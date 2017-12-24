@@ -264,7 +264,7 @@ Arguments Gfun [F V].
 Arguments Gvar [F V].
 
 Record program (F V: Type) : Type := mkprogram {
-  prog_defs: list (ident * option (globdef F V));
+  prog_defs: list (ident * globdef F V);
   prog_public: list ident;
   prog_main: ident
 }.
@@ -276,9 +276,6 @@ Definition prog_defs_names (F V: Type) (p: program F V) : list ident :=
   If several definitions have the same name, the one appearing last in [p.(prog_defs)] wins. *)
 
 Definition prog_defmap (F V: Type) (p: program F V) : PTree.t (globdef F V) :=
-  PTree_Properties.of_list_option p.(prog_defs).
-
-Definition prog_option_defmap (F V: Type) (p: program F V) : PTree.t (option (globdef F V)) :=
   PTree_Properties.of_list p.(prog_defs).
 
 Section DEFMAP.
@@ -287,84 +284,36 @@ Variables F V: Type.
 Variable p: program F V.
 
 Lemma in_prog_defmap:
-  forall id g, (prog_defmap p)!id = Some g -> In (id, Some g) (prog_defs p).
+  forall id g, (prog_defmap p)!id = Some g -> In (id, g) (prog_defs p).
 Proof.
-  apply PTree_Properties.in_of_list_option.
+  apply PTree_Properties.in_of_list.
 Qed.
 
-(*
 Lemma prog_defmap_dom:
   forall id, In id (prog_defs_names p) -> exists g, (prog_defmap p)!id = Some g.
 Proof.
   apply PTree_Properties.of_list_dom.
 Qed.
-*)
 
 Lemma prog_defmap_unique:
   forall defs1 id g defs2,
-  prog_defs p = defs1 ++ (id, Some g) :: defs2 ->
+  prog_defs p = defs1 ++ (id, g) :: defs2 ->
   ~In id (map fst defs2) ->
   (prog_defmap p)!id = Some g.
 Proof.
-  unfold prog_defmap; intros. rewrite H. apply PTree_Properties.of_list_option_unique; auto.
+  unfold prog_defmap; intros. rewrite H. apply PTree_Properties.of_list_unique; auto.
 Qed.
 
 Lemma prog_defmap_norepet:
   forall id g,
   list_norepet (prog_defs_names p) ->
-  In (id, Some g) (prog_defs p) ->
-  (prog_defmap p)!id = Some g.
-Proof.
-  apply PTree_Properties.of_list_option_norepet.
-Qed.
-
-End DEFMAP.
-
-Section OPTION_DEFMAP.
-
-Variables F V: Type.
-Variable p: program F V.
-
-Lemma in_prog_option_defmap:
-  forall id g, (prog_option_defmap p)!id = Some g -> In (id, g) (prog_defs p).
-Proof.
-  apply PTree_Properties.in_of_list.
-Qed.
-
-Lemma prog_option_defmap_dom:
-  forall id, In id (prog_defs_names p) -> exists g, (prog_option_defmap p)!id = Some g.
-Proof.
-  apply PTree_Properties.of_list_dom.
-Qed.
-
-Lemma prog_option_defmap_unique:
-  forall defs1 id g defs2,
-  prog_defs p = defs1 ++ (id, g) :: defs2 ->
-  ~In id (map fst defs2) ->
-  (prog_option_defmap p)!id = Some g.
-Proof.
-  unfold prog_option_defmap; intros. rewrite H. apply PTree_Properties.of_list_unique; auto.
-Qed.
-
-Lemma prog_option_defmap_norepet:
-  forall id g,
-  list_norepet (prog_defs_names p) ->
   In (id, g) (prog_defs p) ->
-  (prog_option_defmap p)!id = Some g.
+  (prog_defmap p)!id = Some g.
 Proof.
   apply PTree_Properties.of_list_norepet.
 Qed.
 
-Lemma prog_defmap_option_defmap:
-  forall id g,
-    (prog_option_defmap p) ! id = Some (Some g) <->
-    (prog_defmap p)!id = Some g.
-Proof.
-  apply PTree_Properties.of_list_option_of_list.
-Qed.
-
-End OPTION_DEFMAP.
-
+End DEFMAP.
 
 (** * Generic transformations over programs *)
 
@@ -377,11 +326,10 @@ Section TRANSF_PROGRAM.
 Variable A B V: Type.
 Variable transf: A -> B.
 
-Definition transform_program_globdef (idg: ident * option (globdef A V)) : ident * option (globdef B V) :=
+Definition transform_program_globdef (idg: ident * globdef A V) : ident * globdef B V :=
   match idg with
-  | (id, None) => (id, None)
-  | (id, Some (Gfun f)) => (id, Some (Gfun (transf f)))
-  | (id, Some (Gvar v)) => (id, Some (Gvar v))
+  | (id, Gfun f) => (id, Gfun (transf f))
+  | (id, Gvar v) => (id, Gvar v)
   end.
 
 Definition transform_program (p: program A V) : program B V :=
@@ -414,23 +362,20 @@ Definition transf_globvar (i: ident) (g: globvar V) : res (globvar W) :=
   do info' <- transf_var i g.(gvar_info);
   OK (mkglobvar info' g.(gvar_init) g.(gvar_readonly) g.(gvar_volatile)).
 
-Fixpoint transf_globdefs (l: list (ident * option (globdef A V))) : res (list (ident * option (globdef B W))) :=
+Fixpoint transf_globdefs (l: list (ident * globdef A V)) : res (list (ident * globdef B W)) :=
   match l with
   | nil => OK nil
-  | (id, None) :: l' =>
-    do tl' <- transf_globdefs l';
-    OK ((id, None) :: tl')
-  | (id, Some (Gfun f)) :: l' =>
+  | (id, Gfun f) :: l' =>
     match transf_fun id f with
       | Error msg => Error (MSG "In function " :: CTX id :: MSG ": " :: msg)
       | OK tf =>
-        do tl' <- transf_globdefs l'; OK ((id, Some (Gfun tf)) :: tl')
+        do tl' <- transf_globdefs l'; OK ((id, Gfun tf) :: tl')
     end
-  | (id, Some (Gvar v)) :: l' =>
+  | (id, Gvar v) :: l' =>
     match transf_globvar id v with
       | Error msg => Error (MSG "In variable " :: CTX id :: MSG ": " :: msg)
       | OK tv =>
-        do tl' <- transf_globdefs l'; OK ((id, Some (Gvar tv)) :: tl')
+        do tl' <- transf_globdefs l'; OK ((id, Gvar tv) :: tl')
     end
   end.
 
@@ -463,7 +408,7 @@ Proof.
               OK (List.map (transform_program_globdef transf_fun) l)).
   { induction l as [ | [id g] l]; simpl.
   - auto.
-  - destruct g as [ [ | ] | ] ; simpl; rewrite IHl; simpl; auto. destruct v; auto.
+  - destruct g; simpl; rewrite IHl; simpl. auto. destruct v; auto.
   }
   rewrite EQ; simpl. auto.
 Qed.

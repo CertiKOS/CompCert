@@ -220,13 +220,11 @@ Definition definitive_initializer (init: list init_data) : bool :=
   | _ => true
   end.
 
-Definition alloc_global (rm: romem) (idg: ident * option (globdef fundef unit)): romem :=
+Definition alloc_global (rm: romem) (idg: ident * globdef fundef unit): romem :=
   match idg with
-  | (id, None) =>
+  | (id, Gfun f) =>
       PTree.remove id rm
-  | (id, Some (Gfun f)) =>
-      PTree.remove id rm
-  | (id, Some (Gvar v)) =>
+  | (id, Gvar v) =>
       if v.(gvar_readonly) && negb v.(gvar_volatile) && definitive_initializer v.(gvar_init)
       then PTree.set id (store_init_data_list (ablock_init Pbot) 0 v.(gvar_init)) rm
       else PTree.remove id rm
@@ -1765,7 +1763,7 @@ Lemma alloc_global_match:
   Genv.alloc_global ge m idg = Some m' ->
   initial_mem_match bc m' (Genv.add_global g idg).
 Proof.
-  intros; red; intros. destruct idg as [id1 [[fd | gv]|]]; simpl in *.
+  intros; red; intros. destruct idg as [id1 [fd | gv]]; simpl in *.
 - destruct (Mem.alloc m 0 1) as [m1 b1] eqn:ALLOC.
   unfold Genv.find_symbol in H2; simpl in H2.
   unfold Genv.find_var_info, Genv.find_def in H3; simpl in H3.
@@ -1862,13 +1860,9 @@ Definition romem_consistent (defmap: PTree.t (globdef fundef unit)) (rm: romem) 
 Lemma alloc_global_consistent:
   forall dm rm idg,
   romem_consistent dm rm ->
-  romem_consistent (match snd idg with
-                      | Some g => PTree.set (fst idg) g dm
-                      | None => PTree.remove (fst idg) dm
-                    end)
-                   (alloc_global rm idg).
+  romem_consistent (PTree.set (fst idg) (snd idg) dm) (alloc_global rm idg).
 Proof.
-  intros; red; intros. destruct idg as [id1 [[f1 | v1] | ]]; simpl in *.
+  intros; red; intros. destruct idg as [id1 [f1 | v1]]; simpl in *.
 - rewrite PTree.grspec in H0. destruct (PTree.elt_eq id id1); try discriminate.
   rewrite PTree.gso by auto. apply H; auto.
 - destruct (gvar_readonly v1 && negb (gvar_volatile v1) && definitive_initializer (gvar_init v1)) eqn:RO.
@@ -1878,21 +1872,14 @@ Proof.
 * apply H; auto.
 + rewrite PTree.grspec in H0. destruct (PTree.elt_eq id id1); try discriminate.
   rewrite PTree.gso by auto. apply H; auto.
-- rewrite ! PTree.grspec in * |- *.
-  destruct (PTree.elt_eq id id1); try discriminate.
-  eauto.
 Qed.
 
 Lemma romem_for_consistent:
-  forall cunit, romem_consistent (prog_defmap cunit) (romem_for_wp cunit).
+  forall cunit, romem_consistent (prog_defmap cunit) (romem_for cunit).
 Proof.
   assert (REC: forall l dm rm,
             romem_consistent dm rm ->
-            romem_consistent (fold_left (fun m idg =>
-                                           match snd idg with
-                                             | Some g => PTree.set (fst idg) g m
-                                             | None => PTree.remove (fst idg) m
-                                           end) l dm)
+            romem_consistent (fold_left (fun m idg => PTree.set (fst idg) (snd idg) m) l dm)
                              (fold_left alloc_global l rm)).
   { induction l; intros; simpl; auto. apply IHl. apply alloc_global_consistent; auto. }
   intros. apply REC.
