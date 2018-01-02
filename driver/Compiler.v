@@ -94,9 +94,9 @@ Definition apply_partial (A B: Type)
                          (x: res A) (f: A -> res B) : res B :=
   match x with Error msg => Error msg | OK x1 => f x1 end.
 
-Notation "a @@@ b" :=
+Notation "a ;;; b" :=
    (apply_partial _ _ a b) (at level 50, left associativity).
-Notation "a @@ b" :=
+Notation "a ;; b" :=
    (apply_total _ _ a b) (at level 50, left associativity).
 
 Definition print {A: Type} (printer: A -> unit) (prog: A) : A :=
@@ -119,52 +119,52 @@ Definition partial_if {A: Type}
 
 Definition transf_rtl_program (f: RTL.program) : res Asm.program :=
    OK f
-   @@ print (print_RTL 0)
-   @@ total_if Compopts.optim_tailcalls (time "Tail calls" Tailcall.transf_program)
-   @@ print (print_RTL 1)
-  @@@ time "Inlining" Inlining.transf_program
-   @@ print (print_RTL 2)
-   @@ time "Renumbering" Renumber.transf_program
-   @@ print (print_RTL 3)
-   @@ total_if Compopts.optim_constprop (time "Constant propagation" Constprop.transf_program)
-   @@ print (print_RTL 4)
-   @@ total_if Compopts.optim_constprop (time "Renumbering" Renumber.transf_program)
-   @@ print (print_RTL 5)
-  @@@ partial_if Compopts.optim_CSE (time "CSE" CSE.transf_program)
-   @@ print (print_RTL 6)
-  @@@ partial_if Compopts.optim_redundancy (time "Redundancy elimination" Deadcode.transf_program)
-   @@ print (print_RTL 7)
-  @@@ time "Unused globals" Unusedglob.transform_program
-   @@ print (print_RTL 8)
-  @@@ time "Register allocation" Allocation.transf_program
-   @@ print print_LTL
-   @@ time "Branch tunneling" Tunneling.tunnel_program
-  @@@ time "CFG linearization" Linearize.transf_program
-   @@ time "Label cleanup" CleanupLabels.transf_program
-  @@@ partial_if Compopts.debug (time "Debugging info for local variables" Debugvar.transf_program)
-  @@@ time "Mach generation" Stacking.transf_program
-   @@ print print_Mach
-  @@@ time "Asm generation" Asmgen.transf_program.
+   ;; print (print_RTL 0)
+   ;; total_if Compopts.optim_tailcalls (time "Tail calls" Tailcall.transf_program)
+   ;; print (print_RTL 1)
+  ;;; time "Inlining" Inlining.transf_program
+   ;; print (print_RTL 2)
+   ;; time "Renumbering" Renumber.transf_program
+   ;; print (print_RTL 3)
+   ;; total_if Compopts.optim_constprop (time "Constant propagation" Constprop.transf_program)
+   ;; print (print_RTL 4)
+   ;; total_if Compopts.optim_constprop (time "Renumbering" Renumber.transf_program)
+   ;; print (print_RTL 5)
+  ;;; partial_if Compopts.optim_CSE (time "CSE" CSE.transf_program)
+   ;; print (print_RTL 6)
+  ;;; partial_if Compopts.optim_redundancy (time "Redundancy elimination" Deadcode.transf_program)
+   ;; print (print_RTL 7)
+  ;;; time "Unused globals" Unusedglob.transform_program
+   ;; print (print_RTL 8)
+  ;;; time "Register allocation" Allocation.transf_program
+   ;; print print_LTL
+   ;; time "Branch tunneling" Tunneling.tunnel_program
+  ;;; time "CFG linearization" Linearize.transf_program
+   ;; time "Label cleanup" CleanupLabels.transf_program
+  ;;; partial_if Compopts.debug (time "Debugging info for local variables" Debugvar.transf_program)
+  ;;; time "Mach generation" Stacking.transf_program
+   ;; print print_Mach
+  ;;; time "Asm generation" Asmgen.transf_program.
 
 Definition transf_cminor_program (p: Cminor.program) : res Asm.program :=
    OK p
-   @@ print print_Cminor
-  @@@ time "Instruction selection" Selection.sel_program
-  @@@ time "RTL generation" RTLgen.transl_program
-  @@@ transf_rtl_program.
+   ;; print print_Cminor
+  ;;; time "Instruction selection" Selection.sel_program
+  ;;; time "RTL generation" RTLgen.transl_program
+  ;;; transf_rtl_program.
 
 Definition transf_clight_program (p: Clight.program) : res Asm.program :=
   OK p
-   @@ print print_Clight
-  @@@ time "Simplification of locals" SimplLocals.transf_program
-  @@@ time "C#minor generation" Cshmgen.transl_program
-  @@@ time "Cminor generation" Cminorgen.transl_program
-  @@@ transf_cminor_program.
+   ;; print print_Clight
+  ;;; time "Simplification of locals" SimplLocals.transf_program
+  ;;; time "C#minor generation" Cshmgen.transl_program
+  ;;; time "Cminor generation" Cminorgen.transl_program
+  ;;; transf_cminor_program.
 
 Definition transf_c_program (p: Csyntax.program) : res Asm.program :=
   OK p
-  @@@ time "Clight generation" SimplExpr.transl_program
-  @@@ transf_clight_program.
+  ;;; time "Clight generation" SimplExpr.transl_program
+  ;;; transf_clight_program.
 
 (** Force [Initializers] and [Cexec] to be extracted as well. *)
 
@@ -182,7 +182,7 @@ Qed.
 
 Lemma compose_print_identity:
   forall (A: Type) (x: res A) (f: A -> unit),
-  x @@ print f = x.
+  x ;; print f = x.
 Proof.
   intros. destruct x; simpl. rewrite print_identity. auto. auto.
 Qed.
