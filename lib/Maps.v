@@ -32,8 +32,8 @@
   inefficient implementation of maps as functions is also provided.
 *)
 
-Require Import Equivalence EquivDec.
 Require Import Coqlib.
+Require Import Equivalence EquivDec.
 
 (* To avoid useless definitions of inductors in extracted code. *)
 Local Unset Elimination Schemes.
@@ -803,11 +803,11 @@ Module PTree <: TREE.
   - destruct n as [ | n1 o' n2 ].
   + rewrite (xelements_empty (Node m1 o m2)). simpl; constructor.
     intros. specialize (H i). rewrite gempty in H. inv H; auto.
-  + rewrite ! xelements_node. repeat apply list_forall2_app.
+  + rewrite ! xelements_node. repeat rstep.
     apply IHm1. intros. apply (H (xO i)).
     generalize (H xH); simpl; intros OR; inv OR.
-    constructor.
     constructor. auto. constructor.
+    constructor.
     apply IHm2. intros. apply (H (xI i)).
   Qed.
 
@@ -835,7 +835,7 @@ Module PTree <: TREE.
     intros.
     exploit (@elements_canonical_order' _ _ (fun (x y: A) => x = y) m n).
     intros. rewrite H. destruct (get i n); constructor; auto.
-    induction 1. auto. destruct a1 as [a2 a3]; destruct b1 as [b2 b3]; simpl in *.
+    induction 1. auto. destruct x as [x1 x2]; destruct y as [y1 y2]; simpl in *.
     destruct H0. congruence.
   Qed.
 
@@ -1714,8 +1714,8 @@ Proof.
                option_rel R (T.get k (fold_left fa l1 m1)) (T.get k (fold_left fb l2 m2))).
   { induction 1; intros; simpl.
   - auto.
-  - apply IHlist_forall2. unfold fa, fb. rewrite ! T.gsspec.
-    destruct H as [E F]. rewrite E. destruct (T.elt_eq k (fst b1)).
+  - apply IHlist_rel. unfold fa, fb. rewrite ! T.gsspec.
+    destruct H as [E F]. rewrite E. destruct (T.elt_eq k (fst y)).
     constructor; auto.
     auto. }
   intros. apply REC; auto. rewrite ! T.gempty. constructor.
@@ -1729,3 +1729,4 @@ Module PTree_Properties := Tree_Properties(PTree).
 
 Notation "a ! b" := (PTree.get b a) (at level 1).
 Notation "a !! b" := (PMap.get b a) (at level 1).
+Notation "a !! ( b )" := (PMap.get b a) (at level 1).

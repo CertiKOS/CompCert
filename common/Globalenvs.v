@@ -1699,8 +1699,8 @@ Lemma add_globals_match:
 Proof.
   induction 1; intros; simpl.
   auto.
-  destruct a1 as [id1 g1]; destruct b1 as [id2 g2]; simpl in *; destruct H; subst id2.
-  apply IHlist_forall2. apply add_global_match; auto.
+  destruct x as [id1 g1]; destruct y as [id2 g2]; simpl in *; destruct H; subst id2.
+  apply IHlist_rel. apply add_global_match; auto.
 Qed.
 
 End MATCH_GENVS.
@@ -1815,9 +1815,9 @@ Lemma alloc_globals_match:
 Proof.
   induction 1; simpl; intros.
 - auto.
-- destruct (alloc_global (globalenv p) m a1) as [m1|] eqn:?; try discriminate.
-  assert (X: alloc_global (globalenv tp) m b1 = Some m1).
-  { destruct a1 as [id1 g1]; destruct b1 as [id2 g2]; destruct H; simpl in *.
+- destruct (alloc_global (globalenv p) m x) as [m1|] eqn:?; try discriminate.
+  assert (X: alloc_global (globalenv tp) m y = Some m1).
+  { destruct x as [id1 g1]; destruct y as [id2 g2]; destruct H; simpl in *.
     subst id2. inv H2.
   - auto.
   - inv H; simpl in *.

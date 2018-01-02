@@ -374,7 +374,7 @@ Proof.
   unfold add_debug_params. destruct (Compopts.debug tt).
 - induction params as [ | [id ty] params ]; simpl; intros until le1; intros NR CAST BIND; inv CAST; inv NR.
   + apply star_refl.
-  + assert (le!id = Some a1). { erewrite bind_parameter_temps_inv by eauto. apply PTree.gss. }
+  + assert (le!id = Some x). { erewrite bind_parameter_temps_inv by eauto. apply PTree.gss. }
     eapply star_left. constructor.
     eapply star_left. eapply step_Sdebug_temp; eauto.
     eapply star_left. constructor.

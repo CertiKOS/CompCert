@@ -875,7 +875,7 @@ Proof.
 - exists (@nil val); split; constructor.
 - simpl in H5.
   exploit eval_builtin_arg_inject; eauto using in_or_app. intros (v1' & A & B).
-  destruct IHlist_forall2 as (vl' & C & D); eauto using in_or_app.
+  destruct IHlist_rel as (vl' & C & D); eauto using in_or_app.
   exists (v1' :: vl'); split; constructor; auto.
 Qed.
 
@@ -1101,7 +1101,7 @@ Lemma bytes_of_init_inject:
 Proof.
   induction il as [ | i1 il]; simpl; intros.
 - constructor.
-- apply list_forall2_app.
+- rstep.
 + destruct i1; simpl; try (apply inj_bytes_inject).
   induction (Z.to_nat z); simpl; constructor. constructor. auto.
   destruct (Genv.find_symbol ge i) as [b|] eqn:FS.

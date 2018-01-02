@@ -1077,7 +1077,7 @@ Proof.
   generalize H0. induction 1. auto.
   simpl. f_equal; auto.
   unfold block_of_binding, Clight.block_of_binding.
-  destruct a1 as [id1 [blk1 ty1]]. destruct b1 as [id2 [blk2 sz2]].
+  destruct x as [id1 [blk1 ty1]]. destruct y as [id2 [blk2 sz2]].
   simpl in *. destruct H1 as [A [B C]]. congruence.
 Qed.
 

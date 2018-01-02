@@ -648,12 +648,12 @@ Proof.
   rewrite ! PTree.gcombine by auto.
   generalize (match_program_defmap _ _ _ _ _ H0 id) (match_program_defmap _ _ _ _ _ H1 id).
   clear R. intros R1 R2; inv R1; inv R2; unfold link_prog_merge.
-* constructor.
-* constructor. apply match_globdef_linkorder with ctx2; auto.
-* constructor. apply match_globdef_linkorder with ctx1; auto.
 * exploit Q; eauto. intros (X & Y & gd & Z).
   exploit link_match_globdef. eexact H2. eexact H3. eauto. eauto. eauto.
   intros (tg & TL & MG). rewrite Z, TL. constructor; auto.
+* constructor. apply match_globdef_linkorder with ctx1; auto.
+* constructor. apply match_globdef_linkorder with ctx2; auto.
+* constructor.
 + rewrite R; simpl; auto.
 + rewrite R; simpl. congruence.
 Qed.

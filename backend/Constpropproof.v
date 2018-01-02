@@ -214,7 +214,7 @@ Lemma builtin_args_strength_reduction_correct:
 Proof.
   induction 2; simpl; constructor.
   eapply builtin_arg_strength_reduction_correct; eauto.
-  apply IHlist_forall2.
+  apply IHlist_rel.
 Qed.
 
 Lemma debug_strength_reduction_correct:
@@ -225,11 +225,11 @@ Lemma debug_strength_reduction_correct:
 Proof.
   induction 2; simpl.
 - exists (@nil val); constructor.
-- destruct IHlist_forall2 as (vl' & A).
+- destruct IHlist_rel as (vl' & A).
   assert (eval_builtin_args ge (fun r => rs#r) sp m
-             (a1 :: debug_strength_reduction ae al) (b1 :: vl'))
+             (x :: debug_strength_reduction ae x0) (y :: vl'))
   by (constructor; eauto).
-  destruct a1; try (econstructor; eassumption).
+  destruct x; try (econstructor; eassumption).
   destruct (builtin_arg_reduction ae (BA x)); repeat (eauto; econstructor).
 Qed.
 

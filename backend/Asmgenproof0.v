@@ -367,7 +367,7 @@ Proof.
   induction 3; intros.
   exists (@nil val); split. constructor. constructor.
   exploit extcall_arg_pair_match; eauto. intros [v1' [A B]].
-  destruct IHlist_forall2 as [vl' [C D]].
+  destruct IHlist_rel as [vl' [C D]].
   exists (v1' :: vl'); split; constructor; auto.
 Qed.
 
@@ -402,7 +402,7 @@ Proof.
   exploit (@eval_builtin_arg_lessdef _ ge ms (fun r => rs (preg_of r))); eauto.
   intros; eapply preg_val; eauto.
   intros (v1' & A & B).
-  destruct IHlist_forall2 as [vl' [C D]].
+  destruct IHlist_rel as [vl' [C D]].
   exists (v1' :: vl'); split; constructor; auto. apply builtin_arg_match; auto.
 Qed.
 

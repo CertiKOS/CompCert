@@ -147,13 +147,14 @@ Proof.
     induction 1; intros; simpl.
   - apply H; auto. simpl. omega.
   - simpl length in H1; rewrite inj_S in H1.
-    apply IHlist_forall2; auto.
+    apply IHlist_rel; auto.
     intros. rewrite ! ZMap.gsspec. destruct (ZIndexed.eq i p). auto.
     apply H1; auto. unfold ZIndexed.t in *; omega.
   }
   intros.
   destruct (Mem.range_perm_storebytes m2 b ofs bytes2) as [m2' ST2].
-  { erewrite <- list_forall2_length by eauto. red; intros.
+  { replace (length bytes2) with (length bytes1) by rauto. (* XXX *)
+    red; intros.
     eapply ma_perm; eauto.
     eapply Mem.storebytes_range_perm; eauto. }
   exists m2'; split; auto.
@@ -635,8 +636,8 @@ Proof.
 Local Opaque transfer_builtin_arg.
   induction 1; simpl; intros.
 - inv H. exists (@nil val); intuition auto. constructor.
-- destruct (transfer_builtin_arg All (ne1, nm1) a1) as [ne' nm'] eqn:TR.
-  exploit IHlist_forall2; eauto. intros (vs' & A1 & B1 & C1 & D1).
+- destruct (transfer_builtin_arg All (ne1, nm1) x) as [ne' nm'] eqn:TR.
+  exploit IHlist_rel; eauto. intros (vs' & A1 & B1 & C1 & D1).
   exploit transfer_builtin_arg_sound; eauto. intros (v1' & A2 & B2 & C2 & D2).
   exists (v1' :: vs'); intuition auto. constructor; auto.
 Qed.
@@ -678,7 +679,7 @@ Proof.
   induction 2.
 - exists (@nil val); constructor.
 - exploit can_eval_builtin_arg; eauto. intros (v' & A).
-  destruct IHlist_forall2 as (vl' & B).
+  destruct IHlist_rel as (vl' & B).
   exists (v' :: vl'); constructor; eauto.
 Qed.
 
@@ -888,7 +889,7 @@ Ltac UseTransfer :=
   functional induction (transfer_builtin (vanalyze cu f)#pc ef args res ne nm);
   simpl in *; intros.
 + (* volatile load *)
-  inv H0. inv H6. rename b1 into v1.
+  inv H0. inv H6. rename y into v1.
   destruct (transfer_builtin_arg All
               (kill_builtin_res res ne,
               nmem_add nm (aaddr_arg (vanalyze cu f) # pc a1)
@@ -917,7 +918,7 @@ Ltac UseTransfer :=
   apply eagree_set_res; auto.
   eapply magree_monotone; eauto. intros. apply incl_nmem_add; auto.
 + (* volatile store *)
-  inv H0. inv H6. inv H7. rename b1 into v1. rename b0 into v2.
+  inv H0. inv H6. inv H7. rename y into v1. rename y1 into v2.
   destruct (transfer_builtin_arg (store_argument chunk)
               (kill_builtin_res res ne, nm) a2) as (ne2, nm2) eqn: TR2.
   destruct (transfer_builtin_arg All (ne2, nm2) a1) as (ne1, nm1) eqn: TR1.
@@ -938,7 +939,7 @@ Ltac UseTransfer :=
   apply eagree_set_res; auto.
 + (* memcpy *)
   rewrite e1 in TI.
-  inv H0. inv H6. inv H7. rename b1 into v1. rename b0 into v2.
+  inv H0. inv H6. inv H7. rename y into v1. rename y1 into v2.
   set (adst := aaddr_arg (vanalyze cu f) # pc dst) in *.
   set (asrc := aaddr_arg (vanalyze cu f) # pc src) in *.
   destruct (transfer_builtin_arg All
@@ -978,7 +979,7 @@ Ltac UseTransfer :=
   apply eagree_set_res; auto.
 + (* memcpy eliminated *)
   rewrite e1 in TI.
-  inv H0. inv H6. inv H7. rename b1 into v1. rename b0 into v2.
+  inv H0. inv H6. inv H7. rename y into v1. rename y1 into v2.
   set (adst := aaddr_arg (vanalyze cu f) # pc dst) in *.
   set (asrc := aaddr_arg (vanalyze cu f) # pc src) in *.
   inv H1.

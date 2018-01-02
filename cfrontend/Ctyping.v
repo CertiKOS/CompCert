@@ -1358,7 +1358,7 @@ Proof.
   { unfold e, e'. revert MATCH; generalize (prog_defs p) (AST.prog_defs tp) (PTree.empty type).
     induction l as [ | [id gd] l ]; intros l' t M; inv M.
     auto.
-    destruct b1 as [id' gd']; destruct H1; simpl in *. inv H0; simpl.
+    destruct y as [id' gd']; destruct H1; simpl in *. inv H0; simpl.
     replace (type_of_fundef f2) with (type_of_fundef f1); auto.
     unfold retype_fundef in H2. destruct f1; monadInv H2; auto. monadInv EQ0; auto.
     inv H1. simpl. auto.
@@ -1367,7 +1367,7 @@ Proof.
   intros id f. revert MATCH; generalize (prog_defs p) (AST.prog_defs tp).
   induction 1; simpl; intros.
   contradiction.
-  destruct H0; auto. subst b1; inv H. simpl in H1. inv H1. 
+  destruct H0; auto. subst y; inv H. simpl in H1. inv H1.
   destruct f1; monadInv H4. eapply retype_function_sound; eauto.
 Qed.
 

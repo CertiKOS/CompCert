@@ -2364,7 +2364,7 @@ Proof.
   induction 1; intros; simpl.
   auto.
   replace (p + delta + 1) with ((p + 1) + delta) by omega.
-  apply IHlist_forall2; auto.
+  apply IHlist_rel; auto.
   intros. rewrite ZMap.gsspec at 1. destruct (ZIndexed.eq q0 p). subst q0.
   rewrite ZMap.gss. auto.
   rewrite ZMap.gso. auto. unfold ZIndexed.t in *. omega.
@@ -2492,7 +2492,7 @@ Proof.
        with ((ofs + Z_of_nat (length bytes1)) + delta).
     eapply range_perm_inj; eauto with mem.
     eapply storebytes_range_perm; eauto.
-    rewrite (list_forall2_length H3). omega.
+    rewrite H3. omega.
   destruct (range_perm_storebytes _ _ _ _ H4) as [n2 STORE].
   exists n2; split. eauto.
   constructor.
@@ -2523,7 +2523,7 @@ Proof.
     eapply H1; eauto 6 with mem.
     exploit storebytes_range_perm. eexact H0.
     instantiate (1 := r - delta).
-    rewrite (list_forall2_length H3). omega.
+    rewrite H3. omega.
     eauto 6 with mem.
   destruct H9. congruence. omega.
   (* block <> b1, block <> b2 *)

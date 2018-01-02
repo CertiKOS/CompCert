@@ -1175,7 +1175,7 @@ Proof.
   assert (Mem.perm m1 bdst i Max Nonempty).
   apply Mem.perm_cur_max. apply Mem.perm_implies with Writable; auto with mem.
   eapply Mem.storebytes_range_perm; eauto.
-  erewrite list_forall2_length; eauto.
+  rewrite B; eauto.
   tauto.
 - (* injections *)
   intros. inv H0. inv H2. inv H14. inv H15. inv H11. inv H12.
@@ -1232,7 +1232,7 @@ Proof.
   eelim H2; eauto.
   apply Mem.perm_cur_max. apply Mem.perm_implies with Writable; auto with mem.
   eapply Mem.storebytes_range_perm; eauto.
-  erewrite list_forall2_length; eauto.
+  rewrite B; eauto.
   omega.
   split. apply inject_incr_refl.
   red; intros; congruence.
@@ -1655,7 +1655,7 @@ Proof.
   induction 1.
 - econstructor; split. constructor. auto.
 - exploit eval_builtin_arg_lessdef; eauto. intros (v1' & P & Q).
-  destruct IHlist_forall2 as (vl' & U & V).
+  destruct IHlist_rel as (vl' & U & V).
   exists (v1'::vl'); split; constructor; auto.
 Qed.
 

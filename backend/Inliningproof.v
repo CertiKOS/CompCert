@@ -237,10 +237,10 @@ Proof.
   exists rs1; split. apply star_refl. split. apply agree_regs_init. auto.
   simpl in H0. inv H0.
   exploit IHrdsts; eauto. intros [rs2 [A [B C]]].
-  exists (rs2#(sreg ctx2 a) <- (rs2#(sreg ctx1 b1))).
+  exists (rs2#(sreg ctx2 a) <- (rs2#(sreg ctx1 y))).
   split. eapply star_right. eauto. eapply exec_Iop; eauto. traceEq.
   split. destruct H3 as [[P Q] | [P Q]].
-  subst a1. eapply agree_set_reg_undef; eauto.
+  subst x. eapply agree_set_reg_undef; eauto.
   eapply agree_set_reg; eauto. rewrite C; auto.  apply context_below_lt; auto.
   intros. rewrite Regmap.gso. auto. apply sym_not_equal. eapply sreg_below_diff; eauto.
   destruct H2; discriminate.
@@ -459,7 +459,7 @@ Proof.
   induction 5; simpl.
 - exists (@nil val); split; constructor.
 - exploit tr_builtin_arg; eauto. intros (v1' & A & B).
-  destruct IHlist_forall2 as (vl' & C & D).
+  destruct IHlist_rel as (vl' & C & D).
   exists (v1' :: vl'); split; constructor; auto.
 Qed.
 
