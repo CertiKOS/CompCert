@@ -65,7 +65,7 @@ VLIB=Axioms.v Coqlib.v Intv.v Maps.v Heaps.v Lattice.v Ordered.v \
 COMMON=Errors.v AST.v Linking.v \
   Events.v Globalenvs.v Memdata.v Memtype.v Memory.v \
   Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
-  LanguageInterface.v CallconvAlgebra.v \
+  LanguageInterface.v CallconvAlgebra.v ModuleSemantics.v \
   Separation.v
 
 # Back-end modules (in backend/, $(ARCH)/)
@@ -103,7 +103,7 @@ BACKEND=\
 CFRONTEND=Ctypes.v Cop.v Csyntax.v Csem.v Ctyping.v Cstrategy.v Cexec.v \
   Initializers.v Initializersproof.v \
   SimplExpr.v SimplExprspec.v SimplExprproof.v \
-  Clight.v ClightBigstep.v SimplLocals.v SimplLocalsproof.v \
+  Clight.v ClightBigstep.v ClightLink.v SimplLocals.v SimplLocalsproof.v \
   Cshmgen.v Cshmgenproof.v \
   Csharpminor.v Cminorgen.v Cminorgenproof.v
 
