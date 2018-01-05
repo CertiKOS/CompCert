@@ -76,7 +76,6 @@ End FComp.
 Module Res.
   Section RESOLVE.
     Context {li} (L: Smallstep.semantics li li).
-    Context (internal: query li -> bool).
 
     Definition state := list (Smallstep.state L).
 
@@ -88,7 +87,7 @@ Module Res.
     Inductive at_external: state -> query li -> Prop :=
       | at_external_intro s stk q':
           Smallstep.at_external L s q' ->
-          internal q' = false ->
+          (forall s', ~ Smallstep.initial_state L q' s') ->
           at_external (s :: stk) q'.
 
     Inductive after_external: state -> reply li -> state -> Prop :=
@@ -106,7 +105,6 @@ Module Res.
           Smallstep.step L ge s t s' ->
           step ge (s :: stk) t (s' :: stk)
       | step_call s stk qi si:
-          internal qi = true ->
           Smallstep.at_external L s qi ->
           Smallstep.initial_state L qi si ->
           step ge (s :: stk) E0 (si :: s :: stk)
@@ -138,9 +136,8 @@ Module HComp.
   Section HCOMP.
     Context (ge: Senv.t).
     Context {li I} (L: I -> semantics li li).
-    Context (internal: query li -> bool).
 
     Definition semantics :=
-      Res.semantics (FComp.semantics ge L) internal.
+      Res.semantics (FComp.semantics ge L).
   End HCOMP.
 End HComp.
