@@ -676,12 +676,12 @@ Inductive initial_state (p: program): query li_c -> state -> Prop :=
       let ge := Genv.globalenv p in
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Genv.find_symbol ge (str2ident id) = Some b ->
-      Genv.find_funct_ptr ge b = Some f ->
-      type_of_fundef f = Tfunction targs tres tcc ->
+      Genv.find_funct_ptr ge b = Some (Internal f) ->
+      type_of_function f = Tfunction targs tres tcc ->
       Val.has_type_list vargs (typlist_of_typelist targs) ->
       initial_state p
         (cq id (signature_of_type targs tres tcc) vargs m)
-        (Callstate f vargs Kstop m).
+        (Callstate (Internal f) vargs Kstop m).
 
 Inductive at_external: state -> query li_c -> Prop :=
   | at_external_intro id sg targs tres cconv vargs k m:

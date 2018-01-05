@@ -1574,12 +1574,16 @@ Proof.
   inv H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
   econstructor; split.
+  fold (CminorSel.funsig (Internal f)).
   erewrite <- sig_transl_function by eauto.
+  monadInv B.
   econstructor.
   fold tge. rewrite genv_next_preserved. assumption.
   fold tge. rewrite symbols_preserved. eassumption.
   eexact A.
-  erewrite sig_transl_function; eassumption.
+  fold (funsig (Internal x)).
+  erewrite sig_transl_function with (Internal f) (Internal x); eauto.
+  simpl. rewrite EQ. reflexivity.
   constructor. auto. constructor.
   clear; induction vargs; eauto.
   apply Mem.extends_refl.

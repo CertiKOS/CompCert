@@ -1090,12 +1090,16 @@ Proof.
   exploit function_ptr_translated; eauto. intros (cu & f' & A & B & C).
   econstructor; split.
   {
+    fold (Cminor.funsig (Internal f)).
     erewrite <- sig_function_translated by eauto.
+    pose proof B. inv B. destruct H4. monadInv H5.
     econstructor.
     + fold tge. rewrite genv_next_preserved. assumption.
     + fold tge. rewrite symbols_preserved. eassumption.
     + fold tge. assumption.
-    + erewrite sig_function_translated; eauto.
+    + fold (funsig (Internal x0)).
+      erewrite sig_function_translated; eauto.
+      assumption.
   }
   econstructor; eauto. red; intros; constructor.
   clear; induction vargs0; eauto.

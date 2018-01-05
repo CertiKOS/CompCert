@@ -1776,6 +1776,7 @@ Proof.
   { eapply transl_fundef_sig2; eauto. }
   econstructor; split.
   rewrite <- E.
+  inv B. simpl in E.
   econstructor; eauto.
   fold tge. rewrite genv_next_preserved; eauto.
   rewrite E. simpl. assumption.

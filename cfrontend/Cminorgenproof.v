@@ -2278,11 +2278,15 @@ Proof.
   inv HS.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   econstructor; split.
+  fold (Csharpminor.funsig (Internal f)).
   erewrite <- sig_preserved by eauto.
+  monadInv TR.
   econstructor; eauto.
   fold tge. rewrite genv_next_preserved. assumption.
   fold tge. rewrite symbols_preserved. assumption.
-  erewrite sig_preserved; eauto.
+  fold (funsig (Internal x)).
+  erewrite sig_preserved with (Internal f) (Internal x); eauto.
+  simpl. rewrite EQ. reflexivity.
   eapply match_callstate with (f := Mem.flat_inj (Mem.nextblock m0)) (cs := @nil frame) (cenv := PTree.empty Z).
   auto.
   apply Mem.neutral_inject; eauto.

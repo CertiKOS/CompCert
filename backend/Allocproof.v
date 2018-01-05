@@ -2515,7 +2515,9 @@ Proof.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   exploit sig_function_translated; eauto. intros SIG.
   exists (LTL.Callstate (Parent rs :: nil) tf rs m); split.
+  fold (RTL.funsig (Internal f)).
   rewrite <- SIG.
+  monadInv TR.
   econstructor; eauto.
   fold tge. rewrite genv_next_preserved. assumption.
   rewrite symbols_preserved. assumption.
@@ -2604,7 +2606,7 @@ Proof.
   inv C.
   inv H1.
   destruct f; simpl in *.
-- monadInv H3.
+- monadInv H2.
   unfold transf_function in EQ.
   destruct (type_function f) as [env|] eqn:TF; try discriminate.
   econstructor. eapply type_function_correct; eauto.

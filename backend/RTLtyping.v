@@ -989,7 +989,7 @@ Lemma wt_initial_state id sg args m:
   forall S, initial_state p (cq id sg args m) S -> wt_state (sig_res sg) S.
 Proof.
   intros. inv H. constructor. constructor. auto.
-  pattern f. apply Genv.find_funct_ptr_prop with fundef unit p b.
+  pattern (Internal f). apply Genv.find_funct_ptr_prop with fundef unit p b.
   exact wt_p. exact H7.
   assumption.
 Qed.

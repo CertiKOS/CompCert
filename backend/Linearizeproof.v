@@ -729,6 +729,7 @@ Proof.
   intros. inversion H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
   exists (Callstate (Parent rs :: nil) tf rs m); split.
+  fold (LTL.funsig (Internal f)).
   erewrite <- sig_preserved by eauto.
   econstructor; eauto.
   fold tge. rewrite genv_next_preserved; eauto.
