@@ -840,38 +840,56 @@ End FORWARD_SIMULATION.
 
 (** ** Composing two forward simulations *)
 
-(*
 Lemma compose_forward_simulations:
-  forall cc12 cc23 L1 L2 L3,
-    forward_simulation cc12 L1 L2 ->
-    forward_simulation cc23 L2 L3 ->
-    forward_simulation (cc_compose cc12 cc23) L1 L3.
+  forall {liA1 liB1 liA2 liB2 liA3 liB3},
+  forall {ccA12 ccB12 ccA23 ccB23},
+  forall L1 L2 L3,
+    @forward_simulation liA1 liB1 liA2 liB2 ccA12 ccB12 L1 L2 ->
+    @forward_simulation liA2 liB2 liA3 liB3 ccA23 ccB23 L2 L3 ->
+    forward_simulation (cc_compose ccA12 ccA23) (cc_compose ccB12 ccB23) L1 L3.
 Proof.
+  intros until ccB23.
   intros L1 L2 L3 S12 S23.
   destruct S12 as [index order match_states props].
   destruct S23 as [index' order' match_states' props'].
 
   set (ff_index := (index' * index)%type).
   set (ff_order := lex_ord (clos_trans _ order') order).
-  set (ff_match_states := fun (i: ff_index) (s1: state L1) (s3: state L3) =>
-                             exists s2, match_states (snd i) s1 s2 /\ match_states' (fst i) s2 s3).
-  apply Forward_simulation with ff_order ff_match_states; constructor.
+  set (ff_match_states := fun w (i: ff_index) (s1: state L1) (s3: state L3) =>
+                             exists s2, match_states (comp_fst w) (snd i) s1 s2 /\ match_states' (comp_snd w) (fst i) s2 s3).
+  apply Forward_simulation with _ ff_order ff_match_states; constructor.
 - (* well founded *)
   unfold ff_order. apply wf_lex_ord. apply wf_clos_trans.
   eapply fsim_order_wf; eauto. eapply fsim_order_wf; eauto.
 - (* initial states *)
-  intros. exploit (fsim_match_initial_states props); eauto. intros [i [s2 [A B]]].
+  subst ff_match_states. simpl.
+  inv_compose_query.
+  intros. subst.
+  exploit (fsim_match_initial_states props); eauto. intros [i [s2 [A B]]].
   exploit (fsim_match_initial_states props'); eauto. intros [i' [s3 [C D]]].
   exists (i', i); exists s3; split; auto. exists s2; auto.
+- (* external call *)
+  intros. destruct H as [s3 [A B]].
+  edestruct (fsim_match_external props) as (? & ? & ? & ? & Hr); eauto.
+  edestruct (fsim_match_external props') as (? & ? & ? & ? & Hr'); eauto.
+  edestruct (match_cc_compose ccA12 ccA23) as (w' & Hq & Hr12); eauto.
+  eexists _, _. intuition; eauto.
+  edestruct Hr12 as (r3 & ? & ?); eauto.
+  edestruct Hr as (j & s2' & Hs2' & Hs12'); eauto.
+  edestruct Hr' as (j' & s3' & Hs3' & Hs23'); eauto.
+  exists (j', j), s3'. intuition.
+  red. eauto.
 - (* final states *)
   intros. destruct H as [s3 [A B]].
-  eapply (fsim_match_final_states props'); eauto.
-  eapply (fsim_match_final_states props); eauto.
+  edestruct (fsim_match_final_states props) as (r2 & ? & ?); eauto.
+  edestruct (fsim_match_final_states props') as (r3 & ? & ?); eauto.
+  eexists; split; eauto.
+  eapply match_reply_cc_compose; eauto.
 - (* simulation *)
   intros. destruct H0 as [s3 [A B]]. destruct i as [i2 i1]; simpl in *.
   exploit (fsim_simulation' props); eauto. intros [[i1' [s3' [C D]]] | [i1' [C [D E]]]].
 + (* L2 makes one or several steps. *)
-  exploit simulation_plus; eauto. intros [[i2' [s2' [P Q]]] | [i2' [P [Q R]]]].
+  exploit (simulation_plus props'); eauto. intros [[i2' [s2' [P Q]]] | [i2' [P [Q R]]]].
 * (* L3 makes one or several steps *)
   exists (i2', i1'); exists s2'; split. auto. exists s3'; auto.
 * (* L3 makes no step *)
@@ -885,7 +903,6 @@ Proof.
 - (* symbols *)
   intros. transitivity (Senv.public_symbol (symbolenv L2) id); eapply fsim_public_preserved; eauto.
 Qed.
-*)
 
 (** * Receptiveness and determinacy *)
 
