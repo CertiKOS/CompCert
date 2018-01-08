@@ -1082,8 +1082,8 @@ Qed.
 
 Lemma sel_initial_states:
   forall w q1 q2, match_query cc_extends_triangle w q1 q2 ->
-  forall S, Cminor.initial_state prog q1 S ->
-  exists R, initial_state tprog q2 R /\ match_states S R.
+  forall S, Cminor.initial_state ge q1 S ->
+  exists R, initial_state tge q2 R /\ match_states S R.
 Proof.
   inv_triangle_query.
   destruct 1.
@@ -1092,11 +1092,10 @@ Proof.
   {
     fold (Cminor.funsig (Internal f)).
     erewrite <- sig_function_translated by eauto.
-    pose proof B. inv B. destruct H4. monadInv H5.
+    pose proof B. inv B. destruct H3. monadInv H4.
     econstructor.
-    + fold tge. rewrite genv_next_preserved. assumption.
-    + fold tge. rewrite symbols_preserved. eassumption.
-    + fold tge. assumption.
+    + rewrite genv_next_preserved. assumption.
+    + assumption.
     + fold (funsig (Internal x0)).
       erewrite sig_function_translated; eauto.
       assumption.
@@ -1109,10 +1108,10 @@ Qed.
 Lemma sel_external:
   forall S R q1,
     match_states S R ->
-    Cminor.at_external S q1 ->
+    Cminor.at_external ge S q1 ->
     exists wA q2,
       match_query cc_extends wA q1 q2 /\
-      CminorSel.at_external R q2 /\
+      CminorSel.at_external tge R q2 /\
       forall r1 r2 S',
         match_reply cc_extends wA r1 r2 ->
         Cminor.after_external S r1 S' ->
@@ -1121,12 +1120,14 @@ Lemma sel_external:
           match_states S' R'.
 Proof.
   intros S R q HSR HS.
-  destruct HS. inv HSR.
+  destruct HS as [fb id sg vargs k m Hfb]. inv HSR.
   - edestruct match_cc_extends as (w & Hq & H); eauto.
     destruct TF as (hf & Hhf & Hf').
     inv Hf'.
-    exists w, (cq id sg args' m'); repeat apply conj; eauto.
-    + constructor.
+    exists w, (cq fb sg args' m'); repeat apply conj; eauto.
+    + edestruct function_ptr_translated as (cu & tf & Htf & Hf & _); eauto.
+      red in Hf. destruct Hf as (hf' & Hhf' & Hf). inv Hf.
+      constructor; eauto.
     + intros r1 [vres2 m2'] H' Hr HS'.
       inv HS'.
       edestruct H as (Hvres & Hm' & Hunch); eauto.
@@ -1154,7 +1155,7 @@ Proof.
   apply forward_simulation_opt with (match_states := fun _ => match_states) (measure := measure).
   apply senv_preserved.
   apply sel_initial_states; auto.
-  auto using sel_external.
+  eauto using sel_external.
   apply sel_final_states; auto.
   auto using sel_step_correct.
 Qed.

@@ -425,7 +425,7 @@ End RELSEM.
 
 Record mach_query :=
   mq {
-    mq_id: String.string;
+    mq_fb: block;
     mq_sp: val;
     mq_ra: val;
     mq_rs: regset;
@@ -438,30 +438,26 @@ Definition li_mach: language_interface :=
     reply := regset * mem;
   |}.
 
-Inductive initial_state (p: program): query li_mach -> state -> Prop :=
-  | initial_state_intro: forall id fb sp ra rs m,
-      let ge := Genv.globalenv p in
+Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
+  | initial_state_intro: forall fb sp ra rs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      Genv.find_symbol ge (str2ident id) = Some fb ->
-      initial_state p
-        (mq id sp ra rs m)
+      initial_state ge
+        (mq fb sp ra rs m)
         (Callstate (Parent sp ra :: nil) fb rs m).
 
-Inductive at_external (p: program): state -> query li_c -> Prop :=
-  | at_external_intro id sg fb s rs m args:
-      let ge := Genv.globalenv p in
+Inductive at_external (ge: genv): state -> query li_c -> Prop :=
+  | at_external_intro fb id sg s rs m args:
       Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
       extcall_arguments rs m (parent_sp s) sg args ->
-      at_external p
+      at_external ge
         (Callstate s fb rs m)
-        (cq id sg args m).
+        (cq fb sg args m).
 
-Inductive after_external (p: program): state -> reply li_c -> state -> Prop :=
+Inductive after_external (ge: genv): state -> reply li_c -> state -> Prop :=
   | after_external_intro id sg fb s rs m vres m':
-      let ge := Genv.globalenv p in
       Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
       let rs' := set_pair (loc_result sg) vres rs in (* XXX erase caller-save *)
-      after_external p
+      after_external ge
         (Callstate s fb rs m)
         (vres, m')
         (Returnstate s rs' m').
@@ -472,13 +468,14 @@ Inductive final_state: state -> reply li_mach -> Prop :=
         (Returnstate (Parent sp ra :: s) rs m) (rs, m).
 
 Definition semantics (rao: function -> code -> ptrofs -> Prop) (p: program) :=
+  let ge := Genv.globalenv p in
   Semantics li_c li_mach
     (step rao)
-    (initial_state p)
-    (at_external p)
-    (after_external p)
+    (initial_state ge)
+    (at_external ge)
+    (after_external ge)
     final_state
-    (Genv.globalenv p).
+    ge.
 
 (** * Leaf functions *)
 
@@ -544,8 +541,8 @@ Qed.
 End WF_STATES.
 
 Lemma wf_initial:
-  forall p q S, initial_state p q S -> wf_state (Genv.globalenv p) S.
+  forall ge q S, initial_state ge q S -> wf_state ge S.
 Proof.
-  intros. inv H. fold ge. constructor. constructor.
+  intros. inv H. constructor. constructor.
   constructor. constructor.
 Qed.

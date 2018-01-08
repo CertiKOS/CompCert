@@ -21,7 +21,7 @@ Structure language_interface :=
 
 Record c_query :=
   cq {
-    cq_id: string;
+    cq_fb: block;
     cq_sg: signature;
     cq_args: list val;
     cq_mem: mem;
@@ -46,11 +46,6 @@ Definition li_empty :=
     query := Empty_set;
     reply := Empty_set;
   |}.
-
-(** XXX temporary fix: external functions are identified with a [string],
-  but internal functions use [AST.ident]. To work around this
-  discrepancy, we introduce the following mapping. *)
-Parameter str2ident : string -> ident.
 
 (** * Calling conventions *)
 
@@ -453,7 +448,7 @@ Qed.
   These components can be obtained from the outer world used in the
   simulation as follows. *)
 
-Notation tr_id w := (cq_id (world_q1 w)).
+Notation tr_fb w := (cq_fb (world_q1 w)).
 Notation tr_sg w := (cq_sg (world_q1 w)).
 Notation tr_args w := (cq_args (world_q1 w)).
 Notation tr_mem w := (cq_mem (world_q1 w)).
@@ -482,7 +477,7 @@ Lemma match_query_cc_extends_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
     P id sg vargs m (cq id sg vargs m) (cq id sg vargs m)) ->
   (forall w q1 q2,
     match_query cc_extends_triangle w q1 q2 ->
-    P (tr_id w) (tr_sg w) (tr_args w) (tr_mem w) q1 q2).
+    P (tr_fb w) (tr_sg w) (tr_args w) (tr_mem w) q1 q2).
 Proof.
   intros H w q1 q2 Hq.
   destruct Hq.
@@ -547,7 +542,7 @@ Lemma match_query_cc_inject_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
     P id sg vargs m (cq id sg vargs m) (cq id sg vargs m)) ->
   (forall w q1 q2,
     match_query cc_inject_triangle w q1 q2 ->
-    P (tr_id w) (tr_sg w) (tr_args w) (tr_mem w) q1 q2).
+    P (tr_fb w) (tr_sg w) (tr_args w) (tr_mem w) q1 q2).
 Proof.
   intros H w q1 q2 Hq.
   destruct Hq.
@@ -588,7 +583,7 @@ Ltac inv_triangle_query :=
   let q2 := fresh "q2" in
   let Hq := fresh "Hq" in
   intros w q1 q2 Hq;
-  pattern (tr_id w), (tr_sg w), (tr_args w), (tr_mem w), q1, q2;
+  pattern (tr_fb w), (tr_sg w), (tr_args w), (tr_mem w), q1, q2;
   revert w q1 q2 Hq;
   first
     [ apply match_query_cc_extends_triangle

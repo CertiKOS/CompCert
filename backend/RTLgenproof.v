@@ -1566,8 +1566,8 @@ Qed.
 
 Lemma transl_initial_states:
   forall w q1 q2, match_query cc_extends_triangle w q1 q2 ->
-  forall S, CminorSel.initial_state prog q1 S ->
-  exists R, RTL.initial_state tprog q2 R /\ match_states S R.
+  forall S, CminorSel.initial_state ge q1 S ->
+  exists R, RTL.initial_state tge q2 R /\ match_states S R.
 Proof.
   inv_triangle_query.
   intros id sg vargs m S H.
@@ -1578,8 +1578,7 @@ Proof.
   erewrite <- sig_transl_function by eauto.
   monadInv B.
   econstructor.
-  fold tge. rewrite genv_next_preserved. assumption.
-  fold tge. rewrite symbols_preserved. eassumption.
+  rewrite genv_next_preserved. assumption.
   eexact A.
   fold (funsig (Internal x)).
   erewrite sig_transl_function with (Internal f) (Internal x); eauto.
@@ -1592,10 +1591,10 @@ Qed.
 Lemma transl_external:
   forall S R q1,
     match_states S R ->
-    CminorSel.at_external S q1 ->
+    CminorSel.at_external ge S q1 ->
     exists wA q2,
       match_query cc_extends wA q1 q2 /\
-      RTL.at_external R q2 /\
+      RTL.at_external tge R q2 /\
       forall r1 r2 S',
         match_reply cc_extends wA r1 r2 ->
         CminorSel.after_external S r1 S' ->
@@ -1604,10 +1603,12 @@ Lemma transl_external:
           match_states S' R'.
 Proof.
   intros S R q HSR HS.
-  destruct HS. inv HSR. inv TF.
+  destruct HS as [fb id sg vargs k m Hfb]. inv HSR. inv TF.
   edestruct match_cc_extends as (w & Hq & H); eauto.
-  exists w, (cq id sg targs tm); repeat apply conj; eauto.
-  - constructor.
+  exists w, (cq fb sg targs tm); repeat apply conj; eauto.
+  - edestruct function_ptr_translated as (tf & Htf & Hf); eauto.
+    inv Hf.
+    constructor; eauto.
   - intros r1 [vres2 m2'] H' Hr HS'.
     inv HS'.
     edestruct H as (Hvres & Hm' & Hunch); eauto.
@@ -1634,7 +1635,7 @@ Proof.
   eapply forward_simulation_star_wf with (match_states := fun _ => match_states) (order := lt_state).
   apply senv_preserved.
   eexact transl_initial_states.
-  auto using transl_external.
+  eauto using transl_external.
   eexact transl_final_states.
   apply lt_state_wf.
   auto using transl_step_correct.

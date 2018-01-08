@@ -341,11 +341,11 @@ Local Opaque mreg_type.
 Qed.
 
 Theorem wt_initial_state q:
-  forall S, initial_state prog q S -> wt_state S.
+  forall S, initial_state ge q S -> wt_state S.
 Proof.
   induction 1. econstructor. constructor.
   assumption.
-  unfold ge0 in H1. exploit Genv.find_funct_ptr_inversion; eauto.
+  unfold ge in H0. exploit Genv.find_funct_ptr_inversion; eauto.
   intros [id' IN]. eapply wt_prog; eauto.
   assumption.
 Qed.

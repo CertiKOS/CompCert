@@ -448,22 +448,21 @@ Inductive step: state -> trace -> state -> Prop :=
 
 End RELSEM.
 
-Inductive initial_state (p: program): query li_c -> state -> Prop :=
-  | initial_state_intro: forall id b f vargs m,
-      let ge := Genv.globalenv p in
+Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
+  | initial_state_intro: forall b f vargs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      Genv.find_symbol ge (str2ident id) = Some b ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       Val.has_type_list vargs (sig_args (fn_sig f)) ->
-      initial_state p
-        (cq id (fn_sig f) vargs m)
+      initial_state ge
+        (cq b (fn_sig f) vargs m)
         (Callstate (Internal f) vargs Kstop m).
 
-Inductive at_external: state -> query li_c -> Prop :=
-  | at_external_intro id sg vargs k m:
-      at_external
+Inductive at_external (ge: genv): state -> query li_c -> Prop :=
+  | at_external_intro b id sg vargs k m:
+      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+      at_external ge
         (Callstate (External (EF_external id sg)) vargs k m)
-        (cq id sg vargs m).
+        (cq b sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
   | after_external_intro id sg vargs k m vres m':
@@ -477,13 +476,14 @@ Inductive final_state: state -> reply li_c -> Prop :=
       final_state (Returnstate r Kstop m) (r, m).
 
 Definition semantics (p: program) :=
+  let ge := Genv.globalenv p in
   Semantics li_c li_c
     step
-    (initial_state p)
-    at_external
+    (initial_state ge)
+    (at_external ge)
     after_external
     final_state
-    (Genv.globalenv p).
+    ge.
 
 Hint Constructors eval_expr eval_exprlist eval_condexpr: evalexpr.
 

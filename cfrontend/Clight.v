@@ -671,23 +671,23 @@ Inductive step: state -> trace -> state -> Prop :=
   corresponding to the invocation of the ``main'' function of the program
   without arguments and with an empty continuation. *)
 
-Inductive initial_state (p: program): query li_c -> state -> Prop :=
-  | initial_state_intro: forall id b f targs tres tcc vargs m,
-      let ge := Genv.globalenv p in
+Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
+  | initial_state_intro: forall b f targs tres tcc vargs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      Genv.find_symbol ge (str2ident id) = Some b ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       type_of_function f = Tfunction targs tres tcc ->
       Val.has_type_list vargs (typlist_of_typelist targs) ->
-      initial_state p
-        (cq id (signature_of_type targs tres tcc) vargs m)
+      initial_state ge
+        (cq b (signature_of_type targs tres tcc) vargs m)
         (Callstate (Internal f) vargs Kstop m).
 
-Inductive at_external: state -> query li_c -> Prop :=
-  | at_external_intro id sg targs tres cconv vargs k m:
-      at_external
-        (Callstate (External (EF_external id sg) targs tres cconv) vargs k m)
-        (cq id sg vargs m).
+Inductive at_external (ge: genv): state -> query li_c -> Prop :=
+  | at_external_intro b id sg targs tres cconv vargs k m:
+      let f := External (EF_external id sg) targs tres cconv in
+      Genv.find_funct_ptr ge b = Some f ->
+      at_external ge
+        (Callstate f vargs k m)
+        (cq b sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
   | after_external_intro f vargs k m vres m':
@@ -735,8 +735,8 @@ Definition semantics1 (p: program) :=
   let ge := globalenv p in
   Semantics_gen li_c li_c
     step1
-    (initial_state p)
-    at_external
+    (initial_state ge)
+    (at_external ge)
     after_external
     final_state
     ge ge.
@@ -745,8 +745,8 @@ Definition semantics2 (p: program) :=
   let ge := globalenv p in
   Semantics_gen li_c li_c
     step2
-    (initial_state p)
-    at_external
+    (initial_state ge)
+    (at_external ge)
     after_external
     final_state
     ge ge.

@@ -314,21 +314,17 @@ Section CLIGHT_UNLINK.
   Proof.
     intros Hq.
     apply match_query_cc_id in Hq; subst.
-    intros [id b f targs tres tcc vargs m ge' Hm Hb Hf Hvargs].
+    intros [b f targs tres tcc vargs m Hm Hb Hf Hvargs].
     edestruct find_funct_ptr_internal_unlink_switch as [i Hbi]; eauto.
     eexists (existT _ i (Clight.Callstate _ vargs Clight.Kstop m) :: nil).
     split.
     + apply Res.initial_state_intro.
       apply FComp.initial_state_intro.
       eapply Clight.initial_state_intro; eauto.
-      * destruct (same_senv i) as (Hnextblock & _).
-        change (Genv.genv_next _) with (Senv.nextblock (tge i)).
-        rewrite Hnextblock.
-        assumption.
-      * destruct (same_senv i) as (_ & Hsymb & _).
-        change (Genv.find_symbol _) with (Senv.find_symbol (tge i)).
-        rewrite Hsymb.
-        assumption.
+      destruct (same_senv i) as (Hnextblock & _).
+      change (Genv.genv_next _) with (Senv.nextblock (tge i)).
+      rewrite Hnextblock.
+      assumption.
     + apply match_callstate.
       * apply linkorder_refl.
       * apply match_kstop.

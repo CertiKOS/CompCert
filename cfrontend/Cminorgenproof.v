@@ -2268,9 +2268,9 @@ End WITHMEMINIT.
 
 Lemma transl_initial_states:
   forall w q1 q2, match_query cc_inject_triangle w q1 q2 ->
-  forall S, Csharpminor.initial_state prog q1 S ->
+  forall S, Csharpminor.initial_state ge q1 S ->
   exists R,
-    Cminor.initial_state tprog q2 R /\
+    Cminor.initial_state tge q2 R /\
     match_states (tr_mem w) S R.
 Proof.
   inv_triangle_query.
@@ -2282,8 +2282,7 @@ Proof.
   erewrite <- sig_preserved by eauto.
   monadInv TR.
   econstructor; eauto.
-  fold tge. rewrite genv_next_preserved. assumption.
-  fold tge. rewrite symbols_preserved. assumption.
+  rewrite genv_next_preserved. assumption.
   fold (funsig (Internal x)).
   erewrite sig_preserved with (Internal f) (Internal x); eauto.
   simpl. rewrite EQ. reflexivity.
@@ -2293,12 +2292,12 @@ Proof.
   apply mcs_nil with (Mem.nextblock m0). econstructor.
   apply Ple_refl.
   unfold Mem.flat_inj. intros.
-  destruct (plt b0 (Mem.nextblock m0)); try contradiction. reflexivity.
+  destruct (plt b (Mem.nextblock m0)); try contradiction. reflexivity.
   unfold Mem.flat_inj. intros.
   destruct (plt b1 (Mem.nextblock m0)); congruence.
-  intros. exploit Genv.genv_symb_range; eauto. unfold ge, ge0 in *. xomega.
-  intros. apply Genv.find_funct_ptr_iff in H. exploit Genv.genv_defs_range; eauto. unfold ge, ge0 in *. xomega.
-  intros. apply Genv.find_var_info_iff in H. exploit Genv.genv_defs_range; eauto. unfold ge, ge0 in *; xomega.
+  intros. exploit Genv.genv_symb_range; eauto. xomega.
+  intros. apply Genv.find_funct_ptr_iff in H. exploit Genv.genv_defs_range; eauto. xomega.
+  intros. apply Genv.find_var_info_iff in H. exploit Genv.genv_defs_range; eauto. xomega.
   apply Ple_refl.
   apply Ple_refl.
   econstructor.
@@ -2309,10 +2308,10 @@ Qed.
 Lemma transl_external:
   forall (w: world cc_inject_triangle) S R q1,
   match_states (tr_mem w) S R ->
-  Csharpminor.at_external S q1 ->
+  Csharpminor.at_external ge S q1 ->
   exists wA q2,
     match_query cc_inject wA q1 q2 /\
-    Cminor.at_external R q2 /\
+    Cminor.at_external tge R q2 /\
     forall r1 r2 S',
       match_reply cc_inject wA r1 r2 ->
       Csharpminor.after_external S r1 S' ->
@@ -2321,12 +2320,14 @@ Lemma transl_external:
         match_states (tr_mem w) S' R'.
 Proof.
   intros w S R q1 HSR Hq1.
-  destruct Hq1 as [id sg vargs1 k1 m1].
+  destruct Hq1 as [b id sg vargs1 k1 m1 Hb].
   inv HSR.
-  edestruct (match_cc_inject id sg) as (wA & Hq & H); eauto.
+  edestruct (match_cc_inject b sg) as (wA & Hq & H); eauto.
   inv TR.
-  exists wA, (cq id sg targs tm); repeat apply conj; eauto.
-  - constructor.
+  exists wA, (cq b sg targs tm); repeat apply conj; eauto.
+  - edestruct function_ptr_translated as (tf & Htf & Hf); eauto.
+    inv Hf.
+    constructor; eauto.
   - intros [vres1 m1'] [vres2 m2'] S' Hr HS'.
     inv HS'.
     eexists; split.

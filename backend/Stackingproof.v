@@ -2382,8 +2382,8 @@ End WITHINIT.
 
 Lemma transf_initial_states:
   forall w q1 q2, match_query cc_stacking w q1 q2 ->
-  forall st1, Linear.initial_state prog q1 st1 ->
-  exists st2, Mach.initial_state tprog q2 st2 /\ match_states w st1 st2.
+  forall st1, Linear.initial_state ge q1 st1 ->
+  exists st2, Mach.initial_state tge q2 st2 /\ match_states w st1 st2.
 Proof.
   inversion 1; subst; clear H Hq Hq1.
   destruct q1 as [id1 sg ls m1].
@@ -2393,8 +2393,7 @@ Proof.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   econstructor; split.
   econstructor.
-  fold tge. rewrite genv_next_preserved. admit. (* need incr flat_inj in cc? *)
-  rewrite symbols_preserved. eauto.
+  rewrite genv_next_preserved. admit. (* need incr flat_inj in cc? *)
   rename w0 into j.
   eapply match_states_call with (j := j); eauto.
   {
@@ -2425,20 +2424,20 @@ Lemma transf_external:
   forall w st1 st2 q1,
     wt_state st1 ->
     match_states w st1 st2 ->
-    Linear.at_external st1 q1 ->
+    Linear.at_external ge st1 q1 ->
     exists wA q2,
       match_query (cc_wt @ cc_inject) wA q1 q2 /\
-      Mach.at_external tprog st2 q2 /\
+      Mach.at_external tge st2 q2 /\
       forall r1 r2 st1',
         match_reply (cc_wt @ cc_inject) wA r1 r2 ->
         Linear.after_external st1 r1 st1' ->
         exists st2',
-          Mach.after_external tprog st2 r2 st2' /\
+          Mach.after_external tge st2 r2 st2' /\
           match_states w st1' st2' /\
           wt_state st1'.
 Proof.
   intros w st1 st2 q1 Hst1 Hst Hq1.
-  destruct Hq1; inv Hst.
+  destruct Hq1 as [fb id sg s rs m Hfb]; inv Hst.
   simpl in TRANSL. inversion TRANSL; subst tf. simpl in STACKS.
   pose proof (ii_incr _ _ _ SINV) as INCR.
   pose proof SEP as (Hsc & (Hinj & Hge & _) & _).
@@ -2448,7 +2447,9 @@ Proof.
   edestruct match_cc_inject as (wA23 & Hq23 & H23); eauto.
   edestruct (match_cc_compose cc_wt cc_inject) as (wA & Hq & H); eauto.
   eexists wA, _; repeat apply conj; eauto.
-  - constructor; eauto.
+  - assert (fb0 = fb) by admit. (* need to know only one def. of each external *)
+    subst.
+    econstructor; eauto.
   - intros [vres1 m1'] [vres3 m3'] st1' Hr13 Hst1'.
     edestruct H as ([vres2 m2'] & Hr12 & Hr23); eauto.
     edestruct H12 as (Hvres12 & Hm12 & Hwt); eauto; subst.
@@ -2471,7 +2472,7 @@ Proof.
     + inv Hst1.
       constructor; eauto.
       eapply wt_setpair; eauto.
-Qed.
+Admitted.
 
 Lemma transf_final_states:
   forall w st1 st2 r1, match_states w st1 st2 -> Linear.final_state st1 r1 ->

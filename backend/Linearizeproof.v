@@ -722,8 +722,8 @@ Qed.
 
 Lemma transf_initial_states:
   forall w q1 q2, match_query (@cc_id li_locset) w q1 q2 ->
-  forall st1, LTL.initial_state prog q1 st1 ->
-  exists st2, Linear.initial_state tprog q2 st2 /\ match_states st1 st2.
+  forall st1, LTL.initial_state ge q1 st1 ->
+  exists st2, Linear.initial_state tge q2 st2 /\ match_states st1 st2.
 Proof.
   intros w q1 q Hq. apply match_query_cc_id in Hq. subst.
   intros. inversion H.
@@ -732,18 +732,17 @@ Proof.
   fold (LTL.funsig (Internal f)).
   erewrite <- sig_preserved by eauto.
   econstructor; eauto.
-  fold tge. rewrite genv_next_preserved; eauto.
-  rewrite symbols_preserved. eauto.
+  rewrite genv_next_preserved; eauto.
   constructor. constructor. constructor. constructor. auto.
 Qed.
 
 Lemma transf_external:
   forall st1 st2 q1,
     match_states st1 st2 ->
-    LTL.at_external st1 q1 ->
+    LTL.at_external ge st1 q1 ->
     exists wA q2,
       match_query cc_id wA q1 q2 /\
-      Linear.at_external st2 q2 /\
+      Linear.at_external tge st2 q2 /\
       forall r1 r2 st1',
         match_reply cc_id wA r1 r2 ->
         LTL.after_external st1 r1 st1' ->
@@ -753,11 +752,13 @@ Lemma transf_external:
 Proof.
   intros st1 st2 q Hst Hst1.
   edestruct (match_cc_id q) as (w & Hq & H); eauto.
-  destruct Hst1.
+  destruct Hst1 as [fb id sg s rs m Hfb].
   inv Hst.
   inv H6.
   eexists w, _; intuition; eauto.
-  - econstructor.
+  - edestruct function_ptr_translated as (tf' & Htf' & Hf); eauto.
+    inv Hf.
+    econstructor; eauto.
   - apply H in H0; subst.
     inv H1.
     eexists; split.

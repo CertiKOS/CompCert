@@ -119,7 +119,7 @@ Require Import Memory.
 
 Record locset_query :=
   lq {
-    lq_id: string;
+    lq_fb: block;
     lq_sg: signature;
     lq_rs: Locmap.t;
     lq_mem: mem;
@@ -160,7 +160,7 @@ Program Definition cc_locset: callconv li_c li_locset :=
         m1 = m2;
   |}.
 
-Notation ls_id w := (cq_id (world_q1 w)).
+Notation ls_fb w := (cq_fb (world_q1 w)).
 Notation ls_sg w := (cq_sg (world_q1 w)).
 Notation ls_args w := (cq_args (world_q1 w)).
 Notation ls_rs w := (lq_rs (world_q2 w)).
@@ -172,7 +172,7 @@ Lemma match_query_cc_locset (P: _->_->_->_->_->_->_-> Prop):
    (forall l, Val.has_type (rs l) (Loc.type l)) ->
    P id sg args rs m (cq id sg args m) (lq id sg rs m)) ->
   (forall w q1 q2, match_query cc_locset w q1 q2 ->
-   P (ls_id w) (ls_sg w) (ls_args w) (ls_rs w) (ls_mem w) q1 q2).
+   P (ls_fb w) (ls_sg w) (ls_args w) (ls_rs w) (ls_mem w) q1 q2).
 Proof.
   intros H w q1 q2 Hq.
   destruct Hq as [w q1 q2 Hq].
@@ -201,7 +201,7 @@ Ltac inv_locset_query :=
   let q2 := fresh "q2" in
   let Hq := fresh "Hq" in
   intros w q1 q2 Hq;
-  pattern (ls_id w), (ls_sg w), (ls_args w), (ls_rs w), (ls_mem w), q1, q2;
+  pattern (ls_fb w), (ls_sg w), (ls_args w), (ls_rs w), (ls_mem w), q1, q2;
   revert w q1 q2 Hq;
   apply match_query_cc_locset.
 

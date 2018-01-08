@@ -2502,9 +2502,9 @@ Let ms (w: world cc) :=
 
 Lemma initial_states_simulation:
   forall w q1 q2, match_query cc w q1 q2 ->
-  forall st1, RTL.initial_state prog q1 st1 ->
+  forall st1, RTL.initial_state ge q1 st1 ->
   exists st2,
-    LTL.initial_state tprog q2 st2 /\
+    LTL.initial_state tge q2 st2 /\
     ms w st1 st2.
 Proof.
   unfold ms.
@@ -2520,7 +2520,6 @@ Proof.
   monadInv TR.
   econstructor; eauto.
   fold tge. rewrite genv_next_preserved. assumption.
-  rewrite symbols_preserved. assumption.
   constructor; auto.
   constructor. rewrite SIG; auto.
   rewrite SIG. clear. induction (map _ _); eauto.
@@ -2532,10 +2531,10 @@ Qed.
 Lemma external_simulation:
   forall w S R q1,
     ms w S R ->
-    RTL.at_external S q1 ->
+    RTL.at_external ge S q1 ->
     exists wA q2,
       match_query (cc_extends @ cc_wt) wA q1 q2 /\
-      LTL.at_external R q2 /\
+      LTL.at_external tge R q2 /\
       forall r1 r2 S',
         match_reply (cc_extends @ cc_wt) wA r1 r2 ->
         RTL.after_external S r1 S' ->
@@ -2545,12 +2544,15 @@ Lemma external_simulation:
           Val.has_type (fst r1) (proj_sig_res (cq_sg q1)).
 Proof.
   intros w S R q HSR HS.
-  destruct HS. inv HSR. inv FUN. simpl in *.
+  destruct HS as [fb id sg s vargs m Hfb].
+  inv HSR. inv FUN. simpl in *.
   edestruct match_cc_extends as (wA12 & Hq12 & H12); eauto.
   edestruct match_cc_wt as (wA23 & Hq23 & H23); eauto.
   edestruct (match_cc_compose cc_extends cc_wt) as (wA & Hq & H); eauto.
-  eexists wA, (cq id sg _ m'); repeat apply conj; eauto.
-  - constructor.
+  eexists wA, (cq fb sg _ m'); repeat apply conj; eauto.
+  - edestruct function_ptr_translated as (tf & Htf & Hf); eauto.
+    inv Hf.
+    constructor; eauto.
   - intros r1 [vres3 m3'] H' Hr HS'.
     inv HS'.
     edestruct H as ([vres2 m2'] & Hr12 & Hr23); eauto.

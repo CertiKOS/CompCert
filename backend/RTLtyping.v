@@ -985,12 +985,11 @@ Proof.
   apply wt_regset_assign; auto. rewrite H10; auto.
 Qed.
 
-Lemma wt_initial_state id sg args m:
-  forall S, initial_state p (cq id sg args m) S -> wt_state (sig_res sg) S.
+Lemma wt_initial_state b sg args m:
+  forall S, initial_state ge (cq b sg args m) S -> wt_state (sig_res sg) S.
 Proof.
   intros. inv H. constructor. constructor. auto.
-  pattern (Internal f). apply Genv.find_funct_ptr_prop with fundef unit p b.
-  exact wt_p. exact H7.
+  pattern (Internal f). apply Genv.find_funct_ptr_prop with fundef unit p b; auto.
   assumption.
 Qed.
 

@@ -317,22 +317,21 @@ End RELSEM.
   corresponding to the invocation of the ``main'' function of the program
   without arguments and with an empty call stack. *)
 
-Inductive initial_state (p: program): query li_c -> state -> Prop :=
-  | initial_state_intro: forall id b f vargs m,
-      let ge := Genv.globalenv p in
+Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
+  | initial_state_intro: forall b f vargs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      Genv.find_symbol ge (str2ident id) = Some b ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       Val.has_type_list vargs (sig_args (fn_sig f)) ->
-      initial_state p
-        (cq id (fn_sig f) vargs m)
+      initial_state ge
+        (cq b (fn_sig f) vargs m)
         (Callstate nil (Internal f) vargs m).
 
-Inductive at_external: state -> query li_c -> Prop :=
-  | at_external_intro id sg s vargs m:
-      at_external
+Inductive at_external (ge: genv): state -> query li_c -> Prop :=
+  | at_external_intro b id sg s vargs m:
+      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+      at_external ge
         (Callstate s (External (EF_external id sg)) vargs m)
-        (cq id sg vargs m).
+        (cq b sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
   | after_external_intro id sg s vargs m vres m':
@@ -348,13 +347,14 @@ Inductive final_state: state -> reply li_c -> Prop :=
 (** The small-step semantics for a program. *)
 
 Definition semantics (p: program) :=
+  let ge := Genv.globalenv p in
   Semantics li_c li_c
     step
-    (initial_state p)
-    at_external
+    (initial_state ge)
+    (at_external ge)
     after_external
     final_state
-    (Genv.globalenv p).
+    ge.
 
 (** This semantics is receptive to changes in events. *)
 

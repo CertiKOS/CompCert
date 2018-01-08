@@ -1763,15 +1763,13 @@ Qed.
 
 Lemma transl_initial_states:
   forall w q1 q2, match_query cc_id w q1 q2 ->
-  forall S, Clight.initial_state prog q1 S ->
-  exists R, initial_state tprog q2 R /\ match_states S R.
+  forall S, Clight.initial_state ge q1 S ->
+  exists R, initial_state tge q2 R /\ match_states S R.
 Proof.
   intros w q1 q Hq S HS.
   apply match_query_cc_id in Hq; subst.
   destruct HS.
   exploit function_ptr_translated; eauto. intros (cu & tf & A & B & C).
-  assert (D: Genv.find_symbol tge (str2ident id) = Some b).
-  { rewrite symbols_preserved. auto. }
   assert (E: funsig tf = signature_of_type targs tres tcc).
   { eapply transl_fundef_sig2; eauto. }
   econstructor; split.
@@ -1786,10 +1784,10 @@ Qed.
 Lemma transl_external:
   forall S R q1,
     match_states S R ->
-    Clight.at_external S q1 ->
+    Clight.at_external ge S q1 ->
     exists wA q2,
       match_query cc_id wA q1 q2 /\
-      Csharpminor.at_external R q2 /\
+      Csharpminor.at_external tge R q2 /\
       forall r1 r2 S',
         match_reply cc_id wA r1 r2 ->
         Clight.after_external S r1 S' ->
@@ -1800,9 +1798,11 @@ Proof.
   intros S R q HSR HS.
   edestruct (match_cc_id q) as (w & Hq & H).
   destruct HS. inv HSR.
-  exists w, (cq id sg vargs m); repeat apply conj; eauto.
+  exists w, (cq b sg vargs m); repeat apply conj; eauto.
   - inv TR.
-    econstructor.
+    edestruct function_ptr_translated as (cu' & tf & Htf & Hf & Hcu); eauto.
+    subst f. inv Hf.
+    econstructor; eauto.
   - intros r1 r2 H' Hr HS'.
     specialize (H r1 r2 Hr); subst.
     inv HS'.
