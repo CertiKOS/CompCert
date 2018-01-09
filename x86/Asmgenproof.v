@@ -939,11 +939,11 @@ Proof.
   - constructor.
     + rewrite genv_next_preserved.
       admit. (* facile *)
-    + admit. (* XXX: external_pc too restrictive; no mach constraint *)
-    + destruct 1.
+    + admit. (* XXX: no mach constraint *)
+    + rewrite Hpc.
       edestruct functions_translated as (tf & Htf & Hf); eauto.
       monadInv Hf.
-      congruence.
+      econstructor; eauto.
     + destruct Hrs.
       congruence.
     + admit. (* RA not Vundef *)

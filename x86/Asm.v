@@ -1128,20 +1128,25 @@ Definition li_asm :=
   those whose [PC] register points to an [EF_external] function. All
   other states are considered internal. *)
 
-Inductive external_pc (ge: genv): val -> Prop :=
-  | external_state_intro b ofs id sg:
-      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
-      external_pc ge (Vptr b ofs).
+Definition internal_fundef {F} (f: AST.fundef F) :=
+  match f with
+    | External (EF_external _ _) => false
+    | _ => true
+  end.
+
+Inductive internal_pc (ge: genv): val -> Prop :=
+  | internal_pc_intro b ofs fd:
+      Genv.find_funct_ptr ge b = Some fd ->
+      internal_fundef fd = true ->
+      internal_pc ge (Vptr b ofs).
 
 Lemma external_pc_nostep (ge: genv) rs m:
-  external_pc ge rs#PC ->
+  ~ internal_pc ge rs#PC ->
   nostep step ge (State rs m).
 Proof.
   intros HPC t s' Hs'.
-  inv HPC.
-  inv Hs'; try congruence.
-  assert (ef = EF_external id sg) by congruence; subst.
-  simpl in H6.
+  apply HPC; clear HPC.
+  inv Hs'; rewrite H1; econstructor; eauto.
   admit. (* Need to clear external_functions_sem *)
 Admitted.
 
@@ -1167,15 +1172,15 @@ Inductive mstep ge: mstate -> trace -> mstate -> Prop :=
 Inductive initial_state (ge: genv): query li_asm -> mstate -> Prop :=
   | initial_state_intro rs m:
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      external_pc ge (rs#RA) ->
-      ~ external_pc ge (rs#PC) ->
+      ~ internal_pc ge (rs#RA) ->
+      internal_pc ge (rs#PC) ->
       rs#SP <> Vundef ->
       rs#RA <> Vundef ->
       initial_state ge (State rs m) (State rs m, rs#SP, rs#RA).
 
 Inductive at_external (ge: genv): mstate -> query li_asm -> Prop :=
   | at_external_intro rs m sp ra:
-      external_pc ge (rs#PC) ->
+      ~ internal_pc ge (rs#PC) ->
       ~ (rs#PC = ra /\ rs#SP = sp) ->
       at_external ge (State rs m, sp, ra) (State rs m).
 
@@ -1185,7 +1190,7 @@ Inductive after_external: mstate -> reply li_asm -> mstate -> Prop :=
 
 Inductive final_state (ge: genv): mstate -> reply li_asm -> Prop :=
   | final_state_intro: forall rs m sp ra,
-      external_pc ge (rs#PC) ->
+      ~ internal_pc ge (rs#PC) ->
       rs#PC = ra /\ rs#SP = sp ->
       final_state ge (State rs m, sp, ra) (State rs m).
 
