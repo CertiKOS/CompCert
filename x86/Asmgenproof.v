@@ -25,6 +25,7 @@ Definition cc_asmgen_mq: query li_mach -> query li_asm -> Prop :=
     rs#PC = Vptr fb Ptrofs.zero /\
     rs#RA = ra /\
     agree ms sp rs /\
+    ra <> Vundef /\
     Mem.extends m1 m2.
 
 Definition cc_asmgen_mr: _ -> _ -> reply li_mach -> reply li_asm -> Prop :=
@@ -931,7 +932,7 @@ Lemma transf_initial_states:
   exists st2, Asm.initial_state tge q2 st2 /\ match_states w st1 st2.
 Proof.
   intros w q1 q2 Hq. destruct Hq.
-  destruct q1 as [fb sp ra ms m1], q2 as [rs m2], Hq as (Hpc & Hra & Hrs & Hm).
+  destruct q1 as [fb sp ra ms m1], q2 as [rs m2], Hq as (Hpc&Hra&Hrs&Hradef&Hm).
   intros st1 Hst1. inv Hst1.
   exists (State rs m2, sp, rs#RA).
   pose proof Hrs as []; subst.
@@ -946,11 +947,10 @@ Proof.
       econstructor; eauto.
     + destruct Hrs.
       congruence.
-    + admit. (* RA not Vundef *)
+    + assumption.
   - econstructor; eauto.
     simpl.
     constructor; eauto.
-    admit. (* RA not Vundef *)      
 Admitted.
 
 Variable (cc_compcert_ext: callconv li_c li_asm).
