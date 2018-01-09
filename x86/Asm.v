@@ -924,9 +924,7 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pcall_r r sg =>
       Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (rs r)) m
   | Pret =>
-  (** [CompCertX:test-compcert-ra-vundef] We need to erase the value of RA,
-      which is actually popped away from the stack in reality. *)
-      Next (rs#PC <- (rs#RA) #RA <- Vundef) m
+      Next (rs#PC <- (rs#RA)) m
   (** Saving and restoring registers *)
   | Pmov_rm_a rd a =>
       exec_load (if Archi.ptr64 then Many64 else Many32) m a rs rd
@@ -1108,39 +1106,98 @@ Inductive step: state -> trace -> state -> Prop :=
       rs PC = Vptr b Ptrofs.zero ->
       Genv.find_funct_ptr ge b = Some (External ef) ->
       extcall_arguments rs m (ef_sig ef) args ->
-      forall (* CompCertX: BEGIN additional conditions for calling convention *)
-        (SP_TYPE: Val.has_type (rs RSP) Tptr)
-        (RA_TYPE: Val.has_type (rs RA) Tptr)
-        (SP_NOT_VUNDEF: rs RSP <> Vundef)
-        (RA_NOT_VUNDEF: rs RA <> Vundef)
-      ,      (* CompCertX: END additional conditions for calling convention *)
       external_call ef ge args m t res m' ->
-      rs' = (set_pair (loc_external_result (ef_sig ef)) res rs) #PC <- (rs RA) #RA <- Vundef ->
+      rs' = (set_pair (loc_external_result (ef_sig ef)) res rs) #PC <- (rs RA) ->
       step (State rs m) t (State rs' m').
 
 End RELSEM.
 
-(** Execution of whole programs. *)
+(** Since Asm does not have an explicit stack, the queries and replies
+  for assembly modules simply pass the current state across modules. *)
 
-Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall m0,
-      Genv.init_mem p = Some m0 ->
-      let ge := Genv.globalenv p in
-      let rs0 :=
-        (Pregmap.init Vundef)
-        # PC <- (Genv.symbol_address ge p.(prog_main) Ptrofs.zero)
-        # RA <- Vnullptr
-        # RSP <- Vnullptr in
-      initial_state p (State rs0 m0).
+Definition li_asm :=
+  {|
+    query := state;
+    reply := state;
+  |}.
 
-Inductive final_state: state -> int -> Prop :=
-  | final_state_intro: forall rs m r,
-      rs#PC = Vnullptr ->
-      rs#RAX = Vint r ->
-      final_state (State rs m) r.
+(** We partition states into internal and external states. For
+  internal states, the current module is expected to take the next
+  step, if any. For external states, we need to jump to another module
+  (either as an external call, or by returning). External states are
+  those whose [PC] register points to an [EF_external] function. All
+  other states are considered internal. *)
+
+Inductive external_pc (ge: genv): val -> Prop :=
+  | external_state_intro b ofs id sg:
+      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+      external_pc ge (Vptr b ofs).
+
+Lemma external_pc_nostep (ge: genv) rs m:
+  external_pc ge rs#PC ->
+  nostep step ge (State rs m).
+Proof.
+  intros HPC t s' Hs'.
+  inv HPC.
+  inv Hs'; try congruence.
+  assert (ef = EF_external id sg) by congruence; subst.
+  simpl in H6.
+  admit. (* Need to clear external_functions_sem *)
+Admitted.
+
+(** However, for the purpose of establishing a simulation with the
+  Mach module, we still need to be able to distinguish between the
+  two kinds of module exits: performing an external call to another
+  module, or returning to the callee. We accomplish this by
+  remembering the values of [SP] and [RA] at module entry. When we
+  leave the module by jumping to the initial value of [RA] with [SP]
+  back to its original position, we consider this returning to the
+  caller. All other cases are considered external calls. *)
+
+Definition mstate: Type :=
+  state * val * val.
+
+Inductive mstep ge: mstate -> trace -> mstate -> Prop :=
+  | mstep_intro s t s' sp ra:
+      step ge s t s' ->
+      mstep ge (s, sp, ra) t (s', sp, ra).
+
+(** With these preparations we're ready to define our semantics. *)
+
+Inductive initial_state (ge: genv): query li_asm -> mstate -> Prop :=
+  | initial_state_intro rs m:
+      Ple (Genv.genv_next ge) (Mem.nextblock m) ->
+      external_pc ge (rs#RA) ->
+      ~ external_pc ge (rs#PC) ->
+      rs#SP <> Vundef ->
+      rs#RA <> Vundef ->
+      initial_state ge (State rs m) (State rs m, rs#SP, rs#RA).
+
+Inductive at_external (ge: genv): mstate -> query li_asm -> Prop :=
+  | at_external_intro rs m sp ra:
+      external_pc ge (rs#PC) ->
+      ~ (rs#PC = ra /\ rs#SP = sp) ->
+      at_external ge (State rs m, sp, ra) (State rs m).
+
+Inductive after_external: mstate -> reply li_asm -> mstate -> Prop :=
+  | after_external_intro s sp ra s':
+      after_external (s, sp, ra) s' (s', sp, ra).
+
+Inductive final_state (ge: genv): mstate -> reply li_asm -> Prop :=
+  | final_state_intro: forall rs m sp ra,
+      external_pc ge (rs#PC) ->
+      rs#PC = ra /\ rs#SP = sp ->
+      final_state ge (State rs m, sp, ra) (State rs m).
 
 Definition semantics (p: program) :=
-  Semantics step (initial_state p) final_state (Genv.globalenv p).
+  let ge := Genv.globalenv p in
+  Semantics li_asm li_asm
+    mstep
+    (initial_state ge)
+    (at_external ge)
+    after_external
+    (final_state ge)
+    ge.
 
 (** Determinacy of the [Asm] semantics. *)
 
@@ -1176,6 +1233,7 @@ Ltac Equalities :=
   end.
   intros; constructor; simpl; intros.
 - (* determ *)
+  destruct H. inv H0. rename H6 into H0.
   inv H; inv H0; Equalities.
 + split. constructor. auto.
 + discriminate.
@@ -1187,16 +1245,16 @@ Ltac Equalities :=
   exploit external_call_determ. eexact H4. eexact H9. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 - (* trace length *)
-  red; intros; inv H; simpl.
+  red; intros; destruct H; inv H; simpl.
   omega.
   eapply external_call_trace_length; eauto.
   eapply external_call_trace_length; eauto.
 - (* initial states *)
-  inv H; inv H0. f_equal. congruence.
+  inv H; inv H0. f_equal.
 - (* final no step *)
-  assert (NOTNULL: forall b ofs, Vnullptr <> Vptr b ofs).
-  { intros; unfold Vnullptr; destruct Archi.ptr64; congruence. }
-  inv H. red; intros; red; intros. inv H; rewrite H0 in *; eelim NOTNULL; eauto.
+  intros t s' Hs'.
+  destruct H. inv Hs'.
+  eapply external_pc_nostep; eauto.
 - (* final states *)
   inv H; inv H0. congruence.
 Qed.
