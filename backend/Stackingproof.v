@@ -2392,7 +2392,8 @@ Proof.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   econstructor; split.
-  econstructor.
+  monadInv TR.
+  econstructor; eauto.
   rewrite genv_next_preserved. admit. (* need incr flat_inj in cc? *)
   rename w0 into j.
   eapply match_states_call with (j := j); eauto.

@@ -439,8 +439,9 @@ Definition li_mach: language_interface :=
   |}.
 
 Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
-  | initial_state_intro: forall fb sp ra rs m,
+  | initial_state_intro: forall fb f sp ra rs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       initial_state ge
         (mq fb sp ra rs m)
         (Callstate (Parent sp ra :: nil) fb rs m).

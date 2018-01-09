@@ -256,11 +256,11 @@ End RELSEM.
 Inductive initial_state (ge: genv): query li_locset -> state -> Prop :=
   | initial_state_intro: forall b f rs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      Genv.find_funct_ptr ge b = Some f ->
+      Genv.find_funct_ptr ge b = Some (Internal f) ->
       (forall l, Val.has_type (rs l) (Loc.type l)) ->
       initial_state ge
-        (lq b (funsig f) rs m)
-        (Callstate (Parent rs :: nil) f rs m).
+        (lq b (fn_sig f) rs m)
+        (Callstate (Parent rs :: nil) (Internal f) rs m).
 
 Inductive at_external (ge: genv): state -> query li_c -> Prop :=
   | at_external_intro b id sg s rs m:

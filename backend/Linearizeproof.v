@@ -731,6 +731,7 @@ Proof.
   exists (Callstate (Parent rs :: nil) tf rs m); split.
   fold (LTL.funsig (Internal f)).
   erewrite <- sig_preserved by eauto.
+  monadInv B.
   econstructor; eauto.
   rewrite genv_next_preserved; eauto.
   constructor. constructor. constructor. constructor. auto.
