@@ -1170,10 +1170,10 @@ Inductive mstep ge: mstate -> trace -> mstate -> Prop :=
 (** With these preparations we're ready to define our semantics. *)
 
 Inductive initial_state (ge: genv): query li_asm -> mstate -> Prop :=
-  | initial_state_intro rs m:
+  | initial_state_intro rs m fb fofs f:
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
-      ~ internal_pc ge (rs#RA) ->
-      internal_pc ge (rs#PC) ->
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
+      rs#PC = Vptr fb fofs ->
       rs#SP <> Vundef ->
       rs#RA <> Vundef ->
       initial_state ge (State rs m) (State rs m, rs#SP, rs#RA).

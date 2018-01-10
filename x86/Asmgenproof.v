@@ -937,17 +937,11 @@ Proof.
   exists (State rs m2, sp, rs#RA).
   pose proof Hrs as []; subst.
   split.
-  - constructor.
-    + rewrite genv_next_preserved.
-      admit. (* facile *)
-    + admit. (* XXX: no mach constraint *)
-    + rewrite Hpc.
-      edestruct functions_translated as (tf & Htf & Hf); eauto.
-      monadInv Hf.
-      econstructor; eauto.
-    + destruct Hrs.
-      congruence.
-    + assumption.
+  - edestruct functions_translated as (tf & Htf & Hf); eauto.
+    monadInv Hf.
+    econstructor; eauto.
+    rewrite genv_next_preserved.
+    admit. (* facile *)
   - econstructor; eauto.
     simpl.
     constructor; eauto.
