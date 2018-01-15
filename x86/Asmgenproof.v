@@ -397,10 +397,12 @@ Section IN_WORLD.
 Context (w: world cc_asmgen).
 Let sp0 := mq_sp (world_q1 w).
 Let ra0 := mq_ra (world_q1 w).
+Let nb0 := Mem.nextblock (snd (world_q2 w)).
 
 Inductive match_states: Mach.state -> Asm.state -> Prop :=
   | match_states_intro:
       forall s fb sp c ep ms m m' rs f tf tc
+        (NB: Pos.le nb0 (Mem.nextblock m'))
         (STACKS: match_stack sp0 ra0 ge s)
         (FIND: Genv.find_funct_ptr ge fb = Some (Internal f))
         (MEXT: Mem.extends m m')
@@ -412,6 +414,7 @@ Inductive match_states: Mach.state -> Asm.state -> Prop :=
                    (Asm.State rs m' (Some sp0))
   | match_states_call:
       forall s fb ms m m' rs
+        (NB: Pos.le nb0 (Mem.nextblock m'))
         (STACKS: match_stack sp0 ra0 ge s)
         (MEXT: Mem.extends m m')
         (AG: agree ms (parent_sp s) rs)
@@ -421,6 +424,7 @@ Inductive match_states: Mach.state -> Asm.state -> Prop :=
                    (Asm.State rs m' (Some sp0))
   | match_states_return:
       forall s ms m m' rs sp ra fb f c tf tc
+        (NB: Pos.le nb0 (Mem.nextblock m'))
         (SF: Genv.find_funct_ptr ge fb = Some (Internal f))
         (TF: transl_code_at_pc ge ra fb f c false tf tc)
         (SPD: sp <> Vundef)
@@ -439,6 +443,42 @@ Inductive match_states: Mach.state -> Asm.state -> Prop :=
       match_states (Mach.Returnstate (Parent sp0 ra :: s) ms m)
                    (Asm.State rs m' None).
 
+Lemma exec_instr_nextblock f i rs m rs' m':
+  exec_instr tge sp0 f i rs m = Next rs' m' ->
+  Pos.le (Mem.nextblock m) (Mem.nextblock m').
+Proof.
+  destruct i; simpl;
+  try (unfold exec_load; destruct (Mem.loadv _ _ _));
+  try (unfold exec_store; destruct (eval_addrmode _ _ _); simpl);
+  unfold goto_label;
+  repeat
+    match goal with
+      | |- match ?x with _ => _ end = Next _ _ -> _ =>
+        let H := fresh in
+        destruct x eqn:H;
+        try apply Mem.nextblock_free in H;
+        try apply Mem.nextblock_store in H;
+        try apply Mem.nextblock_alloc in H
+    end;
+  inversion 1;
+  try (replace (Mem.nextblock m) with (Mem.nextblock m') by congruence);
+  try reflexivity.
+  - replace (Mem.nextblock m') with (Pos.succ (Mem.nextblock m)) by congruence.
+    xomega.
+Qed.
+
+Lemma exec_straight_nextblock tf c rs m k rs' m':
+  exec_straight sp0 tge tf c rs m k rs' m' ->
+  Pos.le nb0 (Mem.nextblock m) ->
+  Pos.le nb0 (Mem.nextblock m').
+Proof.
+  intros H Hnb.
+  transitivity (Mem.nextblock m); eauto.
+  clear Hnb.
+  induction H; eauto using exec_instr_nextblock.
+  etransitivity; eauto using exec_instr_nextblock.
+Qed.
+
 Lemma exec_straight_steps:
   forall s fb f rs1 i c ep tf tc m1' m2 m2' sp ms2,
   match_stack sp0 ra0 ge s ->
@@ -446,6 +486,7 @@ Lemma exec_straight_steps:
   Genv.find_funct_ptr ge fb = Some (Internal f) ->
   transl_code_at_pc ge (rs1 PC) fb f (i :: c) ep tf tc ->
   sp <> sp0 ->
+  Pos.le nb0 (Mem.nextblock m1') ->
   (forall k c (TR: transl_instr f i ep k = OK c),
    exists rs2,
        exec_straight sp0 tge tf c rs1 m1' k rs2 m2'
@@ -455,11 +496,13 @@ Lemma exec_straight_steps:
   plus step tge (State rs1 m1' (Some sp0)) E0 st' /\
   match_states (Mach.State s fb sp c ms2 m2) st'.
 Proof.
-  intros. inversion H2. subst. monadInv H8.
-  exploit H4; eauto. intros [rs2 [A [B C]]].
+  intros. inversion H2. subst. monadInv H9.
+  exploit H5; eauto. intros [rs2 [A [B C]]].
   exists (State rs2 m2' (Some sp0)); split.
   eapply exec_straight_exec; eauto.
-  econstructor; eauto. eapply exec_straight_at; eauto.
+  econstructor; eauto.
+  eapply exec_straight_nextblock; eauto.
+  eapply exec_straight_at; eauto.
 Qed.
 
 Lemma exec_straight_steps_goto:
@@ -471,6 +514,7 @@ Lemma exec_straight_steps_goto:
   transl_code_at_pc ge (rs1 PC) fb f (i :: c) ep tf tc ->
   it1_is_parent ep i = false ->
   sp <> sp0 ->
+  Pos.le nb0 (Mem.nextblock m1') ->
   (forall k c (TR: transl_instr f i ep k = OK c),
    exists jmp, exists k', exists rs2,
        exec_straight sp0 tge tf c rs1 m1' (jmp :: k') rs2 m2'
@@ -480,10 +524,10 @@ Lemma exec_straight_steps_goto:
   plus step tge (State rs1 m1' (Some sp0)) E0 st' /\
   match_states (Mach.State s fb sp c' ms2 m2) st'.
 Proof.
-  intros. inversion H3. subst. monadInv H10.
-  exploit H6; eauto. intros [jmp [k' [rs2 [A [B C]]]]].
-  generalize (functions_transl _ _ _ H8 H9); intro FN.
-  generalize (transf_function_no_overflow _ _ H9); intro NOOV.
+  intros. inversion H3. subst. monadInv H11.
+  exploit H7; eauto. intros [jmp [k' [rs2 [A [B C]]]]].
+  generalize (functions_transl _ _ _ H9 H10); intro FN.
+  generalize (transf_function_no_overflow _ _ H10); intro NOOV.
   exploit exec_straight_steps_2; eauto.
   intros [ofs' [PC2 CT2]].
   exploit find_label_goto_label; eauto.
@@ -496,8 +540,24 @@ Proof.
   rewrite C. eexact GOTO.
   traceEq.
   econstructor; eauto.
+  eapply exec_straight_nextblock; eauto.
   apply agree_exten with rs2; auto with asmgen.
   congruence.
+Qed.
+
+Lemma alloc_sp_fresh m lo hi m' stk ofs:
+  Pos.le nb0 (Mem.nextblock m) ->
+  Mem.alloc m lo hi = (m', stk) ->
+  Vptr stk ofs <> sp0.
+Proof.
+  intros Hm Hstk.
+  apply Mem.alloc_result in Hstk.
+  destruct w as [w' q1 q2 Hq]; simpl in *.
+  destruct Hq; simpl in *.
+  unfold Mem.valid_block in *.
+  subst sp sp0 nb0.
+  unfold Plt in *.
+  inversion 1; subst; xomega.
 Qed.
 
 (** We need to show that, in the simulation diagram, we cannot
@@ -691,6 +751,7 @@ Opaque loadind.
   eapply functions_transl; eauto. eapply find_instr_tail; eauto.
   simpl. eauto. traceEq.
   econstructor; eauto.
+  apply Mem.nextblock_free in E. congruence.
   apply agree_set_other; auto. apply agree_nextinstr. apply agree_set_other; auto.
   eapply agree_change_sp; eauto. eapply parent_sp_def; eauto.
   Simplifs. rewrite Pregmap.gso; auto.
@@ -707,6 +768,7 @@ Opaque loadind.
   eapply functions_transl; eauto. eapply find_instr_tail; eauto.
   simpl. eauto. traceEq.
   econstructor; eauto.
+  apply Mem.nextblock_free in E. congruence.
   apply agree_set_other; auto. apply agree_nextinstr. apply agree_set_other; auto.
   eapply agree_change_sp; eauto. eapply parent_sp_def; eauto.
   rewrite Pregmap.gss. unfold Genv.symbol_address. rewrite symbols_preserved. rewrite H. auto.
@@ -726,6 +788,7 @@ Opaque loadind.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved. auto.
   eauto.
   econstructor; eauto.
+  apply Mem.unchanged_on_nextblock in D. etransitivity; eassumption.
   instantiate (2 := tf); instantiate (1 := x).
   unfold nextinstr_nf, nextinstr. rewrite Pregmap.gss.
   rewrite undef_regs_other. rewrite set_res_other. rewrite undef_regs_other_2.
@@ -894,6 +957,7 @@ Transparent destroyed_by_jumptable.
     - simpl in sp0'.
       destruct (Val.eq _ _); [congruence | ].
       econstructor; eauto.
+      apply Mem.nextblock_free in E; congruence.
       apply agree_set_other; auto.
       apply agree_nextinstr.
       apply agree_set_other; auto.
@@ -920,11 +984,18 @@ Transparent destroyed_by_jumptable.
   rewrite (sp_val _ _ _ AG) in F. rewrite F.
   rewrite ATLR. rewrite P. eauto.
   econstructor; eauto.
+  {
+    apply Mem.nextblock_alloc in C.
+    apply Mem.nextblock_store in F.
+    apply Mem.nextblock_store in P.
+    replace (Mem.nextblock m3') with (Pos.succ (Mem.nextblock m')) by congruence.
+    xomega.
+  }
   unfold nextinstr. rewrite Pregmap.gss. repeat rewrite Pregmap.gso; auto with asmgen.
   rewrite ATPC. simpl. constructor; eauto.
   unfold fn_code. eapply code_tail_next_int. simpl in g. omega.
   constructor.
-  admit. (* newly allocated SP <> sp0 - Mem.fresh_block_alloc etc. *)
+  eapply alloc_sp_fresh; eauto.
   apply agree_nextinstr. eapply agree_change_sp; eauto.
 Transparent destroyed_at_function_entry.
   apply agree_undef_regs with rs0; eauto.
@@ -951,7 +1022,9 @@ Transparent destroyed_at_function_entry.
   + (* internal return *)
     simpl in AG. rewrite <- (agree_sp rs sp rs0 AG) in H5.
     destruct (Val.eq _ _); [congruence | ].
-    econstructor; eauto. erewrite agree_sp in H5 by eauto. assumption.
+    econstructor; eauto.
+    apply Mem.unchanged_on_nextblock in S. etransitivity; eauto.
+    erewrite agree_sp in H5 by eauto. assumption.
     unfold loc_external_result.
     apply agree_set_other; auto. apply agree_set_pair; auto.
 
@@ -959,7 +1032,7 @@ Transparent destroyed_at_function_entry.
   simpl in *.
   right. split. omega. split. auto.
   econstructor; eauto. congruence.
-Admitted.
+Qed.
 
 End IN_WORLD.
 
@@ -982,8 +1055,8 @@ Proof.
     admit. (* facile *)
     congruence.
   - econstructor; eauto.
-    simpl.
-    constructor; eauto.
+    simpl. reflexivity.
+    simpl. constructor; eauto.
 Admitted.
 
 Variable (cc_compcert_ext: callconv li_c li_asm).
