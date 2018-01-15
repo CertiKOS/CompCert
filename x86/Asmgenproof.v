@@ -1052,12 +1052,12 @@ Proof.
     rewrite <- agree_sp.
     econstructor; eauto.
     rewrite genv_next_preserved.
-    admit. (* facile *)
+    apply Mem.mext_next in Hm. congruence.
     congruence.
   - econstructor; eauto.
     simpl. reflexivity.
     simpl. constructor; eauto.
-Admitted.
+Qed.
 
 Variable (cc_compcert_ext: callconv li_c li_asm).
 
