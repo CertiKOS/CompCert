@@ -1106,6 +1106,7 @@ Inductive step: state -> trace -> state -> Prop :=
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some Pret ->
+      rs#SP = sp0 ->
       rs' = rs # PC <- (rs#RA) ->
       step (State rs m (Some sp0)) E0 (State rs' m None)
   | exec_step_builtin:
@@ -1210,7 +1211,6 @@ Proof.
 Qed.
 
 Lemma semantics_determinate: forall p, determinate (semantics p).
-Admitted. (*
 Proof.
 Ltac Equalities :=
   match goal with
@@ -1220,35 +1220,33 @@ Ltac Equalities :=
   end.
   intros; constructor; simpl; intros.
 - (* determ *)
-  destruct H as [s t s' sp H]. inv H0. rename H5 into H0.
   inv H; inv H0; Equalities.
 + split. constructor. auto.
++ simpl in H4. destruct (Val.eq _ _); congruence.
 + discriminate.
++ simpl in H11. destruct (Val.eq _ _); congruence.
++ split. constructor. auto.
 + discriminate.
 + assert (vargs0 = vargs) by (eapply eval_builtin_args_determ; eauto). subst vargs0.
-  exploit external_call_determ. eexact H5. eexact H11. intros [A B].
+  exploit external_call_determ. eexact H5. eexact H14. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 + assert (args0 = args) by (eapply extcall_arguments_determ; eauto). subst args0.
-  exploit external_call_determ. eexact H4. eexact H9. intros [A B].
+  exploit external_call_determ. eexact H4. eexact H10. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 - (* trace length *)
   red; intros. destruct H. inv H; simpl.
   omega.
+  simpl. omega.
   eapply external_call_trace_length; eauto.
   eapply external_call_trace_length; eauto.
 - (* initial states *)
   inv H; inv H0. f_equal.
 - (* final no step *)
-  intros t s' Hs'.
-  destruct Hs' as [s t s' init_sp Hs'].
-  inv H. inv Hs'; try congruence.
-  assert (i = Pret) by congruence; subst.
-  simpl in *.
-  destruct (Val.eq _ _); congruence.
+  destruct H.
+  inversion 1.
 - (* final states *)
   inv H; inv H0. congruence.
 Qed.
-*)
 
 (** Classification functions for processor registers (used in Asmgenproof). *)
 
