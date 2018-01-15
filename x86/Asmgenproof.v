@@ -436,11 +436,11 @@ Inductive match_states: Mach.state -> Asm.state -> Prop :=
       match_states (Mach.Returnstate (Stackframe fb sp ra c :: s) ms m)
                    (Asm.State rs m' (Some sp0))
   | match_states_final:
-      forall ra s ms m rs m'
+      forall s ms m rs m'
         (MEXT: Mem.extends m m')
         (AG: agree ms sp0 rs)
-        (ATPC: rs PC = ra),
-      match_states (Mach.Returnstate (Parent sp0 ra :: s) ms m)
+        (ATPC: rs PC = ra0),
+      match_states (Mach.Returnstate (Parent sp0 ra0 :: s) ms m)
                    (Asm.State rs m' None).
 
 Lemma exec_instr_nextblock f i rs m rs' m':
@@ -1085,8 +1085,7 @@ Proof.
   eexists. split; constructor.
   simpl.
   split; eauto.
-  admit. (* need to remember value of RA in match_stack *)
-Admitted.
+Qed.
 
 Theorem transf_program_correct:
   forward_simulation cc_compcert_ext cc_asmgen
