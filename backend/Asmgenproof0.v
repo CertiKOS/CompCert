@@ -771,6 +771,7 @@ Qed.
 
 Section STRAIGHTLINE.
 
+Variable init_sp: val.
 Variable ge: genv.
 Variable fn: function.
 
@@ -785,12 +786,12 @@ Inductive exec_straight: code -> regset -> mem ->
                          code -> regset -> mem -> Prop :=
   | exec_straight_one:
       forall i1 c rs1 m1 rs2 m2,
-      exec_instr ge fn i1 rs1 m1 = Next rs2 m2 ->
+      exec_instr ge init_sp fn i1 rs1 m1 = Next rs2 m2 ->
       rs2#PC = Val.offset_ptr rs1#PC Ptrofs.one ->
       exec_straight (i1 :: c) rs1 m1 c rs2 m2
   | exec_straight_step:
       forall i c rs1 m1 rs2 m2 c' rs3 m3,
-      exec_instr ge fn i rs1 m1 = Next rs2 m2 ->
+      exec_instr ge init_sp fn i rs1 m1 = Next rs2 m2 ->
       rs2#PC = Val.offset_ptr rs1#PC Ptrofs.one ->
       exec_straight c rs2 m2 c' rs3 m3 ->
       exec_straight (i :: c) rs1 m1 c' rs3 m3.
@@ -808,8 +809,8 @@ Qed.
 
 Lemma exec_straight_two:
   forall i1 i2 c rs1 m1 rs2 m2 rs3 m3,
-  exec_instr ge fn i1 rs1 m1 = Next rs2 m2 ->
-  exec_instr ge fn i2 rs2 m2 = Next rs3 m3 ->
+  exec_instr ge init_sp fn i1 rs1 m1 = Next rs2 m2 ->
+  exec_instr ge init_sp fn i2 rs2 m2 = Next rs3 m3 ->
   rs2#PC = Val.offset_ptr rs1#PC Ptrofs.one ->
   rs3#PC = Val.offset_ptr rs2#PC Ptrofs.one ->
   exec_straight (i1 :: i2 :: c) rs1 m1 c rs3 m3.
@@ -820,9 +821,9 @@ Qed.
 
 Lemma exec_straight_three:
   forall i1 i2 i3 c rs1 m1 rs2 m2 rs3 m3 rs4 m4,
-  exec_instr ge fn i1 rs1 m1 = Next rs2 m2 ->
-  exec_instr ge fn i2 rs2 m2 = Next rs3 m3 ->
-  exec_instr ge fn i3 rs3 m3 = Next rs4 m4 ->
+  exec_instr ge init_sp fn i1 rs1 m1 = Next rs2 m2 ->
+  exec_instr ge init_sp fn i2 rs2 m2 = Next rs3 m3 ->
+  exec_instr ge init_sp fn i3 rs3 m3 = Next rs4 m4 ->
   rs2#PC = Val.offset_ptr rs1#PC Ptrofs.one ->
   rs3#PC = Val.offset_ptr rs2#PC Ptrofs.one ->
   rs4#PC = Val.offset_ptr rs3#PC Ptrofs.one ->
@@ -843,7 +844,7 @@ Lemma exec_straight_steps_1:
   rs#PC = Vptr b ofs ->
   Genv.find_funct_ptr ge b = Some (Internal fn) ->
   code_tail (Ptrofs.unsigned ofs) (fn_code fn) c ->
-  plus step ge (State rs m) E0 (State rs' m').
+  plus step ge (State rs m (Some init_sp)) E0 (State rs' m' (Some init_sp)).
 Proof.
   induction 1; intros.
   apply plus_one.
@@ -898,6 +899,7 @@ Inductive match_stack: list Mach.stackframe -> Prop :=
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       transl_code_at_pc ge ra fb f c false tf tc ->
       sp <> Vundef ->
+      sp <> init_sp ->
       match_stack s ->
       match_stack (Stackframe fb sp ra c :: s).
 

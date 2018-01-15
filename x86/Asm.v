@@ -602,9 +602,17 @@ Definition exec_store (chunk: memory_chunk) (m: mem)
     and all other instruction set those flags to [Vundef], to reflect
     the fact that the processor updates some or all of those flags,
     but we do not need to model this precisely.
+
+    The semantics is parametrized over the value of the stack pointer
+    at module entry, which controls the behavior of the [Pret]
+    instruction.  When [RSP <> init_sp], we interpret [Pret] as a
+    usual, internal return and jump to the location pointed to by
+    [RA]. However, when [RSP = init_sp], we intepret [Pret] as a
+    top-level return to the environment, expressed as a final state
+    rather than a step.
 *)
 
-Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : outcome :=
+Definition exec_instr (init_sp: val) (f: function) (i: instruction) (rs: regset) (m: mem) : outcome :=
   match i with
   (** Moves *)
   | Pmov_rr rd r1 =>
@@ -924,7 +932,10 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pcall_r r sg =>
       Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (rs r)) m
   | Pret =>
-      Next (rs#PC <- (rs#RA)) m
+      if Val.eq rs#SP init_sp then
+        Stuck
+      else
+        Next (rs#PC <- (rs#RA)) m
   (** Saving and restoring registers *)
   | Pmov_rm_a rd a =>
       exec_load (if Archi.ptr64 then Many64 else Many32) m a rs rd
@@ -1080,18 +1091,25 @@ Definition loc_external_result (sg: signature) : rpair preg :=
 (** Execution of the instruction at [rs#PC]. *)
 
 Inductive state: Type :=
-  | State: regset -> mem -> state.
+  | State: regset -> mem -> option val -> state.
 
 Inductive step: state -> trace -> state -> Prop :=
   | exec_step_internal:
-      forall b ofs f i rs m rs' m',
+      forall b ofs f i rs m sp0 rs' m',
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some i ->
-      exec_instr f i rs m = Next rs' m' ->
-      step (State rs m) E0 (State rs' m')
+      exec_instr sp0 f i rs m = Next rs' m' ->
+      step (State rs m (Some sp0)) E0 (State rs' m' (Some sp0))
+  | exec_step_final_ret:
+      forall b ofs f rs m sp0 rs',
+      rs PC = Vptr b ofs ->
+      Genv.find_funct_ptr ge b = Some (Internal f) ->
+      find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some Pret ->
+      rs' = rs # PC <- (rs#RA) ->
+      step (State rs m (Some sp0)) E0 (State rs' m None)
   | exec_step_builtin:
-      forall b ofs f ef args res rs m vargs t vres rs' m',
+      forall b ofs f ef args res rs m sp0 vargs t vres rs' m',
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some (Pbuiltin ef args res) ->
@@ -1100,15 +1118,16 @@ Inductive step: state -> trace -> state -> Prop :=
       rs' = nextinstr_nf
              (set_res res vres
                (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) ->
-      step (State rs m) t (State rs' m')
+      step (State rs m (Some sp0)) t (State rs' m' (Some sp0))
   | exec_step_external:
-      forall b ef args res rs m t rs' m',
+      forall b ef args res rs m sp0 t rs' m' sp0',
       rs PC = Vptr b Ptrofs.zero ->
       Genv.find_funct_ptr ge b = Some (External ef) ->
       extcall_arguments rs m (ef_sig ef) args ->
       external_call ef ge args m t res m' ->
       rs' = (set_pair (loc_external_result (ef_sig ef)) res rs) #PC <- (rs RA) ->
-      step (State rs m) t (State rs' m').
+      sp0' = (if Val.eq rs#SP sp0 then None else Some sp0) ->
+      step (State rs m (Some sp0)) t (State rs' m' sp0').
 
 End RELSEM.
 
@@ -1117,87 +1136,49 @@ End RELSEM.
 
 Definition li_asm :=
   {|
-    query := state;
-    reply := state;
+    query := regset * mem;
+    reply := regset * mem;
   |}.
 
-(** We partition states into internal and external states. For
-  internal states, the current module is expected to take the next
-  step, if any. For external states, we need to jump to another module
-  (either as an external call, or by returning). External states are
-  those whose [PC] register points to an [EF_external] function. All
-  other states are considered internal. *)
-
-Definition internal_fundef {F} (f: AST.fundef F) :=
-  match f with
-    | External (EF_external _ _) => false
-    | _ => true
-  end.
-
-Inductive internal_pc (ge: genv): val -> Prop :=
-  | internal_pc_intro b ofs fd:
-      Genv.find_funct_ptr ge b = Some fd ->
-      internal_fundef fd = true ->
-      internal_pc ge (Vptr b ofs).
-
-Lemma external_pc_nostep (ge: genv) rs m:
-  ~ internal_pc ge rs#PC ->
-  nostep step ge (State rs m).
-Proof.
-  intros HPC t s' Hs'.
-  apply HPC; clear HPC.
-  inv Hs'; rewrite H1; econstructor; eauto.
-  admit. (* Need to clear external_functions_sem *)
-Admitted.
-
-(** However, for the purpose of establishing a simulation with the
-  Mach module, we still need to be able to distinguish between the
-  two kinds of module exits: performing an external call to another
-  module, or returning to the callee. We accomplish this by
-  remembering the values of [SP] and [RA] at module entry. When we
-  leave the module by jumping to the initial value of [RA] with [SP]
-  back to its original position, we consider this returning to the
-  caller. All other cases are considered external calls. *)
-
-Definition mstate: Type :=
-  state * val * val.
-
-Inductive mstep ge: mstate -> trace -> mstate -> Prop :=
-  | mstep_intro s t s' sp ra:
-      step ge s t s' ->
-      mstep ge (s, sp, ra) t (s', sp, ra).
+(** Asm does not really have a notion of control stack. However, to
+  establish the simulation with Mach, we still need to distinguish
+  between two kinds of module exits: performing an external call to
+  another module, or returning to the callee. We accomplish this by
+  remembering the values of [SP] at module entry, and modifying the
+  semantics of [Pret] accordingly: whenever [SP] holds its initial
+  value (again), instead of its usual semantics, [Pret] is interpreted
+  as a top-level return to the environment, and is executed by
+  [final_state] below instead of a [step]. *)
 
 (** With these preparations we're ready to define our semantics. *)
 
-Inductive initial_state (ge: genv): query li_asm -> mstate -> Prop :=
+Inductive initial_state (ge: genv): query li_asm -> state -> Prop :=
   | initial_state_intro rs m fb fofs f:
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       rs#PC = Vptr fb fofs ->
       rs#SP <> Vundef ->
       rs#RA <> Vundef ->
-      initial_state ge (State rs m) (State rs m, rs#SP, rs#RA).
+      initial_state ge (rs, m) (State rs m (Some rs#SP)).
 
-Inductive at_external (ge: genv): mstate -> query li_asm -> Prop :=
-  | at_external_intro rs m sp ra:
-      ~ internal_pc ge (rs#PC) ->
-      ~ (rs#PC = ra /\ rs#SP = sp) ->
-      at_external ge (State rs m, sp, ra) (State rs m).
+Inductive at_external (ge: genv): state -> query li_asm -> Prop :=
+  | at_external_intro rs m sp fb fofs id sg:
+      Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
+      rs#PC = Vptr fb fofs ->
+      at_external ge (State rs m sp) (rs, m).
 
-Inductive after_external: mstate -> reply li_asm -> mstate -> Prop :=
-  | after_external_intro s sp ra s':
-      after_external (s, sp, ra) s' (s', sp, ra).
+Inductive after_external: state -> reply li_asm -> state -> Prop :=
+  | after_external_intro rs m sp rs' m':
+      after_external (State rs m sp) (rs', m') (State rs' m' sp).
 
-Inductive final_state (ge: genv): mstate -> reply li_asm -> Prop :=
-  | final_state_intro: forall rs m sp ra,
-      ~ internal_pc ge (rs#PC) ->
-      rs#PC = ra /\ rs#SP = sp ->
-      final_state ge (State rs m, sp, ra) (State rs m).
+Inductive final_state (ge: genv): state -> reply li_asm -> Prop :=
+  | final_state_intro rs m:
+      final_state ge (State rs m None) (rs, m).
 
 Definition semantics (p: program) :=
   let ge := Genv.globalenv p in
   Semantics li_asm li_asm
-    mstep
+    step
     (initial_state ge)
     (at_external ge)
     after_external
@@ -1229,6 +1210,7 @@ Proof.
 Qed.
 
 Lemma semantics_determinate: forall p, determinate (semantics p).
+Admitted. (*
 Proof.
 Ltac Equalities :=
   match goal with
@@ -1238,7 +1220,7 @@ Ltac Equalities :=
   end.
   intros; constructor; simpl; intros.
 - (* determ *)
-  destruct H. inv H0. rename H6 into H0.
+  destruct H as [s t s' sp H]. inv H0. rename H5 into H0.
   inv H; inv H0; Equalities.
 + split. constructor. auto.
 + discriminate.
@@ -1250,7 +1232,7 @@ Ltac Equalities :=
   exploit external_call_determ. eexact H4. eexact H9. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 - (* trace length *)
-  red; intros; destruct H; inv H; simpl.
+  red; intros. destruct H. inv H; simpl.
   omega.
   eapply external_call_trace_length; eauto.
   eapply external_call_trace_length; eauto.
@@ -1258,11 +1240,15 @@ Ltac Equalities :=
   inv H; inv H0. f_equal.
 - (* final no step *)
   intros t s' Hs'.
-  destruct H. inv Hs'.
-  eapply external_pc_nostep; eauto.
+  destruct Hs' as [s t s' init_sp Hs'].
+  inv H. inv Hs'; try congruence.
+  assert (i = Pret) by congruence; subst.
+  simpl in *.
+  destruct (Val.eq _ _); congruence.
 - (* final states *)
   inv H; inv H0. congruence.
 Qed.
+*)
 
 (** Classification functions for processor registers (used in Asmgenproof). *)
 
