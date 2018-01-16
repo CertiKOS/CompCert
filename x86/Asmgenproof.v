@@ -1066,10 +1066,10 @@ Lemma transf_external:
     match_states w st1 st2 ->
     Mach.at_external ge st1 q1 ->
     exists wA q2,
-      match_query cc_compcert_ext wA q1 q2 /\
+      match_query cc_asmgen wA q1 q2 /\
       Asm.at_external tge st2 q2 /\
       forall r1 r2 st1',
-        match_reply cc_compcert_ext wA r1 r2 ->
+        match_reply cc_asmgen wA r1 r2 ->
         Mach.after_external ge st1 r1 st1' ->
         exists st2',
           Asm.after_external st2 r2 st2' /\
@@ -1088,7 +1088,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_compcert_ext cc_asmgen
+  forward_simulation cc_asmgen cc_asmgen
     (Mach.semantics return_address_offset prog)
     (Asm.semantics tprog).
 Proof.

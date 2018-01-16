@@ -142,7 +142,7 @@ Definition callee_save_loc (l: loc) :=
 Definition agree_callee_save (ls1 ls2: Locmap.t) : Prop :=
   forall l, callee_save_loc l -> ls1 l = ls2 l.
 
-Program Definition cc_locset: callconv li_c li_locset :=
+Definition cc_locset: callconv li_c li_locset :=
   {|
     world_def := unit;
     match_senv w := eq;
@@ -165,6 +165,30 @@ Notation ls_sg w := (cq_sg (world_q1 w)).
 Notation ls_args w := (cq_args (world_q1 w)).
 Notation ls_rs w := (lq_rs (world_q2 w)).
 Notation ls_mem w := (cq_mem (world_q1 w)).
+
+Lemma match_cc_locset fb sg args rs m:
+  (forall l, Val.has_type (rs l) (Loc.type l)) ->
+  args = map (fun p => Locmap.getpair p rs) (loc_arguments sg) ->
+  exists w,
+    match_query cc_locset w (cq fb sg args m) (lq fb sg rs m) /\
+    forall vres m1' rs' m2',
+      match_reply cc_locset w (vres, m1') (rs', m2') ->
+      agree_callee_save rs rs' /\
+      Locmap.getpair (map_rpair R (loc_result sg)) rs' = vres /\
+      m1' = m2'.
+Proof.
+  intros Hrs Hargs.
+  assert (Hq: match_query_def cc_locset tt (cq fb sg args m) (lq fb sg rs m)).
+  {
+    simpl; eauto.
+  }
+  eexists (mk_world _ _ _ _ Hq).
+  split. { constructor. }
+  intros vres m1' rs' m2' Hr.
+  inv Hr. simpl in *.
+  decompose [and] Hq3.
+  eauto.
+Qed.
 
 Lemma match_query_cc_locset (P: _->_->_->_->_->_->_-> Prop):
   (forall id sg args rs m,

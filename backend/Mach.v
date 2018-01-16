@@ -446,21 +446,18 @@ Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
         (mq fb sp ra rs m)
         (Callstate (Parent sp ra :: nil) fb rs m).
 
-Inductive at_external (ge: genv): state -> query li_c -> Prop :=
-  | at_external_intro fb id sg s rs m args:
+Inductive at_external (ge: genv): state -> query li_mach -> Prop :=
+  | at_external_intro fb id sg s rs m:
       Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
-      extcall_arguments rs m (parent_sp s) sg args ->
       at_external ge
         (Callstate s fb rs m)
-        (cq fb sg args m).
+        (mq fb (parent_sp s) (parent_ra s) rs m).
 
-Inductive after_external (ge: genv): state -> reply li_c -> state -> Prop :=
-  | after_external_intro id sg fb s rs m vres m':
-      Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
-      let rs' := set_pair (loc_result sg) vres rs in (* XXX erase caller-save *)
+Inductive after_external (ge: genv): state -> reply li_mach -> state -> Prop :=
+  | after_external_intro fb s rs m rs' m':
       after_external ge
         (Callstate s fb rs m)
-        (vres, m')
+        (rs', m')
         (Returnstate s rs' m').
 
 Inductive final_state: state -> reply li_mach -> Prop :=
@@ -470,7 +467,7 @@ Inductive final_state: state -> reply li_mach -> Prop :=
 
 Definition semantics (rao: function -> code -> ptrofs -> Prop) (p: program) :=
   let ge := Genv.globalenv p in
-  Semantics li_c li_mach
+  Semantics li_mach li_mach
     (step rao)
     (initial_state ge)
     (at_external ge)

@@ -72,8 +72,52 @@ Program Definition cc_stacking: callconv li_locset li_mach :=
           Mem.unchanged_on (loc_unmapped f) m1 m1' /\
           Mem.unchanged_on (loc_out_of_reach f m1) m2 m2' /\
           inject_incr f f' /\
-          inject_separated f f' m1 m2;
+          inject_separated f f' m1 m2 /\
+          forall b ofs p,
+            Mem.valid_block m1 b ->
+            Mem.perm m1' b ofs Max p ->
+            Mem.perm m1 b ofs Max p;
   |}.
+
+Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
+  (forall r, Val.inject f (rs1 (R r)) (rs2 r)) ->
+  Mem.inject f m1 m2 ->
+  Val.has_type sp Tptr ->
+  Val.has_type ra Tptr ->
+  arguments_out_of_reach sg f m1 sp ->
+  (forall ofs ty,
+    In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
+    exists v2,
+      extcall_arg rs2 m2 sp (S Outgoing ofs ty) v2 /\
+      Val.inject f (rs1 (S Outgoing ofs ty)) v2) ->
+  exists w,
+    match_query cc_stacking w (lq fb sg rs1 m1) (mq fb sp ra rs2 m2) /\
+    forall rs1' m1' rs2' m2',
+      match_reply cc_stacking w (rs1', m1') (rs2', m2') ->
+      exists f',
+        (forall r, Val.inject f' (rs1' (R r)) (rs2' r)) /\
+        Mem.inject f' m1' m2' /\
+        Mem.unchanged_on (loc_unmapped f) m1 m1' /\
+        Mem.unchanged_on (loc_out_of_reach f m1) m2 m2' /\
+        inject_incr f f' /\
+        inject_separated f f' m1 m2 /\
+        forall b ofs p,
+          Mem.valid_block m1 b ->
+          Mem.perm m1' b ofs Max p ->
+          Mem.perm m1 b ofs Max p.
+Proof.
+  intros.
+  pose (q1 := lq fb sg rs1 m1).
+  pose (q2 := mq fb sp ra rs2 m2).
+  assert (Hq: match_query_def cc_stacking f q1 q2).
+  {
+    simpl. eauto 10.
+  }
+  exists (mk_world _ _ _ _ Hq).
+  split; [ now constructor | ].
+  inversion 1.
+  assumption.
+Qed.
 
 (** * Basic properties of the translation *)
 
@@ -1927,6 +1971,10 @@ Record source_injection_invariant f m1 :=
     ii_incr: inject_incr init_f f;
     ii_injsep: inject_separated init_f f init_m1 init_m2;
     ii_unmapped: Mem.unchanged_on (loc_unmapped init_f) init_m1 m1;
+    ii_perm b ofs p:
+      Mem.valid_block init_m1 b ->
+      Mem.perm m1 b ofs Max p ->
+      Mem.perm init_m1 b ofs Max p
   }.
 
 Lemma source_injection_invariant_step f m1 m2 f' m1' cs cs' P:
@@ -1935,9 +1983,13 @@ Lemma source_injection_invariant_step f m1 m2 f' m1' cs cs' P:
   inject_separated f f' m1 m2 ->
   Mem.unchanged_on (loc_unmapped f) m1 m1' ->
   m2 |= stack_contents f cs cs' ** P ->
+  (forall b ofs p,
+      Mem.valid_block m1 b ->
+      Mem.perm m1' b ofs Max p ->
+      Mem.perm m1 b ofs Max p) ->
   source_injection_invariant f' m1'.
 Proof.
-  intros [INCR INJSEP UNCH] INCR' INJSEP' UNCH' SEP.
+  intros [INCR INJSEP UNCH PERM] INCR' INJSEP' UNCH' SEP PERM'.
   constructor.
   - eapply inject_incr_trans; eauto.
   - intros b1 b2 delta Hbi Hb'.
@@ -1962,6 +2014,14 @@ Proof.
       destruct (f b) as [[b2 delta] | ] eqn:Hb2; eauto.
       exfalso.
       destruct (INJSEP b b2 delta); eauto.
+  - intros b ofs p Hb.
+    assert (Mem.valid_block m1 b).
+    {
+      unfold Mem.valid_block in Hb |- *.
+      apply Mem.unchanged_on_nextblock in UNCH.
+      xomega.
+    }
+    eauto.
 Qed.
 
 (** [CompCertX:test-compcert-protect-stack-arg] We have to prove that
@@ -2198,6 +2258,8 @@ Proof.
     - destruct a; try discriminate. simpl in H0. inv B.
       eapply Mem.store_unchanged_on; eauto.
       congruence.
+    - unfold Mem.storev in H0. destruct a; try discriminate.
+      eauto using Mem.perm_store_2.
   }
   rewrite transl_destroyed_by_store. apply agree_regs_undef_regs; auto.
   apply agree_locs_undef_locs. auto. apply destroyed_by_store_caller_save.
@@ -2238,6 +2300,7 @@ Proof.
     - congruence.
     - eapply Mem.free_unchanged_on; eauto.
       unfold loc_unmapped; intros _ _. congruence.
+    - eauto using Mem.perm_free_3.
   }
   apply match_stacks_change_sig with (Linear.fn_sig f); eauto.
   apply zero_size_arguments_tailcall_possible. eapply wt_state_tailcall; eauto.
@@ -2262,6 +2325,7 @@ Proof.
   {
     destruct SEP' as (_ & ? & _).
     eapply source_injection_invariant_step with (m1' := m'); eauto.
+    eauto using external_call_max_perm.
   }
   eapply match_stacks_change_meminj; eauto.
   apply agree_regs_set_res; auto. apply agree_regs_undef_regs; auto. eapply agree_regs_inject_incr; eauto.
@@ -2321,6 +2385,7 @@ Proof.
     - congruence.
     - eapply Mem.free_unchanged_on; eauto.
       congruence.
+    - eauto using Mem.perm_free_3.
   }
   rewrite sep_swap; exact G.
 
@@ -2346,6 +2411,10 @@ Proof.
   {
     eapply source_injection_invariant_step; eauto.
     - eapply Mem.alloc_unchanged_on; eauto.
+    - intros.
+      eapply Mem.perm_alloc_4; eauto.
+      apply Mem.alloc_result in H; subst.
+      red in H0. intro; subst; xomega.
   }
   eapply match_stacks_change_meminj; eauto.
   rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.
@@ -2363,6 +2432,7 @@ Proof.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   eapply match_states_return with (j := j').
   eapply source_injection_invariant_step; eauto.
+  eauto using external_call_max_perm.
   eapply match_stacks_change_meminj; eauto.
   apply agree_regs_set_pair. apply agree_regs_inject_incr with j; auto. auto.
   apply agree_callee_save_set_result; auto.
@@ -2427,10 +2497,10 @@ Lemma transf_external:
     match_states w st1 st2 ->
     Linear.at_external ge st1 q1 ->
     exists wA q2,
-      match_query (cc_wt @ cc_inject) wA q1 q2 /\
+      match_query (cc_wt @ cc_locset @ cc_stacking) wA q1 q2 /\
       Mach.at_external tge st2 q2 /\
       forall r1 r2 st1',
-        match_reply (cc_wt @ cc_inject) wA r1 r2 ->
+        match_reply (cc_wt @ cc_locset @ cc_stacking) wA r1 r2 ->
         Linear.after_external st1 r1 st1' ->
         exists st2',
           Mach.after_external tge st2 r2 st2' /\
@@ -2443,25 +2513,48 @@ Proof.
   pose proof (ii_incr _ _ _ SINV) as INCR.
   pose proof SEP as (Hsc & (Hinj & Hge & _) & _).
   simpl in Hinj.
-  edestruct transl_external_arguments as [vl [ARGS VINJ]]; eauto.
+
+  (* edestruct transl_external_arguments as [vl [ARGS VINJ]]; eauto. *)
+  assert (Hloctype: forall l, Val.has_type (rs l) (Loc.type l)) by admit.
+  assert (Hargsoor: arguments_out_of_reach sg j m (parent_sp cs')).
+  {
+    intros ofs ty sb sofs i Hloc Hptr Hi.
+    (* we may need to remember some invariant for the topmost
+      [Parent] frame in [match_stacks] in order to make this
+      work. Otherwise, this should be provable from [frame_contents]
+      and the separation logic assertions. *)
+    admit.
+  }
+
   edestruct match_cc_wt as (wA12 & Hq12 & H12); eauto.
-  edestruct match_cc_inject as (wA23 & Hq23 & H23); eauto.
-  edestruct (match_cc_compose cc_wt cc_inject) as (wA & Hq & H); eauto.
-  eexists wA, _; repeat apply conj; eauto.
+  edestruct match_cc_locset as (wA23 & Hq23 & H23); eauto.
+  edestruct match_cc_stacking as (wA34 & Hq34 & H34); eauto.
+  { eapply match_stacks_type_sp; eauto. }
+  { eapply match_stacks_type_retaddr; eauto. }
+  { eauto using transl_external_argument. }
+  edestruct (match_cc_compose cc_locset cc_stacking) as (wA24 & Hq24 & H24);
+    eauto; clear Hq23 Hq34.
+  edestruct (match_cc_compose cc_wt (cc_locset @ cc_stacking)) as (wA & Hq & H);
+    eauto; clear Hq12 Hq24.
+  eexists wA, _; repeat apply conj; eauto; clear Hq.
   - assert (fb0 = fb) by admit. (* need to know only one def. of each external *)
     subst.
     econstructor; eauto.
-  - intros [vres1 m1'] [vres3 m3'] st1' Hr13 Hst1'.
-    edestruct H as ([vres2 m2'] & Hr12 & Hr23); eauto.
-    edestruct H12 as (Hvres12 & Hm12 & Hwt); eauto; subst.
-    edestruct H23 as (j' & Hvres & Hm' & U1 & U2 & INCR' & ISEP & PERM); eauto.
+  - intros [vres1 m1'] [rs4' m4'] st1' Hr14 Hst1'.
+    edestruct H as ([vres2 m2'] & Hr12 & Hr24); eauto; clear H Hr14.
+    edestruct H12 as (Hvres12 & Hm12 & Hwt); eauto; subst; clear H12 Hr12.
+    edestruct H24 as ([rs3' m3'] & Hr23 & Hr34); eauto; clear H24 Hr24.
+    edestruct H23 as (Hrs3' & Hvres23 & Hm23); eauto; clear H23 Hr23.
+    edestruct H34 as (j' & Hrs34' & Hm34' & UNCH3 & UNCH4 & INCR' & SEP'); eauto.
+    clear H34 Hr34.
     inv Hst1'.
     eexists. intuition.
     + econstructor; eauto.
-    + eapply match_states_return with (j := j'); eauto.
-      eapply source_injection_invariant_step; eauto.
-      eapply match_stacks_change_meminj; eauto.
-      apply agree_regs_set_pair. apply agree_regs_inject_incr with j; auto. auto.
+    + eapply match_states_return with (j := j').
+      eapply source_injection_invariant_step; now eauto.
+      eapply match_stacks_change_meminj; now eauto.
+      admit. (* XXX prob *)
+      (* apply agree_regs_set_pair. apply agree_regs_inject_incr with j; auto. auto. *)
       apply agree_callee_save_set_result; auto.
       apply stack_contents_change_meminj with j; auto.
       rewrite sep_comm, sep_assoc.
@@ -2507,7 +2600,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (cc_wt @ cc_inject) cc_stacking
+  forward_simulation (cc_wt @ cc_locset @ cc_stacking) cc_stacking
     (Linear.semantics prog)
     (Mach.semantics return_address_offset tprog).
 Proof.
