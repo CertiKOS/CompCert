@@ -890,6 +890,17 @@ Section MATCH_STACK.
 Variables init_sp init_ra: val.
 Variable ge: Mach.genv.
 
+(** We maintain the invariant that successive stack frames have
+  increasing block identifiers. This allows us to prove that a new
+  stack block is distinct from all previous ones (and in particular,
+  the top-level stack block which discriminates between Asm final and
+  at_external states). *)
+
+Inductive block_lt: val -> val -> Prop :=
+  | block_lt_intro b1 ofs1 b2 ofs2:
+      Pos.lt b1 b2 ->
+      block_lt (Vptr b1 ofs1) (Vptr b2 ofs2).
+
 Inductive match_stack: list Mach.stackframe -> Prop :=
   | match_stack_nil:
       init_sp <> Vundef ->
@@ -898,16 +909,43 @@ Inductive match_stack: list Mach.stackframe -> Prop :=
   | match_stack_cons: forall fb sp ra c s f tf tc,
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       transl_code_at_pc ge ra fb f c false tf tc ->
-      sp <> Vundef ->
-      sp <> init_sp ->
+      block_lt (parent_sp s) sp ->
       match_stack s ->
       match_stack (Stackframe fb sp ra c :: s).
+
+Lemma init_sp_block_lt s sp:
+  match_stack s ->
+  block_lt (parent_sp s) sp ->
+  block_lt init_sp sp.
+Proof.
+  intros Hs. revert sp.
+  induction Hs; eauto.
+  simpl. destruct 1.
+  eapply IHHs. inv H1.
+  constructor. xomega.
+Qed.
+
+Lemma block_lt_neq p1 p2:
+  block_lt p1 p2 ->
+  p1 <> p2.
+Proof.
+  destruct 1.
+  assert (b1 <> b2) by xomega.
+  congruence.
+Qed.
+
+Lemma block_lt_def p1 p2:
+  block_lt p1 p2 ->
+  p1 <> Vundef.
+Proof.
+  destruct 1; discriminate.
+Qed.
 
 Lemma parent_sp_def: forall s, match_stack s -> parent_sp s <> Vundef.
 Proof.
   induction 1; simpl.
   unfold Vnullptr; destruct Archi.ptr64; congruence.
-  auto.
+  destruct H1; discriminate.
 Qed.
 
 Lemma parent_ra_def: forall s, match_stack s -> parent_ra s <> Vundef.
