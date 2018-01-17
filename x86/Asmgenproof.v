@@ -20,10 +20,12 @@ Require Import Asmgen Asmgenproof0 Asmgenproof1.
 
 (** * Calling convention *)
 
+Definition valid_blockv (m: mem) (sp: val) :=
+  forall b ofs, sp = Vptr b ofs -> Mem.valid_block m b.
+
 Inductive cc_asmgen_mq: query li_mach -> query li_asm -> Prop :=
-  | cc_asmgen_mq_intro fb ms m1 rs m2 sp_b sp_ofs:
-      Mem.valid_block m2 sp_b ->
-      let sp := Vptr sp_b sp_ofs in
+  | cc_asmgen_mq_intro fb ms m1 rs m2 sp:
+      valid_blockv m2 sp ->
       rs#PC = Vptr fb Ptrofs.zero ->
       rs#RA <> Vundef ->
       agree ms sp rs ->
@@ -34,7 +36,8 @@ Definition cc_asmgen_mr: _ -> query li_asm -> reply li_mach -> reply li_asm -> _
   fun '(mq fb sp ra ms m1) '(rs, m2) '(ms', m1') '(rs', m2') =>
     rs'#PC = ra /\
     agree ms' sp rs' /\
-    Mem.extends m1' m2'.
+    Mem.extends m1' m2' /\
+    Pos.le (Mem.nextblock m2) (Mem.nextblock m2').
 
 Definition cc_asmgen: callconv li_mach li_asm :=
   {|
@@ -43,6 +46,31 @@ Definition cc_asmgen: callconv li_mach li_asm :=
     match_query_def w := cc_asmgen_mq;
     match_reply_def w := cc_asmgen_mr;
   |}.
+
+Lemma match_cc_asmgen fb sp ms m1 rs m2:
+  valid_blockv m2 sp ->
+  rs#PC = Vptr fb Ptrofs.zero ->
+  rs#RA <> Vundef ->
+  agree ms sp rs ->
+  Mem.extends m1 m2 ->
+  exists w,
+    match_query cc_asmgen w (mq fb sp rs#RA ms m1) (rs, m2) /\
+    forall ms' m1' rs' m2',
+      match_reply cc_asmgen w (ms', m1') (rs', m2') ->
+      rs'#PC = rs#RA /\
+      agree ms' sp rs' /\
+      Mem.extends m1' m2' /\
+      Pos.le (Mem.nextblock m2) (Mem.nextblock m2').
+Proof.
+  intros.
+  assert (Hq: cc_asmgen_mq (mq fb sp rs#RA ms m1) (rs, m2))
+    by (constructor; eauto).
+  exists (mk_world cc_asmgen tt _ _ Hq).
+  split; [constructor | ].
+  intros ms' m1' rs' m2' Hr.
+  inv Hr; simpl in *.
+  assumption.
+Qed.
 
 (** * .. *)
 
@@ -437,6 +465,7 @@ Inductive match_states: Mach.state -> Asm.state -> Prop :=
                    (Asm.State rs m' (Some sp0))
   | match_states_final:
       forall s ms m rs m'
+        (NB: Pos.le nb0 (Mem.nextblock m'))
         (MEXT: Mem.extends m m')
         (AG: agree ms sp0 rs)
         (ATPC: rs PC = ra0),
@@ -554,8 +583,10 @@ Proof.
   apply Mem.alloc_result in Hstk.
   destruct w as [w' q1 q2 Hq]; simpl in *.
   destruct Hq; simpl in *.
-  unfold Mem.valid_block in *.
-  subst sp sp0 nb0.
+  unfold valid_blockv, Mem.valid_block in *.
+  subst sp0 nb0.
+  destruct sp; try discriminate.
+  specialize (H _ _ eq_refl).
   unfold Plt in *.
   inversion 1; subst; xomega.
 Qed.
@@ -950,6 +981,7 @@ Transparent destroyed_by_jumptable.
     - simpl in sp0'.
       destruct (Val.eq _ _); [ | congruence].
       eapply match_states_final; eauto.
+      apply Mem.nextblock_free in E; congruence.
       apply agree_set_other; auto.
       apply agree_nextinstr.
       apply agree_set_other; auto.
@@ -1018,6 +1050,7 @@ Transparent destroyed_at_function_entry.
     assert (Hsp: rs0 SP = sp0) by eauto using agree_sp.
     destruct (Val.eq _ _); [ | congruence].
     econstructor; eauto.
+    apply Mem.unchanged_on_nextblock in S. etransitivity; eauto.
     apply agree_set_other; auto. apply agree_set_pair; auto.
   + (* internal return *)
     simpl in AG. rewrite <- (agree_sp rs sp rs0 AG) in H5.
@@ -1042,24 +1075,20 @@ Lemma transf_initial_states:
   exists st2, Asm.initial_state tge q2 st2 /\ match_states w st1 st2.
 Proof.
   intros w q1 q2 Hq. destruct Hq.
-  destruct Hq as [fb ms m1 rs m2 sp_b sp_ofs Hsp_b sp Hpc Hra Hrs Hm].
+  destruct Hq as [fb ms m1 rs m2 sp Hsp Hpc Hra Hrs Hm].
   intros st1 Hst1. inv Hst1.
   exists (State rs m2 (Some sp)).
   pose proof Hrs as []; subst.
   split.
   - edestruct functions_translated as (tf & Htf & Hf); eauto.
     monadInv Hf.
-    rewrite <- agree_sp.
     econstructor; eauto.
     rewrite genv_next_preserved.
     apply Mem.mext_next in Hm. congruence.
-    congruence.
   - econstructor; eauto.
     simpl. reflexivity.
     simpl. constructor; eauto.
 Qed.
-
-Variable (cc_compcert_ext: callconv li_c li_asm).
 
 Lemma transf_external:
   forall w st1 st2 q1,
@@ -1074,13 +1103,41 @@ Lemma transf_external:
         exists st2',
           Asm.after_external st2 r2 st2' /\
           match_states w st1' st2'.
+Proof.
+  intros w st1 st2 q1 Hst Hst1.
+  destruct w as [[] [fb0 sp0 ra0 ms0 init_m1] [rs0 init_m2] Hq0]; simpl in *.
+  destruct Hst1 as [fb id sg s ms m Hfb].
+  inversion Hst; clear Hst. subst s0 fb1 m0 ms1 st2; simpl in *.
+  edestruct match_cc_asmgen as (wA & Hq & H); eauto.
+  - admit. (* need to keep invariant -- maybe increasing SPs in match_stack? *)
+  - rewrite ATLR. eapply parent_ra_def; eauto.
+  - rewrite ATLR in Hq.
+    eexists _, _; intuition.
+    + eauto.
+    + edestruct functions_translated as (tf & Htf & Hftf); eauto.
+      inv Hftf.
+      econstructor; eauto.
+    + edestruct H as (Hpc' & Hrs' & Hm'); eauto.
+      inv H1.
+      eexists; intuition.
+      econstructor.
+      erewrite agree_sp; eauto.
+      destruct STACKS; simpl in *.
+      * destruct (Val.eq _ _); try congruence.
+        constructor; eauto.
+        simpl. etransitivity; eauto.
+        rewrite Hpc', ATLR. reflexivity.
+      * destruct (Val.eq _ _); try congruence.
+        econstructor; eauto.
+        simpl. etransitivity; eauto.
+        rewrite Hpc', ATLR. reflexivity.
 Admitted.
 
 Lemma transf_final_states:
   forall w st1 st2 r1, match_states w st1 st2 -> Mach.final_state st1 r1 ->
   exists r2, match_reply cc_asmgen w r1 r2 /\ Asm.final_state tge st2 r2.
 Proof.
-  intros [[] _ _ [fb ms m1 rs m2 sp_b sp_ofs Hsp_b sp Hpc Hra Hrs Hm]].
+  intros [[] _ _ [fb ms m1 rs m2 sp Hsp Hpc Hra Hrs Hm]].
   intros. inv H0. inv H. simpl in *.
   eexists. split; constructor.
   simpl.

@@ -1169,8 +1169,12 @@ Inductive at_external (ge: genv): state -> query li_asm -> Prop :=
       at_external ge (State rs m sp) (rs, m).
 
 Inductive after_external: state -> reply li_asm -> state -> Prop :=
-  | after_external_intro rs m sp rs' m':
-      after_external (State rs m sp) (rs', m') (State rs' m' sp).
+  | after_external_intro rs m sp (rs': regset) m':
+      let sp' := if Val.eq rs'#SP sp then None else Some sp in
+      after_external
+        (State rs m (Some sp))
+        (rs', m')
+        (State rs' m' sp').
 
 Inductive final_state (ge: genv): state -> reply li_asm -> Prop :=
   | final_state_intro rs m:
