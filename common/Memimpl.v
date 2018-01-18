@@ -6180,10 +6180,10 @@ Qed.
 
 Lemma mem_inj_compose:
   forall f f' g g' m1 m2 m3,
-    mem_inj f g m1 m2 -> mem_inj f' g' m2 m3 -> frameinj_surjective g (length (stack_adt m2)) ->
+    mem_inj f g m1 m2 -> mem_inj f' g' m2 m3 ->
     mem_inj (compose_meminj f f') (compose_frameinj g g') m1 m3.
 Proof.
-  intros f f' g g' m1 m2 m3 H H0 SURJ.
+  intros f f' g g' m1 m2 m3 H H0.
   unfold compose_meminj. inv H; inv H0; constructor.
   - (* perm *)
     intros b1 b2 delta ofs k p CINJ PERM IPC.
@@ -6218,10 +6218,9 @@ Qed.
 Theorem inject_compose:
   forall f f' g g' m1 m2 m3,
     inject f g m1 m2 -> inject f' g' m2 m3 ->
-    frameinj_surjective g (length (stack_adt m2)) ->
     inject (compose_meminj f f') (compose_frameinj g g') m1 m3.
 Proof.
-  intros f f' g g' m1 m2 m3 H H0 SURJ.
+  intros f f' g g' m1 m2 m3 H H0.
   unfold compose_meminj; inv H; inv H0. constructor.
 (* inj *)
   eapply mem_inj_compose; eauto.
@@ -6315,9 +6314,6 @@ Proof.
   replace g with (compose_frameinj (flat_frameinj (length (stack_adt m1))) g).
   eapply mem_inj_compose; eauto.
   {
-    rewrite mext_length_stack0; apply frameinj_surjective_flat; auto.
-  }
-  {
     apply extensionality. unfold compose_frameinj. intros.
     unfold flat_frameinj. destruct lt_dec. auto.
     destruct (g x) eqn:GX; auto.
@@ -6351,10 +6347,10 @@ Qed.
 
 Lemma inject_extends_compose:
   forall f g m1 m2 m3,
-    frameinj_surjective g (length (stack_adt m2)) ->
     inject f g m1 m2 -> extends m2 m3 -> inject f g m1 m3.
 Proof.
-  intros f g m1 m2 m3 SURJ H H0. inv H; inversion H0. constructor; intros.
+  intros f g m1 m2 m3 H H0.
+  inv H; inversion H0. constructor; intros.
 (* inj *)
   replace f with (compose_meminj f inject_id).
   replace g with (compose_frameinj g (flat_frameinj (length (stack_adt m2)))).
@@ -6395,9 +6391,6 @@ Proof.
   replace (flat_frameinj (length (stack_adt m1))) with
       (compose_frameinj (flat_frameinj (length (stack_adt m1))) (flat_frameinj (length (stack_adt m2)))).
   eapply mem_inj_compose; eauto.
-  {
-    apply frameinj_surjective_flat. omega.
-  }
   {
     apply extensionality; intros. unfold compose_frameinj, flat_frameinj.
     destruct lt_dec; auto.
@@ -6997,7 +6990,6 @@ Lemma unrecord_stack_block_inject_left:
   forall (m1 m1' m2 : mem) (j : meminj) g,
     inject j g m1 m2 ->
     unrecord_stack_block m1 = Some m1' ->
-    (* frameinj_surjective g (length (stack_adt m2)) -> *)
     g 1 = Some 0 ->
     (forall b, is_stack_top (stack_adt m1) b -> forall o k p, ~ Mem.perm m1 b o k p) ->
     inject j (fun n => g (S n)) m1' m2.
@@ -8762,7 +8754,7 @@ Proof.
 
   intros; eapply record_stack_block_inject_flat; eauto.
   intros; eapply unrecord_stack_block_inject_parallel_flat; eauto.
-  intros; eapply mem_inject_tailcall_inlined; eauto.
+  (* intros; eapply mem_inject_tailcall_inlined; eauto. *)
 Qed.
 
 End Mem.

@@ -1257,23 +1257,23 @@ Inductive match_states: RTL.state -> RTL.state -> Prop :=
         (MS1: match_stack_adt (Some (sp', fn_stacksize f')::map blocks_of_stackframe stk') (Mem.stack_adt m')),
       match_states (Returnstate stk v m)
                    (State stk' f' (Vptr sp' Ptrofs.zero) pc' rs' m')
-| match_states_interm:
-      forall s f0 rs rs' args m tm stk' f' sp' ctx pc id,
-        forall pc1 ctx' fenv,
-          (fn_code f') ! (spc ctx pc) = Some (Inop pc1) ->
-          tr_moves (fn_code f') pc1 (sregs ctx args) (sregs ctx' (fn_params f0)) (spc ctx' (fn_entrypoint f0)) ->
-          tr_funbody fenv (fn_stacksize f') ctx' f0 (fn_code f') ->
-            retinfo ctx' = retinfo ctx ->
-            context_below ctx ctx' ->
-            context_stack_tailcall ctx f0 ctx' ->
-            (forall s',
-                step fn_stack_requirements ge (Callstate s (Internal f0) (rs ## args) m (fn_stack_requirements id)) E0 s' ->
-                exists s2',
-                  plus (step fn_stack_requirements) tge (State stk' f' (Vptr sp' Ptrofs.zero) (spc ctx pc) rs' tm) E0 s2' /\
-                  match_states s' s2') ->
-            match_states
-              (Callstate s (Internal f0) (rs ## args) m (fn_stack_requirements id))
-              (State stk' f' (Vptr sp' Ptrofs.zero) (spc ctx pc) rs' tm).
+(* | match_states_interm: *)
+(*       forall s f0 rs rs' args m tm stk' f' sp' ctx pc id, *)
+(*         forall pc1 ctx' fenv, *)
+(*           (fn_code f') ! (spc ctx pc) = Some (Inop pc1) -> *)
+(*           tr_moves (fn_code f') pc1 (sregs ctx args) (sregs ctx' (fn_params f0)) (spc ctx' (fn_entrypoint f0)) -> *)
+(*           tr_funbody fenv (fn_stacksize f') ctx' f0 (fn_code f') -> *)
+(*             retinfo ctx' = retinfo ctx -> *)
+(*             context_below ctx ctx' -> *)
+(*             context_stack_tailcall ctx f0 ctx' -> *)
+(*             (forall s', *)
+(*                 step fn_stack_requirements ge (Callstate s (Internal f0) (rs ## args) m (fn_stack_requirements id)) E0 s' -> *)
+(*                 exists s2', *)
+(*                   plus (step fn_stack_requirements) tge (State stk' f' (Vptr sp' Ptrofs.zero) (spc ctx pc) rs' tm) E0 s2' /\ *)
+(*                   match_states s' s2') -> *)
+(*             match_states *)
+(*               (Callstate s (Internal f0) (rs ## args) m (fn_stack_requirements id)) *)
+(*               (State stk' f' (Vptr sp' Ptrofs.zero) (spc ctx pc) rs' tm) *).
 
 (** ** Forward simulation *)
 
@@ -2124,10 +2124,10 @@ Proof.
   + auto. 
   + eapply compat_framinj_rec_push_left. eauto.
 
--
-  edestruct H13 as (s2' & STEPS & MS).
-  econstructor; eauto.
-  left; eexists; split. eauto. auto.
+(* - *)
+(*   edestruct H13 as (s2' & STEPS & MS). *)
+(*   econstructor; eauto. *)
+(*   left; eexists; split. eauto. auto. *)
 
 - (* external function *)
   exploit match_stacks_globalenvs; eauto. intros [bound MG].
