@@ -185,6 +185,12 @@ Record frame_adt : Type :=
     frame_adt_size : Z;
     frame_adt_blocks_norepet:
       list_norepet (map fst frame_adt_blocks);
+    (* The boolean field [frame_tailcall] indicates whether the frame
+    corresponds to a function from which a tailcall has been performed (it will
+    be [true] in this case). This influences the semantics of
+    [unrecord_stack_block], which pops the current frame and every following
+    frame that corresponds to a tailcall. *)
+    frame_tailcall: bool;
   }.
 
 Definition stack_adt := list frame_adt.
@@ -2294,18 +2300,31 @@ Definition make_singleton_frame_adt (b: block) (sz: Z) (machsz: Z) :=
   {|
     frame_adt_blocks := (b,{| frame_size := sz; frame_perm := fun o => Public |})::nil;
     frame_adt_size := machsz;
-    frame_adt_blocks_norepet := norepet_1 _
+    frame_adt_blocks_norepet := norepet_1 _;
+    frame_tailcall := false;
   |}.
 
 Definition make_singleton_frame_adt' (b: block) fi (sz: Z) :=
   {|
     frame_adt_blocks := (b,fi)::nil;
     frame_adt_size := sz;
-    frame_adt_blocks_norepet := norepet_1 _
+    frame_adt_blocks_norepet := norepet_1 _;
+    frame_tailcall := false;
   |}.
 
+Definition set_tailcall (f: frame_adt) : frame_adt :=
+  {|
+    frame_adt_blocks := frame_adt_blocks f;
+    frame_adt_size := frame_adt_size f;
+    frame_adt_blocks_norepet := frame_adt_blocks_norepet f;
+    frame_tailcall := true;
+  |}.
 
-
+Definition set_top_tailcall (s: stack_adt) : stack_adt :=
+  match s with
+    nil => nil
+  | f::r => set_tailcall f :: r
+  end.
 
 
   Lemma val_inject_ext:
