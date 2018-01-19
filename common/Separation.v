@@ -656,6 +656,17 @@ Proof.
   clear. firstorder.
 Qed.
 
+Lemma sep_minjection_out_of_reach P j m m' b' ofs:
+  m' |= P ** minjection j m ->
+  m_footprint P b' ofs ->
+  loc_out_of_reach j m b' ofs.
+Proof.
+  intros (_ & _ & Hdisj) Hbofs.
+  intros b delta Hb Hp.
+  eelim Hdisj; eauto.
+  simpl; eauto.
+Qed.
+
 Lemma loadv_parallel_rule:
   forall j m1 m2 chunk addr1 v1 addr2,
   m2 |= minjection j m1 ->

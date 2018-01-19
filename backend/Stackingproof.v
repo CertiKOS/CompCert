@@ -225,6 +225,33 @@ Proof.
   intros; discriminate.
 Qed.
 
+Lemma bound_outgoing_no_overflow:
+  fe_ofs_arg + 4 * (bound_outgoing (function_bounds f)) <= Ptrofs.max_unsigned.
+Proof.
+  pose proof size_no_overflow. subst b fe.
+  etransitivity; eauto; clear.
+  cbv [fe_ofs_arg fe_size make_env].
+  assert ((if Archi.ptr64 then 8 else 4) > 0) by (destruct Archi.ptr64; xomega).
+  repeat
+    match goal with
+    | |- context [align ?x ?a] =>
+      lazymatch goal with
+      | H: x <= align x a |- _ => fail
+      | _ => assert (x <= align x a) by (apply (align_le x a); xomega)
+      end
+    | |- context [size_callee_save_area ?b ?x] =>
+      lazymatch goal with
+      | H: x <= size_callee_save_area b x |- _ => fail
+      | _ => assert (x <= size_callee_save_area b x)
+          by apply size_callee_save_area_incr
+      end
+    end.
+  pose proof (bound_local_pos (function_bounds f)).
+  pose proof (bound_outgoing_pos (function_bounds f)).
+  pose proof (bound_stack_data_pos (function_bounds f)).
+  xomega.
+Qed.
+
 Remark bound_stack_data_stacksize:
   f.(Linear.fn_stacksize) <= b.(bound_stack_data).
 Proof.
@@ -2515,7 +2542,8 @@ Proof.
   simpl in Hinj.
 
   (* edestruct transl_external_arguments as [vl [ARGS VINJ]]; eauto. *)
-  assert (Hloctype: forall l, Val.has_type (rs l) (Loc.type l)) by admit.
+
+  assert (Hrs_wt: wt_locset rs) by (inv Hst1; eauto).
   assert (Hargsoor: arguments_out_of_reach sg j m (parent_sp cs')).
   {
     intros ofs ty sb sofs i Hloc Hptr Hi.
@@ -2523,9 +2551,25 @@ Proof.
       [Parent] frame in [match_stacks] in order to make this
       work. Otherwise, this should be provable from [frame_contents]
       and the separation logic assertions. *)
-    admit.
+    destruct STACKS.
+    - admit.
+    - pose proof (loc_arguments_acceptable_2 _ _ Hloc) as [? ?].
+      apply ARGS in Hloc. red in Hloc.
+      simpl in Hptr. rewrite Ptrofs.add_zero_l in Hptr. inv Hptr.
+      simpl stack_contents in SEP.
+      rewrite sep_assoc in SEP.
+      apply sep_drop2 in SEP.
+      rewrite <- sep_assoc in SEP.
+      apply sep_proj1 in SEP.
+      eapply sep_minjection_out_of_reach; eauto.
+      left. right. left. red. red.
+      unfold offset_arg.
+      rewrite Ptrofs.unsigned_repr.
+      intuition.
+      split; [unfold fe_ofs_arg; xomega | ].
+      etransitivity; [ | eauto using bound_outgoing_no_overflow ].
+      xomega.
   }
-
   edestruct match_cc_wt as (wA12 & Hq12 & H12); eauto.
   edestruct match_cc_locset as (wA23 & Hq23 & H23); eauto.
   edestruct match_cc_stacking as (wA34 & Hq34 & H34); eauto.
