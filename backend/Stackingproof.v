@@ -2491,7 +2491,7 @@ Proof.
   econstructor; split.
   monadInv TR.
   econstructor; eauto.
-  rewrite genv_next_preserved. admit. (* need incr flat_inj in cc? *)
+  rewrite genv_next_preserved. admit. (* need incr flat_inj / globalenv_preserved in cc? *)
   rename w0 into j.
   eapply match_states_call with (j := j); eauto.
   {
@@ -2540,19 +2540,24 @@ Proof.
   pose proof (ii_incr _ _ _ SINV) as INCR.
   pose proof SEP as (Hsc & (Hinj & Hge & _) & _).
   simpl in Hinj.
-
-  (* edestruct transl_external_arguments as [vl [ARGS VINJ]]; eauto. *)
-
   assert (Hrs_wt: wt_locset rs) by (inv Hst1; eauto).
   assert (Hargsoor: arguments_out_of_reach sg j m (parent_sp cs')).
   {
     intros ofs ty sb sofs i Hloc Hptr Hi.
-    (* we may need to remember some invariant for the topmost
-      [Parent] frame in [match_stacks] in order to make this
-      work. Otherwise, this should be provable from [frame_contents]
-      and the separation logic assertions. *)
     destruct STACKS.
-    - admit.
+    - simpl stack_contents in SEP.
+      destruct w as [j0 [fb1 sg1 rs1 m1] [fb2 sp0 ra0 rs2 m2] Hq].
+      cbn -[Z.mul m_pred] in *.
+      rewrite <- sep_assoc in SEP.
+      apply sep_proj1 in SEP.
+      eapply sep_minjection_out_of_reach; eauto.
+      simpl.
+      pose proof Hq as (Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
+      split.
+      + eapply Hoor; eauto.
+        destruct TP as [TP | ?]; try congruence.
+        elim (TP (S Outgoing ofs ty)); eauto.
+      + admit. (* stack pointer valid in initial memory *)
     - pose proof (loc_arguments_acceptable_2 _ _ Hloc) as [? ?].
       apply ARGS in Hloc. red in Hloc.
       simpl in Hptr. rewrite Ptrofs.add_zero_l in Hptr. inv Hptr.
@@ -2597,7 +2602,7 @@ Proof.
     + eapply match_states_return with (j := j').
       eapply source_injection_invariant_step; now eauto.
       eapply match_stacks_change_meminj; now eauto.
-      admit. (* XXX prob *)
+      admit. (* XXX need to Vundef caller-save or use locset CC in Linear *)
       (* apply agree_regs_set_pair. apply agree_regs_inject_incr with j; auto. auto. *)
       apply agree_callee_save_set_result; auto.
       apply stack_contents_change_meminj with j; auto.
