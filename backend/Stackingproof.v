@@ -47,36 +47,40 @@ Definition arguments_out_of_reach sg j m1 sp :=
     0 <= i < 4 * typesize ty ->
     loc_out_of_reach j m1 sb (Ptrofs.unsigned sofs + i).
 
-Program Definition cc_stacking: callconv li_locset li_mach :=
+Definition cc_stacking_mq f: query li_locset -> query li_mach -> Prop :=
+  fun '(lq id1 sg rs1 m1) '(mq id2 sp ra rs2 m2) =>
+    id1 = id2 /\
+    (forall r, Val.inject f (rs1 (R r)) (rs2 r)) /\
+    Mem.inject f m1 m2 /\
+    Val.has_type sp Tptr /\
+    Val.has_type ra Tptr /\
+    arguments_out_of_reach sg f m1 sp /\
+    forall ofs ty,
+      In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
+      exists v2,
+        extcall_arg rs2 m2 sp (S Outgoing ofs ty) v2 /\
+        Val.inject f (rs1 (S Outgoing ofs ty)) v2.
+
+Definition cc_stacking_mr f :=
+  fun '(lq _ _ _ m1) '(mq _ _ _ _ m2) '(rs1', m1') '(rs2', m2') =>
+    exists f',
+      (forall r, Val.inject f' (rs1' (R r)) (rs2' r)) /\
+      Mem.inject f' m1' m2' /\
+      Mem.unchanged_on (loc_unmapped f) m1 m1' /\
+      Mem.unchanged_on (loc_out_of_reach f m1) m2 m2' /\
+      inject_incr f f' /\
+      inject_separated f f' m1 m2 /\
+      forall b ofs p,
+        Mem.valid_block m1 b ->
+        Mem.perm m1' b ofs Max p ->
+        Mem.perm m1 b ofs Max p.
+
+Definition cc_stacking: callconv li_locset li_mach :=
   {|
     world_def := meminj;
     match_senv := symbols_inject;
-    match_query_def f :=
-      fun '(lq id1 sg rs1 m1) '(mq id2 sp ra rs2 m2) =>
-        id1 = id2 /\
-        (forall r, Val.inject f (rs1 (R r)) (rs2 r)) /\
-        Mem.inject f m1 m2 /\
-        Val.has_type sp Tptr /\
-        Val.has_type ra Tptr /\
-        arguments_out_of_reach sg f m1 sp /\
-        forall ofs ty,
-          In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
-          exists v2,
-            extcall_arg rs2 m2 sp (S Outgoing ofs ty) v2 /\
-            Val.inject f (rs1 (S Outgoing ofs ty)) v2;
-    match_reply_def f :=
-      fun '(lq _ _ _ m1) '(mq _ _ _ _ m2) '(rs1', m1') '(rs2', m2') =>
-        exists f',
-          (forall r, Val.inject f' (rs1' (R r)) (rs2' r)) /\
-          Mem.inject f' m1' m2' /\
-          Mem.unchanged_on (loc_unmapped f) m1 m1' /\
-          Mem.unchanged_on (loc_out_of_reach f m1) m2 m2' /\
-          inject_incr f f' /\
-          inject_separated f f' m1 m2 /\
-          forall b ofs p,
-            Mem.valid_block m1 b ->
-            Mem.perm m1' b ofs Max p ->
-            Mem.perm m1 b ofs Max p;
+    match_query_def := cc_stacking_mq;
+    match_reply_def := cc_stacking_mr;
   |}.
 
 Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
