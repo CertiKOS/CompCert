@@ -2573,9 +2573,15 @@ Proof.
         destruct Archi.ptr64; destruct (sig_res sg) as [[]|]; try discriminate.
         assumption.
       * red; intros. rewrite (AG l H0).
-        symmetry; apply Locmap.gpo.
         assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
         { intros. destruct l; simpl in *. congruence. auto. }
+        symmetry; rewrite Locmap.gpo.
+        apply undef_regs_outside.
+        { rewrite Loc.notin_iff.
+          unfold destroyed_at_call. intros l' Hl'.
+          apply in_map_iff in Hl'. destruct Hl' as (reg & Hl' & Hreg). subst l'.
+          apply filter_In in Hreg. destruct Hreg as (Hreg & Hregcs).
+          apply negb_true_iff in Hregcs. eauto. }
         generalize (loc_result_caller_save sg).
         destruct (loc_result sg); simpl; intuition auto.
       * destruct Hvres; eauto.

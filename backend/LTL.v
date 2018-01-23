@@ -290,10 +290,12 @@ Inductive at_external (ge: genv): state -> query li_c -> Prop :=
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
   | after_external_intro id sg s rs m vres m':
+      let rs' := undef_regs destroyed_at_call rs in
+      let rs' := Locmap.setpair (loc_result sg) vres rs' in
       after_external
         (Callstate s (External (EF_external id sg)) rs m)
         (vres, m')
-        (Returnstate s (Locmap.setpair (loc_result sg) vres rs) m').
+        (Returnstate s rs' m').
 
 Inductive final_state: state -> reply li_locset -> Prop :=
   | final_state_intro: forall init_rs s rs m,

@@ -959,6 +959,22 @@ Proof.
   generalize (loc_result_caller_save sg). destruct (loc_result sg); simpl; intuition auto.
 Qed.
 
+Lemma agree_callee_save_undef_destroyed_at_call ls ls':
+  agree_callee_save ls ls' ->
+  agree_callee_save (LTL.undef_regs destroyed_at_call ls) ls'.
+Proof.
+  intros H l Hl.
+  unfold destroyed_at_call.
+  induction all_mregs; simpl; eauto.
+  destruct (is_callee_save a) eqn:Ha; simpl; eauto.
+  destruct (Loc.eq (R a) l); subst.
+  - congruence.
+  - rewrite Locmap.gso; eauto.
+    simpl.
+    destruct l; eauto.
+    congruence.
+Qed.
+
 (** ** Properties of destroyed registers. *)
 
 Definition no_callee_saves (l: list mreg) : Prop :=
@@ -2477,6 +2493,64 @@ Qed.
 
 End WITHINIT.
 
+(** Preservation lemmas for [agree_regs] related to [cc_locset] *)
+
+Require Allocproof. (* XXX move val_{lo,hi}word_longofwords *)
+
+Lemma locmap_setpair_getpair j p ls1 ls2 rs:
+  agree_regs j ls1 rs ->
+  agree_regs j ls2 rs ->
+  agree_regs j (Locmap.setpair p (Locmap.getpair (map_rpair R p) ls1) ls2) rs.
+Proof.
+  intros H1 H2.
+  unfold Locmap.setpair, Locmap.getpair.
+  intros l.
+  destruct p; simpl.
+  - destruct (mreg_eq r l); subst.
+    + setoid_rewrite Locmap.gss; eauto.
+    + setoid_rewrite Locmap.gso; eauto.
+  - destruct (mreg_eq rlo l); subst.
+    + setoid_rewrite Locmap.gss; eauto.
+      eapply Mem.val_lessdef_inject_compose.
+      apply Allocproof.val_loword_longofwords.
+      apply H1.
+    + setoid_rewrite Locmap.gso; eauto.
+      destruct (mreg_eq rhi l); subst.
+      * setoid_rewrite Locmap.gss.
+        eapply Mem.val_lessdef_inject_compose.
+        apply Allocproof.val_hiword_longofwords.
+        apply H1.
+      * setoid_rewrite Locmap.gso; eauto.
+Qed.
+
+Lemma agree_callee_regs j ls ls' rs:
+  Conventions.agree_callee_save ls ls' ->
+  agree_regs j ls' rs ->
+  agree_regs j (LTL.undef_regs destroyed_at_call ls) rs.
+Proof.
+  unfold Conventions.agree_callee_save, callee_save_loc, destroyed_at_call.
+  intros Hls Hls' l.
+  specialize (Hls (R l)); simpl in Hls.
+  specialize (Hls' l).
+  generalize (all_mregs_complete l).
+  induction all_mregs as [ | r regs IHregs]; simpl.
+  - contradiction.
+  - intros [Hl | Hl].
+    + subst.
+      destruct (is_callee_save l) eqn:Hlcs; simpl.
+      * destruct (in_dec mreg_eq l regs); eauto.
+        rewrite LTL_undef_regs_others; eauto.
+        rewrite Hls; eauto.
+        rewrite filter_In.
+        tauto.
+      * rewrite Locmap.gss.
+        constructor.
+    + destruct (is_callee_save r) eqn:Hlcs; simpl; eauto.
+      destruct (mreg_eq r l); subst.
+      * rewrite Locmap.gss; eauto.
+      * rewrite Locmap.gso; eauto.
+Qed.
+
 Lemma transf_initial_states:
   forall w q1 q2, match_query cc_stacking w q1 q2 ->
   forall st1, Linear.initial_state ge q1 st1 ->
@@ -2602,9 +2676,10 @@ Proof.
     + eapply match_states_return with (j := j').
       eapply source_injection_invariant_step; now eauto.
       eapply match_stacks_change_meminj; now eauto.
-      admit. (* XXX need to Vundef caller-save or use locset CC in Linear *)
-      (* apply agree_regs_set_pair. apply agree_regs_inject_incr with j; auto. auto. *)
+      apply locmap_setpair_getpair; eauto.
+      eapply agree_callee_regs; eauto.
       apply agree_callee_save_set_result; auto.
+      apply agree_callee_save_undef_destroyed_at_call; auto.
       apply stack_contents_change_meminj with j; auto.
       rewrite sep_comm, sep_assoc.
       eapply minjection_incr; eauto.
@@ -2615,6 +2690,7 @@ Proof.
     + inv Hst1.
       constructor; eauto.
       eapply wt_setpair; eauto.
+      eapply wt_undef_regs; eauto.
 Admitted.
 
 Lemma transf_final_states:
