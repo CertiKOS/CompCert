@@ -438,6 +438,34 @@ Definition li_mach: language_interface :=
     reply := regset * mem;
   |}.
 
+(** The [valid_blockv] predicate is used to characterize the initial
+  value [mq_sp] for the stack pointer. In order to maintain the
+  invariant that each new stack frame has a different stack pointer,
+  we need to know in particular that the initial stack pointers refers
+  to a valid block, so that any block allocated for new stack frames
+  will be different.
+
+  This version of [valid_blockv] forces the value to be both defined,
+  and a [Vptr] value. We may want to switch back to a characterization
+  where non-pointer values are allowed as well, so that [Vnullptr]
+  qualifies. [Vnullptr] which is a [Vlint]/[Vlong] null value used in
+  the original Compcert semantics as the initial stack pointer. *)
+
+Inductive valid_blockv (m: mem): val -> Prop :=
+  | valid_blockv_intro b ofs:
+      Mem.valid_block m b ->
+      valid_blockv m (Vptr b ofs).
+
+Lemma valid_blockv_nextblock m m' v:
+  valid_blockv m v ->
+  Pos.le (Mem.nextblock m) (Mem.nextblock m') ->
+  valid_blockv m' v.
+Proof.
+  destruct 1. constructor.
+  unfold Mem.valid_block in *. xomega.
+Qed.
+
+
 Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
   | initial_state_intro: forall fb f sp ra rs m,
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->

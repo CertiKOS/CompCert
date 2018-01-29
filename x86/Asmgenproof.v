@@ -20,11 +20,6 @@ Require Import Asmgen Asmgenproof0 Asmgenproof1.
 
 (** * Calling convention *)
 
-Inductive valid_blockv (m: mem): val -> Prop :=
-  | valid_blockv_intro b ofs:
-      Mem.valid_block m b ->
-      valid_blockv m (Vptr b ofs).
-
 Inductive cc_asmgen_mq: query li_mach -> query li_asm -> Prop :=
   | cc_asmgen_mq_intro fb ms m1 rs m2 sp:
       valid_blockv m2 sp ->
@@ -506,15 +501,6 @@ Lemma exec_straight_nextblock tf c rs m k rs' m':
 Proof.
   induction 1; eauto using exec_instr_nextblock.
   etransitivity; eauto using exec_instr_nextblock.
-Qed.
-
-Lemma valid_blockv_nextblock m m' v:
-  valid_blockv m v ->
-  Pos.le (Mem.nextblock m) (Mem.nextblock m') ->
-  valid_blockv m' v.
-Proof.
-  destruct 1. constructor.
-  unfold Mem.valid_block in *. xomega.
 Qed.
 
 Lemma valid_blockv_lt m p1 p2:

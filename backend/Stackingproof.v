@@ -52,7 +52,7 @@ Definition cc_stacking_mq f: query li_locset -> query li_mach -> Prop :=
     id1 = id2 /\
     (forall r, Val.inject f (rs1 (R r)) (rs2 r)) /\
     Mem.inject f m1 m2 /\
-    Val.has_type sp Tptr /\
+    valid_blockv m2 sp /\
     Val.has_type ra Tptr /\
     arguments_out_of_reach sg f m1 sp /\
     forall ofs ty,
@@ -86,7 +86,7 @@ Definition cc_stacking: callconv li_locset li_mach :=
 Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
   (forall r, Val.inject f (rs1 (R r)) (rs2 r)) ->
   Mem.inject f m1 m2 ->
-  Val.has_type sp Tptr ->
+  valid_blockv m2 sp ->
   Val.has_type ra Tptr ->
   arguments_out_of_reach sg f m1 sp ->
   (forall ofs ty,
@@ -1576,6 +1576,28 @@ Qed.
 
 (** Typing properties of [match_stacks]. *)
 
+Lemma valid_blockv_has_type m v:
+  valid_blockv m v ->
+  Val.has_type v Tptr.
+Proof.
+  destruct 1; constructor.
+Qed.
+
+Lemma match_stacks_valid_blockv_sp j cs cs' sg isg m m':
+  match_stacks j cs cs' sg isg ->
+  Mem.inject j m m' ->
+  Ple (Mem.nextblock init_m2) (Mem.nextblock m') ->
+  valid_blockv m' (parent_sp cs').
+Proof.
+  intros Hstk Hm Hnb.
+  destruct Hstk; unfold parent_sp.
+  - destruct w as [f [id1 sg0 rs1 m1] [id2 sp0 ra0 rs2 m2] H]; simpl in *.
+    eapply valid_blockv_nextblock; eauto.
+    tauto.
+  - constructor.
+    eapply Mem.valid_block_inject_2; eauto.
+Qed.
+
 Lemma match_stacks_type_sp:
   forall j cs cs' sg isg,
   match_stacks j cs cs' sg isg ->
@@ -1583,6 +1605,7 @@ Lemma match_stacks_type_sp:
 Proof.
   induction 1; unfold parent_sp.
   - destruct w as [f [id1 sg0 rs1 m1] [id2 sp0 ra0 rs2 m2] H]; simpl in *.
+    apply (valid_blockv_has_type m2).
     tauto.
   - apply Val.Vptr_has_type.
 Qed.
@@ -2635,7 +2658,9 @@ Proof.
       + eapply Hoor; eauto.
         destruct TP as [TP | ?]; try congruence.
         elim (TP (S Outgoing ofs ty)); eauto.
-      + admit. (* stack pointer valid in initial memory *)
+      + destruct Hsp.
+        simpl in Hptr.
+        congruence.
     - pose proof (loc_arguments_acceptable_2 _ _ Hloc) as [? ?].
       apply ARGS in Hloc. red in Hloc.
       simpl in Hptr. rewrite Ptrofs.add_zero_l in Hptr. inv Hptr.
@@ -2656,7 +2681,9 @@ Proof.
   edestruct match_cc_wt as (wA12 & Hq12 & H12); eauto.
   edestruct match_cc_locset as (wA23 & Hq23 & H23); eauto.
   edestruct match_cc_stacking as (wA34 & Hq34 & H34); eauto.
-  { eapply match_stacks_type_sp; eauto. }
+  { eapply match_stacks_valid_blockv_sp; eauto.
+    eapply Mem.unchanged_on_nextblock.
+    eapply stack_contents_out_of_reach; eauto. }
   { eapply match_stacks_type_retaddr; eauto. }
   { eauto using transl_external_argument. }
   edestruct (match_cc_compose cc_locset cc_stacking) as (wA24 & Hq24 & H24);
