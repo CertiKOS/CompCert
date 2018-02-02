@@ -90,6 +90,8 @@ Record t: Type := mksenv {
     forall id b, find_symbol id = Some b -> Block.lt b Block.init;
   block_is_volatile_below:
     forall b, block_is_volatile b = true -> Block.lt b Block.init;
+  find_symbol_def:
+    forall id b, find_symbol id = Some b -> b = Block.glob id;
 }.
 
 Definition symbol_address (ge: t) (id: ident) (ofs: ptrofs) : val :=
@@ -591,6 +593,14 @@ Proof.
   discriminate.
 Qed.
 
+Theorem find_symbol_def:
+  forall ge id b,
+    find_symbol ge id = Some b -> b = Block.glob id.
+Proof.
+  unfold find_symbol.
+  intros ge id b; destruct (genv_defs ge) ! id; congruence.
+Qed.
+
 (** ** Coercing a global environment into a symbol environment *)
 
 Definition to_senv (ge: t) : Senv.t :=
@@ -604,7 +614,8 @@ Definition to_senv (ge: t) : Senv.t :=
     (find_invert_symbol ge)
     (public_symbol_exists ge)
     ge.(genv_symb_range)
-    (block_is_volatile_below ge).
+    (block_is_volatile_below ge)
+    (find_symbol_def ge).
 
 (** * Construction of the initial memory state *)
 

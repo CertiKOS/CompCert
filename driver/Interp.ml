@@ -35,6 +35,12 @@ let mode = ref First
 
 (* Printing events *)
 
+let print_block_ofs p (blk, ofs) =
+  let ofs = camlint_of_coqint ofs in
+  if ofs = 0l
+  then fprintf p " %s" (camlstring_of_coqstring (Block.to_string blk))
+  else fprintf p " %s%+ld" (camlstring_of_coqstring (Block.to_string blk)) ofs
+
 let print_id_ofs p (id, ofs) =
   let id = extern_atom id and ofs = camlint_of_coqint ofs in
   if ofs = 0l
@@ -42,11 +48,12 @@ let print_id_ofs p (id, ofs) =
   else fprintf p " %s%+ld" id ofs
 
 let print_eventval p = function
-  | EVint n -> fprintf p "%ld" (camlint_of_coqint n)
-  | EVfloat f -> fprintf p "%.15F" (camlfloat_of_coqfloat f)
-  | EVsingle f -> fprintf p "%.15F" (camlfloat_of_coqfloat32 f)
-  | EVlong n -> fprintf p "%LdLL" (camlint64_of_coqint n)
-  | EVptr_global(id, ofs) -> fprintf p "&%a" print_id_ofs (id, ofs)
+  | Vint n -> fprintf p "%ld" (camlint_of_coqint n)
+  | Vfloat f -> fprintf p "%.15F" (camlfloat_of_coqfloat f)
+  | Vsingle f -> fprintf p "%.15F" (camlfloat_of_coqfloat32 f)
+  | Vlong n -> fprintf p "%LdLL" (camlint64_of_coqint n)
+  | Vptr(id, ofs) -> fprintf p "&%a" print_block_ofs (id, ofs)
+  | Vundef -> fprintf p "<undef>"
 
 let print_eventval_list p = function
   | [] -> ()
@@ -368,12 +375,11 @@ let (>>=) opt f = match opt with None -> None | Some arg -> f arg
 
 let convert_external_arg ge v t =
   match v with
-  | Vint i -> Some (EVint i)
-  | Vfloat f -> Some (EVfloat f)
-  | Vsingle f -> Some (EVsingle f)
-  | Vlong n -> Some (EVlong n)
-  | Vptr(b, ofs) ->
-      Senv.invert_symbol ge b >>= fun id -> Some (EVptr_global(id, ofs))
+  | Vint i -> Some (Vint i)
+  | Vfloat f -> Some (Vfloat f)
+  | Vsingle f -> Some (Vsingle f)
+  | Vlong n -> Some (Vlong n)
+  | Vptr(b, ofs) -> Some (Vptr (b, ofs))
   | _ -> None
 
 let rec convert_external_args ge vl tl =
@@ -393,7 +399,7 @@ let do_external_function id sg ge w args m =
       Format.print_string fmt';
       flush stdout;
       convert_external_args ge args sg.sig_args >>= fun eargs ->
-      Some(((w, [Event_syscall(id, eargs, EVint len)]), Vint len), m)
+      Some(((w, [Event_syscall(id, eargs, Vint len)]), Vint len), m)
   | _ ->
       None
 

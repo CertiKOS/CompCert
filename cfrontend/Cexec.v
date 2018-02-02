@@ -94,15 +94,15 @@ Variable ge: genv.
 
 Definition eventval_of_val (v: val) (t: typ) : option eventval :=
   match v with
-  | Vint i => check (typ_eq t AST.Tint); Some (EVint i)
-  | Vfloat f => check (typ_eq t AST.Tfloat); Some (EVfloat f)
-  | Vsingle f => check (typ_eq t AST.Tsingle); Some (EVsingle f)
-  | Vlong n => check (typ_eq t AST.Tlong); Some (EVlong n)
+  | Vint i => check (typ_eq t AST.Tint); Some (Vint i)
+  | Vfloat f => check (typ_eq t AST.Tfloat); Some (Vfloat f)
+  | Vsingle f => check (typ_eq t AST.Tsingle); Some (Vsingle f)
+  | Vlong n => check (typ_eq t AST.Tlong); Some (Vlong n)
   | Vptr b ofs =>
       do id <- Genv.invert_symbol ge b;
       check (Genv.public_symbol ge id);
       check (typ_eq t AST.Tptr);
-      Some (EVptr_global id ofs)
+      Some (Vptr b ofs)
   | _ => None
   end.
 
@@ -118,15 +118,16 @@ Fixpoint list_eventval_of_val (vl: list val) (tl: list typ) : option (list event
 
 Definition val_of_eventval (ev: eventval) (t: typ) : option val :=
   match ev with
-  | EVint i => check (typ_eq t AST.Tint); Some (Vint i)
-  | EVfloat f => check (typ_eq t AST.Tfloat); Some (Vfloat f)
-  | EVsingle f => check (typ_eq t AST.Tsingle); Some (Vsingle f)
-  | EVlong n => check (typ_eq t AST.Tlong); Some (Vlong n)
-  | EVptr_global id ofs =>
+  | Vint i => check (typ_eq t AST.Tint); Some (Vint i)
+  | Vfloat f => check (typ_eq t AST.Tfloat); Some (Vfloat f)
+  | Vsingle f => check (typ_eq t AST.Tsingle); Some (Vsingle f)
+  | Vlong n => check (typ_eq t AST.Tlong); Some (Vlong n)
+  | Vptr blk ofs =>
+      do id <- Block.ident_of blk;
       check (Genv.public_symbol ge id);
       check (typ_eq t AST.Tptr);
-      do b <- Genv.find_symbol ge id;
-      Some (Vptr b ofs)
+      Some (Vptr blk ofs)
+  | Vundef => None
   end.
 
 Ltac mydestr :=
@@ -142,8 +143,8 @@ Ltac mydestr :=
 Lemma eventval_of_val_sound:
   forall v t ev, eventval_of_val v t = Some ev -> eventval_match ge ev t v.
 Proof.
-  intros until ev. destruct v; simpl; mydestr; constructor.
-  auto. apply Genv.invert_find_symbol; auto.
+  intros until ev. destruct v; simpl; mydestr; econstructor.
+  eauto. apply Genv.invert_find_symbol; auto.
 Qed.
 
 Lemma eventval_of_val_complete:
@@ -178,7 +179,12 @@ Qed.
 Lemma val_of_eventval_sound:
   forall ev t v, val_of_eventval ev t = Some v -> eventval_match ge ev t v.
 Proof.
-  intros until v. destruct ev; simpl; mydestr; constructor; auto.
+  intros until v. destruct ev; simpl; mydestr; econstructor; eauto.
+  edestruct (Genv.public_symbol_exists) as (b' & FS); eauto.
+  unfold Genv.find_symbol in FS |- *.
+  simpl; unfold Genv.find_symbol.
+  destruct (Genv.genv_defs ge) ! i0; inv FS.
+  apply Block.ident_of_inv in Heqo; subst. auto.
 Qed.
 
 Lemma val_of_eventval_complete:
@@ -189,7 +195,9 @@ Proof.
 - auto.
 - auto.
 - auto.
-- simpl in *. rewrite H, H0. rewrite dec_eq_true. auto.  
+- exploit Senv.find_symbol_def; eauto. intro; subst. simpl in *.
+  rewrite Block.ident_of_glob.
+  rewrite H. rewrite dec_eq_true. auto.
 Qed.
 
 (** Volatile memory accesses. *)
