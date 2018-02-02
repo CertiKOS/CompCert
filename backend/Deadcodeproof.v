@@ -698,8 +698,11 @@ Proof.
   intros. inv H. split; auto.
   inv H0. inv H9.
 - (* volatile *)
-  exists tm; split; auto. econstructor. econstructor; eauto.
-  eapply eventval_match_lessdef; eauto. apply store_argument_load_result; auto.
+  exists tm; split; auto. econstructor.
+  exploit store_argument_load_result. eauto. intro LD.
+  erewrite (eventval_match_lessdef_eq H3); eauto.
+  econstructor; eauto.
+  exploit eventval_match_lessdef; eauto.
 - (* not volatile *)
   exploit magree_store_parallel. eauto. eauto. eauto.
   instantiate (1 := nlive ge sp nm). auto.
@@ -1003,7 +1006,7 @@ Ltac UseTransfer :=
   eapply exec_Ibuiltin; eauto.
   apply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved.
   eapply external_call_symbols_preserved. apply senv_preserved.
-  constructor. eapply eventval_list_match_lessdef; eauto 2 with na.
+  erewrite <- (eventval_list_match_lessdef_eq H2 B); eauto. constructor. auto.
   eapply match_succ_states; eauto. simpl; auto.
   apply eagree_set_res; auto.
 + (* annot val *)
@@ -1015,8 +1018,7 @@ Ltac UseTransfer :=
   eapply exec_Ibuiltin; eauto.
   apply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved.
   eapply external_call_symbols_preserved. apply senv_preserved.
-  constructor.
-  eapply eventval_match_lessdef; eauto 2 with na.
+  erewrite <- (eventval_match_lessdef_eq H2 H4); eauto. constructor. auto.
   eapply match_succ_states; eauto. simpl; auto.
   apply eagree_set_res; auto.
 + (* debug *)

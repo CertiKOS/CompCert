@@ -1310,12 +1310,11 @@ Proof.
 (* mem extends *)
 - inv H. inv H1. inv H6.
   exists v2; exists m1'; intuition.
-  econstructor; eauto.
-  eapply eventval_match_lessdef; eauto.
+  erewrite <- (eventval_match_lessdef_eq H2 H4); eauto. econstructor; eauto.
 (* mem inject *)
 - inv H0. inv H2. inv H7.
   exists f; exists v'; exists m1'; intuition.
-  econstructor; eauto.
+  erewrite (eventval_match_inject_eq H H3 H5); eauto. econstructor; eauto.
   eapply eventval_match_inject; eauto.
   red; intros; congruence.
 (* trace length *)
@@ -1325,7 +1324,6 @@ Proof.
   exists vres1; exists m1; auto.
 (* determ *)
 - inv H; inv H0.
-  assert (arg = arg0). eapply eventval_match_determ_2; eauto. subst arg0.
   split. constructor. auto.
 Qed.
 
