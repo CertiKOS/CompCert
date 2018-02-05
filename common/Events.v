@@ -463,6 +463,28 @@ Qed.
 
 End EVENTVAL_INJECT.
 
+Lemma eventval_match_lessdef_eq:
+  forall ge t v1 v2,
+    eventval_match ge t v1 ->
+    Val.lessdef v1 v2 ->
+    v1 = v2.
+Proof.
+  intros. inv H0; auto. destruct H; easy.
+Qed.
+
+Lemma eventval_list_match_lessdef_eq:
+  forall ge t v1,
+    eventval_list_match ge t v1 ->
+    forall v2,
+    Val.lessdef_list v1 v2 ->
+    v1 = v2.
+Proof.
+  induction 1; simpl; intros; eauto. inv H; auto. inv H1.
+  f_equal. eapply eventval_match_lessdef_eq; eauto.
+  eapply IHlist_forall2; eauto.
+Qed.
+
+
 (** * Matching traces. *)
 
 Section MATCH_TRACES.
@@ -1225,27 +1247,6 @@ Inductive extcall_annot_sem (text: string) (targs: list typ) (ge: Senv.t):
   | extcall_annot_sem_intro: forall vargs m,
       eventval_list_match ge targs vargs ->
       extcall_annot_sem text targs ge vargs m (Event_annot text vargs :: E0) Vundef m.
-
-Lemma eventval_match_lessdef_eq:
-  forall ge t v1 v2,
-    eventval_match ge t v1 ->
-    Val.lessdef v1 v2 ->
-    v1 = v2.
-Proof.
-  intros. inv H0; auto. destruct H; easy.
-Qed.
-
-Lemma eventval_list_match_lessdef_eq:
-  forall ge t v1,
-    eventval_list_match ge t v1 ->
-    forall v2,
-    Val.lessdef_list v1 v2 ->
-    v1 = v2.
-Proof.
-  induction 1; simpl; intros; eauto. inv H; auto. inv H1.
-  f_equal. eapply eventval_match_lessdef_eq; eauto.
-  eapply IHlist_forall2; eauto.
-Qed.
 
 Lemma extcall_annot_ok:
   forall text targs,
