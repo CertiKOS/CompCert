@@ -92,46 +92,32 @@ Section EXEC.
 
 Variable ge: genv.
 
-Definition eventval_of_val (v: val) (t: typ) : option eventval :=
+Definition is_valid_eventval (v: val) (t: typ) : bool :=
   match v with
-  | Vint i => check (typ_eq t AST.Tint); Some (Vint i)
-  | Vfloat f => check (typ_eq t AST.Tfloat); Some (Vfloat f)
-  | Vsingle f => check (typ_eq t AST.Tsingle); Some (Vsingle f)
-  | Vlong n => check (typ_eq t AST.Tlong); Some (Vlong n)
+  | Vint i => proj_sumbool (typ_eq t AST.Tint)
+  | Vfloat f => proj_sumbool (typ_eq t AST.Tfloat)
+  | Vsingle f => proj_sumbool (typ_eq t AST.Tsingle)
+  | Vlong n => proj_sumbool (typ_eq t AST.Tlong)
   | Vptr b ofs =>
-      do id <- Genv.invert_symbol ge b;
-      check (Genv.public_symbol ge id);
-      check (typ_eq t AST.Tptr);
-      Some (Vptr b ofs)
-  | _ => None
+    match Genv.invert_symbol ge b with
+      Some id => Genv.public_symbol ge id && proj_sumbool (typ_eq t AST.Tptr)
+    | None => false
+    end
+  | _ => false
   end.
 
-Fixpoint list_eventval_of_val (vl: list val) (tl: list typ) : option (list eventval) :=
+Fixpoint is_valid_eventval_list (vl: list val) (tl: list typ) : bool :=
   match vl, tl with
-  | nil, nil => Some nil
+  | nil, nil => true
   | v1::vl, t1::tl =>
-      do ev1 <- eventval_of_val v1 t1;
-      do evl <- list_eventval_of_val vl tl;
-      Some (ev1 :: evl)
-  | _, _ => None
-  end.
-
-Definition val_of_eventval (ev: eventval) (t: typ) : option val :=
-  match ev with
-  | Vint i => check (typ_eq t AST.Tint); Some (Vint i)
-  | Vfloat f => check (typ_eq t AST.Tfloat); Some (Vfloat f)
-  | Vsingle f => check (typ_eq t AST.Tsingle); Some (Vsingle f)
-  | Vlong n => check (typ_eq t AST.Tlong); Some (Vlong n)
-  | Vptr blk ofs =>
-      do id <- Block.ident_of blk;
-      check (Genv.public_symbol ge id);
-      check (typ_eq t AST.Tptr);
-      Some (Vptr blk ofs)
-  | Vundef => None
+    is_valid_eventval v1 t1 && is_valid_eventval_list vl tl
+  | _, _ => false
   end.
 
 Ltac mydestr :=
   match goal with
+  | H: false = true |- _ => inversion H
+  | H : proj_sumbool (typ_eq ?a ?b) = _ |- _ => destruct (typ_eq a b); try discriminate; subst; auto
   | [ |- None = Some _ -> _ ] => let X := fresh "X" in intro X; discriminate
   | [ |- Some _ = Some _ -> _ ] => let X := fresh "X" in intro X; inv X
   | [ |- match ?x with Some _ => _ | None => _ end = Some _ -> _ ] => destruct x eqn:?; mydestr
@@ -140,97 +126,43 @@ Ltac mydestr :=
   | _ => idtac
   end.
 
-Lemma eventval_of_val_sound:
-  forall v t ev, eventval_of_val v t = Some ev -> eventval_match ge t ev.
+Lemma is_valid_eventval_sound:
+  forall v t, is_valid_eventval v t = true -> eventval_match ge t v.
 Proof.
-  intros until ev. destruct v; simpl; mydestr; econstructor; simpl; auto.
+  intros v t.
+  destruct v; simpl; intros; mydestr; try solve [econstructor; simpl; auto].
+  destruct (Genv.invert_symbol ge b) eqn:IS; try discriminate.
+  apply andb_true_iff in H. destruct H.
+  constructor; simpl; auto.
   exists i0; split; eauto. apply Genv.invert_find_symbol; auto.
+  destruct typ_eq; try discriminate; auto.
 Qed.
 
-Lemma eventval_of_val_complete:
-  forall t v, eventval_match ge t v -> eventval_of_val v t = Some v.
+Lemma is_valid_eventval_complete:
+  forall t v, eventval_match ge t v -> is_valid_eventval v t = true.
 Proof.
   destruct 1; simpl; subst.
   destruct v; simpl in *; try easy.
   destruct H as (id & FS & PS).
   rewrite (Genv.find_invert_symbol _ _ FS). rewrite PS.
-  rewrite dec_eq_true. auto. 
+  simpl. destruct typ_eq; try discriminate; auto.
 Qed.
 
-Lemma list_eventval_of_val_sound:
-  forall vl tl evl, list_eventval_of_val vl tl = Some evl -> eventval_list_match ge tl evl.
+Lemma is_valid_eventval_list_sound:
+  forall vl tl, is_valid_eventval_list vl tl = true -> eventval_list_match ge tl vl.
 Proof with try discriminate.
   induction vl; destruct tl; simpl; intros; inv H.
   constructor.
-  destruct (eventval_of_val a t) as [ev1|] eqn:?...
-  destruct (list_eventval_of_val vl tl) as [evl'|] eqn:?...
-  inv H1. constructor. eapply eventval_of_val_sound; eauto.
+  apply andb_true_iff in H1; destruct H1.
+  constructor. eapply is_valid_eventval_sound; eauto.
   eapply IHvl; eauto.
 Qed.
 
-Lemma list_eventval_of_val_complete:
-  forall tl vl, eventval_list_match ge tl vl -> list_eventval_of_val vl tl = Some vl.
+Lemma is_valid_eventval_list_complete:
+  forall tl vl, eventval_list_match ge tl vl -> is_valid_eventval_list vl tl = true.
 Proof.
   induction 1; simpl. auto.
-  rewrite (eventval_of_val_complete _ _ H). rewrite IHlist_forall2. auto.
-Qed.
-
-Lemma val_of_eventval_sound:
-  forall ev t v, val_of_eventval ev t = Some v -> eventval_match ge t v.
-Proof.
-  intros until v. destruct ev; simpl; mydestr; econstructor; simpl; eauto.
-  edestruct (Genv.public_symbol_exists) as (b' & FS); eauto.
-  exists i0.
-  unfold Genv.find_symbol in FS |- *.
-  simpl; unfold Genv.find_symbol.
-  destruct (Genv.genv_defs ge) ! i0; inv FS.
-  apply Block.ident_of_inv in Heqo; subst. auto.
-Qed.
-
-Lemma val_of_eventval_complete:
-  forall t v, eventval_match ge t v -> val_of_eventval v t = Some v.
-Proof.
-  destruct 1; simpl. subst; destruct v; try easy.
-  destruct H as (id & FS & PS).
-  exploit Senv.find_symbol_def; eauto. intro; subst. simpl in *.
-  rewrite Block.ident_of_glob.
-  rewrite PS. rewrite dec_eq_true. auto.
-Qed.
-
-Lemma val_of_eventval_corefl:
-  forall v t ev,
-    val_of_eventval v t = Some ev -> v = ev.
-Proof.
-  intros.
-  unfold val_of_eventval in H.
-  destruct v; simpl in *; try solve [destruct (typ_eq); inv H; auto].
-  inv H.
-  destruct (Block.ident_of b); try discriminate.
-  destruct (Genv.public_symbol); try discriminate.
-  destruct typ_eq; try discriminate. congruence.
-Qed.
-
-Lemma eventval_of_val_corefl:
-  forall v t ev,
-    eventval_of_val v t = Some ev -> v = ev.
-Proof.
-  intros.
-  unfold eventval_of_val in H.
-  destruct v; simpl in *; try solve [destruct (typ_eq); inv H; auto].
-  inv H.
-  destruct (Genv.invert_symbol ge b); try discriminate.
-  destruct (Genv.public_symbol); try discriminate.
-  destruct typ_eq; try discriminate. congruence.
-Qed.
-
-Lemma list_eventval_of_val_corefl:
-  forall v t ev,
-    list_eventval_of_val v t = Some ev -> v = ev.
-Proof.
-  induction v; simpl; intros; eauto.
-  destruct t; inv H; auto.
-  destruct t; inv H. revert H1. mydestr.
-  eapply eventval_of_val_corefl in Heqo. f_equal; eauto.
+  rewrite (is_valid_eventval_complete _ _ H). rewrite IHlist_forall2. auto.
 Qed.
 
 (** Volatile memory accesses. *)
@@ -242,8 +174,8 @@ Definition do_volatile_load (w: world) (chunk: memory_chunk) (m: mem) (b: block)
     match nextworld_vload w chunk id ofs with
     | None => None
     | Some(res, w') =>
-        do vres <- val_of_eventval res (type_of_chunk chunk);
-        Some(w', Event_vload chunk id ofs res :: nil, Val.load_result chunk vres)
+      check (is_valid_eventval res (type_of_chunk chunk));
+        Some(w', Event_vload chunk id ofs res :: nil, Val.load_result chunk res)
     end
   else
     do v <- Mem.load chunk m b (Ptrofs.unsigned ofs);
@@ -253,9 +185,9 @@ Definition do_volatile_store (w: world) (chunk: memory_chunk) (m: mem) (b: block
                              : option (world * trace * mem) :=
   if Genv.block_is_volatile ge b then
     do id <- Genv.invert_symbol ge b;
-    do ev <- eventval_of_val (Val.load_result chunk v) (type_of_chunk chunk);
-    do w' <- nextworld_vstore w chunk id ofs ev;
-    Some(w', Event_vstore chunk id ofs ev :: nil, m)
+      check (is_valid_eventval (Val.load_result chunk v) (type_of_chunk chunk));
+    do w' <- nextworld_vstore w chunk id ofs (Val.load_result chunk v);
+    Some(w', Event_vstore chunk id ofs (Val.load_result chunk v) :: nil, m)
   else
     do m' <- Mem.store chunk m b (Ptrofs.unsigned ofs) v;
     Some(w, E0, m').
@@ -267,9 +199,8 @@ Lemma do_volatile_load_sound:
 Proof.
   intros until v. unfold do_volatile_load. mydestr.
   destruct p as [ev w'']. mydestr.
-  exploit val_of_eventval_corefl; eauto. intro; subst.
   split. constructor; auto. apply Genv.invert_find_symbol; auto.
-  eapply val_of_eventval_sound; eauto.
+  eapply is_valid_eventval_sound; eauto.
   econstructor. constructor; eauto. constructor.
   split. constructor; auto. constructor.
 Qed.
@@ -281,7 +212,7 @@ Lemma do_volatile_load_complete:
 Proof.
   unfold do_volatile_load; intros. inv H; simpl in *.
   rewrite H1. rewrite (Genv.find_invert_symbol _ _ H2). inv H0. inv H8. inv H6. rewrite H9.
-  rewrite (val_of_eventval_complete _ _ H3). auto.
+  rewrite (is_valid_eventval_complete _ _ H3). auto.
   rewrite H1. rewrite H2. inv H0. auto.
 Qed.
 
@@ -291,9 +222,8 @@ Lemma do_volatile_store_sound:
   volatile_store ge chunk m b ofs v t m' /\ possible_trace w t w'.
 Proof.
   intros until m'. unfold do_volatile_store. mydestr.
-  exploit eventval_of_val_corefl; eauto. intro; subst.
   split. constructor; auto. apply Genv.invert_find_symbol; auto.
-  eapply eventval_of_val_sound; eauto.
+  eapply is_valid_eventval_sound; eauto.
   econstructor. constructor; eauto. constructor.
   split. constructor; auto. constructor.
 Qed.
@@ -305,7 +235,7 @@ Lemma do_volatile_store_complete:
 Proof.
   unfold do_volatile_store; intros. inv H; simpl in *.
   rewrite H1. rewrite (Genv.find_invert_symbol _ _ H2).
-  rewrite (eventval_of_val_complete _ _ H3).
+  rewrite (is_valid_eventval_complete _ _ H3).
   inv H0. inv H8. inv H6. rewrite H9. auto.
   rewrite H1. rewrite H2. inv H0. auto.
 Qed.
@@ -529,15 +459,15 @@ Definition do_ef_memcpy (sz al: Z)
 
 Definition do_ef_annot (text: string) (targs: list typ)
        (w: world) (vargs: list val) (m: mem) : option (world * trace * val * mem) :=
-  do args <- list_eventval_of_val vargs targs;
-  Some(w, Event_annot text args :: E0, Vundef, m).
+  check (is_valid_eventval_list vargs targs);
+  Some(w, Event_annot text vargs :: E0, Vundef, m).
 
 Definition do_ef_annot_val (text: string) (targ: typ)
        (w: world) (vargs: list val) (m: mem) : option (world * trace * val * mem) :=
   match vargs with
   | varg :: nil =>
-      do arg <- eventval_of_val varg targ;
-      Some(w, Event_annot text (arg :: nil) :: E0, varg, m)
+    check (is_valid_eventval varg targ);
+      Some(w, Event_annot text (varg :: nil) :: E0, varg, m)
   | _ => None
   end.
 
@@ -602,13 +532,11 @@ Proof with try congruence.
   split. econstructor; eauto; tauto. constructor.
 (* EF_annot *)
   unfold do_ef_annot. mydestr.
-  exploit list_eventval_of_val_corefl; eauto. intro; subst.
-  split. constructor. eapply list_eventval_of_val_sound; eauto.
+  split. constructor. eapply is_valid_eventval_list_sound; eauto.
   econstructor. constructor; eauto. constructor.
 (* EF_annot_val *)
   unfold do_ef_annot_val. destruct vargs... destruct vargs... mydestr.
-  exploit eventval_of_val_corefl; eauto; intro; subst.
-  split. constructor. eapply eventval_of_val_sound; eauto.
+  split. constructor. eapply is_valid_eventval_sound; eauto.
   econstructor. constructor; eauto. constructor.
 (* EF_inline_asm *)
   eapply do_inline_assembly_sound; eauto.
@@ -650,10 +578,10 @@ Proof.
   red. tauto.
 (* EF_annot *)
   inv H; unfold do_ef_annot. inv H0. inv H6. inv H4.
-  rewrite (list_eventval_of_val_complete _ _ H1). auto.
+  rewrite (is_valid_eventval_list_complete _ _ H1). auto.
 (* EF_annot_val *)
   inv H; unfold do_ef_annot_val. inv H0. inv H6. inv H4.
-  rewrite (eventval_of_val_complete _ _ H1). auto.
+  rewrite (is_valid_eventval_complete _ _ H1). auto.
 (* EF_inline_asm *)
   eapply do_inline_assembly_complete; eauto.
 (* EF_debug *)

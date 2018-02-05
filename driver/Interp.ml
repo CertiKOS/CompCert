@@ -416,14 +416,15 @@ and world_io ge m id args =
 and world_vload ge m chunk id ofs =
   Genv.find_symbol ge.genv_genv id >>= fun b ->
   Mem.load chunk m b ofs >>= fun v ->
-  Cexec.eventval_of_val ge v (type_of_chunk chunk) >>= fun ev ->
-  Some(ev, world ge m)
+  if Cexec.is_valid_eventval ge v (type_of_chunk chunk)
+  then Some(v, world ge m) else None
 
 and world_vstore ge m chunk id ofs ev =
   Genv.find_symbol ge.genv_genv id >>= fun b ->
-  Cexec.val_of_eventval ge ev (type_of_chunk chunk) >>= fun v ->
-  Mem.store chunk m b ofs v >>= fun m' ->
-  Some(world ge m')
+  if Cexec.is_valid_eventval ge ev (type_of_chunk chunk)
+  then Mem.store chunk m b ofs ev >>= fun m' ->
+       Some(world ge m')
+  else None
 
 let do_event p ge time w ev =
   if !trace >= 1 then
