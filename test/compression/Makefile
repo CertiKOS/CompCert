@@ -1,7 +1,7 @@
 include ../../Makefile.config
 
 CC=../../ccomp 
-CFLAGS=-U__GNUC__ -stdlib ../../runtime -dclight -dasm
+CFLAGS=$(CCOMPOPTS) -U__GNUC__ -stdlib ../../runtime -dclight -dasm
 LIBS=
 TIME=xtime -o /dev/null -mintime 1.0
 
@@ -27,13 +27,13 @@ lzss: $(LZSS_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(LZSS_OBJS) $(LIBS)
 
 TESTFILE:=$(firstword $(wildcard /usr/share/dict/words) ./lzss)
-TESTCOMPR=/tmp/testcompr.out
-TESTEXPND=/tmp/testexpnd.out
+TESTCOMPR=/tmp/testcompr.$$$$
+TESTEXPND=/tmp/testexpnd.$$$$
 
 test:
-	@rm -f $(TESTCOMPR) $(TESTEXPND)
-	@echo "Test data: $(TESTFILE)"
-	@for i in $(EXE); do \
+	@rm -f $(TESTCOMPR) $(TESTEXPND); \
+	echo "Test data: $(TESTFILE)"; \
+	for i in $(EXE); do \
           echo "$$i: compression..."; \
           $(SIMU) ./$$i -c -i $(TESTFILE) -o $(TESTCOMPR); \
           echo "$$i: decompression..."; \
@@ -42,8 +42,8 @@ test:
           then echo "$$i: passed"; \
           else echo "$$i: FAILED"; exit 2; \
           fi; \
-        done
-	@rm -f $(TESTCOMPR) $(TESTEXPND)
+        done; \
+	rm -f $(TESTCOMPR) $(TESTEXPND)
 
 bench:
 	@rm -f $(TESTCOMPR)

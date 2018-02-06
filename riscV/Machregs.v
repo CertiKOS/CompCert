@@ -151,7 +151,7 @@ Definition register_names :=
   ("F16", F16) :: ("F17", F17) :: ("F18", F18) :: ("F19", F19) ::
   ("F20", F20) :: ("F21", F21) :: ("F22", F22) :: ("F23", F23) ::
   ("F24", F24) :: ("F25", F25) :: ("F26", F26) :: ("F27", F27) ::
-  ("F27", F27) :: ("F28", F28) :: ("F29", F29) :: ("F30", F30) ::
+  ("F28", F28) :: ("F29", F29) :: ("F30", F30) :: ("F31", F31) ::
   nil.
 
 Definition register_by_name (s: string) : option mreg :=
@@ -247,7 +247,7 @@ Definition builtin_constraints (ef: external_function) :
   | EF_vload _ => OK_addressing :: nil
   | EF_vstore _ => OK_addressing :: OK_default :: nil
   | EF_memcpy _ _ => OK_addrstack :: OK_addrstack :: nil
-  | EF_annot txt targs => map (fun _ => OK_all) targs
+  | EF_annot kind txt targs => map (fun _ => OK_all) targs
   | EF_debug kind txt targs => map (fun _ => OK_all) targs
   | _ => nil
   end.

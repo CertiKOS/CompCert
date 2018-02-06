@@ -62,17 +62,29 @@ let compile_c_ast sourcename csyntax ofile =
 let compile_c_file sourcename ifile ofile =
   compile_c_ast sourcename (parse_c_file sourcename ifile) ofile
 
+let output_filename sourcename suff =
+  let prefixname = Filename.chop_suffix sourcename suff in
+  output_filename_default (prefixname ^ ".v")
+
 (* Processing of a .c file *)
 
 let process_c_file sourcename =
-  let prefixname = Filename.chop_suffix sourcename ".c" in
+  ensure_inputfile_exists sourcename;
+  let ofile = output_filename sourcename ".c" in
   if !option_E then begin
     preprocess sourcename "-"
   end else begin
-    let preproname = Filename.temp_file "compcert" ".i" in
+    let preproname = Driveraux.tmp_file ".i" in
     preprocess sourcename preproname;
-    compile_c_file sourcename preproname (prefixname ^ ".v")
+    compile_c_file sourcename preproname ofile
   end
+
+(* Processing of a .i file *)
+
+let process_i_file sourcename =
+  ensure_inputfile_exists sourcename;
+  let ofile = output_filename sourcename ".i" in
+  compile_c_file sourcename sourcename ofile
 
 let version_string =
   if Version.buildnr <> "" && Version.tag <> "" then
@@ -82,29 +94,32 @@ let version_string =
 
 let usage_string =
   version_string ^
-"Usage: clightgen [options] <source files>\n\
-Recognized source files:\n\
-\  .c             C source file\n\
-Processing options:\n\
-\  -normalize     Normalize the generated Clight code w.r.t. loads in expressions\n\
-\  -E             Preprocess only, send result to standard output\n"^
+{|Usage: clightgen [options] <source files>
+Recognized source files:
+  .c             C source file
+Processing options:
+  -normalize     Normalize the generated Clight code w.r.t. loads in expressions
+  -E             Preprocess only, send result to standard output
+  -o <file>      Generate output in <file>
+|} ^
 prepro_help ^
-"Language support options (use -fno-<opt> to turn off -f<opt>) :\n\
-\  -fbitfields    Emulate bit fields in structs [off]\n\
-\  -flongdouble   Treat 'long double' as 'double' [off]\n\
-\  -fstruct-passing  Support passing structs and unions by value as function\n\
-\                    results or function arguments [off]\n\
-\  -fstruct-return   Like -fstruct-passing (deprecated)\n\
-\  -fvararg-calls Emulate calls to variable-argument functions [on]\n\
-\  -fpacked-structs  Emulate packed structs [off]\n\
-\  -fall          Activate all language support options above\n\
-\  -fnone         Turn off all language support options above\n\
-Tracing options:\n\
-\  -dparse        Save C file after parsing and elaboration in <file>.parsed.c\n\
-\  -dc            Save generated Compcert C in <file>.compcert.c\n\
-\  -dclight       Save generated Clight in <file>.light.c\n\
-General options:\n\
-\  -v             Print external commands before invoking them\n"
+{|Language support options (use -fno-<opt> to turn off -f<opt>) :
+  -fbitfields    Emulate bit fields in structs [off]
+  -flongdouble   Treat 'long double' as 'double' [off]
+  -fstruct-passing  Support passing structs and unions by value as function
+                    results or function arguments [off]
+  -fstruct-return   Like -fstruct-passing (deprecated)
+  -fvararg-calls Emulate calls to variable-argument functions [on]
+  -fpacked-structs  Emulate packed structs [off]
+  -fall          Activate all language support options above
+  -fnone         Turn off all language support options above
+Tracing options:
+  -dparse        Save C file after parsing and elaboration in <file>.parsed.c
+  -dc            Save generated Compcert C in <file>.compcert.c
+  -dclight       Save generated Clight in <file>.light.c
+General options:
+  -v             Print external commands before invoking them
+|}
 
 let print_usage_and_exit () =
   printf "%s" usage_string; exit 0
@@ -121,6 +136,18 @@ let language_support_options = [
 let set_all opts () = List.iter (fun r -> r := true) opts
 let unset_all opts () = List.iter (fun r -> r := false) opts
 
+let actions : ((string -> unit) * string) list ref = ref []
+let push_action fn arg =
+  actions := (fn, arg) :: !actions
+
+let perform_actions () =
+  let rec perform = function
+    | [] -> ()
+    | (fn,arg) :: rem -> fn arg; perform rem
+  in perform (List.rev !actions)
+
+let num_input_files = ref 0
+
 let cmdline_actions =
   let f_opt name ref =
     [Exact("-f" ^ name), Set ref; Exact("-fno-" ^ name), Unset ref] in
@@ -133,7 +160,10 @@ let cmdline_actions =
   Exact "--version", Unit print_version_and_exit;
 (* Processing options *)
   Exact "-E", Set option_E;
-  Exact "-normalize", Set option_normalize]
+  Exact "-normalize", Set option_normalize;
+  Exact "-o", String(fun s -> option_o := Some s);
+  Prefix "-o", Self (fun s -> let s = String.sub s 2 ((String.length s) - 2) in
+                              option_o := Some s);]
 (* Preprocessing options *)
   @ prepro_actions @
 (* Language support options -- more below *)
@@ -162,7 +192,12 @@ let cmdline_actions =
   Prefix "-", Self (fun s ->
       eprintf "Unknown option `%s'\n" s; exit 2);
 (* File arguments *)
-  Suffix ".c", Self (fun s -> process_c_file s);
+  Suffix ".c", Self (fun s ->
+      incr num_input_files; push_action process_c_file s);
+  Suffix ".i", Self (fun s ->
+      incr num_input_files; push_action process_i_file s);
+  Suffix ".p", Self (fun s ->
+      incr num_input_files; push_action process_i_file s);
   ]
 
 let _ =
@@ -171,20 +206,14 @@ let _ =
               Gc.major_heap_increment = 4194304 (* 4M *)
          };
   Printexc.record_backtrace true;
-  Machine.config :=
-    begin match Configuration.arch with
-    | "powerpc" -> Machine.ppc_32_bigendian
-    | "arm"     -> if Configuration.is_big_endian
-                   then Machine.arm_bigendian
-                   else Machine.arm_littleendian
-    | "x86"     -> if Configuration.model = "64" then
-                     Machine.x86_64
-                   else
-                     if Configuration.abi = "macosx"
-                     then Machine.x86_32_macosx
-                     else Machine.x86_32
-    | _         -> assert false
-    end;
-  Builtins.set C2C.builtins;
-  CPragmas.initialize();
-  parse_cmdline cmdline_actions
+  Frontend.init ();
+  parse_cmdline cmdline_actions;
+  if !option_o <> None && !num_input_files >= 2 then begin
+    eprintf "Ambiguous '-o' option (multiple source files)\n";
+    exit 2
+  end;
+  if !num_input_files = 0 then begin
+    eprintf "clightgen: error: no input file\n";
+    exit 2
+  end;
+  perform_actions ()

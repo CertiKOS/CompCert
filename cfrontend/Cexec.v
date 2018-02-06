@@ -12,6 +12,7 @@
 
 (** Animating the CompCert C semantics *)
 
+Require Import FunInd.
 Require Import Axioms Classical.
 Require Import String Coqlib Decidableplus.
 Require Import Errors Maps Integers Floats.
@@ -518,8 +519,8 @@ Definition do_external (ef: external_function):
   | EF_malloc => do_ef_malloc
   | EF_free => do_ef_free
   | EF_memcpy sz al => do_ef_memcpy sz al
-  | EF_annot text targs => do_ef_annot text targs
-  | EF_annot_val text targ => do_ef_annot_val text targ
+  | EF_annot kind text targs => do_ef_annot text targs
+  | EF_annot_val kind text targ => do_ef_annot_val text targ
   | EF_inline_asm text sg clob => do_inline_assembly text sg ge
   | EF_debug kind text targs => do_ef_debug kind text targs
   end.
@@ -1775,7 +1776,7 @@ Lemma not_stuckred_imm_safe:
 Proof.
   intros. generalize (step_expr_sound a k m). intros [A B].
   destruct (step_expr k a m) as [|[C rd] res] eqn:?.
-  specialize (B (refl_equal _)). destruct k.
+  specialize (B (eq_refl _)). destruct k.
   destruct a; simpl in B; try congruence. constructor.
   destruct a; simpl in B; try congruence. constructor.
   assert (NOTSTUCK: rd <> Stuckred).

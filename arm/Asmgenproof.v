@@ -170,7 +170,7 @@ Proof.
   set (l2 := length (decompose_int (Int.not n))).
   destruct (Nat.leb l1 1%nat). TailNoLabel.
   destruct (Nat.leb l2 1%nat). TailNoLabel.
-  destruct (thumb tt). unfold loadimm_thumb.
+  destruct Archi.thumb2_support. unfold loadimm_word.
   destruct (Int.eq (Int.shru n (Int.repr 16)) Int.zero); TailNoLabel.
   destruct (Nat.leb l1 l2); auto with labels.
 Qed.
@@ -255,7 +255,9 @@ Remark transl_cond_label:
 Proof.
   unfold transl_cond; intros; destruct cond; TailNoLabel.
   destruct (is_immed_arith i). TailNoLabel. eapply tail_nolabel_trans; TailNoLabel.
+  destruct (is_immed_arith (Int.neg i)). TailNoLabel. eapply tail_nolabel_trans; TailNoLabel.
   destruct (is_immed_arith i). TailNoLabel. eapply tail_nolabel_trans; TailNoLabel.
+  destruct (is_immed_arith (Int.neg i)). TailNoLabel. eapply tail_nolabel_trans; TailNoLabel.
 Qed.
 
 Remark transl_op_label:
@@ -264,8 +266,8 @@ Proof.
 Opaque Int.eq.
   unfold transl_op; intros; destruct op; TailNoLabel.
   destruct (preg_of r); try discriminate; destruct (preg_of m); inv H; TailNoLabel.
-  destruct (thumb tt); TailNoLabel.
-  destruct (thumb tt); TailNoLabel.
+  destruct Archi.thumb2_support; TailNoLabel.
+  destruct Archi.thumb2_support; TailNoLabel.
   eapply tail_nolabel_trans; TailNoLabel.
   eapply tail_nolabel_trans. eapply transl_cond_label; eauto. TailNoLabel.
 Qed.
@@ -870,7 +872,7 @@ Opaque loadind.
                  save_lr ra_ofs (Pcfi_rel_offset ra_ofs' :: x0)) in *.
   set (tf := {| fn_sig := Mach.fn_sig f; fn_code := tfbody |}) in *.
   unfold store_stack in *.
-  exploit Mem.alloc_extends. eauto. eauto. apply Zle_refl. apply Zle_refl.
+  exploit Mem.alloc_extends. eauto. eauto. apply Z.le_refl. apply Z.le_refl.
   intros [m1' [C D]].
   exploit Mem.storev_extends. eexact D. eexact H1. eauto. eauto.
   intros [m2' [F G]].

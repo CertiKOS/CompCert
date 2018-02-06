@@ -18,57 +18,37 @@ open Driveraux
 open Frontend
 open Assembler
 open Linker
-open Json
 
 (* Optional sdump suffix *)
 let sdump_suffix = ref ".json"
-let sdump_folder = ref ""
 
-(* Dump Asm code in asm format for the validator *)
+let nolink () =
+  !option_c || !option_S || !option_E || !option_interp
 
-let jdump_magic_number = "CompCertJDUMP" ^ Version.version
-
-let dump_jasm asm sourcename destfile =
-  let oc = open_out_bin destfile in
-  let pp = Format.formatter_of_out_channel oc in
-  let get_args () =
-    let buf = Buffer.create 100 in
-    Buffer.add_string buf Sys.executable_name;
-    for i = 1 to (Array.length  !argv - 1) do
-      Buffer.add_string buf " ";
-      Buffer.add_string buf (Responsefile.gnu_quote  !argv.(i));
-    done;
-    Buffer.contents buf in
-  let dump_compile_info pp () =
-    pp_jobject_start pp;
-    pp_jmember ~first:true pp "directory" pp_jstring (Sys.getcwd ());
-    pp_jmember pp "command" pp_jstring (get_args ());
-    pp_jmember pp "file" pp_jstring sourcename;
-    pp_jobject_end pp in
-  pp_jobject_start pp;
-  pp_jmember ~first:true pp "Version" pp_jstring jdump_magic_number;
-  pp_jmember pp "System" pp_jstring Configuration.system;
-  pp_jmember pp "Compile Info" dump_compile_info ();
-  pp_jmember pp "Compilation Unit" pp_jstring sourcename;
-  pp_jmember pp "Asm Ast" AsmToJSON.pp_program asm;
-  pp_jobject_end pp;
-  Format.pp_print_flush pp ();
-  close_out oc
-
+let object_filename sourcename suff =
+  if nolink () then
+    output_filename ~final: !option_c sourcename suff ".o"
+  else
+    tmp_file ".o"
 
 (* From CompCert C AST to asm *)
 
-let compile_c_ast sourcename csyntax ofile =
+let compile_c_file sourcename ifile ofile =
   (* Prepare to dump Clight, RTL, etc, if requested *)
   let set_dest dst opt ext =
     dst := if !opt then Some (output_filename sourcename ".c" ext)
-                   else None in
+      else None in
+  set_dest Cprint.destination option_dparse ".parsed.c";
+  set_dest PrintCsyntax.destination option_dcmedium ".compcert.c";
   set_dest PrintClight.destination option_dclight ".light.c";
   set_dest PrintCminor.destination option_dcminor ".cm";
   set_dest PrintRTL.destination option_drtl ".rtl";
   set_dest Regalloc.destination_alloctrace option_dalloctrace ".alloctrace";
   set_dest PrintLTL.destination option_dltl ".ltl";
   set_dest PrintMach.destination option_dmach ".mach";
+  set_dest AsmToJSON.destination option_sdump !sdump_suffix;
+  (* Parse the ast *)
+  let csyntax = parse_c_file sourcename ifile in
   (* Convert to Asm *)
   let asm =
     match Compiler.apply_partial
@@ -80,11 +60,7 @@ let compile_c_ast sourcename csyntax ofile =
         eprintf "%s: %a" sourcename print_error msg;
         exit 2 in
   (* Dump Asm in binary and JSON format *)
-  if !option_sdump then begin
-    let sf = output_filename sourcename ".c" !sdump_suffix in
-    let csf = Filename.concat !sdump_folder sf in
-    dump_jasm asm sourcename csf
-  end;
+  AsmToJSON.print_if asm sourcename;
   (* Print Asm in text form *)
   let oc = open_out ofile in
   PrintAsm.print_program oc asm;
@@ -92,10 +68,26 @@ let compile_c_ast sourcename csyntax ofile =
 
 (* From C source to asm *)
 
-let compile_c_file sourcename ifile ofile =
-  let ast = parse_c_file sourcename ifile in
-  compile_c_ast sourcename ast ofile
-
+let compile_i_file sourcename preproname =
+  if !option_interp then begin
+    Machine.config := Machine.compcert_interpreter !Machine.config;
+    let csyntax = parse_c_file sourcename preproname in
+    Interp.execute csyntax;
+        ""
+  end else if !option_S then begin
+    compile_c_file sourcename preproname
+      (output_filename ~final:true sourcename ".c" ".s");
+    ""
+  end else begin
+    let asmname =
+      if !option_dasm
+      then output_filename sourcename ".c" ".s"
+      else tmp_file ".s" in
+    compile_c_file sourcename preproname asmname;
+    let objname = object_filename sourcename ".c" in
+    assemble asmname objname;
+    objname
+  end
 
 (* Processing of a .c file *)
 
@@ -108,68 +100,22 @@ let process_c_file sourcename =
     let preproname = if !option_dprepro then
       output_filename sourcename ".c" ".i"
     else
-      Filename.temp_file "compcert" ".i" in
+      tmp_file ".i" in
     preprocess sourcename preproname;
-    let name =
-      if !option_interp then begin
-        Machine.config := Machine.compcert_interpreter !Machine.config;
-        let csyntax = parse_c_file sourcename preproname in
-        if not !option_dprepro then
-          safe_remove preproname;
-       Interp.execute csyntax;
-        ""
-      end else if !option_S then begin
-        compile_c_file sourcename preproname
-          (output_filename ~final:true sourcename ".c" ".s");
-        if not !option_dprepro then
-          safe_remove preproname;
-        ""
-      end else begin
-        let asmname =
-          if !option_dasm
-          then output_filename sourcename ".c" ".s"
-          else Filename.temp_file "compcert" ".s" in
-        compile_c_file sourcename preproname asmname;
-        if not !option_dprepro then
-          safe_remove preproname;
-        let objname = output_filename ~final: !option_c sourcename ".c" ".o" in
-        assemble asmname objname;
-        if not !option_dasm then safe_remove asmname;
-        objname
-      end in
-    name
+    compile_i_file sourcename preproname
   end
 
 (* Processing of a .i / .p file (preprocessed C) *)
 
 let process_i_file sourcename =
   ensure_inputfile_exists sourcename;
-  if !option_interp then begin
-    let csyntax = parse_c_file sourcename sourcename in
-    Interp.execute csyntax;
-    ""
-  end else if !option_S then begin
-    compile_c_file sourcename sourcename
-      (output_filename ~final:true sourcename ".c" ".s");
-    ""
-  end else begin
-    let asmname =
-      if !option_dasm
-      then output_filename sourcename ".c" ".s"
-      else Filename.temp_file "compcert" ".s" in
-    compile_c_file sourcename sourcename asmname;
-    let objname = output_filename ~final: !option_c sourcename ".c" ".o" in
-    assemble asmname objname;
-    if not !option_dasm then safe_remove asmname;
-    objname
-  end
-
+  compile_i_file sourcename sourcename
 
 (* Processing of .S and .s files *)
 
 let process_s_file sourcename =
   ensure_inputfile_exists sourcename;
-  let objname = output_filename ~final: !option_c sourcename ".s" ".o" in
+  let objname = object_filename sourcename ".s" in
   assemble sourcename objname;
   objname
 
@@ -179,11 +125,10 @@ let process_S_file sourcename =
     preprocess sourcename (output_filename_default "-");
     ""
   end else begin
-    let preproname = Filename.temp_file "compcert" ".s" in
+    let preproname = tmp_file ".s" in
     preprocess sourcename preproname;
-    let objname = output_filename ~final: !option_c sourcename ".S" ".o" in
+    let objname = object_filename sourcename ".S" in
     assemble preproname objname;
-    safe_remove preproname;
     objname
   end
 
@@ -205,13 +150,21 @@ let version_string =
   else
     "The CompCert C verified compiler, version "^ Version.version ^ "\n"
 
-let target_help = if Configuration.arch = "arm" then
+let target_help =
+  if Configuration.arch = "arm" && Configuration.model <> "armv6" then
 {|Target processor options:
   -mthumb        Use Thumb2 instruction encoding
   -marm          Use classic ARM instruction encoding
 |}
 else
   ""
+
+let toolchain_help =
+  if not Configuration.gnu_toolchain then begin
+{|Toolchain options:
+  -t tof:env     Select target processor for the diab toolchain
+|} end else
+    ""
 
 let usage_string =
   version_string ^
@@ -255,6 +208,9 @@ Processing options:
                    (<n>=0: none, <n>=1: limited, <n>=2: full; default is full)
   -fcse          Perform common subexpression elimination [on]
   -fredundancy   Perform redundancy elimination [on]
+  -finline       Perform inlining of functions [on]
+  -finline-functions-called-once Integrate functions only required by their
+                 single caller [on]
 Code generation options: (use -fno-<opt> to turn off -f<opt>)
   -ffpu          Use FP registers for some integer operations [on]
   -fsmall-data <n>  Set maximal size <n> for allocation in small data area
@@ -264,6 +220,7 @@ Code generation options: (use -fno-<opt> to turn off -f<opt>)
   -falign-cond-branches <n>  Set alignment (in bytes) of conditional branches
 |} ^
  target_help ^
+ toolchain_help ^
  assembler_help ^
  linker_help ^
 {|Tracing options:
@@ -309,6 +266,14 @@ let enforce_buildnr nr =
 Please use matching builds of QSK and CompCert.\n" build nr; exit 2
   end
 
+let dump_mnemonics destfile =
+  let oc = open_out_bin destfile in
+  let pp = Format.formatter_of_out_channel oc in
+  AsmToJSON.pp_mnemonics pp;
+  Format.pp_print_flush pp ();
+  close_out oc;
+  exit 0
+
 let language_support_options = [
   option_fbitfields; option_flongdouble;
   option_fstruct_passing; option_fvararg_calls; option_funprototyped;
@@ -316,7 +281,7 @@ let language_support_options = [
 ]
 
 let optimization_options = [
-  option_ftailcalls; option_fconstprop; option_fcse; option_fredundancy
+  option_ftailcalls; option_fconstprop; option_fcse; option_fredundancy; option_finline_functions_called_once;
 ]
 
 let set_all opts () = List.iter (fun r -> r := true) opts
@@ -336,10 +301,12 @@ let cmdline_actions =
 (* Getting version info *)
   Exact "-version", Unit print_version_and_exit;
   Exact "--version", Unit print_version_and_exit;] @
-(* Enforcing CompCert build numbers for QSKs *)
+(* Enforcing CompCert build numbers for QSKs and mnemonics dump *)
   (if Version.buildnr <> "" then
     [ Exact "-qsk-enforce-build", Integer enforce_buildnr;
-      Exact "--qsk-enforce-build", Integer enforce_buildnr; ]
+      Exact "--qsk-enforce-build", Integer enforce_buildnr;
+      Exact "-dump-mnemonics", String  dump_mnemonics;
+    ]
    else []) @
 (* Processing options *)
  [ Exact "-c", Set option_c;
@@ -371,9 +338,19 @@ let cmdline_actions =
   Exact "-conf", Ignore; (* Ignore option since it is already handled *)
   Exact "-target", Ignore;] @ (* Ignore option since it is already handled *)
   (if Configuration.arch = "arm" then
-    [ Exact "-mthumb", Set option_mthumb;
-      Exact "-marm", Unset option_mthumb; ]
-  else []) @
+    if Configuration.model = "armv6" then
+      [ Exact "-marm", Ignore ] (* Thumb needs ARMv6T2 or ARMv7 *)
+    else
+      [ Exact "-mthumb", Set option_mthumb;
+        Exact "-marm", Unset option_mthumb; ]
+   else []) @
+(* Toolchain options *)
+    (if not Configuration.gnu_toolchain then
+       [Exact "-t", String (fun arg -> push_linker_arg "-t"; push_linker_arg arg;
+                             prepro_options := arg :: "-t" :: !prepro_options;
+                             assembler_options := arg :: "-t" :: !assembler_options;)]
+     else
+       []) @
 (* Assembling options *)
   assembler_actions @
 (* Linking options *)
@@ -402,7 +379,7 @@ let cmdline_actions =
     option_dasm := true);
   Exact "-sdump", Set option_sdump;
   Exact "-sdump-suffix", String (fun s -> option_sdump := true; sdump_suffix:= s);
-  Exact "-sdump-folder", String (fun s -> sdump_folder := s);
+  Exact "-sdump-folder", String (fun s -> AsmToJSON.sdump_folder := s);
 (* General options *)
   Exact "-v", Set option_v;
   Exact "-stdlib", String(fun s -> stdlib_path := s);
@@ -432,6 +409,7 @@ let cmdline_actions =
   @ f_opt "cse" option_fcse
   @ f_opt "redundancy" option_fredundancy
   @ f_opt "inline" option_finline
+  @ f_opt "inline-functions-called-once" option_finline_functions_called_once
 (* Code generation options *)
   @ f_opt "fpu" option_ffpu
   @ f_opt "sse" option_ffpu (* backward compatibility *)
@@ -469,32 +447,10 @@ let _ =
                 Gc.major_heap_increment = 4194304 (* 4M *)
            };
     Printexc.record_backtrace true;
-    Machine.config :=
-      begin match Configuration.arch with
-      | "powerpc" -> if Configuration.system = "linux"
-                     then Machine.ppc_32_bigendian
-                     else Machine.ppc_32_diab_bigendian
-      | "arm"     -> if Configuration.is_big_endian
-                     then Machine.arm_bigendian
-                     else Machine.arm_littleendian
-      | "x86"     -> if Configuration.model = "64" then
-                       Machine.x86_64
-                     else
-                       if Configuration.abi = "macosx"
-                       then Machine.x86_32_macosx
-                       else Machine.x86_32
-      | "riscV"   -> if Configuration.model = "64"
-                     then Machine.rv64
-                     else Machine.rv32
-      | _         -> assert false
-      end;
-    Builtins.set C2C.builtins;
-    Cutil.declare_attributes C2C.attributes;
-    CPragmas.initialize();
+    Frontend.init ();
     parse_cmdline cmdline_actions;
     DebugInit.init (); (* Initialize the debug functions *)
-    let nolink = !option_c || !option_S || !option_E || !option_interp in
-    if nolink && !option_o <> None && !num_source_files >= 2 then begin
+    if nolink () && !option_o <> None && !num_source_files >= 2 then begin
       eprintf "Ambiguous '-o' option (multiple source files)\n";
       exit 2
     end;
@@ -504,7 +460,7 @@ let _ =
         exit 2
       end;
     let linker_args = time "Total compilation time" perform_actions () in
-    if (not nolink) && linker_args <> [] then begin
+    if not (nolink ()) && linker_args <> [] then begin
       linker (output_filename_default "a.out") linker_args
     end;
    if  Cerrors.check_errors () then exit 2

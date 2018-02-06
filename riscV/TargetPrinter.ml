@@ -122,57 +122,33 @@ module Target : TARGET =
       | Section_user(s, wr, ex) ->
           sprintf ".section	\"%s\",\"a%s%s\",%%progbits"
             s (if wr then "w" else "") (if ex then "x" else "")
+      | Section_ais_annotation -> sprintf ".section	\"__compcert_ais_annotations\",\"\",@note"
 
     let section oc sec =
       fprintf oc "	%s\n" (name_of_section sec)
 
 (* Associate labels to floating-point constants and to symbols. *)
 
-    let label_constant (h: ('a, int) Hashtbl.t) (cst: 'a) =
-      try
-        Hashtbl.find h cst
-      with Not_found ->
-        let lbl = new_label() in
-        Hashtbl.add h cst lbl;
-        lbl
-
-    let float_labels   = (Hashtbl.create 39 : (int64, int) Hashtbl.t)
-    let float32_labels = (Hashtbl.create 39 : (int32, int) Hashtbl.t)
-    let int64_labels   = (Hashtbl.create 39 : (int64, int) Hashtbl.t)
-
-    let label_float bf = label_constant float_labels bf
-    let label_float32 bf = label_constant float32_labels bf
-    let label_int64 n = label_constant int64_labels n
-
-    let reset_constants () =
-      Hashtbl.clear float_labels;
-      Hashtbl.clear float32_labels;
-      Hashtbl.clear int64_labels
-
-    let emit_constants oc =
-      if Hashtbl.length int64_labels > 0 then
-        begin
-          fprintf oc "	.align 3\n";
-          Hashtbl.iter
-            (fun bf lbl -> fprintf oc "%a:	.quad	0x%Lx\n" label lbl bf)
-            int64_labels
-        end;
-      if Hashtbl.length float_labels > 0 then
-        begin
-          fprintf oc "	.align 3\n";
-          Hashtbl.iter
-            (fun bf lbl -> fprintf oc "%a:	.quad	0x%Lx\n" label lbl bf)
-            float_labels
-        end;
-      if Hashtbl.length float32_labels > 0 then
-        begin
-          fprintf oc "	.align	2\n";
-          Hashtbl.iter
-            (fun bf lbl ->
-               fprintf oc "%a:	.long	0x%lx\n" label lbl bf)
-            float32_labels
-        end;
-      reset_constants ()
+    let emit_constants oc lit =
+      if exists_constants () then begin
+         section oc lit;
+         if Hashtbl.length literal64_labels > 0 then
+           begin
+             fprintf oc "	.align 3\n";
+             Hashtbl.iter
+               (fun bf lbl -> fprintf oc "%a:	.quad	0x%Lx\n" label lbl bf)
+               literal64_labels
+           end;
+         if Hashtbl.length literal32_labels > 0 then
+           begin
+             fprintf oc "	.align	2\n";
+             Hashtbl.iter
+               (fun bf lbl ->
+                  fprintf oc "%a:	.long	0x%lx\n" label lbl bf)
+               literal32_labels
+           end;
+         reset_literals ()
+      end
 
 (* Generate code to load the address of id + ofs in register r *)
 
@@ -562,16 +538,16 @@ module Target : TARGET =
          fprintf oc "	lui	%a, %%hi(%a)\n" ireg rd symbol_offset (id, ofs)
       | Ploadli(rd, n) ->
          let d = camlint64_of_coqint n in
-         let lbl = label_int64 d in
+         let lbl = label_literal64 d in
          fprintf oc "	ld	%a, %a %s %Lx\n" ireg rd label lbl comment d
       | Ploadfi(rd, f) ->
          let d   = camlint64_of_coqint(Floats.Float.to_bits f) in
-         let lbl = label_float d in
+         let lbl = label_literal64 d in
          fprintf oc "	fld	%a, %a, x31 %s %.18g\n"
                     freg rd label lbl comment (camlfloat_of_coqfloat f)
       | Ploadsi(rd, f) ->
          let s   = camlint_of_coqint(Floats.Float32.to_bits f) in
-         let lbl = label_float32 s in
+         let lbl = label_literal32 s in
          fprintf oc "	flw	%a, %a, x31 %s %.18g\n"
                     freg rd label lbl comment (camlfloat_of_coqfloat32 f)
       | Pbtbl(r, tbl) ->
@@ -589,9 +565,16 @@ module Target : TARGET =
          fprintf oc "%s end pseudoinstr btbl\n" comment
       | Pbuiltin(ef, args, res) ->
          begin match ef with
-          | EF_annot(txt, targs) ->
-              fprintf oc "%s annotation: %s\n" comment
-              (annot_text preg_annot "sp" (camlstring_of_coqstring txt) args)
+           | EF_annot(kind,txt, targs) ->
+             let annot =
+             begin match (P.to_int kind) with
+               | 1 -> annot_text preg_annot "sp" (camlstring_of_coqstring txt) args
+               | 2 -> let lbl = new_label () in
+                 fprintf oc "%a: " label lbl;
+                 ais_annot_text lbl preg_annot "r1" (camlstring_of_coqstring txt) args
+               | _ -> assert false
+             end in
+             fprintf oc "%s annotation: %S\n" comment annot
           | EF_debug(kind, txt, targs) ->
               print_debug_info comment print_file_line preg_annot "sp" oc
                                (P.to_int kind) (extern_atom txt) args
@@ -646,34 +629,10 @@ module Target : TARGET =
       current_function_sig := fn.fn_sig;
       List.iter (print_instruction oc) fn.fn_code
 
-    let emit_constants oc lit =
-      section oc lit;
-      emit_constants oc
 
 (* Data *)
 
     let address = if Archi.ptr64 then ".quad" else ".long"
-
-    let print_init oc = function
-      | Init_int8 n ->
-          fprintf oc "	.byte	%ld\n" (camlint_of_coqint n)
-      | Init_int16 n ->
-          fprintf oc "	.short	%ld\n" (camlint_of_coqint n)
-      | Init_int32 n ->
-          fprintf oc "	.long	%ld\n" (camlint_of_coqint n)
-      | Init_int64 n ->
-          fprintf oc "	.quad	%Ld\n" (camlint64_of_coqint n)
-      | Init_float32 n ->
-          fprintf oc "	.long   0x%lx %s %.15g \n" (camlint_of_coqint (Floats.Float32.to_bits n))
-            comment (camlfloat_of_coqfloat n)
-      | Init_float64 n ->
-          fprintf oc "	.quad   %Ld %s %.18g\n" (camlint64_of_coqint (Floats.Float.to_bits n))
-            comment (camlfloat_of_coqfloat n)
-      | Init_space n ->
-          if Z.gt n Z.zero then
-            fprintf oc "	.space  %s\n" (Z.to_string n)
-      | Init_addrof(symb, ofs) ->
-          fprintf oc "	%s	%a\n" address symbol_offset (symb, ofs)
 
     let print_prologue oc =
       fprintf oc "	.option %s\n" (if Archi.pic_code() then "pic" else "nopic");
@@ -688,8 +647,6 @@ module Target : TARGET =
       end
 
     let default_falignment = 2
-
-    let new_label = new_label
 
     let cfi_startproc oc = ()
     let cfi_endproc oc = ()

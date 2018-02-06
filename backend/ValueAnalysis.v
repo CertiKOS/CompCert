@@ -10,6 +10,7 @@
 (*                                                                     *)
 (* *********************************************************************)
 
+Require Import FunInd.
 Require Import Coqlib Maps Integers Floats Lattice Kildall.
 Require Import Compopts AST Linking.
 Require Import Values Memory Globalenvs Events.
@@ -99,9 +100,9 @@ Definition transfer_builtin
       let p := loadbytes am rm (aptr_of_aval asrc) in
       let am' := storebytes am (aptr_of_aval adst) sz p in
       VA.State (set_builtin_res res ntop ae) am'
-  | (EF_annot _ _ | EF_debug _ _ _), _ =>
+  | (EF_annot _ _ _ | EF_debug _ _ _), _ =>
       VA.State (set_builtin_res res ntop ae) am
-  | EF_annot_val _ _, v :: nil =>
+  | EF_annot_val _ _ _, v :: nil =>
       let av := abuiltin_arg ae am rm v in
       VA.State (set_builtin_res res av ae) am
   | _, _ =>
@@ -888,7 +889,7 @@ Proof.
     apply smatch_ge with Nonstack. eapply SM. eapply mmatch_top; eauto. apply pge_lub_r.
   + (* below *)
     red; simpl; intros. destruct (eq_block b sp).
-    subst b. apply Plt_le_trans with bound. apply BELOW. congruence. auto.
+    subst b. apply Pos.lt_le_trans with bound. apply BELOW. congruence. auto.
     eapply mmatch_below; eauto.
 - (* genv *)
   eapply genv_match_exten; eauto.
@@ -1038,7 +1039,7 @@ Proof.
   + apply SMTOP; auto.
   + apply SMTOP; auto.
   + red; simpl; intros. destruct (plt b (Mem.nextblock m)).
-    eapply Plt_le_trans. eauto. eapply external_call_nextblock; eauto.
+    eapply Pos.lt_le_trans. eauto. eapply external_call_nextblock; eauto.
     destruct (j' b) as [[bx deltax] | ] eqn:J'.
     eapply Mem.valid_block_inject_1; eauto.
     congruence.
@@ -1376,7 +1377,7 @@ Proof.
   exploit hide_stack; eauto. apply pincl_ge; auto.
   intros (bc1 & A & B & C & D & E & F & G).
   exploit external_call_match; eauto.
-  intros. exploit list_forall2_in_l; eauto. intros (av & U & V).
+  intros. exploit list_forall2_in_left; eauto. intros (av & U & V).
   eapply D; eauto with va. apply vpincl_ge. apply H3; auto.
   intros (bc2 & J & K & L & M & N & O & P & Q).
   exploit (return_from_private_call bc bc2); eauto.
@@ -1398,7 +1399,7 @@ Proof.
   exploit anonymize_stack; eauto.
   intros (bc1 & A & B & C & D & E & F & G).
   exploit external_call_match; eauto.
-  intros. exploit list_forall2_in_l; eauto. intros (av & U & V). eapply D; eauto with va.
+  intros. exploit list_forall2_in_left; eauto. intros (av & U & V). eapply D; eauto with va.
   intros (bc2 & J & K & L & M & N & O & P & Q).
   exploit (return_from_public_call bc bc2); eauto.
   eapply mmatch_below; eauto.

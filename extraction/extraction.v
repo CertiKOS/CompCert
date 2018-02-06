@@ -6,6 +6,9 @@
 (*                                                                     *)
 (*  Copyright Institut National de Recherche en Informatique et en     *)
 (*  Automatique.  All rights reserved.  This file is distributed       *)
+(*  under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 2 of the License, or  *)
+(*  (at your option) any later version.  This file is also distributed *)
 (*  under the terms of the INRIA Non-Commercial License Agreement.     *)
 (*                                                                     *)
 (* *********************************************************************)
@@ -76,6 +79,8 @@ Extraction Inline RTLgen.ret RTLgen.error RTLgen.bind RTLgen.bind2.
 
 (* Inlining *)
 Extract Inlined Constant Inlining.should_inline => "Inliningaux.should_inline".
+Extract Inlined Constant Inlining.inlining_info => "Inliningaux.inlining_info".
+Extract Inlined Constant Inlining.inlining_analysis => "Inliningaux.inlining_analysis".
 Extraction Inline Inlining.ret Inlining.bind.
 
 (* Allocation *)
@@ -170,6 +175,7 @@ Separate Extraction
    Ctyping.typecheck_program
    Ctyping.epostincr Ctyping.epostdecr Ctyping.epreincr Ctyping.epredecr
    Ctypes.make_program
+   Clight.type_of_function
    Conventions1.callee_save_type Conventions1.is_float_reg
    Conventions1.int_caller_save_regs Conventions1.float_caller_save_regs
    Conventions1.int_callee_save_regs Conventions1.float_callee_save_regs

@@ -1,8 +1,8 @@
 include ../../Makefile.config
 
 CCOMP=../../ccomp
-CCOMPFLAGS=-stdlib ../../runtime -dparse -dc -dclight -dasm -fall
-
+CCOMPFLAGS=$(CCOMPOPTS) -stdlib ../../runtime -dparse -dc -dclight -dasm -fall
+INTERPFLAGS=-stdlib ../../runtime -interp -quiet -fall
 LIBS=$(LIBMATH)
 
 # Can run, both in compiled mode and in interpreter mode,
@@ -12,7 +12,7 @@ TESTS=int32 int64 floats floats-basics \
   expr1 expr6 funptr2 initializers initializers2 initializers3 \
   volatile1 volatile2 volatile3 volatile4 \
   funct3 expr5 struct7 struct8 struct11 struct12 casts1 casts2 char1 \
-  sizeof1 sizeof2 binops bool for1 switch switch2 compound \
+  sizeof1 sizeof2 binops bool for1 for2 switch switch2 compound \
   decl1 interop1 bitfields9 ptrs3 \
   parsing krfun
 
@@ -28,7 +28,7 @@ TESTS_COMP=attribs1 bitfields1 bitfields2 bitfields3 bitfields4 \
 ifeq ($(ARCH),powerpc)
 TESTS_COMP+=packedstruct1
 endif
-ifeq ($(ARCH),ia32)
+ifeq ($(ARCH),x86)
 TESTS_COMP+=packedstruct1
 endif
 
@@ -51,17 +51,17 @@ all: $(TESTS:%=%.compcert) $(TESTS_COMP:%=%.compcert) $(TESTS_DIFF:%=%.compcert)
 
 all_s: $(TESTS:%=%.s) $(TESTS_COMP:%=%.s) $(TESTS_DIFF:%=%.s) $(EXTRAS:%=%.s)
 
-interop1.compcert: interop1.c $(CCOMP)
+interop1.compcert: interop1.c
 	$(CC) -DCC_SIDE -c -o interop1n.o interop1.c
 	$(CCOMP) $(CCOMPFLAGS) -DCOMPCERT_SIDE -o interop1.compcert interop1.c interop1n.o $(LIBS)
 
-interop1.s: interop1.c $(CCOMP)
+interop1.s: interop1.c
 	$(CCOMP) $(CCOMPFLAGS) -S interop1.c
 
-%.compcert: %.c $(CCOMP)
+%.compcert: %.c
 	$(CCOMP) $(CCOMPFLAGS) -o $*.compcert $*.c $(LIBS)
 
-%.s: %.c $(CCOMP)
+%.s: %.c
 	$(CCOMP) $(CCOMPFLAGS) -S $*.c
 
 clean:
@@ -75,7 +75,7 @@ test:
          done
 	@echo "----------- Interpreted tests -------------"
 	@for i in $(TESTS); do \
-           SIMU='' ./Runtest $$i $(CCOMP) -fall -interp -quiet $$i.c; \
+           SIMU='' ./Runtest $$i $(CCOMP) $(INTERPFLAGS) $$i.c; \
          done
 	@for i in $(TESTS_DIFF); do \
            if $(CCOMP) -fall -interp -quiet $$i.c > _cinterp.log; then \

@@ -59,12 +59,7 @@ let parse_c_file sourcename ifile =
     | None -> exit 2
     | Some p -> p in
   (* Save C AST if requested *)
-  if !option_dparse then begin
-    let ofile = output_filename sourcename ".c" ".parsed.c" in
-    let oc = open_out ofile in
-    Cprint.program (Format.formatter_of_out_channel oc) ast;
-    close_out oc
-  end;
+  Cprint.print_if ast;
   (* Conversion to Csyntax *)
   let csyntax =
     match Timing.time "CompCert C generation" C2C.convertProgram ast with
@@ -72,13 +67,33 @@ let parse_c_file sourcename ifile =
     | Some p -> p in
   flush stderr;
   (* Save CompCert C AST if requested *)
-  if !option_dcmedium then begin
-    let ofile = output_filename sourcename ".c" ".compcert.c" in
-    let oc = open_out ofile in
-    PrintCsyntax.print_program (Format.formatter_of_out_channel oc) csyntax;
-    close_out oc
-  end;
+  PrintCsyntax.print_if csyntax;
   csyntax
+
+let init () =
+  Machine.config:=
+    begin match Configuration.arch with
+    | "powerpc" -> if Configuration.gnu_toolchain
+                   then Machine.ppc_32_bigendian
+                   else Machine.ppc_32_diab_bigendian
+    | "arm"     -> if Configuration.is_big_endian
+                   then Machine.arm_bigendian
+                   else Machine.arm_littleendian
+    | "x86"     -> if Configuration.model = "64" then
+                     Machine.x86_64
+                   else
+                     if Configuration.abi = "macosx"
+                     then Machine.x86_32_macosx
+                     else Machine.x86_32
+    | "riscV"   -> if Configuration.model = "64"
+                   then Machine.rv64
+                   else Machine.rv32
+    | _         -> assert false
+  end;
+  Builtins.set C2C.builtins;
+  Cutil.declare_attributes C2C.attributes;
+  CPragmas.initialize()
+
 
 (* Add gnu preprocessor list *)
 let gnu_prepro_opt_key key s =

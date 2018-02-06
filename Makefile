@@ -208,7 +208,7 @@ latexdoc:
 	@rm -f $*.v
 	@echo "Preprocessing $*.vp"
 	@tools/ndfun $*.vp > $*.v || { rm -f $*.v; exit 2; }
-	@chmod -w $*.v
+	@chmod a-w $*.v
 
 compcert.ini: Makefile.config
 	(echo "stdlib_path=$(LIBDIR)"; \
@@ -283,7 +283,7 @@ check-admitted: $(FILES)
 # compcert.backend.SelectDivproof.divs_mul_shift_2 takes forever to check
 
 check-proof: $(FILES)
-	$(COQCHK) -admit Integers -admit SelectDivproof Complements
+	$(COQCHK) -admit compcert.lib.Integers -admit compcert.backend.SelectDivproof compcert.driver.Complements
 
 print-includes:
 	@echo $(COQINCLUDES)

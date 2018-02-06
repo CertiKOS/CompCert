@@ -26,13 +26,18 @@ open Csyntax
 (** Record useful information about global variables and functions,
   and associate it with the corresponding atoms. *)
 
+type inline_status =
+  | No_specifier (* No inline specifier and no noinline attribute *)
+  | Noinline     (* The atom is declared with the noinline attribute *)
+  | Inline       (* The atom is declared inline *)
+
 type atom_info =
   { a_storage: C.storage;              (* storage class *)
     a_alignment: int option;           (* alignment *)
     a_sections: Sections.section_name list; (* in which section to put it *)
       (* 1 section for data, 3 sections (code/lit/jumptbl) for functions *)
     a_access: Sections.access_mode;    (* access mode, e.g. small data area *)
-    a_inline: bool;                    (* function declared inline? *)
+    a_inline: inline_status;           (* function declared inline? *)
     a_loc: location                    (* source location *)
 }
 
@@ -74,11 +79,11 @@ let atom_is_rel_data a ofs =
   with Not_found ->
     false
 
-let atom_is_inline a =
+let atom_inline a =
   try
     (Hashtbl.find decl_atom a).a_inline
   with Not_found ->
-    false
+    No_specifier
 
 (** Iso C99 defines inline definitions of functions as functions
     with inline specifier and without extern. These functions do
@@ -89,7 +94,7 @@ let atom_is_iso_inline_definition a =
   try
     let i = Hashtbl.find decl_atom a in
     match i.a_storage with
-    | C.Storage_default -> i.a_inline
+    | C.Storage_default -> i.a_inline = Inline
     | _ -> false
   with Not_found ->
     false
@@ -132,12 +137,35 @@ let string_of_errmsg msg =
 
 (** ** The builtin environment *)
 
+(* let ais_annot_functions =
+ *   if Configuration.elf_target then
+ *     [(\* Ais Annotations, only available for ELF targets *\)
+ *       "__builtin_ais_annot",
+ *       (TVoid [],
+ *        [TPtr(TInt(IChar, [AConst]), [])],
+ *        true);]
+ *   else
+ *     [] *)
+
 let builtins_generic = {
   Builtins.typedefs = [];
-  Builtins.functions = [
+  Builtins.functions =
+    (* ais_annot_functions
+     * @ *)
+    [
+    (* Integer arithmetic *)
+    "__builtin_bswap",
+    (TInt(IUInt, []), [TInt(IUInt, [])], false);
+    "__builtin_bswap32",
+      (TInt(IUInt, []), [TInt(IUInt, [])], false);
+    "__builtin_bswap16",
+      (TInt(IUShort, []), [TInt(IUShort, [])], false);
     (* Floating-point absolute value *)
     "__builtin_fabs",
-      (TFloat(FDouble, []), [TFloat(FDouble, [])], false);
+    (TFloat(FDouble, []), [TFloat(FDouble, [])], false);
+    (* Float arithmetic *)
+    "__builtin_fsqrt",
+    (TFloat(FDouble, []), [TFloat(FDouble, [])], false);
     (* Block copy *)
     "__builtin_memcpy_aligned",
          (TVoid [],
@@ -200,63 +228,63 @@ let builtins_generic = {
           [TPtr(TVoid [], []); TInt(IULong, [])],
           false);
   (* Helper functions for int64 arithmetic *)
-    "__i64_dtos",
+    "__compcert_i64_dtos",
         (TInt(ILongLong, []),
          [TFloat(FDouble, [])],
          false);
-    "__i64_dtou",
+    "__compcert_i64_dtou",
         (TInt(IULongLong, []),
          [TFloat(FDouble, [])],
          false);
-    "__i64_stod",
+    "__compcert_i64_stod",
         (TFloat(FDouble, []),
          [TInt(ILongLong, [])],
          false);
-    "__i64_utod",
+    "__compcert_i64_utod",
         (TFloat(FDouble, []),
          [TInt(IULongLong, [])],
          false);
-    "__i64_stof",
+    "__compcert_i64_stof",
         (TFloat(FFloat, []),
          [TInt(ILongLong, [])],
          false);
-    "__i64_utof",
+    "__compcert_i64_utof",
         (TFloat(FFloat, []),
          [TInt(IULongLong, [])],
          false);
-    "__i64_sdiv",
+    "__compcert_i64_sdiv",
         (TInt(ILongLong, []),
          [TInt(ILongLong, []); TInt(ILongLong, [])],
          false);
-    "__i64_udiv",
+    "__compcert_i64_udiv",
         (TInt(IULongLong, []),
          [TInt(IULongLong, []); TInt(IULongLong, [])],
          false);
-    "__i64_smod",
+    "__compcert_i64_smod",
         (TInt(ILongLong, []),
          [TInt(ILongLong, []); TInt(ILongLong, [])],
          false);
-    "__i64_umod",
+    "__compcert_i64_umod",
         (TInt(IULongLong, []),
          [TInt(IULongLong, []); TInt(IULongLong, [])],
          false);
-    "__i64_shl",
+    "__compcert_i64_shl",
         (TInt(ILongLong, []),
          [TInt(ILongLong, []); TInt(IInt, [])],
          false);
-    "__i64_shr",
+    "__compcert_i64_shr",
         (TInt(IULongLong, []),
          [TInt(IULongLong, []); TInt(IInt, [])],
          false);
-    "__i64_sar",
+    "__compcert_i64_sar",
         (TInt(ILongLong, []),
          [TInt(ILongLong, []); TInt(IInt, [])],
          false);
-    "__i64_smulh",
+    "__compcert_i64_smulh",
         (TInt(ILongLong, []),
          [TInt(ILongLong, []); TInt(ILongLong, [])],
          false);
-    "__i64_umulh",
+    "__compcert_i64_umulh",
         (TInt(IULongLong, []),
          [TInt(IULongLong, []); TInt(IULongLong, [])],
          false)
@@ -303,7 +331,7 @@ let name_for_string_literal s =
         a_alignment = Some 1;
         a_sections = [Sections.for_stringlit()];
         a_access = Sections.Access_default;
-        a_inline = false;
+        a_inline = No_specifier;
         a_loc = Cutil.no_loc };
     Hashtbl.add stringTable s id;
     id
@@ -333,7 +361,7 @@ let name_for_wide_string_literal s =
         a_alignment = Some Machine.((!config).sizeof_wchar);
         a_sections = [Sections.for_stringlit()];
         a_access = Sections.Access_default;
-        a_inline = false;
+        a_inline = No_specifier;
         a_loc = Cutil.no_loc };
     Hashtbl.add wstringTable s id;
     id
@@ -818,7 +846,7 @@ let rec convertExpr env e =
       | {edesc = C.EConst(CStr txt)} :: args1 ->
           let targs1 = convertTypArgs env [] args1 in
           Ebuiltin(
-             AST.EF_annot(coqstring_of_camlstring txt, typlist_of_typelist targs1),
+             AST.EF_annot(P.of_int 1,coqstring_of_camlstring txt, typlist_of_typelist targs1),
             targs1, convertExprList env args1, convertTyp env e.etyp)
       | _ ->
           error "argument 1 of '__builtin_annot' must be a string literal";
@@ -830,13 +858,27 @@ let rec convertExpr env e =
       | [ {edesc = C.EConst(CStr txt)}; arg ] ->
           let targ = convertTyp env
                          (Cutil.default_argument_conversion env arg.etyp) in
-          Ebuiltin(AST.EF_annot_val(coqstring_of_camlstring txt, typ_of_type targ),
+          Ebuiltin(AST.EF_annot_val(P.of_int 1,coqstring_of_camlstring txt, typ_of_type targ),
                    Tcons(targ, Tnil), convertExprList env [arg],
                    convertTyp env e.etyp)
       | _ ->
           error "argument 1 of '__builtin_annot_intval' must be a string literal";
           ezero
       end
+
+  (* | C.ECall({edesc = C.EVar {name = "__builtin_ais_annot"}}, args) when Configuration.elf_target ->
+   *     begin match args with
+   *     | {edesc = C.EConst(CStr txt)} :: args1 ->
+   *       let file,line = !currentLocation in
+   *       let loc_string = Printf.sprintf "# file %s, line %d\n" file line in
+   *       let targs1 = convertTypArgs env [] args1 in
+   *         Ebuiltin(
+   *            AST.EF_annot(P.of_int 2,coqstring_of_camlstring (loc_string ^ txt), typlist_of_typelist targs1),
+   *           targs1, convertExprList env args1, convertTyp env e.etyp)
+   *     | _ ->
+   *         error "argument 1 of '__builtin_ais_annot' must be a string literal";
+   *         ezero
+   *     end *)
 
  | C.ECall({edesc = C.EVar {name = "__builtin_memcpy_aligned"}}, args) ->
       make_builtin_memcpy (convertExprList env args)
@@ -1112,13 +1154,20 @@ let convertFundef loc env fd =
       fd.fd_locals in
   let body' = convertStmt env fd.fd_body in
   let id' = intern_string fd.fd_name.name in
+  let noinline =  Cutil.find_custom_attributes ["noinline";"__noinline__"] fd.fd_attrib <> [] in
+  let inline = if noinline || fd.fd_vararg then (* PR#15 *)
+      Noinline
+    else if fd.fd_inline then
+      Inline
+    else
+      No_specifier in
   Debug.atom_global fd.fd_name id';
   Hashtbl.add decl_atom id'
     { a_storage = fd.fd_storage;
       a_alignment = None;
       a_sections = Sections.for_function env id' fd.fd_attrib;
       a_access = Sections.Access_default;
-      a_inline = fd.fd_inline && not fd.fd_vararg;  (* PR#15 *)
+      a_inline = inline;
       a_loc = loc };
   (id',  AST.Gfun(Ctypes.Internal
           {fn_return = ret;
@@ -1130,7 +1179,7 @@ let convertFundef loc env fd =
 (** External function declaration *)
 
 let re_builtin = Str.regexp "__builtin_"
-let re_runtime = Str.regexp "__i64_"
+let re_runtime = Str.regexp "__compcert_i64_"
 
 let convertFundecl env (sto, id, ty, optinit) =
   let (args, res, cconv) =
@@ -1204,7 +1253,7 @@ let convertGlobvar loc env (sto, id, ty, optinit) =
       a_alignment = Some (Z.to_int al);
       a_sections = [section];
       a_access = access;
-      a_inline = false;
+      a_inline = No_specifier;
       a_loc = loc };
   let volatile = List.mem C.AVolatile attr in
   let readonly = List.mem C.AConst attr && not volatile in
