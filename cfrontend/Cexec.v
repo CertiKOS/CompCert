@@ -2042,16 +2042,77 @@ Proof.
   eapply PTree.elements_complete. eauto. eauto.
 Qed.
 
+Lemma alloc_variables_injective:
+  forall ge id1 b1 ty1 id2 b2 ty2 e m vars e' m',
+  alloc_variables ge e m vars e' m' ->
+  (e!id1 = Some(b1, ty1) -> e!id2 = Some(b2, ty2) -> id1 <> id2 -> b1 <> b2) ->
+  (forall id b ty, e!id = Some(b, ty) -> Plt b (Mem.nextblock m)) ->
+  (e'!id1 = Some(b1, ty1) -> e'!id2 = Some(b2, ty2) -> id1 <> id2 -> b1 <> b2).
+Proof.
+  induction 1; intros.
+  eauto.
+  eapply IHalloc_variables; eauto.
+  repeat rewrite PTree.gsspec; intros.
+  destruct (peq id1 id); destruct (peq id2 id).
+  congruence.
+  inv H6. exploit Mem.alloc_result; eauto. exploit H2; eauto. unfold block; xomega.
+  inv H7. exploit Mem.alloc_result; eauto. exploit H2; eauto. unfold block; xomega.
+  eauto.
+  intros. rewrite PTree.gsspec in H6. destruct (peq id0 id). inv H6.
+  exploit Mem.alloc_result; eauto. exploit Mem.nextblock_alloc; eauto. unfold block; xomega.
+  exploit H2; eauto. exploit Mem.nextblock_alloc; eauto. unfold block; xomega.
+Qed.
+
+Lemma blocks_with_info_norepet:
+  forall e m1 l m2,
+    (* list_norepet (var_names l) -> *)
+    alloc_variables ge empty_env m1 l e m2 ->
+    list_norepet (map fst (blocks_with_info ge e)).
+Proof.
+  intros e m1 l m2 AV.
+  assert (INJ: forall id1 b1 ty1 id2 b2 ty2,
+             In (id1, (b1, ty1)) (PTree.elements e) ->
+             In (id2, (b2, ty2)) (PTree.elements e) ->
+             id1 <> id2 -> b1 <> b2).
+  {
+    intros.
+    eapply alloc_variables_injective. eauto. rewrite PTree.gempty. congruence.
+    intros id; rewrite PTree.gempty. congruence.
+    eapply PTree.elements_complete; eauto.
+    eapply PTree.elements_complete; eauto. auto.
+  }
+  clear - INJ.
+  revert INJ.
+  unfold blocks_with_info, blocks_of_env.
+  generalize (PTree.elements_keys_norepet e).
+  generalize (PTree.elements e).
+  induction l; simpl; intros LNR INJ; eauto.
+  constructor; auto.
+  - repeat destr. simpl. intro IN.
+    rewrite in_map_iff in IN.
+    destruct IN as (x & EQ & IN). subst.
+    rewrite in_map_iff in IN.
+    destruct IN as (x0 & EQ & IN). subst. destr_in Heqp. destr_in Heqp.
+    simpl in *. subst.
+    unfold block_of_binding in IN, Heqp.
+    destruct a. destruct p0. inv Heqp.
+    rewrite in_map_iff in IN.
+    destruct IN as (x0 & EQ & IN). repeat destr_in EQ.
+    apply (INJ _ _ _ _ _ _ (or_intror IN) (or_introl eq_refl)); auto.
+    intro; subst.
+    inv LNR. apply H1. rewrite in_map_iff. eexists; split; eauto. reflexivity.
+  - apply IHl. inv LNR; auto. intros; eapply INJ; eauto.
+Qed.
+
 Program Definition alloc_variables_record f m sz : option (env * mem) :=
   check (list_norepet_dec ident_eq (var_names (fn_params f) ++ var_names (fn_vars f)));
     let '(e,m1) := do_alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) in
-    do m1 <- Mem.record_stack_blocks_none m1 (blocks_with_info ge e) sz _;
+    do m1 <- Mem.record_stack_blocks_exec m1 {| frame_adt_blocks := blocks_with_info ge e; frame_adt_size := sz |};
       Some (e,m1).
 Next Obligation.
-  generalize (do_alloc_variables_perms _ _ _ _ 
-                                       (do_alloc_variables_sound (fn_params f ++ fn_vars f) empty_env m)).
-  rewrite <- Heq_anonymous. simpl. intro A; apply A.
-  rewrite map_app. eauto.
+  eapply blocks_with_info_norepet.
+  generalize (do_alloc_variables_sound (fn_params f ++ fn_vars f) empty_env m).
+  rewrite <- Heq_anonymous. simpl. eauto.
 Qed.
 
 Lemma destr_dep_match:
@@ -2132,12 +2193,11 @@ Proof.
   simpl in H. destr_in H. inv H.
   exploit do_alloc_variables_sound. rewrite <- pf. simpl.
   intro AV.
-  edestruct Mem.record_stack_blocks_none_correct.
-  clear H0. trim H. eexists; eauto.
-  destruct H as (f1 & RSB & FABLOCKS & FASIZE).
-  exists b, f1; split; eauto.   
+  edestruct Mem.record_stack_blocks_exec_correct.
+  clear H0. trim H. eauto. eexists; eauto.
+  eexists; repeat split; eauto.
+  reflexivity. reflexivity.
 Qed.
-
 
 Function sem_bind_parameters (w: world) (e: env) (m: mem) (l: list (ident * type)) (lv: list val)
                           {struct l} : option mem :=
@@ -2414,6 +2474,15 @@ Proof.
   apply proof_irr.
 Qed.
 
+Lemma record_stack_blocks_ext':
+  forall m1 fi fi' m2,
+    Mem.record_stack_blocks m1 fi m2 ->
+    fi = fi' ->
+    Mem.record_stack_blocks m1 fi' m2.
+Proof.
+  intros; subst; congruence.
+Qed.
+
 Lemma alloc_variables_record_complete:
   forall f m e m1 fa m1',
     list_norepet (var_names (fn_params f) ++ var_names (fn_vars f)) ->
@@ -2426,12 +2495,10 @@ Proof.
   unfold alloc_variables_record.
   destr.
   Focus 2. exfalso; apply n; auto.
-  eapply constr_let. 
-  generalize (Mem.record_stack_blocks_none_correct m1 (blocks_with_info ge e) (frame_adt_size fa) m1').
-  intros (A & B).
-  trim B. eexists; split. eauto. split; auto. destruct B as (pf & RSB).
-  erewrite (proof_irr pf) in RSB. rewrite RSB.
-  auto.
+  eapply constr_let.
+  eapply record_stack_blocks_ext' in H2.
+  apply Mem.record_stack_blocks_exec_correct in H2.
+  rewrite H2. eauto. apply frame_adt_eq; simpl; auto.
   Unshelve.
   eapply do_alloc_variables_complete. eauto.
 Qed.

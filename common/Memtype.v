@@ -184,11 +184,12 @@ that we now axiomatize. *)
  stack_adt: mem -> list frame_adt;
  record_stack_blocks: mem -> frame_adt -> mem -> Prop;
  push_frame: mem -> frame_info -> list (memory_chunk * ptrofs * val) -> option (mem*block);
- record_stack_blocks_none: forall (m: mem) (bl : list (block * frame_info)) (sz: Z),
-                           Forall
-                             (fun b : block * frame_info =>
-                                forall (o : Z) (k : perm_kind) (p : permission), perm m (fst b) o k p -> 0 <= o < frame_size (snd b)) bl -> 
-                           option mem;
+ (* record_stack_blocks_none: forall (m: mem) (bl : list (block * frame_info)) (sz: Z), *)
+ (*                           Forall *)
+ (*                             (fun b : block * frame_info => *)
+ (*                                forall (o : Z) (k : perm_kind) (p : permission), perm m (fst b) o k p -> 0 <= o < frame_size (snd b)) bl ->  *)
+ (*                           option mem; *)
+ record_stack_blocks_exec: mem -> frame_adt -> option mem;
  unrecord_stack_block: mem -> option mem;
  frame_inject f := StackADT.frame_inject f;
  stack_limit: Z;
@@ -1856,10 +1857,10 @@ for [unchanged_on]. *)
      record_stack_blocks m3 fa m4 ->
      push_frame m1 fi l = Some (m4,b);
 
- record_stack_blocks_none_correct:
-   forall m (bl: list (block * frame_info)) sz m',
-     (exists pf, record_stack_blocks_none m bl sz pf = Some m') <->
-     (exists fa, record_stack_blocks m fa m' /\ frame_adt_blocks fa = bl /\ frame_adt_size fa = sz);
+ record_stack_blocks_exec_correct:
+   forall m fa m',
+     record_stack_blocks_exec m fa = Some m' <->
+     record_stack_blocks m fa m';
 
  record_stack_block_inject_left_zero {injperm: InjectPerm}:
     forall m1 m1' m2 j g f1 f2
