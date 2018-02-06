@@ -1400,10 +1400,10 @@ predicate that represents the permissions for the source memory [m1] in which
     rewrite not_in_frames_no_frame_info in H; auto. congruence.
   Qed.
 
-  Inductive option_le {A: Type} (Pns: A -> Prop) (Pss: A -> A -> Prop) (delta: Z): option A -> option A -> Prop :=
-  | option_le_none_none : option_le Pns Pss delta None None
-  | option_le_some_some a b : Pss a b -> option_le Pns Pss delta (Some a) (Some b)
-  | option_le_none_some a: Pns a -> option_le Pns Pss delta None (Some a).
+  Inductive option_le_stack {A: Type} (Pns: A -> Prop) (Pss: A -> A -> Prop) (delta: Z): option A -> option A -> Prop :=
+  | option_le_none_none : option_le_stack Pns Pss delta None None
+  | option_le_some_some a b : Pss a b -> option_le_stack Pns Pss delta (Some a) (Some b)
+  | option_le_none_some a: Pns a -> option_le_stack Pns Pss delta None (Some a).
 
   Lemma get_assoc_spec:
     forall s b fi,
@@ -1458,7 +1458,7 @@ predicate that represents the permissions for the source memory [m1] in which
       (ND2: nodup s2)
       (FB : f b1 = Some (b2, delta))
       (PERM: exists o k p, m1 b1 o k p /\ inject_perm_condition p),
-      option_le (fun fi => 
+      option_le_stack (fun fi => 
                    forall ofs k p,
                      m1 b1 ofs k p ->
                      inject_perm_condition p ->
