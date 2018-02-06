@@ -96,7 +96,6 @@ BACKEND=\
   CleanupLabels.v CleanupLabelsproof.v \
   Debugvar.v Debugvarproof.v \
   Mach.v \
-  EraseArgs.v \
   Bounds.v Stacklayout.v Stacking.v Stackingproof.v \
   Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v \
   Inlining.v Inliningspec.v Inliningproof.v \
