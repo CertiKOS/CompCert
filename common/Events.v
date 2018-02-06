@@ -714,7 +714,7 @@ Lemma volatile_load_preserved:
   volatile_load ge1 chunk m b ofs t v ->
   volatile_load ge2 chunk m b ofs t v.
 Proof.
-  intros. destruct H as (_ & A & B & C). inv H0; constructor; auto.
+  intros. destruct H as (A & B & C). inv H0; constructor; auto.
   rewrite C; auto.
   rewrite A; auto.
   eapply eventval_match_preserved; eauto.
@@ -825,7 +825,7 @@ Lemma volatile_store_preserved:
   volatile_store ge1 chunk m1 b ofs v t m2 ->
   volatile_store ge2 chunk m1 b ofs v t m2.
 Proof.
-  intros. destruct H as (_ & A & B & C). inv H0; constructor; auto.
+  intros. destruct H as (A & B & C). inv H0; constructor; auto.
   rewrite C; auto.
   rewrite A; auto.
   eapply eventval_match_preserved; eauto.
@@ -1263,7 +1263,7 @@ Proof.
 (* well typed *)
 - inv H. simpl. auto.
 (* symbols *)
-- destruct H as (_ & A & B & C). inv H0. econstructor; eauto.
+- destruct H as (A & B & C). inv H0. econstructor; eauto.
   eapply eventval_list_match_preserved; eauto.
 (* valid blocks *)
 - inv H; auto.
@@ -1308,7 +1308,7 @@ Proof.
 (* well typed *)
 - inv H. unfold proj_sig_res; simpl. eapply eventval_match_type; eauto.
 (* symbols *)
-- destruct H as (_ & A & B & C). inv H0. econstructor; eauto.
+- destruct H as (A & B & C). inv H0. econstructor; eauto.
   eapply eventval_match_preserved; eauto.
 (* valid blocks *)
 - inv H; auto.
@@ -1460,12 +1460,12 @@ Definition external_call_determ ef := ec_determ (external_call_spec ef).
 Lemma external_call_nextblock:
   forall ef ge vargs m1 t vres m2,
   external_call ef ge vargs m1 t vres m2 ->
-  Ple (Mem.nextblock m1) (Mem.nextblock m2).
+  Block.le (Mem.nextblock m1) (Mem.nextblock m2).
 Proof.
-  intros. destruct (plt (Mem.nextblock m2) (Mem.nextblock m1)).
+  intros. destruct (Block.lt_dec (Mem.nextblock m2) (Mem.nextblock m1)).
   exploit external_call_valid_block; eauto. intros.
-  eelim Plt_strict; eauto.
-  unfold Plt, Ple in *; zify; omega.
+  eelim Block.lt_strict; eauto.
+  apply Block.nlt_le; eauto.
 Qed.
 
 (** Special case of [external_call_mem_inject_gen] (for backward compatibility) *)

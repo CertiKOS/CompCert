@@ -2611,7 +2611,7 @@ Proof.
   simpl. exists (Mem.nextblock m); split. apply Ple_refl.
   unfold j, Mem.flat_inj; constructor; intros.
     apply pred_dec_true; auto.
-    destruct (plt b1 (Mem.nextblock m0)); congruence.
+    destruct (Block.lt_dec b1 (Mem.nextblock m0)); congruence.
     change (Mem.valid_block m0 b0). eapply Genv.find_symbol_not_fresh; eauto.
     change (Mem.valid_block m0 b0). eapply Genv.find_funct_ptr_not_fresh; eauto.
     change (Mem.valid_block m0 b0). eapply Genv.find_var_info_not_fresh; eauto.
