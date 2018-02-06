@@ -345,7 +345,7 @@ Theorem wt_initial_state q:
 Proof.
   induction 1. econstructor. constructor.
   assumption.
-  unfold ge in H0. exploit Genv.find_funct_ptr_inversion; eauto.
+  unfold ge in H. exploit Genv.find_funct_ptr_inversion; eauto.
   intros [id' IN]. eapply wt_prog; eauto.
   assumption.
 Qed.

@@ -509,7 +509,7 @@ Qed.
 Inductive cc_inject_triangle_mq: meminj -> query li_c -> query li_c -> Prop :=
   cc_inject_triangle_mq_intro id sg vargs m:
     Val.inject_list (Mem.flat_inj (Mem.nextblock m)) vargs vargs ->
-    Mem.inject_neutral (Mem.nextblock m) m ->
+    Mem.inject (Mem.flat_inj (Mem.nextblock m)) m m ->
     cc_inject_triangle_mq
       (Mem.flat_inj (Mem.nextblock m))
       (cq id sg vargs m)
@@ -538,7 +538,7 @@ Definition cc_inject_triangle: callconv li_c li_c :=
 Lemma match_query_cc_inject_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
   (forall id sg vargs m,
     Val.inject_list (Mem.flat_inj (Mem.nextblock m)) vargs vargs ->
-    Mem.inject_neutral (Mem.nextblock m) m ->
+    Mem.inject (Mem.flat_inj (Mem.nextblock m)) m m ->
     P id sg vargs m (cq id sg vargs m) (cq id sg vargs m)) ->
   (forall w q1 q2,
     match_query cc_inject_triangle w q1 q2 ->

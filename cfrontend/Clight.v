@@ -673,7 +673,6 @@ Inductive step: state -> trace -> state -> Prop :=
 
 Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
   | initial_state_intro: forall b f targs tres tcc vargs m,
-      Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       type_of_function f = Tfunction targs tres tcc ->
       Val.has_type_list vargs (typlist_of_typelist targs) ->

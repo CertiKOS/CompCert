@@ -47,12 +47,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf_partial TRANSL).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma function_ptr_translated:
   forall (b: block) (f: Csharpminor.fundef),
   Genv.find_funct_ptr ge b = Some f ->
@@ -458,10 +452,10 @@ Proof.
   inversion 1; subst.
   unfold inject_incr, Mem.flat_inj.
   intros.
-  destruct (plt b (Mem.nextblock m_init)); try discriminate.
+  destruct (Block.lt_dec b (Mem.nextblock m_init)); try discriminate.
   inv H0.
   eapply DOMAIN.
-  xomega.
+  blomega.
 Qed.
 
 Lemma match_globalenvs_inject_separated:
@@ -472,11 +466,11 @@ Proof.
   inversion 1; subst.
   unfold inject_separated, Mem.flat_inj, Mem.valid_block.
   intros.
-  destruct (plt b1 (Mem.nextblock m_init)); try discriminate.
+  destruct (Block.lt_dec b1 (Mem.nextblock m_init)); try discriminate.
   split; auto.
-  destruct (plt b2 bound).
+  destruct (Block.lt_dec b2 bound).
    exploit IMAGE; eauto. congruence.
-  xomega.
+  blomega.
 Qed.
 
 (** * Invariant on abstract call stacks  *)
@@ -2264,23 +2258,7 @@ Opaque PTree.set.
   eapply match_callstack_set_temp; eauto.
 Qed.
 
-<<<<<<< HEAD
 End WITHMEMINIT.
-=======
-Lemma match_globalenvs_init:
-  forall m,
-  Genv.init_mem prog = Some m ->
-  match_globalenvs (Mem.flat_inj (Mem.nextblock m)) (Mem.nextblock m).
-Proof.
-  intros. constructor.
-  intros. unfold Mem.flat_inj. apply pred_dec_true; auto.
-  intros. unfold Mem.flat_inj in H0.
-  destruct (Block.lt_dec b1 (Mem.nextblock m)); congruence.
-  intros. eapply Genv.find_symbol_not_fresh; eauto.
-  intros. eapply Genv.find_funct_ptr_not_fresh; eauto.
-  intros. eapply Genv.find_var_info_not_fresh; eauto.
-Qed.
->>>>>>> origin/globmem
 
 Lemma transl_initial_states:
   forall w q1 q2, match_query cc_inject_triangle w q1 q2 ->
@@ -2298,20 +2276,20 @@ Proof.
   erewrite <- sig_preserved by eauto.
   monadInv TR.
   econstructor; eauto.
-  rewrite genv_next_preserved. assumption.
   fold (funsig (Internal x)).
   erewrite sig_preserved with (Internal f) (Internal x); eauto.
   simpl. rewrite EQ. reflexivity.
+  pose proof (Mem.init_nextblock m0) as Hnb.
   eapply match_callstate with (f := Mem.flat_inj (Mem.nextblock m0)) (cs := @nil frame) (cenv := PTree.empty Z).
   auto.
-  apply Mem.neutral_inject; eauto.
+  eauto.
   apply mcs_nil with (Mem.nextblock m0). econstructor.
   apply Block.le_refl.
   unfold Mem.flat_inj. intros.
-  destruct (Block.lt b (Mem.nextblock m0)); try contradiction. reflexivity.
+  destruct (Block.lt_dec b (Mem.nextblock m0)); try contradiction. reflexivity.
   unfold Mem.flat_inj. intros.
-  destruct (Block.lt b1 (Mem.nextblock m0)); congruence.
-  intros. exploit Genv.genv_symb_range; eauto. xomega.
+  destruct (Block.lt_dec b1 (Mem.nextblock m0)); congruence.
+  intros. exploit Genv.genv_symb_range; eauto. blomega.
   intros. apply Genv.find_funct_ptr_iff in H. exploit Genv.genv_defs_range; eauto. blomega.
   intros. apply Genv.find_var_info_iff in H. exploit Genv.genv_defs_range; eauto. blomega.
   apply Block.le_refl.
@@ -2352,7 +2330,7 @@ Proof.
       econstructor; eauto.
       eapply match_callstack_incr_bound.
       eapply (match_callstack_external_call _ f f' m1 m1' tm m2'); eauto.
-      xomega. xomega.
+      blomega. blomega.
       eapply Mem.unchanged_on_nextblock; eauto.
       eapply Mem.unchanged_on_nextblock; eauto.
 Qed.

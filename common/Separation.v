@@ -973,7 +973,7 @@ Proof.
 - split; auto.
   split; auto.
   red. intros b0 b3 delta0 H8 H9.
-  destruct (peq b0 b1).
+  destruct (Block.eq b0 b1).
   + subst.
     rewrite C in H9. inversion H9. subst delta0 b3.
     eauto with mem.

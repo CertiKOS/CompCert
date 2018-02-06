@@ -1586,7 +1586,7 @@ Qed.
 Lemma match_stacks_valid_blockv_sp j cs cs' sg isg m m':
   match_stacks j cs cs' sg isg ->
   Mem.inject j m m' ->
-  Ple (Mem.nextblock init_m2) (Mem.nextblock m') ->
+  Block.le (Mem.nextblock init_m2) (Mem.nextblock m') ->
   valid_blockv m' (parent_sp cs').
 Proof.
   intros Hstk Hm Hnb.
@@ -1750,10 +1750,6 @@ Proof (Genv.find_symbol_match TRANSF).
 Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_match TRANSF).
-
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof. apply senv_preserved. Qed.
 
 Lemma functions_translated:
   forall v f,
@@ -2089,7 +2085,7 @@ Proof.
     {
       unfold Mem.valid_block in Hb |- *.
       apply Mem.unchanged_on_nextblock in UNCH.
-      xomega.
+      blomega.
     }
     eauto.
 Qed.
@@ -2484,7 +2480,7 @@ Proof.
     - intros.
       eapply Mem.perm_alloc_4; eauto.
       apply Mem.alloc_result in H; subst.
-      red in H0. intro; subst; xomega.
+      red in H0. intro; subst. eelim Block.lt_strict; eauto.
   }
   eapply match_stacks_change_meminj; eauto.
   rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.
@@ -2592,7 +2588,6 @@ Proof.
   econstructor; split.
   monadInv TR.
   econstructor; eauto.
-  rewrite genv_next_preserved. admit. (* need incr flat_inj / globalenv_preserved in cc? *)
   rename w0 into j.
   eapply match_states_call with (j := j); eauto.
   {

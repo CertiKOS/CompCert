@@ -1797,12 +1797,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_match TRANSF).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma functions_translated:
   forall (v: val) (f: RTL.fundef),
   Genv.find_funct ge v = Some f ->
@@ -2520,7 +2514,6 @@ Proof.
   rewrite <- SIG.
   monadInv TR.
   econstructor; eauto.
-  fold tge. rewrite genv_next_preserved. assumption.
   constructor; auto.
   constructor. rewrite SIG; auto.
   rewrite SIG. clear. induction (map _ _); eauto.

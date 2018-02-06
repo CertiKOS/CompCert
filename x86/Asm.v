@@ -1155,7 +1155,6 @@ Definition li_asm :=
 
 Inductive initial_state (ge: genv): query li_asm -> state -> Prop :=
   | initial_state_intro rs m fb fofs f:
-      Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       rs#PC = Vptr fb fofs ->
       rs#SP <> Vundef ->

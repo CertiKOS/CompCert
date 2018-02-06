@@ -898,7 +898,7 @@ Variable ge: Mach.genv.
 
 Inductive block_lt: val -> val -> Prop :=
   | block_lt_intro b1 ofs1 b2 ofs2:
-      Pos.lt b1 b2 ->
+      Block.lt b1 b2 ->
       block_lt (Vptr b1 ofs1) (Vptr b2 ofs2).
 
 Inductive match_stack: list Mach.stackframe -> Prop :=
@@ -922,7 +922,7 @@ Proof.
   induction Hs; eauto.
   simpl. destruct 1.
   eapply IHHs. inv H1.
-  constructor. xomega.
+  constructor. blomega.
 Qed.
 
 Lemma block_lt_neq p1 p2:
@@ -930,7 +930,7 @@ Lemma block_lt_neq p1 p2:
   p1 <> p2.
 Proof.
   destruct 1.
-  assert (b1 <> b2) by xomega.
+  assert (b1 <> b2) by blomega.
   congruence.
 Qed.
 

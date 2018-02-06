@@ -127,12 +127,6 @@ Lemma senv_preserved:
   Senv.equiv (Genv.to_senv ge) (Genv.to_senv tge).
 Proof (Genv.senv_match TRANSF).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma function_ptr_translated:
   forall (b: block) (f: Cminor.fundef),
   Genv.find_funct_ptr ge b = Some f ->
@@ -1093,9 +1087,8 @@ Proof.
   {
     fold (Cminor.funsig (Internal f)).
     erewrite <- sig_function_translated by eauto.
-    pose proof B. inv B. destruct H3. monadInv H4.
+    pose proof B. inv B. destruct H2. monadInv H3.
     econstructor.
-    + rewrite genv_next_preserved. assumption.
     + assumption.
     + fold (funsig (Internal x0)).
       erewrite sig_function_translated; eauto.

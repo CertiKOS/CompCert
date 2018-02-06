@@ -64,12 +64,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf_partial TRANSF).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma sig_preserved:
   forall f tf,
   transf_fundef f = OK tf ->
@@ -733,7 +727,6 @@ Proof.
   erewrite <- sig_preserved by eauto.
   monadInv B.
   econstructor; eauto.
-  rewrite genv_next_preserved; eauto.
   constructor. constructor. constructor. constructor. auto.
 Qed.
 

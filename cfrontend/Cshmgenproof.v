@@ -958,7 +958,6 @@ Proof.
 Qed.
 
 Lemma make_memcpy_correct:
-  forall (SGE_NEXTBLOCK: Genv.genv_next ge = Genv.genv_next (Clight.globalenv prog)),
   forall f dst src ty k e le m b ofs v m' s,
   eval_expr ge e le m dst (Vptr b ofs) ->
   eval_expr ge e le m src v ->
@@ -980,7 +979,6 @@ Proof.
 Qed.
 
 Lemma make_store_correct:
-  forall (SGE_NEXTBLOCK: Genv.genv_next ge = Genv.genv_next (Clight.globalenv prog)),
   forall addr ty rhs code e le m b ofs v m' f k,
   make_store cunit.(prog_comp_env) addr ty rhs = OK code ->
   eval_expr ge e le m addr (Vptr b ofs) ->
@@ -1014,10 +1012,6 @@ Let tge := Genv.globalenv tprog.
 Lemma symbols_preserved:
   forall s, Genv.find_symbol tge s = Genv.find_symbol ge s.
 Proof (Genv.find_symbol_match TRANSL).
-
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof (Genv.genv_next_match TRANSL).
 
 Lemma senv_preserved:
   Senv.equiv ge tge.
@@ -1544,7 +1538,6 @@ Proof.
   destruct SAME; subst ts' tk'.
   econstructor; split.
   apply plus_one. eapply make_store_correct; eauto.
-  apply genv_next_preserved.
   eapply transl_lvalue_correct; eauto. eapply make_cast_correct; eauto.
   eapply transl_expr_correct; eauto.
   eapply match_states_skip; eauto.
@@ -1776,7 +1769,6 @@ Proof.
   rewrite <- E.
   inv B. simpl in E.
   econstructor; eauto.
-  fold tge. rewrite genv_next_preserved; eauto.
   rewrite E. simpl. assumption.
   econstructor; eauto. instantiate (1 := prog_comp_env cu). constructor; auto. exact I.
 Qed.

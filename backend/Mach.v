@@ -458,17 +458,16 @@ Inductive valid_blockv (m: mem): val -> Prop :=
 
 Lemma valid_blockv_nextblock m m' v:
   valid_blockv m v ->
-  Pos.le (Mem.nextblock m) (Mem.nextblock m') ->
+  Block.le (Mem.nextblock m) (Mem.nextblock m') ->
   valid_blockv m' v.
 Proof.
   destruct 1. constructor.
-  unfold Mem.valid_block in *. xomega.
+  unfold Mem.valid_block in *. blomega.
 Qed.
 
 
 Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
   | initial_state_intro: forall fb f sp ra rs m,
-      Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       initial_state ge
         (mq fb sp ra rs m)

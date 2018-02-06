@@ -17,15 +17,8 @@ Section CLIGHT_EQUIV.
   Hypothesis cenv_equiv:
     Clight.genv_cenv tge = Clight.genv_cenv sge.
 
-  Hypothesis genv_symb_equiv:
-    Genv.genv_symb tge = Genv.genv_symb sge.
-
-  Lemma find_symbol_equiv id:
-    Genv.find_symbol tge id = Genv.find_symbol sge id.
-  Proof.
-    unfold Genv.find_symbol.
-    congruence.
-  Qed.
+  Hypothesis find_symbol_equiv:
+    forall id, Genv.find_symbol tge id = Genv.find_symbol sge id.
 
   Lemma assign_loc_equiv ty m b ofs v m':
     Clight.assign_loc sge ty m b ofs v m' ->
@@ -110,8 +103,8 @@ Section CLIGHT_UNLINK.
   Hypothesis cenv_link:
     forall i, Clight.genv_cenv (tge i) = Clight.genv_cenv sge.
 
-  Hypothesis genv_symb_link:
-    forall i, Genv.genv_symb (tge i) = Genv.genv_symb sge.
+  Hypothesis genv_find_symbol:
+    forall i, Genv.find_symbol (tge i) = Genv.find_symbol sge.
 
   Hypothesis genv_defs_unlink:
     forall i id sdef,
@@ -314,17 +307,13 @@ Section CLIGHT_UNLINK.
   Proof.
     intros Hq.
     apply match_query_cc_id in Hq; subst.
-    intros [b f targs tres tcc vargs m Hm Hb Hf Hvargs].
+    intros [b f targs tres tcc vargs m Hb Hf Hvargs].
     edestruct find_funct_ptr_internal_unlink_switch as [i Hbi]; eauto.
     eexists (existT _ i (Clight.Callstate _ vargs Clight.Kstop m) :: nil).
     split.
     + apply Res.initial_state_intro.
       apply FComp.initial_state_intro.
       eapply Clight.initial_state_intro; eauto.
-      destruct (same_senv i) as (Hnextblock & _).
-      change (Genv.genv_next _) with (Senv.nextblock (tge i)).
-      rewrite Hnextblock.
-      assumption.
     + apply match_callstate.
       * apply linkorder_refl.
       * apply match_kstop.
