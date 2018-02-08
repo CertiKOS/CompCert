@@ -484,7 +484,7 @@ Inductive state: Type :=
       (le: temp_env)
       (m: mem) : state
   | Callstate
-      (fd: fundef)
+      (fb: block)
       (args: list val)
       (k: cont)
       (m: mem) : state
@@ -559,14 +559,15 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sset id a) k e le m)
         E0 (State f Sskip k e (PTree.set id v le) m)
 
-  | step_call:   forall f optid a al k e le m tyargs tyres cconv vf vargs fd,
+  | step_call:   forall f optid a al k e le m tyargs tyres cconv vf vargs fb fd,
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr e le m a vf ->
       eval_exprlist e le m al tyargs vargs ->
+      vf = Vptr fb Ptrofs.zero ->
       Genv.find_funct ge vf = Some fd ->
       type_of_fundef fd = Tfunction tyargs tyres cconv ->
       step (State f (Scall optid a al) k e le m)
-        E0 (Callstate fd vargs (Kcall optid f e le k) m)
+        E0 (Callstate fb vargs (Kcall optid f e le k) m)
 
   | step_builtin:   forall f optid ef tyargs al k e le m vargs t vres m',
       eval_exprlist e le m al tyargs vargs ->
@@ -648,14 +649,16 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sgoto lbl) k e le m)
         E0 (State f s' k' e le m)
 
-  | step_internal_function: forall f vargs k m e le m1,
+  | step_internal_function: forall fb f vargs k m e le m1,
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       function_entry f vargs m e le m1 ->
-      step (Callstate (Internal f) vargs k m)
+      step (Callstate fb vargs k m)
         E0 (State f f.(fn_body) k e le m1)
 
-  | step_external_function: forall ef targs tres cconv vargs k m vres t m',
+  | step_external_function: forall fb ef targs tres cconv vargs k m vres t m',
+      Genv.find_funct_ptr ge fb = Some (External ef targs tres cconv) ->
       external_call ef ge vargs m t vres m' ->
-      step (Callstate (External ef targs tres cconv) vargs k m)
+      step (Callstate fb vargs k m)
          t (Returnstate vres k m')
 
   | step_returnstate: forall v optid f e le k m,
@@ -676,7 +679,7 @@ Inductive initial_state (p: program): state -> Prop :=
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-      initial_state p (Callstate f nil Kstop m0).
+      initial_state p (Callstate b nil Kstop m0).
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 
