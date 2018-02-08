@@ -318,8 +318,8 @@ Inductive rred: expr -> mem -> trace -> expr -> mem -> Prop :=
 
 Inductive callred: expr -> mem -> block -> list val -> type -> Prop :=
   | red_call: forall vf tyf m tyargs tyres cconv el ty fb fd vargs,
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       cast_arguments m el tyargs vargs ->
       type_of_fundef fd = Tfunction tyargs tyres cconv ->
       classify_fun tyf = fun_case_f tyargs tyres cconv ->

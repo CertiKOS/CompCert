@@ -385,8 +385,8 @@ Inductive step: state -> trace -> state -> Prop :=
   | step_call: forall fb f optid sig a bl k e le m vf vargs fd,
       eval_expr e le m a vf ->
       eval_exprlist e le m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k e le m)
         E0 (Callstate fb vargs (Kcall optid f e le k) m)

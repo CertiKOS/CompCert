@@ -459,8 +459,8 @@ Inductive step: state -> trace -> state -> Prop :=
   | step_call: forall fb f optid sig a bl k sp e m vf vargs fd,
       eval_expr sp e m a vf ->
       eval_exprlist sp e m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k sp e m)
         E0 (Callstate fb vargs (Kcall optid f sp e k) m)
@@ -468,8 +468,8 @@ Inductive step: state -> trace -> state -> Prop :=
   | step_tailcall: forall fb f sig a bl k sp e m vf vargs fd m',
       eval_expr (Vptr sp Ptrofs.zero) e m a vf ->
       eval_exprlist (Vptr sp Ptrofs.zero) e m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stackspace) = Some m' ->
       step (State f (Stailcall sig a bl) k (Vptr sp Ptrofs.zero) e m)
@@ -690,8 +690,8 @@ with exec_stmt:
       forall fb f sp e m optid sig a bl vf vargs fd t m' vres e',
       eval_expr ge sp e m a vf ->
       eval_exprlist ge sp e m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       eval_funcall m fb vargs t m' vres ->
       e' = set_optvar optid vres e ->
@@ -754,8 +754,8 @@ with exec_stmt:
       forall fb f sp e m sig a bl vf vargs fd t m' m'' vres,
       eval_expr ge (Vptr sp Ptrofs.zero) e m a vf ->
       eval_exprlist ge (Vptr sp Ptrofs.zero) e m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stackspace) = Some m' ->
       eval_funcall m' fb vargs t m'' vres ->
@@ -793,8 +793,8 @@ with execinf_stmt:
       forall fb f sp e m optid sig a bl vf vargs fd t,
       eval_expr ge sp e m a vf ->
       eval_exprlist ge sp e m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       evalinf_funcall m fb vargs t ->
       execinf_stmt f sp e m (Scall optid sig a bl) t
@@ -832,8 +832,8 @@ with execinf_stmt:
       forall fb f sp e m sig a bl vf vargs fd m' t,
       eval_expr ge (Vptr sp Ptrofs.zero) e m a vf ->
       eval_exprlist ge (Vptr sp Ptrofs.zero) e m bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stackspace) = Some m' ->
       evalinf_funcall m' fb vargs t ->

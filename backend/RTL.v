@@ -186,10 +186,7 @@ Variable ge: genv.
 Definition find_block
       (ros: reg + ident) (rs: regset) : option block :=
   match ros with
-  | inl r => match rs#r with
-              Vptr b o => Some b
-            | _ => None
-            end
+  | inl r => block_of (rs#r)
   | inr symb => Genv.find_symbol ge symb
   end.
 

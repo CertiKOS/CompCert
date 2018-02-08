@@ -93,8 +93,8 @@ Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env ->
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr ge e le m a vf ->
       eval_exprlist ge e le m al tyargs vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some f ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some f ->
       type_of_fundef f = Tfunction tyargs tyres cconv ->
       eval_funcall m fb vargs t m' vres ->
       exec_stmt e le m (Scall optid a al)
@@ -194,8 +194,8 @@ CoInductive execinf_stmt: env -> temp_env -> mem -> statement -> traceinf -> Pro
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr ge e le m a vf ->
       eval_exprlist ge e le m al tyargs vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some f ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some f ->
       type_of_fundef f = Tfunction tyargs tyres cconv ->
       evalinf_funcall m fb vargs t ->
       execinf_stmt e le m (Scall optid a al) t

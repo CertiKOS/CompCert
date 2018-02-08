@@ -95,10 +95,7 @@ Variable ge: genv.
 
 Definition find_block (ros: mreg + ident) (rs: locset) : option block :=
   match ros with
-  | inl r => match rs (R r) with
-            | Vptr b o => Some b
-            | _ => None
-            end
+  | inl r => block_of (rs (R r))
   | inr symb => Genv.find_symbol ge symb
   end.
 

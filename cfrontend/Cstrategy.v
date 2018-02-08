@@ -366,8 +366,8 @@ Inductive estep: state -> trace -> state -> Prop :=
       classify_fun (typeof rf) = fun_case_f targs tres cconv ->
       eval_simple_rvalue e m rf vf ->
       eval_simple_list e m rargs targs vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       type_of_fundef fd = Tfunction targs tres cconv ->
       estep (ExprState f (C (Ecall rf rargs ty)) k e m)
          E0 (Callstate fb vargs (Kcall f e C ty k) m)
@@ -565,9 +565,10 @@ Definition invert_expr_prop (a: expr) (m: mem) : Prop :=
       exists v, sem_cast v1 ty1 ty2 m = Some v
   | Ecall (Eval vf tyf) rargs ty =>
       exprlist_all_values rargs ->
-      exists tyargs tyres cconv fd vl,
+      exists tyargs tyres cconv fb fd vl,
          classify_fun tyf = fun_case_f tyargs tyres cconv
-      /\ Genv.find_funct ge vf = Some fd
+      /\ block_of vf = Some fb
+      /\ Genv.find_funct_ptr ge fb = Some fd
       /\ cast_arguments m rargs tyargs vl
       /\ type_of_fundef fd = Tfunction tyargs tyres cconv
   | Ebuiltin ef tyargs rargs ty =>
@@ -613,7 +614,7 @@ Lemma callred_invert:
   invert_expr_prop r m.
 Proof.
   intros. inv H. simpl.
-  intros. exists tyargs, tyres, cconv, fd, args; auto.
+  intros. exists tyargs, tyres, cconv, fb,fd, args; auto.
 Qed.
 
 Scheme context_ind2 := Minimality for context Sort Prop
@@ -1264,7 +1265,7 @@ Proof.
   eapply star_plus_trans.
   eapply eval_simple_rvalue_steps with (C := fun x => C(Ecall x rargs ty)); eauto.
   eapply plus_right.
-  eapply eval_simple_list_steps with (C := fun x => C(Ecall (Eval (Vptr fb Ptrofs.zero) (typeof rf)) x ty)); eauto.
+  eapply eval_simple_list_steps with (C := fun x => C(Ecall (Eval vf (typeof rf)) x ty)); eauto.
   eapply contextlist'_call with (rl0 := Enil); auto.
   left; apply Csem.step_call; eauto. econstructor; eauto.
   traceEq. auto.
@@ -1372,8 +1373,7 @@ Proof.
   eapply safe_steps. eexact S1.
   apply (eval_simple_list_steps f k e m rargs vl E2 C'); auto.
   simpl. intros X. exploit X. eapply rval_list_all_values.
-  intros [tyargs [tyres [cconv [fd [vargs [P [Q [U V]]]]]]]].
-  edestruct (Genv.find_funct_inv ge vf) as (fb & EQ). eauto.
+  intros [tyargs [tyres [cconv [fb [fd [vargs [P [Q1 [Q2 [U V]]]]]]]]]].
   econstructor; econstructor; eapply step_call; eauto. eapply can_eval_simple_list; eauto.
 (* builtin *)
   pose (C' := fun x => C(Ebuiltin ef tyargs x ty)).
@@ -1765,8 +1765,8 @@ with eval_expr: env -> mem -> kind -> expr -> trace -> mem -> expr -> Prop :=
       eval_simple_rvalue ge e m2 rf' vf ->
       eval_simple_list ge e m2 rargs' targs vargs ->
       classify_fun (typeof rf) = fun_case_f targs tres cconv ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       type_of_fundef fd = Tfunction targs tres cconv ->
       eval_funcall m2 fb vargs t3 m3 vres ->
       eval_expr e m RV (Ecall rf rargs ty) (t1**t2**t3) m3 (Eval vres ty)
@@ -2012,8 +2012,8 @@ CoInductive evalinf_expr: env -> mem -> kind -> expr -> traceinf -> Prop :=
       eval_simple_rvalue ge e m2 rf' vf ->
       eval_simple_list ge e m2 rargs' targs vargs ->
       classify_fun (typeof rf) = fun_case_f targs tres cconv ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       type_of_fundef fd = Tfunction targs tres cconv ->
       evalinf_funcall m2 fb vargs t3 ->
       evalinf_expr e m RV (Ecall rf rargs ty) (t1***t2***t3)

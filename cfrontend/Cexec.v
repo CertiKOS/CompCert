@@ -620,7 +620,7 @@ Qed.
 Inductive reduction: Type :=
   | Lred (rule: string) (l': expr) (m': mem)
   | Rred (rule: string) (r': expr) (m': mem) (t: trace)
-  | Callred (rule: string) (fd: fundef) (args: list val) (tyres: type) (m': mem)
+  | Callred (rule: string) (fb: block) (args: list val) (tyres: type) (m': mem)
   | Stuckred.
 
 Section EXPRS.
@@ -849,10 +849,11 @@ Fixpoint step_expr (k: kind) (a: expr) (m: mem): reducts expr :=
       | Some(vf, tyf), Some vtl =>
           match classify_fun tyf with
           | fun_case_f tyargs tyres cconv =>
-              do fd <- Genv.find_funct ge vf;
+              do fb <- block_of vf;
+              do fd <- Genv.find_funct_ptr ge fb;
               do vargs <- sem_cast_arguments vtl tyargs m;
               check type_eq (type_of_fundef fd) (Tfunction tyargs tyres cconv);
-              topred (Callred "red_call" fd vargs ty m)
+              topred (Callred "red_call" fb vargs ty m)
           | _ => stuck
           end
       | _, _ =>
@@ -966,9 +967,10 @@ Definition invert_expr_prop (a: expr) (m: mem) : Prop :=
       exists v, sem_cast v1 ty1 tycast m = Some v
   | Ecall (Eval vf tyf) rargs ty =>
       exprlist_all_values rargs ->
-      exists tyargs tyres cconv fd vl,
+      exists tyargs tyres cconv fb fd vl,
          classify_fun tyf = fun_case_f tyargs tyres cconv
-      /\ Genv.find_funct ge vf = Some fd
+      /\ block_of vf = Some fb
+      /\ Genv.find_funct_ptr ge fb = Some fd
       /\ cast_arguments m rargs tyargs vl
       /\ type_of_fundef fd = Tfunction tyargs tyres cconv
   | Ebuiltin ef tyargs rargs ty =>
@@ -1015,7 +1017,7 @@ Lemma callred_invert:
   invert_expr_prop r m.
 Proof.
   intros. inv H. simpl.
-  intros. exists tyargs, tyres, cconv, fd, args; auto.
+  intros. exists tyargs, tyres, cconv, fd, fd0, args; auto.
 Qed.
 
 Scheme context_ind2 := Minimality for context Sort Prop
@@ -1460,7 +1462,8 @@ Proof with (try (apply not_invert_ok; simpl; intro; myinv; intuition congruence;
   rewrite (is_val_inv _ _ _ Heqo). exploit is_val_list_all_values; eauto. intros ALLVAL.
   (* top *)
   destruct (classify_fun tyf) as [tyargs tyres cconv|] eqn:?...
-  destruct (Genv.find_funct ge vf) as [fd|] eqn:?...
+  destruct (block_of vf) as [fb|] eqn:BO...
+  destruct (Genv.find_funct_ptr ge fb) as [fd|] eqn:?...
   destruct (sem_cast_arguments vtl tyargs m) as [vargs|] eqn:?...
   destruct (type_eq (type_of_fundef fd) (Tfunction tyargs tyres cconv))...
   apply topred_ok; auto. red. split; auto. eapply red_call; eauto.
@@ -1468,6 +1471,7 @@ Proof with (try (apply not_invert_ok; simpl; intro; myinv; intuition congruence;
   apply not_invert_ok; simpl; intros; myinv. specialize (H ALLVAL). myinv. congruence.
   apply not_invert_ok; simpl; intros; myinv. specialize (H ALLVAL). myinv.
   exploit sem_cast_arguments_complete; eauto. intros [vtl' [P Q]]. congruence.
+  apply not_invert_ok; simpl; intros; myinv. specialize (H ALLVAL). myinv. congruence.
   apply not_invert_ok; simpl; intros; myinv. specialize (H ALLVAL). myinv. congruence.
   apply not_invert_ok; simpl; intros; myinv. specialize (H ALLVAL). myinv. congruence.
   (* depth *)
@@ -1594,8 +1598,8 @@ Lemma callred_topred:
   exists rule, step_expr RV a m = topred (Callred rule fd args ty m).
 Proof.
   induction 1; simpl.
-  rewrite H2. exploit sem_cast_arguments_complete; eauto. intros [vtl [A B]].
-  rewrite A; rewrite H; rewrite B; rewrite H1; rewrite dec_eq_true. econstructor; eauto.
+  rewrite H3. exploit sem_cast_arguments_complete; eauto. intros [vtl [A B]].
+  rewrite A; rewrite H,H0; rewrite B; rewrite H2; rewrite dec_eq_true. econstructor; eauto.
 Qed.
 
 Definition reducts_incl {A B: Type} (C: A -> B) (res1: reducts A) (res2: reducts B) : Prop :=
@@ -2020,16 +2024,20 @@ Definition do_step (w: world) (s: state) : list transition :=
       | None => nil
       end
 
-  | Callstate (Internal f) vargs k m =>
+  | Callstate fb  vargs k m =>
+    match Genv.find_funct_ptr ge fb with
+    | Some (Internal f) =>
       check (list_norepet_dec ident_eq (var_names (fn_params f) ++ var_names (fn_vars f)));
-      let (e,m1) := do_alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) in
-      do m2 <- sem_bind_parameters w e m1 f.(fn_params) vargs;
-      ret "step_internal_function" (State f f.(fn_body) k e m2)
-  | Callstate (External ef _ _ _) vargs k m =>
+        let (e,m1) := do_alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) in
+        do m2 <- sem_bind_parameters w e m1 f.(fn_params) vargs;
+          ret "step_internal_function" (State f f.(fn_body) k e m2)
+    | Some (External ef _ _ _) =>
       match do_external ef w vargs m with
       | None => nil
       | Some(w',t,v,m') => TR "step_external_function" t (Returnstate v k m') :: nil
       end
+    | _ => nil
+    end
 
   | Returnstate v (Kcall f e C ty k) m =>
       ret "step_returnstate" (ExprState f (C (Eval v ty)) k e m)
@@ -2093,14 +2101,15 @@ Proof with try (left; right; econstructor; eauto; fail).
   (* stuck rred *)
   exploit not_imm_safe_t; eauto. intros [R | R]; eauto.
 (* callstate *)
-  destruct fd; myinv.
+  destruct (Genv.find_funct_ptr ge fb) eqn:FIND; myinv.
+  destruct f; myinv.
   (* internal *)
   destruct (do_alloc_variables empty_env m (fn_params f ++ fn_vars f)) as [e m1] eqn:?.
-  myinv. left; right; apply step_internal_function with m1. auto.
+  myinv. left; right; apply step_internal_function with m1. auto. auto.
   change e with (fst (e,m1)). change m1 with (snd (e,m1)) at 2. rewrite <- Heqp.
   apply do_alloc_variables_sound. eapply sem_bind_parameters_sound; eauto.
   (* external *)
-  destruct p as [[[w' tr] v] m']. myinv. left; right; constructor.
+  destruct p as [[[w' tr] v] m']. myinv. left; right; econstructor. eauto.
   eapply do_ef_external_sound; eauto.
 (* returnstate *)
   destruct k; myinv...
@@ -2187,8 +2196,10 @@ Proof with (unfold ret; eauto with coqlib).
   rewrite H0...
 
   (* Call step *)
-  rewrite pred_dec_true; auto. rewrite (do_alloc_variables_complete _ _ _ _ _ H1).
-  rewrite (sem_bind_parameters_complete _ _ _ _ _ _ H2)...
+  rewrite H0.
+  rewrite pred_dec_true; auto. rewrite (do_alloc_variables_complete _ _ _ _ _ H2).
+  rewrite (sem_bind_parameters_complete _ _ _ _ _ _ H3)...
+  rewrite H0.
   exploit do_ef_external_complete; eauto. intro EQ; rewrite EQ. auto with coqlib.
 Qed.
 
@@ -2202,7 +2213,7 @@ Definition do_initial_state (p: program): option (genv * state) :=
   do b <- Genv.find_symbol ge p.(prog_main);
   do f <- Genv.find_funct_ptr ge b;
   check (type_eq (type_of_fundef f) (Tfunction Tnil type_int32s cc_default));
-  Some (ge, Callstate f nil Kstop m0).
+  Some (ge, Callstate b nil Kstop m0).
 
 Definition at_final_state (S: state): option int :=
   match S with

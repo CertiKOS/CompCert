@@ -361,8 +361,8 @@ Inductive step: state -> trace -> state -> Prop :=
   | step_call: forall fb f optid sig a bl k sp e m vf vargs fd,
       eval_expr_or_symbol sp e m nil a vf ->
       eval_exprlist sp e m nil bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k sp e m)
         E0 (Callstate fb vargs (Kcall optid f sp e k) m)
@@ -370,8 +370,8 @@ Inductive step: state -> trace -> state -> Prop :=
   | step_tailcall: forall fb f sig a bl k sp e m vf vargs fd m',
       eval_expr_or_symbol (Vptr sp Ptrofs.zero) e m nil a vf ->
       eval_exprlist (Vptr sp Ptrofs.zero) e m nil bl vargs ->
-      vf = Vptr fb Ptrofs.zero ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stackspace) = Some m' ->
       step (State f (Stailcall sig a bl) k (Vptr sp Ptrofs.zero) e m)

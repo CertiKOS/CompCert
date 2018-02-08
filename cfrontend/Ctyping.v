@@ -1971,9 +1971,9 @@ Definition fundef_return (fd: fundef) : type :=
   end.
 
 Lemma wt_find_funct:
-  forall v fd, Genv.find_funct ge v = Some fd -> wt_fundef fd.
+  forall v fd, Genv.find_funct_ptr ge v = Some fd -> wt_fundef fd.
 Proof.
-  intros. apply Genv.find_funct_prop with (p := prog) (v := v); auto.
+  intros. apply Genv.find_funct_ptr_prop with (p := prog) (b := v); auto.
   intros. inv WTPROG. destruct f; simpl; auto. apply H1 with id; auto.
 Qed.
 
@@ -2064,7 +2064,7 @@ Proof.
   eapply wt_rred; eauto. change (wt_expr_kind ge te RV a). eapply wt_subexpr; eauto.
 - (* call *)
   assert (A: wt_expr_kind ge te RV a) by (eapply wt_subexpr; eauto).
-  simpl in A. inv H. inv A. simpl in H9; rewrite H5 in H9; inv H9.
+  simpl in A. inv H. inv A. simpl in H10; rewrite H5 in H10; inv H10.
   assert (fundef_return fd0 = ty).
   { destruct fd0; simpl in *.
     unfold type_of_function in H4. congruence.
@@ -2072,7 +2072,7 @@ Proof.
   econstructor.
   rewrite H. econstructor; eauto.
   intros. change (wt_expr_kind ge te RV (C (Eval v ty))).
-  eapply wt_context with (a := Ecall (Eval (Vptr fd Ptrofs.zero) tyf) el ty); eauto.
+  eapply wt_context with (a := Ecall (Eval vf tyf) el ty); eauto.
   red; constructor; auto.
   eapply wt_find_funct; eauto.
   eauto.
