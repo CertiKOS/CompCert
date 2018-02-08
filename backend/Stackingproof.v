@@ -47,8 +47,36 @@ Definition arguments_out_of_reach sg j m1 sp :=
     0 <= i < 4 * typesize ty ->
     loc_out_of_reach j m1 sb (Ptrofs.unsigned sofs + i).
 
+Definition globals_separated (f: meminj) :=
+  forall b b' ofs,
+    f b = Some (b', ofs) ->
+    Block.lt b' Block.init ->
+    Block.lt b Block.init.
+
+Lemma globals_separated_trans f f' m1 m2:
+  globals_separated f ->
+  Mem.inject f m1 m2 ->
+  inject_incr f f' ->
+  inject_separated f f' m1 m2 ->
+  globals_separated f'.
+Proof.
+  intros Hf Hm INCR SEP.
+  intros b1 b2 ofs Hfb Hb2.
+  destruct (f b1) as [[b2' ofs'] | ] eqn:Hb2'.
+  - eapply Hf; eauto.
+    apply INCR in Hb2'. congruence.
+  - edestruct SEP; eauto.
+    unfold Mem.valid_block in *.
+    elim (Block.lt_strict b2).
+    apply Block.lt_le_trans with Block.init; eauto.
+    apply Block.le_trans with (Mem.nextblock m2); eauto using Mem.init_nextblock.
+    eapply Block.nlt_le; eauto.
+Qed.
+
 Definition cc_stacking_mq f: query li_locset -> query li_mach -> Prop :=
   fun '(lq id1 sg rs1 m1) '(mq id2 sp ra rs2 m2) =>
+    inject_incr (Mem.flat_inj Block.init) f /\
+    globals_separated f /\
     id1 = id2 /\
     (forall r, Val.inject f (rs1 (R r)) (rs2 r)) /\
     Mem.inject f m1 m2 /\
@@ -84,6 +112,8 @@ Definition cc_stacking: callconv li_locset li_mach :=
   |}.
 
 Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
+  inject_incr (Mem.flat_inj Block.init) f ->
+  globals_separated f ->
   (forall r, Val.inject f (rs1 (R r)) (rs2 r)) ->
   Mem.inject f m1 m2 ->
   valid_blockv m2 sp ->
@@ -1811,7 +1841,7 @@ Proof.
   clear.
   destruct w as [j0 [? sg ls0 m1] [id sp0 ra0 rs0 m2] Hq].
   simpl in *.
-  destruct Hq as (? & Hrs0 & _ & _ & _ & Hoor & Hargs); subst.
+  destruct Hq as (_ & _ & ? & Hrs0 & _ & _ & _ & Hoor & Hargs); subst.
   intros Hin_args Hunch.
   edestruct Hargs as (v & Hvarg & Hv); eauto.
   exists v; intuition.
@@ -2582,7 +2612,7 @@ Proof.
   inversion 1; subst; clear H Hq Hq1.
   destruct q1 as [id1 sg ls m1].
   destruct q2 as [id sp ra rs m2].
-  destruct Hq0 as (Hid & Hrs & Hm & Hsp & Hra & Hargs); subst.
+  destruct Hq0 as (INCR & SEP & Hj & Hrs & Hm & Hsp & Hra & Hoor & Hargs); subst.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   econstructor; split.
@@ -2601,18 +2631,22 @@ Proof.
   rewrite <- sep_assoc_1.
   split;[|split].
   apply minjection_intro; assumption.
-  simpl. admit. (* globalenv_inject *)
-  (*
-  simpl. exists (Mem.nextblock m); split. apply Ple_refl.
-  unfold j, Mem.flat_inj; constructor; intros.
-    apply pred_dec_true; auto.
-    destruct (Block.lt_dec b1 (Mem.nextblock m0)); congruence.
-    change (Mem.valid_block m0 b0). eapply Genv.find_symbol_not_fresh; eauto.
-    change (Mem.valid_block m0 b0). eapply Genv.find_funct_ptr_not_fresh; eauto.
-    change (Mem.valid_block m0 b0). eapply Genv.find_var_info_not_fresh; eauto.
-   *)
+  {
+    simpl. exists Block.init; split. apply Mem.init_nextblock.
+    constructor; intros.
+    + apply INCR. unfold Mem.flat_inj.
+      destruct Block.lt_dec. reflexivity. contradiction.
+    + assert (j b1 = Some (b1, 0)).
+      * apply INCR. unfold Mem.flat_inj.
+        destruct Block.lt_dec; eauto.
+        elim n; eapply SEP; eauto.
+      * congruence.
+    + eapply Genv.genv_symb_range; eauto.
+    + apply Genv.find_funct_ptr_iff in H. eapply Genv.genv_defs_range; eauto.
+    + apply Genv.find_var_info_iff in H. eapply Genv.genv_defs_range; eauto.
+  }
   red; simpl; tauto.
-Admitted.
+Qed.
 
 Lemma transf_external:
   forall w st1 st2 q1,
@@ -2648,7 +2682,7 @@ Proof.
       apply sep_proj1 in SEP.
       eapply sep_minjection_out_of_reach; eauto.
       simpl.
-      pose proof Hq as (Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
+      pose proof Hq as (_ & _ & Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
       split.
       + eapply Hoor; eauto.
         destruct TP as [TP | ?]; try congruence.
@@ -2675,7 +2709,19 @@ Proof.
   }
   edestruct match_cc_wt as (wA12 & Hq12 & H12); eauto.
   edestruct match_cc_locset as (wA23 & Hq23 & H23); eauto.
-  edestruct match_cc_stacking as (wA34 & Hq34 & H34); eauto.
+  edestruct (match_cc_stacking j) as (wA34 & Hq34 & H34); eauto.
+  { clear -INCR.
+    destruct w as [j0 [fb1 sg1 rs1 m1] [fb2 sp0 ra0 rs2 m2] Hq].
+    cbn -[Z.mul m_pred] in *.
+    intuition.
+    eapply inject_incr_trans; eauto. }
+  { clear - INCR SINV return_address_offset.
+    destruct w as [j0 [fb1 sg1 rs1 m1] [fb2 sp0 ra0 rs2 m2] Hq].
+    cbn -[Z.mul m_pred] in *.
+    destruct Hq as (FINCR & SEP & Hfb & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
+    eapply globals_separated_trans; eauto.
+    destruct SINV; simpl in *.
+    assumption. }
   { eapply match_stacks_valid_blockv_sp; eauto.
     eapply Mem.unchanged_on_nextblock.
     eapply stack_contents_out_of_reach; eauto. }
