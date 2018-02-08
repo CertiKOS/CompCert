@@ -1725,6 +1725,22 @@ Qed.
 
 Hint Resolve match_cont_globalenv: compat.
 
+Lemma match_cont_find_funct_ptr:
+  forall f cenv k tk m bound tbound fd b vf tvf,
+  match_cont f cenv k tk m bound tbound ->
+  Val.inject f vf tvf ->
+  block_of vf = Some b ->
+  Genv.find_funct_ptr ge b = Some fd ->
+  block_of tvf = Some b /\ exists tfd, Genv.find_funct_ptr tge b = Some tfd /\ transf_fundef fd = OK tfd.
+Proof.
+  intros. exploit match_cont_globalenv; eauto. intros [bound1 MG]. destruct MG.
+  assert (f b = Some(b, 0)).
+    apply DOMAIN. eapply FUNCTIONS; eauto.
+  apply block_of_inv in H1. subst. inv H0.
+  rewrite H3 in H5; inv H5. simpl. rewrite pred_dec_true; auto. split; auto.
+  apply function_ptr_translated; auto.
+Qed.
+
 Lemma match_cont_find_funct:
   forall f cenv k tk m bound tbound vf fd tvf,
   match_cont f cenv k tk m bound tbound ->
@@ -1757,15 +1773,17 @@ Inductive match_states: state -> state -> Prop :=
       match_states (State f s k e le m)
                    (State tf ts tk te tle tm)
   | match_call_state:
-      forall fd vargs k m tfd tvargs tk tm j targs tres cconv
+      forall fd vargs k m tfd tvargs tk tm j targs tres cconv fb tfb
+        (FIND: Genv.find_funct_ptr ge fb = Some fd)
+        (TFIND: Genv.find_funct_ptr tge tfb = Some tfd)
         (TRFD: transf_fundef fd = OK tfd)
         (MCONT: forall cenv, match_cont j cenv k tk m (Mem.nextblock m) (Mem.nextblock tm))
         (MINJ: Mem.inject j m tm)
         (AINJ: Val.inject_list j vargs tvargs)
         (FUNTY: type_of_fundef fd = Tfunction targs tres cconv)
         (ANORM: val_casted_list vargs targs),
-      match_states (Callstate fd vargs k m)
-                   (Callstate tfd tvargs tk tm)
+      match_states (Callstate fb vargs k m)
+                   (Callstate tfb tvargs tk tm)
   | match_return_state:
       forall v k m tv tk tm j
         (MCONT: forall cenv, match_cont j cenv k tk m (Mem.nextblock m) (Mem.nextblock tm))
@@ -2049,11 +2067,11 @@ Proof.
 (* call *)
   exploit eval_simpl_expr; eauto with compat. intros [tvf [A B]].
   exploit eval_simpl_exprlist; eauto with compat. intros [CASTED [tvargs [C D]]].
-  exploit match_cont_find_funct; eauto. intros [tfd [P Q]].
+  exploit match_cont_find_funct_ptr; eauto. intros [BO [tfd [P Q]]].
   econstructor; split.
   apply plus_one. eapply step_call with (fd := tfd).
   rewrite typeof_simpl_expr. eauto.
-  eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
   erewrite type_of_fundef_preserved; eauto.
   econstructor; eauto.
   intros. econstructor; eauto.
@@ -2173,7 +2191,8 @@ Proof.
   econstructor; eauto.
 
 (* internal function *)
-  monadInv TRFD. inv H.
+  rewrite FIND in H; inv H.
+  monadInv TRFD. inv H0. simpl in *.
   generalize EQ; intro EQ'; monadInv EQ'.
   assert (list_norepet (var_names (fn_params f ++ fn_vars f))).
     unfold var_names. rewrite map_app. auto.
@@ -2199,7 +2218,7 @@ Proof.
   generalize (vars_and_temps_properties (cenv_for f) (fn_params f) (fn_vars f) (fn_temps f)).
   intros [X [Y Z]]. auto. auto.
   econstructor; split.
-  eapply plus_left. econstructor.
+  eapply plus_left. econstructor. eauto.
   econstructor. exact Y. exact X. exact Z. simpl. eexact A. simpl. eexact Q.
   simpl. eapply star_trans. eapply step_add_debug_params. auto. eapply forall2_val_casted_inject; eauto. eexact Q.
   eapply star_trans. eexact P. eapply step_add_debug_vars.
@@ -2219,7 +2238,7 @@ Proof.
   rewrite T; xomega.
 
 (* external function *)
-  monadInv TRFD. inv FUNTY.
+  rewrite FIND in H; inv H. monadInv TRFD. inv FUNTY.
   exploit external_call_mem_inject; eauto. apply match_globalenvs_preserves_globals.
   eapply match_cont_globalenv. eexact (MCONT VSet.empty).
   intros [j' [tvres [tm' [P [Q [R [S [T [U V]]]]]]]]].
