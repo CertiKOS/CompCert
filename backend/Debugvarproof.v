@@ -328,16 +328,18 @@ Proof.
 Qed.
 
 Lemma find_function_translated:
-  forall ros ls f,
-  find_function ge ros ls = Some f ->
-  exists tf,
-  find_function tge ros ls = Some tf /\ transf_fundef f = OK tf.
+  forall ros ls f b,
+  find_block ge ros ls = Some b ->
+  Genv.find_funct_ptr ge b = Some f ->
+  exists tb tf,
+    find_block tge ros ls = Some tb /\
+    Genv.find_funct_ptr tge tb = Some tf /\
+    transf_fundef f = OK tf.
 Proof.
-  unfold find_function; intros; destruct ros; simpl.
-  apply functions_translated; auto.
-  rewrite symbols_preserved. destruct (Genv.find_symbol ge i).
-  apply function_ptr_translated; auto.
-  congruence.
+  unfold find_block; intros; destruct ros; simpl.
+  exploit function_ptr_translated; eauto. intros (tf & FIND & TR). eauto.
+  rewrite symbols_preserved.
+  exploit function_ptr_translated; eauto. intros (tf & FIND & TR). eauto.
 Qed.
 
 (** Evaluation of the debug annotations introduced by the transformation. *)
@@ -399,11 +401,13 @@ Inductive match_states: Linear.state ->  Linear.state -> Prop :=
       match_states (State s f sp c rs m)
                    (State ts tf sp tc rs m)
   | match_states_call:
-      forall s f rs m tf ts,
+      forall s f rs m tf ts b tb
+        (FIND: Genv.find_funct_ptr ge b = Some f)
+        (TFIND: Genv.find_funct_ptr tge tb = Some tf),
       list_forall2 match_stackframes s ts ->
       transf_fundef f = OK tf ->
-      match_states (Callstate s f rs m)
-                   (Callstate ts tf rs m)
+      match_states (Callstate s b rs m)
+                   (Callstate ts tb rs m)
   | match_states_return:
       forall s rs m ts,
       list_forall2 match_stackframes s ts ->
@@ -458,20 +462,20 @@ Proof.
   apply eval_add_delta_ranges. traceEq.
   constructor; auto.
 - (* call *)
-  exploit find_function_translated; eauto. intros (tf' & A & B).
+  exploit find_function_translated; eauto. intros (tb' & tf' & FB & A & B).
   econstructor; split.
   apply plus_one.
-  econstructor. eexact A. symmetry; apply sig_preserved; auto. traceEq.
-  constructor; auto. constructor; auto. constructor; auto.
+  econstructor. eexact FB. eexact A. symmetry; apply sig_preserved; auto. traceEq.
+  econstructor; eauto. constructor; auto. constructor; auto.
 - (* tailcall *)
-  exploit find_function_translated; eauto. intros (tf' & A & B).
+  exploit find_function_translated; eauto. intros (tb' & tf' & FB & A & B).
   exploit parent_locset_match; eauto. intros PLS.
   econstructor; split.
   apply plus_one.
-  econstructor. eauto. rewrite PLS. eexact A.
+  econstructor. eauto. rewrite PLS. eexact FB. eexact A.
   symmetry; apply sig_preserved; auto.
   inv TRF; eauto. traceEq.
-  rewrite PLS. constructor; auto.
+  rewrite PLS. econstructor; eauto.
 - (* builtin *)
   econstructor; split.
   eapply plus_left.
@@ -509,14 +513,16 @@ Proof.
   apply plus_one.  constructor. inv TRF; eauto. traceEq.
   rewrite (parent_locset_match _ _ STACKS). constructor; auto.
 - (* internal function *)
-  monadInv H7. rename x into tf.
+  rewrite FIND in H; inv H.
+  monadInv H8. rename x into tf.
   assert (MF: match_function f tf) by (apply transf_function_match; auto).
   inversion MF; subst.
   econstructor; split.
-  apply plus_one. constructor. simpl; eauto. reflexivity.
+  apply plus_one. constructor. eauto. simpl; eauto. reflexivity.
   constructor; auto.
 - (* external function *)
-  monadInv H8. econstructor; split.
+  rewrite FIND in H; inv H.
+  monadInv H9. econstructor; split.
   apply plus_one. econstructor; eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   constructor; auto.
@@ -533,11 +539,11 @@ Lemma transf_initial_states:
 Proof.
   intros. inversion H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
-  exists (Callstate nil tf (Locmap.init Vundef) m0); split.
+  exists (Callstate nil b (Locmap.init Vundef) m0); split.
   econstructor; eauto. eapply (Genv.init_mem_transf_partial TRANSF); eauto.
   rewrite (match_program_main TRANSF), symbols_preserved. auto.
   rewrite <- H3. apply sig_preserved. auto.
-  constructor. constructor. auto.
+  econstructor; eauto. constructor.
 Qed.
 
 Lemma transf_final_states:

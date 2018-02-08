@@ -1495,12 +1495,12 @@ Proof.
   destruct l; simpl; intros; try contradiction. rewrite H4; auto.
 Qed.
 
-Lemma find_function_tailcall:
+Lemma find_block_tailcall:
   forall tge ros ls1 ls2,
   ros_compatible_tailcall ros = true ->
-  find_function tge ros (return_regs ls1 ls2) = find_function tge ros ls2.
+  find_block tge ros (return_regs ls1 ls2) = find_block tge ros ls2.
 Proof.
-  unfold ros_compatible_tailcall, find_function; intros.
+  unfold ros_compatible_tailcall, find_block; intros.
   destruct ros as [r|id]; auto.
   unfold return_regs. destruct (is_callee_save r). discriminate. auto.
 Qed.
@@ -1831,22 +1831,24 @@ Proof.
 Qed.
 
 Lemma find_function_translated:
-  forall ros rs fd ros' e e' ls,
-  RTL.find_function ge ros rs = Some fd ->
+  forall ros rs fb fd ros' e e' ls,
+  RTL.find_block ge ros rs = Some fb ->
+  Genv.find_funct_ptr ge fb = Some fd ->
   add_equation_ros ros ros' e = Some e' ->
   satisf rs ls e' ->
-  exists tfd,
-  LTL.find_function tge ros' ls = Some tfd /\ transf_fundef fd = OK tfd.
+  exists tfb tfd,
+  LTL.find_block tge ros' ls = Some tfb /\ Genv.find_funct_ptr tge tfb = Some tfd /\ transf_fundef fd = OK tfd.
 Proof.
-  unfold RTL.find_function, LTL.find_function; intros.
-  destruct ros as [r|id]; destruct ros' as [r'|id']; simpl in H0; MonadInv.
+  unfold RTL.find_block, LTL.find_block; intros.
+  destruct ros as [r|id]; destruct ros' as [r'|id']; simpl in *; MonadInv.
   (* two regs *)
-  exploit add_equation_lessdef; eauto. intros LD. inv LD.
-  eapply functions_translated; eauto.
-  rewrite <- H2 in H. simpl in H. congruence.
+  apply block_of_inv in H.
+  exploit add_equation_lessdef; eauto. intros LD. simpl in *. rewrite H in LD. inv LD.
+  simpl. rewrite pred_dec_true by reflexivity.
+  exploit function_ptr_translated; eauto. intros (tf & FIND & TF). eauto.
   (* two symbols *)
-  rewrite symbols_preserved. rewrite Heqo.
-  eapply function_ptr_translated; eauto.
+  rewrite symbols_preserved. rewrite H.
+  exploit function_ptr_translated; eauto. intros (tf & FIND & TF); eauto.
 Qed.
 
 Lemma exec_moves:
@@ -1939,15 +1941,17 @@ Inductive match_states: RTL.state -> LTL.state -> Prop :=
       match_states (RTL.State s f sp pc rs m)
                    (LTL.State ts tf sp pc ls m')
   | match_states_call:
-      forall s f args m ts tf ls m'
+      forall s f args m ts tf ls m' fb tfb
         (STACKS: match_stackframes s ts (funsig tf))
-        (FUN: transf_fundef f = OK tf)
+        (FIND: Genv.find_funct_ptr ge fb = Some f)
+        (TFIND: Genv.find_funct_ptr tge tfb = Some tf)
+         (FUN: transf_fundef f = OK tf)
         (ARGS: Val.lessdef_list args (map (fun p => Locmap.getpair p ls) (loc_arguments (funsig tf))))
         (AG: agree_callee_save (parent_locset ts) ls)
         (MEM: Mem.extends m m')
         (WTARGS: Val.has_type_list args (sig_args (funsig tf))),
-      match_states (RTL.Callstate s f args m)
-                   (LTL.Callstate ts tf ls m')
+      match_states (RTL.Callstate s fb args m)
+                   (LTL.Callstate ts tfb ls m')
   | match_states_return:
       forall s res m ts ls m' sg
         (STACKS: match_stackframes s ts sg)
@@ -1997,7 +2001,7 @@ Qed.
     "plus" kind. *)
 
 Lemma step_simulation:
-  forall S1 t S2, RTL.step ge S1 t S2 -> wt_state S1 ->
+  forall S1 t S2, RTL.step ge S1 t S2 -> wt_state prog S1 ->
   forall S1', match_states S1 S1' ->
   exists S2', plus LTL.step tge S1' t S2' /\ match_states S2 S2'.
 Proof.
@@ -2309,8 +2313,8 @@ Proof.
   set (args' := loc_arguments sg) in *.
   set (res' := loc_result sg) in *.
   exploit (exec_moves mv1); eauto. intros [ls1 [A1 B1]].
-  exploit find_function_translated. eauto. eauto. eapply add_equations_args_satisf; eauto.
-  intros [tfd [E F]].
+  exploit find_function_translated. eauto. eauto. eauto. eapply add_equations_args_satisf; eauto.
+  intros [tfb [tfd [EE [E F]]]].
   assert (SIG: funsig tfd = sg). eapply sig_function_translated; eauto.
   econstructor; split.
   eapply plus_left. econstructor; eauto.
@@ -2331,22 +2335,22 @@ Proof.
   eapply star_right. eexact A2. constructor. traceEq.
   apply satisf_incr with eafter; auto.
   rewrite SIG. eapply add_equations_args_lessdef; eauto.
-  inv WTI. rewrite <- H7. apply wt_regset_list; auto.
+  inv WTI. rewrite <- H8. apply wt_regset_list; auto.
   simpl. red; auto.
-  inv WTI. rewrite SIG. rewrite <- H7. apply wt_regset_list; auto.
+  inv WTI. rewrite SIG. rewrite <- H8. apply wt_regset_list; auto.
 
 (* tailcall *)
 - set (sg := RTL.funsig fd) in *.
   set (args' := loc_arguments sg) in *.
   exploit Mem.free_parallel_extends; eauto. intros [m'' [P Q]].
   exploit (exec_moves mv); eauto. intros [ls1 [A1 B1]].
-  exploit find_function_translated. eauto. eauto. eapply add_equations_args_satisf; eauto.
-  intros [tfd [E F]].
+  exploit find_function_translated. eauto. eauto. eauto. eapply add_equations_args_satisf; eauto.
+  intros [tfb [tfd [EE [E F]]]].
   assert (SIG: funsig tfd = sg). eapply sig_function_translated; eauto.
   econstructor; split.
   eapply plus_left. econstructor; eauto.
   eapply star_right. eexact A1. econstructor; eauto.
-  rewrite <- E. apply find_function_tailcall; auto.
+  rewrite <- EE. apply find_block_tailcall; auto.
   replace (fn_stacksize tf) with (RTL.fn_stacksize f); eauto.
   destruct (transf_function_inv _ _ FUN); auto.
   eauto. traceEq.
@@ -2354,9 +2358,9 @@ Proof.
   eapply match_stackframes_change_sig; eauto. rewrite SIG. rewrite e0. decEq.
   destruct (transf_function_inv _ _ FUN); auto.
   rewrite SIG. rewrite return_regs_arg_values; auto. eapply add_equations_args_lessdef; eauto.
-  inv WTI. rewrite <- H6. apply wt_regset_list; auto.
+  inv WTI. rewrite <- H7. apply wt_regset_list; auto.
   apply return_regs_agree_callee_save.
-  rewrite SIG. inv WTI. rewrite <- H6. apply wt_regset_list; auto.
+  rewrite SIG. inv WTI. rewrite <- H7. apply wt_regset_list; auto.
 
 (* builtin *)
 - exploit (exec_moves mv1); eauto. intros [ls1 [A1 B1]].
@@ -2443,12 +2447,12 @@ Proof.
   unfold proj_sig_res. rewrite <- H11; rewrite H13. apply WTRS.
 
 (* internal function *)
-- monadInv FUN. simpl in *.
+- rewrite FIND in H; inv H. monadInv FUN. simpl in *.
   destruct (transf_function_inv _ _ EQ).
   exploit Mem.alloc_extends; eauto. apply Z.le_refl. rewrite H8; apply Z.le_refl.
   intros [m'' [U V]].
   assert (WTRS: wt_regset env (init_regs args (fn_params f))).
-  { apply wt_init_regs. inv H0. rewrite wt_params. rewrite H9. auto. }
+  { apply wt_init_regs. inv H. rewrite wt_params. rewrite H9. auto. }
   exploit (exec_moves mv). eauto. eauto.
     eapply can_undef_satisf; eauto. eapply compat_entry_satisf; eauto.
     rewrite call_regs_param_values. eexact ARGS.
@@ -2463,7 +2467,8 @@ Proof.
   econstructor; eauto.
 
 (* external function *)
-- exploit external_call_mem_extends; eauto. intros [v' [m'' [F [G [J K]]]]].
+- rewrite FIND in H; inv H.
+  exploit external_call_mem_extends; eauto. intros [v' [m'' [F [G [J K]]]]].
   simpl in FUN; inv FUN.
   econstructor; split.
   apply plus_one. econstructor; eauto.
@@ -2475,7 +2480,7 @@ Proof.
   exploit external_call_well_typed; eauto. unfold proj_sig_res; rewrite B. intros WTRES'.
   rewrite Locmap.gss. rewrite Locmap.gso by (red; auto). rewrite Locmap.gss.
   rewrite val_longofwords_eq_1 by auto. auto.
-  red; intros. rewrite (AG l H0).
+  red; intros. rewrite (AG l H).
   symmetry; apply Locmap.gpo.
   assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
   { intros. destruct l; simpl in *. congruence. auto. }
@@ -2498,13 +2503,13 @@ Proof.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   exploit sig_function_translated; eauto. intros SIG.
-  exists (LTL.Callstate nil tf (Locmap.init Vundef) m0); split.
+  exists (LTL.Callstate nil b (Locmap.init Vundef) m0); split.
   econstructor; eauto.
   eapply (Genv.init_mem_transf_partial TRANSF); eauto.
   rewrite symbols_preserved.
   rewrite (match_program_main TRANSF).  auto.
   congruence.
-  constructor; auto.
+  econstructor; eauto.
   constructor. rewrite SIG; rewrite H3; auto.
   rewrite SIG, H3, loc_arguments_main. auto.
   red; auto.
@@ -2537,7 +2542,7 @@ Qed.
 Theorem transf_program_correct:
   forward_simulation (RTL.semantics prog) (LTL.semantics tprog).
 Proof.
-  set (ms := fun s s' => wt_state s /\ match_states s s').
+  set (ms := fun s s' => wt_state prog s /\ match_states s s').
   eapply forward_simulation_plus with (match_states := ms).
 - apply senv_preserved.
 - intros. exploit initial_states_simulation; eauto. intros [st2 [A B]].
@@ -2547,7 +2552,7 @@ Proof.
 - intros. destruct H0.
   exploit step_simulation; eauto. intros [s2' [A B]].
   exists s2'; split. exact A. split.
-  eapply subject_reduction; eauto. eexact wt_prog. eexact H.
+  eapply subject_reduction; eauto. eexact wt_prog.
   auto.
 Qed.
 

@@ -1582,26 +1582,26 @@ Proof.
 Qed.
 
 Lemma find_function_translated:
-  forall j ls rs m ros f,
+  forall j ls rs m ros b f,
   agree_regs j ls rs ->
   m |= globalenv_inject ge j ->
-  Linear.find_function ge ros ls = Some f ->
+  Linear.find_block ge ros ls = Some b ->
+  Genv.find_funct_ptr ge b = Some f ->
   exists bf, exists tf,
      find_function_ptr tge ros rs = Some bf
   /\ Genv.find_funct_ptr tge bf = Some tf
   /\ transf_fundef f = OK tf.
 Proof.
-  intros until f; intros AG [bound [_ [?????]]] FF.
+  intros until f; intros AG [bound [_ [?????]]] FB FF.
   destruct ros; simpl in FF.
-- exploit Genv.find_funct_inv; eauto. intros [b EQ]. rewrite EQ in FF.
-  rewrite Genv.find_funct_find_funct_ptr in FF.
+- simpl in *.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
   exists b; exists tf; split; auto. simpl.
-  generalize (AG m0). rewrite EQ. intro INJ. inv INJ.
+  generalize (AG m0). apply block_of_inv in FB; rewrite FB. intro INJ. inv INJ.
   rewrite DOMAIN in H2. inv H2. simpl. auto. eapply FUNCTIONS; eauto.
-- destruct (Genv.find_symbol ge i) as [b|] eqn:?; try discriminate.
+- simpl in *.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
-  exists b; exists tf; split; auto. simpl.
+  exists b; exists tf; split; auto.
   rewrite symbols_preserved. auto.
 Qed.
 
@@ -1811,16 +1811,17 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
       match_states (Linear.State cs f (Vptr sp Ptrofs.zero) c ls m)
                    (Mach.State cs' fb (Vptr sp' Ptrofs.zero) (transl_code (make_env (function_bounds f)) c) rs m')
   | match_states_call:
-      forall cs f ls m cs' fb rs m' j tf
+      forall cs f ls m cs' fb rs m' j tf b
         (STACKS: match_stacks j cs cs' (Linear.funsig f))
         (TRANSL: transf_fundef f = OK tf)
-        (FIND: Genv.find_funct_ptr tge fb = Some tf)
+        (FIND: Genv.find_funct_ptr ge b = Some f)
+        (TFIND: Genv.find_funct_ptr tge fb = Some tf)
         (AGREGS: agree_regs j ls rs)
         (AGLOCS: agree_callee_save ls (parent_locset cs))
         (SEP: m' |= stack_contents j cs cs'
                  ** minjection j m
                  ** globalenv_inject ge j),
-      match_states (Linear.Callstate cs f ls m)
+      match_states (Linear.Callstate cs b ls m)
                    (Mach.Callstate cs' fb rs m')
   | match_states_return:
       forall cs ls m cs' rs m' j sg
@@ -1835,7 +1836,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
 
 Theorem transf_step_correct:
   forall s1 t s2, Linear.step ge s1 t s2 ->
-  forall (WTS: wt_state s1) s1' (MS: match_states s1 s1'),
+  forall (WTS: wt_state prog s1) s1' (MS: match_states s1 s1'),
   exists s2', plus step tge s1' t s2' /\ match_states s2 s2'.
 Proof.
   induction 1; intros;
@@ -2082,6 +2083,7 @@ Proof.
   rewrite sep_swap; exact G.
 
 - (* internal function *)
+  rewrite FIND in H; inv H.
   revert TRANSL. unfold transf_fundef, transf_partial_fundef.
   destruct (transf_function f) as [tfn|] eqn:TRANSL; simpl; try congruence.
   intros EQ; inversion EQ; clear EQ; subst tf.
@@ -2103,6 +2105,7 @@ Proof.
   rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.
 
 - (* external function *)
+  rewrite FIND in H; inv H.
   simpl in TRANSL. inversion TRANSL; subst tf.
   exploit transl_external_arguments; eauto. apply sep_proj1 in SEP; eauto. intros [vl [ARGS VINJ]].
   rewrite sep_comm, sep_assoc in SEP.
@@ -2184,7 +2187,7 @@ Qed.
 Theorem transf_program_correct:
   forward_simulation (Linear.semantics prog) (Mach.semantics return_address_offset tprog).
 Proof.
-  set (ms := fun s s' => wt_state s /\ match_states s s').
+  set (ms := fun s s' => wt_state prog s /\ match_states s s').
   eapply forward_simulation_plus with (match_states := ms).
 - apply senv_preserved.
 - intros. exploit transf_initial_states; eauto. intros [st2 [A B]].
@@ -2194,7 +2197,7 @@ Proof.
 - intros. destruct H0.
   exploit transf_step_correct; eauto. intros [s2' [A B]].
   exists s2'; split. exact A. split.
-  eapply step_type_preservation; eauto. eexact wt_prog. eexact H.
+  eapply step_type_preservation; eauto. eexact wt_prog.
   auto.
 Qed.
 
