@@ -94,6 +94,11 @@ let name_of_function prog fn =
       find_name rem
   in find_name prog.Ctypes.prog_defs
 
+let name_of_funblock ge b =
+  match Genv.invert_symbol ge b with
+  | Some id -> extern_atom id
+  | None -> "<unknown function>"
+
 let invert_local_variable e b =
   Maps.PTree.fold
     (fun res id (b', _) -> if b = b' then Some id else res)
@@ -128,10 +133,10 @@ let print_state p (prog, ge, s) =
       fprintf p "in function %s, expression@ @[<hv 0>%a@]"
               (name_of_function prog f)
               PrintCsyntax.print_expr r
-  | Callstate(fd, args, k, m) ->
+  | Callstate(fb, args, k, m) ->
       PrintCsyntax.print_pointer_hook := print_pointer ge.genv_genv Maps.PTree.empty;
       fprintf p "calling@ @[<hov 2>%s(%a)@]"
-              (name_of_fundef prog fd)
+              (name_of_funblock ge.genv_genv fb)
               print_val_list args
   | Returnstate(res, k, m) ->
       PrintCsyntax.print_pointer_hook := print_pointer ge.genv_genv Maps.PTree.empty;
