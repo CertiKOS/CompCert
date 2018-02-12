@@ -93,14 +93,10 @@ Section RELSEM.
 
 Variable ge: genv.
 
-Definition find_function (ros: mreg + ident) (rs: locset) : option fundef :=
+Definition find_block (ros: mreg + ident) (rs: locset) : option block :=
   match ros with
-  | inl r => Genv.find_funct ge (rs (R r))
-  | inr symb =>
-      match Genv.find_symbol ge symb with
-      | None => None
-      | Some b => Genv.find_funct_ptr ge b
-      end
+  | inl r => block_of (rs (R r))
+  | inr symb => Genv.find_symbol ge symb
   end.
 
 (** Linear execution states. *)
@@ -127,7 +123,7 @@ Inductive state: Type :=
       state
   | Callstate:
       forall (stack: list stackframe) (**r call stack *)
-             (f: fundef)              (**r function to call *)
+             (fb: block)              (**r function to call *)
              (rs: locset)             (**r location state at point of call *)
              (m: mem),                (**r memory state *)
       state
@@ -178,19 +174,21 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State s f sp (Lstore chunk addr args src :: b) rs m)
         E0 (State s f sp b rs' m')
   | exec_Lcall:
-      forall s f sp sig ros b rs m f',
-      find_function ros rs = Some f' ->
+      forall s f sp sig ros b rs m fb' f',
+      find_block ros rs = Some fb' ->
+      Genv.find_funct_ptr ge fb' = Some f' ->
       sig = funsig f' ->
       step (State s f sp (Lcall sig ros :: b) rs m)
-        E0 (Callstate (Stackframe f sp rs b:: s) f' rs m)
+        E0 (Callstate (Stackframe f sp rs b:: s) fb' rs m)
   | exec_Ltailcall:
-      forall s f stk sig ros b rs m rs' f' m',
+      forall s f stk sig ros b rs m rs' fb' f' m',
       rs' = return_regs (parent_locset s) rs ->
-      find_function ros rs' = Some f' ->
+      find_block ros rs' = Some fb' ->
+      Genv.find_funct_ptr ge fb' = Some f' ->
       sig = funsig f' ->
       Mem.free m stk 0 f.(fn_stacksize) = Some m' ->
       step (State s f (Vptr stk Ptrofs.zero) (Ltailcall sig ros :: b) rs m)
-        E0 (Callstate s f' rs' m')
+        E0 (Callstate s fb' rs' m')
   | exec_Lbuiltin:
       forall s f sp rs m ef args res b vargs t vres rs' m',
       eval_builtin_args ge rs sp m args vargs ->
@@ -234,17 +232,19 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State s f (Vptr stk Ptrofs.zero) (Lreturn :: b) rs m)
         E0 (Returnstate s (return_regs (parent_locset s) rs) m')
   | exec_function_internal:
-      forall s f rs m rs' m' stk,
+      forall s fb f rs m rs' m' stk,
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       Mem.alloc m 0 f.(fn_stacksize) = (m', stk) ->
       rs' = undef_regs destroyed_at_function_entry (call_regs rs) ->
-      step (Callstate s (Internal f) rs m)
+      step (Callstate s fb rs m)
         E0 (State s f (Vptr stk Ptrofs.zero) f.(fn_code) rs' m')
   | exec_function_external:
-      forall s ef args res rs1 rs2 m t m',
+      forall s fb ef args res rs1 rs2 m t m',
+      Genv.find_funct_ptr ge fb = Some (External ef) ->
       args = map (fun p => Locmap.getpair p rs1) (loc_arguments (ef_sig ef)) ->
       external_call ef ge args m t res m' ->
       rs2 = Locmap.setpair (loc_result (ef_sig ef)) res rs1 ->
-      step (Callstate s (External ef) rs1 m)
+      step (Callstate s fb rs1 m)
          t (Returnstate s rs2 m')
   | exec_return:
       forall s f sp rs0 c rs m,
@@ -259,21 +259,22 @@ Inductive initial_state (ge: genv): query li_locset -> state -> Prop :=
       (forall l, Val.has_type (rs l) (Loc.type l)) ->
       initial_state ge
         (lq b (fn_sig f) rs m)
-        (Callstate (Parent rs :: nil) (Internal f) rs m).
+        (Callstate (Parent rs :: nil) b rs m).
 
 Inductive at_external (ge: genv): state -> query li_c -> Prop :=
   | at_external_intro b id sg s rs m:
       Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
       at_external ge
-        (Callstate s (External (EF_external id sg)) rs m)
+        (Callstate s b rs m)
         (cq b sg (map (fun p => Locmap.getpair p rs) (loc_arguments sg)) m).
 
-Inductive after_external: state -> reply li_c -> state -> Prop :=
-  | after_external_intro id sg s rs m vres m':
+Inductive after_external (ge: genv): state -> reply li_c -> state -> Prop :=
+  | after_external_intro b id sg s rs m vres m':
       let rs' := undef_regs destroyed_at_call rs in
       let rs' := Locmap.setpair (loc_result sg) vres rs' in
-      after_external
-        (Callstate s (External (EF_external id sg)) rs m)
+      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+      after_external ge
+        (Callstate s b rs m)
         (vres, m')
         (Returnstate s rs' m').
 
@@ -287,6 +288,6 @@ Definition semantics (p: program) :=
     step
     (initial_state ge)
     (at_external ge)
-    after_external
+    (after_external ge)
     final_state
     ge.

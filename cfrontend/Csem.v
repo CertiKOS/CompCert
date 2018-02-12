@@ -316,14 +316,15 @@ Inductive rred: expr -> mem -> trace -> expr -> mem -> Prop :=
 (** Head reduction for function calls.
     (More exactly, identification of function calls that can reduce.) *)
 
-Inductive callred: expr -> mem -> fundef -> list val -> type -> Prop :=
-  | red_call: forall vf tyf m tyargs tyres cconv el ty fd vargs,
-      Genv.find_funct ge vf = Some fd ->
+Inductive callred: expr -> mem -> block -> list val -> type -> Prop :=
+  | red_call: forall vf tyf m tyargs tyres cconv el ty fb fd vargs,
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       cast_arguments m el tyargs vargs ->
       type_of_fundef fd = Tfunction tyargs tyres cconv ->
       classify_fun tyf = fun_case_f tyargs tyres cconv ->
       callred (Ecall (Eval vf tyf) el ty) m
-              fd vargs ty.
+              fb vargs ty.
 
 (** Reduction contexts.  In accordance with C's nondeterministic semantics,
   we allow reduction both to the left and to the right of a binary operator.
@@ -515,7 +516,7 @@ Inductive state: Type :=
       (e: env)
       (m: mem) : state
   | Callstate                           (**r calling a function *)
-      (fd: fundef)
+      (fb: block)
       (args: list val)
       (k: cont)
       (m: mem) : state
@@ -740,16 +741,18 @@ Inductive sstep: state -> trace -> state -> Prop :=
       sstep (State f (Sgoto lbl) k e m)
          E0 (State f s' k' e m)
 
-  | step_internal_function: forall f vargs k m e m1 m2,
+  | step_internal_function: forall fb f vargs k m e m1 m2,
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       list_norepet (var_names (fn_params f) ++ var_names (fn_vars f)) ->
       alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
       bind_parameters e m1 f.(fn_params) vargs m2 ->
-      sstep (Callstate (Internal f) vargs k m)
+      sstep (Callstate fb vargs k m)
          E0 (State f f.(fn_body) k e m2)
 
-  | step_external_function: forall ef targs tres cc vargs k m vres t m',
+  | step_external_function: forall fb ef targs tres cc vargs k m vres t m',
+      Genv.find_funct_ptr ge fb = Some (External ef targs tres cc) ->
       external_call ef  ge vargs m t vres m' ->
-      sstep (Callstate (External ef targs tres cc) vargs k m)
+      sstep (Callstate fb vargs k m)
           t (Returnstate vres k m')
 
   | step_returnstate: forall v f e C ty k m,
@@ -775,7 +778,7 @@ Inductive initial_state (p: program): state -> Prop :=
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-      initial_state p (Callstate f nil Kstop m0).
+      initial_state p (Callstate b nil Kstop m0).
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 

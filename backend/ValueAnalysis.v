@@ -1345,8 +1345,8 @@ Proof.
     eapply mmatch_stack; eauto.
   * intros. exploit list_in_map_inv; eauto. intros (r & P & Q). subst v.
     apply D with (areg ae r).
-    rewrite forallb_forall in H2. apply vpincl_ge.
-    apply H2. apply in_map; auto.
+    rewrite forallb_forall in H3. apply vpincl_ge.
+    apply H3. apply in_map; auto.
     auto with va.
 + (* public call *)
   exploit analyze_successor; eauto. simpl; eauto. rewrite TR. intros SUCC.

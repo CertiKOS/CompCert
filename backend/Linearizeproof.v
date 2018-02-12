@@ -82,17 +82,28 @@ Proof.
   intros. monadInv H. auto.
 Qed.
 
-Lemma find_function_translated:
-  forall ros ls f,
-  LTL.find_function ge ros ls = Some f ->
-  exists tf,
-  find_function tge ros ls = Some tf /\ transf_fundef f = OK tf.
+Lemma find_block_translated:
+  forall ros ls b,
+  LTL.find_block ge ros ls = Some b ->
+  find_block tge ros ls = Some b.
 Proof.
-  unfold LTL.find_function; intros; destruct ros; simpl.
-  apply functions_translated; auto.
-  rewrite symbols_preserved. destruct (Genv.find_symbol ge i).
-  apply function_ptr_translated; auto.
-  congruence.
+  unfold LTL.find_block, find_block; intros.
+  destruct ros; simpl in *; auto.
+  rewrite symbols_preserved; auto.
+Qed.
+
+Lemma find_function_translated:
+  forall ros ls b f,
+  LTL.find_block ge ros ls = Some b ->
+  Genv.find_funct_ptr ge b = Some f ->
+  exists tf,
+  find_block tge ros ls = Some b /\ Genv.find_funct_ptr tge b = Some tf /\ transf_fundef f = OK tf.
+Proof.
+  intros.
+  apply find_block_translated in H.
+  exploit function_ptr_translated; eauto.
+  intros (tf & FIND & TF).
+  eauto.
 Qed.
 
 (** * Correctness of reachability analysis *)
@@ -535,11 +546,13 @@ Inductive match_states: LTL.state -> Linear.state -> Prop :=
       match_states (LTL.Block s f sp bb ls m)
                    (Linear.State ts tf sp (linearize_block bb c) ls m)
   | match_states_call:
-      forall s f ls m tf ts,
+      forall s f ls m tf ts fb
+      (FIND: Genv.find_funct_ptr ge fb = Some f)
+      (TFIND: Genv.find_funct_ptr tge fb = Some tf),
       list_forall2 match_stackframes s ts ->
       transf_fundef f = OK tf ->
-      match_states (LTL.Callstate s f ls m)
-                   (Linear.Callstate ts tf ls m)
+      match_states (LTL.Callstate s fb ls m)
+                   (Linear.Callstate ts fb ls m)
   | match_states_return:
       forall s ls m ts,
       list_forall2 match_stackframes s ts ->
@@ -627,14 +640,14 @@ Proof.
   econstructor; eauto.
 
   (* Lcall *)
-  exploit find_function_translated; eauto. intros [tfd [A B]].
+  exploit find_function_translated; eauto. intros [tfd [AA [A B]]].
   left; econstructor; split. simpl.
   apply plus_one. econstructor; eauto.
   symmetry; eapply sig_preserved; eauto.
   econstructor; eauto. constructor; auto. econstructor; eauto.
 
   (* Ltailcall *)
-  exploit find_function_translated; eauto. intros [tfd [A B]].
+  exploit find_function_translated; eauto. intros [tfd [AA [A B]]].
   left; econstructor; split. simpl.
   apply plus_one. econstructor; eauto.
   rewrite (match_parent_locset _ _ STACKS). eauto.
@@ -692,9 +705,10 @@ Proof.
   rewrite (match_parent_locset _ _ STACKS). econstructor; eauto.
 
   (* internal functions *)
+  rewrite FIND in H; inv H.
   assert (REACH: (reachable f)!!(LTL.fn_entrypoint f) = true).
     apply reachable_entrypoint.
-  monadInv H7.
+  monadInv H8.
   left; econstructor; split.
   apply plus_one. eapply exec_function_internal; eauto.
   rewrite (stacksize_preserved _ _ EQ). eauto.
@@ -702,7 +716,8 @@ Proof.
   econstructor; eauto. simpl. eapply is_tail_add_branch. constructor.
 
   (* external function *)
-  monadInv H8. left; econstructor; split.
+  rewrite FIND in H; inv H.
+  monadInv H9. left; econstructor; split.
   apply plus_one. eapply exec_function_external; eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   econstructor; eauto.
@@ -722,12 +737,12 @@ Proof.
   intros w q1 q Hq. apply match_query_cc_id in Hq. subst.
   intros. inversion H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
-  exists (Callstate (Parent rs :: nil) tf rs m); split.
+  exists (Callstate (Parent rs :: nil) b rs m); split.
   fold (LTL.funsig (Internal f)).
   erewrite <- sig_preserved by eauto.
   monadInv B.
   econstructor; eauto.
-  constructor. constructor. constructor. constructor. auto.
+  econstructor; eauto. constructor. constructor. constructor.
 Qed.
 
 Lemma transf_external:
@@ -739,9 +754,9 @@ Lemma transf_external:
       Linear.at_external tge st2 q2 /\
       forall r1 r2 st1',
         match_reply cc_id wA r1 r2 ->
-        LTL.after_external st1 r1 st1' ->
+        LTL.after_external ge st1 r1 st1' ->
         exists st2',
-          Linear.after_external st2 r2 st2' /\
+          Linear.after_external tge st2 r2 st2' /\
           match_states st1' st2'.
 Proof.
   intros st1 st2 q Hst Hst1.
@@ -749,15 +764,16 @@ Proof.
   destruct Hst1 as [fb id sg s rs m Hfb].
   inv Hst.
   inv H6.
+  assert (f = External (EF_external id sg)) by congruence; subst f.
   eexists w, _; intuition; eauto.
-  - edestruct function_ptr_translated as (tf' & Htf' & Hf); eauto.
-    inv Hf.
+  - inv H1.
     econstructor; eauto.
   - apply H in H0; subst.
-    inv H1.
+    inv H1. inv H2.
     eexists; split.
-    + constructor.
-    + constructor; eauto.
+    + econstructor; eauto.
+    + assert (sg0 = sg) by congruence; subst sg0.
+      econstructor; eauto.
 Qed.
 
 Lemma transf_final_states:

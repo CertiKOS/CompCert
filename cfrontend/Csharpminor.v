@@ -156,7 +156,7 @@ Inductive state: Type :=
              (m: mem),                  (**r current memory state *)
       state
   | Callstate:                  (**r Invocation of a function *)
-      forall (f: fundef)                (**r function to invoke *)
+      forall (fb: block)                (**r function to invoke *)
              (args: list val)           (**r arguments provided by caller *)
              (k: cont)                  (**r what to do next  *)
              (m: mem),                  (**r memory state *)
@@ -382,13 +382,14 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sstore chunk addr a) k e le m)
         E0 (State f Sskip k e le m')
 
-  | step_call: forall f optid sig a bl k e le m vf vargs fd,
+  | step_call: forall fb f optid sig a bl k e le m vf vargs fd,
       eval_expr e le m a vf ->
       eval_exprlist e le m bl vargs ->
-      Genv.find_funct ge vf = Some fd ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k e le m)
-        E0 (Callstate fd vargs (Kcall optid f e le k) m)
+        E0 (Callstate fb vargs (Kcall optid f e le k) m)
 
   | step_builtin: forall f optid ef bl k e le m vargs t vres m',
       eval_exprlist e le m bl vargs ->
@@ -448,18 +449,20 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sgoto lbl) k e le m)
         E0 (State f s' k' e le m)
 
-  | step_internal_function: forall f vargs k m m1 e le,
+  | step_internal_function: forall fb f vargs k m m1 e le,
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       list_norepet (map fst f.(fn_vars)) ->
       list_norepet f.(fn_params) ->
       list_disjoint f.(fn_params) f.(fn_temps) ->
       alloc_variables empty_env m (fn_vars f) e m1 ->
       bind_parameters f.(fn_params) vargs (create_undef_temps f.(fn_temps)) = Some le ->
-      step (Callstate (Internal f) vargs k m)
+      step (Callstate fb vargs k m)
         E0 (State f f.(fn_body) k e le m1)
 
-  | step_external_function: forall ef vargs k m t vres m',
+  | step_external_function: forall fb ef vargs k m t vres m',
+      Genv.find_funct_ptr ge fb = Some (External ef) ->
       external_call ef ge vargs m t vres m' ->
-      step (Callstate (External ef) vargs k m)
+      step (Callstate fb vargs k m)
          t (Returnstate vres k m')
 
   | step_return: forall v optid f e le k m,
@@ -479,13 +482,13 @@ Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
       Val.has_type_list vargs (sig_args (fn_sig f)) ->
       initial_state ge
         (cq b (fn_sig f) vargs m)
-        (Callstate (Internal f) vargs Kstop m).
+        (Callstate b vargs Kstop m).
 
 Inductive at_external (ge: genv): state -> query li_c -> Prop :=
   | at_external_intro b id sg vargs k m:
       Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
       at_external ge
-        (Callstate (External (EF_external id sg)) vargs k m)
+        (Callstate b vargs k m)
         (cq b sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=

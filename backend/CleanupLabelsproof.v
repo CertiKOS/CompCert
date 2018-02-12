@@ -71,16 +71,12 @@ Proof.
   intros. destruct f; reflexivity.
 Qed.
 
-Lemma find_function_translated:
-  forall ros ls f,
-  find_function ge ros ls = Some f ->
-  find_function tge ros ls = Some (transf_fundef f).
+Lemma find_block_translated:
+  forall ros ls,
+  find_block tge ros ls = find_block ge ros ls.
 Proof.
-  unfold find_function; intros; destruct ros; simpl.
-  apply functions_translated; auto.
-  rewrite symbols_preserved. destruct (Genv.find_symbol ge i).
-  apply function_ptr_translated; auto.
-  congruence.
+  unfold find_block; intros; destruct ros; simpl; auto.
+  rewrite symbols_preserved. auto.
 Qed.
 
 (** Correctness of [labels_branched_to]. *)
@@ -211,10 +207,11 @@ Inductive match_states: state -> state -> Prop :=
       match_states (State s f sp c ls m)
                    (State ts (transf_function f) sp (remove_unused_labels (labels_branched_to f.(fn_code)) c) ls m)
   | match_states_call:
-      forall s f ls m ts,
+      forall s f ls m ts b,
       list_forall2 match_stackframes s ts ->
-      match_states (Callstate s f ls m)
-                   (Callstate ts (transf_fundef f) ls m)
+      Genv.find_funct_ptr ge b = Some f ->
+      match_states (Callstate s b ls m)
+                   (Callstate ts b ls m)
   | match_states_return:
       forall s ls m ts,
       list_forall2 match_stackframes s ts ->
@@ -276,12 +273,13 @@ Proof.
   econstructor; eauto with coqlib.
 (* Lcall *)
   left; econstructor; split.
-  econstructor. eapply find_function_translated; eauto.
+  econstructor. rewrite find_block_translated; eauto. apply function_ptr_translated; eauto.
   symmetry; apply sig_function_translated.
   econstructor; eauto. constructor; auto. constructor; eauto with coqlib.
 (* Ltailcall *)
   left; econstructor; split.
-  econstructor. erewrite match_parent_locset; eauto. eapply find_function_translated; eauto.
+  econstructor. erewrite match_parent_locset; eauto.
+  rewrite find_block_translated; eauto. apply function_ptr_translated; eauto.
   symmetry; apply sig_function_translated.
   simpl. eauto.
   econstructor; eauto.
@@ -323,10 +321,14 @@ Proof.
   erewrite <- match_parent_locset; eauto.
   econstructor; eauto with coqlib.
 (* internal function *)
+  rewrite H8 in H; inv H.
+  apply function_ptr_translated in H8.
   left; econstructor; split.
   econstructor; simpl; eauto.
   econstructor; eauto with coqlib.
 (* external function *)
+  rewrite H9 in H; inv H.
+  apply function_ptr_translated in H9.
   left; econstructor; split.
   econstructor; eauto. eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   econstructor; eauto with coqlib.
@@ -349,7 +351,7 @@ Proof.
   rewrite (match_program_main TRANSL), symbols_preserved; eauto.
   apply function_ptr_translated; auto.
   rewrite sig_function_translated. auto.
-  constructor; auto. constructor.
+  econstructor; eauto. constructor.
 Qed.
 
 Lemma transf_final_states:

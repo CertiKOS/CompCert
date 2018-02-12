@@ -1662,15 +1662,17 @@ Inductive match_states: Csharpminor.state -> Cminor.state -> Prop :=
       match_states (Csharpminor.State fn (Csharpminor.Sseq s1 s2) k e le m)
                    (State tfn ts1 tk (Vptr sp Ptrofs.zero) te tm)
   | match_callstate:
-      forall fd args k m tfd targs tk tm f cs cenv
+      forall fd args k m tfd targs tk tm f cs cenv fb
+      (FIND: Genv.find_funct_ptr ge fb = Some fd)
+      (TFIND: Genv.find_funct_ptr tge fb = Some tfd)
       (TR: transl_fundef fd = OK tfd)
       (MINJ: Mem.inject f m tm)
       (MCS: match_callstack f m tm cs (Mem.nextblock m) (Mem.nextblock tm))
       (MK: match_cont k tk cenv nil cs)
       (ISCC: Csharpminor.is_call_cont k)
       (ARGSINJ: Val.inject_list f args targs),
-      match_states (Csharpminor.Callstate fd args k m)
-                   (Callstate tfd targs tk tm)
+      match_states (Csharpminor.Callstate fb args k m)
+                   (Callstate fb targs tk tm)
   | match_returnstate:
       forall v k m tv tk tm f cs cenv
       (MINJ: Mem.inject f m tm)
@@ -1679,6 +1681,20 @@ Inductive match_states: Csharpminor.state -> Cminor.state -> Prop :=
       (RESINJ: Val.inject f v tv),
       match_states (Csharpminor.Returnstate v k m)
                    (Returnstate tv tk tm).
+
+Remark val_inject_function_pointer_block:
+  forall bound v b fd f tv,
+  block_of v = Some b ->
+  Genv.find_funct_ptr ge b = Some fd ->
+  match_globalenvs f bound ->
+  Val.inject f v tv ->
+  tv = v.
+Proof.
+  intros.
+  apply block_of_inv in H. subst. inv H2.
+  assert (f b = Some(b, 0)). inv H1. apply DOMAIN. eapply FUNCTIONS; eauto.
+  rewrite H in H4; inv H4. reflexivity.
+Qed.
 
 Remark val_inject_function_pointer:
   forall bound v fd f tv,
@@ -2061,12 +2077,12 @@ Proof.
   intros. eapply Mem.perm_store_1; eauto.
 
 (* call *)
-  simpl in H1. exploit functions_translated; eauto. intros [tfd [FIND TRANS]].
+  exploit function_ptr_translated; eauto. intros [tfd [FIND TRANS]].
   monadInv TR.
   exploit transl_expr_correct; eauto. intros [tvf [EVAL1 VINJ1]].
   assert (tvf = vf).
     exploit match_callstack_match_globalenvs; eauto. intros [bnd MG].
-    eapply val_inject_function_pointer; eauto.
+    eapply val_inject_function_pointer_block; eauto.
   subst tvf.
   exploit transl_exprlist_correct; eauto.
   intros [tvargs [EVAL2 VINJ2]].
@@ -2214,7 +2230,8 @@ Opaque PTree.set.
   apply plus_one. apply step_goto. eexact A.
   econstructor; eauto.
 
-(* internal call *)
+  (* internal call *)
+  rewrite FIND in H; inv H.
   monadInv TR. generalize EQ; clear EQ; unfold transl_function.
   caseEq (build_compilenv f). intros ce sz BC.
   destruct (zle sz Ptrofs.max_unsigned); try congruence.
@@ -2234,13 +2251,13 @@ Opaque PTree.set.
   inv MK; simpl in ISCC; contradiction || econstructor; eauto.
 
 (* external call *)
-  monadInv TR.
+  rewrite FIND in H; inv H. monadInv TR.
   exploit match_callstack_match_globalenvs; eauto. intros [hi MG].
   exploit external_call_mem_inject; eauto.
   eapply inj_preserves_globals; eauto.
   intros [f' [vres' [tm' [EC [VINJ [MINJ' [UNMAPPED [OUTOFREACH [INCR SEPARATED]]]]]]]]].
   left; econstructor; split.
-  apply plus_one. econstructor.
+  apply plus_one. econstructor. eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   econstructor; eauto.
   apply match_callstack_incr_bound with (Mem.nextblock m) (Mem.nextblock tm).
@@ -2281,6 +2298,7 @@ Proof.
   simpl. rewrite EQ. reflexivity.
   pose proof (Mem.init_nextblock m0) as Hnb.
   eapply match_callstate with (f := Mem.flat_inj (Mem.nextblock m0)) (cs := @nil frame) (cenv := PTree.empty Z).
+  eauto. eauto.
   auto.
   eauto.
   apply mcs_nil with (Mem.nextblock m0). econstructor.
@@ -2318,10 +2336,10 @@ Proof.
   inv HSR.
   edestruct (match_cc_inject b sg) as (wA & Hq & H); eauto.
   inv TR.
+  assert (fd = External (EF_external id sg)) by congruence; subst fd.
   exists wA, (cq b sg targs tm); repeat apply conj; eauto.
-  - edestruct function_ptr_translated as (tf & Htf & Hf); eauto.
-    inv Hf.
-    constructor; eauto.
+  - inv H1.
+    econstructor; eauto.
   - intros [vres1 m1'] [vres2 m2'] S' Hr HS'.
     inv HS'.
     eexists; split.

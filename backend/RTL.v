@@ -169,7 +169,7 @@ Inductive state : Type :=
       state
   | Callstate:
       forall (stack: list stackframe) (**r call stack *)
-             (f: fundef)              (**r function to call *)
+             (fb: block)              (**r function to call *)
              (args: list val)         (**r arguments to the call *)
              (m: mem),                (**r memory state *)
       state
@@ -183,15 +183,11 @@ Section RELSEM.
 
 Variable ge: genv.
 
-Definition find_function
-      (ros: reg + ident) (rs: regset) : option fundef :=
+Definition find_block
+      (ros: reg + ident) (rs: regset) : option block :=
   match ros with
-  | inl r => Genv.find_funct ge rs#r
-  | inr symb =>
-      match Genv.find_symbol ge symb with
-      | None => None
-      | Some b => Genv.find_funct_ptr ge b
-      end
+  | inl r => block_of (rs#r)
+  | inr symb => Genv.find_symbol ge symb
   end.
 
 (** The transitions are presented as an inductive predicate
@@ -226,20 +222,22 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State s f sp pc rs m)
         E0 (State s f sp pc' rs m')
   | exec_Icall:
-      forall s f sp pc rs m sig ros args res pc' fd,
+      forall s fb f sp pc rs m sig ros args res pc' fd,
       (fn_code f)!pc = Some(Icall sig ros args res pc') ->
-      find_function ros rs = Some fd ->
+      find_block ros rs = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       step (State s f sp pc rs m)
-        E0 (Callstate (Stackframe res f sp pc' rs :: s) fd rs##args m)
+        E0 (Callstate (Stackframe res f sp pc' rs :: s) fb rs##args m)
   | exec_Itailcall:
-      forall s f stk pc rs m sig ros args fd m',
+      forall s fb f stk pc rs m sig ros args fd m',
       (fn_code f)!pc = Some(Itailcall sig ros args) ->
-      find_function ros rs = Some fd ->
+      find_block ros rs = Some fb ->
+      Genv.find_funct_ptr ge fb = Some fd ->
       funsig fd = sig ->
       Mem.free m stk 0 f.(fn_stacksize) = Some m' ->
       step (State s f (Vptr stk Ptrofs.zero) pc rs m)
-        E0 (Callstate s fd rs##args m')
+        E0 (Callstate s fb rs##args m')
   | exec_Ibuiltin:
       forall s f sp pc rs m ef args res pc' vargs t vres m',
       (fn_code f)!pc = Some(Ibuiltin ef args res pc') ->
@@ -268,9 +266,10 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State s f (Vptr stk Ptrofs.zero) pc rs m)
         E0 (Returnstate s (regmap_optget or Vundef rs) m')
   | exec_function_internal:
-      forall s f args m m' stk,
+      forall s fb f args m m' stk,
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       Mem.alloc m 0 f.(fn_stacksize) = (m', stk) ->
-      step (Callstate s (Internal f) args m)
+      step (Callstate s fb args m)
         E0 (State s
                   f
                   (Vptr stk Ptrofs.zero)
@@ -278,9 +277,10 @@ Inductive step: state -> trace -> state -> Prop :=
                   (init_regs args f.(fn_params))
                   m')
   | exec_function_external:
-      forall s ef args res t m m',
+      forall s fb ef args res t m m',
+      Genv.find_funct_ptr ge fb = Some (External ef) ->
       external_call ef ge args m t res m' ->
-      step (Callstate s (External ef) args m)
+      step (Callstate s fb args m)
          t (Returnstate s res m')
   | exec_return:
       forall res f sp pc rs s vres m,
@@ -323,19 +323,19 @@ Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
       Val.has_type_list vargs (sig_args (fn_sig f)) ->
       initial_state ge
         (cq b (fn_sig f) vargs m)
-        (Callstate nil (Internal f) vargs m).
+        (Callstate nil b vargs m).
 
 Inductive at_external (ge: genv): state -> query li_c -> Prop :=
   | at_external_intro b id sg s vargs m:
       Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
       at_external ge
-        (Callstate s (External (EF_external id sg)) vargs m)
+        (Callstate s b vargs m)
         (cq b sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
-  | after_external_intro id sg s vargs m vres m':
+  | after_external_intro b s vargs m vres m':
       after_external
-        (Callstate s (External (EF_external id sg)) vargs m)
+        (Callstate s b vargs m)
         (vres, m')
         (Returnstate s vres m').
 

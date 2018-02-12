@@ -55,6 +55,19 @@ Definition Vnullptr :=
 Definition Vptrofs (n: ptrofs) :=
   if Archi.ptr64 then Vlong (Ptrofs.to_int64 n) else Vint (Ptrofs.to_int n).
 
+Definition block_of (v: val) : option block :=
+  match v with
+  | Vptr b o => if Ptrofs.eq_dec o Ptrofs.zero then Some b else None
+  | _ => None
+  end.
+
+Lemma block_of_inv v b:
+  block_of v = Some b <-> v = Vptr b Ptrofs.zero.
+Proof.
+  unfold block_of; destruct v; try (split; congruence).
+  destruct (Ptrofs.eq_dec i Ptrofs.zero); split; congruence.
+Qed.
+
 (** * Operations over values *)
 
 (** The module [Val] defines a number of arithmetic and logical operations

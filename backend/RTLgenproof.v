@@ -744,6 +744,7 @@ Proof.
   eapply star_left. eapply exec_Icall; eauto.
   simpl. rewrite symbols_preserved. rewrite H. eauto. auto.
   eapply star_left. eapply exec_function_external.
+  eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   apply star_one. apply exec_return.
   reflexivity. reflexivity. reflexivity.
@@ -1230,13 +1231,15 @@ Inductive match_states: CminorSel.state -> RTL.state -> Prop :=
       match_states (CminorSel.State f s k sp e m)
                    (RTL.State cs tf sp ns rs tm)
   | match_callstate:
-      forall f args targs k m tm cs tf
+      forall f args targs k m tm cs tf fb
+        (FIND: Genv.find_funct_ptr ge fb = Some f)
+        (TFIND: Genv.find_funct_ptr tge fb = Some tf)
         (TF: transl_fundef f = OK tf)
         (MS: match_stacks k cs)
         (LD: Val.lessdef_list args targs)
         (MEXT: Mem.extends m tm),
-      match_states (CminorSel.Callstate f args k m)
-                   (RTL.Callstate cs tf targs tm)
+      match_states (CminorSel.Callstate fb args k m)
+                   (RTL.Callstate cs fb targs tm)
   | match_returnstate:
       forall v tv k m tm cs
         (MS: match_stacks k cs)
@@ -1362,24 +1365,25 @@ Proof.
   intros [rs' [tm' [A [B [C [D X]]]]]].
   exploit transl_exprlist_correct; eauto.
   intros [rs'' [tm'' [E [F [G [J Y]]]]]].
-  exploit functions_translated; eauto. intros [tf' [P Q]].
+  exploit function_ptr_translated; eauto. intros [tf' [P Q]].
   econstructor; split.
   left; eapply plus_right. eapply star_trans. eexact A. eexact E. reflexivity.
-  eapply exec_Icall; eauto. simpl. rewrite J. destruct C. eauto. discriminate P. simpl; auto.
+  eapply exec_Icall; eauto.
+  simpl. rewrite J. apply block_of_inv in H1. subst. inv C. reflexivity. simpl; auto.
   apply sig_transl_function; auto.
   traceEq.
-  constructor; auto. econstructor; eauto.
+  econstructor; eauto. econstructor; eauto.
   (* direct *)
   exploit transl_exprlist_correct; eauto.
   intros [rs'' [tm'' [E [F [G [J Y]]]]]].
-  exploit functions_translated; eauto. intros [tf' [P Q]].
+  exploit function_ptr_translated; eauto. intros [tf' [P Q]].
   econstructor; split.
   left; eapply plus_right. eexact E.
-  eapply exec_Icall; eauto. simpl. rewrite symbols_preserved. rewrite H4.
-    rewrite Genv.find_funct_find_funct_ptr in P. eauto.
+  eapply exec_Icall; eauto. simpl. rewrite symbols_preserved. rewrite H5.
+    inv H1; auto.
   apply sig_transl_function; auto.
   traceEq.
-  constructor; auto. econstructor; eauto.
+  econstructor; eauto. econstructor; eauto.
 
   (* tailcall *)
   inv TS; inv H.
@@ -1388,32 +1392,31 @@ Proof.
   intros [rs' [tm' [A [B [C [D X]]]]]].
   exploit transl_exprlist_correct; eauto.
   intros [rs'' [tm'' [E [F [G [J Y]]]]]].
-  exploit functions_translated; eauto. intros [tf' [P Q]].
+  exploit function_ptr_translated; eauto. intros [tf' [P Q]].
   exploit match_stacks_call_cont; eauto. intros [U V].
   assert (fn_stacksize tf = fn_stackspace f). inv TF; auto.
   edestruct Mem.free_parallel_extends as [tm''' []]; eauto.
   econstructor; split.
   left; eapply plus_right. eapply star_trans. eexact A. eexact E. reflexivity.
-  eapply exec_Itailcall; eauto. simpl. rewrite J. destruct C. eauto. discriminate P. simpl; auto.
+  eapply exec_Itailcall; eauto. simpl. rewrite J. apply block_of_inv in H1; subst. inv C. eauto. simpl; auto.
   apply sig_transl_function; auto.
   rewrite H; eauto.
   traceEq.
-  constructor; auto.
+  econstructor; eauto.
   (* direct *)
   exploit transl_exprlist_correct; eauto.
   intros [rs'' [tm'' [E [F [G [J Y]]]]]].
-  exploit functions_translated; eauto. intros [tf' [P Q]].
+  exploit function_ptr_translated; eauto. intros [tf' [P Q]].
   exploit match_stacks_call_cont; eauto. intros [U V].
   assert (fn_stacksize tf = fn_stackspace f). inv TF; auto.
   edestruct Mem.free_parallel_extends as [tm''' []]; eauto.
   econstructor; split.
   left; eapply plus_right. eexact E.
-  eapply exec_Itailcall; eauto. simpl. rewrite symbols_preserved. rewrite H5.
-  rewrite Genv.find_funct_find_funct_ptr in P. eauto.
+  eapply exec_Itailcall; eauto. simpl. rewrite symbols_preserved. rewrite H6. inv H1; auto.
   apply sig_transl_function; auto.
   rewrite H; eauto.
   traceEq.
-  constructor; auto.
+  econstructor; eauto.
 
   (* builtin *)
   inv TS.
@@ -1525,6 +1528,7 @@ Proof.
   econstructor; eauto.
 
   (* internal call *)
+  rewrite FIND in H; inv H.
   monadInv TF. exploit transl_function_charact; eauto. intro TRF.
   inversion TRF. subst f0.
   pose (e := set_locals (fn_vars f) (set_params vargs (CminorSel.fn_params f))).
@@ -1535,7 +1539,7 @@ Proof.
     assert (map_valid init_mapping s0) by apply init_mapping_valid.
     exploit (add_vars_valid (CminorSel.fn_params f)); eauto. intros [A B].
     eapply add_vars_wf; eauto. eapply add_vars_wf; eauto. apply init_mapping_wf.
-  edestruct Mem.alloc_extends as [tm' []]; eauto; try apply Z.le_refl.
+  edestruct Mem.alloc_extends as [tm' []]; eauto; try apply Z.le_refl. subst.
   econstructor; split.
   left; apply plus_one. eapply exec_function_internal; simpl; eauto.
   simpl. econstructor; eauto.
@@ -1543,7 +1547,7 @@ Proof.
   inversion MS; subst; econstructor; eauto.
 
   (* external call *)
-  monadInv TF.
+  rewrite FIND in H; inv H; monadInv TF.
   edestruct external_call_mem_extends as [tvres [tm' [A [B [C D]]]]]; eauto.
   econstructor; split.
   left; apply plus_one. eapply exec_function_external; eauto.
@@ -1576,7 +1580,7 @@ Proof.
   fold (funsig (Internal x)).
   erewrite sig_transl_function with (Internal f) (Internal x); eauto.
   simpl. rewrite EQ. reflexivity.
-  constructor. auto. constructor.
+  econstructor; eauto. constructor.
   clear; induction vargs; eauto.
   apply Mem.extends_refl.
 Qed.
@@ -1598,10 +1602,10 @@ Proof.
   intros S R q HSR HS.
   destruct HS as [fb id sg vargs k m Hfb]. inv HSR. inv TF.
   edestruct match_cc_extends as (w & Hq & H); eauto.
+  assert (f = External (EF_external id sg)) by congruence; subst f.
   exists w, (cq fb sg targs tm); repeat apply conj; eauto.
-  - edestruct function_ptr_translated as (tf & Htf & Hf); eauto.
-    inv Hf.
-    constructor; eauto.
+  - inv H0.
+    econstructor; eauto.
   - intros r1 [vres2 m2'] H' Hr HS'.
     inv HS'.
     edestruct H as (Hvres & Hm' & Hunch); eauto.

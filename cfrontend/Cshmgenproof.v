@@ -1374,14 +1374,16 @@ Inductive match_states: Clight.state -> Csharpminor.state -> Prop :=
       match_states (Clight.State f s k e le m)
                    (State tf ts' tk' te le m)
   | match_callstate:
-      forall fd args k m tfd tk targs tres cconv cu ce
+      forall fd args k m tfd tk targs tres cconv cu ce fb
+          (FIND: Genv.find_funct_ptr ge fb = Some fd)
+          (TFIND: Genv.find_funct_ptr tge fb = Some tfd)
           (LINK: linkorder cu prog)
           (TR: match_fundef cu fd tfd)
           (MK: match_cont ce Tvoid 0%nat 0%nat k tk)
           (ISCC: Clight.is_call_cont k)
           (TY: type_of_fundef fd = Tfunction targs tres cconv),
-      match_states (Clight.Callstate fd args k m)
-                   (Callstate tfd args tk m)
+      match_states (Clight.Callstate fb args k m)
+                   (Callstate fb args tk m)
   | match_returnstate:
       forall res k m tk ce
           (MK: match_cont ce Tvoid 0%nat 0%nat k tk),
@@ -1550,7 +1552,7 @@ Proof.
 - (* call *)
   revert TR. simpl. case_eq (classify_fun (typeof a)); try congruence.
   intros targs tres cc CF TR. monadInv TR. inv MTR.
-  exploit functions_translated; eauto. intros (cu' & tfd & FIND & TFD & LINK').
+  exploit function_ptr_translated; eauto. intros (cu' & tfd & FIND & TFD & LINK').
   rewrite H in CF. simpl in CF. inv CF.
   econstructor; split.
   apply plus_one. econstructor; eauto.
@@ -1558,7 +1560,7 @@ Proof.
   eapply transl_arglist_correct with (cunit := cu); eauto.
   erewrite typlist_of_arglist_eq by eauto.
   eapply transl_fundef_sig1; eauto.
-  rewrite H3. auto.
+  rewrite H4. auto.
   econstructor; eauto.
   eapply match_Kcall with (ce := prog_comp_env cu') (cu := cu); eauto.
   simpl. auto.
@@ -1723,13 +1725,13 @@ Proof.
   econstructor; eauto. constructor.
 
 - (* internal function *)
-  inv H. inv TR. monadInv H5.
+  rewrite FIND in H; inv H. inv H0. inv TR. monadInv H5.
   exploit match_cont_is_call_cont; eauto. intros [A B].
   exploit match_env_alloc_variables; eauto.
   apply match_env_empty.
   intros [te1 [C D]].
   econstructor; split.
-  apply plus_one. eapply step_internal_function.
+  apply plus_one. eapply step_internal_function. eauto.
   simpl. erewrite transl_vars_names by eauto. assumption.
   simpl. assumption.
   simpl. assumption.
@@ -1740,10 +1742,10 @@ Proof.
   constructor.
 
 - (* external function *)
-  inv TR.
+  rewrite FIND in H; inv H. inv TR.
   exploit match_cont_is_call_cont; eauto. intros [A B].
   econstructor; split.
-  apply plus_one. constructor. eauto.
+  apply plus_one. econstructor. eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   eapply match_returnstate with (ce := ce); eauto.
 
@@ -1790,9 +1792,10 @@ Proof.
   intros S R q HSR HS.
   edestruct (match_cc_id q) as (w & Hq & H).
   destruct HS. inv HSR.
+  assert (fd = f) by congruence; subst fd.
   exists w, (cq b sg vargs m); repeat apply conj; eauto.
-  - inv TR.
-    edestruct function_ptr_translated as (cu' & tf & Htf & Hf & Hcu); eauto.
+  - edestruct function_ptr_translated as (cu' & tf & Htf & Hf & Hcu); eauto.
+    inv TR.
     subst f. inv Hf.
     econstructor; eauto.
   - intros r1 r2 H' Hr HS'.

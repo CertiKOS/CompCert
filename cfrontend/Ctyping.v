@@ -1977,9 +1977,9 @@ Definition fundef_return (fd: fundef) : type :=
   end.
 
 Lemma wt_find_funct:
-  forall v fd, Genv.find_funct ge v = Some fd -> wt_fundef fd.
+  forall v fd, Genv.find_funct_ptr ge v = Some fd -> wt_fundef fd.
 Proof.
-  intros. apply Genv.find_funct_prop with (p := prog) (v := v); auto.
+  intros. apply Genv.find_funct_ptr_prop with (p := prog) (b := v); auto.
   intros. inv WTPROG. destruct f; simpl; auto. apply H1 with id; auto.
 Qed.
 
@@ -1997,8 +1997,8 @@ Inductive wt_state: state -> Prop :=
   | wt_call_state: forall b fd vargs k m
         (WTK: wt_call_cont k (fundef_return fd))
         (WTFD: wt_fundef fd)
-        (FIND: Genv.find_funct ge b = Some fd),
-      wt_state (Callstate fd vargs k m)
+        (FIND: Genv.find_funct_ptr ge b = Some fd),
+      wt_state (Callstate b vargs k m)
   | wt_return_state: forall v k m ty
         (WTK: wt_call_cont k ty)
         (VAL: wt_val v ty),
@@ -2070,10 +2070,10 @@ Proof.
   eapply wt_rred; eauto. change (wt_expr_kind ge te RV a). eapply wt_subexpr; eauto.
 - (* call *)
   assert (A: wt_expr_kind ge te RV a) by (eapply wt_subexpr; eauto).
-  simpl in A. inv H. inv A. simpl in H9; rewrite H4 in H9; inv H9.
-  assert (fundef_return fd = ty).
-  { destruct fd; simpl in *.
-    unfold type_of_function in H3. congruence.
+  simpl in A. inv H. inv A. simpl in H10; rewrite H5 in H10; inv H10.
+  assert (fundef_return fd0 = ty).
+  { destruct fd0; simpl in *.
+    unfold type_of_function in H4. congruence.
     congruence. }
   econstructor.
   rewrite H. econstructor; eauto.
@@ -2128,8 +2128,10 @@ Proof.
 - inv WTS; eauto with ty.
 - exploit wt_find_label. eexact WTB. eauto. eapply call_cont_wt'; eauto.
   intros [A B]. eauto with ty.
-- simpl in WTFD; inv WTFD. econstructor; eauto. apply wt_call_cont_stmt_cont; auto.
-- exploit (Genv.find_funct_inversion prog); eauto. intros (id & A).
+- rewrite FIND in H; inv H.
+  simpl in WTFD; inv WTFD. econstructor; eauto. apply wt_call_cont_stmt_cont; auto.
+- rewrite FIND in H; inv H.
+  exploit (Genv.find_funct_ptr_inversion prog); eauto. intros (id & A).
   econstructor; eauto.
 - inv WTK. eauto with ty.
 Qed.
@@ -2143,10 +2145,12 @@ Qed.
 Theorem wt_initial_state:
   forall S, initial_state prog S -> wt_state S.
 Proof.
-  intros. inv H. econstructor. constructor.
+  intros. inv H.
+  unfold ge, ge0 in *.
+  econstructor. constructor.
   apply Genv.find_funct_ptr_prop with (p := prog) (b := b); auto.
   intros. inv WTPROG. destruct f0; simpl; auto. apply H4 with id; auto.
-  instantiate (1 := (Vptr b Ptrofs.zero)). rewrite Genv.find_funct_find_funct_ptr. auto.
+  eauto. eauto.
 Qed.
 
 End PRESERVATION.

@@ -1805,26 +1805,26 @@ Proof.
 Qed.
 
 Lemma find_function_translated:
-  forall j ls rs m ros f,
+  forall j ls rs m ros b f,
   agree_regs j ls rs ->
   m |= globalenv_inject ge j ->
-  Linear.find_function ge ros ls = Some f ->
-  exists bf, exists tf,
-     find_function_ptr tge ros rs = Some bf
-  /\ Genv.find_funct_ptr tge bf = Some tf
+  Linear.find_block ge ros ls = Some b ->
+  Genv.find_funct_ptr ge b = Some f ->
+  exists tf,
+     find_function_ptr tge ros rs = Some b
+  /\ Genv.find_funct_ptr tge b = Some tf
   /\ transf_fundef f = OK tf.
 Proof.
-  intros until f; intros AG [bound [_ [?????]]] FF.
+  intros until f; intros AG [bound [_ [?????]]] FB FF.
   destruct ros; simpl in FF.
-- exploit Genv.find_funct_inv; eauto. intros [b EQ]. rewrite EQ in FF.
-  rewrite Genv.find_funct_find_funct_ptr in FF.
+- simpl in *.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
-  exists b; exists tf; split; auto. simpl.
-  generalize (AG m0). rewrite EQ. intro INJ. inv INJ.
+  exists tf; split; auto. simpl.
+  generalize (AG m0). apply block_of_inv in FB; rewrite FB. intro INJ. inv INJ.
   rewrite DOMAIN in H2. inv H2. simpl. auto. eapply FUNCTIONS; eauto.
-- destruct (Genv.find_symbol ge i) as [b|] eqn:?; try discriminate.
+- simpl in *.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
-  exists b; exists tf; split; auto. simpl.
+  exists tf; split; auto.
   rewrite symbols_preserved. auto.
 Qed.
 
@@ -2175,13 +2175,14 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
         (SINV: source_injection_invariant j m)
         (STACKS: match_stacks j cs cs' (Linear.funsig f) isg)
         (TRANSL: transf_fundef f = OK tf)
-        (FIND: Genv.find_funct_ptr tge fb = Some tf)
+        (FIND: Genv.find_funct_ptr ge fb = Some f)
+        (TFIND: Genv.find_funct_ptr tge fb = Some tf)
         (AGREGS: agree_regs j ls rs)
         (AGLOCS: agree_callee_save ls (parent_locset cs))
         (SEP: m' |= stack_contents j cs cs'
                  ** minjection j m
                  ** globalenv_inject ge j),
-      match_states (Linear.Callstate cs f ls m)
+      match_states (Linear.Callstate cs fb ls m)
                    (Mach.Callstate cs' fb rs m')
   | match_states_return:
       forall cs ls m cs' rs m' j sg isg
@@ -2197,7 +2198,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
 
 Theorem transf_step_correct:
   forall s1 t s2, Linear.step ge s1 t s2 ->
-  forall (WTS: wt_state s1) s1' (MS: match_states s1 s1'),
+  forall (WTS: wt_state prog s1) s1' (MS: match_states s1 s1'),
   exists s2', plus step tge s1' t s2' /\ match_states s2 s2'.
 Proof.
   induction 1; intros;
@@ -2365,7 +2366,7 @@ Proof.
 - (* Lcall *)
   exploit find_function_translated; eauto.
     eapply sep_proj2. eapply sep_proj2. eapply sep_proj2. eexact SEP.
-  intros [bf [tf' [A [B C]]]].
+  intros [tf' [A [B C]]].
   exploit is_tail_transf_function; eauto. intros IST.
   rewrite transl_code_eq in IST. simpl in IST.
   exploit return_address_offset_exists. eexact IST. intros [ra D].
@@ -2387,7 +2388,7 @@ Proof.
   rewrite sep_swap in SEP.
   exploit find_function_translated; eauto.
     eapply sep_proj2. eapply sep_proj2. eexact SEP.
-  intros [bf [tf' [A [B C]]]].
+  intros [tf' [A [B C]]].
   econstructor; split.
   eapply plus_right. eexact S. econstructor; eauto. traceEq.
   econstructor; eauto.
@@ -2486,6 +2487,7 @@ Proof.
   rewrite sep_swap; exact G.
 
 - (* internal function *)
+  rewrite FIND in H; inv H.
   revert TRANSL. unfold transf_fundef, transf_partial_fundef.
   destruct (transf_function f) as [tfn|] eqn:TRANSL; simpl; try congruence.
   intros EQ; inversion EQ; clear EQ; subst tf.
@@ -2509,13 +2511,14 @@ Proof.
     - eapply Mem.alloc_unchanged_on; eauto.
     - intros.
       eapply Mem.perm_alloc_4; eauto.
-      apply Mem.alloc_result in H; subst.
-      red in H0. intro; subst. eelim Block.lt_strict; eauto.
+      apply Mem.alloc_result in H0; subst.
+      red in H1. intro; subst. eelim Block.lt_strict; eauto.
   }
   eapply match_stacks_change_meminj; eauto.
   rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.
 
 - (* external function *)
+  rewrite FIND in H; inv H.
   simpl in TRANSL. inversion TRANSL; subst tf.
   pose proof (ii_incr _ _ SINV).
   exploit transl_external_arguments; eauto. apply sep_proj1 in SEP; eauto. intros [vl [ARGS VINJ]].
@@ -2650,7 +2653,7 @@ Qed.
 
 Lemma transf_external:
   forall w st1 st2 q1,
-    wt_state st1 ->
+    wt_state prog st1 ->
     match_states w st1 st2 ->
     Linear.at_external ge st1 q1 ->
     exists wA q2,
@@ -2658,14 +2661,15 @@ Lemma transf_external:
       Mach.at_external tge st2 q2 /\
       forall r1 r2 st1',
         match_reply (cc_wt @ cc_locset @ cc_stacking) wA r1 r2 ->
-        Linear.after_external st1 r1 st1' ->
+        Linear.after_external ge st1 r1 st1' ->
         exists st2',
           Mach.after_external tge st2 r2 st2' /\
           match_states w st1' st2' /\
-          wt_state st1'.
+          wt_state prog st1'.
 Proof.
   intros w st1 st2 q1 Hst1 Hst Hq1.
   destruct Hq1 as [fb id sg s rs m Hfb]; inv Hst.
+  assert (f = External (EF_external id sg)) by congruence; subst f.
   simpl in TRANSL. inversion TRANSL; subst tf. simpl in STACKS.
   pose proof (ii_incr _ _ _ SINV) as INCR.
   pose proof SEP as (Hsc & (Hinj & Hge & _) & _).
@@ -2732,9 +2736,7 @@ Proof.
   edestruct (match_cc_compose cc_wt (cc_locset @ cc_stacking)) as (wA & Hq & H);
     eauto; clear Hq12 Hq24.
   eexists wA, _; repeat apply conj; eauto; clear Hq.
-  - assert (fb0 = fb) by admit. (* need to know only one def. of each external *)
-    subst.
-    econstructor; eauto.
+  - econstructor; eauto.
   - intros [vres1 m1'] [rs4' m4'] st1' Hr14 Hst1'.
     edestruct H as ([vres2 m2'] & Hr12 & Hr24); eauto; clear H Hr14.
     edestruct H12 as (Hvres12 & Hm12 & Hwt); eauto; subst; clear H12 Hr12.
@@ -2743,6 +2745,7 @@ Proof.
     edestruct H34 as (j' & Hrs34' & Hm34' & UNCH3 & UNCH4 & INCR' & SEP'); eauto.
     clear H34 Hr34.
     inv Hst1'.
+    assert (sg0 = sg) by congruence; subst sg0.
     eexists. intuition.
     + econstructor; eauto.
     + eapply match_states_return with (j := j').
@@ -2763,7 +2766,7 @@ Proof.
       constructor; eauto.
       eapply wt_setpair; eauto.
       eapply wt_undef_regs; eauto.
-Admitted.
+Qed.
 
 Lemma transf_final_states:
   forall w st1 st2 r1, match_states w st1 st2 -> Linear.final_state st1 r1 ->
@@ -2801,7 +2804,7 @@ Theorem transf_program_correct:
     (Linear.semantics prog)
     (Mach.semantics return_address_offset tprog).
 Proof.
-  set (ms := fun w s s' => wt_state s /\ match_states w s s').
+  set (ms := fun w s s' => wt_state prog s /\ match_states w s s').
   eapply forward_simulation_plus with (match_states := ms).
 - apply senv_preserved.
 - intros. exploit transf_initial_states; eauto. intros [st2 [A B]].

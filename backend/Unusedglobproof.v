@@ -761,13 +761,15 @@ Inductive match_states: state -> state -> Prop :=
          (MEMINJ: Mem.inject j m tm),
       match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
                    (State ts f (Vptr tsp Ptrofs.zero) pc trs tm)
-  | match_states_call: forall s fd args m ts targs tm j
+  | match_states_call: forall s fd args m ts targs tm j fb tfb
+         (FIND: Genv.find_funct_ptr ge fb = Some fd)
+         (TFIND: Genv.find_funct_ptr tge tfb = Some fd)
          (STACKS: match_stacks j s ts (Mem.nextblock m) (Mem.nextblock tm))
          (KEPT: forall id, ref_fundef fd id -> kept id)
          (ARGINJ: Val.inject_list j args targs)
          (MEMINJ: Mem.inject j m tm),
-      match_states (Callstate s fd args m)
-                   (Callstate ts fd targs tm)
+      match_states (Callstate s fb args m)
+                   (Callstate ts tfb targs tm)
   | match_states_return: forall s res m ts tres tm j
          (STACKS: match_stacks j s ts (Mem.nextblock m) (Mem.nextblock tm))
          (RESINJ: Val.inject j res tres)
@@ -798,26 +800,27 @@ Proof.
 Admitted.
 
 Lemma find_function_inject:
-  forall j ros rs fd trs,
+  forall j ros rs fb fd trs,
   meminj_preserves_globals j ->
-  find_function ge ros rs = Some fd ->
+  find_block ge ros rs = Some fb ->
+  Genv.find_funct_ptr ge fb = Some fd ->
   match ros with inl r => regset_inject j rs trs | inr id => kept id end ->
-  find_function tge ros trs = Some fd /\ (forall id, ref_fundef fd id -> kept id).
+  exists tfb,
+    find_block tge ros trs = Some tfb /\ Genv.find_funct_ptr tge tfb = Some fd /\ (forall id, ref_fundef fd id -> kept id).
 Proof.
   intros. destruct ros as [r|id]; simpl in *.
-- exploit Genv.find_funct_inv; eauto. intros (b & R). rewrite R in H0.
-  rewrite Genv.find_funct_find_funct_ptr in H0.
-  specialize (H1 r). rewrite R in H1. inv H1.
-  rewrite Genv.find_funct_ptr_iff in H0.
+- apply block_of_inv in H0. 
+  specialize (H2 r). rewrite H0 in H2. inv H2.
+  rewrite Genv.find_funct_ptr_iff in H1.
   exploit defs_inject; eauto. intros (A & B & C).
   rewrite <- Genv.find_funct_ptr_iff in A.
-  rewrite B; auto.
-- destruct (Genv.find_symbol ge id) as [b|] eqn:FS; try discriminate.
-  exploit symbols_inject_2; eauto. intros (tb & P & Q). rewrite P.
-  rewrite Genv.find_funct_ptr_iff in H0.
+  rewrite B; eauto. simpl in *; eauto.
+  exists b2; auto.
+- exploit symbols_inject_2; eauto. intros (tb & P & Q). rewrite P.
+  rewrite Genv.find_funct_ptr_iff in H1.
   exploit defs_inject; eauto. intros (A & B & C).
   rewrite <- Genv.find_funct_ptr_iff in A.
-  auto.
+  eexists; eauto.
 Qed.
 
 Lemma eval_builtin_arg_inject:
@@ -946,9 +949,9 @@ Proof.
 
 - (* call *)
   exploit find_function_inject.
-  eapply match_stacks_preserves_globals; eauto. eauto.
+  eapply match_stacks_preserves_globals; eauto. eauto. eauto.
   destruct ros as [r|id]. eauto. apply KEPT. red. econstructor; econstructor; split; eauto. simpl; auto.
-  intros (A & B).
+  intros (tfb & FB & A & B).
   econstructor; split. eapply exec_Icall; eauto.
   econstructor; eauto.
   econstructor; eauto.
@@ -958,9 +961,9 @@ Proof.
 
 - (* tailcall *)
   exploit find_function_inject.
-  eapply match_stacks_preserves_globals; eauto. eauto.
+  eapply match_stacks_preserves_globals; eauto. eauto. eauto.
   destruct ros as [r|id]. eauto. apply KEPT. red. econstructor; econstructor; split; eauto. simpl; auto.
-  intros (A & B).
+  intros (tfb & FB & A & B).
   exploit Mem.free_parallel_inject; eauto. rewrite ! Z.add_0_r. intros (tm' & C & D).
   econstructor; split.
   eapply exec_Itailcall; eauto.
@@ -1020,6 +1023,7 @@ Proof.
   destruct or; simpl; auto.
 
 - (* internal function *)
+  rewrite FIND in H; inv H.
   exploit Mem.alloc_parallel_inject. eauto. eauto. apply Z.le_refl. apply Z.le_refl.
   intros (j' & tm' & tstk & C & D & E & F & G).
   assert (STK: stk = Mem.nextblock m) by (eapply Mem.alloc_result; eauto).
@@ -1036,6 +1040,7 @@ Proof.
   apply init_regs_inject; auto. apply val_inject_list_incr with j; auto.
 
 - (* external function *)
+  rewrite FIND in H; inv H.
   exploit external_call_inject; eauto.
   eapply match_stacks_preserves_globals; eauto.
   intros (w & Hwq & Hw). exists w; split; eauto.
@@ -1372,15 +1377,16 @@ Lemma transf_initial_states:
 Proof.
   intros. inv H. exploit init_mem_inject; eauto. intros (j & tm & A & B & C).
   exploit symbols_inject_2. eauto. eapply kept_main. eexact H1. intros (tb & P & Q).
+  generalize H2; intro FIND.
   rewrite Genv.find_funct_ptr_iff in H2.
   exploit defs_inject. eauto. eexact Q. exact H2.
   intros (R & S & T).
   rewrite <- Genv.find_funct_ptr_iff in R.
-  exists (Callstate nil f nil tm); split.
+  exists (Callstate nil tb nil tm); split.
   econstructor; eauto.
   fold tge. erewrite match_prog_main by eauto. auto.
   econstructor; eauto.
-  constructor. auto.
+  econstructor. auto.
   erewrite <- Genv.init_mem_genv_next by eauto. apply Block.le_refl.
   erewrite <- Genv.init_mem_genv_next by eauto. apply Block.le_refl.
 Qed.

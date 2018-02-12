@@ -91,13 +91,14 @@ Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env ->
       eval_expr ge e le m a v ->
       exec_stmt e le m (Sset id a)
                E0 (PTree.set id v le) m Out_normal
-  | exec_Scall:   forall e le m optid a al tyargs tyres cconv vf vargs f t m' vres,
+  | exec_Scall:   forall e le m optid a al tyargs tyres cconv vf vargs fb f t m' vres,
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr ge e le m a vf ->
       eval_exprlist ge e le m al tyargs vargs ->
-      Genv.find_funct ge vf = Some f ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some f ->
       type_of_fundef f = Tfunction tyargs tyres cconv ->
-      eval_funcall m f vargs t m' vres ->
+      eval_funcall m fb vargs t m' vres ->
       exec_stmt e le m (Scall optid a al)
                 t (set_opttemp optid vres le) m' Out_normal
   | exec_Sbuiltin:   forall e le m optid ef al tyargs vargs t m' vres,
@@ -164,16 +165,18 @@ Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env ->
   function [fd] with arguments [args].  [res] is the value returned
   by the call.  *)
 
-with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> Prop :=
-  | eval_funcall_internal: forall le m f vargs t e le' m2 m3 out vres m4,
+with eval_funcall: mem -> block -> list val -> trace -> mem -> val -> Prop :=
+  | eval_funcall_internal: forall le m fb f vargs t e le' m2 m3 out vres m4,
       function_entry ge f vargs m e le m2 ->
       exec_stmt e le m2 f.(fn_body) t le' m3 out ->
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       outcome_result_value out f.(fn_return) vres m3 ->
       Mem.free_list m3 (blocks_of_env ge e) = Some m4 ->
-      eval_funcall m (Internal f) vargs t m4 vres
-  | eval_funcall_external: forall m ef targs tres cconv vargs t vres m',
+      eval_funcall m fb vargs t m4 vres
+  | eval_funcall_external: forall m fb ef targs tres cconv vargs t vres m',
+      Genv.find_funct_ptr ge fb = Some (External ef targs tres cconv) ->
       external_call ef ge vargs m t vres m' ->
-      eval_funcall m (External ef targs tres cconv) vargs t m' vres.
+      eval_funcall m fb vargs t m' vres.
 
 Scheme exec_stmt_ind2 := Minimality for exec_stmt Sort Prop
   with eval_funcall_ind2 := Minimality for eval_funcall Sort Prop.
@@ -187,13 +190,14 @@ Combined Scheme exec_stmt_funcall_ind from exec_stmt_ind2, eval_funcall_ind2.
   trace of observable events performed during the execution. *)
 
 CoInductive execinf_stmt: env -> temp_env -> mem -> statement -> traceinf -> Prop :=
-  | execinf_Scall:   forall e le m optid a al vf tyargs tyres cconv vargs f t,
+  | execinf_Scall:   forall e le m optid a al vf tyargs tyres cconv vargs fb f t,
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr ge e le m a vf ->
       eval_exprlist ge e le m al tyargs vargs ->
-      Genv.find_funct ge vf = Some f ->
+      block_of vf = Some fb ->
+      Genv.find_funct_ptr ge fb = Some f ->
       type_of_fundef f = Tfunction tyargs tyres cconv ->
-      evalinf_funcall m f vargs t ->
+      evalinf_funcall m fb vargs t ->
       execinf_stmt e le m (Scall optid a al) t
   | execinf_Sseq_1:   forall e le m s1 s2 t,
       execinf_stmt e le m s1 t ->
@@ -230,11 +234,12 @@ CoInductive execinf_stmt: env -> temp_env -> mem -> statement -> traceinf -> Pro
 (** [evalinf_funcall ge m fd args t] holds if the invocation of function
     [fd] on arguments [args] diverges, with observable trace [t]. *)
 
-with evalinf_funcall: mem -> fundef -> list val -> traceinf -> Prop :=
-  | evalinf_funcall_internal: forall m f vargs t e le m2,
+with evalinf_funcall: mem -> block -> list val -> traceinf -> Prop :=
+  | evalinf_funcall_internal: forall m fb f vargs t e le m2,
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
       function_entry ge f vargs m e le m2 ->
       execinf_stmt e le m2 f.(fn_body) t ->
-      evalinf_funcall m (Internal f) vargs t.
+      evalinf_funcall m fb vargs t.
 
 End BIGSTEP.
 
@@ -251,7 +256,7 @@ Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-      eval_funcall ge function_entry m0 f nil t m1 (Vint r) ->
+      eval_funcall ge function_entry m0 b nil t m1 (Vint r) ->
       bigstep_program_terminates p t r.
 
 Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
@@ -261,7 +266,7 @@ Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-      evalinf_funcall ge function_entry m0 f nil t ->
+      evalinf_funcall ge function_entry m0 b nil t ->
       bigstep_program_diverges p t.
 
 Definition bigstep_semantics (p: program) :=
@@ -331,7 +336,7 @@ Proof.
 (* call *)
   econstructor; split.
   eapply star_left. econstructor; eauto.
-  eapply star_right. apply H5. simpl; auto. econstructor. reflexivity. traceEq.
+  eapply star_right. apply H6. simpl; auto. econstructor. reflexivity. traceEq.
   constructor.
 
 (* builtin *)
@@ -458,28 +463,28 @@ Proof.
   unfold S2. inv B1; simpl; econstructor; eauto.
 
 (* call internal *)
-  destruct (H1 f k) as [S1 [A1 B1]].
+  destruct (H2 f k) as [S1 [A1 B1]].
   eapply star_left. eapply step_internal_function; eauto.
   eapply star_right. eexact A1.
    inv B1; simpl in H4; try contradiction.
   (* Out_normal *)
   assert (fn_return f = Tvoid /\ vres = Vundef).
     destruct (fn_return f); auto || contradiction.
-  destruct H5. subst vres. apply step_skip_call; auto.
+  destruct H6. subst vres. apply step_skip_call; auto.
   (* Out_return None *)
   assert (fn_return f = Tvoid /\ vres = Vundef).
     destruct (fn_return f); auto || contradiction.
-  destruct H6. subst vres.
-  rewrite <- (is_call_cont_call_cont k H4). rewrite <- H5.
+  destruct H7. subst vres.
+  rewrite <- (is_call_cont_call_cont k H4). rewrite <- H6.
   apply step_return_0; auto.
   (* Out_return Some *)
-  destruct H2.
-  rewrite <- (is_call_cont_call_cont k H4). rewrite <- H5.
+  destruct H3.
+  rewrite <- (is_call_cont_call_cont k H4). rewrite <- H6.
   eapply step_return_1; eauto.
   reflexivity. traceEq.
 
 (* call external *)
-  apply star_one. apply step_external_function; auto.
+  apply star_one. eapply step_external_function; eauto.
 Qed.
 
 Lemma exec_stmt_steps:
