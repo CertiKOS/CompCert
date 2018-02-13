@@ -479,12 +479,30 @@ Record semantics liA liB: Type := Semantics_gen {
   genvtype: Type;
   step : genvtype -> state -> trace -> state -> Prop;
   initial_state: query liB -> state -> Prop;
-  at_external: state -> query liA -> Prop;
-  after_external: state -> reply liA -> state -> Prop;
+  external: state -> query liA -> (reply liA -> state -> Prop) -> Prop;
   final_state: state -> reply liB -> Prop;
   globalenv: genvtype;
   symbolenv: Senv.t
 }.
+
+(** In most cases, [external] can be defined through two, independent
+  [at_external] and [after_external] predicates as follows. However,
+  for defining [proj_semantics] below in such a way that we can
+  transform forward simulations into backward simulations, we will the
+  full generality of [external] to ensure that the worlds used to
+  project the query and replies are consistent. *)
+
+Section MAKE_EXTERNAL.
+  Context {state: Type} {liA: language_interface}.
+  Context (at_external: state -> query liA -> Prop).
+  Context (after_external: state -> reply liA -> state -> Prop).
+
+  Inductive make_external:
+    state -> query liA -> (reply liA -> state -> Prop) -> Prop :=
+      | make_external_intro s q:
+          at_external s q ->
+          make_external s q (after_external s).
+End MAKE_EXTERNAL.
 
 (** The form used in earlier CompCert versions, for backward compatibility. *)
 
@@ -500,8 +518,7 @@ Definition Semantics liA liB {state funtype vartype: Type}
      step := step;
      initial_state := initial_state;
      final_state := final_state;
-     at_external := at_external;
-     after_external := after_external;
+     external := make_external at_external after_external;
      globalenv := globalenv;
      symbolenv := Genv.to_senv globalenv |}.
 
@@ -535,15 +552,15 @@ Record fsim_properties (L1: semantics liA1 liB1) (L2: semantics liA2 liB2)
         match_states w i s1 s2;
     fsim_match_external:
       forall w i s1 s2, match_states w i s1 s2 ->
-      forall q1, at_external L1 s1 q1 ->
-      exists wA q2,
+      forall q1 after_external1, external L1 s1 q1 after_external1 ->
+      exists wA q2 after_external2,
         match_query ccA wA q1 q2 /\
-        at_external L2 s2 q2 /\
+        external L2 s2 q2 after_external2 /\
         forall r1 r2 s1',
           match_reply ccA wA r1 r2 ->
-          after_external L1 s1 r1 s1' ->
+          after_external1 r1 s1' ->
           exists j s2',
-            after_external L2 s2 r2 s2' /\
+            after_external2 r2 s2' /\
             match_states w j s1' s2';
     fsim_match_final_states:
       forall w i s1 s2 r1,
@@ -611,17 +628,17 @@ Hypothesis match_initial_states:
     match_states w s1 s2.
 
 Hypothesis match_external:
-  forall w s1 s2 q1,
+  forall w s1 s2 q1 after_external1,
   match_states w s1 s2 ->
-  at_external L1 s1 q1 ->
-  exists wA q2,
+  external L1 s1 q1 after_external1 ->
+  exists wA q2 after_external2,
     match_query ccA wA q1 q2 /\
-    at_external L2 s2 q2 /\
+    external L2 s2 q2 after_external2 /\
     forall r1 r2 s1',
       match_reply ccA wA r1 r2 ->
-      after_external L1 s1 r1 s1' ->
+      after_external1 r1 s1' ->
       exists s2',
-        after_external L2 s2 r2 s2' /\
+        after_external2 r2 s2' /\
         match_states w s1' s2'.
 
 Hypothesis match_final_states:
@@ -663,8 +680,8 @@ Proof.
   intros [s2 [A B]].
   exists s1; exists s2; auto.
 - intros. destruct H.
-  edestruct match_external as (wA & q2 & Hq & Hs2 & Hresume); eauto.
-  exists wA, q2; intuition.
+  edestruct match_external as (wA & q2 & ae2 & Hq & Hs2 & Hresume); eauto.
+  exists wA, q2, ae2; intuition.
   edestruct Hresume as (s2' & Hs2' & Hs'); eauto.
 - intros. destruct H.
   edestruct match_final_states as (r2 & Hr & Hs2); eauto.
@@ -870,10 +887,10 @@ Proof.
   exists (i', i); exists s3; split; auto. exists s2; auto.
 - (* external call *)
   intros. destruct H as [s3 [A B]].
-  edestruct (fsim_match_external props) as (? & ? & ? & ? & Hr); eauto.
-  edestruct (fsim_match_external props') as (? & ? & ? & ? & Hr'); eauto.
+  edestruct (fsim_match_external props) as (? & ? & ? & ? & ? & Hr); eauto.
+  edestruct (fsim_match_external props') as (? & ? & ? & ? & ? & Hr'); eauto.
   edestruct (match_cc_compose ccA12 ccA23) as (w' & Hq & Hr12); eauto.
-  eexists _, _. intuition; eauto.
+  eexists _, _, _. intuition; eauto.
   edestruct Hr12 as (r3 & ? & ?); eauto.
   edestruct Hr as (j & s2' & Hs2' & Hs12'); eauto.
   edestruct Hr' as (j' & s3' & Hs3' & Hs23'); eauto.
@@ -975,6 +992,59 @@ Proof.
 Qed.
 
 End DETERMINACY.
+
+(** * Projecting a transition semantics by a calling convention *)
+
+Section PROJ.
+
+Context {liA1 liA2} (ccA: callconv liA1 liA2).
+Context {liB1 liB2} (ccB: callconv liB1 liB2).
+Context (L: semantics liA1 liB1).
+
+Definition proj_state: Type := world ccB * state L.
+
+Inductive proj_step: genvtype L -> proj_state -> trace -> proj_state -> Prop :=
+  proj_step_intro ge w s t s':
+    step L ge s t s' ->
+    proj_step ge (w, s) t (w, s').
+
+Inductive proj_initial_state: query liB2 -> proj_state -> Prop :=
+  proj_initial_state_intro w q1 q2 s:
+    match_query ccB w q1 q2 ->
+    initial_state L q1 s ->
+    proj_initial_state q2 (w, s).
+
+Inductive proj_after_external wA after_external: reply liA2 -> proj_state -> Prop :=
+  proj_after_external_intro s' r1 r2 w:
+    after_external r1 s' ->
+    match_reply ccA wA r1 r2 ->
+    proj_after_external wA after_external r2 (w, s').
+
+Inductive proj_external: proj_state -> query liA2 -> (reply liA2 -> proj_state -> Prop) -> Prop :=
+  proj_at_external_intro wA q1 q2 ae1 w s:
+    match_query ccA wA q1 q2 ->
+    external L s q1 ae1 ->
+    proj_external (w, s) q2 (proj_after_external wA ae1).
+
+Inductive proj_final_state: proj_state -> reply liB2 -> Prop :=
+  proj_final_state_intro w s r1 r2:
+    final_state L s r1 ->
+    match_reply ccB w r1 r2 ->
+    proj_final_state (w, s) r2.
+
+Definition proj_semantics :=
+  {|
+    state := proj_state;
+    genvtype := genvtype L;
+    step := proj_step;
+    initial_state := proj_initial_state;
+    external := proj_external;
+    final_state := proj_final_state;
+    globalenv := globalenv L;
+    symbolenv := symbolenv L;
+  |}.
+
+End PROJ.
 
 (*
 
