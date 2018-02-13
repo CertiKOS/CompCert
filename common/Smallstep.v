@@ -1046,18 +1046,16 @@ Definition proj_semantics :=
 
 End PROJ.
 
-(*
-
 (** * Backward simulations between two transition semantics. *)
 
-Definition safe (L: semantics) (s: state L) : Prop :=
+Definition safe {liA liB} (L: semantics liA liB) (s: state L) : Prop :=
   forall s',
   Star L s E0 s' ->
   (exists r, final_state L s' r)
   \/ (exists t, exists s'', Step L s' t s'').
 
 Lemma star_safe:
-  forall (L: semantics) s s',
+  forall {liA liB} (L: semantics liA liB) s s',
   Star L s E0 s' -> safe L s -> safe L s'.
 Proof.
   intros; red; intros. apply H0. eapply star_trans; eauto.
@@ -1065,15 +1063,26 @@ Qed.
 
 (** The general form of a backward simulation. *)
 
-Record bsim_properties (L1 L2: semantics) (index: Type)
+Record bsim_properties {liA liB} (L1 L2: semantics liA liB) (index: Type)
                        (order: index -> index -> Prop)
                        (match_states: index -> state L1 -> state L2 -> Prop) : Prop := {
     bsim_order_wf: well_founded order;
     bsim_initial_states_exist:
-      forall s1, initial_state L1 s1 -> exists s2, initial_state L2 s2;
+      forall q s1, initial_state L1 q s1 -> exists s2, initial_state L2 q s2;
     bsim_match_initial_states:
-      forall s1 s2, initial_state L1 s1 -> initial_state L2 s2 ->
-      exists i, exists s1', initial_state L1 s1' /\ match_states i s1' s2;
+      forall q s1 s2, initial_state L1 q s1 -> initial_state L2 q s2 ->
+      exists i, exists s1', initial_state L1 q s1' /\ match_states i s1' s2;
+    bsim_match_external:
+      forall i s1 s2, match_states i s1 s2 -> safe L1 s1 ->
+      forall q after_external2, external L2 s2 q after_external2 ->
+      exists s1' after_external1,
+        Star L1 s1 E0 s1' /\
+        external L1 s1' q after_external1 /\
+        forall r s1'',
+          after_external1 r s1'' ->
+          exists j s2',
+            after_external2 r s2' /\
+            match_states j s1'' s2';
     bsim_match_final_states:
       forall i s1 s2 r,
       match_states i s1 s2 -> safe L1 s1 -> final_state L2 s2 r ->
@@ -1093,26 +1102,27 @@ Record bsim_properties (L1 L2: semantics) (index: Type)
       forall id, Senv.public_symbol (symbolenv L2) id = Senv.public_symbol (symbolenv L1) id
   }.
 
-Arguments bsim_properties: clear implicits.
+Arguments bsim_properties {liA liB}.
 
-Inductive backward_simulation (L1 L2: semantics) : Prop :=
+Inductive backward_simulation {liA liB} (L1 L2: semantics liA liB) : Prop :=
   Backward_simulation (index: Type)
                       (order: index -> index -> Prop)
                       (match_states: index -> state L1 -> state L2 -> Prop)
                       (props: bsim_properties L1 L2 index order match_states).
 
-Arguments Backward_simulation {L1 L2 index} order match_states props.
+Arguments Backward_simulation {liA liB L1 L2 index} order match_states props.
 
 (** An alternate form of the simulation diagram *)
 
 Lemma bsim_simulation':
-  forall L1 L2 index order match_states, bsim_properties L1 L2 index order match_states ->
+  forall {liA liB} (L1 L2: semantics liA liB) index order match_states,
+  bsim_properties L1 L2 index order match_states ->
   forall i s2 t s2', Step L2 s2 t s2' ->
   forall s1, match_states i s1 s2 -> safe L1 s1 ->
   (exists i', exists s1', Plus L1 s1 t s1' /\ match_states i' s1' s2')
   \/ (exists i', order i' i /\ t = E0 /\ match_states i' s1 s2').
 Proof.
-  intros. exploit bsim_simulation; eauto.
+  intros. exploit @bsim_simulation; eauto.
   intros [i' [s1' [A B]]]. intuition.
   left; exists i'; exists s1'; auto.
   inv H4.
@@ -1126,8 +1136,9 @@ Qed.
 
 Section BACKWARD_SIMU_DIAGRAMS.
 
-Variable L1: semantics.
-Variable L2: semantics.
+Context {liA liB: language_interface}.
+Variable L1: semantics liA liB.
+Variable L2: semantics liA liB.
 
 Hypothesis public_preserved:
   forall id, Senv.public_symbol (symbolenv L2) id = Senv.public_symbol (symbolenv L1) id.
@@ -1135,11 +1146,18 @@ Hypothesis public_preserved:
 Variable match_states: state L1 -> state L2 -> Prop.
 
 Hypothesis initial_states_exist:
-  forall s1, initial_state L1 s1 -> exists s2, initial_state L2 s2.
+  forall q s1, initial_state L1 q s1 -> exists s2, initial_state L2 q s2.
 
 Hypothesis match_initial_states:
-  forall s1 s2, initial_state L1 s1 -> initial_state L2 s2 ->
-  exists s1', initial_state L1 s1' /\ match_states s1' s2.
+  forall q s1 s2, initial_state L1 q s1 -> initial_state L2 q s2 ->
+  exists s1', initial_state L1 q s1' /\ match_states s1' s2.
+
+Hypothesis match_external:
+  forall s1 s2, match_states s1 s2 ->
+  forall q after_external2, external L2 s2 q after_external2 ->
+  exists after_external1, external L1 s1 q after_external1 /\
+  forall r s1', after_external1 r s1' ->
+  exists s2', after_external2 r s2' /\ match_states s1' s2'.
 
 Hypothesis match_final_states:
   forall s1 s2 r,
@@ -1166,6 +1184,8 @@ Proof.
   constructor; auto.
 - red; intros; constructor; intros. contradiction.
 - intros. exists tt; eauto.
+- intros. edestruct match_external as (ae1 & Hae1 & Hr); eauto.
+  exists s1, ae1; eauto using star_refl.
 - intros. exists s1; split. apply star_refl. eauto.
 - intros. exploit simulation; eauto. intros [s1' [A B]].
   exists tt; exists s1'; auto.
@@ -1179,7 +1199,8 @@ End BACKWARD_SIMU_DIAGRAMS.
 
 Section BACKWARD_SIMULATION_SEQUENCES.
 
-Context L1 L2 index order match_states (S: bsim_properties L1 L2 index order match_states).
+Context {liA liB} (L1 L2: semantics liA liB).
+Context index order match_states (S: bsim_properties L1 L2 index order match_states).
 
 Lemma bsim_E0_star:
   forall s2 s2', Star L2 s2 E0 s2' ->
@@ -1190,7 +1211,7 @@ Proof.
 - (* base case *)
   intros. exists i; exists s1; split; auto. apply star_refl.
 - (* inductive case *)
-  intros. exploit bsim_simulation; eauto. intros [i' [s1' [A B]]].
+  intros. exploit @bsim_simulation; eauto. intros [i' [s1' [A B]]].
   assert (Star L1 s0 E0 s1'). intuition. apply plus_star; auto.
   exploit H0. eauto. eapply star_safe; eauto. intros [i'' [s1'' [C D]]].
   exists i''; exists s1''; split; auto. eapply star_trans; eauto.
@@ -1213,12 +1234,12 @@ Lemma bsim_E0_plus:
 Proof.
   induction 1 using plus_ind2; intros; subst t.
 - (* base case *)
-  exploit bsim_simulation'; eauto. intros [[i' [s1' [A B]]] | [i' [A [B C]]]].
+  exploit @bsim_simulation'; eauto. intros [[i' [s1' [A B]]] | [i' [A [B C]]]].
 + left; exists i'; exists s1'; auto.
 + right; exists i'; intuition.
 - (* inductive case *)
   exploit Eapp_E0_inv; eauto. intros [EQ1 EQ2]; subst.
-  exploit bsim_simulation'; eauto. intros [[i' [s1' [A B]]] | [i' [A [B C]]]].
+  exploit @bsim_simulation'; eauto. intros [[i' [s1' [A B]]] | [i' [A [B C]]]].
 + exploit bsim_E0_star. apply plus_star; eauto. eauto. eapply star_safe; eauto. apply plus_star; auto.
   intros [i'' [s1'' [P Q]]].
   left; exists i''; exists s1''; intuition. eapply plus_star_trans; eauto.
@@ -1249,9 +1270,10 @@ End BACKWARD_SIMULATION_SEQUENCES.
 
 Section COMPOSE_BACKWARD_SIMULATIONS.
 
-Variable L1: semantics.
-Variable L2: semantics.
-Variable L3: semantics.
+Context {liA liB: language_interface}.
+Variable L1: semantics liA liB.
+Variable L2: semantics liA liB.
+Variable L3: semantics liA liB.
 Hypothesis L3_single_events: single_events L3.
 Context index order match_states (S12: bsim_properties L1 L2 index order match_states).
 Context index' order' match_states' (S23: bsim_properties L2 L3 index' order' match_states').
@@ -1297,7 +1319,7 @@ Proof.
   right; split. apply star_refl. left; auto.
   eapply bb_match_at; eauto.
 + (* 1.2 non-silent transitions *)
-  exploit star_non_E0_split. apply plus_star; eauto. auto.
+  exploit @star_non_E0_split. apply plus_star; eauto. auto.
   intros [s2x [s2y [P [Q R]]]].
   exploit (bsim_E0_star S12). eexact P. eauto. auto. intros [i1' [s1x [X Y]]].
   exploit (bsim_simulation' S12). eexact Q. eauto. eapply star_safe; eauto.
@@ -1343,11 +1365,11 @@ Qed.
 End COMPOSE_BACKWARD_SIMULATIONS.
 
 Lemma compose_backward_simulation:
-  forall L1 L2 L3,
+  forall {liA liB} (L1 L2 L3: semantics liA liB),
   single_events L3 -> backward_simulation L1 L2 -> backward_simulation L2 L3 ->
   backward_simulation L1 L3.
 Proof.
-  intros L1 L2 L3 L3single S12 S23.
+  intros liA liB L1 L2 L3 L3single S12 S23.
   destruct S12 as [index order match_states props].
   destruct S23 as [index' order' match_states' props'].
   apply Backward_simulation with (bb_order order order') (bb_match_states L1 L2 L3 match_states match_states');
@@ -1358,11 +1380,30 @@ Proof.
   intros. exploit (bsim_initial_states_exist props); eauto. intros [s2 A].
   eapply (bsim_initial_states_exist props'); eauto.
 - (* match initial states *)
-  intros s1 s3 INIT1 INIT3.
+  intros q s1 s3 INIT1 INIT3.
   exploit (bsim_initial_states_exist props); eauto. intros [s2 INIT2].
   exploit (bsim_match_initial_states props'); eauto. intros [i2 [s2' [INIT2' M2]]].
   exploit (bsim_match_initial_states props); eauto. intros [i1 [s1' [INIT1' M1]]].
   exists (i1, i2); exists s1'; intuition auto. eapply bb_match_at; eauto.
+- (* match external states *)
+  intros i s1 s3 MS SAFE1 q ae3 EXT3. inv MS.
+  exploit (bsim_match_external props'); eauto.
+    eapply star_safe; eauto. eapply bsim_safe; eauto.
+  intros (s2' & ae2 & STAR2 & EXT2 & Hr23).
+  exploit (bsim_E0_star props). eapply star_trans. eexact H0. eexact STAR2. eauto. eauto. auto.
+  intros (i' & s1' & STAR1 & Hs12').
+  exploit (bsim_match_external props); eauto.
+    eapply star_safe; eauto.
+  intros (s1'' & ae1 & STAR1' & EXT1 & Hr12).
+  exists s1'', ae1; split; eauto.
+  eapply star_trans; eauto.
+  split; eauto.
+  intros r s1''0 Hae1.
+  edestruct Hr12 as (j & s2'' & AE2 & Hs12). eauto.
+  edestruct Hr23 as (j' & s3'' & AE3 & Hs23). eauto.
+  exists (j,j'), s3''; split; eauto.
+  econstructor; eauto.
+  apply star_refl.
 - (* match final states *)
   intros i s1 s3 r MS SAFE FIN. inv MS.
   exploit (bsim_match_final_states props'); eauto.
@@ -1381,6 +1422,8 @@ Proof.
 - (* symbols *)
   intros. transitivity (Senv.public_symbol (symbolenv L2) id); eapply bsim_public_preserved; eauto.
 Qed.
+
+(*
 
 (** ** Converting a forward simulation to a backward simulation *)
 
