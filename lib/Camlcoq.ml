@@ -324,6 +324,24 @@ let coqstring_uppercase_ascii_of_camlstring s =
     cstring (d :: accu) (pos - 1)
   in cstring [] (String.length s - 1)
 
+let coqstring_of_pos p =
+  coqstring_of_camlstring (Printf.sprintf "%ld" (P.to_int32 p))
+
+(* The two functions below are used from within Coq to query the
+  strings-to-atoms table, which we axiomatize as a total, bijective
+  mapping. In actuality, an ident_of_string query may create a new
+  atom, but this will not be observable: as far as the Coq code knows,
+  the mapping existed all along and we just "discovered" it.
+
+  To make sure the side-effects are unobservable, we avoid using
+  extern_atom, which catches Not_found and returns a made-up string;
+  instead, we take the exception and crash. *)
+
+let ident_of_coqstring s =
+  intern_string (camlstring_of_coqstring s)
+let coqstring_of_ident a =
+  coqstring_of_camlstring (Hashtbl.find string_of_atom a)
+
 (* Floats *)
 
 let coqfloat_of_camlfloat f =
