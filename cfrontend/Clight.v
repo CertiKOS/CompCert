@@ -683,20 +683,22 @@ Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
         (cq b (signature_of_type targs tres tcc) vargs m)
         (Callstate b vargs Kstop m).
 
-Inductive at_external (ge: genv): state -> query li_c -> Prop :=
-  | at_external_intro b id sg targs tres cconv vargs k m:
-      let f := External (EF_external id sg) targs tres cconv in
-      Genv.find_funct_ptr ge b = Some f ->
-      at_external ge
-        (Callstate b vargs k m)
-        (cq b sg vargs m).
-
-Inductive after_external: state -> reply li_c -> state -> Prop :=
-  | after_external_intro f vargs k m vres m':
-      after_external
-        (Callstate f vargs k m)
+Inductive after_external k: reply li_c -> state -> Prop :=
+  | after_external_intro vres m':
+      after_external k
         (vres, m')
         (Returnstate vres k m').
+
+Inductive external (ge: genv): state -> query li_c -> (reply li_c -> state -> Prop) -> Prop :=
+  | external_intro b id sg targs tres cconv vargs k m:
+      let f := External (EF_external id sg) targs tres cconv in
+      Genv.find_funct_ptr ge b = Some f ->
+      external ge
+        (Callstate b vargs k m)
+        (cq b sg vargs m)
+        (fun '(vres, m') => eq (Returnstate vres k m')).
+
+        (after_external k).
 
 Inductive final_state: state -> reply li_c -> Prop :=
   | final_state_intro: forall r m,
@@ -738,8 +740,7 @@ Definition semantics1 (p: program) :=
   Semantics_gen li_c li_c
     step1
     (initial_state ge)
-    (at_external ge)
-    after_external
+    (make_external (at_external ge) after_external)
     final_state
     ge ge.
 
@@ -748,8 +749,7 @@ Definition semantics2 (p: program) :=
   Semantics_gen li_c li_c
     step2
     (initial_state ge)
-    (at_external ge)
-    after_external
+    (make_external (at_external ge) after_external)
     final_state
     ge ge.
 
