@@ -62,17 +62,18 @@ Qed.
 
 (** ** Relation to forward simulations *)
 
+Require Import Basics.
+
 Section FWSIM_CCREF.
   Context {liA1 liB1 liA2 liB2: language_interface}.
-  Context (L1: semantics liA1 liB1).
-  Context (L2: semantics liA2 liB2).
-  Context {ccA ccA': callconv liA1 liA2} (HA: ccref ccA' ccA).
-  Context {ccB ccB': callconv liB1 liB2} (HB: ccref ccB ccB').
 
-  Lemma forward_simulation_ccref:
-    forward_simulation ccA' ccB' L1 L2 ->
-    forward_simulation ccA  ccB  L1 L2.
+  Global Instance forward_simulation_ccref:
+    Proper
+      (ccref ++> ccref --> eq ==> eq ==> impl)
+      (@forward_simulation liA1 liB1 liA2 liB2).
   Proof.
+    intros ccA' ccA HA ccB' ccB HB ? L1 HL1 ? L2 HL2.
+    subst. unfold flip in *.
     revert HA HB.
     intros [fA HA] [fB HB] [I lt R H].
     set (R' := fun '(mk_world w q1 q2 Hq) i s1 s2 =>
@@ -108,6 +109,15 @@ Section FWSIM_CCREF.
     - intros [w q1 q2 Hq] s1 t s1' Hstep i s2 Hs.
       subst R'. simpl in *. destruct HB as [HBq HBr]. destruct Hs as [Hs HrB].
       edestruct fsim_simulation as (i' & s2' & Hstep' & Hs'); eauto.
+  Qed.
+
+  Global Instance forward_simulation_cceqv:
+    Proper
+      (cceqv ==> cceqv ==> eq ==> eq ==> impl)
+      (@forward_simulation liA1 liB1 liA2 liB2).
+  Proof.
+    intros ccA ccA' [HA _] ccB ccB' [_ HB].
+    eapply forward_simulation_ccref; eauto.
   Qed.
 End FWSIM_CCREF.
 

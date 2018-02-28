@@ -369,24 +369,22 @@ Bind Scope cc_scope with callconv.
   OS primitive, etc.), but it is less essential. *)
 
 Definition cc_compcert_A: callconv li_c Asm.li_asm :=
-  1 @
   cc_inject @
   cc_extends @
   cc_extends @
-  (cc_extends @ cc_wt) @
-  1 @
-  (cc_wt @
-   Conventions.cc_locset @
-   Stackingproof.cc_stacking) @
+  cc_extends @
+  cc_wt @
+  cc_wt @
+  Conventions.cc_locset @
+  Stackingproof.cc_stacking @
   Asmgenproof.cc_asmgen.
 
 Definition cc_compcert_B: callconv li_c Asm.li_asm :=
-  1 @
   cc_inject_triangle @
   cc_extends_triangle @
   cc_extends_triangle @
-  (cc_extends_triangle @ Conventions.cc_locset) @
-  1 @
+  cc_extends_triangle @
+  Conventions.cc_locset @
   Stackingproof.cc_stacking @
   Asmgenproof.cc_asmgen.
 
@@ -432,6 +430,8 @@ Ltac DestructM :=
   end.
   repeat DestructM. subst tp.
 
+  unfold cc_compcert_A, cc_compcert_B.
+
   (*
   assert (F: forward_simulation (Cstrategy.semantics p) (Asm.semantics p21)).
   {
@@ -440,14 +440,21 @@ Ltac DestructM :=
   eapply compose_forward_simulations.
     eapply SimplLocalsproof.transf_program_correct; eassumption.
    *)
+
+  rewrite <- (cc_compose_id_left (cc_inject @ _)).
+  rewrite <- (cc_compose_id_left (cc_inject_triangle @ _)).
   eapply compose_forward_simulations.
     eapply Cshmgenproof.transl_program_correct; eassumption.
+
   eapply compose_forward_simulations.
     eapply Cminorgenproof.transl_program_correct; eassumption.
+
   eapply compose_forward_simulations.
     eapply Selectionproof.transf_program_correct; eassumption.
+
   eapply compose_forward_simulations.
     eapply RTLgenproof.transf_program_correct; eassumption.
+
   (*
   eapply compose_forward_simulations.
     eapply match_if_simulation. eassumption. exact Tailcallproof.transf_program_correct.
@@ -465,24 +472,36 @@ Ltac DestructM :=
   eapply compose_forward_simulations.
     eapply Unusedglobproof.transf_program_correct; eassumption.
   *)
+
+  rewrite <- (cc_compose_assoc cc_extends).
+  rewrite <- (cc_compose_assoc cc_extends_triangle).
   eapply compose_forward_simulations.
     eapply Allocproof.transf_program_correct; eassumption.
+
   (*
   eapply compose_forward_simulations.
     eapply Tunnelingproof.transf_program_correct; eassumption.
   *)
+
+  rewrite <- (cc_compose_id_left (cc_wt @ _)).
+  rewrite <- (cc_compose_id_left (Stackingproof.cc_stacking @ _)) at 2.
   eapply compose_forward_simulations.
     eapply Linearizeproof.transf_program_correct; eassumption.
+
   (*
   eapply compose_forward_simulations.
     eapply CleanupLabelsproof.transf_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply match_if_simulation. eassumption. exact Debugvarproof.transf_program_correct.
   *)
+
+  rewrite <- (cc_compose_assoc Conventions.cc_locset).
+  rewrite <- (cc_compose_assoc cc_wt).
   eapply compose_forward_simulations.
     eapply Stackingproof.transf_program_correct with (return_address_offset := Asmgenproof0.return_address_offset).
     exact Asmgenproof.return_address_exists.
     eassumption.
+
   eapply Asmgenproof.transf_program_correct; eassumption.
 (*
   }
