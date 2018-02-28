@@ -2811,11 +2811,11 @@ Proof.
   exists st2; split; auto. split; auto.
   eapply wt_initial_state with (prog := prog); auto. exact wt_prog.
   destruct H; eauto.
-- intros w s1 s2 q1 [Hwt Hs] Hq1.
+- intros w s1 s2 q1 AE1 [Hwt Hs] Hq1. destruct Hq1 as [s1 q1 Hq1].
   edestruct transf_external as (wA & q2 & Hq & Hq2 & H); eauto.
-  exists wA, q2; intuition.
+  eexists wA, q2, _; intuition. { constructor; eauto. }
   edestruct H as (s2' & Hs2' & Hs'); eauto.
-  exists s2'; intuition.
+  eexists s2'; intuition.
   split; eauto.
 - destruct w.
   intros. destruct H. eapply transf_final_states; eauto.

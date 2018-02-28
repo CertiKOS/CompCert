@@ -1586,25 +1586,26 @@ Proof.
 Qed.
 
 Lemma transl_external:
-  forall S R q1,
+  forall S R q1 AE1,
     match_states S R ->
-    CminorSel.at_external ge S q1 ->
-    exists wA q2,
+    make_external (CminorSel.at_external ge) CminorSel.after_external S q1 AE1 ->
+    exists wA q2 AE2,
       match_query cc_extends wA q1 q2 /\
-      RTL.at_external tge R q2 /\
+      make_external (RTL.at_external tge) RTL.after_external R q2 AE2 /\
       forall r1 r2 S',
         match_reply cc_extends wA r1 r2 ->
-        CminorSel.after_external S r1 S' ->
+        AE1 r1 S' ->
         exists R',
-          RTL.after_external R r2 R' /\
+          AE2 r2 R' /\
           match_states S' R'.
 Proof.
-  intros S R q HSR HS.
+  intros S R q AE1 HSR HS. destruct HS as [S q HS].
   destruct HS as [fb id sg vargs k m Hfb]. inv HSR. inv TF.
   edestruct match_cc_extends as (w & Hq & H); eauto.
   assert (f = External (EF_external id sg)) by congruence; subst f.
-  exists w, (cq fb sg targs tm); repeat apply conj; eauto.
+  eexists w, (cq fb sg targs tm), _; repeat apply conj; eauto.
   - inv H0.
+    constructor.
     econstructor; eauto.
   - intros r1 [vres2 m2'] H' Hr HS'.
     inv HS'.
@@ -1632,7 +1633,7 @@ Proof.
   eapply forward_simulation_star_wf with (match_states := fun _ => match_states) (order := lt_state).
   apply senv_preserved.
   eexact transl_initial_states.
-  eauto using transl_external.
+  intros; eapply transl_external; eauto.
   eexact transl_final_states.
   apply lt_state_wf.
   auto using transl_step_correct.

@@ -1117,30 +1117,33 @@ Proof.
 Qed.
 
 Lemma transf_external:
-  forall w st1 st2 q1,
+  forall w st1 st2 q1 AE1,
     match_states w st1 st2 ->
-    Mach.at_external ge st1 q1 ->
-    exists wA q2,
+    make_external (Mach.at_external ge) (Mach.after_external ge) st1 q1 AE1 ->
+    exists wA q2 AE2,
       match_query cc_asmgen wA q1 q2 /\
-      Asm.at_external tge st2 q2 /\
+      make_external (Asm.at_external tge) Asm.after_external st2 q2 AE2 /\
       forall r1 r2 st1',
         match_reply cc_asmgen wA r1 r2 ->
-        Mach.after_external ge st1 r1 st1' ->
+        AE1 r1 st1' ->
         exists st2',
-          Asm.after_external st2 r2 st2' /\
+          AE2 r2 st2' /\
           match_states w st1' st2'.
 Proof.
-  intros w st1 st2 q1 Hst Hst1.
+  intros w st1 st2 q1 AE1 Hst Hst1.
+  destruct Hst1 as [st1 q1 Hst1].
+  pose (AE2 := Asm.after_external st2).
   destruct w as [[] [fb0 sp0 ra0 ms0 init_m1] [rs0 init_m2] Hq0]; simpl in *.
   destruct Hst1 as [fb id sg s ms m Hfb].
   inversion Hst; clear Hst. subst s0 fb1 m0 ms1 st2; simpl in *.
   edestruct match_cc_asmgen as (wA & Hq & H); eauto.
   - rewrite ATLR. eapply parent_ra_def; eauto.
   - rewrite ATLR in Hq.
-    eexists _, _; intuition.
+    eexists _, _, AE2; intuition.
     + eauto.
     + edestruct functions_translated as (tf & Htf & Hftf); eauto.
       inv Hftf.
+      constructor.
       econstructor; eauto.
     + edestruct H as (Hpc' & Hrs' & Hm'); eauto.
       inv H1.

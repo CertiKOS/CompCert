@@ -2638,8 +2638,12 @@ Proof.
   inv_locset_query. intros. inv H1.
   eapply wt_initial_state with (p := prog); eauto. exact wt_prog.
 - intros. destruct H.
+  destruct H0.
   edestruct external_simulation as (wA & q2 & Hq & Hq2 & Hr); eauto.
-  exists wA, q2; intuition.
+  exists wA, q2, (after_external tge s2); intuition.
+  {
+    constructor; eauto.
+  }
   edestruct Hr as (s2' & Hs2' & Hs'); eauto.
   exists s2'; intuition.
   {

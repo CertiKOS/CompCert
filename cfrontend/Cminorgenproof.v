@@ -2318,27 +2318,28 @@ Proof.
 Qed.
 
 Lemma transl_external:
-  forall (w: world cc_inject_triangle) S R q1,
+  forall (w: world cc_inject_triangle) S R q1 AE1,
   match_states (tr_mem w) S R ->
-  Csharpminor.at_external ge S q1 ->
-  exists wA q2,
+  make_external (Csharpminor.at_external ge) Csharpminor.after_external S q1 AE1 ->
+  exists wA q2 AE2,
     match_query cc_inject wA q1 q2 /\
-    Cminor.at_external tge R q2 /\
+    make_external (Cminor.at_external tge) Cminor.after_external R q2 AE2 /\
     forall r1 r2 S',
       match_reply cc_inject wA r1 r2 ->
-      Csharpminor.after_external S r1 S' ->
+      AE1 r1 S' ->
       exists R',
-        Cminor.after_external R r2 R' /\
+        AE2 r2 R' /\
         match_states (tr_mem w) S' R'.
 Proof.
-  intros w S R q1 HSR Hq1.
+  intros w S R q1 AE1 HSR Hq1. destruct Hq1 as [S q1 Hq1].
   destruct Hq1 as [b id sg vargs1 k1 m1 Hb].
   inv HSR.
   edestruct (match_cc_inject b sg) as (wA & Hq & H); eauto.
   inv TR.
   assert (fd = External (EF_external id sg)) by congruence; subst fd.
-  exists wA, (cq b sg targs tm); repeat apply conj; eauto.
+  eexists wA, (cq b sg targs tm), _; repeat apply conj; eauto.
   - inv H1.
+    constructor.
     econstructor; eauto.
   - intros [vres1 m1'] [vres2 m2'] S' Hr HS'.
     inv HS'.

@@ -738,8 +738,7 @@ Definition semantics1 (p: program) :=
   Semantics_gen li_c li_c
     step1
     (initial_state ge)
-    (at_external ge)
-    after_external
+    (make_external (at_external ge) after_external)
     final_state
     ge ge.
 
@@ -748,8 +747,7 @@ Definition semantics2 (p: program) :=
   Semantics_gen li_c li_c
     step2
     (initial_state ge)
-    (at_external ge)
-    after_external
+    (make_external (at_external ge) after_external)
     final_state
     ge ge.
 

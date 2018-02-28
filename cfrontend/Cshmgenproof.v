@@ -1776,27 +1776,28 @@ Proof.
 Qed.
 
 Lemma transl_external:
-  forall S R q1,
+  forall S R q1 AE1,
     match_states S R ->
-    Clight.at_external ge S q1 ->
-    exists wA q2,
+    make_external (Clight.at_external ge) Clight.after_external S q1 AE1 ->
+    exists wA q2 AE2,
       match_query cc_id wA q1 q2 /\
-      Csharpminor.at_external tge R q2 /\
+      make_external (Csharpminor.at_external tge) Csharpminor.after_external R q2 AE2 /\
       forall r1 r2 S',
         match_reply cc_id wA r1 r2 ->
-        Clight.after_external S r1 S' ->
+        AE1 r1 S' ->
         exists R',
-          Csharpminor.after_external R r2 R' /\
+          AE2 r2 R' /\
           match_states S' R'.
 Proof.
-  intros S R q HSR HS.
+  intros S R q AE1 HSR HS. destruct HS as [S q HS].
   edestruct (match_cc_id q) as (w & Hq & H).
   destruct HS. inv HSR.
   assert (fd = f) by congruence; subst fd.
-  exists w, (cq b sg vargs m); repeat apply conj; eauto.
+  eexists w, (cq b sg vargs m), _; repeat apply conj; eauto.
   - edestruct function_ptr_translated as (cu' & tf & Htf & Hf & Hcu); eauto.
     inv TR.
     subst f. inv Hf.
+    constructor.
     econstructor; eauto.
   - intros r1 r2 H' Hr HS'.
     specialize (H r1 r2 Hr); subst.

@@ -1110,28 +1110,29 @@ Proof.
 Qed.
 
 Lemma sel_external:
-  forall S R q1,
+  forall S R q1 AE1,
     match_states S R ->
-    Cminor.at_external ge S q1 ->
-    exists wA q2,
+    make_external (Cminor.at_external ge) Cminor.after_external S q1 AE1 ->
+    exists wA q2 AE2,
       match_query cc_extends wA q1 q2 /\
-      CminorSel.at_external tge R q2 /\
+      make_external (CminorSel.at_external tge) CminorSel.after_external R q2 AE2 /\
       forall r1 r2 S',
         match_reply cc_extends wA r1 r2 ->
-        Cminor.after_external S r1 S' ->
+        AE1 r1 S' ->
         exists R',
-          CminorSel.after_external R r2 R' /\
+          AE2 r2 R' /\
           match_states S' R'.
 Proof.
-  intros S R q HSR HS.
+  intros S R q AE1 HSR HS. destruct HS as [S q HS].
   destruct HS as [fb id sg vargs k m Hfb]. inv HSR.
   - edestruct match_cc_extends as (w & Hq & H); eauto.
     destruct TF as (hf & Hhf & Hf').
     inv Hf'.
     assert (f = External (EF_external id sg)) by congruence; subst.
-    exists w, (cq fb sg args' m'); repeat apply conj; eauto.
+    eexists w, (cq fb sg args' m'), _; repeat apply conj; eauto.
     + edestruct function_ptr_translated as (cu & tf & Htf & Hf & _); eauto.
       red in Hf. destruct Hf as (hf' & Hhf' & Hf). inv Hf.
+      constructor.
       econstructor; eauto.
     + intros r1 [vres2 m2'] H' Hr HS'.
       inv HS'.
@@ -1161,7 +1162,7 @@ Proof.
   apply forward_simulation_opt with (match_states := fun _ => match_states) (measure := measure).
   apply senv_preserved.
   apply sel_initial_states; auto.
-  eauto using sel_external.
+  intros; eapply sel_external; eauto.
   apply sel_final_states; auto.
   auto using sel_step_correct.
 Qed.
