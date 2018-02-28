@@ -17,7 +17,7 @@ Require Import String.
 Require Import Coqlib Errors.
 Require Import AST Linking Smallstep.
 (** Languages (syntax and semantics). *)
-Require Ctypes Csyntax Csem Cstrategy Cexec.
+Require Ctypes Csyntax (*Csem Cstrategy Cexec*).
 Require Clight.
 Require Csharpminor.
 Require Cminor.
@@ -28,45 +28,45 @@ Require Linear.
 Require Mach.
 Require Asm.
 (** Translation passes. *)
-Require SimplExpr.
-Require SimplLocals.
+(* Require SimplExpr. *)
+(* Require SimplLocals. *)
 Require Cshmgen.
 Require Cminorgen.
 Require Selection.
 Require RTLgen.
-Require Tailcall.
-Require Inlining.
-Require Renumber.
-Require Constprop.
-Require CSE.
-Require Deadcode.
-Require Unusedglob.
+(* Require Tailcall. *)
+(* Require Inlining. *)
+(* Require Renumber. *)
+(* Require Constprop. *)
+(* Require CSE. *)
+(* Require Deadcode. *)
+(* Require Unusedglob. *)
 Require Allocation.
-Require Tunneling.
+(* Require Tunneling. *)
 Require Linearize.
-Require CleanupLabels.
-Require Debugvar.
+(* Require CleanupLabels. *)
+(* Require Debugvar. *)
 Require Stacking.
 Require Asmgen.
 (** Proofs of semantic preservation. *)
-Require SimplExprproof.
-Require SimplLocalsproof.
+(* Require SimplExprproof. *)
+(* Require SimplLocalsproof. *)
 Require Cshmgenproof.
 Require Cminorgenproof.
 Require Selectionproof.
 Require RTLgenproof.
-Require Tailcallproof.
-Require Inliningproof.
-Require Renumberproof.
-Require Constpropproof.
-Require CSEproof.
-Require Deadcodeproof.
-Require Unusedglobproof.
+(* Require Tailcallproof. *)
+(* Require Inliningproof. *)
+(* Require Renumberproof. *)
+(* Require Constpropproof. *)
+(* Require CSEproof. *)
+(* Require Deadcodeproof. *)
+(* Require Unusedglobproof. *)
 Require Allocproof.
-Require Tunnelingproof.
+(* Require Tunnelingproof. *)
 Require Linearizeproof.
-Require CleanupLabelsproof.
-Require Debugvarproof.
+(* Require CleanupLabelsproof. *)
+(* Require Debugvarproof. *)
 Require Stackingproof.
 Require Asmgenproof.
 (** Command-line flags. *)
@@ -116,33 +116,33 @@ Definition partial_if {A: Type}
   RTL program.  The three translations produce Asm programs ready for
   pretty-printing and assembling. *)
 
-Local Existing Instance ValueAnalysis.romem_for_wp_instance.
+(* Local Existing Instance ValueAnalysis.romem_for_wp_instance. *)
 
 Definition transf_rtl_program (f: RTL.program) : res Asm.program :=
    OK f
    @@ print (print_RTL 0)
-   @@ total_if Compopts.optim_tailcalls (time "Tail calls" Tailcall.transf_program)
-   @@ print (print_RTL 1)
-  @@@ time "Inlining" Inlining.transf_program
-   @@ print (print_RTL 2)
-   @@ time "Renumbering" Renumber.transf_program
-   @@ print (print_RTL 3)
-   @@ total_if Compopts.optim_constprop (time "Constant propagation" Constprop.transf_program)
-   @@ print (print_RTL 4)
-   @@ total_if Compopts.optim_constprop (time "Renumbering" Renumber.transf_program)
-   @@ print (print_RTL 5)
-  @@@ partial_if Compopts.optim_CSE (time "CSE" CSE.transf_program)
-   @@ print (print_RTL 6)
-  @@@ partial_if Compopts.optim_redundancy (time "Redundancy elimination" Deadcode.transf_program)
-   @@ print (print_RTL 7)
-  @@@ time "Unused globals" Unusedglob.transform_program
-   @@ print (print_RTL 8)
+  (*  @@ total_if Compopts.optim_tailcalls (time "Tail calls" Tailcall.transf_program) *)
+  (*  @@ print (print_RTL 1) *)
+  (* @@@ time "Inlining" Inlining.transf_program *)
+  (*  @@ print (print_RTL 2) *)
+  (*  @@ time "Renumbering" Renumber.transf_program *)
+  (*  @@ print (print_RTL 3) *)
+  (*  @@ total_if Compopts.optim_constprop (time "Constant propagation" Constprop.transf_program) *)
+  (*  @@ print (print_RTL 4) *)
+  (*  @@ total_if Compopts.optim_constprop (time "Renumbering" Renumber.transf_program) *)
+  (*  @@ print (print_RTL 5) *)
+  (* @@@ partial_if Compopts.optim_CSE (time "CSE" CSE.transf_program) *)
+  (*  @@ print (print_RTL 6) *)
+  (* @@@ partial_if Compopts.optim_redundancy (time "Redundancy elimination" Deadcode.transf_program) *)
+  (*  @@ print (print_RTL 7) *)
+  (* @@@ time "Unused globals" Unusedglob.transform_program *)
+  (*  @@ print (print_RTL 8) *)
   @@@ time "Register allocation" Allocation.transf_program
    @@ print print_LTL
-   @@ time "Branch tunneling" Tunneling.tunnel_program
+   (* @@ time "Branch tunneling" Tunneling.tunnel_program *)
   @@@ time "CFG linearization" Linearize.transf_program
-   @@ time "Label cleanup" CleanupLabels.transf_program
-  @@@ partial_if Compopts.debug (time "Debugging info for local variables" Debugvar.transf_program)
+  (*  @@ time "Label cleanup" CleanupLabels.transf_program *)
+  (* @@@ partial_if Compopts.debug (time "Debugging info for local variables" Debugvar.transf_program) *)
   @@@ time "Mach generation" Stacking.transf_program
    @@ print print_Mach
   @@@ time "Asm generation" Asmgen.transf_program.
@@ -157,15 +157,16 @@ Definition transf_cminor_program (p: Cminor.program) : res Asm.program :=
 Definition transf_clight_program (p: Clight.program) : res Asm.program :=
   OK p
    @@ print print_Clight
-  @@@ time "Simplification of locals" SimplLocals.transf_program
+  (* @@@ time "Simplification of locals" SimplLocals.transf_program *)
   @@@ time "C#minor generation" Cshmgen.transl_program
   @@@ time "Cminor generation" Cminorgen.transl_program
   @@@ transf_cminor_program.
 
-Definition transf_c_program (p: Csyntax.program) : res Asm.program :=
-  OK p
-  @@@ time "Clight generation" SimplExpr.transl_program
-  @@@ transf_clight_program.
+(* Definition transf_c_program (p: Csyntax.program) : res Asm.program := *)
+(*   OK p *)
+(*   @@@ time "Clight generation" SimplExpr.transl_program *)
+(*   @@@ transf_clight_program. *)
+Definition transf_c_program := transf_clight_program.
 
 (** The following lemmas help reason over compositions of passes. *)
 
@@ -225,25 +226,25 @@ Qed.
 Local Open Scope linking_scope.
 
 Definition CompCert's_passes :=
-      mkpass SimplExprproof.match_prog
-  ::: mkpass SimplLocalsproof.match_prog
-  ::: mkpass Cshmgenproof.match_prog
+  (*     mkpass SimplExprproof.match_prog *)
+  (* ::: mkpass SimplLocalsproof.match_prog *)
+  (* ::: *) mkpass Cshmgenproof.match_prog
   ::: mkpass Cminorgenproof.match_prog
   ::: mkpass Selectionproof.match_prog
   ::: mkpass RTLgenproof.match_prog
-  ::: mkpass (match_if Compopts.optim_tailcalls Tailcallproof.match_prog)
-  ::: mkpass Inliningproof.match_prog
-  ::: mkpass Renumberproof.match_prog
-  ::: mkpass (match_if Compopts.optim_constprop Constpropproof.match_prog)
-  ::: mkpass (match_if Compopts.optim_constprop Renumberproof.match_prog)
-  ::: mkpass (match_if Compopts.optim_CSE CSEproof.match_prog)
-  ::: mkpass (match_if Compopts.optim_redundancy Deadcodeproof.match_prog)
-  ::: mkpass Unusedglobproof.match_prog
+  (* ::: mkpass (match_if Compopts.optim_tailcalls Tailcallproof.match_prog) *)
+  (* ::: mkpass Inliningproof.match_prog *)
+  (* ::: mkpass Renumberproof.match_prog *)
+  (* ::: mkpass (match_if Compopts.optim_constprop Constpropproof.match_prog) *)
+  (* ::: mkpass (match_if Compopts.optim_constprop Renumberproof.match_prog) *)
+  (* ::: mkpass (match_if Compopts.optim_CSE CSEproof.match_prog) *)
+  (* ::: mkpass (match_if Compopts.optim_redundancy Deadcodeproof.match_prog) *)
+  (* ::: mkpass Unusedglobproof.match_prog *)
   ::: mkpass Allocproof.match_prog
-  ::: mkpass Tunnelingproof.match_prog
+  (* ::: mkpass Tunnelingproof.match_prog *)
   ::: mkpass Linearizeproof.match_prog
-  ::: mkpass CleanupLabelsproof.match_prog
-  ::: mkpass (match_if Compopts.debug Debugvarproof.match_prog)
+  (* ::: mkpass CleanupLabelsproof.match_prog *)
+  (* ::: mkpass (match_if Compopts.debug Debugvarproof.match_prog) *)
   ::: mkpass Stackingproof.match_prog
   ::: mkpass Asmgenproof.match_prog
   ::: pass_nil _.
@@ -252,7 +253,7 @@ Definition CompCert's_passes :=
   between CompCert C sources and Asm code that characterize CompCert's
   compilation. *)
 
-Definition match_prog: Csyntax.program -> Asm.program -> Prop :=
+Definition match_prog: (* Csyntax.program *) Clight.program -> Asm.program -> Prop :=
   pass_match (compose_passes CompCert's_passes).
 
 (** The [transf_c_program] function, when successful, produces
@@ -265,49 +266,49 @@ Theorem transf_c_program_match:
 Proof.
   intros p tp T.
   unfold transf_c_program, time in T. simpl in T.
-  destruct (SimplExpr.transl_program p) as [p1|e] eqn:P1; simpl in T; try discriminate.
+  (* destruct (SimplExpr.transl_program p) as [p1|e] eqn:P1; simpl in T; try discriminate. *)
   unfold transf_clight_program, time in T. rewrite ! compose_print_identity in T. simpl in T.
-  destruct (SimplLocals.transf_program p1) as [p2|e] eqn:P2; simpl in T; try discriminate.
-  destruct (Cshmgen.transl_program p2) as [p3|e] eqn:P3; simpl in T; try discriminate.
+  (* destruct (SimplLocals.transf_program p1) as [p2|e] eqn:P2; simpl in T; try discriminate. *)
+  destruct (Cshmgen.transl_program p) as [p3|e] eqn:P3; simpl in T; try discriminate.
   destruct (Cminorgen.transl_program p3) as [p4|e] eqn:P4; simpl in T; try discriminate.
   unfold transf_cminor_program, time in T. rewrite ! compose_print_identity in T. simpl in T.
   destruct (Selection.sel_program p4) as [p5|e] eqn:P5; simpl in T; try discriminate.
   destruct (RTLgen.transl_program p5) as [p6|e] eqn:P6; simpl in T; try discriminate.
   unfold transf_rtl_program, time in T. rewrite ! compose_print_identity in T. simpl in T.
-  set (p7 := total_if optim_tailcalls Tailcall.transf_program p6) in *.
-  destruct (Inlining.transf_program p7) as [p8|e] eqn:P8; simpl in T; try discriminate.
-  set (p9 := Renumber.transf_program p8) in *.
-  set (p10 := total_if optim_constprop Constprop.transf_program p9) in *.
-  set (p11 := total_if optim_constprop Renumber.transf_program p10) in *.
-  destruct (partial_if optim_CSE CSE.transf_program p11) as [p12|e] eqn:P12; simpl in T; try discriminate.
-  destruct (partial_if optim_redundancy Deadcode.transf_program p12) as [p13|e] eqn:P13; simpl in T; try discriminate.
-  destruct (Unusedglob.transform_program p13) as [p14|e] eqn:P14; simpl in T; try discriminate.
-  destruct (Allocation.transf_program p14) as [p15|e] eqn:P15; simpl in T; try discriminate.
-  set (p16 := Tunneling.tunnel_program p15) in *.
-  destruct (Linearize.transf_program p16) as [p17|e] eqn:P17; simpl in T; try discriminate.
-  set (p18 := CleanupLabels.transf_program p17) in *.
-  destruct (partial_if debug Debugvar.transf_program p18) as [p19|e] eqn:P19; simpl in T; try discriminate.
-  destruct (Stacking.transf_program p19) as [p20|e] eqn:P20; simpl in T; try discriminate.
+  (* set (p7 := total_if optim_tailcalls Tailcall.transf_program p6) in *. *)
+  (* destruct (Inlining.transf_program p7) as [p8|e] eqn:P8; simpl in T; try discriminate. *)
+  (* set (p9 := Renumber.transf_program p8) in *. *)
+  (* set (p10 := total_if optim_constprop Constprop.transf_program p9) in *. *)
+  (* set (p11 := total_if optim_constprop Renumber.transf_program p10) in *. *)
+  (* destruct (partial_if optim_CSE CSE.transf_program p11) as [p12|e] eqn:P12; simpl in T; try discriminate. *)
+  (* destruct (partial_if optim_redundancy Deadcode.transf_program p12) as [p13|e] eqn:P13; simpl in T; try discriminate. *)
+  (* destruct (Unusedglob.transform_program p13) as [p14|e] eqn:P14; simpl in T; try discriminate. *)
+  destruct (Allocation.transf_program p6) as [p15|e] eqn:P15; simpl in T; try discriminate.
+  (* set (p16 := Tunneling.tunnel_program p15) in *. *)
+  destruct (Linearize.transf_program p15) as [p17|e] eqn:P17; simpl in T; try discriminate.
+  (* set (p18 := CleanupLabels.transf_program p17) in *. *)
+  (* destruct (partial_if debug Debugvar.transf_program p18) as [p19|e] eqn:P19; simpl in T; try discriminate. *)
+  destruct (Stacking.transf_program p17) as [p20|e] eqn:P20; simpl in T; try discriminate.
   unfold match_prog; simpl.
-  exists p1; split. apply SimplExprproof.transf_program_match; auto.
-  exists p2; split. apply SimplLocalsproof.match_transf_program; auto.
+  (* exists p1; split. apply SimplExprproof.transf_program_match; auto. *)
+  (* exists p2; split. apply SimplLocalsproof.match_transf_program; auto. *)
   exists p3; split. apply Cshmgenproof.transf_program_match; auto.
   exists p4; split. apply Cminorgenproof.transf_program_match; auto.
   exists p5; split. apply Selectionproof.transf_program_match; auto.
   exists p6; split. apply RTLgenproof.transf_program_match; auto.
-  exists p7; split. apply total_if_match. apply Tailcallproof.transf_program_match.
-  exists p8; split. apply Inliningproof.transf_program_match; auto.
-  exists p9; split. apply Renumberproof.transf_program_match; auto.
-  exists p10; split. apply total_if_match. apply Constpropproof.transf_program_match.
-  exists p11; split. apply total_if_match. apply Renumberproof.transf_program_match.
-  exists p12; split. eapply partial_if_match; eauto. apply CSEproof.transf_program_match.
-  exists p13; split. eapply partial_if_match; eauto. apply Deadcodeproof.transf_program_match.
-  exists p14; split. apply Unusedglobproof.transf_program_match; auto.
+  (* exists p7; split. apply total_if_match. apply Tailcallproof.transf_program_match. *)
+  (* exists p8; split. apply Inliningproof.transf_program_match; auto. *)
+  (* exists p9; split. apply Renumberproof.transf_program_match; auto. *)
+  (* exists p10; split. apply total_if_match. apply Constpropproof.transf_program_match. *)
+  (* exists p11; split. apply total_if_match. apply Renumberproof.transf_program_match. *)
+  (* exists p12; split. eapply partial_if_match; eauto. apply CSEproof.transf_program_match. *)
+  (* exists p13; split. eapply partial_if_match; eauto. apply Deadcodeproof.transf_program_match. *)
+  (* exists p14; split. apply Unusedglobproof.transf_program_match; auto. *)
   exists p15; split. apply Allocproof.transf_program_match; auto.
-  exists p16; split. apply Tunnelingproof.transf_program_match.
+  (* exists p16; split. apply Tunnelingproof.transf_program_match. *)
   exists p17; split. apply Linearizeproof.transf_program_match; auto.
-  exists p18; split. apply CleanupLabelsproof.transf_program_match; auto.
-  exists p19; split. eapply partial_if_match; eauto. apply Debugvarproof.transf_program_match.
+  (* exists p18; split. apply CleanupLabelsproof.transf_program_match; auto. *)
+  (* exists p19; split. eapply partial_if_match; eauto. apply Debugvarproof.transf_program_match. *)
   exists p20; split. apply Stackingproof.transf_program_match; auto.
   exists tp; split. apply Asmgenproof.transf_program_match; auto.
   reflexivity.
@@ -327,16 +328,23 @@ Qed.
   (composition of two backward simulations).
 *)
 
-Remark forward_simulation_identity:
-  forall sem, forward_simulation sem sem.
+Remark forward_simulation_identity {liA liB}:
+  forall sem, forward_simulation (@cc_id liA) (@cc_id liB) sem sem.
 Proof.
-  intros. apply forward_simulation_step with (fun s1 s2 => s2 = s1); intros.
+  intros. apply forward_simulation_step with (fun w s1 s2 => s2 = s1); intros.
 - auto.
 - exists s1; auto.
+  apply match_query_cc_id in H; split; congruence.
 - subst s2; auto.
-- subst s2. exists s1'; auto.
+  edestruct (match_cc_id q1) as (wA & Hq & Hr).
+  eexists wA, q1, after_external1. intuition.
+  apply Hr in H. exists s1'; split; eauto. congruence.
+- subst s2. exists r1; split; eauto.
+  apply match_reply_cc_id.
+- subst; eauto. 
 Qed.
 
+(*
 Lemma match_if_simulation:
   forall (A: Type) (sem: A -> semantics) (flag: unit -> bool) (transf: A -> A -> Prop) (prog tprog: A),
   match_if flag transf prog tprog ->
@@ -345,12 +353,75 @@ Lemma match_if_simulation:
 Proof.
   intros. unfold match_if in *. destruct (flag tt). eauto. subst. apply forward_simulation_identity.
 Qed.
+*)
 
-Theorem cstrategy_semantic_preservation:
+Require Import CallconvAlgebra.
+Bind Scope cc_scope with callconv.
+
+(** We will want to use some of the construction in CallconvAlgebra
+  and some new composition theorems to simplify the calling convention
+  below. The most important thing is that the correctness theorem be
+  formulated in terms of the same convention for incoming and outgoing
+  calls, so as to enable horizontal composition of independently
+  compiled modules. An overall simpler calling convention may also be
+  useful for uses where we care about the details of how C-level
+  constructions are related at the assembly level (a small number of
+  OS primitive, etc.), but it is less essential. *)
+
+Definition cc_compcert_A: callconv li_c Asm.li_asm :=
+  1 @
+  cc_inject @
+  cc_extends @
+  cc_extends @
+  (cc_extends @ cc_wt) @
+  1 @
+  (cc_wt @
+   Conventions.cc_locset @
+   Stackingproof.cc_stacking) @
+  Asmgenproof.cc_asmgen.
+
+Definition cc_compcert_B: callconv li_c Asm.li_asm :=
+  1 @
+  cc_inject_triangle @
+  cc_extends_triangle @
+  cc_extends_triangle @
+  (cc_extends_triangle @ Conventions.cc_locset) @
+  1 @
+  Stackingproof.cc_stacking @
+  Asmgenproof.cc_asmgen.
+
+(** The following stability theorems would be useful to that end.
+
+<<<
+Lemma clight_inject p:
+  forward_simulation cc_inject cc_inject
+    (Clight.semantics2 p)
+    (Clight.semantics2 p).
+Admitted.
+
+Lemma clight_extends p:
+  forward_simulation cc_extends cc_extends
+    (Clight.semantics2 p)
+    (Clight.semantics2 p).
+Admitted.
+
+Lemma clight_wt p: (* probably want to use RTL instead *)
+  forward_simulation cc_wt cc_wt
+    (Clight.semantics2 p)
+    (Clight.semantics2 p).
+Admitted.
+>>>
+ *)
+
+Theorem clight_semantic_preservation:
   forall p tp,
   match_prog p tp ->
-  forward_simulation (Cstrategy.semantics p) (Asm.semantics tp)
+  forward_simulation cc_compcert_A cc_compcert_B
+    (Clight.semantics2 p)
+    (Asm.semantics tp).
+  (*
   /\ backward_simulation (atomic (Cstrategy.semantics p)) (Asm.semantics tp).
+   *)
 Proof.
   intros p tp M. unfold match_prog, pass_match in M; simpl in M.
 Ltac DestructM :=
@@ -360,12 +431,15 @@ Ltac DestructM :=
       destruct H as (p & M & MM); clear H
   end.
   repeat DestructM. subst tp.
+
+  (*
   assert (F: forward_simulation (Cstrategy.semantics p) (Asm.semantics p21)).
   {
   eapply compose_forward_simulations.
     eapply SimplExprproof.transl_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply SimplLocalsproof.transf_program_correct; eassumption.
+   *)
   eapply compose_forward_simulations.
     eapply Cshmgenproof.transl_program_correct; eassumption.
   eapply compose_forward_simulations.
@@ -374,6 +448,7 @@ Ltac DestructM :=
     eapply Selectionproof.transf_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply RTLgenproof.transf_program_correct; eassumption.
+  (*
   eapply compose_forward_simulations.
     eapply match_if_simulation. eassumption. exact Tailcallproof.transf_program_correct.
   eapply compose_forward_simulations.
@@ -389,29 +464,37 @@ Ltac DestructM :=
     eapply match_if_simulation. eassumption. exact Deadcodeproof.transf_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply Unusedglobproof.transf_program_correct; eassumption.
+  *)
   eapply compose_forward_simulations.
     eapply Allocproof.transf_program_correct; eassumption.
+  (*
   eapply compose_forward_simulations.
     eapply Tunnelingproof.transf_program_correct; eassumption.
+  *)
   eapply compose_forward_simulations.
     eapply Linearizeproof.transf_program_correct; eassumption.
+  (*
   eapply compose_forward_simulations.
     eapply CleanupLabelsproof.transf_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply match_if_simulation. eassumption. exact Debugvarproof.transf_program_correct.
+  *)
   eapply compose_forward_simulations.
     eapply Stackingproof.transf_program_correct with (return_address_offset := Asmgenproof0.return_address_offset).
     exact Asmgenproof.return_address_exists.
     eassumption.
   eapply Asmgenproof.transf_program_correct; eassumption.
+(*
   }
   split. auto.
   apply forward_to_backward_simulation.
   apply factor_forward_simulation. auto. eapply sd_traces. eapply Asm.semantics_determinate.
   apply atomic_receptive. apply Cstrategy.semantics_strongly_receptive.
   apply Asm.semantics_determinate.
+*)
 Qed.
 
+(*
 Theorem c_semantic_preservation:
   forall p tp,
   match_prog p tp ->
@@ -426,6 +509,7 @@ Proof.
   eapply ssr_well_behaved; eapply Cstrategy.semantics_strongly_receptive.
   exact (proj2 (cstrategy_semantic_preservation _ _ H)).
 Qed.
+*)
 
 (** * Correctness of the CompCert compiler *)
 
@@ -439,6 +523,7 @@ Qed.
   exists a backward simulation of the dynamic semantics of [p]
   by the dynamic semantics of [tp]. *)
 
+(*
 Theorem transf_c_program_correct:
   forall p tp,
   transf_c_program p = OK tp ->
@@ -446,6 +531,7 @@ Theorem transf_c_program_correct:
 Proof.
   intros. apply c_semantic_preservation. apply transf_c_program_match; auto.
 Qed.
+*)
 
 (** Here is the separate compilation case.  Consider a nonempty list [c_units]
   of C source files (compilation units), [C1 ,,, Cn].  Assume that every
@@ -459,6 +545,7 @@ Qed.
   the dynamic semantics of [asm_program] by the dynamic semantics of [c_program].
 *)
 
+(*
 Theorem separate_transf_c_program_correct:
   forall c_units asm_units c_program,
   nlist_forall2 (fun cu tcu => transf_c_program cu = OK tcu) c_units asm_units ->
@@ -475,3 +562,4 @@ Proof.
   destruct H2 as (asm_program & P & Q).
   exists asm_program; split; auto. apply c_semantic_preservation; auto.
 Qed.
+*)
