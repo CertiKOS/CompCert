@@ -440,7 +440,7 @@ Lemma flat_inj_idemp thr:
 Proof.
   apply functional_extensionality; intros b.
   unfold compose_meminj, Mem.flat_inj.
-  destruct (plt _ _) eqn:Hb; eauto.
+  destruct Block.lt_dec eqn:Hb; eauto.
   rewrite Hb.
   reflexivity.
 Qed.
@@ -514,7 +514,6 @@ Proof.
   red; simpl.
   intros _ _ _ [id sg vargs m Hvargs Hm]; simpl.
   exists (Mem.flat_inj (Mem.nextblock m)); intuition.
-  - apply Mem.neutral_inject; eauto.
   - destruct r2 as [vres2 m2'].
     destruct H as (f' & Hvres & Hm' & Hm1' & Hm2' & Hincr & Hsep).
     exists f'; intuition.
