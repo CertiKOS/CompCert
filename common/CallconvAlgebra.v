@@ -4,22 +4,25 @@ Require Export Morphisms.
 Require Export Globalenvs.
 Require Export Events.
 Require Export LanguageInterface.
+Require Export Smallstep.
 
 (** Algebraic structures on calling conventions. *)
 
 (** * Refinement and equivalence *)
+
+(** ** Definition *)
 
 (** The following relation asserts that the calling convention [cc] is
   refined by the calling convention [cc'], meaning that any
   [cc']-simulation is also a [cc]-simulation. *)
 
 Definition ccref {li1 li2} (cc cc': callconv li1 li2) :=
-  forall w q1 q2,
-    match_query_def cc w q1 q2 ->
-    exists w',
-      match_query_def cc' w' q1 q2 /\
+  exists (f: world_def cc -> query li1 -> query li2 -> world_def cc'),
+    forall w q1 q2,
+      match_query_def cc w q1 q2 ->
+      match_query_def cc' (f w q1 q2) q1 q2 /\
       forall r1 r2,
-        match_reply_def cc' w' q1 q2 r1 r2 ->
+        match_reply_def cc' (f w q1 q2) q1 q2 r1 r2 ->
         match_reply_def cc w q1 q2 r1 r2.
 
 Definition cceqv {li1 li2} (cc cc': callconv li1 li2) :=
@@ -30,10 +33,13 @@ Global Instance ccref_preo li1 li2:
 Proof.
   split.
   - intros cc. red.
-    firstorder.
-  - intros cc cc' cc'' H' H'' w'' q1 q2 Hq''.
-    edestruct H' as (w & Hq & Hr); eauto.
-    edestruct H'' as (w' & Hq' & Hr'); eauto.
+    exists (fun x _ _ => x).
+    tauto.
+  - intros cc cc' cc'' [f H'] [g H''].
+    exists (fun x q1 q2 => g (f x q1 q2) q1 q2).
+    intros w q1 q2 Hq.
+    edestruct H' as (Hq' & Hr); eauto.
+    edestruct H'' as (Hq'' & Hr'); eauto.
 Qed.
 
 Global Instance cceqv_equiv li1 li2:
@@ -54,6 +60,57 @@ Proof.
   firstorder.
 Qed.
 
+(** ** Relation to forward simulations *)
+
+Section FWSIM_CCREF.
+  Context {liA1 liB1 liA2 liB2: language_interface}.
+  Context (L1: semantics liA1 liB1).
+  Context (L2: semantics liA2 liB2).
+  Context {ccA ccA': callconv liA1 liA2} (HA: ccref ccA' ccA).
+  Context {ccB ccB': callconv liB1 liB2} (HB: ccref ccB ccB').
+
+  Lemma forward_simulation_ccref:
+    forward_simulation ccA' ccB' L1 L2 ->
+    forward_simulation ccA  ccB  L1 L2.
+  Proof.
+    revert HA HB.
+    intros [fA HA] [fB HB] [I lt R H].
+    set (R' := fun '(mk_world w q1 q2 Hq) i s1 s2 =>
+           let (HBq, HBr) := HB w q1 q2 Hq in
+           R (mk_world _ (fB w q1 q2) q1 q2 HBq) i s1 s2 /\
+           forall r1 r2,
+             match_reply_def ccB' (fB w q1 q2) q1 q2 r1 r2 ->
+             match_reply_def ccB w q1 q2 r1 r2).
+    eexists I lt R'.
+    destruct H.
+    split; eauto.
+    - intros _ _ _ [w q1 q2 Hq] s1 Hs1. simpl.
+      destruct (HB w q1 q2 Hq) as (Hq' & Hr').
+      edestruct fsim_match_initial_states as (i & s2 & Hs2 & Hs); eauto.
+      constructor.
+    - intros [w qB1 qB2 HqB] i s1 s2 Hs q1 AE1 Hs1.
+      subst R'. simpl in *. destruct HB as [HBq HBr]. destruct Hs as [Hs HrB].
+      edestruct fsim_match_external as (wA' & q2 & AE2 & Hq & Hs2 & Hr); eauto.
+      destruct Hq as [wA' q1 q2 Hq].
+      edestruct HA as [HAq HAr]; eauto.
+      exists (mk_world _ (fA wA' q1 q2) q1 q2 HAq), q2, AE2.
+      intuition.
+      + constructor.
+      + edestruct Hr as (j & s2' & Hs2' & Hs'); eauto.
+        inversion H.
+        constructor; eauto.
+    - intros [w q1 q2 Hq] i s1 s2 r1 Hs Hr1.
+      subst R'. simpl in *. destruct HB as [HBq HBr]. destruct Hs as [Hs HrB].
+      edestruct fsim_match_final_states as (r2 & Hr & Hr2); eauto.
+      exists r2. intuition.
+      inversion Hr.
+      constructor; eauto.
+    - intros [w q1 q2 Hq] s1 t s1' Hstep i s2 Hs.
+      subst R'. simpl in *. destruct HB as [HBq HBr]. destruct Hs as [Hs HrB].
+      edestruct fsim_simulation as (i' & s2' & Hstep' & Hs'); eauto.
+  Qed.
+End FWSIM_CCREF.
+
 
 (** * Properties of [cc_compose] *)
 
@@ -64,10 +121,11 @@ Lemma cc_compose_id_left {li1 li2} (cc: callconv li1 li2):
   cceqv (cc_compose cc_id cc) cc.
 Proof.
   split.
-  - intros [[[] w] q1] ? q2 [? Hq]; simpl in *; subst.
-    exists w; eauto 10.
-  - intros w q1 q2 Hq.
-    exists (tt, w, q1).
+  - exists (fun '(tt, w, q1) _ _ => w).
+    intros [[[] w] q1] ? q2 [? Hq]; simpl in *; subst.
+    eauto 10.
+  - red. exists (fun w q1 _ => (tt, w, q1)).
+    intros w q1 q2 Hq.
     firstorder.
     congruence.
 Qed.
@@ -76,10 +134,11 @@ Lemma cc_compose_id_right {li1 li2} (cc: callconv li1 li2):
   cceqv (cc_compose cc cc_id) cc.
 Proof.
   split.
-  - intros [[w []] q2] q1 ? [Hq ?]; simpl in *; subst.
-    exists w; eauto 10.
-  - intros w q1 q2 Hq.
-    exists (w, tt, q2).
+  - exists (fun '(w, tt, q2) _ _ => w).
+    intros [[w []] q2] q1 ? [Hq ?]; simpl in *; subst.
+    eauto 10.
+  - exists (fun w q1 q2 => (w, tt, q2)).
+    intros w q1 q2 Hq.
     firstorder.
     congruence.
 Qed.
@@ -90,12 +149,12 @@ Lemma cc_compose_assoc {A B C D} cc1 cc2 cc3:
     (@cc_compose A B D cc1 (cc_compose cc2 cc3)).
 Proof.
   split.
-  - intros [[[[w1 w2] qb] w3] qc] qa qd [[Hq1 Hq2] Hq3].
-    exists (w1, (w2, w3, qc), qb); simpl.
+  - exists (fun '((w1, w2, qb), w3, qc) _ _ => (w1, (w2, w3, qc), qb)).
+    intros [[[[w1 w2] qb] w3] qc] qa qd [[Hq1 Hq2] Hq3]. simpl.
     split; eauto.
     intros ra rd (rb & Hr1 & rc & Hr2 & Hr3); eauto.
-  - intros [[w1 [[w2 w3] qc]] qb] qa qd [Hq1 [Hq2 Hq3]].
-    exists ((w1, w2, qb), w3, qc); simpl.
+  - exists (fun '(w1, (w2, w3, qc), qb) _ _ => ((w1, w2, qb), w3, qc)).
+    intros [[w1 [[w2 w3] qc]] qb] qa qd [Hq1 [Hq2 Hq3]]. simpl.
     split; eauto.
     intros ra rd (rc & (rb & Hr1 & Hr2) & Hr3); eauto.
 Qed.
@@ -105,11 +164,11 @@ Qed.
 Global Instance cc_compose_ref li1 li2 li3:
   Proper (ccref ++> ccref ++> ccref) (@cc_compose li1 li2 li3).
 Proof.
-  intros cc12 cc12' H12 cc23 cc23' H23.
-  intros [[w12 w23] q2] q1 q3 [Hq12 Hq23].
-  destruct (H12 w12 q1 q2 Hq12) as (w12' & Hq12' & Hr12').
-  destruct (H23 w23 q2 q3 Hq23) as (w23' & Hq23' & Hr23').
-  exists (w12', w23', q2); simpl.
+  intros cc12 cc12' [f12 H12] cc23 cc23' [f23 H23].
+  exists (fun '(w12, w23, q2) q1 q3 => (f12 w12 q1 q2, f23 w23 q2 q3, q2)).
+  intros [[w12 w23] q2] q1 q3 [Hq12 Hq23]. simpl.
+  destruct (H12 w12 q1 q2 Hq12) as (Hq12' & Hr12').
+  destruct (H23 w23 q2 q3 Hq23) as (Hq23' & Hr23').
   split; eauto.
   intros r1 r3 (r2 & Hr12 & Hr23); eauto.
 Qed.
@@ -158,15 +217,17 @@ Section JOIN.
   Lemma cc_join_ub_l cc1 cc2:
     ccref cc1 (cc_join cc1 cc2).
   Proof.
+    exists (fun w _ _ => inl w).
     intros w q1 q2 Hq.
-    exists (inl w); simpl; eauto.
+    simpl; eauto.
   Qed.
 
   Lemma cc_join_ub_r cc1 cc2:
     ccref cc2 (cc_join cc1 cc2).
   Proof.
+    exists (fun w _ _ => inr w).
     intros w q1 q2 Hq.
-    exists (inr w); simpl; eauto.
+    simpl; eauto.
   Qed.
 
   Lemma cc_join_lub cc1 cc2 cc:
@@ -174,7 +235,9 @@ Section JOIN.
     ccref cc2 cc ->
     ccref (cc_join cc1 cc2) cc.
   Proof.
-    intros H1 H2 [w | w] q1 q2 Hq; simpl in *; eauto.
+    intros [f1 H1] [f2 H2].
+    exists (copair f1 f2).
+    intros [w | w] q1 q2 Hq; simpl in *; eauto.
   Qed.
 
   (** The following lemmas are useful as [auto] hints. *)
@@ -323,22 +386,32 @@ Section STAR.
   Lemma cc_star_fold_l:
     ccref (1 + cc @ cc_star) cc_star.
   Proof.
+    exists
+      (fun w _ _ =>
+         match w with
+         | inl tt => nil
+         | inr (w, ws, q) => (w, q) :: ws
+         end).
     intros [[] | [[w ws] q]] q1 q2; simpl.
     - intros [].
-      exists nil; simpl; eauto.
+      simpl; eauto.
     - intros [Hqs Hq].
-      exists ((w, q) :: ws); simpl; eauto.
+      simpl; eauto.
   Qed.
 
   Lemma cc_star_fold_r:
     ccref (1 + cc_star @ cc) cc_star.
   Proof.
+    exists
+      (fun w q1 q2 =>
+         match w with
+         | inl tt => nil
+         | inr (ws, w, q) => ws ++ (w, q2) :: nil
+         end).
     intros [[] | [[ws w] q]] q1 q2; simpl.
     - intros [].
-      exists nil; simpl.
       tauto.
     - intros [Hqs Hq].
-      exists (ws ++ (w, q2) :: nil); simpl.
       split.
       {
         eapply cc_star_mq_app_intro; simpl; eauto.
@@ -370,15 +443,22 @@ End STAR.
 Global Instance cc_star_ref li:
   Proper (ccref ++> ccref) (@cc_star li).
 Proof.
-  intros cc cc' Hcc ws.
+  intros cc cc' [f Hcc].
+  exists
+    (fix F ws q1 q2 :=
+       match ws with
+       | nil => nil
+       | (w, q) :: ws' => (f w q1 q, q) :: F ws' q q2
+       end).
+  intros ws.
   induction ws as [ | [w q] ws IHws]; simpl.
   - intros q _ [].
-    exists nil; simpl; eauto.
+    simpl; eauto.
   - intros q1 q2 [Hq1 Hq2].
-    edestruct Hcc as (w' & Hq1' & Hr1); eauto.
-    edestruct IHws as (ws' & Hq2' & Hr2); eauto.
+    edestruct Hcc as (Hq1' & Hr1); eauto.
+    edestruct IHws as (Hq2' & Hr2); eauto.
     clear Hq1 Hq2.
-    exists ((w', q) :: ws'); simpl in *.
+    simpl in *.
     split; eauto.
     intros r1 r2 (r & Hr1' & Hr2'); eauto.
 Qed.
@@ -450,8 +530,8 @@ Qed.
 Lemma cc_extends_inject_triangle:
   ccref cc_inject_triangle (cc_extends_triangle @ cc_inject_triangle).
 Proof.
+  exists (fun f q1 q3 => (tt, f, q1)).
   intros f q1 q3 Hq.
-  exists (tt, f, q1).
   split.
   {
     simpl in Hq |- *.
@@ -467,8 +547,8 @@ Qed.
 Lemma cc_inject_extends_triangle:
   ccref cc_inject_triangle (cc_inject_triangle @ cc_extends_triangle).
 Proof.
+  exists (fun f q1 q3 => (f, tt, q3)).
   intros f q1 q3 Hq.
-  exists (f, tt, q3).
   split.
   {
     simpl in Hq |- *.
@@ -484,9 +564,9 @@ Qed.
 Lemma cc_inject_inject_triangle:
   ccref cc_inject_triangle (cc_inject_triangle @ cc_inject_triangle).
 Proof.
+  exists (fun f q3 q => (f, f, q)).
   intros f q3 q Hq.
   assert (q3 = q) by (destruct Hq; eauto); subst.
-  exists (f, f, q).
   simpl in *.
   split; eauto.
   destruct Hq as [id sg vargs m Hvargs Hm].
@@ -511,9 +591,9 @@ Qed.
 Lemma cc_inj_injt:
   ccref cc_inject_triangle cc_inject.
 Proof.
-  red; simpl.
+  exists (fun _ q1 '(cq _ _ _ m) => Mem.flat_inj (Mem.nextblock m)).
   intros _ _ _ [id sg vargs m Hvargs Hm]; simpl.
-  exists (Mem.flat_inj (Mem.nextblock m)); intuition.
+  intuition.
   - destruct r2 as [vres2 m2'].
     destruct H as (f' & Hvres & Hm' & Hm1' & Hm2' & Hincr & Hsep).
     exists f'; intuition.
@@ -522,9 +602,9 @@ Qed.
 Lemma cc_ext_extt:
   ccref cc_extends_triangle cc_extends.
 Proof.
-  red; simpl.
-  intros _ q _ []; simpl.
-  exists tt; intuition.
+  exists (fun _ _ _ => tt).
+  intros [] q _ []; simpl.
+  intuition.
   - destruct q; constructor; intuition.
     induction cq_args; constructor; eauto.
     apply Mem.extends_refl.
