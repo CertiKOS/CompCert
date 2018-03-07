@@ -1097,6 +1097,7 @@ Proof.
   unfold Val.cmp_bool. rauto.
 Qed.
 
+(*
 Local Instance ptrbits_inject_rintro f b1 b2 delta ofs1 ofs2:
   RIntro
     (f b1 = Some (b2, delta) /\ ofs2 = Ptrofs.add ofs1 (Ptrofs.repr delta))
@@ -1105,6 +1106,7 @@ Proof.
   intros [Hb Hofs].
   subst. constructor. assumption.
 Qed.
+*)
 
 Global Instance val_cmpu_bool_inject R w:
   Monotonic
@@ -1126,7 +1128,7 @@ Proof.
           apply andb_true_iff in H;
           destruct H
       end;
-      assumption || congruence.
+      assumption.
     + subst.
       destruct (Mem.valid_pointer x b1 (Ptrofs.unsigned ofs1) &&
                 Mem.valid_pointer x b0 (Ptrofs.unsigned ofs0)) eqn:Hvp.
@@ -1134,12 +1136,12 @@ Proof.
         transport Hvp.
         intros Hvp'.
         setoid_rewrite Hvp.
-        assert (Ptrofs.add ofs1 (Ptrofs.repr delta) <> Ptrofs.add ofs0 (Ptrofs.repr delta0)).
+        assert (ofs2 <> ofs3).
         {
           apply andb_prop in Hvp.
           apply andb_prop in Hvp'.
           destruct Hvp, Hvp'.
-          eapply (cklr_different_pointers_inject R w) in n; try eassumption.
+          eapply (cklr_different_pointers_inject R w) in n; eauto.
           destruct n; try congruence.
         }
         destruct x0; simpl; repeat rstep;
@@ -1154,12 +1156,12 @@ Proof.
         transport Hvp.
         intros Hvp'.
         setoid_rewrite Hvp.
-        assert (Ptrofs.add ofs1 (Ptrofs.repr delta) <> Ptrofs.add ofs0 (Ptrofs.repr delta0)).
+        assert (ofs3 <> ofs2).
         {
           apply andb_prop in Hvp.
           apply andb_prop in Hvp'.
           destruct Hvp, Hvp'.
-          eapply (cklr_different_pointers_inject R w) in H7; try eassumption.
+          eapply (cklr_different_pointers_inject R w) in H7; eauto.
           destruct H7; try congruence.
         }
         destruct x0; simpl; repeat rstep;
@@ -1204,7 +1206,7 @@ Proof.
           apply andb_true_iff in H;
           destruct H
       end;
-      assumption || congruence.
+      assumption.
     + subst.
       destruct (Mem.valid_pointer x b1 (Ptrofs.unsigned ofs1) &&
                 Mem.valid_pointer x b0 (Ptrofs.unsigned ofs0)) eqn:Hvp.
@@ -1212,7 +1214,7 @@ Proof.
         transport Hvp.
         intros Hvp'.
         setoid_rewrite Hvp.
-        assert (Ptrofs.add ofs1 (Ptrofs.repr delta) <> Ptrofs.add ofs0 (Ptrofs.repr delta0)).
+        assert (ofs2 <> ofs3).
         {
           apply andb_prop in Hvp.
           apply andb_prop in Hvp'.
@@ -1232,7 +1234,7 @@ Proof.
         transport Hvp.
         intros Hvp'.
         setoid_rewrite Hvp.
-        assert (Ptrofs.add ofs1 (Ptrofs.repr delta) <> Ptrofs.add ofs0 (Ptrofs.repr delta0)).
+        assert (ofs2 <> ofs3).
         {
           apply andb_prop in Hvp.
           apply andb_prop in Hvp'.
@@ -1304,10 +1306,7 @@ Global Instance val_offset_ptr_inject f:
     (Val.inject f ++> - ==> Val.inject f).
 Proof.
   unfold Val.offset_ptr. repeat rstep.
-  subst.
-  rewrite !Ptrofs.add_assoc.
-  rewrite (Ptrofs.add_commut _ x0).
-  reflexivity.
+  eauto using ptrbits_inject_shift.
 Qed.
 
 Global Instance val_load_result_inject f:

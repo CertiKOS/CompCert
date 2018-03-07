@@ -74,6 +74,28 @@ Definition block_inject_sameofs (f: meminj) b1 b2 :=
 Hint Unfold block_inject.
 Hint Unfold block_inject_sameofs.
 
+(** Destruct [Val.inject] in terms of [ptrbits_inject]. *)
+
+Global Instance val_inject_rdestruct f:
+  RDestruct
+    (Val.inject f)
+    (fun P =>
+       (forall n, P (Vint n) (Vint n)) /\
+       (forall n, P (Vlong n) (Vlong n)) /\
+       (forall x, P (Vfloat x) (Vfloat x)) /\
+       (forall x, P (Vsingle x) (Vsingle x)) /\
+       (forall b1 ofs1 b2 ofs2,
+         ptrbits_inject f (b1, ofs1) (b2, ofs2) ->
+         P (Vptr b1 ofs1) (Vptr b2 ofs2)) /\
+       (forall v, P Vundef v)).
+Proof.
+  intros v1 v2 Hv P (Hint & Hlong & Hfloat & Hsingle & Hptr & Hundef).
+  destruct Hv; eauto.
+  eapply Hptr.
+  subst.
+  constructor; eauto.
+Qed.
+
 
 (** * Compcert Kripke simulation relations *)
 
@@ -172,16 +194,14 @@ Record cklr :=
        comparing valid pointers of different memory blocks that inject
        into the same block. *)
     cklr_different_pointers_inject:
-      forall w m m' b1 ofs1 b2 ofs2 b1' delta1 b2' delta2,
+      forall w m m' b1 ofs1 b2 ofs2 b1' ofs1' b2' ofs2',
         match_mem w m m' ->
         b1 <> b2 ->
         Mem.valid_pointer m b1 (Ptrofs.unsigned ofs1) = true ->
         Mem.valid_pointer m b2 (Ptrofs.unsigned ofs2) = true ->
-        mi w b1 = Some (b1', delta1) ->
-        mi w b2 = Some (b2', delta2) ->
-        b1' <> b2' \/
-        Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta1)) <>
-        Ptrofs.unsigned (Ptrofs.add ofs2 (Ptrofs.repr delta2));
+        match_ptrbits w (b1, ofs1) (b1', ofs1') ->
+        match_ptrbits w (b2, ofs2) (b2', ofs2') ->
+        b1' <> b2' \/ ofs1' <> ofs2';
 
     (* similar to Mem.weak_valid_pointer_inject_val, but cannot be deduced
        from Mem.address_inject. Needed for Val.cmpu* *)
@@ -302,7 +322,7 @@ Proof.
 Qed.
 
 Global Instance match_block_sameofs_match_ptrbits R w b1 b2 o:
-  RIntro
+  RExists
     (match_block_sameofs R w b1 b2)
     (match_ptrbits R w) (b1, o) (b2, o).
 Proof.
