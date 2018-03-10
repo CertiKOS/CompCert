@@ -96,6 +96,110 @@ Proof.
   constructor; eauto.
 Qed.
 
+(** ** Compatibility with [inject_incr] *)
+
+(** *** Using coqrel with [inject_incr] *)
+
+(** CompCert's [inject_incr] can be expressed as [- ==> option_le eq]
+  in coqrel, as illustrated by the following instance. *)
+
+Global Instance inject_incr_option_le:
+  Related inject_incr (- ==> option_le eq)%rel subrel.
+Proof.
+  intros f g Hfg b.
+  destruct (f b) as [[b' ofs] | ] eqn:Hb; try constructor.
+  apply Hfg in Hb.
+  rewrite Hb. rauto.
+Qed.
+
+(** Note that the instance above is not sufficient to ensure that
+  [inject_incr] properties can be used by the monotonicity
+  tactic. This is because [subrel] is only looped in after [RElim] has
+  been performed, but we only know how to do that with
+  [(- ==> option_le eq)]. Hence the following instance: *)
+
+Lemma inject_incr_relim (f g: meminj) (b1 b2: block) P Q:
+  RElim (option_le eq) (f b1) (g b2) P Q ->
+  RElim inject_incr f g (b1 = b2 /\ P) Q.
+Proof.
+  intros H Hfg [Hb HP].
+  apply inject_incr_option_le in Hfg.
+  relim Hfg; eauto.
+Qed.
+
+Hint Extern 1 (RElim inject_incr _ _ _ _) =>
+  eapply inject_incr_relim : typeclass_instances.
+
+Lemma inject_incr_rintro f g:
+  RIntro (forall b, option_le eq (f b) (g b)) inject_incr f g.
+Proof.
+  intros H b b1' delta1 Hb1.
+  specialize (H b).
+  transport Hb1.
+  congruence.
+Qed.
+
+(** *** Monotonicity property vs. [inject_incr] *)
+
+Global Instance ptr_inject_incr:
+  Monotonic (@ptr_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp ptr1 ptr2 Hptr.
+  destruct Hptr as [b1 ofs1 b2 delta Hb].
+  transport Hb; subst.
+  constructor; eauto.
+Qed.
+
+Global Instance ptrbits_inject_incr:
+  Monotonic (@ptrbits_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp ptr1 ptr2 Hptr.
+  destruct Hptr as [b1 ofs1 b2 delta Hb].
+  transport Hb; subst.
+  constructor; eauto.
+Qed.
+
+Global Instance ptrrange_inject_incr:
+  Monotonic (@ptrrange_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp ptr1 ptr2 Hptr.
+  destruct Hptr as [b1 ofs1 b2 ofs2 sz Hb].
+  constructor; eauto.
+  revert Hb.
+  apply ptr_inject_incr.
+  assumption.
+Qed.
+
+Global Instance block_inject_incr:
+  Monotonic (@block_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp b1 b2 [delta Hb].
+  transport Hb; subst.
+  eexists; eauto.
+Qed.
+
+Global Instance block_inject_sameofs_incr:
+  Monotonic (@block_inject_sameofs) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp b1 b2 Hb.
+  transport Hb; subst.
+  eauto.
+Qed.
+
+Global Instance val_inject_incr:
+  Monotonic (@Val.inject) (inject_incr ++> subrel).
+Proof.
+  intros w w' Hw x y Hxy.
+  destruct Hxy; econstructor; eauto.
+Qed.
+
+Global Instance memval_inject_incr:
+  Monotonic (@memval_inject) (inject_incr ++> subrel).
+Proof.
+  intros w w' Hw x y Hxy.
+  destruct Hxy; constructor; eauto.
+Qed.
+
 
 (** * Compcert Kripke simulation relations *)
 
@@ -145,7 +249,7 @@ Record cklr :=
       PreOrder acc;
 
     mi_acc:
-      Monotonic mi (acc ++> - ==> option_le eq);
+      Monotonic mi (acc ++> inject_incr);
 
     cklr_alloc:
       Monotonic
@@ -335,92 +439,47 @@ Qed.
 
 (** *** Compatibility with the accessibility relation *)
 
-(** XXX: do we want to state those in terms of inject_incr/foo_inject?
-  Would that work? *)
-
-Global Instance match_ptr_acc R:
-  Monotonic (match_ptr R) (acc R ++> subrel).
+Global Instance match_ptr_acc:
+  Monotonic (@match_ptr) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros p1 p2 Hp ptr1 ptr2 Hptr.
-  destruct Hptr as [b1 ofs1 b2 delta Hb].
-Typeclasses Opaque k1.
-  transport Hb; subst.
-  constructor; eauto.
+  unfold match_ptr. rauto.
 Qed.
 
-Global Instance match_ptr_acc_params:
-  Params (@match_ptr) 3.
-
-Global Instance match_ptrbits_acc R:
-  Monotonic (match_ptrbits R) (acc R ++> subrel).
+Global Instance match_ptrbits_acc:
+  Monotonic (@match_ptrbits) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros p1 p2 Hp ptr1 ptr2 Hptr.
-  destruct Hptr as [b1 ofs1 b2 delta Hb].
-  transport Hb; subst.
-  constructor; eauto.
+  unfold match_ptrbits. rauto.
 Qed.
 
-Global Instance match_ptrbits_acc_params:
-  Params (@match_ptrbits) 3.
-
-Global Instance match_ptrrange_acc R:
-  Monotonic (match_ptrrange R) (acc R ++> subrel).
+Global Instance match_ptrrange_acc:
+  Monotonic (@match_ptrrange) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros p1 p2 Hp ptr1 ptr2 Hptr.
-  destruct Hptr as [b1 ofs1 b2 ofs2 sz Hb].
-  constructor; eauto.
-  revert Hb.
-  apply match_ptr_acc.
-  assumption.
+  unfold match_ptrrange. rauto.
 Qed.
 
-Global Instance match_ptrrange_acc_params:
-  Params (@match_ptrrange) 3.
-
-Global Instance match_block_acc R:
-  Monotonic (match_block R) (acc R ++> subrel).
+Global Instance match_block_acc:
+  Monotonic (@match_block) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros p1 p2 Hp b1 b2 [delta Hb].
-  transport Hb; subst.
-  eexists; eauto.
+  unfold match_block. rauto.
 Qed.
 
-Global Instance match_block_acc_params:
-  Params (@match_block) 3.
-
-Global Instance match_block_sameofs_acc R:
-  Monotonic (match_block_sameofs R) (acc R ++> subrel).
+Global Instance match_block_sameofs_acc:
+  Monotonic (@match_block_sameofs) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros p1 p2 Hp b1 b2 Hb.
-  transport Hb; subst.
-  eauto.
+  unfold match_block_sameofs. rauto.
 Qed.
 
-Global Instance match_block_sameofs_acc_params:
-  Params (@match_block_sameofs) 3.
-
-Global Instance match_val_acc R:
-  Monotonic (match_val R) (acc R ++> subrel).
+Global Instance match_val_acc:
+  Monotonic (@match_val) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros w w' Hw x y Hxy.
-  destruct Hxy; econstructor; eauto.
-  transport H. subst. assumption.
+  unfold match_val. rauto.
 Qed.
 
-Global Instance match_val_acc_params:
-  Params (@match_val) 3.
-
-Global Instance match_memval_acc R:
-  Monotonic (match_memval R) (acc R ++> subrel).
+Global Instance match_memval_acc:
+  Monotonic (@match_memval) (forallr - @ R, acc R ++> subrel).
 Proof.
-  intros w w' Hw x y Hxy.
-  destruct Hxy; constructor; eauto.
-  destruct H; econstructor; eauto.
-  transport H. subst. assumption.
+  unfold match_memval. rauto.
 Qed.
-
-Global Instance match_memval_acc_params:
-  Params (@match_memval) 3.
 
 (** *** Functionality *)
 
