@@ -1029,9 +1029,7 @@ Proof.
   subst.
   assert (delta0 = delta) by congruence; subst.
   rewrite !ptrofs_ltu_Z_ltb.
-  eapply (cklr_weak_valid_pointer_address_inject_weak R w) in H0; [ | eauto].
-  destruct H0 as (delta' & Hdelta').
-  rewrite !Hdelta' by eauto.
+  erewrite !cklr_weak_valid_pointer_address_inject by eauto.
   rewrite Z_ltb_shift.
   reflexivity.
 Qed.
@@ -1053,10 +1051,8 @@ Proof.
   inversion Hy.
   subst.
   assert (delta0 = delta) by congruence; subst.
-  eapply (cklr_weak_valid_pointer_address_inject_weak R w) in H0; [ | eauto].
-  destruct H0 as (delta' & Hdelta').
   rewrite !ptrofs_cmpu_Z_cmpb.
-  rewrite !Hdelta' by eauto.
+  erewrite !cklr_weak_valid_pointer_address_inject by eauto.
   rewrite Z_cmpb_shift.
   reflexivity.
 Qed.

@@ -13,6 +13,8 @@ Require Export Memory.
 
 (** XXX should this go to Valuesrel.v or something such? *)
 
+(** ** Definitions *)
+
 (** Compcert usually passes pointers around as separate block and
   offset arguments. Since we can't relate those independently
   (because the offset shift is specific to each block), we instead
@@ -74,6 +76,40 @@ Definition block_inject_sameofs (f: meminj) b1 b2 :=
 Hint Unfold block_inject.
 Hint Unfold block_inject_sameofs.
 
+(* When going from [Z] to [ptrofs] (using [Ptrofs.repr]), there is no
+  problem going also from [ptr_inject] to [ptrbits_inject]. However,
+  when converting from machine pointer related by [ptrbits_inject]
+  to abstract pointers with [Z] offsets (using [Ptrofs.unsigned]),
+  we cannot easily establish that the results are related by
+  [ptr_inject], since there may in fact be a discrepency of k·2^n
+  between the correct target pointer obtained by adding [delta] and
+  that obtained through [Ptrofs.unsigned].
+
+  The compiler proofs deal with this through a property of memory
+  injections, which ensures that representable, valid pointers in the
+  source memory correspond to representable target pointers as well.
+  Whenever a memory operation succeeds on a pointer retreived from a
+  machine value, we can then deduce that a corresponding target
+  machine pointer will be the correct one.
+
+  In the relational framework we integrate this approach by defining a
+  third relation [rptr_inject], which asserts that two (abtract, [Z])
+  pointer are related by a memory injection, *under the condition*
+  that the memory injection preserve the representability of the
+  source pointer. *)
+
+Definition rptr_preserved (f: meminj) (ptr: block * Z): Prop :=
+  let '(b, ofs) := ptr in
+  forall b' delta,
+    f b = Some (b', delta) ->
+    0 <= ofs <= Ptrofs.max_unsigned ->
+    delta >= 0 /\ 0 <= ofs + delta <= Ptrofs.max_unsigned.
+
+Definition rptr_inject (f: meminj): relation (block * Z) :=
+  rel_impl (lsat (rptr_preserved f)) (ptr_inject f).
+
+(** ** Coqrel support *)
+
 (** Destruct [Val.inject] in terms of [ptrbits_inject]. *)
 
 Global Instance val_inject_rdestruct f:
@@ -95,10 +131,6 @@ Proof.
   subst.
   constructor; eauto.
 Qed.
-
-(** ** Compatibility with [inject_incr] *)
-
-(** *** Using coqrel with [inject_incr] *)
 
 (** CompCert's [inject_incr] can be expressed as [- ==> option_le eq]
   in coqrel, as illustrated by the following instance. *)
@@ -139,7 +171,7 @@ Proof.
   congruence.
 Qed.
 
-(** *** Monotonicity property vs. [inject_incr] *)
+(** ** Compatibility with [inject_incr] *)
 
 Global Instance ptr_inject_incr:
   Monotonic (@ptr_inject) (inject_incr ++> subrel).
@@ -157,6 +189,19 @@ Proof.
   destruct Hptr as [b1 ofs1 b2 delta Hb].
   transport Hb; subst.
   constructor; eauto.
+Qed.
+
+Global Instance rptr_preserved_incr:
+  Monotonic (@rptr_preserved) (inject_incr --> - ==> impl).
+Proof.
+  intros g f Hfg [b ofs] Hptr b' delta Hb Hofs.
+  eapply Hptr; eauto.
+Qed.
+
+Global Instance rptr_inject_incr:
+  Monotonic (@rptr_inject) (inject_incr ++> subrel).
+Proof.
+  unfold rptr_inject. rauto.
 Qed.
 
 Global Instance ptrrange_inject_incr:
@@ -243,6 +288,7 @@ Record cklr :=
     match_ptr: klr (block * Z) (block * Z) := fun w => ptr_inject (mi w);
     match_ptrbits: klr _ _ := fun w => ptrbits_inject (mi w);
     match_ptrrange: klr _ _ := fun w => ptrrange_inject (mi w);
+    match_rptr: klr _ _ := fun w => rptr_inject (mi w);
     match_mem: klr mem mem;
 
     acc_preorder:
@@ -294,61 +340,15 @@ Record cklr :=
         (@Mem.valid_block)
         ([] match_mem ++> match_block ++> k iff);
 
-    (* similar to Mem.different_pointers_inject. Necessary for
-       comparing valid pointers of different memory blocks that inject
-       into the same block. *)
-    cklr_different_pointers_inject:
-      forall w m m' b1 ofs1 b2 ofs2 b1' ofs1' b2' ofs2',
-        match_mem w m m' ->
-        b1 <> b2 ->
-        Mem.valid_pointer m b1 (Ptrofs.unsigned ofs1) = true ->
-        Mem.valid_pointer m b2 (Ptrofs.unsigned ofs2) = true ->
-        match_ptrbits w (b1, ofs1) (b1', ofs1') ->
-        match_ptrbits w (b2, ofs2) (b2', ofs2') ->
-        b1' <> b2' \/ ofs1' <> ofs2';
+    cklr_no_overlap w m1 m2:
+      match_mem w m1 m2 ->
+      Mem.meminj_no_overlap (mi w) m1;
 
-    (* similar to Mem.weak_valid_pointer_inject_val, but cannot be deduced
-       from Mem.address_inject. Needed for Val.cmpu* *)
-    cklr_weak_valid_pointer_inject_val:
-      forall w m1 m2 b1 ofs1 b2 ofs2,
-        match_mem w m1 m2 ->
-        Mem.weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs1) = true ->
-        match_ptrbits w (b1, ofs1) (b2, ofs2) ->
-        Mem.weak_valid_pointer m2 b2 (Ptrofs.unsigned ofs2) = true;
-
-    (** When comparing two weakly valid pointers of the same block
-     using Val.cmpu, we need to compare their offsets, and so
-     comparing the injected offsets must have the same result. To
-     this end, it is necessary to show that all weakly valid
-     pointers be shifted by the same mathematical (not machine)
-     integer amount. However, contrary to the situation with
-     Mem.address_inject for valid pointers, here for weakly valid
-     pointers we do not know whether this amount is delta. The best
-     we know, thanks to Mem.weak_valid_pointer_inject_no_overflow,
-     is that Ptrofs.unsigned (Ptrofs.repr delta) works, but proving
-     composition would be much harder than for the following
-     weak version:
-    *)
-    cklr_weak_valid_pointer_address_inject_weak:
-      forall w m1 m2 b1 b2 delta,
-        match_mem w m1 m2 ->
-        mi w b1 = Some (b2, delta) ->
-        exists delta',
-          forall ofs1,
-            Mem.weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs1) = true ->
-            Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta)) =
-            (Ptrofs.unsigned ofs1 + delta')%Z;
-
-    (* similar to Mem.address_inject for memory injections.
-       Needed at least by Clight assign_of (By_copy) and memcpy,
-       but I guess at many other places. *)
-    cklr_address_inject:
-      forall w m1 m2 b1 ofs1 b2 delta pe,
-        match_mem w m1 m2 ->
-        Mem.perm m1 b1 (Ptrofs.unsigned ofs1) Cur pe ->
-        mi w b1 = Some (b2, delta) ->
-        Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta)) =
-        (Ptrofs.unsigned ofs1 + delta)%Z;
+    cklr_representable w m1 m2 b1 ofs1:
+      match_mem w m1 m2 ->
+      Mem.perm m1 b1 ofs1 Max Nonempty \/
+      Mem.perm m1 b1 (ofs1 - 1) Max Nonempty ->
+      rptr_preserved (mi w) (b1, ofs1);
 
     (* similar to Mem.aligned_area_inject for memory injections.
        Needed by Clight assign_of (By_copy) and memcpy. *)
@@ -389,6 +389,7 @@ Hint Unfold match_block_sameofs.
 Hint Unfold match_ptr.
 Hint Unfold match_ptrbits.
 Hint Unfold match_ptrrange.
+Hint Unfold match_rptr.
 
 Global Existing Instances acc_preorder.
 Global Existing Instances mi_acc.
@@ -435,6 +436,56 @@ Proof.
     by (rewrite Ptrofs.add_zero; reflexivity).
   constructor.
   assumption.
+Qed.
+
+(** *** Machine pointers *)
+
+(** When comparing two weakly valid pointers of the same block
+  using Val.cmpu, we need to compare their offsets, and so
+  comparing the injected offsets must have the same result. To
+  this end, it is necessary to show that all weakly valid
+  pointers be shifted by the same mathematical (not machine)
+  integer amount. *)
+
+Lemma cklr_weak_valid_pointer_address_inject:
+  forall R w m1 m2 b1 b2 delta ofs1,
+    match_mem R w m1 m2 ->
+    mi R w b1 = Some (b2, delta) ->
+    Mem.weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs1) = true ->
+    Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta)) =
+    Ptrofs.unsigned ofs1 + delta.
+Proof.
+  intros.
+  pose proof (Ptrofs.unsigned_range_2 ofs1).
+  edestruct (cklr_representable R w m1 m2 b1 (Ptrofs.unsigned ofs1)); eauto.
+  {
+    rewrite !Mem.weak_valid_pointer_spec, !Mem.valid_pointer_nonempty_perm in H1.
+    intuition eauto using Mem.perm_cur_max.
+  }
+  rewrite Ptrofs.add_unsigned.
+  rewrite !Ptrofs.unsigned_repr.
+  - reflexivity.
+  - xomega.
+  - rewrite Ptrofs.unsigned_repr by xomega.
+    assumption.
+Qed.
+
+(* Similar to [Mem.address_inject]; needed by Clight assign_of
+  (By_copy), memcpy, and likely other places. *)
+
+Lemma cklr_address_inject R w m1 m2 b1 ofs1 b2 delta pe:
+  match_mem R w m1 m2 ->
+  Mem.perm m1 b1 (Ptrofs.unsigned ofs1) Cur pe ->
+  mi R w b1 = Some (b2, delta) ->
+  Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta)) =
+  Ptrofs.unsigned ofs1 + delta.
+Proof.
+  intros.
+  eapply cklr_weak_valid_pointer_address_inject; eauto.
+  apply Mem.valid_pointer_implies.
+  apply Mem.valid_pointer_nonempty_perm.
+  eapply Mem.perm_implies; eauto.
+  constructor.
 Qed.
 
 (** *** Compatibility with the accessibility relation *)
@@ -636,6 +687,13 @@ Proof.
   congruence.
 Qed.
 
+Global Instance match_ptr_rptr_acc:
+  Related (@match_ptr) (@match_rptr) (forallr - @ R, acc R ++> subrel)%rel.
+Proof.
+  intros R w1 w2 Hw ptr1 ptr2 Hptr.
+  unfold match_ptr, match_rptr, rptr_inject in *. rauto.
+Qed.
+
 Lemma match_ptrbits_ptr R w m1 m2 b1 o1 b2 o2 pe:
   match_mem R w m1 m2 ->
   match_ptrbits R w (b1, o1) (b2, o2) ->
@@ -655,6 +713,29 @@ Proof.
   red. red.
   eauto.
 Qed.
+
+Lemma match_ptrbits_rptr_unsigned R w b1 ofs1 b2 ofs2:
+  RIntro
+    (match_ptrbits R w (b1, ofs1) (b2, ofs2))
+    (match_rptr R w) (b1, Ptrofs.unsigned ofs1) (b2, Ptrofs.unsigned ofs2).
+Proof.
+  intros Hptr Hinrange. red in Hinrange.
+  inv Hptr.
+  pose proof (Ptrofs.unsigned_range_2 ofs1) as Hofs1.
+  edestruct Hinrange as [Hdelta Hofs']; eauto.
+  replace (Ptrofs.unsigned (Ptrofs.add _ _)) with (Ptrofs.unsigned ofs1 + delta).
+  - constructor; eauto.
+  - rewrite Ptrofs.add_unsigned.
+    rewrite (Ptrofs.unsigned_repr delta) by xomega.
+    rewrite Ptrofs.unsigned_repr by xomega.
+    reflexivity.
+Qed.
+
+Hint Extern 1 (RIntro _ (match_rptr _ _) (_, Ptrofs.unsigned _) _) =>
+  eapply match_ptrbits_rptr_unsigned : typeclass_instances.
+
+Hint Extern 1 (RIntro _ (match_rptr _ _) _ (_, Ptrofs.unsigned _)) =>
+  eapply match_ptrbits_rptr_unsigned : typeclass_instances.
 
 Lemma match_ptrrange_ptr R w ptr1 hi1 ptr2 hi2:
   match_ptrrange R w (ptr1, hi1) (ptr2, hi2) ->
@@ -744,6 +825,40 @@ Proof.
   eauto.
 Qed.
 
+(** If we have a valid pointer on the left-hand side, then [match_rptr]
+  can be promoted to [match_ptr]. This is used below to strengthen the
+  relational properties of most memory operations so that they only
+  require [match_rptr] for ther hypotheses. *)
+
+Lemma match_rptr_ptr R w m1 m2 b1 ofs1 b2 ofs2:
+  match_mem R w m1 m2 ->
+  match_rptr R w (b1, ofs1) (b2, ofs2) ->
+  Mem.weak_valid_pointer m1 b1 ofs1 = true ->
+  match_ptr R w (b1, ofs1) (b2, ofs2).
+Proof.
+  intros Hm Hptr Hptr1.
+  apply Hptr. red.
+  eapply cklr_representable; eauto.
+  apply Mem.weak_valid_pointer_spec in Hptr1.
+  rewrite !Mem.valid_pointer_nonempty_perm in Hptr1.
+  intuition eauto using Mem.perm_implies, Mem.perm_cur_max.
+Qed.
+
+Lemma match_rptr_ptr_valid_access R w m1 m2 b1 ofs1 b2 ofs2 chunk pe:
+  match_mem R w m1 m2 ->
+  match_rptr R w (b1, ofs1) (b2, ofs2) ->
+  Mem.valid_access m1 chunk b1 ofs1 pe ->
+  match_ptr R w (b1, ofs1) (b2, ofs2).
+Proof.
+  intros Hm Hptr Hptr1.
+  eapply match_rptr_ptr; eauto.
+  apply Mem.valid_pointer_implies.
+  apply Mem.valid_pointer_nonempty_perm.
+  eapply Mem.valid_access_perm in Hptr1.
+  eapply Mem.perm_implies; eauto.
+  constructor.
+Qed.
+
 (** *** Miscellaneous *)
 
 Lemma match_val_weaken_to_undef R w v1 v2:
@@ -753,6 +868,35 @@ Proof.
   intros Hv.
   destruct Hv; try rauto.
 Admitted. (* need the match_val hints *)
+
+(* Machine pointer version of [cklr_no_overlap]. This is similar to
+  [Mem.different_pointers_inject], and is necessary for comparing
+  valid pointers of different memory blocks that inject into the same
+  block. *)
+
+Lemma cklr_different_pointers_inject R w:
+  forall m m' b1 ofs1 b2 ofs2 b1' ofs1' b2' ofs2',
+    match_mem R w m m' ->
+    b1 <> b2 ->
+    Mem.valid_pointer m b1 (Ptrofs.unsigned ofs1) = true ->
+    Mem.valid_pointer m b2 (Ptrofs.unsigned ofs2) = true ->
+    match_ptrbits R w (b1, ofs1) (b1', ofs1') ->
+    match_ptrbits R w (b2, ofs2) (b2', ofs2') ->
+    b1' <> b2' \/ ofs1' <> ofs2'.
+Proof.
+  intros until ofs2'.
+  intros Hm Hb Hptr1 Hptr2 Hptr1' Hptr2'.
+  eapply match_ptrbits_rptr_unsigned, match_rptr_ptr in Hptr1';
+    eauto using Mem.valid_pointer_implies.
+  eapply match_ptrbits_rptr_unsigned, match_rptr_ptr in Hptr2';
+    eauto using Mem.valid_pointer_implies.
+  eapply Mem.valid_pointer_nonempty_perm in Hptr1.
+  eapply Mem.valid_pointer_nonempty_perm in Hptr2.
+  inv Hptr1'. inv Hptr2'.
+  edestruct cklr_no_overlap; eauto using Mem.perm_implies, Mem.perm_cur_max.
+  right.
+  congruence.
+Qed.
 
 (** ** Properties of derived memory operations *)
 
@@ -862,82 +1006,114 @@ Proof.
   rauto.
 Qed.
 
-(** When pointers are extracted from Compcert [val]ues, they use
-  machine integers and we know related values contain pointers that
-  are related by [match_ptrbits]. Often we then convert this machine
-  pointer with offset [ofs] into an mathematical pointer with offset
-  [Ptrofs.unsigned ofs]. This is made explicit for our block-offset
-  pair pointers using the following function. *)
+(** We can restate the monotonicity properties for most memory
+  operations using [match_rptr] instead of [match_ptr]. *)
 
-Definition ptrofbits (p: block * ptrofs) :=
-  let '(b, ofs) := p in (b, Ptrofs.unsigned ofs).
-
-(** Unfortunately we can't establish that the results of this
-  process are related by [match_ptr] without proving the side
-  conditions of [match_ptrbits_ptr]. However if the side-conditions
-  can't be proved directly from the context, we can use the relation
-  [match_ptrbits !! ptrofbits] to remember that they were
-  constructed in this way instead.
-
-  For many memory operations this is enough, because the success of
-  whichever memory operation we will use the pointer with will be
-  sufficient to prove the side-conditions for [match_ptrbits_ptr]. *)
-
-Global Instance match_ptrofbits_rintro R w b1 ofs1 b2 ofs2:
-  RIntro
-    (match_ptrbits R w (b1, ofs1) (b2, ofs2))
-    ((match_ptrbits R w) !! ptrofbits)
-    (b1, Ptrofs.unsigned ofs1)
-    (b2, Ptrofs.unsigned ofs2).
+Global Instance cklr_perm_rptr R w:
+  Monotonic
+    (@Mem.perm)
+    (match_mem R w ++> % match_rptr R w ++> - ==> - ==> impl).
 Proof.
-  intros H.
-  change (b1, Ptrofs.unsigned ofs1) with (ptrofbits (b1, ofs1)).
-  change (b2, Ptrofs.unsigned ofs2) with (ptrofbits (b2, ofs2)).
-  constructor; eauto.
+  intros m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr k p.
+  simpl. intros H. generalize H. repeat rstep.
+  eapply Hptr. red.
+  eapply cklr_representable; eauto.
+  left.
+  eapply Mem.perm_implies with (p1 := p); [ | constructor].
+  destruct k; eauto using Mem.perm_cur_max.
+Qed.
+
+Global Instance cklr_load_rptr R:
+  Monotonic
+    (@Mem.load)
+    ([] - ==> match_mem R ++> % match_rptr R ++> k1 option_le (match_val R)).
+Proof.
+  intros w Hw chunk m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr.
+  simpl. red.
+  destruct (Mem.load chunk m1 b1 ofs1) as [v1 | ] eqn:Hload; try rauto.
+  rewrite <- Hload.
+  eapply match_rptr_ptr_valid_access in Hptr; eauto with mem.
+  rauto.
+Qed.
+
+Global Instance cklr_store_rptr R:
+  Monotonic
+    (@Mem.store)
+    ([] - ==> match_mem R ++> % match_rptr R ++> match_val R ++>
+     k1 option_le (<> match_mem R)).
+Proof.
+  intros w Hw chunk m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr v1 v2 Hv.
+  simpl.
+  destruct (Mem.store chunk m1 b1 ofs1 v1) as [m1' | ] eqn:Hm1'; [ | rauto].
+  rewrite <- Hm1'.
+  eapply match_rptr_ptr_valid_access in Hptr; eauto with mem.
+  rauto.
+Qed.
+
+Global Instance cklr_loadbytes_rptr R:
+  Monotonic
+    (@Mem.loadbytes)
+    ([] match_mem R ++> % match_rptr R ++> - ==>
+     k1 option_le (k1 list_rel (match_memval R))).
+Proof.
+  intros w Hw m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr sz.
+  simpl.
+  assert (sz <= 0 \/ 0 < sz) as [Hsz | Hsz] by xomega.
+  - rewrite !Mem.loadbytes_empty by assumption.
+    rauto.
+  - destruct (Mem.loadbytes m1 b1 ofs1 sz) eqn:H; [ | rauto].
+    rewrite <- H.
+    apply Mem.loadbytes_range_perm in H.
+    eapply match_rptr_ptr_valid_access in Hptr; eauto.
+    + rauto.
+    + split.
+      * instantiate (2 := Mint8unsigned). simpl.
+        intros ofs Hofs. eapply H. xomega.
+      * simpl.
+        apply Z.divide_1_l.
 Qed.
 
 Global Instance valid_pointer_match R w:
   Monotonic
     (@Mem.valid_pointer)
-    (match_mem R w ++> % (match_ptrbits R w) !! ptrofbits ++> Bool.leb).
+    (match_mem R w ++> % match_rptr R w ++> Bool.leb).
 Proof.
-  intros m1 m2 Hm _ _ [[b1 ofs1] [b2 ofs2] H].
+  intros m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr.
   simpl.
   destruct (Mem.valid_pointer m1 _ _) eqn:H1.
-  - assert (match_ptr R w (b1, Ptrofs.unsigned ofs1) (b2, Ptrofs.unsigned ofs2)).
-    {
-      eapply match_ptrbits_ptr; repeat rstep.
-      eapply Mem.valid_pointer_nonempty_perm; eauto.
-    }
+  - eapply match_rptr_ptr in Hptr; eauto using Mem.valid_pointer_implies.
     transport H1.
     rewrite H1.
-    constructor.
-  - destruct (Mem.valid_pointer m2 _ _) eqn:H2; repeat rstep.
+    reflexivity.
+  - rauto.
 Qed.
 
 Global Instance weak_valid_pointer_match R w:
   Monotonic
-    Mem.weak_valid_pointer
-    (match_mem R w ++> % (match_ptrbits R w) !! ptrofbits ++> Bool.leb).
+    (@Mem.weak_valid_pointer)
+    (match_mem R w ++> % match_rptr R w ++> Bool.leb).
 Proof.
-  intros m1 m2 Hm _ _ [[b1 ofs1] [b2 ofs2] Hptr].
-  unfold uncurry; simpl.
+  intros m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr.
+  simpl.
   destruct (Mem.weak_valid_pointer m1 _ _) eqn:Hwvp1.
-  - erewrite (cklr_weak_valid_pointer_inject_val R w); eauto.
-    constructor.
+  - eapply match_rptr_ptr in Hptr; eauto.
+    transport Hwvp1.
+    rewrite Hwvp1.
+    reflexivity.
   - rauto.
 Qed.
 
 Global Instance valid_pointer_weaken_match R w:
   Related
-    Mem.valid_pointer
-    Mem.weak_valid_pointer
-    (match_mem R w ++> % (match_ptrbits R w) !! ptrofbits ++> Bool.leb).
+    (@Mem.valid_pointer)
+    (@Mem.weak_valid_pointer)
+    (match_mem R w ++> % match_rptr R w ++> Bool.leb).
 Proof.
-  intros m1 m2 Hm _ _ [[b1 ofs1] [b2 ofs2] H]. unfold uncurry; simpl.
-  transitivity (Mem.weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs1)).
+  intros m1 m2 Hm [b1 ofs1] [b2 ofs2] H.
+  simpl.
+  transitivity (Mem.weak_valid_pointer m1 b1 ofs1).
   - unfold Mem.weak_valid_pointer.
-    destruct (Mem.valid_pointer m1 b1 (Ptrofs.unsigned ofs1)); simpl; eauto.
+    destruct (Mem.valid_pointer m1 b1 ofs1); simpl; eauto.
   - rauto.
 Qed.
 
