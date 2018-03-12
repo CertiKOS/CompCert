@@ -330,6 +330,12 @@ Record cklr :=
         ([] match_mem ++> % match_ptr ++> k1 list_rel match_memval ++>
          k1 option_le (<> match_mem));
 
+    cklr_storebytes_empty:
+      Monotonic
+        (@Mem.storebytes)
+        ([] match_mem ++> % k ⊤ ++> k (req nil) ++>
+         k1 option_le (<> match_mem));
+
     cklr_perm:
       Monotonic
         (@Mem.perm)
@@ -1069,6 +1075,30 @@ Proof.
     + split.
       * instantiate (2 := Mint8unsigned). simpl.
         intros ofs Hofs. eapply H. xomega.
+      * simpl.
+        apply Z.divide_1_l.
+Qed.
+
+Global Instance cklr_storebytes_rptr R:
+  Monotonic
+    (@Mem.storebytes)
+    ([] match_mem R ++> % match_rptr R ++> k1 list_rel (match_memval R) ++>
+     k1 option_le (<> match_mem R)).
+Proof.
+  intros w Hw m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr vs1 vs2 Hvs.
+  simpl.
+  destruct vs1 as [ | v1 vs1].
+  - inv Hvs.
+    pose proof (cklr_storebytes_empty R).
+    rauto.
+  - destruct (Mem.storebytes m1 b1 ofs1 _) eqn:H; [ | rauto].
+    rewrite <- H.
+    apply Mem.storebytes_range_perm in H.
+    eapply match_rptr_ptr_valid_access in Hptr; eauto.
+    + rauto.
+    + split.
+      * instantiate (2 := Mint8unsigned). simpl.
+        intros ofs Hofs. eapply H. simpl length. xomega.
       * simpl.
         apply Z.divide_1_l.
 Qed.
