@@ -397,21 +397,22 @@ Hint Unfold match_ptrbits.
 Hint Unfold match_ptrrange.
 Hint Unfold match_rptr.
 
+Global Existing Instances cklr_kf.
 Global Existing Instances acc_preorder.
 Global Existing Instances mi_acc.
 Global Instance mi_acc_params: Params (@mi) 2.
 
 Global Existing Instances cklr_alloc.
-Local  Existing Instances cklr_free. (* strengthened version below *)
-Global Existing Instances cklr_load.
-Global Existing Instances cklr_store.
-Global Existing Instances cklr_loadbytes.
-Global Existing Instances cklr_storebytes.
-Global Existing Instances cklr_perm.
+Local Existing Instances cklr_free.
+Local Existing Instances cklr_load.
+Local Existing Instances cklr_store.
+Local Existing Instances cklr_loadbytes.
+Local Existing Instances cklr_storebytes.
+Local Existing Instances cklr_perm.
 Global Existing Instances cklr_valid_block.
 
-(** Since [winit] is hard-coded as [True] in our [KripkeFrame], we use
-  the following hint to discharge it. *)
+(** Since [winit] is hard-coded as [True] in our [KripkeFrame],
+  we can use the following hint to discharge it. *)
 
 Global Instance cklr_winit_rstep R (w: world R):
   RStep True (winit (KripkeFrame := cklr_kf R) w).
