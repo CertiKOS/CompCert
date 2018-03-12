@@ -369,12 +369,7 @@ Bind Scope cc_scope with callconv.
   OS primitive, etc.), but it is less essential. *)
 
 Definition cc_compcert_A: callconv li_c Asm.li_asm :=
-  cc_inject @
-  cc_extends @
-  cc_extends @
-  cc_extends @
-  cc_wt @
-  cc_wt @
+  cc_star (cc_inject + cc_extends + cc_wt) @
   Conventions.cc_locset @
   Stackingproof.cc_stacking @
   Asmgenproof.cc_asmgen.
@@ -383,33 +378,19 @@ Definition cc_compcert_B: callconv li_c Asm.li_asm :=
   cc_inject_triangle @
   cc_extends_triangle @
   cc_extends_triangle @
+  cc_star (cc_inject + cc_extends + cc_wt) @
   cc_extends_triangle @
   Conventions.cc_locset @
   Stackingproof.cc_stacking @
   Asmgenproof.cc_asmgen.
 
-(** The following stability theorems would be useful to that end.
-
-<<<
-Lemma clight_inject p:
-  forward_simulation cc_inject cc_inject
-    (Clight.semantics2 p)
-    (Clight.semantics2 p).
+Lemma rtl_properties p:
+  forward_simulation
+    (cc_star (cc_inject + cc_extends + cc_wt))
+    (cc_star (cc_inject + cc_extends + cc_wt))
+    (RTL.semantics p)
+    (RTL.semantics p).
 Admitted.
-
-Lemma clight_extends p:
-  forward_simulation cc_extends cc_extends
-    (Clight.semantics2 p)
-    (Clight.semantics2 p).
-Admitted.
-
-Lemma clight_wt p: (* probably want to use RTL instead *)
-  forward_simulation cc_wt cc_wt
-    (Clight.semantics2 p)
-    (Clight.semantics2 p).
-Admitted.
->>>
- *)
 
 Theorem clight_semantic_preservation:
   forall p tp,
@@ -441,19 +422,48 @@ Ltac DestructM :=
     eapply SimplLocalsproof.transf_program_correct; eassumption.
    *)
 
-  rewrite <- (cc_compose_id_left (cc_inject @ _)).
+  rewrite <- (cc_compose_id_left (cc_star _ @ _)).
   rewrite <- (cc_compose_id_left (cc_inject_triangle @ _)).
   eapply compose_forward_simulations.
     eapply Cshmgenproof.transl_program_correct; eassumption.
 
+  rewrite <- cc_star_fold_l at 1.
+  rewrite <- cc_join_ub_r.
+  rewrite <- cc_join_ub_l at 1.
+  rewrite <- cc_join_ub_l at 1.
+  rewrite cc_compose_assoc.
   eapply compose_forward_simulations.
     eapply Cminorgenproof.transl_program_correct; eassumption.
 
+  rewrite <- cc_star_fold_l at 1.
+  rewrite <- cc_join_ub_r.
+  rewrite <- cc_join_ub_l at 1.
+  rewrite <- cc_join_ub_r at 1.
+  rewrite cc_compose_assoc.
   eapply compose_forward_simulations.
     eapply Selectionproof.transf_program_correct; eassumption.
 
+  rewrite <- cc_star_fold_l at 1.
+  rewrite <- cc_join_ub_r.
+  rewrite <- cc_join_ub_l at 1.
+  rewrite <- cc_join_ub_r at 1.
+  rewrite cc_compose_assoc.
   eapply compose_forward_simulations.
     eapply RTLgenproof.transf_program_correct; eassumption.
+
+  rewrite <- cc_star_fold_r at 1.
+  rewrite <- cc_join_ub_r.
+  rewrite <- cc_join_ub_r at 2.
+  rewrite <- cc_star_fold_r at 1.
+  rewrite <- cc_join_ub_r.
+  rewrite <- cc_join_ub_r at 2.
+  rewrite <- cc_star_fold_r at 1.
+  rewrite <- cc_join_ub_r.
+  rewrite <- cc_join_ub_l at 2.
+  rewrite <- (cc_join_ub_r cc_inject) at 2.
+  rewrite !cc_compose_assoc.
+  eapply compose_forward_simulations.
+    eapply rtl_properties.
 
   (*
   eapply compose_forward_simulations.
