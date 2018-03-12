@@ -111,6 +111,14 @@ Proof.
   constructor; eauto.
 Qed.
 
+Lemma ptrbits_inject_shift_sub f b1 ofs1 b2 ofs2 delta:
+  ptrbits_inject f (b1, ofs1) (b2, ofs2) ->
+  ptrbits_inject f (b1, Ptrofs.sub ofs1 delta) (b2, Ptrofs.sub ofs2 delta).
+Proof.
+  rewrite !Ptrofs.sub_add_opp.
+  apply ptrbits_inject_shift.
+Qed.
+
 Lemma ptrrange_inject_shift f b1 ofs1 sz1 b2 ofs2 sz2 delta:
   ptrrange_inject f (b1, ofs1, sz1) (b2, ofs2, sz2) ->
   ptrrange_inject f (b1, ofs1 + delta, sz1)%Z (b2, ofs2 + delta, sz2)%Z.
