@@ -109,6 +109,12 @@ let coqint p n =
   then fprintf p "(Int.repr %ld)" n
   else fprintf p "(Int.repr (%ld))" n
 
+let coqptrofs p n =
+  let s = Z.to_string n in
+  if Z.ge n Z.zero
+  then fprintf p "(Ptrofs.repr %s)" s
+  else fprintf p "(Ptrofs.repr (%s))" s
+
 let coqint64 p n =
   let n = camlint64_of_coqint n in
   if n >= 0L
@@ -250,10 +256,10 @@ let external_function p = function
   | EF_free -> fprintf p "EF_free"
   | EF_memcpy(sz, al) ->
       fprintf p "(EF_memcpy %ld %ld)" (Z.to_int32 sz) (Z.to_int32 al)
-  | EF_annot(text, targs) ->
+  | EF_annot(kind,text, targs) ->
       assertions := (camlstring_of_coqstring text, targs) :: !assertions;
       fprintf p "(EF_annot %a %a)" coqstring text (print_list asttype) targs
-  | EF_annot_val(text, targ) ->
+  | EF_annot_val(kind,text, targ) ->
       assertions := (camlstring_of_coqstring text, [targ]) :: !assertions;
       fprintf p "(EF_annot_val %a %a)" coqstring text asttype targ
   | EF_debug(kind, text, targs) ->
@@ -393,7 +399,7 @@ let init_data p = function
   | Init_float32 n -> fprintf p "Init_float32 %a" coqsingle n
   | Init_float64 n -> fprintf p "Init_float64 %a" coqfloat n
   | Init_space n -> fprintf p "Init_space %ld" (Z.to_int32 n)
-  | Init_addrof(id,ofs) -> fprintf p "Init_addrof %a %a" ident id coqint ofs
+  | Init_addrof(id,ofs) -> fprintf p "Init_addrof %a %a" ident id coqptrofs ofs
 
 let print_variable p (id, v) =
   fprintf p "Definition v_%s := {|@ " (extern_atom id);
@@ -478,12 +484,11 @@ let print_assertions p =
 
 (* The prologue *)
 
-let prologue = "\n\
-Require Import Clightdefs.\n\
-\
+let prologue = "\
+From Coq Require Import String List ZArith.\n\
+From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.\n\
 Local Open Scope Z_scope.\n\
-\
-"
+\n"
 
 (* Naming the compiler-generated temporaries occurring in the program *)
 
@@ -550,10 +555,10 @@ let print_program p prog =
   fprintf p "Definition composites : list composite_definition :=@ ";
   print_list print_composite_definition p prog.prog_types;
   fprintf p ".@ @ ";
-  fprintf p "Definition global_definitions :=@ ";
+  fprintf p "Definition global_definitions : list (ident * globdef fundef type) :=@ ";
   print_list print_ident_globdef p prog.Ctypes.prog_defs;
   fprintf p ".@ @ ";
-  fprintf p "Definition public_idents :=@ ";
+  fprintf p "Definition public_idents : list ident :=@ ";
   print_list ident p prog.Ctypes.prog_public;
   fprintf p ".@ @ ";
   fprintf p "Definition prog : Clight.program := @ ";

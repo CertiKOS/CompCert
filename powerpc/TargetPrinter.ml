@@ -136,6 +136,7 @@ module Linux_System : SYSTEM =
       | Section_debug_line _ ->  ".section	.debug_line,\"\",@progbits"
       | Section_debug_ranges -> ".section	.debug_ranges,\"\",@progbits"
       | Section_debug_str -> ".section	.debug_str,\"MS\",@progbits,1"
+      | Section_ais_annotation -> sprintf ".section	\"__compcert_ais_annotations\",\"\",@note"
 
 
     let section oc sec =
@@ -234,6 +235,7 @@ module Diab_System : SYSTEM =
           sprintf ".section	.debug_line,,n\n"
       | Section_debug_ranges
       | Section_debug_str -> assert false (* Should not be used *)
+      | Section_ais_annotation -> sprintf ".section	\"__compcert_ais_annotations\",,n"
 
     let section oc sec =
       let name = name_of_section sec in
@@ -636,10 +638,10 @@ module Target (System : SYSTEM):TARGET =
       | Plhzx(r1, r2, r3) ->
           fprintf oc "	lhzx	%a, %a, %a\n" ireg r1 ireg r2 ireg r3
       | Pldi(r1, c) ->
-          let lbl = new_label() in
+          let c = camlint64_of_coqint c in
+          let lbl = label_literal64 c in
           fprintf oc "	addis	%a, 0, %a\n" ireg GPR12 label_high lbl;
-          fprintf oc "	ld	%a, %a(%a) %s %Ld\n" ireg r1 label_low lbl ireg GPR12 comment (camlint64_of_coqint c);
-          int64_literals := (lbl, camlint64_of_coqint c) :: !int64_literals;
+          fprintf oc "	ld	%a, %a(%a) %s %Ld\n" ireg r1 label_low lbl ireg GPR12 comment c
       | Plmake(_, _, _) ->
           assert false
       | Pllo _ ->
@@ -647,15 +649,13 @@ module Target (System : SYSTEM):TARGET =
       | Plhi(_, _) ->
           assert false
       | Plfi(r1, c) ->
-          let lbl = new_label() in
+          let lbl = label_literal64 (camlint64_of_coqint (Floats.Float.to_bits c)) in
           fprintf oc "	addis	%a, 0, %a\n" ireg GPR12 label_high lbl;
-          fprintf oc "	lfd	%a, %a(%a) %s %.18g\n" freg r1 label_low lbl ireg GPR12 comment (camlfloat_of_coqfloat c);
-          float64_literals := (lbl, camlint64_of_coqint (Floats.Float.to_bits c)) :: !float64_literals;
+          fprintf oc "	lfd	%a, %a(%a) %s %.18g\n" freg r1 label_low lbl ireg GPR12 comment (camlfloat_of_coqfloat c)
       | Plfis(r1, c) ->
-          let lbl = new_label() in
+          let lbl = label_literal32 (camlint_of_coqint (Floats.Float32.to_bits c)) in
           fprintf oc "	addis	%a, 0, %a\n" ireg GPR12 label_high lbl;
-          fprintf oc "	lfs	%a, %a(%a) %s %.18g\n" freg r1 label_low lbl ireg GPR12 comment (camlfloat_of_coqfloat32 c);
-          float32_literals := (lbl, camlint_of_coqint (Floats.Float32.to_bits c)) :: !float32_literals;
+          fprintf oc "	lfs	%a, %a(%a) %s %.18g\n" freg r1 label_low lbl ireg GPR12 comment (camlfloat_of_coqfloat32 c)
       | Plwarx(r1, r2, r3) ->
           fprintf oc "	lwarx	%a, %a, %a\n" ireg r1 ireg r2 ireg r3
       | Plwbrx(r1, r2, r3) ->
@@ -832,10 +832,17 @@ module Target (System : SYSTEM):TARGET =
             fprintf oc "	.balign	%d\n" !Clflags.option_falignbranchtargets;
           fprintf oc "%a:\n" label (transl_label lbl)
       | Pbuiltin(ef, args, res) ->
-          begin match ef with
-          | EF_annot(txt, targs) ->
-              fprintf oc "%s annotation: %s\n" comment
-              (annot_text preg_annot "r1" (camlstring_of_coqstring txt) args)
+        begin match ef with
+          | EF_annot(kind,txt, targs) ->
+            let annot =
+              begin match (P.to_int kind) with
+                | 1 -> annot_text preg_annot "sp" (camlstring_of_coqstring txt) args
+                | 2 -> let lbl = new_label () in
+                  fprintf oc "%a: " label lbl;
+                  ais_annot_text lbl preg_annot "r1" (camlstring_of_coqstring txt) args
+                | _ -> assert false
+              end in
+            fprintf oc "%s annotation: %S\n" comment annot
           | EF_debug(kind, txt, targs) ->
               print_debug_info comment print_file_line preg_annot "r1" oc
                                (P.to_int kind) (extern_atom txt) args
@@ -895,58 +902,24 @@ module Target (System : SYSTEM):TARGET =
 
     (* Print the code for a function *)
 
-    let print_literal64 oc (lbl, n) =
+    let print_literal64 oc n lbl =
       let nlo = Int64.to_int32 n
       and nhi = Int64.to_int32(Int64.shift_right_logical n 32) in
       fprintf oc "%a:	.long	0x%lx, 0x%lx\n" label lbl nhi nlo
 
-    let print_literal32 oc (lbl, n) =
+    let print_literal32 oc n lbl =
       fprintf oc "%a:	.long	0x%lx\n" label lbl n
-
-    let print_init oc = function
-      | Init_int8 n ->
-          fprintf oc "	.byte	%ld\n" (camlint_of_coqint n)
-      | Init_int16 n ->
-      fprintf oc "	.short	%ld\n" (camlint_of_coqint n)
-      | Init_int32 n ->
-          fprintf oc "	.long	%ld\n" (camlint_of_coqint n)
-      | Init_int64 n ->
-          let b = camlint64_of_coqint n in
-          fprintf oc "	.long	0x%Lx, 0x%Lx\n"
-            (Int64.shift_right_logical b 32)
-            (Int64.logand b 0xFFFFFFFFL)
-      | Init_float32 n ->
-          fprintf oc "	.long	0x%lx %s %.18g\n"
-            (camlint_of_coqint (Floats.Float32.to_bits n))
-            comment (camlfloat_of_coqfloat32 n)
-      | Init_float64 n ->
-          let b = camlint64_of_coqint (Floats.Float.to_bits n) in
-          fprintf oc "	.long	0x%Lx, 0x%Lx %s %.18g\n"
-            (Int64.shift_right_logical b 32)
-            (Int64.logand b 0xFFFFFFFFL)
-            comment (camlfloat_of_coqfloat n)
-      | Init_space n ->
-          if Z.gt n Z.zero then
-            fprintf oc "	.space	%s\n" (Z.to_string n)
-      | Init_addrof(symb, ofs) ->
-          fprintf oc "	.long	%a\n"
-            symbol_offset (symb, ofs)
-
 
     let print_fun_info = elf_print_fun_info
 
     let emit_constants oc lit =
-      if !float64_literals <> [] || !float32_literals <> []
-                                 || !int64_literals <> [] then begin
+      if exists_constants () then begin
         section oc lit;
         fprintf oc "	.balign 8\n";
-        List.iter (print_literal64 oc) !int64_literals;
-        int64_literals := [];
-        List.iter (print_literal64 oc) !float64_literals;
-        float64_literals := [];
-        List.iter (print_literal32 oc) !float32_literals;
-        float32_literals := []
-      end
+        Hashtbl.iter (print_literal64 oc) literal64_labels;
+        Hashtbl.iter (print_literal32 oc) literal32_labels;
+      end;
+      reset_literals ()
 
     let print_optional_fun_info _ = ()
 
@@ -954,8 +927,6 @@ module Target (System : SYSTEM):TARGET =
       match C2C.atom_sections name with
       | [t;l;j] -> (t, l, j)
       |    _    -> (Section_text, Section_literal, Section_jumptable)
-
-    let reset_constants = reset_constants
 
     let print_var_info = elf_print_var_info
 
@@ -984,13 +955,13 @@ module Target (System : SYSTEM):TARGET =
 
     let default_falignment = 4
 
-    let new_label = new_label
-
     let address = address
 
     let section oc sec =
       section oc sec;
-      debug_section oc sec
+      match sec with
+      | Section_ais_annotation -> ()
+      | _ -> debug_section oc sec
   end
 
 let sel_target () =

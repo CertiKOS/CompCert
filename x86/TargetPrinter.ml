@@ -80,6 +80,11 @@ let data_pointer = if Archi.ptr64 then ".quad" else ".long"
 (* The comment deliminiter *)
 let comment = "#"
 
+(* Base-2 log of a Caml integer *)
+let rec log2 n =
+  assert (n > 0);
+  if n = 1 then 0 else 1 + log2 (n lsr 1)
+
 (* System dependend printer functions *)
 module type SYSTEM =
     sig
@@ -126,6 +131,7 @@ module ELF_System : SYSTEM =
       | Section_debug_abbrev -> ".section	.debug_abbrev,\"\",@progbits"
       | Section_debug_ranges -> ".section	.debug_ranges,\"\",@progbits"
       | Section_debug_str -> ".section	.debug_str,\"MS\",@progbits,1"
+      | Section_ais_annotation -> sprintf ".section	\"__compcert_ais_annotations\",\"\",@note"
 
     let stack_alignment = 16
 
@@ -184,14 +190,10 @@ module MacOS_System : SYSTEM =
       | Section_debug_str -> ".section	__DWARF,__debug_str,regular,debug"
       | Section_debug_ranges -> ".section	__DWARF,__debug_ranges,regular,debug"
       | Section_debug_abbrev -> ".section	__DWARF,__debug_abbrev,regular,debug"
+      | Section_ais_annotation -> assert false (* Not supported under MacOS *)
 
 
     let stack_alignment =  16 (* mandatory *)
-
-    (* Base-2 log of a Caml integer *)
-    let rec log2 n =
-      assert (n > 0);
-      if n = 1 then 0 else 1 + log2 (n lsr 1)
 
     let print_align oc n =
       fprintf oc "	.align	%d\n" (log2 n)
@@ -233,6 +235,63 @@ module MacOS_System : SYSTEM =
 
   end
 
+(* Printer functions for Cygwin *)
+module Cygwin_System : SYSTEM =
+  struct
+
+    let raw_symbol oc s =
+       fprintf oc "_%s" s
+
+    let symbol oc symb =
+      raw_symbol oc (extern_atom symb)
+
+    let label oc lbl =
+       fprintf oc "L%d" lbl
+
+    let name_of_section = function
+      | Section_text -> ".text"
+      | Section_data i | Section_small_data i ->
+          if i then ".data" else "COMM"
+      | Section_const i | Section_small_const i ->
+          if i then ".section	.rdata,\"dr\"" else "COMM"
+      | Section_string -> ".section	.rdata,\"dr\""
+      | Section_literal -> ".section	.rdata,\"dr\""
+      | Section_jumptable -> ".text"
+      | Section_user(s, wr, ex) ->
+          sprintf ".section	%s, \"%s\"\n"
+            s (if ex then "xr" else if wr then "d" else "dr")
+      | Section_debug_info _ -> ".section	.debug_info,\"dr\""
+      | Section_debug_loc ->  ".section	.debug_loc,\"dr\""
+      | Section_debug_line _ -> ".section	.debug_line,\"dr\""
+      | Section_debug_abbrev -> ".section	.debug_abbrev,\"dr\""
+      | Section_debug_ranges -> ".section	.debug_ranges,\"dr\""
+      | Section_debug_str-> assert false (* Should not be used *)
+      | Section_ais_annotation -> assert false (* Not supported for coff binaries *)
+
+    let stack_alignment = 8 (* minimum is 4, 8 is better for perfs *)
+
+    let print_align oc n =
+      fprintf oc "	.balign	%d\n" n
+
+    let print_mov_rs oc rd id =
+      fprintf oc "	movl	$%a, %a\n" symbol id ireg rd
+
+    let print_fun_info _ _  = ()
+
+    let print_var_info _ _ = ()
+
+    let print_epilogue _ = ()
+
+    let print_comm_decl oc name sz al =
+      fprintf oc "	.comm   %a, %s, %d\n" 
+                 symbol name (Z.to_string sz) (log2 al)
+
+    let print_lcomm_decl oc name sz al =
+      fprintf oc "	.lcomm   %a, %s, %d\n" 
+                 symbol name (Z.to_string sz) (log2 al)
+
+  end
+
 
 module Target(System: SYSTEM):TARGET =
   struct
@@ -240,11 +299,6 @@ module Target(System: SYSTEM):TARGET =
     let symbol = symbol
 
 (*  Basic printing functions *)
-
-    let symbol_offset oc (symb, ofs) =
-      symbol oc symb;
-      let ofs = Z.to_int64 ofs in
-      if ofs <> 0L then fprintf oc " + %Ld" ofs
 
     let addressing_gen ireg oc (Addrmode(base, shift, cst)) =
       begin match cst with
@@ -319,8 +373,7 @@ module Target(System: SYSTEM):TARGET =
         fprintf oc "$%ld" n2
       else begin
         (* put the constant in memory and use a PC-relative memory operand *)
-        let lbl = new_label() in
-        float64_literals := (lbl, n1) :: !float64_literals;
+        let lbl = label_literal64 n1 in
         fprintf oc "%a(%%rip)" label lbl
       end
 
@@ -367,22 +420,20 @@ module Target(System: SYSTEM):TARGET =
           fprintf oc "	movapd	%a, %a\n" freg r1 freg rd
       | Pmovsd_fi(rd, n) ->
           let b = camlint64_of_coqint (Floats.Float.to_bits n) in
-          let lbl = new_label() in
+          let lbl = label_literal64 b in
           fprintf oc "	movsd	%a%s, %a %s %.18g\n"
                      label lbl rip_rel
-                     freg rd comment (camlfloat_of_coqfloat n);
-          float64_literals := (lbl, b) :: !float64_literals
+                     freg rd comment (camlfloat_of_coqfloat n)
       | Pmovsd_fm(rd, a) | Pmovsd_fm_a(rd, a) ->
           fprintf oc "	movsd	%a, %a\n" addressing a freg rd
       | Pmovsd_mf(a, r1) | Pmovsd_mf_a(a, r1) ->
           fprintf oc "	movsd	%a, %a\n" freg r1 addressing a
       | Pmovss_fi(rd, n) ->
           let b = camlint_of_coqint (Floats.Float32.to_bits n) in
-          let lbl = new_label() in
+          let lbl = label_literal32 b in
           fprintf oc "	movss	%a%s, %a %s %.18g\n"
                      label lbl rip_rel
-                     freg rd comment (camlfloat_of_coqfloat32 n);
-          float32_literals := (lbl, b) :: !float32_literals
+                     freg rd comment (camlfloat_of_coqfloat32 n)
       | Pmovss_fm(rd, a) ->
           fprintf oc "	movss	%a, %a\n" addressing a freg rd
       | Pmovss_mf(a, r1) ->
@@ -740,9 +791,16 @@ module Target(System: SYSTEM):TARGET =
 	 assert false
       | Pbuiltin(ef, args, res) ->
           begin match ef with
-          | EF_annot(txt, targs) ->
-              fprintf oc "%s annotation: %s\n" comment
-              (annot_text preg_annot "%esp" (camlstring_of_coqstring txt) args)
+            | EF_annot(kind,txt, targs) ->
+              let annot =
+                begin match (P.to_int kind) with
+                  | 1 -> annot_text preg_annot "sp" (camlstring_of_coqstring txt) args
+                  | 2 -> let lbl = new_label () in
+                    fprintf oc "%a: " label lbl;
+                    ais_annot_text lbl preg_annot "r1" (camlstring_of_coqstring txt) args
+                  | _ -> assert false
+                end in
+              fprintf oc "%s annotation: %S\n" comment annot
           | EF_debug(kind, txt, targs) ->
               print_debug_info comment print_file_line preg_annot "%esp" oc
                                (P.to_int kind) (extern_atom txt) args
@@ -754,9 +812,9 @@ module Target(System: SYSTEM):TARGET =
               assert false
           end
 
-    let print_literal64 oc (lbl, n) =
+    let print_literal64 oc n lbl =
       fprintf oc "%a:	.quad	0x%Lx\n" label lbl n
-    let print_literal32 oc (lbl, n) =
+    let print_literal32 oc n lbl =
       fprintf oc "%a:	.long	0x%lx\n" label lbl n
 
     let print_jumptable oc jmptbl =
@@ -777,29 +835,6 @@ module Target(System: SYSTEM):TARGET =
         jumptables := []
       end
 
-    let print_init oc = function
-      | Init_int8 n ->
-          fprintf oc "	.byte	%ld\n" (camlint_of_coqint n)
-      | Init_int16 n ->
-          fprintf oc "	.short	%ld\n" (camlint_of_coqint n)
-      | Init_int32 n ->
-          fprintf oc "	.long	%ld\n" (camlint_of_coqint n)
-      | Init_int64 n ->
-          fprintf oc "	.quad	%Ld\n" (camlint64_of_coqint n)
-      | Init_float32 n ->
-          fprintf oc "	.long	%ld %s %.18g\n"
-	    (camlint_of_coqint (Floats.Float32.to_bits n))
-	    comment (camlfloat_of_coqfloat32 n)
-      | Init_float64 n ->
-          fprintf oc "	.quad	%Ld %s %.18g\n"
-	    (camlint64_of_coqint (Floats.Float.to_bits n))
-	    comment (camlfloat_of_coqfloat n)
-      | Init_space n ->
-          if Z.gt n Z.zero then
-            fprintf oc "	.space	%a\n" z n
-      | Init_addrof(symb, ofs) ->
-          fprintf oc "	%s	%a\n" data_pointer symbol_offset (symb, ofs)
-
     let print_align = print_align
 
     let print_comm_symb oc sz name align =
@@ -810,13 +845,12 @@ module Target(System: SYSTEM):TARGET =
     let name_of_section = name_of_section
 
     let emit_constants oc lit =
-       if !float64_literals <> [] || !float32_literals <> [] then begin
+       if exists_constants () then begin
          section oc lit;
          print_align oc 8;
-         List.iter (print_literal64 oc) !float64_literals;
-         float64_literals := [];
-         List.iter (print_literal32 oc) !float32_literals;
-         float32_literals := []
+         Hashtbl.iter (print_literal64 oc) literal64_labels;
+         Hashtbl.iter (print_literal32 oc) literal32_labels;
+         reset_literals ()
        end
 
     let cfi_startproc = cfi_startproc
@@ -832,8 +866,6 @@ module Target(System: SYSTEM):TARGET =
       match C2C.atom_sections name with
       | [t;l;j] -> (t, l, j)
       |    _    -> (Section_text, Section_literal, Section_jumptable)
-
-    let reset_constants = reset_constants
 
     let print_fun_info = print_fun_info
 
@@ -872,16 +904,14 @@ module Target(System: SYSTEM):TARGET =
 
     let label = label
 
-    let new_label = new_label
-
     let address = if Archi.ptr64 then ".quad" else ".long"
 
 end
 
 let sel_target () =
  let module S = (val (match Configuration.system with
+  | "linux" | "bsd" -> (module ELF_System:SYSTEM)
   | "macosx" -> (module MacOS_System:SYSTEM)
-  | "linux"
-  | "bsd" -> (module ELF_System:SYSTEM)
+  | "cygwin" -> (module Cygwin_System:SYSTEM)
   | _ -> invalid_arg ("System " ^ Configuration.system ^ " not supported")  ):SYSTEM) in
  (module Target(S):TARGET)

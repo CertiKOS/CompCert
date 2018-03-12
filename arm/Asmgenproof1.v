@@ -344,9 +344,9 @@ Proof.
   econstructor; split. apply exec_straight_one.
   simpl. rewrite Int.not_involutive. reflexivity. auto.
   split; intros; Simpl. }
-  destruct (thumb tt).
+  destruct Archi.thumb2_support.
 { (* movw / movt *)
-  unfold loadimm_thumb. destruct (Int.eq (Int.shru n (Int.repr 16)) Int.zero).
+  unfold loadimm_word. destruct (Int.eq (Int.shru n (Int.repr 16)) Int.zero).
   econstructor; split.
   apply exec_straight_one. simpl; eauto. auto. split; intros; Simpl.
   econstructor; split.
@@ -1069,6 +1069,13 @@ Proof.
   split. destruct (Val.cmp_bool c0 (rs x) (Vint i)) eqn:CMP; auto.
   split; apply cond_for_signed_cmp_correct; auto. rewrite Val.negate_cmp_bool, CMP; auto.
   apply compare_int_inv.
+  destruct (is_immed_arith (Int.neg i)).
+  econstructor.
+  split. apply exec_straight_one. simpl. eauto. auto.
+  split. destruct (Val.cmp_bool c0 (rs x) (Vint i)) eqn:CMP; auto.
+  split; apply cond_for_signed_cmp_correct; rewrite Int.neg_involutive; auto.
+  rewrite Val.negate_cmp_bool, CMP; auto.
+  apply compare_int_inv.
   exploit (loadimm_correct IR14). intros [rs' [P [Q R]]].
   econstructor.
   split. eapply exec_straight_trans. eexact P. apply exec_straight_one. simpl.
@@ -1083,6 +1090,13 @@ Proof.
   split. apply exec_straight_one. simpl. eauto. auto.
   split. destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (Vint i)) eqn:CMP; auto.
   split; apply cond_for_unsigned_cmp_correct; auto. rewrite Val.negate_cmpu_bool, CMP; auto.
+  apply compare_int_inv.
+  destruct (is_immed_arith (Int.neg i)).
+  econstructor.
+  split. apply exec_straight_one. simpl. eauto. auto.
+  split. destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (Vint i)) eqn:CMP; auto.
+  split; apply cond_for_unsigned_cmp_correct; rewrite Int.neg_involutive; auto.
+  rewrite Val.negate_cmpu_bool, CMP; auto.
   apply compare_int_inv.
   exploit (loadimm_correct IR14). intros [rs' [P [Q R]]].
   econstructor.
@@ -1193,7 +1207,7 @@ Proof.
   (* Oaddrstack *)
   contradiction.
   (* Ocast8signed *)
-  destruct (thumb tt).
+  destruct Archi.thumb2_support.
   econstructor; split. apply exec_straight_one; simpl; eauto. intuition Simpl.
   destruct (rs x0); auto; simpl. rewrite Int.shru_zero. reflexivity.
   set (rs1 := nextinstr_nf (rs#x <- (Val.shl rs#x0 (Vint (Int.repr 24))))).
@@ -1206,7 +1220,7 @@ Proof.
   f_equal. symmetry. apply (Int.sign_ext_shr_shl 8). compute; auto.
   intros. unfold rs2, rs1; Simpl.
   (* Ocast16signed *)
-  destruct (thumb tt).
+  destruct Archi.thumb2_support.
   econstructor; split. apply exec_straight_one; simpl; eauto. intuition Simpl.
   destruct (rs x0); auto; simpl. rewrite Int.shru_zero. reflexivity.
   set (rs1 := nextinstr_nf (rs#x <- (Val.shl rs#x0 (Vint (Int.repr 16))))).

@@ -13,6 +13,7 @@
 (** Correctness proof for the [Allocation] pass (validated translation from
   RTL to LTL). *)
 
+Require Import FunInd.
 Require Import FSets.
 Require Import Coqlib Ordered Maps Errors Integers Floats.
 Require Import AST Linking Lattice Kildall.
@@ -2444,7 +2445,7 @@ Proof.
 (* internal function *)
 - monadInv FUN. simpl in *.
   destruct (transf_function_inv _ _ EQ).
-  exploit Mem.alloc_extends; eauto. apply Zle_refl. rewrite H8; apply Zle_refl.
+  exploit Mem.alloc_extends; eauto. apply Z.le_refl. rewrite H8; apply Z.le_refl.
   intros [m'' [U V]].
   assert (WTRS: wt_regset env (init_regs args (fn_params f))).
   { apply wt_init_regs. inv H0. rewrite wt_params. rewrite H9. auto. }

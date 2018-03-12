@@ -6,6 +6,9 @@
 (*                                                                     *)
 (*  Copyright Institut National de Recherche en Informatique et en     *)
 (*  Automatique.  All rights reserved.  This file is distributed       *)
+(*  under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 2 of the License, or  *)
+(*  (at your option) any later version.  This file is also distributed *)
 (*  under the terms of the INRIA Non-Commercial License Agreement.     *)
 (*                                                                     *)
 (* *********************************************************************)
@@ -46,8 +49,8 @@ let name_of_external = function
   | EF_free -> "free"
   | EF_memcpy(sz, al) ->
       sprintf "memcpy size %s align %s " (Z.to_string sz) (Z.to_string al)
-  | EF_annot(text, targs) -> sprintf "annot %S" (camlstring_of_coqstring text)
-  | EF_annot_val(text, targ) ->  sprintf "annot_val %S" (camlstring_of_coqstring text)
+  | EF_annot(kind,text, targs) -> sprintf "annot %S" (camlstring_of_coqstring text)
+  | EF_annot_val(kind,text, targ) ->  sprintf "annot_val %S" (camlstring_of_coqstring text)
   | EF_inline_asm(text, sg, clob) -> sprintf "inline_asm %S" (camlstring_of_coqstring text)
   | EF_debug(kind, text, targs) ->
       sprintf "debug%d %S" (P.to_int kind) (extern_atom text)

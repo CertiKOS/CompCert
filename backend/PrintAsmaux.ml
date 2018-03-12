@@ -28,8 +28,6 @@ module type TARGET =
       val print_comm_symb:  out_channel -> Z.t -> P.t -> int -> unit
       val print_var_info: out_channel -> P.t -> unit
       val print_fun_info: out_channel -> P.t -> unit
-      val print_init: out_channel -> init_data -> unit
-      val reset_constants: unit -> unit
       val get_section_names: P.t -> section_name * section_name * section_name
       val print_file_line: out_channel -> string -> int -> unit
       val print_optional_fun_info: out_channel -> unit
@@ -43,7 +41,6 @@ module type TARGET =
       val comment: string
       val symbol: out_channel -> P.t -> unit
       val default_falignment: int
-      val new_label: unit -> int
       val label: out_channel -> int -> unit
       val address: string
     end
@@ -70,15 +67,33 @@ let elf_label oc lbl =
 
 (* List of literals and jumptables used in the code *)
 
-let float64_literals : (int * int64) list ref = ref []
-let float32_literals : (int * int32) list ref = ref []
-let int64_literals : (int * int64) list ref = ref []
 let jumptables : (int * label list) list ref = ref []
 
+
+let label_constant (h: ('a, int) Hashtbl.t) (cst: 'a) =
+  try
+    Hashtbl.find h cst
+  with Not_found ->
+    let lbl = new_label() in
+    Hashtbl.add h cst lbl;
+    lbl
+
+let literal32_labels = (Hashtbl.create 39 : (int32, int) Hashtbl.t)
+let literal64_labels   = (Hashtbl.create 39 : (int64, int) Hashtbl.t)
+
+let label_literal32 bf = label_constant literal32_labels bf
+let label_literal64 n = label_constant literal64_labels n
+
+let reset_literals () =
+  Hashtbl.clear literal32_labels;
+  Hashtbl.clear literal64_labels
+
 let reset_constants () =
-  float64_literals := [];
-  float32_literals := [];
-  jumptables := []
+  jumptables := [];
+  reset_literals ()
+
+let exists_constants () =
+  Hashtbl.length literal32_labels > 0 || Hashtbl.length literal64_labels > 0
 
 (* Variables used for the handling of varargs *)
 
@@ -196,6 +211,18 @@ let annot_text preg_string sp_reg_name txt args =
       with Failure _ ->
         sprintf "<bad parameter %s>" s in
   String.concat "" (List.map fragment (Str.full_split re_annot_param txt))
+
+let ais_annot_list: (int * Str.split_result list) list ref = ref []
+
+let re_annot_addr = Str.regexp "%addr"
+let re_annot_quote = Str.regexp "\007"
+
+let ais_annot_text lbl preg_string sp_reg_name txt args =
+  let annot = annot_text preg_string sp_reg_name txt args in
+  let annot = Str.global_replace re_annot_quote "\007\000" annot in
+  let annots = Str.full_split re_annot_addr annot in
+  ais_annot_list := (lbl,annots)::!ais_annot_list;
+  annot
 
 (* Printing of [EF_debug] info.  To be completed. *)
 

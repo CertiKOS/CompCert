@@ -32,7 +32,6 @@ let _8 = coqint_of_camlint 8l
 let _16 = coqint_of_camlint 16l
 let _32 = coqint_of_camlint 32l
 let _64 = coqint_of_camlint 64l
-let _m1 = coqint_of_camlint (-1l)
 
 (* Emit instruction sequences that set or offset a register by a constant. *)
 (* No S suffix because they are applied to SP most of the time. *)
@@ -81,8 +80,8 @@ let expand_int64_arith conflict rl fn =
 
 (* Handling of annotations *)
 
-let expand_annot_val txt targ args res =
-  emit (Pbuiltin (EF_annot(txt,[targ]), args, BR_none));
+let expand_annot_val kind txt targ args res =
+  emit (Pbuiltin (EF_annot(kind,txt,[targ]), args, BR_none));
   match args, res with
   | [BA(IR src)], BR(IR dst) ->
      if dst <> src then emit (Pmov (dst,SOreg src))
@@ -318,7 +317,7 @@ let expand_builtin_inline name args res =
      emit (Pclz (res, ah));
      emit (Padd (res, res, SOreg IR14))
   | ("__builtin_ctz" | "__builtin_ctzl"), [BA(IR a1)], BR(IR res) ->
-     emit (Padd(IR14, a1, SOimm _m1));   (* tmp := x-1 *)
+     emit (Psub(IR14, a1, SOimm _1));    (* tmp := x-1 *)
      emit (Pmvn(res, SOreg a1));         (* res := ~(x) *)
      emit (Pand(res, IR14, SOreg res));  (* res := tmp & ~(x) *)
      emit (Pclz(res, res));              (* res := #leading zeros *)
@@ -330,7 +329,7 @@ let expand_builtin_inline name args res =
      emit (Pcmp (al, SOimm _0));
      emit (Pbne lbl1);
      (* low word is zero, count trailing zeros in high word and increment by 32 *)
-     emit (Padd(IR14, ah, SOimm _m1));
+     emit (Psub(IR14, ah, SOimm _1));
      emit (Pmvn(res, SOreg ah));
      emit (Pand(res, IR14, SOreg res));
      emit (Pclz(res, res));
@@ -338,7 +337,7 @@ let expand_builtin_inline name args res =
      emit (Pb lbl2);
      (* count trailing zeros in low word *)
      emit (Plabel lbl1);
-     emit (Padd(IR14, al, SOimm _m1));
+     emit (Psub(IR14, al, SOimm _1));
      emit (Pmvn(res, SOreg al));
      emit (Pand(res, IR14, SOreg res));
      emit (Pclz(res, res));
@@ -409,6 +408,161 @@ let expand_builtin_inline name args res =
   | _ ->
       raise (Error ("unrecognized builtin " ^ name))
 
+
+(* Handling of calling conventions *)
+
+type direction = Incoming | Outgoing
+
+module FixupEABI = struct
+
+  let ireg_param = function
+    | 0 -> IR0 | 1 -> IR1 | 2 -> IR2 | 3 -> IR3 | _ -> assert false
+
+  let freg_param = function
+    | 0 -> FR0 | 1 -> FR1 | 2 -> FR2 | 3 -> FR3 | _ -> assert false
+
+  let fixup_double dir f i1 i2 =
+    match dir with
+    | Incoming -> (* f <- (i1, i2)  *)
+      emit (Pfcpy_fii (f, i1, i2))
+    | Outgoing -> (* (i1, i2) <- f *)
+      emit (Pfcpy_iif (i1, i2, f))
+
+  let fixup_single dir f i =
+    match dir with
+    | Incoming -> (* f <- i *)
+      emit (Pfcpy_fi (f, i))
+    | Outgoing -> (* i <- f *)
+      emit (Pfcpy_if (i, f))
+
+  let fixup_conventions dir tyl =
+    let rec fixup i tyl =
+      if i < 4 then
+        match tyl with
+        | [] -> ()
+        | (Tint | Tany32) :: tyl' ->
+          fixup (i+1) tyl'
+        | Tlong :: tyl' ->
+          fixup (((i + 1) land (-2)) + 2) tyl'
+        | (Tfloat | Tany64) :: tyl' ->
+          let i = (i + 1) land (-2) in
+          if i < 4 then begin
+            if Archi.big_endian
+            then fixup_double dir (freg_param i) (ireg_param (i+1)) (ireg_param i)
+            else fixup_double dir (freg_param i) (ireg_param i) (ireg_param (i+1));
+            fixup (i+2) tyl'
+          end
+        | Tsingle :: tyl' ->
+          fixup_single dir (freg_param i) (ireg_param i);
+          fixup (i+1) tyl'
+    in fixup 0 tyl
+
+  let fixup_arguments dir sg =
+    fixup_conventions dir sg.sig_args
+
+  let fixup_result dir sg =
+    fixup_conventions dir (proj_sig_res sg :: [])
+end
+
+module FixupHF = struct
+
+  type fsize = Single | Double
+
+  let rec find_single used pos =
+    if pos >= Array.length used then pos
+    else if used.(pos) then find_single used (pos + 1)
+    else begin used.(pos) <- true; pos end
+
+  let rec find_double used pos =
+    if pos + 1 >= Array.length used then pos
+    else if used.(pos) || used.(pos + 1) then find_double used (pos + 2)
+    else begin used.(pos) <- true; used.(pos + 1) <- true; pos / 2 end
+
+  let freg_param = function
+    |  0 -> FR0  |  1 -> FR1  |  2 -> FR2  |  3 -> FR3
+    |  4 -> FR4  |  5 -> FR5  |  6 -> FR6  |  7 -> FR7
+    | _ -> assert false
+
+  let sreg_param = function
+    |  0 -> SR0  |  1 -> SR1  |  2 -> SR2  |  3 -> SR3
+    |  4 -> SR4  |  5 -> SR5  |  6 -> SR6  |  7 -> SR7
+    |  8 -> SR8  |  9 -> SR9  | 10 -> SR10 | 11 -> SR11
+    | 12 -> SR12 | 13 -> SR13 | 14 -> SR14 | 15 -> SR15
+    | _ -> assert false
+
+  let rec fixup_actions used fr tyl =
+    match tyl with
+    | [] -> []
+    | (Tint | Tlong | Tany32) :: tyl' -> fixup_actions used fr tyl'
+    | (Tfloat | Tany64) :: tyl' ->
+      if fr >= 8 then [] else begin
+        let dr = find_double used 0 in
+        assert (dr < 8);
+        (fr, Double, dr) :: fixup_actions used (fr + 1) tyl'
+      end
+    | Tsingle :: tyl' ->
+      if fr >= 8 then [] else begin
+        let sr = find_single used 0 in
+        assert (sr < 16);
+        (fr, Single, sr) :: fixup_actions used (fr + 1) tyl'
+      end
+
+  let rec fixup_outgoing = function
+    | [] -> ()
+    | (fr, Double, dr) :: act ->
+      if fr <> dr then begin
+        let fr = freg_param fr
+        and dr = freg_param dr in
+        emit (Pfcpyd (dr, fr))
+      end;
+      fixup_outgoing act
+    | (fr, Single, sr) :: act ->
+      let fr = freg_param fr
+      and sr = sreg_param sr in
+      emit (Pfcpy_sf (sr, fr));
+      fixup_outgoing act
+
+  let rec fixup_incoming = function
+    | [] -> ()
+    | (fr, Double, dr) :: act ->
+      fixup_incoming act;
+      if fr <> dr then begin
+        let fr = freg_param fr
+        and dr = freg_param dr in
+        emit (Pfcpyd (fr, dr))
+      end
+    | (fr, Single, sr) :: act ->
+      fixup_incoming act;
+      if (2 * fr) <> sr then begin
+        let fr = freg_param fr
+        and sr = sreg_param sr in
+        emit (Pfcpy_fs (fr, sr))
+      end
+
+  let fixup_arguments dir sg =
+    if sg.sig_cc.cc_vararg then
+      FixupEABI.fixup_arguments dir sg
+    else begin
+      let act = fixup_actions (Array.make 16 false) 0 sg.sig_args in
+      match dir with
+      | Outgoing -> fixup_outgoing act
+      | Incoming -> fixup_incoming act
+    end
+
+  let fixup_result dir sg =
+    if sg.sig_cc.cc_vararg then
+      FixupEABI.fixup_result dir sg
+end
+
+let (fixup_arguments, fixup_result) =
+  match Configuration.abi with
+  | "eabi"      -> (FixupEABI.fixup_arguments, FixupEABI.fixup_result)
+  | "hardfloat" -> (FixupHF.fixup_arguments, FixupHF.fixup_result)
+  | _ -> assert false
+
+
+(* Instruction expansion *)
+
 let expand_instruction instr =
   match instr with
   | Pallocframe (sz, ofs) ->
@@ -453,8 +607,8 @@ let expand_instruction instr =
 	      expand_builtin_vload chunk args res
 	   | EF_vstore chunk ->
 	      expand_builtin_vstore chunk args
-	   | EF_annot_val (txt,targ) ->
-	      expand_annot_val txt targ args res
+	   | EF_annot_val (kind,txt,targ) ->
+	      expand_annot_val kind txt targ args res
 	   | EF_memcpy(sz, al) ->
 	      expand_builtin_memcpy (Int32.to_int (camlint_of_coqint sz))
 		(Int32.to_int (camlint_of_coqint al)) args
@@ -463,6 +617,24 @@ let expand_instruction instr =
 	   | _ ->
               assert false
      end
+  (* Fixup for calling conventions *)
+  | Pbsymb(id, sg) ->
+      fixup_arguments Outgoing sg;
+      emit instr
+  | Pbreg(r, sg) ->
+    if r = IR14 then
+      fixup_result Outgoing sg
+    else
+      fixup_arguments Outgoing sg;
+    emit instr
+  | Pblsymb(_, sg) ->
+      fixup_arguments Outgoing sg;
+      emit instr;
+      fixup_result Incoming sg
+  | Pblreg(_, sg) ->
+      fixup_arguments Outgoing sg;
+      emit instr;
+      fixup_result Incoming sg
   | _ ->
      emit instr
 
@@ -492,11 +664,14 @@ let preg_to_dwarf = function
 let expand_function id fn =
   try
     set_current_function fn;
+    fixup_arguments Incoming fn.fn_sig;
     if !Clflags.option_g then
       expand_debug id 13 preg_to_dwarf expand_instruction fn.fn_code
     else
       List.iter expand_instruction fn.fn_code;
-    Errors.OK (get_current_function ())
+    let fn = get_current_function () in
+    let fn = Constantexpand.expand_constants fn in
+    Errors.OK fn
   with Error s ->
     Errors.Error (Errors.msg (coqstring_of_camlstring s))
 

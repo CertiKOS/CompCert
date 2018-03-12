@@ -43,6 +43,16 @@ Inductive freg: Type :=
   | FR8: freg  | FR9: freg  | FR10: freg  | FR11: freg
   | FR12: freg  | FR13: freg  | FR14: freg  | FR15: freg.
 
+Inductive sreg: Type :=
+  | SR0: sreg  | SR1: sreg  | SR2: sreg  | SR3: sreg
+  | SR4: sreg  | SR5: sreg  | SR6: sreg  | SR7: sreg
+  | SR8: sreg  | SR9: sreg  | SR10: sreg  | SR11: sreg
+  | SR12: sreg  | SR13: sreg  | SR14: sreg  | SR15: sreg
+  | SR16: sreg  | SR17: sreg  | SR18: sreg  | SR19: sreg
+  | SR20: sreg  | SR21: sreg  | SR22: sreg  | SR23: sreg
+  | SR24: sreg  | SR25: sreg  | SR26: sreg  | SR27: sreg
+  | SR28: sreg  | SR29: sreg  | SR30: sreg  | SR31: sreg.
+
 Lemma ireg_eq: forall (x y: ireg), {x=y} + {x<>y}.
 Proof. decide equality. Defined.
 
@@ -120,6 +130,11 @@ Inductive testcond : Type :=
   | TCgt: testcond    (**r signed greater *)
   | TCle: testcond.   (**r signed less than or equal *)
 
+Inductive code_constant: Type :=
+| Float32 : label -> float32 -> code_constant
+| Float64 : label -> float -> code_constant
+| Symbol : label -> ident -> ptrofs -> code_constant.
+
 Inductive instruction : Type :=
   (* Core instructions *)
   | Padd: ireg -> ireg -> shift_op -> instruction (**r integer addition *)
@@ -133,6 +148,7 @@ Inductive instruction : Type :=
   | Pblreg: ireg -> signature -> instruction                   (**r computed branch and link *)
   | Pbic: ireg -> ireg -> shift_op -> instruction (**r bitwise bit-clear *)
   | Pcmp: ireg -> shift_op -> instruction         (**r integer comparison *)
+  | Pcmn: ireg -> shift_op -> instruction         (**r integer comparison with opposite *)
   | Peor: ireg -> ireg -> shift_op -> instruction (**r bitwise exclusive or *)
   | Pldr: ireg -> ireg -> shift_op -> instruction (**r int32 load *)
   | Pldr_a: ireg -> ireg -> shift_op -> instruction (**r any32 load to int register *)
@@ -228,9 +244,24 @@ Inductive instruction : Type :=
   | Pldrh_p: ireg -> ireg -> shift_op -> instruction  (**r unsigned int16 load with post increment *)
   | Pstr_p: ireg -> ireg -> shift_op -> instruction   (**r int32 store with post increment *)
   | Pstrb_p: ireg -> ireg -> shift_op -> instruction  (**r unsigned int8 store with post increment *)
-  | Pstrh_p: ireg -> ireg -> shift_op -> instruction. (**r unsigned int16 store with post increment *)
+  | Pstrh_p: ireg -> ireg -> shift_op -> instruction  (**r unsigned int16 store with post increment *)
 
+  (* Instructions for fixup of calling conventions *)
+  | Pfcpy_fs: freg -> sreg -> instruction            (**r single precision float move for incoming arguments *)
+  | Pfcpy_sf: sreg -> freg -> instruction            (**r single precision float move for outgoing arguments *)
+  | Pfcpy_fii: freg -> ireg -> ireg -> instruction    (**r copy integer register pair to double fp-register  *)
+  | Pfcpy_fi: freg -> ireg -> instruction            (**r copy integer register to single fp-register *)
+  | Pfcpy_iif: ireg -> ireg -> freg -> instruction    (**r copy double fp-register to integer register pair *)
+  | Pfcpy_if: ireg -> freg -> instruction            (**r copy single fp-register to integer register *)
 
+  (* Instructions for the emitting of constants *)
+  | Pconstants: list code_constant -> instruction   (**r constants in code*)
+  | Ploadsymbol_imm: ireg -> ident -> ptrofs -> instruction (**r move symbol address in register *)
+  | Pflid_lbl: freg -> label -> float -> instruction (**r load float64 from label *)
+  | Pflis_lbl: freg -> label -> float32 -> instruction (**r load float32 from label *)
+  | Pflid_imm: freg -> float -> instruction          (**r move float64 into register *)
+  | Pflis_imm: freg -> float32 -> instruction        (**r move float32 into register *)
+  | Ploadsymbol_lbl: ireg -> label -> ident -> ptrofs -> instruction. (**r load symbol address from label *)
 
 (** The pseudo-instructions are the following:
 
@@ -578,6 +609,8 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
       Next (nextinstr_nf (rs#r1 <- (Val.and rs#r2 (Val.notint (eval_shift_op so rs))))) m
   | Pcmp r1 so =>
       Next (nextinstr (compare_int rs rs#r1 (eval_shift_op so rs) m)) m
+  | Pcmn r1 so =>
+      Next (nextinstr (compare_int rs rs#r1 (Val.neg (eval_shift_op so rs)) m)) m
   | Peor r1 r2 so =>
       Next (nextinstr_nf (rs#r1 <- (Val.xor rs#r2 (eval_shift_op so rs)))) m
   | Pldr r1 r2 sa =>
@@ -784,7 +817,21 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pldrh_p _ _ _
   | Pstr_p _ _ _
   | Pstrb_p _ _ _
-  | Pstrh_p _ _ _ =>
+  | Pstrh_p _ _ _
+  | Pfcpy_fs _ _
+  | Pfcpy_sf _ _
+  | Pfcpy_fii _ _ _
+  | Pfcpy_fi _ _
+  | Pfcpy_iif _ _ _
+  | Pfcpy_if _ _
+  | Pconstants _
+  | Ploadsymbol_imm _ _ _
+  | Pflid_lbl _ _ _
+  | Pflis_lbl _ _ _
+  | Pflid_imm _ _
+  | Pflis_imm _ _
+  | Ploadsymbol_lbl _ _ _ _
+    =>
     Stuck
   end.
 
