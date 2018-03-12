@@ -1579,7 +1579,7 @@ Lemma add_equations_builtin_args_lessdef:
 Proof.
   induction 1; simpl; intros; destruct arg'; MonadInv.
 - exists (@nil val); split; constructor.
-- exploit IHlist_forall2; eauto. intros (vl' & A & B).
+- exploit IHlist_rel; eauto. intros (vl' & A & B).
   exploit add_equations_builtin_arg_lessdef; eauto.
   eapply add_equations_builtin_args_satisf; eauto. intros (v1' & C & D).
   exploit (@eval_builtin_arg_lessdef _ ge ls ls); eauto. intros (v1'' & E & F).
@@ -1609,8 +1609,8 @@ Proof.
   induction 1; simpl; intros; destruct arg'; MonadInv.
 - exists (@nil val); constructor.
 - exists (@nil val); constructor.
-- destruct (add_equations_builtin_arg env a1 b e) as [e1|] eqn:A.
-+ exploit IHlist_forall2; eauto. intros (vl' & B).
+- destruct (add_equations_builtin_arg env x b e) as [e1|] eqn:A.
++ exploit IHlist_rel; eauto. intros (vl' & B).
   exploit add_equations_builtin_arg_lessdef; eauto.
   eapply add_equations_debug_args_satisf; eauto. intros (v1' & C & D).
   exploit (@eval_builtin_arg_lessdef _ ge ls ls); eauto. intros (v1'' & E & F).

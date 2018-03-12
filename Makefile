@@ -27,7 +27,7 @@ DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
 
 RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
 
-COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d))
+COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) -R coqrel coqrel
 
 COQC="$(COQBIN)coqc" -q $(COQINCLUDES) $(COQCOPTS)
 COQDEP="$(COQBIN)coqdep" $(COQINCLUDES)
@@ -58,7 +58,8 @@ FLOCQ=\
 VLIB=Axioms.v Coqlib.v Intv.v Maps.v Heaps.v Lattice.v Ordered.v \
   Iteration.v Integers.v Archi.v Fappli_IEEE_extra.v Floats.v \
   Parmov.v UnionFind.v Wfsimpl.v \
-  Postorder.v FSetAVLplus.v IntvSets.v Decidableplus.v BoolEqual.v
+  Postorder.v FSetAVLplus.v IntvSets.v Decidableplus.v BoolEqual.v \
+  Mapsrel.v \
 
 # Parts common to the front-ends and the back-end (in common/)
 
@@ -66,7 +67,8 @@ COMMON=Errors.v AST.v Linking.v \
   Events.v Globalenvs.v Memdata.v Memtype.v Memory.v BlockNames.v \
   Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
   LanguageInterface.v CallconvAlgebra.v ModuleSemantics.v \
-  Separation.v
+  Separation.v \
+  CKLR.v Valuesrel.v \
 
 # Back-end modules (in backend/, $(ARCH)/)
 
@@ -105,7 +107,8 @@ CFRONTEND=Ctypes.v Cop.v Csyntax.v Csem.v Ctyping.v Cstrategy.v Cexec.v \
   SimplExpr.v SimplExprspec.v SimplExprproof.v \
   Clight.v ClightBigstep.v ClightLink.v SimplLocals.v SimplLocalsproof.v \
   Cshmgen.v Cshmgenproof.v \
-  Csharpminor.v Cminorgen.v Cminorgenproof.v
+  Csharpminor.v Cminorgen.v Cminorgenproof.v \
+  Coprel.v Clightrel.v \
 
 # LR(1) parser validator
 

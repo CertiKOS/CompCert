@@ -1035,7 +1035,7 @@ Proof.
   induction 1; simpl.
 - exists (@nil val); split; constructor.
 - exploit invert_eval_builtin_arg; eauto. intros (vl1 & A & B & C).
-  destruct IHlist_forall2 as (vl2 & D & E).
+  destruct IHlist_rel as (vl2 & D & E).
   exists (vl1 ++ vl2); split.
   apply eval_exprlist_append; auto.
   rewrite C; simpl. constructor; auto.

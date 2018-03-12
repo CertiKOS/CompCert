@@ -2030,7 +2030,7 @@ Proof.
   induction 1; simpl; intros VALID BOUNDS.
 - exists (@nil val); split; constructor.
 - exploit transl_builtin_arg_correct; eauto using in_or_app. intros (v1' & A & B).
-  exploit IHlist_forall2; eauto using in_or_app. intros (vl' & C & D).
+  exploit IHlist_rel; eauto using in_or_app. intros (vl' & C & D).
   exists (v1'::vl'); split; constructor; auto.
 Qed.
 

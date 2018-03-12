@@ -774,8 +774,8 @@ Lemma proj_bytes_inject:
 Proof.
   induction 1; simpl. congruence.
   inv H; try congruence.
-  destruct (proj_bytes al); intros.
-  inv H. rewrite (IHlist_forall2 l); auto.
+  destruct (proj_bytes _); intros.
+  inv H. rewrite (IHlist_rel l); auto.
   congruence.
 Qed.
 
@@ -803,7 +803,7 @@ Lemma proj_value_inject:
 Proof.
   intros. unfold proj_value.
   inversion H; subst. auto. inversion H0; subst; auto.
-  destruct (check_value (size_quantity_nat q) v1 q (Fragment v1 q0 n :: al)) eqn:B; auto.
+  destruct (check_value (size_quantity_nat q) v1 q (Fragment v1 q0 n :: _)) eqn:B; auto.
   destruct (Val.eq v1 Vundef). subst; auto.
   erewrite check_value_inject by eauto. auto.
 Qed.
@@ -816,9 +816,9 @@ Proof.
   induction 1; simpl; intros.
   congruence.
   inv H; try congruence.
-  right. apply IHlist_forall2.
-  destruct (proj_bytes al); congruence.
-  destruct (proj_bytes bl); congruence.
+  right. apply IHlist_rel.
+  destruct (proj_bytes x0); congruence.
+  destruct (proj_bytes y0); congruence.
   auto.
 Qed.
 

@@ -1166,9 +1166,9 @@ Proof.
     exists valu.
     apply set_res_unknown_holds.
     InvSoundState. unfold vanalyze; rewrite AN.
-    assert (pmatch bc bsrc osrc (aaddr_arg (VA.State ae am) a0))
+    assert (pmatch bc bsrc osrc (aaddr_arg (VA.State ae am) x1))
     by (eapply aaddr_arg_sound_1; eauto).
-    assert (pmatch bc bdst odst (aaddr_arg (VA.State ae am) a1))
+    assert (pmatch bc bdst odst (aaddr_arg (VA.State ae am) x))
     by (eapply aaddr_arg_sound_1; eauto).
     eapply add_memcpy_holds; eauto.
     eapply kill_loads_after_storebytes_holds; eauto.

@@ -17,6 +17,7 @@
     used throughout the development.  It complements the Coq standard
     library. *)
 
+Require Export LogicalRelations.
 Require Export ZArith.
 Require Export Znumtheory.
 Require Export List.
@@ -645,12 +646,6 @@ Definition option_eq (A: Type) (eqA: forall (x y: A), {x=y} + {x<>y}):
 Proof. decide equality. Defined.
 Global Opaque option_eq.
 
-(** Lifting a relation to an option type. *)
-
-Inductive option_rel (A B: Type) (R: A -> B -> Prop) : option A -> option B -> Prop :=
-  | option_rel_none: option_rel R None None
-  | option_rel_some: forall x y, R x y -> option_rel R (Some x) (Some y).
-
 (** Mapping a function over an option type. *)
 
 Definition option_map (A B: Type) (f: A -> B) (x: option A) : option B :=
@@ -1162,52 +1157,30 @@ Qed.
 (** [list_forall2 P [x1 ... xN] [y1 ... yM]] holds iff [N = M] and
   [P xi yi] holds for all [i]. *)
 
+Notation list_forall2 := list_rel (only parsing).
+
 Section FORALL2.
 
 Variable A: Type.
 Variable B: Type.
 Variable P: A -> B -> Prop.
 
-Inductive list_forall2: list A -> list B -> Prop :=
-  | list_forall2_nil:
-      list_forall2 nil nil
-  | list_forall2_cons:
-      forall a1 al b1 bl,
-      P a1 b1 ->
-      list_forall2 al bl ->
-      list_forall2 (a1 :: al) (b1 :: bl).
-
-Lemma list_forall2_app:
-  forall a2 b2 a1 b1,
-  list_forall2 a1 b1 -> list_forall2 a2 b2 ->
-  list_forall2 (a1 ++ a2) (b1 ++ b2).
-Proof.
-  induction 1; intros; simpl. auto. constructor; auto.
-Qed.
-
-Lemma list_forall2_length:
-  forall l1 l2,
-  list_forall2 l1 l2 -> length l1 = length l2.
-Proof.
-  induction 1; simpl; congruence.
-Qed.
-
 Lemma list_forall2_in_left:
   forall x1 l1 l2,
-  list_forall2 l1 l2 -> In x1 l1 -> exists x2, In x2 l2 /\ P x1 x2.
+  list_forall2 P l1 l2 -> In x1 l1 -> exists x2, In x2 l2 /\ P x1 x2.
 Proof.
   induction 1; simpl; intros. contradiction. destruct H1.
-  subst; exists b1; auto.
-  exploit IHlist_forall2; eauto. intros (x2 & U & V); exists x2; auto.
+  subst; eexists; auto.
+  exploit IHlist_rel; eauto. intros (x2 & U & V); exists x2; auto.
 Qed.
 
 Lemma list_forall2_in_right:
   forall x2 l1 l2,
-  list_forall2 l1 l2 -> In x2 l2 -> exists x1, In x1 l1 /\ P x1 x2.
+  list_forall2 P l1 l2 -> In x2 l2 -> exists x1, In x1 l1 /\ P x1 x2.
 Proof.
   induction 1; simpl; intros. contradiction. destruct H1.
-  subst; exists a1; auto.
-  exploit IHlist_forall2; eauto. intros (x1 & U & V); exists x1; auto.
+  subst; eexists; auto.
+  exploit IHlist_rel; eauto. intros (x1 & U & V); exists x1; auto.
 Qed.
 
 End FORALL2.
@@ -1221,7 +1194,7 @@ Lemma list_forall2_imply:
 Proof.
   induction 1; intros.
   constructor.
-  constructor. auto with coqlib. apply IHlist_forall2; auto.
+  constructor. auto with coqlib. apply IHlist_rel; auto.
   intros. auto with coqlib.
 Qed.
 
