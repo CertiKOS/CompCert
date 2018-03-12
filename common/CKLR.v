@@ -300,7 +300,7 @@ Record cklr :=
     cklr_alloc:
       Monotonic
         (@Mem.alloc)
-        ([] match_mem ++> - ==> - ==> <> match_mem * match_block);
+        ([] match_mem ++> - ==> - ==> <> match_mem * match_block_sameofs);
 
     cklr_free:
       Monotonic
