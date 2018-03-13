@@ -1,6 +1,7 @@
 Require Export List.
 Require Export RelationClasses.
 Require Export Morphisms.
+Require Import Integers.
 Require Export Globalenvs.
 Require Export Events.
 Require Export LanguageInterface.
@@ -533,6 +534,150 @@ Proof.
   destruct Block.lt_dec eqn:Hb; eauto.
   rewrite Hb.
   reflexivity.
+Qed.
+
+(** ** The [meminj_dom] construction *)
+
+(** The following injection is a sub-injection of [Mem.flat_inj],
+  which contains only blocks mapped by the original injection [f].
+  Like [Mem.flat_inj], it is a neutral element for composition
+  with [f] on the left, but the fact that its domain and codomain
+  correspond to the domain of [f] yields many desirable properties
+  that do not hold for [Mem.flat_inj]. *)
+
+Definition meminj_dom (f: meminj): meminj :=
+  fun b => if f b then Some (b, 0) else None.
+
+Lemma meminj_dom_compose f:
+  compose_meminj (meminj_dom f) f = f.
+Proof.
+  apply functional_extensionality; intros b.
+  unfold compose_meminj, meminj_dom.
+  destruct (f b) as [[b' ofs] | ] eqn:Hfb; eauto.
+  rewrite Hfb.
+  replace (0 + ofs) with ofs by xomega.
+  reflexivity.
+Qed.
+
+Lemma val_inject_dom f v1 v2:
+  Val.inject f v1 v2 ->
+  Val.inject (meminj_dom f) v1 v1.
+Proof.
+  destruct 1; econstructor.
+  - unfold meminj_dom.
+    rewrite H.
+    reflexivity.
+  - rewrite Ptrofs.add_zero.
+    reflexivity.
+Qed.
+
+Lemma memval_inject_dom f v1 v2:
+  memval_inject f v1 v2 ->
+  memval_inject (meminj_dom f) v1 v1.
+Proof.
+  destruct 1; econstructor.
+  eapply val_inject_dom; eauto.
+Qed.
+
+Lemma val_inject_list_dom f vs1 vs2:
+  Val.inject_list f vs1 vs2 ->
+  Val.inject_list (meminj_dom f) vs1 vs1.
+Proof.
+  induction 1; constructor; eauto using val_inject_dom.
+Qed.
+
+Lemma mem_mem_inj_dom f m1 m2:
+  Mem.mem_inj f m1 m2 ->
+  Mem.mem_inj (meminj_dom f) m1 m1.
+Proof.
+  intros H.
+  split.
+  - unfold meminj_dom. intros b1 b2 delta ofs k p Hb1 Hp.
+    destruct (f b1); inv Hb1.
+    replace (ofs + 0) with ofs by xomega.
+    auto.
+  - unfold meminj_dom. intros b1 b2 delta chunk ofs p Hb1 Hrp.
+    destruct (f b1) as [[b1' delta'] | ]; inv Hb1.
+    eauto using Z.divide_0_r.
+  - unfold meminj_dom at 1. intros b1 ofs b2 delta Hb1 Hp.
+    destruct (f b1) as [[b1' delta'] | ] eqn:Hb1'; inv Hb1.
+    replace (ofs + 0) with ofs by xomega.
+    eapply memval_inject_dom.
+    eapply Mem.mi_memval; eauto.
+Qed.
+
+Lemma mem_inject_dom f m1 m2:
+  Mem.inject f m1 m2 ->
+  Mem.inject (meminj_dom f) m1 m1.
+Proof.
+  intros H.
+  split.
+  - eapply mem_mem_inj_dom.
+    eapply Mem.mi_inj; eauto.
+  - unfold meminj_dom. intros.
+    erewrite Mem.mi_freeblocks; eauto.
+  - unfold meminj_dom; intros.
+    destruct (f b) as [[b'' delta'] | ] eqn:Hb; inv H0.
+    eapply Mem.valid_block_inject_1; eauto.
+  - red. unfold meminj_dom. intros.
+    destruct (f b1); inv H1.
+    destruct (f b2); inv H2.
+    eauto.
+  - unfold meminj_dom. intros.
+    destruct (f b); inv H0.
+    split; try xomega.
+    rewrite Z.add_0_r.
+    apply Ptrofs.unsigned_range_2.
+  - unfold meminj_dom. intros.
+    destruct (f b1); inv H0.
+    rewrite Z.add_0_r in H1; eauto.
+Qed.
+
+Lemma cc_inject_mq_dom f q1 q2:
+  cc_inject_mq f q1 q2 ->
+  cc_inject_mq (meminj_dom f) q1 q1.
+Proof.
+  destruct q1 as [fb1 sg1 vargs1 m1], q2 as [fb2 sg2 vargs2 m2]. simpl.
+  intuition.
+  - eauto using val_inject_list_dom.
+  - eauto using mem_inject_dom.
+Qed.
+
+Lemma loc_unmapped_dom f b ofs:
+  loc_unmapped (meminj_dom f) b ofs <->
+  loc_unmapped f b ofs.
+Proof.
+  unfold meminj_dom, loc_unmapped.
+  destruct (f b) as [[b' delta] | ].
+  - split; discriminate.
+  - reflexivity.
+Qed.
+
+(** ** Rectangular diagrams *)
+
+Lemma cc_inject_inject:
+  ccref cc_inject (cc_inject @ cc_inject).
+Proof.
+  exists (fun f q1 q2 => (meminj_dom f, f, q1)).
+  simpl.
+  intros f q1 q2 Hq.
+  split; eauto using cc_inject_mq_dom.
+  intros r1 r3 (r2 & Hr12 & Hr23).
+  destruct q1 as [fb1 sg1 vargs1 m1], q2 as [fb2 sg2 vargs2 m2].
+  destruct r1 as [vres1 m1'], r2 as [vres2 m2'], r3 as [vres3 m3'].
+  simpl in *.
+  destruct Hr12 as (f12' & Hvres12 & Hm12' & Huc1 & Huc12 & Hf12' & Hsp12 & Hp1).
+  destruct Hr23 as (f23' & Hvres23 & Hm23' & Huc2 & Huc23 & Hf23' & Hsp23 & Hp2).
+  exists (compose_meminj f12' f23'). intuition.
+  - eapply val_inject_compose; eauto.
+  - eapply Mem.inject_compose; eauto.
+  - eapply Mem.unchanged_on_implies; eauto.
+    intros. apply loc_unmapped_dom; eauto.
+  - rewrite <- (meminj_dom_compose f).
+    rauto.
+  - rewrite <- (meminj_dom_compose f).
+    eapply compose_meminj_separated; eauto.
+    eapply mem_inject_dom; eauto.
 Qed.
 
 (** ** Triangular diagrams *)
