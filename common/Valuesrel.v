@@ -1,28 +1,75 @@
 Require Export LogicalRelations.
-Require Import KLR.
-Require Import OptionRel.
-Require Import BoolRel.
+Require Export KLR.
+Require Export OptionRel.
+Require Export BoolRel.
+
 Require Import Coqlib.
 Require Import Integers.
 Require Import Floats.
 Require Export Values.
-Require Import Memory.
-Require Import CKLR.
+Require Export Memdata.
 
 
-(** * Complementary injection relations *)
+(** * Injection relations *)
 
-(** ** Definitions *)
+(** ** Coqrel support for [inject_incr] *)
 
-(** [Should bring over the definitions in CKLR.v, and maybe inject /
-  lessdef from Values.v? => would need to make the comparison
-  signatures independent from [match_mem]. *)
+(** CompCert's [inject_incr] can be expressed as [- ==> option_le eq]
+  in coqrel, as illustrated by the following instance. *)
 
-(** ** Properties *)
+Global Instance inject_incr_option_le:
+  Related inject_incr (- ==> option_le eq)%rel subrel.
+Proof.
+  intros f g Hfg b.
+  destruct (f b) as [[b' ofs] | ] eqn:Hb; try constructor.
+  apply Hfg in Hb.
+  rewrite Hb. rauto.
+Qed.
 
-(** *** Basic properties *)
+(** Note that the instance above is not sufficient to ensure that
+  [inject_incr] properties can be used by the monotonicity
+  tactic. This is because [subrel] is only looped in after [RElim] has
+  been performed, but we only know how to do that with
+  [(- ==> option_le eq)]. Hence the following instance: *)
 
-Global Instance inject_refl:
+Lemma inject_incr_relim (f g: meminj) (b1 b2: block) P Q:
+  RElim (option_le eq) (f b1) (g b2) P Q ->
+  RElim inject_incr f g (b1 = b2 /\ P) Q.
+Proof.
+  intros H Hfg [Hb HP].
+  apply inject_incr_option_le in Hfg.
+  relim Hfg; eauto.
+Qed.
+
+Hint Extern 1 (RElim inject_incr _ _ _ _) =>
+  eapply inject_incr_relim : typeclass_instances.
+
+Lemma inject_incr_rintro f g:
+  RIntro (forall b, option_le eq (f b) (g b)) inject_incr f g.
+Proof.
+  intros H b b1' delta1 Hb1.
+  specialize (H b).
+  transport Hb1.
+  congruence.
+Qed.
+
+(** ** Properties of existing relations *)
+
+Global Instance val_inject_incr:
+  Monotonic (@Val.inject) (inject_incr ++> subrel).
+Proof.
+  intros w w' Hw x y Hxy.
+  destruct Hxy; econstructor; eauto.
+Qed.
+
+Global Instance memval_inject_incr:
+  Monotonic (@memval_inject) (inject_incr ++> subrel).
+Proof.
+  intros w w' Hw x y Hxy.
+  destruct Hxy; constructor; eauto.
+Qed.
+
+Global Instance val_inject_refl:
   Reflexive (Val.inject inject_id).
 Proof.
   intros v. destruct v; econstructor.
@@ -30,6 +77,399 @@ Proof.
   - rewrite Ptrofs.add_zero.
     reflexivity.
 Qed.
+
+(** ** Complementary relations *)
+
+(** *** Abstract pointers *)
+
+(** Compcert usually passes pointers around as separate block and
+  offset arguments. Since we can't relate those independently
+  (because the offset shift is specific to each block), we instead
+  relate (block, offset) pairs and use [rel_curry] to construct our
+  [Monotonicity] relations.
+
+  Relating pointers is complicated because of the interaction
+  between the abstract [Z] offsets that are used by the memory model
+  and the [ptrofs] concrete machine representations that are used to
+  build [val]ues. The basic relation [ptr_inject] relates abstract
+  pointers in the obvious way, while [ptrbits_inject] relates
+  concrete pointers as is done in [Val.inject]. *)
+
+Inductive ptr_inject (f: meminj): relation (block * Z) :=
+  ptr_inject_intro b1 ofs1 b2 delta:
+    f b1 = Some (b2, delta) ->
+    ptr_inject f (b1, ofs1) (b2, ofs1 + delta).
+
+Hint Constructors ptr_inject.
+
+Global Instance ptr_inject_incr:
+  Monotonic (@ptr_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp ptr1 ptr2 Hptr.
+  destruct Hptr as [b1 ofs1 b2 delta Hb].
+  transport Hb; subst.
+  constructor; eauto.
+Qed.
+
+(** *** Machine pointers *)
+
+(** For the machine integer version, we also make sure we can destruct
+  [Val.inject] in terms of [ptrbits_inject]. *)
+
+Inductive ptrbits_inject (f: meminj): relation (block * ptrofs) :=
+  ptrbits_inject_intro b1 ofs1 b2 delta:
+    f b1 = Some (b2, delta) ->
+    ptrbits_inject f (b1, ofs1) (b2, Ptrofs.add ofs1 (Ptrofs.repr delta)).
+
+Hint Constructors ptrbits_inject.
+
+Global Instance ptrbits_inject_incr:
+  Monotonic (@ptrbits_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp ptr1 ptr2 Hptr.
+  destruct Hptr as [b1 ofs1 b2 delta Hb].
+  transport Hb; subst.
+  constructor; eauto.
+Qed.
+
+Global Instance val_inject_rdestruct f:
+  RDestruct
+    (Val.inject f)
+    (fun P =>
+       (forall n, P (Vint n) (Vint n)) /\
+       (forall n, P (Vlong n) (Vlong n)) /\
+       (forall x, P (Vfloat x) (Vfloat x)) /\
+       (forall x, P (Vsingle x) (Vsingle x)) /\
+       (forall b1 ofs1 b2 ofs2,
+         ptrbits_inject f (b1, ofs1) (b2, ofs2) ->
+         P (Vptr b1 ofs1) (Vptr b2 ofs2)) /\
+       (forall v, P Vundef v)).
+Proof.
+  intros v1 v2 Hv P (Hint & Hlong & Hfloat & Hsingle & Hptr & Hundef).
+  destruct Hv; eauto.
+  eapply Hptr.
+  subst.
+  constructor; eauto.
+Qed.
+
+(** *** Address ranges *)
+
+(** For [Mem.free] we need to relate a whole range of abstract
+  pointers in the form of an [(ofs, lo, hi)] triple. *)
+
+Inductive ptrrange_inject (f: meminj): relation (block * Z * Z) :=
+  ptrrange_inject_intro b1 ofs1 b2 ofs2 sz:
+    RIntro
+      (ptr_inject f (b1, ofs1) (b2, ofs2))
+      (ptrrange_inject f) (b1, ofs1, ofs1+sz) (b2, ofs2, ofs2+sz).
+
+Hint Constructors ptrrange_inject.
+Global Existing Instance ptrrange_inject_intro.
+
+Global Instance ptrrange_inject_incr:
+  Monotonic (@ptrrange_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp ptr1 ptr2 Hptr.
+  destruct Hptr as [b1 ofs1 b2 ofs2 sz Hb].
+  constructor; eauto.
+  revert Hb.
+  apply ptr_inject_incr.
+  assumption.
+Qed.
+
+(** *** Blocks *)
+
+(** For operations that manipulate blocks, we can use the two
+  relations below: the weaker [match_block] relates two blocks
+  according to [cklr_meminj], no matter what the offset shift
+  is. The stronger [match_block_sameofs] only relates blocks that
+  correspond to one another with no shift in offset. *)
+
+Definition block_inject (f: meminj) b1 b2 :=
+  exists delta, f b1 = Some (b2, delta).
+
+Definition block_inject_sameofs (f: meminj) b1 b2 :=
+  f b1 = Some (b2, 0%Z).
+
+Hint Unfold block_inject.
+Hint Unfold block_inject_sameofs.
+
+Global Instance block_inject_incr:
+  Monotonic (@block_inject) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp b1 b2 [delta Hb].
+  transport Hb; subst.
+  eexists; eauto.
+Qed.
+
+Global Instance block_inject_sameofs_incr:
+  Monotonic (@block_inject_sameofs) (inject_incr ++> subrel).
+Proof.
+  intros p1 p2 Hp b1 b2 Hb.
+  transport Hb; subst.
+  eauto.
+Qed.
+
+(** *** Representable pointers *)
+
+(* When going from [Z] to [ptrofs] (using [Ptrofs.repr]), there is no
+  problem going also from [ptr_inject] to [ptrbits_inject]. However,
+  when converting from machine pointer related by [ptrbits_inject]
+  to abstract pointers with [Z] offsets (using [Ptrofs.unsigned]),
+  we cannot easily establish that the results are related by
+  [ptr_inject], since there may in fact be a discrepency of k·2^n
+  between the correct target pointer obtained by adding [delta] and
+  that obtained through [Ptrofs.unsigned].
+
+  The compiler proofs deal with this through a property of memory
+  injections, which ensures that representable, valid pointers in the
+  source memory correspond to representable target pointers as well.
+  Whenever a memory operation succeeds on a pointer retreived from a
+  machine value, we can then deduce that a corresponding target
+  machine pointer will be the correct one.
+
+  In the relational framework we integrate this approach by defining a
+  third relation [rptr_inject], which asserts that two (abtract, [Z])
+  pointer are related by a memory injection, *under the condition*
+  that the memory injection preserve the representability of the
+  source pointer. *)
+
+Definition rptr_preserved (f: meminj) (ptr: block * Z): Prop :=
+  let '(b, ofs) := ptr in
+  forall b' delta,
+    f b = Some (b', delta) ->
+    0 <= ofs <= Ptrofs.max_unsigned ->
+    delta >= 0 /\ 0 <= ofs + delta <= Ptrofs.max_unsigned.
+
+Definition rptr_inject (f: meminj): relation (block * Z) :=
+  rel_impl (lsat (rptr_preserved f)) (ptr_inject f).
+
+Global Instance rptr_preserved_incr:
+  Monotonic (@rptr_preserved) (inject_incr --> - ==> impl).
+Proof.
+  intros g f Hfg [b ofs] Hptr b' delta Hb Hofs.
+  eapply Hptr; eauto.
+Qed.
+
+Global Instance rptr_inject_incr:
+  Monotonic (@rptr_inject) (inject_incr ++> subrel).
+Proof.
+  unfold rptr_inject. rauto.
+Qed.
+
+(** ** Relationships between injection relations *)
+
+(** We call each lemma [foo_bar_inject] that establishes [bar_inject]
+  from a [foo_inject] premise. When this can be done in several ways,
+  we add a suffix to disambiguate. *)
+
+(** *** Consequences of [ptr_inject] *)
+
+Lemma add_repr ofs1 delta:
+  Ptrofs.repr (ofs1 + delta) =
+  Ptrofs.add (Ptrofs.repr ofs1) (Ptrofs.repr delta).
+Proof.
+    rewrite Ptrofs.add_unsigned.
+    auto using Ptrofs.eqm_samerepr,
+    Ptrofs.eqm_add, Ptrofs.eqm_unsigned_repr.
+Qed.    
+
+Lemma ptr_ptrbits_inject_repr f b1 ofs1 b2 ofs2:
+  ptr_inject f (b1, ofs1) (b2, ofs2) ->
+  ptrbits_inject f (b1, Ptrofs.repr ofs1) (b2, Ptrofs.repr ofs2).
+Proof.
+  inversion 1; subst.
+  rewrite add_repr.
+  constructor.
+  assumption.
+Qed.
+
+Lemma ptr_ptrbits_inject_unsigned f b1 ofs1 b2 ofs2:
+  ptr_inject f (b1, Ptrofs.unsigned ofs1) (b2, Ptrofs.unsigned ofs2) ->
+  ptrbits_inject f (b1, ofs1) (b2, ofs2).
+Proof.
+  intros H.
+  rewrite <- (Ptrofs.repr_unsigned ofs1), <- (Ptrofs.repr_unsigned ofs2).
+  apply ptr_ptrbits_inject_repr; eauto.
+Qed.
+
+Lemma ptr_ptrrange_inject f b1 lo1 hi1 b2 lo2 hi2:
+  RExists
+    (ptr_inject f (b1, lo1) (b2, lo2) /\ hi1 - lo1 = hi2 - lo2)
+    (ptrrange_inject f) (b1, lo1, hi1) (b2, lo2, hi2).
+Proof.
+  intros [Hlo Hhi].
+  replace hi1 with (lo1 + (hi1 - lo1))%Z by omega.
+  replace hi2 with (lo2 + (hi1 - lo1))%Z by omega.
+  constructor; eauto.
+Qed.
+
+Hint Extern 0 (RExists _ (ptrrange_inject _) _ _) =>
+  eapply ptr_ptrrange_inject : typeclass_instances.
+
+Lemma ptr_block_inject f b1 ofs1 b2 ofs2:
+  ptr_inject f (b1, ofs1) (b2, ofs2) ->
+  block_inject f b1 b2.
+Proof.
+  inversion 1.
+  eauto.
+Qed.
+
+Lemma ptr_block_sameofs_inject f b1 b2 ofs:
+  ptr_inject f (b1, ofs) (b2, ofs) ->
+  block_inject_sameofs f b1 b2.
+Proof.
+  inversion 1.
+  assert (delta = 0) by omega.
+  red.
+  congruence.
+Qed.
+
+Global Instance ptr_rptr_inject_incr:
+  Related (@ptr_inject) (@rptr_inject) (inject_incr ++> subrel).
+Proof.
+  intros f1 f2 Hf ptr1 ptr2 Hptr.
+  unfold rptr_inject in *. rauto.
+Qed.
+
+(** *** Consequences of [ptrbits_inject] *)
+
+Lemma ptrbits_block_inject f b1 ofs1 b2 ofs2:
+  ptrbits_inject f (b1, ofs1) (b2, ofs2) ->
+  block_inject f b1 b2.
+Proof.
+  inversion 1.
+  eauto.
+Qed.
+
+Lemma ptrbits_rptr_inject_unsigned f b1 ofs1 b2 ofs2:
+  RIntro
+    (ptrbits_inject f (b1, ofs1) (b2, ofs2))
+    (rptr_inject f) (b1, Ptrofs.unsigned ofs1) (b2, Ptrofs.unsigned ofs2).
+Proof.
+  intros Hptr Hinrange. red in Hinrange.
+  inv Hptr.
+  pose proof (Ptrofs.unsigned_range_2 ofs1) as Hofs1.
+  edestruct Hinrange as [Hdelta Hofs']; eauto.
+  replace (Ptrofs.unsigned (Ptrofs.add _ _)) with (Ptrofs.unsigned ofs1 + delta).
+  - constructor; eauto.
+  - rewrite Ptrofs.add_unsigned.
+    rewrite (Ptrofs.unsigned_repr delta) by xomega.
+    rewrite Ptrofs.unsigned_repr by xomega.
+    reflexivity.
+Qed.
+
+Hint Extern 1 (RIntro _ (rptr_inject _) (_, Ptrofs.unsigned _) _) =>
+  eapply ptrbits_rptr_inject_unsigned : typeclass_instances.
+
+Hint Extern 1 (RIntro _ (rptr_inject _) _ (_, Ptrofs.unsigned _)) =>
+  eapply ptrbits_rptr_inject_unsigned : typeclass_instances.
+
+(** *** Consequences of [ptrrange_inject] *)
+
+Lemma ptrrange_ptr_inject f ptr1 hi1 ptr2 hi2:
+  ptrrange_inject f (ptr1, hi1) (ptr2, hi2) ->
+  ptr_inject f ptr1 ptr2.
+Proof.
+  inversion 1.
+  assumption.
+Qed.
+
+(** *** Consequences of [block_inject] *)
+
+Lemma block_ptr_inject f b1 b2 ofs1:
+  block_inject f b1 b2 ->
+  exists ofs2, ptr_inject f (b1, ofs1) (b2, ofs2).
+Proof.
+  intros [delta H].
+  exists (ofs1 + delta)%Z.
+  constructor; eauto.
+Qed.
+
+Lemma block_ptrbits_inject f b1 b2 ofs1:
+  block_inject f b1 b2 ->
+  exists ofs2, ptrbits_inject f (b1, ofs1) (b2, ofs2).
+Proof.
+  intros [delta H].
+  exists (Ptrofs.add ofs1 (Ptrofs.repr delta)).
+  constructor; eauto.
+Qed.
+
+Lemma block_ptrrange_inject f b1 b2 lo1 hi1:
+  block_inject f b1 b2 ->
+  exists lo2 hi2, ptrrange_inject f (b1, lo1, hi1) (b2, lo2, hi2).
+Proof.
+  intros [delta H].
+  exists (lo1 + delta)%Z, ((lo1 + delta) + (hi1 - lo1))%Z.
+  pattern hi1 at 1.
+  replace hi1 with (lo1 + (hi1 - lo1))%Z by omega.
+  constructor.
+  constructor.
+  assumption.
+Qed.
+
+(** *** Consequences of [block_inject_sameofs] *)
+
+Lemma block_sameofs_ptr_inject f b1 ofs1 b2 ofs2:
+  RExists
+    (block_inject_sameofs f b1 b2 /\ ofs1 = ofs2)
+    (ptr_inject f) (b1, ofs1) (b2, ofs2).
+Proof.
+  intros [Hb Hofs].
+  red in Hb.
+  destruct Hofs.
+  pattern ofs1 at 2.
+  replace ofs1 with (ofs1 + 0)%Z by omega.
+  constructor; eauto.
+Qed.
+
+Hint Extern 0 (RExists _ (ptr_inject _) _ _) =>
+  eapply block_sameofs_ptr_inject : typeclass_instances.
+
+Lemma block_sameofs_ptrbits_inject f b1 ofs1 b2 ofs2:
+  RExists
+    (block_inject_sameofs f b1 b2 /\ ofs1 = ofs2)
+    (ptrbits_inject f) (b1, ofs1) (b2, ofs2).
+Proof.
+  intros [Hb Hofs].
+  red in Hb.
+  destruct Hofs.
+  pattern ofs1 at 2.
+  replace ofs1 with (Ptrofs.add ofs1 (Ptrofs.repr 0%Z)).
+  - constructor; eauto.
+  - change (Ptrofs.repr 0) with Ptrofs.zero.
+    apply Ptrofs.add_zero.
+Qed.
+
+Hint Extern 0 (RExists _ (ptrbits_inject _) _ _) =>
+  eapply block_sameofs_ptrbits_inject : typeclass_instances.
+
+Lemma block_sameofs_ptrrange_inject f b1 lo1 hi1 b2 lo2 hi2:
+  RExists
+    (block_inject_sameofs f b1 b2 /\ lo1 = lo2 /\ hi1 = hi2)
+    (ptrrange_inject f) (b1, lo1, hi1) (b2, lo2, hi2).
+Proof.
+  intros (Hb & Hlo & Hhi).
+  red in Hb.
+  subst.
+  eapply ptr_ptrrange_inject; split; eauto.
+  eapply block_sameofs_ptr_inject; eauto.
+Qed.
+
+Hint Extern 0 (RExists _ (ptrrange_inject _) _ _) =>
+  eapply block_sameofs_ptrrange_inject : typeclass_instances.
+
+Global Instance block_sameofs_block_inject:
+  Related (@block_inject_sameofs) (@block_inject) (inject_incr ++> subrel).
+Proof.
+  repeat rstep.
+  transitivity (block_inject x); [ | rauto]; clear.
+  inversion 1.
+  red.
+  eauto.
+Qed.
+
+(** ** Other properties *)
 
 (** *** Functionality *)
 
@@ -83,7 +523,7 @@ Lemma block_sameofs_inject_functional f b b1 b2:
   block_inject_sameofs f b b2 ->
   b1 = b2.
 Proof.
-  unfold match_block_sameofs.
+  unfold block_inject_sameofs.
   congruence.
 Qed.
 
@@ -131,158 +571,6 @@ Proof.
 Qed.
 
 (** See also [val_offset_ptr_inject] below. *)
-
-(** *** Relationships between [foo_inject] relations *)
-
-(** We call each lemma [foo_bar_inject] that establishes [bar_inject]
-  from a [foo_inject] premise. When this can be done in several ways,
-  we add a suffix to disambiguate. *)
-
-Lemma ptr_ptrbits_repr_inject f b1 ofs1 b2 ofs2:
-  ptr_inject f (b1, ofs1) (b2, ofs2) ->
-  ptrbits_inject f (b1, Ptrofs.repr ofs1) (b2, Ptrofs.repr ofs2).
-Proof.
-  inversion 1; subst.
-  rewrite add_repr.
-  constructor.
-  assumption.
-Qed.
-
-Lemma ptr_ptrbits_unsigned_inject f b1 ofs1 b2 ofs2:
-  ptr_inject f (b1, Ptrofs.unsigned ofs1) (b2, Ptrofs.unsigned ofs2) ->
-  ptrbits_inject f (b1, ofs1) (b2, ofs2).
-Proof.
-  intros H.
-  rewrite <- (Ptrofs.repr_unsigned ofs1), <- (Ptrofs.repr_unsigned ofs2).
-  apply ptr_ptrbits_repr_inject; eauto.
-Qed.
-
-Lemma ptr_ptrrange_inject f b1 lo1 hi1 b2 lo2 hi2:
-  ptr_inject f (b1, lo1) (b2, lo2) ->
-  hi1 - lo1 = hi2 - lo2 ->
-  ptrrange_inject f (b1, lo1, hi1) (b2, lo2, hi2).
-Proof.
-  intros Hlo Hhi.
-  replace hi1 with (lo1 + (hi1 - lo1))%Z by omega.
-  replace hi2 with (lo2 + (hi1 - lo1))%Z by omega.
-  constructor; eauto.
-Qed.
-
-Lemma ptr_block_inject f b1 ofs1 b2 ofs2:
-  ptr_inject f (b1, ofs1) (b2, ofs2) ->
-  block_inject f b1 b2.
-Proof.
-  inversion 1.
-  red.
-  eauto.
-Qed.
-
-Lemma ptr_block_sameofs_inject f b1 b2 ofs:
-  ptr_inject f (b1, ofs) (b2, ofs) ->
-  block_inject_sameofs f b1 b2.
-Proof.
-  inversion 1.
-  assert (delta = 0) by omega.
-  red.
-  congruence.
-Qed.
-
-Lemma ptrbits_block_inject f b1 ofs1 b2 ofs2:
-  ptrbits_inject f (b1, ofs1) (b2, ofs2) ->
-  block_inject f b1 b2.
-Proof.
-  inversion 1.
-  red.
-  eauto.
-Qed.
-
-Lemma ptrrange_ptr_inject f ptr1 hi1 ptr2 hi2:
-  ptrrange_inject f (ptr1, hi1) (ptr2, hi2) ->
-  ptr_inject f ptr1 ptr2.
-Proof.
-  inversion 1.
-  assumption.
-Qed.
-
-Lemma block_ptr_inject f b1 b2 ofs1:
-  block_inject f b1 b2 ->
-  exists ofs2, ptr_inject f (b1, ofs1) (b2, ofs2).
-Proof.
-  intros [delta H].
-  exists (ofs1 + delta)%Z.
-  constructor; eauto.
-Qed.
-
-Lemma block_ptrbits_inject f b1 b2 ofs1:
-  block_inject f b1 b2 ->
-  exists ofs2, ptrbits_inject f (b1, ofs1) (b2, ofs2).
-Proof.
-  intros [delta H].
-  exists (Ptrofs.add ofs1 (Ptrofs.repr delta)).
-  constructor; eauto.
-Qed.
-
-Lemma block_ptrrange_inject f b1 b2 lo1 hi1:
-  block_inject f b1 b2 ->
-  exists lo2 hi2, ptrrange_inject f (b1, lo1, hi1) (b2, lo2, hi2).
-Proof.
-  intros [delta H].
-  exists (lo1 + delta)%Z, ((lo1 + delta) + (hi1 - lo1))%Z.
-  pattern hi1 at 1.
-  replace hi1 with (lo1 + (hi1 - lo1))%Z by omega.
-  constructor.
-  constructor.
-  assumption.
-Qed.
-
-Lemma block_sameofs_ptr_inject f b1 ofs1 b2 ofs2:
-  block_inject_sameofs f b1 b2 ->
-  ofs1 = ofs2 ->
-  ptr_inject f (b1, ofs1) (b2, ofs2).
-Proof.
-  intros Hb Hofs.
-  red in Hb.
-  destruct Hofs.
-  pattern ofs1 at 2.
-  replace ofs1 with (ofs1 + 0)%Z by omega.
-  constructor; eauto.
-Qed.
-
-Lemma block_sameofs_ptrbits_inject f b1 ofs1 b2 ofs2:
-  block_inject_sameofs f b1 b2 ->
-  ofs1 = ofs2 ->
-  ptrbits_inject f (b1, ofs1) (b2, ofs2).
-Proof.
-  intros Hb Hofs.
-  red in Hb.
-  destruct Hofs.
-  pattern ofs1 at 2.
-  replace ofs1 with (Ptrofs.add ofs1 (Ptrofs.repr 0%Z)).
-  - constructor; eauto.
-  - change (Ptrofs.repr 0) with Ptrofs.zero.
-    apply Ptrofs.add_zero.
-Qed.
-
-Lemma block_sameofs_ptrrange_inject f b1 lo1 hi1 b2 lo2 hi2:
-  block_inject_sameofs f b1 b2 ->
-  lo1 = lo2 ->
-  hi1 = hi2 ->
-  ptrrange_inject f (b1, lo1, hi1) (b2, lo2, hi2).
-Proof.
-  intros Hb Hlo Hhi.
-  red in Hb.
-  subst.
-  eapply ptr_ptrrange_inject; eauto.
-  eapply block_sameofs_ptr_inject; eauto.
-Qed.
-
-Global Instance block_sameofs_block_inject f:
-  Related (block_inject_sameofs f) (block_inject f) subrel.
-Proof.
-  inversion 1.
-  red.
-  eauto.
-Qed.
 
 
 (** * Relational properties *)
@@ -901,197 +1189,9 @@ Qed.
 
 (** ** Comparisons *)
 
-(** *** Prerequisites *)
-
-(** Comparisons involving pointers are tricky. This is because the
-  result may be true, false, or undefined depending on whether the
-  pointers being compared are valid, and whether they're in the same
-  block. In case we actually end up comparing offsets of related
-  pointers, we have to handle the complications introduced by
-  modular arithmetic. *)
-
-(** Block comparisons are mostly straightforward to handle. *)
-
-Global Instance match_ptrbits_block_rstep f b1 b2 ofs1 ofs2:
-  RStep
-    (ptrbits_inject f (b1, ofs1) (b2, ofs2))
-    (block_inject f b1 b2) | 100.
-Proof.
-  red.
-  apply ptrbits_block_inject.
-Qed.
-
-Global Instance eq_block_rel f:
-  Monotonic
-    (@eq_block)
-    (forallr b1 b1' : block_inject f,
-     forallr b2 b2' : block_inject f,
-     sumbool_le).
-Proof.
-  intros b1 b2 Hb b1' b2' Hb'.
-  destruct (eq_block b1 b1'); repeat rstep.
-  destruct (eq_block b2 b2'); repeat rstep.
-  elim n.
-  subst.
-  eapply block_inject_functional; eauto.
-Qed.
-
-(** Offset comparisons are more involved. *)
-
-Section PTROFS_CMP.
-  Lemma ptrofs_eq_Z_eqb x y:
-    Ptrofs.eq x y = Z.eqb (Ptrofs.unsigned x) (Ptrofs.unsigned y).
-  Proof.
-    apply eq_iff_eq_true.
-    rewrite Z.eqb_eq.
-    unfold Ptrofs.eq.
-    clear; destruct (zeq _ _); intuition congruence.
-  Qed.
-
-  Lemma Z_eqb_shift x y d:
-    Z.eqb (x + d) (y + d) = Z.eqb x y.
-  Proof.
-    apply eq_iff_eq_true.
-    repeat rewrite Z.eqb_eq.
-    omega.
-  Qed.
-
-  Lemma ptrofs_ltu_Z_ltb x y:
-    Ptrofs.ltu x y = Z.ltb (Ptrofs.unsigned x) (Ptrofs.unsigned y).
-  Proof.
-    apply eq_iff_eq_true.
-    rewrite Z.ltb_lt.
-    unfold Ptrofs.ltu.
-    clear; destruct (zlt _ _); intuition congruence.
-  Qed.
-
-  Lemma Z_ltb_shift x y d:
-    Z.ltb (x + d) (y + d) = Z.ltb x y.
-  Proof.
-    apply eq_iff_eq_true.
-    repeat rewrite Z.ltb_lt.
-    omega.
-  Qed.
-
-  Definition Z_cmpb c :=
-    match c with
-      | Ceq => Z.eqb
-      | Cle => fun x y => negb (Z.ltb y x)
-      | Cgt => fun x y => Z.ltb y x
-      | Cge => fun x y => negb (Z.ltb x y)
-      | Cne => fun x y => negb (Z.eqb x y)
-      | Clt => Z.ltb
-    end.
-
-  Lemma ptrofs_cmpu_Z_cmpb c u v:
-    Ptrofs.cmpu c u v = Z_cmpb c (Ptrofs.unsigned u) (Ptrofs.unsigned v).
-  Proof.
-    destruct c; simpl;
-    rewrite ?ptrofs_eq_Z_eqb, ?ptrofs_ltu_Z_ltb;
-    reflexivity.
-  Qed.
-
-  Lemma Z_cmpb_shift c x y d:
-    Z_cmpb c (x + d) (y + d) = Z_cmpb c x y.
-  Proof.
-    destruct c;
-    simpl;
-    rewrite ?Z_eqb_shift, ?Z_ltb_shift;
-    reflexivity.
-  Qed.
-End PTROFS_CMP.
-
-Global Instance ptrofs_eq_rintro f xb1 xb2 xofs1 xofs2 yb1 yb2 yofs1 yofs2:
-  RIntro
-    (ptrbits_inject f (xb1, xofs1) (xb2, xofs2) /\
-     ptrbits_inject f (yb1, yofs1) (yb2, yofs2) /\
-     xb1 = yb1)
-    eq
-    (Ptrofs.eq xofs1 yofs1)
-    (Ptrofs.eq xofs2 yofs2).
-Proof.
-  intros (Hx & Hy & Hb).
-  inversion Hx.
-  inversion Hy.
-  subst.
-  assert (delta0 = delta) by congruence; subst.
-  rewrite Ptrofs.translate_eq.
-  reflexivity.
-Qed.
-
-Global Instance ptrofs_ltu_rintro R w m1 m2 xb1 xb2 xofs1 xofs2 yb1 yb2 yofs1 yofs2:
-  RIntro
-    (match_mem R w m1 m2 /\
-     match_ptrbits R w (xb1, xofs1) (xb2, xofs2) /\
-     match_ptrbits R w (yb1, yofs1) (yb2, yofs2) /\
-     xb1 = yb1 /\
-     Mem.weak_valid_pointer m1 xb1 (Ptrofs.unsigned xofs1) = true /\
-     Mem.weak_valid_pointer m1 xb1 (Ptrofs.unsigned yofs1) = true)
-    eq
-    (Ptrofs.ltu xofs1 yofs1)
-    (Ptrofs.ltu xofs2 yofs2).
-Proof.
-  intros (Hm & Hx & Hy & Hb & Hxv & Hyv).
-  inversion Hx.
-  inversion Hy.
-  subst.
-  assert (delta0 = delta) by congruence; subst.
-  rewrite !ptrofs_ltu_Z_ltb.
-  erewrite !cklr_weak_valid_pointer_address_inject by eauto.
-  rewrite Z_ltb_shift.
-  reflexivity.
-Qed.
-
-Global Instance ptrofs_cmpu_rintro R w m1 m2 c xb1 xb2 xofs1 xofs2 yb1 yb2 yofs1 yofs2:
-  RIntro
-    (match_mem R w m1 m2 /\
-     match_ptrbits R w (xb1, xofs1) (xb2, xofs2) /\
-     match_ptrbits R w (yb1, yofs1) (yb2, yofs2) /\
-     xb1 = yb1 /\
-     Mem.weak_valid_pointer m1 xb1 (Ptrofs.unsigned xofs1) = true /\
-     Mem.weak_valid_pointer m1 xb1 (Ptrofs.unsigned yofs1) = true)
-    eq
-    (Ptrofs.cmpu c xofs1 yofs1)
-    (Ptrofs.cmpu c xofs2 yofs2).
-Proof.
-  intros (Hm & Hx & Hy & Hb & Hxv & Hyv).
-  inversion Hx.
-  inversion Hy.
-  subst.
-  assert (delta0 = delta) by congruence; subst.
-  rewrite !ptrofs_cmpu_Z_cmpb.
-  erewrite !cklr_weak_valid_pointer_address_inject by eauto.
-  rewrite Z_cmpb_shift.
-  reflexivity.
-Qed.
-
-(** One last complication is that [Val.cmpu] and [Val.cmplu] can
-  formally accept an arbitrary [valid_pointer] predicate, but our
-  proof relies on the fact that they are actually passed
-  [Mem.valid_pointer] applied to related memories. Thankfully, we
-  can express this constraint with the relation
-  [(match_mem R p) !! Mem.valid_pointer]. We also use the following
-  instance of [RStep] to automatically fold the derived
-  [weak_valid_pointer] into the actual [Mem.weak_valid_pointer] that
-  we know things about. *)
-
-Lemma fold_weak_valid_pointer_rstep Rb m1 m2 b1 b2 ofs1 ofs2:
-  RStep
-    (Rb (Mem.weak_valid_pointer m1 b1 ofs1)
-        (Mem.weak_valid_pointer m2 b2 ofs2))
-    (Rb (Mem.valid_pointer m1 b1 ofs1 || Mem.valid_pointer m1 b1 (ofs1 - 1))
-        (Mem.valid_pointer m2 b2 ofs2 || Mem.valid_pointer m2 b2 (ofs2 - 1))).
-Proof.
-  intros H.
-  exact H.
-Qed.
-
-Hint Extern 1
-  (RStep _ (_ (Mem.valid_pointer _ _ _ || Mem.valid_pointer _ _ _)
-              (Mem.valid_pointer _ _ _ || Mem.valid_pointer _ _ _))) =>
-  eapply fold_weak_valid_pointer_rstep : typeclass_instances.
-
-(** *** Comparison operations *)
+(** Note: the relational properties for unsigned integer comparisons
+  (which potentially involve pointers) are defined in CKLR.v because
+  the properties depend in [Mem.valid_pointer] and the like. *)
 
 Global Instance val_cmp_bool_inject f:
   Monotonic
@@ -1099,79 +1199,6 @@ Global Instance val_cmp_bool_inject f:
     (- ==> Val.inject f ++> Val.inject f ++> option_le eq).
 Proof.
   unfold Val.cmp_bool. rauto.
-Qed.
-
-(*
-Local Instance ptrbits_inject_rintro f b1 b2 delta ofs1 ofs2:
-  RIntro
-    (f b1 = Some (b2, delta) /\ ofs2 = Ptrofs.add ofs1 (Ptrofs.repr delta))
-    (ptrbits_inject f) (b1, ofs1) (b2, ofs2).
-Proof.
-  intros [Hb Hofs].
-  subst. constructor. assumption.
-Qed.
-*)
-
-Global Instance val_cmpu_bool_inject R w:
-  Monotonic
-    (@Val.cmpu_bool)
-    ((match_mem R w) !! Mem.valid_pointer ++> - ==>
-     Val.inject (mi R w) ++> Val.inject (mi R w) ++> option_le eq).
-Proof.
-  intros ? ? H.
-  destruct H.
-  unfold Val.cmpu_bool.
-
-  repeat rstep.
-  - destruct b4.
-    + rdestruct_remember.
-      repeat rstep;
-      subst;
-      repeat match goal with
-        | H: _ && _ = true |- _ =>
-          apply andb_true_iff in H;
-          destruct H
-      end;
-      assumption.
-    + subst.
-      destruct (Mem.valid_pointer x b1 (Ptrofs.unsigned ofs1) &&
-                Mem.valid_pointer x b0 (Ptrofs.unsigned ofs0)) eqn:Hvp.
-      * generalize Hvp.
-        transport Hvp.
-        intros Hvp'.
-        setoid_rewrite Hvp.
-        assert (ofs2 <> ofs3).
-        {
-          apply andb_prop in Hvp.
-          apply andb_prop in Hvp'.
-          destruct Hvp, Hvp'.
-          eapply (cklr_different_pointers_inject R w) in n; eauto.
-          destruct n; try congruence.
-        }
-        destruct x0; simpl; repeat rstep;
-        rewrite Ptrofs.eq_false; eauto.
-      * rauto.
-
-  - destruct b4.
-    + subst.
-      destruct (Mem.valid_pointer x b1 (Ptrofs.unsigned ofs1) &&
-                Mem.valid_pointer x b0 (Ptrofs.unsigned ofs0)) eqn:Hvp.
-      * generalize Hvp.
-        transport Hvp.
-        intros Hvp'.
-        setoid_rewrite Hvp.
-        assert (ofs3 <> ofs2).
-        {
-          apply andb_prop in Hvp.
-          apply andb_prop in Hvp'.
-          destruct Hvp, Hvp'.
-          eapply (cklr_different_pointers_inject R w) in H7; eauto.
-          destruct H7; try congruence.
-        }
-        destruct x0; simpl; repeat rstep;
-        rewrite Ptrofs.eq_false; eauto.
-      * rauto.
-    + repeat rstep.
 Qed.
 
 Global Instance val_cmpf_bool_inject f:
@@ -1190,68 +1217,6 @@ Proof.
   unfold Val.cmpl_bool. rauto.
 Qed.
 
-Global Instance val_cmplu_bool_inject R w:
-  Monotonic
-    (@Val.cmplu_bool)
-    ((match_mem R w) !! Mem.valid_pointer ++> - ==>
-     Val.inject (mi R w) ++> Val.inject (mi R w) ++> option_le eq).
-Proof.
-  intros ? ? H.
-  destruct H.
-  unfold Val.cmplu_bool.
-
-  repeat rstep.
-  - destruct b4.
-    + rdestruct_remember.
-      repeat rstep;
-      subst;
-      repeat match goal with
-        | H: _ && _ = true |- _ =>
-          apply andb_true_iff in H;
-          destruct H
-      end;
-      assumption.
-    + subst.
-      destruct (Mem.valid_pointer x b1 (Ptrofs.unsigned ofs1) &&
-                Mem.valid_pointer x b0 (Ptrofs.unsigned ofs0)) eqn:Hvp.
-      * generalize Hvp.
-        transport Hvp.
-        intros Hvp'.
-        setoid_rewrite Hvp.
-        assert (ofs2 <> ofs3).
-        {
-          apply andb_prop in Hvp.
-          apply andb_prop in Hvp'.
-          destruct Hvp, Hvp'.
-          eapply (cklr_different_pointers_inject R w) in n; try eassumption.
-          destruct n; try congruence.
-        }
-        destruct x0; simpl; repeat rstep;
-        rewrite Ptrofs.eq_false; eauto.
-      * rauto.
-
-  - destruct b4.
-    + subst.
-      destruct (Mem.valid_pointer x b1 (Ptrofs.unsigned ofs1) &&
-                Mem.valid_pointer x b0 (Ptrofs.unsigned ofs0)) eqn:Hvp.
-      * generalize Hvp.
-        transport Hvp.
-        intros Hvp'.
-        setoid_rewrite Hvp.
-        assert (ofs2 <> ofs3).
-        {
-          apply andb_prop in Hvp.
-          apply andb_prop in Hvp'.
-          destruct Hvp, Hvp'.
-          eapply (cklr_different_pointers_inject R w) in H6; try eassumption.
-          destruct H6; try congruence.
-        }
-        destruct x0; simpl; repeat rstep;
-        rewrite Ptrofs.eq_false; eauto.
-      * rauto.
-    + repeat rstep.
-Qed.
-
 Global Instance val_of_optbool_inject f:
   Monotonic (@Val.of_optbool) (option_le eq ++> Val.inject f).
 Proof.
@@ -1262,15 +1227,6 @@ Global Instance val_cmp_inject f:
   Monotonic (@Val.cmp) (- ==> Val.inject f ++> Val.inject f ++> Val.inject f).
 Proof.
   unfold Val.cmp. rauto.
-Qed.
-
-Global Instance val_cmpu_inject R w:
-  Monotonic
-    (@Val.cmpu)
-    ((match_mem R w) !! Mem.valid_pointer ++>
-     - ==> Val.inject (mi R w) ++> Val.inject (mi R w) ++> Val.inject (mi R w)).
-Proof.
-  unfold Val.cmpu. rauto.
 Qed.
 
 Global Instance val_cmpf_inject f:
@@ -1285,15 +1241,6 @@ Global Instance val_cmpl_inject f:
     (- ==> Val.inject f ++> Val.inject f ++> option_le (Val.inject f)).
 Proof.
   unfold Val.cmpl. rauto.
-Qed.
-
-Global Instance val_cmplu_inject R w:
-  Monotonic
-    Val.cmplu
-    ((match_mem R w) !! Mem.valid_pointer ++> - ==> Val.inject (mi R w) ++>
-     Val.inject (mi R w) ++> option_le (Val.inject (mi R w))).
-Proof.
-  unfold Val.cmplu. rauto.
 Qed.
 
 Global Instance val_maskzero_bool_inject f:
