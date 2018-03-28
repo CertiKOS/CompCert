@@ -23,9 +23,9 @@ endif
 
 DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
-  cparser cparser/validator
+  cparser cparser/validator cklr
 
-RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
+RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser cklr
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) -R coqrel coqrel
 
@@ -69,6 +69,13 @@ COMMON=Errors.v AST.v Linking.v \
   LanguageInterface.v CallconvAlgebra.v ModuleSemantics.v \
   Separation.v \
   CKLR.v Valuesrel.v \
+
+# Compcert Kripke Logical Relations
+
+CKLR=\
+  CKLRAlgebra.v \
+  Extends.v \
+  Inject.v InjectFootprint.v InjectNeutral.v \
 
 # Back-end modules (in backend/, $(ARCH)/)
 
@@ -126,7 +133,7 @@ DRIVER=Compopts.v Compiler.v Complements.v
 
 # All source files
 
-FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
+FILES=$(VLIB) $(COMMON) $(CKLR) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
   $(PARSERVALIDATOR) $(PARSER)
 
 # Generated source files
