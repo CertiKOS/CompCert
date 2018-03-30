@@ -218,47 +218,58 @@ Next Obligation. (* Mem.loadbytes *)
 Qed.
 
 Next Obligation. (* Mem.storebytes *)
-  intros _ _ _ [f m1 m2 Hm] _ _ [b1 ofs1 b2 delta Hptr] vs1 vs2 Hvs.
-  simpl in *. red.
-  destruct (Mem.storebytes m1 b1 ofs1 vs1) as [m1'|] eqn:Hm1'; [|rauto].
-  edestruct Mem.storebytes_mapped_inject as (m2' & Hm2' & Hm'); eauto.
-  rewrite Hm2'. repeat rstep.
-  exists (injpw f m1' m2'); split; repeat rstep; eauto.
-  constructor.
-  - red. eauto using Mem.perm_storebytes_2.
-  - eapply Mem.storebytes_unchanged_on; eauto.
-    unfold loc_unmapped. congruence.
-  - eapply Mem.storebytes_unchanged_on; eauto.
-    unfold loc_out_of_reach.
-    intros ofs Hofs H.
-    eelim H; eauto.
-    eapply Mem.perm_cur_max.
-    eapply Mem.perm_implies; [ | eapply perm_any_N].
-    eapply Mem.storebytes_range_perm; eauto.
-    red in Hvs. rewrite Hvs.
-    xomega.
-  - reflexivity.
-  - apply inject_separated_refl.
-Qed.
-
-Next Obligation. (* Mem.storebytes (empty) *)
-  intros _ _ _ [f m1 m2 Hm] [b1 ofs1] [b2 ofs2] _ _ _ [ ].
+  intros _ _ _ [f m1 m2 Hm] [b1 ofs1] [b2 ofs2] Hptr vs1 vs2 Hvs.
   simpl. red.
-  destruct (Mem.storebytes m1 b1 ofs1 nil) as [m1'|] eqn:Hm1'; [|rauto].
-  destruct (Mem.range_perm_storebytes m2 b2 ofs2 nil) as (m2' & Hm2').
-  { intros ofs. simpl. xomega. }
-  rewrite Hm2'.
-  assert (Mem.inject f m1' m2') by eauto using Mem.storebytes_empty_inject.
-  repeat rstep.
-  exists (injpw f m1' m2'); split; repeat rstep; eauto.
-  constructor.
-  - red. eauto using Mem.perm_storebytes_2.
-  - eapply Mem.storebytes_unchanged_on; eauto.
-    simpl. intro. xomega.
-  - eapply Mem.storebytes_unchanged_on; eauto.
-    simpl. intro. xomega.
-  - reflexivity.
-  - apply inject_separated_refl.
+  destruct (Mem.storebytes m1 _ _ _) as [m1'|] eqn:Hm1'; [|constructor].
+  assert (vs1 = nil \/ vs1 <> nil) as [Hvs1|Hvs1].
+  { destruct vs1; constructor; congruence. }
+  - subst. inv Hvs.
+    edestruct (Mem.range_perm_storebytes m2 b2 ofs2 nil) as [m2' Hm2'].
+    {
+      intros ofs. simpl. xomega.
+    }
+    rewrite Hm2'.
+    constructor.
+    exists (injpw f m1' m2'); split.
+    + constructor; eauto.
+      * red. eauto using Mem.perm_storebytes_2.
+      * eapply Mem.storebytes_unchanged_on; eauto.
+        simpl. intro. xomega.
+      * eapply Mem.storebytes_unchanged_on; eauto.
+        simpl. intro. xomega.
+      * apply inject_separated_refl.
+    + constructor.
+      eapply Mem.storebytes_empty_inject; eauto.
+  - assert (ptr_inject f (b1, ofs1) (b2, ofs2)) as Hptr'.
+    {
+      destruct Hptr as [Hptr|Hptr]; eauto.
+      inversion Hptr as [_ _ [xb1 xofs1 xb2 delta Hb]]; clear Hptr; subst.
+      unfold ptrbits_unsigned.
+      erewrite Mem.address_inject; eauto.
+      apply Mem.storebytes_range_perm in Hm1'.
+      eapply Hm1'.
+      destruct vs1; try congruence.
+      simpl. xomega.
+    }
+    inv Hptr'.
+    edestruct Mem.storebytes_mapped_inject as (m2' & Hm2' & Hm'); eauto.
+    rewrite Hm2'. constructor.
+    exists (injpw f m1' m2'); split; repeat rstep; eauto.
+    constructor.
+    + red. eauto using Mem.perm_storebytes_2.
+    + eapply Mem.storebytes_unchanged_on; eauto.
+      unfold loc_unmapped. congruence.
+    + eapply Mem.storebytes_unchanged_on; eauto.
+      unfold loc_out_of_reach.
+      intros ofs Hofs H.
+      eelim H; eauto.
+      eapply Mem.perm_cur_max.
+      eapply Mem.perm_implies; [ | eapply perm_any_N].
+      eapply Mem.storebytes_range_perm; eauto.
+      red in Hvs. rewrite Hvs.
+      xomega.
+    + reflexivity.
+    + apply inject_separated_refl.
 Qed.
 
 Next Obligation. (* Mem.perm *)

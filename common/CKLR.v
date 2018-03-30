@@ -90,14 +90,8 @@ Record cklr :=
     cklr_storebytes:
       Monotonic
         (@Mem.storebytes)
-        ([] match_mem ++> % ptr_inject @@ [mi] ++>
+        ([] match_mem ++> % rptr_inject @@ [mi] ++>
          k1 list_rel (memval_inject @@ [mi]) ++>
-         k1 option_le (<> match_mem));
-
-    cklr_storebytes_empty:
-      Monotonic
-        (@Mem.storebytes)
-        ([] match_mem ++> % k ⊤ ++> k (req nil) ++>
          k1 option_le (<> match_mem));
 
     cklr_perm:
@@ -114,11 +108,13 @@ Record cklr :=
       match_mem w m1 m2 ->
       Mem.meminj_no_overlap (mi w) m1;
 
-    cklr_representable w m1 m2 b1 ofs1:
+    cklr_representable w m1 m2 b1 ofs1 b2 delta:
       match_mem w m1 m2 ->
       Mem.perm m1 b1 ofs1 Max Nonempty \/
       Mem.perm m1 b1 (ofs1 - 1) Max Nonempty ->
-      rptr_preserved (mi w) (b1, ofs1);
+      mi w b1 = Some (b2, delta) ->
+      0 <= ofs1 <= Ptrofs.max_unsigned ->
+      delta >= 0 /\ 0 <= ofs1 + delta <= Ptrofs.max_unsigned;
 
     (* similar to Mem.aligned_area_inject for memory injections.
        Needed by Clight assign_of (By_copy) and memcpy. *)
@@ -162,7 +158,7 @@ Local Existing Instances cklr_free.
 Local Existing Instances cklr_load.
 Local Existing Instances cklr_store.
 Local Existing Instances cklr_loadbytes.
-Local Existing Instances cklr_storebytes.
+Global Existing Instances cklr_storebytes.
 Local Existing Instances cklr_perm.
 Global Existing Instances cklr_valid_block.
 
@@ -234,18 +230,38 @@ Qed.
   relational properties of most memory operations so that they only
   require [match_rptr] for ther hypotheses. *)
 
-Lemma rptr_ptr_inject R w m1 m2 b1 ofs1 b2 ofs2:
+Lemma rptr_ptr_inject R w m1 m2 b1 ofs1 b2 ofs2 k pe:
+  match_mem R w m1 m2 ->
+  rptr_inject (mi R w) (b1, ofs1) (b2, ofs2) ->
+  Mem.perm m1 b1 ofs1 k pe \/ Mem.perm m1 b1 (ofs1 - 1) k pe ->
+  ptr_inject (mi R w) (b1, ofs1) (b2, ofs2).
+Proof.
+  intros Hm Hptr Hptr1.
+  destruct Hptr; eauto.
+  inv H. destruct x as [xb1 obits1], y as [xb2 obits2].
+  inv H0. inv H1. inv H2. unfold ptrbits_unsigned.
+  replace (Ptrofs.unsigned (Ptrofs.add _ _)) with (Ptrofs.unsigned obits1 + delta).
+  - constructor; eauto.
+  - pose proof (Ptrofs.unsigned_range_2 obits1).
+    edestruct (cklr_representable R w m1 m2 b1 (Ptrofs.unsigned obits1)); eauto.
+    + destruct k;
+      intuition eauto using Mem.perm_implies, Mem.perm_cur_max, perm_any_N.
+    + rewrite Ptrofs.add_unsigned.
+      rewrite (Ptrofs.unsigned_repr delta) by xomega.
+      rewrite Ptrofs.unsigned_repr by xomega.
+      reflexivity.
+Qed.
+
+Lemma rptr_ptr_inject_weak_valid_pointer R w m1 m2 b1 ofs1 b2 ofs2:
   match_mem R w m1 m2 ->
   rptr_inject (mi R w) (b1, ofs1) (b2, ofs2) ->
   Mem.weak_valid_pointer m1 b1 ofs1 = true ->
   ptr_inject (mi R w) (b1, ofs1) (b2, ofs2).
 Proof.
   intros Hm Hptr Hptr1.
-  apply Hptr. red.
-  eapply cklr_representable; eauto.
   apply Mem.weak_valid_pointer_spec in Hptr1.
   rewrite !Mem.valid_pointer_nonempty_perm in Hptr1.
-  intuition eauto using Mem.perm_implies, Mem.perm_cur_max.
+  eapply rptr_ptr_inject; eauto.
 Qed.
 
 Lemma rptr_ptr_inject_valid_access R w m1 m2 b1 ofs1 b2 ofs2 chunk pe:
@@ -256,11 +272,18 @@ Lemma rptr_ptr_inject_valid_access R w m1 m2 b1 ofs1 b2 ofs2 chunk pe:
 Proof.
   intros Hm Hptr Hptr1.
   eapply rptr_ptr_inject; eauto.
-  apply Mem.valid_pointer_implies.
-  apply Mem.valid_pointer_nonempty_perm.
-  eapply Mem.valid_access_perm in Hptr1.
-  eapply Mem.perm_implies; eauto.
-  constructor.
+  eapply Mem.valid_access_perm with (k := Cur) in Hptr1.
+  eauto.
+Qed.
+
+Lemma rptr_ptr_inject_perm R w m1 m2 b1 ofs1 b2 ofs2 pe k:
+  match_mem R w m1 m2 ->
+  rptr_inject (mi R w) (b1, ofs1) (b2, ofs2) ->
+  Mem.perm m1 b1 ofs1 k pe ->
+  ptr_inject (mi R w) (b1, ofs1) (b2, ofs2).
+Proof.
+  intros Hm Hptr Hptr1.
+  eapply rptr_ptr_inject; eauto.
 Qed.
 
 (** ** Properties of derived memory operations *)
@@ -382,11 +405,7 @@ Global Instance cklr_perm_rptr R w:
 Proof.
   intros m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr k p.
   simpl. intros H. generalize H. repeat rstep.
-  eapply Hptr. red.
-  eapply cklr_representable; eauto.
-  left.
-  eapply Mem.perm_implies with (p1 := p); [ | constructor].
-  destruct k; eauto using Mem.perm_cur_max.
+  eapply rptr_ptr_inject_perm; eauto.
 Qed.
 
 Global Instance cklr_load_rptr R:
@@ -440,31 +459,6 @@ Proof.
         apply Z.divide_1_l.
 Qed.
 
-Global Instance cklr_storebytes_rptr R:
-  Monotonic
-    (@Mem.storebytes)
-    ([] match_mem R ++> % rptr_inject @@ [mi R] ++>
-     k1 list_rel (memval_inject @@ [mi R]) ++>
-     k1 option_le (<> match_mem R)).
-Proof.
-  intros w m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr vs1 vs2 Hvs.
-  simpl.
-  destruct vs1 as [ | v1 vs1].
-  - inv Hvs.
-    pose proof (cklr_storebytes_empty R).
-    rauto.
-  - destruct (Mem.storebytes m1 b1 ofs1 _) eqn:H; [ | rauto].
-    rewrite <- H.
-    apply Mem.storebytes_range_perm in H.
-    eapply rptr_ptr_inject_valid_access in Hptr; eauto.
-    + rauto.
-    + split.
-      * instantiate (2 := Mint8unsigned). simpl.
-        intros ofs Hofs. eapply H. simpl length. xomega.
-      * simpl.
-        apply Z.divide_1_l.
-Qed.
-
 Global Instance valid_pointer_match R w:
   Monotonic
     (@Mem.valid_pointer)
@@ -473,7 +467,8 @@ Proof.
   intros m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr.
   simpl.
   destruct (Mem.valid_pointer m1 _ _) eqn:H1.
-  - eapply rptr_ptr_inject in Hptr; eauto using Mem.valid_pointer_implies.
+  - eapply rptr_ptr_inject_weak_valid_pointer in Hptr;
+      eauto using Mem.valid_pointer_implies.
     transport H1.
     rewrite H1.
     reflexivity.
@@ -488,7 +483,7 @@ Proof.
   intros m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr.
   simpl.
   destruct (Mem.weak_valid_pointer m1 _ _) eqn:Hwvp1.
-  - eapply rptr_ptr_inject in Hptr; eauto.
+  - eapply rptr_ptr_inject_weak_valid_pointer in Hptr; eauto.
     transport Hwvp1.
     rewrite Hwvp1.
     reflexivity.
@@ -531,9 +526,9 @@ Lemma cklr_different_pointers_inject R w:
 Proof.
   intros until ofs2'.
   intros Hm Hb Hptr1 Hptr2 Hptr1' Hptr2'.
-  eapply ptrbits_rptr_inject_unsigned, rptr_ptr_inject in Hptr1';
+  eapply ptrbits_rptr_inject_unsigned, rptr_ptr_inject_weak_valid_pointer in Hptr1';
     eauto using Mem.valid_pointer_implies.
-  eapply ptrbits_rptr_inject_unsigned, rptr_ptr_inject in Hptr2';
+  eapply ptrbits_rptr_inject_unsigned, rptr_ptr_inject_weak_valid_pointer in Hptr2';
     eauto using Mem.valid_pointer_implies.
   eapply Mem.valid_pointer_nonempty_perm in Hptr1.
   eapply Mem.valid_pointer_nonempty_perm in Hptr2.

@@ -24,6 +24,17 @@ Proof.
   reflexivity.
 Qed.
 
+Global Instance rptr_inject_corefl:
+  Coreflexive (rptr_inject inject_id).
+Proof.
+  intros ptr1 ptr2 [Hptr|Hptr].
+  - eapply coreflexivity; eauto.
+  - destruct Hptr as [_ _ [b1 ofs1 b2 delta Hb]].
+    inv Hb.
+    rewrite Ptrofs.add_zero.
+    reflexivity.
+Qed.
+
 Global Instance ptrrange_inject_corefl:
   Coreflexive (ptrrange_inject inject_id).
 Proof.
@@ -111,10 +122,6 @@ Next Obligation.
   edestruct Mem.storebytes_within_extends as (m2' & Hm2' & Hm'); eauto.
   rewrite Hm2'. constructor. exists tt; split; rauto.
 Qed.
-
-Next Obligation.
-  (* storebytes_empty can't be proved from extends properties *)
-Admitted.
 
 Next Obligation.
   intros [ ] m1 m2 Hm [b1 ofs1] p2 Hp p k H.

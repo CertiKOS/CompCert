@@ -180,6 +180,45 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma ptrbits_inject_compose f g:
+  eqrel
+    (ptrbits_inject (compose_meminj f g))
+    (rel_compose (ptrbits_inject f) (ptrbits_inject g)).
+Proof.
+  split.
+  - destruct 1.
+    unfold compose_meminj in H.
+    destruct (f b1) as [[bI delta1I] | ] eqn:H1I; [ | discriminate].
+    exists (bI, Ptrofs.add ofs1 (Ptrofs.repr delta1I)); split; eauto.
+    destruct (g bI) as [[xb2 deltaI2] | ] eqn:HI2; [ | discriminate].
+    inv H.
+    rewrite add_repr.
+    rewrite <- Ptrofs.add_assoc.
+    constructor; eauto.
+  - intros p1 p3 (p2 & H12 & H23).
+    destruct H12 as [b1 ofs1 b2 delta12].
+    inv H23.
+    rewrite Ptrofs.add_assoc.
+    rewrite <- add_repr.
+    constructor.
+    unfold compose_meminj. rewrite H, H3.
+    reflexivity.
+Qed.
+
+Lemma rptr_inject_compose f g:
+  subrel
+    (rptr_inject (compose_meminj f g))
+    (rel_compose (rptr_inject f) (rptr_inject g)).
+Proof.
+  unfold rptr_inject.
+  intros p1 p3 Hp.
+  rewrite ptr_inject_compose in Hp.
+  rewrite ptrbits_inject_compose in Hp.
+  destruct Hp as [(p2 & H12 & H23) | [q1 q3 (q2 & H12 & H23)]].
+  - exists p2; split; rauto.
+  - exists (ptrbits_unsigned q2); split; rauto.
+Qed.
+
 Lemma ptrrange_inject_compose f g:
   eqrel
     (ptrrange_inject (compose_meminj f g))
@@ -315,7 +354,7 @@ Qed.
 Next Obligation.
   intros [w12 w23] m1 m3 (m2 & Hm12 & Hm23) [b1 o1] [b3 o3] Hptr v1 v3 Hv.
   unfold k1, klr_pullw in *. simpl in *.
-  apply ptr_inject_compose in Hptr. destruct Hptr as ([b2 o2] & Hp12 & Hp23).
+  apply rptr_inject_compose in Hptr. destruct Hptr as ([b2 o2] & Hp12 & Hp23).
   rewrite memval_inject_compose in Hv. apply list_rel_compose in Hv.
   destruct Hv as (v2 & Hv12 & Hv23).
   destruct (Mem.storebytes m1 b1 o1 v1) as [m1'|] eqn:H1; [|constructor].
@@ -324,21 +363,6 @@ Next Obligation.
   rewrite H1. constructor.
   exists (w12', w23'); split; [rauto | ].
   eexists; split; try rauto.
-Qed.
-
-Next Obligation.
-  intros [w12 w23] m1 m3 (m2 & Hm12 & Hm23) [b1 o1] [b3 o3] _ _ _ [ ].
-  red. simpl in *.
-  destruct (Mem.storebytes m1 b1 o1 nil) as [m1'|] eqn:H1; [ | constructor].
-  pose proof (cklr_storebytes_empty R1 w12 m1 m2 Hm12 (b1, o1) (b1, o1) rauto).
-  simpl in *.
-  transport H1.
-  pose proof (cklr_storebytes_empty R2).
-  transport H0.
-  rewrite H3.
-  constructor.
-  exists (w12', w23'); split; [rauto | simpl].
-  eexists; split; rauto.
 Qed.
 
 Next Obligation.
@@ -368,9 +392,9 @@ Next Obligation. (* no overlap *)
   destruct (mi R2 w0 bx) as [[bz dbz2] | ] eqn:Hbx2; [ | discriminate].
   inv Hb.
   assert (Mem.perm mx ax (oa + da1x) Max Nonempty).
-  { revert Hoa. repeat rstep. intros _. constructor; eauto. }
+  { revert Hoa. repeat rstep. left. constructor; eauto. }
   assert (Mem.perm mx bx (ob + db1x) Max Nonempty).
-  { revert Hob. repeat rstep. intros _. constructor; eauto. }
+  { revert Hob. repeat rstep. left. constructor; eauto. }
   edestruct (cklr_no_overlap R1 w m1 mx); eauto.
   - edestruct (cklr_no_overlap R2 w0 mx m2); eauto.
     rewrite !Z.add_assoc.
@@ -394,9 +418,9 @@ Next Obligation. (* representable *)
   assert (dI2 >= 0 /\ 0 <= (ofs1 + d1I) + dI2 <= Ptrofs.max_unsigned).
   { eapply (cklr_representable R2); eauto.
     revert H0. repeat rstep.
-    - intros _.
+    - left.
       constructor; eauto.
-    - intros _.
+    - left.
       replace (ofs1 + d1I -1) with (ofs1 - 1 + d1I) by xomega.
       constructor; eauto. }
   xomega.
@@ -413,7 +437,7 @@ Next Obligation. (* aligned_area_inject *)
   eapply (cklr_aligned_area_inject R2); eauto.
   - intros x Hx.
     assert (Mem.perm m b (x - d1I) Cur Nonempty). { eapply H3. xomega. }
-    revert H. repeat rstep. intros _.
+    revert H. repeat rstep. left.
     replace x with (x - d1I + d1I) at 2 by xomega.
     constructor; eauto.
   - eapply (cklr_aligned_area_inject R1); eauto.
@@ -433,12 +457,12 @@ Next Obligation. (* disjoint_or_equal_inject *)
   eapply (cklr_disjoint_or_equal_inject R2); eauto.
   - intros x Hx.
     assert (Mem.perm m b1 (x - d1) Max Nonempty). { eapply H2. xomega. }
-    revert H. repeat rstep. intros _.
+    revert H. repeat rstep. left.
     replace x with (x - d1 + d1) at 2 by xomega.
     constructor; eauto.
   - intros x Hx.
     assert (Mem.perm m b2 (x - d2) Max Nonempty). { eapply H3. xomega. }
-    revert H. repeat rstep. intros _.
+    revert H. repeat rstep. left.
     replace x with (x - d2 + d2) at 2 by xomega.
     constructor; eauto.
   - eapply (cklr_disjoint_or_equal_inject R1); eauto.

@@ -228,33 +228,26 @@ Qed.
   machine value, we can then deduce that a corresponding target
   machine pointer will be the correct one.
 
+  We introduce are relation [rptr_inject] 
+
   In the relational framework we integrate this approach by defining a
   third relation [rptr_inject], which asserts that two (abtract, [Z])
   pointer are related by a memory injection, *under the condition*
   that the memory injection preserve the representability of the
   source pointer. *)
 
-Definition rptr_preserved (f: meminj) (ptr: block * Z): Prop :=
-  let '(b, ofs) := ptr in
-  forall b' delta,
-    f b = Some (b', delta) ->
-    0 <= ofs <= Ptrofs.max_unsigned ->
-    delta >= 0 /\ 0 <= ofs + delta <= Ptrofs.max_unsigned.
+Definition ptrbits_unsigned: block * ptrofs -> block * Z :=
+  fun '(b, ofs) => (b, Ptrofs.unsigned ofs).
 
 Definition rptr_inject (f: meminj): relation (block * Z) :=
-  rel_impl (lsat (rptr_preserved f)) (ptr_inject f).
-
-Global Instance rptr_preserved_incr:
-  Monotonic (@rptr_preserved) (inject_incr --> - ==> impl).
-Proof.
-  intros g f Hfg [b ofs] Hptr b' delta Hb Hofs.
-  eapply Hptr; eauto.
-Qed.
+  ptr_inject f \/ (ptrbits_inject f) !! ptrbits_unsigned.
 
 Global Instance rptr_inject_incr:
   Monotonic (@rptr_inject) (inject_incr ++> subrel).
 Proof.
-  unfold rptr_inject. rauto.
+  unfold rptr_inject.
+  assert (Params (@rel_push) 3) by constructor.
+  rauto.
 Qed.
 
 (** ** Relationships between injection relations *)
@@ -328,8 +321,7 @@ Qed.
 Global Instance ptr_rptr_inject_incr:
   Related (@ptr_inject) (@rptr_inject) (inject_incr ++> subrel).
 Proof.
-  intros f1 f2 Hf ptr1 ptr2 Hptr.
-  unfold rptr_inject in *. rauto.
+  unfold rptr_inject. rauto.
 Qed.
 
 (** *** Consequences of [ptrbits_inject] *)
@@ -347,16 +339,10 @@ Lemma ptrbits_rptr_inject_unsigned f b1 ofs1 b2 ofs2:
     (ptrbits_inject f (b1, ofs1) (b2, ofs2))
     (rptr_inject f) (b1, Ptrofs.unsigned ofs1) (b2, Ptrofs.unsigned ofs2).
 Proof.
-  intros Hptr Hinrange. red in Hinrange.
-  inv Hptr.
-  pose proof (Ptrofs.unsigned_range_2 ofs1) as Hofs1.
-  edestruct Hinrange as [Hdelta Hofs']; eauto.
-  replace (Ptrofs.unsigned (Ptrofs.add _ _)) with (Ptrofs.unsigned ofs1 + delta).
-  - constructor; eauto.
-  - rewrite Ptrofs.add_unsigned.
-    rewrite (Ptrofs.unsigned_repr delta) by xomega.
-    rewrite Ptrofs.unsigned_repr by xomega.
-    reflexivity.
+  intros H.
+  fold (ptrbits_unsigned (b1, ofs1)).
+  fold (ptrbits_unsigned (b2, ofs2)).
+  unfold rptr_inject. rauto.
 Qed.
 
 Hint Extern 1 (RIntro _ (rptr_inject _) (_, Ptrofs.unsigned _) _) =>
