@@ -327,11 +327,8 @@ Qed.
 Lemma injp_inj_injp:
   subcklr injp (injp @ inj @ injp).
 Proof.
-  exists (fun '(injpw f m1 m4) =>
-            (injpw (meminj_dom f) m1 m1, (meminj_dom f, injpw f m1 m4))).
-  exists (fun '(injpw f12' m1' m2', (f23', injpw f34' m3' m4')) =>
-            (injpw (compose_meminj f12' (compose_meminj f23' f34')) m1' m4')).
   intros _ _ _ [f m1 m4 Hm14].
+  exists (injpw (meminj_dom f) m1 m1, (meminj_dom f, injpw f m1 m4)).
   simpl.
   repeat apply conj.
   - exists m1; split.
@@ -347,6 +344,7 @@ Proof.
     destruct Hm34' as [f34 m3' m4' Hm34'].
     inv H12.
     inv H34.
+    exists (injpw (compose_meminj f12 (compose_meminj f23 f34)) m1' m4').
     repeat apply conj.
     + constructor; eauto.
       eauto using Mem.inject_compose.

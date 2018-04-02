@@ -542,7 +542,7 @@ Context (ccB: callconv liB1 liB2).
 
 Record fsim_properties (L1: semantics liA1 liB1) (L2: semantics liA2 liB2)
                        (index: Type) (order: index -> index -> Prop)
-                       (match_states: world ccB -> index -> state L1 -> state L2 -> Prop) : Prop := {
+                       (match_states: ccworld ccB -> index -> state L1 -> state L2 -> Prop) : Prop := {
     fsim_order_wf: well_founded order;
     fsim_match_initial_states:
       forall w q1 q2, match_query ccB w q1 q2 ->
@@ -584,7 +584,7 @@ Arguments fsim_properties : clear implicits.
 Inductive forward_simulation (L1 L2: semantics _ _) : Prop :=
   Forward_simulation (index: Type)
                      (order: index -> index -> Prop)
-                     (match_states: world ccB -> index -> state L1 -> state L2 -> Prop)
+                     (match_states: ccworld ccB -> index -> state L1 -> state L2 -> Prop)
                      (props: fsim_properties L1 L2 index order match_states).
 
 Arguments Forward_simulation {L1 L2 index} order match_states props.
@@ -618,7 +618,7 @@ Variable L2: semantics liA2 liB2.
 Hypothesis public_preserved:
   forall id, Senv.public_symbol (symbolenv L2) id = Senv.public_symbol (symbolenv L1) id.
 
-Variable match_states: world ccB -> state L1 -> state L2 -> Prop.
+Variable match_states: ccworld ccB -> state L1 -> state L2 -> Prop.
 
 Hypothesis match_initial_states:
   forall w q1 q2, match_query ccB w q1 q2 ->
@@ -873,7 +873,7 @@ Proof.
   set (ff_index := (index' * index)%type).
   set (ff_order := lex_ord (clos_trans _ order') order).
   set (ff_match_states := fun w (i: ff_index) (s1: state L1) (s3: state L3) =>
-                             exists s2, match_states (comp_fst w) (snd i) s1 s2 /\ match_states' (comp_snd w) (fst i) s2 s3).
+                             exists s2, match_states (fst w) (snd i) s1 s2 /\ match_states' (snd w) (fst i) s2 s3).
   apply Forward_simulation with _ ff_order ff_match_states; constructor.
 - (* well founded *)
   unfold ff_order. apply wf_lex_ord. apply wf_clos_trans.
@@ -1001,7 +1001,7 @@ Context {liA1 liA2} (ccA: callconv liA1 liA2).
 Context {liB1 liB2} (ccB: callconv liB1 liB2).
 Context (L: semantics liA1 liB1).
 
-Definition proj_state: Type := world ccB * state L.
+Definition proj_state: Type := ccworld ccB * state L.
 
 Inductive proj_step: genvtype L -> proj_state -> trace -> proj_state -> Prop :=
   proj_step_intro ge w s t s':

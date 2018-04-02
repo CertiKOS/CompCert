@@ -221,6 +221,24 @@ Proof.
   destruct (f b); eauto.
 Qed.
 
+Lemma meminj_dom_flat_inj nb:
+  meminj_dom (Mem.flat_inj nb) = Mem.flat_inj nb.
+Proof.
+  apply functional_extensionality; intros b.
+  unfold meminj_dom, Mem.flat_inj.
+  destruct Block.lt_dec; eauto.
+Qed.
+
+Lemma block_inject_dom f b1 b2:
+  block_inject f b1 b2 ->
+  block_inject (meminj_dom f) b1 b1.
+Proof.
+  unfold meminj_dom.
+  intros (delta & Hb).
+  exists 0.
+  rewrite Hb; eauto.
+Qed.
+
 Lemma val_inject_dom f v1 v2:
   Val.inject f v1 v2 ->
   Val.inject (meminj_dom f) v1 v1.
@@ -310,15 +328,14 @@ Qed.
 Lemma inj_inj:
   subcklr inj (inj @ inj).
 Proof.
-  exists (fun f => (meminj_dom f, f)).
-  exists (fun '(f12', f23') => compose_meminj f12' f23').
-  simpl.
   intros f m1 m2 Hm.
+  exists (meminj_dom f, f); simpl.
   repeat apply conj.
   - exists m1; split; eauto using mem_inject_dom.
   - rewrite meminj_dom_compose.
     reflexivity.
   - intros [f12' f23'] m1' m3' (m2' & Hm12' & Hm23') [Hf12' Hf23']. simpl in *.
+    exists (compose_meminj f12' f23').
     repeat apply conj.
     + eapply Mem.inject_compose; eauto.
     + rewrite <- (meminj_dom_compose f). rauto.
