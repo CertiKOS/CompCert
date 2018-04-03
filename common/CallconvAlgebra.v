@@ -797,6 +797,57 @@ Proof.
     elim n. eapply Mem.valid_block_inject_1; eauto.
 Qed.
 
+Lemma match_c_query_injn_l nb q1 q2:
+  match_c_query injn nb q1 q2 ->
+  match_c_query injn nb q1 q1.
+Proof.
+  intros Hq.
+  apply match_c_query_injn_inj in Hq.
+  destruct Hq as (Hq & Hnb & _).
+  apply match_c_query_injn_inj.
+  split; eauto.
+  rewrite <- meminj_dom_flat_inj.
+  eapply match_c_query_dom; eauto.
+Qed.
+
+Lemma cc_injt_inj:
+  ccref
+    (cc_c injn @ cc_c inj)
+    (cc_c injn @ cc_c_tr inj @ cc_c injn @ cc_c inj).
+Proof.
+  intros [nb f] q1 q3 (q2 & Hq12 & Hq23). simpl in * |- .
+  exists (nb, (Mem.flat_inj nb, (nb, f))). split.
+  - pose proof (match_c_query_injn_l nb q1 q2 Hq12) as Hq11.
+    repeat (eexists; split); cbn [fst snd].
+    + eauto.
+    + apply match_c_query_injn_inj in Hq11 as (Hq11 & Hnb & _).
+      constructor; eauto.
+      rewrite Hnb. reflexivity.
+    + eapply Hq12.
+    + assumption.
+  - intros r1 r5 (r2 & Hr12 & r3 & Hr23 & r4 & Hr34 & Hr45).
+    cbn [fst snd] in *.
+    exists r2; split; eauto.
+    clear r1 Hr12. destruct r2 as [v2 m2].
+    destruct r3 as [v3 m3], Hr23 as (f23 & Hf23 & Hv23 & Hm23).
+    destruct r4 as [v4 m4], Hr34 as (nb3 & Hnb3 & Hv34 & Hm34).
+    destruct r5 as [v5 r5], Hr45 as (f45 & Hf45 & Hv45 & Hm45).
+    simpl in * |- .
+    exists (compose_meminj f23 (compose_meminj (Mem.flat_inj nb3) f45)).
+    split.
+    + simpl.
+      destruct Hq23.
+      erewrite <- (compose_flat_inj f); eauto.
+      erewrite <- (compose_flat_inj f); eauto.
+      apply match_c_query_injn_inj in Hq12 as (Hq11 & Hnb1 & Hnb2).
+      rewrite Hnb2.
+      rauto.
+    + split; cbn [fst snd].
+      * repeat eapply Values.val_inject_compose; eauto.
+      * destruct Hm34.
+        repeat eapply Mem.inject_compose; eauto.
+Qed.
+
 Lemma cc_injt_injp:
   ccref
     ((cc_c injn & cc_id) @ cc_c injp)
