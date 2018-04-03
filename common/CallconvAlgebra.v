@@ -335,6 +335,46 @@ End JOIN.
 
 Infix "+" := cc_join : cc_scope.
 
+(** ** Superposition *)
+
+(** In addition to the union, we can define a superposition operator
+  which requires that both calling conventions are satisfied. This is
+  particularly useful with [cc_id] to enforce invariants. *)
+
+Definition cc_both {liA liB} (cc1 cc2: callconv liA liB): callconv liA liB :=
+  {|
+    ccworld := ccworld cc1 * ccworld cc2;
+    match_senv := fun '(w1, w2) => match_senv cc1 w1 /\ match_senv cc2 w2;
+    match_query := fun '(w1, w2) => match_query cc1 w1 /\ match_query cc2 w2;
+    match_reply := fun '(w1, w2) => match_reply cc1 w1 /\ match_reply cc2 w2;
+  |}%rel.
+
+Global Instance cc_both_ref:
+  Monotonic (@cc_both) (forallr -, forallr -, ccref ++> ccref ++> ccref).
+Proof.
+  intros liA liB cc1 cc1' H1 cc2 cc2' H2 [w1 w2] q q' [Hq1 Hq2].
+  specialize (H1 w1 q q' Hq1) as (w1' & Hq1' & H1).
+  specialize (H2 w2 q q' Hq2) as (w2' & Hq2' & H2).
+  exists (w1', w2'). split.
+  - split; eauto.
+  - intros r r' [Hr1 Hr2].
+    split; eauto.
+Qed.
+
+Lemma cc_both_assoc {liA liB} (cc1 cc2 cc3: callconv liA liB):
+  cceqv (cc_both (cc_both cc1 cc2) cc3) (cc_both cc1 (cc_both cc2 cc3)).
+Abort.
+
+Lemma cc_both_comm {liA liB} (cc1 cc2: callconv liA liB):
+  cceqv (cc_both cc1 cc2) (cc_both cc2 cc1).
+Abort.
+
+Lemma cc_both_idemp {liA liB} (cc: callconv liA liB):
+  cceqv (cc_both cc cc) cc.
+Abort.
+
+Infix "&" := cc_both (at level 40) : cc_scope.
+
 (** ** Iteration *)
 
 Require Import KLR.
@@ -743,3 +783,92 @@ Proof.
     split; eauto.
     red. rewrite Hnb1, Hnb2. constructor.
 Qed.
+
+Lemma compose_flat_inj f m1 m2:
+  Mem.inject f m1 m2 ->
+  compose_meminj (Mem.flat_inj (Mem.nextblock m1)) f = f.
+Proof.
+  intros Hf.
+  apply functional_extensionality; intro b.
+  unfold compose_meminj, Mem.flat_inj.
+  destruct Block.lt_dec.
+  - destruct (f b) as [[b' delta] | ]; eauto.
+  - destruct (f b) as [[b' delta] | ] eqn:Hb; eauto.
+    elim n. eapply Mem.valid_block_inject_1; eauto.
+Qed.
+
+Lemma cc_injt_injp:
+  ccref
+    ((cc_c injn & cc_id) @ cc_c injp)
+    ((cc_c injn & cc_id) @ cc_c injp @ cc_c_tr inj @ cc_c injp).
+Proof.
+  intros ([nb [ ]] & w12) [fb1 sg1 vs1 m1] [fb2 sg vs2 m2] (xq1 & Hq11 & Hq12).
+  destruct Hq11 as [Hq11 Hxq1]. simpl in Hxq1. subst xq1.
+  apply match_c_query_injn_inj in Hq11.
+  destruct Hq11 as ([Hfb1 _ Hvs1 Hm1] & Hnb & _).
+  destruct Hq12 as [Hfb12 Hsg12 Hvs12 xHm12]. simpl in * |- . subst sg1.
+  inversion xHm12 as [f xm1 xm2 Hm12]; clear xHm12.
+  subst xm1 xm2 w12. simpl in * |- .
+  exists ((nb,tt),
+          (injpw (meminj_dom f) m1 m1,
+           (Mem.flat_inj nb,
+            injpw f m1 m2))).
+  split.
+  - exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
+    {
+      split; constructor; simpl; eauto.
+      split; eauto.
+      red. rewrite Hnb. constructor.
+    }
+    exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
+    {
+      constructor; simpl; eauto.
+      + eapply block_inject_dom; eauto.
+      + apply val_inject_list_rel.
+        eapply val_inject_list_dom; eauto.
+        apply val_inject_list_rel; eauto.
+      + constructor.
+        eapply mem_inject_dom; eauto.
+    }
+    exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
+    {
+      split; simpl.
+      + destruct Hnb. eauto.
+      + constructor; simpl; eauto.
+    }
+    constructor; eauto.
+    constructor; eauto.
+  - intros r1 r4 (xr1 & [Hr1 Hxr1] & r2 & Hr12 & r3 & Hr23 & Hr34).
+    cbn [fst snd] in *. simpl in Hxr1. subst xr1.
+    destruct r1 as [v1' m1'], Hr1 as (nb' & Hnb' & Hv1' & Hm1').
+    destruct r2 as [v2' m2'], Hr12 as (w12' & Hw12' & Hv12' & xHm12').
+    destruct r3 as [v3' m3'], Hr23 as (f23 & Hf23 & Hv23' & Hm23').
+    destruct r4 as [v4' m4'], Hr34 as (w34' & Hw34' & Hv34' & xHm34').
+    simpl in * |- .
+    destruct Hm1' as [Hm1' Hnb1'].
+    inversion xHm12' as [f12 xm1' xm2' Hm12']; clear xHm12'; subst.
+    inversion xHm34' as [f34 xm3' xm4' Hm34']; clear xHm34'; subst.
+    exists (v1', m1'). cbn [fst snd]. split.
+    + simpl. rauto.
+    + exists (injpw (compose_meminj f12 (compose_meminj f23 f34)) m1' m4').
+      inv Hw12'. inv Hw34'.
+      split; constructor; eauto.
+      * eapply injp_max_perm_decrease_dom; eauto.
+      * eapply Mem.unchanged_on_implies; eauto.
+        intros. apply loc_unmapped_dom; eauto.
+      * rewrite <- (meminj_dom_compose f).
+        erewrite <- (compose_flat_inj f) at 2; eauto.
+        rauto.
+      * rewrite <- (meminj_dom_compose f).
+        eapply compose_meminj_separated; eauto using mem_inject_dom.
+        erewrite <- (compose_flat_inj f); eauto.
+        eapply compose_meminj_separated; eauto.
+        admit. (* CAN'T WORK, because we could allocate an empty block
+          in the source, mapped to an already valid block in the target.
+          -> we need inject_separated in the triangle diagrams too, or
+          at least some version thereof for target blocks. *)
+      * red. simpl.
+        eauto using Values.val_inject_compose.
+      * constructor. simpl.
+        eauto using Mem.inject_compose.
+Admitted.
