@@ -1,7 +1,7 @@
-Require Export CKLR.
+Require Import CKLR.
 Require Import CKLRAlgebra.
 Require Import Inject.
-Require Export Events.
+Require Import Events.
 
 
 (** * Injection CKLR with footprint invariants *)

@@ -1,4 +1,4 @@
-Require Export CKLR.
+Require Import CKLR.
 Require Import Axioms.
 Require Import Inject.
 

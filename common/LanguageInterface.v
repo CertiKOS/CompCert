@@ -10,10 +10,10 @@ Require Import Globalenvs.
 Require Import Events.
 Require Import KLR.
 Require Import CKLR.
-Require Import Inject.
-Require Import InjectNeutral.
-Require Import InjectFootprint.
-Require Import Extends.
+Require Export Inject.
+Require Export InjectFootprint.
+Require Export Extends.
+Require Export ExtendsFootprint.
 
 
 (** * Semantic interface of languages *)

@@ -1,6 +1,6 @@
 Require Import Axioms.
 Require Import Events.
-Require Export CKLR.
+Require Import CKLR.
 Require Import Inject.
 
 
