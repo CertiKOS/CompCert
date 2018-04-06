@@ -1114,10 +1114,10 @@ Lemma sel_external:
     match_states S R ->
     make_external (Cminor.at_external ge) Cminor.after_external S q1 AE1 ->
     exists wA q2 AE2,
-      match_query cc_extends wA q1 q2 /\
+      match_query (cc_c extp) wA q1 q2 /\
       make_external (CminorSel.at_external tge) CminorSel.after_external R q2 AE2 /\
       forall r1 r2 S',
-        match_reply cc_extends wA r1 r2 ->
+        match_reply (cc_c extp) wA r1 r2 ->
         AE1 r1 S' ->
         exists R',
           AE2 r2 R' /\
@@ -1155,7 +1155,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_extends cc_extends_triangle
+  forward_simulation (cc_c extp) cc_extends_triangle
     (Cminor.semantics prog)
     (CminorSel.semantics tprog).
 Proof.
