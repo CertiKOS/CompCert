@@ -74,7 +74,7 @@ COMMON=Errors.v AST.v Linking.v \
 
 CKLR=\
   CKLRAlgebra.v \
-  Extends.v \
+  Extends.v ExtendsFootprint.v \
   Inject.v InjectFootprint.v InjectNeutral.v \
 
 # Back-end modules (in backend/, $(ARCH)/)
