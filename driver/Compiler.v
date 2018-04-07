@@ -41,13 +41,13 @@ Require RTLgen.
 (* Require CSE. *)
 (* Require Deadcode. *)
 (* Require Unusedglob. *)
-Require Allocation.
+(* Require Allocation. *)
 (* Require Tunneling. *)
-Require Linearize.
+(* Require Linearize. *)
 (* Require CleanupLabels. *)
 (* Require Debugvar. *)
-Require Stacking.
-Require Asmgen.
+(* Require Stacking. *)
+(* Require Asmgen. *)
 (** Proofs of semantic preservation. *)
 (* Require SimplExprproof. *)
 (* Require SimplLocalsproof. *)
@@ -62,13 +62,13 @@ Require RTLgenproof.
 (* Require CSEproof. *)
 (* Require Deadcodeproof. *)
 (* Require Unusedglobproof. *)
-Require Allocproof.
+(* Require Allocproof. *)
 (* Require Tunnelingproof. *)
-Require Linearizeproof.
+(* Require Linearizeproof. *)
 (* Require CleanupLabelsproof. *)
 (* Require Debugvarproof. *)
-Require Stackingproof.
-Require Asmgenproof.
+(* Require Stackingproof. *)
+(* Require Asmgenproof. *)
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -118,8 +118,10 @@ Definition partial_if {A: Type}
 
 (* Local Existing Instance ValueAnalysis.romem_for_wp_instance. *)
 
-Definition transf_rtl_program (f: RTL.program) : res Asm.program :=
+Definition transf_rtl_program (f: RTL.program) (*: res Asm.program*) :=
    OK f
+.
+(*
    ;; print (print_RTL 0)
   (*  ;; total_if Compopts.optim_tailcalls (time "Tail calls" Tailcall.transf_program) *)
   (*  ;; print (print_RTL 1) *)
@@ -146,15 +148,16 @@ Definition transf_rtl_program (f: RTL.program) : res Asm.program :=
   ;;; time "Mach generation" Stacking.transf_program
    ;; print print_Mach
   ;;; time "Asm generation" Asmgen.transf_program.
+*)
 
-Definition transf_cminor_program (p: Cminor.program) : res Asm.program :=
+Definition transf_cminor_program (p: Cminor.program) (*: res Asm.program*) :=
    OK p
    ;; print print_Cminor
   ;;; time "Instruction selection" Selection.sel_program
   ;;; time "RTL generation" RTLgen.transl_program
   ;;; transf_rtl_program.
 
-Definition transf_clight_program (p: Clight.program) : res Asm.program :=
+Definition transf_clight_program (p: Clight.program) (*: res Asm.program*) :=
   OK p
    ;; print print_Clight
   (* ;;; time "Simplification of locals" SimplLocals.transf_program *)
@@ -240,6 +243,7 @@ Definition CompCert's_passes :=
   (* ::: mkpass (match_if Compopts.optim_CSE CSEproof.match_prog) *)
   (* ::: mkpass (match_if Compopts.optim_redundancy Deadcodeproof.match_prog) *)
   (* ::: mkpass Unusedglobproof.match_prog *)
+  (*
   ::: mkpass Allocproof.match_prog
   (* ::: mkpass Tunnelingproof.match_prog *)
   ::: mkpass Linearizeproof.match_prog
@@ -247,13 +251,14 @@ Definition CompCert's_passes :=
   (* ::: mkpass (match_if Compopts.debug Debugvarproof.match_prog) *)
   ::: mkpass Stackingproof.match_prog
   ::: mkpass Asmgenproof.match_prog
+*)
   ::: pass_nil _.
 
 (** Composing the [match_prog] relations above, we obtain the relation
   between CompCert C sources and Asm code that characterize CompCert's
   compilation. *)
 
-Definition match_prog: (* Csyntax.program *) Clight.program -> Asm.program -> Prop :=
+Definition match_prog: (* Csyntax.program *) Clight.program -> (*Asm.program*)_ -> Prop :=
   pass_match (compose_passes CompCert's_passes).
 
 (** The [transf_c_program] function, when successful, produces
@@ -274,6 +279,7 @@ Proof.
   unfold transf_cminor_program, time in T. rewrite ! compose_print_identity in T. simpl in T.
   destruct (Selection.sel_program p4) as [p5|e] eqn:P5; simpl in T; try discriminate.
   destruct (RTLgen.transl_program p5) as [p6|e] eqn:P6; simpl in T; try discriminate.
+(*
   unfold transf_rtl_program, time in T. rewrite ! compose_print_identity in T. simpl in T.
   (* set (p7 := total_if optim_tailcalls Tailcall.transf_program p6) in *. *)
   (* destruct (Inlining.transf_program p7) as [p8|e] eqn:P8; simpl in T; try discriminate. *)
@@ -289,6 +295,7 @@ Proof.
   (* set (p18 := CleanupLabels.transf_program p17) in *. *)
   (* destruct (partial_if debug Debugvar.transf_program p18) as [p19|e] eqn:P19; simpl in T; try discriminate. *)
   destruct (Stacking.transf_program p17) as [p20|e] eqn:P20; simpl in T; try discriminate.
+*)
   unfold match_prog; simpl.
   (* exists p1; split. apply SimplExprproof.transf_program_match; auto. *)
   (* exists p2; split. apply SimplLocalsproof.match_transf_program; auto. *)
@@ -304,6 +311,7 @@ Proof.
   (* exists p12; split. eapply partial_if_match; eauto. apply CSEproof.transf_program_match. *)
   (* exists p13; split. eapply partial_if_match; eauto. apply Deadcodeproof.transf_program_match. *)
   (* exists p14; split. apply Unusedglobproof.transf_program_match; auto. *)
+  (*
   exists p15; split. apply Allocproof.transf_program_match; auto.
   (* exists p16; split. apply Tunnelingproof.transf_program_match. *)
   exists p17; split. apply Linearizeproof.transf_program_match; auto.
@@ -311,6 +319,8 @@ Proof.
   (* exists p19; split. eapply partial_if_match; eauto. apply Debugvarproof.transf_program_match. *)
   exists p20; split. apply Stackingproof.transf_program_match; auto.
   exists tp; split. apply Asmgenproof.transf_program_match; auto.
+*)
+  inv T.
   reflexivity.
 Qed.
 
@@ -368,37 +378,47 @@ Bind Scope cc_scope with callconv.
   constructions are related at the assembly level (a small number of
   OS primitive, etc.), but it is less essential. *)
 
-Definition cc_compcert_A: callconv li_c Asm.li_asm :=
-  cc_star (cc_inject + cc_extends + cc_wt) @
-  Conventions.cc_locset @
-  Stackingproof.cc_stacking @
-  Asmgenproof.cc_asmgen.
+Require Import InjectNeutral.
 
-Definition cc_compcert_B: callconv li_c Asm.li_asm :=
-  cc_inject_triangle @
-  cc_extends_triangle @
-  cc_extends_triangle @
-  cc_star (cc_inject + cc_extends + cc_wt) @
-  cc_extends_triangle @
-  Conventions.cc_locset @
-  Stackingproof.cc_stacking @
-  Asmgenproof.cc_asmgen.
+Definition cc_compcert: callconv li_c li_c :=
+  cc_star (cc_c injp + cc_c extp + cc_c injn + cc_wt) @ cc_c injn @ cc_c inj.
+
+Lemma c_properties p:
+  forward_simulation
+    (cc_star (cc_c injp + cc_c extp + cc_c injn + cc_wt) @ cc_c injn)
+    (cc_star (cc_c injp + cc_c extp + cc_c injn + cc_wt) @ cc_c injn)
+    (Clight.semantics2 p)
+    (Clight.semantics2 p).
+Admitted.
 
 Lemma rtl_properties p:
   forward_simulation
-    (cc_star (cc_inject + cc_extends + cc_wt))
-    (cc_star (cc_inject + cc_extends + cc_wt))
+    (cc_c injn @ cc_c inj)
+    (cc_c injn @ cc_c inj)
     (RTL.semantics p)
     (RTL.semantics p).
 Admitted.
 
+Lemma cc_star_subfold_r {A B} (cc cc': callconv A A) (ccs: callconv A B):
+  ccref cc' cc ->
+  ccref (cc_star cc @ cc' @ ccs) (cc_star cc @ ccs).
+Proof.
+  intros Hcc.
+  rewrite <- cc_compose_assoc.
+  rewrite <- cc_star_fold_r at 2.
+  repeat rstep.
+  eapply cc_join_r.
+  rauto.
+Qed.
+
 Theorem clight_semantic_preservation:
   forall p tp,
   match_prog p tp ->
-  forward_simulation cc_compcert_A cc_compcert_B
+  forward_simulation cc_compcert cc_compcert (* cc_compcert_A cc_compcert_B*)
     (Clight.semantics2 p)
+    (RTL.semantics tp).
+(*
     (Asm.semantics tp).
-  (*
   /\ backward_simulation (atomic (Cstrategy.semantics p)) (Asm.semantics tp).
    *)
 Proof.
@@ -411,7 +431,8 @@ Ltac DestructM :=
   end.
   repeat DestructM. subst tp.
 
-  unfold cc_compcert_A, cc_compcert_B.
+  eapply forward_simulation_ccref.
+  Focus 3.
 
   (*
   assert (F: forward_simulation (Cstrategy.semantics p) (Asm.semantics p21)).
@@ -422,48 +443,17 @@ Ltac DestructM :=
     eapply SimplLocalsproof.transf_program_correct; eassumption.
    *)
 
-  rewrite <- (cc_compose_id_left (cc_star _ @ _)).
-  rewrite <- (cc_compose_id_left (cc_inject_triangle @ _)).
+  eapply compose_forward_simulations.
+    eapply c_properties.
   eapply compose_forward_simulations.
     eapply Cshmgenproof.transl_program_correct; eassumption.
-
-  rewrite <- cc_star_fold_l at 1.
-  rewrite <- cc_join_ub_r.
-  rewrite <- cc_join_ub_l at 1.
-  rewrite <- cc_join_ub_l at 1.
-  rewrite cc_compose_assoc.
   eapply compose_forward_simulations.
     eapply Cminorgenproof.transl_program_correct; eassumption.
-
-  rewrite <- cc_star_fold_l at 1.
-  rewrite <- cc_join_ub_r.
-  rewrite <- cc_join_ub_l at 1.
-  rewrite <- cc_join_ub_r at 1.
-  rewrite cc_compose_assoc.
   eapply compose_forward_simulations.
     eapply Selectionproof.transf_program_correct; eassumption.
-
-  rewrite <- cc_star_fold_l at 1.
-  rewrite <- cc_join_ub_r.
-  rewrite <- cc_join_ub_l at 1.
-  rewrite <- cc_join_ub_r at 1.
-  rewrite cc_compose_assoc.
   eapply compose_forward_simulations.
     eapply RTLgenproof.transf_program_correct; eassumption.
-
-  rewrite <- cc_star_fold_r at 1.
-  rewrite <- cc_join_ub_r.
-  rewrite <- cc_join_ub_r at 2.
-  rewrite <- cc_star_fold_r at 1.
-  rewrite <- cc_join_ub_r.
-  rewrite <- cc_join_ub_r at 2.
-  rewrite <- cc_star_fold_r at 1.
-  rewrite <- cc_join_ub_r.
-  rewrite <- cc_join_ub_l at 2.
-  rewrite <- (cc_join_ub_r cc_inject) at 2.
-  rewrite !cc_compose_assoc.
-  eapply compose_forward_simulations.
-    eapply rtl_properties.
+  eapply rtl_properties.
 
   (*
   eapply compose_forward_simulations.
@@ -481,38 +471,39 @@ Ltac DestructM :=
     eapply match_if_simulation. eassumption. exact Deadcodeproof.transf_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply Unusedglobproof.transf_program_correct; eassumption.
-  *)
-
-  rewrite <- (cc_compose_assoc cc_extends).
-  rewrite <- (cc_compose_assoc cc_extends_triangle).
   eapply compose_forward_simulations.
     eapply Allocproof.transf_program_correct; eassumption.
-
-  (*
   eapply compose_forward_simulations.
     eapply Tunnelingproof.transf_program_correct; eassumption.
-  *)
-
-  rewrite <- (cc_compose_id_left (cc_wt @ _)).
-  rewrite <- (cc_compose_id_left (Stackingproof.cc_stacking @ _)) at 2.
   eapply compose_forward_simulations.
     eapply Linearizeproof.transf_program_correct; eassumption.
-
-  (*
   eapply compose_forward_simulations.
     eapply CleanupLabelsproof.transf_program_correct; eassumption.
   eapply compose_forward_simulations.
     eapply match_if_simulation. eassumption. exact Debugvarproof.transf_program_correct.
-  *)
-
-  rewrite <- (cc_compose_assoc Conventions.cc_locset).
-  rewrite <- (cc_compose_assoc cc_wt).
   eapply compose_forward_simulations.
     eapply Stackingproof.transf_program_correct with (return_address_offset := Asmgenproof0.return_address_offset).
     exact Asmgenproof.return_address_exists.
     eassumption.
-
   eapply Asmgenproof.transf_program_correct; eassumption.
+*)
+
+  - unfold cc_compcert.
+    rewrite cc_compose_id_left.
+    rewrite !cc_compose_assoc.
+    repeat rewrite cc_star_subfold_r
+      by eauto using cc_join_l, cc_join_r, (reflexivity (R:=ccref)).
+    reflexivity.
+
+  - red. unfold cc_compcert.
+    rewrite cc_compose_id_left.
+    repeat
+      rewrite <- (cc_compose_assoc cc_inject_triangle cc_extends_triangle),
+              <- cc_inject_extends_triangle.
+    rewrite !cc_compose_assoc.
+    rewrite <- cc_injt_inj.
+    reflexivity.
+
 (*
   }
   split. auto.

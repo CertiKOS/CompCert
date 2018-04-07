@@ -417,9 +417,9 @@ Inductive cc_inject_triangle_mq: block -> query li_c -> query li_c -> Prop :=
 Definition cc_inject_triangle_mr nb: reply li_c -> reply li_c -> Prop :=
   fun '(vres1, m1') '(vres2, m2') =>
     exists f',
+      inject_incr (Mem.flat_inj nb) f' /\
       Val.inject f' vres1 vres2 /\
-      Mem.inject f' m1' m2' /\
-      inject_incr (Mem.flat_inj nb) f'.
+      Mem.inject f' m1' m2'.
 
 Definition cc_inject_triangle: callconv li_c li_c :=
   {|

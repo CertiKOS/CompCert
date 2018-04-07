@@ -210,11 +210,14 @@ Proof.
 Qed.
 
 Global Instance cc_compose_eqv li1 li2 li3:
-  Proper (cceqv ==> cceqv ==> cceqv) (@cc_compose li1 li2 li3).
+  Proper (cceqv ==> cceqv ==> cceqv) (@cc_compose li1 li2 li3) | 10.
 Proof.
   intros cc12 cc12' [H12 H21] cc23 cc23' [H23 H32].
   split; eapply cc_compose_ref; eauto.
 Qed.
+
+Global Instance cc_compose_ref_params:
+  Params (@cc_compose) 2.
 
 
 (** * Kleene algebra *)
@@ -646,76 +649,63 @@ Proof.
   replace (delta + 0) with delta by xomega; eauto.
 Qed.
 
-Lemma incr_flat_inj_eq f m1 m2:
-  Mem.inject f m1 m2 ->
-  inject_incr (Mem.flat_inj (Mem.nextblock m1)) f ->
-  f = Mem.flat_inj (Mem.nextblock m1).
-Proof.
-  intros Hm Hf.
-  apply functional_extensionality. intros b.
-  unfold Mem.flat_inj in *.
-  specialize (Hf b); simpl in Hf.
-  destruct Block.lt_dec; eauto.
-  destruct (f b) as [[b' delta] | ] eqn:Hb; eauto.
-  elim n. eapply Mem.valid_block_inject_1; eauto.
-Qed.
-
 Lemma cc_extends_inject_triangle:
-  ccref (cc_c_tr inj) (cc_c_tr ext @ cc_c_tr inj).
+  ccref cc_inject_triangle (cc_extends_triangle @ cc_inject_triangle).
 Proof.
-  intros f _ _ [q Hf [Hfb Hsg Hvargs Hm]].
-  exists (tt, f). simpl in *.
-  eapply incr_flat_inj_eq in Hf; eauto; subst.
+  inv_triangle_query.
+  intros fb sg vargs m Hfb Hvargs Hm.
+  exists (tt, Mem.nextblock m).
   split.
-  - exists q.
+  - exists (cq fb sg vargs m).
     split; constructor; eauto.
     + rauto.
     + constructor; try reflexivity.
       rauto.
       apply Mem.extends_refl.
-    + constructor; eauto.
-  - intros r1 r3 (r2 & ([ ] & _ & [Hv12' Hm12']) & (f' & Hf' & [Hv23' Hm23'])).
+  - intros [v1' m1'] [v3' r3'].
+    intros ([v2' m2'] & ([ ] & _ & [Hv12' Hm12']) & (f' & Hf' & Hv23' & Hm23')).
+    simpl in *.
     exists f'; split; eauto.
     split.
-    + eapply (Mem.val_lessdef_inject_compose _ _ (fst r2)); eauto.
+    + eapply (Mem.val_lessdef_inject_compose _ _ v2'); eauto.
       apply val_inject_id; eauto.
     + eapply Mem.extends_inject_compose; eauto.
 Qed.
 
 Lemma cc_inject_extends_triangle:
-  ccref (cc_c_tr inj) (cc_c_tr inj @ cc_c_tr ext).
+  ccref cc_inject_triangle (cc_inject_triangle @ cc_extends_triangle).
 Proof.
-  intros f _ _ [q Hf [Hfb Hsg Hvargs Hm]].
-  exists (f, tt). simpl in *.
-  eapply incr_flat_inj_eq in Hf; eauto; subst.
+  inv_triangle_query.
+  intros fb sg vargs m Hfb Hvargs Hm.
+  exists (Mem.nextblock m, tt). simpl in *.
   split.
-  - exists q.
+  - exists (cq fb sg vargs m).
     split; constructor; eauto.
-    + constructor; eauto.
     + rauto.
     + constructor; try reflexivity.
       rauto.
       apply Mem.extends_refl.
-  - intros r1 r3 (r2 & (f' & Hf' & [Hv12' Hm12']) & ([ ] & _ & [Hv23' Hm23'])).
+  - intros [v1' m1'] [v3' m3'].
+    intros ([v2' m2'] & (f' & Hf' & Hv12' & Hm12') & ([ ] & _ & Hv23' & Hm23')).
     exists f'; split; eauto.
     split.
-    + eapply (Mem.val_inject_lessdef_compose _ _ (fst r2)); eauto.
+    + eapply (Mem.val_inject_lessdef_compose _ _ v2'); eauto.
       apply val_inject_id; eauto.
     + eapply Mem.inject_extends_compose; eauto.
 Qed.
 
 Lemma cc_inject_inject_triangle:
-  ccref (cc_c_tr inj) (cc_c_tr inj @ cc_c_tr inj).
+  ccref cc_inject_triangle (cc_inject_triangle @ cc_inject_triangle).
 Proof.
-  intros f _ _ [q Hf [Hfb Hsg Hvargs Hm]].
-  exists (f, f). simpl in *.
-  eapply incr_flat_inj_eq in Hf; eauto; subst.
+  inv_triangle_query.
+  intros fb sg vargs m Hfb Hvargs Hm.
+  exists (Mem.nextblock m, Mem.nextblock m). simpl in *.
   split.
-  - exists q.
+  - exists (cq fb sg vargs m).
     refine ((fun x => conj x x) _).
     constructor; eauto.
-    constructor; eauto.
-  - intros r1 r3 (r2 & (f12&Hf12&[Hv12' Hm12']) & (f23&Hf23&[Hv23' Hm23'])).
+  - intros [v1' m1'] [v3' m3'].
+    intros ([v2' m2']&(f12 & Hf12 & Hv12' & Hm12')&(f23 & Hf23 & Hv23' & Hm23')).
     exists (compose_meminj f12 f23); split; eauto.
     + rewrite <- flat_inj_idemp. rauto.
     + split.
@@ -813,16 +803,17 @@ Qed.
 Lemma cc_injt_inj:
   ccref
     (cc_c injn @ cc_c inj)
-    (cc_c injn @ cc_c_tr inj @ cc_c injn @ cc_c inj).
+    (cc_c injn @ cc_inject_triangle @ cc_c injn @ cc_c inj).
 Proof.
   intros [nb f] q1 q3 (q2 & Hq12 & Hq23). simpl in * |- .
-  exists (nb, (Mem.flat_inj nb, (nb, f))). split.
+  exists (nb, (nb, (nb, f))). split.
   - pose proof (match_c_query_injn_l nb q1 q2 Hq12) as Hq11.
     repeat (eexists; split); cbn [fst snd].
     + eauto.
     + apply match_c_query_injn_inj in Hq11 as (Hq11 & Hnb & _).
+      destruct q1, Hq11; simpl in *. subst nb.
       constructor; eauto.
-      rewrite Hnb. reflexivity.
+      apply val_inject_list_rel; eauto.
     + eapply Hq12.
     + assumption.
   - intros r1 r5 (r2 & Hr12 & r3 & Hr23 & r4 & Hr34 & Hr45).
