@@ -1577,9 +1577,6 @@ Proof.
   monadInv B.
   econstructor.
   eexact A.
-  fold (funsig (Internal x)).
-  erewrite sig_transl_function with (Internal f) (Internal x); eauto.
-  simpl. rewrite EQ. reflexivity.
   econstructor; eauto. constructor.
   clear; induction vargs; eauto.
   apply Mem.extends_refl.

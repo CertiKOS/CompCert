@@ -275,26 +275,22 @@ End RELSEM.
 Inductive initial_state (ge: genv): query li_locset -> state -> Prop :=
   | initial_state_intro: forall b f rs m,
       Genv.find_funct_ptr ge b = Some (Internal f) ->
-      (forall l, Val.has_type (rs l) (Loc.type l)) ->
       initial_state ge
         (lq b (fn_sig f) rs m)
         (Callstate (Parent rs :: nil) b rs m).
 
-Inductive at_external (ge: genv): state -> query li_c -> Prop :=
+Inductive at_external (ge: genv): state -> query li_locset -> Prop :=
   | at_external_intro b id sg s rs m:
       Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
       at_external ge
         (Callstate s b rs m)
-        (cq b sg (map (fun p => Locmap.getpair p rs) (loc_arguments sg)) m).
+        (lq b sg rs m).
 
-Inductive after_external (ge: genv): state -> reply li_c -> state -> Prop :=
-  | after_external_intro b id sg s rs m vres m':
-      let rs' := undef_regs destroyed_at_call rs in
-      let rs' := Locmap.setpair (loc_result sg) vres rs' in
-      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+Inductive after_external (ge: genv): state -> reply li_locset -> state -> Prop :=
+  | after_external_intro b s rs m rs' m':
       after_external ge
         (Callstate s b rs m)
-        (vres, m')
+        (rs', m')
         (Returnstate s rs' m').
 
 Inductive final_state: state -> reply li_locset -> Prop :=
@@ -303,7 +299,7 @@ Inductive final_state: state -> reply li_locset -> Prop :=
 
 Definition semantics (p: program) :=
   let ge := Genv.globalenv p in
-  Semantics li_c li_locset
+  Semantics li_locset li_locset
     step
     (initial_state ge)
     (at_external ge)

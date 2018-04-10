@@ -27,6 +27,7 @@ Require Import Events.
 Require Import RTL.
 Require Import Conventions.
 Require Import LanguageInterface.
+Require Import Invariant.
 
 (** * The type system *)
 
@@ -872,11 +873,11 @@ Proof.
 Qed.
 
 Section WITHRESTYP.
-Variable (restyp: option typ).
+Variable (restyp: typ).
 
 Inductive wt_stackframes: list stackframe -> signature -> Prop :=
   | wt_stackframes_nil: forall sg,
-      Some sg.(sig_res) = Some restyp ->
+      sg.(proj_sig_res) = restyp ->
       wt_stackframes nil sg
   | wt_stackframes_cons:
       forall s res f sp pc rs env sg,
@@ -890,40 +891,42 @@ Remark wt_stackframes_change_sig:
   forall s sg1 sg2,
   sg1.(sig_res) = sg2.(sig_res) -> wt_stackframes s sg1 -> wt_stackframes s sg2.
 Proof.
-  intros. inv H0.
-- constructor; congruence.
-- econstructor; eauto. rewrite H3. unfold proj_sig_res. rewrite H. auto.
+  intros. destruct H0.
+- constructor. unfold proj_sig_res in *.
+  destruct (sig_res sg); rewrite <- H; congruence.
+- econstructor; eauto. rewrite H2. unfold proj_sig_res. rewrite H. auto.
 Qed.
+
+End WITHRESTYP.
 
 Section WTSTATE.
 
   Variable p: program.
+  Variable (restyp: typ).
 
   Let ge := Genv.globalenv p.
 
   Inductive wt_state: state -> Prop :=
   | wt_state_intro:
       forall s f sp pc rs m env
-        (WT_STK: wt_stackframes s (fn_sig f))
+        (WT_STK: wt_stackframes restyp s (fn_sig f))
         (WT_FN: wt_function f env)
         (WT_RS: wt_regset env rs),
         wt_state (State s f sp pc rs m)
   | wt_state_call:
       forall s fb f args m,
         Genv.find_funct_ptr ge fb = Some f ->
-        wt_stackframes s (funsig f) ->
+        wt_stackframes restyp s (funsig f) ->
         wt_fundef f ->
         Val.has_type_list args (sig_args (funsig f)) ->
         wt_state (Callstate s fb args m)
   | wt_state_return:
       forall s v m sg,
-        wt_stackframes s sg ->
+        wt_stackframes restyp s sg ->
         Val.has_type v (proj_sig_res sg) ->
         wt_state (Returnstate s v m).
 
 End WTSTATE.
-
-End WITHRESTYP.
 
 Section SUBJECT_REDUCTION.
 
@@ -933,11 +936,11 @@ Hypothesis wt_p: wt_program p.
 
 Let ge := Genv.globalenv p.
 
-Variable restyp: option typ.
+Variable restyp: typ.
 
 Lemma subject_reduction:
   forall st1 t st2, step ge st1 t st2 ->
-  forall (WT: wt_state restyp p st1), wt_state restyp p st2.
+  forall (WT: wt_state p restyp st1), wt_state p restyp st2.
 Proof.
   induction 1; intros; inv WT;
   try (generalize (wt_instrs _ _ WT_FN pc _ H); intros WTI).
@@ -986,18 +989,35 @@ Proof.
   apply wt_regset_assign; auto. rewrite H10; auto.
 Qed.
 
-Lemma wt_initial_state b sg args m:
-  forall S, initial_state ge (cq b sg args m) S -> wt_state (sig_res sg) p S.
+Lemma wt_initial_state b sg vs m:
+  forall S,
+    initial_state ge (cq b sg vs m) S ->
+    Val.has_type_list vs (sig_args sg) ->
+    wt_state p (proj_sig_res sg) S.
 Proof.
   intros. inv H. econstructor. eassumption. constructor. auto.
   pattern (Internal f). apply Genv.find_funct_ptr_prop with fundef unit p b; auto.
   assumption.
 Qed.
 
+Lemma wt_external s fb sg vargs m vres m' s':
+  wt_state p restyp s ->
+  at_external ge s (cq fb sg vargs m) ->
+  after_external s (vres, m') s' ->
+  Val.has_type vres (proj_sig_res sg) ->
+  wt_state p restyp s'.
+Proof.
+  intros Hs Hq Hs' Hr.
+  inv Hq. inv Hs. inv Hs'.
+  econstructor; eauto.
+  subst ge. rewrite H1 in H4. inv H4.
+  assumption.
+Qed.
+
 Lemma wt_instr_inv:
   forall restyp,
   forall s f sp pc rs m i,
-  wt_state restyp p (State s f sp pc rs m) ->
+  wt_state p restyp (State s f sp pc rs m) ->
   f.(fn_code)!pc = Some i ->
   exists env, wt_instr f env i /\ wt_regset env rs.
 Proof.
@@ -1007,4 +1027,25 @@ Qed.
 
 End SUBJECT_REDUCTION.
 
+Definition wt_rtl p q :=
+  wt_state p (proj_sig_res (cq_sg q)).
 
+Lemma wt_semantics p:
+  wt_program p ->
+  preserves (semantics p) wt_c wt_c (wt_rtl p).
+Proof.
+  intros Hp. unfold wt_rtl.
+  split.
+  - eauto using subject_reduction.
+  - intros [fb sg vargs m] s Hq Hs. simpl in *.
+    eauto using wt_initial_state.
+  - intros q s [fb sg vargs m] AE Hs HAE.
+    inv HAE.
+    split; simpl; eauto.
+    + inv H. inv Hs. rewrite H4 in H2. inv H2. assumption.
+    + intros [vres m'] s' Hvres Hs'.
+      eapply wt_external; eauto.
+  - intros q s [vres m'] Hs Hr.
+    inv Hr. inv Hs. inv H1.
+    simpl. congruence.
+Qed.

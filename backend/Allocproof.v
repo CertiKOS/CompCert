@@ -20,6 +20,7 @@ Require Import AST Linking Lattice Kildall.
 Require Import Values Memory Globalenvs Events Smallstep.
 Require Archi.
 Require Import Op Registers RTL Locations Conventions RTLtyping LTL.
+Require Import Invariant.
 Require Import Allocation.
 
 Definition match_prog (p: RTL.program) (tp: LTL.program) :=
@@ -1894,11 +1895,11 @@ Qed.
 
 Section WITHRESTYPE.
 Variable init_ls: locset.
-Variable restype: option typ.
+Variable restype: typ.
 
 Inductive match_stackframes: list RTL.stackframe -> list LTL.stackframe -> signature -> Prop :=
   | match_stackframes_nil: forall sg,
-      sg.(sig_res) = restype ->
+      sg.(proj_sig_res) = restype ->
       match_stackframes nil (Parent init_ls :: nil) sg
   | match_stackframes_cons:
       forall res f sp pc rs s tf bb ls ts sg an e env
@@ -1964,7 +1965,8 @@ Lemma match_stackframes_change_sig:
   match_stackframes s ts sg'.
 Proof.
   intros. destruct H.
-  constructor. congruence.
+  constructor.
+  unfold proj_sig_res in *. destruct (sig_res sg); rewrite H0; congruence.
   econstructor; eauto.
   unfold proj_sig_res in *. rewrite H0; auto.
   intros. rewrite (loc_result_exten sg' sg) in H1 by auto. eauto.
@@ -1996,7 +1998,7 @@ Qed.
     "plus" kind. *)
 
 Lemma step_simulation:
-  forall S1 t S2, RTL.step ge S1 t S2 -> wt_state restype prog S1 ->
+  forall S1 t S2, RTL.step ge S1 t S2 -> wt_state prog restype S1 ->
   forall S1', match_states S1 S1' ->
   exists S2', plus LTL.step tge S1' t S2' /\ match_states S2 S2'.
 Proof.
@@ -2493,24 +2495,25 @@ Qed.
 
 End WITHRESTYPE.
 
-Let cc := cc_compose cc_extends_triangle cc_locset.
+Let cc := cc_compose cc_extends_triangle cc_alloc.
 
-Let ms (w: world cc) :=
-  let rs := ls_rs (comp_snd w) in
-  let sg := ls_sg (comp_snd w) in
-  match_states rs (sig_res sg).
+Let ms (w: ccworld cc) :=
+  let rs := alloc_rs (snd w) in
+  let sg := alloc_sg (snd w) in
+  match_states rs (proj_sig_res sg).
 
 Lemma initial_states_simulation:
   forall w q1 q2, match_query cc w q1 q2 ->
-  forall st1, RTL.initial_state ge q1 st1 ->
+  forall st1, RTL.initial_state ge q1 st1 -> query_inv wt_c q1 ->
   exists st2,
     LTL.initial_state tge q2 st2 /\
-    ms w st1 st2.
+    ms w st1 st2 /\
+    cq_sg q1 = alloc_sg (snd w).
 Proof.
   unfold ms.
   inv_compose_query.
-  inv_triangle_query. intros id sg args m.
-  inv_locset_query. intros id' sg' args' rs m' Hargs Hwt Hw. inv Hw.
+  inv_triangle_query. intros id sg args m. simpl.
+  inv_alloc_query. intros id' sg' args' rs m' Hargs Hq. inv Hq.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   exploit sig_function_translated; eauto. intros SIG.
@@ -2518,6 +2521,7 @@ Proof.
   fold (RTL.funsig (Internal f)).
   rewrite <- SIG.
   monadInv TR.
+  econstructor; eauto.
   econstructor; eauto.
   econstructor; eauto.
   constructor. rewrite SIG; auto.
@@ -2531,61 +2535,37 @@ Lemma external_simulation:
   forall w S R q1,
     ms w S R ->
     RTL.at_external ge S q1 ->
+    wt_state prog (proj_sig_res (alloc_sg (snd w))) S ->
     exists wA q2,
-      match_query (cc_extends @ cc_wt) wA q1 q2 /\
+      match_query (cc_c extp @ cc_alloc) wA q1 q2 /\
       LTL.at_external tge R q2 /\
       forall r1 r2 S',
-        match_reply (cc_extends @ cc_wt) wA r1 r2 ->
+        match_reply (cc_c extp @ cc_alloc) wA r1 r2 ->
         RTL.after_external S r1 S' ->
+        Val.has_type (fst r1) (proj_sig_res (cq_sg q1)) ->
         exists R',
           LTL.after_external tge R r2 R' /\
-          ms w S' R' /\
-          Val.has_type (fst r1) (proj_sig_res (cq_sg q1)).
+          ms w S' R'.
 Proof.
-  intros w S R q HSR HS.
+  intros w S R q HSR HS WT. subst.
   destruct HS as [fb id sg s vargs m Hfb].
-  inv HSR. inv FUN. simpl in *.
-  edestruct match_cc_extends as (wA12 & Hq12 & H12); eauto.
-  edestruct match_cc_wt as (wA23 & Hq23 & H23); eauto.
-  edestruct (match_cc_compose cc_extends cc_wt) as (wA & Hq & H); eauto.
+  inv HSR. inv FUN. inv WT. simpl in *.
   assert (f = External (EF_external id sg)) by congruence; subst.
   inv H0. simpl in *.
-  eexists wA, (cq fb sg _ m'); repeat apply conj; eauto.
+  edestruct (match_cc_extends fb sg) as (wA12 & Hq12 & H12); eauto.
+  edestruct match_cc_alloc as (wA23 & Hq23 & H23); eauto.
+  edestruct (match_cc_compose (cc_c extp) cc_alloc) as (wA & Hq & H); eauto.
+  eexists wA, (lq fb sg ls m'); repeat apply conj; eauto.
   - econstructor; eauto.
-  - intros r1 [vres3 m3'] H' Hr HS'.
+  - intros r1 [ls3' m3'] S' Hr HS' Hwt.
+    edestruct (H _ _ Hr) as ([v2' m2'] & Hr12 & Hr23); eauto.
+    edestruct (H12 _ _ _ _ Hr12) as (Hv' & Hm' & Hunch); eauto.
+    edestruct (H23 _ _ _ _ Hr23) as (Hls23' & Hv3' & Hm23'); eauto; subst.
     inv HS'.
-    edestruct H as ([vres2 m2'] & Hr12 & Hr23); eauto.
-    edestruct H12 as (Hvres & Hm' & Hunch); eauto.
-    edestruct H23 as (Hvres23 & Hm23 & Hwt); eauto; subst.
-    eexists; repeat apply conj.
+    eexists; repeat apply conj; eauto.
     + econstructor; eauto.
     + econstructor; eauto.
-      * destruct (loc_result sg) eqn:RES; simpl.
-        rewrite Locmap.gss; auto.
-        generalize (loc_result_pair sg); rewrite RES; intros (A & B & C & D & E).
-        rewrite Locmap.gss.
-        rewrite Locmap.gso by (red; auto).
-        rewrite Locmap.gss.
-        rewrite val_longofwords_eq_1; auto.
-        unfold loc_result, loc_result_64, loc_result_32 in RES.
-        unfold proj_sig_res in Hwt.
-        destruct Archi.ptr64; destruct (sig_res sg) as [[]|]; try discriminate.
-        assumption.
-      * red; intros. rewrite (AG l H0).
-        assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
-        { intros. destruct l; simpl in *. congruence. auto. }
-        symmetry; rewrite Locmap.gpo.
-        apply undef_regs_outside.
-        { rewrite Loc.notin_iff.
-          unfold destroyed_at_call. intros l' Hl'.
-          apply in_map_iff in Hl'. destruct Hl' as (reg & Hl' & Hreg). subst l'.
-          apply filter_In in Hreg. destruct Hreg as (Hreg & Hregcs).
-          apply negb_true_iff in Hregcs. eauto. }
-        generalize (loc_result_caller_save sg).
-        destruct (loc_result sg); simpl; intuition auto.
-      * destruct Hvres; eauto.
-        constructor.
-    + destruct Hvres; eauto; constructor.
+      red; intros. rewrite (AG l H0). eapply Hls23'; eauto.
 Qed.
 
 Lemma final_states_simulation:
@@ -2599,9 +2579,10 @@ Proof.
   exists (ls, m'). split.
   - eapply match_reply_cc_compose.
     + apply match_reply_cc_extends_triangle; eauto.
-    + apply match_reply_cc_locset; eauto.
+    + apply match_reply_cc_alloc; eauto.
       unfold loc_result, loc_result_32, loc_result_64.
-      destruct Archi.ptr64; rewrite H1; reflexivity.
+      unfold proj_sig_res in H1.
+      destruct Archi.ptr64, (sig_res sg), (sig_res _); inv H1; reflexivity.
   - constructor.
 Qed.
 
@@ -2621,46 +2602,34 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (cc_extends @ cc_wt) cc
+  forward_simulation (wt_c @ cc_c extp @ cc_alloc) (wt_c @ cc)
     (RTL.semantics prog)
     (LTL.semantics tprog).
 Proof.
-  eapply forward_simulation_plus with
-    (match_states :=
-       fun w s s' =>
-         wt_state (sig_res (ls_sg (comp_snd w))) prog s /\ ms w s s').
-- apply senv_preserved.
-- intros. exploit initial_states_simulation; eauto. intros [st2 [A B]].
-  exists st2; split; auto. split; auto.
-  clear A B. revert w q1 q2 H H0.
-  inv_compose_query.
-  inv_triangle_query. intros until m.
-  inv_locset_query. intros. inv H1.
-  eapply wt_initial_state with (p := prog); eauto. exact wt_prog.
-- intros. destruct H.
-  destruct H0.
-  edestruct external_simulation as (wA & q2 & Hq & Hq2 & Hr); eauto.
-  exists wA, q2, (after_external tge s2); intuition.
-  {
-    constructor; eauto.
-  }
-  edestruct Hr as (s2' & Hs2' & Hs'); eauto.
-  exists s2'; intuition.
-  {
-    destruct H3.
-    inv H.
-    econstructor; eauto.
-    inv H0.
-    assert (f = External (EF_external id sg)) by congruence; subst. simpl.
-    assumption.
-  }
-- intros. destruct H. eapply final_states_simulation; eauto.
-- intros. destruct H0.
-  exploit step_simulation; eauto.
-  intros [s2' [A B]].
-  exists s2'; split. exact A. split.
-  eapply subject_reduction; eauto. eexact wt_prog.
-  auto.
+  eapply compose_forward_simulations.
+  eapply restrict_fsim. eauto using wt_semantics, wt_prog.
+  pose (ms' := fun w '(q, s1) s2 => ms w s1 s2 /\ cq_sg q = alloc_sg (snd w)).
+  eapply forward_simulation_plus with (match_states := ms').
+  - apply senv_preserved.
+  - intros w q1 q2 Hq _ [st1 Hst1 Hq1wt Hst1wt].
+    eapply initial_states_simulation; eauto.
+  - intros w qst1 st2 q1 AE1 Hst Hq1.
+    destruct Hq1 as [q st1 q1 AE1 Hq1 Hst1wt Hq1wt].
+    destruct Hq1 as [st1 q1 Hq1]. destruct Hst as [Hst Hsg].
+    red in Hst1wt. rewrite Hsg in Hst1wt.
+    edestruct external_simulation as (wA & q2 & Hq & Hq2 & H); eauto.
+    eexists wA, q2, (after_external tge st2). repeat apply conj; eauto.
+    + constructor; eauto.
+    + intros r1 r2 [xq s1'] Hr HAE. inv HAE.
+      unfold ms'.
+      edestruct H as (s2' & Hs2' & Hs'); eauto.
+  - intros w st1 st2 r1 Hst H. destruct H as [q st1 r1 Hst1 Hst1wt Hr1wt], Hst.
+    eapply final_states_simulation; eauto.
+  - intros w st1 t st1' Hstep1 st2 Hst.
+    destruct Hstep1 as [q st1 t st1' Hstep1 Hst1 Hst1'], Hst as [Hst Hsg].
+    unfold ms', ms in *. rewrite <- Hsg in Hst.
+    edestruct step_simulation as (st2' & Hplus & Hst'); eauto.
+    rewrite <- Hsg. eauto.
 Qed.
 
 End PRESERVATION.
