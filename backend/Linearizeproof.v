@@ -763,18 +763,16 @@ Proof.
   edestruct (match_cc_id q) as (w & Hq & H); eauto.
   destruct Hst1 as [fb id sg s rs m Hfb].
   inv Hst.
-  inv H6.
   assert (f = External (EF_external id sg)) by congruence; subst f.
+  inv H6.
   eexists w, _, _; intuition; eauto.
-  - inv H1.
-    constructor.
+  - constructor.
     econstructor; eauto.
   - apply H in H0; subst.
-    inv H1. inv H2.
+    inv H1.
     eexists; split.
     + econstructor; eauto.
-    + assert (sg0 = sg) by congruence; subst sg0.
-      econstructor; eauto.
+    + econstructor; eauto.
 Qed.
 
 Lemma transf_final_states:
