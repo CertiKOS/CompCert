@@ -66,7 +66,7 @@ VLIB=Axioms.v Coqlib.v Intv.v Maps.v Heaps.v Lattice.v Ordered.v \
 COMMON=Errors.v AST.v Linking.v \
   Events.v Globalenvs.v Memdata.v Memtype.v Memory.v BlockNames.v \
   Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
-  LanguageInterface.v CallconvAlgebra.v ModuleSemantics.v \
+  LanguageInterface.v Invariant.v CallconvAlgebra.v ModuleSemantics.v \
   Separation.v \
   CKLR.v Valuesrel.v \
 
