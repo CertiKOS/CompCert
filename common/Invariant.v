@@ -78,8 +78,8 @@ Record preserves {liA liB} (L: semantics liA liB) IA IB (SI: _->_-> Prop) :=
   conventions asserting that the source and target queries are
   identical, and furthermore satisfy the given invariant. *)
 
-Inductive rel_inv {A} (I: A -> Prop): A -> A -> Prop :=
-  rel_inv_intro x: I x -> rel_inv I x x.
+Inductive rel_inv {A} (I: A -> Prop) (x: A): A -> Prop :=
+  rel_inv_intro: I x -> rel_inv I x x.
 
 Coercion cc_inv {li} (I: invariant li): callconv li li :=
   {|
@@ -103,18 +103,18 @@ Proof.
     exists s. split; eauto.
     constructor.
     eapply preserves_initial_state; eauto.
-  - intros w _ _ qA AE [s Hs] HAE.
+  - intros w s _ qA AE [Hs] HAE.
     edestruct @preserves_external as (HqA & Hr); eauto.
     exists qA, qA, AE. repeat apply conj; eauto.
-    + intros _ _ s' [r' Hr'] Hs'.
+    + intros r' _ s' [Hr'] Hs'.
       exists s'. split; eauto.
       constructor.
       eapply Hr; eauto.
-  - intros w _ _ r [s Hs] Hr.
+  - intros w s _ r [Hs] Hr.
     exists r. split; eauto.
     constructor.
     eapply preserves_final_state; eauto.
-  - intros w s t s' Hstep ? Hs. destruct Hs as [s Hs].
+  - intros w s t s' Hstep _ [Hs].
     exists s'. split; eauto.
     constructor.
     eapply preserves_step; eauto.
@@ -245,7 +245,7 @@ Section RESTRICT.
       exists qA, qA, (restrict_after_external q qA AE).
       repeat apply conj; eauto.
       + constructor; eauto.
-      + intros _ _ s' [r Hr] Hs1'.
+      + intros r _ s' [Hr] Hs1'.
         exists (q, s'). split; constructor; eauto.
     - intros q s _ r [[] Hqs] Hr.
       assert (reply_inv IB q r) by eauto using preserves_final_state.
@@ -316,7 +316,7 @@ Section EXPAND.
       inversion H; clear H; subst.
       edestruct @preserves_external as (HqA & HrA); eauto.
       exists qA, qA, AE. simpl. intuition eauto.
-      destruct H0 as [r Hr].
+      destruct H0 as [Hr].
       destruct H1 as [s' Hs'].
       eauto 10.
     - intros q qs s r [Hqs Hs] Hr. subst qs ms.

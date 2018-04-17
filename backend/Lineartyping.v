@@ -19,6 +19,8 @@ Require Import Values.
 Require Import Globalenvs.
 Require Import Memory.
 Require Import Events.
+Require Import LanguageInterface.
+Require Import Invariant.
 Require Import Op.
 Require Import Machregs.
 Require Import Locations.
@@ -340,13 +342,47 @@ Local Opaque mreg_type.
 Qed.
 
 Theorem wt_initial_state q:
-  forall S, initial_state ge q S -> wt_state S.
+  forall S, wt_locset (lq_rs q) -> initial_state ge q S -> wt_state S.
 Proof.
+  intros S Hq.
   induction 1. econstructor. eauto. constructor.
   assumption.
   unfold ge in H. exploit Genv.find_funct_ptr_inversion; eauto.
   intros [id' IN]. eapply wt_prog; eauto.
   assumption.
+Qed.
+
+Theorem wt_at_external S qA:
+  wt_state S -> at_external ge S qA -> wt_locset (lq_rs qA).
+Proof.
+  intros HS HqA. destruct HqA. inv HS.
+  assumption.
+Qed.
+
+Theorem wt_after_external S rA S':
+  wt_state S -> wt_locset (fst rA) -> after_external ge S rA S' -> wt_state S'.
+Proof.
+  intros HS HrA HS'. destruct HS'. inv HS.
+  constructor; eauto.
+Qed.
+
+Theorem wt_final_state S r:
+  wt_state S -> final_state S r -> wt_locset (fst r).
+Proof.
+  intros HS Hr. destruct Hr. inv HS.
+  assumption.
+Qed.
+
+Theorem wt_semantics:
+  preserves (semantics prog) locset_wt locset_wt (fun _ => wt_state).
+Proof.
+  split; simpl.
+  - eauto using step_type_preservation.
+  - eauto using wt_initial_state.
+  - destruct 3. split.
+    + intro. eapply wt_at_external; eauto.
+    + eauto using wt_after_external.
+  - intros. eapply wt_final_state; eauto.
 Qed.
 
 End SOUNDNESS.

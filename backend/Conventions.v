@@ -107,6 +107,8 @@ Qed.
 (** * Calling convention *)
 
 Require Import LanguageInterface.
+Require Import Invariant.
+Require Import CKLR.
 Require Import String.
 Require Import Values.
 Require Import Memory.
@@ -129,6 +131,46 @@ Canonical Structure li_locset: language_interface :=
   {|
     query := locset_query;
     reply := Locmap.t * mem;
+  |}.
+
+Record match_locset_query (R: cklr) (w: world R) (q1 q2: locset_query) :=
+  {
+    match_lq_fb: block_inject (mi R w) (lq_fb q1) (lq_fb q2);
+    match_lq_sg: lq_sg q1 = lq_sg q2;
+    match_lq_rs: (- ==> Val.inject (mi R w))%rel (lq_rs q1) (lq_rs q2);
+    match_lq_mem: match_mem R w (lq_mem q1) (lq_mem q2);
+  }.
+
+Definition cc_locset (R: cklr): callconv li_locset li_locset :=
+  {|
+    ccworld := world R;
+    match_senv := Events.symbols_inject @@ [mi R];
+    match_query := match_locset_query R;
+    match_reply := <> (- ==> Val.inject @@ [mi R]) * match_mem R;
+  |}.
+
+(** Triangular diagrams *)
+
+Inductive match_locset_query_tr (R: cklr) (w: world R) q: locset_query -> Prop :=
+  match_locset_query_tr_intro:
+    inject_incr (Mem.flat_inj (Mem.nextblock (lq_mem q))) (mi R w) ->
+    match_locset_query R w q q ->
+    match_locset_query_tr R w q q.
+
+Definition cc_locset_tr R: callconv li_locset li_locset :=
+  {|
+    ccworld := world R;
+    match_senv := Events.symbols_inject @@ [mi R];
+    match_query := match_locset_query_tr R;
+    match_reply := <> (- ==> Val.inject @@ [mi R]) * match_mem R;
+  |}.
+
+(** Typing *)
+
+Definition locset_wt: invariant li_locset :=
+  {|
+    query_inv q := forall l, Val.has_type (lq_rs q l) (Loc.type l);
+    reply_inv q r := forall l, Val.has_type (fst r l) (Loc.type l);
   |}.
 
 (** We now define the calling convention between C and locset languages. *)

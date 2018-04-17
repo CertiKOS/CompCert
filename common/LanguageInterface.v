@@ -212,42 +212,6 @@ Definition cc_c_tr R: callconv li_c li_c :=
     match_reply := <> Val.inject @@ [mi R] * match_mem R;
   |}.
 
-(** ** Well-typedness property *)
-
-Inductive cc_wt_mq: klr signature c_query c_query :=
-  | cc_wt_mq_intro id sg vargs m:
-      cc_wt_mq sg (cq id sg vargs m) (cq id sg vargs m).
-
-Inductive cc_wt_mr: klr signature (reply li_c) (reply li_c) :=
-  | cc_wt_mr_intro sg vres m':
-      Val.has_type vres (proj_sig_res sg) ->
-      cc_wt_mr sg (vres, m') (vres, m').
-
-Definition cc_wt: callconv li_c li_c :=
-  {|
-    ccworld := signature;
-    match_senv := k eq;
-    match_query := cc_wt_mq;
-    match_reply := cc_wt_mr;
-  |}.
-
-Lemma match_cc_wt id sg vargs m:
-  exists w,
-    match_query cc_wt w (cq id sg vargs m) (cq id sg vargs m) /\
-    forall vres1 m1' vres2 (m2': mem),
-      match_reply cc_wt w (vres1, m1') (vres2, m2') ->
-      vres1 = vres2 /\
-      m1' = m2' /\
-      Val.has_type vres2 (proj_sig_res sg).
-Proof.
-  exists sg.
-  split.
-  - constructor.
-  - intros.
-    inv H.
-    eauto.
-Qed.
-
 (** ** Rectangular diagrams *)
 
 (** *** Extension passes *)
