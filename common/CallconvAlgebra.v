@@ -491,6 +491,112 @@ Proof.
 Qed.
 
 
+(** * Invariants *)
+
+Require Import Invariant.
+
+(** ** Composition *)
+
+(** Composition of invariant-derived calling conventions is
+  essentially the conjunction of the underlying invariants, and as
+  such it is commutative and idempotent. *)
+
+Lemma cc_inv_commut {li} (I1 I2: invariant li):
+  ccref (I1 @ I2) (I2 @ I1).
+Proof.
+  intros [xq q] q1 q3 (q2 & (H1 & Hq2 & HqI1) & (H2 & Hq2I & Hq3)).
+  simpl in * |- . subst.
+  exists (q, q). split; simpl.
+  - eexists; eauto 10.
+  - intros r _ (_ & [Hr2] & [Hr1]).
+    eexists; split; constructor; eauto.
+Qed.
+
+Lemma cc_inv_idemp {li} (I: invariant li):
+  cceqv (I @ I) I.
+Proof.
+  split.
+  - intros [xq q] q1 q3 (q2 & (H1 & Hq2 & HqI1) & (H2 & Hq2I & Hq3)).
+    simpl in * |- . subst.
+    exists q. split; simpl; eauto.
+    intros r _ [Hr].
+    eexists; split; constructor; eauto.
+  - intros q q1 q2 (Hq & Hq1 & Hq2). subst.
+    exists (q, q). split; simpl.
+    + eexists; split; constructor; eauto.
+    + intros r _ (_ & [Hr] & [_]).
+      constructor; eauto.
+Qed.
+
+(** ** Commutation with rectangular diagrams *)
+
+(** Typing is contravariant with injections and extensions. We can use
+  such properties to show a partial commutation property with
+  rectangular diagrams. Since we need to transport the invariant in
+  opposite directions for queries and replies (which, at least for
+  typing, we can't), we cannot prove full commutation, however we can
+  strengthen the calling convention in the following way. *)
+
+Lemma cc_inv_c_commut I R:
+  (forall w q1 q2,
+      match_query (cc_c R) w q1 q2 ->
+      query_inv I q2 ->
+      query_inv I q1) ->
+  (forall w q1 q2 r1 r2,
+      match_query (cc_c R) w q1 q2 ->
+      match_reply (cc_c R) w r1 r2 ->
+      query_inv I q1 ->
+      query_inv I q2 ->
+      reply_inv I q2 r2 ->
+      reply_inv I q1 r1) ->
+  ccref (cc_c R @ I) (I @ cc_c R @ I).
+Proof.
+  intros HIq HIr [w q2] q1 qx2 (qxx2 & Hq & Hq1 & Hqx1 & Hqxx1).
+  cbn [fst snd] in *. subst.
+  exists (q1, (w, q2)). split.
+  - simpl. unfold rel_compose. eauto 10.
+  - intros r1 r2 (r1I & [Hr1] & r2I & Hr & [Hr2]). cbn [fst snd] in *.
+    eexists. cbn [fst snd]. split; eauto.
+    constructor; eauto.
+Qed.
+
+Lemma wt_c_commut R:
+  ccref (cc_c R @ wt_c) (wt_c @ cc_c R @ wt_c).
+Proof.
+  apply cc_inv_c_commut.
+  - intros w [fb1 sg1 vargs1 m1] [fb2 sg2 vargs2 m2] [Hfb Hsg Hvargs Hm].
+    simpl in *. subst.
+    generalize (sig_args sg2). revert Hvargs. generalize (mi R w). clear.
+    induction 1; simpl in *; intros [ | t ts]; intuition eauto.
+    revert H1; rauto.
+  - simpl. intros w q1 q2 [v1 m1] [v2 m2] [_ Hsg _ _] (f & _ & Hv & _) _ _.
+    rewrite Hsg. generalize (proj_sig_res (cq_sg q2)). red in Hv. simpl in *.
+    clear -Hv. intro. rauto.
+Qed.
+
+(** ** Commutation with triangular diagrams *)
+
+Lemma cc_inv_c_tr_commut I R:
+  (forall w q r1 r2,
+     match_query (cc_c_tr R) w q q ->
+     match_reply (cc_c_tr R) w r1 r2 ->
+     reply_inv I q r2 ->
+     reply_inv I q r1) ->
+  ccref (I @ cc_c_tr R) (cc_c_tr R @ I).
+Proof.
+  intros H [q1 w] xq1 q2 (xxq1 & (HqI & Hxq1 & Hxxq1) & Hq12).
+  simpl in * |- . subst.
+  destruct Hq12 as [q Hw Hq].
+  exists (w, q). split; simpl.
+  - exists q; split; [constructor | ]; eauto.
+  - intros r1 _ (r2 & Hr12 & [Hr2]).
+    exists r1; split; eauto.
+    constructor.
+    eapply H; eauto.
+    constructor; eauto.
+Qed.
+
+
 (** * Composition theorems *)
 
 Lemma match_c_query_dom f q1 q2:
@@ -757,6 +863,22 @@ Proof.
     + eapply Mem.extends_extends_compose; eauto.
 Qed.
 
+Lemma cc_ext_extt:
+  ccref (cc_c ext) (cc_c ext @ cc_c_tr ext).
+Proof.
+  intros [ ] q1 q2 Hq.
+  exists (tt, tt). simpl. split.
+  - eexists; split; eauto.
+    constructor; simpl.
+    + rauto.
+    + destruct q1. constructor; simpl; reflexivity.
+  - intros r1 r3 (r2 & ([ ] & _ & Hv12' & Hm12') & ([ ] & _ & Hv23' & Hm23')).
+    exists tt; split; [rauto | ]; split.
+    + rewrite <- (compose_meminj_id_right inject_id).
+      apply val_inject_compose. eexists; split; eauto.
+    + eapply Mem.extends_extends_compose; eauto.
+Qed.
+
 Lemma match_c_query_injn_inj nb q1 q2:
   match_c_query injn nb q1 q2 <->
   match_c_query inj (Mem.flat_inj nb) q1 q2 /\
@@ -913,4 +1035,4 @@ Proof.
         eauto using Values.val_inject_compose.
       * constructor. simpl.
         eauto using Mem.inject_compose.
-Admitted.
+Abort.
