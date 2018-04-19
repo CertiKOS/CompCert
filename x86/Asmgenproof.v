@@ -20,28 +20,27 @@ Require Import Asmgen Asmgenproof0 Asmgenproof1.
 
 (** * Calling convention *)
 
-Inductive cc_asmgen_mq: query li_mach -> query li_asm -> Prop :=
+Inductive cc_asmgen_mq: _ -> query li_mach -> query li_asm -> Prop :=
   | cc_asmgen_mq_intro fb ms m1 rs m2 sp:
       valid_blockv m2 sp ->
       rs#PC = Vptr fb Ptrofs.zero ->
       rs#RA <> Vundef ->
       agree ms sp rs ->
       Mem.extends m1 m2 ->
-      cc_asmgen_mq (mq fb sp rs#RA ms m1) (rs, m2).
+      cc_asmgen_mq (sp, rs#RA, Mem.nextblock m2) (mq fb sp rs#RA ms m1) (rs, m2).
 
-Definition cc_asmgen_mr: _ -> query li_asm -> reply li_mach -> reply li_asm -> _ :=
-  fun '(mq fb sp ra ms m1) '(rs, m2) '(ms', m1') '(rs', m2') =>
+Definition cc_asmgen_mr: _ -> reply li_mach -> reply li_asm -> _ :=
+  fun '(sp, ra, nb) '(ms', m1') '(rs', m2') =>
     rs'#PC = ra /\
     agree ms' sp rs' /\
     Mem.extends m1' m2' /\
-    Block.le (Mem.nextblock m2) (Mem.nextblock m2').
+    Block.le nb (Mem.nextblock m2').
 
 Definition cc_asmgen: callconv li_mach li_asm :=
   {|
-    world_def := unit;
     match_senv w := eq;
-    match_query_def w := cc_asmgen_mq;
-    match_reply_def w := cc_asmgen_mr;
+    match_query := cc_asmgen_mq;
+    match_reply := cc_asmgen_mr;
   |}.
 
 Lemma match_cc_asmgen fb sp ms m1 rs m2:
@@ -60,13 +59,9 @@ Lemma match_cc_asmgen fb sp ms m1 rs m2:
       Block.le (Mem.nextblock m2) (Mem.nextblock m2').
 Proof.
   intros.
-  assert (Hq: cc_asmgen_mq (mq fb sp rs#RA ms m1) (rs, m2))
-    by (constructor; eauto).
-  exists (mk_world cc_asmgen tt _ _ Hq).
-  split; [constructor | ].
-  intros ms' m1' rs' m2' Hr.
-  inv Hr; simpl in *.
-  assumption.
+  exists (sp, rs#RA, Mem.nextblock m2). simpl. split.
+  - constructor; eauto.
+  - intuition eauto.
 Qed.
 
 (** * .. *)
@@ -415,10 +410,10 @@ Qed.
 
 Section IN_WORLD.
 
-Context (w: world cc_asmgen).
-Let sp0 := mq_sp (world_q1 w).
-Let ra0 := mq_ra (world_q1 w).
-Let nb0 := Mem.nextblock (snd (world_q2 w)).
+Context (w: ccworld cc_asmgen).
+Let sp0 := fst (fst w).
+Let ra0 := snd (fst w).
+Let nb0 := snd w.
 
 Inductive match_states: Mach.state -> Asm.state -> Prop :=
   | match_states_intro:
@@ -1102,8 +1097,7 @@ Lemma transf_initial_states:
   forall st1, Mach.initial_state ge q1 st1 ->
   exists st2, Asm.initial_state tge q2 st2 /\ match_states w st1 st2.
 Proof.
-  intros w q1 q2 Hq. destruct Hq.
-  destruct Hq as [fb ms m1 rs m2 sp Hsp Hpc Hra Hrs Hm].
+  intros _ _ _ [fb ms m1 rs m2 sp Hsp Hpc Hra Hrs Hm].
   intros st1 Hst1. inv Hst1.
   exists (State rs m2 (Some sp)).
   pose proof Hrs as []; subst.
@@ -1133,9 +1127,9 @@ Proof.
   intros w st1 st2 q1 AE1 Hst Hst1.
   destruct Hst1 as [st1 q1 Hst1].
   pose (AE2 := Asm.after_external st2).
-  destruct w as [[] [fb0 sp0 ra0 ms0 init_m1] [rs0 init_m2] Hq0]; simpl in *.
+  destruct w as [[sp0 ra0] nb0].
   destruct Hst1 as [fb id sg s ms m Hfb].
-  inversion Hst; clear Hst. subst s0 fb1 m0 ms1 st2; simpl in *.
+  inversion Hst; clear Hst. subst s0 fb0 m0 ms0 st2. cbn [fst snd] in *.
   edestruct match_cc_asmgen as (wA & Hq & H); eauto.
   - rewrite ATLR. eapply parent_ra_def; eauto.
   - rewrite ATLR in Hq.
@@ -1145,7 +1139,8 @@ Proof.
       inv Hftf.
       constructor.
       econstructor; eauto.
-    + edestruct H as (Hpc' & Hrs' & Hm'); eauto.
+    + inv Hq. destruct r1 as [rs1 m1], r2 as [rs2 m2].
+      edestruct H as (Hpc' & Hrs' & Hm' & Hnb); eauto.
       inv H1.
       eexists; intuition.
       econstructor.
@@ -1167,11 +1162,9 @@ Lemma transf_final_states:
   forall w st1 st2 r1, match_states w st1 st2 -> Mach.final_state st1 r1 ->
   exists r2, match_reply cc_asmgen w r1 r2 /\ Asm.final_state tge st2 r2.
 Proof.
-  intros [[] _ _ [fb ms m1 rs m2 sp Hsp Hpc Hra Hrs Hm]].
-  intros. inv H0. inv H. simpl in *.
-  eexists. split; constructor.
-  simpl.
-  split; eauto.
+  intros [[ra0 sp0] nb0] st1 st2 r1 Hst Hr1.
+  destruct Hr1. inv Hst. simpl in *.
+  eexists (_, _). split; econstructor; eauto.
 Qed.
 
 Theorem transf_program_correct:

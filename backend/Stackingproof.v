@@ -73,42 +73,35 @@ Proof.
     eapply Block.nlt_le; eauto.
 Qed.
 
-Definition cc_stacking_mq f: query li_locset -> query li_mach -> Prop :=
+Require Import CKLR.
+
+Definition cc_stacking_mq RR w: query li_locset -> query li_mach -> Prop :=
   fun '(lq id1 sg rs1 m1) '(mq id2 sp ra rs2 m2) =>
-    inject_incr (Mem.flat_inj Block.init) f /\
-    globals_separated f /\
+    inject_incr (Mem.flat_inj Block.init) (mi RR w) /\
+    globals_separated (mi RR w) /\
     id1 = id2 /\
-    (forall r, Val.inject f (rs1 (R r)) (rs2 r)) /\
-    Mem.inject f m1 m2 /\
+    (forall r, Val.inject (mi RR w) (rs1 (R r)) (rs2 r)) /\
+    match_mem RR w m1 m2 /\
     valid_blockv m2 sp /\
     Val.has_type ra Tptr /\
-    arguments_out_of_reach sg f m1 sp /\
+    arguments_out_of_reach sg (mi RR w) m1 sp /\
     forall ofs ty,
       In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
       exists v2,
         extcall_arg rs2 m2 sp (S Outgoing ofs ty) v2 /\
-        Val.inject f (rs1 (S Outgoing ofs ty)) v2.
+        Val.inject (mi RR w) (rs1 (S Outgoing ofs ty)) v2.
 
-Definition cc_stacking_mr f :=
-  fun '(lq _ _ _ m1) '(mq _ _ _ _ m2) '(rs1', m1') '(rs2', m2') =>
-    exists f',
-      (forall r, Val.inject f' (rs1' (R r)) (rs2' r)) /\
-      Mem.inject f' m1' m2' /\
-      Mem.unchanged_on (loc_unmapped f) m1 m1' /\
-      Mem.unchanged_on (loc_out_of_reach f m1) m2 m2' /\
-      inject_incr f f' /\
-      inject_separated f f' m1 m2 /\
-      forall b ofs p,
-        Mem.valid_block m1 b ->
-        Mem.perm m1' b ofs Max p ->
-        Mem.perm m1 b ofs Max p.
+Definition cc_stacking_mr RR w: reply li_locset -> reply li_mach -> Prop :=
+  fun '(rs1', m1') '(rs2', m2') =>
+    (forall r, Val.inject (mi RR w) (rs1' (R r)) (rs2' r)) /\
+    match_mem RR w m1' m2'.
 
-Definition cc_stacking: callconv li_locset li_mach :=
+Definition cc_stacking R: callconv li_locset li_mach :=
   {|
-    world_def := meminj;
-    match_senv := symbols_inject;
-    match_query_def := cc_stacking_mq;
-    match_reply_def := cc_stacking_mr;
+    ccworld := world R;
+    match_senv w := symbols_inject (mi R w);
+    match_query := cc_stacking_mq R;
+    match_reply := <> cc_stacking_mr R;
   |}.
 
 Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
@@ -125,9 +118,9 @@ Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
       extcall_arg rs2 m2 sp (S Outgoing ofs ty) v2 /\
       Val.inject f (rs1 (S Outgoing ofs ty)) v2) ->
   exists w,
-    match_query cc_stacking w (lq fb sg rs1 m1) (mq fb sp ra rs2 m2) /\
+    match_query (cc_stacking injp) w (lq fb sg rs1 m1) (mq fb sp ra rs2 m2) /\
     forall rs1' m1' rs2' m2',
-      match_reply cc_stacking w (rs1', m1') (rs2', m2') ->
+      match_reply (cc_stacking injp) w (rs1', m1') (rs2', m2') ->
       exists f',
         (forall r, Val.inject f' (rs1' (R r)) (rs2' r)) /\
         Mem.inject f' m1' m2' /\
@@ -143,14 +136,12 @@ Proof.
   intros.
   pose (q1 := lq fb sg rs1 m1).
   pose (q2 := mq fb sp ra rs2 m2).
-  assert (Hq: match_query_def cc_stacking f q1 q2).
-  {
-    simpl. eauto 10.
-  }
-  exists (mk_world _ _ _ _ Hq).
-  split; [ now constructor | ].
-  inversion 1.
-  assumption.
+  exists (injpw f m1 m2). simpl. split; eauto 10.
+  intros rs1' m1' rs2' m2' (w' & Hw' & Hrs' & Hm'). inv Hw'. inv Hm'.
+  exists f'. intuition eauto.
+  destruct (f b) as [[delta b'] | ] eqn:Hfb.
+  - eauto. (* injp_max_perm_decreases *)
+  - eapply Mem.unchanged_on_perm; eauto.
 Qed.
 
 (** * Basic properties of the translation *)
@@ -212,11 +203,14 @@ Let tge := Genv.globalenv tprog.
 
 Section WITHINIT.
 
-Variable (w: world cc_stacking).
+Variable w: ccworld (cc_stacking injp).
+Variable q1: query li_locset.
+Variable q2: query li_mach.
+Hypothesis Hq: match_query _ w q1 q2.
 
-Let init_ls := lq_rs (world_q1 w).
-Let init_sp := mq_sp (world_q2 w).
-Let init_ra := mq_ra (world_q2 w).
+Let init_ls := lq_rs q1.
+Let init_sp := mq_sp q2.
+Let init_ra := mq_ra q2.
 
 Section FRAME_PROPERTIES.
 
@@ -637,13 +631,13 @@ Qed.
 
 Lemma frame_contents_exten:
   forall ls ls0 ls' ls0' j sp parent retaddr P m,
-  (forall sl ofs ty, ls' (S sl ofs ty) = ls (S sl ofs ty)) ->
+  (forall sl ofs ty, sl <> Incoming -> ls' (S sl ofs ty) = ls (S sl ofs ty)) ->
   (forall r, In r b.(used_callee_save) -> ls0' (R r) = ls0 (R r)) ->
   m |= frame_contents j sp ls ls0 parent retaddr ** P ->
   m |= frame_contents j sp ls' ls0' parent retaddr ** P.
 Proof.
   unfold frame_contents, frame_contents_1; intros.
-  rewrite <- ! (contains_locations_exten ls ls') by auto.
+  rewrite <- ! (contains_locations_exten ls ls') by (intros; eapply H; congruence).
   erewrite  <- contains_callee_saves_exten by eauto.
   assumption.
 Qed.
@@ -728,16 +722,6 @@ Record agree_locs (ls ls0: locset) : Prop :=
        In (S Incoming ofs ty) (regs_of_rpairs (loc_parameters f.(Linear.fn_sig))) ->
        ls (S Incoming ofs ty) = ls0 (S Outgoing ofs ty)
 }.
-
-(** Auxiliary predicate used at call points *)
-
-Definition agree_callee_save (ls ls0: locset) : Prop :=
-  forall l,
-  match l with
-  | R r => is_callee_save r = true
-  | S _ _ _ => True
-  end ->
-  ls l = ls0 l.
 
 (** ** Properties of [agree_regs]. *)
 
@@ -1510,9 +1494,10 @@ End FRAME_PROPERTIES.
 
 (** Initial memory states and injection *)
 
-Let init_f := world_proj w.
-Let init_m1 := lq_mem (world_q1 w).
-Let init_m2 := mq_mem (world_q2 w).
+
+Let init_f := mi _ w.
+Let init_m1 := lq_mem q1.
+Let init_m2 := mq_mem q2.
 
 (** This is the memory assertion that captures the contents of the stack frames
   mentioned in the call stacks. *)
@@ -1531,7 +1516,7 @@ Fixpoint stack_contents (j: meminj) (cs: list Linear.stackframe) (cs': list Mach
 whole-program, this is the signature of the [main] function (see the
 match_states' definition at the very end of this file) *)
 
-Let init_sg := lq_sg (world_q1 w).
+Let init_sg := lq_sg q1.
 
 (** [match_stacks] captures additional properties (not related to memory)
   of the Linear and Mach call stacks. *)
@@ -1572,7 +1557,7 @@ Lemma stack_contents_change_meminj:
   m |= stack_contents j' cs cs' ** P.
 Proof.
 Local Opaque sepconj.
-  induction cs as [ | [] cs]; destruct cs' as [ | [] cs']; simpl; intros; auto.
+  induction cs as [ | [ ] cs]; destruct cs' as [ | [ ] cs']; simpl; intros; auto.
   destruct sp0; auto.
   rewrite sep_assoc in *.
   apply frame_contents_incr with (j := j); auto.
@@ -1621,7 +1606,7 @@ Lemma match_stacks_valid_blockv_sp j cs cs' sg isg m m':
 Proof.
   intros Hstk Hm Hnb.
   destruct Hstk; unfold parent_sp.
-  - destruct w as [f [id1 sg0 rs1 m1] [id2 sp0 ra0 rs2 m2] H]; simpl in *.
+  - destruct q1 as [id1 sg0 rs1 m1], q2 as [id2 sp0 ra0 rs2 m2]; simpl in *.
     eapply valid_blockv_nextblock; eauto.
     tauto.
   - constructor.
@@ -1634,7 +1619,7 @@ Lemma match_stacks_type_sp:
   Val.has_type (parent_sp cs') Tptr.
 Proof.
   induction 1; unfold parent_sp.
-  - destruct w as [f [id1 sg0 rs1 m1] [id2 sp0 ra0 rs2 m2] H]; simpl in *.
+  - destruct q1 as [id1 sg0 rs1 m1], q2 as [id2 sp0 ra0 rs2 m2]; simpl in *.
     apply (valid_blockv_has_type m2).
     tauto.
   - apply Val.Vptr_has_type.
@@ -1646,7 +1631,7 @@ Lemma match_stacks_type_retaddr:
   Val.has_type (parent_ra cs') Tptr.
 Proof.
   induction 1; unfold parent_ra.
-  - destruct w as [f [id1 sg0 rs1 m1] [id2 sp0 ra0 rs2 m2] H]; simpl in *.
+  - destruct q1 as [id1 sg0 rs1 m1], q2 as [id2 sp0 ra0 rs2 m2]; simpl in *.
     tauto.
   - auto.
 Qed.
@@ -1838,8 +1823,8 @@ Lemma frame_get_init_arg m ty ofs:
   /\ Val.inject init_f (init_ls (S Outgoing ofs ty)) v.
 Proof.
   subst init_sp init_f init_m1 init_m2 init_sg.
-  clear.
-  destruct w as [j0 [? sg ls0 m1] [id sp0 ra0 rs0 m2] Hq].
+  clear -Hq.
+  destruct q1 as [? sg ls0 m1], q2 as [id sp0 ra0 rs0 m2].
   simpl in *.
   destruct Hq as (_ & _ & ? & Hrs0 & _ & _ & _ & Hoor & Hargs); subst.
   intros Hin_args Hunch.
@@ -1990,7 +1975,7 @@ Proof.
 Local Opaque fe.
   induction 1; simpl; intros VALID BOUNDS.
 - assert (loc_valid f x = true) by auto.
-  destruct x as [r | [] ofs ty]; try discriminate.
+  destruct x as [r | [ ] ofs ty]; try discriminate.
   + exists (rs r); auto with barg.
   + exploit frame_get_local; eauto. intros (v & A & B).
     exists v; split; auto. constructor; auto.
@@ -2198,7 +2183,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
 
 Theorem transf_step_correct:
   forall s1 t s2, Linear.step ge s1 t s2 ->
-  forall (WTS: wt_state prog s1) s1' (MS: match_states s1 s1'),
+  forall q (WTS: wt_state prog q s1) s1' (MS: match_states s1 s1'),
   exists s2', plus step tge s1' t s2' /\ match_states s2 s2'.
 Proof.
   induction 1; intros;
@@ -2608,20 +2593,20 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall w q1 q2, match_query cc_stacking w q1 q2 ->
+  forall w q1 q2, match_query (cc_stacking injp) w q1 q2 ->
   forall st1, Linear.initial_state ge q1 st1 ->
-  exists st2, Mach.initial_state tge q2 st2 /\ match_states w st1 st2.
+  exists st2, Mach.initial_state tge q2 st2 /\ match_states w q1 q2 st1 st2.
 Proof.
-  inversion 1; subst; clear H Hq Hq1.
+  intros w q1 q2 Hq.
   destruct q1 as [id1 sg ls m1].
   destruct q2 as [id sp ra rs m2].
-  destruct Hq0 as (INCR & SEP & Hj & Hrs & Hm & Hsp & Hra & Hoor & Hargs); subst.
+  destruct Hq as (INCR & SEP & Hj & Hrs & Hm & Hsp & Hra & Hoor & Hargs); subst.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   econstructor; split.
   monadInv TR.
   econstructor; eauto.
-  rename w0 into j.
+  destruct w as [j init_m1 init_m2]. inv Hm.
   eapply match_states_call with (j := j); eauto.
   {
     constructor; simpl; eauto.
@@ -2652,26 +2637,28 @@ Proof.
 Qed.
 
 Lemma transf_external:
-  forall w st1 st2 q1,
-    wt_state prog st1 ->
-    match_states w st1 st2 ->
+  forall w qB1 qB2, match_query (cc_stacking injp) w qB1 qB2 ->
+  forall q st1 st2 q1,
+    wt_state prog q st1 ->
+    match_states w qB1 qB2 st1 st2 ->
     Linear.at_external ge st1 q1 ->
     exists wA q2,
-      match_query (cc_wt @ cc_locset @ cc_stacking) wA q1 q2 /\
+      match_query (cc_stacking injp) wA q1 q2 /\
       Mach.at_external tge st2 q2 /\
       forall r1 r2 st1',
-        match_reply (cc_wt @ cc_locset @ cc_stacking) wA r1 r2 ->
+        wt_state prog q st1' ->
+        match_reply (cc_stacking injp) wA r1 r2 ->
         Linear.after_external ge st1 r1 st1' ->
         exists st2',
           Mach.after_external tge st2 r2 st2' /\
-          match_states w st1' st2' /\
-          wt_state prog st1'.
+          match_states w qB1 qB2 st1' st2' /\
+          wt_state prog q st1'.
 Proof.
-  intros w st1 st2 q1 Hst1 Hst Hq1.
+  intros w qB1 qB2 HqB q st1 st2 q1 Hst1 Hst Hq1.
   destruct Hq1 as [fb id sg s rs m Hfb]; inv Hst.
   assert (f = External (EF_external id sg)) by congruence; subst f.
   simpl in TRANSL. inversion TRANSL; subst tf. simpl in STACKS.
-  pose proof (ii_incr _ _ _ SINV) as INCR.
+  pose proof (ii_incr _ _ _ _ _ SINV) as INCR.
   pose proof SEP as (Hsc & (Hinj & Hge & _) & _).
   simpl in Hinj.
   assert (Hrs_wt: wt_locset rs) by (inv Hst1; eauto).
@@ -2680,13 +2667,13 @@ Proof.
     intros ofs ty sb sofs i Hloc Hptr Hi.
     destruct STACKS.
     - simpl stack_contents in SEP.
-      destruct w as [j0 [fb1 sg1 rs1 m1] [fb2 sp0 ra0 rs2 m2] Hq].
+      destruct qB1 as [fb1 sg1 rs1 m1], qB2 as [fb2 sp0 ra0 rs2 m2].
       cbn -[Z.mul m_pred] in *.
       rewrite <- sep_assoc in SEP.
       apply sep_proj1 in SEP.
       eapply sep_minjection_out_of_reach; eauto.
       simpl.
-      pose proof Hq as (_ & _ & Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
+      pose proof HqB as (_ & _ & Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
       split.
       + eapply Hoor; eauto.
         destruct TP as [TP | ?]; try congruence.
@@ -2711,18 +2698,17 @@ Proof.
       etransitivity; [ | eauto using bound_outgoing_no_overflow ].
       xomega.
   }
-  edestruct match_cc_wt as (wA12 & Hq12 & H12); eauto.
-  edestruct match_cc_locset as (wA23 & Hq23 & H23); eauto.
-  edestruct (match_cc_stacking j) as (wA34 & Hq34 & H34); eauto.
-  { clear -INCR.
-    destruct w as [j0 [fb1 sg1 rs1 m1] [fb2 sp0 ra0 rs2 m2] Hq].
-    cbn -[Z.mul m_pred] in *.
-    intuition.
+
+  edestruct (match_cc_stacking j) as (wA & Hq12 & H12); eauto.
+  { destruct w as [j0 xm1 xm2].
+    destruct qB1 as [fb1 sg1 rs1 m1], qB2 as [fb2 sp0 ra0 rs2 m2].
+    destruct HqB as (FINCR & SEP' & Hfb' & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
+    cbn -[Z.mul m_pred] in *. inv Hm.
     eapply inject_incr_trans; eauto. }
-  { clear - INCR SINV return_address_offset.
-    destruct w as [j0 [fb1 sg1 rs1 m1] [fb2 sp0 ra0 rs2 m2] Hq].
-    cbn -[Z.mul m_pred] in *.
-    destruct Hq as (FINCR & SEP & Hfb & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
+  { destruct w as [j0 xm1 xm2].
+    destruct qB1 as [fb1 sg1 rs1 m1], qB2 as [fb2 sp0 ra0 rs2 m2].
+    destruct HqB as (FINCR & SEP' & Hfb' & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
+    cbn -[Z.mul m_pred] in *. inv Hm.
     eapply globals_separated_trans; eauto.
     destruct SINV; simpl in *.
     assumption. }
@@ -2731,30 +2717,20 @@ Proof.
     eapply stack_contents_out_of_reach; eauto. }
   { eapply match_stacks_type_retaddr; eauto. }
   { eauto using transl_external_argument. }
-  edestruct (match_cc_compose cc_locset cc_stacking) as (wA24 & Hq24 & H24);
-    eauto; clear Hq23 Hq34.
-  edestruct (match_cc_compose cc_wt (cc_locset @ cc_stacking)) as (wA & Hq & H);
-    eauto; clear Hq12 Hq24.
-  eexists wA, _; repeat apply conj; eauto; clear Hq.
+
+  eexists wA, _; repeat apply conj; eauto. clear Hq12.
   - econstructor; eauto.
-  - intros [vres1 m1'] [rs4' m4'] st1' Hr14 Hst1'.
-    edestruct H as ([vres2 m2'] & Hr12 & Hr24); eauto; clear H Hr14.
-    edestruct H12 as (Hvres12 & Hm12 & Hwt); eauto; subst; clear H12 Hr12.
-    edestruct H24 as ([rs3' m3'] & Hr23 & Hr34); eauto; clear H24 Hr24.
-    edestruct H23 as (Hrs3' & Hvres23 & Hm23); eauto; clear H23 Hr23.
-    edestruct H34 as (j' & Hrs34' & Hm34' & UNCH3 & UNCH4 & INCR' & SEP'); eauto.
-    clear H34 Hr34.
+  - intros [rs1' m1'] [rs2' m2'] st1' Hst1'wt Hr12 Hst1'.
+    edestruct H12 as (j' & Hrs12' & Hm12' & UNCH1 & UNCH2 & INCR' & SEP'); eauto.
+    clear H12 Hr12.
     inv Hst1'.
-    assert (sg0 = sg) by congruence; subst sg0.
     eexists. intuition.
     + econstructor; eauto.
     + eapply match_states_return with (j := j').
       eapply source_injection_invariant_step; now eauto.
       eapply match_stacks_change_meminj; now eauto.
-      apply locmap_setpair_getpair; eauto.
-      eapply agree_callee_regs; eauto.
-      apply agree_callee_save_set_result; auto.
-      apply agree_callee_save_undef_destroyed_at_call; auto.
+      assumption.
+      inv Hst1'wt. assumption.
       apply stack_contents_change_meminj with j; auto.
       rewrite sep_comm, sep_assoc.
       eapply minjection_incr; eauto.
@@ -2762,30 +2738,35 @@ Proof.
       eapply globalenv_inject_incr; eauto.
       rewrite sep_comm, sep_assoc.
       assumption.
-    + inv Hst1.
-      constructor; eauto.
-      eapply wt_setpair; eauto.
-      eapply wt_undef_regs; eauto.
 Qed.
 
 Lemma transf_final_states:
-  forall w st1 st2 r1, match_states w st1 st2 -> Linear.final_state st1 r1 ->
-  exists r2, match_reply cc_stacking w r1 r2 /\ Mach.final_state st2 r2.
+  forall w q1 q2 st1 st2 r1,
+    match_query (cc_stacking injp) w q1 q2 ->
+    match_states w q1 q2 st1 st2 ->
+    Linear.final_state st1 r1 ->
+    exists r2,
+      match_reply (cc_stacking injp) w r1 r2 /\
+      Mach.final_state st2 r2.
 Proof.
-  destruct w as [j [id1 sg ls m1] [id sp ra rs m2] Hq].
-  destruct Hq as (Hid & Hrs & Hm & Hsp & Hra & Hargs); subst.
-  intros. inv H0. inv H. inv STACKS.
-  destruct SINV as [INCR INJSEP UNCH].
+  intros until r1. intros Hq Hst Hst1.
+  destruct w as [f xm1 xm2], q1 as [id1 sg ls m1], q2 as [id sp ra rs m2].
+  destruct Hq as (Hf & Hfg & Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs). inv Hm.
+  destruct Hst1. inv Hst. inv STACKS.
+  destruct SINV as [INCR INJSEP UNCH PERM].
   cbn -[m_pred] in *.
-  exists (rs1, m').
-  split; constructor.
-  simpl.
-  destruct SEP as (UNCH' & (Hm' & Hge & Hm'_ge) & _).
-  clear TP.
-  exists j0; intuition.
-  eapply Mem.unchanged_on_implies.
-  exact UNCH'.
-  simpl. eauto.
+  exists (rs1, m'). split.
+  - destruct SEP as (UNCH' & (Hm' & Hge & Hm'_ge) & _).
+    exists (injpw j m m'). split.
+    + simpl. constructor; eauto.
+      * red. intros ? ? [? ?] ? ?. eapply PERM; eauto.
+        eapply Mem.valid_block_inject_1; eauto.
+      * eapply Mem.unchanged_on_implies.
+        exact UNCH'.
+        simpl. eauto.
+    + constructor; eauto.
+      constructor; eauto.
+  - constructor.
 Qed.
 
 Lemma wt_prog:
@@ -2799,33 +2780,39 @@ Proof.
 - auto.
 Qed.
 
+Require Import Invariant.
+
 Theorem transf_program_correct:
-  forward_simulation (cc_wt @ cc_locset @ cc_stacking) cc_stacking
+  forward_simulation (locset_wt @ cc_stacking injp) (locset_wt @ cc_stacking injp)
     (Linear.semantics prog)
     (Mach.semantics return_address_offset tprog).
 Proof.
-  set (ms := fun w s s' => wt_state prog s /\ match_states w s s').
+  set (ms := fun w '(q1, s) s' =>
+               exists q2,
+                 match_query (cc_stacking injp) w q1 q2 /\
+                 match_states w q1 q2 s s').
+  eapply compose_forward_simulations.
+  eapply restrict_fsim, wt_semantics, wt_prog.
   eapply forward_simulation_plus with (match_states := ms).
 - apply senv_preserved.
-- intros. exploit transf_initial_states; eauto. intros [st2 [A B]].
-  exists st2; split; auto. split; auto.
-  eapply wt_initial_state with (prog := prog); auto. exact wt_prog.
-  destruct H; eauto.
-- intros w s1 s2 q1 AE1 [Hwt Hs] Hq1. destruct Hq1 as [s1 q1 Hq1].
-  edestruct transf_external as (wA & q2 & Hq & Hq2 & H); eauto.
-  eexists wA, q2, _; intuition. { constructor; eauto. }
-  edestruct H as (s2' & Hs2' & Hs'); eauto.
-  eexists s2'; intuition.
-  split; eauto.
-- destruct w.
-  intros. destruct H. eapply transf_final_states; eauto.
-- intros. destruct H0.
-  simpl in H.
+- intros w q1 q2 Hq _ [s1 Hs Hq1 Hs1].
+  exploit transf_initial_states; eauto. intros [st2 [A B]].
+  exists st2; split; auto. red; eauto.
+- intros w s1 s2 q1 AE1 Hs Hq1.
+  destruct Hq1 as [q1 s1 qA1 AE1 HAE1 Hs1 HqA1], Hs as (q2 & Hq & Hs).
+  destruct HAE1 as [s1 qA1 HqAE1].
+  edestruct transf_external as (wA & qA2 & HqA & HqA2 & H); eauto.
+  eexists wA, qA2, _; repeat apply conj; eauto. { constructor; eauto. }
+  intros rA1 rA2 _ Hr [s1' HrAE1 HrA1 Hs1'].
+  edestruct H as (s2' & HrAE2 & Hs' & Hs2'); eauto.
+  eexists s2'. simpl. intuition eauto.
+- intros w [q1 s1] s2 r1 (w2 & Hq & Hs) Hs1. inv Hs1.
+  destruct H1. eapply transf_final_states; eauto.
+  constructor.
+- intros w _ _ _ [q1 s1 t s1' Hstep1 Hs1 Hs1'] s2 (q2 & Hq & Hs). simpl in * |- .
   exploit transf_step_correct; eauto.
   intros [s2' [A B]].
-  exists s2'; split. exact A. split.
-  eapply step_type_preservation; eauto. eexact wt_prog.
-  auto.
+  exists s2'; split; simpl; eauto.
 Qed.
 
 End PRESERVATION.
