@@ -1176,17 +1176,23 @@ Proof.
     exists r3; split; cbn [fst snd]; eauto.
 Admitted.
 
-Lemma locset_wt_extt_commut:
-  ccref (locset_wt @ cc_locset_tr ext) (cc_locset_tr ext @ locset_wt).
+Lemma locset_alloc_wt_extt_commut:
+  ccref
+    (cc_alloc @ locset_wt @ cc_locset_tr ext)
+    (cc_alloc @ cc_locset_tr ext @ locset_wt).
 Proof.
-  intros [q [ ]] xq _ (xxq & (Hq & Hxq & Hxxq) & [Hw Hq12]).
+  intros ([sg ls] & q & [ ]) q0 _ (xq & H0 & xxq & (Hq & Hxq & Hxxq) & [Hw Hq12]).
   cbn [fst snd] in *. subst.
-  exists (tt, q). split.
+  exists ((sg, ls), (tt, q)). split.
   - exists q. simpl; split; eauto.
+    exists q. simpl; split; eauto.
     constructor; eauto.
-  - intros r1 _ (r2 & Hr12 & [Hr]). simpl in * |- .
+  - intros r0 _ (r1 & Hr0 & r2 & Hr12 & [[_ Hr]]). simpl in * |- .
+    exists r1. split; simpl; eauto.
     exists r1. split; simpl; eauto.
     constructor; eauto.
-    destruct Hr as [Hcs Hr].
     split.
-Admitted. (* This is not gonna work any more w/ agree_callee_save, but we should be able to use a broader thing (say alloc;wt;tr <= alloc;tr;wt or the like) *)
+    + inv Hr0. inv H0. simpl in *. intros ? ?. symmetry; eauto.
+    + destruct Hr12 as ([ ] & _ & Hr12 & Hm12).
+      intro. eapply (val_has_type_inject inject_id). eapply Hr12. auto.
+Qed.

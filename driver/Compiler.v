@@ -530,7 +530,8 @@ Ltac DestructM :=
     rewrite !cc_compose_assoc.
 
     rewrite <- (cc_compose_assoc (cc_locset_tr ext) locset_wt).
-    rewrite <- locset_wt_extt_commut.
+    rewrite <- (cc_compose_assoc cc_alloc (cc_locset_tr ext @ locset_wt)).
+    rewrite <- locset_alloc_wt_extt_commut.
     rewrite !cc_compose_assoc.
 
     rewrite <- (cc_compose_assoc cc_alloc locset_wt (cc_locset_tr ext @ _)).
