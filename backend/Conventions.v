@@ -104,6 +104,19 @@ Proof.
   generalize (typesize_pos ty). omega.
 Qed.
 
+(** * Callee-save registers *)
+
+Definition callee_save_loc (l: loc) :=
+  match l with
+  | R r => is_callee_save r = true
+  | S sl ofs ty => True
+  end.
+
+Hint Unfold callee_save_loc.
+
+Definition agree_callee_save (ls1 ls2: Locmap.t) : Prop :=
+  forall l, callee_save_loc l -> ls1 l = ls2 l.
+
 (** * Calling convention *)
 
 Require Import LanguageInterface.
@@ -166,15 +179,6 @@ Definition cc_locset_tr R: callconv li_locset li_locset :=
   |}.
 
 (** We now define the calling convention between C and locset languages. *)
-
-Definition callee_save_loc (l: loc) :=
-  match l with
-  | R r => is_callee_save r = true
-  | S sl ofs ty => sl <> Outgoing
-  end.
-
-Definition agree_callee_save (ls1 ls2: Locmap.t) : Prop :=
-  forall l, callee_save_loc l -> ls1 l = ls2 l.
 
 Inductive cc_alloc_mq: _ -> c_query -> locset_query -> Prop :=
   cc_alloc_mq_intro id sg args rs m:

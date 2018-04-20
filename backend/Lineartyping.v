@@ -30,14 +30,6 @@ Require Import Linear.
 
 (** Typing interface *)
 
-Definition agree_callee_save (ls ls0: locset) : Prop :=
-  forall l,
-  match l with
-  | R r => is_callee_save r = true
-  | S _ _ _ => True
-  end ->
-  ls l = ls0 l.
-
 Definition locset_wt: invariant li_locset :=
   {|
     query_inv q :=
