@@ -1042,8 +1042,35 @@ Abort.
 
 Require Import Locations.
 Require Import Conventions.
+Require Import LTL.
+Require Import Allocproof.
 
-(** We can show that [cc_alloc] commutes with [cc_c] and [cc_locset]. *)
+(** ** [cc_alloc] *)
+
+(** *** Commutation with rectangular diagrams *)
+
+(** In the following, we seek to prove that [cc_alloc] commutes with
+  arbitrary rectangular CKLR diagrams. Since the memory components are
+  equal under [cc_alloc], this part of the proof is easy. The
+  challenge is to show that the way arguments are encoded into
+  registers is compatible with the commutation property.
+
+  More precisely, we seek to prove the property
+  [ccref (cc_c R @ cc_alloc) (cc_alloc @ cc_locset R)]. This means
+  that given arguments [args1] injecting into [args2], where the
+  [args2] are read from the location set [rs2], we need to give
+  a location set [rs1], such that the [args1] can be read from [rs1],
+  and [rs1] injects into [rs2].
+
+  To that end, we are going to start from a fully-undefined location
+  set [Locmap.init Vundef], and write the [args1] into it one by one.
+  To prove that the result injects into [rs2], we will essentially
+  rewrite the arguments read from [rs2] into [rs2] itself: the result
+  will be less defined than [rs2], and by monotonicity we will know
+  that [rs1] injects into it, and therefore into [rs2]. *)
+
+(** The first step is to define a version of [Locmap.setpair] able to
+  access stack locations. *)
 
 Definition setlpair (p: rpair loc) (v: val) (rs: Locmap.t) :=
   match p with
@@ -1053,22 +1080,131 @@ Definition setlpair (p: rpair loc) (v: val) (rs: Locmap.t) :=
       Locmap.set lo (Val.loword v) (Locmap.set hi (Val.hiword v) rs)
   end.
 
-Fixpoint rs_of_args (locs: list (rpair loc)) (args: list val) (rs: Locmap.t) :=
+(** Thankfully, the "memory effects" of stack locations will at most
+  yield an undefined value (but no integer conversions), so that we
+  don't need to know the types of arguments. *)
+
+Lemma val_load_result_chunk_of_type ty v:
+  Val.lessdef (Val.load_result (chunk_of_type ty) v) v.
+Proof.
+  destruct ty, v; constructor.
+Qed.
+
+Lemma locmap_set_get_lessdef r v ls1 ls2:
+  Val.lessdef v (ls2 r) ->
+  (forall l, Val.lessdef (ls1 l) (ls2 l)) ->
+  (forall l, Val.lessdef (Locmap.set r v ls1 l) (ls2 l)).
+Proof.
+  intros Hv Hls l.
+  unfold Locmap.set.
+  destruct Loc.eq; subst.
+  - destruct l; eauto.
+    eapply Val.lessdef_trans with v; eauto.
+    eapply val_load_result_chunk_of_type.
+  - destruct Loc.diff_dec; eauto.
+Qed.
+
+Global Instance locmap_set_lessdef:
+  Monotonic
+    (@Locmap.set)
+    (- ==> Val.lessdef ++> (- ==> Val.lessdef) ++> - ==> Val.lessdef) | 10.
+Proof.
+  unfold Locmap.set. repeat rstep; auto using Val.load_result_lessdef.
+Qed.
+
+Global Instance locmap_set_inject f:
+  Monotonic
+    (@Locmap.set)
+    (- ==> Val.inject f ++> (- ==> Val.inject f) ++> - ==> Val.inject f).
+Proof.
+  unfold Locmap.set. rauto.
+Qed.
+
+Global Instance setlpair_inject f:
+  Monotonic
+    (@setlpair)
+    (- ==> Val.inject f ++> (- ==> Val.inject f) ++> - ==> Val.inject f).
+Proof.
+  unfold setlpair. repeat rstep.
+  destruct x; repeat rstep. (* XXX coqrel *)
+Qed.
+
+Lemma locmap_setlpair_getpair_lessdef p ls1 ls2 v:
+  Val.lessdef v (Locmap.getpair p ls2) ->
+  (forall l, Val.lessdef (ls1 l) (ls2 l)) ->
+  (forall l, Val.lessdef (setlpair p v ls1 l) (ls2 l)).
+Proof.
+  intros Hv Hls.
+  unfold setlpair, Locmap.getpair.
+  destruct p; simpl in *.
+  - intros l.
+    eapply Val.lessdef_trans with (Locmap.set r v ls2 l).
+    + repeat rstep; eauto.
+    + eapply locmap_set_get_lessdef; eauto.
+  - intros l.
+    eapply locmap_set_get_lessdef.
+    * eapply Val.lessdef_trans, val_loword_longofwords.
+      eauto using Val.loword_lessdef.
+    * eapply locmap_set_get_lessdef; eauto.
+      eapply Val.lessdef_trans, val_hiword_longofwords.
+      eauto using Val.hiword_lessdef.
+Qed.
+
+Lemma locmap_setlpair_getpair_inject f v1 rs1 rs2 p:
+  Val.inject f v1 (Locmap.getpair p rs2) ->
+  (forall l, Val.inject f (rs1 l) (rs2 l)) ->
+  (forall l, Val.inject f (setlpair p v1 rs1 l) (rs2 l)).
+Proof.
+  intros Hv Hrs l.
+  eapply Mem.val_inject_lessdef_compose.
+  - repeat rstep; eauto.
+  - eapply locmap_setlpair_getpair_lessdef; eauto.
+Qed.
+
+(** Now, we can define a function for writing the complete list of
+  arguments, and the associated property we need. *)
+
+Fixpoint setlpairs (locs: list (rpair loc)) (args: list val) (rs: Locmap.t) :=
   match locs, args with
-    | l::locs, v::args => rs_of_args locs args (setlpair l v rs)
+    | l::locs, v::args => setlpairs locs args (setlpair l v rs)
     | _, _ => rs
   end.
 
-Lemma getpair_setlpair p v rs:
-  Locmap.getpair p (setlpair p v rs) = v.
+Lemma setlpairs_getpairs_inject f vs1 rs1 rs2 locs:
+  list_rel (Val.inject f) vs1 (map (fun p => Locmap.getpair p rs2) locs) ->
+  (forall l, Val.inject f (rs1 l) (rs2 l)) ->
+  (forall l, Val.inject f (setlpairs locs vs1 rs1 l) (rs2 l)).
 Proof.
-Abort.
+  revert vs1 rs1.
+  induction locs; intros vs1 rs1 Hvs Hrs; inv Hvs; simpl; eauto.
+  eapply IHlocs; eauto.
+  eapply locmap_setlpair_getpair_inject; eauto.
+Qed.
+
+(** The new intermediate register set can be obtained by starting from
+  a fully [Vundef] state and writing arguments. *)
+
+Definition rs_of_args (sg: signature) (args: list val) :=
+  setlpairs (loc_arguments sg) args (Locmap.init Vundef).
+
+Lemma rs_of_args_inject sg f args1 args2 rs2:
+  list_rel (Val.inject f) args1 args2 ->
+  args2 = map (fun p => Locmap.getpair p rs2) (loc_arguments sg) ->
+  forall l, Val.inject f (rs_of_args sg args1 l) (rs2 l).
+Proof.
+  intros Hargs Hargs2. subst args2.
+  unfold rs_of_args.
+  eapply setlpairs_getpairs_inject; eauto.
+Qed.
 
 Global Instance getpair_inject f:
   Monotonic (@Locmap.getpair) (- ==> (- ==> Val.inject f) ++> Val.inject f).
 Proof.
   unfold Locmap.getpair. rauto.
 Qed.
+
+(** With those auxiliary definitions, we can prove the commutation
+  property we want for [cc_alloc]. *)
 
 Lemma cc_alloc_commut R:
   ccref
@@ -1079,7 +1215,7 @@ Proof.
   destruct Hq23 as [id2 sg args2 rs m2 Hargs2].
   destruct q1 as [id1 sg1 args1 m1], Hq12 as [Hid Hsg Hargs Hm]. simpl in * |-.
   subst sg1.
-  set (rs1 := rs_of_args (loc_arguments sg) args1 (Locmap.init Vundef)).
+  set (rs1 := rs_of_args sg args1).
   exists ((sg, rs1), w). split.
   - exists (lq id1 sg rs1 m1). split.
     + econstructor; eauto.
@@ -1088,21 +1224,35 @@ Proof.
       admit. (** XXX: we would need to exploit the fact that no two
            arguments use the same location as one of their register
            pairs, but this should be possible. *)
+      (* OR, we could loosen cc_alloc to use extends and/or an arbitrary CLR. *)
     + constructor; eauto.
-      simpl.
-      admit. (* same *)
+      simpl. intro.
+      eapply rs_of_args_inject; eauto.
   - intros r1 [rs2' m2'] (rI & Hr1I & HrI2). simpl in * |- .
     inversion Hr1I as [xsg xrs vres rs' m' Hrs Hvres]; clear Hr1I; subst.
     destruct HrI2 as (w' & Hw' & Hrs12' & Hm12'). simpl in * |- .
-    (*
-    set (rs2'' := 
     exists (Locmap.getpair (map_rpair Locations.R (loc_result sg)) rs2', m2').
     split; simpl.
     + rauto.
     + constructor; eauto.
-     *)
-    admit.
-Abort.
+      admit. (* XXX we need to make agree_callee_save part of cc_locset or add a wt component. *)
+Admitted.
+
+(* XXX a version is defined in Stackingproof, except for [ls1].
+  We should make sure the direction in which agree_callee_save is used
+  is consistent across CompCert, and also that the Stackingproof
+  version of this lemma does not gratuitously depend on section
+  variables, so that we can reuse it. *)
+Lemma agree_callee_save_set_result:
+  forall sg v ls1 ls2,
+  agree_callee_save ls1 ls2 ->
+  agree_callee_save ls1 (Locmap.setpair (loc_result sg) v ls2).
+Proof.
+  intros; red; intros. rewrite Locmap.gpo. apply H; auto.
+  assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
+  { intros. destruct l; auto. simpl; congruence. }
+  generalize (loc_result_caller_save sg). destruct (loc_result sg); simpl; intuition auto.
+Qed.
 
 Lemma cc_alloc_tr_commut R:
   ccref
@@ -1122,11 +1272,20 @@ Proof.
   - intros r1 r2 (rI & Hr1I & HrI2). simpl in * |- .
     destruct r1 as [vres1 m1'], Hr1I as (w' & Hw' & Hvres & Hm').
     inv HrI2. simpl in * |- .
-    assert (rs1': Locmap.t) by admit. (* complicated construction *)
+    set (rs1' := Locmap.setpair (loc_result sg) vres1 (return_regs rs (Locmap.init Vundef))).
     eexists (rs1', m1'); simpl; split.
     + constructor; eauto.
-      * admit. (* by construction of rs1', b/c loc_result \notin callee_save *)
-      * admit. (* by construction of rs1': we store vres1 into loc_result *)
+      * eapply agree_callee_save_set_result; eauto.
+        eapply return_regs_agree_callee_save.
+      * subst rs1'.
+        destruct (loc_result sg) as [r | r1 r2] eqn:Hresult; simpl.
+        -- apply Locmap.gss.
+        -- rewrite Locmap.gss, Locmap.gso, Locmap.gss.
+           apply val_longofwords_eq_2.
+           ++ admit. (* need typing *)
+           ++ admit. (* need property on loc_result vs. Twolong *)
+           ++ admit. (* need property on loc_result vs. Loc.diff *)
+           (* ^ OR, add extension in cc_alloc *)
     + exists w'. split; eauto.
       split; eauto. simpl.
       intros l.
