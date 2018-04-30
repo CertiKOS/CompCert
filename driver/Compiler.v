@@ -377,12 +377,8 @@ Definition cc_compcert: callconv li_c Asm.li_asm :=
   cc_star (cc_c injp + cc_c extp + cc_c injn) @
   cc_c injn @
   cc_c inj @
-  cc_star (cc_c extp + wt_c) @
-  cc_alloc @
-  locset_wt @
-  cc_locset ext @
-  locset_wt @
-  Stackingproof.cc_stacking injp @
+  wt_c @ cc_c ext @ cc_alloc @
+  locset_wt @ Stackingproof.cc_stacking injp @
   Asmgenproof.cc_asmgen.
 
 Lemma c_properties p:
@@ -395,18 +391,10 @@ Admitted.
 
 Lemma rtl_properties p:
   forward_simulation
-    (cc_c injn @ cc_c inj @ cc_star (cc_c extp + wt_c))
-    (cc_c injn @ cc_c inj @ cc_star (cc_c extp + wt_c))
+    (cc_c injn @ cc_c inj)
+    (cc_c injn @ cc_c inj)
     (RTL.semantics p)
     (RTL.semantics p).
-Admitted.
-
-Lemma linear_properties p:
-  forward_simulation
-    (locset_wt @ cc_locset ext)
-    (locset_wt @ cc_locset ext)
-    (Linear.semantics p)
-    (Linear.semantics p).
 Admitted.
 
 Lemma cc_star_subfold_r {A B} (cc cc': callconv A A) (ccs: callconv A B):
@@ -488,8 +476,6 @@ Ltac DestructM :=
 *)
   eapply compose_forward_simulations.
     eapply Linearizeproof.transf_program_correct; eassumption.
-  eapply compose_forward_simulations.
-    eapply linear_properties.
 (*
   eapply compose_forward_simulations.
     eapply CleanupLabelsproof.transf_program_correct; eassumption.
@@ -507,40 +493,21 @@ Ltac DestructM :=
     rewrite !cc_compose_assoc.
     do 4 rewrite cc_star_subfold_r
       by eauto using cc_join_l, cc_join_r, (reflexivity (R:=ccref)).
-    do 2 rewrite (cc_star_subfold_r (cc_c extp + wt_c))
-      by eauto using cc_join_l, cc_join_r, (reflexivity (R:=ccref)).
     reflexivity.
 
-  - red. unfold cc_compcert.
+  - unfold flip, cc_compcert.
     rewrite ?cc_compose_id_left, ?cc_compose_id_right.
     repeat
       rewrite <- (cc_compose_assoc cc_inject_triangle cc_extends_triangle),
               <- cc_inject_extends_triangle.
     rewrite !cc_compose_assoc.
 
-    rewrite <- (cc_compose_assoc (cc_c injn) (cc_c inj) (_ @ wt_c @ _)).
+    rewrite <- (cc_compose_assoc (cc_c injn) (cc_c inj) (wt_c @ _)) at 2.
     rewrite <- (cc_compose_assoc _ (cc_c injn @ cc_c inj) _).
     rewrite <- (cc_compose_assoc (cc_c injn) (cc_inject_triangle @ _)).
     rewrite <- cc_injt_inj.
     rewrite !cc_compose_assoc.
 
-    unfold cc_extends_triangle.
-    rewrite <- (cc_compose_assoc (cc_c_tr ext) cc_alloc).
-    rewrite <- cc_alloc_tr_commut.
-    rewrite !cc_compose_assoc.
-
-    rewrite <- (cc_compose_assoc (cc_locset_tr ext) locset_wt).
-    rewrite <- (cc_compose_assoc cc_alloc (cc_locset_tr ext @ locset_wt)).
-    rewrite <- locset_alloc_wt_extt_commut.
-    rewrite !cc_compose_assoc.
-
-    rewrite <- (cc_compose_assoc cc_alloc locset_wt (cc_locset_tr ext @ _)).
-    rewrite <- (cc_compose_assoc wt_c (_ @ _)).
-    rewrite <- alloc_wt_commut.
-    rewrite !cc_compose_assoc.
-
-    rewrite <- (cc_compose_assoc (cc_locset_tr ext) (cc_locset ext)).
-    rewrite <- locset_extt_ext.
     reflexivity.
 
 (*

@@ -2495,7 +2495,7 @@ Qed.
 
 End WITHRESTYPE.
 
-Let cc := cc_compose cc_extends_triangle cc_alloc.
+Let cc := cc_compose (cc_c ext) cc_alloc.
 
 Let ms (w: ccworld cc) :=
   let rs := alloc_rs (snd w) in
@@ -2512,12 +2512,13 @@ Lemma initial_states_simulation:
 Proof.
   unfold ms.
   inv_compose_query.
-  inv_triangle_query. intros id sg args m. simpl.
-  inv_alloc_query. intros id' sg' args' rs m' Hargs Hq. inv Hq.
+  intros [] [id1 sg1 args1 m1] [id2 sg2 args2 m2] [Hid Hsg Hargs Hm]. simpl in *.
+  apply coreflexivity in Hid. subst.
+  inv_alloc_query. intros id' sg' args' rs m' Hargs' Hq. inv Hq.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   exploit sig_function_translated; eauto. intros SIG.
-  exists (LTL.Callstate (Parent rs :: nil) id rs m); split.
+  exists (LTL.Callstate (Parent rs :: nil) id2 rs m2); split.
   fold (RTL.funsig (Internal f)).
   rewrite <- SIG.
   monadInv TR.
@@ -2525,9 +2526,9 @@ Proof.
   econstructor; eauto.
   econstructor; eauto.
   constructor. rewrite SIG; auto.
-  rewrite SIG. clear. induction (map _ _); eauto.
+  rewrite SIG. simpl. clear -Hargs.
+    induction Hargs; constructor; eauto. apply val_inject_id; eauto.
   red; auto.
-  apply Mem.extends_refl.
   rewrite SIG. assumption.
 Qed.
 
@@ -2537,10 +2538,10 @@ Lemma external_simulation:
     RTL.at_external ge S q1 ->
     wt_state prog (proj_sig_res (alloc_sg (snd w))) S ->
     exists wA q2,
-      match_query (cc_c extp @ cc_alloc) wA q1 q2 /\
+      match_query cc wA q1 q2 /\
       LTL.at_external tge R q2 /\
       forall r1 r2 S',
-        match_reply (cc_c extp @ cc_alloc) wA r1 r2 ->
+        match_reply cc wA r1 r2 ->
         RTL.after_external S r1 S' ->
         Val.has_type (fst r1) (proj_sig_res (cq_sg q1)) ->
         exists R',
@@ -2552,14 +2553,14 @@ Proof.
   inv HSR. inv FUN. inv WT. simpl in *.
   assert (f = External (EF_external id sg)) by congruence; subst.
   inv H0. simpl in *.
-  edestruct (match_cc_extends fb sg) as (wA12 & Hq12 & H12); eauto.
+  edestruct (match_cc_ext fb sg) as (wA12 & Hq12 & H12); eauto.
   edestruct match_cc_alloc as (wA23 & Hq23 & H23); eauto.
-  edestruct (match_cc_compose (cc_c extp) cc_alloc) as (wA & Hq & H); eauto.
+  edestruct (match_cc_compose (cc_c ext) cc_alloc) as (wA & Hq & H); eauto.
   eexists wA, (lq fb sg ls m'); repeat apply conj; eauto.
   - econstructor; eauto.
   - intros r1 [ls3' m3'] S' Hr HS' Hwt.
     edestruct (H _ _ Hr) as ([v2' m2'] & Hr12 & Hr23); eauto.
-    edestruct (H12 _ _ _ _ Hr12) as (Hv' & Hm' & Hunch); eauto.
+    edestruct (H12 _ _ _ _ Hr12) as (Hv' & Hm'); eauto.
     edestruct (H23 _ _ _ _ Hr23) as (Hls23' & Hv3' & Hm23'); eauto; subst.
     inv HS'.
     eexists; repeat apply conj; eauto.
@@ -2602,7 +2603,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (wt_c @ cc_c extp @ cc_alloc) (wt_c @ cc)
+  forward_simulation (wt_c @ cc) (wt_c @ cc)
     (RTL.semantics prog)
     (LTL.semantics tprog).
 Proof.

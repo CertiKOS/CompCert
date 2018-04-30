@@ -216,6 +216,27 @@ Definition cc_c_tr R: callconv li_c li_c :=
 
 (** *** Extension passes *)
 
+Lemma match_cc_ext id sg vargs1 m1 vargs2 m2:
+  Mem.extends m1 m2 ->
+  Val.lessdef_list vargs1 vargs2 ->
+  exists w,
+    match_query (cc_c ext) w (cq id sg vargs1 m1) (cq id sg vargs2 m2) /\
+    forall vres1 m1' vres2 m2',
+      match_reply (cc_c ext) w (vres1, m1') (vres2, m2') ->
+      Val.lessdef vres1 vres2 /\
+      Mem.extends m1' m2'.
+Proof.
+  intros Hm Hvargs.
+  exists tt. split.
+  - constructor; simpl; eauto.
+    + exists 0. reflexivity.
+    + apply val_inject_list_lessdef in Hvargs.
+      induction Hvargs; constructor; eauto.
+  - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). simpl in *.
+    split; auto.
+    apply val_inject_lessdef; eauto.
+Qed.
+
 Lemma match_cc_extends id sg vargs1 m1 vargs2 m2:
   Mem.extends m1 m2 ->
   Val.lessdef_list vargs1 vargs2 ->
