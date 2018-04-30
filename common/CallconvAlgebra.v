@@ -596,6 +596,15 @@ Proof.
     constructor; eauto.
 Qed.
 
+Lemma wt_c_tr_commut R:
+  ccref (wt_c @ cc_c_tr R) (cc_c_tr R @ wt_c).
+Proof.
+  apply cc_inv_c_tr_commut. simpl.
+  intros w _ [v1 m1] [v2 m2] [q Hwq [Hfb1 _ Hargs1 Hm1]] (f & _ & Hv & Hm).
+  generalize (proj_sig_res (cq_sg q)). red in Hv. simpl in *.
+  clear -Hv. intro. rauto.
+Qed.
+
 
 (** * Composition theorems *)
 
@@ -1120,6 +1129,15 @@ Proof.
   unfold Locmap.set. rauto.
 Qed.
 
+Global Instance locmap_setpair_inject f:
+  Monotonic
+    (@Locmap.setpair)
+    (- ==> Val.inject f ++> (- ==> Val.inject f) ++> - ==> Val.inject f).
+Proof.
+  unfold Locmap.setpair. repeat rstep.
+  destruct x; repeat rstep. (* XXX coqrel *)
+Qed.
+
 Global Instance setlpair_inject f:
   Monotonic
     (@setlpair)
@@ -1203,6 +1221,14 @@ Proof.
   unfold Locmap.getpair. rauto.
 Qed.
 
+Global Instance return_regs_inject f:
+  Monotonic
+    (@return_regs)
+    ((- ==> Val.inject f) ++> (- ==> Val.inject f) ++> - ==> Val.inject f).
+Proof.
+  unfold return_regs. rauto.
+Qed.
+
 (** With those auxiliary definitions, we can prove the commutation
   property we want for [cc_alloc]. *)
 
@@ -1225,6 +1251,11 @@ Proof.
            arguments use the same location as one of their register
            pairs, but this should be possible. *)
       (* OR, we could loosen cc_alloc to use extends and/or an arbitrary CLR. *)
+      (* NB, could also construct a regset function manually, that
+        won't necessarily have the same restrictions as if we use setpair;
+        since this is an intermediate construction we don't care and
+        it may be easier to come up with a thing with the right
+        properties in this way. *)
     + constructor; eauto.
       simpl. intro.
       eapply rs_of_args_inject; eauto.
@@ -1236,7 +1267,7 @@ Proof.
     + rauto.
     + constructor; eauto.
       admit. (* XXX we need to make agree_callee_save part of cc_locset or add a wt component. *)
-Admitted.
+Abort.
 
 (* XXX a version is defined in Stackingproof, except for [ls1].
   We should make sure the direction in which agree_callee_save is used
@@ -1252,6 +1283,54 @@ Proof.
   assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
   { intros. destruct l; auto. simpl; congruence. }
   generalize (loc_result_caller_save sg). destruct (loc_result sg); simpl; intuition auto.
+Qed.
+
+Lemma loc_result_pair sg rlo rhi:
+  loc_result sg = Twolong rlo rhi ->
+  sig_res sg = Some Tlong /\
+  Loc.diff (R rhi) (R rlo) /\
+  Archi.splitlong = true.
+Proof.
+Admitted.
+
+Lemma locmap_getpair_setpair sg v ls:
+  Val.has_type v (proj_sig_res sg) ->
+  Locmap.getpair
+    (map_rpair R (loc_result sg))
+    (Locmap.setpair (loc_result sg) v ls) = v.
+Proof.
+  intros Hv.
+  unfold setlpair, Locmap.getpair.
+  destruct loc_result eqn:Hlr; simpl.
+  - apply Locmap.gss.
+  - edestruct loc_result_pair as (Hres & Hdiff & Hsplit); eauto.
+    rewrite Locmap.gss.
+    rewrite Locmap.gso, Locmap.gss; eauto.
+    eapply val_longofwords_eq_2; eauto.
+    unfold proj_sig_res in Hv.
+    rewrite Hres in Hv.
+    assumption.
+Qed.
+
+Lemma locmap_setpair_getpair_lessdef p ls1 ls2 v:
+  Val.lessdef v (Locmap.getpair (map_rpair R p) ls2) ->
+  (forall l, Val.lessdef (ls1 l) (ls2 l)) ->
+  (forall l, Val.lessdef (Locmap.setpair p v ls1 l) (ls2 l)).
+Proof.
+  intros Hv Hls.
+  unfold Locmap.setpair, Locmap.getpair.
+  destruct p; simpl in *.
+  - intros l.
+    eapply Val.lessdef_trans with (Locmap.set (R r) v ls2 l).
+    + repeat rstep; eauto.
+    + eapply locmap_set_get_lessdef; eauto.
+  - intros l.
+    eapply locmap_set_get_lessdef.
+    * eapply Val.lessdef_trans, val_loword_longofwords.
+      eauto using Val.loword_lessdef.
+    * eapply locmap_set_get_lessdef; eauto.
+      eapply Val.lessdef_trans, val_hiword_longofwords.
+      eauto using Val.hiword_lessdef.
 Qed.
 
 Lemma cc_alloc_tr_commut R:
@@ -1272,25 +1351,31 @@ Proof.
   - intros r1 r2 (rI & Hr1I & HrI2). simpl in * |- .
     destruct r1 as [vres1 m1'], Hr1I as (w' & Hw' & Hvres & Hm').
     inv HrI2. simpl in * |- .
+    set (loc_res := map_rpair Locations.R (loc_result sg)).
     set (rs1' := Locmap.setpair (loc_result sg) vres1 (return_regs rs (Locmap.init Vundef))).
     eexists (rs1', m1'); simpl; split.
     + constructor; eauto.
       * eapply agree_callee_save_set_result; eauto.
         eapply return_regs_agree_callee_save.
       * subst rs1'.
-        destruct (loc_result sg) as [r | r1 r2] eqn:Hresult; simpl.
-        -- apply Locmap.gss.
-        -- rewrite Locmap.gss, Locmap.gso, Locmap.gss.
-           apply val_longofwords_eq_2.
-           ++ admit. (* need typing *)
-           ++ admit. (* need property on loc_result vs. Twolong *)
-           ++ admit. (* need property on loc_result vs. Loc.diff *)
-           (* ^ OR, add extension in cc_alloc *)
+        apply locmap_getpair_setpair.
+        admit. (* XXX need typing *)
     + exists w'. split; eauto.
       split; eauto. simpl.
-      intros l.
-      admit. (* callee_save -> Hrs; return -> Hvres (tricky?); other -> undef *)
-Admitted.
+      set (vres2 := Locmap.getpair (map_rpair Locations.R (loc_result sg)) rs').
+      set (rs2' := Locmap.setpair (loc_result sg) vres2 (return_regs rs rs')).
+      intros l. eapply Mem.val_inject_lessdef_compose with (rs2' l).
+      * subst rs1' rs2'. rauto.
+      * subst rs2'.
+        eapply locmap_setpair_getpair_lessdef.
+        -- apply Val.lessdef_refl.
+        -- clear l. intros l.
+           unfold return_regs.
+           destruct l as [r | sl ofs ty].
+           ++ destruct is_callee_save eqn:Hcs; eauto.
+              rewrite H1; eauto.
+           ++ rewrite H1; eauto.
+Abort.
 
 Lemma locset_extt_ext:
   ccref (cc_locset ext) (cc_locset_tr ext @ cc_locset ext).
@@ -1333,7 +1418,7 @@ Proof.
   - intros r1 r4 (r2 & Hr12 & r3 & Hr23 & Hr34). cbn [fst snd] in *.
     destruct Hr12.
     exists r3; split; cbn [fst snd]; eauto.
-Admitted.
+Abort. (* XXX does not work b/c C typing more fine-grained than reg typing? *)
 
 Lemma locset_alloc_wt_extt_commut:
   ccref
