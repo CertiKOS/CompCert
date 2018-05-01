@@ -23,7 +23,7 @@ Require Export Clight.
   [blocks_of_env] (we would have to introduce some kind of "subset"
   list relator) *)
 Definition env_match R w :=
-  PTreeRel.r (option_rel (match_block_sameofs R w * @eq type)).
+  PTreeRel.r (option_rel (block_inject_sameofs (mi R w) * @eq type)).
 
 Global Instance env_match_acc:
   Monotonic (@env_match) (forallr - @ R, acc ++> subrel).
@@ -49,11 +49,12 @@ Qed.
 Global Instance deref_loc_match R w:
   Monotonic
     (@deref_loc)
-    (- ==> match_mem R w ++> % match_ptrbits R w ++> set_le (match_val R w)).
+    (- ==> match_mem R w ++> % ptrbits_inject (mi R w) ++>
+     set_le (Val.inject (mi R w))).
 Proof.
   repeat rstep.
   intros a H1.
-  assert (match_val R w (Vptr (fst x1) (snd x1)) (Vptr (fst y0) (snd y0))) as VAL.
+  assert (Val.inject (mi R w) (Vptr (fst x1) (snd x1)) (Vptr (fst y0) (snd y0))) as VAL.
   {
     rstep.
     destruct x1; destruct y0; assumption.
@@ -62,7 +63,7 @@ Proof.
   repeat red.
   simpl in * |- * .
   inversion H1; subst; eauto using @deref_loc_reference, @deref_loc_copy.
-  generalize (cklr_loadv R w I chunk _ _ H _ _ VAL).
+  generalize (cklr_loadv R w chunk _ _ H _ _ VAL).
   rewrite H4.
   inversion 1; subst.
   symmetry in H7.
@@ -76,7 +77,7 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
 
 Lemma assign_loc_match_alignof_blockcopy R w m1 m2 b1 ofs1 b2 ofs2 env ty:
   match_mem R w m1 m2 ->
-  match_ptrbits R w (b1, ofs1) (b2, ofs2) ->
+  ptrbits_inject (mi R w) (b1, ofs1) (b2, ofs2) ->
   sizeof env ty > 0 ->
   Mem.range_perm m1 b1 (Ptrofs.unsigned ofs1) (Ptrofs.unsigned ofs1 + sizeof env ty) Cur Nonempty ->
   (alignof_blockcopy env ty | Ptrofs.unsigned ofs1) ->
@@ -95,11 +96,13 @@ Qed.
 Global Instance assign_loc_match R:
   Monotonic
     (@assign_loc)
-    ([] - ==> - ==> match_mem R ++> % match_ptrbits R ++> match_val R ++>
+    ([] - ==> - ==> match_mem R ++>
+     % ptrbits_inject @@ [mi R] ++>
+     Val.inject @@ [mi R] ++>
      k1 set_le (<> match_mem R)).
 Proof.
-  intros w Hw ce ty m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr v1 v2 Hv m1' Hm1'.
-  destruct Hm1' as [v1 chunk m1' | b1' ofs1' bytes1 m1'].
+  intros w ce ty m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr v1 v2 Hv m1' Hm1'.
+  destruct Hm1' as [v1 chunk m1' | ofs1 b1' ofs1' bytes1 m1'].
   - transport_hyps.
     eexists; split; [ | rauto].
     eapply assign_loc_value; eauto.
@@ -168,6 +171,9 @@ Proof.
     + rauto.
 Qed.
 
+Hint Extern 1 (Related _ _ _) =>
+  eapply assign_loc_match : typeclass_instances.
+
 Hint Extern 1 (Transport _ _ _ _ _) =>
   set_le_transport @assign_loc : typeclass_instances.
 
@@ -177,7 +183,7 @@ Global Instance alloc_variables_match R:
     ([] - ==> env_match R ++> match_mem R ++> - ==>
      % k1 set_le (<> (env_match R * match_mem R))).
 Proof.
-  intros w _ ge e1 e2 Henv m1 m2 Hm vars [e1' m1'] H.
+  intros w ge e1 e2 Henv m1 m2 Hm vars [e1' m1'] H.
   revert H w e2 m2 Henv Hm.
   simpl.
   induction 1 as [e1 m1 | e1 m1 id ty vars m1' b1 m1'' e1'' Hm1' Hm1'' IH].
@@ -187,7 +193,7 @@ Proof.
     + constructor.
     + rauto.
   - intros.
-    edestruct (cklr_alloc R w I m1 m2 Hm 0 (sizeof ge ty)) as (p' & Hp' & Hm' & Hb); eauto.
+    edestruct (cklr_alloc R w m1 m2 Hm 0 (sizeof ge ty)) as (p' & Hp' & Hm' & Hb); eauto.
     destruct (Mem.alloc m2 0 (sizeof ge ty)) as [m2' b2] eqn:Hm2'.
     rewrite Hm1' in *. cbn [fst snd] in *.
     specialize (IH p' (PTree.set id (b2, ty) e2) m2').
@@ -211,10 +217,11 @@ Qed.
 Global Instance bind_parameters_match R:
   Monotonic
     (@bind_parameters)
-    ([] - ==> env_match R ++> match_mem R ++> - ==> k1 list_rel (match_val R) ++>
+    ([] - ==> env_match R ++> match_mem R ++> - ==>
+     k1 list_rel (Val.inject @@ [mi R]) ++>
      k1 set_le (<> match_mem R)).
 Proof.
-  intros w _ ge e1 e2 He m1 m2 Hm vars vl1 vl2 Hvl m1' H.
+  intros w ge e1 e2 He m1 m2 Hm vars vl1 vl2 Hvl m1' H.
   revert H w He vl2 m2 Hvl Hm.
   induction 1 as [m1 | m1 id ty params v1 vl1 b1 m1' m1'' Hb1 Hm1' Hm1'' IH].
   - intros.
@@ -231,7 +238,10 @@ Proof.
     inversion Hb1; clear Hb1.
     repeat subst.
     inversion Hvl as [ | xv1 v2 Hv xvl1 vl2' Hvl']; subst.
-    generalize (match_block_sameofs_ptrbits _ _ _ Ptrofs.zero _ _ Hb Logic.eq_refl). intro PTR.
+    assert (PTR: ptrbits_inject (mi R w) (b1, Ptrofs.zero) (b2, Ptrofs.zero))
+      by rauto.
+    edestruct (assign_loc_match R) as (m2' & Hm2' & w' & Hw' & Hm'); eauto.
+    unfold klr_pullw in *.
     transport_hyps.
     edestruct (IH w') as (m2'' & Hm2'' & Hm''); eauto.
     + rauto.
@@ -258,7 +268,7 @@ Qed.
 Global Instance bind_parameter_temps_match R w:
   Monotonic
     (@bind_parameter_temps)
-    (- ==> list_rel (match_val R w) ++> temp_env_match R w ++>
+    (- ==> list_rel (Val.inject (mi R w)) ++> temp_env_match R w ++>
      option_rel (temp_env_match R w)).
 Proof.
   intros formals args1 args2 Hargs.
@@ -273,19 +283,19 @@ Qed.
 Global Instance block_of_binding_match R w:
   Monotonic
     (@block_of_binding)
-    (- ==> eq * (match_block_sameofs R w * eq) ++>
-     match_ptrrange R w).
+    (- ==> eq * (block_inject_sameofs (mi R w) * eq) ++>
+     ptrrange_inject (mi R w)).
 Proof.
   intros ge (id1 & b1 & ty1) (id2 & b2 & ty2) (Hid & Hb & Hty).
   simpl in *.
-  eapply match_block_sameofs_ptrrange; eauto.
+  eapply block_sameofs_ptrrange_inject; intuition auto.
   congruence.
 Qed.
 
 Global Instance blocks_of_env_match R w:
   Monotonic
     (@blocks_of_env)
-    (- ==> env_match R w ++> list_rel (match_ptrrange R w)).
+    (- ==> env_match R w ++> list_rel (ptrrange_inject (mi R w))).
 Proof.
   unfold blocks_of_env. rauto.
 Qed.
@@ -293,7 +303,7 @@ Qed.
 Global Instance set_opttemp_match R w:
   Monotonic
     (@set_opttemp)
-    (- ==> match_val R w ++> temp_env_match R w ++> temp_env_match R w).
+    (- ==> Val.inject (mi R w) ++> temp_env_match R w ++> temp_env_match R w).
 Proof.
   unfold set_opttemp. rauto.
 Qed.
@@ -308,12 +318,12 @@ Lemma eval_expr_lvalue_match R w ge:
      eval_expr ge e1 le1 m1 expr v1 ->
      exists v2,
        eval_expr ge e2 le2 m2 expr v2 /\
-       match_val R w v1 v2) /\
+       Val.inject (mi R w) v1 v2) /\
   (forall expr b1 ofs,
      eval_lvalue ge e1 le1 m1 expr b1 ofs ->
      exists b2 ofs2,
        eval_lvalue ge e2 le2 m2 expr b2 ofs2 /\
-       match_ptrbits R w (b1, ofs) (b2, ofs2)).
+       ptrbits_inject (mi R w) (b1, ofs) (b2, ofs2)).
 Proof.
   intros e1 e2 He le1 le2 Hle m1 m2 Hm.
   apply eval_expr_lvalue_ind;
@@ -334,7 +344,7 @@ Proof.
     transport_hyps.
     eexists; eexists; split.
     + eapply eval_Evar_global; eauto.
-    + apply match_block_sameofs_ptrbits; auto.
+    + apply block_sameofs_ptrbits_inject; intuition auto.
       admit. (* need extra condition on w: global symbols inject into self *)
 
   - intros expr ty b1 ofs H1 IH.
@@ -346,7 +356,7 @@ Proof.
   - intros expr fid ty b1 ofs1 sid sflist satt delta H1 IH Hs Hf Hdelta.
     destruct IH as (ptr2 & H2 & Hptr).
     rinversion Hptr; inv Hptrl.
-    eauto 6 using @eval_Efield_struct, match_ptrbits_shift.
+    eauto 6 using @eval_Efield_struct, ptrbits_inject_shift.
 
   - intros expr fid ty b1 ofs1 uid uflist uatt H1 IH Hu.
     destruct IH as (ptr2 & H2 & Hptr).
@@ -358,7 +368,7 @@ Global Instance eval_expr_match R w:
   Monotonic
     (@eval_expr)
     (- ==> env_match R w ++> temp_env_match R w ++> match_mem R w ++> - ==>
-     set_le (match_val R w)).
+     set_le (Val.inject (mi R w))).
 Proof.
   intros ge e1 e2 He le1 le2 Hle m1 m2 Hm expr v1 Hv1.
   edestruct eval_expr_lvalue_match; eauto.
@@ -371,7 +381,7 @@ Global Instance eval_lvalue_match R w:
   Monotonic
     (@eval_lvalue)
     (- ==> env_match R w ++> temp_env_match R w ++> match_mem R w ++> - ==>
-     % set_le (match_ptrbits R w)).
+     % set_le (ptrbits_inject (mi R w))).
 Proof.
   intros ge e1 e2 He le1 le2 Hle m1 m2 Hm expr [b1 ofs] Hp1.
   simpl in *.
@@ -389,7 +399,7 @@ Global Instance eval_exprlist_match R w:
   Monotonic
     (@eval_exprlist)
     (- ==> env_match R w ++> temp_env_match R w ++> match_mem R w ++> - ==> - ==>
-     set_le (list_rel (match_val R w))).
+     set_le (list_rel (Val.inject (mi R w)))).
 Proof.
   intros ge e1 e2 He le1 le2 Hle m1 m2 Hm exprlist tys vs1 Hvs1.
   induction Hvs1 as [|expr exprs ty tys v1 v1' v1s Hv1 Hv1' Hv1s IHv1s]; simpl.
@@ -473,14 +483,14 @@ Inductive state_match R w: rel state state :=
       Monotonic
         (@Callstate)
         (- ==>
-         list_rel (match_val R w) ++>
+         list_rel (Val.inject (mi R w)) ++>
          (cont_match R w (*/\ lsat is_call_cont*)) ++>
          match_mem R w ++>
          state_match R w)
   | Returnstate_rel:
       Monotonic
         (@Returnstate)
-        (match_val R w ++>
+        (Val.inject (mi R w) ++>
          (cont_match R w (*/\ lsat is_call_cont*)) ++>
          match_mem R w ++>
          state_match R w).
@@ -507,20 +517,19 @@ Proof.
                (find_label_ls lbl ls));
   simpl; intros;
   repeat rstep.
-  destruct (ident_eq _ _); rauto. (* XXX coqrel *)
 Qed.
 
 Global Instance function_entry2_match R:
   Monotonic
     (@function_entry2)
-    ([] - ==> - ==> k1 list_rel (match_val R) ++> match_mem R ++>
+    ([] - ==> - ==> k1 list_rel (Val.inject @@ [mi R]) ++> match_mem R ++>
      %% k1 set_le (<> env_match R * temp_env_match R * match_mem R)).
 Proof.
-  intros w _ ge f vargs1 vargs2 Hvargs m1 m2 Hm [[e1 le1] m1'] H.
+  intros w ge f vargs1 vargs2 Hvargs m1 m2 Hm [[e1 le1] m1'] H.
   simpl in *.
   destruct H as [Hfvnr Hfpnr Hfvpd Hm1' Hle1].
   pose proof (empty_env_match R w) as Hee.
-  destruct (alloc_variables_match R w I ge _ _ Hee _ _ Hm _ (e1, m1') Hm1')
+  destruct (alloc_variables_match R w ge _ _ Hee _ _ Hm _ (e1, m1') Hm1')
     as ((e2 & m2') & Hm2' & p' & Hp' & He & Hm').
   transport Hle1.
   exists (e2, x, m2').
@@ -542,7 +551,7 @@ Global Instance find_funct_transfer {F V} R w (ge: Genv.t F V) v1 v2 f:
     (ge1, v1)
     (ge2, v2)
      *)
-    (match_val R w) v1 v2
+    (Val.inject (mi R w)) v1 v2
     (Genv.find_funct ge v1 = Some f)
     (Genv.find_funct ge v2 = Some f /\
      exists b, v1 = Vptr b Ptrofs.zero).
@@ -574,19 +583,19 @@ Qed.
 Global Instance external_call_rel R:
   Monotonic
     (@external_call)
-    ([] - ==> - ==> k1 list_rel (match_val R) ++> match_mem R ++> - ==>
-     % k1 set_le (<> match_val R * match_mem R)).
+    ([] - ==> - ==> k1 list_rel (Val.inject @@ [mi R]) ++> match_mem R ++> - ==>
+     % k1 set_le (<> Val.inject @@ [mi R] * match_mem R)).
 Admitted.
 
 Hint Extern 1 (Transport _ _ _ _ _) =>
   rel_curry_set_le_transport @external_call : typeclass_instances.
 
-Global Instance step_rel R ge:
+Global Instance step2_rel R ge:
   Monotonic
-    (@step ge (function_entry2 ge))
+    (@step2 ge)
     ([] state_match R ++> - ==> k1 set_le (<> state_match R)).
 Proof.
-  intros w _ s1 s2 Hs t s1' H1.
+  intros w s1 s2 Hs t s1' H1.
   deconstruct H1 ltac:(fun x => pose (c := x)); inv Hs;
   try
     (transport_hyps;
@@ -604,4 +613,31 @@ Proof.
        eexists; split;
          [ eapply c; eauto; fail
          | eexists; split; rauto ]).
-Qed.
+
+  - transport_hyps.
+    eexists; split.
+    eapply c; eauto.
+    admit. (* XXX: block_of is not stable under injection -- need property that ge's symbols self-inject w/ 0 offset *)
+    eexists; split; rauto.
+Admitted.
+
+Global Instance step_rel_params:
+  Params (@step2) 3.
+
+Hint Extern 1 (Transport _ _ _ _ _) =>
+  set_le_transport @step2 : typeclass_instances.
+
+Lemma semantics2_rel R p:
+  forward_simulation (cc_c R) (cc_c R) (Clight.semantics2 p) (Clight.semantics2 p).
+Proof.
+  apply forward_simulation_step with (<> state_match R)%klr.
+  - reflexivity.
+  - admit. (* initial states *)
+  - admit. (* external *)
+  - admit. (* final state *)
+  - intros.
+    simpl in H.
+    destruct H0 as (w' & Hw' & Hs).
+    transport H.
+    eexists; split; rauto.
+Admitted.

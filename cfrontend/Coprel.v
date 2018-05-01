@@ -15,7 +15,7 @@ Require Export Cop.
 Global Instance bool_val_match R w:
   Monotonic
     (@Cop.bool_val)
-    (match_val R w ++> - ==> match_mem R w ++> option_le eq).
+    (Val.inject (mi R w) ++> - ==> match_mem R w ++> option_le eq).
 Proof.
   unfold bool_val. rauto.
 Qed.
@@ -31,7 +31,8 @@ Qed.
 Global Instance sem_unary_operation_match R w:
   Monotonic
     (@Cop.sem_unary_operation)
-    (- ==> match_val R w ++> - ==> match_mem R w ==> option_le (match_val R w)).
+    (- ==> Val.inject (mi R w) ++> - ==> match_mem R w ==>
+     option_le (Val.inject (mi R w))).
 Proof.
   unfold Cop.sem_unary_operation.
   unfold
@@ -46,40 +47,33 @@ Qed.
 Global Instance sem_cast_match R w:
   Monotonic
     (@Cop.sem_cast)
-    (match_val R w ++> - ==> - ==> match_mem R w ++>
-     option_le (match_val R w)).
+    (Val.inject (mi R w) ++> - ==> - ==> match_mem R w ++>
+     option_le (Val.inject (mi R w))).
 Proof.
-  unfold Cop.sem_cast.
-  repeat rstep.
-  - rdestruct_assert; [ apply eq_refl | rauto ]. (* XXX: fix in coqrel *)
-  - rdestruct_assert; [ apply eq_refl | rauto ]. (* XXX: fix in coqrel *)
+  unfold Cop.sem_cast. rauto.
 Qed.
 
 Global Instance sem_binarith_match R w:
   Monotonic
     (@Cop.sem_binarith)
-    ((- ==> - ==> - ==> option_le (match_val R w)) ++>
-     (- ==> - ==> - ==> option_le (match_val R w)) ++>
-     (- ==> - ==> option_le (match_val R w)) ++>
-     (- ==> - ==> option_le (match_val R w)) ++>
-     match_val R w ++> - ==>
-     match_val R w ++> - ==>
+    ((- ==> - ==> - ==> option_le (Val.inject (mi R w))) ++>
+     (- ==> - ==> - ==> option_le (Val.inject (mi R w))) ++>
+     (- ==> - ==> option_le (Val.inject (mi R w))) ++>
+     (- ==> - ==> option_le (Val.inject (mi R w))) ++>
+     Val.inject (mi R w) ++> - ==>
+     Val.inject (mi R w) ++> - ==>
      match_mem R w ++>
-     option_le (match_val R w)).
+     option_le (Val.inject (mi R w))).
 Proof.
   unfold Cop.sem_binarith. rauto.
 Qed.
-
-(*
-  Remove Hints funext_mor4 : typeclass_instances.
-*)
 
 Global Instance cmp_ptr_match R w:
   Related
     (@Cop.cmp_ptr)
     (@Cop.cmp_ptr)
-    (match_mem R w ++> - ==> match_val R w ++> match_val R w ++>
-     option_le (match_val R w)).
+    (match_mem R w ++> - ==> Val.inject (mi R w) ++> Val.inject (mi R w) ++>
+     option_le (Val.inject (mi R w))).
 Proof.
   unfold cmp_ptr. rauto.
 Qed.
@@ -88,10 +82,10 @@ Global Instance sem_cmp_match R w:
   Monotonic
    (@Cop.sem_cmp)
    (- ==>
-    match_val R w ++> - ==>
-    match_val R w ++> - ==>
+    Val.inject (mi R w) ++> - ==>
+    Val.inject (mi R w) ++> - ==>
     match_mem R w ++>
-    option_le (match_val R w)).
+    option_le (Val.inject (mi R w))).
 Proof.
   unfold sem_cmp. rauto.
 Qed.
@@ -101,9 +95,9 @@ Global Instance sem_shift_match R w:
     (@Cop.sem_shift)
     (- ==>
      - ==>
-     match_val R w ++> - ==>
-     match_val R w ++> - ==>
-     option_le (match_val R w)).
+     Val.inject (mi R w) ++> - ==>
+     Val.inject (mi R w) ++> - ==>
+     option_le (Val.inject (mi R w))).
 Proof.
   unfold Cop.sem_shift. rauto.
 Qed.
@@ -112,10 +106,10 @@ Global Instance sem_binary_operation_match R w:
   Monotonic
     (@Cop.sem_binary_operation)
     (- ==> - ==>
-     match_val R w ++> - ==>
-     match_val R w ++> - ==>
+     Val.inject (mi R w) ++> - ==>
+     Val.inject (mi R w) ++> - ==>
      match_mem R w ++>
-     option_le (match_val R w)).
+     option_le (Val.inject (mi R w))).
 Proof.
   unfold Cop.sem_binary_operation.
   unfold
