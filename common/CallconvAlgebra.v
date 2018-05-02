@@ -376,7 +376,7 @@ Lemma cc_both_idemp {liA liB} (cc: callconv liA liB):
   cceqv (cc_both cc cc) cc.
 Abort.
 
-Infix "&" := cc_both (at level 40) : cc_scope.
+Infix "&&" := cc_both : cc_scope.
 
 (** ** Iteration *)
 
@@ -387,71 +387,59 @@ Section STAR.
 
   (** *** Definition *)
 
-  Fixpoint klr_fold {W A} (R: klr W A A) (ws: list W) :=
-    match ws with
-      | nil => eq
-      | w::ws => rel_compose (R w) (klr_fold R ws)
+  (** We define n-fold self-composition [cc_pow cc n], then use it as
+    a base to define [cc_star cc]. This makes it easier to prove that
+    self-simulation entails self-simulation by the starred calling
+    convention: we first show self-simulation by [cc ^ n] for an
+    arbitrary [n]; then with that intermediate result we can reuse
+    [compose_forward_simulations], which deals with the complexity of
+    composing the general forward simulation diagram, in our proof of
+    the [cc_star] simulation. *)
+
+  Fixpoint cc_pow (n: nat): callconv li li :=
+    match n with
+      | O => cc_id
+      | S m => cc @ cc_pow m
     end.
 
   Definition cc_star: callconv li li :=
     {|
-      ccworld := list (ccworld cc);
-      match_senv := klr_fold (match_senv cc);
-      match_query := klr_fold (match_query cc);
-      match_reply := klr_fold (match_reply cc);
+      ccworld := { n : nat & ccworld (cc_pow n) };
+      match_senv := fun '(existT n w) => match_senv (cc_pow n) w;
+      match_query := fun '(existT n w) => match_query (cc_pow n) w;
+      match_reply := fun '(existT n w) => match_reply (cc_pow n) w;
     |}.
-
-  (** *** Useful lemmas *)
-
-  Lemma klr_fold_app_intro {W A} R (u v: list W) (x y z: A):
-    klr_fold R u x y ->
-    klr_fold R v y z ->
-    klr_fold R (u ++ v) x z.
-  Proof.
-    revert x.
-    induction u as [ | u us IHus]; simpl.
-    - congruence.
-    - intros x (x' & Hx & Hx'). eexists. eauto.
-  Qed.
-
-  Lemma klr_fold_app_elim {W A} R (u v: list W) (x z: A):
-    klr_fold R (u ++ v) x z ->
-    exists y, klr_fold R u x y /\ klr_fold R v y z.
-  Proof.
-    revert x.
-    induction u as [ | u us IHus]; simpl.
-    - firstorder.
-    - intros x (x' & Hx & H).
-      edestruct IHus as (y & Hx' & Hyz); eauto.
-      exists y. split; eauto. exists x'; eauto.
-  Qed.
 
   (** *** Properties *)
 
   Lemma cc_star_fold_l:
     ccref (1 + cc @ cc_star) cc_star.
   Proof.
-    intros [[ ] | [w ws]] q1 q2 Hq; simpl.
-    - exists nil.
+    intros [[ ] | [w [n ws]]] q1 q2 Hq; simpl in *.
+    - exists (existT _ O tt).
       simpl; eauto.
-    - exists (w :: ws).
+    - exists (existT _ (S n) (w, ws)).
       simpl; eauto.
   Qed.
 
   Lemma cc_star_fold_r:
     ccref (1 + cc_star @ cc) cc_star.
   Proof.
-    intros [[ ] | [ws w]] q1 q3; simpl.
+    intros [[ ] | [[n ws] w]] q1 q3; simpl.
     - intros [ ].
-      exists nil. simpl. tauto.
+      exists (existT _ O tt). simpl. tauto.
     - intros (q2 & Hqs & Hq).
-      exists (ws ++ w :: nil).
-      unfold rel_compose; split.
-      + eapply klr_fold_app_intro; simpl; eauto.
-        eexists; eauto.
-      + intros r1 r2 Hr.
-        edestruct (klr_fold_app_elim (match_reply cc)) as (r & Hr1 & Hr2); eauto.
-        destruct Hr2 as (? & Hr2 & ?); simpl in *; subst. eauto.
+      revert q1 Hqs.
+      induction n as [ | n IHn]; simpl in *; intros.
+      + exists (existT _ 1%nat (w, tt)). simpl. subst.
+        unfold rel_compose. split; eauto.
+        intros r1 r3 (r2 & Hr12 & Hr23). subst. eauto.
+      + destruct ws as [w0 ws], Hqs as (qI & Hq1I & HqI2). simpl in *.
+        specialize (IHn ws qI HqI2) as ([n' ws'] & HqI3' & ?). clear HqI2.
+        exists (existT _ (S n') (w0, ws')). simpl.
+        unfold rel_compose. split; eauto.
+        intros r1 r3 (r2 & Hr12 & Hr23).
+        edestruct H as (rI & Hr1I & HrI2); eauto.
   Qed.
 
   Lemma cc_id_star:
@@ -471,23 +459,180 @@ Section STAR.
     rewrite cc_compose_id_left.
     reflexivity.
   Qed.
+
+  Lemma cc_pow_star n:
+    ccref (cc_pow n) cc_star.
+  Proof.
+    induction n; simpl.
+    - apply cc_id_star.
+    - rewrite <- cc_star_fold_l.
+      rewrite <- cc_join_ub_r.
+      rauto.
+  Qed.
 End STAR.
+
+Infix "^" := cc_pow : cc_scope.
+Notation "cc ^{*}" := (cc_star cc) (at level 30) : cc_scope.
+
+Global Instance cc_pow_ref:
+  Monotonic (@cc_pow) (forallr -, ccref ++> - ==> ccref).
+Proof.
+  intros li cc1 cc2 Hcc n.
+  induction n; simpl cc_pow; rauto.
+Qed.
 
 Global Instance cc_star_ref li:
   Proper (ccref ++> ccref) (@cc_star li).
 Proof.
-  intros cc cc' Hcc ws.
-  induction ws as [ | w ws IHws]; simpl.
-  - intros q _ [ ].
-    exists nil. simpl. eauto.
-  - intros q1 q2 (q & Hq1 & Hq2).
-    edestruct Hcc as (w' & Hq1' & Hr1); eauto.
-    edestruct IHws as (ws' & Hq2' & Hr2); eauto.
-    clear Hq1 Hq2.
-    exists (w'::ws').
-    simpl in *. unfold rel_compose in *.
-    split; eauto.
-    intros r1 r2 (r & Hr1' & Hr2'); eauto.
+  intros cc cc' Hcc [n ws] q1 q2 Hq.
+  destruct (cc_pow_ref li cc cc' Hcc n ws q1 q2 Hq) as (ws' & Hq' & H).
+  exists (existT _ n ws'); simpl. eauto.
+Qed.
+
+(** *** Proving simulations *)
+
+Lemma cc_pow_fsim_intro {liA liB ccA ccB} (L: semantics liA liB) n:
+  forward_simulation ccA ccB L L ->
+  forward_simulation (ccA ^ n) (ccB ^ n) L L.
+Proof.
+  intros HL.
+  induction n; simpl.
+  - admit. (* identity forward simulation *)
+  - eapply compose_forward_simulations; eauto.
+Admitted. (* cc_pow_fsim_intro -- needs identity forward simulation *)
+
+Lemma cc_star_pow_fsim {liA liB ccA ccB} (L: semantics liA liB) n:
+  forward_simulation ccA ccB L L ->
+  forward_simulation (ccA ^{*}) (ccB ^ n) L L.
+Proof.
+  intros HL.
+  rewrite <- cc_pow_star.
+  apply cc_pow_fsim_intro; eauto.
+Qed.
+
+(** The lemma proved below is the fundamental way of building
+  simulations with a [cc_star] incoming calling convention: if we can
+  show a simulation in terms of [cc_pow n] for all [n], then the
+  simulation holds for [cc_star] as well. This is simple in principle,
+  but somewhat technical to prove, and it requires dependent
+  functional choice.
+
+  This could be formulated in terms of strategy refinement instead,
+  which would make it both more general and would probably avoid much
+  of the complexity. *)
+
+Section CC_POW_STAR_FSIM.
+  Context {liA1 liA2 liB} {ccA: callconv liA1 liA2} {ccB: callconv liB liB}.
+  Context (L1: Smallstep.semantics liA1 liB).
+  Context (L2: Smallstep.semantics liA2 liB).
+
+  (** We will need to have packaged the components of the simulations
+    so as to feed them through our choice axiom. *)
+
+  Record simulation_components {n} :=
+    {
+      sc_index: Type;
+      sc_order: relation sc_index;
+      sc_match_states: ccworld (ccB^n) -> sc_index -> rel (state L1) (state L2);
+    }.
+
+  Arguments simulation_components : clear implicits.
+
+  Definition simulation_holds n (c: simulation_components n) :=
+    fsim_properties ccA (ccB^n) L1 L2 (sc_order c) (sc_match_states c).
+
+  (** We will use [ChoiceFacts.FunctionalDependentChoice] to obtain
+    the following data, from which we can construct the composite
+    simulation. *)
+
+  Variable (sc: forall n, simulation_components n).
+  Hypothesis (Hsc: forall n, simulation_holds n (sc n)).
+
+  (** First, we must define our index type. *)
+
+  Definition pow_star_index :=
+    { n: nat & sc_index (sc n) }.
+
+  Inductive pow_star_order: relation pow_star_index :=
+    pso_intro n x y:
+      sc_order (sc n) x y ->
+      pow_star_order (existT _ n x) (existT _ n y).
+
+  Lemma pow_star_order_wf:
+    well_founded pow_star_order.
+  Proof.
+    intros [n i].
+    assert (Acc (sc_order (sc n)) i) by eapply fsim_order_wf, Hsc.
+    induction H.
+    constructor.
+    inversion 1; subst.
+    eapply H0.
+    apply inj_pair2 in H5.
+    congruence.
+  Qed.
+
+  (** Now we can define the simulation relation and prove its properties. *)
+
+  Inductive pow_star_match: ccworld (ccB^{*}) -> pow_star_index -> rel _ _ :=
+    psms_intro n w i s1 s2:
+      sc_match_states (sc n) w i s1 s2 ->
+      pow_star_match (existT _ n w) (existT _ n i) s1 s2.
+
+  Lemma pow_star_fsim_properties:
+    fsim_properties ccA (cc_star ccB) L1 L2 pow_star_order pow_star_match.
+  Proof.
+    unfold simulation_holds in Hsc.
+    split.
+    - apply pow_star_order_wf.
+    - intros [n w] q1 q2 Hq s1 Hs1. simpl in *.
+      edestruct @fsim_match_initial_states as (i & s2 & Hs2 & Hs); eauto.
+      exists (existT _ n i), s2. split; auto.
+      constructor; auto.
+    - intros _ _ _ _ [n w i s1 s2 Hs] q1 AE1 Hs1.
+      edestruct @fsim_match_external as (wA & q2 & AE2 & Hq & Hs2 & HAE); eauto.
+      exists wA, q2, AE2. intuition auto.
+      edestruct HAE as (j & s2' & Hs2' & Hs'); eauto.
+      exists (existT _ n j), s2'. intuition auto.
+      constructor; auto.
+    - intros _ _ _ _ r1 [n w i s1 s2 Hs] Hs1.
+      edestruct @fsim_match_final_states as (r2 & Hr & Hs2); eauto.
+      exists r2. simpl. eauto.
+    - intros nw s1 t s1' Hstep1 i s2 Hs. destruct Hs as [n w i s1 s2 Hs].
+      edestruct @fsim_simulation as (i' & s2' & Hstep2 & Hs'); eauto.
+      intuition eauto 10 using pso_intro, psms_intro.
+    - specialize (Hsc 0).
+      eapply fsim_public_preserved; eauto.
+  Qed.
+End CC_POW_STAR_FSIM.
+
+Require Import ChoiceFacts.
+Axiom AC_dep_fun: DependentFunctionalChoice.
+
+Lemma cc_pow_star_fsim {liA1 liA2 liB ccA ccB} L1 L2:
+  (forall n, forward_simulation ccA (ccB ^ n) L1 L2) ->
+  @forward_simulation liA1 liB liA2 liB ccA (cc_star ccB) L1 L2.
+Proof.
+  intros HL.
+  assert (forall n, exists s, simulation_holds (ccA:=ccA) (ccB:=ccB) L1 L2 n s).
+  {
+    intros n.
+    specialize (HL n) as [index order ms H].
+    exists {| sc_order := order; sc_match_states := ms |}.
+    eauto.
+  }
+  clear HL.
+  apply AC_dep_fun in H as [sc Hsc].
+  econstructor.
+  eapply pow_star_fsim_properties; eauto.
+Qed.
+
+Lemma cc_star_fsim {liA liB ccA ccB} (L: semantics liA liB):
+  forward_simulation ccA ccB L L ->
+  forward_simulation (cc_star ccA) (cc_star ccB) L L.
+Proof.
+  intros HL.
+  apply cc_pow_star_fsim. intros n.
+  apply cc_star_pow_fsim; eauto.
 Qed.
 
 
@@ -972,8 +1117,8 @@ Qed.
 
 Lemma cc_injt_injp:
   ccref
-    ((cc_c injn & cc_id) @ cc_c injp)
-    ((cc_c injn & cc_id) @ cc_c injp @ cc_c_tr inj @ cc_c injp).
+    ((cc_c injn && cc_id) @ cc_c injp)
+    ((cc_c injn && cc_id) @ cc_c injp @ cc_c_tr inj @ cc_c injp).
 Proof.
   intros ([nb [ ]] & w12) [fb1 sg1 vs1 m1] [fb2 sg vs2 m2] (xq1 & Hq11 & Hq12).
   destruct Hq11 as [Hq11 Hxq1]. simpl in Hxq1. subst xq1.
