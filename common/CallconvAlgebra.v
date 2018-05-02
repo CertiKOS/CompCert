@@ -237,6 +237,8 @@ Global Instance cc_compose_ref_params:
 Section JOIN.
   Context {li: language_interface}.
 
+  (** *** Definition *)
+
   Definition copair {A B C} (f: A -> C) (g: B -> C) (x: A + B): C :=
     match x with
       | inl a => f a
@@ -250,6 +252,8 @@ Section JOIN.
       match_query := copair (match_query cc1) (match_query cc2);
       match_reply := copair (match_reply cc1) (match_reply cc2);
     |}.
+
+  (** *** Properties *)
 
   (** [cc_join] is the least upper bound with respect to [ccref]. *)
 
@@ -333,6 +337,52 @@ Section JOIN.
   Proof.
     unfold cceqv; intuition.
     transitivity (cc_join cc1 cc2); eauto.
+  Qed.
+
+  (** *** Forward simulations *)
+
+  Inductive cc_join_ms {A B C D E F} R1 R2: A + B -> C + D -> E -> F -> Prop :=
+    | cc_join_ms_introl a b x y:
+        R1 a b x y -> cc_join_ms R1 R2 (inl a) (inl b) x y
+    | cc_join_ms_intror a b x y:
+        R2 a b x y -> cc_join_ms R1 R2 (inr a) (inr b) x y.
+
+  Hint Constructors cc_join_ms.
+
+  Lemma cc_join_fsim {liA1 liA2} (ccA: callconv liA1 liA2) ccB1 ccB2 L1 L2:
+    forward_simulation ccA ccB1 L1 L2 ->
+    forward_simulation ccA ccB2 L1 L2 ->
+    forward_simulation ccA (cc_join ccB1 ccB2) L1 L2.
+  Proof.
+    intros [index1 order1 ms1 H1] [index2 order2 ms2 H2].
+    exists (index1 + index2)%type (order1 + order2)%rel (cc_join_ms ms1 ms2).
+    split.
+    - intros [x|x].
+      + induction (fsim_order_wf H1 x).
+        constructor. inversion 1. subst. eauto.
+      + induction (fsim_order_wf H2 x).
+        constructor. inversion 1. subst. eauto.
+    - intros [w|w] q1 q2 Hq s1 Hs1; simpl in *.
+      edestruct (fsim_match_initial_states H1) as (i & s2 & Hs2 & Hs); eauto.
+      edestruct (fsim_match_initial_states H2) as (i & s2 & Hs2 & Hs); eauto.
+    - intros _ _ _ _ [w i s1 s2 Hs | w i s1 s2 Hs] q1 AE1 Hq1.
+      + edestruct (fsim_match_external H1) as (wA & q2 & AE2 & ? & ? & H); eauto.
+        exists wA, q2, AE2. intuition auto.
+        edestruct H as (j & s2' & Hs2' & Hs'); eauto.
+      + edestruct (fsim_match_external H2) as (wA & q2 & AE2 & ? & ? & H); eauto.
+        exists wA, q2, AE2. intuition auto.
+        edestruct H as (j & s2' & Hs2' & Hs'); eauto.
+    - intros _ _ _ _ r1 [w i s1 s2 Hs | w i s1 s2 Hs] Hs1; simpl;
+        eauto using fsim_match_final_states.
+    - intros w s1 t s1' Hstep1 i s2 Hs.
+      destruct Hs as [w i s1 s2 Hs | w i s1 s2 Hs].
+      + edestruct (fsim_simulation H1) as (i' & s2' & Hstep2 & Hs'); eauto.
+        exists (inl i'), s2'. intuition auto.
+        right. split; eauto. constructor; eauto.
+      + edestruct (fsim_simulation H2) as (i' & s2' & Hstep2 & Hs'); eauto.
+        exists (inr i'), s2'. intuition auto.
+        right. split; eauto. constructor; eauto.
+    - eauto using fsim_public_preserved.
   Qed.
 End JOIN.
 

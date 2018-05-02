@@ -372,6 +372,7 @@ Bind Scope cc_scope with callconv.
   OS primitive, etc.), but it is less essential. *)
 
 Require Import InjectNeutral.
+Require Import Clightrel.
 
 Definition cc_compcert: callconv li_c Asm.li_asm :=
   cc_star (cc_c injp + cc_c extp + cc_c injn) @
@@ -387,7 +388,17 @@ Lemma c_properties p:
     (cc_star (cc_c injp + cc_c extp + cc_c injn) @ cc_c injn)
     (Clight.semantics2 p)
     (Clight.semantics2 p).
-Admitted.
+Proof.
+  eapply compose_forward_simulations; eauto using Clightrel.semantics2_rel.
+  eapply cc_star_fsim.
+  repeat eapply cc_join_fsim.
+  - rewrite <- cc_join_ub_l, <- cc_join_ub_l.
+    apply Clightrel.semantics2_rel.
+  - rewrite <- cc_join_ub_l, <- cc_join_ub_r.
+    apply Clightrel.semantics2_rel.
+  - rewrite <- cc_join_ub_r.
+    apply Clightrel.semantics2_rel.
+Qed.
 
 Lemma rtl_properties p:
   forward_simulation
