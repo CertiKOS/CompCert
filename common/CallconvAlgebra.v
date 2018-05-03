@@ -547,9 +547,9 @@ Lemma cc_pow_fsim_intro {liA liB ccA ccB} (L: semantics liA liB) n:
 Proof.
   intros HL.
   induction n; simpl.
-  - admit. (* identity forward simulation *)
+  - eapply forward_simulation_identity.
   - eapply compose_forward_simulations; eauto.
-Admitted. (* cc_pow_fsim_intro -- needs identity forward simulation *)
+Qed.
 
 Lemma cc_star_pow_fsim {liA liB ccA ccB} (L: semantics liA liB) n:
   forward_simulation ccA ccB L L ->

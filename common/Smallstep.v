@@ -855,6 +855,24 @@ End SIMULATION_SEQUENCES.
 
 End FORWARD_SIMULATION.
 
+(** ** Identity forward simulation *)
+
+Remark forward_simulation_identity {liA liB}:
+  forall sem, forward_simulation (@cc_id liA) (@cc_id liB) sem sem.
+Proof.
+  intros. apply forward_simulation_step with (fun w s1 s2 => s2 = s1); intros.
+- auto.
+- exists s1; auto.
+  apply match_query_cc_id in H; split; congruence.
+- subst s2; auto.
+  edestruct (match_cc_id q1) as (wA & Hq & Hr).
+  eexists wA, q1, after_external1. intuition.
+  apply Hr in H. exists s1'; split; eauto. congruence.
+- subst s2. exists r1; split; eauto.
+  apply match_reply_cc_id.
+- subst; eauto. 
+Qed.
+
 (** ** Composing two forward simulations *)
 
 Lemma compose_forward_simulations:
