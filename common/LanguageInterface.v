@@ -188,6 +188,7 @@ Record match_c_query (R: cklr) (w: world R) (q1 q2: c_query) :=
     match_cq_sg: cq_sg q1 = cq_sg q2;
     match_cq_args: list_rel (Val.inject (mi R w)) (cq_args q1) (cq_args q2);
     match_cq_mem: match_mem R w (cq_mem q1) (cq_mem q2);
+    match_cq_valid: inject_incr (Mem.flat_inj Block.init) (mi R w);
   }.
 
 Definition cc_c (R: cklr): callconv li_c li_c :=
@@ -216,6 +217,10 @@ Definition cc_c_tr R: callconv li_c li_c :=
 
 (** *** Extension passes *)
 
+Lemma flat_inject_id_incr thr:
+  inject_incr (Mem.flat_inj thr) inject_id.
+Admitted.
+
 Lemma match_cc_ext id sg vargs1 m1 vargs2 m2:
   Mem.extends m1 m2 ->
   Val.lessdef_list vargs1 vargs2 ->
@@ -232,6 +237,7 @@ Proof.
     + exists 0. reflexivity.
     + apply val_inject_list_lessdef in Hvargs.
       induction Hvargs; constructor; eauto.
+    + apply flat_inject_id_incr.
   - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). simpl in *.
     split; auto.
     apply val_inject_lessdef; eauto.
@@ -255,6 +261,7 @@ Proof.
     + apply val_inject_list_lessdef in Hvargs.
       induction Hvargs; constructor; eauto.
     + constructor; eauto.
+    + apply flat_inject_id_incr.
   - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). cbn [fst snd] in *.
     inversion Hw' as [xm1 xm2 xm1' xm2' Hperm Hunch]; subst.
     inv Hm'. simpl in Hvres. red in Hvres.
@@ -268,6 +275,7 @@ Lemma match_cc_inject fb1 sg f vargs1 m1 fb2 vargs2 m2:
   block_inject f fb1 fb2 ->
   Val.inject_list f vargs1 vargs2 ->
   Mem.inject f m1 m2 ->
+  inject_incr (Mem.flat_inj Block.init) f ->
   exists w,
     match_query (cc_c injp) w (cq fb1 sg vargs1 m1) (cq fb2 sg vargs2 m2) /\
     forall vres1 m1' vres2 m2',

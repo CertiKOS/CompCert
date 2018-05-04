@@ -803,28 +803,42 @@ Qed.
 
 (** * Composition theorems *)
 
+(* XXX should go to cklr.Inject *)
+Global Instance meminj_dom_incr:
+  Monotonic (@meminj_dom) (inject_incr ++> inject_incr).
+Proof.
+  intros f1 f2 Hf b b' delta.
+  unfold meminj_dom, inject_incr in *.
+  destruct (f1 b) as [[xb xdelta] | ] eqn:H; try discriminate.
+  erewrite Hf; eauto.
+Qed.
+
 Lemma match_c_query_dom f q1 q2:
   match_c_query inj f q1 q2 ->
   match_c_query inj (meminj_dom f) q1 q1.
 Proof.
   destruct q1 as [fb1 sg1 vargs1 m1], q2 as [fb2 sg2 vargs2 m2]. simpl.
-  intros [Hfb Hsg Hargs Hm]; simpl in *.
+  intros [Hfb Hsg Hargs Hm Hf]; simpl in *.
   constructor; simpl; eauto using block_inject_dom, mem_inject_dom.
-  apply val_inject_list_rel.
-  eapply val_inject_list_dom.
-  apply val_inject_list_rel.
-  eassumption.
+  - apply val_inject_list_rel.
+    eapply val_inject_list_dom.
+    apply val_inject_list_rel.
+    eassumption.
+  - transitivity (meminj_dom (Mem.flat_inj Block.init)).
+    + rewrite meminj_dom_flat_inj; eauto.
+    + rauto.
 Qed.
 
 (** ** Rectangular diagrams *)
 
+(* broken after adding match_cq_valid
 Lemma match_c_query_compose R12 R23 w12 w23:
   eqrel
     (match_c_query (R12 @ R23) (w12, w23))
     (rel_compose (match_c_query R12 w12) (match_c_query R23 w23)).
 Proof.
   split.
-  - intros [fb1 sg1 vargs1 m1] [fb3 sg3 vargs3 m3] [Hfb Hsg Hvargs Hm].
+  - intros [fb1 sg1 vargs1 m1] [fb3 sg3 vargs3 m3] [Hfb Hsg Hvargs Hm Hf].
     simpl in *.
     apply block_inject_compose in Hfb.
     rewrite val_inject_compose in Hvargs. apply list_rel_compose in Hvargs.
@@ -844,6 +858,7 @@ Proof.
       eexists; split; eauto.
     + eexists; split; eauto.
 Qed.
+*)
 
 Lemma cc_c_ref:
   Monotonic (@cc_c) (subcklr ++> ccref).
@@ -860,6 +875,7 @@ Proof.
     rauto.
 Qed.
 
+(* broken after adding match_cq_valid
 Lemma cc_c_compose R12 R23:
   cceqv (cc_c (R12 @ R23)) (cc_c R12 @ cc_c R23).
 Proof.
@@ -887,6 +903,7 @@ Proof.
     destruct Hm' as (m2' & Hm12' & Hm23').
     exists (vres2, m2'); split; rauto.
 Qed.
+*)
 
 (** ** Triangular diagrams *)
 
@@ -907,6 +924,7 @@ Proof.
     rauto.
 Qed.
 
+(* broken after adding match_cq_valid
 Lemma cc_c_tr_compose Q R:
   ccref (cc_c_tr Q @ cc_c_tr R) (cc_c_tr (Q @ R)).
 Proof.
@@ -932,6 +950,7 @@ Proof.
     simpl in *.
     eexists; split; rauto.
 Qed.
+*)
 
 Global Instance flat_inject_id thr:
   Related (Mem.flat_inj thr) inject_id inject_incr.
@@ -972,6 +991,7 @@ Proof.
     + constructor; try reflexivity.
       rauto.
       apply Mem.extends_refl.
+      apply flat_inject_id_incr.
   - intros [v1' m1'] [v3' r3'].
     intros ([v2' m2'] & ([ ] & _ & [Hv12' Hm12']) & (f' & Hf' & Hv23' & Hm23')).
     simpl in *.
@@ -995,6 +1015,7 @@ Proof.
     + constructor; try reflexivity.
       rauto.
       apply Mem.extends_refl.
+      apply flat_inject_id_incr.
   - intros [v1' m1'] [v3' m3'].
     intros ([v2' m2'] & (f' & Hf' & Hv12' & Hm12') & ([ ] & _ & Hv23' & Hm23')).
     exists f'; split; eauto.
@@ -1051,6 +1072,7 @@ Proof.
   intro. apply Mem.extends_refl.
 Qed.
 
+(* broken after adding match_cq_valid
 Lemma cc_extt_ext:
   ccref (cc_c ext) (cc_c_tr ext @ cc_c ext).
 Proof.
@@ -1082,6 +1104,7 @@ Proof.
       apply val_inject_compose. eexists; split; eauto.
     + eapply Mem.extends_extends_compose; eauto.
 Qed.
+*)
 
 Lemma match_c_query_injn_inj nb q1 q2:
   match_c_query injn nb q1 q2 <->
@@ -1197,6 +1220,8 @@ Proof.
         apply val_inject_list_rel; eauto.
       + constructor.
         eapply mem_inject_dom; eauto.
+      + transitivity (meminj_dom (Mem.flat_inj Block.init)); [ | rauto].
+        rewrite meminj_dom_flat_inj; eauto.
     }
     exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
     {
@@ -1542,6 +1567,8 @@ Proof.
       constructor; eauto. simpl.
       subst args1.
       rauto.
+      transitivity (Mem.flat_inj (Mem.nextblock m1)); eauto.
+      repeat rstep. apply Mem.init_nextblock.
     + constructor; eauto.
   - intros r1 r2 (rI & Hr1I & HrI2). simpl in * |- .
     destruct r1 as [vres1 m1'], Hr1I as (w' & Hw' & Hvres & Hm').

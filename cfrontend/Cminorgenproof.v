@@ -2320,6 +2320,13 @@ Proof.
     destruct Hge; eauto.
     eapply match_globalenvs_inject_incr; eauto.
   }
+  {
+    clear -MCS.
+    apply match_callstack_match_globalenvs in MCS as [hi [ ]].
+    intros b b' delta. unfold Mem.flat_inj.
+    destruct Block.lt_dec; inversion 1; subst.
+    eapply DOMAIN. blomega.
+  }
   inv TR.
   assert (fd = External (EF_external id sg)) by congruence; subst fd.
   eexists wA, (cq b sg targs tm), _; repeat apply conj; eauto.
