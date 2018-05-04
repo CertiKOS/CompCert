@@ -1771,7 +1771,6 @@ Proof.
   rewrite <- E.
   inv B. simpl in E.
   econstructor; eauto.
-  rewrite E. simpl. assumption.
   econstructor; eauto. instantiate (1 := prog_comp_env cu). constructor; auto. exact I.
 Qed.
 

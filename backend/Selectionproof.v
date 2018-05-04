@@ -1097,12 +1097,8 @@ Proof.
   {
     fold (Cminor.funsig (Internal f)).
     erewrite <- sig_function_translated by eauto.
-    pose proof B. inv B. destruct H2. monadInv H3.
-    econstructor.
-    + assumption.
-    + fold (funsig (Internal x0)).
-      erewrite sig_function_translated; eauto.
-      assumption.
+    pose proof B. inv B. destruct H1. monadInv H2.
+    econstructor; eauto.
   }
   econstructor; eauto. red; intros; constructor.
   clear; induction vargs0; eauto.

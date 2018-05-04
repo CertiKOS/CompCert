@@ -2271,9 +2271,6 @@ Proof.
   erewrite <- sig_preserved by eauto.
   monadInv TR.
   econstructor; eauto.
-  fold (funsig (Internal x)).
-  erewrite sig_preserved with (Internal f) (Internal x); eauto.
-  simpl. rewrite EQ. reflexivity.
   pose proof (Mem.init_nextblock m0) as Hnb.
   eapply match_callstate with (f := Mem.flat_inj (Mem.nextblock m0)) (cs := @nil frame) (cenv := PTree.empty Z).
   eauto. eauto.
