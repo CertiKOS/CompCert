@@ -68,7 +68,7 @@ COMMON=Errors.v AST.v Linking.v \
   Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
   LanguageInterface.v Invariant.v CallconvAlgebra.v ModuleSemantics.v \
   Separation.v \
-  CKLR.v Valuesrel.v \
+  CKLR.v Valuesrel.v Eventsrel.v \
 
 # Compcert Kripke Logical Relations
 

@@ -6,7 +6,7 @@ Require Import Floats.
 Require Import Valuesrel.
 Require Import AST.
 Require Import CKLR.
-Require Import Events.
+Require Import Eventsrel.
 Require Import Globalenvs.
 Require Import Smallstep.
 Require Import Ctypes.
@@ -308,9 +308,118 @@ Proof.
   unfold set_opttemp. rauto.
 Qed.
 
+
+(* XXX move to coqrel *)
+
+Inductive psat {A} (I: A -> Prop) (x: A): A -> Prop :=
+  psat_intro: I x -> psat I x x.
+
+Global Instance psat_subrel A:
+  Monotonic (@psat A) ((- ==> impl) ++> subrel).
+Proof.
+  intros P Q HPQ x _ [Hx].
+  constructor. apply HPQ. assumption.
+Qed.
+
+Global Instance psat_corefl {A} (I: A -> Prop):
+  Coreflexive (psat I).
+Proof.
+  intros x _ [_]. reflexivity.
+Qed.
+
+
+Definition genv_valid R w (ge: genv) :=
+  inject_incr (Mem.flat_inj Block.init) (mi R w).
+
+Global Instance genv_valid_acc:
+  Monotonic (@genv_valid) (forallr -, acc ++> - ==> impl).
+Proof.
+  unfold genv_valid.
+  intros R w w' Hw ge H.
+  etransitivity; rauto.
+Qed.
+
+Lemma genv_valid_find_symbol R w ge i b:
+  genv_valid R w ge ->
+  Genv.find_symbol ge i = Some b ->
+  block_inject_sameofs (mi R w) b b.
+Proof.
+  intros Hge H.
+  unfold Genv.find_symbol in H.
+  destruct (Genv.genv_defs ge)!i; inv H.
+  apply Hge.
+  unfold Mem.flat_inj.
+  destruct Block.lt_dec; eauto.
+  elim n; eapply Block.lt_glob_init.
+Qed.
+
+Lemma genv_valid_funct_ptr R w ge b f:
+  genv_valid R w ge ->
+  Genv.find_funct_ptr ge b = Some f ->
+  block_inject_sameofs (mi R w) b b.
+Proof.
+  intros Hge Hf.
+  unfold Genv.find_funct_ptr, Genv.find_def in Hf.
+  destruct Block.ident_of eqn:Hb; try discriminate.
+  apply Block.ident_of_inv in Hb. subst.
+  apply Hge.
+  unfold Mem.flat_inj.
+  destruct Block.lt_dec; eauto.
+  elim n; eapply Block.lt_glob_init.
+Qed.
+
+Lemma genv_valid_block_inject_eq R w ge b1 b2 f:
+  genv_valid R w ge ->
+  block_inject (mi R w) b1 b2 ->
+  Genv.find_funct_ptr ge b1 = Some f ->
+  b2 = b1.
+Proof.
+  intros Hge Hb H.
+  eapply genv_valid_funct_ptr in H; eauto.
+  red in H. destruct Hb. congruence.
+Qed.
+
+Lemma find_funct_ptr_transport R w ge b1 b2 f:
+  genv_valid R w ge ->
+  block_inject (mi R w) b1 b2 ->
+  Genv.find_funct_ptr ge b1 = Some f ->
+  Genv.find_funct_ptr ge b2 = Some f.
+Proof.
+  intros Hge Hb H.
+  cut (b2 = b1); try congruence.
+  eapply genv_valid_block_inject_eq; eauto.
+Qed.
+
+Global Instance find_funct_transfer R w ge1 ge2 v1 v2 f:
+  Transport
+    (psat (genv_valid R w) * Val.inject (mi R w))%rel
+    (ge1, v1)
+    (ge2, v2)
+    (Genv.find_funct ge1 v1 = Some f)
+    (Genv.find_funct ge2 v2 = Some f /\
+     exists b, v1 = Vptr b Ptrofs.zero).
+Proof.
+  repeat red.
+  intros [Hge Hv].
+  simpl in Hge, Hv.
+  destruct Hge as [Hge].
+  intros H.
+  inversion Hv; subst; try discriminate. simpl in *.
+  destruct (Ptrofs.eq_dec _ _); try discriminate. subst.
+  rewrite Ptrofs.add_zero_l.
+  assert (b2 = b1) by eauto using genv_valid_block_inject_eq; subst.
+  pose proof (genv_valid_funct_ptr _ _ _ _ _ Hge H) as Hb. red in Hb.
+  assert (delta = 0) by congruence; subst.
+  change (Ptrofs.repr 0) with Ptrofs.zero.
+  destruct Ptrofs.eq_dec; try congruence.
+  eauto.
+Qed.
+
+
 (** [select_switch_default], [select_switch_case], [select_switch]
   and [seq_of_label_statement] are entierly about syntax. *)
-Lemma eval_expr_lvalue_match R w ge:
+Lemma eval_expr_lvalue_match R w (ge: genv):
+  genv_valid R w ge ->
   forall e1 e2, env_match R w e1 e2 ->
   forall le1 le2, temp_env_match R w le1 le2 ->
   forall m1 m2, match_mem R w m1 m2 ->
@@ -325,7 +434,7 @@ Lemma eval_expr_lvalue_match R w ge:
        eval_lvalue ge e2 le2 m2 expr b2 ofs2 /\
        ptrbits_inject (mi R w) (b1, ofs) (b2, ofs2)).
 Proof.
-  intros e1 e2 He le1 le2 Hle m1 m2 Hm.
+  intros Hge e1 e2 He le1 le2 Hle m1 m2 Hm.
   apply eval_expr_lvalue_ind;
   try solve
     [ intros;
@@ -344,8 +453,7 @@ Proof.
     transport_hyps.
     eexists; eexists; split.
     + eapply eval_Evar_global; eauto.
-    + apply block_sameofs_ptrbits_inject; intuition auto.
-      admit. (* need extra condition on w: global symbols inject into self *)
+    + apply block_sameofs_ptrbits_inject; eauto using genv_valid_find_symbol.
 
   - intros expr ty b1 ofs H1 IH.
     destruct IH as (ptr2 & H2 & Hptr).
@@ -362,15 +470,16 @@ Proof.
     destruct IH as (ptr2 & H2 & Hptr).
     rinversion Hptr; inv Hptrl.
     eauto using @eval_Efield_union.
-Admitted.
+Qed.
 
 Global Instance eval_expr_match R w:
   Monotonic
     (@eval_expr)
-    (- ==> env_match R w ++> temp_env_match R w ++> match_mem R w ++> - ==>
+    (psat (genv_valid R w) ==> env_match R w ++> temp_env_match R w ++>
+     match_mem R w ++> - ==>
      set_le (Val.inject (mi R w))).
 Proof.
-  intros ge e1 e2 He le1 le2 Hle m1 m2 Hm expr v1 Hv1.
+  intros ge _ [Hge] e1 e2 He le1 le2 Hle m1 m2 Hm expr v1 Hv1.
   edestruct eval_expr_lvalue_match; eauto.
 Qed.
 
@@ -380,10 +489,11 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
 Global Instance eval_lvalue_match R w:
   Monotonic
     (@eval_lvalue)
-    (- ==> env_match R w ++> temp_env_match R w ++> match_mem R w ++> - ==>
+    (psat (genv_valid R w) ==> env_match R w ++> temp_env_match R w ++>
+     match_mem R w ++> - ==>
      % set_le (ptrbits_inject (mi R w))).
 Proof.
-  intros ge e1 e2 He le1 le2 Hle m1 m2 Hm expr [b1 ofs] Hp1.
+  intros ge _ [Hge] e1 e2 He le1 le2 Hle m1 m2 Hm expr [b1 ofs] Hp1.
   simpl in *.
   edestruct eval_expr_lvalue_match as [_ H]; eauto.
   edestruct H as (b2 & ofs2 & H'); eauto.
@@ -398,10 +508,11 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
 Global Instance eval_exprlist_match R w:
   Monotonic
     (@eval_exprlist)
-    (- ==> env_match R w ++> temp_env_match R w ++> match_mem R w ++> - ==> - ==>
+    (psat (genv_valid R w) ==> env_match R w ++> temp_env_match R w ++>
+     match_mem R w ++> - ==> - ==>
      set_le (list_rel (Val.inject (mi R w)))).
 Proof.
-  intros ge e1 e2 He le1 le2 Hle m1 m2 Hm exprlist tys vs1 Hvs1.
+  intros ge1 ge2 Hge e1 e2 He le1 le2 Hle m1 m2 Hm exprlist tys vs1 Hvs1.
   induction Hvs1 as [|expr exprs ty tys v1 v1' v1s Hv1 Hv1' Hv1s IHv1s]; simpl.
   - exists nil.
     split; constructor.
@@ -484,14 +595,14 @@ Inductive state_match R w: rel state state :=
         (@Callstate)
         (- ==>
          list_rel (Val.inject (mi R w)) ++>
-         (cont_match R w (*/\ lsat is_call_cont*)) ++>
+         cont_match R w ++>
          match_mem R w ++>
          state_match R w)
   | Returnstate_rel:
       Monotonic
         (@Returnstate)
         (Val.inject (mi R w) ++>
-         (cont_match R w (*/\ lsat is_call_cont*)) ++>
+         cont_match R w ++>
          match_mem R w ++>
          state_match R w).
 
@@ -542,60 +653,14 @@ Qed.
 Hint Extern 1 (Transport _ _ _ _ _) =>
   rel_curry2_set_le_transport @function_entry2 : typeclass_instances.
 
-(** Special case of [Transport] for [Genv.find_funct] *)
-
-Global Instance find_funct_transfer {F V} R w (ge: Genv.t F V) v1 v2 f:
-  Transport
-    (*
-    (genv_le (F:=F) (V:=V) Rf * match_val R p)%rel
-    (ge1, v1)
-    (ge2, v2)
-     *)
-    (Val.inject (mi R w)) v1 v2
-    (Genv.find_funct ge v1 = Some f)
-    (Genv.find_funct ge v2 = Some f /\
-     exists b, v1 = Vptr b Ptrofs.zero).
-Admitted. (* need self-inject property for [ge] *)
-(*
-Proof.
-  repeat red.
-  intros [Hge Hv].
-  simpl in Hge, Hv.
-  intros H.
-  inversion Hv; subst; try discriminate.
-  generalize H. intro H_.
-  simpl in H_.
-  destruct (Ptrofs.eq_dec _ _); try discriminate.
-  subst.
-  generalize H0. intro H0_.
-  assert (block_is_global b1) as GLOBAL by eauto.
-  apply (match_global_ptrbits p _ Ptrofs.zero) in GLOBAL.
-  generalize (match_ptrbits_functional _ _ _ _ H0 GLOBAL).
-  inversion 1; subst.
-  simpl.
-  destruct (Ptrofs.eq_dec _ _); try congruence.
-  clear H.
-  transport H_.
-  eauto.
-Qed.
-*)
-
-Global Instance external_call_rel R:
+Global Instance step2_rel R:
   Monotonic
-    (@external_call)
-    ([] - ==> - ==> k1 list_rel (Val.inject @@ [mi R]) ++> match_mem R ++> - ==>
-     % k1 set_le (<> Val.inject @@ [mi R] * match_mem R)).
-Admitted.
-
-Hint Extern 1 (Transport _ _ _ _ _) =>
-  rel_curry_set_le_transport @external_call : typeclass_instances.
-
-Global Instance step2_rel R ge:
-  Monotonic
-    (@step2 ge)
-    ([] state_match R ++> - ==> k1 set_le (<> state_match R)).
+    (@step2)
+    ([] (fun w => psat (genv_valid R w)) ++>
+        state_match R ++> - ==> k1 set_le (<> state_match R)).
 Proof.
-  intros w s1 s2 Hs t s1' H1.
+  intros w xge ge Hge s1 s2 Hs t s1' H1.
+  pose proof (coreflexivity _ _ Hge); subst.
   deconstruct H1 ltac:(fun x => pose (c := x)); inv Hs;
   try
     (transport_hyps;
@@ -617,9 +682,18 @@ Proof.
   - transport_hyps.
     eexists; split.
     eapply c; eauto.
-    admit. (* XXX: block_of is not stable under injection -- need property that ge's symbols self-inject w/ 0 offset *)
+    {
+      clear - Hge e3 e4 H3. destruct Hge as [Hge].
+      destruct H3; try discriminate. simpl in *.
+      destruct Ptrofs.eq_dec; inv e3.
+      assert (b2 = fb) by eauto using genv_valid_block_inject_eq; subst.
+      eapply genv_valid_funct_ptr in e4; eauto. red in e4.
+      assert (delta = 0) by congruence. subst.
+      change (Ptrofs.add _ _) with Ptrofs.zero.
+      destruct Ptrofs.eq_dec; congruence.
+    }
     eexists; split; rauto.
-Admitted.
+Qed.
 
 Global Instance step_rel_params:
   Params (@step2) 3.
@@ -630,14 +704,48 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
 Lemma semantics2_rel R p:
   forward_simulation (cc_c R) (cc_c R) (Clight.semantics2 p) (Clight.semantics2 p).
 Proof.
-  apply forward_simulation_step with (<> state_match R)%klr.
+  pose (ms := fun w s1 s2 => genv_valid R w (globalenv p) /\
+                             klr_diam (state_match R) w s1 s2).
+  apply forward_simulation_step with ms.
   - reflexivity.
-  - admit. (* initial states *)
-  - admit. (* external *)
-  - admit. (* final state *)
-  - intros.
-    simpl in H.
-    destruct H0 as (w' & Hw' & Hs).
-    transport H.
-    eexists; split; rauto.
-Admitted.
+  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm Hw] s1 Hs1.
+    inv Hs1. simpl in *. subst.
+    assert (genv_valid R w (globalenv p)) by assumption.
+    exists (Callstate fb2 vargs2 Kstop m2). split.
+    + econstructor; eauto.
+      eapply find_funct_ptr_transport; eauto.
+    + split; eauto.
+      exists w; split; try rauto.
+      erewrite (genv_valid_block_inject_eq R w _ fb1 fb2); eauto.
+      econstructor; eauto.
+      constructor.
+  - intros w s1 s2 q1 AE1 [Hge Hs] HAE1.
+    destruct Hs as (w' & Hw' & Hs).
+    destruct HAE1 as [s1 q1 Hq1]. destruct Hq1. inv Hs.
+    eexists w', (cq b sg _ _), _. repeat apply conj.
+    + rewrite Hw' in Hge.
+      econstructor; simpl; eauto.
+      eapply genv_valid_funct_ptr in H; eauto.
+    + constructor.
+      econstructor.
+      eassumption.
+    + intros r1 [vres2 m2'] s1' (w'' & Hw'' & Hvres & Hm') Hs1'.
+      inv Hs1'. simpl in *.
+      eexists. split.
+      * constructor.
+      * split; eauto.
+        exists w''. split; [rauto | ].
+        constructor; rauto.
+  - intros w s1 s2 r1 (Hge & w' & Hw' & Hs) H. destruct H as [v1' m1'].
+    inv Hs. inv H4.
+    eexists (_, _). split.
+    + simpl. rauto.
+    + constructor.
+  - intros w s1 t s1' Hstep s2 (Hge & w' & Hw' & Hs).
+    simpl in Hstep.
+    assert (Hge': genv_valid R w' (globalenv p)) by (revert Hge; rauto).
+    apply psat_intro in Hge'.
+    transport Hstep.
+    eexists; split; try rauto.
+    split; rauto.
+Qed.
