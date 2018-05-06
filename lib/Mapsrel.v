@@ -4,6 +4,9 @@ Require Export Maps.
 Require Import LogicalRelations.
 Require Import OptionRel.
 
+
+(** * Trees *)
+
 Module TreeRel (T: TREE).
 
   (** The relator for trees takes any relation on [option _] as a parameter.
@@ -129,3 +132,51 @@ Proof.
     assert (option_rel R (tA!i) (tB!i)) as Hi by rauto.
     destruct Hi; inv H. eauto.
 Qed.
+
+
+(** * Maps *)
+
+Module MapRel (M: MAP).
+
+  Definition r {A B} (R: rel A B): rel (M.t A) (M.t B) :=
+    fun m1 m2 => forall i, R (M.get i m1) (M.get i m2).
+
+  Global Instance r_subrel A B:
+    Monotonic (@r A B) (subrel ++> subrel).
+  Proof.
+    firstorder.
+  Qed.
+
+  Global Instance r_subrel_params:
+    Params (@r) 3.
+
+  Global Instance init_rel:
+    Monotonic (@M.init) (forallr R, R ++> r R).
+  Proof.
+    intros A B R x y H i.
+    rewrite !M.gi.
+    assumption.
+  Qed.
+
+  Global Instance get_rel:
+    Monotonic (@M.get) (forallr R, - ==> r R ++> R).
+  Proof.
+    repeat rstep. eauto.
+  Qed.
+
+  Global Instance set_rel:
+    Monotonic (@M.set) (forallr R, - ==> R ++> r R ++> r R).
+  Proof.
+    intros A B R i x y Hxy m1 m2 Hm j.
+    destruct (M.elt_eq j i).
+    - subst. rewrite !M.gss. assumption.
+    - rewrite !M.gso by auto. eauto.
+  Qed.
+
+  Global Instance map_rel:
+    Monotonic (@M.map) (forallr RA, forallr RB, (RA ++> RB) ++> r RA ++> r RB).
+  Proof.
+    intros A1 A2 RA B1 B2 RB f g Hfg m1 m2 Hm i.
+    rewrite !M.gmap. rauto.
+  Qed.
+End MapRel.
