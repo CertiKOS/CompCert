@@ -653,6 +653,34 @@ Qed.
 Hint Extern 1 (Transport _ _ _ _ _) =>
   rel_curry2_set_le_transport @function_entry2 : typeclass_instances.
 
+Global Instance genv_valid_symbols_inject R w ge1 ge2:
+  RIntro
+    (psat (genv_valid R w) ge1 ge2)
+    (symbols_inject (mi R w))
+    (Genv.to_senv (genv_genv ge1))
+    (Genv.to_senv (genv_genv ge2)).
+Proof.
+  intros [Hge].
+  repeat apply conj; simpl.
+  - reflexivity.
+  - intros.
+    pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
+    red in Hb. split; congruence.
+  - intros.
+    pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
+  - intros.
+    specialize (Hge b1 b1 0).
+    unfold Mem.flat_inj in Hge.
+    admit.
+Admitted.
+
+(* Maybe move to a more central location and make global? *)
+Local Instance list_inject_subrel f:
+  Related (list_rel (Val.inject f)) (Val.inject_list f) subrel.
+Proof.
+  induction 1; constructor; eauto.
+Qed.
+
 Global Instance step2_rel R:
   Monotonic
     (@step2)
