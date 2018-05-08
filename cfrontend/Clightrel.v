@@ -7,7 +7,7 @@ Require Import Valuesrel.
 Require Import AST.
 Require Import CKLR.
 Require Import Eventsrel.
-Require Import Globalenvs.
+Require Import Globalenvsrel.
 Require Import Smallstep.
 Require Import Ctypes.
 Require Import Coprel.
@@ -17,6 +17,33 @@ Require Import OptionRel.
 Require Import KLR.
 Require Export Clight.
 
+
+Definition genv_valid R w ge :=
+  Globalenvsrel.genv_valid R w (genv_genv ge).
+
+Global Instance genv_valid_acc:
+  Monotonic genv_valid (forallr -, acc ++> - ==> impl).
+Proof.
+  unfold genv_valid. rauto.
+Qed.
+
+Lemma genv_genv_valid R w ge:
+  genv_valid R w ge ->
+  Globalenvsrel.genv_valid R w (genv_genv ge).
+Proof.
+  eauto.
+Qed.
+
+Hint Resolve genv_genv_valid.
+
+Global Instance genv_genv_valid_rel R w:
+  Monotonic
+    (@genv_genv)
+    (psat (genv_valid R w) ++> psat (Globalenvsrel.genv_valid R w)).
+Proof.
+  intros ge _ [Hge].
+  constructor; assumption.
+Qed.
 
 (** NB: we have to use [option_rel] here not [option_le], because
   otherwise it is difficult to state the monotonicity property of
@@ -309,112 +336,6 @@ Proof.
 Qed.
 
 
-(* XXX move to coqrel *)
-
-Inductive psat {A} (I: A -> Prop) (x: A): A -> Prop :=
-  psat_intro: I x -> psat I x x.
-
-Global Instance psat_subrel A:
-  Monotonic (@psat A) ((- ==> impl) ++> subrel).
-Proof.
-  intros P Q HPQ x _ [Hx].
-  constructor. apply HPQ. assumption.
-Qed.
-
-Global Instance psat_corefl {A} (I: A -> Prop):
-  Coreflexive (psat I).
-Proof.
-  intros x _ [_]. reflexivity.
-Qed.
-
-
-Definition genv_valid R w (ge: genv) :=
-  inject_incr (Mem.flat_inj Block.init) (mi R w).
-
-Global Instance genv_valid_acc:
-  Monotonic (@genv_valid) (forallr -, acc ++> - ==> impl).
-Proof.
-  unfold genv_valid.
-  intros R w w' Hw ge H.
-  etransitivity; rauto.
-Qed.
-
-Lemma genv_valid_find_symbol R w ge i b:
-  genv_valid R w ge ->
-  Genv.find_symbol ge i = Some b ->
-  block_inject_sameofs (mi R w) b b.
-Proof.
-  intros Hge H.
-  unfold Genv.find_symbol in H.
-  destruct (Genv.genv_defs ge)!i; inv H.
-  apply Hge.
-  unfold Mem.flat_inj.
-  destruct Block.lt_dec; eauto.
-  elim n; eapply Block.lt_glob_init.
-Qed.
-
-Lemma genv_valid_funct_ptr R w ge b f:
-  genv_valid R w ge ->
-  Genv.find_funct_ptr ge b = Some f ->
-  block_inject_sameofs (mi R w) b b.
-Proof.
-  intros Hge Hf.
-  unfold Genv.find_funct_ptr, Genv.find_def in Hf.
-  destruct Block.ident_of eqn:Hb; try discriminate.
-  apply Block.ident_of_inv in Hb. subst.
-  apply Hge.
-  unfold Mem.flat_inj.
-  destruct Block.lt_dec; eauto.
-  elim n; eapply Block.lt_glob_init.
-Qed.
-
-Lemma genv_valid_block_inject_eq R w ge b1 b2 f:
-  genv_valid R w ge ->
-  block_inject (mi R w) b1 b2 ->
-  Genv.find_funct_ptr ge b1 = Some f ->
-  b2 = b1.
-Proof.
-  intros Hge Hb H.
-  eapply genv_valid_funct_ptr in H; eauto.
-  red in H. destruct Hb. congruence.
-Qed.
-
-Lemma find_funct_ptr_transport R w ge b1 b2 f:
-  genv_valid R w ge ->
-  block_inject (mi R w) b1 b2 ->
-  Genv.find_funct_ptr ge b1 = Some f ->
-  Genv.find_funct_ptr ge b2 = Some f.
-Proof.
-  intros Hge Hb H.
-  cut (b2 = b1); try congruence.
-  eapply genv_valid_block_inject_eq; eauto.
-Qed.
-
-Global Instance find_funct_transfer R w ge1 ge2 v1 v2 f:
-  Transport
-    (psat (genv_valid R w) * Val.inject (mi R w))%rel
-    (ge1, v1)
-    (ge2, v2)
-    (Genv.find_funct ge1 v1 = Some f)
-    (Genv.find_funct ge2 v2 = Some f /\
-     exists b, v1 = Vptr b Ptrofs.zero).
-Proof.
-  repeat red.
-  intros [Hge Hv].
-  simpl in Hge, Hv.
-  destruct Hge as [Hge].
-  intros H.
-  inversion Hv; subst; try discriminate. simpl in *.
-  destruct (Ptrofs.eq_dec _ _); try discriminate. subst.
-  rewrite Ptrofs.add_zero_l.
-  assert (b2 = b1) by eauto using genv_valid_block_inject_eq; subst.
-  pose proof (genv_valid_funct_ptr _ _ _ _ _ Hge H) as Hb. red in Hb.
-  assert (delta = 0) by congruence; subst.
-  change (Ptrofs.repr 0) with Ptrofs.zero.
-  destruct Ptrofs.eq_dec; try congruence.
-  eauto.
-Qed.
-
 
 (** [select_switch_default], [select_switch_case], [select_switch]
   and [seq_of_label_statement] are entierly about syntax. *)
@@ -475,7 +396,8 @@ Qed.
 Global Instance eval_expr_match R w:
   Monotonic
     (@eval_expr)
-    (psat (genv_valid R w) ==> env_match R w ++> temp_env_match R w ++>
+    (psat (genv_valid R w) ==>
+     env_match R w ++> temp_env_match R w ++>
      match_mem R w ++> - ==>
      set_le (Val.inject (mi R w))).
 Proof.
@@ -652,27 +574,6 @@ Qed.
 
 Hint Extern 1 (Transport _ _ _ _ _) =>
   rel_curry2_set_le_transport @function_entry2 : typeclass_instances.
-
-Global Instance genv_valid_symbols_inject R w ge1 ge2:
-  RIntro
-    (psat (genv_valid R w) ge1 ge2)
-    (symbols_inject (mi R w))
-    (Genv.to_senv (genv_genv ge1))
-    (Genv.to_senv (genv_genv ge2)).
-Proof.
-  intros [Hge].
-  repeat apply conj; simpl.
-  - reflexivity.
-  - intros.
-    pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
-    red in Hb. split; congruence.
-  - intros.
-    pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
-  - intros.
-    specialize (Hge b1 b1 0).
-    unfold Mem.flat_inj in Hge.
-    admit.
-Admitted.
 
 (* Maybe move to a more central location and make global? *)
 Local Instance list_inject_subrel f:

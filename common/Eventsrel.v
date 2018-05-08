@@ -1,7 +1,33 @@
+Require Import Maps.
 Require Import Valuesrel.
-Require Import Globalenvs.
+Require Import Globalenvsrel.
 Require Import CKLR.
 Require Export Events.
+
+
+(** * [genv_valid] vs. [symbols_inject] *)
+
+Global Instance genv_valid_symbols_inject R w:
+  Monotonic
+    (@Genv.to_senv)
+    (forallr -, forallr -, psat (genv_valid R w) ++> symbols_inject (mi R w)).
+Proof.
+  intros F V ge _ [Hge].
+  repeat apply conj; simpl.
+  - reflexivity.
+  - intros.
+    pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
+    red in Hb. split; congruence.
+  - intros.
+    pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
+  - intros.
+    specialize (Hge b1 b1 0).
+    unfold Mem.flat_inj in Hge.
+    admit.
+Admitted. (* XXX non-global block could inject into global volatile block *)
+
+
+(** * External functions *)
 
 Global Instance eventval_match_rel f:
   Monotonic
@@ -267,3 +293,80 @@ Qed.
 
 Hint Extern 1 (Transport _ _ _ _ _) =>
   rel_curry_set_le_transport @external_call : typeclass_instances.
+
+
+(** * [eval_builtin_args] *)
+
+Global Instance genv_symbols_address_inject R w:
+  Monotonic
+    (@Genv.symbol_address)
+    (forallr -, forallr -, psat (genv_valid R w) ++>
+     - ==> - ==> Val.inject (mi R w)).
+Proof.
+  intros F V ge1 _ [Hge] id ofs.
+  unfold Genv.symbol_address.
+  unfold Genv.find_symbol.
+  destruct (Genv.genv_defs ge1)!id; econstructor.
+  - eapply Hge.
+    unfold Mem.flat_inj.
+    destruct Block.lt_dec.
+    + reflexivity.
+    + elim n; eauto using Block.lt_glob_init.
+  - rewrite Ptrofs.add_zero.
+    reflexivity.
+Qed.
+
+Global Instance senv_symbols_address_inject {F V} R w:
+  Monotonic
+    (@Senv.symbol_address)
+    ((psat (genv_valid R w)) !! (@Genv.to_senv F V) ++>
+     - ==> - ==> Val.inject (mi R w)).
+Proof.
+  intros _ _ [ge1 ge2 Hge].
+  change (Senv.symbol_address ge1) with (Genv.symbol_address ge1).
+  change (Senv.symbol_address ge2) with (Genv.symbol_address ge2).
+  rauto.
+Qed.
+
+Global Instance eval_builtin_arg_rel {F V} R w:
+  Monotonic
+    (@eval_builtin_arg)
+    (forallr -, (psat (genv_valid R w)) !! (@Genv.to_senv F V) ++>
+     (- ==> Val.inject (mi R w)) ++>
+     Val.inject (mi R w) ++> match_mem R w ++> - ==> set_le (Val.inject (mi R w))).
+Proof.
+  intros A ge1 ge2 Hge f1 f2 Hf v1 v2 Hv m1 m2 Hm arg r Hr.
+  revert v2 Hv.
+  induction Hr; intros ? ?;
+  try (transport_hyps; eexists; split; [constructor; eauto | rauto]).
+  - edestruct IHHr1 as (vhi' & Hvhi' & Hvhi); eauto.
+    edestruct IHHr2 as (vlo' & Hvlo' & Hvlo); eauto.
+    eexists. split; [ constructor; eauto | rauto ].
+  - edestruct IHHr1 as (va1 & Hva1 & Hva1'); eauto.
+    edestruct IHHr2 as (va2 & Hva2 & Hva2'); eauto.
+    eexists. split; [ constructor; eauto | rauto ].
+Qed.
+
+Hint Extern 1 (Transport _ _ _ _ _) =>
+  set_le_transport @eval_builtin_arg : typeclass_instances.
+
+Global Instance eval_builtin_args_rel {F V} R w:
+  Monotonic
+    (@eval_builtin_args)
+    (forallr -, (psat (genv_valid R w)) !! (@Genv.to_senv F V) ++>
+     (- ==> Val.inject (mi R w)) ++>
+     Val.inject (mi R w) ++> match_mem R w ++> - ==>
+     set_le (Val.inject_list (mi R w))).
+Proof.
+  unfold eval_builtin_args.
+  repeat rstep.
+  intros vl Hvl.
+  induction Hvl.
+  - eexists; split; constructor; eauto.
+  - destruct IHHvl as (? & ? & ?).
+    transport H3.
+    eexists; split; constructor; eauto.
+Qed.
+
+Hint Extern 1 (Transport _ _ _ _ _) =>
+  set_le_transport @eval_builtin_args : typeclass_instances.
