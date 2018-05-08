@@ -575,13 +575,6 @@ Qed.
 Hint Extern 1 (Transport _ _ _ _ _) =>
   rel_curry2_set_le_transport @function_entry2 : typeclass_instances.
 
-(* Maybe move to a more central location and make global? *)
-Local Instance list_inject_subrel f:
-  Related (list_rel (Val.inject f)) (Val.inject_list f) subrel.
-Proof.
-  induction 1; constructor; eauto.
-Qed.
-
 Global Instance step2_rel R:
   Monotonic
     (@step2)

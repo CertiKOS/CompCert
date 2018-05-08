@@ -78,6 +78,14 @@ Proof.
     reflexivity.
 Qed.
 
+(** XXX normalization in coqrel would be best because it would make it
+  possible for this to work in both directions. *)
+Global Instance list_inject_subrel f:
+  Related (list_rel (Val.inject f)) (Val.inject_list f) subrel.
+Proof.
+  induction 1; constructor; eauto.
+Qed.
+
 (** ** Complementary relations *)
 
 (** *** Abstract pointers *)
