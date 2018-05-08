@@ -819,6 +819,12 @@ Proof.
   unfold Val.singleoffloat. rauto.
 Qed.
 
+Global Instance val_floatofsingle_inject f:
+  Monotonic (@Val.floatofsingle) (Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.floatofsingle. rauto.
+Qed.
+
 Global Instance val_add_inject f:
   Monotonic (@Val.add) (Val.inject f ++> Val.inject f ++> Val.inject f).
 Proof.
@@ -997,6 +1003,30 @@ Proof.
   unfold Val.floatofwords. rauto.
 Qed.
 
+Global Instance val_addfs_inject f:
+  Monotonic (@Val.addfs) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.addfs. rauto.
+Qed.
+
+Global Instance val_subfs_inject f:
+  Monotonic (@Val.subfs) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.subfs. rauto.
+Qed.
+
+Global Instance val_mulfs_inject f:
+  Monotonic (@Val.mulfs) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.mulfs. rauto.
+Qed.
+
+Global Instance val_divfs_inject f:
+  Monotonic (@Val.divfs) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.divfs. rauto.
+Qed.
+
 (** ** Operations on 64-bit integers *)
 
 Global Instance val_longofwords_inject f:
@@ -1051,6 +1081,18 @@ Global Instance val_longuoffloat_inject f:
   Monotonic (@Val.longuoffloat) (Val.inject f ++> option_le (Val.inject f)).
 Proof.
   unfold Val.longuoffloat. rauto.
+Qed.
+
+Global Instance val_longofsingle_inject f:
+  Monotonic (@Val.longofsingle) (Val.inject f ++> option_le (Val.inject f)).
+Proof.
+  unfold Val.longofsingle. rauto.
+Qed.
+
+Global Instance val_longuofsingle_inject f:
+  Monotonic (@Val.longuofsingle) (Val.inject f ++> option_le (Val.inject f)).
+Proof.
+  unfold Val.longuofsingle. rauto.
 Qed.
 
 Global Instance val_floatoflong_inject f:
@@ -1181,6 +1223,38 @@ Proof.
   unfold Val.shrlu. rauto.
 Qed.
 
+Global Instance val_shrxl_inject f:
+  Monotonic
+    (@Val.shrxl)
+    (Val.inject f ++> Val.inject f ++> option_le (Val.inject f)).
+Proof.
+  unfold Val.shrxl. rauto.
+Qed.
+
+Global Instance val_shrl_carry_inject f:
+  Monotonic (@Val.shrl_carry) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.shrl_carry. rauto.
+Qed.
+
+Global Instance val_roll_inject f:
+  Monotonic (@Val.roll) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.roll. rauto.
+Qed.
+
+Global Instance val_rorl_inject f:
+  Monotonic (@Val.rorl) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.rorl. rauto.
+Qed.
+
+Global Instance val_rolml_inject f:
+  Monotonic (@Val.rolml) (Val.inject f ++> - ==> - ==> Val.inject f).
+Proof.
+  unfold Val.rolml. rauto.
+Qed.
+
 (** ** Comparisons *)
 
 (** Note: the relational properties for unsigned integer comparisons
@@ -1201,6 +1275,14 @@ Global Instance val_cmpf_bool_inject f:
     (- ==> Val.inject f ++> Val.inject f ++> option_le eq).
 Proof.
   unfold Val.cmpf_bool. rauto.
+Qed.
+
+Global Instance val_cmpfs_bool_inject f:
+  Monotonic
+    (@Val.cmpfs_bool)
+    (- ==> Val.inject f ++> Val.inject f ++> option_le eq).
+Proof.
+  unfold Val.cmpfs_bool. rauto.
 Qed.
 
 Global Instance val_cmpl_bool_inject f:

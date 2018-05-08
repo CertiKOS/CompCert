@@ -85,6 +85,7 @@ BACKEND=\
   SelectOpproof.v SelectDivproof.v SplitLongproof.v \
   SelectLongproof.v Selectionproof.v \
   Registers.v RTL.v \
+  Registersrel.v RTLrel.v \
   RTLgen.v RTLgenspec.v RTLgenproof.v \
   Tailcall.v Tailcallproof.v \
   Inlining.v Inliningspec.v Inliningproof.v \

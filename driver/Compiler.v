@@ -22,7 +22,7 @@ Require Clight.
 Require Csharpminor.
 Require Cminor.
 Require CminorSel.
-Require RTL.
+Require RTLrel.
 Require LTL.
 Require Linear.
 Require Mach.
@@ -390,7 +390,9 @@ Lemma rtl_properties p:
     (cc_c injn @ cc_c inj)
     (RTL.semantics p)
     (RTL.semantics p).
-Admitted.
+Proof.
+  eapply compose_forward_simulations; rauto.
+Qed.
 
 Lemma cc_star_subfold_r {A B} (cc cc': callconv A A) (ccs: callconv A B):
   ccref cc' cc ->
