@@ -229,15 +229,70 @@ Proof.
   inv Hvargs. apply val_inject_vptr_inv in H9 as (bdst' & odst' & ? & ?); subst.
   inv H11. apply val_inject_vptr_inv in H10 as (bsrc' & osrc' & ? & ?); subst.
   inv H13.
+  generalize H5 H6.
   transport H5.
   transport H6.
+  intros Hlb1 Hsb1.
   eexists (_, _). simpl. split.
   - econstructor; eauto.
-    admit.
-    admit.
-    admit.
+    + intro. rewrite Hw' in H9. inv H9.
+      eapply Mem.loadbytes_range_perm in Hlb1.
+      erewrite cklr_address_inject; eauto.
+      eapply cklr_aligned_area_inject; eauto.
+      * intros ofs Hofs.
+        eapply Mem.perm_storebytes_1; eauto.
+        eapply Mem.perm_implies.
+        eapply Hlb1; eauto.
+        constructor.
+      * eapply Mem.perm_storebytes_1; eauto.
+        eapply Hlb1. xomega.
+    + intro. rewrite Hw' in H8. inv H8.
+      erewrite cklr_address_inject; eauto.
+      eapply cklr_aligned_area_inject; eauto.
+      * pose proof Hsb1 as Hrp1.
+        eapply Mem.storebytes_range_perm in Hrp1.
+        erewrite Mem.loadbytes_length in Hrp1 by eauto.
+        rewrite nat_of_Z_eq in Hrp1 by xomega.
+        intros ofs Hofs.
+        eapply Mem.perm_storebytes_1; eauto.
+        eapply Mem.perm_implies; eauto.
+        constructor.
+      * eapply Mem.perm_storebytes_1; eauto.
+        eapply Mem.storebytes_range_perm; eauto.
+        erewrite Mem.loadbytes_length; eauto.
+        rewrite nat_of_Z_eq by xomega.
+        xomega.
+    + assert (sz > 0 \/ sz = 0) as [Hsz | Hsz] by xomega.
+      * rewrite Hw' in H8. inv H8.
+        rewrite Hw' in H9. inv H9.
+        erewrite !cklr_address_inject; eauto.
+        eapply cklr_disjoint_or_equal_inject; eauto.
+        -- intros ofs Hofs.
+           eapply Mem.loadbytes_range_perm in Hlb1.
+           eapply Mem.perm_storebytes_1; eauto.
+           eapply Mem.perm_cur_max; eauto.
+           eapply Mem.perm_implies; eauto.
+           constructor.
+        -- intros ofs Hofs.
+           eapply Mem.perm_storebytes_1; eauto.
+           eapply Mem.perm_cur_max; eauto.
+           eapply Mem.storebytes_range_perm in Hsb1.
+           eapply Mem.perm_implies; eauto.
+           eapply Hsb1; eauto.
+           erewrite Mem.loadbytes_length; eauto.
+           rewrite nat_of_Z_eq by xomega; eauto.
+           constructor.
+        -- eapply Mem.perm_storebytes_1; eauto.
+           eapply Mem.storebytes_range_perm; eauto.
+           erewrite Mem.loadbytes_length; eauto.
+           rewrite nat_of_Z_eq by xomega; eauto.
+           xomega.
+        -- eapply Mem.perm_storebytes_1; eauto.
+           eapply Mem.loadbytes_range_perm; eauto.
+           xomega.
+      * subst. right. xomega.
   - rauto.
-Admitted. (* extcall_memcpy_sem_rel *)
+Qed.
 
 Global Instance extcall_annot_sem_rel R:
   Monotonic (@extcall_annot_sem) (- ==> - ==> extcall_sem_rel R).
