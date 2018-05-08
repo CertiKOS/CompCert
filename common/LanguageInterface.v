@@ -219,7 +219,10 @@ Definition cc_c_tr R: callconv li_c li_c :=
 
 Lemma flat_inject_id_incr thr:
   inject_incr (Mem.flat_inj thr) inject_id.
-Admitted.
+Proof.
+  intros b b' delta. unfold Mem.flat_inj, inject_id.
+  destruct Block.lt_dec; congruence.
+Qed.
 
 Lemma match_cc_ext id sg vargs1 m1 vargs2 m2:
   Mem.extends m1 m2 ->
