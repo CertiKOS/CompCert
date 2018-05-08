@@ -14,11 +14,37 @@ Proof.
   - repeat rstep. eauto.
 Qed.
 
+(** RTL relies on hardcoded offsets for stack blocks, so we need to
+  make sure that the stack pointer can only inject with a zero delta.
+  To this end we introduce the following restricted injection relation
+  on values. *)
+
+Inductive sp_inject f: relation val :=
+  | sp_inject_ptr:
+      Monotonic (@Vptr) (block_inject_sameofs f ++> - ==> sp_inject f).
+
+Global Existing Instance sp_inject_ptr | 5.
+
+Global Instance sp_inject_incr:
+  Monotonic (@sp_inject) (inject_incr ++> subrel).
+Proof.
+  intros f g Hfg x y Hxy.
+  destruct Hxy; constructor; eauto.
+Qed.
+
+Global Instance sp_val_inject_subrel:
+  Related (@sp_inject) (@Val.inject) (inject_incr ++> subrel).
+Proof.
+  intros f g Hfg x y Hxy.
+  destruct Hxy; econstructor; eauto.
+  rewrite Ptrofs.add_zero. reflexivity.
+Qed.
+
 Inductive stackframe_inject f: relation stackframe :=
   Stackframe_inject:
     Monotonic
       (@Stackframe)
-      (-==> -==> Val.inject f ++> -==> regset_inject f ++> stackframe_inject f).
+      (-==> -==> sp_inject f ++> -==> regset_inject f ++> stackframe_inject f).
 
 Global Existing Instance Stackframe_inject.
 
@@ -34,7 +60,7 @@ Inductive state_rel R w: relation state :=
       Monotonic
         (@State)
         (list_rel (stackframe_inject (mi R w)) ++>
-         - ==> Val.inject (mi R w) ++> - ==> regset_inject (mi R w) ++>
+         - ==> sp_inject (mi R w) ++> - ==> regset_inject (mi R w) ++>
          match_mem R w ++> state_rel R w)
   | Callstate_rel:
       Monotonic
@@ -139,7 +165,7 @@ Proof.
 Qed.
 
 Global Instance option_impl_transport {A B} (R: rel A B) x y a b:
-  Transport (option_impl R * R) (x, a) (y, b) (x = Some a) (y = Some b).
+  Transport (option_impl R * R) (x, a) (y, b) (x = Some a) (y = Some b) | 5.
 Proof.
   firstorder.
 Qed.
@@ -192,14 +218,22 @@ Proof.
   - transport_hyps; eexists; split; [ eapply c; eauto; fail | rauto ].
   - transport_hyps. eexists. split; [ eapply c; eauto; fail | ].
     exists w'. split; rauto.
-  - transport_hyps; eexists; split; [ eapply c; eauto; fail | rauto ].
-  - admit. (* need stack to inject w/ 0 delta *)
+  - assert (Hfb: block_inject_sameofs (mi R w) fb fb) by rauto.
+    transport_hyps; eexists; split; [ eapply c; eauto; fail | rauto ].
+  - inv H8.
+    transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
+    assert (Hfb: block_inject_sameofs (mi R w) fb fb) by rauto.
+    rewrite Hw' in Hge.
+    exists w'; split; rauto.
   - transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
     exists w'. split; rauto.
   - transport_hyps; eexists; split; [ eapply c; eauto; fail | rauto ].
   - transport_hyps; eexists; split; [ eapply c; eauto | rauto ].
     + specialize (H9 arg). destruct H9; congruence.
-  - admit. (* need stack to inject w/ 0 delta *)
+  - inv H8.
+    transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
+    rewrite Hw' in Hge.
+    exists w'; split; rauto.
   - edestruct cklr_alloc as (w' & Hw' & Halloc); eauto.
     transport e0. clear Halloc.
     assert (Hfb: block_inject_sameofs (mi R w) fb fb) by rauto.
@@ -228,7 +262,7 @@ Proof.
     exists w'; split; rauto.
   - inv H3. inv H2.
     transport_hyps; eexists; split; [ eapply c; eauto; fail | rauto ].
-Admitted. (* need stack inj w/ 0 delta *)
+Qed.
 
 Hint Extern 1 (Transport _ _ _ _ _) =>
   set_le_transport @step : typeclass_instances.

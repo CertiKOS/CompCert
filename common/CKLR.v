@@ -547,6 +547,7 @@ Qed.
 
 (** *** Comparing blocks *)
 
+(* XXX: introduces uninstantiated existentials *)
 Global Instance match_ptrbits_block_rstep f b1 b2 ofs1 ofs2:
   RStep
     (ptrbits_inject f (b1, ofs1) (b2, ofs2))
