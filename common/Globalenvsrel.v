@@ -7,15 +7,7 @@ Require Export Globalenvs.
 (** * Injections and global environements *)
 
 Definition genv_valid {F V} R w (ge: Genv.t F V) :=
-  inject_incr (Mem.flat_inj Block.init) (mi R w).
-
-Global Instance genv_valid_acc:
-  Monotonic (@genv_valid) (forallr -, forallr -, forallr -, acc ++> - ==> impl).
-Proof.
-  unfold genv_valid.
-  intros F V R w w' Hw ge H.
-  eapply inject_incr_trans; rauto.
-Qed.
+  meminj_wf (mi R w).
 
 Lemma genv_valid_find_symbol {F V} R w (ge: Genv.t F V) i b:
   genv_valid R w ge ->

@@ -21,12 +21,6 @@ Require Export Clight.
 Definition genv_valid R w ge :=
   Globalenvsrel.genv_valid R w (genv_genv ge).
 
-Global Instance genv_valid_acc:
-  Monotonic genv_valid (forallr -, acc ++> - ==> impl).
-Proof.
-  unfold genv_valid. rauto.
-Qed.
-
 Lemma genv_genv_valid R w ge:
   genv_valid R w ge ->
   Globalenvsrel.genv_valid R w (genv_genv ge).
@@ -645,7 +639,7 @@ Proof.
     destruct Hs as (w' & Hw' & Hs).
     destruct HAE1 as [s1 q1 Hq1]. destruct Hq1. inv Hs.
     eexists w', (cq b sg _ _), _. repeat apply conj.
-    + rewrite Hw' in Hge.
+    + assert (Hge': genv_valid R w' (globalenv p)) by (eapply cklr_wf; eauto).
       econstructor; simpl; eauto.
       eapply genv_valid_funct_ptr in H; eauto.
     + constructor.
@@ -665,7 +659,8 @@ Proof.
     + constructor.
   - intros w s1 t s1' Hstep s2 (Hge & w' & Hw' & Hs).
     simpl in Hstep.
-    assert (Hge': genv_valid R w' (globalenv p)) by (revert Hge; rauto).
+    assert (Hge': genv_valid R w' (globalenv p))
+      by (destruct Hs; eapply cklr_wf; eauto).
     apply psat_intro in Hge'.
     transport Hstep.
     eexists; split; try rauto.

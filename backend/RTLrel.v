@@ -223,7 +223,8 @@ Proof.
   - inv H8.
     transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
     assert (Hfb: block_inject_sameofs (mi R w) fb fb) by rauto.
-    rewrite Hw' in Hge.
+    assert (Hgev': psat (genv_valid R w') ge ge)
+      by (constructor; eapply cklr_wf; eauto).
     exists w'; split; rauto.
   - transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
     exists w'. split; rauto.
@@ -232,7 +233,8 @@ Proof.
     + specialize (H9 arg). destruct H9; congruence.
   - inv H8.
     transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
-    rewrite Hw' in Hge.
+    assert (Hgev': psat (genv_valid R w') ge ge)
+      by (constructor; eapply cklr_wf; eauto).
     exists w'; split; rauto.
   - edestruct cklr_alloc as (w' & Hw' & Halloc); eauto.
     transport e0. clear Halloc.
@@ -290,7 +292,8 @@ Proof.
       clear - H7; induction H7; constructor; eauto.
     + split.
       * constructor. econstructor.
-        rewrite Hw' in Hge.
+        assert (Hge': genv_valid R w' (Genv.globalenv p))
+          by (eapply cklr_wf; eauto).
         eapply find_funct_ptr_transport; eauto.
       * intros r1 [vres2 m2'] s1' (w'' & Hw'' & Hvres & Hm') HAE. inv HAE.
         simpl in *. eexists. split.
@@ -303,7 +306,7 @@ Proof.
     + constructor.
   - intros w s1 t s1' Hstep1 s2 [(w' & Hw' & Hs) Hge].
     assert (psat (genv_valid R w') (Genv.globalenv p) (Genv.globalenv p))
-      by (constructor; revert Hge; rauto).
+      by (constructor; destruct Hs; eapply cklr_wf; eauto).
     simpl in *.
     transport Hstep1.
     eexists. split; eauto. split; eauto. rauto.

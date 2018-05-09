@@ -21,10 +21,21 @@ Proof.
   - intros.
     pose proof H0 as Hb. eapply genv_valid_find_symbol in Hb; eauto.
   - intros.
-    specialize (Hge b1 b1 0).
-    unfold Mem.flat_inj in Hge.
-    admit.
-Admitted. (* XXX non-global block could inject into global volatile block *)
+    pose proof (meminj_wf_incr _ Hge b1 b1 0) as Hb1.
+    unfold Mem.flat_inj in Hb1.
+    destruct Block.lt_dec.
+    + specialize (Hb1 eq_refl). rewrite H in Hb1. inv Hb1.
+      reflexivity.
+    + clear Hb1.
+      destruct (Block.lt_dec b2 Block.init).
+      * elim n. eapply meminj_wf_img; eauto.
+      * unfold Genv.block_is_volatile, Genv.find_var_info.
+        destruct (Genv.find_def ge b1) eqn:H1.
+        { apply Genv.genv_defs_range in H1. contradiction. }
+        destruct (Genv.find_def ge b2) eqn:H2.
+        { apply Genv.genv_defs_range in H2. contradiction. }
+        reflexivity.
+Qed.
 
 
 (** * External functions *)
