@@ -62,6 +62,10 @@ Next Obligation.
 Qed.
 
 Next Obligation.
+  apply inject_id_wf.
+Qed.
+
+Next Obligation.
   intros _ _ _ [m1 m2 Hm] lo hi.
   destruct (Mem.alloc m1 lo hi) as [m1' b1] eqn:H1.
   edestruct Mem.alloc_extends as (m2' & Hm2' & Hm'); eauto; try reflexivity.

@@ -818,15 +818,13 @@ Lemma match_c_query_dom f q1 q2:
   match_c_query inj (meminj_dom f) q1 q1.
 Proof.
   destruct q1 as [fb1 sg1 vargs1 m1], q2 as [fb2 sg2 vargs2 m2]. simpl.
-  intros [Hfb Hsg Hargs Hm Hf]; simpl in *.
+  intros [Hfb Hsg Hargs Hm]; simpl in *.
   constructor; simpl; eauto using block_inject_dom, mem_inject_dom.
   - apply val_inject_list_rel.
     eapply val_inject_list_dom.
     apply val_inject_list_rel.
     eassumption.
-  - transitivity (meminj_dom (Mem.flat_inj Block.init)).
-    + rewrite meminj_dom_flat_inj; eauto.
-    + rauto.
+  - destruct Hm. split; eauto using mem_inject_dom, meminj_dom_wf.
 Qed.
 
 (** ** Rectangular diagrams *)
@@ -952,15 +950,6 @@ Proof.
 Qed.
 *)
 
-Global Instance flat_inject_id thr:
-  Related (Mem.flat_inj thr) inject_id inject_incr.
-Proof.
-  intros b1 b2 delta.
-  unfold Mem.flat_inj, inject_id.
-  destruct Block.lt_dec; try discriminate.
-  auto.
-Qed.
-
 Lemma compose_meminj_id_left f:
   compose_meminj inject_id f = f.
 Proof.
@@ -978,6 +967,19 @@ Proof.
   replace (delta + 0) with delta by xomega; eauto.
 Qed.
 
+Lemma flat_inj_wf thr:
+  Block.le Block.init thr ->
+  meminj_wf (Mem.flat_inj thr).
+Proof.
+  intros Hthr.
+  split.
+  - intros b1 b2 [delta Hb].
+    unfold Mem.flat_inj in Hb.
+    destruct Block.lt_dec; inv Hb.
+    reflexivity.
+  - rauto.
+Qed.
+
 Lemma cc_extends_inject_triangle:
   ccref cc_inject_triangle (cc_extends_triangle @ cc_inject_triangle).
 Proof.
@@ -991,12 +993,10 @@ Proof.
     + constructor; try reflexivity.
       rauto.
       apply Mem.extends_refl.
-      apply flat_inject_id_incr.
   - intros [v1' m1'] [v3' r3'].
-    intros ([v2' m2'] & ([ ] & _ & [Hv12' Hm12']) & (f' & Hf' & Hv23' & Hm23')).
+    intros ([v2' m2'] & ([ ] & _ & [Hv12' Hm12']) & (f' & Hf' & Hv23' & Hm23' & Hwf23')).
     simpl in *.
-    exists f'; split; eauto.
-    split.
+    exists f'; repeat apply conj; eauto.
     + eapply (Mem.val_lessdef_inject_compose _ _ v2'); eauto.
       apply val_inject_id; eauto.
     + eapply Mem.extends_inject_compose; eauto.
@@ -1015,11 +1015,9 @@ Proof.
     + constructor; try reflexivity.
       rauto.
       apply Mem.extends_refl.
-      apply flat_inject_id_incr.
   - intros [v1' m1'] [v3' m3'].
-    intros ([v2' m2'] & (f' & Hf' & Hv12' & Hm12') & ([ ] & _ & Hv23' & Hm23')).
-    exists f'; split; eauto.
-    split.
+    intros ([v2' m2'] & (f' & Hf' & Hv12' & Hm12' & Hwf12') & ([ ] & _ & Hv23' & Hm23')).
+    exists f'; repeat apply conj; eauto.
     + eapply (Mem.val_inject_lessdef_compose _ _ v2'); eauto.
       apply val_inject_id; eauto.
     + eapply Mem.inject_extends_compose; eauto.
@@ -1036,12 +1034,15 @@ Proof.
     refine ((fun x => conj x x) _).
     constructor; eauto.
   - intros [v1' m1'] [v3' m3'].
-    intros ([v2' m2']&(f12 & Hf12 & Hv12' & Hm12')&(f23 & Hf23 & Hv23' & Hm23')).
+    intros ([v2' m2'] &
+            (f12 & Hf12 & Hv12' & Hm12' & Hwf12') &
+            (f23 & Hf23 & Hv23' & Hm23' & Hwf23')).
     exists (compose_meminj f12 f23); split; eauto.
     + rewrite <- flat_inj_idemp. rauto.
-    + split.
+    + repeat apply conj.
       * apply val_inject_compose. eexists; eauto.
       * eapply Mem.inject_compose; eauto.
+      * apply compose_meminj_wf; eauto.
 Qed.
 
 (** ** Relationship between rectangular and triangular diagrams *)
@@ -1160,7 +1161,7 @@ Proof.
     repeat (eexists; split); cbn [fst snd].
     + eauto.
     + apply match_c_query_injn_inj in Hq11 as (Hq11 & Hnb & _).
-      destruct q1, Hq11; simpl in *. subst nb.
+      destruct q1, Hq11 as [Hfb Hsg Hargs [Hm Hwf]]; simpl in *. subst nb.
       constructor; eauto.
       apply val_inject_list_rel; eauto.
     + eapply Hq12.
@@ -1169,14 +1170,14 @@ Proof.
     cbn [fst snd] in *.
     exists r2; split; eauto.
     clear r1 Hr12. destruct r2 as [v2 m2].
-    destruct r3 as [v3 m3], Hr23 as (f23 & Hf23 & Hv23 & Hm23).
-    destruct r4 as [v4 m4], Hr34 as (nb3 & Hnb3 & Hv34 & Hm34).
-    destruct r5 as [v5 r5], Hr45 as (f45 & Hf45 & Hv45 & Hm45).
+    destruct r3 as [v3 m3], Hr23 as (f23 & Hf23 & Hv23 & Hm23 & Hwf23).
+    destruct r4 as [v4 m4], Hr34 as (nb3 & Hnb3 & Hv34 & [[Hm34 Hwf34] Hnb34]).
+    destruct r5 as [v5 r5], Hr45 as (f45 & Hf45 & Hv45 & Hm45 & Hwf45).
     simpl in * |- .
     exists (compose_meminj f23 (compose_meminj (Mem.flat_inj nb3) f45)).
     split.
     + simpl.
-      destruct Hq23.
+      destruct Hq23 as [Hfb23 Hsg23 Hvargs23 [Hm23' Hwf23']].
       erewrite <- (compose_flat_inj f); eauto.
       erewrite <- (compose_flat_inj f); eauto.
       apply match_c_query_injn_inj in Hq12 as (Hq11 & Hnb1 & Hnb2).
@@ -1184,8 +1185,9 @@ Proof.
       rauto.
     + split; cbn [fst snd].
       * repeat eapply Values.val_inject_compose; eauto.
-      * destruct Hm34.
-        repeat eapply Mem.inject_compose; eauto.
+      * split.
+        -- repeat eapply Mem.inject_compose; eauto.
+        -- repeat eapply compose_meminj_wf; eauto.
 Qed.
 
 Lemma cc_injt_injp:
@@ -1220,8 +1222,7 @@ Proof.
         apply val_inject_list_rel; eauto.
       + constructor.
         eapply mem_inject_dom; eauto.
-      + transitivity (meminj_dom (Mem.flat_inj Block.init)); [ | rauto].
-        rewrite meminj_dom_flat_inj; eauto.
+        eapply meminj_dom_wf; eauto.
     }
     exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
     {
@@ -1233,9 +1234,9 @@ Proof.
     constructor; eauto.
   - intros r1 r4 (xr1 & [Hr1 Hxr1] & r2 & Hr12 & r3 & Hr23 & Hr34).
     cbn [fst snd] in *. simpl in Hxr1. subst xr1.
-    destruct r1 as [v1' m1'], Hr1 as (nb' & Hnb' & Hv1' & Hm1').
+    destruct r1 as [v1' m1'], Hr1 as (nb' & Hnb' & Hv1' & Hm1' & Hwf1').
     destruct r2 as [v2' m2'], Hr12 as (w12' & Hw12' & Hv12' & xHm12').
-    destruct r3 as [v3' m3'], Hr23 as (f23 & Hf23 & Hv23' & Hm23').
+    destruct r3 as [v3' m3'], Hr23 as (f23 & Hf23 & Hv23' & Hm23' & Hwf23').
     destruct r4 as [v4' m4'], Hr34 as (w34' & Hw34' & Hv34' & xHm34').
     simpl in * |- .
     destruct Hm1' as [Hm1' Hnb1'].
@@ -1260,10 +1261,6 @@ Proof.
           in the source, mapped to an already valid block in the target.
           -> we need inject_separated in the triangle diagrams too, or
           at least some version thereof for target blocks. *)
-      * red. simpl.
-        eauto using Values.val_inject_compose.
-      * constructor. simpl.
-        eauto using Mem.inject_compose.
 Abort.
 
 
@@ -1567,8 +1564,6 @@ Proof.
       constructor; eauto. simpl.
       subst args1.
       rauto.
-      transitivity (Mem.flat_inj (Mem.nextblock m1)); eauto.
-      repeat rstep. apply Mem.init_nextblock.
     + constructor; eauto.
   - intros r1 r2 (rI & Hr1I & HrI2). simpl in * |- .
     destruct r1 as [vres1 m1'], Hr1I as (w' & Hw' & Hvres & Hm').

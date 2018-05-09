@@ -59,6 +59,25 @@ Proof.
   split; intros x y; apply val_inject_lessdef.
 Qed.
 
+Global Instance flat_inject_id thr:
+  Related (Mem.flat_inj thr) inject_id inject_incr.
+Proof.
+  intros b1 b2 delta.
+  unfold Mem.flat_inj, inject_id.
+  destruct Block.lt_dec; try discriminate.
+  auto.
+Qed.
+
+Lemma inject_id_wf:
+  meminj_wf inject_id.
+Proof.
+  split.
+  - intros b1 b2 Hb.
+    apply coreflexivity in Hb.
+    congruence.
+  - apply flat_inject_id.
+Qed.
+
 (** ** Definition *)
 
 Program Definition ext: cklr :=
@@ -71,6 +90,10 @@ Program Definition ext: cklr :=
 
 Next Obligation.
   rauto.
+Qed.
+
+Next Obligation.
+  apply inject_id_wf.
 Qed.
 
 Next Obligation.

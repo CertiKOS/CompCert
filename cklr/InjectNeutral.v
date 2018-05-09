@@ -30,17 +30,37 @@ Program Definition injn: cklr :=
     match_mem w := (match_mem inj (Mem.flat_inj w) /\ req w @@ Mem.nextblock)%rel;
   |}.
 
+Next Obligation.
+  destruct H as [H _].
+  apply (cklr_wf inj (Mem.flat_inj w) m1 m2); eauto.
+Qed.
+
 Next Obligation. (* Mem.alloc *)
-  intros nb m1 m2 [Hm Hnb] lo hi.
+  intros nb m1 m2 [[Hm Hwf] Hnb] lo hi.
   destruct (Mem.alloc m1 lo hi) as [m1' b1] eqn:Hm1'.
   edestruct Mem.alloc_parallel_inject
-    as (f' & m2' & b2 & Hm2' & Hm' & _ & Hb2 & Hf');
+    as (f' & m2' & b2 & Hm2' & Hm' & Hf'' & Hb2 & Hf');
     eauto using Zle_refl.
   rewrite Hm2'.
   exists (Block.succ (Mem.nextblock m1)); split; repeat rstep.
   - destruct Hnb. simpl. blomega.
   - split.
     + replace (Mem.flat_inj (Block.succ (Mem.nextblock m1))) with f'; eauto.
+      {
+        split; eauto.
+        split.
+        - intros x y [d Hxy].
+          destruct (Block.eq x b1); subst.
+          * rewrite Hb2 in Hxy; inv Hxy.
+            eapply Mem.alloc_result in Hm1'.
+            eapply Mem.alloc_result in Hm2'.
+            subst. rewrite !ident_of_nextblock.
+            reflexivity.
+          * rewrite Hf' in Hxy by eauto.
+            apply Hwf. exists d; eauto.
+        - transitivity (Mem.flat_inj nb); eauto.
+          apply meminj_wf_incr; eauto.
+      }
       eapply functional_extensionality; intros b.
       apply Mem.alloc_result in Hm1'.
       apply Mem.alloc_result in Hm2'.
@@ -68,7 +88,7 @@ Next Obligation. (* Mem.alloc *)
 Qed.
 
 Next Obligation. (* Mem.free *)
-  intros nb m1 m2 [Hm Hnb] [[b1 lo1] hi1] [[b2 lo2] hi2] Hr.
+  intros nb m1 m2 [[Hm Hwf] Hnb] [[b1 lo1] hi1] [[b2 lo2] hi2] Hr.
   simpl. red.
   destruct (Mem.free m1 b1 lo1 hi1) as [m1'|] eqn:Hm1'; [|rauto].
   inv Hr. inv H0.
@@ -83,11 +103,13 @@ Next Obligation. (* Mem.free *)
 Qed.
 
 Next Obligation. (* Mem.load *)
-  pose proof (cklr_load inj). rauto.
+  pose proof (cklr_load inj). repeat rstep.
+  destruct H0 as [[? ?] ?]; eauto.
+  destruct H0 as [[? ?] ?]; eauto.
 Qed.
 
 Next Obligation. (* Mem.store *)
-  intros nb chunk m1 m2 [Hm Hnb] _ _ [b1 ofs1 b2 delta Hptr] v1 v2 Hv.
+  intros nb chunk m1 m2 [[Hm Hwf] Hnb] _ _ [b1 ofs1 b2 delta Hptr] v1 v2 Hv.
   simpl. red.
   destruct (Mem.store chunk m1 b1 ofs1 v1) as [m1'|] eqn:Hm1'; [|rauto].
   edestruct Mem.store_mapped_inject as (m2' & Hm2' & Hm'); eauto.
@@ -100,7 +122,7 @@ Next Obligation. (* Mem.store *)
 Qed.
 
 Next Obligation. (* Mem.loadbytes *)
-  intros nb m1 m2 [Hm Hnb] _ _ [b1 ofs1 b2 delta Hptr] sz.
+  intros nb m1 m2 [[Hm Hwf] Hnb] _ _ [b1 ofs1 b2 delta Hptr] sz.
   simpl. red.
   destruct (Mem.loadbytes m1 b1 ofs1 sz) as [vs1|] eqn:Hvs1; [|rauto].
   edestruct Mem.loadbytes_inject as (vs2 & Hvs2 & Hvs); eauto.
@@ -108,7 +130,7 @@ Next Obligation. (* Mem.loadbytes *)
 Qed.
 
 Next Obligation. (* Mem.storebytes *)
-  intros nb m1 m2 [Hm Hnb] [b1 ofs1] [b2 ofs2] Hptr vs1 vs2 Hvs.
+  intros nb m1 m2 [[Hm Hwf] Hnb] [b1 ofs1] [b2 ofs2] Hptr vs1 vs2 Hvs.
   simpl. red.
   destruct (Mem.storebytes m1 _ _ _) as [m1'|] eqn:Hm1'; [|constructor].
   assert (vs1 = nil \/ vs1 <> nil) as [Hvs1|Hvs1].
@@ -122,7 +144,8 @@ Next Obligation. (* Mem.storebytes *)
     constructor.
     exists nb; split; try rauto.
     split.
-    + eapply Mem.storebytes_empty_inject; eauto.
+    + split; eauto.
+      eapply Mem.storebytes_empty_inject; eauto.
     + red.
       apply Mem.nextblock_storebytes in Hm1'. rewrite Hm1'.
       apply Mem.nextblock_storebytes in Hm2'. rewrite Hm2'.
@@ -150,22 +173,24 @@ Next Obligation. (* Mem.storebytes *)
 Qed.
 
 Next Obligation. (* Mem.perm *)
-  intros nb m1 m2 [Hm Hnb] _ _ [b1 ofs1 b2 delta Hb] p k H.
+  intros nb m1 m2 [[Hm Hwf] Hnb] _ _ [b1 ofs1 b2 delta Hb] p k H.
   eapply Mem.perm_inject; eauto.
 Qed.
 
 Next Obligation. (* Mem.valid_block *)
-  intros nb m1 m2 [Hm Hnb] b1 b2 [delta Hb].
+  intros nb m1 m2 [[Hm Hwf] Hnb] b1 b2 [delta Hb].
   split; intro.
   - eapply Mem.valid_block_inject_2; eauto.
   - eapply Mem.valid_block_inject_1; eauto.
 Qed.
 
 Next Obligation. (* Mem.meminj_no_overlap *)
+  destruct H as [[? ?] ?].
   eapply Mem.mi_no_overlap; rauto.
 Qed.
 
 Next Obligation. (* representable *)
+  destruct H as [[? ?] ?].
   rewrite <- (Ptrofs.unsigned_repr ofs1) by xomega.
   eapply Mem.mi_representable; try rauto.
   rewrite Ptrofs.unsigned_repr by xomega.
@@ -173,9 +198,11 @@ Next Obligation. (* representable *)
 Qed.
 
 Next Obligation.
+  destruct H as [[? ?] ?].
   eapply Mem.aligned_area_inject; rauto.
 Qed.
 
 Next Obligation. 
+  destruct H as [[? ?] ?].
   eapply Mem.disjoint_or_equal_inject; rauto.
 Qed.

@@ -630,9 +630,9 @@ Proof.
                              klr_diam (state_match R) w s1 s2).
   apply forward_simulation_step with ms.
   - reflexivity.
-  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm Hw] s1 Hs1.
+  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm] s1 Hs1.
     inv Hs1. simpl in *. subst.
-    assert (genv_valid R w (globalenv p)) by assumption.
+    assert (genv_valid R w (globalenv p)) by (eapply cklr_wf; eauto).
     exists (Callstate fb2 vargs2 Kstop m2). split.
     + econstructor; eauto.
       eapply find_funct_ptr_transport; eauto.

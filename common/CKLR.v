@@ -43,6 +43,14 @@ Require Export Memory.
   memory operations, so that they satisfy the relational properties
   enumerated below. *)
 
+Record meminj_wf f :=
+  {
+    meminj_wf_ident_of b1 b2:
+      block_inject f b1 b2 -> Block.ident_of b1 = Block.ident_of b2;
+    meminj_wf_incr:
+      inject_incr (Mem.flat_inj Block.init) f;
+  }.
+
 Record cklr :=
   {
     world: Type;
@@ -56,6 +64,10 @@ Record cklr :=
 
     mi_acc:
       Monotonic mi (acc ++> inject_incr);
+
+    cklr_wf w m1 m2:
+      match_mem w m1 m2 ->
+      meminj_wf (mi w);
 
     cklr_alloc:
       Monotonic

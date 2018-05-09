@@ -1,3 +1,4 @@
+Require Import Axioms.
 Require Export CKLR.
 
 (** Algebraic structures on CKLRs *)
@@ -264,6 +265,30 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma flat_inj_idemp thr:
+  compose_meminj (Mem.flat_inj thr) (Mem.flat_inj thr) = Mem.flat_inj thr.
+Proof.
+  apply functional_extensionality; intros b.
+  unfold compose_meminj, Mem.flat_inj.
+  destruct Block.lt_dec eqn:Hb; eauto.
+  rewrite Hb.
+  reflexivity.
+Qed.
+
+Lemma compose_meminj_wf f1 f2:
+  meminj_wf f1 ->
+  meminj_wf f2 ->
+  meminj_wf (compose_meminj f1 f2).
+Proof.
+  intros [Hb1 Hf1] [Hb2 Hf2].
+  split.
+  - intros b1 b2 Hb.
+    apply block_inject_compose in Hb as (bI & Hb1I & HbI2).
+    transitivity (Block.ident_of bI); eauto.
+  - rewrite <- flat_inj_idemp.
+    rauto.
+Qed.
+
 (** ** Definition *)
 
 Program Definition cklr_compose (R1 R2: cklr): cklr :=
@@ -280,6 +305,11 @@ Qed.
 
 Next Obligation.
   rauto.
+Qed.
+
+Next Obligation.
+  destruct H as (mI & Hm1I & HmI2); simpl in *.
+  apply compose_meminj_wf; eapply cklr_wf; eauto.
 Qed.
 
 Next Obligation.

@@ -275,9 +275,9 @@ Proof.
                             genv_valid R w (Genv.globalenv p)).
   eapply forward_simulation_step with ms.
   - reflexivity.
-  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm Hw].
+  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm].
     intros s1 Hs1. inv Hs1. simpl in *. subst.
-    assert (genv_valid R w (Genv.globalenv p)) by assumption.
+    assert (genv_valid R w (Genv.globalenv p)) by (eapply cklr_wf; eauto).
     exists (Callstate nil fb2 vargs2 m2). split.
     + econstructor; eauto.
       eapply find_funct_ptr_transport; eauto.
@@ -288,7 +288,6 @@ Proof.
     eexists w', (cq _ _ y1 _), _. split.
     + econstructor; simpl; eauto.
       clear - H7; induction H7; constructor; eauto.
-      eapply inject_incr_trans; eauto. rauto.
     + split.
       * constructor. econstructor.
         rewrite Hw' in Hge.
