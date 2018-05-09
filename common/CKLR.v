@@ -45,10 +45,12 @@ Require Export Memory.
 
 Record meminj_wf f :=
   {
-    meminj_wf_ident_of b1 b2:
-      block_inject f b1 b2 -> Block.ident_of b1 = Block.ident_of b2;
     meminj_wf_incr:
       inject_incr (Mem.flat_inj Block.init) f;
+    meminj_wf_img b1 b2:
+      block_inject f b1 b2 ->
+      Block.lt b2 Block.init ->
+      Block.lt b1 Block.init;
   }.
 
 Record cklr :=

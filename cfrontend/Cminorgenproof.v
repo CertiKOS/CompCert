@@ -531,20 +531,14 @@ Lemma match_globalenvs_wf f hi:
   CKLR.meminj_wf f.
 Proof.
   intros [ ]. split.
-  - intros b1 b2 [delta Hb].
-    destruct (Block.ident_of b1) as [i|] eqn:Hb1.
-    * apply Block.ident_of_inv in Hb1; subst.
-      rewrite DOMAIN in Hb; inv Hb. rewrite Block.ident_of_glob; auto.
-      apply Block.lt_le_trans with Block.init; eauto using Block.lt_glob_init.
-      apply Block.le_trans with init_nb; eauto.
-    * destruct (Block.ident_of b2) eqn:Hb2; eauto.
-      rewrite (IMAGE b1 b2 delta Hb) in Hb1; try congruence.
-      eapply Block.ident_of_inv in Hb2; subst.
-      apply Block.lt_le_trans with Block.init; eauto using Block.lt_glob_init.
-      apply Block.le_trans with init_nb; eauto.
   - intros b b' delta. unfold Mem.flat_inj.
     destruct Block.lt_dec; inversion 1; subst.
     eapply DOMAIN. blomega.
+  - intros b1 b2 [delta Hb] Hb2.
+    assert (b1 = b2); try congruence.
+    eapply IMAGE; eauto.
+    eapply Block.lt_le_trans; eauto.
+    eapply Block.le_trans; eauto.
 Qed.
 
 (** Invariance properties for [match_callstack]. *)

@@ -72,10 +72,10 @@ Lemma inject_id_wf:
   meminj_wf inject_id.
 Proof.
   split.
+  - apply flat_inject_id.
   - intros b1 b2 Hb.
     apply coreflexivity in Hb.
     congruence.
-  - apply flat_inject_id.
 Qed.
 
 (** ** Definition *)

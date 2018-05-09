@@ -49,17 +49,17 @@ Next Obligation. (* Mem.alloc *)
       {
         split; eauto.
         split.
-        - intros x y [d Hxy].
-          destruct (Block.eq x b1); subst.
-          * rewrite Hb2 in Hxy; inv Hxy.
-            eapply Mem.alloc_result in Hm1'.
-            eapply Mem.alloc_result in Hm2'.
-            subst. rewrite !ident_of_nextblock.
-            reflexivity.
-          * rewrite Hf' in Hxy by eauto.
-            apply Hwf. exists d; eauto.
         - transitivity (Mem.flat_inj nb); eauto.
           apply meminj_wf_incr; eauto.
+        - intros x y [d Hxy] Hy.
+          destruct (Block.eq x b1); subst.
+          * assert (y = b2) by congruence; subst.
+            eapply Mem.alloc_result in Hm2'; subst.
+            elim (Block.lt_strict Block.init).
+            eapply Block.le_lt_trans; eauto.
+            apply Mem.init_nextblock.
+          * rewrite Hf' in Hxy by eauto.
+            eapply meminj_wf_img; eauto.
       }
       eapply functional_extensionality; intros b.
       apply Mem.alloc_result in Hm1'.

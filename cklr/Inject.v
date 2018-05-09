@@ -21,28 +21,19 @@ Lemma meminj_wf_trans f f' m1 m2:
   inject_separated f f' m1 m2 ->
   meminj_wf f'.
 Proof.
-  intros [Hglob Hf] Hm INCR SEP.
+  intros [Hf Himg] Hm INCR SEP.
   split; eauto using inject_incr_trans.
-  intros b1 b2' [delta' Hb2'].
-  destruct (f b1) as [[b2 delta] | ] eqn:Hb2.
-  - eapply Hglob; eauto.
-    rewrite (INCR _ _ _ Hb2) in Hb2'. inv Hb2'.
+  intros b1 b2' [delta' H2'] Hb2'.
+  destruct (f b1) as [[b2 delta] | ] eqn:H2.
+  - eapply Himg; eauto.
+    rewrite (INCR _ _ _ H2) in H2'. inv H2'.
     eauto.
-  - edestruct SEP; eauto.
-    assert (Block.ident_of b1 = None).
-    {
-      destruct Block.ident_of eqn:Hb1; eauto.
-      eapply Block.ident_of_inv in Hb1; subst.
-      erewrite Hf in Hb2; try discriminate.
-      unfold Mem.flat_inj. destruct Block.lt_dec; eauto.
-      elim n; eauto using Block.lt_glob_init.
-    }
-    destruct (Block.ident_of b2') eqn:Hb2''; try congruence.
-    eapply Block.ident_of_inv in Hb2''; subst.
-    elim H0. red.
-    eapply Block.lt_le_trans with Block.init.
-    + apply Block.lt_glob_init.
-    + apply Mem.init_nextblock.
+  - edestruct SEP as [_ H]; eauto.
+    eapply Block.nlt_le in H.
+    elim (Block.lt_strict b2').
+    apply Block.lt_le_trans with Block.init; eauto.
+    apply Block.le_trans with (Mem.nextblock m2); eauto.
+    apply Mem.init_nextblock.
 Qed.
 
 (** XXX could be moved to coqrel *)
@@ -107,17 +98,17 @@ Next Obligation. (* Mem.alloc *)
   rewrite Hm2'.
   exists f'; split; repeat rstep.
   split.
-  - intros x y [d Hxy].
-    destruct (Block.eq x b1); subst.
-    + rewrite Hb2 in Hxy; inv Hxy.
-      eapply Mem.alloc_result in Hm1'.
-      eapply Mem.alloc_result in Hm2'.
-      subst. rewrite !ident_of_nextblock.
-      reflexivity.
-    + rewrite Hf'2 in Hxy by eauto.
-      apply Hwf. exists d; eauto.
   - transitivity f; eauto.
     apply meminj_wf_incr; auto.
+  - intros x y [d Hxy] Hy.
+    destruct (Block.eq x b1); subst.
+    + assert (y = b2) by congruence; subst.
+      eapply Mem.alloc_result in Hm2'; subst.
+      elim (Block.lt_strict Block.init).
+      eapply Block.le_lt_trans; eauto.
+      apply Mem.init_nextblock.
+    + rewrite Hf'2 in Hxy by eauto.
+      eapply meminj_wf_img; eauto.
 Qed.
 
 Next Obligation. (* Mem.free *)
@@ -414,12 +405,12 @@ Lemma meminj_dom_wf f:
 Proof.
   intros Hwf.
   split.
+  - rewrite <- meminj_dom_flat_inj. rstep.
+    auto using meminj_wf_incr.
   - intros b1 b2 [d Hb].
     unfold meminj_dom in Hb.
     destruct (f b1) as [[b2' d'] | ]; inv Hb.
-    reflexivity.
-  - rewrite <- meminj_dom_flat_inj. rstep.
-    auto using meminj_wf_incr.
+    auto.
 Qed.
 
 (** ** CKLR composition theorems *)

@@ -280,13 +280,13 @@ Lemma compose_meminj_wf f1 f2:
   meminj_wf f2 ->
   meminj_wf (compose_meminj f1 f2).
 Proof.
-  intros [Hb1 Hf1] [Hb2 Hf2].
+  intros [Hf1 Hi1] [Hf2 Hi2].
   split.
-  - intros b1 b2 Hb.
-    apply block_inject_compose in Hb as (bI & Hb1I & HbI2).
-    transitivity (Block.ident_of bI); eauto.
   - rewrite <- flat_inj_idemp.
     rauto.
+  - intros b1 b2 Hb Hb2.
+    apply block_inject_compose in Hb as (bI & Hb1I & HbI2).
+    eauto using meminj_wf_img.
 Qed.
 
 (** ** Definition *)

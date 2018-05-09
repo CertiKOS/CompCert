@@ -47,38 +47,10 @@ Definition arguments_out_of_reach sg j m1 sp :=
     0 <= i < 4 * typesize ty ->
     loc_out_of_reach j m1 sb (Ptrofs.unsigned sofs + i).
 
-Definition globals_separated (f: meminj) :=
-  forall b b' ofs,
-    f b = Some (b', ofs) ->
-    Block.lt b' Block.init ->
-    Block.lt b Block.init.
-
-Lemma globals_separated_trans f f' m1 m2:
-  globals_separated f ->
-  Mem.inject f m1 m2 ->
-  inject_incr f f' ->
-  inject_separated f f' m1 m2 ->
-  globals_separated f'.
-Proof.
-  intros Hf Hm INCR SEP.
-  intros b1 b2 ofs Hfb Hb2.
-  destruct (f b1) as [[b2' ofs'] | ] eqn:Hb2'.
-  - eapply Hf; eauto.
-    apply INCR in Hb2'. congruence.
-  - edestruct SEP; eauto.
-    unfold Mem.valid_block in *.
-    elim (Block.lt_strict b2).
-    apply Block.lt_le_trans with Block.init; eauto.
-    apply Block.le_trans with (Mem.nextblock m2); eauto using Mem.init_nextblock.
-    eapply Block.nlt_le; eauto.
-Qed.
-
 Require Import CKLR.
 
 Definition cc_stacking_mq RR w: query li_locset -> query li_mach -> Prop :=
   fun '(lq id1 sg rs1 m1) '(mq id2 sp ra rs2 m2) =>
-    inject_incr (Mem.flat_inj Block.init) (mi RR w) /\
-    globals_separated (mi RR w) /\
     id1 = id2 /\
     (forall r, Val.inject (mi RR w) (rs1 (R r)) (rs2 r)) /\
     match_mem RR w m1 m2 /\
@@ -105,8 +77,7 @@ Definition cc_stacking R: callconv li_locset li_mach :=
   |}.
 
 Lemma match_cc_stacking f fb sg rs1 m1 sp ra rs2 m2:
-  inject_incr (Mem.flat_inj Block.init) f ->
-  globals_separated f ->
+  meminj_wf f ->
   (forall r, Val.inject f (rs1 (R r)) (rs2 r)) ->
   Mem.inject f m1 m2 ->
   valid_blockv m2 sp ->
@@ -137,15 +108,12 @@ Proof.
   pose (q1 := lq fb sg rs1 m1).
   pose (q2 := mq fb sp ra rs2 m2).
   exists (injpw f m1 m2). simpl. repeat apply conj; eauto 10.
-  {
-    admit.
-  }
   intros rs1' m1' rs2' m2' (w' & Hw' & Hrs' & Hm'). inv Hw'. inv Hm'.
   exists f'. intuition eauto.
   destruct (f b) as [[delta b'] | ] eqn:Hfb.
   - eauto. (* injp_max_perm_decreases *)
   - eapply Mem.unchanged_on_perm; eauto.
-Admitted.
+Qed.
 
 (** * Basic properties of the translation *)
 
@@ -1829,7 +1797,7 @@ Proof.
   clear -Hq.
   destruct q1 as [? sg ls0 m1], q2 as [id sp0 ra0 rs0 m2].
   simpl in *.
-  destruct Hq as (_ & _ & ? & Hrs0 & _ & _ & _ & Hoor & Hargs); subst.
+  destruct Hq as (? & Hrs0 & _ & _ & _ & Hoor & Hargs); subst.
   intros Hin_args Hunch.
   edestruct Hargs as (v & Hvarg & Hv); eauto.
   exists v; intuition.
@@ -2603,7 +2571,7 @@ Proof.
   intros w q1 q2 Hq.
   destruct q1 as [id1 sg ls m1].
   destruct q2 as [id sp ra rs m2].
-  destruct Hq as (INCR & SEP & Hj & Hrs & Hm & Hsp & Hra & Hoor & Hargs); subst.
+  destruct Hq as (Hj & Hrs & Hm & Hsp & Hra & Hoor & Hargs); subst.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   econstructor; split.
@@ -2625,13 +2593,16 @@ Proof.
   {
     simpl. exists Block.init; split. apply Mem.init_nextblock.
     constructor; intros.
-    + apply INCR. unfold Mem.flat_inj.
+    + apply meminj_wf_incr; eauto. unfold Mem.flat_inj.
       destruct Block.lt_dec. reflexivity. contradiction.
-    + assert (j b1 = Some (b1, 0)).
-      * apply INCR. unfold Mem.flat_inj.
-        destruct Block.lt_dec; eauto.
-        elim n; eapply SEP; eauto.
-      * congruence.
+    + assert (block_inject j b1 b2) as Hb by eauto.
+      apply meminj_wf_img in Hb; eauto.
+      assert (Mem.flat_inj Block.init b1 = Some (b1, 0)).
+      {
+        unfold Mem.flat_inj. destruct Block.lt_dec; tauto.
+      }
+      eapply meminj_wf_incr in H1; eauto.
+      congruence.
     + eapply Genv.genv_symb_range; eauto.
     + apply Genv.find_funct_ptr_iff in H. eapply Genv.genv_defs_range; eauto.
     + apply Genv.find_var_info_iff in H. eapply Genv.genv_defs_range; eauto.
@@ -2662,6 +2633,7 @@ Proof.
   assert (f = External (EF_external id sg)) by congruence; subst f.
   simpl in TRANSL. inversion TRANSL; subst tf. simpl in STACKS.
   pose proof (ii_incr _ _ _ _ _ SINV) as INCR.
+  pose proof (ii_injsep _ _ _ _ _ SINV) as SSEP.
   pose proof SEP as (Hsc & (Hinj & Hge & _) & _).
   simpl in Hinj.
   assert (Hrs_wt: wt_locset rs) by (inv Hst1; eauto).
@@ -2676,7 +2648,7 @@ Proof.
       apply sep_proj1 in SEP.
       eapply sep_minjection_out_of_reach; eauto.
       simpl.
-      pose proof HqB as (_ & _ & Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
+      pose proof HqB as (Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs).
       split.
       + eapply Hoor; eauto.
         destruct TP as [TP | ?]; try congruence.
@@ -2705,16 +2677,9 @@ Proof.
   edestruct (match_cc_stacking j) as (wA & Hq12 & H12); eauto.
   { destruct w as [j0 xm1 xm2].
     destruct qB1 as [fb1 sg1 rs1 m1], qB2 as [fb2 sp0 ra0 rs2 m2].
-    destruct HqB as (FINCR & SEP' & Hfb' & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
+    destruct HqB as (Hfb' & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
     cbn -[Z.mul m_pred] in *. inv Hm.
-    eapply inject_incr_trans; eauto. }
-  { destruct w as [j0 xm1 xm2].
-    destruct qB1 as [fb1 sg1 rs1 m1], qB2 as [fb2 sp0 ra0 rs2 m2].
-    destruct HqB as (FINCR & SEP' & Hfb' & Hrs & Hm & Hbv & Hra & Hoor & Hargs).
-    cbn -[Z.mul m_pred] in *. inv Hm.
-    eapply globals_separated_trans; eauto.
-    destruct SINV; simpl in *.
-    assumption. }
+    eapply meminj_wf_trans; eauto. }
   { eapply match_stacks_valid_blockv_sp; eauto.
     eapply Mem.unchanged_on_nextblock.
     eapply stack_contents_out_of_reach; eauto. }
@@ -2754,7 +2719,7 @@ Lemma transf_final_states:
 Proof.
   intros until r1. intros Hq Hst Hst1.
   destruct w as [f xm1 xm2], q1 as [id1 sg ls m1], q2 as [id sp ra rs m2].
-  destruct Hq as (Hf & Hfg & Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs). inv Hm.
+  destruct Hq as (Hid & Hrs & Hm & Hsp & Hra & Hoor & Hargs). inv Hm.
   destruct Hst1. inv Hst. inv STACKS.
   destruct SINV as [INCR INJSEP UNCH PERM].
   cbn -[m_pred] in *.

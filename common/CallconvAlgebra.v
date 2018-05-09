@@ -973,11 +973,11 @@ Lemma flat_inj_wf thr:
 Proof.
   intros Hthr.
   split.
-  - intros b1 b2 [delta Hb].
+  - rauto.
+  - intros b1 b2 [delta Hb] Hb2.
     unfold Mem.flat_inj in Hb.
     destruct Block.lt_dec; inv Hb.
-    reflexivity.
-  - rauto.
+    auto.
 Qed.
 
 Lemma cc_extends_inject_triangle:
