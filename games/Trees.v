@@ -152,9 +152,9 @@ Module Gametree.
     change (f r = g r). cut (f = g); try congruence. subst f g.
     eapply final_morphism_uniq.
     - eapply LTS.morphism_compose; eauto using c_mor.
-      eapply LTS.rfst_morphism. apply Hαβ.
+      eapply LTS.rfst_morphism. rauto.
     - eapply LTS.morphism_compose; eauto using c_mor.
-      eapply LTS.rsnd_morphism. apply Hαβ.
+      eapply LTS.rsnd_morphism. apply LTS.bisim_sim, LTS.bisim_flip. auto.
   Qed.
 
   (** ** Refinement *)

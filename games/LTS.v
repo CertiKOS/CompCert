@@ -121,13 +121,16 @@ Module LTS.
     alternating simulations below. *)
 
   Definition sim P {A B} (R : rel A B) : rel (lts M A) (lts M B) :=
-    (psat P ++> R ++> set_le R).
+    fun α β =>
+      forall m, P m ->
+      forall a b, R a b ->
+      forall a', α m a a' ->
+      exists b', β m b b' /\ R a' b'.
 
   Global Instance sim_refl {A} P :
     @Reflexive (lts M A) (sim P eq).
   Proof.
-    intros α m _ [Hm] a _ [].
-    reflexivity.
+    intros α m Hm a _ []. eauto.
   Qed.
 
   Lemma sim_compose {A B C} P (R : rel A B) (S : rel B C) α β γ :
@@ -135,7 +138,7 @@ Module LTS.
     sim P S β γ ->
     sim P (rel_compose R S) α γ.
   Proof.
-    intros Hαβ Hβγ m _ [Hm] a c (b & Hab & Hbc) a' Ha'.
+    intros Hαβ Hβγ m Hm a c (b & Hab & Hbc) a' Ha'.
     edestruct Hαβ as (b' & Hb' & Hab'); eauto.
     edestruct Hβγ as (c' & Hc' & Hbc'); eauto 10.
   Qed.
@@ -146,7 +149,7 @@ Module LTS.
     determ β ->
     sim P (R1 /\ R2) α β.
   Proof.
-    intros H1 H2 Hβ m _ [Hm] a b [Hab1 Hab2] a' Ha'.
+    intros H1 H2 Hβ m Hm a b [Hab1 Hab2] a' Ha'.
     edestruct H1 as (b' & Hb1' & Hab1'); eauto.
     edestruct H2 as (xb' & Hb2' & Hab2'); eauto.
     assert (xb' = b') by eauto; subst.
@@ -155,14 +158,37 @@ Module LTS.
 
   (** ** Alternating simulations *)
 
-  Definition ref {A B} (p : M -> bool) R : rel (lts M A) (lts M B) :=
-    sim (fun m => p m = true) R /\
-    flip (sim (fun m => p m = false) (flip R)).
+  Definition ref {A B} (p : M -> bool) (R : rel A B) : rel (lts M A) (lts M B) :=
+    fun α β =>
+      forall m a b, R a b ->
+      if p m then
+        (forall a', α m a a' -> exists b', β m b b' /\ R a' b')
+      else
+        (forall b', β m b b' -> exists a', α m a a' /\ R a' b').
+
+  Lemma sim_ref {A B} p (R : rel A B) α β :
+    sim (fun m => p m = true) R α β ->
+    sim (fun m => p m = false) (flip R) β α ->
+    ref p R α β.
+  Proof.
+    intros Ht Hf m. unfold flip in *.
+    destruct p eqn:Hm; eauto.
+  Qed.
+
+  Lemma ref_sim {A B} p (R : rel A B) α β :
+    ref p R α β ->
+    sim (fun m => p m = true) R α β /\
+    sim (fun m => p m = false) (flip R) β α.
+  Proof.
+    intros H. unfold ref, flip in *.
+    split; intros m Hm; specialize (H m); rewrite Hm in H; eauto.
+  Qed.
 
   Global Instance ref_id {A} p :
     @Reflexive (lts M A) (ref p eq).
   Proof.
-    split.
+    intros α.
+    apply sim_ref.
     - reflexivity.
     - replace (flip eq) with (@eq A).
       + reflexivity.
@@ -184,20 +210,23 @@ Module LTS.
     determ β ->
     ref p (R1 /\ R2) α β.
   Proof.
-    intros [Hαβ1 Hβα1] [Hαβ2 Hβα2] Hα Hβ.
-    split; apply sim_inter; eauto.
+    intros H1 H2 Hα Hβ m.
+    apply ref_sim in H1 as [Hαβ1 Hβα1].
+    apply ref_sim in H2 as [Hαβ2 Hβα2].
+    apply sim_ref; apply sim_inter; eauto.
   Qed.
 
   Lemma ref_flip {A B} p (R : rel A B) α β :
     ref (opp p) R β α ->
     ref p (flip R) α β.
   Proof.
-    intros [Hβα Hαβ]. split; unfold flip in *.
-    - intros m _ [Hm].
-      apply Hαβ. constructor. unfold opp.
+    intros H. apply ref_sim in H as [Hβα Hαβ].
+    apply sim_ref; unfold flip in *.
+    - intros m Hm.
+      apply Hαβ. unfold opp.
       destruct (p m); simpl; congruence.
-    - intros m _ [Hm].
-      apply Hβα. constructor. unfold opp.
+    - intros m Hm.
+      apply Hβα. unfold opp.
       destruct (p m); simpl; congruence.
   Qed.
 
@@ -215,11 +244,11 @@ Module LTS.
     determ β ->
     invr R α β.
   Proof.
-    intros [Hαβ Hβα] Hα Hβ m a b a' b' Ha' Hb' Hab.
-    destruct (p m) eqn:Hm.
-    - edestruct Hαβ as (xb' & Hxb' & Hab'); eauto.
+    intros H Hα Hβ m a b a' b' Ha' Hb' Hab. specialize (H m).
+    destruct (p m).
+    - edestruct H as (xb' & Hxb' & Hab'); simpl; eauto.
       assert (xb' = b') by eauto. congruence.
-    - edestruct Hβα as (xa' & Hxa' & Hab'); eauto. red in Hab'.
+    - edestruct H as (xa' & Hxa' & Hab'); simpl; eauto.
       assert (xa' = a') by eauto. congruence.
   Qed.
 
@@ -239,7 +268,7 @@ Module LTS.
     invr R' α β ->
     sim P (R /\ R') α β.
   Proof.
-    intros Hαβ HR' m _ [Hm] a b [Hab H'ab] a' Ha'.
+    intros Hαβ HR' m Hm a b [Hab H'ab] a' Ha'.
     edestruct Hαβ as (b' & Hb' & Hab'); eauto.
     exists b'; split; eauto. split; eauto.
   Qed.
@@ -249,37 +278,51 @@ Module LTS.
     invr R' α β ->
     ref p (R /\ R') α β.
   Proof.
-    intros [Hαβ Hβα] HR'.
-    split; apply invr_sim; eauto using invr_flip.
+    intros H HR'. apply ref_sim in H as [Hαβ Hβα].
+    apply sim_ref; apply invr_sim; eauto using invr_flip.
   Qed.
 
   (** ** Bisimulations *)
 
   Definition bisim {A B} (R : rel A B) : rel (lts M A) (lts M B) :=
-    sim (fun _ => True) R /\
-    flip (sim (fun _ => True) (flip R)).
+    fun α β =>
+      forall m a b, R a b ->
+        (forall a', α m a a' -> exists b', β m b b' /\ R a' b') /\
+        (forall b', β m b b' -> exists a', α m a a' /\ R a' b').
+
+  Global Instance bisim_sim P {A B} (R : rel A B) :
+    Related (bisim R) (sim P R) subrel.
+  Proof.
+    firstorder.
+  Qed.
+
+  Global Instance bisim_sim_subrel_params:
+    Params (@sim) 2.
+
+  Lemma bisim_flip {A B} (R : rel A B) α β :
+    bisim R α β ->
+    bisim (flip R) β α.
+  Proof.
+    unfold flip. firstorder.
+  Qed.
 
   Lemma ref_bisim p {A B} (R : rel A B) α β :
     ref p R α β ->
     ref p (flip R) β α ->
     bisim R α β.
   Proof.
-    intros [Hαβ Hβα] [Hβα' Hαβ']. unfold flip in *.
-    split.
-    - intros m _ [_].
-      destruct (p m) eqn:Hpm; eauto.
-    - intros m _ [_].
-      destruct (p m) eqn:Hpm; eauto.
+    intros H1 H2 m. specialize (H1 m). specialize (H2 m). unfold flip in *.
+    destruct p; eauto.
   Qed.
 
   Lemma ref_bisim_inter p {A B} (R1 R2 : rel A B) (α β : lts M _) :
-    LTS.ref p R1 α β ->
-    LTS.ref (opp p) R2 α β ->
-    LTS.determ α ->
-    LTS.determ β ->
-    LTS.bisim (R1 /\ R2) α β.
+    ref p R1 α β ->
+    ref (opp p) R2 α β ->
+    determ α ->
+    determ β ->
+    bisim (R1 /\ R2) α β.
   Proof.
-    intros.
+    intros H1 H2 Hα Hβ.
     eapply ref_bisim.
     - apply invr_ref; eauto.
       eapply ref_invr; eauto.
@@ -308,7 +351,7 @@ Module LTS.
     split.
     - clear. firstorder.
     - intros m [a b Hab] a' Ha'.
-      edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+      edestruct Hαβ as (b' & Hb' & Hab'); simpl; eauto.
       exists (rpair a' b' Hab'). simpl.
       unfold pair. split; rauto.
   Qed.
@@ -321,7 +364,7 @@ Module LTS.
     split.
     - clear. firstorder.
     - intros m [a b Hab] b' Hb'.
-      edestruct Hβα as (a' & Ha' & Hab'); eauto.
+      edestruct Hβα as (a' & Ha' & Hab'); simpl; eauto.
       exists (rpair a' b' Hab'). simpl.
       unfold pair. split; rauto.
   Qed.
@@ -341,9 +384,10 @@ Module LTS.
   Lemma bot_ref {A} p (α : lts M A) :
     ref p ⊤ (bot p) α.
   Proof.
-    unfold ref, sim, bot. split.
-    - intros m _ [Hm] [] a _ [] H. congruence.
-    - intros m _ [Hm] a [] _ a' H. exists tt; split; eauto. rauto.
+    unfold ref, sim, bot.
+    intros m [] a _. destruct p.
+    - congruence.
+    - intros a' H. exists tt; split; eauto. rauto.
   Qed.
 
   Definition sup {A} (p : M -> bool) (δ : lts M A) : lts M (A -> Prop) :=
@@ -367,13 +411,13 @@ Module LTS.
   Lemma sup_ub {A} (p : M -> bool) (δ : lts M A) :
     ref p (fun a sA => sA a) δ (sup p δ).
   Proof.
-    split.
-    - intros m _ [Hm] a sA H a' Ha'.
+    apply sim_ref.
+    - intros m Hm a sA H a' Ha'.
       exists (fun a' => exists a, sA a /\ δ m a a'). split; eauto.
       split.
       + reflexivity.
       + rewrite Hm. eauto.
-    - intros m _ [Hm] sA a Ha sA' [HsA' ?]. unfold flip in *. rewrite Hm in H.
+    - intros m Hm sA a Ha sA' [HsA' ?]. unfold flip in *. rewrite Hm in H.
       edestruct H as [a' Ha']; eauto.
       exists a'. split; eauto.
       apply HsA'. eauto.
@@ -385,19 +429,19 @@ Module LTS.
     determ β ->
     ref p (fun sA b => forall a, impl (sA a) (R a b)) (sup p α) β.
   Proof.
-    intros [Hαβ Hβα] Hα Hβ.
-    split.
-    - intros m _ [Hm] sA b Hab sA' [HsA' H].
+    intros H Hα Hβ. apply ref_sim in H as [Hαβ Hβα].
+    apply sim_ref.
+    - intros m Hm sA b Hab sA' [HsA' H].
       rewrite Hm in H. destruct H as (a & Ha & a' & Ha').
       unfold impl in Hab.
-      edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+      edestruct Hαβ as (b' & Hb' & Hab'); simpl; eauto.
       exists b'. split; eauto.
       intros a2' Ha2'. apply HsA' in Ha2'.
       destruct Ha2' as (a2 & Ha2 & Ha2').
-      edestruct Hαβ with (x0 := a2) as (b2' & Hb2' & Hab2'); eauto.
+      edestruct Hαβ with (a := a2) as (b2' & Hb2' & Hab2'); simpl; eauto.
       assert (b2' = b') by eauto. congruence.
     - unfold flip, impl in *.
-      intros m _ [Hm] b sA Hab b' Hb'.
+      intros m Hm b sA Hab b' Hb'.
       exists (fun a' => exists a, sA a /\ α m a a'). split; [split | ].
       + reflexivity.
       + rewrite Hm. intros a Ha.
