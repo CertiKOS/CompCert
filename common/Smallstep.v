@@ -337,8 +337,8 @@ Hypothesis order_wf: well_founded order.
 Lemma forever_N_inv:
   forall ge a s T,
   forever_N ge a s T ->
-  exists t, exists s', exists a', exists li,
-  step ge s t s' /\ forever_N ge a' s' li /\ T = t *** li.
+  exists t, exists s', exists a', exists T',
+  step ge s t s' /\ forever_N ge a' s' T' /\ T = t *** T'.
 Proof.
   intros ge a0. pattern a0. apply (well_founded_ind order_wf).
   intros. inv H0.
@@ -363,7 +363,7 @@ Lemma forever_N_forever:
   forall ge a s T, forever_N ge a s T -> forever ge s T.
 Proof.
   cofix COINDHYP; intros.
-  destruct (forever_N_inv H) as [t [s' [a' [li [P [Q R]]]]]].
+  destruct (forever_N_inv H) as [t [s' [a' [T' [P [Q R]]]]]].
   rewrite R. apply forever_intro with s'. auto.
   apply COINDHYP with a'; auto.
 Qed.
@@ -380,8 +380,8 @@ CoInductive forever_plus (ge: genv) : state -> traceinf -> Prop :=
 Lemma forever_plus_inv:
   forall ge s T,
   forever_plus ge s T ->
-  exists s', exists t, exists li,
-  step ge s t s' /\ forever_plus ge s' li /\ T = t *** li.
+  exists s', exists t, exists T',
+  step ge s t s' /\ forever_plus ge s' T' /\ T = t *** T'.
 Proof.
   intros. inv H. inv H0. exists s0; exists t1; exists (t2 *** T2).
   split. auto.
@@ -394,7 +394,7 @@ Lemma forever_plus_forever:
   forall ge s T, forever_plus ge s T -> forever ge s T.
 Proof.
   cofix COINDHYP; intros.
-  destruct (forever_plus_inv H) as [s' [t [li [P [Q R]]]]].
+  destruct (forever_plus_inv H) as [s' [t [T' [P [Q R]]]]].
   subst. econstructor; eauto.
 Qed.
 
@@ -524,12 +524,14 @@ Definition Semantics liA liB {state funtype vartype: Type}
 
 (** Handy notations. *)
 
-Notation Step L := (step L (globalenv L)).
-Notation Star L := (star (step L) (globalenv L)).
-Notation Plus L := (plus (step L) (globalenv L)).
-Notation Forever_silent L := (forever_silent (step L) (globalenv L)).
-Notation Forever_reactive L := (forever_reactive (step L) (globalenv L)).
-Notation Nostep L := (nostep (step L) (globalenv L)).
+Notation " 'Step' L " := (step L (globalenv L)) (at level 1) : smallstep_scope.
+Notation " 'Star' L " := (star (step L) (globalenv L)) (at level 1) : smallstep_scope.
+Notation " 'Plus' L " := (plus (step L) (globalenv L)) (at level 1) : smallstep_scope.
+Notation " 'Forever_silent' L " := (forever_silent (step L) (globalenv L)) (at level 1) : smallstep_scope.
+Notation " 'Forever_reactive' L " := (forever_reactive (step L) (globalenv L)) (at level 1) : smallstep_scope.
+Notation " 'Nostep' L " := (nostep (step L) (globalenv L)) (at level 1) : smallstep_scope.
+
+Open Scope smallstep_scope.
 
 (** * Forward simulations between two transition semantics. *)
 
