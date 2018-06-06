@@ -27,6 +27,10 @@ Set Implicit Arguments.
 
 (** * Behaviors for program executions *)
 
+Section BEHAVIOR.
+
+Context {R: Type}.
+
 (** The four possible outcomes for the execution of a program:
 - Termination, with a finite trace of observable events
   and an integer value that stands for the process exit code
@@ -41,7 +45,7 @@ Set Implicit Arguments.
 *)
 
 Inductive program_behavior: Type :=
-  | Terminates: trace -> int -> program_behavior
+  | Terminates: trace -> R -> program_behavior
   | Diverges: trace -> program_behavior
   | Reacts: traceinf -> program_behavior
   | Goes_wrong: trace -> program_behavior.
@@ -80,54 +84,72 @@ Qed.
 Definition behavior_prefix (t: trace) (beh: program_behavior) : Prop :=
   exists beh', beh = behavior_app t beh'.
 
-Definition behavior_improves (beh1 beh2: program_behavior) : Prop :=
-  beh1 = beh2 \/ exists t, beh1 = Goes_wrong t /\ behavior_prefix t beh2.
+End BEHAVIOR.
 
-Lemma behavior_improves_refl:
-  forall beh, behavior_improves beh beh.
+Inductive behavior_improves {A B} (R: rel A B) : rel _ _ :=
+  | Terminates_improves t r1 r2 :
+      R r1 r2 ->
+      behavior_improves R (Terminates t r1) (Terminates t r2)
+  | Diverges_improves t :
+      behavior_improves R (Diverges t) (Diverges t)
+  | Reacts_improve T :
+      behavior_improves R (Reacts T) (Reacts T)
+  | Goes_wrong_improves t beh2 :
+      behavior_prefix t beh2 ->
+      behavior_improves R (Goes_wrong t) beh2.
+
+Lemma behavior_improves_refl `{HR: Reflexive}:
+  forall beh, behavior_improves R beh beh.
 Proof.
-  intros; red; auto.
+  intros [t r | t | T | t]; constructor; eauto.
+  exists (Goes_wrong E0). simpl. rewrite E0_right; eauto.
 Qed.
 
-Lemma behavior_improves_trans:
+Lemma behavior_improves_trans `{HR: Transitive}:
   forall beh1 beh2 beh3,
-  behavior_improves beh1 beh2 -> behavior_improves beh2 beh3 ->
-  behavior_improves beh1 beh3.
+  behavior_improves R beh1 beh2 -> behavior_improves R beh2 beh3 ->
+  behavior_improves R beh1 beh3.
 Proof.
-  intros. red. destruct H; destruct H0; subst; auto.
-  destruct H as [t1 [EQ1 [beh2' EQ1']]].
-  destruct H0 as [t2 [EQ2 [beh3' EQ2']]].
-  subst. destruct beh2'; simpl in EQ2; try discriminate. inv EQ2.
-  right. exists t1; split; auto. exists (behavior_app t beh3'). apply behavior_app_assoc.
+  intros. destruct H; inversion H0; subst; constructor; eauto.
+  - destruct H as (beh & Hbeh).
+    destruct beh; inv Hbeh.
+    exists (Terminates t1 r2). reflexivity.
+  - destruct H as (beh & Hbeh).
+    destruct beh; inv Hbeh.
+    destruct H1 as (beh & Hbeh); subst.
+    exists (behavior_app t1 beh).
+    apply behavior_app_assoc.
 Qed.
 
-Lemma behavior_improves_bot:
-  forall beh, behavior_improves (Goes_wrong E0) beh.
+Lemma behavior_improves_bot {A B} {R: rel A B}:
+  forall beh, behavior_improves R (Goes_wrong E0) beh.
 Proof.
-  intros. right. exists E0; split; auto. exists beh. rewrite behavior_app_E0; auto.
+  intros. constructor. exists beh. rewrite behavior_app_E0; auto.
 Qed.
 
-Lemma behavior_improves_app:
+Lemma behavior_improves_app {A B} {R: rel A B}:
   forall t beh1 beh2,
-  behavior_improves beh1 beh2 ->
-  behavior_improves (behavior_app t beh1) (behavior_app t beh2).
+  behavior_improves R beh1 beh2 ->
+  behavior_improves R (behavior_app t beh1) (behavior_app t beh2).
 Proof.
-  intros. red; destruct H. left; congruence.
-  destruct H as [t' [A [beh' B]]]. subst.
-  right; exists (t ** t'); split; auto. exists beh'. rewrite behavior_app_assoc; auto.
+  intros. destruct H; constructor; eauto.
+  destruct H as [beh' ?]. subst.
+  exists beh'. rewrite behavior_app_assoc; auto.
 Qed.
+
+(*Arguments program_behavior : clear implicits. ?*)
 
 (** Associating behaviors to programs. *)
 
 Section PROGRAM_BEHAVIORS.
 
-Variable L: semantics.
+Context {li} (L: semantics li).
 
 Inductive state_behaves (s: state L): program_behavior -> Prop :=
-  | state_terminates: forall t s' r,
+  | state_terminates: forall t s' r k,
       Star L s t s' ->
-      final_state L s' r ->
-      state_behaves s (Terminates t r)
+      final_state L s' r k ->
+      state_behaves s (Terminates t (r, k))
   | state_diverges: forall t s',
       Star L s t s' -> Forever_silent L s' ->
       state_behaves s (Diverges t)
@@ -137,16 +159,16 @@ Inductive state_behaves (s: state L): program_behavior -> Prop :=
   | state_goes_wrong: forall t s',
       Star L s t s' ->
       Nostep L s' ->
-      (forall r, ~final_state L s' r) ->
+      (forall r k, ~final_state L s' r k) ->
       state_behaves s (Goes_wrong t).
 
-Inductive program_behaves: program_behavior -> Prop :=
+Inductive program_behaves (q: query li): program_behavior -> Prop :=
   | program_runs: forall s beh,
-      initial_state L s -> state_behaves s beh ->
-      program_behaves beh
+      initial_state L q s -> state_behaves s beh ->
+      program_behaves q beh
   | program_goes_initially_wrong:
-      (forall s, ~initial_state L s) ->
-      program_behaves (Goes_wrong E0).
+      (forall s, ~initial_state L q s) ->
+      program_behaves q (Goes_wrong E0).
 
 Lemma state_behaves_app:
   forall s1 t s2 beh,
@@ -253,9 +275,9 @@ Proof.
   destruct (not_all_ex_not _ _ H) as [s1 A]; clear H.
   destruct (not_all_ex_not _ _ A) as [t1 B]; clear A.
   destruct (imply_to_and _ _ B) as [C D]; clear B.
-  destruct (classic (exists r, final_state L s1 r)) as [[r FINAL] | NOTFINAL].
+  destruct (classic (exists r k, final_state L s1 r k)) as [(r & k & FINAL) | NOTFINAL].
 (* 2.1 Normal termination *)
-  exists (Terminates t1 r); econstructor; eauto.
+  exists (Terminates t1 (r, k)); econstructor; eauto.
 (* 2.2 Going wrong *)
   exists (Goes_wrong t1); econstructor; eauto. red. intros.
   generalize (not_ex_all_not _ _ D s'); intros.
@@ -263,10 +285,10 @@ Proof.
   auto.
 Qed.
 
-Theorem program_behaves_exists:
-  exists beh, program_behaves beh.
+Theorem program_behaves_exists q:
+  exists beh, program_behaves q beh.
 Proof.
-  destruct (classic (exists s, initial_state L s)) as [[s0 INIT] | NOTINIT].
+  destruct (classic (exists s, initial_state L q s)) as [[s0 INIT] | NOTINIT].
 (* 1. Initial state is defined. *)
   destruct (state_behaves_exists s0) as [beh SB].
   exists beh; econstructor; eauto.
@@ -281,61 +303,82 @@ End PROGRAM_BEHAVIORS.
 
 Section FORWARD_SIMULATIONS.
 
-Context L1 L2 index order match_states (S: fsim_properties L1 L2 index order match_states).
+Context {li1 li2} {cc: callconv li1 li2}.
+Context L1 L2 index order match_states (S: fsim_properties cc L1 L2 (index:=index) order match_states).
+
+Definition match_cont w (k1 k2: query _ -> state _ -> Prop): Prop :=
+  forall q1 q2 w' s1,
+    cc_query cc q1 q2 w w' ->
+    k1 q1 s1 ->
+    exists i s2,
+      k2 q2 s2 /\
+      match_states w' i s1 s2.
+
+Definition match_res w '(r1, k1) '(r2, k2): Prop :=
+  exists w',
+    cc_reply cc r1 r2 w w' /\
+    match_cont w' k1 k2.
 
 Lemma forward_simulation_state_behaves:
-  forall i s1 s2 beh1,
-  match_states i s1 s2 -> state_behaves L1 s1 beh1 ->
-  exists beh2, state_behaves L2 s2 beh2 /\ behavior_improves beh1 beh2.
+  forall w i s1 s2 beh1,
+  match_states w i s1 s2 -> state_behaves L1 s1 beh1 ->
+  exists beh2, state_behaves L2 s2 beh2 /\ behavior_improves (match_res w) beh1 beh2.
 Proof.
   intros. inv H0.
 - (* termination *)
-  exploit simulation_star; eauto. intros [i' [s2' [A B]]].
-  exists (Terminates t r); split.
-  econstructor; eauto. eapply fsim_match_final_states; eauto.
-  apply behavior_improves_refl.
+  exploit @simulation_star; eauto. intros [i' [s2' [A B]]].
+  edestruct @fsim_match_final_states as (r2 & w' & k2 & Hr & Hr2 & Hk); eauto.
+  exists (Terminates t (r2, k2)); split.
+  econstructor; eauto.
+  constructor. exists w'. unfold match_cont. eauto.
 - (* silent divergence *)
-  exploit simulation_star; eauto. intros [i' [s2' [A B]]].
+  exploit @simulation_star; eauto. intros [i' [s2' [A B]]].
   exists (Diverges t); split.
   econstructor; eauto. eapply simulation_forever_silent; eauto.
-  apply behavior_improves_refl.
+  constructor.
 - (* reactive divergence *)
   exists (Reacts T); split.
   econstructor. eapply simulation_forever_reactive; eauto.
-  apply behavior_improves_refl.
+  constructor.
 - (* going wrong *)
-  exploit simulation_star; eauto. intros [i' [s2' [A B]]].
+  exploit @simulation_star; eauto. intros [i' [s2' [A B]]].
   destruct (state_behaves_exists L2 s2') as [beh' SB].
   exists (behavior_app t beh'); split.
   eapply state_behaves_app; eauto.
-  replace (Goes_wrong t) with (behavior_app t (Goes_wrong E0)).
+  replace (Goes_wrong t) with (behavior_app t
+            (Goes_wrong (R := reply li1 * (query li1 -> state L1 -> Prop)) E0)).
   apply behavior_improves_app. apply behavior_improves_bot.
   simpl. decEq. traceEq.
 Qed.
 
 End FORWARD_SIMULATIONS.
 
-Theorem forward_simulation_behavior_improves:
-  forall L1 L2, forward_simulation L1 L2 ->
-  forall beh1, program_behaves L1 beh1 ->
-  exists beh2, program_behaves L2 beh2 /\ behavior_improves beh1 beh2.
+Theorem forward_simulation_behavior_improves {li1 li2} (cc: callconv li1 li2):
+  forall L1 L2, forward_simulation cc L1 L2 ->
+  forall q1 q2 w, cc_query cc q1 q2 (cc_init cc) w ->
+  forall beh1, program_behaves L1 q1 beh1 ->
+  exists beh2,
+    program_behaves L2 q2 beh2 /\
+    behavior_improves ⊤ beh1 beh2.
 Proof.
-  intros L1 L2 FS. destruct FS as [init order match_states S]. intros. inv H.
+  intros L1 L2 FS. destruct FS as [init order match_states S]. intros. inv H0.
 - (* initial state defined *)
   exploit (fsim_match_initial_states S); eauto. intros [i [s' [INIT MATCH]]].
-  exploit forward_simulation_state_behaves; eauto. intros [beh2 [A B]].
+  exploit @forward_simulation_state_behaves; eauto. intros [beh2 [A B]].
   exists beh2; split; auto. econstructor; eauto.
+  destruct B; constructor; eauto. constructor.
 - (* initial state undefined *)
-  destruct (classic (exists s', initial_state L2 s')).
-  destruct H as [s' INIT].
+  destruct (classic (exists s', initial_state L2 q2 s')).
+  destruct H0 as [s' INIT].
   destruct (state_behaves_exists L2 s') as [beh' SB].
   exists beh'; split. econstructor; eauto. apply behavior_improves_bot.
   exists (Goes_wrong E0); split.
   apply program_goes_initially_wrong.
-  intros; red; intros. elim H; exists s; auto.
-  apply behavior_improves_refl.
+  intros; red; intros. elim H0; exists s; auto.
+  apply behavior_improves_bot.
 Qed.
 
+(*
 Corollary forward_simulation_same_safe_behavior:
   forall L1 L2, forward_simulation L1 L2 ->
   forall beh,
@@ -347,42 +390,44 @@ Proof.
   congruence.
   destruct H2 as [t [C D]]. subst. contradiction.
 Qed.
+*)
 
 (** * Backward simulations and program behaviors *)
 
 Section BACKWARD_SIMULATIONS.
 
-Context L1 L2 index order match_states (S: bsim_properties L1 L2 index order match_states).
+Context {li} (L1 L2: semantics li).
+Context index order match_states (S: bsim_properties L1 L2 index order match_states).
 
-Definition safe_along_behavior (s: state L1) (b: program_behavior) : Prop :=
+Definition safe_along_behavior {R} (s: state L1) (b: @program_behavior R) :=
   forall t1 s' b2, Star L1 s t1 s' -> b = behavior_app t1 b2 ->
-     (exists r, final_state L1 s' r)
+     (exists r k, final_state L1 s' r k)
   \/ (exists t2, exists s'', Step L1 s' t2 s'').
 
-Remark safe_along_safe:
-  forall s b, safe_along_behavior s b -> safe L1 s.
+Remark safe_along_safe {R}:
+  forall s b, @safe_along_behavior R s b -> safe L1 s.
 Proof.
   intros; red; intros. eapply H; eauto. symmetry; apply behavior_app_E0.
 Qed.
 
-Remark star_safe_along:
+Remark star_safe_along {R}:
   forall s b t1 s' b2,
-  safe_along_behavior s b ->
+  @safe_along_behavior R s b ->
   Star L1 s t1 s' -> b = behavior_app t1 b2 ->
-  safe_along_behavior s' b2.
+  @safe_along_behavior R s' b2.
 Proof.
   intros; red; intros. eapply H. eapply star_trans; eauto.
   subst. rewrite behavior_app_assoc. eauto.
 Qed.
 
-Remark not_safe_along_behavior:
+Remark not_safe_along_behavior {R}:
   forall s b,
-  ~ safe_along_behavior s b ->
+  ~ @safe_along_behavior R s b ->
   exists t, exists s',
      behavior_prefix t b
   /\ Star L1 s t s'
   /\ Nostep L1 s'
-  /\ (forall r, ~(final_state L1 s' r)).
+  /\ (forall r k, ~(final_state L1 s' r k)).
 Proof.
   intros.
   destruct (not_all_ex_not _ _ H) as [t1 A]; clear H.
@@ -395,12 +440,12 @@ Proof.
   split. exists b2; auto.
   split. auto.
   split. red; intros; red; intros. elim Q. exists t; exists s'0; auto.
-  intros; red; intros. elim P. exists r; auto.
+  intros; red; intros. elim P. exists r, k; auto.
 Qed.
 
-Lemma backward_simulation_star:
+Lemma backward_simulation_star {R}:
   forall s2 t s2', Star L2 s2 t s2' ->
-  forall i s1 b, match_states i s1 s2 -> safe_along_behavior s1 (behavior_app t b) ->
+  forall i s1 b, match_states i s1 s2 -> @safe_along_behavior R s1 (behavior_app t b) ->
   exists i', exists s1', Star L1 s1 t s1' /\ match_states i' s1' s2'.
 Proof.
   induction 1; intros.
@@ -432,66 +477,77 @@ Proof.
   intros. eapply forever_silent_N_forever; eauto. eapply bsim_order_wf; eauto.
 Qed.
 
-Lemma backward_simulation_forever_reactive:
+Lemma backward_simulation_forever_reactive {R}:
   forall i s1 s2 T,
-  Forever_reactive L2 s2 T -> match_states i s1 s2 -> safe_along_behavior s1 (Reacts T) ->
+  Forever_reactive L2 s2 T -> match_states i s1 s2 -> @safe_along_behavior R s1 (Reacts T) ->
   Forever_reactive L1 s1 T.
 Proof.
   cofix COINDHYP; intros. inv H.
-  destruct (backward_simulation_star H2 (Reacts T0) H0) as [i' [s1' [A B]]]; eauto.
+  destruct (backward_simulation_star (R:=R) H2 (Reacts T0) H0) as [i' [s1' [A B]]]; eauto.
   econstructor; eauto. eapply COINDHYP; eauto. eapply star_safe_along; eauto.
 Qed.
+
+Definition match_cont_bsim (k1 k2 : query li -> state _ -> Prop) :=
+  forall q s1, k1 q s1 -> exists i s2, k2 q s2 /\ match_states i s1 s2.
 
 Lemma backward_simulation_state_behaves:
   forall i s1 s2 beh2,
   match_states i s1 s2 -> state_behaves L2 s2 beh2 ->
-  exists beh1, state_behaves L1 s1 beh1 /\ behavior_improves beh1 beh2.
+  exists beh1,
+    state_behaves L1 s1 beh1 /\
+    behavior_improves (eq * match_cont_bsim) beh1 beh2.
 Proof.
   intros. destruct (classic (safe_along_behavior s1 beh2)).
 - (* 1. Safe along *)
-  exists beh2; split; [idtac|apply behavior_improves_refl].
+  (*exists beh2; split; [idtac|apply behavior_improves_refl].*)
   inv H0.
 + (* termination *)
-  assert (Terminates t r = behavior_app t (Terminates E0 r)).
+  assert (Terminates t (r, k) = behavior_app t (Terminates E0 (r, k))).
     simpl. rewrite E0_right; auto.
   rewrite H0 in H1.
-  exploit backward_simulation_star; eauto.
+  exploit @backward_simulation_star; eauto.
   intros [i' [s1' [A B]]].
   exploit (bsim_match_final_states S); eauto.
     eapply safe_along_safe. eapply star_safe_along; eauto.
-  intros [s1'' [C D]].
+  intros (s1'' & k1 & C & D & K).
+  exists (Terminates t (r, k1)). split; [ | constructor; rauto].
   econstructor. eapply star_trans; eauto. traceEq. auto.
 + (* silent divergence *)
-  assert (Diverges t = behavior_app t (Diverges E0)).
+  assert (@Diverges (reply li * (query li -> state L2 -> Prop)) t = behavior_app t (Diverges E0)).
     simpl. rewrite E0_right; auto.
   rewrite H0 in H1.
-  exploit backward_simulation_star; eauto.
+  exploit @backward_simulation_star; eauto.
   intros [i' [s1' [A B]]].
+  exists (Diverges t); split; [ | constructor].
   econstructor. eauto. eapply backward_simulation_forever_silent; eauto.
   eapply safe_along_safe. eapply star_safe_along; eauto.
 + (* reactive divergence *)
+  exists (Reacts T); split; [ | constructor].
   econstructor. eapply backward_simulation_forever_reactive; eauto.
 + (* goes wrong *)
-  assert (Goes_wrong t = behavior_app t (Goes_wrong E0)).
+  assert (@Goes_wrong (reply li * (query li -> state L2 -> Prop)) t = behavior_app t (Goes_wrong E0)).
     simpl. rewrite E0_right; auto.
   rewrite H0 in H1.
-  exploit backward_simulation_star; eauto.
+  exploit @backward_simulation_star; eauto.
   intros [i' [s1' [A B]]].
+  exists (Goes_wrong t); split.
   exploit (bsim_progress S); eauto. eapply safe_along_safe. eapply star_safe_along; eauto.
-  intros [[r FIN] | [t' [s2' STEP2]]].
-  elim (H4 _ FIN).
+  intros [(r & k & FIN) | [t' [s2' STEP2]]].
+  elim (H4 _ _ FIN).
   elim (H3 _ _ STEP2).
+  constructor. exists (Goes_wrong E0). simpl. rewrite E0_right. reflexivity.
 
 - (* 2. Not safe along *)
-  exploit not_safe_along_behavior; eauto.
+  exploit @not_safe_along_behavior; eauto.
   intros [t [s1' [PREF [STEPS [NOSTEP NOFIN]]]]].
   exists (Goes_wrong t); split.
   econstructor; eauto.
-  right. exists t; auto.
+  constructor; auto.
 Qed.
 
 End BACKWARD_SIMULATIONS.
 
+(*
 Theorem backward_simulation_behavior_improves:
   forall L1 L2, backward_simulation L1 L2 ->
   forall beh2, program_behaves L2 beh2 ->
@@ -528,12 +584,14 @@ Proof.
   congruence.
   destruct H2 as [t [C D]]. subst. elim (H0 (Goes_wrong t)). auto.
 Qed.
+*)
 
 (** * Program behaviors for the "atomic" construction *)
 
+(*
 Section ATOMIC.
 
-Variable L: semantics.
+Context {li} (L: semantics li).
 Hypothesis Lwb: well_behaved_traces L.
 
 Remark atomic_finish: forall s t, output_trace t -> Star (atomic L) (t, s) t (E0, s).
@@ -678,6 +736,7 @@ Proof.
 Qed.
 
 End ATOMIC.
+*)
 
 (** * Additional results about infinite reduction sequences *)
 
@@ -819,6 +878,7 @@ Set Implicit Arguments.
 
 (** * Big-step semantics and program behaviors *)
 
+(*
 Section BIGSTEP_BEHAVIORS.
 
 Variable B: bigstep_semantics.
@@ -847,3 +907,4 @@ Proof.
 Qed.
 
 End BIGSTEP_BEHAVIORS.
+*)
