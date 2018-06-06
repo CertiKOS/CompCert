@@ -27,9 +27,15 @@ Module Type GametreeSpec.
   Parameter ref : forall {M} (p : M -> bool), relation (t M).
 
   Axiom d_ref :
-    forall M p, Monotonic (@d M) (LTS.ref p (ref p)).
+    forall {M} p, Monotonic (@d M) (LTS.ref p (ref p)).
+
   Axiom c_ref :
-    forall M p, Monotonic (@c M) (forallr R, LTS.ref p R ++> R ++> ref p).
+    forall {M A B} (p : M -> bool) (R : rel A B) α β a b,
+      LTS.determ α ->
+      LTS.determ β ->
+      LTS.ref p R α β ->
+      R a b ->
+      ref p (c α a) (c β b).
 
 End GametreeSpec.
 
@@ -93,12 +99,42 @@ Module GametreeImpl : GametreeSpec.
         split; auto. congruence.
   Qed.
 
-  Parameter ref : forall {M} (p : M -> bool), relation (t M).
+  Inductive ref_def {M} (p : M -> bool) : relation (t M) :=
+    | ref_intro {A B} (R : rel A B) α β a b :
+        LTS.determ α ->
+        LTS.determ β ->
+        LTS.ref p R α β ->
+        R a b ->
+        ref_def p (c α a) (c β b).
 
-  Axiom d_ref :
-    forall M p, Monotonic (@d M) (LTS.ref p (ref p)).
-  Axiom c_ref :
-    forall M p, Monotonic (@c M) (forallr R, LTS.ref p R ++> R ++> ref p).
+  Definition ref {M} (p : M -> bool) := ref_def p.
+
+  Lemma d_ref {M} p :
+    Monotonic (@d M) (LTS.ref p (ref p)).
+  Proof.
+    intros m x y [A B R α β a b Hα Hβ Hαβ Hab]. red in Hαβ.
+    apply (Hαβ m) in Hab. destruct (p m).
+    - intros xa' H. eapply c_mor in H as (a' & Hxa' & Ha'); eauto; subst.
+      edestruct Hab as (b' & Hb' & Hab'); eauto.
+      exists (c β b'). split.
+      + apply c_mor; eauto.
+      + econstructor; eauto.
+    - intros xb' H. eapply c_mor in H as (b' & Hxb' & Hb'); eauto; subst.
+      edestruct Hab as (a' & Ha' & Hab'); eauto.
+      exists (c α a'). split.
+      + apply c_mor; eauto.
+      + econstructor; eauto.
+  Qed.
+
+  Lemma c_ref {M A B} (p : M -> bool) (R : rel A B) α β a b :
+    LTS.determ α ->
+    LTS.determ β ->
+    LTS.ref p R α β ->
+    R a b ->
+    ref p (c α a) (c β b).
+  Proof.
+    econstructor; eauto.
+  Qed.
 
 End GametreeImpl.
 
@@ -111,7 +147,7 @@ End GametreeImpl.
 Module Gametree.
   Include GametreeImpl.
 
-  Global Existing Instances d_ref c_ref.
+  Global Existing Instances d_ref.
   Global Instance c_ref_params : Params (@c) 3.
   Global Instance d_ref_params : Params (@d) 3.
 
@@ -179,10 +215,11 @@ Module Gametree.
       split.
       - intros x.
         rewrite <- (c_d x).
-        monotonicity; reflexivity.
+        eapply c_ref with eq; eauto using d_determ.
+        reflexivity.
       - intros x y z Hxy Hyz.
         rewrite <- (c_d x), <- (c_d z).
-        apply c_ref with (rel_compose (ref p) (ref p)); eauto.
+        apply c_ref with (rel_compose (ref p) (ref p)); eauto using d_determ.
         rewrite LTS.ref_compose.
         eexists; split; rauto.
     Qed.
@@ -215,7 +252,10 @@ Module Gametree.
     Lemma bot_ref y :
       ref p bot y.
     Proof.
-      unfold bot. rewrite <- (c_d y). rstep.
+      unfold bot. rewrite <- (c_d y).
+      eapply c_ref.
+      - apply LTS.bot_determ.
+      - apply d_determ.
       - apply LTS.bot_ref.
       - constructor.
     Qed.
@@ -226,7 +266,10 @@ Module Gametree.
     Lemma sup_ub (x : t M) (X : t M -> Prop) :
       X x -> ref p x (sup X).
     Proof.
-      intros Hx. unfold sup. rewrite <- (c_d x). rstep.
+      intros Hx. unfold sup. rewrite <- (c_d x).
+      eapply c_ref.
+      - eapply d_determ.
+      - eapply LTS.sup_determ.
       - apply LTS.sup_ub.
       - simpl. assumption.
     Qed.
@@ -234,7 +277,10 @@ Module Gametree.
     Lemma sup_lub (X : t M -> Prop) (y : t M) :
       (forall x, X x -> ref p x y) -> ref p (sup X) y.
     Proof.
-      intros Hy. unfold sup. rewrite <- (c_d y). rstep.
+      intros Hy. unfold sup. rewrite <- (c_d y).
+      eapply c_ref.
+      - eapply LTS.sup_determ.
+      - eapply d_determ.
       - apply LTS.sup_lub; eauto using d_determ. rauto.
       - simpl. assumption.
     Qed.
@@ -250,11 +296,11 @@ Module Gametree.
       apply prop_ext. split.
       - intros Hyx.
         rewrite <- (c_d x), <- (c_d y).
-        apply c_ref with (flip (ref p)); eauto.
+        apply c_ref with (flip (ref p)); eauto using d_determ.
         apply LTS.ref_flip. setoid_rewrite opp_invol. rauto.
       - intros Hxy. red.
         rewrite <- (c_d x), <- (c_d y).
-        apply c_ref with (flip (ref (fun m => negb (p m)))); [ | rauto].
+        apply c_ref with (flip (ref (fun m=> negb (p m)))); eauto using d_determ.
         apply LTS.ref_flip. rauto.
     Qed.
 
