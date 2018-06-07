@@ -935,7 +935,6 @@ Record receptive {li} (L: semantics li) : Prop :=
       single_events L
   }.
 
-(** XXX: need to add external *)
 Record determinate {li} (L: semantics li) : Prop :=
   Determinate {
     sd_determ: forall s t1 s1 t2 s2,
@@ -1051,19 +1050,22 @@ Qed.
 
 (** The general form of a backward simulation. *)
 
+Notation match_cont_exists k1 k2 := (forall q s1, k1 q s1 -> exists s2, k2 q s2).
+Notation match_cont_match k1 k2 MS := (forall q s1 s2, k1 q s1 -> k2 q s2 -> exists i s1', k1 q s1' /\ MS i s1' s2).
+
 Record bsim_properties {li} (L1 L2: semantics li) (index: Type)
                        (order: index -> index -> Prop)
                        (match_states: index -> state L1 -> state L2 -> Prop) : Prop := {
     bsim_order_wf: well_founded order;
+    bsim_initial_states_exist:
+      match_cont_exists (initial_state L1) (initial_state L2);
     bsim_match_initial_states:
-      forall q s1, initial_state L1 q s1 ->
-      exists i s2, initial_state L2 q s2 /\ match_states i s1 s2;
+      match_cont_match (initial_state L1) (initial_state L2) match_states;
     bsim_match_final_states:
       forall i s1 s2 r k2,
       match_states i s1 s2 -> safe L1 s1 -> final_state L2 s2 r k2 ->
       exists s1' k1, Star L1 s1 E0 s1' /\ final_state L1 s1' r k1 /\
-      forall q s1'', k1 q s1'' ->
-      exists i' s2', k2 q s2' /\ match_states i' s1'' s2';
+      match_cont_exists k1 k2 /\ match_cont_match k1 k2 match_states;
     bsim_progress:
       forall i s1 s2,
       match_states i s1 s2 -> safe L1 s1 ->
@@ -1122,15 +1124,13 @@ Hypothesis public_preserved:
 
 Variable match_states: state L1 -> state L2 -> Prop.
 
-Hypothesis match_initial_states:
-  forall q s1, initial_state L1 q s1 ->
-  exists s2, initial_state L2 q s2 /\ match_states s1 s2.
+Hypothesis initial_states_exists: match_cont_exists (initial_state L1) (initial_state L2).
+
+Hypothesis match_initial_states: match_cont_match (initial_state L1) (initial_state L2) (fun i:unit => match_states).
 
 Hypothesis match_final_states:
   forall s1 s2 r k2, match_states s1 s2 -> final_state L2 s2 r k2 ->
-  exists k1, final_state L1 s1 r k1 /\
-  forall q s1', k1 q s1' ->
-  exists s2', k2 q s2' /\ match_states s1' s2'.
+  exists k1, final_state L1 s1 r k1 /\ match_cont_exists k1 k2 /\ match_cont_match k1 k2 (fun i: unit => match_states).
 
 Hypothesis progress:
   forall s1 s2,
@@ -1152,7 +1152,6 @@ Proof.
     (fun (i: unit) s1 s2 => match_states s1 s2);
   constructor; auto.
 - red; intros; constructor; intros. contradiction.
-- intros. exists tt; eauto.
 - intros. edestruct match_final_states as (k1 & Hk1 & Hk); eauto.
   exists s1, k1; split. apply star_refl. eauto.
 - intros. exploit simulation; eauto. intros [s1' [A B]].
@@ -1344,24 +1343,32 @@ Proof.
   constructor.
 - (* well founded *)
   unfold bb_order. apply wf_lex_ord. apply wf_clos_trans. eapply bsim_order_wf; eauto. eapply bsim_order_wf; eauto.
-- (* match initial states *)
+- (* initial states exist *)
   intros q s1 INIT1.
-  edestruct (bsim_match_initial_states props) as (i1 & s2 & INIT2 & M1); eauto.
-  edestruct (bsim_match_initial_states props') as (i2 & s3 & INIT3 & M2); eauto.
-  exists (i1, i2), s3; intuition auto. eapply bb_match_at; eauto.
+  edestruct (bsim_initial_states_exist props) as (s2 & INIT2); eauto.
+  edestruct (bsim_initial_states_exist props') as (s3 & INIT3); eauto.
+- (* match initial states *)
+  intros q s1 s3 INIT1 INIT3.
+  edestruct (bsim_initial_states_exist props) as (s2 & INIT2); eauto.
+  edestruct (bsim_match_initial_states props') as (i2 & s2' & INIT2' & M2); eauto.
+  edestruct (bsim_match_initial_states props) as (i1 & s1' & INIT1' & M1); eauto.
+  exists (i1, i2), s1'; intuition auto. eapply bb_match_at; eauto.
 - (* match final states *)
   intros i s1 s3 r k3 MS SAFE FIN. inv MS.
   exploit (bsim_match_final_states props'); eauto.
     eapply star_safe; eauto. eapply bsim_safe; eauto.
-  intros (s2' & k2 & A & B & K).
+  intros (s2' & k2 & A & B & KE & KM).
   exploit (bsim_E0_star props). eapply star_trans. eexact H0. eexact A. auto. eauto. auto.
   intros [i1' [s1' [C D]]].
   exploit (bsim_match_final_states props); eauto. eapply star_safe; eauto.
-  intros (s1'' & k1 & P & Q & L).
-  exists s1'', k1; intuition auto. eapply star_trans; eauto.
-  edestruct L as (i1'' & s2'' & Hs2'' & M1); eauto.
-  edestruct K as (i2'' & s3'' & Hs3'' & M2); eauto.
-  exists (i1'', i2''), s3''; intuition auto. eapply bb_match_at; eauto.
+  intros (s1'' & k1 & P & Q & LE & LM).
+  exists s1'', k1; intuition auto.
+  + eapply star_trans; eauto.
+  + edestruct LE as (s2'' & Hs2''); eauto.
+  + edestruct LE as (s2'' & Hs2''); eauto.
+    edestruct KM as (i2'' & s2''' & Hs2''' & M2); eauto.
+    edestruct LM as (i1'' & s1''' & Hs1''' & M1); eauto.
+    exists (i1'', i2''), s1'''; intuition auto. eapply bb_match_at; eauto.
 - (* progress *)
   intros i s1 s3 MS SAFE. inv MS.
   eapply (bsim_progress props'). eauto. eapply star_safe; eauto. eapply bsim_safe; eauto.
