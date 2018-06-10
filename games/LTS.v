@@ -371,6 +371,11 @@ Module LTS.
 
   (** ** Lattice *)
 
+  (** *** Bottom *)
+
+  (** The bottom element for a polarity assignment [p] simply produces
+    all possible outputs forever, using a trivial transition system. *)
+
   Definition bot (p : M -> bool) : lts M unit :=
     fun m _ _ => p m = false.
 
@@ -389,6 +394,13 @@ Module LTS.
     - congruence.
     - intros a' H. exists tt; split; eauto. rauto.
   Qed.
+
+  (** *** Supremum *)
+
+  (** For a transition system [δ], the transition system [sup δ] can
+    generate the supremum of a set of states. There will be an output
+    whenever at least on state in the set produces that output, and an
+    input when all states in the set produce that input. *)
 
   Definition sup {A} (p : M -> bool) (δ : lts M A) : lts M (A -> Prop) :=
     fun m sA sA' =>
@@ -449,6 +461,57 @@ Module LTS.
       + intros a' (a & Ha & Ha').
         edestruct Hβα as (a2' & Ha2' & Hab2'); simpl; eauto.
         assert (a2' = a') by eauto. congruence.
+  Qed.
+
+  (** [sup] can also be used to determinize a transition system. In
+    that case, the following refinement relation can be used between
+    the non-deterministic transition systems, to establish [set_le R]
+    as a refinement relation between the determinized systems. *)
+
+  Definition nref {A B} (p: M -> bool) (R: rel A B) : rel (lts M A) (lts M B) :=
+    fun α β =>
+      forall m a b,
+        R a b ->
+        if p m then
+          forall a', α m a a' -> exists b', β m b b' /\ R a' b'
+        else
+          forall x, β m b x ->
+            (exists a', α m a a') /\
+            (forall a', α m a a' -> exists b', β m b b' /\ R a' b').
+
+  Lemma sup_nref {A B} p R (α : lts M A) (β : lts M B):
+    nref p R α β ->
+    ref p (set_le R) (LTS.sup p α) (LTS.sup p β).
+  Proof.
+    intros Hαβ m sA sB Hs.
+    unfold LTS.sup. specialize (Hαβ m).
+    destruct p.
+    - intros sA' [HsA' (a & Ha & a' & Ha')].
+      exists (fun b' => exists b, sB b /\ β m b b').
+      split.
+      + split. reflexivity.
+        edestruct Hs as (b & Hb & Hab); eauto.
+        edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+      + clear a Ha a' Ha'.
+        intros a' Ha'.
+        apply HsA' in Ha' as (a & Ha & Ha').
+        edestruct Hs as (b & Hb & Hab); eauto.
+        edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+    - intros sB' [HsB' HsB].
+      exists (fun a' => exists a, sA a /\ α m a a').
+      split.
+      + split. reflexivity.
+        intros a Ha.
+        edestruct Hs as (b & Hb & Hab); eauto.
+        eapply HsB in Hb as [x Hx].
+        eapply Hαβ; eauto.
+      + intros a' (a & Ha & Ha').
+        edestruct Hs as (b & Hb & Hab); eauto.
+        edestruct HsB as (x & Hx); eauto.
+        edestruct Hαβ as [_ H]; eauto. clear x Hx.
+        edestruct H as (b' & Hb' & Hab'); eauto.
+        exists b'. split; auto.
+        apply HsB'; eauto.
   Qed.
 
   End LTS.
