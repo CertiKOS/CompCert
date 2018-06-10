@@ -307,3 +307,5 @@ Module Gametree.
   End REF.
 
 End Gametree.
+
+Notation gametree := Gametree.t.
