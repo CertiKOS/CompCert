@@ -490,6 +490,7 @@ Qed.
 Definition match_cont_bsim (k1 k2 : query li -> state _ -> Prop) :=
   forall q s1, k1 q s1 -> exists i s2, k2 q s2 /\ match_states i s1 s2.
 
+(*
 Lemma backward_simulation_state_behaves:
   forall i s1 s2 beh2,
   match_states i s1 s2 -> state_behaves L2 s2 beh2 ->
@@ -544,6 +545,7 @@ Proof.
   econstructor; eauto.
   constructor; auto.
 Qed.
+*)
 
 End BACKWARD_SIMULATIONS.
 
