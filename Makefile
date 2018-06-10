@@ -76,6 +76,7 @@ GAMES=\
   PCST.v \
   LTS.v \
   Trees.v \
+  GameSemantics.v \
 
 # Compcert Kripke Logical Relations
 
