@@ -600,4 +600,81 @@ Module LTS.
       right. exists a''. econstructor; eauto.
   Qed.
 
+  (** ** Big-stepping operator *)
+
+  Section BIGSTEP_DEF.
+    Context {M A} (α : lts (option M) A).
+
+    CoInductive forever_silent (a : A) : Prop :=
+      forever_silent_intro a' :
+        α None a a' ->
+        forever_silent a' ->
+        forever_silent a.
+
+    Inductive bigstep (d : M) : lts M (option A) :=
+      | bigstep_step m a a' :
+          α (Some m) a a' ->
+          bigstep d m (Some a) (Some a')
+      | bigstep_silent_step m a a' s :
+          α None a a' ->
+          bigstep d m (Some a') s ->
+          bigstep d m (Some a) s
+      | bigstep_forever_silent a :
+          forever_silent a ->
+          bigstep d d (Some a) None.
+
+  End BIGSTEP_DEF.
+
+  Section BIGSTEP_BISIM.
+    Context {M A B} (R : rel A B) (α : lts (option M) A) (β : lts (option M) B).
+
+    Lemma forever_silent_bisim a b :
+      bisim R α β ->
+      R a b ->
+      forever_silent α a ->
+      forever_silent β b.
+    Proof.
+      intros Hαβ. revert a b. cofix IH. intros a b Hab H.
+      destruct H as [a' Ha' H].
+      eapply Hαβ in Ha' as (b' & Hb' & Hab'); eauto.
+      econstructor; eauto.
+    Qed.
+
+    Lemma bigstep_bisim_sim d :
+      bisim R α β ->
+      sim (fun _ => True) (option_rel R) (bigstep α d) (bigstep β d).
+    Proof.
+      intros Hαβ m _ a b Hab a' Ha'.
+      revert b Hab.
+      induction Ha'; intros; inversion Hab; clear Hab; subst.
+      - eapply Hαβ in H as (b' & Hb' & Hab'); eauto.
+        exists (Some b'). split; constructor; eauto.
+      - eapply Hαβ in H as (b' & Hb' & Hab'); eauto.
+        edestruct IHHa' as (sb & Hsb & Hs). rauto.
+        exists sb. split; eauto. econstructor; eauto.
+      - eapply forever_silent_bisim in H; eauto.
+        exists None. split; constructor; eauto.
+    Qed.
+  End BIGSTEP_BISIM.
+
+  Lemma option_rel_flip {A B} (R : rel A B) a b :
+    option_rel R a b <->
+    option_rel (flip R) b a.
+  Proof.
+    split; destruct 1; constructor; eauto.
+  Qed.
+
+  Lemma bigstep_bisim {M A B} R (α : lts (option M) A) (β : lts (option M) B) d :
+    bisim R α β ->
+    bisim (option_rel R) (bigstep α d) (bigstep β d).
+  Proof.
+    intros Hαβ m a b Hab. split.
+    - eapply bigstep_bisim_sim; eauto.
+    - intros. edestruct (bigstep_bisim_sim (flip R) β α) as (? & ? & ?); eauto.
+      + apply bisim_flip; eauto.
+      + constructor.
+      + apply option_rel_flip; eauto.
+      + apply option_rel_flip in H1; eauto.
+  Qed.
+
 End LTS.
