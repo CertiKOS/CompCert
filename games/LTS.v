@@ -514,6 +514,44 @@ Module LTS.
         apply HsB'; eauto.
   Qed.
 
+  (** For deterministic transition systems, [sup] of a singleton is
+    the original thing. *)
+
+  Lemma sup_singleton {A} p (α : lts M A) :
+    determ α ->
+    bisim (fun sA a => sA = eq a) (sup p α) α.
+  Proof.
+    intros Hα m sA a H. subst.
+    split.
+    - intros sA' [HsA' Hstep].
+      assert (exists a', α m a a') as [a' Ha'].
+      {
+        destruct p.
+        + destruct Hstep as (xa & Hxa & a' & Ha'). subst xa. eauto.
+        + apply Hstep. eauto.
+      }
+      eexists; split; eauto.
+      apply functional_extensionality; intro x.
+      apply prop_ext. split; intro.
+      + apply HsA' in H as (xa & Hxa & Hx). subst. eauto.
+      + apply HsA'. subst. eauto.
+    - intros a' Ha'. eexists; split; eauto. split.
+      + intros a''. split.
+        * intro. subst. eauto.
+        * intros (xa & Hxa & Ha''). subst; eauto.
+      + destruct p; eauto.
+        intros xa Hxa. subst. eauto.
+  Qed.
+
+  (** Hence [sup] is idempotent in the following sense. *)
+
+  Lemma sup_idemp {A} p (α : lts M A) :
+    bisim (fun ssA sA => ssA = eq sA) (sup p (sup p α)) (sup p α).
+  Proof.
+    eapply sup_singleton.
+    eapply sup_determ.
+  Qed.
+
   End LTS.
 
   (** ** Traces *)
