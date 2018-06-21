@@ -51,37 +51,31 @@ Module Behavior.
 
     Inductive state :=
       | waiting (k: query li -> Smallstep.state L -> Prop)
-      | running (t: trace) (s: Smallstep.state L)
-      | silent
-      | wrong.
+      | running (t: trace) (s: Smallstep.state L).
 
-    Inductive step: lts (move li) state :=
+    Inductive step: lts (option (move li)) state :=
       | step_query (k: _ -> _ -> Prop) q s:
           k q s ->
-          step (qm q) (waiting k) (running E0 s)
-      | step_run s t s' m S:
+          step (Some (qm q)) (waiting k) (running E0 s)
+      | step_run s t s':
           Step L s t s' ->
-          step m (running t s') S ->
-          step m (running E0 s) S
+          step None (running E0 s) (running t s')
       | step_deq e t s:
-          step (ev e) (running (e :: t) s) (running t s)
+          step (Some (ev e)) (running (e :: t) s) (running t s)
       | step_terminate s r k:
           final_state L s r k ->
-          step (rm r) (running E0 s) (waiting k)
-      | step_diverge s:
-          Forever_silent L s ->
-          step diverge (running E0 s) silent
-      | step_goes_wrong s m S:
+          step (Some (rm r)) (running E0 s) (waiting k)
+      | step_wrong m s:
           Nostep L s ->
           (forall r k, ~ final_state L s r k) ->
-          step m wrong S ->
-          step m (running E0 s) S
-      | step_wrong m:
           tc m = true ->
-          step m wrong wrong.
+          step (Some m) (running E0 s) (running E0 s).
+
+    Definition of_states: (option state -> Prop) -> behavior li :=
+      Gametree.c (LTS.sup tc (LTS.bigstep step diverge)).
 
     Definition of: behavior li :=
-      Gametree.c (LTS.sup tc step) (eq (waiting (initial_state L))).
+      of_states (eq (Some (waiting (initial_state L)))).
 
     (** ** Properties *)
 
@@ -90,46 +84,47 @@ Module Behavior.
 
     Lemma step_run_star s s' m S:
       Star L s E0 s' ->
-      step m (running E0 s') S ->
-      step m (running E0 s) S.
+      LTS.bigstep step diverge m (Some (running E0 s')) S ->
+      LTS.bigstep step diverge m (Some (running E0 s)) S.
     Proof.
-      intros H. pattern s, s'. eapply star_E0_ind; eauto using step_run.
+      intros H. pattern s, s'.
+      eapply star_E0_ind; eauto using step_run, LTS.bigstep_silent_step.
     Qed.
 
     Lemma running_no_input m t s S':
-      step m (running t s) S' ->
+      LTS.bigstep step diverge m (Some (running t s)) S' ->
       tc m = true.
     Proof.
-      intros HS'. remember (running t s) as S eqn:HS. revert t s HS.
-      induction HS'; inversion 1; subst; simpl; eauto.
-      inversion HS'; eauto.
+      intros HS'. remember (Some (running t s)) as S eqn:HS. revert t s HS.
+      induction HS'; eauto.
+      - inversion 1; subst. inversion H; eauto.
+      - inversion 1; subst. inversion H; clear H; subst; eauto.
     Qed.
 
     Definition safe S :=
       match S with
-        | wrong => False
-        | running nil s => Smallstep.safe L s
+        | Some (running nil s) => Smallstep.safe L s
         | _ => True
       end.
 
     Lemma unsafe_goes_wrong m S:
       tc m = true ->
       ~ safe S ->
-      step m S wrong.
+      exists S', LTS.bigstep step diverge m S S' /\ ~ safe S'.
     Proof.
       intros Hm HS.
-      destruct S; simpl in *; try tauto.
-      - destruct t; try contradiction.
-        apply not_all_ex_not in HS as [s' HS].
-        apply not_all_ex_not in HS as [Hs' HS].
-        revert HS. pattern s, s'. revert s s' Hs'.
-        eapply star_E0_ind; eauto; intros.
-        + eapply step_goes_wrong.
-          * firstorder.
-          * firstorder.
-          * constructor. assumption.
-        + eapply step_run; eauto.
-      - constructor; eauto.
+      destruct S as [ [ ] | ]; simpl in *; try tauto.
+      destruct t; try contradiction.
+      apply not_all_ex_not in HS as [s' HS].
+      apply not_all_ex_not in HS as [Hs' HS].
+      revert HS. pattern s, s'. revert s s' Hs'.
+      eapply star_E0_ind; eauto; intros.
+      - eexists; split.
+        + eapply LTS.bigstep_step. apply step_wrong; firstorder.
+        + simpl. intros Hs. apply HS. eapply Hs. apply star_refl.
+      - edestruct H0 as (S' & HSS' & HS'); eauto. eexists; split; eauto.
+        eapply LTS.bigstep_silent_step; eauto.
+        eapply step_run; eauto.
     Qed.
 
     (** ** Determinism *)
@@ -145,12 +140,13 @@ Module Behavior.
         | _ => True
       end.
 
-    Definition step_determ (m : move li) (s s' : sig state_determ) : Prop :=
+    Definition step_determ m (s s' : sig state_determ) : Prop :=
       step m (proj1_sig s) (proj1_sig s').
 
+    (*
     Lemma program_lts_determ:
       Smallstep.determinate L ->
-      LTS.determ step_determ.
+      LTS.determ (LTS.bigstep step_determ diverge).
     Proof.
       intros HL m [s Hs] [s1 Hs1] [s2 Hs2] H1 H2.
       red in H1, H2. simpl in *.
@@ -161,6 +157,7 @@ Module Behavior.
       - eapply IHstep; eauto.
         edestruct @sd_determ; [ | apply H | apply H3 | ]; eauto.
     Abort. (* determinism -- tedious but straightforward *)
+     *)
 
   End LTS.
 
@@ -173,117 +170,178 @@ Module Behavior.
 
     We use the following alternating simulation relation. *)
 
-  Inductive state_rel {li L1 L2} (R : rel _ _) : rel (state L1) (state L2) :=
+  Inductive state_rel {li L1 L2} (R : rel _ _) : rel _ _ :=
     | waiting_rel (k1 k2: query li -> _ -> Prop):
         (forall q s2, k2 q s2 -> exists s1, k1 q s1) ->
         (forall q s1 s2, k1 q s1-> k2 q s2-> exists s2', k2 q s2' /\ R s1 s2') ->
-        state_rel R (waiting L1 k1) (waiting L2 k2)
+        state_rel R (Some (waiting L1 k1)) (Some (waiting L2 k2))
     | running_rel t1 s1 s2 t2 s2':
         Star L2 s2 t2 s2' ->
         R s1 s2' ->
-        state_rel R (running L1 (t1 ** t2) s1) (running L2 t1 s2)
-    | silent_rel:
-        state_rel R (silent L1) (silent L2)
-    | wrong_rel S1:
-        state_rel R S1 (wrong L2).
+        state_rel R (Some (running L1 (t1 ** t2) s1)) (Some (running L2 t1 s2))
+    | wrong_rel S1 S2:
+        ~ safe L2 S2 ->
+        state_rel R S1 S2
+    | diverge_rel:
+        state_rel R None None.
 
   Hint Constructors state_rel.
+
+  Lemma forever_silent_trace {li} (L : semantics li) t s:
+    LTS.forever_silent (step L) (running L t s) ->
+    t = E0.
+  Proof.
+    destruct t.
+    - reflexivity.
+    - intros H. destruct H. inversion H.
+  Qed.
+
+  Lemma lts_forever_silent {li} (L : semantics li) t s:
+    LTS.forever_silent (step L) (running L t s) ->
+    Forever_silent L s.
+  Proof.
+    revert t s. cofix IH.
+    intros.
+    assert (t = E0) by eauto using forever_silent_trace; subst.
+    destruct H. inversion H; clear H; subst.
+    assert (t = E0) by eauto using forever_silent_trace; subst.
+    econstructor; eauto.
+  Qed.
+
+  Lemma forever_silent_lts {li} (L : semantics li) s:
+    Forever_silent L s ->
+    LTS.forever_silent (step L) (running L E0 s).
+  Proof.
+    revert s. cofix IH.
+    intros.
+    destruct H. econstructor; eauto.
+    constructor. eauto.
+  Qed.
 
   Lemma bsim_sound_step {li} (L1 L2: semantics li) ind ord ms:
     bsim_properties L2 L1 ind ord ms ->
     LTS.ref tc (set_le (state_rel (flip (rel_ex ms))))
-      (LTS.sup tc (step L1))
-      (LTS.sup tc (step L2)).
+      (LTS.sup tc (LTS.bigstep (step L1) diverge))
+      (LTS.sup tc (LTS.bigstep (step L2) diverge)).
   Proof.
     set (R := flip (rel_ex ms)). unfold flip, rel_ex in R.
     intros HL.
     eapply LTS.sup_nref. intros m S1 S2 HS.
     destruct (tc m) eqn:Hm.
-    - intros S1' HS1'.
-      destruct (classic (safe L2 S2)) as [HS2 | ]; eauto using unsafe_goes_wrong.
+
+    - (* Output moves *)
+      intros S1' HS1'.
+      destruct (classic (safe L2 S2)) as [HS2 | ];
+        [ | edestruct @unsafe_goes_wrong as (? & ? & ?); eauto; fail ].
       revert S2 HS HS2. induction HS1'; intros.
-      + (* query *)
-        discriminate.
-      + (* run *)
-        inversion HS; clear HS; subst; eauto using step_wrong.
-        apply Eapp_E0_inv in H0 as [? ?]; subst. simpl in *.
-        destruct H4 as [i Hs].
-        edestruct @bsim_simulation as (i' & s1' & Hs1' & Hs'); eauto using star_safe.
-        eapply IHHS1'; eauto.
-        rewrite <- (E0_left t). econstructor; subst R; simpl; eauto.
-        eapply star_trans; eauto using E0_left.
-        intuition auto using plus_star.
-      + (* deq *)
-        inversion HS; clear HS; subst; eauto using step_wrong.
-        clear HS2 Hm. revert t1 H. induction H1; intros.
-        * rewrite E0_right in H. subst.
-          exists (running L2 t s0). rewrite <- (E0_right t) at 3.
-          split; econstructor; eauto using star_refl.
-        * subst.
-          destruct t3 as [ | e0 t0].
-          -- rewrite E0_left in H2.
-             edestruct IHstar as (S2 & HS2 & HS); eauto.
-             exists S2. split; eauto.
-             eapply step_run; eauto.
-          -- setoid_rewrite <- app_comm_cons in H2. inversion H2; clear H2; subst.
-             edestruct IHstar as (S2 & HS2 & HS); eauto.
-             { instantiate (1 := e :: t0 ** t1).
-               setoid_rewrite <- app_comm_cons. f_equal.
-               setoid_rewrite app_assoc. reflexivity. }
-             exists (running L2 t0 s1). split. constructor. econstructor; eauto.
-             eapply star_step; eauto.
-      + (* terminate *)
-        inversion HS; clear HS; subst; eauto using step_wrong.
-        apply Eapp_E0_inv in H0 as [? ?]; subst. simpl in *.
-        destruct H4 as [i Hs].
-        edestruct @bsim_match_final_states as (s2'' & k2 & Hs2'' & Hk2 & Hk);
-          eauto using star_safe.
-        exists (waiting L2 k2). split.
-        * revert Hs Hk2. pattern s2, s2''. clear - H2 Hs2''.
-          eapply star_E0_ind; eauto; intros.
-          -- eapply step_terminate; eauto.
-          -- eapply step_run; eauto.
-          -- eapply star_trans; eauto.
-        * revert Hk. clear. intros [Hke Hkm].
-          constructor; eauto.
-          intros q s1 s2 Hs1 Hs2.
-          edestruct Hkm as (i & s2' & Hs2' & Hs'); eauto.
-          unfold R. eauto.
-      + (* diverge *)
-        inversion HS; clear HS; subst; eauto using step_wrong.
-        apply Eapp_E0_inv in H0 as [? ?]; subst. simpl in *.
-        destruct H4 as [i Hs].
-        eapply (backward_simulation_forever_silent HL) in H; eauto using star_safe.
-        exists (silent L2). split; [ | constructor].
-        revert H. pattern s2, s2'. revert H2. clear.
-        eapply star_E0_ind; eauto; intros.
-        * eapply step_diverge; eauto.
-        * eapply step_run; eauto.
-      + (* going wrong *)
-        inversion HS; clear HS; subst; eauto using step_wrong.
-        apply Eapp_E0_inv in H1 as [? ?]; subst. simpl in *.
-        destruct H5 as [i Hs].
-        edestruct @bsim_progress as [(?&?&?) | (?&?&?)]; eauto using star_safe.
-        * eelim H0; eauto.
-        * eelim H; eauto.
-      + (* staying wrong *)
-        inversion HS; clear HS; subst; eauto using step_wrong.
-    - intros S2x HS2x.
-      revert S1 HS. induction HS2x; simpl in *; try congruence; intros.
-      + (* query *)
+
+      + (* Noisy steps *)
+        inversion H; clear H; subst.
+        * (* query *)
+          discriminate.
+        * (* deq *)
+          inversion HS; clear HS; subst; eauto using LTS.bigstep_step, step_wrong.
+          clear HS2 Hm. revert t1 H. induction H1; intros.
+          -- rewrite E0_right in H. subst.
+             exists (Some (running L2 t s0)). rewrite <- (E0_right t) at 3.
+             split; econstructor; eauto using star_refl. constructor.
+          -- subst.
+             destruct t3 as [ | e0 t0].
+             ++ rewrite E0_left in H2.
+                edestruct IHstar as (S2 & HS2 & HS); eauto.
+                exists S2. split; eauto.
+                eapply LTS.bigstep_silent_step; eauto.
+                eapply step_run; eauto.
+             ++ setoid_rewrite <- app_comm_cons in H2. inversion H2; clear H2; subst.
+                edestruct IHstar as (S2 & HS2 & HS); eauto.
+                { instantiate (1 := e :: t0 ** t1).
+                  setoid_rewrite <- app_comm_cons. f_equal.
+                  setoid_rewrite app_assoc. reflexivity. }
+                exists (Some (running L2 t0 s1)).
+                split. constructor. constructor.
+                econstructor; eauto.
+                eapply star_step; eauto.
+          -- contradiction.
+        * (* terminate *)
+          inversion HS; clear HS; subst; eauto using LTS.bigstep_step, step_wrong.
+          apply Eapp_E0_inv in H as [? ?]; subst. simpl in *.
+          destruct H4 as [i Hs].
+          edestruct @bsim_match_final_states as (s2'' & k2 & Hs2'' & Hk2 & Hk);
+            eauto using star_safe.
+          exists (Some (waiting L2 k2)). split.
+          -- revert Hs Hk2. pattern s2, s2''. clear - H2 Hs2''.
+             eapply star_E0_ind; eauto; intros.
+             ++ eauto using LTS.bigstep_step, step_terminate.
+             ++ eauto using LTS.bigstep_silent_step, step_run.
+             ++ eapply star_trans; eauto.
+          -- revert Hk. clear. intros [Hke Hkm].
+             constructor; eauto.
+             intros q s1 s2 Hs1 Hs2.
+             edestruct Hkm as (i & s2' & Hs2' & Hs'); eauto.
+             unfold R. eauto.
+          -- contradiction.
+        * (* staying wrong *)
+          inversion HS; clear HS; subst; try contradiction.
+          apply Eapp_E0_inv in H as [? ?]; subst. simpl in *.
+          destruct H6 as [i Hs].
+          edestruct @bsim_progress as [(?&?&?) | (?&?&?)]; eauto using star_safe.
+          -- eelim H2; eauto.
+          -- eelim H1; eauto.
+
+      + (* Silent steps *)
+        inversion H; clear H; subst.
+        * (* run *)
+          inversion HS; clear HS; subst; eauto using LTS.bigstep_step,step_wrong.
+          apply Eapp_E0_inv in H as [? ?]; subst. simpl in *.
+          destruct H4 as [i Hs].
+          edestruct @bsim_simulation as (i' & s1' & Hs1' & Hs');
+            eauto using star_safe.
+          eapply IHHS1'; eauto.
+          rewrite <- (E0_left t). econstructor; subst R; simpl; eauto.
+          eapply star_trans; eauto using E0_left.
+          intuition auto using plus_star.
+
+      + (* Silent divergence *)
         inversion HS; clear HS; subst.
+        * destruct H. inversion H.
+        * assert (Ht : t1 ** t2 = E0) by eauto using forever_silent_trace.
+          apply Eapp_E0_inv in Ht as [Ht1 Ht2]; subst. simpl in *.
+          destruct H2 as [i Hs].
+          eapply lts_forever_silent in H.
+          eapply (backward_simulation_forever_silent HL) in H; eauto using star_safe.
+          eapply forever_silent_lts in H.
+          exists None. split; [ | constructor; fail ].
+          revert H. pattern s2, s2'. revert H1. clear.
+          eapply star_E0_ind; eauto; intros.
+          -- constructor; eauto.
+          -- eapply LTS.bigstep_silent_step; eauto.
+             eapply step_run; eauto.
+        * contradiction.
+
+    - (* Input moves *)
+      intros S2x HS2x.
+      revert S1 HS. induction HS2x; simpl in *; try congruence; intros.
+
+      + (* Regular steps *)
+        inversion H; clear H; subst; simpl in *; try congruence.
+        inversion HS; clear HS; subst; simpl in *; try contradiction.
         split.
-        * edestruct H1 as [s1' Hs1']; eauto.
-          exists (running L1 E0 s1').
+        * edestruct H0 as [s1' Hs1']; eauto.
+          exists (Some (running L1 E0 s1')). constructor.
           constructor; eauto.
         * intros S1' HS1'.
           inversion HS1'; clear HS1'; subst.
-          edestruct H3 as (s2' & Hs2' & Hs'); eauto.
-          change E0 with (E0 ++ E0).
-          exists (running L2 E0 s2'); split; econstructor; eauto.
-          apply star_refl.
-      + apply running_no_input in HS2x. congruence.
-      + inversion HS2x. congruence.
+          -- inversion H4; clear H4; subst.
+             edestruct H3 as (s2' & Hs2' & Hs'); eauto.
+             change E0 with (E0 ++ E0).
+             exists (Some (running L2 E0 s2')); split; econstructor; eauto.
+             ++ econstructor; eauto.
+             ++ apply star_refl.
+          -- inversion H2.
+
+      + (* Silent steps *)
+        inversion H; clear H; subst.
+        apply running_no_input in HS2x. congruence.
   Qed.
 
   Global Instance bsim_sound:
@@ -295,7 +353,7 @@ Module Behavior.
     - eapply LTS.sup_determ.
     - eapply bsim_sound_step; eauto.
     - unfold set_le, flip, rel_ex. intros. subst.
-      exists (waiting L2 (initial_state L2)). split; eauto.
+      exists (Some (waiting L2 (initial_state L2))). split; eauto.
       constructor.
       + eapply bsim_initial_states_exist; eauto.
       + intros. edestruct @bsim_match_initial_states as (? & ? & ? & ?); eauto.
