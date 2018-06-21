@@ -552,6 +552,57 @@ Module LTS.
     eapply sup_determ.
   Qed.
 
+  (** We can also show that [sup] preserves bisimulations. *)
+
+  Notation set_rel R := (set_le R /\ set_ge R)%rel.
+
+  Lemma bisim_sup_sim {A B} p R (α : lts M A) (β : lts M B) :
+    bisim R α β ->
+    sim (fun _ => True) (set_rel R) (LTS.sup p α) (LTS.sup p β).
+  Proof.
+    intros H m Hm sA sB [HsAB HsBA].
+    intros sA' [HsA' H'].
+    exists (fun b' => exists b, sB b /\ β m b b').
+    split; [split | ].
+    + reflexivity.
+    + destruct p.
+      * destruct H' as (a & Ha & a' & Ha').
+        edestruct HsAB as (b & Hb & Hab); eauto.
+        specialize (H m a b) as [Hαβ Hβα]; eauto.
+        edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+      * intros b Hb.
+        edestruct HsBA as (a & Ha & Hab); eauto.
+        specialize (H m a b) as [Hαβ Hβα]; eauto.
+        edestruct H' as (a' & Ha'); eauto.
+        edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+    + split.
+      * intros a' Ha'.
+        apply HsA' in Ha' as (a & Ha & Ha').
+        edestruct HsAB as (b & Hb & Hab); eauto.
+        specialize (H m a b) as [Hαβ Hβα]; eauto.
+        edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+      * intros b' (b & Hb & Hb').
+        setoid_rewrite HsA'.
+        edestruct HsBA as (a & Ha & Hab); eauto.
+        specialize (H m a b) as [Hαβ Hβα]; eauto.
+        edestruct Hβα as (a' & Ha' & Hab'); eauto.
+  Qed.
+
+  Lemma sup_bisim {A B} p R (α : lts M A) (β : lts M B) :
+    LTS.bisim R α β ->
+    LTS.bisim (set_rel R) (LTS.sup p α) (LTS.sup p β).
+  Proof.
+    intros H m sA sB Hs.
+    split.
+    - eapply bisim_sup_sim; eauto.
+    - intros.
+      assert (HH: forall x y, set_rel (flip R) x y = set_rel R y x) by admit.
+      rewrite <- HH in Hs.
+      setoid_rewrite <- HH.
+      eapply bisim_sup_sim; eauto.
+      eapply LTS.bisim_flip; eauto.
+  Admitted.
+
   End LTS.
 
   (** ** Traces *)
