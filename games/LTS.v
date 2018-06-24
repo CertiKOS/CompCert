@@ -402,22 +402,19 @@ Module LTS.
     whenever at least on state in the set produces that output, and an
     input when all states in the set produce that input. *)
 
-  Definition sup {A} (p : M -> bool) (δ : lts M A) : lts M (A -> Prop) :=
-    fun m sA sA' =>
-      (forall a', sA' a' <-> exists a, sA a /\ δ m a a') /\
-      if p m then
-        (exists a, sA a /\ exists a', δ m a a')
-      else
-        (forall a, sA a -> exists a', δ m a a').
+  Inductive sup {A} (p : M -> bool) (δ : lts M A) (m : M) sA : _ -> Prop :=
+    sup_intro :
+      match p m with
+        | true  => exists a, sA a /\ exists a', δ m a a'
+        | false => forall a, sA a -> exists a', δ m a a'
+      end ->
+      sup p δ m sA (fun a' => exists a, sA a /\ δ m a a').
 
   Lemma sup_determ {A} (p : M -> bool) (δ : lts M A) :
     determ (sup p δ).
   Proof.
-    intros m s s1 s2 [Hs1 _] [Hs2 _].
-    apply functional_extensionality. intros a'.
-    apply prop_ext. etransitivity.
-    - eauto.
-    - symmetry. eauto.
+    intros m s _ _ [_] [_].
+    reflexivity.
   Qed.
 
   Lemma sup_ub {A} (p : M -> bool) (δ : lts M A) :
@@ -425,14 +422,11 @@ Module LTS.
   Proof.
     apply sim_ref.
     - intros m Hm a sA H a' Ha'.
-      exists (fun a' => exists a, sA a /\ δ m a a'). split; eauto.
-      split.
-      + reflexivity.
-      + rewrite Hm. eauto.
-    - intros m Hm sA a Ha sA' [HsA' ?]. unfold flip in *. rewrite Hm in H.
+      eexists. split.
+      + constructor. rewrite Hm. eauto.
+      + simpl. eauto.
+    - intros m Hm sA a Ha _ [H]. unfold flip in *. rewrite Hm in H.
       edestruct H as [a' Ha']; eauto.
-      exists a'. split; eauto.
-      apply HsA'. eauto.
   Qed.
 
   Lemma sup_lub {A B} (p : M -> bool) R (α : lts M A) (β : lts M B) :
@@ -443,20 +437,18 @@ Module LTS.
   Proof.
     intros H Hα Hβ. apply ref_sim in H as [Hαβ Hβα].
     apply sim_ref.
-    - intros m Hm sA b Hab sA' [HsA' H].
+    - intros m Hm sA b Hab _ [H].
       rewrite Hm in H. destruct H as (a & Ha & a' & Ha').
       unfold impl in Hab.
       edestruct Hαβ as (b' & Hb' & Hab'); simpl; eauto.
       exists b'. split; eauto.
-      intros a2' Ha2'. apply HsA' in Ha2'.
-      destruct Ha2' as (a2 & Ha2 & Ha2').
+      intros a2' (a2 & Ha2 & Ha2').
       edestruct Hαβ with (a := a2) as (b2' & Hb2' & Hab2'); simpl; eauto.
       assert (b2' = b') by eauto. congruence.
     - unfold flip, impl in *.
       intros m Hm b sA Hab b' Hb'.
-      exists (fun a' => exists a, sA a /\ α m a a'). split; [split | ].
-      + reflexivity.
-      + rewrite Hm. intros a Ha.
+      eexists; split.
+      + constructor. rewrite Hm. intros a Ha.
         edestruct Hβα as (a' & Ha' & Hab'); simpl; eauto.
       + intros a' (a & Ha & Ha').
         edestruct Hβα as (a2' & Ha2' & Hab2'); simpl; eauto.
@@ -484,23 +476,20 @@ Module LTS.
     ref p (set_le R) (LTS.sup p α) (LTS.sup p β).
   Proof.
     intros Hαβ m sA sB Hs.
-    unfold LTS.sup. specialize (Hαβ m).
-    destruct p.
-    - intros sA' [HsA' (a & Ha & a' & Ha')].
-      exists (fun b' => exists b, sB b /\ β m b b').
-      split.
-      + split. reflexivity.
+    specialize (Hαβ m).
+    destruct p eqn:Hm.
+    - intros _ [H]. rewrite Hm in H. destruct H as (a & Ha & a' & Ha').
+      eexists; split.
+      + constructor. rewrite Hm.
         edestruct Hs as (b & Hb & Hab); eauto.
         edestruct Hαβ as (b' & Hb' & Hab'); eauto.
       + clear a Ha a' Ha'.
-        intros a' Ha'.
-        apply HsA' in Ha' as (a & Ha & Ha').
+        intros a' (a & Ha & Ha').
         edestruct Hs as (b & Hb & Hab); eauto.
         edestruct Hαβ as (b' & Hb' & Hab'); eauto.
-    - intros sB' [HsB' HsB].
-      exists (fun a' => exists a, sA a /\ α m a a').
-      split.
-      + split. reflexivity.
+    - intros _ [HsB]. rewrite Hm in HsB.
+      eexists; split.
+      + constructor. rewrite Hm.
         intros a Ha.
         edestruct Hs as (b & Hb & Hab); eauto.
         eapply HsB in Hb as [x Hx].
@@ -510,8 +499,6 @@ Module LTS.
         edestruct HsB as (x & Hx); eauto.
         edestruct Hαβ as [_ H]; eauto. clear x Hx.
         edestruct H as (b' & Hb' & Hab'); eauto.
-        exists b'. split; auto.
-        apply HsB'; eauto.
   Qed.
 
   (** For deterministic transition systems, [sup] of a singleton is
@@ -523,7 +510,7 @@ Module LTS.
   Proof.
     intros Hα m sA a H. subst.
     split.
-    - intros sA' [HsA' Hstep].
+    - intros _ [Hstep].
       assert (exists a', α m a a') as [a' Ha'].
       {
         destruct p.
@@ -533,14 +520,13 @@ Module LTS.
       eexists; split; eauto.
       apply functional_extensionality; intro x.
       apply prop_ext. split; intro.
-      + apply HsA' in H as (xa & Hxa & Hx). subst. eauto.
-      + apply HsA'. subst. eauto.
-    - intros a' Ha'. eexists; split; eauto. split.
-      + intros a''. split.
-        * intro. subst. eauto.
-        * intros (xa & Hxa & Ha''). subst; eauto.
-      + destruct p; eauto.
-        intros xa Hxa. subst. eauto.
+      + destruct H as (xa & Hxa & Hx). subst. eauto.
+      + subst. eauto.
+    - intros a' Ha'. eexists; split.
+      + constructor. destruct p; intros; subst; eauto.
+      + eapply functional_extensionality; intros x.
+        eapply prop_ext; split; intros; subst; eauto.
+        destruct H as (xa & Hxa & Ha); subst xa. eauto.
   Qed.
 
   (** Hence [sup] is idempotent in the following sense. *)
@@ -561,11 +547,9 @@ Module LTS.
     sim (fun _ => True) (set_rel R) (LTS.sup p α) (LTS.sup p β).
   Proof.
     intros H m Hm sA sB [HsAB HsBA].
-    intros sA' [HsA' H'].
-    exists (fun b' => exists b, sB b /\ β m b b').
-    split; [split | ].
-    + reflexivity.
-    + destruct p.
+    intros _ [H'].
+    eexists; split.
+    + constructor. destruct p.
       * destruct H' as (a & Ha & a' & Ha').
         edestruct HsAB as (b & Hb & Hab); eauto.
         specialize (H m a b) as [Hαβ Hβα]; eauto.
@@ -576,13 +560,11 @@ Module LTS.
         edestruct H' as (a' & Ha'); eauto.
         edestruct Hαβ as (b' & Hb' & Hab'); eauto.
     + split.
-      * intros a' Ha'.
-        apply HsA' in Ha' as (a & Ha & Ha').
+      * intros a' (a & Ha & Ha').
         edestruct HsAB as (b & Hb & Hab); eauto.
         specialize (H m a b) as [Hαβ Hβα]; eauto.
         edestruct Hαβ as (b' & Hb' & Hab'); eauto.
       * intros b' (b & Hb & Hb').
-        setoid_rewrite HsA'.
         edestruct HsBA as (a & Ha & Hab); eauto.
         specialize (H m a b) as [Hαβ Hβα]; eauto.
         edestruct Hβα as (a' & Ha' & Hab'); eauto.
