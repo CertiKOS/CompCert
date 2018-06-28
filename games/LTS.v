@@ -633,4 +633,11 @@ Module LTS.
       right. exists a''. econstructor; eauto.
   Qed.
 
+  (** ** Translating moves *)
+
+  Inductive map {M N A} (f : M -> N) (α : lts M A) : lts N A :=
+    map_intro m a a' :
+      α m a a' ->
+      map f α (f m) a a'.
+
 End LTS.

@@ -306,6 +306,11 @@ Module Gametree.
 
   End REF.
 
+  (** ** Additional operations *)
+
+  Definition map {M N} (f : M -> N) (τ : t M) : t N :=
+    c (LTS.map f d) τ.
+
 End Gametree.
 
 Notation gametree := Gametree.t.
