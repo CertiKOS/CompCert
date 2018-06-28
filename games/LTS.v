@@ -120,7 +120,7 @@ Module LTS.
     events, so that we can use [sim] for defining more complex
     alternating simulations below. *)
 
-  Definition sim P {A B} (R : rel A B) : rel (lts M A) (lts M B) :=
+  Definition sim (P : M -> Prop) {A B} (R : rel A B) : rel (lts M A) (lts M B) :=
     fun α β =>
       forall m, P m ->
       forall a b, R a b ->
