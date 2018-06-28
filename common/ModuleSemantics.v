@@ -9,6 +9,12 @@ Require Import Smallstep.
 
 Definition cont {li} (L: semantics li) := query li -> state L -> Prop.
 
+Inductive apply_cont {li} L (k: @cont li L) q: option (state L) -> Prop :=
+  | apply_cont_some s :
+      k q s -> apply_cont L k q (Some s)
+  | apply_cont_none :
+      (forall s, ~ k q s) -> apply_cont L k q None.
+
 (** * Flat composition *)
 
 (** The flat composition of transition systems essentially corresponds
@@ -71,19 +77,20 @@ End FComp.
 Module Res.
   Section RESOLVE.
     Context {li} (L: Smallstep.semantics (li -o li)).
+    Context (dom : query li -> bool).
 
-    Definition state: Type := Smallstep.state L * list (cont L).
+    Definition state: Type := option (Smallstep.state L) * list (cont L).
 
     Definition observable (x: reply (li -o li)) (stk: list (cont L)) :=
       match x with
-        | inl q => forall s, ~ Smallstep.initial_state L (inr q) s
+        | inl q => dom q = false (*forall s, ~ Smallstep.initial_state L (inr q) s*)
         | inr r => stk = nil
       end.
 
     Inductive liftk (k: cont L) stk: query (li -o li) -> state -> Prop :=
       | liftk_intro q s:
           k q s ->
-          liftk k stk q (s, stk).
+          liftk k stk q (Some s, stk).
 
     Definition initial_state :=
       liftk (Smallstep.initial_state L) nil.
@@ -92,20 +99,21 @@ Module Res.
       | final_state_intro s r k stk:
           observable r stk ->
           Smallstep.final_state L s r k ->
-          final_state (s, stk) r (liftk k stk).
+          final_state (Some s, stk) r (liftk k stk).
 
     Inductive step ge : state -> trace -> state -> Prop :=
       | step_internal s t s' stk:
           Smallstep.step L ge s t s' ->
-          step ge (s, stk) t (s', stk)
+          step ge (Some s, stk) t (Some s', stk)
       | step_call s stk qi si k:
+          dom qi = true ->
           Smallstep.final_state L s (inl qi) k ->
-          Smallstep.initial_state L (inr qi) si ->
-          step ge (s, stk) E0 (si, k :: stk)
+          apply_cont L (Smallstep.initial_state L) (inr qi) si ->
+          step ge (Some s, stk) E0 (si, k :: stk)
       | step_return si ri ki (k: cont L) s stk:
           Smallstep.final_state L si (inr ri) ki ->
-          k (inl ri) s ->
-          step ge (si, k :: stk) E0 (s, stk).
+          apply_cont L k (inl ri) s ->
+          step ge (Some si, k :: stk) E0 (s, stk).
 
     Definition semantics: Smallstep.semantics (li -o li) :=
       {|

@@ -77,6 +77,7 @@ GAMES=\
   LTS.v \
   Trees.v \
   GameSemantics.v \
+  Composition.v \
 
 # Compcert Kripke Logical Relations
 

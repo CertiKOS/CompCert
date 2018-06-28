@@ -6,6 +6,7 @@ Require Import Smallstep.
 Require Import Behaviors.
 Require Import LTS.
 Require Import Trees.
+Require Import ModuleSemantics.
 
 
 (** * CompCert games *)
@@ -20,8 +21,8 @@ Require Import Trees.
   correctness). *)
 
 Inductive move {li} :=
-  | qm (q : query li) :> move
-  | rm (r : reply li) :> move
+  | qm (q : query li) : move
+  | rm (r : reply li) : move
   | ev (e : event)
   | crash
   | diverge.
@@ -51,33 +52,36 @@ Module Behavior.
 
     Inductive state :=
       | waiting (k: query li -> Smallstep.state L -> Prop)
-      | running (t: trace) (s: Smallstep.state L).
+      | running (q: list event) (s: option (Smallstep.state L))
+      | wrong.
 
     Inductive step: lts (option (move li)) state :=
-      | step_query (k: _ -> _ -> Prop) q s:
-          k q s ->
-          step (Some (qm q)) (waiting k) (running E0 s)
+      | step_query k q s:
+          apply_cont L k q s ->
+          step (Some (qm q)) (waiting k) (running nil s)
       | step_run s t s':
           Step L s t s' ->
-          step None (running E0 s) (running t s')
+          step None (running nil (Some s)) (running t (Some s'))
       | step_deq e t s:
           step (Some (ev e)) (running (e :: t) s) (running t s)
       | step_terminate s r k:
           final_state L s r k ->
-          step (Some (rm r)) (running E0 s) (waiting k)
-      | step_wrong m s:
+          step (Some (rm r)) (running nil (Some s)) (waiting k)
+      | step_stuck s:
           Nostep L s ->
           (forall r k, ~ final_state L s r k) ->
-          tc m = true ->
-          step (Some m) (running E0 s) (running E0 s).
-
-    Definition of_states: (option state -> Prop) -> behavior li :=
-      Gametree.c (LTS.sup tc (LTS.bigstep step diverge)).
+          step (Some crash) (running nil (Some s)) wrong
+      | step_wrong :
+          step (Some crash) (running nil None) wrong.
 
     Definition of: behavior li :=
-      of_states (eq (Some (waiting (initial_state L)))).
+      Gametree.c
+        (LTS.sup tc (LTS.bigstep step diverge))
+        (LTS.bigstep_initial step (waiting (initial_state L))).
 
     (** ** Properties *)
+
+    (*
 
     (** The following properties of the transition system will be
       useful in the soundness proof below. *)
@@ -159,8 +163,11 @@ Module Behavior.
     Abort. (* determinism -- tedious but straightforward *)
      *)
 
+    *)
+
   End LTS.
 
+  (*
   (** ** Monotonicity *)
 
   (** Backward simulation of small-step semantics are sound with
@@ -358,4 +365,5 @@ Module Behavior.
       + eapply bsim_initial_states_exist; eauto.
       + intros. edestruct @bsim_match_initial_states as (? & ? & ? & ?); eauto.
   Qed.
+   *)
 End Behavior.

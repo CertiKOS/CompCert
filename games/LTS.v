@@ -635,8 +635,14 @@ Module LTS.
 
   (** ** Big-stepping operator *)
 
+  (** Note that silent steps are taken *after* one noisy steps. This
+    is important so that ↓(τ₁ ⊔ ετ₂) = τ₁ ⊔ τ₂ once we compose the
+    bigstep operator below with [sup]. If we were to take silent steps
+    first then a noisy step, the joining would happen one step into τ₁
+    and τ₂ instead, which is not what we want. *)
+
   Section BIGSTEP_DEF.
-    Context {M A} (α : lts (option M) A).
+    Context {M A} (α : lts (option M) A) (d : M).
 
     CoInductive forever_silent (a : A) : Prop :=
       forever_silent_intro a' :
@@ -644,22 +650,45 @@ Module LTS.
         forever_silent a' ->
         forever_silent a.
 
-    Inductive bigstep (d : M) : lts M (option A) :=
-      | bigstep_step m a a' :
-          α (Some m) a a' ->
-          bigstep d m (Some a) (Some a')
-      | bigstep_silent_step m a a' s :
+    Inductive silent_successor (a : A) : A -> Prop :=
+      | succ_refl :
+          silent_successor a a
+      | succ_step a' a'' :
           α None a a' ->
-          bigstep d m (Some a') s ->
-          bigstep d m (Some a) s
-      | bigstep_forever_silent a :
+          silent_successor a' a'' ->
+          silent_successor a a''.
+
+    Inductive bigstep : lts M (option A) :=
+      | bigstep_step m a a' a'' :
+          α (Some m) a a' ->
+          silent_successor a' a'' ->
+          bigstep m (Some a) (Some a'')
+      | bigstep_diverge a :
           forever_silent a ->
-          bigstep d d (Some a) None.
+          bigstep d (Some a) None.
+
+    Inductive bigstep_initial (a : A) : option A -> Prop :=
+      bigstep_initial_intro a' :
+        silent_successor a a' ->
+        bigstep_initial a (Some a').
 
   End BIGSTEP_DEF.
 
   Section BIGSTEP_BISIM.
     Context {M A B} (R : rel A B) (α : lts (option M) A) (β : lts (option M) B).
+
+    Lemma silent_successor_bisim a b a' :
+      bisim R α β ->
+      R a b -> silent_successor α a a' ->
+      exists b', silent_successor β b b' /\ R a' b'.
+    Proof.
+      intros Hαβ Hab Ha'. revert b Hab.
+      induction Ha'; intros.
+      - exists b. split; eauto. constructor.
+      - edestruct Hαβ as [(b' & Hb' & Hab') _]; eauto.
+        edestruct IHHa' as (b'' & Hb'' & Hab''); eauto.
+        exists b''. split; eauto. econstructor; eauto.
+    Qed.
 
     Lemma forever_silent_bisim a b :
       bisim R α β ->
@@ -681,10 +710,8 @@ Module LTS.
       revert b Hab.
       induction Ha'; intros; inversion Hab; clear Hab; subst.
       - eapply Hαβ in H as (b' & Hb' & Hab'); eauto.
-        exists (Some b'). split; constructor; eauto.
-      - eapply Hαβ in H as (b' & Hb' & Hab'); eauto.
-        edestruct IHHa' as (sb & Hsb & Hs). rauto.
-        exists sb. split; eauto. econstructor; eauto.
+        edestruct silent_successor_bisim as (b'' & Hb'' & Hab''); eauto.
+        eexists; split; econstructor; eauto.
       - eapply forever_silent_bisim in H; eauto.
         exists None. split; constructor; eauto.
     Qed.
