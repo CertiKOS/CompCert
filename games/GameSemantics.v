@@ -7,6 +7,7 @@ Require Import Behaviors.
 Require Import LTS.
 Require Import Trees.
 Require Import ModuleSemantics.
+Require Import Bigstep.
 
 
 (** * CompCert games *)
@@ -37,6 +38,9 @@ Definition tc {li} (m : move li) :=
     | crash => true
     | diverge => true
   end.
+
+Definition etc {li} (m : option (move li)) : bool :=
+  match m with Some m => tc m | None => true end.
 
 Definition behavior li :=
   Gametree.t (move li).
@@ -74,10 +78,11 @@ Module Behavior.
       | step_wrong :
           step (Some crash) (running nil None) wrong.
 
+    Definition tree: gametree (option (move li)) :=
+      Gametree.c (LTS.sup etc step) (eq (waiting (initial_state L))).
+
     Definition of: behavior li :=
-      Gametree.c
-        (LTS.sup tc (LTS.bigstep step diverge))
-        (LTS.bigstep_initial step (waiting (initial_state L))).
+      bigstep tc diverge tree.
 
     (** ** Properties *)
 

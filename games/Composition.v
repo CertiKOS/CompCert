@@ -55,9 +55,6 @@ Module Res.
 
   (** ** Core commutation theorem *)
 
-  Definition etc {li} (m : option (move (li -o li))) : bool :=
-    match m with Some m => tc m | None => true end.
-
   Section COMMUT.
     Context {li} (L : semantics (li -o li)) (dom : query li -> bool).
 
