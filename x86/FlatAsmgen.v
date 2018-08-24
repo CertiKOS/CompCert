@@ -26,9 +26,6 @@ Definition data_label (ofs:Z) : seglabel := (data_segid, Ptrofs.repr ofs).
 Definition code_label (ofs:Z) : seglabel := (code_segid, Ptrofs.repr ofs).
 Definition extfun_label (ofs:Z) : seglabel := (extfuns_segid, Ptrofs.repr ofs).
 
-Definition GID_MAP_TYPE := ident -> option seglabel.
-Definition LABEL_MAP_TYPE := ident -> Asm.label -> option seglabel.
-
 Definition default_gid_map : GID_MAP_TYPE := fun id => None.
 Definition default_label_map : LABEL_MAP_TYPE :=
   fun id l => None.

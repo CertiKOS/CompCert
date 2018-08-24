@@ -5,24 +5,10 @@
 
 Require Import Axioms Coqlib Errors Maps AST Linking.
 Require Import Integers Floats Values Memory.
-Require Import FlatAsmGlobenv Segment.
-
-(** * Arguments and results to builtin functions *)
-
-Inductive builtin_arg (A: Type) : Type :=
-  | BA (x: A)
-  | BA_int (n: int)
-  | BA_long (n: int64)
-  | BA_float (f: float)
-  | BA_single (f: float32)
-  | BA_loadstack (chunk: memory_chunk) (ofs: ptrofs)
-  | BA_addrstack (ofs: ptrofs)
-  | BA_loadglobal (chunk: memory_chunk) (gloc: seglabel) (ofs: ptrofs)
-  | BA_addrglobal (gloc: seglabel) (ofs: ptrofs)
-  | BA_splitlong (hi lo: builtin_arg A).
+Require Import FlatAsmGlobenv Segment Events.
 
 
-Section WITHEXTERNALCALLS.
+Section WITHMEMMODEL.
 
 Context `{memory_model_ops: Mem.MemoryModelOps}.
 
@@ -31,37 +17,38 @@ Context `{memory_model_ops: Mem.MemoryModelOps}.
 Section EVAL_BUILTIN_ARG.
 
 Variable F: Type.
+Variable V: Type.
 Variable I: Type.
 Variable A: Type.
-Variable ge: Genv.t F I.
+Variable ge: Genv.t F V I.
 Variable e: A -> val.
 Variable sp: val.
 Variable m:mem. 
 
 Inductive eval_builtin_arg: builtin_arg A -> val -> Prop :=
   | eval_BA: forall x,
-      eval_builtin_arg (BA A x) (e x)
+      eval_builtin_arg (BA x) (e x)
   | eval_BA_int: forall n,
-      eval_builtin_arg (BA_int A n) (Vint n)
+      eval_builtin_arg (BA_int n) (Vint n)
   | eval_BA_long: forall n,
-      eval_builtin_arg (BA_long A n) (Vlong n)
+      eval_builtin_arg (BA_long n) (Vlong n)
   | eval_BA_float: forall n,
-      eval_builtin_arg (BA_float A n) (Vfloat n)
+      eval_builtin_arg (BA_float n) (Vfloat n)
   | eval_BA_single: forall n,
-      eval_builtin_arg (BA_single A n) (Vsingle n)
+      eval_builtin_arg (BA_single n) (Vsingle n)
   | eval_BA_loadstack: forall chunk ofs v,
       Mem.loadv chunk m (Val.offset_ptr sp ofs) = Some v ->
-      eval_builtin_arg (BA_loadstack A chunk ofs) v
+      eval_builtin_arg (BA_loadstack chunk ofs) v
   | eval_BA_addrstack: forall ofs,
-      eval_builtin_arg (BA_addrstack A ofs) (Val.offset_ptr sp ofs)
-  | eval_BA_loadglobal: forall chunk gloc ofs v,
-      Mem.loadv chunk m  (Genv.symbol_address ge gloc ofs) = Some v ->
-      eval_builtin_arg (BA_loadglobal A chunk gloc ofs) v
-  | eval_BA_addrglobal: forall gloc ofs,
-      eval_builtin_arg (BA_addrglobal A gloc ofs) (Genv.symbol_address ge gloc ofs)
+      eval_builtin_arg (BA_addrstack ofs) (Val.offset_ptr sp ofs)
+  | eval_BA_loadglobal: forall chunk id ofs v,
+      Mem.loadv chunk m  (Genv.symbol_address ge id ofs) = Some v ->
+      eval_builtin_arg (BA_loadglobal chunk id ofs) v
+  | eval_BA_addrglobal: forall id ofs,
+      eval_builtin_arg (BA_addrglobal id ofs) (Genv.symbol_address ge id ofs)
   | eval_BA_splitlong: forall hi lo vhi vlo,
       eval_builtin_arg hi vhi -> eval_builtin_arg lo vlo ->
-      eval_builtin_arg (BA_splitlong A hi lo) (Val.longofwords vhi vlo).
+      eval_builtin_arg (BA_splitlong hi lo) (Val.longofwords vhi vlo).
 
 Definition eval_builtin_args (al: list (builtin_arg A)) (vl: list val) : Prop :=
   list_forall2 eval_builtin_arg al vl.
@@ -81,4 +68,4 @@ Qed.
 
 End EVAL_BUILTIN_ARG.
 
-End WITHEXTERNALCALLS.
+End WITHMEMMODEL.
