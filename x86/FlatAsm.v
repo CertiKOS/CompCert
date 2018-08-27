@@ -15,11 +15,11 @@ Require Globalenvs.
 
 
 
-Definition instr_with_info:Type := instruction * segblock.
+Definition instr_with_info:Type := instruction * segblock * ident.
 Definition code := list instr_with_info.
 Record function : Type := mkfunction { fn_sig: signature; fn_code: code; fn_frame: frame_info; fn_range:segblock}.
 Definition fundef := AST.fundef function.
-Definition gdef := (FlatAsmGlobdef.globdef fundef unit).
+Definition gdef := globdef fundef unit.
 
 (* mapping from global identifiers to segment labels *)
 Definition GID_MAP_TYPE := ident -> option seglabel.
@@ -28,7 +28,7 @@ Definition LABEL_MAP_TYPE := ident -> ident -> option seglabel.
 
 (* The FlatAsm program *)
 Record program : Type := {
-  prog_defs: list (ident * option gdef);
+  prog_defs: list (ident * option gdef * segblock);
   prog_public: list ident;
   prog_main: ident;
   data_seg: segment;  (* The data segment *)
@@ -184,8 +184,8 @@ End MEM_ACCESSORS_DEFAULT.
     but we do not need to model this precisely.
 *)
 
-Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_store} (ge: genv) (fid:ident) (ii: instr_with_info) (rs: regset) (m: mem) : outcome :=
-  let (i,blk) := ii in
+Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_store} (ge: genv) (ii: instr_with_info) (rs: regset) (m: mem) : outcome :=
+  let '(i,blk,fid) := ii in
   let sz := segblock_size blk in
   match i with
   (** Moves *)
@@ -592,15 +592,17 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
 Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store} 
   (ge: genv) : state -> trace -> state -> Prop :=
 | exec_step_internal:
-    forall b fid ofs i rs m rs' m',
+    forall b ofs i rs m rs' m' f,
       rs PC = Vptr b ofs ->
-      Genv.find_instr ge (Vptr b ofs) = Some (i,fid) ->
-      exec_instr ge fid i rs m = Next rs' m' ->
+      Genv.find_funct_ptr ge b ofs = Some (Internal f) ->
+      Genv.find_instr ge (Vptr b ofs) = Some i ->
+      exec_instr ge i rs m = Next rs' m' ->
       step ge (State rs m) E0 (State rs' m')
 | exec_step_builtin:
-    forall fid b ofs ef args res rs m vargs t vres rs' m' blk,
+    forall fid b ofs ef args res rs m vargs t vres rs' m' blk f,
       rs PC = Vptr b ofs ->
-      Genv.find_instr ge (Vptr b ofs) = Some ((Pbuiltin ef args res, blk), fid)  ->
+      Genv.find_funct_ptr ge b ofs = Some (Internal f) ->
+      Genv.find_instr ge (Vptr b ofs) = Some (Pbuiltin ef args res, blk, fid)  ->
       eval_builtin_args _ _ _ preg ge rs (rs RSP) m args vargs ->
         external_call ef (Genv.genv_senv ge) vargs m t vres m' ->
       forall BUILTIN_ENABLED: builtin_enabled ef,
@@ -611,7 +613,7 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
 | exec_step_external:
     forall b ofs ef args res rs m t rs' m',
       rs PC = Vptr b ofs ->
-      Genv.find_funct ge (Vptr b ofs) = Some (External ef) ->
+      Genv.find_funct_ptr ge b ofs = Some (External ef) ->
       extcall_arguments rs m (ef_sig ef) args ->
       forall (* CompCertX: BEGIN additional conditions for calling convention *)
         (* (STACK: *)
@@ -632,8 +634,8 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
 End RELSEM.
 
 (** Initialization of the global environment *)
-Definition add_global (ge:genv) (idg: ident * option gdef) : genv :=
-  let '(gid,gdef) := idg in
+Definition add_global (ge:genv) (idg: ident * option gdef * segblock) : genv :=
+  let '(gid,gdef,blk) := idg in
   match (Genv.genv_symb ge gid) with
   | None => ge
   | Some (b, ofs) =>
@@ -647,7 +649,7 @@ Definition add_global (ge:genv) (idg: ident * option gdef) : genv :=
        (Genv.genv_senv ge))
   end.
     
-Fixpoint add_globals (ge:genv) (gl: list (ident * option gdef)) : genv :=
+Fixpoint add_globals (ge:genv) (gl: list (ident * option gdef * segblock)) : genv :=
   match gl with
   | nil => ge
   | (idg::gl') => 
@@ -660,7 +662,7 @@ Lemma add_global_pres_genv_instrs: forall def ge ge',
   forall b ofs, Genv.genv_instrs ge b ofs = Genv.genv_instrs ge' b ofs.
 Proof.
   intros def ge ge' H b ofs.
-  subst. unfold add_global. destruct def. 
+  subst. unfold add_global. destruct def. destruct p.
   destruct (Genv.genv_symb ge i) eqn:EQ.
   destruct p. auto. auto.
 Qed.
@@ -697,37 +699,37 @@ Qed.
 (* Qed. *)
 
 Definition get_instr_ptr (smap:segid_type ->block) (i:instr_with_info): val :=
-  let (_,bi) := i in Genv.label_to_ptr smap (segblock_to_label bi).
+  let '(_,bi,_) := i in Genv.label_to_ptr smap (segblock_to_label bi).
 
-Definition acc_instr_map (smap:segid_type -> block) (i:instr_with_info) map : 
+Definition acc_instr_map (smap:segid_type -> block) (i:instr_with_info) map :
   block -> ptrofs -> option instr_with_info :=
   let ptr := get_instr_ptr smap i in
   fun b ofs => if Val.eq (Vptr b ofs) ptr then Some i else (map b ofs).
 
-Fixpoint acc_instrs_map (smap:segid_type -> block) (c:code) map 
+Fixpoint acc_instrs_map (smap:segid_type -> block) (c:code) map
   : block -> ptrofs -> option instr_with_info :=
-  match c with 
-  | nil => map 
-  | i'::c' => 
+  match c with
+  | nil => map
+  | i'::c' =>
     let map' := acc_instrs_map smap c' map in
     acc_instr_map smap i' map'
   end.
 
 (* Get the segment labels of instructions *)
 Definition code_labels (c:code) : list seglabel :=
-  List.map (fun i => segblock_to_label (snd i)) c.
+  List.map (fun '(_,blk,_) => segblock_to_label blk) c.
 
 Lemma incode_labels : forall i (c:code),
-  In i c -> In (segblock_to_label (snd i)) (code_labels c).
+  In i c -> In (segblock_to_label (snd (fst i))) (code_labels c).
 Proof.
   induction c; simpl; intros.
   - auto.
-  - destruct H. subst. auto.
+  - destruct H. subst. destruct i. destruct p. auto.
     right. apply IHc. auto.
 Qed.
 
 Definition code_labels_are_distinct (c: code) : Prop :=
-  let labels := (map (fun i => segblock_to_label (snd i)) c) in
+  let labels := (map (fun '(_,blk,_) => segblock_to_label blk) c) in
   list_norepet labels.
 
 Fixpoint pos_advance_N (p:positive) (n:nat) : positive :=
@@ -749,28 +751,28 @@ Lemma pos_advance_N_ple : forall p n,
 Proof.
   induction n; intros.
   - simpl. apply Ple_refl.
-  - simpl. 
+  - simpl.
     rewrite psucc_advance_Nsucc_eq.
     apply Ple_trans with (pos_advance_N p n); auto. apply Ple_succ.
 Qed.
 
 
-(* The following are definitions and properties for segment blocks
-   and the mapping from segment ids to segment blocks. They are necessary
-   for proving invariants of the transformation from RawAsm to FlatAsm.
- *)
+(* The following are definitions and properties for segment blocks *)
+(*    and the mapping from segment ids to segment blocks. They are necessary *)
+(*    for proving invariants of the transformation from RawAsm to FlatAsm. *)
+(*  *)
 Section WITHSEGSLENGTH.
 
 Variable init_block : block. (* The smallest segment block *)
 Variable segs_length : nat.   (* The number of segments in a program *)
 
 
-(* Definition of valid blocks for segments.  A segment block is valid if its id is 
-   greater or equal to 'init_block' and less than 'init_block + segs_length' *)
+(* Definition of valid blocks for segments.  A segment block is valid if its id is  *)
+(*    greater or equal to 'init_block' and less than 'init_block + segs_length' *)
 Definition segblock_is_valid (b:block) : Prop :=
   Ple init_block b /\ Plt b (pos_advance_N init_block segs_length).
 
-Lemma init_segblock_is_valid : 
+Lemma init_segblock_is_valid :
   (segs_length <> 0)%nat -> segblock_is_valid init_block.
 Proof.
   clear. red. split. apply Ple_refl.
@@ -780,36 +782,36 @@ Proof.
   apply pos_advance_N_ple. apply Plt_succ.
 Qed.
 
-(* With its range restricted to valid blocks, a mapping from 
-   segment ids to blocks is injective *)
+(* With its range restricted to valid blocks, a mapping from  *)
+(*    segment ids to blocks is injective *)
 Definition injective_on_valid_segs (sbmap: segid_type -> block) : Prop :=
   forall s1 s2, sbmap s1 = sbmap s2 -> segblock_is_valid (sbmap s1) -> s1 = s2.
 
 (* A mapping from segment ids to blocks maps code labels to valid blocks *)
 Definition code_labels_are_valid (sbmap: segid_type -> block) (c:code) : Prop :=
-  forall i sblk, In (i,sblk) c -> segblock_is_valid (sbmap (segblock_id sblk)).
+  forall i sblk fid, In (i,sblk,fid) c -> segblock_is_valid (sbmap (segblock_id sblk)).
 
 Lemma code_labels_are_valid_cons_inv : forall sbmap a l,
     code_labels_are_valid sbmap (a :: l) ->
-    segblock_is_valid (sbmap (segblock_id (snd a)))
+    segblock_is_valid (sbmap (segblock_id (snd (fst a))))
     /\ code_labels_are_valid sbmap l.
 Proof.
-  unfold code_labels_are_valid. 
+  unfold code_labels_are_valid.
   intros sbmap a l VALID. split.
-  - apply VALID with (fst a). destruct a. simpl. auto.
-  - intros i sblk IN. apply VALID with i. apply in_cons. auto.
+  - destruct a.  destruct p.  simpl. eapply VALID; eauto. apply in_eq.
+  - intros i sblk fid IN. eapply VALID. apply in_cons. eauto.
 Qed.
 
 Lemma code_labels_are_valid_cons : forall sbmap a l,
-    segblock_is_valid (sbmap (segblock_id (snd a))) ->
+    segblock_is_valid (sbmap (segblock_id (snd (fst a)))) ->
     code_labels_are_valid sbmap l ->
     code_labels_are_valid sbmap (a :: l).
 Proof.
-  unfold code_labels_are_valid. 
-  intros sbmap a l SVALID VALID i sblk IN. simpl in IN.
+  unfold code_labels_are_valid.
+  intros sbmap a l SVALID VALID i sblk fid IN. simpl in IN.
   destruct IN.
   - subst. simpl in *. auto.
-  - apply VALID with i. auto.
+  - eapply VALID; eauto.
 Qed.
   
 Lemma code_labels_are_valid_app : forall sbmap l1 l2,
@@ -820,7 +822,7 @@ Proof.
   induction l1; intros; simpl in *.
   - auto.
   - apply code_labels_are_valid_cons_inv in H. destruct H.
-    assert (code_labels_are_valid sbmap (l1 ++ l2)) 
+    assert (code_labels_are_valid sbmap (l1 ++ l2))
       by (apply IHl1; auto).
     apply code_labels_are_valid_cons; auto.
 Qed.
@@ -835,58 +837,62 @@ Proof.
   - intros EQMAP VALID.
     apply code_labels_are_valid_cons_inv in VALID. destruct VALID.
     apply code_labels_are_valid_cons; auto.
-    specialize (EQMAP (segblock_id (snd a))). rewrite <- EQMAP. auto.
+    rewrite <- EQMAP. auto.
 Qed.
 
 End WITHSEGSLENGTH.
 
-(* Given 
-   - 'sbmap': a mapping that maps segment ids to blocks and that
-              is injective for ids mapped on valid blocks
-   - 'c':     a list of instructions residing in segments mapped into
-              valid blocks by 'sbmap'
-   - 'i':     an instruction in 'c'
+(* Given  *)
+(*    - 'sbmap': a mapping that maps segment ids to blocks and that *)
+(*               is injective for ids mapped on valid blocks *)
+(*    - 'c':     a list of instructions residing in segments mapped into *)
+(*               valid blocks by 'sbmap' *)
+(*    - 'i':     an instruction in 'c' *)
    
-   if the code labels for instructions in 'c' are all distinct, then
-   the instruction mapping from pairs of segment blocks and offsets
-   generated by 'acc_instrs_map' maps the pair of segment block 
-   and offset for 'i' (determined by 'sbmap') to 'i' itself
-*)
+(*    if the code labels for instructions in 'c' are all distinct, then *)
+(*    the instruction mapping from pairs of segment blocks and offsets *)
+(*    generated by 'acc_instrs_map' maps the pair of segment block  *)
+(*    and offset for 'i' (determined by 'sbmap') to 'i' itself *)
+(* *)
 Lemma acc_instrs_map_self : forall init_block slen i c map map' sbmap,
   injective_on_valid_segs init_block slen sbmap ->
   In i c ->
   code_labels_are_distinct c ->
   code_labels_are_valid init_block slen sbmap c ->
   map' = acc_instrs_map sbmap c map ->
-  map' (sbmap (segblock_id (snd i))) (segblock_start (snd i)) = Some i.
-Proof. 
+  map' (sbmap (segblock_id (snd (fst i)))) (segblock_start (snd (fst i))) = Some i.
+Proof.
   induction c; simpl; intros.
   - contradiction.
-  - destruct H0. 
+  - destruct H0.
     + subst. unfold acc_instr_map.
       unfold get_instr_ptr. destruct i. simpl. unfold Genv.label_to_ptr.
       unfold segblock_to_label. simpl. destruct Val.eq. auto.
-      congruence.
+      destruct p. simpl in *. congruence.
     + subst. unfold acc_instr_map. destruct Val.eq.
-      * unfold get_instr_ptr in e. destruct a. unfold Genv.label_to_ptr in e.
+      * unfold get_instr_ptr in e. destruct a. destruct p; simpl in *. 
+        unfold Genv.label_to_ptr in e.
         unfold segblock_to_label in e. simpl in e.
-        inv e. unfold injective_on_valid_segs in H. 
-        exploit H; eauto. 
-        unfold code_labels_are_valid in H2. apply H2 with (fst i).
-        apply in_cons. destruct i; auto. intros.
-        assert (segblock_to_label (snd i) = segblock_to_label s).
+        inv e. unfold injective_on_valid_segs in H.
+        exploit H; eauto.
+        unfold code_labels_are_valid in H2. 
+        destruct i. destruct p. simpl in *. eapply H2.
+        right. eauto. intros.
+        destruct i. destruct p. simpl in *.
+        assert (segblock_to_label s0 = segblock_to_label s).
         unfold segblock_to_label. f_equal; auto.
         simpl in H1. inv H1. rewrite <- H6 in *.
-        apply incode_labels in H0. unfold code_labels in H0. congruence.
-      * eapply IHc; eauto. inv H1. auto. destruct a. inv H1.
-        unfold code_labels_are_valid in *. intros i1 sblk H1.
-        apply H2 with i1. apply in_cons. auto.
+        apply incode_labels in H0. unfold code_labels in H0. 
+        simpl in H0. congruence.
+      * eapply IHc; eauto. inv H1. auto. destruct a. destruct p. inv H1.
+        unfold code_labels_are_valid in *. intros i2 sblk fid H1.
+        eapply H2. apply in_cons. eauto.
 Qed.
 
 (* Generate a mapping from offsets to instructions *)
-Definition gen_instrs_map (smap:segid_type -> block) (p:program) 
+Definition gen_instrs_map (smap:segid_type -> block) (p:program)
   : block -> ptrofs -> option instr_with_info :=
-  acc_instrs_map smap (snd (code_seg p)) (fun b ofs => None).  
+  acc_instrs_map smap (snd (code_seg p)) (fun b ofs => None).
   
 (* Generate a function for checking if pc points to an internal instruction *)
 Definition gen_internal_codeblock (smap:segid_type -> block) (p:program) : block -> bool:=
@@ -902,8 +908,8 @@ Fixpoint acc_segblocks (nextblock: block) (ids: list segid_type) (map: segid_typ
     (fun x => if ident_eq x id then nextblock else map' x)
   end.
 
-Definition list_of_segments (p:program) : list segment  := 
-  (p.(data_seg) :: (fst p.(code_seg)) :: p.(extfuns_seg) :: nil).
+Definition list_of_segments (p:program) : list segment  :=
+  (p.(data_seg) :: (fst p.(code_seg)) :: nil).
 
 Definition undef_seg_block := 1%positive.
 (* Definition stack_block := 5%positive. *)
@@ -920,7 +926,7 @@ Lemma acc_segblocks_upper_bound : forall l i f,
 Proof.
   induction l; intros.
   - simpl in *. auto.
-  - simpl in *. destruct ident_eq. 
+  - simpl in *. destruct ident_eq.
     + rewrite psucc_advance_Nsucc_eq. apply Pos.le_lt_trans with (pos_advance_N i (Datatypes.length l)).
       apply pos_advance_N_ple. apply Plt_succ.
     + apply IHl. intros. apply Plt_trans with i. apply H.
@@ -931,12 +937,12 @@ Lemma gen_segblocks_upper_bound : forall p id,
   Plt (gen_segblocks p id) (pos_advance_N init_block (length (list_of_segments p))).
 Proof.
   intros. unfold gen_segblocks.
-  eapply acc_segblocks_upper_bound; eauto. 
+  eapply acc_segblocks_upper_bound; eauto.
   intros. unfold undef_seg_block, init_block. apply Plt_succ.
 Qed.
 
-(* The ids used to create a mapping from segment ids to blocks 
-   are indeed mapped to valid blocks by the mapping*) 
+(* The ids used to create a mapping from segment ids to blocks  *)
+(*    are indeed mapped to valid blocks by the mapping*)
 Lemma acc_segblocks_in_valid: forall ids id sbmap initb initmap,
   In id ids ->
   sbmap = acc_segblocks initb ids initmap ->
@@ -948,11 +954,11 @@ Proof.
   - intros id sbmap initb initmap H H0. simpl in H. destruct H.
     subst. simpl. destruct ident_eq.
     apply init_segblock_is_valid. omega. congruence.
-    simpl in H0. subst. destruct ident_eq. 
+    simpl in H0. subst. destruct ident_eq.
     apply init_segblock_is_valid. simpl. omega.
     exploit (IHids id (acc_segblocks (Pos.succ initb) ids initmap)); eauto.
     intros VALID. unfold segblock_is_valid in *.  destruct VALID.
-    split. apply Ple_trans with (Pos.succ initb); auto. 
+    split. apply Ple_trans with (Pos.succ initb); auto.
     apply Ple_succ. simpl.
     auto.
 Qed.
@@ -971,7 +977,7 @@ Proof.
 Qed.
 
 Lemma acc_segblocks_range: forall ids b initb initmap s,
-  b = (acc_segblocks initb ids initmap s) -> 
+  b = (acc_segblocks initb ids initmap s) ->
   b = (initmap s) \/ segblock_is_valid initb (length ids) b.
 Proof.
   induction ids; simpl; intros.
@@ -1020,7 +1026,7 @@ Proof.
     + set (sbmap := acc_segblocks (Pos.succ init_block0) ids initmap) in *.
       generalize (IHids (Pos.succ init_block0) initmap sbmap). intros.
       exploit H2; eauto. intros. apply Plt_trans_succ. auto.
-      set (b1 := sbmap s1) in *. 
+      set (b1 := sbmap s1) in *.
       assert (b1 = sbmap s2) by auto. subst sbmap.
       apply acc_segblocks_range in H3. destruct H3; auto.
       red in H1. destruct H1. specialize (H s2). rewrite <- H3 in H.
@@ -1030,37 +1036,53 @@ Qed.
 Lemma gen_segblocks_injective : forall p,
     injective_on_valid_segs init_block (length (list_of_segments p)) (gen_segblocks p).
 Proof.
-  intros p. set (sbmap := gen_segblocks p) in *. 
+  intros p. set (sbmap := gen_segblocks p) in *.
   unfold gen_segblocks in *.
   assert (length (list_of_segments p) = length (map segid (list_of_segments p))).
   symmetry. apply list_length_map. rewrite H.
-  eapply acc_segblocks_injective; eauto. 
-  instantiate (1:=(fun _ : segid_type => undef_seg_block)). intros. simpl. 
+  eapply acc_segblocks_injective; eauto.
+  instantiate (1:=(fun _ : segid_type => undef_seg_block)). intros. simpl.
   apply Plt_succ. auto.
 Qed.
 
 
 Definition empty_genv (p:program): genv :=
-  Genv.mkgenv (prog_public p) (fun b ofs => None) (fun b ofs => None) (fun b => false) (gen_segblocks p) 1%positive (prog_senv p).
+  Genv.mkgenv (prog_public p) (fun id => None) (fun b ofs => None) (fun b ofs => None) 
+              (fun fid lbl => None) 1%positive (prog_senv p).
+
+Definition gidmap_to_symbmap (smap: segid_type -> block) (gmap:GID_MAP_TYPE) :=
+  fun id =>
+    match gmap id with
+    | None => None
+    | Some (sid,ofs) => Some (smap sid, ofs)
+    end.
+
+Definition lblmap_to_symbmap (smap: segid_type -> block) (lmap:LABEL_MAP_TYPE) :=
+  fun fid lbl =>
+    match lmap fid lbl with
+    | None => None
+    | Some (sid,ofs) => Some (smap sid, ofs)
+    end.
 
 Definition globalenv (p: program) : genv :=
   let smap := gen_segblocks p in
+  let symbmap := gidmap_to_symbmap smap (glob_map p) in
+  let lblmap := lblmap_to_symbmap smap (lbl_map p) in
   let imap := gen_instrs_map smap p in
-  let cbmap := gen_internal_codeblock smap p in
   let nextblock := Pos.of_nat ((Pos.to_nat init_block) + length (list_of_segments p)) in
-  let genv := Genv.mkgenv (prog_public p) (fun b ofs => None) imap cbmap smap nextblock (prog_senv p) in
+  let genv := Genv.mkgenv (prog_public p) symbmap (fun b ofs => None) imap lblmap nextblock (prog_senv p) in
   add_globals genv p.(prog_defs).
   
 (* (** Initialization of the memory *) *)
 (* Definition mem_block_size : Z := *)
 (*   if Archi.ptr64 then two_power_nat 64 else two_power_nat 32. *)
 
-Lemma genv_gen_segblocks:  forall p sid, 
-  Genv.genv_segblocks (globalenv p) sid = gen_segblocks p sid.
-Proof.
-  unfold globalenv. intros p sid.
-  erewrite <- add_globals_pres_genv_segblocks; eauto. simpl. auto.
-Qed.
+(* Lemma genv_gen_segblocks:  forall p sid, *)
+(*   Genv.genv_segblocks (globalenv p) sid = gen_segblocks p sid. *)
+(* Proof. *)
+(*   unfold globalenv. intros p sid. *)
+(*   erewrite <- add_globals_pres_genv_segblocks; eauto. simpl. auto. *)
+(* Qed. *)
 
 Section WITHGE.
 
@@ -1099,14 +1121,14 @@ Definition alloc_global (smap:segid_type -> block) (m: mem) (idg: ident * option
   | Some (Gfun f) =>
     Mem.drop_perm m b ofs (ofs + sz) Nonempty
   | Some (Gvar v) =>
-    let init := gvar_init unit v in
+    let init := gvar_init v in
     let isz := init_data_list_size init in
     match Globalenvs.store_zeros m b ofs isz with
     | None => None
     | Some m1 =>
       match store_init_data_list m1 b ofs init with
       | None => None
-      | Some m2 => Mem.drop_perm m2 b ofs (ofs+isz) (perm_globvar v)
+      | Some m2 => Mem.drop_perm m2 b ofs (ofs+isz) (Globalenvs.Genv.perm_globvar v)
       end
     end
   end.
@@ -1127,7 +1149,7 @@ End WITHGE.
 Fixpoint alloc_segments m (segs: list segment) :=
   match segs with
   | nil => m
-  | s :: segs' => 
+  | s :: segs' =>
     match Mem.alloc m 0 (Ptrofs.unsigned (segsize s)) with
     | (m',_) => alloc_segments m' segs'
     end
@@ -1140,31 +1162,31 @@ Definition init_mem (p: program) :=
   alloc_globals ge (gen_segblocks p) m p.(prog_defs).
 
 (** Execution of whole programs. *)
-Definition get_seg_block (id:ident) (l: list (ident * option gdef * segblock)) : option segblock :=
-  match (List.find (fun '(id',_,_) => ident_eq id id') l) with
-  | None => None
-  | Some (_,_,sb) => Some sb
-  end.
+(* Definition get_seg_block (id:ident) (l: list (ident * option gdef * segblock)) : option segblock := *)
+(*   match (List.find (fun '(id',_,_) => ident_eq id id') l) with *)
+(*   | None => None *)
+(*   | Some (_,_,sb) => Some sb *)
+(*   end. *)
 
-Definition get_main_fun_ptr (ge:genv) (p:program) : val :=
-  match get_seg_block (prog_main p) (prog_defs p) with
-  | None => Vundef
-  | Some sb => (Genv.symbol_address ge (segblock_to_label sb) Ptrofs.zero)
-  end.
+(* Definition get_main_fun_ptr (ge:genv) (p:program) : val := *)
+(*   match get_seg_block (prog_main p) (prog_defs p) with *)
+(*   | None => Vundef *)
+(*   | Some sb => (Genv.symbol_address ge (segblock_to_label sb) Ptrofs.zero) *)
+(*   end. *)
 
 (* Definition init_rsp (ge:genv) (p:program) : val := *)
 (*   Vptr (Genv.genv_segblocks ge (segid (p.(stack_seg)))) *)
 (*        (segsize (p.(stack_seg))). *)
 
 Inductive initial_state_gen (p: program) (rs: regset) m: state -> Prop :=
-  | initial_state_gen_intro: 
+  | initial_state_gen_intro:
       forall m1 m2 m3 bstack
       (MALLOC: Mem.alloc (Mem.push_new_stage m) 0 (Mem.stack_limit) = (m1,bstack))
       (MDROP: Mem.drop_perm m1 bstack 0 (Mem.stack_limit) Writable = Some m2)
       (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3),
       let ge := (globalenv p) in
       let rs0 :=
-        rs # PC <- (get_main_fun_ptr ge p)
+        rs # PC <- (Genv.symbol_address ge p.(prog_main) Ptrofs.zero)
            # RA <- Vnullptr
            # RSP <- (Vptr bstack (Ptrofs.repr Mem.stack_limit)) in
       initial_state_gen p rs m (State rs0 m3).
@@ -1228,7 +1250,7 @@ Ltac Equalities :=
   exploit external_call_determ. eexact H5. eexact H11. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 + assert (args0 = args) by (eapply Asm.extcall_arguments_determ; eauto). subst args0.
-  exploit external_call_determ. eexact H5. eexact H11. intros [A B].
+  exploit external_call_determ. eexact H4. eexact H9. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 - (* trace length *)
   red; intros; inv H; simpl.

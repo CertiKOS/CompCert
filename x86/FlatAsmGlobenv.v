@@ -38,7 +38,7 @@ Require Import Zwf.
 Require Import Axioms Coqlib Errors Maps AST Linking.
 Require Import Integers Floats Values Memory.
 Require Import Segment.
-Require Import FlatAsmGlobdef Globalenvs.
+Require Import Globalenvs.
 
 Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
 Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
@@ -68,7 +68,7 @@ Record t: Type := mkgenv {
   genv_public: list ident;
   genv_symb: ident -> option (block * ptrofs);        (**r mapping symbol -> block * ptrofs *)
   genv_defs: block -> ptrofs -> option (globdef F V);             (**r mapping offsets -> function defintions *)
-  genv_instrs: block -> ptrofs -> option (I * ident);           (**r mapping offset -> instructions * function id *)
+  genv_instrs: block -> ptrofs -> option I;           (**r mapping offset -> instructions * function id *)
   (* genv_internal_codeblock : block -> bool; *)
   (* genv_segblocks: segid_type -> block; *)
   genv_lbl: ident -> ident -> option (block * ptrofs);
@@ -99,8 +99,8 @@ Definition find_funct (ge: t) (v:val) : option F :=
   | _ => None
   end.
 
-(* Definition label_to_ptr (smap: segid_type -> block) (l:seglabel) : val := *)
-(*   Vptr (smap (fst l)) (snd l). *)
+Definition label_to_ptr (smap: segid_type -> block) (l:seglabel) : val :=
+  Vptr (smap (fst l)) (snd l).
 
 (* Definition symbol_address ge id ofs :=  *)
 (*   let l :=  *)
@@ -142,7 +142,7 @@ Definition find_funct (ge: t) (v:val) : option F :=
 
 
 (** Find an instruction at an offset *)
-Definition find_instr (ge: t) (v:val) : option (I*ident) :=
+Definition find_instr (ge: t) (v:val) : option I :=
   match v with
   | Vptr b ofs => (genv_instrs ge b ofs)
   | _ => None
