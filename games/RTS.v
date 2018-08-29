@@ -1,278 +1,388 @@
 Require Import LogicalRelations.
-Require Import OptionRel.
-Require Import List.
 Require Import Axioms.
-Require Import PCST.
+
 
 (** * Receptive transition systems *)
 
 (** We do metatheory in a setting ...
   The whole thing in this file is parametrized by a set of events [E]
   and a set of moves [M]. Events can only ever serve as outputs,
-  whereas moves can be used both as outputs and inputs.
-
-  In addition to events and moves, we introduce three special outputs:
-  the output [int] indicates internal activity (τ transition);
-  the output [div] indicates silent divergence; finally,
-  the output [undef] indicates that the program goes wrong. *)
+  whereas moves can be used both as outputs and inputs. *)
 
 Section RTS.
   Context (E M : Type).
 
   Inductive output :=
     | event (e : E)
-    | move (m : M)
-    | int
-    | div
-    | undef.
+    | move (m : M).
 
-  (** A step in the transition system, defined as follows, describes
-    how the execution will unfold as a function of incoming moves,
-    and what outputs may be emitted with transitions to what states. *)
+  (** ** Definition *)
 
-  Record step {A} :=
-    {
-      input_step : M -> A;
-      output_step : output -> A -> Prop;
-    }.
+  (** The possible behaviors of each state in a RTS are as follows. *)
 
-  Arguments step : clear implicits.
+  Inductive behavior {A} :=
+    | internal (a' : A)
+    | interacts (m : output) (k : M -> A)
+    | goes_wrong.
 
-  (** A receptive transition system associates such a step to each
-    possible state. *)
+  Arguments behavior : clear implicits.
+
+  Definition behavior_map {A B} (f : A -> B) (r : behavior A) : behavior B :=
+    match r with
+      | internal a' => internal (f a')
+      | interacts m k => interacts m (fun mi => f (k mi))
+      | goes_wrong => goes_wrong
+    end.
+
+  Definition behavior_in {A} (dom : M -> bool) (r : behavior A) :=
+    match r with
+      | interacts (move m) k => dom m
+      | _ => false
+    end.
+
+  Inductive behavior_le {A B} (R : rel A B) : rel (behavior A) (behavior B) :=
+    | internal_le a' b' :
+        R a' b' ->
+        behavior_le R (internal a') (internal b')
+    | interacts_le m ka kb :
+        (forall mi, R (ka mi) (kb mi)) ->
+        behavior_le R (interacts m ka) (interacts m kb)
+    | goes_wrong_le ra :
+        behavior_le R ra goes_wrong.
+
+  Global Instance behavior_le_refl {A} (R: relation A) :
+    Reflexive R ->
+    Reflexive (behavior_le R).
+  Proof.
+    intros H [a' | m k | ]; constructor; eauto.
+  Qed.
+
+  (** A receptive transition system simply assigns a set of possible
+    behaviors to each state. *)
 
   Definition rts A :=
-    A -> step A.
+    rel A (behavior A).
 
-  
-  (** * Simulations *)
+  Arguments rts : clear implicits.
 
-  (** Note: we may not want to require input simulation for unsafe
-    states. We could push back the safety clause to sim *)
+  (** ** Simulations *)
 
-  Record step_sim {A B} (R : rel A B) (x : step A) (y : step B) :=
-    Build_step_sim {
-      input_step_sim m :
-        R (input_step x m) (input_step y m);
-      output_step_sim m a :
-        output_step x m a ->
-        exists b,
-          output_step y undef b \/
-          output_step y m b /\ R a b;
-    }.
+  (** A simulation between two RTS assets that each possible behavior
+    in the first has a correponding behavior in the second. In
+    particular, internal transitions must correspond one-to-one. *)
 
-  Definition sim {A B} (R : rel A B) (α : rts A) (β : rts B) :=
-    forall a b, R a b -> step_sim R (α a) (β b).
+  Definition sim {A B} (R : rel A B) : rel (rts A) (rts B) :=
+    fun α β =>
+      forall a b ra,
+        R a b ->
+        α a ra ->
+        exists rb,
+          β b rb /\
+          behavior_le R ra rb.
 
-  Global Instance step_sim_id A :
-    Reflexive (step_sim (@eq A)).
-  Proof.
-    intros. split; eauto.
-  Qed.
+  (** ** Externally observable behaviors *)
 
-  Lemma step_sim_compose A B C (R1 : rel A B) (R2 : rel B C) x y z :
-    step_sim R1 x y ->
-    step_sim R2 y z ->
-    step_sim (rel_compose R1 R2) x z. 
-  Proof.
-    intros Hxy Hyz. split.
-    - intros; eexists; split; eapply input_step_sim; eauto.
-    - intros m a Ha. unfold rel_compose.
-      edestruct (@output_step_sim A B) as [b [Hb | [Hb Hab]]]; eauto;
-      edestruct (@output_step_sim B C) as [c [Hc | [Hc Hbc]]]; eauto 10.
-  Qed.
+  (** Given a RTS, we can define a reduced version that only contains
+    observable behaviors: internal transitions are hidden, except in
+    the case of silent divergence. *)
 
-  Lemma output_step_sim_undef {A B} (R : rel A B) x y a :
-    step_sim R x y ->
-    output_step x undef a ->
-    exists b, output_step y undef b.
-  Proof.
-    intros Hxy Ha.
-    edestruct @output_step_sim as [b [Hb | [Hb Hab]]]; eauto.
-  Qed.
+  CoInductive diverges {A} (α : rts A) (a : A) : Prop :=
+    | diverges_intro a' :
+        α a (internal a') ->
+        diverges α a' ->
+        diverges α a.
 
+  Inductive reachable {A} (α : rts A) : relation A :=
+    | reachable_refl a :
+        reachable α a a
+    | reachable_step a a' a'' :
+        α a (internal a') ->
+        reachable α a' a'' ->
+        reachable α a a''.
 
-  (** * Tau transitions *)
+  Inductive obs {A} (α : rts A) a : behavior A -> Prop :=
+    | obs_diverges :
+        diverges α a ->
+        obs α a (internal a)
+    | obs_interacts a' m k :
+        reachable α a a' ->
+        α a' (interacts m k) ->
+        obs α a (interacts m k)
+    | obs_goes_wrong a' :
+        reachable α a a' ->
+        α a' goes_wrong ->
+        obs α a goes_wrong.
 
-  Section TAU.
-    Context {A} (α : rts A).
+  (** Observations are compatible with simulations. *)
 
-    CoInductive pull_forever (a : A) : Prop :=
-      | pull_forever_step a' :
-          output_step (α a) int a' ->
-          pull_forever a' ->
-          pull_forever a
-      | pull_forever_undef a' :
-          output_step (α a) undef a' ->
-          pull_forever a.
+  Require Import Classical.
 
-    Inductive pull_reachable (a : A) : A -> Prop :=
-      | pull_reachable_refl :
-          pull_reachable a a
-      | pull_reachable_step a' a'' :
-          output_step (α a) int a' ->
-          pull_reachable a' a'' ->
-          pull_reachable a a''.
-
-    Inductive pull_output_step : option A -> output -> option A -> Prop :=
-      | pull_finite a a' m a'' :
-          pull_reachable a a' ->
-          output_step (α a') m a'' ->
-          pull_output_step (Some a) m (Some a'')
-      | pull_div a :
-          pull_forever a ->
-          pull_output_step (Some a) div None.
-
-    Definition pull : rts (option A) :=
-      fun x =>
-        {|
-          input_step m :=
-            match x with
-              | Some a => Some (input_step (α a) m)
-              | None => None
-            end;
-          output_step :=
-            pull_output_step x;
-        |}.
-  End TAU.
-
-  Hint Constructors pull_output_step.
-  Hint Constructors option_rel.
-
-  Lemma pull_reachable_sim {A B} R (α : rts A) (β : rts B) a b a' :
+  Lemma diverges_sim {A B} (R : rel A B) α β a b :
     sim R α β ->
     R a b ->
-    pull_reachable α a a' ->
+    diverges α a ->
+    diverges β b \/ obs β b goes_wrong.
+  Proof.
+    intros Hαβ Hab Ha.
+    destruct (classic (obs β b goes_wrong)); eauto. left.
+    revert a b Hab H Ha. cofix IH. intros.
+    destruct Ha as [a' Ha' Hda'].
+    edestruct Hαβ as (rb & Hb' & Hrab); eauto.
+    inversion Hrab; clear Hrab; subst.
+    - econstructor; eauto.
+      eapply IH; eauto.
+      intros Hgw. inversion Hgw; clear Hgw; subst.
+      apply H. econstructor; eauto.
+      econstructor; eauto.
+    - destruct H.
+      econstructor; eauto.
+      constructor.
+  Qed.
+
+  Lemma reachable_sim {A B} (R : rel A B) α β a b a' :
+    sim R α β ->
+    R a b ->
+    reachable α a a' ->
     exists b',
-      pull_reachable β b b' /\
-      ((exists b'', output_step (β b') undef b'') \/ R a' b').
+      reachable β b b' /\
+      (R a' b' \/ β b' goes_wrong).
   Proof.
     intros Hαβ Hab Ha'. revert b Hab.
-    induction Ha'; intros.
-    - eauto using pull_reachable_refl.
-    - edestruct @output_step_sim as [b' [Hb' | [Hb' Hab']]]; eauto.
-      + eauto using pull_reachable_refl.
-      + edestruct IHHa' as (b'' & Hb'' & Hab''); eauto.
-        eauto using pull_reachable_step.
+    induction Ha' as [a | a a' a'' Ha' Ha'' IHa'']; intros.
+    - exists b. split; auto. constructor.
+    - edestruct Hαβ as (rb' & Hb' & Hab'); eauto.
+      inversion Hab'; clear Hab'; subst.
+      + edestruct IHa'' as (b'' & Hb'' & Hab''); eauto.
+        exists b''. split; eauto. econstructor; eauto.
+      + exists b. split; eauto. constructor.
   Qed.
 
-  Lemma pull_forever_sim :
-    Monotonic (@pull_forever) (forallr R, sim R ++> R ++> impl).
+  Global Instance obs_sim :
+    Monotonic (@obs) (forallr R, sim R ++> sim R).
   Proof.
-    intros A B R α β Hαβ. cofix IH. intros a b Hab H.
-    destruct H.
-    - edestruct @output_step_sim as [b' [Hb' | [Hb' Hab']]]; eauto.
-      + eapply pull_forever_undef; eauto.
-      + eapply pull_forever_step; eauto.
-        eapply IH; eauto.
-    - edestruct @output_step_sim_undef as [b' Hb']; eauto.
-      eapply pull_forever_undef; eauto.
+    intros A B R α β Hαβ a b ra Hab Hra.
+    destruct Hra as [Ha | a' m ka H Hka | a' H Ha'].
+    - edestruct @diverges_sim as [Hb | Hb]; eauto.
+      + exists (internal b). split; constructor; eauto.
+      + exists goes_wrong. split; eauto. constructor.
+    - edestruct @reachable_sim as (b' & Hb' & [Hab' | Hgw]); eauto.
+      + edestruct Hαβ as (rb & Hrb & Hr); eauto.
+        exists rb. split; auto.
+        inversion Hr; clear Hr; subst; econstructor; eauto.
+      + exists goes_wrong. split; econstructor; eauto.
+    - edestruct @reachable_sim as (b' & Hb' & [Hab' | Hgw]); eauto.
+      + edestruct Hαβ as (rb & Hrb & Hr); eauto.
+        exists rb. split; auto.
+        inversion Hr; clear Hr; subst; econstructor; eauto.
+      + exists goes_wrong. split; econstructor; eauto.
   Qed.
 
-  Global Instance pull_sim :
-    Monotonic (@pull) (forallr R, sim R ++> sim (option_rel R)).
+  (** The reduction process preserves observations, so that [obs] is
+    idempotent. *)
+
+  Lemma reachable_obs {A} (α : rts A) a a' :
+    reachable (obs α) a a' ->
+    a = a'.
   Proof.
-    intros A B R α β Hαβ a b Hab.
-    split; simpl.
-    - intros m.
-      destruct Hab; constructor.
-      apply input_step_sim; eauto.
-    - intros m a' Ha'.
-      destruct Ha' as [a a' m a'' Ha' Ha'' | a Ha].
-      + inversion Hab; clear Hab; subst. rename y into b.
-        edestruct @pull_reachable_sim as (b' & Hb' & [[b'' Hb''] | Hab']); eauto.
-        edestruct @output_step_sim as [b'' [Hb'' | [Hb'' Hab'']]]; eauto.
-        exists (Some b''). right. split; eauto. rauto.
-      + inversion Hab; clear Hab; subst. rename y into b.
-        exists None. right. split; constructor.
-        eapply pull_forever_sim; eauto.
+    intros Ha'.
+    induction Ha' as [a | a a' a'' Ha' Ha'' IHa'']; eauto.
+    inversion Ha'. congruence.
   Qed.
 
-
-  (** * Pruning *)
-
-  Definition prune {A} (α : rts A) (P : output -> Prop) : rts A :=
-    fun a =>
-      {|
-        input_step := input_step (α a);
-        output_step m a' := output_step (α a) m a' /\ (P m -> m = undef);
-      |}.
-
-  Global Instance prune_sim :
-    Monotonic (@prune) (forallr R, sim R ++> (- ==> impl) --> sim R).
+  Lemma diverges_obs {A} (α : rts A) a :
+    diverges (obs α) a <-> diverges α a.
   Proof.
-    intros A B R α β Hαβ P Q HPQ a b Hab.
-    split; simpl.
-    - intros. eapply @input_step_sim; eauto.
-    - intros m a' [Ha' Hm]. repeat red in HPQ.
-      edestruct @output_step_sim as [b' [Hb' | [Hb' Hab']]]; eauto 10.
+    split.
+    - intros [a' Ha' Hda'].
+      inversion Ha' as [Ha | | ]; clear Ha'; subst.
+      assumption.
+    - revert a. cofix IH.
+      intros a Ha.
+      econstructor; eauto.
+      constructor; eauto.
   Qed.
 
-  Lemma prune_idemp {A} (α : rts A) (P : output -> Prop) :
-    sim eq (prune (prune α P) P) (prune α P).
+  Lemma reduce_observed_step {A} (α : rts A) a ra :
+    obs (obs α) a ra <-> obs α a ra.
   Proof.
-    split; simpl; subst; intuition eauto.
-  Qed.
-
-  Lemma prune_decr {A} (α : rts A) (P : output -> Prop) :
-    sim eq (prune α P) α.
-  Proof.
-    split; simpl; subst; intuition eauto.
+    split.
+    - intros [Ha | a' m k Ha' Hk | a' Ha' Hk].
+      + constructor. apply diverges_obs; auto.
+      + apply reachable_obs in Ha'. subst. auto.
+      + apply reachable_obs in Ha'. subst. auto.
+    - intros [Ha | a' m k Ha' Hk | a' Ha' Hk].
+      + constructor. apply diverges_obs; auto.
+      + econstructor; eauto using reachable_refl.
+        econstructor; eauto.
+      + econstructor; eauto using reachable_refl.
+        econstructor; eauto.
   Qed.
 
 
-  (** * Resolution operator *)
+  (** * Modules *)
 
-  Section RES.
-    Context {A} (α : rts A) (dom : M -> Prop) (a0 : A).
+  Record modsem :=
+    {
+      modsem_dom : M -> bool;
+      modsem_state : Type;
+      modsem_lts :> rts modsem_state;
+      modsem_entry : M -> modsem_state;
+    }.
 
-    Inductive res_output_step (a : A) : output -> A -> Prop :=
-      | res_output_pass m a' :
-          output_step (α a) m a' ->
-          res_output_step a m a'
-      | res_output_dom q a' :
-          dom q ->
-          output_step (α a) (move q) a' ->
-          res_output_step a int (input_step (α a0) q).
+  Record modref (α β : modsem) : Prop :=
+    {
+      modref_dom :
+        forall q, modsem_dom α q = modsem_dom β q;
+      modref_state :
+        rel (modsem_state α) (modsem_state β);
+      modref_sim :
+        sim modref_state (modsem_lts α) (modsem_lts β);
+      modref_init :
+        forall q, modref_state (modsem_entry α q) (modsem_entry β q);
+    }.
 
-    Definition res : rts A :=
-      fun a =>
-        {|
-          input_step := input_step (α a);
-          output_step := res_output_step a;
-        |}.
-  End RES.
 
-  Global Instance res_sim :
-    Monotonic (@res) (forallr R, sim R ++> - ==> R ++> sim R).
+  (** * Horizontal composition *)
+
+  (** ** Transition system *)
+
+  Section HCOMP_RTS.
+    Context {A} (α : forall i : bool, rts (A i)) (dom : bool -> M -> bool).
+
+    Inductive hc_state : Type :=
+      | hc_r (i : bool) (a : A i) (k : M -> A (negb i))
+      | hc_z.
+
+    Definition hc_x i : A (negb i) -> (M -> A i) -> hc_state :=
+      match i with
+        | true => hc_r false
+        | false => hc_r true
+      end.
+
+    Definition hc_extcall (i : bool) (mo : output) :=
+      match mo with
+        | move m => if dom i m then None else Some m
+        | _ => None
+      end.
+
+    Definition hc_behavior i (r : behavior (A i)) (k : M -> A (negb i)) :=
+      match r with
+        | internal a =>
+          internal (hc_r i a k)
+        | interacts mo k' =>
+          match hc_extcall i mo with
+            | Some m => internal (hc_x i (k m) k')
+            | None => interacts mo (fun mi => hc_r i (k' mi) k)
+          end
+        | goes_wrong =>
+          goes_wrong
+      end.
+
+    Inductive hc : rts hc_state :=
+      | hc_intro i a k r :
+          α i a r ->
+          hc (hc_r i a k) (hc_behavior i r k).
+  End HCOMP_RTS.
+
+  Arguments hc_state : clear implicits.
+
+  (** ** Monotonicity *)
+
+  Section HCOMP_REL.
+    Context {A B} (R : forall i : bool, rel (A i) (B i)).
+
+    Inductive hc_rel : rel (hc_state A) (hc_state B) :=
+      | hc_r_rel i :
+          Monotonic (hc_r i) (R i ++> (- ==> R (negb i)) ++> hc_rel)
+      | hc_z_rel :
+          Monotonic hc_z hc_rel.
+
+    Global Existing Instance hc_r_rel.
+    Global Existing Instance hc_z_rel.
+    Global Instance hc_r_rel_params : Params (@hc_r) 2.
+
+    Global Instance hc_x_rel i :
+      Monotonic (hc_x i) (R (negb i) ++> (- ==> R i) ++> hc_rel).
+    Proof.
+      destruct i; simpl; rauto.
+    Qed.
+
+    Global Instance hc_x_rel_params :
+      Params (@hc_x) 2.
+
+    Global Instance hc_behavior_rel dom i :
+      Monotonic
+        (hc_behavior dom i)
+        (behavior_le (R i) ++> (- ==> R (negb i)) ++> behavior_le hc_rel).
+    Proof.
+      unfold hc_behavior.
+      repeat rstep.
+      - constructor. constructor; eauto.
+      - constructor. repeat rstep. auto.
+      - constructor. intro. repeat rstep. auto.
+      - constructor.
+    Qed.
+
+    Global Instance hc_behavior_rel_params :
+      Params (@hc_behavior) 2.
+
+    Global Instance hc_sim :
+      Monotonic hc ((forallr - @ i, sim (R i)) ++> - ==> sim hc_rel).
+    Proof.
+      intros α β Hαβ dom sa sb ka Hs Hka.
+      destruct Hka as [i a ka ra].
+      inversion Hs as [xi xa b Hab xka kb Hk | ]; clear Hs; subst.
+      apply inj_pair2 in H1.
+      apply inj_pair2 in H2.
+      subst.
+      edestruct Hαβ as (rb & Hrb & Hr); eauto.
+      exists (hc_behavior dom i rb kb). split; [ | rauto].
+      constructor; auto.
+    Qed.
+  End HCOMP_REL.
+
+  (** ** Modules *)
+
+  Definition hcomp (α1 α2 : modsem) : modsem :=
+    let α : bool -> modsem := fun i => if i then α1 else α2 in
+    {|
+      modsem_dom q :=
+        (modsem_dom α1 q || modsem_dom α2 q)%bool;
+      modsem_lts :=
+        hc (fun i => modsem_lts (α i)) (fun i => modsem_dom (α i));
+      modsem_entry q :=
+        match modsem_dom α1 q, modsem_dom α2 q with
+          | true, true => hc_z
+          | true, false => hc_r true (modsem_entry α1 q) (modsem_entry α2)
+          | false, true => hc_r false (modsem_entry α2 q) (modsem_entry α1)
+          | false, false => hc_z
+        end;
+    |}.
+
+  Global Instance hcomp_ref :
+    Monotonic (@hcomp) (modref ++> modref ++> modref).
   Proof.
-    intros A B R α β Hαβ dom a0 b0 Hab0 a b Hab.
-    split; simpl.
-    - eapply input_step_sim; eauto.
-    - intros m a' Ha'.
-      destruct Ha'.
-      + edestruct @output_step_sim as (b' & [Hb' | [Hb' Hab']]);
-        eauto using res_output_pass.
-      + edestruct @output_step_sim as (b' & [Hb' | [Hb' Hab']]);
-        eauto using res_output_dom, res_output_pass.
-        exists (input_step (β b0) q).
-        right. split; eauto using res_output_dom.
-        eapply input_step_sim. eauto.
-  Qed.
-
-  Lemma res_incr {A} (α : rts A) dom a0 :
-    sim eq α (res α dom a0).
-  Proof.
-    intros a _ [].
-    split; simpl; eauto using res_output_pass.
-  Qed.
-
-  Lemma res_idemp {A} (α : rts A) dom a0 :
-    sim eq (res (res α dom a0) dom a0) (res α dom a0).
-  Proof.
-    intros a _ []. split; simpl; eauto.
-    intros _ _ [m a' Ha' | q a' Hq Ha']; simpl in *; eauto.
-    inversion Ha' as [m xa' Hxa' | ]; clear Ha'; subst.
-    eauto using res_output_dom.
+    intros α1 β1 [Hd1 R1 Hαβ1 He1].
+    intros α2 β2 [Hd2 R2 Hαβ2 He2].
+    pose (α := fun i : bool => if i then α1 else α2).
+    pose (β := fun i : bool => if i then β1 else β2).
+    pose (R := fun i : bool =>
+            match i return rel (modsem_state (α i)) (modsem_state (β i)) with
+              | true => R1
+              | false => R2
+            end).
+    exists (hc_rel R); simpl.
+    - intros q. f_equal; auto.
+    - change (sim (hc_rel R) (hc α (fun i => modsem_dom (α i)))
+                             (hc β (fun i => modsem_dom (β i)))).
+      replace (fun i => modsem_dom (α i)) with (fun i => modsem_dom (β i)).
+      + eapply hc_sim.
+        intros [ | ]; simpl; eauto.
+      + apply functional_extensionality. intros i.
+        apply functional_extensionality. intros q.
+        destruct i; simpl; eauto.
+    - intros q.
+      rewrite !Hd1, !Hd2.
+      repeat rstep; simpl; eauto.
   Qed.
 End RTS.
