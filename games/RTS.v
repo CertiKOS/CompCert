@@ -41,20 +41,24 @@ Section RTS.
     end.
 
   Inductive behavior_le {A B} (R : rel A B) : rel (behavior A) (behavior B) :=
-    | internal_le a' b' :
-        R a' b' ->
-        behavior_le R (internal a') (internal b')
-    | interacts_le m ka kb :
-        (forall mi, R (ka mi) (kb mi)) ->
-        behavior_le R (interacts m ka) (interacts m kb)
+    | internal_le :
+        Monotonic internal (R ++> behavior_le R)
+    | interacts_le :
+        Monotonic interacts (- ==> (- ==> R) ++> behavior_le R)
     | goes_wrong_le ra :
-        behavior_le R ra goes_wrong.
+        Related ra goes_wrong (behavior_le R).
+
+  Global Existing Instance internal_le.
+  Global Existing Instance interacts_le.
+  Global Existing Instance goes_wrong_le.
+  Global Instance internal_le_params : Params (@internal) 1.
+  Global Instance interacts_le_params : Params (@interacts) 2.
 
   Global Instance behavior_le_refl {A} (R: relation A) :
     Reflexive R ->
     Reflexive (behavior_le R).
   Proof.
-    intros H [a' | m k | ]; constructor; eauto.
+    intros H [a' | m k | ]; rauto.
   Qed.
 
   (** A receptive transition system simply assigns a set of possible
@@ -72,13 +76,7 @@ Section RTS.
     particular, internal transitions must correspond one-to-one. *)
 
   Definition sim {A B} (R : rel A B) : rel (rts A) (rts B) :=
-    fun α β =>
-      forall a b ra,
-        R a b ->
-        α a ra ->
-        exists rb,
-          β b rb /\
-          behavior_le R ra rb.
+    (R ++> set_le (behavior_le R)).
 
   (** ** Externally observable behaviors *)
 
@@ -315,12 +313,7 @@ Section RTS.
         (hc_behavior dom i)
         (behavior_le (R i) ++> (- ==> R (negb i)) ++> behavior_le hc_rel).
     Proof.
-      unfold hc_behavior.
-      repeat rstep.
-      - constructor. constructor; eauto.
-      - constructor. repeat rstep. auto.
-      - constructor. intro. repeat rstep. auto.
-      - constructor.
+      unfold hc_behavior. rauto.
     Qed.
 
     Global Instance hc_behavior_rel_params :
@@ -329,7 +322,7 @@ Section RTS.
     Global Instance hc_sim :
       Monotonic hc ((forallr - @ i, sim (R i)) ++> - ==> sim hc_rel).
     Proof.
-      intros α β Hαβ dom sa sb ka Hs Hka.
+      intros α β Hαβ dom sa sb Hs ka Hka.
       destruct Hka as [i a ka ra].
       inversion Hs as [xi xa b Hab xka kb Hk | ]; clear Hs; subst.
       apply inj_pair2 in H1.
@@ -339,6 +332,9 @@ Section RTS.
       exists (hc_behavior dom i rb kb). split; [ | rauto].
       constructor; auto.
     Qed.
+
+    Global Instance hc_sim_params :
+      Params (@hc) 2.
   End HCOMP_REL.
 
   (** ** Modules *)
