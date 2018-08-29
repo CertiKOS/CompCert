@@ -1,5 +1,8 @@
 Require Import LogicalRelations.
 Require Import Axioms.
+Require Import Classical.
+
+Axiom prop_ext : ClassicalFacts.prop_extensionality.
 
 
 (** * Receptive transition systems *)
@@ -32,12 +35,6 @@ Section RTS.
       | internal a' => internal (f a')
       | interacts m k => interacts m (fun mi => f (k mi))
       | goes_wrong => goes_wrong
-    end.
-
-  Definition behavior_in {A} (dom : M -> bool) (r : behavior A) :=
-    match r with
-      | interacts (move m) k => dom m
-      | _ => false
     end.
 
   Inductive behavior_le {A B} (R : rel A B) : rel (behavior A) (behavior B) :=
@@ -112,8 +109,6 @@ Section RTS.
         obs α a goes_wrong.
 
   (** Observations are compatible with simulations. *)
-
-  Require Import Classical.
 
   Lemma diverges_sim {A B} (R : rel A B) α β a b :
     sim R α β ->
@@ -200,9 +195,12 @@ Section RTS.
       constructor; eauto.
   Qed.
 
-  Lemma reduce_observed_step {A} (α : rts A) a ra :
-    obs (obs α) a ra <-> obs α a ra.
+  Lemma obs_idempotent {A} (α : rts A) :
+    obs (obs α) = obs α.
   Proof.
+    apply functional_extensionality; intros a.
+    apply functional_extensionality; intros r.
+    apply prop_ext.
     split.
     - intros [Ha | a' m k Ha' Hk | a' Ha' Hk].
       + constructor. apply diverges_obs; auto.
