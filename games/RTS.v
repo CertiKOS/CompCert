@@ -255,9 +255,9 @@ Section RTS.
         | false => hc_r true
       end.
 
-    Definition hc_extcall (i : bool) (mo : output) :=
+    Definition hc_xcall (i : bool) (mo : output) : option M :=
       match mo with
-        | move m => if dom i m then None else Some m
+        | move m => if dom (negb i) m then Some m else None
         | _ => None
       end.
 
@@ -266,7 +266,7 @@ Section RTS.
         | internal a =>
           internal (hc_r i a k)
         | interacts mo k' =>
-          match hc_extcall i mo with
+          match hc_xcall i mo with
             | Some m => internal (hc_x i (k m) k')
             | None => interacts mo (fun mi => hc_r i (k' mi) k)
           end
