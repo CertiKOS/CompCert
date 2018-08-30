@@ -95,18 +95,26 @@ Section RTS.
         reachable α a' a'' ->
         reachable α a a''.
 
+  Inductive behavior_external {A} : behavior A -> Prop :=
+    | interacts_external m k :
+        behavior_external (interacts m k)
+    | goes_wrong_external :
+        behavior_external goes_wrong.
+
   Inductive obs {A} (α : rts A) a : behavior A -> Prop :=
     | obs_diverges :
         diverges α a ->
         obs α a (internal a)
-    | obs_interacts a' m k :
+    | obs_external a' r :
+        behavior_external r ->
+        α a' r ->
         reachable α a a' ->
-        α a' (interacts m k) ->
-        obs α a (interacts m k)
-    | obs_goes_wrong a' :
-        reachable α a a' ->
-        α a' goes_wrong ->
-        obs α a goes_wrong.
+        obs α a r.
+
+  Hint Resolve reachable_refl.
+  Hint Immediate reachable_step.
+  Hint Constructors behavior_external.
+  Hint Constructors obs.
 
   (** Observations are compatible with simulations. *)
 
@@ -124,12 +132,9 @@ Section RTS.
     inversion Hrab; clear Hrab; subst.
     - econstructor; eauto.
       eapply IH; eauto.
-      intros Hgw. inversion Hgw; clear Hgw; subst.
-      apply H. econstructor; eauto.
-      econstructor; eauto.
+      inversion 1; eauto.
     - destruct H.
       econstructor; eauto.
-      constructor.
   Qed.
 
   Lemma reachable_sim {A B} (R : rel A B) α β a b a' :
@@ -141,37 +146,48 @@ Section RTS.
       (R a' b' \/ β b' goes_wrong).
   Proof.
     intros Hαβ Hab Ha'. revert b Hab.
-    induction Ha' as [a | a a' a'' Ha' Ha'' IHa'']; intros.
-    - exists b. split; auto. constructor.
-    - edestruct Hαβ as (rb' & Hb' & Hab'); eauto.
-      inversion Hab'; clear Hab'; subst.
-      + edestruct IHa'' as (b'' & Hb'' & Hab''); eauto.
-        exists b''. split; eauto. econstructor; eauto.
-      + exists b. split; eauto. constructor.
+    induction Ha' as [a | a a' a'' Ha' Ha'' IHa'']; eauto.
+    intros b Hab.
+    edestruct Hαβ as (rb' & Hb' & Hab'); eauto.
+    inversion Hab'; clear Hab'; subst; eauto.
+    edestruct IHa'' as (b'' & Hb'' & Hab''); eauto.
   Qed.
+
+  Global Instance behavior_external_sim :
+    Monotonic (@behavior_external) (forallr R, behavior_le R ++> impl).
+  Proof.
+    intros A B R a b Hab Ha.
+    destruct Ha; inversion Hab; eauto.
+  Qed.
+
+  Hint Extern 10 (Transport _ _ _ (behavior_external _) _) =>
+    eapply impl_transport : typeclass_instances.
 
   Global Instance obs_sim :
     Monotonic (@obs) (forallr R, sim R ++> sim R).
   Proof.
-    intros A B R α β Hαβ a b ra Hab Hra.
-    destruct Hra as [Ha | a' m ka H Hka | a' H Ha'].
+    intros A B R α β Hαβ a b Hab ra Hra.
+    destruct Hra as [Ha | a' ra Hext Hra Ha' ].
     - edestruct @diverges_sim as [Hb | Hb]; eauto.
-      + exists (internal b). split; constructor; eauto.
-      + exists goes_wrong. split; eauto. constructor.
+      + exists (internal b). split; eauto. rauto.
+      + exists goes_wrong. split; eauto. rauto.
     - edestruct @reachable_sim as (b' & Hb' & [Hab' | Hgw]); eauto.
       + edestruct Hαβ as (rb & Hrb & Hr); eauto.
-        exists rb. split; auto.
-        inversion Hr; clear Hr; subst; econstructor; eauto.
-      + exists goes_wrong. split; econstructor; eauto.
-    - edestruct @reachable_sim as (b' & Hb' & [Hab' | Hgw]); eauto.
-      + edestruct Hαβ as (rb & Hrb & Hr); eauto.
-        exists rb. split; auto.
-        inversion Hr; clear Hr; subst; econstructor; eauto.
-      + exists goes_wrong. split; econstructor; eauto.
+        transport Hext. eauto.
+      + exists goes_wrong. split; eauto. rauto.
   Qed.
 
   (** The reduction process preserves observations, so that [obs] is
     idempotent. *)
+
+  Lemma obs_internal_inv {A} (α : rts A) a a' :
+    obs α a (internal a') ->
+    diverges α a /\ a' = a /\ exists a'', α a (internal a'').
+  Proof.
+    inversion 1; subst.
+    - intuition; eauto. destruct H1; eauto.
+    - inversion H0.
+  Qed.
 
   Lemma reachable_obs {A} (α : rts A) a a' :
     reachable (obs α) a a' ->
@@ -179,7 +195,7 @@ Section RTS.
   Proof.
     intros Ha'.
     induction Ha' as [a | a a' a'' Ha' Ha'' IHa'']; eauto.
-    inversion Ha'. congruence.
+    apply obs_internal_inv in Ha' as (_ & Ha' & _). congruence.
   Qed.
 
   Lemma diverges_obs {A} (α : rts A) a :
@@ -187,12 +203,10 @@ Section RTS.
   Proof.
     split.
     - intros [a' Ha' Hda'].
-      inversion Ha' as [Ha | | ]; clear Ha'; subst.
-      assumption.
+      apply obs_internal_inv in Ha' as (Hda & _); auto.
     - revert a. cofix IH.
       intros a Ha.
       econstructor; eauto.
-      constructor; eauto.
   Qed.
 
   Lemma obs_idempotent {A} (α : rts A) :
@@ -202,16 +216,12 @@ Section RTS.
     apply functional_extensionality; intros r.
     apply prop_ext.
     split.
-    - intros [Ha | a' m k Ha' Hk | a' Ha' Hk].
+    - intros [Ha | a' ra' Hra' Hext Ha' ].
       + constructor. apply diverges_obs; auto.
       + apply reachable_obs in Ha'. subst. auto.
-      + apply reachable_obs in Ha'. subst. auto.
-    - intros [Ha | a' m k Ha' Hk | a' Ha' Hk].
+    - intros [Ha | a' ra' Hra' Hext Ha' ].
       + constructor. apply diverges_obs; auto.
-      + econstructor; eauto using reachable_refl.
-        econstructor; eauto.
-      + econstructor; eauto using reachable_refl.
-        econstructor; eauto.
+      + econstructor; eauto.
   Qed.
 
 
