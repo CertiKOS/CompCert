@@ -26,6 +26,7 @@ Section RTS.
   Inductive behavior {A} :=
     | internal (a' : A)
     | interacts (m : output) (k : M -> A)
+    | diverges
     | goes_wrong.
 
   Arguments behavior : clear implicits.
@@ -34,6 +35,7 @@ Section RTS.
     match r with
       | internal a' => internal (f a')
       | interacts m k => interacts m (fun mi => f (k mi))
+      | diverges => diverges
       | goes_wrong => goes_wrong
     end.
 
@@ -42,11 +44,14 @@ Section RTS.
         Monotonic internal (R ++> behavior_le R)
     | interacts_le :
         Monotonic interacts (- ==> (- ==> R) ++> behavior_le R)
+    | diverges_le :
+        Monotonic diverges (behavior_le R)
     | goes_wrong_le ra :
         Related ra goes_wrong (behavior_le R).
 
   Global Existing Instance internal_le.
   Global Existing Instance interacts_le.
+  Global Existing Instance diverges_le.
   Global Existing Instance goes_wrong_le.
   Global Instance internal_le_params : Params (@internal) 1.
   Global Instance interacts_le_params : Params (@interacts) 2.
@@ -55,7 +60,7 @@ Section RTS.
     Reflexive R ->
     Reflexive (behavior_le R).
   Proof.
-    intros H [a' | m k | ]; rauto.
+    intros H [a' | m k | | ]; rauto.
   Qed.
 
   (** A receptive transition system simply assigns a set of possible
@@ -81,11 +86,11 @@ Section RTS.
     observable behaviors: internal transitions are hidden, except in
     the case of silent divergence. *)
 
-  CoInductive diverges {A} (α : rts A) (a : A) : Prop :=
-    | diverges_intro a' :
+  CoInductive forever_internal {A} (α : rts A) (a : A) : Prop :=
+    | forever_internal_intro a' :
         α a (internal a') ->
-        diverges α a' ->
-        diverges α a.
+        forever_internal α a' ->
+        forever_internal α a.
 
   Inductive reachable {A} (α : rts A) : relation A :=
     | reachable_refl a :
@@ -98,13 +103,15 @@ Section RTS.
   Inductive behavior_external {A} : behavior A -> Prop :=
     | interacts_external m k :
         behavior_external (interacts m k)
+    | diverges_external :
+        behavior_external diverges
     | goes_wrong_external :
         behavior_external goes_wrong.
 
   Inductive obs {A} (α : rts A) a : behavior A -> Prop :=
     | obs_diverges :
-        diverges α a ->
-        obs α a (internal a)
+        forever_internal α a ->
+        obs α a diverges
     | obs_external a' r :
         behavior_external r ->
         α a' r ->
@@ -118,11 +125,11 @@ Section RTS.
 
   (** Observations are compatible with simulations. *)
 
-  Lemma diverges_sim {A B} (R : rel A B) α β a b :
+  Lemma forever_internal_sim {A B} (R : rel A B) α β a b :
     sim R α β ->
     R a b ->
-    diverges α a ->
-    diverges β b \/ obs β b goes_wrong.
+    forever_internal α a ->
+    forever_internal β b \/ obs β b goes_wrong.
   Proof.
     intros Hαβ Hab Ha.
     destruct (classic (obs β b goes_wrong)); eauto. left.
@@ -168,8 +175,8 @@ Section RTS.
   Proof.
     intros A B R α β Hαβ a b Hab ra Hra.
     destruct Hra as [Ha | a' ra Hext Hra Ha' ].
-    - edestruct @diverges_sim as [Hb | Hb]; eauto.
-      + exists (internal b). split; eauto. rauto.
+    - edestruct @forever_internal_sim as [Hb | Hb]; eauto.
+      + exists diverges. split; eauto. rauto.
       + exists goes_wrong. split; eauto. rauto.
     - edestruct @reachable_sim as (b' & Hb' & [Hab' | Hgw]); eauto.
       + edestruct Hαβ as (rb & Hrb & Hr); eauto.
@@ -180,13 +187,18 @@ Section RTS.
   (** The reduction process preserves observations, so that [obs] is
     idempotent. *)
 
-  Lemma obs_internal_inv {A} (α : rts A) a a' :
-    obs α a (internal a') ->
-    diverges α a /\ a' = a /\ exists a'', α a (internal a'').
+  Lemma obs_behavior_external {A} (α : rts A) a r :
+    obs α a r ->
+    behavior_external r.
   Proof.
-    inversion 1; subst.
-    - intuition; eauto. destruct H1; eauto.
-    - inversion H0.
+    destruct 1; eauto.
+  Qed.
+
+  Lemma obs_internal_inv {A} (α : rts A) a a' :
+    ~ obs α a (internal a').
+  Proof.
+    inversion 1.
+    inversion H0.
   Qed.
 
   Lemma reachable_obs {A} (α : rts A) a a' :
@@ -194,19 +206,8 @@ Section RTS.
     a = a'.
   Proof.
     intros Ha'.
-    induction Ha' as [a | a a' a'' Ha' Ha'' IHa'']; eauto.
-    apply obs_internal_inv in Ha' as (_ & Ha' & _). congruence.
-  Qed.
-
-  Lemma diverges_obs {A} (α : rts A) a :
-    diverges (obs α) a <-> diverges α a.
-  Proof.
-    split.
-    - intros [a' Ha' Hda'].
-      apply obs_internal_inv in Ha' as (Hda & _); auto.
-    - revert a. cofix IH.
-      intros a Ha.
-      econstructor; eauto.
+    destruct Ha' as [a | a a' a'' Ha' Ha'' IHa'']; eauto.
+    eelim obs_internal_inv; eauto.
   Qed.
 
   Lemma obs_idempotent {A} (α : rts A) :
@@ -217,11 +218,10 @@ Section RTS.
     apply prop_ext.
     split.
     - intros [Ha | a' ra' Hra' Hext Ha' ].
-      + constructor. apply diverges_obs; auto.
+      + destruct Ha. eelim obs_internal_inv; eauto.
       + apply reachable_obs in Ha'. subst. auto.
-    - intros [Ha | a' ra' Hra' Hext Ha' ].
-      + constructor. apply diverges_obs; auto.
-      + econstructor; eauto.
+    - intros Hr.
+      eapply obs_external; eauto using obs_behavior_external.
   Qed.
 
 
@@ -280,6 +280,8 @@ Section RTS.
             | Some m => internal (hc_x i (k m) k')
             | None => interacts mo (fun mi => hc_r i (k' mi) k)
           end
+        | diverges =>
+          diverges
         | goes_wrong =>
           goes_wrong
       end.
