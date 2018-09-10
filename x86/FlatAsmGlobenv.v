@@ -99,6 +99,12 @@ Definition find_funct (ge: t) (v:val) : option F :=
   | _ => None
   end.
 
+Definition label_address (ge: t) (id:ident) (id:ident) : val :=
+  match genv_lbl ge id id with
+  | None => Vundef
+  | Some (b,o) => Vptr b o
+  end.
+
 Definition label_to_ptr (smap: segid_type -> block) (l:seglabel) : val :=
   Vptr (smap (fst l)) (snd l).
 
