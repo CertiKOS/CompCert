@@ -1433,9 +1433,9 @@ Record match_inj (mj: meminj) : Type :=
       (*       Genv.symbol_address tge gloc Ptrofs.zero = Vptr b' ofs' /\ *)
       (*       mj b = Some (b', Ptrofs.unsigned ofs'); *)
 
-      agree_inj_glob : forall id b b' ofs',
+      agree_inj_glob : forall id b,
           Globalenvs.Genv.find_symbol ge id = Some b ->
-          Genv.symbol_address tge id Ptrofs.zero = Vptr b' ofs' ->
+          exists b' ofs', Genv.symbol_address tge id Ptrofs.zero = Vptr b' ofs' /\
           mj b = Some (b', Ptrofs.unsigned ofs');
 
       agree_inj_lbl : forall id b f l z,
@@ -1530,7 +1530,7 @@ Definition glob_block_valid (m:mem) :=
 
 Inductive match_states: state -> state -> Prop :=
 | match_states_intro: forall (j:meminj) (rs: regset) (m: mem) (rs': regset) (m':mem)
-                        (gm: GID_MAP_TYPE) (lm: LABEL_MAP_TYPE)
+                        (* (gm: GID_MAP_TYPE) (lm: LABEL_MAP_TYPE) *)
                         (MINJ: Mem.inject j (def_frame_inj m) m m')
                         (MATCHSMINJ: match_inj j)
                         (* (GINJFLATMEM: globs_inj_into_flatmem j) *)
@@ -1538,8 +1538,8 @@ Inductive match_states: state -> state -> Prop :=
                         (EXTEXTERNAL: extfun_entry_is_external j)
                         (MATCHFINDFUNCT: match_find_funct j)
                         (RSINJ: regset_inject j rs rs')
-                        (GBVALID: glob_block_valid m)
-                        (GMUNDEF: gid_map_for_undef_syms gm),
+                        (GBVALID: glob_block_valid m),
+                        (* (GMUNDEF: gid_map_for_undef_syms gm), *)
     match_states (State rs m) (State rs' m').
 
 
@@ -5273,21 +5273,19 @@ Proof.
 Qed.
 
 
-(* Lemma inject_symbol_sectlabel : forall gm lm j id lbl ofs, *)
-(*     match_inj gm lm j -> *)
-(*     gm id = Some lbl -> *)
-(*     Val.inject j (Globalenvs.Genv.symbol_address ge id ofs) (Genv.symbol_address tge lbl ofs). *)
-(* Proof. *)
-(*   unfold Globalenvs.Genv.symbol_address. *)
-(*   intros. *)
-(*   destruct (Genv.find_symbol ge id) eqn:FINDSYM; auto. *)
-(*   inv H. exploit agree_sminj_glob0; eauto. *)
-(*   intros (ofs' & b0 & b' & FSYM & SBOFS & JB).   *)
-(*   rewrite FSYM in FINDSYM; inv FINDSYM. *)
-(*   exploit Genv.symbol_address_offset; eauto. intro SYMADDR. rewrite SYMADDR. *)
-(*   eapply Val.inject_ptr. eauto. *)
-(*   rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut. *)
-(* Qed. *)
+Lemma inject_symbol_sectlabel : forall j id ofs,
+    match_inj j ->
+    Val.inject j (Globalenvs.Genv.symbol_address ge id ofs) (Genv.symbol_address tge id ofs).
+Proof.
+  unfold Globalenvs.Genv.symbol_address.
+  intros.
+  destruct (Globalenvs.Genv.find_symbol ge id) eqn:FINDSYM; auto.
+  inv H. exploit agree_inj_glob0; eauto.
+  intros (b' & ofs' & SBOFS & JB).
+  erewrite Genv.symbol_address_offset; eauto. 
+  eapply Val.inject_ptr; eauto.
+  rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
+Qed.
 
 Lemma add_undef : forall v,
   Val.add v Vundef = Vundef.
@@ -5506,24 +5504,23 @@ Ltac destr_valinj_left H :=
 (*   + eapply eval_addrmode32_inject; eauto. *)
 (* Qed. *)
 
-(* Lemma exec_load_step: forall j rs1 rs2 m1 m2 rs1' m1' gm lm sz chunk rd a1 a2 *)
-(*                           (MINJ: Mem.inject j (def_frame_inj m1) m1 m2) *)
-(*                           (MATCHSMINJ: match_sminj gm lm j) *)
-(*                           (* (GINJFLATMEM: globs_inj_into_flatmem j) *) *)
-(*                           (INSTRINTERNAL: valid_instr_offset_is_internal j) *)
-(*                           (EXTEXTERNAL: extfun_entry_is_external j) *)
-(*                           (MATCHFINDFUNCT: match_find_funct j) *)
-(*                           (RSINJ: regset_inject j rs1 rs2) *)
-(*                           (GBVALID: glob_block_valid m1) *)
-(*                           (GMUNDEF: gid_map_for_undef_syms gm), *)
-(*     Asm.exec_load ge chunk m1 a1 rs1 rd sz = Next rs1' m1' -> *)
-(*     transl_addr_mode gm a1 = OK a2 -> *)
-(*     exists rs2' m2', *)
-(*       FlatAsm.exec_load tge chunk m2 a2 rs2 rd sz = Next rs2' m2' /\ *)
-(*       match_states (State rs1' m1') (State rs2' m2'). *)
-(* Proof. *)
-(*   intros. unfold Asm.exec_load in *.   *)
-(*   exploit eval_addrmode_inject; eauto. intro EMODINJ.  *)
+Lemma exec_load_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk rd a
+                          (MINJ: Mem.inject j (def_frame_inj m1) m1 m2)
+                          (MATCHINJ: match_inj j)
+                          (* (GINJFLATMEM: globs_inj_into_flatmem j) *)
+                          (INSTRINTERNAL: valid_instr_offset_is_internal j)
+                          (EXTEXTERNAL: extfun_entry_is_external j)
+                          (MATCHFINDFUNCT: match_find_funct j)
+                          (RSINJ: regset_inject j rs1 rs2)
+                          (GBVALID: glob_block_valid m1),
+                          (* (GMUNDEF: gid_map_for_undef_syms gm), *)
+    Asm.exec_load ge chunk m1 a rs1 rd sz = Next rs1' m1' ->
+    exists rs2' m2',
+      FlatAsm.exec_load tge chunk m2 a rs2 rd sz = Next rs2' m2' /\
+      match_states (State rs1' m1') (State rs2' m2').
+Proof.
+(*   intros. unfold Asm.exec_load in *. *)
+(*   exploit eval_addrmode_inject; eauto. intro EMODINJ. *)
 (*   destruct (Mem.loadv chunk m1 (Asm.eval_addrmode ge a1 rs1)) eqn:MLOAD; try congruence. *)
 (*   exploit Mem.loadv_inject; eauto. intros (v2 & MLOADV & VINJ). *)
 (*   eexists. eexists. split. *)
@@ -5532,39 +5529,39 @@ Ltac destr_valinj_left H :=
 (*     apply nextinstr_pres_inject. apply undef_regs_pres_inject. *)
 (*     apply regset_inject_expand; eauto. *)
 (* Qed. *)
+Admitted.
 
-(* Lemma store_pres_glob_block_valid : forall m1 chunk b v ofs m2, *)
-(*   Mem.store chunk m1 b ofs v = Some m2 -> glob_block_valid m1 -> glob_block_valid m2. *)
-(* Proof. *)
-(*   unfold glob_block_valid in *. intros. *)
-(*   eapply Mem.store_valid_block_1; eauto. *)
-(* Qed. *)
+Lemma store_pres_glob_block_valid : forall m1 chunk b v ofs m2,
+  Mem.store chunk m1 b ofs v = Some m2 -> glob_block_valid m1 -> glob_block_valid m2.
+Proof.
+  unfold glob_block_valid in *. intros.
+  eapply Mem.store_valid_block_1; eauto.
+Qed.
 
-(* Lemma storev_pres_glob_block_valid : forall m1 chunk ptr v m2, *)
-(*   Mem.storev chunk m1 ptr v = Some m2 -> glob_block_valid m1 -> glob_block_valid m2. *)
-(* Proof. *)
-(*   unfold Mem.storev. intros. destruct ptr; try congruence. *)
-(*   eapply store_pres_glob_block_valid; eauto. *)
-(* Qed. *)
+Lemma storev_pres_glob_block_valid : forall m1 chunk ptr v m2,
+  Mem.storev chunk m1 ptr v = Some m2 -> glob_block_valid m1 -> glob_block_valid m2.
+Proof.
+  unfold Mem.storev. intros. destruct ptr; try congruence.
+  eapply store_pres_glob_block_valid; eauto.
+Qed.
 
-(* Lemma exec_store_step: forall j rs1 rs2 m1 m2 rs1' m1' gm lm sz chunk r a1 a2 dregs *)
-(*                          (MINJ: Mem.inject j (def_frame_inj m1) m1 m2) *)
-(*                          (MATCHSMINJ: match_sminj gm lm j) *)
-(*                          (* (GINJFLATMEM: globs_inj_into_flatmem j) *) *)
-(*                          (INSTRINTERNAL: valid_instr_offset_is_internal j) *)
-(*                          (EXTEXTERNAL: extfun_entry_is_external j) *)
-(*                          (MATCHFINDFUNCT: match_find_funct j) *)
-(*                          (RSINJ: regset_inject j rs1 rs2) *)
-(*                          (GBVALID: glob_block_valid m1) *)
-(*                          (GMUNDEF: gid_map_for_undef_syms gm), *)
-(*     Asm.exec_store ge chunk m1 a1 rs1 r dregs sz = Next rs1' m1' -> *)
-(*     transl_addr_mode gm a1 = OK a2 -> *)
-(*     exists rs2' m2', *)
-(*       FlatAsm.exec_store tge chunk m2 a2 rs2 r dregs sz = Next rs2' m2' /\ *)
-(*       match_states (State rs1' m1') (State rs2' m2'). *)
-(* Proof. *)
-(*   intros. unfold Asm.exec_store in *.   *)
-(*   exploit eval_addrmode_inject; eauto. intro EMODINJ.  *)
+Lemma exec_store_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk r a1 a2 dregs
+                         (MINJ: Mem.inject j (def_frame_inj m1) m1 m2)
+                         (MATCHINJ: match_inj j)
+                         (* (GINJFLATMEM: globs_inj_into_flatmem j) *)
+                         (INSTRINTERNAL: valid_instr_offset_is_internal j)
+                         (EXTEXTERNAL: extfun_entry_is_external j)
+                         (MATCHFINDFUNCT: match_find_funct j)
+                         (RSINJ: regset_inject j rs1 rs2)
+                         (GBVALID: glob_block_valid m1),
+                         (* (GMUNDEF: gid_map_for_undef_syms gm), *)
+    Asm.exec_store ge chunk m1 a1 rs1 r dregs sz = Next rs1' m1' ->
+    exists rs2' m2',
+      FlatAsm.exec_store tge chunk m2 a2 rs2 r dregs sz = Next rs2' m2' /\
+      match_states (State rs1' m1') (State rs2' m2').
+Proof.
+(*   intros. unfold Asm.exec_store in *. *)
+(*   exploit eval_addrmode_inject; eauto. intro EMODINJ. *)
 (*   destruct (Mem.storev chunk m1 (Asm.eval_addrmode ge a1 rs1) (rs1 r)) eqn:MSTORE; try congruence. *)
 (*   exploit Mem.storev_mapped_inject; eauto. intros (m2' & MSTOREV & MINJ'). *)
 (*   eexists. eexists. split. *)
@@ -5574,6 +5571,7 @@ Ltac destr_valinj_left H :=
 (*     apply nextinstr_pres_inject. repeat apply undef_regs_pres_inject. auto. *)
 (*     eapply storev_pres_glob_block_valid; eauto. *)
 (* Qed. *)
+Admitted.
 
 Inductive opt_val_inject (j:meminj) : option val -> option val -> Prop :=
 | opt_val_inject_none v : opt_val_inject j None v
@@ -6227,15 +6225,15 @@ Proof.
   inv H. constructor; auto.
 Qed.
   
-(* Ltac solve_store_load := *)
-(*   match goal with *)
-(*   | [ H : Asm.exec_instr _ _ _ _ _ _ = Next _ _ |- _ ] => *)
-(*     unfold Asm.exec_instr in H; simpl in H; solve_store_load *)
-(*   | [ H : Asm.exec_store _ _ _ _ _ _ _ _ = Next _ _ |- _ ] => *)
-(*     exploit exec_store_step; eauto *)
-(*   | [ H : Asm.exec_load _ _ _ _ _ _ _ = Next _ _ |- _ ] => *)
-(*     exploit exec_load_step; eauto *)
-(*   end. *)
+Ltac solve_store_load :=
+  match goal with
+  | [ H : Asm.exec_instr _ _ _ _ _ _ = Next _ _ |- _ ] =>
+    unfold Asm.exec_instr in H; simpl in H; solve_store_load
+  | [ H : Asm.exec_store _ _ _ _ _ _ _ _ = Next _ _ |- _ ] =>
+    exploit exec_store_step; eauto
+  | [ H : Asm.exec_load _ _ _ _ _ _ _ = Next _ _ |- _ ] =>
+    exploit exec_load_step; eauto
+  end.
 
 Ltac solve_opt_lessdef := 
   match goal with
@@ -6363,55 +6361,46 @@ Proof.
   destruct (Globalenvs.Genv.find_funct_ptr ge b); try inv H0. auto.
 Qed.
 
-(* Lemma goto_label_inject : forall rs1 rs2 gm lm id b f l l' j m1 m2 rs1' m1' ofs *)
-(*                             (MATCHSMINJ: match_inj j) *)
-(*                             (RINJ: regset_inject j rs1 rs2) *)
-(*                             (MINJ:Mem.inject j (def_frame_inj m1) m1 m2), *)
-(*     rs1 PC = Vptr b ofs -> *)
-(*     Globalenvs.Genv.find_symbol ge id = Some b -> *)
-(*     Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) -> *)
-(*     Asm.goto_label ge f l rs1 m1 = Next rs1' m1' -> *)
-(*     lm id l = Some l' -> *)
-(*     exists rs2', goto_label tge l' rs2 m2 = Next rs2' m2 /\ *)
-(*             regset_inject j rs1' rs2' /\ Mem.inject j (def_frame_inj m1') m1' m2. *)
-(* Proof. *)
-(*   intros. unfold Asm.goto_label in H2. *)
-(*   destruct (label_pos l 0 (Asm.fn_code f)) eqn:EQLBL; try inv H2. *)
-(*   setoid_rewrite H in H5. rewrite H1 in H5. inv H5. *)
-(*   exploit agree_sminj_lbl; eauto. intros.  *)
-(*   eexists. split. *)
-(*   unfold goto_label. auto. split; auto. *)
-(*   repeat apply regset_inject_expand; auto.  *)
-(* Qed. *)
+Lemma goto_label_inject : forall rs1 rs2 id b f l j m1 m2 rs1' m1' ofs
+                            (MATCHSMINJ: match_inj j)
+                            (RINJ: regset_inject j rs1 rs2)
+                            (MINJ:Mem.inject j (def_frame_inj m1) m1 m2),
+    rs1 PC = Vptr b ofs ->
+    Globalenvs.Genv.find_symbol ge id = Some b ->
+    Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) ->
+    Asm.goto_label ge f l rs1 m1 = Next rs1' m1' ->
+    exists rs2', goto_label tge id l rs2 m2 = Next rs2' m2 /\
+            regset_inject j rs1' rs2' /\ Mem.inject j (def_frame_inj m1') m1' m2.
+Proof.
+  intros. unfold Asm.goto_label in H2.
+  destruct (label_pos l 0 (Asm.fn_code f)) eqn:EQLBL; try inv H2.
+  setoid_rewrite H in H4. rewrite H1 in H4. inv H4.
+  exploit agree_inj_lbl; eauto. intros.
+  eexists. split.
+  unfold goto_label. auto. split; auto.
+  repeat apply regset_inject_expand; auto.
+Qed.
 
-(* Lemma goto_tbl_label_inject : forall gm lm id tbl tbl' l b f j rs1 rs2 m1 m2 rs1' m1' i ofs *)
-(*                                 (MATCHSMINJ: match_sminj gm lm j) *)
-(*                                 (RINJ: regset_inject j rs1 rs2) *)
-(*                                 (MINJ:Mem.inject j (def_frame_inj m1) m1 m2), *)
-(*     rs1 PC = Vptr b ofs -> *)
-(*     Genv.find_symbol ge id = Some b -> *)
-(*     Genv.find_funct_ptr ge b = Some (Internal f) -> *)
-(*     list_nth_z tbl i = Some l -> *)
-(*     Asm.goto_label ge f l ((rs1 # RAX <- Vundef) # RDX <- Vundef) m1 = Next rs1' m1' -> *)
-(*     transl_tbl lm id tbl = OK tbl' -> *)
-(*     exists rs2' l',  *)
-(*       list_nth_z tbl' i = Some l' /\ *)
-(*       FlatAsm.goto_label tge l' ((rs2 # RAX <- Vundef) # RDX <- Vundef) m2 = Next rs2' m2 /\ *)
-(*       regset_inject j rs1' rs2' /\ Mem.inject j (def_frame_inj m1') m1' m2. *)
-(* Proof. *)
-(*   induction tbl; simpl; intros. *)
-(*   - congruence. *)
-(*   - destruct (zeq i 0). *)
-(*     + inv H2. monadInvX H4. *)
-(*       exploit (goto_label_inject ((rs1 # RAX <- Vundef) # RDX <- Vundef) ((rs2 # RAX <- Vundef) # RDX <- Vundef)); eauto with inject_db.  *)
-(*       intros (rs2' & GLBL & RSINJ' & MINJ'). *)
-(*       eexists; eexists. split. simpl. auto. split. *)
-(*       rewrite GLBL. auto. split; eauto. *)
-(*     + monadInvX H4. *)
-(*       exploit (IHtbl x); eauto. *)
-(*       intros (rs2' & l' & LNTH & GLBL & RSINJ' & MINJ'). *)
-(*       exists rs2', l'. split. simpl. erewrite zeq_false; auto. split; auto. *)
-(* Qed. *)
+Lemma goto_tbl_label_inject : forall id tbl l b f j rs1 rs2 m1 m2 rs1' m1' i ofs
+                                (MATCHSMINJ: match_inj j)
+                                (RINJ: regset_inject j rs1 rs2)
+                                (MINJ:Mem.inject j (def_frame_inj m1) m1 m2),
+    rs1 PC = Vptr b ofs ->
+    Globalenvs.Genv.find_symbol ge id = Some b ->
+    Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) ->
+    list_nth_z tbl i = Some l ->
+    Asm.goto_label ge f l ((rs1 # RAX <- Vundef) # RDX <- Vundef) m1 = Next rs1' m1' ->
+    exists rs2',
+      FlatAsm.goto_label tge id l ((rs2 # RAX <- Vundef) # RDX <- Vundef) m2 = Next rs2' m2 /\
+      regset_inject j rs1' rs2' /\ Mem.inject j (def_frame_inj m1') m1' m2.
+Proof.
+  induction tbl; simpl; intros.
+  - congruence.
+  - destruct (zeq i 0).
+    + inv H2. 
+      exploit (goto_label_inject ((rs1 # RAX <- Vundef) # RDX <- Vundef) ((rs2 # RAX <- Vundef) # RDX <- Vundef)); eauto with inject_db.
+    + exploit IHtbl; eauto.
+Qed.
 
 (* Lemma add_globals_pres_senv :  *)
 (*   forall (defs : list (ident * option gdef * segblock)) (ge : genv), *)
@@ -6464,14 +6453,19 @@ Proof.
     apply regset_inject_expand; auto.
     inv MATCHSMINJ.
     unfold Globalenvs.Genv.symbol_address.
-    destruct (Genv.find_symbol ge id0) eqn:FINDSYM; auto.
-    exploit agree_sminj_glob0; eauto.
-    intros (ofs1 & b1 & b' & FSYM & GLBL & JB).
-    rewrite FSYM in FINDSYM; inv FINDSYM. 
+    destruct (Globalenvs.Genv.find_symbol ge id0) eqn:FINDSYM; auto.
+    exploit agree_inj_glob0; eauto.
+    intros (b1 & ofs1 & GLBL & JB).
     rewrite GLBL.
     rewrite <- (Ptrofs.add_zero_l ofs1).
     eapply Val.inject_ptr; eauto.
     rewrite Ptrofs.repr_unsigned. auto.
+
+  - (* eval addrmode 32 *)
+    admit.
+
+  - (* eval addrmode 64 *)
+    admit.
 
   (* Divisions *)
   - unfold Asm.exec_instr in H6; simpl in H6.
@@ -6518,20 +6512,20 @@ Proof.
     unfold Asm.exec_instr in H6; simpl in H6.
     unfold Asm.goto_label in H6. destruct (label_pos l 0 (Asm.fn_code f)) eqn:LBLPOS; inv H6.
     destruct (rs1 Asm.PC) eqn:PC1; inv H4. 
-    destruct (Genv.find_funct_ptr ge b0); inv H5.
+    destruct (Globalenvs.Genv.find_funct_ptr ge b0); inv H5.
     eexists; eexists. split. simpl.
     unfold goto_label. eauto.
     eapply match_states_intro; eauto.
     apply regset_inject_expand; auto. 
     rewrite H in *. inv PC1. inv H.
-    eapply agree_sminj_lbl; eauto.
+    eapply agree_inj_lbl; eauto.
 
   - (* Pjmp_s *)
     apply regset_inject_expand; auto.
-    inversion MATCHSMINJ. 
-    exploit (agree_sminj_glob0 symb s0); eauto.
-    intros (ofs1 & b1 & b' & FSYM & LBLOFS & JB). 
-    unfold Globalenvs.Genv.symbol_address. rewrite FSYM. 
+    inversion MATCHSMINJ.
+    unfold Globalenvs.Genv.symbol_address. destr_match; auto.
+    exploit (agree_inj_glob0 symb b0); eauto.
+    intros (b1 & ofs1 & LBLOFS & JB). 
     rewrite LBLOFS. econstructor; eauto.
     simpl_goal. auto.
 
@@ -6562,9 +6556,9 @@ Proof.
     destruct (list_nth_z tbl (Int.unsigned i)) eqn:LEQ; inv H4.
     assert (rs2 r = Vint i) by
         (generalize (RSINJ r); rewrite REQ; inversion 1; auto).
-    exploit (goto_tbl_label_inject gm lm id tbl x0 l); eauto. 
-    intros (rs2' & l' & LEQ' & GLBL & RSINJ' & MINJ').
-    exists rs2', m2. split. simpl. setoid_rewrite H3. setoid_rewrite LEQ'. auto. 
+    exploit (goto_tbl_label_inject id tbl l); eauto. 
+    intros (rs2' & GLBL & RSINJ' & MINJ').
+    exists rs2', m2. split. simpl. setoid_rewrite H3. setoid_rewrite LEQ. auto. 
     eapply match_states_intro; eauto.
     assert (m1 = m1') by (eapply goto_label_pres_mem; eauto). subst. auto.
     
@@ -6572,7 +6566,7 @@ Proof.
     generalize (RSINJ PC). intros. rewrite H in *. inv H3.
     repeat apply regset_inject_expand; auto.
     + apply Val.offset_ptr_inject. eauto.
-    + exploit (inject_symbol_sectlabel gm lm j symb s0 Ptrofs.zero); eauto. 
+    + exploit (inject_symbol_sectlabel j symb Ptrofs.zero); eauto. 
       
   - (* Pallocframe *)
     generalize (RSINJ RSP). intros RSPINJ.

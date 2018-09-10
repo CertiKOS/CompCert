@@ -99,8 +99,8 @@ Definition find_funct (ge: t) (v:val) : option F :=
   | _ => None
   end.
 
-Definition label_address (ge: t) (id:ident) (id:ident) : val :=
-  match genv_lbl ge id id with
+Definition label_address (ge: t) (fid:ident) (lid:ident) : val :=
+  match genv_lbl ge fid lid with
   | None => Vundef
   | Some (b,o) => Vptr b o
   end.
@@ -118,14 +118,19 @@ Definition label_to_ptr (smap: segid_type -> block) (l:seglabel) : val :=
 (* Definition symbol_block_offset ge l :=  *)
 (*   label_to_block_offset (genv_segblocks ge) l. *)
 
-(* Lemma symbol_address_offset : forall ge ofs1 b s ofs, *)
-(*     symbol_address ge s Ptrofs.zero = Vptr b ofs -> *)
-(*     symbol_address ge s ofs1 = Vptr b (Ptrofs.add ofs ofs1). *)
-(* Proof. *)
-(*   unfold symbol_address. intros. destruct s. *)
-(*   simpl in *. unfold label_to_ptr in *. inv H. *)
-(*   rewrite Ptrofs.add_zero. auto. *)
-(* Qed. *)
+Lemma symbol_address_offset : forall ge ofs1 b s ofs,
+    symbol_address ge s Ptrofs.zero = Vptr b ofs ->
+    symbol_address ge s ofs1 = Vptr b (Ptrofs.add ofs ofs1).
+Proof.
+  unfold symbol_address. intros. 
+  destruct (find_symbol ge s) eqn:FSM.
+  - 
+    destruct p.
+    simpl in *. unfold label_to_ptr in *. inv H. 
+    rewrite Ptrofs.add_zero_l. rewrite Ptrofs.add_commut. auto.
+  - 
+    inv H.
+Qed.
 
 (* Definition get_label_offset (ge: t) (l:seglabel) (ofs:ptrofs): option ptrofs := *)
 (*   get_sect_label_offset (genv_smap ge) l ofs. *)

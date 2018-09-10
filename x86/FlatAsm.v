@@ -116,15 +116,18 @@ End WITHGE.
   [nextinstr_nf] is a variant of [nextinstr] that sets condition flags
   to [Vundef] in addition to incrementing the [PC]. *)
 
-Definition goto_label {F V I} (ge: Genv.t F V I) (fid: ident) (lbl: label) (rs: regset) (m: mem) :=
-  match Genv.genv_lbl ge fid lbl with
-  | None => Stuck
-  | Some (b, ofs) =>
-      match rs#PC with
-      | Vptr b ofs => Next (rs#PC <- (Vptr b ofs)) m
-      | _ => Stuck
-    end
-  end.
+Definition goto_label {F V I} (ge: Genv.t F V I) (fid:ident) (lbl: label) (rs: regset) (m: mem) :=
+  Next (rs#PC <- (Genv.label_address ge fid lbl)) m.
+
+(* Definition goto_label {F V I} (ge: Genv.t F V I) (fid: ident) (lbl: label) (rs: regset) (m: mem) := *)
+(*   match Genv.genv_lbl ge fid lbl with *)
+(*   | None => Stuck *)
+(*   | Some (b, ofs) => *)
+(*       match rs#PC with *)
+(*       | Vptr b ofs => Next (rs#PC <- (Vptr b ofs)) m *)
+(*       | _ => Stuck *)
+(*     end *)
+(*   end. *)
 
 
 (** [CompCertiKOS:test-compcert-param-mem-accessors] For CertiKOS, we
