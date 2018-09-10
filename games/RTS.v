@@ -208,8 +208,7 @@ Section RTS.
       + exists goes_wrong. split; eauto. rauto.
   Qed.
 
-  (** The reduction process preserves observations, so that [obs] is
-    idempotent. *)
+  (** Additional properties. *)
 
   Lemma obs_behavior_external {A} (α : rts A) a r :
     obs α a r ->
@@ -241,6 +240,18 @@ Section RTS.
   Proof.
     induction 1; auto.
     econstructor; eauto.
+  Qed.
+
+  Lemma obs_reachable {A} (α : rts A) a a' r :
+    reachable α a a' ->
+    obs α a' r ->
+    obs α a r.
+  Proof.
+    intros Ha' H.
+    destruct H.
+    - eauto using forever_internal_reachable.
+    - eapply obs_external; eauto.
+      etransitivity; eauto.
   Qed.
 
   (** ** [obs] is idempotent *)
@@ -397,6 +408,25 @@ Section RTS.
       Params (@hc) 2.
   End HCOMP_REL.
 
+  (** ** Properties *)
+
+  Lemma hc_behavior_external {A} dom (r : behavior A) (k : M -> A) :
+    behavior_external (hc_behavior dom r k) ->
+    behavior_external r.
+  Proof.
+    destruct r; inversion 1; constructor.
+  Qed.
+
+  Lemma hc_reachable {A} dom (α : rts A) a a' k :
+    reachable α a a' ->
+    reachable (hc dom α) (hc_r a k) (hc_r a' k).
+  Proof.
+    induction 1; eauto.
+    econstructor; eauto.
+    change (internal _) with (hc_behavior dom (internal a') k).
+    constructor; eauto.
+  Qed.
+
   (** ** Modules *)
 
   Definition hcomp_dom (α1 α2 : modsem) (q : M) : bool :=
@@ -439,5 +469,140 @@ Section RTS.
       + apply functional_extensionality. intros i. rauto.
     - intros q.
       repeat rstep; simpl; eauto.
+  Qed.
+
+  (** ** [hcomp] and [obs] *)
+
+  (** We prove that [hcomp] semi-commutes with [obs], in the sense
+    that applying [obs] after horizontal composition only should yield
+    the same result as applying it both before and after horizontal
+    composition. *)
+
+  CoInductive forever_switching {A} dom (α : rts A) : hc_state A -> Prop :=
+    | forever_switching_intro a a' ra k s' :
+        reachable α a a' ->
+        α a' ra ->
+        behavior_external ra ->
+        hc_behavior dom ra k = internal s' ->
+        forever_switching dom α s' ->
+        forever_switching dom α (hc_r a k).
+
+  Lemma forever_switching_internal {A} dom (α : rts A) s s' :
+    hc dom α s (internal s') ->
+    forever_switching dom α s' ->
+    forever_switching dom α s.
+  Proof.
+    intros Hs' Hd.
+    inversion Hs' as [a0 k0 ra0 Hra0]; clear Hs'.
+    destruct ra0; inversion H0; clear H0.
+    - destruct Hd.
+      inversion H2; clear H2; subst.
+      eapply (forever_switching_intro dom α a0 a'0); eauto.
+    - destruct hc_xcall as [mx|] eqn:Hmx; inversion H2; clear H2; subst.
+      eapply (forever_switching_intro dom α a0 a0); eauto.
+      simpl. rewrite Hmx. reflexivity.
+  Qed.
+
+  Inductive hc_settles {A} dom (α : rts A) : rts (hc_state A) :=
+    | hc_settles_external a a' ra k r :
+        α a' ra ->
+        reachable α a a' ->
+        hc_behavior dom ra k = r ->
+        behavior_external r ->
+        hc_settles dom α (hc_r a k) r
+    | hc_settles_diverges a k :
+        forever_internal α a ->
+        hc_settles dom α (hc_r a k) diverges
+    | hc_settles_switch a a' ra k s' r :
+        α a' ra ->
+        reachable α a a' ->
+        behavior_external ra ->
+        hc_behavior dom ra k = internal s' ->
+        hc_settles dom α s' r ->
+        hc_settles dom α (hc_r a k) r.
+
+  Hint Constructors hc_settles.
+
+  Lemma hc_settles_internal {A} dom (α : rts A) s s' r :
+    hc dom α s (internal s') ->
+    hc_settles dom α s' r ->
+    hc_settles dom α s r.
+  Proof.
+    intros Hs' Hr.
+    inversion Hs' as [a k ra Hra]; clear Hs'; subst.
+    destruct ra; inversion H0; clear H0.
+    - destruct Hr; inversion H1; clear H1; subst.
+      + eapply (hc_settles_external dom α a a'0); eauto.
+      + eapply (hc_settles_diverges dom α a); eauto.
+        econstructor; eauto.
+      + eapply (hc_settles_switch dom α a a'0); eauto.
+    - destruct hc_xcall as [mx|] eqn:Hmx; inversion H1; clear H1; subst.
+      eapply (hc_settles_switch dom α a a (interacts m k0)); eauto.
+      simpl. rewrite Hmx. reflexivity.
+  Qed.
+
+  Inductive obs_hc {A} dom (α : rts A) : rts (hc_state A) :=
+    | obs_hc_settles s r :
+        hc_settles dom α s r ->
+        obs_hc dom α s r
+    | obs_hc_forever_switching s :
+        forever_switching dom α s ->
+        obs_hc dom α s diverges.
+
+  Lemma forever_hc {A} dom (α : rts A) s :
+    forever_internal (hc dom α) s ->
+    (exists a k, reachable (hc dom α) s (hc_r a k) /\ forever_internal α a) \/
+    forever_switching dom α s.
+  Proof.
+  Admitted.
+
+  Lemma obs_hc_obs_hc {A} dom (α : rts A) s r :
+    obs (hc dom α) s r ->
+    obs_hc dom α s r.
+  Proof.
+    intros Hr.
+    destruct Hr as [Hs | s' r Hrext Hr Hs'].
+    - apply forever_hc in Hs as [(a & k & Hs' & Ha) | Hs].
+      + eapply obs_hc_settles.
+        remember (hc_r a k) as s' in Hs'.
+        induction Hs'; eauto using hc_settles_internal.
+        subst. constructor; auto.
+      + eapply obs_hc_forever_switching; eauto.
+    - eapply obs_hc_settles; eauto.
+      induction Hs'; eauto using hc_settles_internal.
+      inversion Hr; clear Hr; subst.
+      destruct r0; simpl in *; (try now inversion Hrext); eauto.
+  Qed.
+
+  Lemma obs_hc_obs_hc_obs {A} dom (α : rts A) s r :
+    obs_hc dom α s r ->
+    obs (hc dom (obs α)) s r.
+  Proof.
+    intro.
+    destruct H.
+    - induction H.
+      + apply obs_external with (hc_r a k); eauto.
+        subst. constructor.
+        eapply obs_external with a'; eauto.
+        eapply hc_behavior_external; eauto.
+      + apply obs_external with (hc_r a k); eauto.
+        change diverges with (hc_behavior dom diverges k).
+        constructor. auto.
+      + apply obs_reachable with s'; auto.
+        econstructor; eauto.
+        rewrite <- H2. constructor. eauto.
+    - eapply obs_diverges.
+      revert s H. cofix IH. intros.
+      destruct H. econstructor; eauto. Guarded.
+      rewrite <- H2. constructor. eauto.
+  Qed.
+
+  Lemma obs_hc_obs_hc_obs_sim {A} dom (α : rts A) :
+    sim eq (obs (hc dom α)) (obs (hc dom (obs α))).
+  Proof.
+    intros s _ [] r Hr.
+    exists r. split; [ | rauto].
+    apply obs_hc_obs_hc_obs.
+    apply obs_hc_obs_hc. auto.
   Qed.
 End RTS.
