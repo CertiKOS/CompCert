@@ -31,14 +31,6 @@ Section RTS.
 
   Arguments behavior : clear implicits.
 
-  Definition behavior_map {A B} (f : A -> B) (r : behavior A) : behavior B :=
-    match r with
-      | internal a' => internal (f a')
-      | interacts m k => interacts m (fun mi => f (k mi))
-      | diverges => diverges
-      | goes_wrong => goes_wrong
-    end.
-
   Inductive behavior_le {A B} (R : rel A B) : rel (behavior A) (behavior B) :=
     | internal_le :
         Monotonic internal (R ++> behavior_le R)
@@ -63,6 +55,22 @@ Section RTS.
     intros H [a' | m k | | ]; rauto.
   Qed.
 
+  Definition behavior_map {A B} (f : A -> B) (r : behavior A) : behavior B :=
+    match r with
+      | internal a' => internal (f a')
+      | interacts m k => interacts m (fun mi => f (k mi))
+      | diverges => diverges
+      | goes_wrong => goes_wrong
+    end.
+
+  Global Instance behavior_map_le :
+    Monotonic
+      (@behavior_map)
+      (forallr RA, forallr RB, (RA++>RB) ++> behavior_le RA ++> behavior_le RB).
+  Proof.
+    unfold behavior_map. rauto.
+  Qed.
+
   (** A receptive transition system simply assigns a set of possible
     behaviors to each state. *)
 
@@ -70,6 +78,7 @@ Section RTS.
     rel A (behavior A).
 
   Arguments rts : clear implicits.
+  Bind Scope rts_scope with rts.
 
   (** ** Simulations *)
 
@@ -79,6 +88,13 @@ Section RTS.
 
   Definition sim {A B} (R : rel A B) : rel (rts A) (rts B) :=
     (R ++> set_le (behavior_le R)).
+
+  Hint Extern 1 (RElim (sim _) _ _ _ _) =>
+    eapply arrow_relim : typeclass_instances.
+
+  Hint Extern 1 (Transport _ _ _ (?α _ _) _) =>
+    match type of α with rts _ => set_le_transport α end
+    : typeclass_instances.
 
   (** ** Externally observable behaviors *)
 
@@ -122,6 +138,14 @@ Section RTS.
   Hint Immediate reachable_step.
   Hint Constructors behavior_external.
   Hint Constructors obs.
+
+  Global Instance reachable_trans {A} (α : rts A) :
+    Transitive (reachable α).
+  Proof.
+    intros a a' a'' Ha' Ha''.
+    induction Ha'; auto.
+    econstructor; eauto.
+  Qed.
 
   (** Observations are compatible with simulations. *)
 
@@ -203,12 +227,23 @@ Section RTS.
 
   Lemma reachable_obs {A} (α : rts A) a a' :
     reachable (obs α) a a' ->
-    a = a'.
+    reachable α a a'.
   Proof.
     intros Ha'.
-    destruct Ha' as [a | a a' a'' Ha' Ha'' IHa'']; eauto.
+    destruct Ha'; eauto.
     eelim obs_internal_inv; eauto.
   Qed.
+
+  Lemma forever_internal_reachable {A} (α : rts A) a a' :
+    reachable α a a' ->
+    forever_internal α a' ->
+    forever_internal α a.
+  Proof.
+    induction 1; auto.
+    econstructor; eauto.
+  Qed.
+
+  (** ** [obs] is idempotent *)
 
   Lemma obs_idempotent {A} (α : rts A) :
     obs (obs α) = obs α.
@@ -217,11 +252,38 @@ Section RTS.
     apply functional_extensionality; intros r.
     apply prop_ext.
     split.
-    - intros [Ha | a' ra' Hra' Hext Ha' ].
+    - intros [Ha | a' ra' Hext Hra' Ha' ].
       + destruct Ha. eelim obs_internal_inv; eauto.
-      + apply reachable_obs in Ha'. subst. auto.
-    - intros Hr.
-      eapply obs_external; eauto using obs_behavior_external.
+      + eapply reachable_obs in Ha'.
+        destruct Hra'.
+        * eauto using forever_internal_reachable, reachable_obs.
+        * econstructor; eauto.
+          etransitivity; eauto.
+    - intros [Ha | a' ra' Hra' Hext Ha' ]; eauto.
+  Qed.
+
+  (** ** Operators *)
+
+  (** *** Sum *)
+
+  Section SUM.
+    Context {A B} (α : rts A) (β : rts B).
+
+    Inductive sum : rts (A + B) :=
+      | sum_inl a ra : α a ra -> sum (inl a) (behavior_map inl ra)
+      | sum_inr b rb : β b rb -> sum (inr b) (behavior_map inr rb).
+  End SUM.
+
+  Hint Constructors sum.
+  Infix "+" := sum : rts_scope.
+
+  Global Instance sum_sim :
+    Monotonic
+      (@sum)
+      (forallr RA, forallr RB, sim RA ++> sim RB ++> sim (RA + RB)).
+  Proof.
+    intros A1 A2 RA B1 B2 RB α1 α2 Hα β1 β2 Hβ s1 s2 Hs s1' Hs1'.
+    destruct Hs1'; inversion Hs; transport H; (eexists; split; [eauto | rauto]).
   Qed.
 
 
@@ -247,38 +309,38 @@ Section RTS.
         forall q, modref_state (modsem_entry α q) (modsem_entry β q);
     }.
 
+  Global Instance modsem_dom_ref :
+    Monotonic (@modsem_dom) (modref ++> - ==> eq).
+  Proof.
+    intros ? ? []. firstorder.
+  Qed.
+
 
   (** * Horizontal composition *)
 
   (** ** Transition system *)
 
   Section HCOMP_RTS.
-    Context {A} (α : forall i : bool, rts (A i)) (dom : bool -> M -> bool).
+    Context {A} (dom : M -> bool) (α : rts A).
 
     Inductive hc_state : Type :=
-      | hc_r (i : bool) (a : A i) (k : M -> A (negb i))
+      | hc_r (a : A) (k : M -> A)
       | hc_z.
 
-    Definition hc_x i : A (negb i) -> (M -> A i) -> hc_state :=
-      match i with
-        | true => hc_r false
-        | false => hc_r true
-      end.
-
-    Definition hc_xcall (i : bool) (mo : output) : option M :=
+    Definition hc_xcall (mo : output) : option M :=
       match mo with
-        | move m => if dom (negb i) m then Some m else None
+        | move m => if dom m then Some m else None
         | _ => None
       end.
 
-    Definition hc_behavior i (r : behavior (A i)) (k : M -> A (negb i)) :=
+    Definition hc_behavior (r : behavior A) (k : M -> A) :=
       match r with
         | internal a =>
-          internal (hc_r i a k)
+          internal (hc_r a k)
         | interacts mo k' =>
-          match hc_xcall i mo with
-            | Some m => internal (hc_x i (k m) k')
-            | None => interacts mo (fun mi => hc_r i (k' mi) k)
+          match hc_xcall mo with
+            | Some m => internal (hc_r (k m) k')
+            | None => interacts mo (fun mi => hc_r (k' mi) k)
           end
         | diverges =>
           diverges
@@ -287,9 +349,9 @@ Section RTS.
       end.
 
     Inductive hc : rts hc_state :=
-      | hc_intro i a k r :
-          α i a r ->
-          hc (hc_r i a k) (hc_behavior i r k).
+      | hc_intro a k r :
+          α a r ->
+          hc (hc_r a k) (hc_behavior r k).
   End HCOMP_RTS.
 
   Arguments hc_state : clear implicits.
@@ -297,11 +359,11 @@ Section RTS.
   (** ** Monotonicity *)
 
   Section HCOMP_REL.
-    Context {A B} (R : forall i : bool, rel (A i) (B i)).
+    Context {A B} (R : rel A B).
 
     Inductive hc_rel : rel (hc_state A) (hc_state B) :=
-      | hc_r_rel i :
-          Monotonic (hc_r i) (R i ++> (- ==> R (negb i)) ++> hc_rel)
+      | hc_r_rel :
+          Monotonic hc_r (R ++> (- ==> R) ++> hc_rel)
       | hc_z_rel :
           Monotonic hc_z hc_rel.
 
@@ -309,19 +371,10 @@ Section RTS.
     Global Existing Instance hc_z_rel.
     Global Instance hc_r_rel_params : Params (@hc_r) 2.
 
-    Global Instance hc_x_rel i :
-      Monotonic (hc_x i) (R (negb i) ++> (- ==> R i) ++> hc_rel).
-    Proof.
-      destruct i; simpl; rauto.
-    Qed.
-
-    Global Instance hc_x_rel_params :
-      Params (@hc_x) 2.
-
-    Global Instance hc_behavior_rel dom i :
+    Global Instance hc_behavior_rel dom :
       Monotonic
-        (hc_behavior dom i)
-        (behavior_le (R i) ++> (- ==> R (negb i)) ++> behavior_le hc_rel).
+        (hc_behavior dom)
+        (behavior_le R ++> (- ==> R) ++> behavior_le hc_rel).
     Proof.
       unfold hc_behavior. rauto.
     Qed.
@@ -330,16 +383,13 @@ Section RTS.
       Params (@hc_behavior) 2.
 
     Global Instance hc_sim :
-      Monotonic hc ((forallr - @ i, sim (R i)) ++> - ==> sim hc_rel).
+      Monotonic hc (- ==> sim R ++> sim hc_rel).
     Proof.
-      intros α β Hαβ dom sa sb Hs ka Hka.
-      destruct Hka as [i a ka ra].
-      inversion Hs as [xi xa b Hab xka kb Hk | ]; clear Hs; subst.
-      apply inj_pair2 in H1.
-      apply inj_pair2 in H2.
-      subst.
+      intros dom α β Hαβ sa sb Hs ka Hka.
+      destruct Hka as [a ka ra].
+      inversion Hs as [xa b Hab xka kb Hk | ]; clear Hs; subst.
       edestruct Hαβ as (rb & Hrb & Hr); eauto.
-      exists (hc_behavior dom i rb kb). split; [ | rauto].
+      exists (hc_behavior dom rb kb). split; [ | rauto].
       constructor; auto.
     Qed.
 
@@ -349,46 +399,45 @@ Section RTS.
 
   (** ** Modules *)
 
+  Definition hcomp_dom (α1 α2 : modsem) (q : M) : bool :=
+    (modsem_dom α1 q || modsem_dom α2 q)%bool.
+
   Definition hcomp (α1 α2 : modsem) : modsem :=
     let α : bool -> modsem := fun i => if i then α1 else α2 in
     {|
-      modsem_dom q :=
-        (modsem_dom α1 q || modsem_dom α2 q)%bool;
-      modsem_lts :=
-        hc (fun i => modsem_lts (α i)) (fun i => modsem_dom (α i));
+      modsem_dom := hcomp_dom α1 α2;
+      modsem_lts := hc (hcomp_dom α1 α2) (α1 + α2);
       modsem_entry q :=
         match modsem_dom α1 q, modsem_dom α2 q with
           | true, true => hc_z
-          | true, false => hc_r true (modsem_entry α1 q) (modsem_entry α2)
-          | false, true => hc_r false (modsem_entry α2 q) (modsem_entry α1)
+          | true, false =>
+              hc_r (inl (modsem_entry α1 q)) (fun m => inr (modsem_entry α2 m))
+          | false, true =>
+              hc_r (inr (modsem_entry α2 q)) (fun m => inl (modsem_entry α1 m))
           | false, false => hc_z
         end;
     |}.
 
+  Global Instance hcomp_dom_ref :
+    Monotonic (@hcomp_dom) (modref ++> modref ++> - ==> eq).
+  Proof.
+    unfold hcomp_dom. repeat rstep. f_equal; rauto.
+  Qed.
+
   Global Instance hcomp_ref :
     Monotonic (@hcomp) (modref ++> modref ++> modref).
   Proof.
-    intros α1 β1 [Hd1 R1 Hαβ1 He1].
-    intros α2 β2 [Hd2 R2 Hαβ2 He2].
-    pose (α := fun i : bool => if i then α1 else α2).
-    pose (β := fun i : bool => if i then β1 else β2).
-    pose (R := fun i : bool =>
-            match i return rel (modsem_state (α i)) (modsem_state (β i)) with
-              | true => R1
-              | false => R2
-            end).
-    exists (hc_rel R); simpl.
-    - intros q. f_equal; auto.
-    - change (sim (hc_rel R) (hc α (fun i => modsem_dom (α i)))
-                             (hc β (fun i => modsem_dom (β i)))).
-      replace (fun i => modsem_dom (α i)) with (fun i => modsem_dom (β i)).
-      + eapply hc_sim.
-        intros [ | ]; simpl; eauto.
-      + apply functional_extensionality. intros i.
-        apply functional_extensionality. intros q.
-        destruct i; simpl; eauto.
+    intros α1 β1 Hαβ1 α2 β2 Hαβ2.
+    pose proof Hαβ1 as [Hd1 R1 H1 He1].
+    pose proof Hαβ2 as [Hd2 R2 H2 He2].
+    exists (hc_rel (R1 + R2)); simpl.
+    - intros q. rauto.
+    - change (sim (hc_rel (R1 + R2)) (hc (hcomp_dom α1 α2) (α1 + α2))
+                                     (hc (hcomp_dom β1 β2) (β1 + β2))).
+      replace (hcomp_dom β1 β2) with (hcomp_dom α1 α2).
+      + eapply hc_sim. rauto.
+      + apply functional_extensionality. intros i. rauto.
     - intros q.
-      rewrite !Hd1, !Hd2.
       repeat rstep; simpl; eauto.
   Qed.
 End RTS.
