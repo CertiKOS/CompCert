@@ -5273,7 +5273,7 @@ Proof.
 Qed.
 
 
-Lemma inject_symbol_sectlabel : forall j id ofs,
+Lemma inject_symbol_address : forall j id ofs,
     match_inj j ->
     Val.inject j (Globalenvs.Genv.symbol_address ge id ofs) (Genv.symbol_address tge id ofs).
 Proof.
@@ -5359,150 +5359,113 @@ Ltac destr_valinj_left H :=
     destruct a eqn:?
   end.
 
-(* Lemma eval_addrmode32_inject: forall gm lm j a1 a2 rs1 rs2, *)
-(*     match_sminj gm lm j -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     transl_addr_mode gm a1 = OK a2 -> *)
-(*     Val.inject j (Asm.eval_addrmode32 ge a1 rs1) (FlatAsm.eval_addrmode32 tge a2 rs2). *)
-(* Proof. *)
-(*   intros. unfold Asm.eval_addrmode32, FlatAsm.eval_addrmode32. *)
-(*   destruct a1. destruct base, ofs, const; simpl in *; monadInvX H1; simpl; simpl_goal; auto. *)
-(*   - apply Val.add_inject; auto. destr_pair_if; repeat apply Val.add_inject; auto. *)
-(*     apply mul_inject; auto. *)
-(*   - destr_pair_if; *)
-(*       try (repeat apply Val.add_inject; auto); *)
-(*       try (eapply inject_symbol_sectlabel; eauto). *)
-(*     apply mul_inject; auto. *)
-(*   - apply Val.add_inject; auto. *)
-(*   - apply Val.add_inject; auto. *)
-(*     destruct (Globalenvs.Genv.symbol_address ge i0 i1) eqn:SYMADDR; auto. *)
-(*     simpl_goal. *)
-(*     exploit inject_symbol_sectlabel; eauto. *)
-(*     rewrite SYMADDR. intros. inv H1. *)
-(*   - destr_pair_if. *)
-(*     + inject_match. *)
-(*       apply Val.add_inject; auto. *)
-(*       destruct (Val.add (rs1 i) (Vint (Int.repr z))); auto. *)
-(*       inv_valinj. simpl_goal. congruence. *)
-(*     + inject_match. apply Val.add_inject; auto. *)
-(*       destruct (Val.add (rs1 i) (Vint (Int.repr z))); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.add_inject; auto. *)
-(*       apply mul_inject; auto. *)
-(*       destruct (Val.add (Val.mul (rs1 i) (Vint (Int.repr z0))) (Vint (Int.repr z))); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.add_inject; auto. *)
-(*       apply mul_inject; auto. *)
-(*       destruct (Val.add (Val.mul (rs1 i) (Vint (Int.repr z0))) (Vint (Int.repr z))); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*   - destr_pair_if. *)
-(*     + inject_match. *)
-(*       apply Val.add_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.add (rs1 i1) (Globalenvs.Genv.symbol_address ge i i0)); auto. *)
-(*       inv_valinj. simpl_goal. congruence. *)
-(*     + inject_match. apply Val.add_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.add (rs1 i1) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.add_inject; auto. *)
-(*       apply mul_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.add (Val.mul (rs1 i1) (Vint (Int.repr z))) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.add_inject; auto. *)
-(*       apply mul_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.add (Val.mul (rs1 i1) (Vint (Int.repr z))) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*   - inject_match. *)
-(*     +  destruct (Globalenvs.Genv.symbol_address ge i i0) eqn:EQ; auto. *)
-(*        unfold Globalenvs.Genv.symbol_address in EQ. destruct (Genv.find_symbol ge i); inv EQ. *)
-(*     + destr_valinj_left H1; auto. destruct Archi.ptr64; inv H1. *)
-(* Qed. *)
+Lemma eval_addrmode32_inject: forall j a rs1 rs2,
+    match_inj j ->
+    regset_inject j rs1 rs2 ->
+    Val.inject j (Asm.eval_addrmode32 ge a rs1) (FlatAsm.eval_addrmode32 tge a rs2).
+Proof.
+  intros. unfold Asm.eval_addrmode32, FlatAsm.eval_addrmode32.
+  destruct a. 
+  destruct base, ofs, const; simpl in *. 
+  - destruct p. repeat apply Val.add_inject; auto.
+    destr_pair_if; auto.
+    apply mul_inject; auto.
+  - destruct p,p0. repeat apply Val.add_inject; auto.
+    destr_pair_if; auto.
+    apply mul_inject; auto.
+    apply inject_symbol_address. auto.
+  - repeat apply Val.add_inject; auto.
+  - destruct p. apply Val.add_inject; auto. 
+    inject_match. apply inject_symbol_address; auto.
+    destr_valinj_left H1; inv H1; auto.
+  - destruct p. 
+    inject_match.
+    apply Val.add_inject; auto.
+    destr_pair_if; auto. 
+    apply mul_inject; auto.
+    destr_valinj_left H1; inv H1; auto.
+  - destruct p,p0.
+    inject_match.
+    apply Val.add_inject; auto.
+    destr_pair_if; auto. 
+    apply mul_inject; auto.
+    apply inject_symbol_address; auto.
+    destr_valinj_left H1; inv H1; auto.
+  - repeat apply Val.add_inject; auto.
+  - destruct p. inject_match. inject_match.
+    apply inject_symbol_address; auto.
+    destr_valinj_left H1; inv H1; auto.
+    destr_valinj_left H1; inv H1; auto.
+Qed.    
 
-(* Lemma eval_addrmode64_inject: forall gm lm j a1 a2 rs1 rs2, *)
-(*     match_sminj gm lm j -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     transl_addr_mode gm a1 = OK a2 -> *)
-(*     Val.inject j (Asm.eval_addrmode64 ge a1 rs1) (FlatAsm.eval_addrmode64 tge a2 rs2). *)
-(* Proof. *)
-(*   intros. unfold Asm.eval_addrmode64, FlatAsm.eval_addrmode64. *)
-(*   destruct a1, a2. destruct base, ofs, const; simpl in *; monadInvX H1; simpl; simpl_goal; *)
-(*   try apply Val.add_inject; auto. *)
-(*   - destr_pair_if. *)
-(*     + repeat apply Val.addl_inject; auto. *)
-(*     + repeat apply Val.addl_inject; auto. *)
-(*       apply mull_inject; auto. *)
-(*   - destr_pair_if. *)
-(*     + repeat apply Val.addl_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*     + repeat apply Val.addl_inject; auto. *)
-(*       apply mull_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*   - simpl_goal. apply Val.addl_inject; auto. *)
-(*   - apply Val.addl_inject; auto. *)
-(*     destruct (Globalenvs.Genv.symbol_address ge i0 i1) eqn:EQ; auto. *)
-(*     unfold Globalenvs.Genv.symbol_address in EQ. destruct (Genv.find_symbol ge i0); inv EQ. *)
-(*     destruct Archi.ptr64; auto. simpl_goal. *)
-(*     exploit inject_symbol_sectlabel; eauto. rewrite EQ. unfold Genv.symbol_address, Genv.label_to_ptr. *)
-(*     auto. *)
-(*   - destr_pair_if. *)
-(*     + inject_match. *)
-(*       apply Val.addl_inject; auto. *)
-(*       destruct (Val.addl (rs1 i) (Vlong (Int64.repr z))); simpl_goal; auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. apply Val.addl_inject; auto. *)
-(*       destruct (Val.addl (rs1 i) (Vlong (Int64.repr z))); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.addl_inject; auto. *)
-(*       apply mull_inject; auto. *)
-(*       destruct (Val.addl (Val.mull (rs1 i) (Vlong (Int64.repr z0))) (Vlong (Int64.repr z))); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.addl_inject; auto. *)
-(*       apply mull_inject; auto. *)
-(*       destruct (Val.addl (Val.mull (rs1 i) (Vlong (Int64.repr z0))) (Vlong (Int64.repr z))); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*   - destr_pair_if. *)
-(*     + inject_match. *)
-(*       apply Val.addl_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.addl (rs1 i1) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. apply Val.addl_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.addl (rs1 i1) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.addl_inject; auto. *)
-(*       apply mull_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.addl (Val.mull (rs1 i1) (Vlong (Int64.repr z))) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*     + inject_match. repeat apply Val.addl_inject; auto. *)
-(*       apply mull_inject; auto. *)
-(*       eapply inject_symbol_sectlabel; eauto. *)
-(*       destruct (Val.addl (Val.mull (rs1 i1) (Vlong (Int64.repr z))) (Globalenvs.Genv.symbol_address ge i i0)); auto; *)
-(*       inv_valinj; simpl_goal; congruence. *)
-(*   - inject_match. *)
-(*     + destruct (Globalenvs.Genv.symbol_address ge i i0) eqn:EQ; auto. *)
-(*       unfold Globalenvs.Genv.symbol_address in EQ. destruct (Genv.find_symbol ge i); inv EQ. *)
-(*       destruct Archi.ptr64; auto. simpl_goal. *)
-(*       exploit inject_symbol_sectlabel; eauto. rewrite EQ. unfold Genv.symbol_address, Genv.label_to_ptr. *)
-(*       auto. *)
-(*     + destr_valinj_left H1; auto; destruct Archi.ptr64; inv H1. *)
-(*       simpl_goal. eapply Val.inject_ptr; eauto. *)
-(* Qed. *)
+Lemma eval_addrmode64_inject: forall j a rs1 rs2,
+    match_inj j ->
+    regset_inject j rs1 rs2 ->
+    Val.inject j (Asm.eval_addrmode64 ge a rs1) (FlatAsm.eval_addrmode64 tge a rs2).
+Proof.
+  intros. unfold Asm.eval_addrmode32, FlatAsm.eval_addrmode32.
+  destruct a. 
+  destruct base, ofs, const; simpl in *.
+  - destruct p. repeat apply Val.addl_inject; auto.
+    destr_pair_if; auto.
+    apply mull_inject; auto.
+  - destruct p,p0. repeat apply Val.addl_inject; auto.
+    destr_pair_if; auto.
+    apply mull_inject; auto.
+    apply inject_symbol_address. auto.
+  - repeat apply Val.addl_inject; auto.
+  - destruct p. apply Val.addl_inject; auto. 
+    inject_match. apply inject_symbol_address; auto.
+    destr_valinj_left H1; inv H1; auto.
+    destr_pair_if; auto.
+    eapply Val.inject_ptr; eauto. 
+    repeat rewrite Ptrofs.add_assoc. 
+    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+  - destruct p. 
+    inject_match.
+    apply Val.addl_inject; auto.
+    destr_pair_if; auto. 
+    apply mull_inject; auto.
+    destr_valinj_left H1; inv H1; auto.
+    destr_pair_if; auto.
+    eapply Val.inject_ptr; eauto. 
+    repeat rewrite Ptrofs.add_assoc. 
+    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+  - destruct p,p0.
+    inject_match.
+    apply Val.addl_inject; auto.
+    destr_pair_if; auto. 
+    apply mull_inject; auto.
+    apply inject_symbol_address; auto.
+    destr_valinj_left H1; inv H1; auto.
+    destr_pair_if; auto.
+    eapply Val.inject_ptr; eauto. 
+    repeat rewrite Ptrofs.add_assoc. 
+    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+  - repeat apply Val.addl_inject; auto.
+  - destruct p. inject_match. inject_match.
+    apply inject_symbol_address; auto.
+    destr_valinj_left H1; inv H1; auto.
+    destr_pair_if; auto.
+    eapply Val.inject_ptr; eauto. 
+    repeat rewrite Ptrofs.add_assoc. 
+    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+    destr_valinj_left H1; inv H1; auto.
+    destr_pair_if; auto.
+    eapply Val.inject_ptr; eauto. 
+    repeat rewrite Ptrofs.add_assoc. 
+    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+Qed.
 
-(* Lemma eval_addrmode_inject: forall gm lm j a1 a2 rs1 rs2, *)
-(*     match_sminj gm lm j -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     transl_addr_mode gm a1 = OK a2 -> *)
-(*     Val.inject j (Asm.eval_addrmode ge a1 rs1) (FlatAsm.eval_addrmode tge a2 rs2). *)
-(* Proof. *)
-(*   intros. unfold Asm.eval_addrmode, eval_addrmode. destruct Archi.ptr64. *)
-(*   + eapply eval_addrmode64_inject; eauto. *)
-(*   + eapply eval_addrmode32_inject; eauto. *)
-(* Qed. *)
+Lemma eval_addrmode_inject: forall j a rs1 rs2,
+    match_inj j ->
+    regset_inject j rs1 rs2 ->
+    Val.inject j (Asm.eval_addrmode ge a rs1) (FlatAsm.eval_addrmode tge a rs2).
+Proof.
+  intros. unfold Asm.eval_addrmode, eval_addrmode. destruct Archi.ptr64.
+  + eapply eval_addrmode64_inject; eauto.
+  + eapply eval_addrmode32_inject; eauto.
+Qed.
 
 Lemma exec_load_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk rd a
                           (MINJ: Mem.inject j (def_frame_inj m1) m1 m2)
@@ -6258,30 +6221,13 @@ Proof.
   intros. destruct c; simpl; try solve_opt_lessdef.
 Qed.
 
-(* Hint Resolve nextinstr_nf_pres_inject nextinstr_pres_inject regset_inject_expand *)
-(*   regset_inject_expand_vundef_left undef_regs_pres_inject *)
-(*   zero_ext_inject sign_ext_inject longofintu_inject longofint_inject *)
-(*   singleoffloat_inject loword_inject floatofsingle_inject intoffloat_inject maketotal_inject *)
-(*   intoffloat_inject floatofint_inject intofsingle_inject singleofint_inject *)
-(*   longoffloat_inject floatoflong_inject longofsingle_inject singleoflong_inject *)
-(*   eval_addrmode32_inject eval_addrmode64_inject eval_addrmode_inject *)
-(*   neg_inject negl_inject Val.add_inject Val.addl_inject *)
-(*   Val.sub_inject Val.subl_inject mul_inject mull_inject mulhs_inject mulhu_inject *)
-(*   mullhs_inject mullhu_inject shr_inject shrl_inject or_inject orl_inject *)
-(*   xor_inject xorl_inject and_inject andl_inject notl_inject *)
-(*   shl_inject shll_inject vzero_inject notint_inject *)
-(*   shru_inject shrlu_inject ror_inject rorl_inject *)
-(*   compare_ints_inject compare_longs_inject compare_floats_inject compare_floats32_inject *)
-(*   addf_inject subf_inject mulf_inject divf_inject negf_inject absf_inject *)
-(*   addfs_inject subfs_inject mulfs_inject divfs_inject negfs_inject absfs_inject *)
-(*   val_of_optbool_lessdef eval_testcond_inject Val.offset_ptr_inject: inject_db. *)
-
 Hint Resolve nextinstr_nf_pres_inject nextinstr_pres_inject regset_inject_expand
   regset_inject_expand_vundef_left undef_regs_pres_inject
   zero_ext_inject sign_ext_inject longofintu_inject longofint_inject
   singleoffloat_inject loword_inject floatofsingle_inject intoffloat_inject maketotal_inject
   intoffloat_inject floatofint_inject intofsingle_inject singleofint_inject
   longoffloat_inject floatoflong_inject longofsingle_inject singleoflong_inject
+  eval_addrmode32_inject eval_addrmode64_inject eval_addrmode_inject
   neg_inject negl_inject Val.add_inject Val.addl_inject
   Val.sub_inject Val.subl_inject mul_inject mull_inject mulhs_inject mulhu_inject
   mullhs_inject mullhu_inject shr_inject shrl_inject or_inject orl_inject
@@ -6292,7 +6238,6 @@ Hint Resolve nextinstr_nf_pres_inject nextinstr_pres_inject regset_inject_expand
   addf_inject subf_inject mulf_inject divf_inject negf_inject absf_inject
   addfs_inject subfs_inject mulfs_inject divfs_inject negfs_inject absfs_inject
   val_of_optbool_lessdef eval_testcond_inject Val.offset_ptr_inject: inject_db.
-
 
 Ltac solve_exec_instr :=
   match goal with
@@ -6461,12 +6406,6 @@ Proof.
     eapply Val.inject_ptr; eauto.
     rewrite Ptrofs.repr_unsigned. auto.
 
-  - (* eval addrmode 32 *)
-    admit.
-
-  - (* eval addrmode 64 *)
-    admit.
-
   (* Divisions *)
   - unfold Asm.exec_instr in H6; simpl in H6.
     destr_match_outcome. 
@@ -6566,7 +6505,7 @@ Proof.
     generalize (RSINJ PC). intros. rewrite H in *. inv H3.
     repeat apply regset_inject_expand; auto.
     + apply Val.offset_ptr_inject. eauto.
-    + exploit (inject_symbol_sectlabel j symb Ptrofs.zero); eauto. 
+    + exploit (inject_symbol_address j symb Ptrofs.zero); eauto. 
       
   - (* Pallocframe *)
     generalize (RSINJ RSP). intros RSPINJ.
