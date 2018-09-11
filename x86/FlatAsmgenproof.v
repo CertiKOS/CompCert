@@ -1199,203 +1199,211 @@ Context `{memory_model: Mem.MemoryModel }.
 Existing Instance inject_perm_all.
 
 
-(* Lemma store_init_data_perm : forall ge m m' b b' p i q k prm, *)
-(*   store_init_data ge m b p i = Some m' -> Mem.perm m' b' q k prm <-> Mem.perm m b' q k prm. *)
-(* Proof. *)
-(*   intros ge m m' b b' p i q k prm H. *)
-(*   unfold store_init_data in H. destruct i; try now (eapply store_perm; eauto). *)
-(*   inv H. split; auto. *)
-(* Qed. *)
+Lemma store_init_data_perm : forall ge m m' b b' p i q k prm,
+  store_init_data ge m b p i = Some m' -> Mem.perm m' b' q k prm <-> Mem.perm m b' q k prm.
+Proof.
+  intros ge m m' b b' p i q k prm H.
+  unfold store_init_data in H. destruct i; try now (eapply store_perm; eauto).
+  inv H. split; auto.
+Qed.
 
-(* Lemma store_init_data_list_perm : forall idl ge m m' b p  b' q k prm, *)
-(*   store_init_data_list ge m b p idl = Some m' -> Mem.perm m b' q k prm <-> Mem.perm m' b' q k prm. *)
-(* Proof. *)
-(*   induction idl; intros. *)
-(*   - inv H. split; auto. *)
-(*   - inv H. destr_match_in H1. *)
-(*     + erewrite <- store_init_data_perm; eauto. *)
-(*     + inv H1. *)
-(* Qed. *)
+Lemma store_init_data_list_perm : forall idl ge m m' b p  b' q k prm,
+  store_init_data_list ge m b p idl = Some m' -> Mem.perm m b' q k prm <-> Mem.perm m' b' q k prm.
+Proof.
+  induction idl; intros.
+  - inv H. split; auto.
+  - inv H. destr_match_in H1.
+    + erewrite <- store_init_data_perm; eauto.
+    + inv H1.
+Qed.
 
-(* Lemma store_init_data_stack : forall v ge (m m' : mem) (b : block) (ofs : Z), *)
-(*        store_init_data ge m b ofs v = Some m' -> Mem.stack m' = Mem.stack m. *)
-(* Proof. *)
-(*   intros v ge0 m m' b ofs H. destruct v; simpl in *; try (now eapply Mem.store_stack_blocks; eauto). *)
-(*   inv H. auto. *)
-(* Qed. *)
+Lemma store_init_data_stack : forall v ge (m m' : mem) (b : block) (ofs : Z),
+       store_init_data ge m b ofs v = Some m' -> Mem.stack m' = Mem.stack m.
+Proof.
+  intros v ge0 m m' b ofs H. destruct v; simpl in *; try (now eapply Mem.store_stack_blocks; eauto).
+  inv H. auto.
+Qed.
 
-(* Lemma store_init_data_list_stack : forall l ge (m m' : mem) (b : block) (ofs : Z), *)
-(*        store_init_data_list ge m b ofs l = Some m' -> Mem.stack m' = Mem.stack m. *)
-(* Proof. *)
-(*   induction l; intros. *)
-(*   - simpl in H. inv H. auto. *)
-(*   - simpl in H. destr_match_in H; inv H. *)
-(*     exploit store_init_data_stack; eauto. *)
-(*     exploit IHl; eauto. *)
-(*     intros. congruence. *)
-(* Qed. *)
+Lemma store_init_data_list_stack : forall l ge (m m' : mem) (b : block) (ofs : Z),
+       store_init_data_list ge m b ofs l = Some m' -> Mem.stack m' = Mem.stack m.
+Proof.
+  induction l; intros.
+  - simpl in H. inv H. auto.
+  - simpl in H. destr_match_in H; inv H.
+    exploit store_init_data_stack; eauto.
+    exploit IHl; eauto.
+    intros. congruence.
+Qed.
 
-(* Lemma alloc_global_stack : forall ge smap m def m', *)
-(*     alloc_global ge smap m def = Some m' -> *)
-(*     Mem.stack m' = Mem.stack m. *)
-(* Proof. *)
-(*   intros ge0 smap m def m' H.  *)
-(*   destruct def. destruct p. destruct o. destruct g. destruct f. *)
-(*   - simpl in H. exploit Mem.drop_perm_stack; eauto. *)
-(*   - simpl in H. exploit Mem.drop_perm_stack; eauto. *)
-(*   - simpl in H. destr_match_in H; inv H. destr_match_in H1; inv H1. *)
-(*     exploit Genv.store_zeros_stack; eauto. *)
-(*     exploit store_init_data_list_stack; eauto. *)
-(*     exploit Mem.drop_perm_stack; eauto. intros. congruence. *)
-(*   - simpl in H. inv H. auto. *)
-(* Qed. *)
+Lemma alloc_global_stack : forall ge smap m def m',
+    alloc_global ge smap m def = Some m' ->
+    Mem.stack m' = Mem.stack m.
+Proof.
+  intros ge0 smap m def m' H.
+  destruct def. destruct p. destruct o. destruct g. destruct f.
+  - simpl in H. exploit Mem.drop_perm_stack; eauto.
+  - simpl in H. exploit Mem.drop_perm_stack; eauto.
+  - simpl in H. destr_match_in H; inv H. destr_match_in H1; inv H1.
+    exploit Genv.store_zeros_stack; eauto.
+    exploit store_init_data_list_stack; eauto.
+    exploit Mem.drop_perm_stack; eauto. intros. congruence.
+  - simpl in H. inv H. auto.
+Qed.
 
-(* Lemma alloc_globals_stack : forall l ge smap m m', *)
-(*     alloc_globals ge smap m l = Some m' -> *)
-(*     Mem.stack m' = Mem.stack m. *)
-(* Proof.  *)
-(*   induction l; intros. *)
-(*   - simpl in H. inv H. auto. *)
-(*   - simpl in H. destr_match_in H; inv H. *)
-(*     exploit alloc_global_stack; eauto. intros. *)
-(*     exploit IHl; eauto. intros. congruence. *)
-(* Qed. *)
+Lemma alloc_globals_stack : forall l ge smap m m',
+    alloc_globals ge smap m l = Some m' ->
+    Mem.stack m' = Mem.stack m.
+Proof.
+  induction l; intros.
+  - simpl in H. inv H. auto.
+  - simpl in H. destr_match_in H; inv H.
+    exploit alloc_global_stack; eauto. intros.
+    exploit IHl; eauto. intros. congruence.
+Qed.
 
-(* Lemma alloc_segments_perm_ofs : forall segs m1 m2 *)
-(*                                   (ALLOCSEGS : alloc_segments m1 segs = m2) *)
-(*                                   (PERMOFS : forall b ofs k p, Mem.perm m1 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned), *)
-(*     (forall b ofs k p, Mem.perm m2 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned). *)
-(* Proof. *)
-(*   induction segs. intros. *)
-(*   - subst. simpl in H. eauto. *)
-(*   - intros. simpl in ALLOCSEGS. *)
-(*     destruct (Mem.alloc m1 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     eapply IHsegs; eauto.  *)
-(*     intros b1 ofs0 k0 p0 PERM. *)
-(*     erewrite alloc_perm in PERM; eauto. *)
-(*     destruct peq.  *)
-(*     generalize (Ptrofs.unsigned_range_2 (segsize a)). omega. *)
-(*     eauto. *)
-(* Qed. *)
+Lemma alloc_segments_perm_ofs : forall segs m1 m2
+                                  (ALLOCSEGS : alloc_segments m1 segs = m2)
+                                  (PERMOFS : forall b ofs k p, Mem.perm m1 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned),
+    (forall b ofs k p, Mem.perm m2 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned).
+Proof.
+  induction segs. intros.
+  - subst. simpl in H. eauto.
+  - intros. simpl in ALLOCSEGS.
+    destruct (Mem.alloc m1 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    eapply IHsegs; eauto.
+    intros b1 ofs0 k0 p0 PERM.
+    erewrite alloc_perm in PERM; eauto.
+    destruct peq.
+    generalize (Ptrofs.unsigned_range_2 (segsize a)). omega.
+    eauto.
+Qed.
 
-(* Lemma alloc_segments_stack: forall l m m', *)
-(*     m' = alloc_segments m l -> Mem.stack m' = Mem.stack m. *)
-(* Proof. *)
-(*   induction l; intros. *)
-(*   - simpl in H. subst. auto. *)
-(*   - inv H. simpl. destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     exploit Mem.alloc_stack_blocks; eauto. intros H. rewrite <- H. *)
-(*     erewrite IHl; eauto. *)
-(* Qed. *)
+Lemma alloc_segments_stack: forall l m m',
+    m' = alloc_segments m l -> Mem.stack m' = Mem.stack m.
+Proof.
+  induction l; intros.
+  - simpl in H. subst. auto.
+  - inv H. simpl. destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    exploit Mem.alloc_stack_blocks; eauto. intros H. rewrite <- H.
+    erewrite IHl; eauto.
+Qed.
 
-(* Lemma alloc_segments_nextblock :  forall l m m', *)
-(*   m' = alloc_segments m l -> Mem.nextblock m' = pos_advance_N (Mem.nextblock m) (length l). *)
-(* Proof. *)
-(*   induction l; intros. *)
-(*   - inv H. simpl. auto. *)
-(*   - inv H. simpl. *)
-(*     destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     erewrite IHl; eauto. exploit Mem.nextblock_alloc; eauto. intros. rewrite H. *)
-(*     rewrite psucc_advance_Nsucc_eq. auto. *)
-(* Qed. *)
+Lemma alloc_segments_nextblock :  forall l m m',
+  m' = alloc_segments m l -> Mem.nextblock m' = pos_advance_N (Mem.nextblock m) (length l).
+Proof.
+  induction l; intros.
+  - inv H. simpl. auto.
+  - inv H. simpl.
+    destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    erewrite IHl; eauto. exploit Mem.nextblock_alloc; eauto. intros. rewrite H.
+    rewrite psucc_advance_Nsucc_eq. auto.
+Qed.
 
-(* Lemma init_mem_stack: *)
-(*   forall (p: program) m, *)
-(*     init_mem p = Some m -> *)
-(*     Mem.stack m = nil. *)
-(* Proof. *)
-(*   intros. unfold init_mem in H. *)
-(*   destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC. *)
-(*   exploit Mem.alloc_stack_blocks; eauto. intros. *)
-(*   exploit alloc_globals_stack; eauto. intros. *)
-(*   rewrite H1. erewrite alloc_segments_stack; eauto.  *)
-(*   rewrite Mem.empty_stack in H0. auto. *)
-(* Qed. *)
+Lemma init_mem_stack:
+  forall (p: program) m,
+    init_mem p = Some m ->
+    Mem.stack m = nil.
+Proof.
+  intros. unfold init_mem in H.
+  destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
+  exploit Mem.alloc_stack_blocks; eauto. intros.
+  exploit alloc_globals_stack; eauto. intros.
+  rewrite H1. erewrite alloc_segments_stack; eauto.
+  rewrite Mem.empty_stack in H0. auto.
+Qed.
 
-(* Lemma store_init_data_nextblock : forall v ge m b ofs m', *)
-(*   store_init_data ge m b ofs v = Some m' -> *)
-(*   Mem.nextblock m' = Mem.nextblock m. *)
-(* Proof. *)
-(*   intros. destruct v; simpl in *; try now (eapply Mem.nextblock_store; eauto). *)
-(*   inv H. auto. *)
-(* Qed. *)
+Lemma store_init_data_nextblock : forall v ge m b ofs m',
+  store_init_data ge m b ofs v = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  intros. destruct v; simpl in *; try now (eapply Mem.nextblock_store; eauto).
+  inv H. auto.
+Qed.
     
-(* Lemma store_init_data_list_nextblock : forall l ge m b ofs m', *)
-(*   store_init_data_list ge m b ofs l = Some m' -> *)
-(*   Mem.nextblock m' = Mem.nextblock m. *)
-(* Proof. *)
-(*   induction l; intros. *)
-(*   - inv H. auto. *)
-(*   - inv H. destr_match_in H1; inv H1. *)
-(*     exploit store_init_data_nextblock; eauto. *)
-(*     exploit IHl; eauto. intros. congruence. *)
-(* Qed. *)
+Lemma store_init_data_list_nextblock : forall l ge m b ofs m',
+  store_init_data_list ge m b ofs l = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  induction l; intros.
+  - inv H. auto.
+  - inv H. destr_match_in H1; inv H1.
+    exploit store_init_data_nextblock; eauto.
+    exploit IHl; eauto. intros. congruence.
+Qed.
 
-(* Remark alloc_global_nextblock: *)
-(*   forall v ge smap m m', *)
-(*   alloc_global ge smap m v = Some m' -> *)
-(*   Mem.nextblock m' = Mem.nextblock m. *)
-(* Proof. *)
-(*   intros. destruct v. destruct p. destruct o. destruct g. destruct f. *)
-(*   - simpl in H. eapply Mem.nextblock_drop; eauto. *)
-(*   - simpl in H. eapply Mem.nextblock_drop; eauto. *)
-(*   - simpl in H. destr_match_in H; inv H. *)
-(*     destr_match_in H1; inv H1. *)
-(*     exploit Genv.store_zeros_nextblock; eauto. *)
-(*     exploit store_init_data_list_nextblock; eauto. *)
-(*     exploit Mem.nextblock_drop; eauto. *)
-(*     intros. congruence. *)
-(*   - simpl in H. inv H. auto. *)
-(* Qed. *)
+Remark alloc_global_nextblock:
+  forall v ge smap m m',
+  alloc_global ge smap m v = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  intros. destruct v. destruct p. destruct o. destruct g. destruct f.
+  - simpl in H. eapply Mem.nextblock_drop; eauto.
+  - simpl in H. eapply Mem.nextblock_drop; eauto.
+  - simpl in H. destr_match_in H; inv H.
+    destr_match_in H1; inv H1.
+    exploit Genv.store_zeros_nextblock; eauto.
+    exploit store_init_data_list_nextblock; eauto.
+    exploit Mem.nextblock_drop; eauto.
+    intros. congruence.
+  - simpl in H. inv H. auto.
+Qed.
 
-(* Remark alloc_globals_nextblock: *)
-(*   forall gl ge smap  m m', *)
-(*   alloc_globals ge smap m gl = Some m' -> *)
-(*   Mem.nextblock m' = Mem.nextblock m. *)
-(* Proof. *)
-(*   induction gl; intros. *)
-(*   - inv H. auto. *)
-(*   - inv H. destr_match_in H1; inv H1. *)
-(*     exploit alloc_global_nextblock; eauto. *)
-(*     exploit IHgl; eauto. *)
-(*     intros. congruence. *)
-(* Qed. *)
+Remark alloc_globals_nextblock:
+  forall gl ge smap  m m',
+  alloc_globals ge smap m gl = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  induction gl; intros.
+  - inv H. auto.
+  - inv H. destr_match_in H1; inv H1.
+    exploit alloc_global_nextblock; eauto.
+    exploit IHgl; eauto.
+    intros. congruence.
+Qed.
 
-(* Lemma add_global_pres_genv_next :  *)
-(*   forall def (ge ge' : genv), *)
-(*   ge' = add_global ge def -> Genv.genv_next ge = Genv.genv_next ge'. *)
-(* Proof. *)
-(*   intros. destruct def. destruct p.  *)
-(*   destruct o. destruct g. destruct f. *)
-(*   - simpl in *. subst. auto. *)
-(*   - simpl in *. subst. auto. *)
-(*   - simpl in *. subst. auto. *)
-(*   - simpl in *. subst. auto. *)
-(* Qed.   *)
+Lemma add_global_pres_genv_next :
+  forall def (ge ge' : genv),
+  ge' = add_global ge def -> Genv.genv_next ge = Genv.genv_next ge'.
+Proof.
+  intros. destruct def. destruct p.
+  destruct o. destruct g. destruct f.
+  - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM.
+    destruct p. subst. simpl. auto. 
+    subst. auto.
+  - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM.
+    destruct p. subst. simpl. auto. 
+    subst. auto.
+  - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM.
+    destruct p. subst. simpl. auto. 
+    subst. auto.
+  - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM.
+    destruct p. subst. simpl. auto. 
+    subst. auto.
+Qed.
 
-(* Lemma add_globals_pres_genv_next :  *)
-(*   forall (defs : list (ident * option gdef * segblock)) (ge ge' : genv), *)
-(*   ge' = add_globals ge defs -> Genv.genv_next ge = Genv.genv_next ge'. *)
-(* Proof. *)
-(*   induction defs; intros; simpl in *. *)
-(*   - subst. auto. *)
-(*   - exploit IHdefs; eauto.  *)
-(*     erewrite <- add_global_pres_genv_next; eauto. *)
-(* Qed. *)
+Lemma add_globals_pres_genv_next :
+  forall (defs : list (ident * option gdef * segblock)) (ge ge' : genv),
+  ge' = add_globals ge defs -> Genv.genv_next ge = Genv.genv_next ge'.
+Proof.
+  induction defs; intros; simpl in *.
+  - subst. auto.
+  - exploit IHdefs; eauto.
+    erewrite <- add_global_pres_genv_next; eauto.
+Qed.
 
-(* Lemma init_mem_genv_next: forall p m, *)
-(*   init_mem p = Some m -> *)
-(*   Genv.genv_next (globalenv p) = Mem.nextblock m. *)
-(* Proof. *)
-(*   unfold init_mem; intros. *)
-(*   destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC. *)
-(*   exploit alloc_globals_nextblock; eauto.  *)
-(*   exploit Mem.nextblock_alloc; eauto. rewrite Mem.nextblock_empty. intros. *)
-(*   exploit alloc_segments_nextblock; eauto. *)
-(*   rewrite <- H1. unfold list_of_segments. simpl. rewrite H0. simpl. *)
-(*   intros. unfold globalenv. simpl. *)
-(*   erewrite <- add_globals_pres_genv_next; eauto. simpl. congruence. *)
-(* Qed. *)
+Lemma init_mem_genv_next: forall p m,
+  init_mem p = Some m ->
+  Genv.genv_next (globalenv p) = Mem.nextblock m.
+Proof.
+  unfold init_mem; intros.
+  destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
+  exploit alloc_globals_nextblock; eauto.
+  exploit Mem.nextblock_alloc; eauto. rewrite Mem.nextblock_empty. intros.
+  exploit alloc_segments_nextblock; eauto.
+  rewrite <- H1. unfold list_of_segments. simpl. rewrite H0. simpl.
+  intros. unfold globalenv. simpl.
+  erewrite <- add_globals_pres_genv_next; eauto. simpl. congruence.
+Qed.
 
 
 Definition match_prog (p: Asm.program) (tp: FlatAsm.program) :=
@@ -1544,26 +1552,27 @@ Inductive match_states: state -> state -> Prop :=
     match_states (State rs m) (State rs' m').
 
 
-(* Definition seglabel_to_ptr (slbl: seglabel) (stob : segid_type -> block) : (block * Z) := *)
-(*   let (sid, ofs) := slbl in *)
-(*   (stob sid, Ptrofs.unsigned ofs). *)
+Definition init_meminj : meminj :=
+  let ge := Genv.globalenv prog in
+  let tge := globalenv tprog in
+  fun b =>
+    (* (genv_next ge) is the stack block of the source program *)
+    if eq_block b (Globalenvs.Genv.genv_next ge)
+    then Some (Genv.genv_next tge, 0)
+    else
+      match (Genv.invert_symbol ge b) with
+      | None => None
+      | Some id =>
+        match Genv.find_symbol tge id with
+        | None => None
+        | Some (b,ofs) => Some (b, Ptrofs.unsigned ofs)
+        end
 
-(* Definition init_meminj (gmap: GID_MAP_TYPE) : meminj := *)
-(*   let ge := Genv.globalenv prog in *)
-(*   let tge := globalenv tprog in *)
-(*   fun b =>  *)
-(*     (* (genv_next ge) is the stack block of the source program *) *)
-(*     if eq_block b (Globalenvs.Genv.genv_next ge)  *)
-(*     then Some (Genv.genv_next tge, 0) *)
-(*     else *)
-(*       match (Genv.invert_symbol ge b) with *)
-(*       | None => None *)
-(*       | Some id =>  *)
-(*         match (gmap id) with *)
-(*         | None => None *)
-(*         | Some slbl => Some (Genv.symbol_block_offset tge slbl) *)
-(*         end *)
-(*       end. *)
+        (* match (gmap id) with *)
+        (* | None => None *)
+        (* | Some slbl => Some (Genv.symbol_block_offset tge slbl) *)
+        (* end *)
+      end.
 
 (* Lemma in_transl_instrs: *)
 (*   forall gmap lmap i si c o o' sz x1 *)
@@ -2184,13 +2193,14 @@ Qed.
 (*   exploit make_maps_gmap_inj'. 4: rewrite EQ; reflexivity. all: eauto.  *)
 (* Qed. *)
 
-(* Theorem init_meminj_match_sminj : forall gmap lmap dsize csize efsize m, *)
-(*     dsize + csize + efsize <= Ptrofs.max_unsigned -> *)
-(*     Genv.init_mem prog = Some m -> *)
-(*     make_maps prog = (gmap,lmap,dsize,csize,efsize) -> *)
-(*     transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog -> *)
-(*     match_sminj gmap lmap (init_meminj gmap). *)
-(* Proof.    *)
+Theorem init_meminj_match_sminj : forall gmap lmap dsize csize m,
+    dsize + csize <= Ptrofs.max_unsigned ->
+    Genv.init_mem prog = Some m ->
+    make_maps prog = (gmap,lmap,dsize,csize) ->
+    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
+    match_inj init_meminj.
+Proof.
+Admitted.
 (*   intros gmap lmap dsize csize efsize m MAX INITMEM UPDATE TRANS.  *)
 (*   generalize TRANSF. intros TRANSF'. *)
 (*   unfold match_prog in TRANSF'.  *)
@@ -2265,32 +2275,36 @@ Qed.
 (*     rewrite Ptrofs.add_commut. auto. *)
 (* Qed. *)
 
-(* Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b, *)
-(*     Mem.alloc m1 lo hi = (m1', b) -> *)
-(*     def_frame_inj m1 = def_frame_inj m1'. *)
-(* Proof. *)
-(*   unfold def_frame_inj. intros. *)
-(*   apply Mem.alloc_stack_blocks in H. rewrite H. auto. *)
-(* Qed. *)
+Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b,
+    Mem.alloc m1 lo hi = (m1', b) ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  unfold def_frame_inj. intros.
+  apply Mem.alloc_stack_blocks in H. rewrite H. auto.
+Qed.
 
-(* (** Proving initial memory injection **) *)
+(** Proving initial memory injection **)
 
-(* Definition partial_genv defs : Globalenvs.Genv.t Asm.fundef unit :=  *)
-(*   let emptyge := (Globalenvs.Genv.empty_genv Asm.fundef unit prog.(AST.prog_public)) in *)
-(*   Globalenvs.Genv.add_globals emptyge defs. *)
+Definition partial_genv defs : Globalenvs.Genv.t Asm.fundef unit :=
+  let emptyge := (Globalenvs.Genv.empty_genv Asm.fundef unit prog.(AST.prog_public)) in
+  Globalenvs.Genv.add_globals emptyge defs.
 
-(* Definition globs_meminj (gmap: GID_MAP_TYPE) : meminj := *)
-(*   let ge := Genv.globalenv prog in *)
-(*   let tge := globalenv tprog in *)
-(*   fun b => *)
-(*       match (Genv.invert_symbol ge b) with *)
-(*       | None => None *)
-(*       | Some id => *)
-(*         match (gmap id) with *)
-(*         | None => None *)
-(*         | Some slbl => Some (Genv.symbol_block_offset tge slbl) *)
-(*         end *)
-(*       end. *)
+Definition globs_meminj (gmap: GID_MAP_TYPE) : meminj :=
+  let ge := Genv.globalenv prog in
+  let tge := globalenv tprog in
+  fun b =>
+      match (Genv.invert_symbol ge b) with
+      | None => None
+      | Some id =>
+        match Genv.find_symbol tge id with
+        | None => None
+        | Some (b, ofs) => Some (b, Ptrofs.unsigned ofs)
+        end
+        (* match (gmap id) with *)
+        (* | None => None *)
+        (* | Some slbl => Some (Genv.symbol_block_offset tge slbl) *)
+        (* end *)
+      end.
 
 
 (* Lemma find_symbol_add_global_eq : forall (F V: Type) (ge:Globalenvs.Genv.t F V) i def, *)
@@ -2447,13 +2461,13 @@ Qed.
 (*   inv H. auto. *)
 (* Qed. *)
 
-(* Lemma drop_perm_pres_def_frame_inj : forall m1 lo hi m1' b p, *)
-(*     Mem.drop_perm m1 b lo hi p = Some m1' -> *)
-(*     def_frame_inj m1 = def_frame_inj m1'. *)
-(* Proof. *)
-(*   unfold def_frame_inj. intros. *)
-(*   apply Mem.drop_perm_stack in H. rewrite H. auto. *)
-(* Qed. *)
+Lemma drop_perm_pres_def_frame_inj : forall m1 lo hi m1' b p,
+    Mem.drop_perm m1 b lo hi p = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  unfold def_frame_inj. intros.
+  apply Mem.drop_perm_stack in H. rewrite H. auto.
+Qed.
 
 (* Lemma transl_fun_inversion : forall gmap lmap id f f', *)
 (*     transl_fun gmap lmap id f = OK f' -> *)
@@ -3971,12 +3985,13 @@ Qed.
 (*       erewrite <- Mem.nextblock_alloc; eauto. *)
 (* Qed.       *)
 
-(* Lemma init_mem_pres_inject : forall m gmap lmap dsize csize efsize *)
-(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog) *)
-(*     (INITMEM: Genv.init_mem prog = Some m), *)
-(*     exists m', init_mem tprog = Some m' /\ Mem.inject (globs_meminj gmap) (def_frame_inj m) m m'.  *)
-(* Proof.  *)
+Lemma init_mem_pres_inject : forall m gmap lmap dsize csize 
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (INITMEM: Genv.init_mem prog = Some m),
+    exists m', init_mem tprog = Some m' /\ Mem.inject (globs_meminj gmap) (def_frame_inj m) m m'.
+Proof.
+Admitted.
 (*   unfold Genv.init_mem, init_mem. intros. *)
 (*   destruct (Mem.alloc Mem.empty 0 0) eqn:IALLOC.  *)
 (*   exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK.  *)
@@ -4057,12 +4072,12 @@ Qed.
 (*     exploit (agree_sminj_lbl gmap lmap j MSMINJ); eauto. *)
 (* Qed. *)
 
-(* Lemma push_new_stage_def_frame_inj : forall m, *)
-(*     def_frame_inj (Mem.push_new_stage m) = (1%nat :: def_frame_inj m). *)
-(* Proof. *)
-(*   unfold def_frame_inj. intros. *)
-(*   erewrite Mem.push_new_stage_stack. simpl. auto. *)
-(* Qed. *)
+Lemma push_new_stage_def_frame_inj : forall m,
+    def_frame_inj (Mem.push_new_stage m) = (1%nat :: def_frame_inj m).
+Proof.
+  unfold def_frame_inj. intros.
+  erewrite Mem.push_new_stage_stack. simpl. auto.
+Qed.
 
 
 
@@ -4760,56 +4775,56 @@ Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Va
     RawAsm.initial_state prog rs st1  ->
     exists st2, FlatAsm.initial_state tprog rs st2 /\ match_states st1 st2.
 Proof.
-Admitted.
-(*   intros rs SELFINJECT st1 INIT. *)
-(*   generalize TRANSF. intros TRANSF'. *)
-(*   unfold match_prog in TRANSF'. unfold transf_program in TRANSF'. *)
-(*   destruct (check_wellformedness prog) eqn:WF. 2: congruence. repeat destr_in TRANSF'. *)
-(*   rename g into gmap. *)
-(*   rename l into lmap. *)
-(*   rename z1 into dsize. rename z0 into csize. rename z into efsize. *)
-(*   inv INIT. *)
-(*   exploit init_meminj_match_sminj; eauto. *)
-(*   intros MATCH_SMINJ. *)
-(*   exploit (init_mem_pres_inject m gmap); eauto. *)
-(*   intros (m' & INITM' & MINJ). *)
-(*   inversion H1. *)
-(*   (* push_new stage *) *)
-(*   exploit Mem.push_new_stage_inject; eauto. intros NSTGINJ. *)
-(*   exploit (Mem.alloc_parallel_inject (globs_meminj gmap) (1%nat :: def_frame_inj m) *)
-(*           (Mem.push_new_stage m) (Mem.push_new_stage m') *)
-(*           0 Mem.stack_limit m1 bstack 0 Mem.stack_limit); eauto. omega. omega. *)
-(*   intros (j' & m1' & bstack' & MALLOC' & AINJ & INCR & FBSTACK & NOTBSTK). *)
-(*   rewrite <- push_new_stage_def_frame_inj in AINJ. *)
-(*   erewrite alloc_pres_def_frame_inj in AINJ; eauto. *)
-(*   assert (bstack = Globalenvs.Genv.genv_next ge).  *)
-(*   {  *)
-(*     exploit (Genv.init_mem_genv_next prog m); eauto. intros BEQ. unfold ge. rewrite BEQ. *)
-(*     apply Mem.alloc_result in MALLOC; eauto. *)
-(*     subst bstack. apply Mem.push_new_stage_nextblock. *)
-(*   } *)
-(*   assert (bstack' = Genv.genv_next tge).  *)
-(*   { *)
-(*     exploit init_mem_genv_next; eauto. intros BEQ. *)
-(*     unfold tge. rewrite BEQ. *)
-(*     exploit Mem.alloc_result; eauto. *)
-(*     intros. subst. apply Mem.push_new_stage_nextblock. *)
-(*   } *)
-(*   assert (forall x, j' x = init_meminj gmap x). *)
-(*   { *)
-(*     intros. destruct (eq_block x bstack). *)
-(*     subst x. rewrite FBSTACK. unfold init_meminj. subst. *)
-(*     rewrite dec_eq_true; auto. *)
-(*     erewrite NOTBSTK; eauto. *)
-(*     unfold init_meminj. subst.  *)
-(*     rewrite dec_eq_false; auto. *)
-(*   } *)
-(*   exploit Mem.inject_ext; eauto. intros MINJ'. *)
-(*   exploit Mem.drop_parallel_inject; eauto. red. simpl. auto. *)
-(*   rewrite <- H5. rewrite FBSTACK. eauto. *)
-(*   intros (m2' & MDROP' & DMINJ). simpl in MDROP'. rewrite Z.add_0_r in MDROP'. *)
-(*   erewrite (drop_perm_pres_def_frame_inj m1) in DMINJ; eauto. *)
+  intros rs SELFINJECT st1 INIT.
+  generalize TRANSF. intros TRANSF'.
+  unfold match_prog in TRANSF'. unfold transf_program in TRANSF'.
+  destruct (check_wellformedness prog) eqn:WF. 2: congruence. repeat destr_in TRANSF'.
+  rename g into gmap.
+  rename l into lmap.
+  rename z0 into dsize. rename z into csize. 
+  inv INIT.
+  exploit init_meminj_match_sminj; eauto.
+  intros MATCH_SMINJ.
+  exploit (init_mem_pres_inject m gmap); eauto.
+  intros (m' & INITM' & MINJ).
+  inversion H1.
+  (* push_new stage *)
+  exploit Mem.push_new_stage_inject; eauto. intros NSTGINJ.
+  exploit (Mem.alloc_parallel_inject (globs_meminj gmap) (1%nat :: def_frame_inj m)
+          (Mem.push_new_stage m) (Mem.push_new_stage m')
+          0 Mem.stack_limit m1 bstack 0 Mem.stack_limit); eauto. omega. omega.
+  intros (j' & m1' & bstack' & MALLOC' & AINJ & INCR & FBSTACK & NOTBSTK).
+  rewrite <- push_new_stage_def_frame_inj in AINJ.
+  erewrite alloc_pres_def_frame_inj in AINJ; eauto.
+  assert (bstack = Globalenvs.Genv.genv_next ge).
+  {
+    exploit (Genv.init_mem_genv_next prog m); eauto. intros BEQ. unfold ge. rewrite BEQ.
+    apply Mem.alloc_result in MALLOC; eauto.
+    subst bstack. apply Mem.push_new_stage_nextblock.
+  }
+  assert (bstack' = Genv.genv_next tge).
+  {
+    exploit init_mem_genv_next; eauto. intros BEQ.
+    unfold tge. rewrite BEQ.
+    exploit Mem.alloc_result; eauto.
+    intros. subst. apply Mem.push_new_stage_nextblock.
+  }
+  assert (forall x, j' x = init_meminj x).
+  {
+    intros. destruct (eq_block x bstack).
+    subst x. rewrite FBSTACK. unfold init_meminj. subst.
+    rewrite dec_eq_true; auto.
+    erewrite NOTBSTK; eauto.
+    unfold init_meminj. subst.
+    rewrite dec_eq_false; auto.
+  }
+  exploit Mem.inject_ext; eauto. intros MINJ'.
+  exploit Mem.drop_parallel_inject; eauto. red. simpl. auto.
+  rewrite <- H5. rewrite FBSTACK. eauto.
+  intros (m2' & MDROP' & DMINJ). simpl in MDROP'. rewrite Z.add_0_r in MDROP'.
+  erewrite (drop_perm_pres_def_frame_inj m1) in DMINJ; eauto.
   
+  Admitted.
 (*   assert (exists m3', Mem.record_stack_blocks m2' (make_singleton_frame_adt' bstack' frame_info_mono 0) = Some m3' *)
 (*                  /\ Mem.inject (init_meminj gmap) (def_frame_inj m3) m3 m3') as RCD. *)
 (*   { *)
