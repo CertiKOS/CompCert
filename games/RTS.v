@@ -273,6 +273,96 @@ Section RTS.
     - intros [Ha | a' ra' Hra' Hext Ha' ]; eauto.
   Qed.
 
+  (** ** Structural properties *)
+
+  Definition nonbranching_behaviors {A} (r1 r2 : behavior A) :=
+    match r1, r2 with
+      | internal a1, internal a2 => a1 = a2
+      | interacts m1 k1, interacts m2 k2 => m1 = m2 -> k1 = k2
+      | internal _, _ | _, internal _ => False
+      | _, _ => True
+    end.
+
+  Definition nonbranching {A} (α : rts A) :=
+    forall a r1 r2, α a r1 -> α a r2 -> nonbranching_behaviors r1 r2.
+
+  Definition deterministic {A} (α : rts A) :=
+    forall a r1 r2, α a r1 -> α a r2 -> r1 = r2.
+
+  Lemma deterministic_nonbranching {A} (α : rts A) :
+    deterministic α ->
+    nonbranching α.
+  Proof.
+    intros Hα a r1 r2 Hr1 Hr2.
+    assert (r1 = r2) as [] by eauto.
+    destruct r1; simpl; auto.
+  Qed.
+
+  Hint Resolve deterministic_nonbranching.
+
+  Lemma nonbranching_internal {A} (α : rts A) a a1 a2 :
+    nonbranching α ->
+    α a (internal a1) ->
+    α a (internal a2) ->
+    a1 = a2.
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma nonbranching_internal_external {A} (α : rts A) a r a' :
+    nonbranching α ->
+    behavior_external r ->
+    α a r ->
+    α a (internal a') ->
+    False.
+  Proof.
+    intros Hα Hrext Hr Ha'.
+    destruct Hrext; apply (Hα _ _ _ Hr Ha').
+  Qed.
+
+  (** A particular property of nonbranching transition systems is
+    that any observable behavior remains unchanged after taking any
+    number of silent steps. *)
+
+  Lemma fi_inv_internal {A} (α : rts A) a a' :
+    nonbranching α ->
+    forever_internal α a ->
+    α a (internal a') ->
+    forever_internal α a'.
+  Proof.
+    intros Hα Ha Ha'.
+    destruct Ha as [a1 Ha1 Ha1div].
+    assert (H: a1 = a') by eauto using nonbranching_internal; subst.
+    eauto.
+  Qed.
+
+  Lemma fi_inv_reachable {A} (α : rts A) a a' :
+    nonbranching α ->
+    forever_internal α a ->
+    reachable α a a' ->
+    forever_internal α a'.
+  Proof.
+    intros Hα Ha Ha'.
+    induction Ha' as [ | a a' a'' Ha' Ha'' IHa''];
+      eauto using fi_inv_internal.
+  Qed.
+
+  Lemma reachable_inv_reachable {A} (α : rts A) a a' a'' r :
+    nonbranching α ->
+    behavior_external r ->
+    α a'' r ->
+    reachable α a a'' ->
+    reachable α a a' ->
+    reachable α a' a''.
+  Proof.
+    intros Hα Hrext Hr Ha'' Ha'.
+    revert a'' Hr Ha''.
+    induction Ha' as [ | a1 a2 a3 Ha12 Ha23]; eauto; intros.
+    destruct Ha'' as [ | a1 a' a'' Ha' Ha''].
+    - eelim nonbranching_internal_external; eauto.
+    - assert (a2 = a') by eauto using nonbranching_internal; subst. eauto.
+  Qed.
+
   (** ** Operators *)
 
   (** *** Sum *)
@@ -549,20 +639,143 @@ Section RTS.
         forever_switching dom α s ->
         obs_hc dom α s diverges.
 
+  (** *** Alternative formulations for coinductive properties *)
+
+  Lemma forever_internal_nbr {A} (α : rts A) a :
+    nonbranching α ->
+    forever_internal α a <->
+    (forall a', reachable α a a' -> exists a'', α a' (internal a'')).
+  Proof.
+    intros Hα. split.
+    - intros Ha a' Ha'.
+      induction Ha' as [a | a a' a'' Ha' Ha'' IHa''].
+      + destruct Ha. eauto.
+      + eapply fi_inv_internal in Ha; eauto.
+    - revert a. cofix IH. intros a H.
+      destruct (H a) as (a' & Ha'); [ eauto .. | ].
+      econstructor; eauto.
+  Qed.
+
+  Lemma forever_switching_inv_internal {A} dom (α : rts A) s s' :
+    deterministic α ->
+    forever_switching dom α s ->
+    hc dom α s (internal s') ->
+    forever_switching dom α s'.
+  Proof.
+    intros Hα Hs Hs'.
+    inversion Hs'; clear Hs'; subst.
+    destruct r; simpl in H; try now inversion H.
+    - inversion Hs as [a1 a2 ra l s2 Ha2 Hra Hs2 Hs2d]; clear Hs; subst.
+      inversion H; clear H; subst.
+      eapply (reachable_inv_reachable α a a' a2) in Ha2; eauto.
+      econstructor; eauto.
+    - destruct hc_xcall eqn:Hm; inversion H; clear H; subst.
+      inversion Hs; clear Hs; subst.
+      assert (a' = a).
+      {
+        destruct H2; eauto.
+        eelim (nonbranching_internal_external α a (interacts m k0)); eauto.
+      }
+      subst.
+      assert (ra = interacts m k0).
+      {
+        eapply Hα; eauto.
+      }
+      subst.
+      simpl in H5.
+      rewrite Hm in H5.
+      inversion H5.
+      congruence.
+  Qed.
+
+  Lemma forever_switching_nbr {A} dom (α : rts A) s :
+    deterministic α ->
+    forever_switching dom α s <->
+    (s <> hc_z /\
+     forall a k, reachable (hc dom α) s (hc_r a k) ->
+                 exists a' r s', reachable α a a' /\
+                                 α a' r /\
+                                 behavior_external r /\
+                                 hc_behavior dom r k = internal s').
+  Proof.
+    intros Hα. split.
+    - intros Hs.
+      split. { destruct Hs. congruence. }
+      intros a k Hak.
+      remember (hc_r a k) as s' eqn:Hs' in Hak.
+      revert a k Hs'.
+      induction Hak; intros.
+      + destruct Hs.
+        inversion Hs'; clear Hs'; subst.
+        exists a', ra, s'. eauto.
+      + eapply IHHak; eauto.
+        eapply forever_switching_inv_internal; eauto.
+    - revert s. cofix IH. intros s [Hnz Hs].
+      destruct s as [a k | ]; try congruence.
+      edestruct (Hs a k) as (a' & r & s' & Ha' & Hr & Hrext & Hs'); [ eauto .. | ].
+      eapply (forever_switching_intro dom α a a' r k); eauto.
+      eapply IH.
+      split. { destruct r; simpl in Hs'; try congruence.
+               destruct hc_xcall; congruence. }
+      intros.
+      eapply Hs.
+      transitivity s'; auto.
+      transitivity (hc_r a' k); auto using hc_reachable.
+      econstructor; eauto.
+      rewrite <- Hs'. constructor. auto.
+  Qed.
+
+  Lemma hc_det {A} dom (α : rts A) :
+    deterministic α ->
+    deterministic (hc dom α).
+  Proof.
+    intros Hα s x y Hx Hy.
+    destruct Hx. inversion Hy.
+    f_equal; eauto.
+  Qed.
+
   Lemma forever_hc {A} dom (α : rts A) s :
+    deterministic α ->
     forever_internal (hc dom α) s ->
     (exists a k, reachable (hc dom α) s (hc_r a k) /\ forever_internal α a) \/
     forever_switching dom α s.
   Proof.
-  Admitted.
+    intros Hα Hs1.
+    destruct (classic (forever_switching dom α s)) as [? | Hs2]; auto. left.
+    rewrite forever_internal_nbr in Hs1; eauto using hc_det.
+    rewrite forever_switching_nbr in Hs2; eauto.
+    apply not_and_or in Hs2 as [? | Hs2].
+    {
+      specialize (Hs1 s (reachable_refl _ s)) as (s' & Hs').
+      destruct Hs'. elim H. congruence.
+    }
+    apply not_all_ex_not in Hs2 as [a Hs2].
+    apply not_all_ex_not in Hs2 as [k Hs2].
+    apply not_all_ex_not in Hs2 as [Hak Hs2].
+    exists a, k. split; auto.
+    revert a Hak Hs2. cofix IH. intros.
+    edestruct (Hs1 _ Hak) as (a'' & Ha'').
+    inversion Ha''; clear Ha''; subst.
+    destruct r; try now inversion H2.
+    - simpl in H2. inversion H2; clear H2; subst.
+      econstructor; eauto.
+      eapply IH.
+      + transitivity (hc_r a k); eauto.
+        econstructor; eauto.
+        change (internal _) with (hc_behavior dom (internal a') k).
+        constructor; eauto.
+      + intros (a'' & r & s' & Ha'' & Hr & Hrext & Hs'); eauto 10.
+    - elim Hs2; eauto 10.
+  Qed.
 
   Lemma obs_hc_obs_hc {A} dom (α : rts A) s r :
+    deterministic α ->
     obs (hc dom α) s r ->
     obs_hc dom α s r.
   Proof.
-    intros Hr.
+    intros Hα Hr.
     destruct Hr as [Hs | s' r Hrext Hr Hs'].
-    - apply forever_hc in Hs as [(a & k & Hs' & Ha) | Hs].
+    - apply forever_hc in Hs as [(a & k & Hs' & Ha) | Hs]; auto.
       + eapply obs_hc_settles.
         remember (hc_r a k) as s' in Hs'.
         induction Hs'; eauto using hc_settles_internal.
@@ -598,11 +811,12 @@ Section RTS.
   Qed.
 
   Lemma obs_hc_obs_hc_obs_sim {A} dom (α : rts A) :
+    deterministic α ->
     sim eq (obs (hc dom α)) (obs (hc dom (obs α))).
   Proof.
-    intros s _ [] r Hr.
+    intros Hα s _ [] r Hr.
     exists r. split; [ | rauto].
     apply obs_hc_obs_hc_obs.
-    apply obs_hc_obs_hc. auto.
+    apply obs_hc_obs_hc; auto.
   Qed.
 End RTS.
