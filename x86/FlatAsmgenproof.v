@@ -9,7 +9,7 @@ Require Import Coqlib Integers Values Maps AST.
 Require Import Memtype Memory.
 Require Import Smallstep.
 Require Import Asm RawAsm.
-Require Import FlatAsm FlatAsmgen.
+Require Import FlatAsm FlatAsmBuiltin FlatAsmgen.
 Require Import Segment.
 Require Import Events.
 Require Import StackADT.
@@ -1454,7 +1454,8 @@ Definition valid_instr_offset_is_internal (mj:meminj) :=
     Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) ->
     find_instr (Ptrofs.unsigned ofs) (Asm.fn_code f) = Some i ->
     mj b = Some (b', ofs') ->
-    exists f, Genv.find_funct_ptr tge b' (Ptrofs.repr ofs') = Some (Internal f).
+    Genv.genv_internal_codeblock tge b' = true.    
+
 
 Definition extfun_entry_is_external (mj:meminj) :=
   forall b b' f ofs,
@@ -4891,183 +4892,174 @@ Qed.
 (*       intro IN. destruct (Genv.find_symbol_exists_1 prog id). apply IN. fold ge in H7. congruence.   *)
 (* Qed. *)
 
+Lemma symbol_address_inject : forall j id ofs
+                                (MATCHINJ: match_inj j),
+    Val.inject j (Senv.symbol_address ge id ofs) (Genv.symbol_address tge id ofs).
+Proof.
+  intros. unfold Senv.symbol_address.
+  inv MATCHINJ.
+  unfold Senv.find_symbol. simpl.
+  destruct (Globalenvs.Genv.find_symbol ge id) eqn:FINDSYM; auto.
+  exploit agree_inj_glob0; eauto.
+  intros (b' & ofs' & FINDSYM' & JB).
+  erewrite Genv.symbol_address_offset; eauto. 
+  eapply Val.inject_ptr; eauto.
+  rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
+Qed.
+
 Context `{external_calls_ops : !ExternalCallsOps mem }.
 Context `{!EnableBuiltins mem}.
 Existing Instance Asm.mem_accessors_default.
 Existing Instance FlatAsm.mem_accessors_default.
 
-(* Lemma eval_builtin_arg_inject : forall gm lm j m m' rs rs' sp sp' arg varg arg', *)
-(*     match_sminj gm lm j -> *)
-(*     gid_map_for_undef_syms gm -> *)
-(*     Mem.inject j (def_frame_inj m) m m' -> *)
-(*     regset_inject j rs rs' -> *)
-(*     Val.inject j sp sp' -> *)
-(*     transl_builtin_arg gm arg = OK arg' -> *)
-(*     eval_builtin_arg ge rs sp m arg varg -> *)
-(*     exists varg', FlatAsmBuiltin.eval_builtin_arg _ _ preg tge rs' sp' m' arg' varg' /\ *)
-(*              Val.inject j varg varg'. *)
-(* Proof. *)
-(*   unfold regset_inject.  *)
-(*   induction arg; intros; inv H5; *)
-(*     try (eexists; split; auto; monadInv H4; constructor). *)
-(*   - monadInv H4. exploit Mem.loadv_inject; eauto. *)
-(*     eapply Val.offset_ptr_inject; eauto. *)
-(*     intros (v2 & MVLOAD & LINJ). *)
-(*     eexists; split; eauto. *)
-(*     constructor; auto. *)
-(*   - monadInv H4.  *)
-(*     exists (Val.offset_ptr sp' ofs). split; try (eapply Val.offset_ptr_inject; eauto). *)
-(*     constructor. *)
-(*   - monadInvX H4. unfold Senv.symbol_address in H10. *)
-(*     destruct (Senv.find_symbol ge id) eqn:FINDSYM. *)
-(*     + inv H. exploit agree_sminj_glob0; eauto.  *)
-(*       intros (ofs' & b0 & b' & FSYM & GLOFS & JB). *)
-(*       unfold Senv.find_symbol in FINDSYM. simpl in FINDSYM. rewrite FSYM in FINDSYM; inv FINDSYM. *)
-(*       exploit Mem.loadv_inject; eauto. *)
-(*       intros (varg' & LOADV & VARGINJ). *)
-(*       exists varg'. split; auto. *)
-(*       eapply FlatAsmBuiltin.eval_BA_loadglobal.        *)
-(*       exploit Genv.symbol_address_offset; eauto. intros SYMADDR. *)
-(*       rewrite SYMADDR. rewrite Ptrofs.repr_unsigned in *. *)
-(*       rewrite Ptrofs.add_commut. auto. *)
-(*     + simpl in H10. congruence. *)
-(*   - monadInvX H4. unfold Senv.symbol_address. *)
-(*     destruct (Senv.find_symbol ge id) eqn:FINDSYM. *)
-(*     + inv H. exploit agree_sminj_glob0; eauto.  *)
-(*       intros (ofs' & b0 & b' & FSYM & GLOFS & JB). *)
-(*       unfold Senv.find_symbol in FINDSYM. simpl in FINDSYM. rewrite FSYM in FINDSYM; inv FINDSYM. *)
-(*       eexists. split.  *)
-(*       apply FlatAsmBuiltin.eval_BA_addrglobal. *)
-(*       exploit Genv.symbol_address_offset; eauto. intros SYMADDR. *)
-(*       rewrite SYMADDR. *)
-(*       eapply Val.inject_ptr; eauto. *)
-(*       rewrite Ptrofs.repr_unsigned. rewrite Ptrofs.add_commut. auto. *)
-(*     + unfold Senv.find_symbol in FINDSYM. simpl in FINDSYM. *)
-(*       unfold gid_map_for_undef_syms in *. exploit H0; eauto. *)
-(*       congruence. *)
-(*   - monadInv H4. *)
-(*     exploit IHarg1; eauto. intros (vhi' & EVAL1 & VINJ1). *)
-(*     exploit IHarg2; eauto. intros (vlo' & EVAL2 & VINJ2). *)
-(*     exists (Val.longofwords vhi' vlo'); split. *)
-(*     + constructor; auto. *)
-(*     + apply Val.longofwords_inject; eauto. *)
-(* Qed. *)
+Lemma eval_builtin_arg_inject : forall j m m' rs rs' sp sp' arg varg
+    (MATCHINJ: match_inj j)
+    (MINJ: Mem.inject j (def_frame_inj m) m m')
+    (RSINJ: regset_inject j rs rs')
+    (VINJ: Val.inject j sp sp')
+    (EVALBI: eval_builtin_arg ge rs sp m arg varg),
+    exists varg', FlatAsmBuiltin.eval_builtin_arg _ _ _ _ tge rs' sp' m' arg varg' /\
+             Val.inject j varg varg'.
+Proof.
+  unfold regset_inject.
+  induction arg; intros; inv EVALBI.
+  - eexists; split; auto. constructor.
+  - eexists; split; auto. constructor.
+  - eexists; split; auto. constructor.
+  - eexists; split; auto. constructor.
+  - eexists; split; auto. constructor.
+  - exploit Mem.loadv_inject; eauto.
+    apply Val.offset_ptr_inject; eauto.
+    intros (v2 & ML & VJ); auto.
+    eexists; split. constructor. apply ML. auto.
+  - eexists; split. constructor.
+    apply Val.offset_ptr_inject; eauto.
+  - exploit Mem.loadv_inject; eauto.
+    apply symbol_address_inject; eauto.
+    intros (v2 & ML & VJ); auto.
+    eexists; split. constructor. apply ML. auto.
+  - eexists; split. constructor.
+    apply symbol_address_inject; eauto.
+  - exploit IHarg1; eauto.
+    intros (varg1 & EVALBI1 & JB1).
+    exploit IHarg2; eauto.
+    intros (varg2 & EVALBI2 & JB2).
+    eexists; split. constructor; eauto.
+    apply Val.longofwords_inject; auto.
+Qed.    
+   
 
-(* Lemma eval_builtin_args_inject : forall gm lm j m m' rs rs' sp sp' args vargs args', *)
-(*     match_sminj gm lm j -> *)
-(*     gid_map_for_undef_syms gm -> *)
-(*     Mem.inject j (def_frame_inj m) m m' -> *)
-(*     regset_inject j rs rs' -> *)
-(*     Val.inject j sp sp' -> *)
-(*     transl_builtin_args gm args = OK args' -> *)
-(*     eval_builtin_args ge rs sp m args vargs -> *)
-(*     exists vargs', FlatAsmBuiltin.eval_builtin_args _ _ preg tge rs' sp' m' args' vargs' /\ *)
-(*              Val.inject_list j vargs vargs'. *)
-(* Proof. *)
-(*   induction args; intros; simpl.  *)
-(*   - inv H4. inv H5. exists nil. split; auto. *)
-(*     unfold FlatAsmBuiltin.eval_builtin_args. apply list_forall2_nil. *)
-(*   - monadInv H4. inv H5. *)
-(*     exploit eval_builtin_arg_inject; eauto.  *)
-(*     intros (varg' & EVARG & VINJ). *)
-(*     exploit IHargs; eauto.  *)
-(*     intros (vargs' & EVARGS & VSINJ). *)
-(*     exists (varg' :: vargs'). split; auto. *)
-(*     unfold FlatAsmBuiltin.eval_builtin_args.  *)
-(*     apply list_forall2_cons; auto. *)
-(* Qed. *)
+Lemma eval_builtin_args_inject : forall j m m' rs rs' sp sp' args vargs
+    (MATCHINJ: match_inj j)
+    (MINJ: Mem.inject j (def_frame_inj m) m m')
+    (RSINJ: regset_inject j rs rs')
+    (VINJ: Val.inject j sp sp')
+    (EVALBI: eval_builtin_args ge rs sp m args vargs),
+    exists vargs', FlatAsmBuiltin.eval_builtin_args _ _ _ _ tge rs' sp' m' args vargs' /\
+             Val.inject_list j vargs vargs'.
+Proof.
+  induction args; intros; simpl; inv EVALBI.
+  - eexists. split. constructor. auto.
+  - exploit eval_builtin_arg_inject; eauto.
+    intros (varg' & EVARG & JB).
+    exploit IHargs; eauto.
+    intros (vargs' & EVARGS & JBS).
+    exists (varg' :: vargs'). split; auto.
+    unfold FlatAsmBuiltin.eval_builtin_args.
+    apply list_forall2_cons; auto.
+Qed.
 
-(* Lemma extcall_arg_inject : forall rs1 rs2 m1 m2 l arg1 j, *)
-(*     extcall_arg rs1 m1 l arg1 -> *)
-(*     Mem.inject j (def_frame_inj m1) m1 m2 -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     exists arg2, *)
-(*       Val.inject j arg1 arg2 /\ *)
-(*       extcall_arg rs2 m2 l arg2. *)
-(* Proof. *)
-(*   intros. inv H. *)
-(*   - unfold regset_inject in *. *)
-(*     specialize (H1 (Asm.preg_of r)). eexists; split; eauto. *)
-(*     constructor. *)
-(*   - exploit Mem.loadv_inject; eauto. *)
-(*     apply Val.offset_ptr_inject. apply H1. *)
-(*     intros (arg2 & MLOADV & ARGINJ). *)
-(*     exists arg2. split; auto. *)
-(*     eapply extcall_arg_stack; eauto. *)
-(* Qed. *)
+Lemma extcall_arg_inject : forall rs1 rs2 m1 m2 l arg1 j,
+    extcall_arg rs1 m1 l arg1 ->
+    Mem.inject j (def_frame_inj m1) m1 m2 ->
+    regset_inject j rs1 rs2 ->
+    exists arg2,
+      Val.inject j arg1 arg2 /\
+      extcall_arg rs2 m2 l arg2.
+Proof.
+  intros. inv H.
+  - unfold regset_inject in *.
+    specialize (H1 (Asm.preg_of r)). eexists; split; eauto.
+    constructor.
+  - exploit Mem.loadv_inject; eauto.
+    apply Val.offset_ptr_inject. apply H1.
+    intros (arg2 & MLOADV & ARGINJ).
+    exists arg2. split; auto.
+    eapply extcall_arg_stack; eauto.
+Qed.
 
-(* Lemma extcall_arg_pair_inject : forall rs1 rs2 m1 m2 lp arg1 j, *)
-(*     extcall_arg_pair rs1 m1 lp arg1 -> *)
-(*     Mem.inject j (def_frame_inj m1) m1 m2 -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     exists arg2, *)
-(*       Val.inject j arg1 arg2 /\ *)
-(*       extcall_arg_pair rs2 m2 lp arg2. *)
-(* Proof. *)
-(*   intros. inv H. *)
-(*   - exploit extcall_arg_inject; eauto.  *)
-(*     intros (arg2 & VINJ & EXTCALL). *)
-(*     exists arg2. split; auto. constructor. auto. *)
-(*   - exploit (extcall_arg_inject rs1 rs2 m1 m2 hi vhi); eauto.  *)
-(*     intros (arghi & VINJHI & EXTCALLHI). *)
-(*     exploit (extcall_arg_inject rs1 rs2 m1 m2 lo vlo); eauto.  *)
-(*     intros (arglo & VINJLO & EXTCALLLO). *)
-(*     exists (Val.longofwords arghi arglo). split. *)
-(*     + apply Val.longofwords_inject; auto. *)
-(*     + constructor; auto. *)
-(* Qed. *)
+Lemma extcall_arg_pair_inject : forall rs1 rs2 m1 m2 lp arg1 j,
+    extcall_arg_pair rs1 m1 lp arg1 ->
+    Mem.inject j (def_frame_inj m1) m1 m2 ->
+    regset_inject j rs1 rs2 ->
+    exists arg2,
+      Val.inject j arg1 arg2 /\
+      extcall_arg_pair rs2 m2 lp arg2.
+Proof.
+  intros. inv H.
+  - exploit extcall_arg_inject; eauto.
+    intros (arg2 & VINJ & EXTCALL).
+    exists arg2. split; auto. constructor. auto.
+  - exploit (extcall_arg_inject rs1 rs2 m1 m2 hi vhi); eauto.
+    intros (arghi & VINJHI & EXTCALLHI).
+    exploit (extcall_arg_inject rs1 rs2 m1 m2 lo vlo); eauto.
+    intros (arglo & VINJLO & EXTCALLLO).
+    exists (Val.longofwords arghi arglo). split.
+    + apply Val.longofwords_inject; auto.
+    + constructor; auto.
+Qed.
 
-(* Lemma extcall_arguments_inject_aux : forall rs1 rs2 m1 m2 locs args1 j, *)
-(*    list_forall2 (extcall_arg_pair rs1 m1) locs args1 -> *)
-(*     Mem.inject j (def_frame_inj m1) m1 m2 -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     exists args2, *)
-(*       Val.inject_list j args1 args2 /\ *)
-(*       list_forall2 (extcall_arg_pair rs2 m2) locs args2. *)
-(* Proof. *)
-(*   induction locs; simpl; intros; inv H. *)
-(*   - exists nil. split. *)
-(*     + apply Val.inject_list_nil. *)
-(*     + unfold Asm.extcall_arguments. apply list_forall2_nil. *)
-(*   - exploit extcall_arg_pair_inject; eauto. *)
-(*     intros (arg2 & VINJARG2 & EXTCALLARG2). *)
-(*     exploit IHlocs; eauto. *)
-(*     intros (args2 & VINJARGS2 & EXTCALLARGS2). *)
-(*     exists (arg2 :: args2). split; auto. *)
-(*     apply list_forall2_cons; auto. *)
-(* Qed. *)
+Lemma extcall_arguments_inject_aux : forall rs1 rs2 m1 m2 locs args1 j,
+   list_forall2 (extcall_arg_pair rs1 m1) locs args1 ->
+    Mem.inject j (def_frame_inj m1) m1 m2 ->
+    regset_inject j rs1 rs2 ->
+    exists args2,
+      Val.inject_list j args1 args2 /\
+      list_forall2 (extcall_arg_pair rs2 m2) locs args2.
+Proof.
+  induction locs; simpl; intros; inv H.
+  - exists nil. split.
+    + apply Val.inject_list_nil.
+    + unfold Asm.extcall_arguments. apply list_forall2_nil.
+  - exploit extcall_arg_pair_inject; eauto.
+    intros (arg2 & VINJARG2 & EXTCALLARG2).
+    exploit IHlocs; eauto.
+    intros (args2 & VINJARGS2 & EXTCALLARGS2).
+    exists (arg2 :: args2). split; auto.
+    apply list_forall2_cons; auto.
+Qed.
 
-(* Lemma extcall_arguments_inject : forall rs1 rs2 m1 m2 ef args1 j, *)
-(*     Asm.extcall_arguments rs1 m1 (ef_sig ef) args1 -> *)
-(*     Mem.inject j (def_frame_inj m1) m1 m2 -> *)
-(*     regset_inject j rs1 rs2 -> *)
-(*     exists args2, *)
-(*       Val.inject_list j args1 args2 /\ *)
-(*       Asm.extcall_arguments rs2 m2 (ef_sig ef) args2. *)
-(* Proof. *)
-(*   unfold Asm.extcall_arguments. intros. *)
-(*   eapply extcall_arguments_inject_aux; eauto. *)
-(* Qed. *)
+Lemma extcall_arguments_inject : forall rs1 rs2 m1 m2 ef args1 j,
+    Asm.extcall_arguments rs1 m1 (ef_sig ef) args1 ->
+    Mem.inject j (def_frame_inj m1) m1 m2 ->
+    regset_inject j rs1 rs2 ->
+    exists args2,
+      Val.inject_list j args1 args2 /\
+      Asm.extcall_arguments rs2 m2 (ef_sig ef) args2.
+Proof.
+  unfold Asm.extcall_arguments. intros.
+  eapply extcall_arguments_inject_aux; eauto.
+Qed.
 
-(* Axiom external_call_inject : forall ge j vargs1 vargs2 m1 m2 m1' vres1 t ef, *)
-(*     Val.inject_list j vargs1 vargs2 -> *)
-(*     Mem.inject j (def_frame_inj m1) m1 m2 -> *)
-(*     external_call ef ge vargs1 m1 t vres1 m1' -> *)
-(*     exists j' vres2 m2', *)
-(*       external_call ef ge vargs2 m2 t vres2 m2' /\  *)
-(*       Val.inject j' vres1 vres2 /\ Mem.inject j' (def_frame_inj m1') m1' m2' /\ *)
-(*       inject_incr j j' /\ *)
-(*       inject_separated j j' m1 m2. *)
+Axiom external_call_inject : forall ge j vargs1 vargs2 m1 m2 m1' vres1 t ef,
+    Val.inject_list j vargs1 vargs2 ->
+    Mem.inject j (def_frame_inj m1) m1 m2 ->
+    external_call ef ge vargs1 m1 t vres1 m1' ->
+    exists j' vres2 m2',
+      external_call ef ge vargs2 m2 t vres2 m2' /\
+      Val.inject j' vres1 vres2 /\ Mem.inject j' (def_frame_inj m1') m1' m2' /\
+      inject_incr j j' /\
+      inject_separated j j' m1 m2.
 
-(* Axiom  external_call_valid_block: forall ef ge vargs m1 t vres m2 b, *)
-(*     external_call ef ge vargs m1 t vres m2 -> Mem.valid_block m1 b -> Mem.valid_block m2 b. *)
+Axiom  external_call_valid_block: forall ef ge vargs m1 t vres m2 b,
+    external_call ef ge vargs m1 t vres m2 -> Mem.valid_block m1 b -> Mem.valid_block m2 b.
 
-(* Lemma extcall_pres_glob_block_valid : forall ef ge vargs m1 t vres m2, *)
-(*   external_call ef ge vargs m1 t vres m2 -> glob_block_valid m1 -> glob_block_valid m2. *)
-(* Proof. *)
-(*   unfold glob_block_valid in *. intros. *)
-(*   eapply external_call_valid_block; eauto. *)
-(* Qed. *)
+Lemma extcall_pres_glob_block_valid : forall ef ge vargs m1 t vres m2,
+  external_call ef ge vargs m1 t vres m2 -> glob_block_valid m1 -> glob_block_valid m2.
+Proof.
+  unfold glob_block_valid in *. intros.
+  eapply external_call_valid_block; eauto.
+Qed.
 
 Lemma regset_inject_incr : forall j j' rs rs',
     regset_inject j rs rs' ->
@@ -5189,57 +5181,56 @@ Lemma inject_pres_match_sminj :
     glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 -> 
     match_inj j'.
 Proof.
-(*   unfold glob_block_valid. *)
-(*   intros. inversion ms. constructor; intros. *)
-(*   -  *)
-(*     eapply (agree_sminj_instr0 b b'); eauto. *)
-(*     unfold Genv.find_funct_ptr in H2. destruct (Genv.find_def ge b) eqn:FDEF; try congruence. *)
-(*     exploit H; eauto. intros. *)
-(*     eapply inject_decr; eauto. *)
-(*   -  *)
-(*     exploit agree_sminj_glob0; eauto.  *)
-(*     intros (ofs' & b0 & b' & FSYM & GLBL & JB). *)
-(*     eexists; eexists; eexists; eauto. *)
-(*   -  *)
-(*     exploit agree_sminj_lbl0; eauto. *)
-(* Qed. *)
-Admitted.
+  unfold glob_block_valid.
+  intros. inversion ms. constructor; intros.
+  -
+    eapply (agree_inj_instr0 b b'); eauto.
+    unfold Globalenvs.Genv.find_funct_ptr in H2. destruct (Globalenvs.Genv.find_def ge b) eqn:FDEF; try congruence.
+    exploit H; eauto. intros.
+    eapply inject_decr; eauto.
+  -
+    exploit agree_inj_glob0; eauto.
+    intros (b' & ofs' & GLBL & JB).
+    eexists; eexists; eexists; eauto.
+  -
+    exploit agree_inj_lbl0; eauto.
+Qed.
 
 
-(* Lemma inject_pres_valid_instr_offset_is_internal : forall j j' m1 m2, *)
-(*     glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 ->  *)
-(*     valid_instr_offset_is_internal j -> valid_instr_offset_is_internal j'. *)
-(* Proof. *)
-(*   unfold glob_block_valid. *)
-(*   unfold valid_instr_offset_is_internal. intros. *)
-(*   eapply H2; eauto. *)
-(*   unfold Genv.find_funct_ptr in H3. destruct (Genv.find_def ge b) eqn:FDEF; try congruence. *)
-(*   exploit H; eauto. intros. *)
-(*   eapply inject_decr; eauto. *)
-(* Qed. *)
+Lemma inject_pres_valid_instr_offset_is_internal : forall j j' m1 m2,
+    glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 ->
+    valid_instr_offset_is_internal j -> valid_instr_offset_is_internal j'.
+Proof.
+  unfold glob_block_valid.
+  unfold valid_instr_offset_is_internal. intros.
+  eapply H2; eauto.
+  unfold Globalenvs.Genv.find_funct_ptr in H3. destruct (Globalenvs.Genv.find_def ge b) eqn:FDEF; try congruence.
+  exploit H; eauto. intros.
+  eapply inject_decr; eauto.
+Qed.
 
-(* Lemma inject_pres_extfun_entry_is_external : forall j j' m1 m2, *)
-(*     glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 ->  *)
-(*     extfun_entry_is_external j -> extfun_entry_is_external j'. *)
-(* Proof. *)
-(*   unfold glob_block_valid. *)
-(*   unfold extfun_entry_is_external. intros. *)
-(*   eapply H2; eauto. *)
-(*   unfold Genv.find_funct_ptr in H3. destruct (Genv.find_def ge b) eqn:FDEF; try congruence. *)
-(*   exploit H; eauto. intros. *)
-(*   eapply inject_decr; eauto. *)
-(* Qed. *)
+Lemma inject_pres_extfun_entry_is_external : forall j j' m1 m2,
+    glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 ->
+    extfun_entry_is_external j -> extfun_entry_is_external j'.
+Proof.
+  unfold glob_block_valid.
+  unfold extfun_entry_is_external. intros.
+  eapply H2; eauto.
+  unfold Globalenvs.Genv.find_funct_ptr in H3. destruct (Globalenvs.Genv.find_def ge b) eqn:FDEF; try congruence.
+  exploit H; eauto. intros.
+  eapply inject_decr; eauto.
+Qed.
 
-(* Lemma inject_pres_match_find_funct : forall j j' m1 m2, *)
-(*     glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 ->  *)
-(*     match_find_funct j -> match_find_funct j'. *)
-(* Proof. *)
-(*   unfold glob_block_valid, match_find_funct. intros. *)
-(*   eapply H2; eauto. *)
-(*   unfold Genv.find_funct_ptr in H3. destruct (Genv.find_def ge b) eqn:FDEF; try congruence. *)
-(*   exploit H; eauto. intros. *)
-(*   eapply inject_decr; eauto. *)
-(* Qed.   *)
+Lemma inject_pres_match_find_funct : forall j j' m1 m2,
+    glob_block_valid m1 -> inject_incr j j' -> inject_separated j j' m1 m2 ->
+    match_find_funct j -> match_find_funct j'.
+Proof.
+  unfold glob_block_valid, match_find_funct. intros.
+  eapply H2; eauto.
+  unfold Globalenvs.Genv.find_funct_ptr in H3. destruct (Globalenvs.Genv.find_def ge b) eqn:FDEF; try congruence.
+  exploit H; eauto. intros.
+  eapply inject_decr; eauto.
+Qed.
 
 
 
@@ -5896,25 +5887,27 @@ Proof.
     + exploit IHtbl; eauto.
 Qed.
 
-(* Lemma add_globals_pres_senv :  *)
-(*   forall (defs : list (ident * option gdef * segblock)) (ge : genv), *)
-(*   Genv.genv_senv (add_globals ge defs) = Genv.genv_senv ge. *)
-(* Proof. *)
-(*   induction defs; intros. *)
-(*   - simpl. auto. *)
-(*   - simpl. erewrite IHdefs; eauto. *)
-(*     unfold add_global. destruct a. destruct p. destruct o; auto. *)
-(*     destruct g; auto. *)
-(* Qed. *)
+Lemma add_globals_pres_senv :
+  forall (defs : list (ident * option gdef * segblock)) (ge : genv),
+  Genv.genv_senv (add_globals ge defs) = Genv.genv_senv ge.
+Proof.
+  induction defs; intros.
+  - simpl. auto.
+  - simpl. erewrite IHdefs; eauto.
+    unfold add_global. destruct a. destruct p. 
+    destruct (Genv.genv_symb ge0 i) eqn:GENVSYM.
+    + destruct p. simpl. auto.
+    + auto.
+Qed.
 
-(* Lemma transl_prog_pres_senv : forall gmap lmap dsize csize efsize tprog prog, *)
-(*     transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog -> *)
-(*     (Genv.genv_senv (globalenv tprog)) = (Globalenvs.Genv.globalenv prog). *)
-(* Proof. *)
-(*   intros gmap lmap dsize csize efsize tprog0 prog0 H. *)
-(*   monadInv H. unfold globalenv. simpl. *)
-(*   rewrite add_globals_pres_senv; eauto. *)
-(* Qed. *)
+Lemma transl_prog_pres_senv : forall gmap lmap dsize csize tprog prog,
+    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
+    (Genv.genv_senv (globalenv tprog)) = (Globalenvs.Genv.globalenv prog).
+Proof.
+  intros gmap lmap dsize csize tprog0 prog0 H.
+  monadInv H. unfold globalenv. simpl.
+  rewrite add_globals_pres_senv; eauto.
+Qed.
 
 
 
@@ -6106,9 +6099,9 @@ Proof.
   - (* Internal step *)
     unfold regset_inject in RSINJ. generalize (RSINJ Asm.PC). rewrite H. 
     inversion 1; subst.
-    exploit (agree_sminj_instr gm lm j MATCHSMINJ b b2 f ofs delta i); eauto.
+    exploit (agree_inj_instr j MATCHSMINJ b b2 f ofs delta i); eauto.
     intros (id & i' & sid & ofs1 & FITARG & FSYMB & TRANSL).
-    exploit (exec_instr_step j rs rs'0 m m'0 rs' m' gm lm i i' id); eauto.
+    exploit (exec_instr_step j rs rs'0 m m'0 rs' m' i i' id); eauto.
     intros (rs2' & m2' & FEXEC & MS1).
     exists (State rs2' m2'). split; auto.
     eapply FlatAsm.exec_step_internal; eauto.
@@ -6116,12 +6109,12 @@ Proof.
   - (* Builtin *)
     unfold regset_inject in RSINJ. generalize (RSINJ Asm.PC). rewrite H.
     inversion 1; subst.
-    exploit (agree_sminj_instr gm lm j MATCHSMINJ b b2 f ofs delta (Asm.Pbuiltin ef args res, sz)); auto.
+    exploit (agree_inj_instr j MATCHSMINJ b b2 f ofs delta (Asm.Pbuiltin ef args res, sz)); auto.
     intros (id & i' & sid & ofs1 & FITARG & FSYMB & TRANSL).
     (* exploit (globs_to_funs_inj_into_flatmem j); eauto. inversion 1; subst. *)
-    monadInv TRANSL. monadInv EQ.
+    monadInv TRANSL. (* monadInv EQ. *)
     set (pbseg := {| segblock_id := sid; segblock_start := Ptrofs.repr ofs1; segblock_size := Ptrofs.repr (si_size sz) |}) in *.
-    exploit (eval_builtin_args_inject gm lm j m m'0 rs rs'0 (rs Asm.RSP) (rs'0 Asm.RSP) args vargs x0); auto.
+    exploit (eval_builtin_args_inject j m m'0 rs rs'0 (rs Asm.RSP) (rs'0 Asm.RSP) args vargs); auto.
     intros (vargs' & EBARGS & ARGSINJ).
     assert (Globalenvs.Genv.to_senv ge = (Genv.genv_senv tge)) as SENVEQ. 
     { 
@@ -6133,8 +6126,8 @@ Proof.
     rewrite SENVEQ.
     intros (j' & vres2 & m2' & EXTCALL & RESINJ & MINJ' & INJINCR & INJSEP).
     set (rs' := nextinstr_nf (set_res res vres2 (undef_regs (map preg_of (Machregs.destroyed_by_builtin ef)) rs'0)) (segblock_size pbseg)).
-    exploit (fun b ofs => FlatAsm.exec_step_builtin tge b ofs
-                                       ef x0 res rs'0  m'0 vargs' t vres2 rs' m2' pbseg); eauto. 
+    exploit (fun b ofs => FlatAsm.exec_step_builtin tge id b ofs
+                                       ef args res rs'0  m'0 vargs' t vres2 rs' m2' pbseg); eauto. 
     (* unfold valid_instr_offset_is_internal in INSTRINTERNAL. *)
     (* eapply INSTRINTERNAL; eauto. *)
     intros FSTEP. eexists; split; eauto.

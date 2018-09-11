@@ -20,6 +20,13 @@ Variable F: Type.
 Variable V: Type.
 Variable I: Type.
 Variable A: Type.
+
+Global Arguments F : default implicits. 
+Global Arguments V : default implicits. 
+Global Arguments I : default implicits. 
+Global Arguments I : default implicits. 
+
+
 Variable ge: Genv.t F V I.
 Variable e: A -> val.
 Variable sp: val.

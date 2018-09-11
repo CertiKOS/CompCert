@@ -100,7 +100,7 @@ BACKEND=\
   Tailcall.v Tailcallproof.v \
   AsmFacts.v RawAsm.v RawAsmproof.v \
   Segment.v \
-  FlatAsm.v FlatAsmGlobenv.v FlatAsmGlobdef.v FlatAsmBuiltin.v \
+  FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v \
   FlatAsmgen.v FlatAsmgenproof.v 
 
 
