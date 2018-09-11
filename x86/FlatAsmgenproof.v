@@ -5241,36 +5241,6 @@ Admitted.
 (*   eapply inject_decr; eauto. *)
 (* Qed.   *)
 
-Remark mul_inject:
-  forall f v1 v1' v2 v2',
-  Val.inject f v1 v1' ->
-  Val.inject f v2 v2' ->
-  Val.inject f (Val.mul v1 v2) (Val.mul v1' v2').
-Proof.
-  intros. unfold Val.mul. destruct v1, v2; simpl; auto.
-  inversion H; inversion H0; subst. auto.
-Qed.
-
-Remark mull_inject:
-  forall f v1 v1' v2 v2',
-  Val.inject f v1 v1' ->
-  Val.inject f v2 v2' ->
-  Val.inject f (Val.mull v1 v2) (Val.mull v1' v2').
-Proof.
-Proof.
-  intros. unfold Val.mull. destruct v1, v2; simpl; auto.
-  inversion H; inversion H0; subst. auto.
-Qed.
-
-Remark mulhs_inject:
-  forall f v1 v1' v2 v2',
-  Val.inject f v1 v1' ->
-  Val.inject f v2 v2' ->
-  Val.inject f (Val.mulhs v1 v2) (Val.mulhs v1' v2').
-Proof.
-  intros. unfold Val.mulhs. destruct v1, v2; simpl; auto.
-  inversion H; inversion H0; subst. auto.
-Qed.
 
 
 Lemma inject_symbol_address : forall j id ofs,
@@ -5287,17 +5257,6 @@ Proof.
   rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
 Qed.
 
-Lemma add_undef : forall v,
-  Val.add v Vundef = Vundef.
-Proof.
-  intros; destruct v; simpl; auto.
-Qed.
-
-Lemma addl_undef : forall v,
-  Val.addl v Vundef = Vundef.
-Proof.
-  intros; destruct v; simpl; auto.
-Qed.
 
 Ltac simpl_goal :=
   repeat match goal with
@@ -5369,10 +5328,10 @@ Proof.
   destruct base, ofs, const; simpl in *. 
   - destruct p. repeat apply Val.add_inject; auto.
     destr_pair_if; auto.
-    apply mul_inject; auto.
+    apply Val.mul_inject; auto.
   - destruct p,p0. repeat apply Val.add_inject; auto.
     destr_pair_if; auto.
-    apply mul_inject; auto.
+    apply Val.mul_inject; auto.
     apply inject_symbol_address. auto.
   - repeat apply Val.add_inject; auto.
   - destruct p. apply Val.add_inject; auto. 
@@ -5382,13 +5341,13 @@ Proof.
     inject_match.
     apply Val.add_inject; auto.
     destr_pair_if; auto. 
-    apply mul_inject; auto.
+    apply Val.mul_inject; auto.
     destr_valinj_left H1; inv H1; auto.
   - destruct p,p0.
     inject_match.
     apply Val.add_inject; auto.
     destr_pair_if; auto. 
-    apply mul_inject; auto.
+    apply Val.mul_inject; auto.
     apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
   - repeat apply Val.add_inject; auto.
@@ -5408,10 +5367,10 @@ Proof.
   destruct base, ofs, const; simpl in *.
   - destruct p. repeat apply Val.addl_inject; auto.
     destr_pair_if; auto.
-    apply mull_inject; auto.
+    apply Val.mull_inject; auto.
   - destruct p,p0. repeat apply Val.addl_inject; auto.
     destr_pair_if; auto.
-    apply mull_inject; auto.
+    apply Val.mull_inject; auto.
     apply inject_symbol_address. auto.
   - repeat apply Val.addl_inject; auto.
   - destruct p. apply Val.addl_inject; auto. 
@@ -5425,7 +5384,7 @@ Proof.
     inject_match.
     apply Val.addl_inject; auto.
     destr_pair_if; auto. 
-    apply mull_inject; auto.
+    apply Val.mull_inject; auto.
     destr_valinj_left H1; inv H1; auto.
     destr_pair_if; auto.
     eapply Val.inject_ptr; eauto. 
@@ -5435,7 +5394,7 @@ Proof.
     inject_match.
     apply Val.addl_inject; auto.
     destr_pair_if; auto. 
-    apply mull_inject; auto.
+    apply Val.mull_inject; auto.
     apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
     destr_pair_if; auto.
@@ -5536,310 +5495,6 @@ Proof.
 (* Qed. *)
 Admitted.
 
-Inductive opt_val_inject (j:meminj) : option val -> option val -> Prop :=
-| opt_val_inject_none v : opt_val_inject j None v
-| opt_val_inject_some v1 v2 : Val.inject j v1 v2 -> 
-                                opt_val_inject j (Some v1) (Some v2).
-
-Lemma maketotal_inject : forall v1 v2 j,
-    opt_val_inject j v1 v2 -> Val.inject j (Val.maketotal v1) (Val.maketotal v2).
-Proof.
-  intros. inversion H; simpl; subst; auto.
-Qed.
-
-Inductive opt_lessdef {A:Type} : option A -> option A -> Prop :=
-| opt_lessdef_none v : opt_lessdef None v
-| opt_lessdef_some v : opt_lessdef (Some v) (Some v). 
-
-Lemma vzero_inject : forall j,
-  Val.inject j Vzero Vzero.
-Proof.
-  intros. unfold Vzero. auto.
-Qed.
-
-Lemma vtrue_inject : forall j,
-  Val.inject j Vtrue Vtrue.
-Proof.
-  intros. unfold Vtrue. auto.
-Qed.
-
-Lemma vfalse_inject : forall j,
-  Val.inject j Vfalse Vfalse.
-Proof.
-  intros. unfold Vfalse. auto.
-Qed.
-
-Lemma vofbool_inject : forall j v,
-  Val.inject j (Val.of_bool v) (Val.of_bool v).
-Proof.
-  destruct v; simpl.
-  - apply vtrue_inject.
-  - apply vfalse_inject.
-Qed.
-  
-Lemma neg_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.neg v1) (Val.neg v2).
-Proof.
-  intros. unfold Val.neg. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma negl_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.negl v1) (Val.negl v2).
-Proof.
-  intros. unfold Val.negl. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma mullhs_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.mullhs v1 v1') (Val.mullhs v2 v2').
-Proof.
-  intros. unfold Val.mullhs. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma mullhu_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.mullhu v1 v1') (Val.mullhu v2 v2').
-Proof.
-  intros. unfold Val.mullhu. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma mulhu_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.mulhu v1 v1') (Val.mulhu v2 v2').
-Proof.
-  intros. unfold Val.mulhu. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-
-Lemma shr_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.shr v1 v1') (Val.shr v2 v2').
-Proof.
-  intros. unfold Val.shr. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. 
-  destruct (Int.ltu i0 Int.iwordsize); auto.
-Qed.
-
-Lemma shrl_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.shrl v1 v1') (Val.shrl v2 v2').
-Proof.
-  intros. unfold Val.shrl. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. 
-  destruct (Int.ltu i0 Int64.iwordsize'); auto.
-Qed.
-
-Lemma shru_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.shru v1 v1') (Val.shru v2 v2').
-Proof.
-  intros. unfold Val.shru. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. 
-  destruct (Int.ltu i0 Int.iwordsize); auto.
-Qed.
-
-Lemma shrlu_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.shrlu v1 v1') (Val.shrlu v2 v2').
-Proof.
-  intros. unfold Val.shrlu. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. 
-  destruct (Int.ltu i0 Int64.iwordsize'); auto.
-Qed.
-
-Lemma or_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.or v1 v1') (Val.or v2 v2').
-Proof.
-  intros. unfold Val.or. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma orl_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.orl v1 v1') (Val.orl v2 v2').
-Proof.
-  intros. unfold Val.orl. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma ror_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.ror v1 v1') (Val.ror v2 v2').
-Proof.
-  intros. unfold Val.ror. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma rorl_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.rorl v1 v1') (Val.rorl v2 v2').
-Proof.
-  intros. unfold Val.rorl. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-
-Lemma xor_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.xor v1 v1') (Val.xor v2 v2').
-Proof.
-  intros. unfold Val.xor. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma xorl_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.xorl v1 v1') (Val.xorl v2 v2').
-Proof.
-  intros. unfold Val.xorl. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma and_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.and v1 v1') (Val.and v2 v2').
-Proof.
-  intros. unfold Val.and. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma andl_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.andl v1 v1') (Val.andl v2 v2').
-Proof.
-  intros. unfold Val.andl. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma notl_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.notl v1) (Val.notl v2).
-Proof.
-  intros. unfold Val.notl. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma notint_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.notint v1) (Val.notint v2).
-Proof.
-  intros. unfold Val.notint. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma shl_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.shl v1 v1') (Val.shl v2 v2').
-Proof.
-  intros. unfold Val.shl. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. 
-  destruct (Int.ltu i0 Int.iwordsize); auto.
-Qed.
-
-Lemma shll_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.shll v1 v1') (Val.shll v2 v2').
-Proof.
-  intros. unfold Val.shll. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. 
-  destruct (Int.ltu i0 Int64.iwordsize'); auto.
-Qed.
-
-Lemma addf_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.addf v1 v1') (Val.addf v2 v2').
-Proof.
-  intros. unfold Val.addf. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma subf_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.subf v1 v1') (Val.subf v2 v2').
-Proof.
-  intros. unfold Val.subf. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma mulf_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.mulf v1 v1') (Val.mulf v2 v2').
-Proof.
-  intros. unfold Val.mulf. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma divf_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.divf v1 v1') (Val.divf v2 v2').
-Proof.
-  intros. unfold Val.divf. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma negf_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.negf v1) (Val.negf v2).
-Proof.
-  intros. unfold Val.negf. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma absf_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.absf v1) (Val.absf v2).
-Proof.
-  intros. unfold Val.absf. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma addfs_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.addfs v1 v1') (Val.addfs v2 v2').
-Proof.
-  intros. unfold Val.addfs. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma subfs_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.subfs v1 v1') (Val.subfs v2 v2').
-Proof.
-  intros. unfold Val.subfs. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma mulfs_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.mulfs v1 v1') (Val.mulfs v2 v2').
-Proof.
-  intros. unfold Val.mulfs. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma divfs_inject : forall v1 v2 v1' v2' j,
-    Val.inject j v1 v2 -> Val.inject j v1' v2' -> Val.inject j (Val.divfs v1 v1') (Val.divfs v2 v2').
-Proof.
-  intros. unfold Val.divfs. 
-  destruct v1; auto. inv H. 
-  destruct v1'; auto. inv H0. auto.
-Qed.
-
-Lemma negfs_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.negfs v1) (Val.negfs v2).
-Proof.
-  intros. unfold Val.negfs. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma absfs_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.absfs v1) (Val.absfs v2).
-Proof.
-  intros. unfold Val.absfs. 
-  destruct v1; auto. inv H. auto.
-Qed.
 
 (* Injection for cmpu_bool and cmplu_bool *)
 Lemma valid_ptr_inj : forall j m m',
@@ -5897,7 +5552,7 @@ Definition cmpu_bool_inject := fun j m m' (MINJ: Mem.inject j (def_frame_inj m) 
 Lemma cmpu_bool_lessdef : forall j v1 v2 v1' v2' m m' c,
     Val.inject j v1 v1' -> Val.inject j v2 v2' ->
     Mem.inject j (def_frame_inj m) m m' ->
-    opt_lessdef (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)
+    Val.opt_lessdef (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)
                 (Val.cmpu_bool (Mem.valid_pointer m') c v1' v2').
 Proof.
   intros. destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) eqn:EQ.
@@ -5917,7 +5572,7 @@ Definition cmplu_bool_inject := fun j m m' (MINJ: Mem.inject j (def_frame_inj m)
 Lemma cmplu_bool_lessdef : forall j v1 v2 v1' v2' m m' c,
     Val.inject j v1 v1' -> Val.inject j v2 v2' ->
     Mem.inject j (def_frame_inj m) m m' ->
-    opt_lessdef (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2)
+    Val.opt_lessdef (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2)
                 (Val.cmplu_bool (Mem.valid_pointer m') c v1' v2').
 Proof.
   intros. destruct (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2) eqn:EQ.
@@ -5927,7 +5582,7 @@ Proof.
 Qed.
 
 Lemma val_of_optbool_lessdef : forall j v1 v2,
-    opt_lessdef v1 v2 -> Val.inject j (Val.of_optbool v1) (Val.of_optbool v2).
+    Val.opt_lessdef v1 v2 -> Val.inject j (Val.of_optbool v1) (Val.of_optbool v2).
 Proof.
   intros. destruct v1; auto.
   simpl. inv H. destruct b; constructor.
@@ -5993,13 +5648,13 @@ Qed.
 Lemma cmplu_lessdef : forall j v1 v2 v1' v2' m m' c,
     Val.inject j v1 v1' -> Val.inject j v2 v2' ->
     Mem.inject j (def_frame_inj m) m m' ->
-    opt_val_inject j (Val.cmplu (Mem.valid_pointer m) c v1 v2)
+    Val.opt_val_inject j (Val.cmplu (Mem.valid_pointer m) c v1 v2)
                      (Val.cmplu (Mem.valid_pointer m') c v1' v2').
 Proof.
   intros. unfold Val.cmplu.
   exploit (cmplu_bool_lessdef j v1 v2 v1' v2' m m' c); eauto. intros.
   inversion H2; subst; simpl; constructor.
-  apply vofbool_inject.
+  apply Val.vofbool_inject.
 Qed.
 
 Lemma compare_longs_inject: forall j v1 v2 v1' v2' rs rs' m m',
@@ -6014,12 +5669,12 @@ Proof.
     exploit (cmplu_bool_lessdef j v1 v2 v1' v2' m m' Ceq); eauto. intros.
     inversion H3; subst.
     + simpl. auto. 
-    + simpl. apply vofbool_inject.
+    + simpl. apply Val.vofbool_inject.
   - unfold Val.cmplu.
     exploit (cmplu_bool_lessdef j v1 v2 v1' v2' m m' Clt); eauto. intros.
     inversion H3; subst.
     + simpl. auto. 
-    + simpl. apply vofbool_inject.
+    + simpl. apply Val.vofbool_inject.
   - apply val_negativel_inject. apply Val.subl_inject; auto.
   - apply subl_overflow_inject; auto.
 Qed.
@@ -6045,7 +5700,7 @@ Ltac solve_val_inject :=
   | [ H : Val.inject _ (Vsingle _) (Vsingle _) |- _] => inv H; solve_val_inject
   | [ H : Val.inject _ (Vsingle _) (Vptr _ _) |- _] => inversion H
   | [ H : Val.inject _ (Vsingle _) (Vfloat _) |- _] => inversion H
-  | [ |- Val.inject _ (Val.of_bool ?v) (Val.of_bool ?v) ] => apply vofbool_inject
+  | [ |- Val.inject _ (Val.of_bool ?v) (Val.of_bool ?v) ] => apply Val.vofbool_inject
   | [ |- Val.inject _ Vundef _ ] => auto
   end.
 
@@ -6081,112 +5736,6 @@ Proof.
   destruct v1, v2, v1', v2'; try solve_regset_inject. 
 Qed.
 
-Lemma zero_ext_inject : forall v1 v2 n j,
-    Val.inject j v1 v2 -> Val.inject j (Val.zero_ext n v1) (Val.zero_ext n v2).
-Proof.
-  intros. unfold Val.zero_ext. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma sign_ext_inject : forall v1 v2 n j,
-    Val.inject j v1 v2 -> Val.inject j (Val.sign_ext n v1) (Val.sign_ext n v2).
-Proof.
-  intros. unfold Val.sign_ext. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma longofintu_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.longofintu v1) (Val.longofintu v2).
-Proof.
-  intros. unfold Val.longofintu. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma longofint_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.longofint v1) (Val.longofint v2).
-Proof.
-  intros. unfold Val.longofint. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma singleoffloat_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.singleoffloat v1) (Val.singleoffloat v2).
-Proof.
-  intros. unfold Val.singleoffloat. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma loword_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.loword v1) (Val.loword v2).
-Proof.
-  intros. unfold Val.loword. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma floatofsingle_inject : forall v1 v2 j,
-    Val.inject j v1 v2 -> Val.inject j (Val.floatofsingle v1) (Val.floatofsingle v2).
-Proof.
-  intros. unfold Val.floatofsingle. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-Lemma intoffloat_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.intoffloat v1) (Val.intoffloat v2).
-Proof.
-  intros. unfold Val.intoffloat. destruct v1; try constructor.
-  inv H. destruct (Floats.Float.to_int f); simpl. 
-  - constructor. auto.
-  - constructor.
-Qed.
-
-Lemma floatofint_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.floatofint v1) (Val.floatofint v2).
-Proof.
-  intros. unfold Val.floatofint. destruct v1; try constructor.
-  inv H. constructor; auto.
-Qed.
-
-Lemma intofsingle_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.intofsingle v1) (Val.intofsingle v2).
-Proof.
-  intros. unfold Val.intofsingle. destruct v1; try constructor.
-  inv H. destruct (Floats.Float32.to_int f); simpl; constructor; auto.
-Qed.
-
-Lemma longoffloat_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.longoffloat v1) (Val.longoffloat v2).
-Proof.
-  intros. unfold Val.longoffloat. destruct v1; try constructor.
-  inv H. destruct (Floats.Float.to_long f) eqn:EQ; simpl; constructor; auto.
-Qed.
-
-Lemma floatoflong_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.floatoflong v1) (Val.floatoflong v2).
-Proof.
-  intros. unfold Val.floatoflong. destruct v1; try constructor.
-  inv H. constructor; auto. 
-Qed.
-
-Lemma longofsingle_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.longofsingle v1) (Val.longofsingle v2).
-Proof.
-  intros. unfold Val.longofsingle. destruct v1; try constructor.
-  inv H. destruct (Floats.Float32.to_long f) eqn:EQ; simpl; constructor; auto.
-Qed.
-
-Lemma singleoflong_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.singleoflong v1) (Val.singleoflong v2).
-Proof.
-  intros. unfold Val.singleoflong. destruct v1; try constructor.
-  inv H. constructor; auto.
-Qed.
-
-Lemma singleofint_inject : forall j v1 v2,
-  Val.inject j v1 v2 -> opt_val_inject j (Val.singleofint v1) (Val.singleofint v2).
-Proof.
-  intros. unfold Val.singleofint. destruct v1; try constructor.
-  inv H. constructor; auto.
-Qed.
   
 Ltac solve_store_load :=
   match goal with
@@ -6200,43 +5749,43 @@ Ltac solve_store_load :=
 
 Ltac solve_opt_lessdef := 
   match goal with
-  | [ |- opt_lessdef (match ?rs1 ?r with
+  | [ |- Val.opt_lessdef (match ?rs1 ?r with
                      | _ => _
                      end) _ ] =>
     let EQ := fresh "EQ" in (destruct (rs1 r) eqn:EQ; solve_opt_lessdef)
-  | [ |- opt_lessdef None _ ] => constructor
-  | [ |- opt_lessdef (Some _) (match ?rs2 ?r with
+  | [ |- Val.opt_lessdef None _ ] => constructor
+  | [ |- Val.opt_lessdef (Some _) (match ?rs2 ?r with
                               | _ => _
                               end) ] =>
     let EQ := fresh "EQ" in (destruct (rs2 r) eqn:EQ; solve_opt_lessdef)
   | [ H1: regset_inject _ ?rs1 ?rs2, H2: ?rs1 ?r = _, H3: ?rs2 ?r = _ |- _ ] =>
     generalize (H1 r); rewrite H2, H3; clear H2 H3; inversion 1; subst; solve_opt_lessdef
-  | [ |- opt_lessdef (Some ?v) (Some ?v) ] => constructor
+  | [ |- Val.opt_lessdef (Some ?v) (Some ?v) ] => constructor
   end.
 
 Lemma eval_testcond_inject: forall j c rs1 rs2,
     regset_inject j rs1 rs2 ->
-    opt_lessdef (Asm.eval_testcond c rs1) (Asm.eval_testcond c rs2).
+    Val.opt_lessdef (Asm.eval_testcond c rs1) (Asm.eval_testcond c rs2).
 Proof.
   intros. destruct c; simpl; try solve_opt_lessdef.
 Qed.
 
 Hint Resolve nextinstr_nf_pres_inject nextinstr_pres_inject regset_inject_expand
   regset_inject_expand_vundef_left undef_regs_pres_inject
-  zero_ext_inject sign_ext_inject longofintu_inject longofint_inject
-  singleoffloat_inject loword_inject floatofsingle_inject intoffloat_inject maketotal_inject
-  intoffloat_inject floatofint_inject intofsingle_inject singleofint_inject
-  longoffloat_inject floatoflong_inject longofsingle_inject singleoflong_inject
+  Val.zero_ext_inject Val.sign_ext_inject Val.longofintu_inject Val.longofint_inject
+  Val.singleoffloat_inject Val.loword_inject Val.floatofsingle_inject Val.intoffloat_inject Val.maketotal_inject
+  Val.intoffloat_inject Val.floatofint_inject Val.intofsingle_inject Val.singleofint_inject
+  Val.longoffloat_inject Val.floatoflong_inject Val.longofsingle_inject Val.singleoflong_inject
   eval_addrmode32_inject eval_addrmode64_inject eval_addrmode_inject
-  neg_inject negl_inject Val.add_inject Val.addl_inject
-  Val.sub_inject Val.subl_inject mul_inject mull_inject mulhs_inject mulhu_inject
-  mullhs_inject mullhu_inject shr_inject shrl_inject or_inject orl_inject
-  xor_inject xorl_inject and_inject andl_inject notl_inject
-  shl_inject shll_inject vzero_inject notint_inject
-  shru_inject shrlu_inject ror_inject rorl_inject
+  Val.neg_inject Val.negl_inject Val.add_inject Val.addl_inject
+  Val.sub_inject Val.subl_inject Val.mul_inject Val.mull_inject Val.mulhs_inject Val.mulhu_inject
+  Val.mullhs_inject Val.mullhu_inject Val.shr_inject Val.shrl_inject Val.or_inject Val.orl_inject
+  Val.xor_inject Val.xorl_inject Val.and_inject Val.andl_inject Val.notl_inject
+  Val.shl_inject Val.shll_inject Val.vzero_inject Val.notint_inject
+  Val.shru_inject Val.shrlu_inject Val.ror_inject Val.rorl_inject
   compare_ints_inject compare_longs_inject compare_floats_inject compare_floats32_inject
-  addf_inject subf_inject mulf_inject divf_inject negf_inject absf_inject
-  addfs_inject subfs_inject mulfs_inject divfs_inject negfs_inject absfs_inject
+  Val.addf_inject Val.subf_inject Val.mulf_inject Val.divf_inject Val.negf_inject Val.absf_inject
+  Val.addfs_inject Val.subfs_inject Val.mulfs_inject Val.divfs_inject Val.negfs_inject Val.absfs_inject
   val_of_optbool_lessdef eval_testcond_inject Val.offset_ptr_inject: inject_db.
 
 Ltac solve_exec_instr :=
@@ -6280,9 +5829,9 @@ Ltac destr_eval_testcond :=
     end
   | [ H : Asm.Next _ _ = Next _ _ |- _ ] =>
     inv H; destr_eval_testcond
-  | [ H: opt_lessdef (Some true) (Asm.eval_testcond _ _) |- _ ] =>
+  | [ H: Val.opt_lessdef (Some true) (Asm.eval_testcond _ _) |- _ ] =>
     inv H; destr_eval_testcond
-  | [ H: opt_lessdef (Some false) (Asm.eval_testcond _ _) |- _ ] =>
+  | [ H: Val.opt_lessdef (Some false) (Asm.eval_testcond _ _) |- _ ] =>
     inv H; destr_eval_testcond
   | _ => idtac
   end.

@@ -69,7 +69,7 @@ Record t: Type := mkgenv {
   genv_symb: ident -> option (block * ptrofs);        (**r mapping symbol -> block * ptrofs *)
   genv_defs: block -> ptrofs -> option (globdef F V);             (**r mapping offsets -> function defintions *)
   genv_instrs: block -> ptrofs -> option I;           (**r mapping offset -> instructions * function id *)
-  (* genv_internal_codeblock : block -> bool; *)
+  genv_internal_codeblock : block -> bool;
   (* genv_segblocks: segid_type -> block; *)
   genv_lbl: ident -> ident -> option (block * ptrofs);
   genv_next : block;

@@ -595,16 +595,16 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
 Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store} 
   (ge: genv) : state -> trace -> state -> Prop :=
 | exec_step_internal:
-    forall b ofs i rs m rs' m' f,
+    forall b ofs i rs m rs' m',
       rs PC = Vptr b ofs ->
-      Genv.find_funct_ptr ge b ofs = Some (Internal f) ->
+      Genv.genv_internal_codeblock ge b = true ->
       Genv.find_instr ge (Vptr b ofs) = Some i ->
       exec_instr ge i rs m = Next rs' m' ->
       step ge (State rs m) E0 (State rs' m')
 | exec_step_builtin:
-    forall fid b ofs ef args res rs m vargs t vres rs' m' blk f,
+    forall fid b ofs ef args res rs m vargs t vres rs' m' blk,
       rs PC = Vptr b ofs ->
-      Genv.find_funct_ptr ge b ofs = Some (Internal f) ->
+      Genv.genv_internal_codeblock ge b = true ->
       Genv.find_instr ge (Vptr b ofs) = Some (Pbuiltin ef args res, blk, fid)  ->
       eval_builtin_args _ _ _ preg ge rs (rs RSP) m args vargs ->
         external_call ef (Genv.genv_senv ge) vargs m t vres m' ->
@@ -616,7 +616,8 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
 | exec_step_external:
     forall b ofs ef args res rs m t rs' m',
       rs PC = Vptr b ofs ->
-      Genv.find_funct_ptr ge b ofs = Some (External ef) ->
+      Genv.genv_internal_codeblock ge b = false ->
+      Genv.find_funct ge (Vptr b ofs) = Some (External ef) ->
       extcall_arguments rs m (ef_sig ef) args ->
       forall (* CompCertX: BEGIN additional conditions for calling convention *)
         (* (STACK: *)
@@ -647,6 +648,7 @@ Definition add_global (ge:genv) (idg: ident * option gdef * segblock) : genv :=
        (Genv.genv_symb ge)
        (fun b' ofs' => if (peq b b') && (Ptrofs.eq ofs ofs') then gdef else (Genv.genv_defs ge b ofs))
        (Genv.genv_instrs ge)
+       (Genv.genv_internal_codeblock ge)
        (Genv.genv_lbl ge)
        (Genv.genv_next ge)
        (Genv.genv_senv ge))
@@ -1050,7 +1052,7 @@ Qed.
 
 
 Definition empty_genv (p:program): genv :=
-  Genv.mkgenv (prog_public p) (fun id => None) (fun b ofs => None) (fun b ofs => None) 
+  Genv.mkgenv (prog_public p) (fun id => None) (fun b ofs => None) (fun b ofs => None) (fun b => false)
               (fun fid lbl => None) 1%positive (prog_senv p).
 
 Definition gidmap_to_symbmap (smap: segid_type -> block) (gmap:GID_MAP_TYPE) :=
@@ -1073,7 +1075,8 @@ Definition globalenv (p: program) : genv :=
   let lblmap := lblmap_to_symbmap smap (lbl_map p) in
   let imap := gen_instrs_map smap p in
   let nextblock := Pos.of_nat ((Pos.to_nat init_block) + length (list_of_segments p)) in
-  let genv := Genv.mkgenv (prog_public p) symbmap (fun b ofs => None) imap lblmap nextblock (prog_senv p) in
+  let cbmap := gen_internal_codeblock smap p in
+  let genv := Genv.mkgenv (prog_public p) symbmap (fun b ofs => None) imap cbmap lblmap nextblock (prog_senv p) in
   add_globals genv p.(prog_defs).
   
 (* (** Initialization of the memory *) *)
@@ -1253,7 +1256,7 @@ Ltac Equalities :=
   exploit external_call_determ. eexact H5. eexact H11. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 + assert (args0 = args) by (eapply Asm.extcall_arguments_determ; eauto). subst args0.
-  exploit external_call_determ. eexact H4. eexact H9. intros [A B].
+  exploit external_call_determ. eexact H5. eexact H11. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto.
 - (* trace length *)
   red; intros; inv H; simpl.
