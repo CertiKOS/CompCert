@@ -132,6 +132,11 @@ Proof.
     inv H.
 Qed.
 
+Lemma find_symbol_genv_next_absurd:
+  forall (id : ident) (ge : t) b, find_symbol ge id = Some (genv_next ge, b) -> False.
+Admitted.
+
+
 (* Definition get_label_offset (ge: t) (l:seglabel) (ofs:ptrofs): option ptrofs := *)
 (*   get_sect_label_offset (genv_smap ge) l ofs. *)
 
