@@ -1461,7 +1461,7 @@ Definition extfun_entry_is_external (mj:meminj) :=
   forall b b' f ofs,
     Globalenvs.Genv.find_funct_ptr ge b = Some (External f) ->
     mj b = Some (b', ofs) ->
-    exists ef, Genv.find_funct_ptr tge b' (Ptrofs.repr ofs) = Some (External ef). 
+    Genv.genv_internal_codeblock tge b' = false.
 
 
 Definition def_frame_inj m := (flat_frameinj (length (Mem.stack m))).
@@ -4756,10 +4756,11 @@ Qed.
 (* Qed. *)
 
 
-(* Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Val.inject j (rs r) (rs r)) st1, *)
-(*     RawAsm.initial_state prog rs st1  -> *)
-(*     exists st2, FlatAsm.initial_state tprog rs st2 /\ match_states st1 st2. *)
-(* Proof. *)
+Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Val.inject j (rs r) (rs r)) st1,
+    RawAsm.initial_state prog rs st1  ->
+    exists st2, FlatAsm.initial_state tprog rs st2 /\ match_states st1 st2.
+Proof.
+Admitted.
 (*   intros rs SELFINJECT st1 INIT. *)
 (*   generalize TRANSF. intros TRANSF'. *)
 (*   unfold match_prog in TRANSF'. unfold transf_program in TRANSF'. *)
@@ -6168,7 +6169,7 @@ Proof.
     exploit (external_call_inject ge j args args2 m m'0 m' res t ef); eauto.
     rewrite SENVEQ.
     intros (j' & res' & m2' & EXTCALL & RESINJ & MINJ' & INJINCR & INJSEP).
-    exploit (fun ofs => FlatAsm.exec_step_external tge b2 ofs ef args2 res'); eauto.
+    exploit (fun ofs => FlatAsm.exec_step_external tge b2 ofs ef args2 res'); eauto. 
     + generalize (RSINJ Asm.RSP). intros. 
       eapply vinject_pres_has_type; eauto.
     + generalize (RSINJ Asm.RA). intros. 
