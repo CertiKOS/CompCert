@@ -1445,8 +1445,8 @@ Record match_inj (mj: meminj) : Type :=
           Val.inject mj (Vptr b (Ptrofs.repr z)) (Genv.label_address tge id l);      
     }.
 
-Definition gid_map_for_undef_syms (gm: GID_MAP_TYPE) :=
-  forall id, Globalenvs.Genv.find_symbol ge id = None -> gm id = None.
+(* Definition gid_map_for_undef_syms (gm: GID_MAP_TYPE) := *)
+(*   forall id, Globalenvs.Genv.find_symbol ge id = None -> gm id = None. *)
 
 
 Definition valid_instr_offset_is_internal (mj:meminj) :=
@@ -5433,17 +5433,16 @@ Lemma exec_load_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk rd a
       FlatAsm.exec_load tge chunk m2 a rs2 rd sz = Next rs2' m2' /\
       match_states (State rs1' m1') (State rs2' m2').
 Proof.
-(*   intros. unfold Asm.exec_load in *. *)
-(*   exploit eval_addrmode_inject; eauto. intro EMODINJ. *)
-(*   destruct (Mem.loadv chunk m1 (Asm.eval_addrmode ge a1 rs1)) eqn:MLOAD; try congruence. *)
-(*   exploit Mem.loadv_inject; eauto. intros (v2 & MLOADV & VINJ). *)
-(*   eexists. eexists. split. *)
-(*   - unfold exec_load. rewrite MLOADV. auto. *)
-(*   - inv H. eapply match_states_intro; eauto. *)
-(*     apply nextinstr_pres_inject. apply undef_regs_pres_inject. *)
-(*     apply regset_inject_expand; eauto. *)
-(* Qed. *)
-Admitted.
+  intros. unfold Asm.exec_load in *.
+  exploit eval_addrmode_inject; eauto. intro EMODINJ.
+  destruct (Mem.loadv chunk m1 (Asm.eval_addrmode ge a rs1)) eqn:MLOAD; try congruence.
+  exploit Mem.loadv_inject; eauto. intros (v2 & MLOADV & VINJ).
+  eexists. eexists. split.
+  - unfold exec_load. rewrite MLOADV. auto.
+  - inv H. eapply match_states_intro; eauto.
+    apply nextinstr_pres_inject. apply undef_regs_pres_inject.
+    apply regset_inject_expand; eauto.
+Qed.
 
 Lemma store_pres_glob_block_valid : forall m1 chunk b v ofs m2,
   Mem.store chunk m1 b ofs v = Some m2 -> glob_block_valid m1 -> glob_block_valid m2.
@@ -5459,7 +5458,7 @@ Proof.
   eapply store_pres_glob_block_valid; eauto.
 Qed.
 
-Lemma exec_store_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk r a1 a2 dregs
+Lemma exec_store_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk r a dregs
                          (MINJ: Mem.inject j (def_frame_inj m1) m1 m2)
                          (MATCHINJ: match_inj j)
                          (* (GINJFLATMEM: globs_inj_into_flatmem j) *)
@@ -5469,23 +5468,22 @@ Lemma exec_store_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk r a1 a2 dregs
                          (RSINJ: regset_inject j rs1 rs2)
                          (GBVALID: glob_block_valid m1),
                          (* (GMUNDEF: gid_map_for_undef_syms gm), *)
-    Asm.exec_store ge chunk m1 a1 rs1 r dregs sz = Next rs1' m1' ->
+    Asm.exec_store ge chunk m1 a rs1 r dregs sz = Next rs1' m1' ->
     exists rs2' m2',
-      FlatAsm.exec_store tge chunk m2 a2 rs2 r dregs sz = Next rs2' m2' /\
+      FlatAsm.exec_store tge chunk m2 a rs2 r dregs sz = Next rs2' m2' /\
       match_states (State rs1' m1') (State rs2' m2').
 Proof.
-(*   intros. unfold Asm.exec_store in *. *)
-(*   exploit eval_addrmode_inject; eauto. intro EMODINJ. *)
-(*   destruct (Mem.storev chunk m1 (Asm.eval_addrmode ge a1 rs1) (rs1 r)) eqn:MSTORE; try congruence. *)
-(*   exploit Mem.storev_mapped_inject; eauto. intros (m2' & MSTOREV & MINJ'). *)
-(*   eexists. eexists. split. *)
-(*   - unfold exec_store. rewrite MSTOREV. auto. *)
-(*   - inv H. eapply match_states_intro; eauto. *)
-(*     erewrite <- storev_pres_def_frame_inj; eauto. *)
-(*     apply nextinstr_pres_inject. repeat apply undef_regs_pres_inject. auto. *)
-(*     eapply storev_pres_glob_block_valid; eauto. *)
-(* Qed. *)
-Admitted.
+  intros. unfold Asm.exec_store in *.
+  exploit eval_addrmode_inject; eauto. intro EMODINJ.
+  destruct (Mem.storev chunk m1 (Asm.eval_addrmode ge a rs1) (rs1 r)) eqn:MSTORE; try congruence.
+  exploit Mem.storev_mapped_inject; eauto. intros (m2' & MSTOREV & MINJ').
+  eexists. eexists. split.
+  - unfold exec_store. rewrite MSTOREV. auto.
+  - inv H. eapply match_states_intro; eauto.
+    erewrite <- storev_pres_def_frame_inj; eauto.
+    apply nextinstr_pres_inject. repeat apply undef_regs_pres_inject. auto.
+    eapply storev_pres_glob_block_valid; eauto.
+Qed.
 
 
 (* Injection for cmpu_bool and cmplu_bool *)
