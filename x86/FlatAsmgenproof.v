@@ -4733,42 +4733,52 @@ Admitted.
 (* Qed. *)
   
 
-(* Lemma transl_prog_pres_main_id : forall gmap lmap prog dsize csize efsize tprog, *)
-(*     transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog -> *)
-(*     AST.prog_main prog = prog_main tprog. *)
-(* Proof. *)
-(*   intros. monadInv H. simpl. auto. *)
-(* Qed. *)
+Lemma transl_prog_pres_main_id : forall gmap lmap prog dsize csize tprog,
+    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
+    AST.prog_main prog = prog_main tprog.
+Proof.
+  intros. monadInv H. simpl. auto.
+Qed.
 
-(* Lemma main_ptr_inject: *)
-(*   forall gmap lmap dsize csize efsize *)
-(*     (MATCH_SMINJ: match_sminj gmap lmap (init_meminj gmap)) *)
-(*     (MAKEMAPS: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (TRANSL: transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog), *)
-(*     Val.inject (init_meminj gmap) *)
-(*                (Globalenvs.Genv.symbol_address *)
-(*                   (Genv.globalenv prog) *)
-(*                   (AST.prog_main prog) Ptrofs.zero) *)
-(*                (get_main_fun_ptr (globalenv tprog) tprog). *)
-(* Proof. *)
-(*   intros. *)
-(*   unfold match_prog in TRANSF. unfold transf_program in TRANSF. *)
-(*   repeat destr_in TRANSF.  inv MAKEMAPS. inv w. auto. *)
-(*   red in wf_prog_main_exists. rewrite Exists_exists in wf_prog_main_exists. *)
-(*   destruct wf_prog_main_exists as (def & IN & P).  *)
-(*   destruct def. destruct o; destruct P as [IDEQ P]; inv P. *)
-(*   exploit transl_prog_get_seg_block; eauto. *)
-(*   intros (sb & GETSEGB & GMAP). *)
-(*   inv MATCH_SMINJ. exploit agree_sminj_glob0; eauto. *)
-(*   intros (ofs' & b0 & b' & FINDSYM & SYMADDR & INJ). *)
-(*   unfold Globalenvs.Genv.symbol_address. destr_match; auto. *)
-(*   fold ge in EQ. rewrite EQ in FINDSYM. inv FINDSYM. *)
-(*   unfold get_main_fun_ptr.  *)
-(*   erewrite <- transl_prog_pres_main_id; eauto. *)
-(*   rewrite GETSEGB. fold tge. rewrite SYMADDR.  *)
-(*   eapply Val.inject_ptr; eauto. *)
-(*   rewrite Ptrofs.add_zero_l. rewrite Ptrofs.repr_unsigned. auto. *)
-(* Qed. *)
+
+Lemma symbol_address_inject : forall j id ofs
+                                (MATCHINJ: match_inj j),
+    Val.inject j (Senv.symbol_address ge id ofs) (Genv.symbol_address tge id ofs).
+Proof.
+  intros. unfold Senv.symbol_address.
+  inv MATCHINJ.
+  unfold Senv.find_symbol. simpl.
+  destruct (Globalenvs.Genv.find_symbol ge id) eqn:FINDSYM; auto.
+  exploit agree_inj_glob0; eauto.
+  intros (b' & ofs' & FINDSYM' & JB).
+  erewrite Genv.symbol_address_offset; eauto. 
+  eapply Val.inject_ptr; eauto.
+  rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
+Qed.
+
+Lemma main_ptr_inject:
+  forall gmap lmap dsize csize 
+    (MATCH_INJ: match_inj init_meminj)
+    (MAKEMAPS: make_maps prog = (gmap, lmap, dsize, csize))
+    (TRANSL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog),
+    Val.inject init_meminj
+               (Globalenvs.Genv.symbol_address
+                  (Globalenvs.Genv.globalenv prog)
+                  (AST.prog_main prog) Ptrofs.zero)
+               (Genv.symbol_address
+                  (globalenv tprog)
+                  (prog_main tprog) Ptrofs.zero).
+Proof.
+  intros.
+  unfold match_prog in TRANSF. unfold transf_program in TRANSF.
+  repeat destr_in TRANSF.  inv MAKEMAPS. inv w. auto.
+  red in wf_prog_main_exists. rewrite Exists_exists in wf_prog_main_exists.
+  destruct wf_prog_main_exists as (def & IN & P).
+  destruct def. destruct o; destruct P as [IDEQ P]; inv P.
+  erewrite <- transl_prog_pres_main_id; eauto.
+  eapply symbol_address_inject; eauto.
+Qed.
+
 
 
 Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Val.inject j (rs r) (rs r)) st1,
@@ -4893,7 +4903,7 @@ Proof.
       apply val_inject_set.
       apply val_inject_set.
       auto.
-      admit. (* eapply main_ptr_inject; eauto. *)
+      eapply main_ptr_inject; eauto.
       unfold Vnullptr. destr; auto.
       econstructor. unfold init_meminj. subst bstack. fold ge. rewrite peq_true. subst bstack'.  fold tge. eauto.
       rewrite Ptrofs.add_zero. auto.
@@ -4901,23 +4911,8 @@ Proof.
       unfold Genv.find_def in FD. eapply Genv.genv_defs_range in FD.
       revert FD. red. rewnb.
       fold ge. intros. xomega.
-Admitted.
-
-
-Lemma symbol_address_inject : forall j id ofs
-                                (MATCHINJ: match_inj j),
-    Val.inject j (Senv.symbol_address ge id ofs) (Genv.symbol_address tge id ofs).
-Proof.
-  intros. unfold Senv.symbol_address.
-  inv MATCHINJ.
-  unfold Senv.find_symbol. simpl.
-  destruct (Globalenvs.Genv.find_symbol ge id) eqn:FINDSYM; auto.
-  exploit agree_inj_glob0; eauto.
-  intros (b' & ofs' & FINDSYM' & JB).
-  erewrite Genv.symbol_address_offset; eauto. 
-  eapply Val.inject_ptr; eauto.
-  rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
 Qed.
+
 
 Context `{external_calls_ops : !ExternalCallsOps mem }.
 Context `{!EnableBuiltins mem}.
