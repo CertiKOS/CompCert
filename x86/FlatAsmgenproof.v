@@ -1443,7 +1443,7 @@ Record match_inj (mj: meminj) : Type :=
 
       agree_inj_glob : forall id b,
           Globalenvs.Genv.find_symbol ge id = Some b ->
-          exists b' ofs', Genv.symbol_address tge id Ptrofs.zero = Vptr b' ofs' /\
+          exists b' ofs', Genv.find_symbol tge id = Some (b', ofs') /\
           mj b = Some (b', Ptrofs.unsigned ofs');
 
       agree_inj_lbl : forall id b f l z,
@@ -4096,15 +4096,16 @@ Proof.
 Qed.
 
 
-(* Lemma genv_internal_codeblock_add_globals: *)
-(*   forall l g, *)
-(*     Genv.genv_internal_codeblock (add_globals g l) = Genv.genv_internal_codeblock g. *)
-(* Proof. *)
-(*   induction l; simpl; intros; auto. *)
-(*   rewrite IHl. unfold add_global.  *)
-(*   destruct a, p, o; auto. *)
-(*   destruct g0; auto. *)
-(* Qed. *)
+Lemma genv_internal_codeblock_add_globals:
+  forall l g,
+    Genv.genv_internal_codeblock (add_globals g l) = Genv.genv_internal_codeblock g.
+Proof.
+  induction l; simpl; intros; auto.
+  rewrite IHl. unfold add_global.
+  destruct a. destruct p. destr_match.
+  - destruct p. simpl. auto.
+  - auto.
+Qed.
 
 
 (* Lemma genv_segblocks_add_globals: *)
@@ -4619,6 +4620,7 @@ Lemma extfun_entry_is_external_init:
     make_maps prog = (gmap, lmap, dsize, csize) ->
     list_norepet (map fst (AST.prog_defs prog)) ->
     (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) ->
+    match_inj j ->
     extfun_entry_is_external j.
 Proof.
 Admitted.
@@ -4754,6 +4756,8 @@ Proof.
   erewrite Genv.symbol_address_offset; eauto. 
   eapply Val.inject_ptr; eauto.
   rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
+  unfold Genv.symbol_address. rewrite FINDSYM'. 
+  rewrite Ptrofs.add_zero_l. auto.
 Qed.
 
 Lemma main_ptr_inject:
@@ -5253,6 +5257,8 @@ Proof.
   erewrite Genv.symbol_address_offset; eauto. 
   eapply Val.inject_ptr; eauto.
   rewrite Ptrofs.repr_unsigned. apply Ptrofs.add_commut.
+  unfold Genv.symbol_address. rewrite SBOFS.
+  rewrite Ptrofs.add_zero_l. auto.
 Qed.
 
 
@@ -5948,7 +5954,7 @@ Proof.
     destruct (Globalenvs.Genv.find_symbol ge id0) eqn:FINDSYM; auto.
     exploit agree_inj_glob0; eauto.
     intros (b1 & ofs1 & GLBL & JB).
-    rewrite GLBL.
+    erewrite Genv.find_sym_to_addr with (ofs:=ofs1); eauto.
     rewrite <- (Ptrofs.add_zero_l ofs1).
     eapply Val.inject_ptr; eauto.
     rewrite Ptrofs.repr_unsigned. auto.
@@ -6012,8 +6018,10 @@ Proof.
     unfold Globalenvs.Genv.symbol_address. destr_match; auto.
     exploit (agree_inj_glob0 symb b0); eauto.
     intros (b1 & ofs1 & LBLOFS & JB). 
-    rewrite LBLOFS. econstructor; eauto.
-    simpl_goal. auto.
+    erewrite Genv.find_sym_to_addr with (ofs:=ofs1); eauto.
+    rewrite <- (Ptrofs.add_zero_l ofs1).
+    eapply Val.inject_ptr; eauto.
+    rewrite Ptrofs.repr_unsigned. auto.    
 
   - (* Pjcc *)
     unfold Asm.exec_instr in H6; simpl in H6.

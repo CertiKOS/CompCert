@@ -132,6 +132,15 @@ Proof.
     inv H.
 Qed.
 
+Lemma find_sym_to_addr : forall (ge:t) id b ofs,
+    find_symbol ge id = Some (b, ofs) ->
+    symbol_address ge id Ptrofs.zero = Vptr b ofs.
+Proof.
+  intros. unfold symbol_address. rewrite H.
+  rewrite Ptrofs.add_zero_l. auto.
+Qed.
+
+
 Lemma find_symbol_genv_next_absurd:
   forall (id : ident) (ge : t) b, find_symbol ge id = Some (genv_next ge, b) -> False.
 Admitted.
