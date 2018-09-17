@@ -17,11 +17,6 @@ Local Open Scope error_monad_scope.
 
 Definition alignw:Z := 8.
 
-Definition undef_segid: segid_type := 1%positive.
-Definition stack_segid: segid_type := 2%positive.
-Definition data_segid:  segid_type := 3%positive.
-Definition code_segid:  segid_type := 4%positive.
-
 
 Definition data_label (ofs:Z) : seglabel := (data_segid, Ptrofs.repr ofs).
 Definition code_label (ofs:Z) : seglabel := (code_segid, Ptrofs.repr ofs).
