@@ -76,6 +76,7 @@ GAMES=\
   PCST.v \
   LTS.v \
   Trees.v \
+  RTS.v \
   GameSemantics.v \
   Composition.v \
   Bigstep.v \
