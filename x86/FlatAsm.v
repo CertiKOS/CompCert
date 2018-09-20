@@ -1090,10 +1090,6 @@ Definition lblmap_to_symbmap (smap: segid_type -> block) (lmap:LABEL_MAP_TYPE) :
     | Some (sid,ofs) => Some (smap sid, ofs)
     end.
 
-(* The global block is shifted by 3 to get pass the 
-   undefined, code and data segments *)
-Definition shift_glob_block (b:block) := pos_advance_N b num_segments.
-
 Definition segmap := 
   fun sid => if eq_block sid code_segid then 
             code_block 

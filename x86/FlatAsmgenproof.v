@@ -244,14 +244,14 @@ Section UPDATE_MAPS.
 
   Variable gmap: GID_MAP_TYPE.
   Variable lmap: LABEL_MAP_TYPE.
-  Variables dsize csize efsize: Z.
+  Variables dsize csize: Z.
 
   Variable i: ident.
   Variable def: option (globdef Asm.fundef unit).
 
   Variable gmap': GID_MAP_TYPE.
   Variable lmap': LABEL_MAP_TYPE.
-  Variables dsize' csize' efsize': Z.
+  Variables dsize' csize': Z.
 
   Hypothesis UPDATE: update_maps_def gmap lmap dsize csize i def = (gmap', lmap', dsize', csize').
 
@@ -345,9 +345,7 @@ Section UPDATE_MAPS.
   Qed.
 
 
-
-    Hypothesis dsize_div: (alignw | dsize).
-    Hypothesis efsize_div: (alignw | efsize).
+  Hypothesis dsize_div: (alignw | dsize).
 
   Lemma update_dsize_div:
     (alignw | dsize').
@@ -4180,6 +4178,54 @@ Proof.
   erewrite Mem.push_new_stage_stack. simpl. auto.
 Qed.
 
+Definition find_symbol_block_bound (ge:genv) :=
+  forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).
+
+Lemma add_global_pres_find_symbol_block_bound: forall ge def,
+  find_symbol_block_bound ge -> find_symbol_block_bound (add_global ge def).
+Proof.
+  unfold find_symbol_block_bound. intros.
+  unfold add_global in *. destruct def. destruct p. simpl in *.
+  destruct o. destruct g. destruct f.
+  - apply Pos.lt_lt_succ. eapply H; eauto.
+  - destruct ident_eq. 
+    + subst. inv H0. apply Pos.lt_succ_diag_r.
+    + apply Pos.lt_lt_succ. eapply H; eauto.
+  - apply Pos.lt_lt_succ. eapply H; eauto.
+  - destruct ident_eq. 
+    + subst. inv H0. apply Pos.lt_succ_diag_r.
+    + apply Pos.lt_lt_succ. eapply H; eauto.
+Qed.
+
+Lemma add_globals_pres_find_symbol_block_bound: forall defs ge,
+  find_symbol_block_bound ge -> find_symbol_block_bound (add_globals ge defs).
+Proof.
+  induction defs; intros; simpl.
+  - auto.
+  - apply IHdefs. apply add_global_pres_find_symbol_block_bound. auto.
+Qed.
+
+
+Lemma find_symbol_globenv_block_bound :
+  forall (id : ident) b ofs, Genv.find_symbol (globalenv tprog) id = Some (b, ofs) 
+                        -> Pos.lt b (Genv.genv_next (globalenv tprog)).
+Proof.
+  unfold globalenv. simpl. intros.
+  exploit add_globals_pres_find_symbol_block_bound; eauto. 
+  red. simpl. intros.
+  unfold match_prog in TRANSF. unfold transf_program in TRANSF.
+  repeat destr_in TRANSF.
+  clear H. monadInv H2; simpl in H0.
+  unfold gidmap_to_symbmap in H0. 
+  destr_match_in H0; inv H0. destruct s.
+  inv H1. 
+  exploit update_map_gmap_range; eauto. simpl.
+  unfold segmap.
+  intros. repeat destruct H; simpl.
+  - unfold code_block. apply Pos.lt_le_trans with 3%positive.
+    apply Pos.lt_succ_diag_r. admit.
+  - unfold data_block. apply Pos.lt_succ_diag_r.
+Admitted.
 
 Lemma init_meminj_genv_next_inv : forall b delta
     (MINJ: init_meminj b = Some (Genv.genv_next tge, delta)),
@@ -4191,19 +4237,29 @@ Proof.
   - destr_match_in H0; inv H0.
     destr_match_in H1; inv H1.
     destruct p. inv H0.
-    exfalso. eapply Genv.find_symbol_genv_next_absurd; eauto.
+    exploit find_symbol_globenv_block_bound; eauto. 
+    intros.
+    exfalso. generalize H.
+    setoid_rewrite <- Pos.compare_nlt_iff.
+    apply Pos.lt_irrefl.
 Qed.
 
+
+Lemma genv_internal_codeblock_add_global:
+  forall g def,
+    Genv.genv_internal_codeblock (add_global g def) = Genv.genv_internal_codeblock g.
+Proof.
+  unfold add_global. intros. destruct def. destruct p. simpl. auto.
+Qed.
 
 Lemma genv_internal_codeblock_add_globals:
   forall l g,
     Genv.genv_internal_codeblock (add_globals g l) = Genv.genv_internal_codeblock g.
 Proof.
   induction l; simpl; intros; auto.
-  rewrite IHl. unfold add_global.
-  destruct a. destruct p. destr_match.
-  - destruct p. simpl. auto.
-  - auto.
+  rewrite IHl. 
+  rewrite genv_internal_codeblock_add_global.
+  auto.
 Qed.
 
 
@@ -4713,52 +4769,27 @@ Admitted.
 (*   simpl. f_equal. rewrite Ptrofs.add_zero. rewrite Ptrofs.repr_unsigned. auto. *)
 (* Qed. *)
 
-Lemma find_symbol_not_genv_next:
-  forall (id : ident) b ofs, Genv.find_symbol tge id = Some (b, ofs) -> b <> Genv.genv_next tge.
-Proof.
-Admitted.  
 
 Lemma extfun_entry_is_external_init:
-  forall gmap lmap dsize csize j,
+  forall gmap lmap dsize csize,
     transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
     make_maps prog = (gmap, lmap, dsize, csize) ->
     list_norepet (map fst (AST.prog_defs prog)) ->
-    (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) ->
-    extfun_entry_is_external j.
+    extfun_entry_is_external init_meminj.
 Proof.
-  intros gmap lmap dsize csize j TP UM LNR INJ b b' f ofs FFP JB.
-  assert (b <> Globalenvs.Genv.genv_next ge).
-  {
-    unfold Globalenvs.Genv.find_funct_ptr in FFP. destr_in FFP.
-    unfold Genv.find_def in Heqo. eapply Globalenvs.Genv.genv_defs_range in Heqo.
-    apply Plt_ne. auto.
-  }
-  rewrite INJ in JB; auto.
-  unfold init_meminj in JB.
-  rewrite pred_dec_false in JB by auto.
-  destr_in JB. repeat destr_in JB.
-  assert (b' <> Genv.genv_next tge). eapply find_symbol_not_genv_next; eauto.
-  unfold tge.
-  unfold globalenv. simpl.
-  rewrite genv_internal_codeblock_add_globals. simpl.
-  rewrite genv_segblocks_add_globals. simpl.
-  unfold gen_segblocks. simpl.
-  unfold gen_internal_codeblock.
-  unfold proj_sumbool. destr. contradict e.
-  exploit update_map_ext_funct; eauto. intro EQ. rewrite EQ.
-  rewrite pred_dec_false. rewrite pred_dec_false. rewrite pred_dec_true.
-  rewrite pred_dec_false. rewrite pred_dec_true; eauto. congruence.
-  erewrite transl_prog_seg_code; eauto. erewrite transl_prog_seg_data; eauto. unfold code_segid, data_segid. congruence.
-  erewrite transl_prog_seg_ext; eauto.
-  erewrite transl_prog_seg_code; eauto. unfold code_segid, extfuns_segid. congruence.
-  erewrite transl_prog_seg_data; eauto. unfold extfuns_segid, data_segid. congruence.
-Qed.
-
-
-(*   intros gmap lmap dsize csize efsize j TP UM LNR INJ b b' f ofs FFP JB. *)
+Admitted.
+(* Lemma extfun_entry_is_external_init: *)
+(*   forall gmap lmap dsize csize j, *)
+(*     transl_prog_with_map gmap lmap prog dsize csize = OK tprog -> *)
+(*     make_maps prog = (gmap, lmap, dsize, csize) -> *)
+(*     list_norepet (map fst (AST.prog_defs prog)) -> *)
+(*     (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) -> *)
+(*     extfun_entry_is_external j. *)
+(* Proof. *)
+(*   intros gmap lmap dsize csize j TP UM LNR INJ b b' f ofs FFP JB. *)
 (*   assert (b <> Globalenvs.Genv.genv_next ge). *)
 (*   { *)
-(*     unfold Genv.find_funct_ptr in FFP. destr_in FFP. *)
+(*     unfold Globalenvs.Genv.find_funct_ptr in FFP. destr_in FFP. *)
 (*     unfold Genv.find_def in Heqo. eapply Globalenvs.Genv.genv_defs_range in Heqo. *)
 (*     apply Plt_ne. auto. *)
 (*   } *)
@@ -4766,9 +4797,20 @@ Qed.
 (*   unfold init_meminj in JB. *)
 (*   rewrite pred_dec_false in JB by auto. *)
 (*   destr_in JB. repeat destr_in JB. *)
+(*   assert (b' <> Genv.genv_next tge). eapply find_symbol_not_genv_next; eauto. *)
 (*   unfold tge. *)
 (*   unfold globalenv. simpl. *)
 (*   rewrite genv_internal_codeblock_add_globals. simpl. *)
+(*   unfold gen_internal_codeblock. *)
+(*   erewrite transl_prog_seg_code; eauto.  *)
+(*   unfold segmap. simpl. *)
+(*   Admitted. *)
+
+(*   erewrite transl_prog_seg_ext; eauto. *)
+(*   erewrite transl_prog_seg_code; eauto. unfold code_segid, extfuns_segid. congruence. *)
+(*   erewrite transl_prog_seg_data; eauto. unfold extfuns_segid, data_segid. congruence. *)
+  
+
 (*   rewrite genv_segblocks_add_globals. simpl. *)
 (*   unfold gen_segblocks. simpl. *)
 (*   unfold gen_internal_codeblock. *)
