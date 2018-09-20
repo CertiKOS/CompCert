@@ -4353,15 +4353,127 @@ Qed.
 (*   intros. monadInvX H. simpl. auto. *)
 (* Qed. *)
 
-Lemma valid_instr_offset_is_internal_init:
-  forall gmap lmap dsize csize j,
-    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
+Lemma transl_prog_map : forall g l p p' dz sz,
+  transl_prog_with_map g l p dz sz = OK p' -> glob_map p' = g.
+Proof.
+  intros. monadInv H. simpl. auto.
+Qed.
+
+Lemma add_globals_pres_internal_block : forall defs ge ge' b,
+  add_globals ge defs = ge' -> 
+  Genv.genv_internal_codeblock ge' b = Genv.genv_internal_codeblock ge b.
+Admitted.
+
+
+Lemma gidmap_symbmap_internal_block:
+  forall gmap lmap dsize csize b b' f i ofs,
     make_maps prog = (gmap, lmap, dsize, csize) ->
+    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
     list_norepet (map fst (AST.prog_defs prog)) ->
-    (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) ->
-    valid_instr_offset_is_internal j.
+    Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) ->
+    Genv.invert_symbol ge b = Some i ->
+    gidmap_to_symbmap segmap (glob_map tprog) i = Some (b',ofs) ->
+    b' = code_block.
+Proof.
+  intros. 
+  exploit transl_prog_map; eauto. intros. subst.
+  unfold gidmap_to_symbmap in H4. destr_match_in H4; inv H4.
+  destruct s. inv H6.
+  exploit update_map_funct; eauto. simpl. intros. subst.
+  unfold segmap. simpl. auto.
+Qed.
+
+
+Lemma transl_prog_list_norepet : forall gmap lmap dsize csize
+  (TL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+  (NPT: list_norepet (map fst (AST.prog_defs prog))),
+  list_norepet (map fst (prog_defs tprog)).
 Proof.
 Admitted.
+
+Lemma transl_prog_pres_internal_fun : forall g l p dz cz p' i def
+  (TL: transl_prog_with_map g l p dz cz = OK p')
+  (IN: In (i,def) (AST.prog_defs p)),
+  exists def' sb c, In (i, def', sb) (prog_defs p') /\ transl_globdef g i def = OK (i, def', sb, c).
+Proof.
+Admitted.
+
+Definition def_is_var_or_internal_fun (i:ident) (defs: list (ident * option gdef * segblock)) := 
+  forall def sb, In (i, def, sb) defs -> (exists v, def = Some (Gvar v)) \/ (exists f, def = (Some (Gfun (Internal f)))).
+
+Lemma add_globals_pres_find_symbol : forall ge i defs,
+  def_is_var_or_internal_fun i defs ->
+  Genv.find_symbol (add_globals ge defs) i = Genv.find_symbol ge i.
+Admitted.
+
+Lemma unique_def_is_internal_fun : forall defs i f sb
+  (NPT: list_norepet (map fst defs))
+  (IN: In (i, Some (Gfun (Internal f)), sb) defs),
+  def_is_var_or_internal_fun i defs.
+Admitted.
+
+
+Lemma find_symbol_internal_block:
+  forall gmap lmap dsize csize b b' f i ofs
+    (MK: make_maps prog = (gmap, lmap, dsize, csize))
+    (TL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (NPT: list_norepet (map fst (AST.prog_defs prog)))
+    (FPTR: Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f))
+    (INVS: Globalenvs.Genv.invert_symbol ge b = Some i)
+    (FSYM: Genv.find_symbol tge i = Some (b',ofs)),
+    b' = code_block.
+Proof.
+  intros. apply Genv.invert_find_symbol in INVS.
+  unfold ge in *. exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+  intros INS.
+  exploit transl_prog_list_norepet; eauto. intros NPT'.
+  exploit transl_prog_pres_internal_fun; eauto. 
+  intros (def' & sb & c & IN' & TLGF).
+  monadInv TLGF.
+  unfold tge, globalenv in FSYM. 
+  assert (def_is_var_or_internal_fun i (prog_defs tprog)).
+  eapply unique_def_is_internal_fun; eauto.
+  erewrite add_globals_pres_find_symbol in FSYM; eauto. simpl in FSYM.
+  eapply gidmap_symbmap_internal_block; eauto.
+  apply Genv.find_invert_symbol. auto.
+Qed.
+
+Lemma valid_instr_offset_is_internal_init:
+  list_norepet (map fst (AST.prog_defs prog)) ->
+  valid_instr_offset_is_internal init_meminj.
+Proof.
+  intro NRP.
+  red.
+  intros b b' f ofs i ofs' FFP FI INJ.
+  unfold Genv.genv_internal_codeblock. 
+  destruct tge eqn:TGE.
+  unfold tge in TGE. unfold globalenv in TGE.
+  exploit (fun ge ge' => add_globals_pres_internal_block (prog_defs tprog) ge ge' b'); eauto. 
+  simpl. intros. rewrite H. clear TGE H.
+  assert (match_prog prog tprog) as TRANSF' by auto.
+  unfold match_prog in TRANSF'. unfold transf_program in TRANSF'.
+  repeat destr_in TRANSF'.
+  unfold gen_internal_codeblock.
+  erewrite transl_prog_seg_code; eauto.
+  unfold segmap. simpl.
+  unfold init_meminj in INJ. destr_in INJ.
+  exfalso. subst. unfold ge in FFP. 
+  exploit Globalenvs.Genv.genv_next_find_funct_ptr_absurd; eauto.
+  destr_in INJ; inv INJ.
+  destr_in H1; inv H1. destruct p. inv H2.
+  fold tge in Heqo0.
+  assert (b' = code_block).
+  eapply find_symbol_internal_block; eauto. subst. auto.
+Qed.
+
+(* Lemma valid_instr_offset_is_internal_init: *)
+(*   forall gmap lmap dsize csize j, *)
+(*     transl_prog_with_map gmap lmap prog dsize csize = OK tprog -> *)
+(*     make_maps prog = (gmap, lmap, dsize, csize) -> *)
+(*     list_norepet (map fst (AST.prog_defs prog)) -> *)
+(*     (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) -> *)
+(*     valid_instr_offset_is_internal j. *)
+(* Proof. *)
 (*   intros gmap lmap dsize csize j TP UM LNR INJ b b' f ofs i ofs' FFP FI JB. *)
 (*   assert (b <> Globalenvs.Genv.genv_next ge). *)
 (*   { *)
