@@ -98,7 +98,7 @@ BACKEND=\
   Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v \
   Inlining.v Inliningspec.v Inliningproof.v \
   Tailcall.v Tailcallproof.v \
-  AsmFacts.v RawAsm.v RawAsmproof.v \
+	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
 	AsmRegs.v RealAsm.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
   Segment.v \
   FlatAsm.v FlatAsmGlobenv.v FlatAsmGlobdef.v FlatAsmBuiltin.v \

@@ -38,7 +38,7 @@ Require Import Zwf.
 Require Import Axioms Coqlib Errors Maps AST Linking.
 Require Import Integers Floats Values Memory.
 Require Import Segment.
-Require Import FlatAsmGlobdef Globalenvs.
+Require Import Globalenvs.
 
 Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
 Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
@@ -59,52 +59,87 @@ Module Genv.
 Section GENV.
 
 Variable F: Type.  (**r The type of function descriptions *)
+Variable V: Type.  (**r The type of information attached to variables *)
 Variable I: Type.  (**r The type of instructions *)
 
 (** The type of global environments. *)
 
 Record t: Type := mkgenv {
   genv_public: list ident;
-  genv_defs: block -> ptrofs -> option F;                 (**r mapping offsets -> function defintions *)
-  genv_instrs: block -> ptrofs -> option I;           (**r mapping offset -> instructions *)
+  genv_symb: ident -> option (block * ptrofs);        (**r mapping symbol -> block * ptrofs *)
+  genv_defs: block -> ptrofs -> option (globdef F V);             (**r mapping offsets -> function defintions *)
+  genv_instrs: block -> ptrofs -> option I;           (**r mapping offset -> instructions * function id *)
   genv_internal_codeblock : block -> bool;
-  genv_segblocks: segid_type -> block;
+  (* genv_segblocks: segid_type -> block; *)
+  genv_lbl: ident -> ident -> option (block * ptrofs);
   genv_next : block;
   genv_senv : Globalenvs.Senv.t;
 }.
 
 (** ** Lookup functions *)
 
-(** [find_funct_ptr ge ofs] returns the function description associated with
-    the given address. *)
+Definition find_symbol (ge: t) (id: ident) : option (block * ptrofs):=
+  ge.(genv_symb) id.
+
+Definition symbol_address (ge: t) (id: ident) (ofs: ptrofs) : val :=
+  match find_symbol ge id with
+  | Some (b, o) => Vptr b (Ptrofs.add ofs o)
+  | None => Vundef
+  end.
+
+Definition find_def (ge: t) (b: block) (ofs:ptrofs): option (globdef F V) :=
+  genv_defs ge b ofs.
+
+Definition find_funct_ptr (ge: t) (b: block) (ofs:ptrofs) : option F :=
+  match find_def ge b ofs with Some (Gfun f) => Some f | _ => None end.
 
 Definition find_funct (ge: t) (v:val) : option F :=
   match v with
-  | Vptr b ofs => genv_defs ge b ofs
+  | Vptr b ofs => find_funct_ptr ge b ofs
   | _ => None
+  end.
+
+Definition label_address (ge: t) (fid:ident) (lid:ident) : val :=
+  match genv_lbl ge fid lid with
+  | None => Vundef
+  | Some (b,o) => Vptr b o
   end.
 
 Definition label_to_ptr (smap: segid_type -> block) (l:seglabel) : val :=
   Vptr (smap (fst l)) (snd l).
 
+(* Definition symbol_address ge id ofs :=  *)
+(*   let l :=  *)
+(*   label_to_ptr (genv_segblocks ge) (offset_seglabel l ofs). *)
 
-Definition symbol_address ge l ofs := 
-  label_to_ptr (genv_segblocks ge) (offset_seglabel l ofs).
+(* Definition label_to_block_offset (smap: segid_type -> block) (l:seglabel) : (block * Z) := *)
+(*   (smap (fst l), Ptrofs.unsigned (snd l)). *)
 
-Definition label_to_block_offset (smap: segid_type -> block) (l:seglabel) : (block * Z) :=
-  (smap (fst l), Ptrofs.unsigned (snd l)).
-
-Definition symbol_block_offset ge l := 
-  label_to_block_offset (genv_segblocks ge) l.
+(* Definition symbol_block_offset ge l :=  *)
+(*   label_to_block_offset (genv_segblocks ge) l. *)
 
 Lemma symbol_address_offset : forall ge ofs1 b s ofs,
     symbol_address ge s Ptrofs.zero = Vptr b ofs ->
     symbol_address ge s ofs1 = Vptr b (Ptrofs.add ofs ofs1).
 Proof.
-  unfold symbol_address. intros. destruct s.
-  simpl in *. unfold label_to_ptr in *. inv H.
-  rewrite Ptrofs.add_zero. auto.
+  unfold symbol_address. intros. 
+  destruct (find_symbol ge s) eqn:FSM.
+  - 
+    destruct p.
+    simpl in *. unfold label_to_ptr in *. inv H. 
+    rewrite Ptrofs.add_zero_l. rewrite Ptrofs.add_commut. auto.
+  - 
+    inv H.
 Qed.
+
+Lemma find_sym_to_addr : forall (ge:t) id b ofs,
+    find_symbol ge id = Some (b, ofs) ->
+    symbol_address ge id Ptrofs.zero = Vptr b ofs.
+Proof.
+  intros. unfold symbol_address. rewrite H.
+  rewrite Ptrofs.add_zero_l. auto.
+Qed.
+
 
 (* Definition get_label_offset (ge: t) (l:seglabel) (ofs:ptrofs): option ptrofs := *)
 (*   get_sect_label_offset (genv_smap ge) l ofs. *)
