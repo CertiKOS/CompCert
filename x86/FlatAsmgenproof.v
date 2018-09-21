@@ -4368,7 +4368,7 @@ Proof.
     repeat eexists. apply in_cons. eauto. eauto.
 Qed.
 
-Lemma transl_prog_pres_internal_fun : forall g l p dz cz p' i def
+Lemma transl_prog_pres_def : forall g l p dz cz p' i def
   (TL: transl_prog_with_map g l p dz cz = OK p')
   (IN: In (i,def) (AST.prog_defs p)),
   exists def' sb c, In (i, def', sb) (prog_defs p') /\ transl_globdef g i def = OK (i, def', sb, c).
@@ -4454,7 +4454,7 @@ Proof.
   unfold ge in *. exploit Genv.find_symbol_funct_ptr_inversion; eauto.
   intros INS.
   exploit transl_prog_list_norepet; eauto. intros NPT'.
-  exploit transl_prog_pres_internal_fun; eauto. 
+  exploit transl_prog_pres_def; eauto. 
   intros (def' & sb & c & IN' & TLGF).
   monadInv TLGF.
   unfold tge, globalenv in FSYM. 
@@ -4831,20 +4831,59 @@ Qed.
 (*   apply H1. exists x; split; auto. eauto. auto. *)
 (* Qed. *)
 
+
 Lemma extfun_transf:
-  forall gmap lmap dsize csize j,
-    wf_prog prog ->
-    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
-    make_maps prog = (gmap, lmap, dsize, csize) ->
-    dsize + csize <= Ptrofs.max_unsigned ->
-    list_norepet (map fst (AST.prog_defs prog)) ->
-    (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) ->
+  forall gmap lmap dsize csize 
+    (* wf_prog prog -> *)
+    (TL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (* make_maps prog = (gmap, lmap, dsize, csize) -> *)
+    (* dsize + csize <= Ptrofs.max_unsigned -> *)
+    (NPT: list_norepet (map fst (AST.prog_defs prog))),
     forall b b' f ofs
       (FFP : Globalenvs.Genv.find_funct_ptr ge b = Some (External f))
-      (JB: j b = Some (b', ofs)),
+      (JB: init_meminj b = Some (b', ofs)),
       Genv.find_funct tge (Vptr b' (Ptrofs.repr ofs)) = Some (External f).
 Proof.
+  intros.
+  unfold init_meminj in JB. destr_in JB.
+  - inv JB. unfold ge in FFP.
+    exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+  - destr_in JB; inv JB. destr_in H0; inv H0.
+    destruct p. inv H1.
+    apply Genv.invert_find_symbol in Heqo.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto. intros IN.
+    exploit transl_prog_list_norepet; eauto. intros NPT'.
+    exploit transl_prog_pres_def; eauto.
+    intros (def' & sb & code & IN' & TLDEF).
+    monadInv TLDEF.    
+    unfold tge. rewrite Ptrofs.repr_unsigned.
+
+(* Definition def_non_or_external (def:option gdef) := *)
+(*   def = None \/ exists f, def = Some (Gfun (External f)). *)
+
+(* Lemma  *)
+(*     In (i, def , sb) (prog_defs tprog) -> *)
+(*     Genv.find_symbol (globalenv tprog) i = Some (b, o) -> *)
+(*     Genv.find_def (globalenv tprog) b o = def *)
+
+
+(* unfold globalenv. *)
+
 Admitted.
+
+(* Lemma extfun_transf: *)
+(*   forall gmap lmap dsize csize j, *)
+(*     wf_prog prog -> *)
+(*     transl_prog_with_map gmap lmap prog dsize csize = OK tprog -> *)
+(*     make_maps prog = (gmap, lmap, dsize, csize) -> *)
+(*     dsize + csize <= Ptrofs.max_unsigned -> *)
+(*     list_norepet (map fst (AST.prog_defs prog)) -> *)
+(*     (forall b, b <> Globalenvs.Genv.genv_next ge -> j b = init_meminj b) -> *)
+(*     forall b b' f ofs *)
+(*       (FFP : Globalenvs.Genv.find_funct_ptr ge b = Some (External f)) *)
+(*       (JB: j b = Some (b', ofs)), *)
+(*       Genv.find_funct tge (Vptr b' (Ptrofs.repr ofs)) = Some (External f). *)
+(* Proof. *)  
 (*   intros gmap lmap dsize csize efsize j WF TP UM SZ LNR INJ b b' f ofs FFP JB. *)
 (*   assert (b <> Globalenvs.Genv.genv_next ge). *)
 (*   { *)
@@ -5215,7 +5254,6 @@ Proof.
     + eapply extfun_entry_is_external_init; eauto. inv w; auto.
     + red.
       intros. eapply extfun_transf; eauto. inv w; auto.
-      rewrite H6. eauto.
     + red. unfold rs0, rs0'.
       apply val_inject_set.
       apply val_inject_set.
