@@ -4359,11 +4359,20 @@ Proof.
   intros. monadInv H. simpl. auto.
 Qed.
 
-Lemma add_globals_pres_internal_block : forall defs ge ge' b,
-  add_globals ge defs = ge' -> 
-  Genv.genv_internal_codeblock ge' b = Genv.genv_internal_codeblock ge b.
-Admitted.
+Lemma add_global_pres_internal_block : forall def ge b,
+  Genv.genv_internal_codeblock (add_global ge def) b = Genv.genv_internal_codeblock ge b.
+Proof.
+  destruct def. destruct p. simpl. intros. auto.
+Qed.
 
+Lemma add_globals_pres_internal_block : forall defs ge ge' b,
+  add_globals ge defs = ge' ->
+  Genv.genv_internal_codeblock ge' b = Genv.genv_internal_codeblock ge b.
+Proof.
+  induction defs; intros; subst; simpl.
+  - auto.
+  - erewrite (IHdefs (add_global ge0 a)); eauto. erewrite add_global_pres_internal_block; eauto.
+Qed.
 
 Lemma gidmap_symbmap_internal_block:
   forall gmap lmap dsize csize b b' f i ofs,
