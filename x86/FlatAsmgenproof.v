@@ -4275,11 +4275,20 @@ Proof.
   intros. monadInv H. simpl. auto.
 Qed.
 
-Lemma add_globals_pres_internal_block : forall defs ge ge' b,
-  add_globals ge defs = ge' -> 
-  Genv.genv_internal_codeblock ge' b = Genv.genv_internal_codeblock ge b.
-Admitted.
+Lemma add_global_pres_internal_block : forall def ge b,
+  Genv.genv_internal_codeblock (add_global ge def) b = Genv.genv_internal_codeblock ge b.
+Proof.
+  destruct def. destruct p. simpl. intros. auto.
+Qed.
 
+Lemma add_globals_pres_internal_block : forall defs ge ge' b,
+  add_globals ge defs = ge' ->
+  Genv.genv_internal_codeblock ge' b = Genv.genv_internal_codeblock ge b.
+Proof.
+  induction defs; intros; subst; simpl.
+  - auto.
+  - erewrite (IHdefs (add_global ge0 a)); eauto. erewrite add_global_pres_internal_block; eauto.
+Qed.
 
 Lemma gidmap_symbmap_internal_block:
   forall gmap lmap dsize csize b b' f i ofs,
@@ -4299,35 +4308,137 @@ Proof.
   unfold segmap. simpl. auto.
 Qed.
 
+Lemma transl_globdef_pres_index : forall gmap i o o' s c i',
+  transl_globdef gmap i o = OK (i', o', s, c) -> i' = i.
+Proof.
+  intros. destruct o. destruct g. destruct f.
+  - monadInv H. auto.
+  - monadInv H. auto.
+  - monadInvX H. auto.
+  - monadInv H. auto.
+Qed.
+
+Lemma transl_globdefs_pres_index: forall defs gmap defs' code
+  (TL: transl_globdefs gmap defs = OK (defs', code))
+  (NPT: list_norepet (map fst (defs))),
+  map fst defs = map (fun '(i,_,_) => i) defs'.
+Proof.
+  induction defs; intros; simpl.
+  - monadInv TL. auto.
+  - destruct a. monadInv TL. destruct x. destruct p. destruct p.
+    exploit transl_globdef_pres_index; eauto. intros. subst.
+    inv EQ2. simpl.
+    exploit IHdefs; eauto.
+    inv NPT. auto.
+    intros. congruence.
+Qed.
+
+Lemma transl_globdefs_list_norepet: forall defs gmap defs' code
+  (TL: transl_globdefs gmap defs = OK (defs', code))
+  (NPT: list_norepet (map fst (defs))),
+  list_norepet (map (fun '(i,_,_) => i) (defs')).
+Proof.
+  intros. exploit transl_globdefs_pres_index; eauto.
+  intros. congruence.
+Qed.
 
 Lemma transl_prog_list_norepet : forall gmap lmap dsize csize
   (TL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
   (NPT: list_norepet (map fst (AST.prog_defs prog))),
-  list_norepet (map fst (prog_defs tprog)).
+  list_norepet (map (fun '(i,_,_) => i) (prog_defs tprog)).
 Proof.
-Admitted.
+  intros. monadInv TL. simpl.
+  eapply transl_globdefs_list_norepet; eauto.
+Qed.
+
+
+Lemma transl_globdefs_pres_internal_fun : forall defs g defs' code i def
+  (TL: transl_globdefs g defs = OK (defs', code))
+  (IN: In (i,def) defs),
+  exists def' sb c, In (i, def', sb) defs' /\ transl_globdef g i def = OK (i, def', sb, c).
+Proof.
+  induction defs; intros; simpl; inv IN.
+  - monadInv TL. destruct x. inv EQ2.
+    destruct p. destruct p.
+    exploit transl_globdef_pres_index; eauto. intros. subst.
+    repeat eexists; eauto. apply in_eq.
+  - destruct a. monadInv TL. destruct x. inv EQ2.
+    exploit IHdefs; eauto. 
+    intros (def' & sb & c0 & IN & TL).
+    repeat eexists. apply in_cons. eauto. eauto.
+Qed.
 
 Lemma transl_prog_pres_internal_fun : forall g l p dz cz p' i def
   (TL: transl_prog_with_map g l p dz cz = OK p')
   (IN: In (i,def) (AST.prog_defs p)),
   exists def' sb c, In (i, def', sb) (prog_defs p') /\ transl_globdef g i def = OK (i, def', sb, c).
 Proof.
-Admitted.
+  intros. monadInv TL. simpl.
+  eapply transl_globdefs_pres_internal_fun; eauto.
+Qed.
 
-Definition def_is_var_or_internal_fun (i:ident) (defs: list (ident * option gdef * segblock)) := 
-  forall def sb, In (i, def, sb) defs -> (exists v, def = Some (Gvar v)) \/ (exists f, def = (Some (Gfun (Internal f)))).
+Definition def_is_var_or_internal_fun  (def: (ident * option gdef * segblock)) := 
+  let '(_,d,_) := def in
+  (exists v, d = Some (Gvar v)) \/ (exists f, d = (Some (Gfun (Internal f)))).
 
-Lemma add_globals_pres_find_symbol : forall ge i defs,
-  def_is_var_or_internal_fun i defs ->
+Definition defs_is_var_or_internal_fun (i:ident) (defs: list (ident * option gdef * segblock)) :=
+  forall def sb, In (i, def, sb) defs -> def_is_var_or_internal_fun (i, def, sb).
+                                                    
+Lemma add_global_pres_find_symbol : forall def ge i,
+  def_is_var_or_internal_fun def ->
+  Genv.find_symbol (add_global ge def) i = Genv.find_symbol ge i.
+Proof.
+  intros. destruct def. destruct p. simpl.
+  destruct o. destruct g. destruct f.
+  - auto.
+  - destruct ident_eq. 
+    + subst. inv H. inv H0. inv H. inv H0. inv H.
+    + auto.
+  - auto.
+  - destruct ident_eq.
+    + subst. inv H. inv H0. inv H. inv H0. inv H.
+    + auto.
+Qed.
+
+Lemma add_globals_pres_find_symbol : forall defs ge i,
+  defs_is_var_or_internal_fun i defs ->
   Genv.find_symbol (add_globals ge defs) i = Genv.find_symbol ge i.
-Admitted.
+Proof.
+  induction defs; intros; simpl.
+  - auto.
+  - assert (defs_is_var_or_internal_fun i defs).
+    red. intros. apply H. apply in_cons. auto.
+    exploit (IHdefs (add_global ge0 a) i); eauto.
+    intros FS. rewrite FS.
+    destruct a. destruct p.
+    destruct (ident_eq i i0).
+    + subst. 
+      apply add_global_pres_find_symbol. 
+      apply H. apply in_eq.
+    + unfold add_global. simpl.
+      destruct o. destruct g. destruct f.
+      * auto.
+      * destruct ident_eq. contradiction. auto.
+      * auto.
+      * destruct ident_eq. contradiction. auto.
+Qed.
 
 Lemma unique_def_is_internal_fun : forall defs i f sb
-  (NPT: list_norepet (map fst defs))
+  (NPT: list_norepet (map (fun '(i,_,_) => i) defs))
   (IN: In (i, Some (Gfun (Internal f)), sb) defs),
-  def_is_var_or_internal_fun i defs.
-Admitted.
-
+  defs_is_var_or_internal_fun i defs.
+Proof.
+  induction defs; intros; simpl; inv IN.
+  - inv NPT. red. intros def sb0 H.
+    inv H. inv H0. red. eauto.
+    generalize (in_map (fun '(i,_,_) => i) defs (i,def,sb0) H0). contradiction.
+  - destruct a. destruct p. inv NPT.
+    red. intros def sb0 IN. inv IN. 
+    + inv H0.
+      generalize (in_map (fun '(i,_,_) => i) defs (i,Some (Gfun (Internal f)),sb) H). contradiction.
+    + exploit IHdefs; eauto.
+Qed.
+    
 
 Lemma find_symbol_internal_block:
   forall gmap lmap dsize csize b b' f i ofs
@@ -4347,7 +4458,7 @@ Proof.
   intros (def' & sb & c & IN' & TLGF).
   monadInv TLGF.
   unfold tge, globalenv in FSYM. 
-  assert (def_is_var_or_internal_fun i (prog_defs tprog)).
+  assert (defs_is_var_or_internal_fun i (prog_defs tprog)).
   eapply unique_def_is_internal_fun; eauto.
   erewrite add_globals_pres_find_symbol in FSYM; eauto. simpl in FSYM.
   eapply gidmap_symbmap_internal_block; eauto.
