@@ -99,10 +99,11 @@ BACKEND=\
   Inlining.v Inliningspec.v Inliningproof.v \
   Tailcall.v Tailcallproof.v \
   AsmFacts.v RawAsm.v RawAsmproof.v \
-	AsmRegs.v RealAsm.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v
-  # Sect.v Sectinj.v \
-  # FlatAsm.v FlatAsmGlobenv.v FlatAsmGlobdef.v FlatAsmBuiltin.v \
-  # FlatAsmgen.v FlatAsmgenproof.v 
+	AsmRegs.v RealAsm.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
+  Segment.v \
+  FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v \
+  FlatAsmgen.v FlatAsmgenproof.v
+
 
 
 # C front-end modules (in cfrontend/)
