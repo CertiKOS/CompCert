@@ -2208,14 +2208,55 @@ Qed.
 (*   exploit make_maps_gmap_inj'. 4: rewrite EQ; reflexivity. all: eauto.  *)
 (* Qed. *)
 
-Theorem init_meminj_match_sminj : forall gmap lmap dsize csize m,
-    dsize + csize <= Ptrofs.max_unsigned ->
-    Genv.init_mem prog = Some m ->
-    make_maps prog = (gmap,lmap,dsize,csize) ->
-    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
+Theorem init_meminj_match_sminj : (* forall gmap lmap dsize csize m, *)
+    (* dsize + csize <= Ptrofs.max_unsigned -> *)
+    (* Genv.init_mem prog = Some m -> *)
+    (* make_maps prog = (gmap,lmap,dsize,csize) -> *)
+    (* transl_prog_with_map gmap lmap prog dsize csize = OK tprog -> *)
     match_inj init_meminj.
 Proof.
-Admitted.
+  generalize TRANSF. intros TRANSF'.
+  unfold match_prog in TRANSF'.
+  unfold transf_program in TRANSF'.
+  repeat destr_in TRANSF'.
+  unfold make_maps in Heqp. 
+  monadInv H0.
+  constructor.
+
+  - (* agree_inj_instr *)
+    intros b b' f ofs ofs' i FPTR FINST INITINJ.
+    unfold init_meminj in INITINJ. 
+    destruct eq_block. inv INITINJ.
+    unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+    destr_match_in INITINJ; inv INITINJ.
+    destr_match_in H1; inv H1.
+    destruct p. inv H0.
+    unfold globalenv in EQ1; simpl in EQ1.
+    apply Genv.invert_find_symbol in EQ0.
+    exploit (Genv.find_symbol_funct_ptr_inversion prog); eauto.
+    intros FINPROG.
+    exploit transl_fun_exists; eauto. intros (f' & TRANSLFUN' & INR).
+(*       exploit AGREE_SMINJ_INSTR.find_instr_transl_fun; eauto.  *)
+(*       intros (i' & ofs1 & TRANSINSTR & SEGLBL & IN). *)
+(*       exists id, i', (fst s), ofs1. split.  *)
+(*       unfold segblock_to_label in SEGLBL. inversion SEGLBL. *)
+(*       apply INR in IN. *)
+(*       eapply AGREE_SMINJ_INSTR.find_instr_self; eauto. *)
+(*       simpl. *)
+(*       eapply transl_globdefs_distinct_code_labels; eauto. *)
+(*       eapply update_maps_gmap_inj; eauto. *)
+(*       inv w; auto. *)
+(*       split; auto. *)
+    Admitted.
+
+
+(* Theorem init_meminj_match_sminj : forall gmap lmap dsize csize m, *)
+(*     dsize + csize <= Ptrofs.max_unsigned -> *)
+(*     Genv.init_mem prog = Some m -> *)
+(*     make_maps prog = (gmap,lmap,dsize,csize) -> *)
+(*     transl_prog_with_map gmap lmap prog dsize csize = OK tprog -> *)
+(*     match_inj init_meminj. *)
+(* Proof. *)
 (*   intros gmap lmap dsize csize efsize m MAX INITMEM UPDATE TRANS.  *)
 (*   generalize TRANSF. intros TRANSF'. *)
 (*   unfold match_prog in TRANSF'.  *)
@@ -5335,7 +5376,8 @@ Proof.
   rename l into lmap.
   rename z0 into dsize. rename z into csize. 
   inv INIT.
-  exploit init_meminj_match_sminj; eauto.
+  generalize init_meminj_match_sminj.
+  (* exploit init_meminj_match_sminj; eauto. *)
   intros MATCH_SMINJ.
   exploit (init_mem_pres_inject m gmap); eauto.
   intros (m' & INITM' & MINJ).
