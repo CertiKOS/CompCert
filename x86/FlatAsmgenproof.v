@@ -5063,15 +5063,86 @@ Qed.
 (*   simpl. f_equal. rewrite Ptrofs.add_zero. rewrite Ptrofs.repr_unsigned. auto. *)
 (* Qed. *)
 
-
-Lemma extfun_entry_is_external_init:
-  forall gmap lmap dsize csize,
-    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
-    make_maps prog = (gmap, lmap, dsize, csize) ->
-    list_norepet (map fst (AST.prog_defs prog)) ->
-    extfun_entry_is_external init_meminj.
+Lemma add_globals_find_symbol_external: forall defs i f sb b ofs ge
+     (NPT: list_norepet (map (fun '(i, _, _) => i) defs))
+     (IN: In (i, Some (Gfun (External f)), sb) defs)
+     (GNXT: Pos.lt (Pos.of_nat num_segments) (Genv.genv_next ge))
+     (FSYM: Genv.find_symbol (add_globals ge defs) i = Some (b, ofs)),
+     Pos.lt (Pos.of_nat num_segments) b.
 Proof.
+  induction defs; simpl; intros. contradiction.
+  destruct a. destruct p. inv NPT.
+  inv IN.
+  - inv H.
+    erewrite add_globals_pres_find_symbol_not_in in FSYM; eauto.
+    simpl in FSYM. rewrite peq_true in FSYM. inv FSYM. auto.
+  - eapply (IHdefs _ _ _ _ _ (add_global ge0 (i0, o, s))); eauto.
+    rewrite add_global_next_block. simpl.
+    apply Pos.lt_lt_succ; eauto.
+Qed.    
+
+Lemma find_symbol_external_block:
+  forall gmap lmap dsize csize b b' f i ofs
+    (MK: make_maps prog = (gmap, lmap, dsize, csize))
+    (TL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (NPT: list_norepet (map fst (AST.prog_defs prog)))
+    (FPTR: Globalenvs.Genv.find_funct_ptr ge b = Some (External f))
+    (INVS: Globalenvs.Genv.invert_symbol ge b = Some i)
+    (FSYM: Genv.find_symbol tge i = Some (b',ofs)),
+    b' <> code_block.
+Proof.
+  intros. apply Genv.invert_find_symbol in INVS.
+  unfold ge in *. exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+  intros INS.
+  exploit transl_prog_list_norepet; eauto. intros NPT'.
+  exploit transl_prog_pres_def; eauto. 
+  intros (def' & sb & c & IN' & TLGF).
+  monadInv TLGF.
+  unfold tge, globalenv in FSYM. 
+  exploit add_globals_find_symbol_external; eauto. 
+  simpl. apply Pos.lt_succ_diag_r.
+  intros BRNG. unfold not. intros. subst.
+  unfold num_segments, code_block in BRNG. simpl in BRNG.
+  admit.
 Admitted.
+  
+Lemma extfun_entry_is_external_init:
+  list_norepet (map fst (AST.prog_defs prog)) ->
+  extfun_entry_is_external init_meminj.
+Proof.
+  intros NPT.
+  red. intros b b' f ofs FPTR JB.
+  unfold tge. unfold globalenv.
+  erewrite add_globals_pres_internal_block; eauto. simpl.
+  unfold gen_internal_codeblock.
+  unfold init_meminj in JB.
+  destruct eq_block.
+  subst. unfold ge in FPTR.
+  exploit Globalenvs.Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+  destr_match_in JB; inv JB.
+  destr_match_in H0; inv H0.
+  destruct p. inv H1.
+  assert (match_prog prog tprog) as TRANSF' by auto.
+  unfold match_prog in TRANSF'. unfold transf_program in TRANSF'.
+  repeat destr_in TRANSF'.
+  assert (b' <> code_block).
+  eapply find_symbol_external_block; eauto. 
+  erewrite transl_prog_seg_code; eauto. 
+  unfold segmap. simpl. 
+  destruct eq_block. contradiction. auto.
+Qed.
+
+
+
+(* Lemma extfun_entry_is_external_init: *)
+(*   forall gmap lmap dsize csize *)
+(*     (TL: transl_prog_with_map gmap lmap prog dsize csize = OK tprog) *)
+(*     (MP: make_maps prog = (gmap, lmap, dsize, csize)) *)
+(*     (NPT: list_norepet (map fst (AST.prog_defs prog))), *)
+(*     extfun_entry_is_external init_meminj. *)
+(* Proof. *)
+  
+
 (* Lemma extfun_entry_is_external_init: *)
 (*   forall gmap lmap dsize csize j, *)
 (*     transl_prog_with_map gmap lmap prog dsize csize = OK tprog -> *)
