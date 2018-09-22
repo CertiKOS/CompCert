@@ -4831,6 +4831,128 @@ Qed.
 (*   apply H1. exists x; split; auto. eauto. auto. *)
 (* Qed. *)
 
+Lemma add_global_pres_find_symbol_neq : forall ge i o s i1,
+  i <> i1 ->
+  Genv.find_symbol (add_global ge (i, o, s)) i1 = Genv.find_symbol ge i1.
+Proof.
+  intros. 
+  destruct o; simpl. 
+  destruct g; simpl. 
+  destruct f; simpl.
+  auto.
+  rewrite peq_false; auto.
+  auto.
+  rewrite peq_false; auto.
+Qed.
+
+Lemma add_globals_pres_find_symbol_not_in : 
+  forall defs i ge
+    (NIN: ~In i (map (fun '(i,_,_) => i) defs)),
+    Genv.find_symbol (add_globals ge defs) i = Genv.find_symbol ge i.
+Proof.
+  induction defs; simpl; intros. auto.
+  destruct a. destruct p. destruct (peq i i0).
+  - subst. exfalso. apply NIN. auto.
+  - erewrite IHdefs; eauto. 
+    eapply add_global_pres_find_symbol_neq; eauto.
+Qed.
+
+
+Lemma add_global_pres_find_def_blt : forall b ge def ofs,
+  Pos.lt b (Genv.genv_next ge) ->
+  Genv.find_def (add_global ge def) b ofs = Genv.find_def ge b ofs.
+Proof.
+  intros. 
+  destruct def; simpl.
+  destruct p; simpl.
+  destruct o; simpl. 
+  destruct g; simpl.
+  destruct f; simpl.
+  - auto.
+  - destruct eq_block. 
+    + subst. exfalso. eapply Pos.lt_irrefl; eauto.
+    + simpl. auto.
+  - auto.
+  - destruct eq_block. 
+    + subst. exfalso. eapply Pos.lt_irrefl; eauto.
+    + simpl. auto.
+Qed.
+
+Lemma add_globals_pres_find_def: forall defs ge b ofs,
+    Pos.lt b (Genv.genv_next ge) ->
+    Genv.find_def (add_globals ge defs) b ofs = Genv.find_def ge b ofs.
+Proof.
+  induction defs; simpl; intros. auto.
+  erewrite IHdefs; eauto.
+  eapply add_global_pres_find_def_blt; eauto.
+  rewrite add_global_next_block.
+  eapply Pos.lt_lt_succ; eauto.
+Qed.
+
+Lemma external_in_defs_inversion : forall defs f sb i ge
+  (NPT: list_norepet (map (fun '(i, _, _) => i) defs))
+  (IN: In (i, Some (Gfun (External f)), sb) defs),
+  exists b o,
+    Genv.find_symbol (add_globals ge defs) i = Some (b, o) /\
+    Genv.find_def (add_globals ge defs) b o = Some (Gfun (External f)).
+Proof.
+  induction defs; simpl; intros.
+  - contradiction.
+  - destruct a. destruct p. destruct IN.
+    + inv H. inv NPT.
+      eexists. eexists. split.
+      erewrite add_globals_pres_find_symbol_not_in; eauto.
+      simpl. rewrite peq_true. eauto.
+      erewrite add_globals_pres_find_def; eauto.
+      simpl. rewrite Ptrofs.eq_true. 
+      destruct peq. simpl. auto. contradiction.
+      simpl. apply Pos.lt_succ_diag_r.
+    + eapply IHdefs; eauto. inv NPT. auto.
+Qed.
+      
+
+Lemma external_in_prog_defs_inversion : forall f sb i
+  (NPT: list_norepet (map (fun '(i, _, _) => i) (prog_defs tprog)))
+  (IN: In (i, Some (Gfun (External f)), sb) (prog_defs tprog)),
+  exists b o,
+    Genv.find_symbol (globalenv tprog) i = Some (b, o) /\
+    Genv.find_def (globalenv tprog) b o = Some (Gfun (External f)).
+Proof.
+  unfold globalenv. intros.
+  eapply external_in_defs_inversion; eauto.
+Qed.
+  
+
+Lemma external_find_symbol_det : forall defs ge i b1 b2 o1 o2 f sb
+  (IN: In (i, Some (Gfun (External f)), sb) defs)
+  (NPT: list_norepet (map (fun '(i, _, _) => i) defs))
+  (FINSYM1: Genv.find_symbol (add_globals ge defs) i = Some (b1, o1))
+  (FINSYM2: Genv.find_symbol (add_globals ge defs) i = Some (b2, o2)),
+  b1 = b2 /\ o1 = o2.
+Proof.
+  induction defs; simpl; intros. contradiction. 
+  destruct IN. 
+  - subst. inv NPT.
+    erewrite add_globals_pres_find_symbol_not_in in FINSYM1; eauto.
+    erewrite add_globals_pres_find_symbol_not_in in FINSYM2; eauto.
+    simpl in FINSYM1. rewrite peq_true in FINSYM1. inv FINSYM1.
+    simpl in FINSYM2. rewrite peq_true in FINSYM2. inv FINSYM2.
+    auto.
+  - destruct a. destruct p. inv NPT.
+    eapply IHdefs; eauto.
+Qed.
+
+
+Lemma external_find_symbol_det' : forall i b1 b2 o1 o2 f sb
+  (IN: In (i, Some (Gfun (External f)), sb) (prog_defs tprog))
+  (NPT: list_norepet (map (fun '(i, _, _) => i) (prog_defs tprog)))
+  (FINSYM1: Genv.find_symbol (globalenv tprog) i = Some (b1, o1))
+  (FINSYM2: Genv.find_symbol (globalenv tprog) i = Some (b2, o2)),
+  b1 = b2 /\ o1 = o2.
+Proof.
+  unfold globalenv. intros.
+  eapply external_find_symbol_det; eauto.
+Qed.
 
 Lemma extfun_transf:
   forall gmap lmap dsize csize 
@@ -4857,19 +4979,13 @@ Proof.
     intros (def' & sb & code & IN' & TLDEF).
     monadInv TLDEF.    
     unfold tge. rewrite Ptrofs.repr_unsigned.
-
-(* Definition def_non_or_external (def:option gdef) := *)
-(*   def = None \/ exists f, def = Some (Gfun (External f)). *)
-
-(* Lemma  *)
-(*     In (i, def , sb) (prog_defs tprog) -> *)
-(*     Genv.find_symbol (globalenv tprog) i = Some (b, o) -> *)
-(*     Genv.find_def (globalenv tprog) b o = def *)
-
-
-(* unfold globalenv. *)
-
-Admitted.
+    exploit (external_in_prog_defs_inversion f); eauto.
+    intros (b1 & o1 & FSYM & FDEF).
+    assert (b1 = b' /\ o1 = i0). eapply external_find_symbol_det'; eauto. 
+    destruct H. subst. 
+    unfold Genv.find_funct. unfold Genv.find_funct_ptr.
+    rewrite FDEF. auto.
+Qed.
 
 (* Lemma extfun_transf: *)
 (*   forall gmap lmap dsize csize j, *)
