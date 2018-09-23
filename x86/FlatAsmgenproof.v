@@ -823,15 +823,15 @@ Lemma find_instr_self : forall i,
     Genv.find_instr tge
                     (Vptr (segmap (segblock_id (snd (fst i)))) (segblock_start (snd (fst i)))) = Some i.
 Proof.
-Admitted.
-(*   intros i DLBL IN. subst tge. *)
-(*   unfold Genv.find_instr. unfold globalenv. *)
-(*   erewrite <- add_globals_pres_genv_instrs; eauto. simpl. *)
-(*   erewrite <- add_globals_pres_genv_segblocks; eauto. simpl. *)
-(*   set (sbmap := (gen_segblocks tprog)). *)
-(*   unfold gen_instrs_map. *)
-(*   set (code := (snd (code_seg tprog))) in *. *)
-(*   eapply acc_instrs_map_self; eauto. *)
+  intros i DLBL IN. subst tge.
+  unfold Genv.find_instr. unfold globalenv.
+  erewrite <- add_globals_pres_genv_instrs; eauto. simpl.
+  unfold gen_instrs_map.
+  set (sbmap := segmap).
+  unfold gen_instrs_map.
+  set (code := (snd (code_seg tprog))) in *.
+  eapply acc_instrs_map_self; eauto.  
+  apply segmap_injective.
 (*   apply gen_segblocks_injective. *)
 (*   set (tge := globalenv tprog). *)
 (*   subst sbmap code. *)
@@ -839,6 +839,7 @@ Admitted.
 (*   apply genv_gen_segblocks. *)
 (*   apply target_code_labels_are_valid. *)
 (* Qed. *)
+Admitted.
 
 (* Lemma transl_instr_segblock : forall gmap lmap ofs' id i i' sid, *)
 (*       transl_instr gmap lmap (Ptrofs.unsigned ofs') id sid i = OK i' -> *)
@@ -866,14 +867,15 @@ Admitted.
 (*     generalize (instr_size_positive a). unfold instr_size. omega. *)
 (* Qed. *)
 
-(* Lemma find_instr_transl_instrs : forall code gmap lmap id sid i ofs ofs' fofs code', *)
-(*     find_instr (Ptrofs.unsigned ofs) code = Some i -> *)
-(*     transl_instrs gmap lmap id sid (Ptrofs.unsigned ofs') code = OK (fofs, code') -> *)
-(*     fofs <= Ptrofs.max_unsigned -> *)
-(*     exists i' ofs1, transl_instr gmap lmap ofs1 id sid i = OK i'  *)
-(*                /\ segblock_to_label (snd i') = (sid, Ptrofs.add ofs ofs') *)
-(*                /\ In i' code'. *)
-(* Proof. *)
+Lemma find_instr_transl_instrs : forall code id sid i ofs ofs' fofs code',
+    find_instr (Ptrofs.unsigned ofs) code = Some i ->
+    transl_instrs id sid (Ptrofs.unsigned ofs') code = OK (fofs, code') ->
+    fofs <= Ptrofs.max_unsigned ->
+    exists i' ofs1, transl_instr ofs1 id sid i = OK i'
+               /\ segblock_to_label (snd (fst i')) = (sid, Ptrofs.add ofs ofs')
+               /\ In i' code'.
+Proof.
+Admitted.
 (*   induction code; simpl; intros. *)
 (*   - inv H. *)
 (*   - monadInv H0. destruct zeq. *)
@@ -910,10 +912,6 @@ Admitted.
 (*       apply in_cons. auto. *)
 (* Qed. *)
 
-End WITHTRANSF.
-
-(* End AGREE_SMINJ_INSTR. *)
-
 Lemma find_instr_transl_fun : forall id f f' ofs i gmap s,
     find_instr (Ptrofs.unsigned ofs) (Asm.fn_code f) = Some i ->
     transl_fun gmap id f = OK f' ->
@@ -922,12 +920,16 @@ Lemma find_instr_transl_fun : forall id f f' ofs i gmap s,
                /\ segblock_to_label (snd (fst i')) = (fst s, Ptrofs.add ofs (snd s))
                /\ In i' (fn_code f').
 Proof.
-Admitted.
-(*   intros id f f' ofs i gmap lmap s FINSTR TRANSFUN GMAP. *)
-(*   unfold transl_fun in TRANSFUN. rewrite GMAP in TRANSFUN. *)
-(*   monadInvX TRANSFUN. destruct zle; inversion EQ1; clear EQ1. *)
-(*   exploit find_instr_transl_instrs; eauto. *)
-(* Qed. *)
+  intros id f f' ofs i gmap s FINSTR TRANSFUN GMAP.
+  unfold transl_fun in TRANSFUN. rewrite GMAP in TRANSFUN.
+  monadInvX TRANSFUN. destruct zle; inversion EQ1; clear EQ1.
+  exploit find_instr_transl_instrs; eauto.
+Qed.
+
+End WITHTRANSF.
+
+(* End AGREE_SMINJ_INSTR. *)
+
 
 
 (* (** Lemmas for proving agree_sminj_glob **) *)

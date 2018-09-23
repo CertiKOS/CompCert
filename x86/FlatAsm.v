@@ -1086,6 +1086,21 @@ Definition segmap :=
             else
               undef_seg_block.
 
+Lemma segmap_injective: 
+  injective_on_valid_segs code_block 2 segmap.
+Proof.
+  clear.
+  unfold segmap. red. intros.
+  repeat destruct eq_block; subst; auto.
+  unfold data_block, code_block in H. admit.
+  unfold code_block, undef_seg_block in H. admit.
+  unfold data_block, code_block in H. admit.
+  unfold data_block, undef_seg_block in H. admit.
+  unfold undef_seg_block, code_block in H. admit.
+  unfold data_block, undef_seg_block in H. admit.
+  unfold segblock_is_valid in H0. inv H0. admit.
+Admitted.
+
 Definition globalenv (p: program) : genv :=
   let smap := segmap in
   let symbmap := gidmap_to_symbmap smap (glob_map p) in
