@@ -821,17 +821,17 @@ Lemma find_instr_self : forall i,
     code_labels_are_distinct (snd (code_seg tprog)) ->
     In i (snd (code_seg tprog)) ->
     Genv.find_instr tge
-                    (Vptr (segmap (segblock_id (snd (fst i)))) (segblock_start (snd (fst i)))) = Some i.
+                    (Vptr (gen_segblocks tprog (segblock_id (snd (fst i)))) (segblock_start (snd (fst i)))) = Some i.
 Proof.
-  intros i DLBL IN. subst tge.
-  unfold Genv.find_instr. unfold globalenv.
-  erewrite <- add_globals_pres_genv_instrs; eauto. simpl.
-  unfold gen_instrs_map.
-  set (sbmap := segmap).
-  unfold gen_instrs_map.
-  set (code := (snd (code_seg tprog))) in *.
-  eapply acc_instrs_map_self; eauto.  
-  apply segmap_injective.
+  (* intros i DLBL IN. subst tge. *)
+  (* unfold Genv.find_instr. unfold globalenv. *)
+  (* erewrite <- add_globals_pres_genv_instrs; eauto. simpl. *)
+  (* unfold gen_instrs_map. *)
+  (* set (sbmap := segmap). *)
+  (* unfold gen_instrs_map. *)
+  (* set (code := (snd (code_seg tprog))) in *. *)
+  (* eapply acc_instrs_map_self; eauto.   *)
+  (* apply segmap_injective. *)
 (*   apply gen_segblocks_injective. *)
 (*   set (tge := globalenv tprog). *)
 (*   subst sbmap code. *)
@@ -4397,12 +4397,9 @@ Proof.
   destr_match_in H0; inv H0. destruct s.
   inv H1. 
   exploit update_map_gmap_range; eauto. simpl.
-  unfold segmap.
-  intros. repeat destruct H; simpl.
-  - unfold code_block. apply Pos.lt_le_trans with 3%positive.
-    apply Pos.lt_succ_diag_r. admit.
-  - unfold data_block. apply Pos.lt_succ_diag_r.
-Admitted.
+  intros.
+  apply gen_segblocks_upper_bound.
+Qed.
 
 Lemma init_meminj_genv_next_inv : forall b delta
     (MINJ: init_meminj b = Some (Genv.genv_next tge, delta)),
@@ -4502,7 +4499,17 @@ Qed.
 (*   - auto. *)
 (*   - auto. *)
 (* Qed. *)
-    
+
+
+
+Lemma gen_segblocks_code_map : forall g l p dz cz p'
+                                 (TL: transl_prog_with_map g l p dz cz = OK p'),
+    gen_segblocks p' code_segid = code_block.
+Proof.
+  intros. monadInv TL. unfold gen_segblocks.
+  simpl. auto.
+Qed.
+
 Lemma gidmap_symbmap_internal_block:
   forall gmap lmap dsize csize b b' f i ofs,
     make_maps prog = (gmap, lmap, dsize, csize) ->
@@ -4510,7 +4517,7 @@ Lemma gidmap_symbmap_internal_block:
     list_norepet (map fst (AST.prog_defs prog)) ->
     Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) ->
     Genv.invert_symbol ge b = Some i ->
-    gidmap_to_symbmap segmap (glob_map tprog) i = Some (b',ofs) ->
+    gidmap_to_symbmap (gen_segblocks tprog) (glob_map tprog) i = Some (b',ofs) ->
     b' = code_block.
 Proof.
   intros. 
@@ -4518,7 +4525,7 @@ Proof.
   unfold gidmap_to_symbmap in H4. destr_match_in H4; inv H4.
   destruct s. inv H6.
   exploit update_map_funct; eauto. simpl. intros. subst.
-  unfold segmap. simpl. auto.
+  eapply gen_segblocks_code_map; eauto.
 Qed.
 
 
@@ -4564,7 +4571,7 @@ Proof.
   repeat destr_in TRANSF'.
   unfold gen_internal_codeblock.
   erewrite transl_prog_seg_code; eauto.
-  unfold segmap. simpl.
+  erewrite gen_segblocks_code_map; eauto.
   unfold init_meminj in INJ. destr_in INJ.
   exfalso. subst. unfold ge in FFP. 
   exploit Globalenvs.Genv.genv_next_find_funct_ptr_absurd; eauto.
@@ -5210,7 +5217,7 @@ Proof.
   assert (b' <> code_block).
   eapply find_symbol_external_block; eauto. 
   erewrite transl_prog_seg_code; eauto. 
-  unfold segmap. simpl. 
+  erewrite gen_segblocks_code_map; eauto.
   destruct eq_block. contradiction. auto.
 Qed.
 
