@@ -920,13 +920,13 @@ Proof.
   exploit find_instr_transl_instrs; eauto.
 Qed.
 
-End WITHTRANSF.
+(* End WITHTRANSF. *)
 
 (* End AGREE_SMINJ_INSTR. *)
 
 
 
-(* (** Lemmas for proving agree_sminj_glob **) *)
+(** Lemmas for proving agree_sminj_glob **)
 (* Module AGREE_SMINJ_GLOB. *)
 
 (* Section WITHTRANSF. *)
@@ -938,199 +938,210 @@ End WITHTRANSF.
 (* Let ge := Genv.globalenv prog. *)
 (* Let tge := globalenv tprog. *)
 
-(* Lemma lnr_transf: list_norepet (map fst (AST.prog_defs prog)). *)
-(* Proof. *)
-(*   unfold transf_program in TRANSF. *)
-(*   repeat destr_in TRANSF. *)
-(*   destruct w; auto. *)
-(* Qed. *)
+Lemma lnr_transf: list_norepet (map fst (AST.prog_defs prog)).
+Proof.
+  unfold transf_program in TRANSF.
+  repeat destr_in TRANSF.
+  destruct w; auto.
+Qed.
 
-(* Lemma update_map_gmap_domain : forall gmap lmap dsize csize efsize id slbl,  *)
-(*     make_maps prog = (gmap, lmap, dsize, csize, efsize) -> *)
-(*     gmap id = Some slbl -> *)
-(*     In id (prog_defs_names prog). *)
-(* Proof. *)
-(*   intros gmap lmap dsize csize efsize id slbl UPDATE GMAP. *)
-(*   unfold make_maps in UPDATE. *)
-(*   destruct (updates_gmap_in _ _ _ _ _ _ _ _ _ _ _ UPDATE _ _ GMAP) as [IN | EQ]. 2: inv EQ. auto. *)
-(* Qed. *)
+Lemma update_map_gmap_domain : forall gmap lmap dsize csize id slbl,
+    make_maps prog = (gmap, lmap, dsize, csize) ->
+    gmap id = Some slbl ->
+    In id (prog_defs_names prog).
+Proof.
+  intros gmap lmap dsize csize id slbl UPDATE GMAP.
+  unfold make_maps in UPDATE.
+  destruct (updates_gmap_in _ _ _ _ _ _ _ _ _ UPDATE _ _ GMAP) as [IN | EQ]. 2: inv EQ. auto.
+Qed.
 
 (* End WITHTRANSF. *)
 
 
-(* Lemma defs_nodup_labels : forall defs f id, *)
-(*     defs_no_duplicated_labels defs -> *)
-(*     In (id, Some (Gfun (Internal f))) defs -> *)
-(*     list_norepet (labels (Asm.fn_code f)). *)
-(* Proof. *)
-(*   intros. *)
-(*   red in H. rewrite Forall_forall in H. *)
-(*   exploit H. apply in_map. eauto. simpl. auto. *)
-(* Qed. *)
+Lemma defs_nodup_labels : forall defs f id,
+    defs_no_duplicated_labels defs ->
+    In (id, Some (Gfun (Internal f))) defs ->
+    list_norepet (labels (Asm.fn_code f)).
+Proof.
+  intros.
+  red in H. rewrite Forall_forall in H.
+  exploit H. apply in_map. eauto. simpl. auto.
+Qed.
 
-(* Ltac solve_label_pos_inv :=  *)
-(*   match goal with *)
-(*   | [ |- _ <> Asm.Plabel _ /\ label_pos _ _ _ = Some _] => *)
-(*     split; solve_label_pos_inv *)
-(*   | [ |- _ <> Asm.Plabel _ ] => *)
-(*     unfold not; inversion 1 *)
-(*   | [ |- label_pos _ _ _ = Some _ ] => auto *)
-(*   | _ => idtac *)
-(*   end. *)
+Ltac solve_label_pos_inv :=
+  match goal with
+  | [ |- _ <> Asm.Plabel _ /\ label_pos _ _ _ = Some _] =>
+    split; solve_label_pos_inv
+  | [ |- _ <> Asm.Plabel _ ] =>
+    unfold not; inversion 1
+  | [ |- label_pos _ _ _ = Some _ ] => auto
+  | _ => idtac
+  end.
 
-(* Lemma label_pos_inv : forall l ofs a instrs z, *)
-(*     label_pos l ofs (a :: instrs) = Some z -> *)
-(*     (fst a = Asm.Plabel l /\ z = ofs + instr_size a)  *)
-(*     \/ (fst a <> Asm.Plabel l /\ label_pos l (ofs + instr_size a) instrs = Some z). *)
-(* Proof. *)
-(*   intros l ofs a instrs z H. *)
-(*   simpl in H. destruct a. unfold Asm.is_label in H; simpl in H. *)
-(*   destruct i; try now (right; solve_label_pos_inv). *)
-(*   destruct peq. *)
-(*   - subst. left. inv H. auto. *)
-(*   - right. simpl. split. unfold not. inversion 1. congruence. *)
-(*     auto. *)
-(* Qed. *)
+Lemma label_pos_inv : forall l ofs a instrs z,
+    label_pos l ofs (a :: instrs) = Some z ->
+    (a = Asm.Plabel l /\ z = ofs + instr_size a)
+    \/ (a <> Asm.Plabel l /\ label_pos l (ofs + instr_size a) instrs = Some z).
+Proof.
+  intros l ofs a instrs z H.
+  simpl in H. unfold Asm.is_label in H; simpl in H.
+  destruct a; try now (right; solve_label_pos_inv).
+  destruct peq.
+  - subst. left. inv H. auto.
+  - right. simpl. split. unfold not. inversion 1. congruence.
+    auto.
+Qed.
 
-(* Lemma update_instrs_map_pres_lmap_2 : forall instrs l id lmap lmap' csize csize', *)
-(*     ~ In (Asm.Plabel l) (map fst instrs) -> *)
-(*     update_instrs lmap csize id instrs = (lmap',csize') -> *)
-(*     lmap' id l = lmap id l. *)
-(* Proof. *)
-(*   unfold update_instrs. *)
-(*   induction instrs; simpl; intros; auto. *)
-(*   - inv H0; auto.  *)
-(*   - assert (Asm.Plabel l <> fst a /\ ~ In (Asm.Plabel l) (map fst instrs)) as H1 *)
-(*         by (apply not_in_cons; auto). destruct H1. *)
-(*     erewrite IHinstrs. 2: auto. 2: eauto. *)
-(*     destr. *)
-(*     unfold update_label_map. rewrite peq_true. rewrite peq_false. auto. *)
-(*     unfold is_label in Heqo. destr_in Heqo. *)
-(* Qed. *)
+Lemma update_instrs_map_pres_lmap_2 : forall instrs l id lmap lmap' csize csize',
+    ~ In (Asm.Plabel l) instrs ->
+    update_instrs lmap csize id instrs = (lmap',csize') ->
+    lmap' id l = lmap id l.
+Proof.
+  unfold update_instrs.
+  induction instrs; simpl; intros; auto.
+  - inv H0; auto.
+  - assert (Asm.Plabel l <> a /\ ~ In (Asm.Plabel l) instrs) as H1
+        by (apply not_in_cons; auto). destruct H1.
+    erewrite IHinstrs. 2: auto. 2: eauto.
+    destr.
+    unfold update_label_map. rewrite peq_true. rewrite peq_false. auto.
+    unfold is_label in Heqo. destr_in Heqo.
+Qed.
 
-(* Lemma update_instrs_other_label: *)
-(*   forall l id ins lmap csize lmap' csize', *)
-(*     ~ In l (labels ins) -> *)
-(*     update_instrs lmap csize id ins = (lmap',csize') -> *)
-(*     lmap' id l = lmap id l. *)
-(* Proof. *)
-(*   induction ins; simpl; intros; eauto. inv H0. auto. *)
-(*   rewrite update_instrs_cons in H0. destr_in H0. *)
-(*   unfold update_instr in Heqp. *)
-(*   repeat destr_in Heqp. *)
-(*   eapply IHins in H0. *)
-(*   - rewrite H0. unfold update_label_map. rewrite peq_true, peq_false; auto. simpl in H; auto. *)
-(*   - simpl in H; auto. *)
-(*   - eapply IHins in H0; eauto. *)
-(* Qed. *)
+Lemma update_instrs_cons:
+  forall lmap csize id ins insns,
+    update_instrs lmap csize id (ins::insns) =
+    let (lmap',csize') := update_instr lmap csize id ins in
+    update_instrs lmap' csize' id insns.
+Proof.
+  Opaque update_instr.
+  unfold update_instrs. simpl. intros.
+  destr.
+  Transparent update_instr.
+Qed.
 
-(* Lemma update_instrs_map_lmap_inversion : forall instrs csize l z ofs id csize' lmap lmap' l' *)
-(*     (MAXSIZE: csize' <= Ptrofs.max_unsigned) *)
-(*     (MINSIZE: csize  >= 0) *)
-(*     (LNR: list_norepet (labels instrs)) *)
-(*     (LPOS: label_pos l ofs instrs = Some z) *)
-(*     (UI: update_instrs lmap csize id instrs = (lmap', csize')) *)
-(*     (LM: lmap' id l = Some l'), *)
-(*     l' = (code_segid , Ptrofs.repr (csize + z - ofs)) /\ 0 <= (csize + z - ofs) <= Ptrofs.max_unsigned. *)
-(* Proof. *)
-(*   induction instrs; simpl; intros; auto. *)
-(*   - inv LPOS. *)
-(*   - apply label_pos_inv in LPOS. destruct LPOS as [[LAB EQ] | [NLAB LPOS]]. *)
-(*     + subst. destruct a. simpl in *. subst. simpl in *. *)
-(*       rewrite update_instrs_cons in UI. destr_in UI. *)
-(*       erewrite update_instrs_other_label in LM. 3: eauto. 2: inv LNR; auto. *)
-(*       unfold update_instr in Heqp. repeat destr_in Heqp. *)
-(*       unfold is_label in Heqo; repeat destr_in Heqo. simpl in Heqi. inv Heqi. *)
-(*       unfold update_label_map in LM. *)
-(*       rewrite ! peq_true in LM. inv LM. unfold code_label. *)
-(*       split. *)
-(*       f_equal. f_equal. omega. *)
-(*       rewrite (update_instrs_code_size _ _ _ _ _ _ UI) in MAXSIZE. *)
-(*       generalize (instr_size_positive (Asm.Plabel l1, s)). *)
-(*       generalize (code_size_non_neg instrs). omega. *)
-(*       unfold is_label in Heqo;  simpl in Heqo; repeat destr_in Heqo. *)
-(*     + rewrite update_instrs_cons in UI. destr_in UI. *)
-(*       specialize (IHinstrs z0 l z (ofs + instr_size a) id csize' l0 lmap' l'). *)
-(*       inv Heqp. *)
-(*       exploit IHinstrs; eauto. *)
-(*       generalize (instr_size_positive a); omega. *)
-(*       destr_in LNR; auto. inv LNR; auto. *)
-(*       intros (A & B). *)
-(*       rewrite A. split. f_equal. f_equal. omega. omega. *)
-(* Qed. *)
+Lemma update_instrs_other_label:
+  forall l id ins lmap csize lmap' csize',
+    ~ In l (labels ins) ->
+    update_instrs lmap csize id ins = (lmap',csize') ->
+    lmap' id l = lmap id l.
+Proof.
+  induction ins; simpl; intros; eauto. inv H0. auto.
+  rewrite update_instrs_cons in H0. destr_in H0.
+  unfold update_instr in Heqp.
+  repeat destr_in Heqp.
+  eapply IHins in H0.
+  - rewrite H0. unfold update_label_map. rewrite peq_true, peq_false; auto. simpl in H; auto.
+  - simpl in H; auto.
+  - eapply IHins in H0; eauto.
+Qed.
 
-(* Lemma label_pos_min_size : forall instrs l ofs ofs',  *)
-(*     label_pos l ofs instrs = Some ofs' -> ofs <= ofs'. *)
-(* Proof. *)
-(*   induction instrs; intros. *)
-(*   - simpl in *. inv H. *)
-(*   - simpl in *.  *)
-(*     destruct a. unfold instr_size in *. simpl in *. *)
-(*     generalize (si_size_non_zero s). intros H0. *)
-(*     repeat destr_in H. omega. *)
-(*     eapply IHinstrs in H2. omega. *)
-(* Qed. *)
+Lemma update_instrs_map_lmap_inversion : forall instrs csize l z ofs id csize' lmap lmap' l'
+    (MAXSIZE: csize' <= Ptrofs.max_unsigned)
+    (MINSIZE: csize  >= 0)
+    (LNR: list_norepet (labels instrs))
+    (LPOS: label_pos l ofs instrs = Some z)
+    (UI: update_instrs lmap csize id instrs = (lmap', csize'))
+    (LM: lmap' id l = Some l'),
+    l' = (code_segid , Ptrofs.repr (csize + z - ofs)) /\ 0 <= (csize + z - ofs) <= Ptrofs.max_unsigned.
+Proof.
+  induction instrs; simpl; intros; auto.
+  - inv LPOS.
+  - apply label_pos_inv in LPOS. destruct LPOS as [[LAB EQ] | [NLAB LPOS]].
+    + subst. simpl in *. subst. simpl in *.
+      rewrite update_instrs_cons in UI. destr_in UI.
+      erewrite update_instrs_other_label in LM. 3: eauto. 2: inv LNR; auto.
+      unfold update_instr in Heqp. repeat destr_in Heqp.
+      unfold is_label in Heqo; repeat destr_in Heqo. 
+      unfold update_label_map in LM.
+      rewrite ! peq_true in LM. inv LM. unfold code_label.
+      split.
+      f_equal. f_equal. omega.
+      rewrite (update_instrs_code_size _ _ _ _ _ _ UI) in MAXSIZE.
+      generalize (instr_size_positive (Asm.Plabel l1)).
+      generalize (code_size_non_neg instrs). omega.
+      unfold is_label in Heqo;  simpl in Heqo; repeat destr_in Heqo.
+    + rewrite update_instrs_cons in UI. destr_in UI.
+      specialize (IHinstrs z0 l z (ofs + instr_size a) id csize' l0 lmap' l').
+      inv Heqp.
+      exploit IHinstrs; eauto.
+      generalize (instr_size_positive a); omega.
+      destr_in LNR; auto. inv LNR; auto.
+      intros (A & B).
+      rewrite A. split. f_equal. f_equal. omega. omega.
+Qed.
 
-(* Lemma size_fun_pos: *)
-(*   forall o, *)
-(*     0 <= size_fun o. *)
-(* Proof. *)
-(*   intros. *)
-(*   unfold size_fun. repeat destr; try omega. *)
-(*   generalize (code_size_non_neg (Asm.fn_code f0)); omega. *)
-(* Qed. *)
+Lemma label_pos_min_size : forall instrs l ofs ofs',
+    label_pos l ofs instrs = Some ofs' -> ofs <= ofs'.
+Proof.
+  induction instrs; intros.
+  - simpl in *. inv H.
+  - simpl in *.
+    generalize (instr_size_positive a). intros H0. 
+    repeat destr_in H. omega.
+    eapply IHinstrs in H2. omega.
+Qed.
 
-(* Lemma update_funs_map_lpos_inversion: forall defs id l f z gmap lmap csize dsize efsize csize' dsize' efsize' gmap' lmap' l' *)
-(*     (DDISTINCT : list_norepet (map fst defs))  *)
-(*     (LDISTINCT : list_norepet (labels (Asm.fn_code f))) *)
-(*     (MAXSIZE   : csize' <= Ptrofs.max_unsigned) *)
-(*     (MINSIZE   : csize >= 0) *)
-(*     (AL: (alignw | csize)), *)
-(*     In (id, Some (Gfun (Internal f))) defs -> *)
-(*     label_pos l 0 (Asm.fn_code f) = Some z -> *)
-(*     update_maps gmap lmap dsize csize efsize defs = (gmap', lmap', dsize', csize', efsize') ->  *)
-(*     lmap' id l = Some l' -> *)
-(*     (exists slbl : seglabel, gmap' id = Some slbl  *)
-(*                         /\ fst slbl = fst l'  *)
-(*                         /\ Ptrofs.add (snd slbl) (Ptrofs.repr z) = snd l'). *)
-(* Proof. *)
-(*   induction defs; intros. *)
-(*   - contradiction. *)
-(*   - inv DDISTINCT. inv H.   *)
-(*     + simpl in *. *)
-(*       rewrite AGREE_SMINJ_INSTR.update_maps_cons in H1. repeat destr_in H1. *)
-(*       simpl in Heqp. repeat destr_in Heqp. *)
-(*       erewrite update_gmap_not_in. 2: eauto. 2: auto. *)
-(*       unfold update_gid_map. rewrite peq_true.  *)
-(*       eexists. split. eauto. unfold code_label. simpl. *)
-(*       erewrite update_lmap_not_in in H2. 3: eauto. 2: auto. 2: auto. *)
-(*       generalize (csize_mono _ _ _ _ _ _ _ _ _ _ _ H3 (alignw_divides _ )). *)
-(*       intros. *)
-(*       exploit update_instrs_map_lmap_inversion. 4: eauto. 4: eauto. 4: eauto. *)
-(*       generalize (alignw_le z3). omega. omega. auto. *)
-(*       intros (A & B). subst. simpl. split. auto. *)
-(*       rewrite Ptrofs.add_unsigned. *)
-(*       f_equal. rewrite Ptrofs.unsigned_repr. rewrite Ptrofs.unsigned_repr. *)
-(*       omega. *)
-(*       assert (0 <= z). eapply (label_pos_min_size (Asm.fn_code f) l 0); eauto. *)
-(*       omega. *)
-(*       apply update_instrs_code_size in Heqp0. *)
-(*       generalize (alignw_le z3). *)
-(*       subst. *)
-(*       generalize (code_size_non_neg (Asm.fn_code f)). omega. eauto. *)
-(*     + destruct a. *)
-(*       rewrite AGREE_SMINJ_INSTR.update_maps_cons in H1. repeat destr_in H1. *)
-(*       assert (i <> id). *)
-(*       { *)
-(*         simpl in *. *)
-(*         apply in_map with (f:=fst) in H3; simpl in *. congruence. *)
-(*       } *)
-(*       eapply IHdefs; auto. eauto. 4: auto. 4: eauto. 4: eauto. auto. 3: auto. *)
-(*       erewrite update_csize with (csize':=z1). 2: eauto. *)
-(*       generalize (alignw_le (size_fun o)) (size_fun_pos o); omega. *)
-(*       auto. *)
-(*       eapply update_csize_div; eauto. *)
-(* Qed. *)
+Lemma size_fun_pos:
+  forall o,
+    0 <= size_fun o.
+Proof.
+  intros.
+  unfold size_fun. repeat destr; try omega.
+  generalize (code_size_non_neg (Asm.fn_code f0)); omega.
+Qed.
+
+Lemma update_funs_map_lpos_inversion: forall defs id l f z gmap lmap csize dsize csize' dsize' gmap' lmap' l'
+    (DDISTINCT : list_norepet (map fst defs))
+    (LDISTINCT : list_norepet (labels (Asm.fn_code f)))
+    (MAXSIZE   : csize' <= Ptrofs.max_unsigned)
+    (MINSIZE   : csize >= 0)
+    (AL: (alignw | csize)),
+    In (id, Some (Gfun (Internal f))) defs ->
+    label_pos l 0 (Asm.fn_code f) = Some z ->
+    update_maps gmap lmap dsize csize defs = (gmap', lmap', dsize', csize') ->
+    lmap' id l = Some l' ->
+    (exists slbl : seglabel, gmap' id = Some slbl
+                        /\ fst slbl = fst l'
+                        /\ Ptrofs.add (snd slbl) (Ptrofs.repr z) = snd l').
+Proof.
+  induction defs; intros.
+  - contradiction.
+  - inv DDISTINCT. inv H.
+    + simpl in *.
+      rewrite update_maps_cons in H1. repeat destr_in H1.
+      simpl in Heqp. repeat destr_in Heqp.
+      erewrite update_gmap_not_in. 2: eauto. 2: auto.
+      unfold update_gid_map. rewrite peq_true.
+      eexists. split. eauto. unfold code_label. simpl.
+      erewrite update_lmap_not_in in H2. 3: eauto. 2: auto. 2: auto.
+      generalize (csize_mono _ _ _ _ _ _ _ _ _ H3 (alignw_divides _ )).
+      intros.
+      exploit update_instrs_map_lmap_inversion. 4: eauto. 4: eauto. 4: eauto.
+      generalize (alignw_le z2). omega. omega. auto.
+      intros (A & B). subst. simpl. split. auto.
+      rewrite Ptrofs.add_unsigned.
+      f_equal. rewrite Ptrofs.unsigned_repr. rewrite Ptrofs.unsigned_repr.
+      omega.
+      assert (0 <= z). eapply (label_pos_min_size (Asm.fn_code f) l 0); eauto.
+      omega.
+      apply update_instrs_code_size in Heqp0.
+      generalize (alignw_le z2).
+      subst.
+      generalize (code_size_non_neg (Asm.fn_code f)). omega. eauto.
+    + destruct a.
+      rewrite update_maps_cons in H1. repeat destr_in H1.
+      assert (i <> id).
+      {
+        simpl in *.
+        apply in_map with (f:=fst) in H3; simpl in *. congruence.
+      }
+      eapply IHdefs; auto. eauto. 4: auto. 4: eauto. 4: eauto. auto. 3: auto.
+      erewrite update_csize with (csize':=z0). 2: eauto.
+      generalize (alignw_le (size_fun o)) (size_fun_pos o); omega.
+      auto.
+      eapply update_csize_div; eauto.
+Qed.
 
 (* Section WITHTRANSF. *)
 
@@ -1141,29 +1152,31 @@ End WITHTRANSF.
 (* Let ge := Genv.globalenv prog. *)
 (* Let tge := globalenv tprog. *)
 
-(* Lemma update_map_lmap_inversion : forall id f gmap lmap dsize csize efsize l z l', *)
-(*     (dsize + csize + efsize) <= Ptrofs.max_unsigned -> *)
-(*     list_norepet (map fst (AST.prog_defs prog)) -> *)
-(*     list_norepet (labels (Asm.fn_code f)) -> *)
-(*     In (id, Some (Gfun (Internal f))) (AST.prog_defs prog) -> *)
-(*     make_maps prog = (gmap, lmap, dsize, csize, efsize) -> *)
-(*     label_pos l 0 (Asm.fn_code f) = Some z -> *)
-(*     lmap id l = Some l' -> *)
-(*     exists slbl, gmap id = Some slbl /\ *)
-(*             fst slbl = fst l' /\ *)
-(*             Ptrofs.add (snd slbl) (Ptrofs.repr z) = snd l'. *)
-(* Proof. *)
-(*   intros id f gmap lmap dsize csize efsize l z l' SZBOUND DDISTINCT LDISTINCT IN UPDATE LPOS LMAP. *)
-(*   unfold make_maps in UPDATE. *)
-(*   eapply update_funs_map_lpos_inversion. 8: eauto. all: eauto. *)
-(*   generalize (dsize_mono _  _ _ _ _ _ _ _ _ _ _ UPDATE). *)
-(*   generalize (efsize_mono _ _ _ _ _ _ _ _ _ _ _ UPDATE). omega. omega. *)
-(*   apply Z.divide_0_r. *)
-(* Qed. *)
+Lemma update_map_lmap_inversion : forall id f gmap lmap dsize csize l z l',
+    (dsize + csize) <= Ptrofs.max_unsigned ->
+    list_norepet (map fst (AST.prog_defs prog)) ->
+    list_norepet (labels (Asm.fn_code f)) ->
+    In (id, Some (Gfun (Internal f))) (AST.prog_defs prog) ->
+    make_maps prog = (gmap, lmap, dsize, csize) ->
+    label_pos l 0 (Asm.fn_code f) = Some z ->
+    lmap id l = Some l' ->
+    exists slbl, gmap id = Some slbl /\
+            fst slbl = fst l' /\
+            Ptrofs.add (snd slbl) (Ptrofs.repr z) = snd l'.
+Proof.
+  intros id f gmap lmap dsize csize l z l' SZBOUND DDISTINCT LDISTINCT IN UPDATE LPOS LMAP.
+  unfold make_maps in UPDATE.
+  eapply update_funs_map_lpos_inversion. 8: eauto. all: eauto.
+  generalize (dsize_mono _ _ _ _ _ _ _ _ _ UPDATE).
+  omega. omega.
+  apply Z.divide_0_r.
+Qed.
 
-(* End WITHTRANSF. *)
+End WITHTRANSF.
 
 (* End AGREE_SMINJ_LBL. *)
+
+
 
 Section WITHMEMORYMODEL.
   
