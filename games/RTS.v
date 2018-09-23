@@ -35,7 +35,7 @@ Module RTS.
 
   Inductive behavior {G A} :=
     | internal (a' : A)
-    | interacts (m : output G) (k : input G -> A)
+    | interacts (m : output G) (k : input G -> option A)
     | diverges
     | goes_wrong.
 
@@ -45,7 +45,7 @@ Module RTS.
     | internal_le :
         Monotonic internal (R ++> behavior_le R)
     | interacts_le :
-        Monotonic interacts (- ==> (- ==> R) ++> behavior_le R)
+        Monotonic interacts (- ==> (- ==> option_rel R) ++> behavior_le R)
     | diverges_le :
         Monotonic diverges (behavior_le R)
     | goes_wrong_le ra :
@@ -68,7 +68,7 @@ Module RTS.
   Definition behavior_map {G A B} (f : A -> B) (r : behavior G A) :=
     match r with
       | internal a' => internal (f a')
-      | interacts m k => interacts m (fun mi => f (k mi))
+      | interacts m k => interacts m (fun mi => option_map f (k mi))
       | diverges => diverges
       | goes_wrong => goes_wrong
     end.
@@ -99,6 +99,8 @@ Module RTS.
 
   Definition sim {G A B} (R : rel A B) : rel (rts G A) (rts G B) :=
     (R ++> set_le (behavior_le R)).
+
+  Arguments sim {G A B} R%rel α%rts β%rts.
 
   Hint Extern 1 (RElim (sim _) _ _ _ _) =>
     eapply arrow_relim : typeclass_instances.
@@ -382,7 +384,32 @@ Module RTS.
     - assert (a2 = a') by eauto using nonbranching_internal; subst. eauto.
   Qed.
 
+  Lemma obs_deterministic {G A} (α : rts G A) : (* XXX in RTS.v *)
+    deterministic α ->
+    deterministic (obs α).
+  Proof.
+    intros Hα a r1 r2 H1 H2.
+    destruct H1.
+    - destruct H2; eauto.
+      induction H2 as [a | a1 a2 a3 Ha12 Ha23].
+      + destruct H.
+        assert (r = internal a'); eauto. subst.
+        inversion H0.
+      + eapply IHHa23; eauto using fi_inv_internal.
+    - destruct H2; eauto.
+      + eapply fi_inv_reachable in H2; eauto.
+        destruct H2.
+        assert (r = internal a'0) by eauto; subst. inversion H.
+      + induction H1 as [a | a1 a2 a3 Ha12 Ha23].
+        * destruct H4; eauto.
+          assert (r = internal a') by eauto; subst. inversion H.
+        * apply IHHa23; eauto.
+          eapply reachable_inv_reachable; eauto.
+  Qed.
+
   (** ** Sum *)
+
+  (** *** Definition *)
 
   Inductive sum {G A B} (α : rts G A) (β : rts G B) : rts G (A + B) :=
     | sum_inl a ra : α a ra -> sum α β (inl a) (behavior_map inl ra)
@@ -398,6 +425,88 @@ Module RTS.
   Proof.
     intros G A1 A2 RA B1 B2 RB α1 α2 Hα β1 β2 Hβ s1 s2 Hs s1' Hs1'.
     destruct Hs1'; inversion Hs; transport H; (eexists; split; [eauto | try rauto]).
+  Qed.
+
+  (** *** Commutation with [obs] *)
+
+  Lemma inl_reachable {G A B} (α : rts G A) (β : rts G B) a a' :
+    reachable α a a' ->
+    reachable (α + β) (inl a) (inl a').
+  Proof.
+    induction 1; eauto.
+    econstructor; eauto.
+    change (internal (?x ?y)) with (behavior_map (G:=G) x (internal y)).
+    constructor; auto.
+  Qed.
+
+  Lemma inr_reachable {G A B} (α : rts G A) (β : rts G B) b b' :
+    reachable β b b' ->
+    reachable (α + β) (inr b) (inr b').
+  Proof.
+    induction 1; eauto.
+    econstructor; eauto.
+    change (internal (?x ?y)) with (behavior_map (G:=G) x (internal y)).
+    constructor; auto.
+  Qed.
+
+  Lemma sum_reachable_inv {G A B} (α : rts G A) (β : rts G B) s s' :
+    reachable (α + β) s s' ->
+    (exists a a', s = inl a /\ s' = inl a' /\ reachable α a a') \/
+    (exists b b', s = inr b /\ s' = inr b' /\ reachable β b b').
+  Proof.
+    induction 1 as [s | s s' s'' Hs' Hs'' IHs''].
+    - destruct s; [left | right]; eauto.
+    - destruct IHs'' as [(a' & a'' & ? & ? & Ha'') | (b' & b'' & ? & ? & Hb'')].
+      + left. subst. inversion Hs'; clear Hs'; subst.
+        * destruct ra; inversion H; clear H; subst. eauto.
+        * destruct rb; inversion H.
+      + right. subst. inversion Hs'; clear Hs'; subst.
+        * destruct ra; inversion H.
+        * destruct rb; inversion H; clear H; subst. eauto.
+  Qed.
+
+  Lemma sum_forever_internal_inv {G A B} (α : rts G A) (β : rts G B) s :
+    forever_internal (α + β) s ->
+    (exists a, s = inl a /\ forever_internal α a) \/
+    (exists b, s = inr b /\ forever_internal β b).
+  Proof.
+    destruct s as [a | b].
+    - left. exists a; intuition auto.
+      revert a H. cofix IH. intros.
+      destruct H as [s' Hs' H].
+      inversion Hs'; clear Hs'; subst.
+      destruct ra; inversion H1; clear H1; subst.
+      econstructor; eauto.
+    - right. exists b; intuition auto.
+      revert b H. cofix IH. intros.
+      destruct H as [s' Hs' H].
+      inversion Hs'; clear Hs'; subst.
+      destruct rb; inversion H1; clear H1; subst.
+      econstructor; eauto.
+  Qed.
+
+  Lemma behavior_external_map_inv {G A B} (f : A -> B) (r : behavior G A) :
+    behavior_external (behavior_map f r) ->
+    behavior_external r.
+  Proof.
+    destruct r; inversion 1; eauto.
+  Qed.
+
+  Lemma sum_obs {G A B} (α : rts G A) (β : rts G B) :
+    RTS.sim eq (obs (α + β)) (obs α + obs β).
+  Proof.
+    intros s _ [] r Hr.
+    exists r; split; [ | rauto].
+    destruct Hr as [Hs | s' r Hrext Hr Hs'].
+    - apply sum_forever_internal_inv in Hs as [(a & ? & H) | (b & ? & H)]; subst.
+      + change diverges with (behavior_map (G:=G) (@inl A B) diverges).
+        left. auto.
+      + change diverges with (behavior_map (G:=G) (@inr A B) diverges).
+        right. auto.
+    - apply sum_reachable_inv in Hs' as [(a & a' & ? & ? & Ha') |
+                                         (b & b' & ? & ? & Hb')]; subst;
+      inversion Hr; clear Hr; subst;
+      eauto using behavior_external_map_inv.
   Qed.
 
   Global Instance obs_params : Params (@obs) 4.

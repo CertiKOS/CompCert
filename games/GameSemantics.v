@@ -26,38 +26,29 @@ Bind Scope li_scope with game.
 
 Record modsem {li : language_interface} :=
   {
-    modsem_dom : query li -> bool;
     modsem_state : Type;
     modsem_lts :> rts li modsem_state;
-    modsem_entry : query li -> modsem_state;
+    modsem_entry : input li -> option modsem_state;
   }.
 
 Arguments modsem : clear implicits.
 
 Record modref {li} (α β : modsem li) : Prop :=
   {
-    modref_dom :
-      forall q, modsem_dom α q = modsem_dom β q;
     modref_state :
       rel (modsem_state α) (modsem_state β);
     modref_sim :
       RTS.sim modref_state (modsem_lts α) (modsem_lts β);
     modref_init :
-      forall q, modref_state (modsem_entry α q) (modsem_entry β q);
+      forall q, option_rel modref_state (modsem_entry α q) (modsem_entry β q);
   }.
-
-Global Instance modsem_dom_ref :
-  Monotonic (@modsem_dom) (forallr -, modref ++> - ==> eq).
-Proof.
-  intros ? ? ? []. firstorder.
-Qed.
 
 
 (** * Behaviors from small step semantics *)
 
 Module Behavior.
   Section LTS.
-    Context {li} (L : Smallstep.semantics li).
+    Context {li} (L : Smallstep.semantics li) (idom kdom : query li -> bool).
 
     (** ** Transition system *)
 
@@ -65,8 +56,8 @@ Module Behavior.
       | resumed (k : Smallstep.state L -> Prop)
       | running (s : Smallstep.state L).
 
-    Definition liftk (k : cont L) : input li -> state :=
-      fun q => resumed (k q).
+    Definition liftk (dom : _ -> bool) (k : cont L) : input li -> option state :=
+      fun q => if dom q then Some (resumed (k q)) else None.
 
     Inductive step : rts li state :=
       | step_resumed (k : Smallstep.state L -> Prop) s :
@@ -80,18 +71,17 @@ Module Behavior.
           step (running s) (RTS.internal (running s'))
       | step_interacts s r k :
           final_state L s r k ->
-          step (running s) (RTS.interacts (G:=li) r (liftk k))
+          step (running s) (RTS.interacts (G:=li) r (liftk kdom k))
       | step_goes_wrong s :
           Nostep L s ->
           (forall r k, ~ final_state L s r k) ->
           step (running s) (RTS.goes_wrong).
 
-    Definition of dom : modsem li :=
+    Definition of : modsem li :=
       {|
-        modsem_dom := dom;
         modsem_state := state;
         modsem_lts := RTS.obs step;
-        modsem_entry := liftk (initial_state L);
+        modsem_entry := liftk idom (initial_state L);
       |}.
 
     (** ** Properties *)
@@ -201,8 +191,8 @@ Module Behavior.
 
   Hint Constructors state_rel.
 
-  Lemma rts_forever_silent {li} (L : semantics li) s:
-    RTS.forever_internal (step L) (running L s) ->
+  Lemma rts_forever_silent {li} (L : semantics li) kdom s:
+    RTS.forever_internal (step L kdom) (running L s) ->
     Forever_silent L s.
   Proof.
     revert s. cofix IH.
@@ -211,9 +201,9 @@ Module Behavior.
     econstructor; eauto.
   Qed.
 
-  Lemma forever_silent_rts {li} (L : semantics li) s:
+  Lemma forever_silent_rts {li} (L : semantics li) kdom s:
     Forever_silent L s ->
-    RTS.forever_internal (step L) (running L s).
+    RTS.forever_internal (step L kdom) (running L s).
   Proof.
     revert s. cofix IH.
     intros.
@@ -221,12 +211,12 @@ Module Behavior.
     constructor. eauto.
   Qed.
 
-  Lemma forever_internal_bsim {li} (L1 L2: semantics li) ind ord ms i S1 S2:
+  Lemma forever_internal_bsim {li} (L1 L2: semantics li) d1 d2 ind ord ms i S1 S2:
     bsim_properties L2 L1 ind ord ms ->
     ms i S2 S1 ->
     Smallstep.safe L2 S2 ->
-    RTS.forever_internal (step L1) (running L1 S1) ->
-    RTS.forever_internal (step L2) (running L2 S2).
+    RTS.forever_internal (step L1 d1) (running L1 S1) ->
+    RTS.forever_internal (step L2 d2) (running L2 S2).
   Proof.
     intros.
     eapply forever_silent_rts.
@@ -236,11 +226,11 @@ Module Behavior.
 
   Hint Extern 10 => rstep : coqrel.
 
-  Lemma bsim_sound_step {li} (L1 L2: semantics li) ind ord ms:
+  Lemma bsim_sound_step {li} (L1 L2: semantics li) d ind ord ms:
     bsim_properties L2 L1 ind ord ms ->
     RTS.sim (state_rel (flip (rel_ex ms)))
-      (RTS.obs (step L1))
-      (RTS.obs (step L2)).
+      (RTS.obs (step L1 d))
+      (RTS.obs (step L2 d)).
   Proof.
     set (R := flip (rel_ex ms)). unfold flip, rel_ex in R.
     intros HL S1 S2 HS S1' HS1'.
@@ -277,11 +267,11 @@ Module Behavior.
           destruct H1 as (i & Hs).
           eapply bsim_match_final_states in H; eauto.
           destruct H as (s2' & k2 & Hs2' & Hsk2 & Hke & Hkm); eauto.
-          exists (RTS.interacts (G:=li) r (liftk L2 k2)). split.
+          exists (RTS.interacts (G:=li) r (liftk L2 d k2)). split.
           -- eapply RTS.obs_external with (running L2 s2'); eauto.
              ++ constructor; eauto.
              ++ eapply star_reachable; eauto.
-          -- unfold liftk, R. repeat constructor.
+          -- unfold liftk, R. repeat rstep. constructor.
              ++ eauto.
              ++ intros. edestruct Hkm as (? & ? & ? & ?); eauto.
         * (* Can't go wrong *)
@@ -315,12 +305,12 @@ Module Behavior.
   Qed.
 
   Global Instance bsim_sound:
-    Monotonic (@of) (forallr -, backward_simulation --> - ==> modref).
+    Monotonic (@of) (forallr -, backward_simulation --> - ==> - ==> modref).
   Proof.
-    intros li L1 L2 [index order match_states HL] dom. unfold of.
+    intros li L1 L2 [index order match_states HL] idom kdom. unfold of.
     econstructor; simpl; eauto.
     - eapply bsim_sound_step; eauto.
-    - intros q. unfold liftk, flip, rel_ex. constructor.
+    - intros q. unfold liftk, flip, rel_ex. repeat rstep. constructor.
       + eapply bsim_initial_states_exist; eauto.
       + intros. edestruct @bsim_match_initial_states as (? & ? & ? & ?); eauto.
   Qed.

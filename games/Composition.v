@@ -12,241 +12,214 @@ Require Import Classical.
 Require Import Axioms.
 
 
-(** * Horizontal composition *)
+(** * Flat composition *)
 
-Module HComp.
+Module FComp.
   Import RTS.
 
-  Section RTS.
-    Context {G A} (sw : output G -> option (input G)) (α : rts G A).
+  (** ** Definition *)
 
-    Inductive hc_state : Type :=
-      | hc_r (a : A) (k : input G -> A)
-      | hc_z.
+  (** Given a RTS, we can create a new RTS that maintains the states
+    of two threads within this RTS. At any time, only one of the
+    threads will be running and we will store a suspended continuation
+    for the inactive thread. *)
 
-    Definition hc_behavior (r : RTS.behavior G A) (k : input G -> A) :=
-      match r with
-        | internal a =>
-          internal (hc_r a k)
-        | interacts mo k' =>
-          match sw mo with
-            | Some m => internal (hc_r (k m) k')
-            | None => interacts mo (fun mi => hc_r (k' mi) k)
-          end
-        | diverges =>
-          diverges
-        | goes_wrong =>
-          goes_wrong
-      end.
+  Inductive state {G A} :=
+    | running (a : A) (k : input G -> option A)
+    | conflict.
 
-    Inductive hc : rts G hc_state :=
-      | hc_intro a k r :
-          α a r ->
-          hc (hc_r a k) (hc_behavior r k).
+  Arguments state : clear implicits.
 
-  End RTS.
+  (** Two continuations for the underlying can be combined into a
+    continuation for the two-threaded RTS in the following way. *)
 
-  Arguments hc_state : clear implicits.
+  Definition liftk {G A} (k1 k2 : input G -> option A) (q : input G) :=
+    match k1 q, k2 q with
+      | None, None => None
+      | Some a1, None => Some (running a1 k2)
+      | None, Some a2 => Some (running a2 k1)
+      | Some _, Some _ => Some conflict
+    end.
+
+  (** When the running thread interacts with the environment, its
+    continuation will be combined with the suspended continuation, so
+    that the environment may resume either thread. *)
+
+  Definition liftb {G A} (r : behavior G A) k :=
+    match r with
+      | internal a' => internal (running a' k)
+      | interacts mo k' => interacts mo (liftk k' k)
+      | diverges => diverges
+      | goes_wrong => goes_wrong
+    end.
+
+  Inductive step {G A} (α : rts G A) : rts G (state G A) :=
+    step_intro a k r :
+      α a r ->
+      step α (running a k) (liftb r k).
 
   (** ** Monotonicity *)
 
-  Inductive hc_rel {G A B} R : rel (hc_state G A) (hc_state G B) :=
-    | hc_r_rel :
-        Monotonic hc_r (R ++> (- ==> R) ++> hc_rel R)
-    | hc_z_rel :
-        Monotonic hc_z (hc_rel R).
+  Inductive state_rel {G A B} R : rel (state G A) (state G B) :=
+    | running_rel :
+        Monotonic running (R ++> (- ==> option_rel R) ++> state_rel R)
+    | conflict_rel :
+        Monotonic conflict (state_rel R).
 
-  Global Existing Instance hc_r_rel.
-  Global Existing Instance hc_z_rel.
-  Global Instance hc_r_rel_params : Params (@hc_r) 2.
+  Global Existing Instance running_rel.
+  Global Existing Instance conflict_rel.
+  Global Instance running_rel_params : Params (@running) 2.
 
-  Global Instance hc_behavior_rel {G A B} R sw :
+  Global Instance liftk_sim :
     Monotonic
-      (hc_behavior sw)
-      (behavior_le R ++> (- ==> R) ++> behavior_le (@hc_rel G A B R)).
+      (@liftk)
+      (forallr -, forallr R,
+        (- ==> option_rel R) ++>
+        (- ==> option_rel R) ++>
+        (- ==> option_rel (state_rel R))).
   Proof.
-    unfold hc_behavior. rauto.
+    unfold liftk. rauto.
   Qed.
 
-  Global Instance hc_behavior_rel_params :
-    Params (@hc_behavior) 2.
-
-  Global Instance hc_sim {G A B} R :
-    Monotonic hc (- ==> sim R ++> sim (@hc_rel G A B R)).
+  Global Instance liftb_sim :
+    Monotonic
+      (@liftb)
+      (forallr -, forallr R,
+        behavior_le R ++>
+        (- ==> option_rel R) ++>
+        behavior_le (state_rel R)).
   Proof.
-    intros sw α β Hαβ sa sb Hs ka Hka.
-    destruct Hka as [a ka ra].
+    unfold liftb. rauto.
+  Qed.
+
+  Global Instance step_sim {G A B} R :
+    Monotonic step (sim R ++> sim (@state_rel G A B R)).
+  Proof.
+    intros α β Hαβ sa sb Hs ra Hra.
+    destruct Hra as [a ka ra Hra].
     inversion Hs as [xa b Hab xka kb Hk | ]; clear Hs; subst.
     edestruct Hαβ as (rb & Hrb & Hr); eauto.
-    exists (hc_behavior sw rb kb). split; [ | rauto].
-    constructor; auto.
+    exists (liftb rb kb). split.
+    - constructor; auto.
+    - rauto.
   Qed.
 
-  Global Instance hc_sim_params :
-    Params (@hc) 2.
+  Global Instance step_sim_params :
+    Params (@step) 1.
 
-  (** ** Properties *)
+  (** ** Modules *)
 
-  Lemma hc_behavior_external {G A} sw (r : behavior G A) (k : input G -> A) :
-    behavior_external (hc_behavior sw r k) ->
-    behavior_external r.
+  (** When we wish to compute the flat composition of two modules, we
+    can use the sum of the underlying RTS and combine the two initial
+    continuations. *)
+
+  Definition of {li} (α β : modsem li) : modsem li :=
+    {|
+      modsem_lts := step (modsem_lts α + modsem_lts β);
+      modsem_entry :=
+        liftk
+          (fun q => option_map inl (modsem_entry α q))
+          (fun q => option_map inr (modsem_entry β q));
+    |}.
+
+  Global Instance of_ref :
+    Monotonic (@of) (forallr -, modref ++> modref ++> modref).
   Proof.
-    destruct r; inversion 1; constructor.
+    intros li α1 β1 Hαβ1 α2 β2 Hαβ2.
+    pose proof Hαβ1 as [R1 H1 He1].
+    pose proof Hαβ2 as [R2 H2 He2].
+    exists (state_rel (R1 + R2)); simpl.
+    - apply step_sim.
+      rauto.
+    - intro q.
+      apply liftk_sim; repeat rstep; auto.
   Qed.
+End FComp.
 
-  Lemma hc_reachable {G A} sw (α : rts G A) a a' k :
-    reachable α a a' ->
-    reachable (hc sw α) (hc_r a k) (hc_r a' k).
+
+(** * Resolution operator *)
+
+Module Res.
+  Import RTS.
+
+  (** ** Definition *)
+
+  Definition res_behavior {G A} sw (r : behavior G A) : behavior G A :=
+    match r with
+      | interacts mo k =>
+        match sw mo with
+          | Some mi =>
+            match k mi with
+              | Some a' => internal a'
+              | None => r
+            end
+          | None => r
+        end
+      | _ => r
+    end.
+
+  Inductive res {G A} sw (α : rts G A) : rts G A :=
+    res_intro a r :
+      α a r ->
+      res sw α a (res_behavior sw r).
+
+  (** ** Monotonicity *)
+
+  Global Instance res_sim :
+    Monotonic (@res) (forallr -, forallr R, - ==> sim R ++> sim R).
   Proof.
-    induction 1; eauto.
-    econstructor; eauto.
-    change (internal _) with (hc_behavior sw (internal a') k).
-    constructor; eauto.
+    intros G A B R sw α β Hαβ a b Hab ra Hra.
+    destruct Hra as [a' ra Hra].
+    edestruct Hαβ as (rb & Hrb & Hr); eauto.
+    exists (res_behavior sw rb). split.
+    - constructor; auto.
+    - unfold res_behavior. rauto.
   Qed.
 
   (** ** Modules *)
 
-  Section HCOMP.
-    Context {li} (α1 α2 : modsem (li -o li)).
+  Definition sw li (mo : output (li -o li)) : option (input (li -o li)) :=
+    match mo with
+      | inr x => Some (inl x)
+      | inl x => Some (inr x)
+    end.
 
-    Definition hcomp_dom (q : query (li -o li)) : bool :=
-      modsem_dom α1 q || modsem_dom α2 q.
+  Definition of {li} (α : modsem (li -o li)) : modsem (li -o li) :=
+    {|
+      modsem_lts := res (sw li) α;
+      modsem_entry := modsem_entry α;
+    |}.
 
-    Definition hcomp_sw (q : reply (li -o li)) : option (query (li -o li)) :=
-      match q with
-        | inl q => if hcomp_dom (inr q) then Some (inr q) else None
-        | inr r => Some (inl r) (* XXX need to know whether outermost reply *)
-      end.
-
-    Definition hcomp_entry (q : query (li -o li)) :=
-      match modsem_dom α1 q, modsem_dom α2 q with
-        | true, false =>
-            hc_r (G := li -o li)
-              (inl (modsem_entry α1 q))
-              (fun m => inr (modsem_entry α2 m))
-        | false, true =>
-            hc_r (G := li -o li)
-              (inr (modsem_entry α2 q))
-              (fun m => inl (modsem_entry α1 m))
-        | _, _ =>
-            hc_z
-      end.
-
-    Definition hcomp : modsem (li -o li) :=
-      {|
-        modsem_lts := hc (G := li -o li) hcomp_sw (α1 + α2)%rts;
-        modsem_dom := hcomp_dom;
-        modsem_entry := hcomp_entry;
-      |}.
-  End HCOMP.
-
-  Global Instance hcomp_dom_ref :
-    Monotonic (@hcomp_dom) (forallr -, modref ++> modref ++> - ==> eq).
+  Global Instance of_sim :
+    Monotonic (@of) (forallr -, modref ++> modref).
   Proof.
-    unfold hcomp_dom. repeat rstep. f_equal; rauto.
+    intros li α β [R Hαβ He].
+    esplit; simpl; eauto. rauto.
   Qed.
 
-  Global Instance hcomp_sw_ref :
-    Monotonic (@hcomp_sw) (forallr -, modref ++> modref ++> - ==> eq).
-  Proof.
-    unfold hcomp_sw. rauto.
-  Qed.
+  (** ** Commutation with [obs] *)
 
-  Global Instance hcomp_ref :
-    Monotonic (@hcomp) (forallr -, modref ++> modref ++> modref).
-  Proof.
-    intros li α1 β1 Hαβ1 α2 β2 Hαβ2.
-    pose proof Hαβ1 as [Hd1 R1 H1 He1].
-    pose proof Hαβ2 as [Hd2 R2 H2 He2].
-    exists (hc_rel (R1 + R2)); simpl.
-    - intros q. rauto.
-    - replace (hcomp_sw β1 β2) with (hcomp_sw α1 α2).
-      + eapply hc_sim. rauto.
-      + apply functional_extensionality. intros i. rauto.
-    - intros q. unfold hcomp_entry.
-      rewrite <- Hd1, <- Hd2.
-      repeat rstep; simpl; eauto.
-  Qed.
-
-  (** ** [hcomp] and [obs] *)
-
-  (** We prove that [hcomp] semi-commutes with [obs], in the sense
+  (** We prove that [res] semi-commutes with [obs], in the sense
     that applying [obs] after horizontal composition only should yield
     the same result as applying it both before and after horizontal
-    composition. *)
+    composition: in particular, for any step of [obs (res sw α)],
+    there is a corresponding step of [obs (res sw (obs α))]. This is
+    used as a lemma in proofs of syntactic composition. The proof is
+    non-trivial both in the diverging and terminating cases. *)
 
-  CoInductive forever_switching {G A} sw (α : rts G A) : hc_state G A -> Prop :=
-    | forever_switching_intro a a' ra k s' :
-        reachable α a a' ->
-        α a' ra ->
-        behavior_external ra ->
-        hc_behavior sw ra k = internal s' ->
-        forever_switching sw α s' ->
-        forever_switching sw α (hc_r a k).
+  (** *** Divergence *)
 
-  Lemma forever_switching_internal {G A} sw (α : rts G A) s s' :
-    hc sw α s (internal s') ->
-    forever_switching sw α s' ->
-    forever_switching sw α s.
-  Proof.
-    intros Hs' Hd.
-    inversion Hs' as [a0 k0 ra0 Hra0]; clear Hs'.
-    destruct ra0; inversion H0; clear H0.
-    - destruct Hd.
-      inversion H2; clear H2; subst.
-      eapply (forever_switching_intro sw α a0 a'0); eauto.
-    - destruct sw as [mx|] eqn:Hmx; inversion H2; clear H2; subst.
-      eapply (forever_switching_intro sw α a0 a0); eauto.
-      simpl. rewrite Hmx. reflexivity.
-  Qed.
+  (** First, if [res sw α] diverges, we need to distinguish two subcases.
+    On one hand, the divergence may result from an infinite number of
+    terminating segments which are stiched together by internal
+    switching, resulting in an infinite sequence of internal
+    actions. On the other hand, it may be that [α] itself diverges,
+    with [res] simply passing along these internal actions; even in
+    this case, this may be preceded by a finite number of internal
+    switches.
 
-  Inductive hc_settles {G A} sw (α : rts G A) : rts G (hc_state G A) :=
-    | hc_settles_external a a' ra k r :
-        α a' ra ->
-        reachable α a a' ->
-        hc_behavior sw ra k = r ->
-        behavior_external r ->
-        hc_settles sw α (hc_r a k) r
-    | hc_settles_diverges a k :
-        forever_internal α a ->
-        hc_settles sw α (hc_r a k) diverges
-    | hc_settles_switch a a' ra k s' r :
-        α a' ra ->
-        reachable α a a' ->
-        behavior_external ra ->
-        hc_behavior sw ra k = internal s' ->
-        hc_settles sw α s' r ->
-        hc_settles sw α (hc_r a k) r.
-
-  Hint Constructors hc_settles.
-
-  Lemma hc_settles_internal {G A} sw (α : rts G A) s s' r :
-    hc sw α s (internal s') ->
-    hc_settles sw α s' r ->
-    hc_settles sw α s r.
-  Proof.
-    intros Hs' Hr.
-    inversion Hs' as [a k ra Hra]; clear Hs'; subst.
-    destruct ra; inversion H0; clear H0.
-    - destruct Hr; inversion H1; clear H1; subst.
-      + eapply (hc_settles_external sw α a a'0); eauto.
-      + eapply (hc_settles_diverges sw α a); eauto.
-        econstructor; eauto.
-      + eapply (hc_settles_switch sw α a a'0); eauto.
-    - destruct sw as [mx|] eqn:Hmx; inversion H1; clear H1; subst.
-      eapply (hc_settles_switch sw α a a (interacts m k0)); eauto.
-      simpl. rewrite Hmx. reflexivity.
-  Qed.
-
-  Inductive obs_hc {G A} sw (α : rts G A) : rts G (hc_state G A) :=
-    | obs_hc_settles s r :
-        hc_settles sw α s r ->
-        obs_hc sw α s r
-    | obs_hc_forever_switching s :
-        forever_switching sw α s ->
-        obs_hc sw α s diverges.
-
-  (** *** Alternative formulations for coinductive properties *)
+    In order to simplify the case analysis we introduce the following
+    positive formulation of divergence. *)
 
   Lemma forever_internal_nbr {G A} (α : rts G A) a :
     nonbranching α ->
@@ -263,168 +236,185 @@ Module HComp.
       econstructor; eauto.
   Qed.
 
-  Lemma forever_switching_inv_internal {G A} sw (α : rts G A) s s' :
-    deterministic α ->
-    forever_switching sw α s ->
-    hc sw α s (internal s') ->
-    forever_switching sw α s'.
-  Proof.
-    intros Hα Hs Hs'.
-    inversion Hs'; clear Hs'; subst.
-    destruct r; simpl in H; try now inversion H.
-    - inversion Hs as [a1 a2 ra l s2 Ha2 Hra Hs2 Hs2d]; clear Hs; subst.
-      inversion H; clear H; subst.
-      eapply (reachable_inv_reachable α a a' a2) in Ha2; eauto.
-      econstructor; eauto.
-    - destruct sw eqn:Hm; inversion H; clear H; subst.
-      inversion Hs; clear Hs; subst.
-      assert (a' = a).
-      {
-        destruct H2; eauto.
-        eelim (nonbranching_internal_external α a (interacts m k0)); eauto.
-      }
-      subst.
-      assert (ra = interacts m k0).
-      {
-        eapply Hα; eauto.
-      }
-      subst.
-      simpl in H5.
-      rewrite Hm in H5.
-      inversion H5.
-      congruence.
-  Qed.
+  (** The formulation above is only valid when [α] is nonbranching,
+    otherwise [Σ n . τ^n] may be mistaken for [τ^ω]. To apply it to
+    [obs (res sw α)] we use the following lemmas. *)
 
-  Lemma forever_switching_nbr {G A} sw (α : rts G A) s :
+  Lemma res_det {G A} sw (α : rts G A) :
     deterministic α ->
-    forever_switching sw α s <->
-    (s <> hc_z /\
-     forall a k, reachable (hc sw α) s (hc_r a k) ->
-                 exists a' r s', reachable α a a' /\
-                                 α a' r /\
-                                 behavior_external r /\
-                                 hc_behavior sw r k = internal s').
-  Proof.
-    intros Hα. split.
-    - intros Hs.
-      split. { destruct Hs. congruence. }
-      intros a k Hak.
-      remember (hc_r a k) as s' eqn:Hs' in Hak.
-      revert a k Hs'.
-      induction Hak; intros.
-      + destruct Hs.
-        inversion Hs'; clear Hs'; subst.
-        exists a', ra, s'. eauto.
-      + eapply IHHak; eauto.
-        eapply forever_switching_inv_internal; eauto.
-    - revert s. cofix IH. intros s [Hnz Hs].
-      destruct s as [a k | ]; try congruence.
-      edestruct (Hs a k) as (a' & r & s' & Ha' & Hr & Hrext & Hs'); [ eauto .. | ].
-      eapply (forever_switching_intro sw α a a' r k); eauto.
-      eapply IH.
-      split. { destruct r; simpl in Hs'; try congruence.
-               destruct sw; congruence. }
-      intros.
-      eapply Hs.
-      transitivity s'; auto.
-      transitivity (hc_r a' k); auto using hc_reachable.
-      econstructor; eauto.
-      rewrite <- Hs'. constructor. auto.
-  Qed.
-
-  Lemma hc_det {G A} sw (α : rts G A) :
-    deterministic α ->
-    deterministic (hc sw α).
+    deterministic (res sw α).
   Proof.
     intros Hα s x y Hx Hy.
     destruct Hx. inversion Hy.
     f_equal; eauto.
   Qed.
 
-  Lemma forever_hc {G A} sw (α : rts G A) s :
-    deterministic α ->
-    forever_internal (hc sw α) s ->
-    (exists a k, reachable (hc sw α) s (hc_r a k) /\ forever_internal α a) \/
-    forever_switching sw α s.
+  (** In addition, we will use the following properties relating
+    reachability in various flavors of the transition system. *)
+
+  Lemma reachable_obs_res_inv {G A} sw (α : rts G A) a a' :
+    reachable (res sw (obs α)) a a' ->
+    reachable (res sw α) a a'.
   Proof.
-    intros Hα Hs1.
-    destruct (classic (forever_switching sw α s)) as [? | Hs2]; auto. left.
-    rewrite forever_internal_nbr in Hs1; eauto using hc_det.
-    rewrite forever_switching_nbr in Hs2; eauto.
-    apply not_and_or in Hs2 as [? | Hs2].
-    {
-      specialize (Hs1 s (reachable_refl _ s)) as (s' & Hs').
-      destruct Hs'. elim H. congruence.
-    }
-    apply not_all_ex_not in Hs2 as [a Hs2].
-    apply not_all_ex_not in Hs2 as [k Hs2].
-    apply not_all_ex_not in Hs2 as [Hak Hs2].
-    exists a, k. split; auto.
-    revert a Hak Hs2. cofix IH. intros.
-    edestruct (Hs1 _ Hak) as (a'' & Ha'').
-    inversion Ha''; clear Ha''; subst.
-    destruct r; try now inversion H2.
-    - simpl in H2. inversion H2; clear H2; subst.
-      econstructor; eauto.
-      eapply IH.
-      + transitivity (hc_r a k); eauto.
-        econstructor; eauto.
-        change (internal _) with (hc_behavior sw (internal a') k).
-        constructor; eauto.
-      + intros (a'' & r & s' & Ha'' & Hr & Hrext & Hs'); eauto 10.
-    - elim Hs2; eauto 10.
+    induction 1 as [a | a1 a2 a3 Ha12 Ha23].
+    - constructor.
+    - clear Ha23.
+      inversion Ha12 as [xa1 r2 Hr2]; clear Ha12; subst.
+      destruct Hr2 as [ | a1' r2 Hr2ext Hr2 Ha1']; [inversion H0 | ].
+      induction Ha1' as [a1 | a1 a1' a1'' Ha1' Ha1''].
+      + eapply reachable_step with a2; eauto.
+        rewrite <- H0. constructor; auto.
+      + eapply reachable_step with a1'; eauto.
+        change (internal a1') with (res_behavior sw (internal a1')).
+        constructor; auto.
   Qed.
 
-  Lemma obs_hc_obs_hc {G A} sw (α : rts G A) s r :
-    deterministic α ->
-    obs (hc sw α) s r ->
-    obs_hc sw α s r.
+  Lemma reachable_res {G A} sw (α : rts G A) a a' :
+    reachable α a a' ->
+    reachable (res sw α) a a'.
   Proof.
-    intros Hα Hr.
-    destruct Hr as [Hs | s' r Hrext Hr Hs'].
-    - apply forever_hc in Hs as [(a & k & Hs' & Ha) | Hs]; auto.
-      + eapply obs_hc_settles.
-        remember (hc_r a k) as s' in Hs'.
-        induction Hs'; eauto using hc_settles_internal.
-        subst. constructor; auto.
-      + eapply obs_hc_forever_switching; eauto.
-    - eapply obs_hc_settles; eauto.
-      induction Hs'; eauto using hc_settles_internal.
-      inversion Hr; clear Hr; subst.
-      destruct r0; simpl in *; (try now inversion Hrext); eauto.
+    induction 1 as [a | a1 a2 a3 Ha2 Ha3]; eauto.
+    eapply reachable_step; eauto.
+    change (internal a2) with (res_behavior sw (internal a2)).
+    constructor; eauto.
   Qed.
 
-  Lemma obs_hc_obs_hc_obs {G A} sw (α : rts G A) s r :
-    obs_hc sw α s r ->
-    obs (hc sw (obs α)) s r.
+  (** Another important key property is is the following: the
+    behaviors of [obs α] will all be external, so that an internal
+    transition in [res sw (obs α)] can only come from internal
+    switching. If there is no such internal switching, and [res sw α]
+    takes an internal step, then it must have come from an internal
+    step of [α]. *)
+
+  Lemma res_noswitch_internal_inv {G A} sw (α : rts G A) a a' :
+    ~ (exists x, res sw (obs α) a (internal x)) ->
+    res sw α a (internal a') ->
+    α a (internal a').
   Proof.
-    intro.
-    destruct H.
-    - induction H.
-      + apply obs_external with (hc_r a k); eauto.
-        subst. constructor.
-        eapply obs_external with a'; eauto.
-        eapply hc_behavior_external; eauto.
-      + apply obs_external with (hc_r a k); eauto.
-        change diverges with (hc_behavior sw diverges k).
-        constructor. auto.
-      + apply obs_reachable with s'; auto.
-        econstructor; eauto.
-        rewrite <- H2. constructor. eauto.
-    - eapply obs_diverges.
-      revert s H. cofix IH. intros.
-      destruct H. econstructor; eauto.
-      rewrite <- H2. constructor. eauto.
+    intros Hnoswitch Ha'.
+    inversion Ha'; clear Ha'; subst.
+    destruct r; try now inversion H.
+    - simpl. auto.
+    - eelim Hnoswitch.
+      exists a'. rewrite <- H. constructor. eauto.
   Qed.
 
-  Lemma obs_hc_obs_hc_obs_sim {G A} sw (α : rts G A) :
+  (** This is used to show the following key property, which spells
+    out the case analysis for the divergence of [res sw α]. *)
+
+  Lemma forever_internal_res_inv {G A} sw (α : rts G A) a :
     deterministic α ->
-    sim eq (obs (hc sw α)) (obs (hc sw (obs α))).
+    forever_internal (res sw α) a ->
+    (exists a', reachable (res sw α) a a' /\ forever_internal α a') \/
+    forever_internal (res sw (obs α)) a.
+  Proof.
+    intros Hα Ha1.
+    destruct (classic (forever_internal (res sw (obs α)) a)) as [? | Ha2]; auto.
+    left.
+    rewrite forever_internal_nbr in Ha1; eauto using res_det.
+    rewrite forever_internal_nbr in Ha2; eauto using res_det, obs_deterministic.
+    apply not_all_ex_not in Ha2 as [a' Ha2].
+    apply not_all_ex_not in Ha2 as [Ha' Ha2].
+    exists a'. split; auto using reachable_obs_res_inv.
+    apply forever_internal_nbr; eauto.
+    intros a'' Ha''.
+    specialize (Ha1 a'') as (a''' & Ha''').
+    - transitivity a'; eauto using reachable_res, reachable_obs_res_inv.
+    - exists a'''.
+      eapply res_noswitch_internal_inv; eauto.
+      intros (a'''' & Ha'''').
+      apply Ha2. exists a''''.
+      inversion Ha''''; clear Ha''''; subst.
+      constructor.
+      eapply obs_reachable; eauto.
+  Qed.
+
+  (** *** External behavior *)
+
+  (** If [res sw α] eventually reaches an externally observable step,
+    this will potentially happen after an interleaving of internal
+    steps of [α], and external steps of [α] that have been turned into
+    internal steps of [res sw α]. We need to decompose those, because
+    on the [obs (res sw (obs α))] side, internal steps of [α] will
+    have been absorbed by the innermost [obs], whereas internal steps
+    introduced by [res] will be absorbed by the outermost [obs].
+
+    This makes the induction on the internal segment in [res sw α]
+    somewhat tricky, because proving that [obs (res sw (obs α))]
+    is invariant under the addition of an additional initial internal
+    step of [res sw α] is complicated. However, the following,
+    equivalent formulation works very well in that context. *)
+
+  Definition obs_res_obs {G A} sw (α : rts G A) r a :=
+    forall x,
+      reachable α x a ->
+      obs (res sw (obs α)) x r.
+
+  Lemma obs_res_obs_internal {G A} sw (α : rts G A) a a' r:
+    res sw α a (internal a') ->
+    obs_res_obs sw α r a' ->
+    obs_res_obs sw α r a.
+  Proof.
+    intros Ha' H x Hx.
+    inversion Ha' as [xa ra Hra]; clear Ha'; subst.
+    destruct ra; try now inversion H1.
+    - (* internal step of α *)
+      inversion H1; clear H1; subst.
+      eapply H; eauto.
+      transitivity a; eauto.
+    - (* external step of α turned internal step of [res α] *)
+      eapply obs_internal; eauto.
+      rewrite <- H1. constructor. eauto.
+  Qed.
+
+  Lemma res_behavior_external {G A} sw (r : behavior G A) :
+    behavior_external (res_behavior sw r) ->
+    behavior_external r.
+  Proof.
+    destruct r; inversion 1; constructor.
+  Qed.
+
+  Lemma obs_res_obs_external {G A} sw (α : rts G A) a a' r :
+    reachable (res sw α) a a' ->
+    res sw (obs α) a' r ->
+    behavior_external r ->
+    obs (res sw (obs α)) a r.
+  Proof.
+    intros Ha' Hr Hrext.
+    cut (obs_res_obs sw α r a).
+    - unfold obs_res_obs. eauto.
+    - induction Ha'; eauto using obs_res_obs_internal.
+      intros x Hx.
+      eapply obs_external with x; eauto.
+      inversion Hr; clear Hr; subst. constructor.
+      eauto using obs_reachable, res_behavior_external.
+  Qed.
+
+  (** *** Main proof *)
+
+  (** Putting these pieces together, *)
+
+  Lemma obs_res_comm {G A} sw (α : rts G A) :
+    deterministic α ->
+    sim eq (obs (res sw α)) (obs (res sw (obs α))).
   Proof.
     intros Hα s _ [] r Hr.
     exists r. split; [ | rauto].
-    apply obs_hc_obs_hc_obs.
-    apply obs_hc_obs_hc; auto.
+    destruct Hr.
+    - edestruct @forever_internal_res_inv as [(s' & Hs' & Hd) | ]; eauto.
+      eapply obs_res_obs_external; eauto.
+      change diverges with (@res_behavior G A sw diverges). constructor.
+      eauto.
+    - apply obs_res_obs_external with a'; auto.
+      inversion H0; clear H0; subst. constructor.
+      eauto using res_behavior_external.
   Qed.
+End Res.
 
+
+(** * Horizontal composition *)
+
+Module HComp.
+  Definition of {li} (α β : modsem (li -o li)) :=
+    Res.of (FComp.of α β).
 End HComp.
