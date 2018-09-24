@@ -2695,42 +2695,58 @@ Proof.
 Qed.
 
 
+Lemma update_instrs_in_lbl : forall code p l cz id l' cz'
+                               (IN: In p (labels code))
+                               (UPI: update_instrs l cz id code = (l', cz')),
+    exists sid ofs, l' id p = Some (sid, ofs).
+Proof.
+  induction code; simpl; intros. contradiction. destruct (is_label a) eqn:ILBL.
+  - destruct a; inv ILBL. unfold update_instrs in UPI. simpl in UPI.
+    inv IN. 
+    assert ({In p (labels code)} + {~In p (labels code)}).
+    apply in_dec. apply peq. destruct H.
+    + eapply IHcode; eauto.
+    + exploit update_instrs_other_label; eauto. simpl. intros. rewrite H. 
+      unfold update_label_map. rewrite peq_true. rewrite peq_true.
+      unfold code_label. eauto.
+    + eapply IHcode; eauto.
+  - unfold update_instrs in UPI. simpl in UPI.
+    eapply IHcode; eauto.
+Qed.
+
 Lemma update_maps_lmap_in : forall defs id f p g l dz cz g' l' dz' cz'
                               (NPT: list_norepet (map fst defs))
                               (IN: In (id, Some (Gfun (Internal f))) defs)
-                              (INL: In (Asm.Plabel p) (Asm.fn_code f))
+                              (INL: In p (labels (Asm.fn_code f)))
                               (UPD: update_maps g l dz cz defs = (g', l', dz', cz')),
     exists sid ofs, l' id p = Some (sid, ofs).
 Proof.
-(*   induction defs; simpl; intros. contradiction. destruct IN. *)
-(*   - subst. rewrite update_maps_cons in UPD. *)
-(*     destruct (update_maps_def g l dz cz x def) eqn: UPDD. *)
-(*     destruct p. destruct p. inv NPT. *)
-(*     erewrite update_gmap_not_in; eauto. *)
-(*     erewrite update_gmap; eauto. rewrite peq_true. *)
-(*     destruct def. destruct g1. destruct f. *)
-(*     + unfold code_label. eauto. *)
-(*     + inv VIT. *)
-(*     + unfold data_label. eauto. *)
-(*     + inv VIT. *)
-(*   - destruct a. simpl in *. *)
-(*     rewrite update_maps_cons in UPD. *)
-(*     destruct (update_maps_def g l dz cz i o) eqn: UPDD. *)
-(*     destruct p. destruct p.  *)
-(*     inv NPT.  *)
-(*     exploit IHdefs; eauto. *)
-(* Qed. *)
-Admitted.
+  induction defs; simpl; intros. contradiction. destruct IN.
+  - subst. rewrite update_maps_cons in UPD.
+    destruct (update_maps_def g l dz cz id (Some (Gfun (Internal f)))) eqn: UPDD.
+    destruct p0. destruct p0. inv NPT.
+    erewrite update_lmap_not_in; eauto.
+    erewrite update_lmap; eauto. rewrite peq_true.
+    destruct (update_instrs l cz id (Asm.fn_code f)) as [l1 cz1] eqn:EQ. simpl.
+    eapply update_instrs_in_lbl; eauto.
+  - destruct a. simpl in *.
+    rewrite update_maps_cons in UPD.
+    destruct (update_maps_def g l dz cz i o) eqn: UPDD.
+    destruct p0. destruct p0.
+    inv NPT.
+    exploit IHdefs; eauto.
+Qed.
 
 Lemma label_pos_in_fun : forall c l s z
   (LPOS: label_pos l s c = Some z),
-  In (Asm.Plabel l) c.
+  In l (labels c).
 Proof.
   induction c; simpl; intros.
   - congruence.
   - destruct (Asm.is_label l a) eqn:EQ.
-    + destruct a; inv EQ. destruct peq; inv H0. eauto.
-    + right. eapply IHc; eauto.
+    + destruct a; inv EQ. destruct peq; inv H0. simpl. eauto.
+    + exploit IHc; eauto. intros. destr_match; auto.
+      apply in_cons. auto.
 Qed.
 
 Theorem init_meminj_match_sminj : (* forall gmap lmap dsize csize m, *)
