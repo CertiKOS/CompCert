@@ -2398,11 +2398,18 @@ Qed.
 (*   intros. monadInvX H. simpl. auto. *)
 (* Qed. *)
 
-Lemma transl_prog_map : forall g l p p' dz sz,
+Lemma transl_prog_gmap : forall g l p p' dz sz,
   transl_prog_with_map g l p dz sz = OK p' -> glob_map p' = g.
 Proof.
   intros. monadInv H. simpl. auto.
 Qed.
+
+Lemma transl_prog_lmap : forall g l p p' dz sz,
+  transl_prog_with_map g l p dz sz = OK p' -> lbl_map p' = l.
+Proof.
+  intros. monadInv H. simpl. auto.
+Qed.
+
 
 Lemma add_global_pres_internal_block : forall def ge b,
   Genv.genv_internal_codeblock (add_global ge def) b = Genv.genv_internal_codeblock ge b.
@@ -2642,7 +2649,7 @@ Proof.
   - monadInv TLD. unfold globalenv.
     erewrite add_globals_pres_find_symbol; eauto. simpl.
     unfold gidmap_to_symbmap. 
-    erewrite transl_prog_map; eauto.
+    erewrite transl_prog_gmap; eauto.
     exploit update_maps_gmap_in; eauto. red. auto.
     intros (sid & ofs & GM). rewrite GM. eauto.
     eapply unique_def_is_internal_fun; eauto.
@@ -2655,7 +2662,7 @@ Proof.
   - monadInvX TLD. unfold globalenv.
     erewrite add_globals_pres_find_symbol; eauto. simpl.
     unfold gidmap_to_symbmap. 
-    erewrite transl_prog_map; eauto.
+    erewrite transl_prog_gmap; eauto.
     exploit update_maps_gmap_in; eauto. red. auto.
     intros (sid & ofs & GM). rewrite GM. eauto.
     eapply unique_def_is_var; eauto.
@@ -2666,7 +2673,65 @@ Proof.
     red. eauto.
     eapply transl_prog_list_norepet; eauto.
 Qed.
+
+Lemma add_global_pres_lbl:
+  forall (def : ident * option gdef * segblock) (ge : genv) (b : block),
+    Genv.genv_lbl (add_global ge def) b = Genv.genv_lbl ge b.
+Proof.
+  intros. destruct def. destruct p. destruct o. destruct g. destruct f.
+  - simpl. auto.
+  - simpl. auto.
+  - simpl. auto.
+  - simpl. auto.
+Qed.
     
+Lemma add_globals_pres_lbl:
+  forall (defs : list (ident * option gdef * segblock)) (ge : genv) (b : block),
+    Genv.genv_lbl (add_globals ge defs) b = Genv.genv_lbl ge b.
+Proof.
+  induction defs; simpl; intros.
+  - auto.
+  - erewrite IHdefs; eauto. apply add_global_pres_lbl.
+Qed.
+
+
+Lemma update_maps_lmap_in : forall defs id f p g l dz cz g' l' dz' cz'
+                              (NPT: list_norepet (map fst defs))
+                              (IN: In (id, Some (Gfun (Internal f))) defs)
+                              (INL: In (Asm.Plabel p) (Asm.fn_code f))
+                              (UPD: update_maps g l dz cz defs = (g', l', dz', cz')),
+    exists sid ofs, l' id p = Some (sid, ofs).
+Proof.
+(*   induction defs; simpl; intros. contradiction. destruct IN. *)
+(*   - subst. rewrite update_maps_cons in UPD. *)
+(*     destruct (update_maps_def g l dz cz x def) eqn: UPDD. *)
+(*     destruct p. destruct p. inv NPT. *)
+(*     erewrite update_gmap_not_in; eauto. *)
+(*     erewrite update_gmap; eauto. rewrite peq_true. *)
+(*     destruct def. destruct g1. destruct f. *)
+(*     + unfold code_label. eauto. *)
+(*     + inv VIT. *)
+(*     + unfold data_label. eauto. *)
+(*     + inv VIT. *)
+(*   - destruct a. simpl in *. *)
+(*     rewrite update_maps_cons in UPD. *)
+(*     destruct (update_maps_def g l dz cz i o) eqn: UPDD. *)
+(*     destruct p. destruct p.  *)
+(*     inv NPT.  *)
+(*     exploit IHdefs; eauto. *)
+(* Qed. *)
+Admitted.
+
+Lemma label_pos_in_fun : forall c l s z
+  (LPOS: label_pos l s c = Some z),
+  In (Asm.Plabel l) c.
+Proof.
+  induction c; simpl; intros.
+  - congruence.
+  - destruct (Asm.is_label l a) eqn:EQ.
+    + destruct a; inv EQ. destruct peq; inv H0. eauto.
+    + right. eapply IHc; eauto.
+Qed.
 
 Theorem init_meminj_match_sminj : (* forall gmap lmap dsize csize m, *)
     (* dsize + csize <= Ptrofs.max_unsigned -> *)
@@ -2738,6 +2803,47 @@ Proof.
     unfold init_meminj. destruct eq_block.
     subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction.
     apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto.
+
+  - (* agree_inj_lbl *)
+    intros id b f l1 z1 FINDSYM FINDPTR LPOS.
+    unfold ge in FINDSYM.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto. intros INDEFS.
+    exploit transl_fun_exists; eauto.
+    intros (f' & TRANSLF & INCODE).
+    assert (exists l', l id l1 = Some l') as LMAP. 
+    { 
+      exploit label_pos_in_fun; eauto. intros.
+      exploit update_maps_lmap_in; eauto. destruct w; auto.
+      intros (sid & ofs & LEQ). eauto.
+    }
+    destruct LMAP as (l' & LMAP).
+    exploit update_map_lmap_inversion; eauto.
+    inv w; auto. inv w; auto.
+    eapply defs_nodup_labels; eauto.
+    intros (slbl & GMAP & LEQ & OFSEQ).
+    unfold Genv.label_address. unfold tge.
+    unfold globalenv. 
+    erewrite add_globals_pres_lbl. simpl.
+    erewrite transl_prog_lmap; eauto.
+    unfold lblmap_to_symbmap. rewrite LMAP. destruct l'.
+    apply Val.inject_ptr with (Ptrofs.unsigned (snd slbl)).
+    unfold init_meminj. destruct eq_block.
+    subst b. exfalso.
+    eapply Genv.find_symbol_genv_next_absurd; eauto.
+    erewrite Genv.find_invert_symbol; eauto.
+    destruct slbl. simpl in LEQ. subst s0. simpl.
+    unfold globalenv. 
+    erewrite add_globals_pres_find_symbol; eauto. simpl.
+    erewrite transl_prog_gmap; eauto. unfold gidmap_to_symbmap.
+    rewrite GMAP. eauto.
+    exploit transl_prog_pres_def; eauto. 
+    intros (def' & sb & c & IN & TF). 
+    destruct w. exploit transl_prog_list_norepet; eauto. intros.
+    monadInv TF.
+    eapply unique_def_is_internal_fun; eauto. 
+    simpl in OFSEQ. subst i.
+    rewrite Ptrofs.repr_unsigned. symmetry.
+    rewrite Ptrofs.add_commut. auto.
 
 Admitted.
 
@@ -4793,7 +4899,7 @@ Lemma gidmap_symbmap_internal_block:
     b' = code_block.
 Proof.
   intros. 
-  exploit transl_prog_map; eauto. intros. subst.
+  exploit transl_prog_gmap; eauto. intros. subst.
   unfold gidmap_to_symbmap in H4. destr_match_in H4; inv H4.
   destruct s. inv H6.
   exploit update_map_funct; eauto. simpl. intros. subst.
