@@ -1663,38 +1663,101 @@ Definition init_meminj : meminj :=
         (* end *)
       end.
 
-(* Lemma transl_globdef_distinct_code_labels: *)
-(*   forall gmap lmap i o p c *)
-(*     (* (GNDL: globdef_no_duplicated_labels o = true) *) *)
-(*     (TG : transl_globdef gmap lmap i o = OK (Some (p, c))), *)
-(*     list_norepet (map (fun i0 : instruction * segblock => segblock_to_label (snd i0)) c). *)
-(* Proof. *)
-(*   intros. *)
-(*   unfold transl_globdef in TG. *)
-(*   repeat destr_in TG. *)
-(*   - monadInv H0. *)
-(*     unfold transl_fun in EQ. repeat destr_in EQ. *)
-(*     monadInv H0. repeat destr_in EQ0. *)
-(*     simpl. eapply transl_instrs_diff_labels; eauto. split; auto. *)
-(*     generalize (AGREE_SMINJ_INSTR.transl_instrs_ofs_bound _ _ _ _ _ _ _ _ EQ). generalize (Ptrofs.unsigned_range i0); omega. *)
-(*     apply Ptrofs.unsigned_range. *)
-(*   - constructor. *)
-(*   - monadInv H0. constructor. *)
-(* Qed. *)
 
-(* Lemma transl_globdef_gmap: *)
-(*   forall gmap lmap i o c, *)
-(*     transl_globdef gmap lmap i o = OK c -> *)
-(*     o = None \/ exists s, gmap i = Some s. *)
-(* Proof. *)
-(*   intros. *)
-(*   unfold transl_globdef in H. repeat destr_in H. *)
-(*   monadInv H1. unfold transl_fun in EQ. destr_in EQ. eauto. eauto. eauto. *)
-(* Qed. *)
+Lemma in_transl_instrs:
+  forall i si c o o' sz x1
+    (RNG: 0 <= sz <= Ptrofs.max_unsigned)
+    (POS: 0 <= o')
+    (TI: transl_instrs i si o' c = OK (sz, x1))
+    si'
+    (IN: In (si', o) (map (fun i1 => (segblock_id (snd (fst i1)), segblock_start (snd (fst i1)))) x1)),
+    si' = si /\ o' <= Ptrofs.unsigned o < o' + code_size c.
+Proof.
+  induction c; simpl; intros; eauto.
+  - inv TI. simpl in IN. easy. 
+  - monadInv TI. simpl in IN.
+    destruct IN as [IN|IN].
+    + inv IN. simpl. split; auto.
+      rewrite Ptrofs.unsigned_repr.
+      generalize (instr_size_positive a) (code_size_non_neg c); omega.
+      split. omega.
+      generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ).
+      generalize (instr_size_positive a); omega.
+    + generalize (instr_size_positive a); intros.
+      eapply IHc in IN. 4: eauto. destruct IN; split; auto. omega. auto. omega.
+Qed.
+
+
+Lemma transl_instrs_diff_labels:
+  forall i si c
+    (* (lnr : list_norepet (labels c)) *)
+    (* (lmap_inj: forall i1 i2 l1 l2 sl1 sl2, (i1,l1) <> (i2,l2) -> lmap i1 l1 = Some sl1 -> lmap i2 l2 = Some sl2 -> *)
+    (*                                   sl1 <> sl2) *)
+    sz ofs c'
+    (RNG: 0 <= sz <= Ptrofs.max_unsigned)
+    (POS: 0 <= ofs)
+    (TI : transl_instrs i si ofs c = OK (sz, c')),
+    list_norepet (map (fun i1 => segblock_to_label (snd (fst i1))) c').
+Proof.
+  induction c; simpl; intros; eauto.
+  - inv TI. simpl. constructor.
+  - monadInv TI.
+    (* trim IHc. *)
+    (* { *)
+    (*   destr_in lnr. inv lnr; auto. *)
+    (* } *)
+    (* trim IHc. eauto. *)
+    simpl.
+    constructor; eauto.
+    clear IHc. 
+    intro IN.
+    simpl in IN.
+    unfold segblock_to_label in IN. simpl in IN.
+    eapply in_transl_instrs in IN. 4: eauto. 2: auto.
+    rewrite Ptrofs.unsigned_repr in IN. 
+    generalize (instr_size_positive a). omega. split. auto.
+    generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ).
+    generalize (instr_size_positive a); omega.
+    generalize (instr_size_positive a); omega.
+    eapply IHc. 3: eauto. auto.
+    generalize (instr_size_positive a); omega.
+Qed.
+
+Lemma transl_globdef_distinct_code_labels:
+  forall gmap i o p c
+    (* (GNDL: globdef_no_duplicated_labels o = true) *)
+    (TG : transl_globdef gmap i o = OK (p, c)),
+    list_norepet (map (fun i0  => segblock_to_label (snd (fst i0))) c).
+Proof.
+  intros.
+  unfold transl_globdef in TG.
+  repeat destr_in TG.
+  - monadInv H0.
+    unfold transl_fun in EQ. repeat destr_in EQ.
+    monadInv H0. repeat destr_in EQ0.
+    simpl. eapply transl_instrs_diff_labels; eauto. split; auto.
+    generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ). generalize (Ptrofs.unsigned_range i0); omega.
+    apply Ptrofs.unsigned_range.
+  - constructor.
+  - constructor.
+  - constructor.
+Qed.
+
+Lemma transl_globdef_gmap:
+  forall gmap i o d ins c,
+    transl_globdef gmap i o = OK (d,(ins::c)) ->
+    exists s, gmap i = Some s.
+Proof.
+  intros. destruct o. destruct g. destruct f.
+  - monadInv H. monadInvX EQ. eexists; eauto.
+  - monadInv H.
+  - simpl in H. monadInvX H.
+  - monadInv H.
+Qed.
 
 (* Lemma transl_globdefs_gmap: *)
-(*   forall gmap lmap l gdefs c, *)
-(*     transl_globdefs gmap lmap l = OK (gdefs, c) -> *)
+(*   forall gmap l gdefs ins c, *)
+(*     transl_globdefs gmap l = OK (gdefs, c) -> *)
 (*     Forall (fun '(i,d) => d = None \/ exists s, gmap i = Some s) l. *)
 (* Proof. *)
 (*   induction l; simpl; intros. *)
@@ -1704,56 +1767,54 @@ Definition init_meminj : meminj :=
 (* Qed. *)
 
 
-(* Lemma in_transl_globdef: *)
-(*   forall gmap lmap i o p0 c *)
-(*     (EQ : transl_globdef gmap lmap i o = OK (Some (p0, c))) *)
-(*     x *)
-(*     (IN: In x (map (fun i0 : instruction * segblock => segblock_to_label (snd i0)) c)), *)
-(*     exists s, *)
-(*       gmap i = Some s /\  *)
-(*       fst x = fst s /\ Ptrofs.unsigned (snd s) <= Ptrofs.unsigned (snd x) < Ptrofs.unsigned (snd s) + odef_size o. *)
-(* Proof. *)
-(*   unfold transl_globdef. *)
-(*   intros. *)
-(*   repeat destr_in EQ. *)
-(*   - monadInv H0. unfold transl_fun in EQ. *)
-(*     repeat destr_in EQ. eexists; split. eauto. monadInv H0. simpl. *)
-(*     repeat destr_in EQ0. simpl in *. *)
-(*     destruct x. simpl in *. *)
-(*     exploit in_transl_instrs. 3: apply EQ. 3: eauto. *)
-(*     generalize (AGREE_SMINJ_INSTR.transl_instrs_ofs_bound _ _ _ _ _ _ _ _ EQ). generalize (Ptrofs.unsigned_range i0); omega. *)
-(*     apply Ptrofs.unsigned_range. auto. *)
-(*   - easy. *)
-(*   - monadInv H0. easy. *)
-(* Qed. *)
+Lemma in_transl_globdef:
+  forall gmap i o p0 c
+    (EQ : transl_globdef gmap i o = OK (p0, c))
+    x
+    (IN: In x (map (fun i0  => segblock_to_label (snd (fst i0))) c)),
+    exists s,
+      gmap i = Some s /\
+      fst x = fst s /\ Ptrofs.unsigned (snd s) <= Ptrofs.unsigned (snd x) < Ptrofs.unsigned (snd s) + odef_size o.
+Proof.
+  intros.
+  destruct c as [|ins c]. exploit in_nil. apply IN. contradiction.
+  unfold transl_globdef in EQ.
+  repeat destr_in EQ.
+  monadInv H0. unfold transl_fun in EQ.
+  repeat destr_in EQ. eexists; split. eauto. monadInv H0. simpl.
+  repeat destr_in EQ0. simpl in *.
+  destruct x. simpl in *.
+  exploit in_transl_instrs. 3: apply EQ. 
+  generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ). generalize (Ptrofs.unsigned_range i0); omega.
+  apply Ptrofs.unsigned_range. 
+  subst. simpl. eauto.
+  auto.
+Qed.
 
-(* Lemma in_transl_globdefs: *)
-(*   forall gmap lmap l gdefs code *)
-(*     (EQ : transl_globdefs gmap lmap l = OK (gdefs, code)) *)
-(*     x *)
-(*     (IN: In x (map (fun i0 : instruction * segblock => segblock_to_label (snd i0)) code)), *)
-(*           exists i def s, *)
-(*             In (i, def) l /\ *)
-(*             gmap i = Some s /\  *)
-(*             fst x = fst s /\ Ptrofs.unsigned (snd s) <= Ptrofs.unsigned (snd x) < Ptrofs.unsigned (snd s) + odef_size def. *)
-(* Proof. *)
-(*   induction l; simpl; intros; eauto. inv EQ. easy. *)
-(*   repeat destr_in EQ. *)
-(*   monadInv H0. *)
-(*   repeat destr_in EQ2; eauto. *)
-(*   - specialize (IHl _ _ EQ1). *)
-(*     rewrite map_app, in_app in IN. *)
-(*     destruct IN as [IN|IN]. *)
-(*     exploit in_transl_globdef; eauto. *)
-(*     intros (s & G & FST & RNG). *)
-(*     exists i, o, s; repeat apply conj; auto; omega. *)
-(*     exploit IHl; eauto. *)
-(*     intros (i0 & def & s & INl & G & FST & RNG). *)
-(*     exists i0, def, s; repeat apply conj; auto; omega. *)
-(*   - exploit IHl; eauto. *)
-(*     intros (i0 & def & s & INl & G & FST & RNG). *)
-(*     exists i0, def, s; repeat apply conj; auto; omega. *)
-(* Qed. *)
+Lemma in_transl_globdefs:
+  forall gmap l gdefs code
+    (EQ : transl_globdefs gmap l = OK (gdefs, code))
+    x
+    (IN: In x (map (fun i0 => segblock_to_label (snd (fst i0))) code)),
+          exists i def s,
+            In (i, def) l /\
+            gmap i = Some s /\
+            fst x = fst s /\ Ptrofs.unsigned (snd s) <= Ptrofs.unsigned (snd x) < Ptrofs.unsigned (snd s) + odef_size def.
+Proof.
+  induction l; simpl; intros; eauto. inv EQ. easy.
+  repeat destr_in EQ.
+  monadInv H0.
+  repeat destr_in EQ2; eauto.
+  - specialize (IHl _ _ EQ1).
+    rewrite map_app, in_app in IN.
+    destruct IN as [IN|IN].
+    exploit in_transl_globdef; eauto.
+    intros (s & G & FST & RNG).
+    exists i, o, s; repeat apply conj; auto; omega.
+    exploit IHl; eauto.
+    intros (i0 & def & s & INl & G & FST & RNG).
+    exists i0, def, s; repeat apply conj; auto; omega.
+Qed.
 
 Definition gmap_inj (gmap: GID_MAP_TYPE) (l: list (ident * option _)): Prop :=
   forall i1 i2 d1 d2 s1 s2 o1 o2,
@@ -1778,42 +1839,63 @@ Ltac ereplace t :=
   | ?ty => let x := fresh in evar (x : ty); replace t with x; unfold x
   end.
 
+Lemma transl_globdef_distinct_code_labels'
+     : forall (gmap : GID_MAP_TYPE) (i : ident) (o : option (globdef Asm.fundef unit)) (p : ident * option gdef * segblock) (c : code),
+       transl_globdef gmap i o = OK (p, c) -> 
+       list_norepet (map (fun '(_,blk,_) => segblock_to_label blk) c).
+Proof.
+  intros.
+  exploit transl_globdef_distinct_code_labels; eauto.
+  intros. rewrite map_ext with 
+              (g := (fun i0 => segblock_to_label (snd (fst i0)))). auto.
+  intros. destruct a. destruct p0. auto.
+Qed.
+
+Lemma in_segblock_eq : forall a (c: list (instruction * segblock * ident)),
+ In a (map (fun '(_, blk, _) => segblock_to_label blk) c) <->
+ In a (map (fun i => segblock_to_label (snd (fst i))) c).
+Proof.
+  intros. rewrite map_ext with 
+              (g := (fun i0 => segblock_to_label (snd (fst i0)))). auto.
+  split; auto.
+  intros. destruct a0. destruct p. auto.
+Qed.
+
 Lemma transl_globdefs_distinct_code_labels:
   forall gmap prog (GINJ: gmap_inj gmap (AST.prog_defs prog)) tgdefs code,
     transl_globdefs gmap (AST.prog_defs prog) = OK (tgdefs, code) ->
     wf_prog prog ->
     code_labels_are_distinct code.
 Proof.
-clear.
-Admitted.
-(*   intros gmap lmap prog0 GINJ tgdefs code TG WF. inv WF. *)
-(*   revert TG GINJ wf_prog_not_empty wf_prog_norepet_defs wf_prog_norepet_labels. *)
-(*   generalize (AST.prog_defs prog0). intro l. *)
-(*   intros TG GINJ DNE NDD DNDL. *)
-(*   red. *)
-(*   revert l tgdefs code TG GINJ DNE NDD DNDL. *)
-(*   induction l; simpl; intros; eauto. *)
-(*   - inv TG. simpl. constructor. *)
-(*   - inv NDD. inv DNDL. inv DNE. destr_in TG. monadInv TG. *)
-(*     repeat destr_in EQ2; eauto. *)
-(*     rewrite map_app. rewrite list_norepet_app. *)
-(*     repeat apply conj; eauto. *)
-(*     + eapply transl_globdef_distinct_code_labels; eauto. *)
-(*     + eapply IHl; eauto using gmap_inj_inv. *)
-(*     + red. *)
-(*       intros (sx & ox) (sy & oy) INx INy. *)
-(*       exploit in_transl_globdef. eauto. eauto. *)
-(*       simpl. intros (s & G & FST & RNG). subst. *)
-(*       exploit in_transl_globdefs. eauto. eauto. *)
-(*       simpl. intros (i0 & def & s' & INl & G' & FST' & RNG'). subst. *)
-(*       destruct s, s'. simpl in *. intro A; inv A. *)
-(*       exploit GINJ. left; reflexivity. *)
-(*       right; eauto. *)
-(*       intro; subst. apply H1. *)
-(*       ereplace i0. apply in_map, INl. reflexivity. *)
-(*       eauto. eauto. intros [A | A]. congruence. omega. *)
-(*     + eapply IHl; eauto using gmap_inj_inv. *)
-(* Qed. *)
+  intros gmap prog0 GINJ tgdefs code TG WF. inv WF.
+  revert TG GINJ wf_prog_not_empty wf_prog_norepet_defs wf_prog_norepet_labels.
+  generalize (AST.prog_defs prog0). intro l.
+  intros TG GINJ DNE NDD DNDL.
+  red.
+  revert l tgdefs code TG GINJ DNE NDD DNDL.
+  induction l; simpl; intros; eauto.
+  - inv TG. simpl. constructor.
+  - inv NDD. inv DNDL. inv DNE. destr_in TG. monadInv TG.
+    repeat destr_in EQ2; eauto.
+    rewrite map_app. rewrite list_norepet_app.
+    repeat apply conj; eauto.
+    + eapply transl_globdef_distinct_code_labels'; eauto.
+    + eapply IHl; eauto using gmap_inj_inv.
+    + red.
+      intros (sx & ox) (sy & oy) INx INy.
+      exploit in_transl_globdef. eauto.
+      rewrite <- in_segblock_eq. eauto.
+      simpl. intros (s & G & FST & RNG). subst.
+      exploit in_transl_globdefs. eauto. 
+      rewrite <- in_segblock_eq. eauto.
+      simpl. intros (i0 & def & s' & INl & G' & FST' & RNG'). subst.
+      destruct s, s'. simpl in *. intro A; inv A.
+      exploit GINJ. left; reflexivity.
+      right; eauto.
+      intro; subst. apply H1.
+      ereplace i0. apply in_map, INl. reflexivity.
+      eauto. eauto. intros [A | A]. congruence. omega.
+Qed.
 
 (* Lemma update_maps_code_lt: *)
 (*   forall defs g l d c e g' l' d' c' e' i s *)
