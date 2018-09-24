@@ -5483,9 +5483,9 @@ Proof.
   exploit add_globals_find_symbol_external; eauto. 
   simpl. apply Pos.lt_succ_diag_r.
   intros BRNG. unfold not. intros. subst.
-  unfold num_segments, code_block in BRNG. simpl in BRNG.
-  admit.
-Admitted.
+  unfold num_segments, code_block in BRNG. simpl in BRNG. 
+  eapply Pos.lt_irrefl; eauto.
+Qed.
   
 Lemma extfun_entry_is_external_init:
   list_norepet (map fst (AST.prog_defs prog)) ->
