@@ -2504,6 +2504,10 @@ Proof.
     + exploit IHdefs; eauto.
 Qed.
 
+Lemma find_symbol_exists : forall (p : program) (x : ident) def sb,
+    In (x, def, sb) (prog_defs p) -> exists b ofs, Genv.find_symbol (globalenv p) x = Some (b, ofs).
+Admitted.
+
 Theorem init_meminj_match_sminj : (* forall gmap lmap dsize csize m, *)
     (* dsize + csize <= Ptrofs.max_unsigned -> *)
     (* Genv.init_mem prog = Some m -> *)
@@ -2558,6 +2562,22 @@ Proof.
     monadInv TLD. eauto.
     eapply unique_def_is_internal_fun; eauto.
     eapply transl_prog_list_norepet; eauto. inv w; auto.
+
+  - (* agree_inj_glob *)
+    intros id b FSYM.
+    unfold ge in FSYM.
+    exploit Genv.find_symbol_inversion; eauto. intros INSYM.
+    unfold prog_defs_names in INSYM.
+    rewrite in_map_iff in INSYM. destruct INSYM as (def & EQ1 & IN).
+    destruct def. simpl in EQ1. subst i.
+    exploit transl_prog_pres_def; eauto.
+    intros (def' & sb & c & IN' & TLDEF).
+    exploit find_symbol_exists; eauto.
+    intros (b' & ofs' & FSYM').
+    exists b', ofs'. split; auto.
+    unfold init_meminj. destruct eq_block.
+    subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction.
+    apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto.
 
 Admitted.
 
