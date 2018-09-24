@@ -1897,84 +1897,87 @@ Proof.
       eauto. eauto. intros [A | A]. congruence. omega.
 Qed.
 
-(* Lemma update_maps_code_lt: *)
-(*   forall defs g l d c e g' l' d' c' e' i s *)
-(*     (RNG: 0 <= c <= Ptrofs.max_unsigned) *)
-(*     (RNG: 0 <= c' <= Ptrofs.max_unsigned) *)
-(*     (UPDATE: update_maps g l d c e defs = (g', l', d', c', e')) *)
-(*     (AL: (alignw | c)) *)
-(*     (LNR: list_norepet (map fst defs)) *)
-(*     f *)
-(*     (IN: In (i, Some (Gfun (Internal f))) defs) *)
-(*     (* o *) *)
-(*     (* (POS: 0 <= o < code_size (Asm.fn_code f)) *) *)
-(*     (BEFORE: g i = None) *)
-(*     (AFTER: g' i = Some s), *)
-(*     c <= Ptrofs.unsigned (snd s) /\ Ptrofs.unsigned (snd s) + code_size (Asm.fn_code f) <= c'. *)
-(* Proof. *)
-(*   induction defs; simpl; intros; eauto. easy. *)
-(*   destruct IN. *)
-(*   - subst. *)
-(*     rewrite AGREE_SMINJ_INSTR.update_maps_cons in UPDATE. do 4 destr_in UPDATE. subst. *)
-(*     erewrite update_gmap_not_in in AFTER. 2: eauto. 2: inv LNR; auto. *)
-(*     erewrite update_gmap in AFTER. 2: eauto. *)
-(*     rewrite peq_true in AFTER. inv AFTER. *)
-(*     unfold code_label; simpl. *)
-(*     rewrite Ptrofs.unsigned_repr; auto. *)
-(*     exploit update_csize_div. eauto. eauto. intro. *)
-(*     eapply update_csize in Heqp. *)
-(*     eapply csize_mono in UPDATE. subst. simpl in UPDATE. *)
-(*     generalize (alignw_le (code_size (Asm.fn_code f))). omega. *)
-(*     inv LNR; auto. auto. *)
-(*   - destruct a. rewrite AGREE_SMINJ_INSTR.update_maps_cons in UPDATE. do 4 destr_in UPDATE. subst. *)
-(*     exploit update_csize_div; eauto.  intro. *)
-(*     inv LNR. *)
-(*     assert (c <= z0). { *)
-(*       exploit update_csize; eauto. intro; subst. *)
-(*       generalize (alignw_le (size_fun o)) (AGREE_SMINJ_LBL.size_fun_pos o). *)
-(*       intros. omega. *)
-(*     } *)
-(*     assert (z0 <= c') by (eapply csize_mono; eauto). *)
-(*     exploit IHdefs. 3: eauto. omega. auto. auto. auto. eauto. eauto.  *)
-(*     erewrite update_gmap; eauto. rewrite peq_false; auto. *)
-(*     intro; subst. apply H3. *)
-(*     apply in_map with (f:= fst) in H. simpl in H; auto. eauto. *)
-(*     omega. *)
-(* Qed. *)
+Lemma update_maps_code_lt:
+  forall defs g l d c g' l' d' c' i s
+    (RNG: 0 <= c <= Ptrofs.max_unsigned)
+    (RNG: 0 <= c' <= Ptrofs.max_unsigned)
+    (UPDATE: update_maps g l d c defs = (g', l', d', c'))
+    (AL: (alignw | c))
+    (LNR: list_norepet (map fst defs))
+    f
+    (IN: In (i, Some (Gfun (Internal f))) defs)
+    (* o *)
+    (* (POS: 0 <= o < code_size (Asm.fn_code f)) *)
+    (BEFORE: g i = None)
+    (AFTER: g' i = Some s),
+    c <= Ptrofs.unsigned (snd s) /\ Ptrofs.unsigned (snd s) + code_size (Asm.fn_code f) <= c'.
+Proof.
+  induction defs; simpl; intros; eauto. easy.
+  destruct IN.
+  - subst.
+    rewrite update_maps_cons in UPDATE. do 4 destr_in UPDATE. subst.
+    erewrite update_gmap_not_in in AFTER. 2: eauto. 2: inv LNR; auto.
+    erewrite update_gmap in AFTER. 2: eauto.
+    rewrite peq_true in AFTER. inv AFTER.
+    unfold code_label; simpl.
+    rewrite Ptrofs.unsigned_repr; auto.
+    exploit update_csize_div. eauto. eauto. intro.
+    eapply update_csize in Heqp.
+    eapply csize_mono in H0. subst. simpl in H0.
+    generalize (alignw_le (code_size (Asm.fn_code f))). omega.
+    inv LNR; auto. auto.
+  - destruct a. rewrite update_maps_cons in UPDATE. do 4 destr_in UPDATE. subst.
+    exploit update_csize_div; eauto.  intro.
+    inv LNR.
+    assert (c <= z). {
+      exploit update_csize; eauto. intro; subst.
+      generalize (alignw_le (size_fun o)) (size_fun_pos o).
+      intros. omega.
+    }
+    assert (z <= c') by (eapply csize_mono; eauto).
+    exploit IHdefs. 3: eauto. omega. auto. auto. auto. eauto. eauto.
+    erewrite update_gmap; eauto. rewrite peq_false; auto.
+    intro; subst. apply H4.
+    apply in_map with (f:= fst) in H. simpl in H; auto. eauto.
+    omega.
+Qed.
 
-(* Lemma update_maps_code_lt': *)
-(*   forall defs g l d c e g' l' d' c' e' i s *)
-(*     (RNG: 0 <= c <= Ptrofs.max_unsigned) *)
-(*     (RNG: 0 <= c' <= Ptrofs.max_unsigned) *)
-(*     (UPDATE: update_maps g l d c e defs = (g', l', d', c', e')) *)
-(*     (AL: (alignw | c)) *)
-(*     (LNR: list_norepet (map fst defs)) *)
-(*     def *)
-(*     (IN: In (i, def) defs) *)
-(*     (BEFORE: g i = None) *)
-(*     (GMAP: g' i = Some (code_segid, s)), *)
-(*     c <= Ptrofs.unsigned s /\ Ptrofs.unsigned s + odef_size def <= c'. *)
-(* Proof. *)
-(*   intros. *)
-(*   simpl in *. *)
-(*   assert (exists f, def = Some (Gfun (Internal f))). *)
-(*   { *)
-(*     destruct (in_split _ _ IN) as (bef & aft & EQ). rewrite EQ in *. *)
-(*     rewrite update_maps_app in UPDATE. *)
-(*     repeat destr_in UPDATE. simpl in *. *)
-(*     rewrite AGREE_SMINJ_INSTR.update_maps_cons in H0. repeat destr_in H0. *)
-(*     erewrite update_gmap_not_in in GMAP. 2: eauto. *)
-(*     erewrite update_gmap in GMAP. 2: eauto. rewrite peq_true in GMAP. *)
-(*     repeat destr_in GMAP; unfold code_label, data_label, extfun_label; simpl; eauto. *)
-(*     erewrite update_gmap_not_in in H0. 2: eauto. congruence. *)
-(*     rewrite map_app in LNR. rewrite list_norepet_app in LNR. destruct LNR as (LNR1 & LNR2 & DISJ); auto. *)
-(*     simpl in DISJ. intro II; destruct (DISJ i i II (or_introl eq_refl) eq_refl). *)
-(*     rewrite map_app in LNR. rewrite list_norepet_app in LNR. destruct LNR as (LNR1 & LNR2 & DISJ); auto. *)
-(*     simpl in LNR2; inv LNR2; auto. *)
-(*   } *)
-(*   destruct H; subst. *)
-(*   simpl. exploit update_maps_code_lt. 3: eauto. 5: eauto. all: eauto. *)
-(* Qed. *)
+Lemma update_maps_code_lt':
+  forall defs g l d c g' l' d' c' i s
+    (RNG: 0 <= c <= Ptrofs.max_unsigned)
+    (RNG: 0 <= c' <= Ptrofs.max_unsigned)
+    (UPDATE: update_maps g l d c defs = (g', l', d', c'))
+    (AL: (alignw | c))
+    (LNR: list_norepet (map fst defs))
+    def
+    (IN: In (i, def) defs)
+    (BEFORE: g i = None)
+    (GMAP: g' i = Some (code_segid, s)),
+    c <= Ptrofs.unsigned s /\ Ptrofs.unsigned s + odef_size def <= c'.
+Proof.
+  intros.
+  simpl in *.
+  assert (exists f, def = Some (Gfun (Internal f))).
+  {
+    destruct (in_split _ _ IN) as (bef & aft & EQ). rewrite EQ in *.
+    rewrite update_maps_app in UPDATE.
+    repeat destr_in UPDATE. simpl in *.
+    rewrite update_maps_cons in H0. repeat destr_in H0.
+    erewrite update_gmap_not_in in GMAP. 2: eauto.
+    erewrite update_gmap in GMAP. 2: eauto. rewrite peq_true in GMAP.
+    repeat destr_in GMAP; unfold code_label, data_label; simpl; eauto.
+    erewrite update_gmap_not_in in H0. 2: eauto. congruence.
+    rewrite map_app in LNR. rewrite list_norepet_app in LNR. destruct LNR as (LNR1 & LNR2 & DISJ); auto.
+    simpl in DISJ. intro II; destruct (DISJ i i II (or_introl eq_refl) eq_refl).
+    erewrite update_gmap_not_in in H0. 2: eauto. congruence.
+    rewrite map_app in LNR. rewrite list_norepet_app in LNR. destruct LNR as (LNR1 & LNR2 & DISJ); auto.
+    simpl in DISJ. intro II; destruct (DISJ i i II (or_introl eq_refl) eq_refl).
+    rewrite map_app in LNR. rewrite list_norepet_app in LNR. destruct LNR as (LNR1 & LNR2 & DISJ); auto.
+    simpl in LNR2; inv LNR2; auto.
+  }
+  destruct H; subst.
+  simpl. exploit update_maps_code_lt. 3: eauto. 5: eauto. all: eauto.
+Qed.
 
 (* Lemma update_maps_data_lt: *)
 (*   forall defs g l d c e g' l' d' c' e' i s *)
@@ -2149,54 +2152,50 @@ Lemma update_map_gmap_some :
            /\ (forall id' def' slbl', In (id', def') gdefs -> (gmap id' = Some slbl') ->
                            fst slbl' = fst slbl -> Ptrofs.unsigned (snd slbl) + def_size def <= Ptrofs.unsigned (snd slbl')).
 Proof.
-Admitted.
-(*   clear. unfold make_maps. *)
-(*   intros prog gmap lmap dsize csize id defs gdefs def UPDATE BOUND LNR DEFS. *)
-(*   rewrite <- DEFS in *. clear prog DEFS. *)
-(*   rewrite update_maps_app in UPDATE. do 3 destr_in UPDATE. subst. *)
-(*   rewrite update_maps_cons in UPDATE. *)
-(*   do 3 destr_in UPDATE. subst. *)
-(*   rewrite map_app, list_norepet_app in LNR; destruct LNR as (LNR1 & LNR2 & DISJ); inv LNR2. *)
-(*   assert (0 <= z1). eapply dsize_mono. eauto. *)
-(*   assert (0 <= z0). eapply csize_mono; eauto. apply Z.divide_0_r. *)
-(*   assert (0 <= z). eapply efsize_mono. eauto. *)
-(*   assert (alignw | z0). eapply updates_csize_div. eauto. apply Z.divide_0_r. *)
-(*   assert (alignw | z3). eapply update_csize_div with(def:= Some def). unfold update_maps_def. *)
-(*   eauto. auto. *)
-(*   assert (z1 <= z4). eapply update_dsize_mono; eauto. *)
-(*   assert (z0 <= z3). eapply update_csize_mono; eauto. *)
-(*   assert (z <= z2). eapply update_efsize_mono; eauto. *)
-(*   assert (z4 <= dsize). eapply dsize_mono. eauto. *)
-(*   assert (z3 <= csize). eapply csize_mono. eauto. auto. *)
-(*   assert (z2 <= efsize). eapply efsize_mono. eauto. *)
-(*   erewrite update_gmap_not_in; eauto. *)
-(*   simpl in Heqp0. repeat destr_in Heqp0. *)
-(*   - (* internal function *) *)
-(*     unfold update_gid_map. rewrite peq_true. eexists; split; eauto. *)
-(*     split. *)
-(*     + intros id' def' slbl' IN GM LBLEQ. *)
-(*       erewrite update_gmap_not_in in GM; eauto. *)
-(*       unfold update_gid_map in GM. rewrite peq_false in GM. *)
-(*       destruct slbl'. simpl in *. subst. *)
-(*       exploit update_maps_code_lt'. 3: apply Heqp. 5: apply IN. 5: reflexivity. all: eauto. *)
-(*       vm_compute. intuition congruence. omega. apply Z.divide_0_r. *)
-(*       rewrite Ptrofs.unsigned_repr. omega. omega. *)
-(*       intro; subst. *)
-(*       exploit DISJ. apply in_map. eauto. left. reflexivity. reflexivity. auto. *)
-(*       intro IN'. exploit DISJ. apply in_map, IN. right; apply IN'. auto. auto. *)
-(*     + intros id' def' slbl' IN GM LBLEQ. *)
-(*       destruct slbl'. simpl in *. subst. *)
-(*       exploit update_maps_code_lt'. 3: apply UPDATE. 5: apply IN. all: eauto. omega. omega. *)
-(*       unfold update_gid_map. *)
-(*       rewrite peq_false. *)
-(*       erewrite update_gmap_not_in. 2: eauto. reflexivity. auto. *)
-(*       intro IN'. exploit DISJ. apply IN'. right; apply in_map, IN. auto. auto. *)
-(*       intro; subst. apply H1. replace id' with (fst (id', def')) by reflexivity. *)
-(*       apply in_map; congruence. *)
-(*       rewrite Ptrofs.unsigned_repr. *)
-(*       exploit update_instrs_code_size; eauto. intros; subst. *)
-(*       eapply Z.le_trans. 2: apply H13. *)
-(*       eapply Z.le_trans. 2: apply alignw_le. omega. omega. *)
+  clear. unfold make_maps.
+  intros prog gmap lmap dsize csize id defs gdefs def UPDATE BOUND LNR DEFS.
+  rewrite <- DEFS in *. clear prog DEFS.
+  rewrite update_maps_app in UPDATE. do 3 destr_in UPDATE. subst.
+  rewrite update_maps_cons in UPDATE.
+  do 3 destr_in UPDATE. subst.
+  rewrite map_app, list_norepet_app in LNR; destruct LNR as (LNR1 & LNR2 & DISJ); inv LNR2.
+  assert (0 <= z0). eapply dsize_mono. eauto.
+  assert (0 <= z). eapply csize_mono; eauto. apply Z.divide_0_r.
+  assert (alignw | z). eapply updates_csize_div. eauto. apply Z.divide_0_r.
+  assert (alignw | z1). eapply update_csize_div with(def:= Some def). unfold update_maps_def.
+  eauto. auto.
+  assert (z0 <= z2). eapply update_dsize_mono; eauto.
+  assert (z <= z1). eapply update_csize_mono; eauto.
+  assert (z2 <= dsize). eapply dsize_mono. eauto.
+  assert (z1 <= csize). eapply csize_mono. eauto. auto.
+  erewrite update_gmap_not_in; eauto.
+  simpl in Heqp0. repeat destr_in Heqp0.
+  - (* internal function *)
+    unfold update_gid_map. rewrite peq_true. eexists; split; eauto.
+    split.
+    + intros id' def' slbl' IN GM LBLEQ.
+      erewrite update_gmap_not_in in GM; eauto.
+      unfold update_gid_map in GM. rewrite peq_false in GM.
+      destruct slbl'. simpl in *. subst.
+      exploit update_maps_code_lt'. 3: apply Heqp. 5: apply IN. 5: reflexivity. all: eauto.
+      vm_compute. intuition congruence. omega. apply Z.divide_0_r.
+      rewrite Ptrofs.unsigned_repr. omega. omega.
+      intro; subst.
+      exploit DISJ. apply in_map. eauto. left. reflexivity. reflexivity. auto.
+      intro IN'. exploit DISJ. apply in_map, IN. right; apply IN'. auto. auto.
+    + intros id' def' slbl' IN GM LBLEQ.
+      destruct slbl'. simpl in *. subst.
+      exploit update_maps_code_lt'. 3: apply UPDATE. 5: apply IN. all: eauto. omega. omega.
+      unfold update_gid_map.
+      rewrite peq_false.
+      erewrite update_gmap_not_in. 2: eauto. reflexivity. auto.
+      intro IN'. exploit DISJ. apply IN'. right; apply in_map, IN. auto. auto.
+      intro; subst. apply H1. replace id' with (fst (id', def')) by reflexivity.
+      apply in_map; congruence.
+      rewrite Ptrofs.unsigned_repr.
+      exploit update_instrs_code_size; eauto. intros; subst.
+      eapply Z.le_trans. 2: apply H10.
+      eapply Z.le_trans. 2: apply alignw_le. omega. omega.
 (*   - (* external function *) *)
 (*     unfold update_gid_map. rewrite peq_true. eexists; split; eauto. *)
 (*     split. *)
@@ -2244,6 +2243,7 @@ Admitted.
 (*       intros. eapply Z.le_trans. 2: apply H12. *)
 (*       generalize (alignw_le (init_data_list_size (gvar_init v))); omega. *)
 (* Qed. *)
+Admitted.
 
 
 Lemma make_maps_gmap_inj':
