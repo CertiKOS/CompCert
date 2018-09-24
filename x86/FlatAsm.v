@@ -1199,24 +1199,24 @@ Fixpoint store_globals (smap:segid_type->block) (m: mem) (gl: list (ident * opti
 
 End WITHGE.
 
-(* Fixpoint alloc_segments m (segs: list segment) := *)
-(*   match segs with *)
-(*   | nil => m *)
-(*   | s :: segs' => *)
-(*     match Mem.alloc m 0 (Ptrofs.unsigned (segsize s)) with *)
-(*     | (m',_) => alloc_segments m' segs' *)
-(*     end *)
-(*   end. *)
+Fixpoint alloc_segments m (segs: list segment) :=
+  match segs with
+  | nil => m
+  | s :: segs' =>
+    match Mem.alloc m 0 (Ptrofs.unsigned (segsize s)) with
+    | (m',_) => alloc_segments m' segs'
+    end
+  end.
 
 Definition alloc_segment m seg := Mem.alloc m 0 (Ptrofs.unsigned (segsize seg)).
 
 Definition init_mem (p: program) :=
   let ge := globalenv p in
   let (initm,_) := Mem.alloc Mem.empty 0 0 in (** *r A dummy block is allocated for undefined segments *)
-  (* let m := alloc_segments initm (list_of_segments p) in *)
-  let (m1,_) := alloc_segment initm (fst (code_seg p)) in
-  let (m2,_) := alloc_segment m1 (data_seg p) in
-  match alloc_globals m2 (prog_defs p) with
+  let m := alloc_segments initm (list_of_segments p) in
+  (* let (m1,_) := alloc_segment initm (fst (code_seg p)) in *)
+  (* let (m2,_) := alloc_segment m1 (data_seg p) in *)
+  match alloc_globals m (prog_defs p) with
   | None => None
   | Some m3 =>
     store_globals ge (gen_segblocks p) m3 (prog_defs p)

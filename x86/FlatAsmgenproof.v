@@ -1246,43 +1246,43 @@ Proof.
     exploit IHl; eauto. intros. congruence.
 Qed.
 
-(* Lemma alloc_segments_perm_ofs : forall segs m1 m2 *)
-(*                                   (ALLOCSEGS : alloc_segments m1 segs = m2) *)
-(*                                   (PERMOFS : forall b ofs k p, Mem.perm m1 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned), *)
-(*     (forall b ofs k p, Mem.perm m2 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned). *)
-(* Proof. *)
-(*   induction segs. intros. *)
-(*   - subst. simpl in H. eauto. *)
-(*   - intros. simpl in ALLOCSEGS. *)
-(*     destruct (Mem.alloc m1 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     eapply IHsegs; eauto. *)
-(*     intros b1 ofs0 k0 p0 PERM. *)
-(*     erewrite alloc_perm in PERM; eauto. *)
-(*     destruct peq. *)
-(*     generalize (Ptrofs.unsigned_range_2 (segsize a)). omega. *)
-(*     eauto. *)
-(* Qed. *)
+Lemma alloc_segments_perm_ofs : forall segs m1 m2
+                                  (ALLOCSEGS : alloc_segments m1 segs = m2)
+                                  (PERMOFS : forall b ofs k p, Mem.perm m1 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned),
+    (forall b ofs k p, Mem.perm m2 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned).
+Proof.
+  induction segs. intros.
+  - subst. simpl in H. eauto.
+  - intros. simpl in ALLOCSEGS.
+    destruct (Mem.alloc m1 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    eapply IHsegs; eauto.
+    intros b1 ofs0 k0 p0 PERM.
+    erewrite alloc_perm in PERM; eauto.
+    destruct peq.
+    generalize (Ptrofs.unsigned_range_2 (segsize a)). omega.
+    eauto.
+Qed.
 
-(* Lemma alloc_segments_stack: forall l m m', *)
-(*     m' = alloc_segments m l -> Mem.stack m' = Mem.stack m. *)
-(* Proof. *)
-(*   induction l; intros. *)
-(*   - simpl in H. subst. auto. *)
-(*   - inv H. simpl. destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     exploit Mem.alloc_stack_blocks; eauto. intros H. rewrite <- H. *)
-(*     erewrite IHl; eauto. *)
-(* Qed. *)
+Lemma alloc_segments_stack: forall l m m',
+    m' = alloc_segments m l -> Mem.stack m' = Mem.stack m.
+Proof.
+  induction l; intros.
+  - simpl in H. subst. auto.
+  - inv H. simpl. destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    exploit Mem.alloc_stack_blocks; eauto. intros H. rewrite <- H.
+    erewrite IHl; eauto.
+Qed.
 
-(* Lemma alloc_segments_nextblock :  forall l m m', *)
-(*   m' = alloc_segments m l -> Mem.nextblock m' = pos_advance_N (Mem.nextblock m) (length l). *)
-(* Proof. *)
-(*   induction l; intros. *)
-(*   - inv H. simpl. auto. *)
-(*   - inv H. simpl. *)
-(*     destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     erewrite IHl; eauto. exploit Mem.nextblock_alloc; eauto. intros. rewrite H. *)
-(*     rewrite psucc_advance_Nsucc_eq. auto. *)
-(* Qed. *)
+Lemma alloc_segments_nextblock :  forall l m m',
+  m' = alloc_segments m l -> Mem.nextblock m' = pos_advance_N (Mem.nextblock m) (length l).
+Proof.
+  induction l; intros.
+  - inv H. simpl. auto.
+  - inv H. simpl.
+    destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    erewrite IHl; eauto. exploit Mem.nextblock_alloc; eauto. intros. rewrite H.
+    rewrite psucc_advance_Nsucc_eq. auto.
+Qed.
 
 Lemma alloc_segment_stack: forall s m m' b,
     alloc_segment m s = (m',b) -> Mem.stack m' = Mem.stack m.
@@ -1335,7 +1335,7 @@ Proof.
   apply alloc_segment_stack in ALLOC_CODE.
   apply alloc_segment_stack in ALLOC_DATA.
   rewrite H. erewrite <- alloc_globals_stack; eauto.
-  rewrite ALLOC_DATA. rewrite ALLOC_CODE.
+  erewrite alloc_segments_stack; eauto. 
   rewrite H0. erewrite Mem.empty_stack; eauto.
 Qed.
 
@@ -1472,23 +1472,26 @@ Proof.
     rewrite add_global_next_block. auto.
 Qed.
 
+Lemma alloc_segments_nextblock' : forall (l : list segment) (m: mem), 
+  Mem.nextblock (alloc_segments m l) = pos_advance_N (Mem.nextblock m) (length l).
+Proof.
+  intros. apply alloc_segments_nextblock. auto.
+Qed.
+
 Lemma init_mem_genv_next: forall p m,
   init_mem p = Some m ->
   Genv.genv_next (globalenv p) = Mem.nextblock m.
 Proof.
   unfold init_mem; intros.
   destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
-  destruct (alloc_segment m0 (fst (code_seg p))) eqn:ALLOC_CODE.
-  destruct (alloc_segment m1 (data_seg p)) eqn:ALLOC_DATA.
-  destruct (alloc_globals m2 (prog_defs p)) eqn:ALLOC_GLOBALS; inv H.
-  unfold globalenv. simpl.
-  rewrite add_globals_next_block. simpl.
+  destr_match_in H; inv H.
+  exploit alloc_globals_nextblock; eauto. 
+  exploit Mem.nextblock_alloc; eauto. rewrite Mem.nextblock_empty. 
+  erewrite alloc_segments_nextblock'; eauto. simpl.
+  intros. rewrite H in H0. simpl in H0.
   erewrite store_globals_nextblock; eauto.
-  erewrite alloc_globals_nextblock; eauto.
-  erewrite alloc_segment_nextblock; eauto.
-  erewrite alloc_segment_nextblock; eauto.
-  erewrite Mem.nextblock_alloc; eauto. 
-  erewrite Mem.nextblock_empty; eauto.
+  rewrite H0. unfold globalenv. simpl.
+  rewrite add_globals_next_block. simpl. auto.
 Qed.
 
 
