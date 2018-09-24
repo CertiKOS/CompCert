@@ -2504,9 +2504,169 @@ Proof.
     + exploit IHdefs; eauto.
 Qed.
 
-Lemma find_symbol_exists : forall (p : program) (x : ident) def sb,
-    In (x, def, sb) (prog_defs p) -> exists b ofs, Genv.find_symbol (globalenv p) x = Some (b, ofs).
-Admitted.
+Lemma unique_def_is_var : forall defs i v sb
+  (NPT: list_norepet (map (fun '(i,_,_) => i) defs))
+  (IN: In (i, Some (Gvar v), sb) defs),
+  defs_is_var_or_internal_fun i defs.
+Proof.
+  induction defs; intros; simpl; inv IN.
+  - inv NPT. red. intros def sb0 H.
+    inv H. inv H0. red. eauto.
+    generalize (in_map (fun '(i,_,_) => i) defs (i,def,sb0) H0). contradiction.
+  - destruct a. destruct p. inv NPT.
+    red. intros def sb0 IN. inv IN. 
+    + inv H0.
+      generalize (in_map (fun '(i,_,_) => i) defs (i,Some (Gvar v),sb) H). contradiction.
+    + exploit IHdefs; eauto.
+Qed.
+
+
+
+Definition sdef_is_var_or_internal_fun {F V: Type} (def: option (AST.globdef (AST.fundef F) V)) :=
+  match def with
+  | Some (Gvar _) => True
+  | Some (Gfun (Internal f)) => True
+  | _ => False
+  end.
+
+Lemma update_maps_gmap_in : forall defs x def g l dz cz g' l' dz' cz'
+                              (VIT: sdef_is_var_or_internal_fun def)
+                              (NPT: list_norepet (map fst defs))
+                              (IN: In (x, def) defs)
+                              (UPD: update_maps g l dz cz defs = (g', l', dz', cz')),
+    exists sid ofs, g' x = Some (sid, ofs).
+Proof.
+  induction defs; simpl; intros. contradiction. destruct IN.
+  - subst. rewrite update_maps_cons in UPD.
+    destruct (update_maps_def g l dz cz x def) eqn: UPDD.
+    destruct p. destruct p. inv NPT.
+    erewrite update_gmap_not_in; eauto.
+    erewrite update_gmap; eauto. rewrite peq_true.
+    destruct def. destruct g1. destruct f.
+    + unfold code_label. eauto.
+    + inv VIT.
+    + unfold data_label. eauto.
+    + inv VIT.
+  - destruct a. simpl in *.
+    rewrite update_maps_cons in UPD.
+    destruct (update_maps_def g l dz cz i o) eqn: UPDD.
+    destruct p. destruct p. 
+    inv NPT. 
+    exploit IHdefs; eauto.
+Qed.
+  
+Lemma add_global_pres_find_symbol_neq : forall ge i o s i1,
+  i <> i1 ->
+  Genv.find_symbol (add_global ge (i, o, s)) i1 = Genv.find_symbol ge i1.
+Proof.
+  intros. 
+  destruct o; simpl. 
+  destruct g; simpl. 
+  destruct f; simpl.
+  auto.
+  rewrite peq_false; auto.
+  auto.
+  rewrite peq_false; auto.
+Qed.
+
+Lemma add_globals_pres_find_symbol_not_in : 
+  forall defs i ge
+    (NIN: ~In i (map (fun '(i,_,_) => i) defs)),
+    Genv.find_symbol (add_globals ge defs) i = Genv.find_symbol ge i.
+Proof.
+  induction defs; simpl; intros. auto.
+  destruct a. destruct p. destruct (peq i i0).
+  - subst. exfalso. apply NIN. auto.
+  - erewrite IHdefs; eauto. 
+    eapply add_global_pres_find_symbol_neq; eauto.
+Qed.
+
+Definition def_is_none_or_external_fun  (def: (ident * option gdef * segblock)) := 
+  let '(_,d,_) := def in
+  d = None \/ (exists f, d = (Some (Gfun (External f)))).
+
+
+Lemma add_global_find_symbol_eq:
+  forall (ge : genv) (i : ident) (o : option gdef) (s : segblock) (i1 : ident)
+  (NE: def_is_none_or_external_fun (i, o, s)),
+  Genv.find_symbol (add_global ge (i, o, s)) i = Some (Genv.genv_next ge, Ptrofs.zero).
+Proof.
+  intros. destruct o. destruct g. destruct f.
+  - simpl. inv NE. inv H. inv H. inv H0.
+  - simpl. rewrite peq_true. eauto.
+  - simpl. inv NE. inv H. inv H. inv H0.
+  - simpl. rewrite peq_true. eauto.
+Qed.
+
+
+Inductive Nth {A :Type} : nat -> list A -> A -> Prop :=
+| Nth_base: forall x l, Nth O (x::l) x
+| Nth_cons: forall n x y l, Nth n l x -> Nth (S n) (y::l) x.
+
+Lemma add_globals_find_symbol_ne : forall defs x def sb n ge
+    (NE: def_is_none_or_external_fun (x, def, sb))
+    (NTH: Nth n defs (x,def,sb))
+    (NPT: list_norepet (map (fun '(i,_,_) => i) defs)),
+    Genv.find_symbol (add_globals ge defs) x = Some (pos_advance_N (Genv.genv_next ge) n, Ptrofs.zero).
+Proof.
+  induction defs; intros; simpl. inv NTH. inv NTH.
+  - inv NPT.
+    erewrite add_globals_pres_find_symbol_not_in; eauto.
+    apply add_global_find_symbol_eq; eauto.
+  - inv NPT.
+    erewrite IHdefs; eauto. 
+    rewrite add_global_next_block. auto.
+Qed.
+      
+
+Lemma In_Nth: forall (A : Type) (l : list A) (x : A), 
+    In x l -> exists n : nat, (n < length l)%nat /\ Nth n l x.
+Proof.
+  induction l; simpl; intros. contradiction. inv H.
+  - exists O. split. omega. constructor.
+  - apply IHl in H0. destruct H0 as (n' & LT & NTH).
+    exists (S n'). split. omega. constructor. auto.
+Qed.
+
+
+Lemma find_symbol_exists : forall (x : ident) def
+    (IN: In (x, def) (AST.prog_defs prog)),
+    exists b ofs, Genv.find_symbol (globalenv tprog) x = Some (b, ofs).
+Proof.
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w.
+  exploit transl_prog_pres_def; eauto.
+  intros (def' & sb & c & IN' & TLD).
+  destruct def. destruct g0. destruct f.
+  - monadInv TLD. unfold globalenv.
+    erewrite add_globals_pres_find_symbol; eauto. simpl.
+    unfold gidmap_to_symbmap. 
+    erewrite transl_prog_map; eauto.
+    exploit update_maps_gmap_in; eauto. red. auto.
+    intros (sid & ofs & GM). rewrite GM. eauto.
+    eapply unique_def_is_internal_fun; eauto.
+    eapply transl_prog_list_norepet; eauto.
+  - monadInv TLD. unfold globalenv.
+    apply In_Nth in IN'. destruct IN' as (n & LT & NTH).
+    exploit add_globals_find_symbol_ne; eauto.
+    red. eauto.
+    eapply transl_prog_list_norepet; eauto.
+  - monadInvX TLD. unfold globalenv.
+    erewrite add_globals_pres_find_symbol; eauto. simpl.
+    unfold gidmap_to_symbmap. 
+    erewrite transl_prog_map; eauto.
+    exploit update_maps_gmap_in; eauto. red. auto.
+    intros (sid & ofs & GM). rewrite GM. eauto.
+    eapply unique_def_is_var; eauto.
+    eapply transl_prog_list_norepet; eauto.
+  - monadInv TLD. unfold globalenv.
+    apply In_Nth in IN'. destruct IN' as (n & LT & NTH).
+    exploit add_globals_find_symbol_ne; eauto.
+    red. eauto.
+    eapply transl_prog_list_norepet; eauto.
+Qed.
+    
 
 Theorem init_meminj_match_sminj : (* forall gmap lmap dsize csize m, *)
     (* dsize + csize <= Ptrofs.max_unsigned -> *)
@@ -5031,32 +5191,6 @@ Qed.
 (*   eapply inj. 4: apply EQ. auto. auto. intro KEY. *)
 (*   apply H1. exists x; split; auto. eauto. auto. *)
 (* Qed. *)
-
-Lemma add_global_pres_find_symbol_neq : forall ge i o s i1,
-  i <> i1 ->
-  Genv.find_symbol (add_global ge (i, o, s)) i1 = Genv.find_symbol ge i1.
-Proof.
-  intros. 
-  destruct o; simpl. 
-  destruct g; simpl. 
-  destruct f; simpl.
-  auto.
-  rewrite peq_false; auto.
-  auto.
-  rewrite peq_false; auto.
-Qed.
-
-Lemma add_globals_pres_find_symbol_not_in : 
-  forall defs i ge
-    (NIN: ~In i (map (fun '(i,_,_) => i) defs)),
-    Genv.find_symbol (add_globals ge defs) i = Genv.find_symbol ge i.
-Proof.
-  induction defs; simpl; intros. auto.
-  destruct a. destruct p. destruct (peq i i0).
-  - subst. exfalso. apply NIN. auto.
-  - erewrite IHdefs; eauto. 
-    eapply add_global_pres_find_symbol_neq; eauto.
-Qed.
 
 
 Lemma add_global_pres_find_def_blt : forall b ge def ofs,
