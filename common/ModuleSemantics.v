@@ -25,38 +25,45 @@ Inductive apply_cont {li} L (k: @cont li L) q: option (state L) -> Prop :=
 Module FComp.
   Section FLATCOMP.
     Context (ge: Senv.t).
-    Context {li I} (L: I -> semantics li).
+    Context {li} (L1 L2: semantics li) (dom1 dom2: query li -> bool).
 
-    Definition genv := forall i, genvtype (L i).
+    Definition genv: Type := genvtype L1 * genvtype L2.
 
-    Definition state := { i : I & state (L i) }.
+    Inductive state :=
+      | state_l (s1: Smallstep.state L1) (k2: cont L2)
+      | state_r (s2: Smallstep.state L2) (k1: cont L1).
 
-    Inductive liftk {i} (k: cont (L i)) q: state -> Prop :=
-      | lift_intro s: k q s -> liftk k q (existT _ i s).
+    Definition liftk (k1: cont L1) (k2: cont L2) (q: query li) (s: state) :=
+      match dom1 q, dom2 q, s with
+        | true, false, state_l s1 k2' => k1 q s1 /\ k2' = k2
+        | false, true, state_r s2 k1' => k2 q s2 /\ k1' = k1
+        | _, _, _ => False
+      end.
 
     Inductive step (ge: genv): state -> trace -> state -> Prop :=
-      | step_intro i s t s':
-          Smallstep.step (L i) (ge i) s t s' ->
-          step ge (existT _ i s) t (existT _ i s').
+      | step_l s t s' k:
+          Smallstep.step L1 (fst ge) s t s' ->
+          step ge (state_l s k) t (state_l s' k)
+      | step_r s t s' k:
+          Smallstep.step L2 (snd ge) s t s' ->
+          step ge (state_r s k) t (state_r s' k).
 
-    Inductive initial_state (q: query li): state -> Prop :=
-      | initial_state_intro i s:
-          Smallstep.initial_state (L i) q s ->
-          initial_state q (existT _ i s).
-
-    Inductive final_state: state -> reply li -> (query li -> state -> Prop) -> Prop :=
-      | final_state_intro i s r k:
-          Smallstep.final_state (L i) s r k ->
-          final_state (existT _ i s) r (liftk k).
+    Inductive final_state: state -> reply li -> _ -> Prop :=
+      | final_state_l s1 r1 k1 k2:
+          Smallstep.final_state L1 s1 r1 k1 ->
+          final_state (state_l s1 k2) r1 (liftk k1 k2)
+      | final_state_r s2 r2 k2 k1:
+          Smallstep.final_state L2 s2 r2 k2 ->
+          final_state (state_r s2 k1) r2 (liftk k1 k2).
 
     Definition semantics :=
       {|
         Smallstep.genvtype := genv;
         Smallstep.state := state;
         Smallstep.step := step;
-        Smallstep.initial_state := initial_state;
+        Smallstep.initial_state := liftk (initial_state L1) (initial_state L2);
         Smallstep.final_state := final_state;
-        Smallstep.globalenv := fun i => Smallstep.globalenv (L i);
+        Smallstep.globalenv := (globalenv L1, globalenv L2);
         Smallstep.symbolenv := ge;
       |}.
     End FLATCOMP.
@@ -79,48 +86,28 @@ Module Res.
     Context {li} (L: Smallstep.semantics (li -o li)).
     Context (dom : query li -> bool).
 
-    Definition state: Type := option (Smallstep.state L) * list (cont L).
-
-    Definition observable (x: reply (li -o li)) (stk: list (cont L)) :=
-      match x with
-        | inl q => dom q = false (*forall s, ~ Smallstep.initial_state L (inr q) s*)
-        | inr r => stk = nil
+    Definition sw (r : reply (li -o li)) : option (query (li -o li)) :=
+      match r with
+        | inl qA => if dom qA then Some (inr qA) else None
+        | inr rB => None
       end.
 
-    Inductive liftk (k: cont L) stk: query (li -o li) -> state -> Prop :=
-      | liftk_intro q s:
-          k q s ->
-          liftk k stk q (Some s, stk).
-
-    Definition initial_state :=
-      liftk (Smallstep.initial_state L) nil.
-
-    Inductive final_state: state -> reply (li -o li) -> _ -> Prop :=
-      | final_state_intro s r k stk:
-          observable r stk ->
-          Smallstep.final_state L s r k ->
-          final_state (Some s, stk) r (liftk k stk).
-
-    Inductive step ge : state -> trace -> state -> Prop :=
-      | step_internal s t s' stk:
+    Inductive step ge : state L -> trace -> state L -> Prop :=
+      | step_internal s t s':
           Smallstep.step L ge s t s' ->
-          step ge (Some s, stk) t (Some s', stk)
-      | step_call s stk qi si k:
-          dom qi = true ->
-          Smallstep.final_state L s (inl qi) k ->
-          apply_cont L (Smallstep.initial_state L) (inr qi) si ->
-          step ge (Some s, stk) E0 (si, k :: stk)
-      | step_return si ri ki (k: cont L) s stk:
-          Smallstep.final_state L si (inr ri) ki ->
-          apply_cont L k (inl ri) s ->
-          step ge (Some si, k :: stk) E0 (s, stk).
+          step ge s t s'
+      | step_switch s r k q s':
+          Smallstep.final_state L s r k ->
+          sw r = Some q ->
+          k q s' ->
+          step ge s E0 s'.
 
     Definition semantics: Smallstep.semantics (li -o li) :=
       {|
-        Smallstep.state := state;
+        Smallstep.state := state L;
         Smallstep.step := step;
-        Smallstep.initial_state := initial_state;
-        Smallstep.final_state := final_state;
+        Smallstep.initial_state := initial_state L;
+        Smallstep.final_state s r k := final_state L s r k /\ sw r = None;
         Smallstep.globalenv := globalenv L;
         Smallstep.symbolenv := symbolenv L;
       |}.
@@ -135,9 +122,9 @@ End Res.
 Module HComp.
   Section HCOMP.
     Context (ge: Senv.t).
-    Context {li I} (L: I -> semantics (li -o li)).
+    Context {li} (L1 L2: semantics (li -o li)).
 
-    Definition semantics :=
-      Res.semantics (FComp.semantics ge L).
+    Definition semantics dom1 dom2 dom :=
+      Res.semantics (FComp.semantics ge L1 L2 dom1 dom2) dom.
   End HCOMP.
 End HComp.
