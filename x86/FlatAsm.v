@@ -194,6 +194,13 @@ End MEM_ACCESSORS_DEFAULT.
     but we do not need to model this precisely.
 *)
 
+Definition eval_ros (ge : genv) (ros : ireg + ident) (rs : regset) :=
+  match ros with
+  | inl r => rs r
+  | inr symb => Genv.symbol_address ge symb Ptrofs.zero
+  end.
+
+
 Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_store} (ge: genv) (ii: instr_with_info) (rs: regset) (m: mem) : outcome :=
   let '(i,blk,fid) := ii in
   let sz := segblock_size blk in
@@ -517,14 +524,30 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
           end
       | _ => Stuck
       end
-  | Pcall (inr gloc) sg =>
-      Next (rs#RA <- (Val.offset_ptr rs#PC sz) #PC <- (Genv.symbol_address ge gloc Ptrofs.zero)) m
-  | Pcall (inl r) sg =>
-      Next (rs#RA <- (Val.offset_ptr rs#PC sz) #PC <- (rs r)) m
+ | Pcall ros sg =>
+      let addr := eval_ros ge ros rs in
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
+      match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
+      | None => Stuck
+      | Some m2 =>
+        Next (rs#RA <- (Val.offset_ptr rs#PC sz)
+                #PC <- addr
+                #RSP <- sp) m2
+      end
+  (* | Pcall (inr gloc) sg => *)
+  (*     Next (rs#RA <- (Val.offset_ptr rs#PC sz) #PC <- (Genv.symbol_address ge gloc Ptrofs.zero)) m *)
+  (* | Pcall (inl r) sg => *)
+  (*     Next (rs#RA <- (Val.offset_ptr rs#PC sz) #PC <- (rs r)) m *)
   | Pret =>
-  (** [CompCertX:test-compcert-ra-vundef] We need to erase the value of RA,
-      which is actually popped away from the stack in reality. *)
-      Next (rs#PC <- (rs#RA) #RA <- Vundef) m
+        match Mem.loadv Mptr m rs#RSP with
+      | None => Stuck
+      | Some ra =>
+        let sp := Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr)) in
+        Next (rs #RSP <- sp
+                 #PC <- ra
+                 #RA <- Vundef) m
+      end
+
   (** Saving and restoring registers *)
   | Pmov_rm_a rd a =>
       exec_load _ _ _ ge (if Archi.ptr64 then Many64 else Many32) m a rs rd sz
@@ -604,27 +627,20 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
                          (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) (segblock_size blk) ->
         step ge (State rs m) t (State rs' m')
 | exec_step_external:
-    forall b ofs ef args res rs m t m2 rs' m',
+    forall b ofs ef args res rs m t rs' m',
       rs PC = Vptr b ofs ->
       Genv.genv_internal_codeblock ge b = false ->
       Genv.find_funct ge (Vptr b ofs) = Some (External ef) ->
-      forall (* CompCertX: BEGIN additional conditions for calling convention *)
-        (* (STACK: *)
-        (*    exists m_, *)
-        (*      free_extcall_args (rs RSP) m (regs_of_rpairs (Conventions1.loc_arguments (ef_sig ef))) = Some m_ /\ *)
-        (*      exists t_ res'_ m'_, *)
-        (*        external_call ef ge args m_ t_ res'_ m'_ *)
-        (* ) *)
-        (SP_TYPE: Val.has_type (rs RSP) Tptr)
-        (RA_TYPE: Val.has_type (rs RA) Tptr)
-        (SP_NOT_VUNDEF: rs RSP <> Vundef)
-        (RA_NOT_VUNDEF: rs RA <> Vundef)
-        (SZRA: Mem.storev Mptr m (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))
-                          (rs RA) = Some m2)
-        (ARGS: extcall_arguments rs m2 (ef_sig ef) args)
-      ,      (* CompCertX: END additional conditions for calling convention *)
-        external_call ef (Genv.genv_senv ge) args m2 t res m' ->
-        rs' = (set_pair (loc_external_result (ef_sig ef)) res (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) (undef_regs (map preg_of destroyed_at_call) rs))) #PC <- (rs RA) #RA <- Vundef ->
+      forall ra (LOADRA: Mem.loadv Mptr m (rs RSP) = Some ra)
+        (RA_NOT_VUNDEF: ra <> Vundef)
+        (ARGS: extcall_arguments (rs # RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr)))) m (ef_sig ef) args),
+        external_call ef (Genv.genv_senv ge) args m t res m' ->
+          rs' = (set_pair (loc_external_result (ef_sig ef)) res
+                          (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                                      (undef_regs (map preg_of destroyed_at_call) rs)))
+                  #PC <- ra
+                  #RA <- Vundef
+                  #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr))) ->
         step ge (State rs m) t (State rs' m').
 
 End RELSEM.
@@ -1243,16 +1259,17 @@ Definition init_mem (p: program) :=
 
 Inductive initial_state_gen (p: program) (rs: regset) m: state -> Prop :=
   | initial_state_gen_intro:
-      forall m1 m2 m3 bstack
+      forall m1 m2 m3 bstack m4
       (MALLOC: Mem.alloc (Mem.push_new_stage m) 0 (Mem.stack_limit + align (size_chunk Mptr) 8) = (m1,bstack))
       (MDROP: Mem.drop_perm m1 bstack 0 (Mem.stack_limit + align (size_chunk Mptr) 8) Writable = Some m2)
-      (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3),
+      (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3)
+      (MST: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr))) Vnullptr = Some m4),
       let ge := (globalenv p) in
       let rs0 :=
         rs # PC <- (Genv.symbol_address ge p.(prog_main) Ptrofs.zero)
            # RA <- Vnullptr
-           # RSP <- (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8))) in
-      initial_state_gen p rs m (State rs0 m3).
+           # RSP <- (Vptr bstack (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr)))) in
+      initial_state_gen p rs m (State rs0 m4).
 
 Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=
 | initial_state_intro: forall m,
@@ -1322,8 +1339,8 @@ Ltac Equalities :=
   eapply external_call_trace_length; eauto.
 - (* initial states *)
   inv H; inv H0. assert (m = m0) by congruence. subst. inv H2; inv H3.
-  assert (m1 = m4 /\ bstack = bstack0) by intuition congruence. destruct H0; subst.
-  assert (m2 = m5) by congruence. subst.
+  assert (m1 = m5 /\ bstack = bstack0) by intuition congruence. destruct H0; subst.
+  assert (m2 = m6) by congruence. subst.
   f_equal. congruence.
 - (* final no step *)
   assert (NOTNULL: forall b ofs, Vnullptr <> Vptr b ofs).

@@ -8,7 +8,7 @@
 Require Import Coqlib Integers Values Maps AST.
 Require Import Memtype Memory.
 Require Import Smallstep.
-Require Import Asm RawAsm.
+Require Import Asm RealAsm.
 Require Import FlatAsm FlatAsmBuiltin FlatAsmgen.
 Require Import Segment.
 Require Import Events.
@@ -5705,7 +5705,7 @@ Qed.
 
 
 Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Val.inject j (rs r) (rs r)) st1,
-    RawAsm.initial_state prog rs st1  ->
+    RealAsm.initial_state prog rs st1  ->
     exists st2, FlatAsm.initial_state tprog rs st2 /\ match_states st1 st2.
 Proof.
   intros rs SELFINJECT st1 INIT.
@@ -5759,18 +5759,18 @@ Proof.
   intros (m2' & MDROP' & DMINJ). simpl in MDROP'. rewrite Z.add_0_r in MDROP'.
   erewrite (drop_perm_pres_def_frame_inj m1) in DMINJ; eauto.
   
-  assert (exists m3', Mem.record_stack_blocks m2' (make_singleton_frame_adt' bstack' frame_info_mono 0) = Some m3'
+  assert (exists m3', Mem.record_stack_blocks m2' (make_singleton_frame_adt' bstack' RawAsm.frame_info_mono 0) = Some m3'
                  /\ Mem.inject (init_meminj) (def_frame_inj m3) m3 m3') as RCD.
   {
     unfold def_frame_inj. unfold def_frame_inj in DMINJ.
     eapply (Mem.record_stack_block_inject_flat m2 m3 m2' (init_meminj)
-           (make_singleton_frame_adt' bstack frame_info_mono 0)); eauto.
+           (make_singleton_frame_adt' bstack RawAsm.frame_info_mono 0)); eauto.
     (* frame inject *)
     red. unfold make_singleton_frame_adt'. simpl. constructor. 
     simpl. intros b2 delta FINJ.
     unfold init_meminj in FINJ. fold ge in FINJ. rewrite <- H4 in FINJ.
     rewrite pred_dec_true in FINJ; auto. inv FINJ.
-    exists frame_info_mono. split. auto. apply inject_frame_info_id.
+    exists RawAsm.frame_info_mono. split. auto. apply inject_frame_info_id.
     constructor.
     (* in frame *)
     unfold make_singleton_frame_adt'. simpl. unfold in_frame. simpl.
@@ -5784,7 +5784,7 @@ Proof.
     (* frame_agree_perms *)
     red. unfold make_singleton_frame_adt'. simpl.
     intros b fi o k p BEQ PERM. inv BEQ; try contradiction.
-    inv H7. unfold frame_info_mono. simpl.
+    inv H7. unfold RawAsm.frame_info_mono. simpl.
     erewrite drop_perm_perm in PERM; eauto. destruct PERM.
     eapply Mem.perm_alloc_3; eauto.
     (* in frame iff *)
@@ -5814,10 +5814,14 @@ Proof.
   destruct RCD as (m3' & RCDSB & RMINJ).
   set (rs0' := rs # PC <- (Genv.symbol_address tge tprog.(prog_main) Ptrofs.zero)
                   # RA <- Vnullptr
-                  # RSP <- (Vptr bstack' (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)))) in *.
-  exists (State rs0' m3'). split.
+                  # RSP <- (Vptr bstack' (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr))))) in *.
+  edestruct storev_mapped_inject' as (m4' & ST & SMINJ). apply RMINJ. eauto. econstructor.
+  rewrite <- H6, FBSTACK; eauto. reflexivity. constructor.
+  exists (State rs0' m4'). split.
   - eapply initial_state_intro; eauto.
-    eapply initial_state_gen_intro; eauto. subst. fold tge in MDROP'. auto.
+    eapply initial_state_gen_intro; eauto.
+    subst. fold tge in MDROP'. eauto.
+    subst. fold tge in MDROP'. rewrite Ptrofs.add_zero in ST. eauto.
   - eapply match_states_intro; eauto.
     + eapply valid_instr_offset_is_internal_init; eauto. inv w; auto.
     + eapply extfun_entry_is_external_init; eauto. inv w; auto.
@@ -5832,7 +5836,8 @@ Proof.
       unfold ge, ge0 in *. rewrite H2. fold tge. auto.
       unfold Vnullptr. destr; auto.
       econstructor. unfold init_meminj. subst bstack. fold ge. rewrite peq_true. subst bstack'.  fold tge. eauto.
-      rewrite Ptrofs.add_zero. auto.
+      rewrite Ptrofs.add_zero.
+      apply Ptrofs.sub_add_opp.
     + red. intros b g FD.
       unfold Genv.find_def in FD. eapply Genv.genv_defs_range in FD.
       revert FD. red. rewnb.
@@ -6869,7 +6874,7 @@ Lemma exec_instr_step : forall j rs1 rs2 m1 m2 rs1' m1' i i' id sid ofs ofs' f b
     Globalenvs.Genv.find_symbol ge id = Some b ->
     Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f) ->
     Asm.find_instr (Ptrofs.unsigned ofs) (Asm.fn_code f) = Some i ->
-    RawAsm.exec_instr ge f i rs1 m1 = Next rs1' m1' ->
+    RealAsm.exec_instr ge f i rs1 m1 = Next rs1' m1' ->
     transl_instr ofs' id sid i = OK i' ->
     exists rs2' m2',
       FlatAsm.exec_instr tge i' rs2 m2 = Next rs2' m2' /\
@@ -7000,13 +7005,18 @@ Proof.
   - (* Pcall_s *)
     repeat destr_in H6.
     generalize (RSINJ PC).
-    destruct ros; simpl in *; do 2 eexists; split; eauto; econstructor; eauto.
+    edestruct storev_mapped_inject' as (m2' & ST & MINJ'). apply MINJ. eauto.
+    apply Val.offset_ptr_inject. eauto.
+    apply Val.offset_ptr_inject. eauto.
+    do 2 eexists; split; eauto. simpl.
+    rewrite ST. eauto.
+    econstructor; eauto.
     repeat apply regset_inject_expand; auto.
     apply Val.offset_ptr_inject. eauto.
-    repeat apply regset_inject_expand; auto.
+    destruct ros; simpl; repeat apply regset_inject_expand; auto.
+    exploit (inject_symbol_address j i Ptrofs.zero); eauto.
     apply Val.offset_ptr_inject. eauto.
-    + exploit (inject_symbol_address j i Ptrofs.zero); eauto.
-      
+    eapply storev_pres_glob_block_valid; eauto.      
   (* - (* Pallocframe *) *)
   (*   generalize (RSINJ RSP). intros RSPINJ. *)
   (*   destruct (Mem.storev Mptr m1 *)
@@ -7041,18 +7051,19 @@ Proof.
   (*   setoid_rewrite MLOAD2. auto. *)
   (*   eapply match_states_intro; eauto with inject_db. *)
 
-  - repeat destr_in H6. simpl. 
+  - repeat destr_in H6. simpl.
+    exploit Mem.loadv_inject; eauto. intros (v2 & LD & VI). rewrite LD.
     eexists _, _; split; eauto. econstructor; eauto.
     repeat apply regset_inject_expand; auto.
+    apply Val.offset_ptr_inject. eauto.
   - exploit no_pseudo_instrs; eauto. simpl. destruct 1.
   - exploit no_pseudo_instrs; eauto. simpl. destruct 1.
   - exploit no_pseudo_instrs; eauto. simpl. destruct 1.
 Qed.
 
-
 Theorem step_simulation:
   forall S1 t S2,
-    RawAsm.step ge S1 t S2 ->
+    RealAsm.step ge S1 t S2 ->
     forall S1' (MS: match_states S1 S1'),
     exists S2',
       FlatAsm.step tge S1' t S2' /\
@@ -7121,9 +7132,12 @@ Proof.
     unfold regset_inject in RSINJ. generalize (RSINJ Asm.PC). rewrite H. 
     inversion 1; subst. rewrite Ptrofs.add_zero_l in H6.
     (* exploit (globs_to_funs_inj_into_flatmem j); eauto. inversion 1; subst. *)
-    edestruct storev_mapped_inject' as (m2' & SV & INJ2); eauto.
-    apply Val.offset_ptr_inject. eauto.
+    (* edestruct storev_mapped_inject' as (m2' & SV & INJ2); eauto. *)
+    (* apply Val.offset_ptr_inject. eauto. *)
+    exploit Mem.loadv_inject. apply MINJ. apply LOADRA. eauto. intros (v2 & LRA & VI).
     edestruct (extcall_arguments_inject) as (args2 & ARGSINJ & EXTCALLARGS); eauto.
+    apply regset_inject_expand. eauto.
+    apply Val.offset_ptr_inject. eauto.
     assert (Globalenvs.Genv.to_senv ge = (Genv.genv_senv tge)) as SENVEQ. 
     { 
       unfold match_prog in TRANSF. unfold transf_program in TRANSF.
@@ -7135,33 +7149,13 @@ Proof.
     
     intros (j' & res' & m2'' & EXTCALL & RESINJ & MINJ' & INJINCR & INJSEP).
     exploit (fun ofs => FlatAsm.exec_step_external tge b2 ofs ef args2 res'); eauto.
-    + generalize (RSINJ Asm.RSP). intros. 
-      eapply vinject_pres_has_type; eauto.
-    + generalize (RSINJ Asm.RA). intros. 
-      eapply vinject_pres_has_type; eauto.
-    + generalize (RSINJ Asm.RSP). intros. 
-      eapply vinject_pres_not_vundef; eauto.
-    + generalize (RSINJ Asm.RA). intros. 
-      eapply vinject_pres_not_vundef; eauto.
+    + intro; subst. inv VI. congruence.
     + intros FSTEP. eexists. split. apply FSTEP.
       eapply match_states_intro with (j := j'); eauto.
       * eapply (inject_pres_match_sminj j); eauto.
-        intros b1 b0 delta0 J1 J2.
-        generalize (INJSEP _ _ _ J1 J2).
-        unfold Mem.valid_block. rewnb. eauto.
-      (* * eapply (inject_pres_globs_inj_into_flatmem j); eauto. *)
       * eapply (inject_pres_valid_instr_offset_is_internal j); eauto.
-        intros b1 b0 delta0 J1 J2.
-        generalize (INJSEP _ _ _ J1 J2).
-        unfold Mem.valid_block. rewnb. eauto.
       * eapply (inject_pres_extfun_entry_is_external j); eauto.
-        intros b1 b0 delta0 J1 J2.
-        generalize (INJSEP _ _ _ J1 J2).
-        unfold Mem.valid_block. rewnb. eauto.
       * eapply (inject_pres_match_find_funct j); eauto.
-        intros b1 b0 delta0 J1 J2.
-        generalize (INJSEP _ _ _ J1 J2).
-        unfold Mem.valid_block. rewnb. eauto.
       * assert (regset_inject j' rs rs'0) by 
             (eapply regset_inject_incr; eauto).
         set (dregs := (map Asm.preg_of Conventions1.destroyed_at_call)) in *.
@@ -7177,8 +7171,9 @@ Proof.
         intros.
         apply regset_inject_expand; auto.
         apply regset_inject_expand; auto.
+        apply regset_inject_expand; auto. eapply val_inject_incr; eauto.
+        apply Val.offset_ptr_inject; eauto.
       * eapply extcall_pres_glob_block_valid; eauto.
-        red. red. rewnb. eauto.
 Qed.        
 
 Lemma transf_final_states:
@@ -7194,7 +7189,7 @@ Proof.
 Qed.
   
 Theorem transf_program_correct:
-  forward_simulation (RawAsm.semantics prog (Pregmap.init Vundef)) (FlatAsm.semantics tprog (Pregmap.init Vundef)).
+  forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef)) (FlatAsm.semantics tprog (Pregmap.init Vundef)).
 Proof.
   eapply forward_simulation_step with match_states.
   - simpl. intros. 
