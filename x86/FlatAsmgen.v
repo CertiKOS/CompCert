@@ -8,6 +8,7 @@ Require Import Asm FlatAsm Segment.
 Require Import Errors.
 Require Import FlatAsmBuiltin.
 Require Import Memtype.
+Require Import FlatAsmProgram.
 Import ListNotations.
 
 
@@ -225,7 +226,7 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
 
 
 Definition transl_globdef (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
-  : res (ident * option FlatAsm.gdef * segblock) :=
+  : res (ident * option FlatAsmProgram.gdef * segblock) :=
   match def with
   | None => OK (id, None, (mkSegBlock undef_segid Ptrofs.zero Ptrofs.zero))
   | Some (AST.Gvar v) =>
