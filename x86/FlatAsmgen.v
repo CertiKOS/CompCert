@@ -225,48 +225,47 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
 
 
 Definition transl_globdef (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
-  : res ((ident * option FlatAsm.gdef * segblock) * code) :=
+  : res (ident * option FlatAsm.gdef * segblock) :=
   match def with
-  | None => OK ((id, None, (mkSegBlock undef_segid Ptrofs.zero Ptrofs.zero)), nil)
+  | None => OK (id, None, (mkSegBlock undef_segid Ptrofs.zero Ptrofs.zero))
   | Some (AST.Gvar v) =>
     match gid_map id with
     | None => Error (MSG "Translation of a global variable fails: no address for the variable" :: nil)
     | Some (sid,ofs) =>
       let sz := AST.init_data_list_size (AST.gvar_init v) in
       let sblk := mkSegBlock sid ofs (Ptrofs.repr sz) in
-      OK ((id, Some (Gvar v), sblk), nil)
+      OK (id, Some (Gvar v), sblk)
     end
   | Some (AST.Gfun f) =>
     match f with
     | External f => 
       let sblk := mkSegBlock undef_segid Ptrofs.zero Ptrofs.zero in
-      OK ((id, Some (Gfun (External f)), sblk), nil)
+      OK (id, Some (Gfun (External f)), sblk)
     | Internal fd =>
       do fd' <- transl_fun id fd;
-        OK ((id, Some (Gfun (Internal fd')), (fn_range fd')), (fn_code fd'))
+        OK (id, Some (Gfun (Internal fd')), (fn_range fd'))
     end
   end.
 
 Fixpoint transl_globdefs (defs : list (ident * option (AST.globdef Asm.fundef unit))) 
-  : res (list (ident * option gdef * segblock) * code) :=
+  : res (list (ident * option gdef * segblock)) :=
   match defs with
-  | nil => OK (nil, nil)
+  | nil => OK nil
   | (id, def)::defs' =>
-    do tdef_code <- transl_globdef id def;
-    do (tdefs', c') <- transl_globdefs defs';
-    let (tdef, c) := tdef_code in 
-    OK (tdef :: tdefs', c++c')
+    do tdef <- transl_globdef id def;
+    do tdefs' <- transl_globdefs defs';
+    OK (tdef :: tdefs')
   end.
   
 (** Translation of a program *)
 Definition transl_prog_with_map (p:Asm.program) (data_sz code_sz:Z): res program := 
-  do (defs, code) <- transl_globdefs (AST.prog_defs p);
+  do defs <- transl_globdefs (AST.prog_defs p);
   OK (Build_program
         defs
         (AST.prog_public p)
         (AST.prog_main p)
         (mkSegment data_segid (Ptrofs.repr data_sz))
-        (mkSegment code_segid (Ptrofs.repr code_sz), code)
+        (mkSegment code_segid (Ptrofs.repr code_sz))
         gid_map
         label_map
         (Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)))

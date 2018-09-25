@@ -38,8 +38,8 @@ Record program : Type := {
   prog_defs: list (ident * option gdef * segblock);
   prog_public: list ident;
   prog_main: ident;
-  data_seg: segment;  (* The data segment *)
-  code_seg: segment * code; (* The code segment *)
+  data_seg: segment; (* The data segment *)
+  code_seg: segment; (* The code segment *)
   glob_map: GID_MAP_TYPE;
   lbl_map: LABEL_MAP_TYPE;
   prog_senv : Globalenvs.Senv.t;
@@ -917,14 +917,31 @@ Proof.
         eapply H2. apply in_cons. eauto.
 Qed.
 
+Definition get_def_code (def: (ident * option gdef * segblock)) : code :=
+  let '(_,def,_) := def in
+  match def with
+  | Some (Gfun (Internal f)) => fn_code f
+  | _ => nil
+  end.
+
+Fixpoint get_defs_code (defs: list (ident * option gdef * segblock)) : code :=
+  match defs with
+  | nil => nil
+  | def :: defs' => 
+    (get_def_code def) ++ (get_defs_code defs')
+  end.
+
+Definition get_program_code (p:program) : code := 
+  get_defs_code  (prog_defs p).
+
 (* Generate a mapping from offsets to instructions *)
 Definition gen_instrs_map (smap:segid_type -> block) (p:program)
   : block -> ptrofs -> option instr_with_info :=
-  acc_instrs_map smap (snd (code_seg p)) (fun b ofs => None).
+  acc_instrs_map smap (get_program_code p) (fun b ofs => None).
   
 (* Generate a function for checking if pc points to an internal instruction *)
 Definition gen_internal_codeblock (smap:segid_type -> block) (p:program) : block -> bool:=
-  let code_seg_id := segid (fst (p.(code_seg))) in
+  let code_seg_id := segid p.(code_seg) in
   fun b => eq_block b (smap code_seg_id).
 
 Fixpoint acc_segblocks (nextblock: block) (ids: list segid_type) (map: segid_type -> block)
@@ -937,7 +954,7 @@ Fixpoint acc_segblocks (nextblock: block) (ids: list segid_type) (map: segid_typ
   end.
 
 Definition list_of_segments (p:program) : list segment  :=
-  (p.(data_seg) :: (fst p.(code_seg)) :: nil).
+  (p.(data_seg) :: (p.(code_seg)) :: nil).
 
 Definition undef_seg_block := 1%positive.
 Definition data_block := 2%positive.
