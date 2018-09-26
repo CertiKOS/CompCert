@@ -77,6 +77,7 @@ Record t: Type := mksenv {
   public_symbol: ident -> bool;
   invert_symbol: block -> option ident;
   block_is_volatile: block -> option bool;
+  block_is_internal: block -> bool;
   (** Properties *)
   find_symbol_injective:
     forall id1 id2 b, find_symbol id1 = Some b -> find_symbol id2 = Some b -> id1 = id2;
@@ -146,6 +147,7 @@ Variable V: Type.  (**r The type of information attached to variables *)
 Record t: Type := mkgenv {
   genv_public: list ident;              (**r which symbol names are public *)
   genv_defs: PTree.t (globdef F V);     (**r mapping ident -> definition *)
+  genv_fundef_is_internal: FundefIsInternal F;
 }.
 
 (** ** Lookup functions *)
@@ -261,12 +263,19 @@ Definition block_is_volatile (ge: t) (b: block) : option bool :=
   | Some gv => Some (gv.(gvar_volatile))
   end.
 
+Definition block_is_internal (ge: t) (b: block) : bool :=
+  match find_funct_ptr ge b with
+  | None => false
+  | Some fd => genv_fundef_is_internal ge fd
+  end.
+
 (** ** Constructing the global environment *)
 
 Definition add_global (ge: t) (idg: ident * globdef F V) : t :=
   @mkgenv
     ge.(genv_public)
-    (PTree.set idg#1 idg#2 ge.(genv_defs)).
+    (PTree.set idg#1 idg#2 ge.(genv_defs))
+    (genv_fundef_is_internal ge).
 
 Definition add_globals (ge: t) (gl: list (ident * globdef F V)) : t :=
   List.fold_left add_global gl ge.
@@ -278,8 +287,10 @@ Proof.
   intros. apply fold_left_app.
 Qed.
 
+Context `{Fii: FundefIsInternal F}.
+
 Definition empty_genv (pub: list ident): t :=
-  @mkgenv pub (PTree.empty _).
+  @mkgenv pub (PTree.empty _) Fii.
 
 Definition globalenv (p: program F V) :=
   add_globals (empty_genv p.(prog_public)) p.(prog_defs).
@@ -599,6 +610,7 @@ Definition to_senv (ge: t) : Senv.t :=
     (public_symbol ge)
     (invert_symbol ge)
     (block_is_volatile ge)
+    (block_is_internal ge)
     ge.(genv_vars_inj)
     (invert_find_symbol ge)
     (find_invert_symbol ge)
@@ -1635,6 +1647,7 @@ End MATCH_GENVS.
 Section MATCH_PROGRAMS.
 
 Context {C F1 V1 F2 V2: Type} {LC: Linker C} {LF: Linker F1} {LV: Linker V1}.
+Context {F1ii: FundefIsInternal F1} {F2ii: FundefIsInternal F2}.
 Variable match_fundef: C -> F1 -> F2 -> Prop.
 Variable match_varinfo: V1 -> V2 -> Prop.
 Variable ctx: C.
@@ -1780,6 +1793,7 @@ End MATCH_PROGRAMS.
 Section TRANSFORM_PARTIAL.
 
 Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
+Context {Aii: FundefIsInternal A} {Bii: FundefIsInternal B}.
 Context {transf: A -> res B} {p: program A V} {tp: program B V}.
 Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp.
 
@@ -1829,6 +1843,7 @@ End TRANSFORM_PARTIAL.
 Section TRANSFORM_TOTAL.
 
 Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
+Context {Aii: FundefIsInternal A} {Bii: FundefIsInternal B}.
 Context {transf: A -> B} {p: program A V} {tp: program B V}.
 Hypothesis progmatch: match_program (fun cu f tf => tf = transf f) eq p tp.
 

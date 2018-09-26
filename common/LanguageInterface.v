@@ -22,6 +22,7 @@ Structure language_interface :=
   mk_language_interface {
     query: Type;
     reply: Type;
+    query_is_internal: Senv.t -> query -> bool;
   }.
 
 Delimit Scope li_scope with li.
@@ -41,6 +42,7 @@ Canonical Structure li_c :=
   {|
     query := c_query;
     reply := val * mem;
+    query_is_internal ge q := Senv.block_is_internal ge (cq_fb q);
   |}.
 
 (** ** Arrow *)
@@ -49,6 +51,11 @@ Definition li_arrow liA liB :=
   {|
     query := reply liA + query liB;
     reply := query liA + reply liB;
+    query_is_internal ge q :=
+      match q with
+        | inl rA => true
+        | inr qB => query_is_internal liB ge qB
+      end;
   |}.
 
 Infix "-o" := li_arrow (at level 55, right associativity) : li_scope.
@@ -59,12 +66,14 @@ Definition li_wp :=
   {|
     query := unit;
     reply := int;
+    query_is_internal ge q := true;
   |}.
 
 Definition li_empty :=
   {|
     query := Empty_set;
     reply := Empty_set;
+    query_is_internal ge q := true;
   |}.
 
 (** * Calling conventions *)

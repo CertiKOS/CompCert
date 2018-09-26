@@ -25,7 +25,7 @@ Inductive apply_cont {li} L (k: @cont li L) q: option (state L) -> Prop :=
 Module FComp.
   Section FLATCOMP.
     Context (ge: Senv.t).
-    Context {li} (L1 L2: semantics li) (dom1 dom2: query li -> bool).
+    Context {li} (L1 L2: semantics li).
 
     Definition genv: Type := genvtype L1 * genvtype L2.
 
@@ -34,7 +34,7 @@ Module FComp.
       | state_r (s2: Smallstep.state L2) (k1: cont L1).
 
     Definition liftk (k1: cont L1) (k2: cont L2) (q: query li) (s: state) :=
-      match dom1 q, dom2 q, s with
+      match dom L1 q, dom L2 q, s with
         | true, false, state_l s1 k2' => k1 q s1 /\ k2' = k2
         | false, true, state_r s2 k1' => k2 q s2 /\ k1' = k1
         | _, _, _ => False
@@ -84,30 +84,49 @@ End FComp.
 Module Res.
   Section RESOLVE.
     Context {li} (L: Smallstep.semantics (li -o li)).
-    Context (dom : query li -> bool).
 
     Definition sw (r : reply (li -o li)) : option (query (li -o li)) :=
       match r with
-        | inl qA => if dom qA then Some (inr qA) else None
+        | inl qA => if dom L (inr qA) then Some (inr qA) else None
         | inr rB => None
       end.
 
-    Inductive step ge : state L -> trace -> state L -> Prop :=
+    Inductive state :=
+      | running (s : Smallstep.state L)
+      | resumed (k : Smallstep.state L -> Prop).
+
+    Inductive step ge : state -> trace -> state -> Prop :=
       | step_internal s t s':
           Smallstep.step L ge s t s' ->
-          step ge s t s'
-      | step_switch s r k q s':
+          step ge (running s) t (running s')
+      | step_switch s r k q:
           Smallstep.final_state L s r k ->
           sw r = Some q ->
-          k q s' ->
-          step ge s E0 s'.
+          step ge (running s) E0 (resumed (k q))
+      | step_resume (k: Smallstep.state L -> Prop) s :
+          k s ->
+          step ge (resumed k) E0 (running s).
+
+    Inductive liftr (k: Smallstep.state L -> Prop) : state -> Prop :=
+      liftr_intro s :
+        k s ->
+        liftr k (running s).
+
+    Definition liftk (k: cont L) (q: query (li -o li)) : state -> Prop :=
+      liftr (k q).
+
+    Inductive final_state : state -> reply (li -o li) -> _ -> Prop :=
+      final_state_intro s r k :
+        Smallstep.final_state L s r k ->
+        sw r = None ->
+        final_state (running s) r (liftk k).
 
     Definition semantics: Smallstep.semantics (li -o li) :=
       {|
-        Smallstep.state := state L;
+        Smallstep.state := state;
         Smallstep.step := step;
-        Smallstep.initial_state := initial_state L;
-        Smallstep.final_state s r k := final_state L s r k /\ sw r = None;
+        Smallstep.initial_state := liftk (initial_state L);
+        Smallstep.final_state := final_state;
         Smallstep.globalenv := globalenv L;
         Smallstep.symbolenv := symbolenv L;
       |}.
@@ -124,7 +143,7 @@ Module HComp.
     Context (ge: Senv.t).
     Context {li} (L1 L2: semantics (li -o li)).
 
-    Definition semantics dom1 dom2 dom :=
-      Res.semantics (FComp.semantics ge L1 L2 dom1 dom2) dom.
+    Definition semantics :=
+      Res.semantics (FComp.semantics ge L1 L2).
   End HCOMP.
 End HComp.

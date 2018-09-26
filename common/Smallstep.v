@@ -532,6 +532,11 @@ Definition Semantics :=
 
 End SIMPLE_SEMANTICS.
 
+(** ... *)
+
+Definition dom {li} (L: semantics li) (q: query li): bool :=
+  query_is_internal li (symbolenv L) q.
+
 (** Handy notations. *)
 
 Notation " 'Step' L " := (step L (globalenv L)) (at level 1) : smallstep_scope.
@@ -1108,6 +1113,14 @@ Proof.
   right; exists i'; auto.
   left; exists i'; exists s1'; split; auto. econstructor; eauto.
 Qed.
+
+(** Domain. *)
+
+Lemma bsim_dom:
+  forall {li} (L1 L2: semantics li) index order match_states,
+  bsim_properties L1 L2 index order match_states ->
+  forall q, dom L1 q = dom L2 q.
+Admitted.
 
 (** ** Backward simulation diagrams. *)
 
