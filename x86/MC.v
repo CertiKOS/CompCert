@@ -34,8 +34,8 @@ Context `{external_calls_prf: ExternalCalls}.
 Definition genv := @FlatAsmProgram.genv instruction.
 
 
-Definition goto_label (ofs: ptrofs) (rs: regset) (m:mem):=
-  Next (rs#PC <- (Val.offset_ptr (rs PC) ofs)) m.
+Definition goto_label (ofs: ptrofs) (sz: ptrofs) (rs: regset) (m:mem):=
+  Next (rs#PC <- (Val.offset_ptr (rs PC) (Ptrofs.add ofs sz))) m.
 
 Definition eval_ros (ge : genv) (ros : ireg + ident) (rs : regset) :=
   match ros with
@@ -430,16 +430,16 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
   let sz := segblock_size blk in
   match i with
   (* Jump instruction in MC *)
-  | MCjmp_l ofs => goto_label ofs rs m
+  | MCjmp_l ofs => goto_label ofs sz rs m
   | MCjcc cond ofs =>
     match eval_testcond cond rs with
-    | Some true => goto_label ofs rs m
+    | Some true => goto_label ofs sz rs m
     | Some false => Next (nextinstr rs sz) m
     | None => Stuck
     end
   | MCjcc2 cond1 cond2 ofs =>
       match eval_testcond cond1 rs, eval_testcond cond2 rs with
-      | Some true, Some true => goto_label ofs rs m
+      | Some true, Some true => goto_label ofs sz rs m
       | Some _, Some _ => Next (nextinstr rs sz) m
       | _, _ => Stuck
       end    
@@ -448,7 +448,7 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
       | Vint n =>
           match list_nth_z tbl (Int.unsigned n) with
           | None => Stuck
-          | Some ofs => goto_label ofs (rs #RAX <- Vundef #RDX <- Vundef) m
+          | Some ofs => goto_label ofs sz (rs #RAX <- Vundef #RDX <- Vundef) m
           end
       | _ => Stuck
       end
