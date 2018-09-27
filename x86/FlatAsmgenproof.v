@@ -5687,24 +5687,50 @@ Proof.
   - destruct p. apply Val.add_inject; auto. 
     inject_match. apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
-  - destruct p. 
+    destr_pair_if. auto.
+    eapply Val.inject_ptr; eauto.
+    repeat unfold Ptrofs.of_int. 
+    repeat rewrite Int.unsigned_zero. 
+    repeat rewrite Ptrofs.add_zero. auto.
+  - destruct p.
     inject_match.
     apply Val.add_inject; auto.
-    destr_pair_if; auto. 
+    destr_pair_if; auto.
     apply Val.mul_inject; auto.
     destr_valinj_left H1; inv H1; auto.
+    destr_pair_if. auto.
+    eapply Val.inject_ptr; eauto.
+    repeat unfold Ptrofs.of_int. 
+    repeat rewrite Int.unsigned_zero. 
+    repeat rewrite Ptrofs.add_zero. auto.
   - destruct p,p0.
     inject_match.
     apply Val.add_inject; auto.
-    destr_pair_if; auto. 
+    destr_pair_if; auto.
     apply Val.mul_inject; auto.
     apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
+    destr_pair_if. auto.
+    eapply Val.inject_ptr; eauto.
+    repeat unfold Ptrofs.of_int. 
+    repeat rewrite Int.unsigned_zero. 
+    repeat rewrite Ptrofs.add_zero. auto.
   - repeat apply Val.add_inject; auto.
-  - destruct p. inject_match. inject_match.
+  - destruct p. 
+    inject_match. inject_match.
     apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
+    destr_pair_if. auto.
+    eapply Val.inject_ptr; eauto.
+    repeat unfold Ptrofs.of_int. 
+    repeat rewrite Int.unsigned_zero. 
+    repeat rewrite Ptrofs.add_zero. auto.
     destr_valinj_left H1; inv H1; auto.
+    destr_pair_if. auto.
+    eapply Val.inject_ptr; eauto.
+    repeat unfold Ptrofs.of_int. 
+    repeat rewrite Int.unsigned_zero. 
+    repeat rewrite Ptrofs.add_zero. auto.
 Qed.    
 
 Lemma eval_addrmode64_inject: forall j a rs1 rs2,
@@ -5726,20 +5752,20 @@ Proof.
   - destruct p. apply Val.addl_inject; auto. 
     inject_match. apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
-    destr_pair_if; auto.
-    eapply Val.inject_ptr; eauto. 
-    repeat rewrite Ptrofs.add_assoc. 
-    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+    (* destr_pair_if; auto. *)
+    (* eapply Val.inject_ptr; eauto.  *)
+    (* repeat rewrite Ptrofs.add_assoc.  *)
+    (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *)
   - destruct p. 
     inject_match.
     apply Val.addl_inject; auto.
     destr_pair_if; auto. 
     apply Val.mull_inject; auto.
     destr_valinj_left H1; inv H1; auto.
-    destr_pair_if; auto.
-    eapply Val.inject_ptr; eauto. 
-    repeat rewrite Ptrofs.add_assoc. 
-    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+    (* destr_pair_if; auto. *)
+    (* eapply Val.inject_ptr; eauto.  *)
+    (* repeat rewrite Ptrofs.add_assoc.  *)
+    (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *)
   - destruct p,p0.
     inject_match.
     apply Val.addl_inject; auto.
@@ -5747,23 +5773,18 @@ Proof.
     apply Val.mull_inject; auto.
     apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
-    destr_pair_if; auto.
-    eapply Val.inject_ptr; eauto. 
-    repeat rewrite Ptrofs.add_assoc. 
-    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+    (* destr_pair_if; auto. *)
+    (* eapply Val.inject_ptr; eauto.  *)
+    (* repeat rewrite Ptrofs.add_assoc.  *)
+    (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *)
   - repeat apply Val.addl_inject; auto.
   - destruct p. inject_match. inject_match.
     apply inject_symbol_address; auto.
     destr_valinj_left H1; inv H1; auto.
-    destr_pair_if; auto.
-    eapply Val.inject_ptr; eauto. 
-    repeat rewrite Ptrofs.add_assoc. 
-    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
     destr_valinj_left H1; inv H1; auto.
-    destr_pair_if; auto.
-    eapply Val.inject_ptr; eauto. 
-    repeat rewrite Ptrofs.add_assoc. 
-    rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto.
+    (* eapply Val.inject_ptr; eauto.  *)
+    (* repeat rewrite Ptrofs.add_assoc.  *)
+    (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *)    
 Qed.
 
 Lemma eval_addrmode_inject: forall j a rs1 rs2,

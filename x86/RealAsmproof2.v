@@ -694,7 +694,7 @@ Section WITHMEMORYMODEL.
           erewrite ? REQ by congruence;
           repeat destr_in EI;
           try (do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq;
-                                           try eapply eval_addrmode32_seq ; now eauto
+                                           try eapply eval_addrmode64_seq ; now eauto
                                     ]; fail).
         do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq; repeat destr; simpl; regs_eq].
         do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq; repeat destr; simpl; regs_eq].
@@ -784,7 +784,7 @@ Section WITHMEMORYMODEL.
       eapply Mem.encode_decode_int; eauto. eapply Mem.loadbytes_length in Heqo. rewrite length_inj_bytes in Heqo. rewrite Heqo.
       unfold Mptr; rewrite Heqb0; reflexivity.
       unfold Val.load_result in Heqv0.
-      unfold Mptr in *. unfold encode_val. destruct Archi.ptr64 eqn:ARCHI; simpl in Heqv; repeat destr_in Heqv0.
+      unfold Mptr in *. unfold encode_val. destruct x86_32.Archi.ptr64 eqn:ARCHI; simpl in Heqv; repeat destr_in Heqv0.
       eapply Mem.proj_value_inj_value; eauto. congruence.
       eapply Mem.proj_value_inj_value; eauto. congruence.
     }
@@ -894,7 +894,7 @@ Section WITHMEMORYMODEL.
         change Mptr with (chunk_of_type Tptr).
         symmetry.  apply Val.load_result_same.
         revert RA_NOT_VUNDEF. unfold Val.load_result, Mptr, Tptr.
-        destruct ptr64 eqn:PTR, (rs1 RA); simpl; try congruence. auto.
+        destruct x86_32.Archi.ptr64 eqn:PTR, (rs1 RA); simpl; try congruence. auto.
         eapply Mem.load_type in LOADRA. 
         change Tptr with (type_of_chunk Mptr). auto.
       } destruct H as (RA1 & RA1U & RATYP); subst.
@@ -967,7 +967,7 @@ Section WITHMEMORYMODEL.
         edestruct Mem.load_loadbytes as (bytes & LB & DEC); eauto. rewrite Heqo2 in LB.  inv LB.
         revert H0.
         unfold Mem.encoded_ra, decode_val. destr. unfold Mptr, Vptrofs.
-        destruct Archi.ptr64 eqn:?; inversion 1.
+        destruct x86_32.Archi.ptr64 eqn:?; inversion 1.
         unfold Ptrofs.to_int64. f_equal.
         apply Int64.eqm_samerepr.  apply Ptrofs.eqm64; auto. apply Ptrofs.eqm_sym, Ptrofs.eqm_unsigned_repr.
         unfold Ptrofs.to_int. f_equal.
@@ -1209,7 +1209,7 @@ Section WITHMEMORYMODEL.
       constructor.
       apply Z.divide_sub_r.
       apply Z.divide_add_r.
-      apply Mem.stack_limit_aligned.
+      apply align_Mptr_stack_limit.
       apply align_Mptr_align8.
       apply align_size_chunk_divides.
       intros.

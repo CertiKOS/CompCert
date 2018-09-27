@@ -189,33 +189,58 @@ Proof.
   simpl. rewrite Ptrofs.add_zero_l; auto.
 Qed.
 
+
+Lemma wt_encoded_ra_same_64:
+  forall v, Archi.ptr64 = true -> 
+       Val.has_type v Tptr ->
+       v <> Vundef ->
+       Mem.encoded_ra (encode_val Mptr v) = Some v.
+Proof.
+  clear step.
+  unfold Tptr, Mem.encoded_ra, Mptr.
+  intros v ARCH WT NU.
+  destr_in WT.
+  destruct v; simpl in WT; try congruence; try easy.
+  (* + simpl. rewrite proj_inj_bytes. unfold Vptrofs; rewrite Heqb0. f_equal. f_equal. *)
+  (*   rewrite decode_encode_int. *)
+  (*   erewrite Ptrofs.agree64_to_int_eq. eauto. *)
+  (*   etransitivity. apply Ptrofs.agree64_repr. auto. *)
+  (*   rewrite Z.mod_small. *)
+  (*   rewrite Int64.repr_unsigned. auto. apply Int64.unsigned_range. *)
+  (* + simpl. rewrite WT. rewrite proj_bytes_inj_value. rewrite proj_inj_value. reflexivity. *)
+Qed.
+
+Lemma wt_encoded_ra_same_32:
+  forall v, Archi.ptr64 = false -> 
+       Val.has_type v Tptr ->
+       v <> Vundef ->
+       Mem.encoded_ra (encode_val Mptr v) = Some v.
+Proof.
+  clear step.
+  unfold Tptr, Mem.encoded_ra, Mptr.
+  intros v ARCH WT NU.
+  destr_in WT.
+  destruct v; simpl in WT. congruence.
+  + simpl. rewrite proj_inj_bytes. unfold Vptrofs; rewrite Heqb0. f_equal. f_equal.
+    rewrite decode_encode_int.
+    erewrite Ptrofs.agree32_to_int_eq. eauto.
+    etransitivity. apply Ptrofs.agree32_repr. auto.
+    rewrite Z.mod_small.
+    rewrite Int.repr_unsigned. auto. apply Int.unsigned_range.
+  + inv WT.
+  + inv WT.
+  + inv WT.
+  + simpl. rewrite WT. rewrite proj_bytes_inj_value. rewrite proj_inj_value. reflexivity.
+Qed.
+  
 Lemma wt_encoded_ra_same:
   forall v, Val.has_type v Tptr ->
        v <> Vundef ->
        Mem.encoded_ra (encode_val Mptr v) = Some v.
 Proof.
-  unfold Tptr, Mem.encoded_ra, Mptr.
-  intros v WT NU.
-  destr_in WT.
-  - destruct v; simpl in WT; try congruence; try easy.
-    + simpl. rewrite proj_inj_bytes. unfold Vptrofs; rewrite Heqb0. f_equal. f_equal.
-      rewrite decode_encode_int.
-      erewrite Ptrofs.agree64_to_int_eq. eauto.
-      etransitivity. apply Ptrofs.agree64_repr. auto.
-      rewrite Z.mod_small.
-      rewrite Int64.repr_unsigned. auto. apply Int64.unsigned_range.
-    + simpl. rewrite WT. rewrite proj_bytes_inj_value. rewrite proj_inj_value. reflexivity.
-  - destruct v; simpl in WT. congruence.
-    + simpl. rewrite proj_inj_bytes. unfold Vptrofs; rewrite Heqb0. f_equal. f_equal.
-      rewrite decode_encode_int.
-      erewrite Ptrofs.agree32_to_int_eq. eauto.
-      etransitivity. apply Ptrofs.agree32_repr. auto.
-      rewrite Z.mod_small.
-      rewrite Int.repr_unsigned. auto. apply Int.unsigned_range.
-    + inv WT.
-    + inv WT.
-    + inv WT.
-    + simpl. rewrite WT. rewrite proj_bytes_inj_value. rewrite proj_inj_value. reflexivity.
+  destruct Archi.ptr64 eqn:ARCH.
+  intros. eapply wt_encoded_ra_same_64; eauto.
+  intros. eapply wt_encoded_ra_same_32; eauto.
 Qed.
 
 Lemma store_rule':
