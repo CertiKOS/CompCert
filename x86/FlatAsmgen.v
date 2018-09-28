@@ -193,9 +193,15 @@ Variable label_map : LABEL_MAP_TYPE.
 
 
 Definition transl_instr (ofs:Z) (fid: ident) (sid:segid_type) (i:Asm.instruction) : res FlatAsm.instr_with_info :=
-    let sz := instr_size i in
-    let sblk := mkSegBlock sid (Ptrofs.repr ofs) (Ptrofs.repr sz) in
-    OK ( i, sblk, fid).
+  match i with
+      Pallocframe _ _ _
+    | Pfreeframe _ _
+    | Pload_parent_pointer _ _ => Error (MSG "No pseudo instructions" :: nil)
+    | _ =>
+      let sz := instr_size i in
+      let sblk := mkSegBlock sid (Ptrofs.repr ofs) (Ptrofs.repr sz) in
+      OK (i, sblk, fid)
+  end.
 
 (** Translation of a sequence of instructions in a function *)
 Fixpoint transl_instrs (fid:ident) (sid:segid_type) (ofs:Z) (instrs: list Asm.instruction) : res (Z * list instr_with_info) :=

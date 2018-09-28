@@ -709,6 +709,13 @@ Qed.
 
 (* *)
 
+Lemma transl_instr_inv : forall ofs fid sid i x,
+  transl_instr ofs fid sid i = OK x ->
+  exists sblk, x = (i, sblk, fid) /\ sblk = mkSegBlock sid (Ptrofs.repr ofs) (Ptrofs.repr (instr_size i)).
+Proof.
+  intros. destruct i; simpl in H; inv H; eauto.
+Qed.
+
 Lemma transl_instrs_gen_valid_code_labels : forall instrs (gmap: GID_MAP_TYPE) i (tp:FlatAsm.program) sid ofs1 ofs2 ofs' instrs',
   (forall id b, gmap id = Some b -> In (fst b) (map segid (list_of_segments tp))) ->
   gmap i = Some (sid, ofs1) ->
@@ -718,7 +725,9 @@ Proof.
   induction instrs; intros.
   - monadInv H1. red. intros. contradiction.
   - monadInv H1. 
-    assert (code_labels_are_valid init_block (length (list_of_segments tp)) (gen_segblocks tp) x0).
+    exploit transl_instr_inv; eauto. 
+    intros (sblk & EQI & EQS). subst.
+    assert (code_labels_are_valid init_block (length (list_of_segments tp)) (gen_segblocks tp) x1).
       eapply IHinstrs; eauto.
     apply code_labels_are_valid_cons; auto.
     exploit (@gen_segblocks_in_valid instruction); eauto.
@@ -818,7 +827,10 @@ Lemma transl_instr_segblock : forall ofs' id i i' sid,
       transl_instr (Ptrofs.unsigned ofs') id sid i = OK i' ->
       segblock_to_label (snd (fst i')) = (sid, ofs').
 Proof.
-  intros. monadInv H. unfold segblock_to_label. simpl.
+  intros. 
+  exploit transl_instr_inv; eauto.
+  intros (sblk & EQI & EQS). subst.
+  unfold segblock_to_label. simpl.
   rewrite Ptrofs.repr_unsigned. auto.
 Qed.
 
@@ -836,7 +848,10 @@ Lemma transl_instrs_ofs_bound: forall code code' id sid ofs fofs,
 Proof.
   induction code; simpl; intros.
   - inv H. omega.
-  - monadInv H. apply IHcode in EQ.
+  - monadInv H. 
+    exploit transl_instr_inv; eauto.
+    intros (sblk & EQI & EQS). subst.
+    apply IHcode in EQ1.
     generalize (instr_size_positive a). omega.
 Qed.
 
@@ -851,7 +866,10 @@ Proof.
   induction code; simpl; intros.
   - inv H.
   - monadInv H0. destruct zeq.
-    + inv H. eexists. exists (Ptrofs.unsigned ofs'). split. 
+    + inv H. 
+      exploit transl_instr_inv; eauto.
+      intros (sblk & EQI & EQS). subst.
+      eexists. exists (Ptrofs.unsigned ofs'). split.       
       unfold transl_instr. eauto. simpl.
       repeat rewrite Ptrofs.repr_unsigned.
       split. unfold segblock_to_label. simpl.
@@ -865,8 +883,8 @@ Proof.
       generalize (instr_size_positive a).
       generalize (Ptrofs.unsigned_range_2 ofs). intros. omega.
       rewrite Ptrofs.unsigned_repr. eauto.
-      generalize (transl_instrs_ofs_bound code x0 id sid
-                                          (Ptrofs.unsigned ofs' + instr_size a) fofs EQ).
+      generalize (transl_instrs_ofs_bound code x1 id sid
+                                          (Ptrofs.unsigned ofs' + instr_size a) fofs EQ1).
       generalize (Ptrofs.unsigned_range_2 ofs').
       generalize (instr_size_positive a). omega.
       intros (i' & ofs1 & TRANSI & SBEQ & IN).
@@ -876,8 +894,8 @@ Proof.
       replace (Ptrofs.unsigned ofs - instr_size a + (Ptrofs.unsigned ofs' + instr_size a)) with
               (Ptrofs.unsigned ofs + Ptrofs.unsigned ofs') by omega.
       rewrite <- Ptrofs.add_unsigned. auto.
-      generalize (transl_instrs_ofs_bound code x0 id sid
-                                          (Ptrofs.unsigned ofs' + instr_size a) fofs EQ).
+      generalize (transl_instrs_ofs_bound code x1 id sid
+                                          (Ptrofs.unsigned ofs' + instr_size a) fofs EQ1).
       generalize (Ptrofs.unsigned_range_2 ofs').
       generalize (instr_size_positive a). omega.
       generalize (find_instr_ofs_non_negative code (Ptrofs.unsigned ofs - instr_size a) i H).
@@ -1344,13 +1362,16 @@ Lemma in_transl_instrs:
 Proof.
   induction c; simpl; intros; eauto.
   - inv TI. simpl in IN. easy. 
-  - monadInv TI. simpl in IN.
+  - monadInv TI. 
+    exploit transl_instr_inv; eauto.
+    intros (sblk & EQI & EQS). subst.
+    simpl in IN.
     destruct IN as [IN|IN].
     + inv IN. simpl. split; auto.
       rewrite Ptrofs.unsigned_repr.
       generalize (instr_size_positive a) (code_size_non_neg c); omega.
       split. omega.
-      generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ).
+      generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ1).
       generalize (instr_size_positive a); omega.
     + generalize (instr_size_positive a); intros.
       eapply IHc in IN. 4: eauto. destruct IN; split; auto. omega. auto. omega.
@@ -1371,6 +1392,8 @@ Proof.
   induction c; simpl; intros; eauto.
   - inv TI. simpl. constructor.
   - monadInv TI.
+    exploit transl_instr_inv; eauto.
+    intros (sblk & EQI & EQS). subst.
     (* trim IHc. *)
     (* { *)
     (*   destr_in lnr. inv lnr; auto. *)
@@ -1385,7 +1408,7 @@ Proof.
     eapply in_transl_instrs in IN. 4: eauto. 2: auto.
     rewrite Ptrofs.unsigned_repr in IN. 
     generalize (instr_size_positive a). omega. split. auto.
-    generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ).
+    generalize (transl_instrs_ofs_bound _ _ _ _ _ _ EQ1).
     generalize (instr_size_positive a); omega.
     generalize (instr_size_positive a); omega.
     eapply IHc. 3: eauto. auto.
@@ -6288,17 +6311,17 @@ Proof.
 Qed.
 
 
-Hypothesis no_pseudo_instrs:
-  forall id b f ofs i
-    (FS: Globalenvs.Genv.find_symbol ge id = Some b)
-    (FFP: Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f))
-    (FI : find_instr (Ptrofs.unsigned ofs) (Asm.fn_code f) = Some i),
-    match i with
-      Pallocframe _ _ _
-    | Pfreeframe _ _
-    | Pload_parent_pointer _ _ => False
-    | _ => True
-    end.
+(* Hypothesis no_pseudo_instrs: *)
+(*   forall id b f ofs i *)
+(*     (FS: Globalenvs.Genv.find_symbol ge id = Some b) *)
+(*     (FFP: Globalenvs.Genv.find_funct_ptr ge b = Some (Internal f)) *)
+(*     (FI : find_instr (Ptrofs.unsigned ofs) (Asm.fn_code f) = Some i), *)
+(*     match i with *)
+(*       Pallocframe _ _ _ *)
+(*     | Pfreeframe _ _ *)
+(*     | Pload_parent_pointer _ _ => False *)
+(*     | _ => True *)
+(*     end. *)
 
 (** The internal step preserves the invariant *)
 Lemma exec_instr_step : forall j rs1 rs2 m1 m2 rs1' m1' i i' id sid ofs ofs' f b
@@ -6496,9 +6519,6 @@ Proof.
     eexists _, _; split; eauto. econstructor; eauto.
     repeat apply regset_inject_expand; auto.
     apply Val.offset_ptr_inject. eauto.
-  - exploit no_pseudo_instrs; eauto. simpl. destruct 1.
-  - exploit no_pseudo_instrs; eauto. simpl. destruct 1.
-  - exploit no_pseudo_instrs; eauto. simpl. destruct 1.
 Qed.
 
 Theorem step_simulation:
