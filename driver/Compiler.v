@@ -52,6 +52,8 @@ Require Mach2Mach2.
 Require Asmgen.
 Require PseudoInstructions.
 Require FlatAsmgen.
+Require MCgen.
+Require RockSaltAsmGen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -183,6 +185,14 @@ Definition transf_c_program_real p : res Asm.program :=
 Definition transf_c_program_flatasm p : res FlatAsm.program :=
   transf_c_program_real p
   @@@ time "Generation of FlatAsm" FlatAsmgen.transf_program.
+
+Definition transf_c_program_mc p : res MC.program :=
+  transf_c_program_flatasm p
+  @@@ time "Generation of MC" MCgen.transf_program.
+
+Definition transf_c_program_rs p : res RockSaltAsm.program :=
+  transf_c_program_mc p
+  @@@ time "Generation of RockSalt program" RockSaltAsmGen.transf_program.
 
 (** The following lemmas help reason over compositions of passes. *)
 

@@ -16,6 +16,15 @@ Inductive instruction : Type :=
   | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
   | MCAsminstr : Asm.instruction -> instruction.
 
+Definition instr_to_string (i:instruction) : string :=
+  match i with
+  | MCjmp_l _ => "MCjmp_l"
+  | MCjcc _ _ => "MCjcc"
+  | MCjcc2 _ _ _ => "MCjcc2"
+  | MCjmptbl _ _ => "MCjmptbl"
+  | MCAsminstr i => Asm.instr_to_string i
+  end.
+
 Definition instr_with_info:Type := @FlatAsmProgram.instr_with_info instruction.
 
 (* The MC program *)
@@ -423,6 +432,7 @@ Definition exec_flatasm_instr {exec_load exec_store} `{!MemAccessors exec_load e
   | Psqrtsd _ _
   | _ => Stuck
   end.
+
 
 Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load exec_store} 
            (ge: genv) (ii: instr_with_info) (rs: regset) (m: mem) : outcome :=

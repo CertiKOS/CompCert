@@ -97,7 +97,7 @@ Fixpoint transl_globdefs defs :=
 End WITH_LABEL_MAP.
   
 (** Translation of a program *)
-Definition transl_prog (p:FlatAsm.program) : res program := 
+Definition transf_program (p:FlatAsm.program) : res program := 
   do defs <- transl_globdefs (lbl_map p) (prog_defs p);
   OK (Build_program
         defs

@@ -1,42 +1,40 @@
-(* Translation from CompCert assembly to Rocksalt assembly *)
+(* Translation from MC to Rocksalt assembly *)
 (* Author        : Yuting Wang *)
 (* Date Created  : 10-23-2017 *)
+(* Last Modified  : 8-22-2018 *)
 
 Require Import Coqlib.
 Require Import Integers AST Floats.
-Require Import Asm.
+Require Import Asm MC.
 Require Import X86Model.Encode.
 Require Import X86Model.X86Syntax.
 Require Import Errors.
 Require Import RockSaltAsm.
 Require Import Lists.List.
+Require Import Segment.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
 
-(* The memory is layouted as follows:
-   1. The data segment holding global variables starts at the address 0;
-   2. The code segment holding function definitions immediately follows the data segment;
-   3. The stack grows from the highest address downwards to address 0. Its size is determined by stack limit of the memory implementation.
-*)
 
 (* Transform global variables *)
 Definition DMAP_TYPE := ident -> int32.
 
 Definition default_dmap (d:ident) : int32 := Word.zero.
 
+Definition gdef := @FlatAsmProgram.gdef MC.instruction.
 
 (** Get the size and offset information of the global variables *)
-Fixpoint transf_globvars (gdefs : list (ident * option (globdef Asm.fundef unit))) (ofs:int32) 
+Fixpoint transf_globvars (gdefs : list (ident * option gdef * segblock)) (ofs:int32) 
   (daccum: list (ident * option (globvar gv_info))) 
   : int32 * list (ident * option (globvar gv_info)) :=
   match gdefs with
   | nil =>  (ofs, daccum)
-  | ((id, None) :: gdefs') =>
+  | ((id, None, sb) :: gdefs') =>
     transf_globvars gdefs' ofs daccum
-  | ((_, Some (Gfun _)) :: gdefs') =>
+  | ((_, Some (Gfun _), sb) :: gdefs') =>
     transf_globvars gdefs' ofs daccum
-  | ((id, Some (Gvar v)) :: gdefs') =>
+  | ((id, Some (Gvar v), sb) :: gdefs') =>
     let sz := Word.repr (init_data_list_size (gvar_init v)) in
     let info := mkInfo ofs sz in
     let v' := mkglobvar info v.(gvar_init) v.(gvar_readonly) v.(gvar_volatile) in
@@ -295,100 +293,116 @@ Definition transl_addr_mode (m: addrmode) : res (int32 -> address) :=
 *)
 
 Definition transl_instr (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
-           (f:ident) (i: Asm.instruction) (ofs: int32) : 
+           (f:ident) (i: MC.instruction) (ofs: int32) : 
   res (ACCUM_INSTRS * LMAP_TYPE)  :=
   match i with
-  | Pxorl_r rd =>
-    do rd' <- transl_ireg rd;
-      OK (fun data_addr => [XOR true (Reg_op rd') (Reg_op rd')],lmap)
-  | Paddl_ri rd n =>
-    do rd' <- transl_ireg rd; 
-    OK (fun data_addr => [ADD true (Reg_op rd') (Imm_op (int_to_bits n))], lmap)
-  | Psubl_ri rd n => 
-    do rd' <- transl_ireg rd; 
-    OK (fun data_addr => [SUB true (Reg_op rd') (Imm_op (int_to_bits n))], lmap)
-  | Psubl_rr rd r1 => 
-    do rd' <- transl_ireg rd; 
-    do r1' <- transl_ireg r1; 
-    OK (fun data_addr => [SUB true (Reg_op rd') (Reg_op r1')], lmap)
-  | Pleal rd a =>
-    do rd' <- transl_ireg rd;
-    do a' <- transl_addr_mode a;
-    OK (fun data_addr => [LEA (Reg_op rd') (Address_op (a' data_addr))], lmap)
-  | Pmovl_ri rd n =>
-    do rd' <- transl_ireg rd;
-    OK (fun data_addr => [MOV true (Reg_op rd') (Imm_op (int_to_bits n))], lmap)
-  | Pmov_rr rd r1 =>
-    do rd' <- transl_ireg rd;
-    do r1' <- transl_ireg r1;
-    OK (fun data_addr => [MOV true (Reg_op rd') (Reg_op r1')],lmap)
-  | Pmovl_mr a rs =>
-    do a' <- transl_addr_mode a;
-    do rs' <- transl_ireg rs;
-    OK (fun data_addr => [MOV true (Address_op (a' data_addr)) (Reg_op rs')],lmap)
-  | Pmov_mr_a a rs =>
-    do a' <- transl_addr_mode a;
-    do rs' <- transl_ireg rs;
-    OK (fun data_addr => [MOV true (Address_op (a' data_addr)) (Reg_op rs')],lmap)
-  | Pmovl_rm rd a =>
-    do rd' <- transl_ireg rd;
-    do a' <- transl_addr_mode a;
-    OK (fun data_addr => [MOV true (Reg_op rd') (Address_op (a' data_addr))],lmap)
-  | Pmov_rm_a rd a =>
-    do rd' <- transl_ireg rd;
-    do a' <- transl_addr_mode a;
-    OK (fun data_addr => [MOV true (Reg_op rd') (Address_op (a' data_addr))],lmap)
-  | Ptestl_rr r1 r2 =>
-    do r1' <- transl_ireg r1;
-    do r2' <- transl_ireg r2;
-    OK (fun data_addr => [TEST true (Reg_op r1') (Reg_op r2')],lmap)
-  | Pjcc c l =>
-    (* calculate the size of the instruction *)
-    do isz <- instr_size (Jcc (transl_cond_type c) Word.zero);
-    (* calculate the offset of the jump *)
-    let rel_ofs := Word.sub (lmap f l) (Word.add ofs isz) in
-    OK (fun data_addr => [Jcc (transl_cond_type c) rel_ofs],lmap)
-  | Pcall_s symb _ =>
-    (* calculate the size of the instruction *)
-    do isz <- instr_size (CALL true false (Imm_op Word.zero) None);
-    (* calculate the offset of the call *)
-    let rel_ofs := Word.sub (fmap symb) (Word.add ofs isz) in
-    OK (fun data_addr => [CALL true false (Imm_op rel_ofs) None],lmap)
-  (* | Pcall_r r _ => *)
-  (*   do r' <- transl_ireg r; *)
-  (*   OK (CALL true false (Reg_op r') None) *)
-  | Pret =>
-    OK (fun data_addr => [RET true None],lmap)
-  | Pimull_rr rd r1 =>
-    do rd' <- transl_ireg rd;
-    do r1' <- transl_ireg r1;
-    OK (fun data_addr => [IMUL false (Reg_op rd') (Some (Reg_op r1')) None],lmap)
-  | Pjmp_l l =>
-    (* calculate the size of the instruction *)
-    do isz <- instr_size (JMP true false (Imm_op Word.zero) None);
-    (* calculate the offset of the jump *)
-    let rel_ofs := Word.sub (lmap f l) (Word.add ofs isz) in
+  | MCjmp_l ofs =>
+    let rel_ofs := ptrofs_to_bits ofs in
     OK (fun data_addr => [JMP true false (Imm_op rel_ofs) None],lmap)
-  | Pcmpl_rr r1 r2 =>
-    do r1' <- transl_ireg r1;
-    do r2' <- transl_ireg r2;
-    OK (fun data_addr => [CMP true (Reg_op r1') (Reg_op r2')],lmap)
-  | Pcmpl_ri r1 n =>
-    do r1' <- transl_ireg r1;
-    OK (fun data_addr => [CMP true (Reg_op r1') (Imm_op (int_to_bits n))],lmap)
-  | Pcltd =>
-    OK (fun data_addr => [CDQ], lmap)
-  | Pidivl r1 => 
-    do r1' <- transl_ireg r1;
-    OK (fun data_addr => [IDIV true (Reg_op r1')],lmap)
-  | Plabel l =>
-    OK (fun data_addr => [], update_lmap lmap f l ofs)
-  | _ => 
-    Error (MSG (Asm.instr_to_string i) :: MSG " not supported" :: nil)
+  | MCjcc c ofs =>
+    let rel_ofs := ptrofs_to_bits ofs in
+    OK (fun data_addr => [Jcc (transl_cond_type c) rel_ofs],lmap)
+  | MCAsminstr i =>
+    match i with
+    | Pxorl_r rd =>
+      do rd' <- transl_ireg rd;
+        OK (fun data_addr => [XOR true (Reg_op rd') (Reg_op rd')],lmap)
+    | Paddl_ri rd n =>
+      do rd' <- transl_ireg rd; 
+        OK (fun data_addr => [ADD true (Reg_op rd') (Imm_op (int_to_bits n))], lmap)
+    | Psubl_ri rd n => 
+      do rd' <- transl_ireg rd; 
+        OK (fun data_addr => [SUB true (Reg_op rd') (Imm_op (int_to_bits n))], lmap)
+    | Psubl_rr rd r1 => 
+      do rd' <- transl_ireg rd; 
+        do r1' <- transl_ireg r1; 
+        OK (fun data_addr => [SUB true (Reg_op rd') (Reg_op r1')], lmap)
+    | Pleal rd a =>
+      do rd' <- transl_ireg rd;
+        do a' <- transl_addr_mode a;
+        OK (fun data_addr => [LEA (Reg_op rd') (Address_op (a' data_addr))], lmap)
+    | Pmovl_ri rd n =>
+      do rd' <- transl_ireg rd;
+        OK (fun data_addr => [MOV true (Reg_op rd') (Imm_op (int_to_bits n))], lmap)
+    | Pmov_rr rd r1 =>
+      do rd' <- transl_ireg rd;
+        do r1' <- transl_ireg r1;
+        OK (fun data_addr => [MOV true (Reg_op rd') (Reg_op r1')],lmap)
+    | Pmovl_mr a rs =>
+      do a' <- transl_addr_mode a;
+        do rs' <- transl_ireg rs;
+        OK (fun data_addr => [MOV true (Address_op (a' data_addr)) (Reg_op rs')],lmap)
+    | Pmov_mr_a a rs =>
+      do a' <- transl_addr_mode a;
+        do rs' <- transl_ireg rs;
+        OK (fun data_addr => [MOV true (Address_op (a' data_addr)) (Reg_op rs')],lmap)
+    | Pmovl_rm rd a =>
+      do rd' <- transl_ireg rd;
+        do a' <- transl_addr_mode a;
+        OK (fun data_addr => [MOV true (Reg_op rd') (Address_op (a' data_addr))],lmap)
+    | Pmov_rm_a rd a =>
+      do rd' <- transl_ireg rd;
+        do a' <- transl_addr_mode a;
+        OK (fun data_addr => [MOV true (Reg_op rd') (Address_op (a' data_addr))],lmap)
+    | Ptestl_rr r1 r2 =>
+      do r1' <- transl_ireg r1;
+        do r2' <- transl_ireg r2;
+        OK (fun data_addr => [TEST true (Reg_op r1') (Reg_op r2')],lmap)
+    (* | Pjcc c l => *)
+    (*   (* calculate the size of the instruction *) *)
+    (*   do isz <- instr_size (Jcc (transl_cond_type c) Word.zero); *)
+    (*     (* calculate the offset of the jump *) *)
+    (*     let rel_ofs := Word.sub (lmap f l) (Word.add ofs isz) in *)
+    (*     OK (fun data_addr => [Jcc (transl_cond_type c) rel_ofs],lmap) *)
+    | Pcall ros _ =>
+      match ros with
+      | inr symb =>
+        (* calculate the size of the instruction *)
+        do isz <- instr_size (CALL true false (Imm_op Word.zero) None);
+          (* calculate the offset of the call *)
+          let rel_ofs := Word.sub (fmap symb) (Word.add ofs isz) in
+          OK (fun data_addr => [CALL true false (Imm_op rel_ofs) None],lmap)
+      | inl r =>
+        Error (MSG (Asm.instr_to_string i) :: MSG " not supported" :: nil)
+      end
+    (* | Pcall_r r _ => *)
+    (*   do r' <- transl_ireg r; *)
+    (*   OK (CALL true false (Reg_op r') None) *)
+    | Pret =>
+      OK (fun data_addr => [RET true None],lmap)
+    | Pimull_rr rd r1 =>
+      do rd' <- transl_ireg rd;
+        do r1' <- transl_ireg r1;
+        OK (fun data_addr => [IMUL false (Reg_op rd') (Some (Reg_op r1')) None],lmap)
+    (* | Pjmp_l l => *)
+    (*   (* calculate the size of the instruction *) *)
+    (*   do isz <- instr_size (JMP true false (Imm_op Word.zero) None); *)
+    (*     (* calculate the offset of the jump *) *)
+    (*     let rel_ofs := Word.sub (lmap f l) (Word.add ofs isz) in *)
+    (*     OK (fun data_addr => [JMP true false (Imm_op rel_ofs) None],lmap) *)
+    | Pcmpl_rr r1 r2 =>
+      do r1' <- transl_ireg r1;
+        do r2' <- transl_ireg r2;
+        OK (fun data_addr => [CMP true (Reg_op r1') (Reg_op r2')],lmap)
+    | Pcmpl_ri r1 n =>
+      do r1' <- transl_ireg r1;
+        OK (fun data_addr => [CMP true (Reg_op r1') (Imm_op (int_to_bits n))],lmap)
+    | Pcltd =>
+      OK (fun data_addr => [CDQ], lmap)
+    | Pidivl r1 => 
+      do r1' <- transl_ireg r1;
+        OK (fun data_addr => [IDIV true (Reg_op r1')],lmap)
+    | Plabel l =>
+      OK (fun data_addr => [NOP (Imm_op (int_to_bits Int.zero))], update_lmap lmap f l ofs)
+    | _ => 
+      Error (MSG (Asm.instr_to_string i) :: MSG " not supported" :: nil)
+    end
+  | _ =>
+    Error (MSG (MC.instr_to_string i) :: MSG " not supported" :: nil)
   end.
 
 Fixpoint transl_instr_list (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
-           (f:ident) (il: list instruction) (ofs: int32) (accum : ACCUM_INSTRS) 
+           (f:ident) (il: list MC.instruction) (ofs: int32) (accum : ACCUM_INSTRS) 
   : res (ACCUM_INSTRS * LMAP_TYPE * int32)  :=
   match il with
   | nil => OK (accum, lmap, ofs)
@@ -401,28 +415,33 @@ Fixpoint transl_instr_list (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
   end.
 
 Definition transl_function (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
-         (f:ident) (code:Asm.code) (ofs:int32) (accum: ACCUM_INSTRS)
+         (f:ident) (code:list MC.instruction) (ofs:int32) (accum: ACCUM_INSTRS)
   : res (ACCUM_INSTRS * FMAP_TYPE * LMAP_TYPE * int32) := 
   do (im, ofs') <- transl_instr_list fmap lmap f code ofs accum;
   let (accum', lmap') := im in
   OK (accum', update_fmap fmap f ofs, lmap', ofs').
 
+Definition transl_function' (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
+           (f:ident) (code: list MC.instr_with_info) (ofs:int32) (accum: ACCUM_INSTRS) := 
+  let code' := List.map (fun '(i,_,_) => i) code in
+  transl_function fmap lmap f code' ofs accum.
+
 
 (* Collect the functions that needs to be translated *)
 Fixpoint transf_globfuns (fmap: FMAP_TYPE) (lmap: LMAP_TYPE) 
-  (gdefs : list (ident * option (globdef Asm.fundef unit))) (ofs:int32) 
+         (gdefs : list (ident * option gdef * segblock)) (ofs:int32) 
   (iaccum: ACCUM_INSTRS) (daccum: list (ident * option RockSaltAsm.fundef))
   : res (ACCUM_INSTRS * list (ident * option RockSaltAsm.fundef) * FMAP_TYPE * LMAP_TYPE * int32) :=
   match gdefs with
   | nil =>  OK (iaccum, daccum, fmap, lmap, ofs)
-  | ((id, None) :: gdefs') =>
+  | ((id, None, sb) :: gdefs') =>
     transf_globfuns fmap lmap gdefs' ofs iaccum daccum
-  | ((id, Some (Gvar _)) :: gdefs') =>
+  | ((id, Some (Gvar _), sb) :: gdefs') =>
     transf_globfuns fmap lmap gdefs' ofs iaccum daccum
-  | ((id, Some (Gfun fn)) :: gdefs') =>
+  | ((id, Some (Gfun fn), sb) :: gdefs') =>
     match fn with
     | Internal f => 
-      do r <- transl_function fmap lmap id f.(fn_code) ofs iaccum;
+      do r <- transl_function' fmap lmap id (@FlatAsmProgram.fn_code MC.instruction f) ofs iaccum;
       let '(il, fmap', lmap', ofs') := r in
       let f' := mkFun ofs (Word.sub ofs' ofs) in
       transf_globfuns fmap' lmap' gdefs' ofs'
@@ -444,11 +463,12 @@ Definition default_lmap (f:ident) (l:label) : int32 := Word.zero.
 Definition align_int32 (n: int32) (amount: Z) :int32 :=
   Word.repr (align (Word.unsigned n) amount).
 
+Definition prog_defns := @FlatAsmProgram.prog_defs MC.instruction.
 
-Definition transf_program (p: Asm.program) : res RockSaltAsm.program :=
+Definition transf_program (p: MC.program) : res RockSaltAsm.program :=
   (* Transform the global variables *)
   let (data_seg_size, gvars) := 
-      transf_globvars p.(AST.prog_defs) Word.zero [] in
+      transf_globvars (prog_defns p) Word.zero [] in
   (* Calculate information of the data segment *)
   let dmap := gvars_to_dmap gvars in
   let init_data := collect_init_data dmap gvars in
@@ -456,13 +476,13 @@ Definition transf_program (p: Asm.program) : res RockSaltAsm.program :=
      the mapping for functions and labels *)
   do r <- transf_globfuns dmap
              default_fmap default_lmap 
-             p.(AST.prog_defs) Word.zero (fun data_addr => []) [];
+             (prog_defns p) Word.zero (fun data_addr => []) [];
     let '(_,_,fmap,lmap,_) := r in
   (* The second pass of functions finishes
      the translation using those mappings *)
   do r <- transf_globfuns dmap
              fmap lmap
-             p.(AST.prog_defs) Word.zero (fun data_addr => []) [];
+             (prog_defns p) Word.zero (fun data_addr => []) [];
   let '(instrs,gfuns,fmap,_,code_seg_size) := r in
   (* Compose the results to form the RockSalt program *)
   let gvars_defs :=
@@ -488,13 +508,13 @@ Definition transf_program (p: Asm.program) : res RockSaltAsm.program :=
   (* let text_addr := align_int32 (Word.add data_addr data_seg_size) 4 in *)
   OK {|
     prog_defs       := gvars_defs ++ gfuns_defs;
-    prog_public     := p.(AST.prog_public);
-    prog_main       := p.(AST.prog_main);
+    prog_public     := @FlatAsmProgram.prog_public MC.instruction p;
+    prog_main       := @FlatAsmProgram.prog_main MC.instruction p;
     (* text_seg        := mkSegment text_addr (Word.repr (Z_of_nat (length mach_code))); *)
     text_instrs     := tinstrs;
     (* machine_code    := mach_code; *)
     (* entry_ofs       := code_seg_size; *)
     (* data_seg        := mkSegment data_addr data_seg_size; *)
     init_data       := init_data;
-    main_ofs        := fmap (p.(AST.prog_main));
+    main_ofs        := fmap (@FlatAsmProgram.prog_main MC.instruction p);
   |}.

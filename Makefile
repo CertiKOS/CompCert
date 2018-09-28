@@ -27,7 +27,10 @@ DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
 
 RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
 
-COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d))
+COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) \
+	-R cpu_models/shared Shared \
+	-R cpu_models/x86model/Model X86Model
+
 
 COQC="$(COQBIN)coqc" -q $(COQINCLUDES) $(COQCOPTS)
 COQDEP="$(COQBIN)coqdep" $(COQINCLUDES)
@@ -103,7 +106,8 @@ BACKEND=\
   Segment.v \
   FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v FlatAsmProgram.v \
   FlatAsmgen.v FlatAsmgenproof.v \
-  MC.v MCgen.v
+  MC.v MCgen.v \
+  RockSaltAsm.v RockSaltAsmGen.v
 
 # C front-end modules (in cfrontend/)
 
