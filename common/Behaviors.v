@@ -163,11 +163,11 @@ Inductive state_behaves (s: state L): program_behavior -> Prop :=
       state_behaves s (Goes_wrong t).
 
 Inductive program_behaves (q: query li): program_behavior -> Prop :=
-  | program_runs: forall s beh,
-      initial_state L q s -> state_behaves s beh ->
+  | program_runs: forall S s beh,
+      initial_state L q = Some S -> S s -> state_behaves s beh ->
       program_behaves q beh
   | program_goes_initially_wrong:
-      (forall s, ~initial_state L q s) ->
+      (forall S s, initial_state L q = Some S -> ~ S s) ->
       program_behaves q (Goes_wrong E0).
 
 Lemma state_behaves_app:
@@ -288,16 +288,20 @@ Qed.
 Theorem program_behaves_exists q:
   exists beh, program_behaves q beh.
 Proof.
-  destruct (classic (exists s, initial_state L q s)) as [[s0 INIT] | NOTINIT].
+  destruct (classic (exists S s, initial_state L q = Some S /\ S s))
+    as [(S & s0 & INIT & Ss0) | NOTINIT].
 (* 1. Initial state is defined. *)
   destruct (state_behaves_exists s0) as [beh SB].
   exists beh; econstructor; eauto.
 (* 2. Initial state is undefined *)
   exists (Goes_wrong E0). apply program_goes_initially_wrong.
-  intros. eapply not_ex_all_not; eauto.
+  firstorder.
 Qed.
 
 End PROGRAM_BEHAVIORS.
+
+Arguments state_behaves {li} _ _ _.
+Arguments program_behaves {li} _ _ _.
 
 (** * Forward simulations and program behaviors *)
 
@@ -306,18 +310,10 @@ Section FORWARD_SIMULATIONS.
 Context {li1 li2} {cc: callconv li1 li2}.
 Context L1 L2 index order match_states (S: fsim_properties cc L1 L2 (index:=index) order match_states).
 
-Definition match_cont w (k1 k2: query _ -> state _ -> Prop): Prop :=
-  forall q1 q2 w' s1,
-    cc_query cc q1 q2 w w' ->
-    k1 q1 s1 ->
-    exists i s2,
-      k2 q2 s2 /\
-      match_states w' i s1 s2.
-
 Definition match_res w '(r1, k1) '(r2, k2): Prop :=
   exists w',
     cc_reply cc r1 r2 w w' /\
-    match_cont w' k1 k2.
+    fsim_match_cont cc (match_ex match_states) w' k1 k2.
 
 Lemma forward_simulation_state_behaves:
   forall w i s1 s2 beh1,
@@ -330,7 +326,7 @@ Proof.
   edestruct @fsim_match_final_states as (r2 & w' & k2 & Hr & Hr2 & Hk); eauto.
   exists (Terminates t (r2, k2)); split.
   econstructor; eauto.
-  constructor. exists w'. unfold match_cont. eauto.
+  constructor. exists w'; auto.
 - (* silent divergence *)
   exploit @simulation_star; eauto. intros [i' [s2' [A B]]].
   exists (Diverges t); split.
@@ -346,13 +342,14 @@ Proof.
   exists (behavior_app t beh'); split.
   eapply state_behaves_app; eauto.
   replace (Goes_wrong t) with (behavior_app t
-            (Goes_wrong (R := reply li1 * (query li1 -> state L1 -> Prop)) E0)).
+            (Goes_wrong (R := reply li1 * cont li1 (state L1)) E0)).
   apply behavior_improves_app. apply behavior_improves_bot.
   simpl. decEq. traceEq.
 Qed.
 
 End FORWARD_SIMULATIONS.
 
+(*
 Theorem forward_simulation_behavior_improves {li1 li2} (cc: callconv li1 li2):
   forall L1 L2, forward_simulation cc L1 L2 ->
   forall q1 q2 w, cc_query cc q1 q2 (cc_init cc) w ->
@@ -363,7 +360,9 @@ Theorem forward_simulation_behavior_improves {li1 li2} (cc: callconv li1 li2):
 Proof.
   intros L1 L2 FS. destruct FS as [init order match_states S]. intros. inv H0.
 - (* initial state defined *)
-  exploit (fsim_match_initial_states S); eauto. intros [i [s' [INIT MATCH]]].
+  exploit (fsim_match_initial_states S); eauto.
+  destruct 1 as [S1 S2 HS | ] eqn:Hfoo; inversion H1; clear H1; subst.
+  edestruct HS as (i & s' & INIIT & MATCH); eauto.
   exploit @forward_simulation_state_behaves; eauto. intros [beh2 [A B]].
   exists beh2; split; auto. econstructor; eauto.
   destruct B; constructor; eauto. constructor.
@@ -378,7 +377,6 @@ Proof.
   apply behavior_improves_bot.
 Qed.
 
-(*
 Corollary forward_simulation_same_safe_behavior:
   forall L1 L2, forward_simulation L1 L2 ->
   forall beh,

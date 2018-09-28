@@ -11,6 +11,7 @@ Require Import ModuleSemantics.
 Require Import Classical.
 Require Import Axioms.
 Require Import ModuleSemantics.
+Require Import Sets.
 
 
 (** * Flat composition *)
@@ -148,12 +149,8 @@ Module Res.
   Definition res_behavior {G A} sw (r : behavior G A) : behavior G A :=
     match r with
       | interacts mo k =>
-        match sw mo with
-          | Some mi =>
-            match k mi with
-              | Some a' => internal a'
-              | None => r
-            end
+        match k (sw mo) with
+          | Some a' => internal a'
           | None => r
         end
       | _ => r
@@ -179,10 +176,10 @@ Module Res.
 
   (** ** Modules *)
 
-  Definition sw li (mo : output (li -o li)) : option (input (li -o li)) :=
+  Definition sw li (mo : output (li -o li)) : input (li -o li) :=
     match mo with
-      | inr x => Some (inl x)
-      | inl x => Some (inr x)
+      | inr x => inl x
+      | inl x => inr x
     end.
 
   Definition of {li} (α : modsem (li -o li)) : modsem (li -o li) :=
@@ -200,75 +197,51 @@ Module Res.
 
   (** ** Commutation with embedding *)
 
-  Inductive plus {G A} (α : rts G A) : rts G A :=
-    | plus_one a r : α a r -> plus α a r
-    | plus_step a a' r : α a (internal a') -> plus α a' r -> plus α a r.
-
   Inductive res_emb_comm_match {li} (L: semantics (li -o li)) :
     rel (Behavior.state (A := Smallstep.state L))
-        (Behavior.state (A := Res.state L)) :=
+        (Behavior.state (A := Res.state)) :=
     | res_emb_comm_resumed k :
         res_emb_comm_match L
           (Behavior.resumed (A := Smallstep.state L) k)
-          (Behavior.resumed (Res.liftr L k))
+          (Behavior.resumed (set_map Res.running k))
     | res_emb_comm_running s :
         res_emb_comm_match L
           (Behavior.running s)
-          (Behavior.running (Res.running L s))
+          (Behavior.running (Res.running s))
     | res_emb_comm_switching k :
         res_emb_comm_match L
           (Behavior.resumed k)
-          (Behavior.running (Res.resumed L k)).
+          (Behavior.running (Res.resumed k)).
 
   Lemma res_emb_comm_step {li} (L: semantics (li -o li)):
     sim (res_emb_comm_match L)
       (res (Res.sw li) (Behavior.step L))
-      (Behavior.step (Res.semantics L)).
+      (Behavior.step (Res.semantics HComp.sw L)).
   Proof.
     intros s1 s2 Hs r1 Hr1.
     destruct Hr1; inversion Hs; clear Hs; subst.
     - inversion H; clear H; subst.
-      + exists (internal (Behavior.running (Res.running L s))).
+      + exists (internal (Behavior.running (Res.running s))).
         repeat (constructor; auto).
       + exists goes_wrong.
         split; constructor.
         intros [_ [s Hs]]. eauto.
     - inversion H; clear H; subst.
-      + exists (internal (Behavior.running (Res.running L s'))).
+      + exists (internal (Behavior.running (Res.running s'))).
         repeat (constructor; auto).
       + rename r0 into r. simpl.
-        destruct sw eqn:Hsw.
-        * unfold Behavior.liftk at 1.
-          destruct dom eqn:Hdom.
-          -- exists (internal (Behavior.running (Res.resumed L (k i)))).
-             split.
-             ++ constructor. econstructor; eauto.
-                unfold sw, ModuleSemantics.Res.sw in *.
-                destruct r; inversion Hsw; clear Hsw; subst.
-                ** rewrite Hdom. reflexivity.
-                ** admit. (* sw should not handle returns this way *)
-             ++ repeat constructor.
-          -- eexists. split.
-             ++ eapply (Behavior.step_interacts (Res.semantics L)).
-                econstructor; eauto.
-                unfold ModuleSemantics.Res.sw.
-                destruct r; inversion Hsw; clear Hsw; subst; eauto.
-                rewrite Hdom; eauto.
-             ++ repeat rstep.
-                unfold Behavior.liftk.
-                unfold dom. simpl. repeat rstep.
-                constructor.
-                constructor.
-        * eexists. split.
-             ++ eapply (Behavior.step_interacts (Res.semantics L)).
-                econstructor; eauto.
-                unfold ModuleSemantics.Res.sw.
-                destruct r; inversion Hsw; clear Hsw; subst; eauto.
-             ++ repeat rstep.
-                unfold Behavior.liftk.
-                unfold dom. simpl. repeat rstep.
-                constructor.
-                constructor.
+        unfold Behavior.liftk at 1.
+        destruct (k (sw li r)) as [S | ] eqn:HS; simpl.
+        * exists (internal (Behavior.running (Res.resumed S))).
+          split; repeat (constructor; eauto). simpl.
+          eapply Res.step_switch; eauto.
+        * eexists.
+          split.
+          -- eapply (Behavior.step_interacts (Res.semantics HComp.sw L)).
+             econstructor; eauto.
+          -- repeat rstep. unfold Behavior.liftk, Res.liftk.
+             destruct (k x) as [S | ] eqn:Hk; simpl; constructor.
+             constructor.
       + exists goes_wrong.
         split; constructor.
         * intros t s' Hs'.
@@ -279,7 +252,7 @@ Module Res.
           inversion H; clear H; subst.
           eapply H2; eauto.
     - inversion H; clear H; subst.
-      + exists (internal (Behavior.running (Res.running L s))).
+      + exists (internal (Behavior.running (Res.running s))).
         split; repeat (constructor; auto).
       + exists goes_wrong.
         split; repeat (constructor; auto).
@@ -287,7 +260,7 @@ Module Res.
           inversion Hs'; clear Hs'; subst.
           eauto.
         * inversion 1.
-  Admitted.
+  Qed.
 
   (** ** Commutation with [obs] *)
 

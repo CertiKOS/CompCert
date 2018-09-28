@@ -80,6 +80,7 @@ GAMES=\
   GameSemantics.v \
   Composition.v \
   Bigstep.v \
+  Sets.v \
 
 # Compcert Kripke Logical Relations
 

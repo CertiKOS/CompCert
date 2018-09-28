@@ -56,8 +56,8 @@ Module Behavior.
       | resumed (k : A -> Prop)
       | running (s : A).
 
-    Definition liftk (k : cont L) : input li -> option state :=
-      fun q => if dom L q then Some (resumed (k q)) else None.
+    Definition liftk {A} (k : cont li A) (q : input li): option state :=
+      option_map resumed (k q).
 
     Inductive step : rts li state :=
       | step_resumed (k : Smallstep.state L -> Prop) s :
@@ -226,6 +226,20 @@ Module Behavior.
 
   Hint Extern 10 => rstep : coqrel.
 
+  Lemma bsim_sound_liftk {li} L1 L2 ind ord ms (k1 k2: cont li _) q :
+    @bsim_properties li L2 L1 ind ord ms ->
+    bsim_match_cont (rel_ex ms) k2 k1 ->
+    option_rel (state_rel (flip (rel_ex ms))) (liftk k1 q) (liftk k2 q).
+  Proof.
+    intros HL Hk. unfold liftk.
+    specialize (Hk q). destruct Hk as [S1 S2 HS | ]; constructor.
+    constructor.
+    - intros.
+      edestruct @bsim_sets_exists as (? & ? & ?); eauto.
+    - intros. unfold flip, rel_ex.
+      edestruct @bsim_sets_match as (? & ? & ?); eauto.
+  Qed.
+
   Lemma bsim_sound_step {li} (L1 L2: semantics li) ind ord ms:
     bsim_properties L2 L1 ind ord ms ->
     RTS.sim (state_rel (flip (rel_ex ms)))
@@ -266,16 +280,13 @@ Module Behavior.
         * (* Final states *)
           destruct H1 as (i & Hs).
           eapply bsim_match_final_states in H; eauto.
-          destruct H as (s2' & k2 & Hs2' & Hsk2 & Hke & Hkm); eauto.
-          exists (RTS.interacts (G:=li) r (liftk L2 k2)). split.
+          destruct H as (s2' & k2 & Hs2' & Hsk2 & Hk); eauto.
+          exists (RTS.interacts (G:=li) r (liftk k2)). split.
           -- eapply RTS.obs_external with (running s2'); eauto.
              ++ constructor; eauto.
              ++ eapply star_reachable; eauto.
-          -- unfold liftk, R. repeat rstep.
-             erewrite <- bsim_dom by eauto.
-             repeat rstep. constructor.
-             ++ eauto.
-             ++ intros. edestruct Hkm as (? & ? & ? & ?); eauto.
+          -- constructor. intro q.
+             eapply bsim_sound_liftk; eauto.
         * (* Can't go wrong *)
           simpl in HS2. subst R. destruct H2 as [i Hs].
           eapply bsim_safe in HS2; eauto. red in HS2. clear - HS2 H0 H. exfalso.
@@ -312,10 +323,8 @@ Module Behavior.
     intros li L1 L2 [index order match_states HL]. unfold of.
     econstructor; simpl; eauto.
     - eapply bsim_sound_step; eauto.
-    - intros q. unfold liftk, flip, rel_ex. repeat rstep.
-      erewrite <- bsim_dom by eauto.
-      repeat rstep. constructor.
-      + eapply bsim_initial_states_exist; eauto.
-      + intros. edestruct @bsim_match_initial_states as (? & ? & ? & ?); eauto.
+    - intros q.
+      eapply bsim_sound_liftk; eauto.
+      eapply bsim_initial_states; eauto.
   Qed.
 End Behavior.

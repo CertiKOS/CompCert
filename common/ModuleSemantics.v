@@ -6,14 +6,7 @@ Require Import Events.
 Require Import Globalenvs.
 Require Import Integers.
 Require Import Smallstep.
-
-Definition cont {li} (L: semantics li) := query li -> state L -> Prop.
-
-Inductive apply_cont {li} L (k: @cont li L) q: option (state L) -> Prop :=
-  | apply_cont_some s :
-      k q s -> apply_cont L k q (Some s)
-  | apply_cont_none :
-      (forall s, ~ k q s) -> apply_cont L k q None.
+Require Import Sets.
 
 (** * Flat composition *)
 
@@ -29,15 +22,16 @@ Module FComp.
 
     Definition genv: Type := genvtype L1 * genvtype L2.
 
-    Inductive state :=
-      | state_l (s1: Smallstep.state L1) (k2: cont L2)
-      | state_r (s2: Smallstep.state L2) (k1: cont L1).
+    Inductive state {A B} :=
+      | state_l (s1: A) (k2: cont li B)
+      | state_r (s2: B) (k1: cont li A).
 
-    Definition liftk (k1: cont L1) (k2: cont L2) (q: query li) (s: state) :=
-      match dom L1 q, dom L2 q, s with
-        | true, false, state_l s1 k2' => k1 q s1 /\ k2' = k2
-        | false, true, state_r s2 k1' => k2 q s2 /\ k1' = k1
-        | _, _, _ => False
+    Definition liftk {A B} (k1: cont li A) (k2: cont li B) (q: query li) :=
+      match k1 q, k2 q with
+        | Some S1, None => Some (set_map (fun s1 => state_l s1 k2) S1)
+        | None, Some S2 => Some (set_map (fun s2 => state_r s2 k1) S2)
+        | Some _, Some _ => Some (fun _ => False)
+        | None, None => None
       end.
 
     Inductive step (ge: genv): state -> trace -> state -> Prop :=
@@ -83,45 +77,47 @@ End FComp.
 
 Module Res.
   Section RESOLVE.
-    Context {li} (L: Smallstep.semantics (li -o li)).
+    Context {li} (sw: reply li -> query li) (L: Smallstep.semantics li).
 
-    Definition sw (r : reply (li -o li)) : option (query (li -o li)) :=
-      match r with
-        | inl qA => if dom L (inr qA) then Some (inr qA) else None
-        | inr rB => None
-      end.
+    (** When switching occurs, we use an intermediate [resumed] state
+      before starting up again. This is important for two reasons.
+      First, in a nondeterministic transition system, a switching
+      final state may coexist with other steps. If the switch results
+      in a query that goes initially wrong, this behavior would be
+      cancelled out by the alternative step, whereas the approach
+      below allows us to first transition to the [resumed] step, then
+      go wrong. Second, the strategy-level horizontal composition will
+      also have such a step, introduced as the initial step of the
+      embedding for the component being switched to, so that using the
+      extra step allows the commutation proof between horizontal
+      composition and embedding to be a simple lockstep simulation. *)
 
-    Inductive state :=
-      | running (s : Smallstep.state L)
-      | resumed (k : Smallstep.state L -> Prop).
+    Inductive state {A} :=
+      | running (s : A)
+      | resumed (S : A -> Prop).
 
     Inductive step ge : state -> trace -> state -> Prop :=
       | step_internal s t s':
           Smallstep.step L ge s t s' ->
           step ge (running s) t (running s')
-      | step_switch s r k q:
+      | step_switch s r k S:
           Smallstep.final_state L s r k ->
-          sw r = Some q ->
-          step ge (running s) E0 (resumed (k q))
-      | step_resume (k: Smallstep.state L -> Prop) s :
-          k s ->
-          step ge (resumed k) E0 (running s).
+          k (sw r) = Some S ->
+          step ge (running s) E0 (resumed S)
+      | step_resume (S: Smallstep.state L -> Prop) s :
+          S s ->
+          step ge (resumed S) E0 (running s).
 
-    Inductive liftr (k: Smallstep.state L -> Prop) : state -> Prop :=
-      liftr_intro s :
-        k s ->
-        liftr k (running s).
+    Definition liftk {A} (k: cont li A) : cont li state :=
+      fun q => option_map (set_map running) (k q).
 
-    Definition liftk (k: cont L) (q: query (li -o li)) : state -> Prop :=
-      liftr (k q).
-
-    Inductive final_state : state -> reply (li -o li) -> _ -> Prop :=
+    Inductive final_state : state -> reply li -> _ -> Prop :=
       final_state_intro s r k :
         Smallstep.final_state L s r k ->
-        sw r = None ->
+        k (sw r) = None ->
         final_state (running s) r (liftk k).
 
-    Definition semantics: Smallstep.semantics (li -o li) :=
+    Definition semantics: Smallstep.semantics li :=
       {|
         Smallstep.state := state;
         Smallstep.step := step;
@@ -143,7 +139,13 @@ Module HComp.
     Context (ge: Senv.t).
     Context {li} (L1 L2: semantics (li -o li)).
 
+    Definition sw (r : reply (li -o li)) : query (li -o li) :=
+      match r with
+        | inl qA => inr qA
+        | inr rB => inl rB
+      end.
+
     Definition semantics :=
-      Res.semantics (FComp.semantics ge L1 L2).
+      Res.semantics sw (FComp.semantics ge L1 L2).
   End HCOMP.
 End HComp.
