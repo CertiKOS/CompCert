@@ -10,8 +10,8 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-(* open RSAsmToElf *)
-(* open Elf *)
+open RSAsmToElf
+open Elf
 open Printf
 open Commandline
 open Clflags
@@ -51,21 +51,21 @@ let compile_c_ast sourcename csyntax ofile =
   set_dest Regalloc.destination_alloctrace option_dalloctrace ".alloctrace";
   set_dest PrintLTL.destination option_dltl ".ltl";
   set_dest PrintMach.destination option_dmach ".mach";
-  (* if !option_machine_code then *)
-  (* begin *)
-  (*   let asm = *)
-  (*     match (Compiler.transf_c_program_ex csyntax) with *)
-  (*     | Errors.OK asm -> *)
-  (*         asm *)
-  (*     | Errors.Error msg -> *)
-  (*         eprintf "%s: %a" sourcename print_error msg; *)
-  (*         exit 2 in *)
-  (*   (\* Create an ELF file from the RockSalt Asm program *\) *)
-  (*   let elf_file = gen_elf asm in *)
-  (*   (\* Write the ELF file *\) *)
-  (*   write_elf ofile elf_file *)
-  (* end *)
-  (* else *) begin
+  if !option_machine_code then
+  begin
+    let asm =
+      match (Compiler.transf_c_program_rs csyntax) with
+      | Errors.OK asm ->
+          asm
+      | Errors.Error msg ->
+          eprintf "%s: %a" sourcename print_error msg;
+          exit 2 in
+    (* Create an ELF file from the RockSalt Asm program *)
+    let elf_file = gen_elf asm in
+    (* Write the ELF file *)
+    write_elf ofile elf_file
+  end
+  else begin
     (* Convert to Asm *)
     let asm =
       match Compiler.apply_partial
@@ -124,19 +124,19 @@ let compile_cminor_file ifile ofile =
            eprintf "File %s, type-checking error:\n%s"
                    ifile msg;
            exit 2 in
-  (* if ! option_machine_code then *)
-  (* begin let asm = *)
-  (*   match (Compiler.transf_cminor_program_ex cm) with *)
-  (*   | Errors.OK asm -> *)
-  (*       asm *)
-  (*   | Errors.Error msg -> *)
-  (*       eprintf "%s: %a" ifile print_error msg; *)
-  (*       exit 2 in *)
-  (* (\* Create an ELF file from the RockSalt Asm program *\) *)
-  (* let elf_file = gen_elf asm in *)
-  (* (\* Write the ELF file *\) *)
-  (* write_elf ofile elf_file end *)
-  (* else *) begin
+  if ! option_machine_code then
+  begin let asm =
+    match (Compiler.transf_cminor_program_rs cm) with
+    | Errors.OK asm ->
+        asm
+    | Errors.Error msg ->
+        eprintf "%s: %a" ifile print_error msg;
+        exit 2 in
+  (* Create an ELF file from the RockSalt Asm program *)
+  let elf_file = gen_elf asm in
+  (* Write the ELF file *)
+  write_elf ofile elf_file end
+  else begin
  (* Convert to Asm *)
   let asm =
     match Compiler.apply_partial
@@ -186,9 +186,9 @@ let process_c_file sourcename =
           then output_filename sourcename ".c" ".s"
           else Filename.temp_file "compcert" ".s" in
         let objname = output_filename ~final: !option_c sourcename ".c" ".o" in
-        (* if ! option_machine_code then begin *)
-        (*   compile_c_file sourcename preproname objname; *)
-        (* end else  *)begin
+        if ! option_machine_code then begin
+          compile_c_file sourcename preproname objname;
+        end else begin
            compile_c_file sourcename preproname asmname;
            if not !option_dprepro then
             safe_remove preproname;

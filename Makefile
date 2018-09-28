@@ -146,6 +146,7 @@ GENERATED=\
   cparser/Parser.v
 
 all:
+	$(MAKE) -C cpu_models/x86model
 	@test -f .depend || $(MAKE) depend
 	$(MAKE) proof
 	$(MAKE) extraction
@@ -282,6 +283,8 @@ clean:
 	$(MAKE) -f Makefile.extr clean
 	$(MAKE) -C runtime clean
 	$(MAKE) -C test clean
+	$(MAKE) -C cpu_models/x86model clean
+
 
 distclean:
 	$(MAKE) clean

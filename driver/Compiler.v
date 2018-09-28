@@ -164,6 +164,15 @@ Definition transf_cminor_program (p: Cminor.program) : res Asm.program :=
   @@@ time "RTL generation" RTLgen.transl_program
   @@@ transf_rtl_program.
 
+Definition transf_cminor_program_rs (p: Cminor.program) : res RockSaltAsm.program :=
+  OK p
+  @@@ transf_cminor_program
+  @@@ PseudoInstructions.check_program
+  @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program
+  @@@ time "Generation of FlatAsm" FlatAsmgen.transf_program
+  @@@ time "Generation of MC" MCgen.transf_program
+  @@@ time "Generation of RockSalt program" RockSaltAsmGen.transf_program.
+ 
 Definition transf_clight_program (p: Clight.program) : res Asm.program :=
   OK p
    @@ print print_Clight
