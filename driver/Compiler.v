@@ -51,6 +51,7 @@ Require Stacking.
 Require Mach2Mach2.
 Require Asmgen.
 Require PseudoInstructions.
+Require FlatAsmgen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -75,6 +76,7 @@ Require Asmgenproof.
 Require RawAsmproof.
 Require RealAsmproof2.
 Require PseudoInstructionsproof.
+Require FlatAsmgenproof.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -177,6 +179,10 @@ Definition transf_c_program_real p : res Asm.program :=
   transf_c_program p
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
+
+Definition transf_c_program_flatasm p : res FlatAsm.program :=
+  transf_c_program_real p
+  @@@ time "Generation of FlatAsm" FlatAsmgen.transf_program.
 
 (** The following lemmas help reason over compositions of passes. *)
 
