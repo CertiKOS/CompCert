@@ -47,7 +47,9 @@ Definition transf_program (p: Asm.program) : Asm.program :=
 Definition check_function (f: Asm.function) : bool :=
   wf_asm_function_check f && AsmFacts.check_asm_code_no_rsp (fn_code f).
 
-Definition transf_check_function f := if check_function f then OK f else Error nil.
+Definition transf_check_function f := 
+  if check_function f then OK f 
+  else Error (MSG "Precondition of pseudo instruction elimination fails" :: nil).
 
 Definition transf_check_fundef :=
   AST.transf_partial_fundef (transf_check_function).
