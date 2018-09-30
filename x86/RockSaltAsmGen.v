@@ -207,7 +207,7 @@ Definition update_fmap (fmap: FMAP_TYPE) (f:ident) (ofs:int32) : FMAP_TYPE :=
 
 Definition instr_size (i:instr) : res int32 :=
   match (encode i) with
-  | None => Error (msg "instruction has no encoding")
+  | None => Error (msg (String.append (instr_to_string i) " instruction has no encoding"))
   | Some l => OK (Word.repr (Z.of_nat (length l)))
   end.
 
