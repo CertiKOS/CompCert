@@ -1774,19 +1774,20 @@ Section WITHMEMORYMODEL.
       + etransitivity. apply GlobLeT. fold Ple. rewnb. xomega.
       + repeat rewrite_stack_blocks. simpl; eauto.
     - (* external step *)
-      edestruct (Mem.valid_access_store m'0 Mptr bstack (Ptrofs.unsigned (Ptrofs.add ostack0 (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))))) as (m'2 & STORERA).
+      edestruct (Mem.valid_access_store m'0 Mptr bstack (Ptrofs.unsigned (Ptrofs.add ostack0 (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8)))))) as (m'2 & STORERA).
       {
         red. repeat apply conj.
         red; intros. apply PBSL.
-        split. generalize (Ptrofs.unsigned_range (Ptrofs.add ostack0 (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))); omega.
+        split. generalize (Ptrofs.unsigned_range (Ptrofs.add ostack0 (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8))))); omega.
         eapply Z.lt_le_trans. apply H6.
         rewrite <- Ptrofs.sub_add_opp. unfold Ptrofs.sub.
-        rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)).
+        rewrite (Ptrofs.unsigned_repr (align (size_chunk Mptr) 8)).
         2: vm_compute; intuition congruence.
         rewrite Ptrofs.unsigned_repr.
         erewrite AGSP by eauto.
         generalize (size_active_stack_pos (Mem.stack m)).
-        generalize (size_chunk_pos Mptr).
+        assert (size_chunk Mptr <= align (size_chunk Mptr) 8). apply align_le. omega.
+        (* generalize (size_chunk_pos Mptr). *)
         omega.
         erewrite AGSP by eauto.
         generalize (size_active_stack_pos (Mem.stack m)).
@@ -1817,7 +1818,7 @@ Section WITHMEMORYMODEL.
         unfold Mptr; unfold align_chunk. destruct ptr64; simpl.
         exists 1; omega. exists 2; omega.
         apply size_active_stack_divides.
-        unfold Ptrofs.neg. rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)) by (vm_compute; intuition congruence).
+        unfold Ptrofs.neg. rewrite (Ptrofs.unsigned_repr (align (size_chunk Mptr) 8)) by (vm_compute; intuition congruence).
         rewrite Ptrofs.unsigned_repr_eq.
         apply mod_divides. vm_compute; congruence.
         rewrite Ptrofs.modulus_power.
@@ -1827,7 +1828,8 @@ Section WITHMEMORYMODEL.
         exists (two_p (Ptrofs.zwordsize - 3)). change 8 with (two_p 3). rewrite <- two_p_is_exp. f_equal.
         vm_compute. congruence. omega.
         rewrite Z.divide_opp_r.
-        apply align_size_chunk_divides.
+        apply align_Mptr_align8.
+        (* apply align_size_chunk_divides. *)
         red.
         destruct NS as (fr & fi & r & STK' & BLK & ZERO & PUB).
         rewrite STK'. left. red. simpl. unfold get_frames_blocks. simpl.
@@ -1841,9 +1843,10 @@ Section WITHMEMORYMODEL.
         destruct RNG as (RNG1 & RNG2).
         revert RNG2.
         rewrite <- Ptrofs.sub_add_opp. unfold Ptrofs.sub.
-        rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)).
+        rewrite (Ptrofs.unsigned_repr (align (size_chunk Mptr) 8)).
         2: vm_compute; intuition congruence.
         rewrite Ptrofs.unsigned_repr.
+        assert (size_chunk Mptr <= align (size_chunk Mptr) 8). apply align_le. omega.
         intros; omega.
         erewrite AGSP by eauto.
         generalize (size_active_stack_pos (Mem.stack m)).

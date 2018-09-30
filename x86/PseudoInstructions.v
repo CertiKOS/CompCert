@@ -17,11 +17,11 @@ Definition Psub dst src z := Padd dst src (- z).
 Definition transf_instr (i: instruction): list instruction :=
   match i with
   | Pallocframe sz pubrange ofs_ra =>
-    let sz := align sz 8 - size_chunk Mptr in
-    let addr1 := linear_addr RSP (size_chunk Mptr) in
-    [ Padd RAX RSP (size_chunk Mptr); Psub RSP RSP sz ]
+    let sz := align sz 8 - (align (size_chunk Mptr) 8) in
+    let addr1 := linear_addr RSP (align (size_chunk Mptr) 8) in
+    [ Padd RAX RSP (align (size_chunk Mptr) 8); Psub RSP RSP sz ]
   | Pfreeframe fsz ofs_ra =>
-    let sz := align fsz 8 - size_chunk Mptr in
+    let sz := align fsz 8 - (align (size_chunk Mptr) 8) in
     [ Padd RSP RSP sz ]
   | Pload_parent_pointer rd z =>
     [ Padd rd RSP (align (Z.max 0 z) 8) ]

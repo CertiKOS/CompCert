@@ -31,7 +31,7 @@ Section WFASM.
 
   Definition make_palloc f  : instruction :=
     let sz := fn_stacksize f in
-    (Pallocframe sz (fn_pubrange f) (Ptrofs.sub (Ptrofs.repr (align sz 8)) (Ptrofs.repr (size_chunk Mptr)))).
+    (Pallocframe sz (fn_pubrange f) (Ptrofs.sub (Ptrofs.repr (align sz 8)) (Ptrofs.repr (align (size_chunk Mptr) 8)))).
   
   Lemma make_palloc_is_alloc:
     forall f,
@@ -110,25 +110,25 @@ Section WFASM.
       wf_asm_free_spec:
         forall o sz ora,
           find_instr o (fn_code f) = Some (Pfreeframe sz ora) ->
-          sz = fn_stacksize f /\ ora = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (size_chunk Mptr));
+          sz = fn_stacksize f /\ ora = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (align (size_chunk Mptr) 8));
 
       wf_allocframe_repr:
         forall o sz pubrange ora,
           find_instr o (fn_code f) = Some (Pallocframe sz pubrange ora) ->
-          align sz 8 - size_chunk Mptr =
-          Ptrofs.unsigned (Ptrofs.sub (Ptrofs.repr (align sz 8)) (Ptrofs.repr (size_chunk Mptr)));
+          align sz 8 - align (size_chunk Mptr) 8 =
+          Ptrofs.unsigned (Ptrofs.sub (Ptrofs.repr (align sz 8)) (Ptrofs.repr (align (size_chunk Mptr) 8)));
 
       wf_freeframe_repr:
         forall o sz ora,
           find_instr o (fn_code f) = Some (Pfreeframe sz ora) ->
-          Ptrofs.repr (align sz 8 - size_chunk Mptr) = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (size_chunk Mptr));
+          Ptrofs.repr (align sz 8 - align (size_chunk Mptr) 8) = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (align (size_chunk Mptr) 8));
       
     }.
 
  
   Definition is_make_palloc a f :=  a = make_palloc f /\
-                                    align (fn_stacksize f) 8 - size_chunk Mptr =
-                                    Ptrofs.unsigned (Ptrofs.sub (Ptrofs.repr (align (fn_stacksize f) 8)) (Ptrofs.repr (size_chunk Mptr))).
+                                    align (fn_stacksize f) 8 - align (size_chunk Mptr) 8 =
+                                    Ptrofs.unsigned (Ptrofs.sub (Ptrofs.repr (align (fn_stacksize f) 8)) (Ptrofs.repr (align (size_chunk Mptr) 8))).
 
   Lemma pair_eq: forall {A B}
                    (Adec: forall (a b: A), {a = b} + {a <> b})
@@ -180,8 +180,8 @@ Section WFASM.
     end.
   
   Definition check_free f sz ora :=
-      sz = fn_stacksize f /\ ora = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (size_chunk Mptr)) /\
-      Ptrofs.repr (align sz 8 - size_chunk Mptr) = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (size_chunk Mptr)).
+      sz = fn_stacksize f /\ ora = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (align (size_chunk Mptr) 8)) /\
+      Ptrofs.repr (align sz 8 - align (size_chunk Mptr) 8) = Ptrofs.sub (Ptrofs.repr (align (Z.max 0 sz) 8)) (Ptrofs.repr (align (size_chunk Mptr) 8)).
 
   Definition check_free_dec f sz ora : { check_free f sz ora } + { ~ check_free f sz ora }.
   Proof.
@@ -646,17 +646,17 @@ Section WITHGE.
     let sz := Ptrofs.repr (Asm.instr_size i) in 
     match i with
     | Pallocframe size _ ofs_ra =>
-      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.sub (Ptrofs.repr (align size 8)) (Ptrofs.repr (size_chunk Mptr)))) in
-      Next (nextinstr (rs #RAX <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr))) #RSP <- sp) sz) m
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.sub (Ptrofs.repr (align size 8)) (Ptrofs.repr (align (size_chunk Mptr) 8)))) in
+      Next (nextinstr (rs #RAX <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8))) #RSP <- sp) sz) m
     | Pfreeframe fsz ofs_ra =>
-      let sp := Val.offset_ptr (rs RSP) (Ptrofs.sub (Ptrofs.repr (align (Z.max 0 fsz) 8)) (Ptrofs.repr (size_chunk Mptr))) in
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.sub (Ptrofs.repr (align (Z.max 0 fsz) 8)) (Ptrofs.repr (align (size_chunk Mptr) 8))) in
       Next (nextinstr (rs#RSP <- sp) sz) m
     | Pload_parent_pointer rd z =>
       let sp := Val.offset_ptr (rs RSP) (Ptrofs.repr (align (Z.max 0 z) 8)) in
       Next (nextinstr (rs#rd <- sp) sz) m
     | Pcall ros sg =>
       let addr := eval_ros ge ros rs in
-      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8))) in
       match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
       | None => Stuck
       | Some m2 =>
@@ -668,7 +668,7 @@ Section WITHGE.
       match Mem.loadv Mptr m rs#RSP with
       | None => Stuck
       | Some ra =>
-        let sp := Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr)) in
+        let sp := Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)) in
         Next (rs #RSP <- sp
                  #PC <- ra
                  #RA <- Vundef) m
@@ -701,7 +701,7 @@ Section WITHGE.
       forall b ef args res rs m t rs' m',
         rs PC = Vptr b Ptrofs.zero ->
         Genv.find_funct_ptr ge b = Some (External ef) ->
-        extcall_arguments (rs # RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr)))) m (ef_sig ef) args ->
+        extcall_arguments (rs # RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)))) m (ef_sig ef) args ->
         forall (SP_TYPE: Val.has_type (rs RSP) Tptr)
           ra (LOADRA: Mem.loadv Mptr m (rs RSP) = Some ra)
           (SP_NOT_VUNDEF: rs RSP <> Vundef)
@@ -712,7 +712,7 @@ Section WITHGE.
                                       (undef_regs (map preg_of destroyed_at_call) rs)))
                   #PC <- ra
                   #RA <- Vundef
-                  #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr))) ->
+                  #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8))) ->
           step (State rs m) t (State rs' m').
 
 End WITHGE.
@@ -723,13 +723,13 @@ End WITHGE.
         (MALLOC: Mem.alloc (Mem.push_new_stage m) 0 (Mem.stack_limit + align (size_chunk Mptr) 8) = (m1,bstack))
         (MDROP: Mem.drop_perm m1 bstack 0 (Mem.stack_limit + align (size_chunk Mptr) 8) Writable = Some m2)
         (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3)
-        (STORE_RETADDR: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr))) Vnullptr = Some m4),
+        (STORE_RETADDR: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit))) Vnullptr = Some m4),
         let ge := Genv.globalenv prog in
         Genv.find_symbol ge prog.(prog_main) = Some bmain ->
         let rs0 :=
             rs #PC <- (Vptr bmain Ptrofs.zero)
                #RA <- Vnullptr
-               #RSP <- (Val.offset_ptr (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8))) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) in
+               #RSP <- (Vptr bstack (Ptrofs.repr (Mem.stack_limit))) in
         initial_state_gen prog rs m (State rs0 m4).
 
   Inductive initial_state (prog: Asm.program) (rs: regset) (s: state): Prop :=
@@ -789,16 +789,20 @@ End WITHGE.
         exploit Mem.alloc_result; eauto. rewnb.
         fold ge. intro; subst.
         eexists; split; eauto.
-        apply div_ptr_add.
-        apply div_unsigned_repr.
-        apply Z.divide_add_r. apply align_Mptr_stack_limit. apply align_Mptr_align8.
-        apply align_Mptr_modulus. unfold Ptrofs.neg. apply div_unsigned_repr.
-        apply Zdivide_opp_r.
-        apply div_unsigned_repr.
-        apply align_size_chunk_divides.
-        apply align_Mptr_modulus.
-        apply align_Mptr_modulus.
-        apply align_Mptr_modulus.
+        rewrite Ptrofs.unsigned_repr.
+        apply align_Mptr_stack_limit.
+        apply Mem.stack_limit_range.
+        (* apply div_ptr_add. *)
+        (* apply div_unsigned_repr. *)
+        (* apply Z.divide_add_r. apply align_Mptr_stack_limit. apply align_Mptr_align8. *)
+        (* apply align_Mptr_modulus. unfold Ptrofs.neg. apply div_unsigned_repr. *)
+        (* apply Zdivide_opp_r. *)
+        (* apply div_unsigned_repr. *)
+        (* apply align_size_chunk_divides. *)
+        (* apply align_Mptr_modulus. *)
+        (* apply align_Mptr_modulus. *)
+        (* apply align_Mptr_modulus. *)
+        
       - exploit Mem.alloc_result; eauto. rewnb.
         fold ge. intro; subst.
         red. simpl. intros o k p. repeat rewrite_perms. unfold bstack. rewrite ! pred_dec_true by reflexivity.
@@ -880,14 +884,15 @@ End WITHGE.
     Lemma align_Mptr_sub:
       forall o,
         (align_chunk Mptr | Ptrofs.unsigned o) ->
-        (align_chunk Mptr | Ptrofs.unsigned (Ptrofs.add o (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))).
+        (align_chunk Mptr | Ptrofs.unsigned (Ptrofs.add o (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8))))).
     Proof.
       intros.
       apply div_ptr_add; auto.
       apply div_unsigned_repr.
       apply Z.divide_opp_r.
       apply div_unsigned_repr.
-      apply align_size_chunk_divides.
+      apply align_Mptr_align8.
+      (* apply align_size_chunk_divides. *)
       apply align_Mptr_modulus.
       apply align_Mptr_modulus.
       apply align_Mptr_modulus.
@@ -896,12 +901,13 @@ End WITHGE.
     Lemma align_Mptr_add:
       forall o,
         (align_chunk Mptr | Ptrofs.unsigned o) ->
-        (align_chunk Mptr | Ptrofs.unsigned (Ptrofs.add o (Ptrofs.repr (size_chunk Mptr)))).
+        (align_chunk Mptr | Ptrofs.unsigned (Ptrofs.add o (Ptrofs.repr (align (size_chunk Mptr) 8)))).
     Proof.
       intros.
       apply div_ptr_add; auto.
       apply div_unsigned_repr.
-      apply align_size_chunk_divides.
+      apply align_Mptr_align8.
+      (* apply align_size_chunk_divides. *)
       apply align_Mptr_modulus.
       apply align_Mptr_modulus.
     Qed.
@@ -963,7 +969,8 @@ End WITHGE.
             transitivity 8. unfold Mptr. destr; simpl. exists 1; omega. exists 2; omega. apply align_divides. omega.
             apply align_Mptr_modulus.
             apply div_unsigned_repr; auto.
-            apply align_size_chunk_divides.
+            apply align_Mptr_align8.
+            (* apply align_size_chunk_divides. *)
             apply align_Mptr_modulus.
             apply align_Mptr_modulus.
             apply align_Mptr_modulus.
@@ -980,7 +987,8 @@ End WITHGE.
             transitivity 8. unfold Mptr. destr; simpl. exists 1; omega. exists 2; omega. apply align_divides. omega.
             apply align_Mptr_modulus.
             apply div_unsigned_repr; auto.
-            apply align_size_chunk_divides.
+            apply align_Mptr_align8.
+            (* apply align_size_chunk_divides. *)
             apply align_Mptr_modulus.
             apply align_Mptr_modulus.
           * red in BSTACKPERM; red; simpl in *.

@@ -60,7 +60,7 @@ Section WITHMEMORYMODEL.
   | match_states_call_alloc
       (rs1 rs2: regset) m1 m2
       (REQ: forall r : preg, r <> RSP -> r <> RA -> rs1 r = rs2 r)
-      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (size_chunk Mptr)))
+      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)))
       (MEQ: Mem.storev Mptr m1 (rs2 RSP) (rs1 RA) = Some m2)
       f ialloc
       (PC1: pc_at (State rs1 m1) = Some (inl (f,ialloc)))
@@ -69,7 +69,7 @@ Section WITHMEMORYMODEL.
   | match_states_call_external
       (rs1 rs2: regset) m1 m2
       (REQ: forall r : preg, r <> RSP -> r <> RA -> rs1 r = rs2 r)
-      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (size_chunk Mptr)))
+      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)))
       (MEQ: Mem.storev Mptr m1 (rs2 RSP) (rs1 RA) = Some m2)
       ef
       (PC1: pc_at (State rs1 m1) = Some (inr ef)):
@@ -77,7 +77,7 @@ Section WITHMEMORYMODEL.
   | match_states_free_ret
       (rs1 rs2: regset) m
       (REQ: forall r : preg, r <> RSP -> r <> RA -> rs1 r = rs2 r)
-      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) ((Ptrofs.repr (size_chunk Mptr))))
+      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)))
       (LOADRA: Mem.loadbytesv Mptr m (rs2 RSP) = Some (rs1 RA))
       f
       (PC1: pc_at (State rs1 m) = Some (inl (f,Pret))):
@@ -85,7 +85,7 @@ Section WITHMEMORYMODEL.
   | match_states_free_jmp
       (rs1 rs2: regset) m
       (REQ: forall r: preg, r <> RSP -> r <> RA -> rs1 r = rs2 r)
-      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) ((Ptrofs.repr (size_chunk Mptr))))
+      (RRSP: rs1 RSP = Val.offset_ptr (rs2 RSP) ((Ptrofs.repr (align (size_chunk Mptr) 8))))
       (MEQ: Mem.loadbytesv Mptr m (rs2 RSP) = Some (rs1 RA))
       (RANU: rs1 RA <> Vundef)
       f ijmp
@@ -120,12 +120,32 @@ Section WITHMEMORYMODEL.
     apply Mem.stack_limit_range.
   Qed.
 
+  Lemma stack_limit_range'':
+    align (size_chunk Mptr) 8 <= Mem.stack_limit <= Ptrofs.max_unsigned.
+  Proof.
+    split.
+    generalize Mem.stack_limit_aligned Mem.stack_limit_pos. intros (x & EQ) POS. rewrite EQ.
+    transitivity 8.
+    unfold Mptr. destr; simpl; unfold align. simpl. omega. simpl. omega.
+    rewrite EQ in POS. cut (1 <= x). omega.
+    change 0 with (0 * 8) in POS.
+    rewrite <- Z.mul_lt_mono_pos_r in POS. omega. omega.
+    apply Mem.stack_limit_range.
+  Qed.
+
+
   Hypothesis WF: wf_asm_prog ge.
  
   (* Hypothesis main_internal: *)
   (*   exists bmain fmain, *)
   (*     Genv.find_symbol ge (prog_main prog) = Some bmain /\ *)
   (*     Genv.find_funct_ptr ge bmain = Some (Internal fmain). *)
+
+  Lemma align_Mptr8_range : 0 <= align (size_chunk Mptr) 8 <= Ptrofs.max_unsigned.
+  Proof.
+    split. apply align_Mptr_pos.
+    generalize stack_limit_range''. omega.
+  Qed.
   
   Lemma initial_states_match rs:
     forall s1 s2,
@@ -142,30 +162,34 @@ Section WITHMEMORYMODEL.
       + eapply match_states_call_alloc.
         * intros. simpl_regs. rewrite (Pregmap.gso _ _ H0). rewrite (Pregmap.gso _ _ H1). auto.
         * simpl_regs. simpl. f_equal.
-          rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_commut (Ptrofs.neg _)), Ptrofs.add_neg_zero. rewrite Ptrofs.add_zero. auto.
+          rewrite Ptrofs.add_unsigned. repeat rewrite Ptrofs.unsigned_repr. auto.
+          apply align_Mptr8_range. apply Mem.stack_limit_range.
+          (* rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_commut (Ptrofs.neg _)), Ptrofs.add_neg_zero. rewrite Ptrofs.add_zero. auto. *)
         * simpl_regs.
-          simpl. rewrite <- Ptrofs.sub_add_opp.
-          unfold Ptrofs.sub.
-          rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)).
-          rewrite (Ptrofs.unsigned_repr (Mem.stack_limit + align (size_chunk Mptr) 8)).
-          3: vm_compute; intuition congruence.
+          simpl. (* rewrite <- Ptrofs.sub_add_opp. *)
+          (* unfold Ptrofs.sub. *)
+          (* rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)). *)
+          (* rewrite (Ptrofs.unsigned_repr (Mem.stack_limit + align (size_chunk Mptr) 8)). *)
+          (* 3: vm_compute; intuition congruence. *)
           simpl in STORE_RETADDR. congruence.
-          generalize Mem.stack_limit_range, Mem.stack_limit_range', align_Mptr_pos. omega.
+          (* generalize Mem.stack_limit_range, Mem.stack_limit_range', align_Mptr_pos. omega. *)
         * simpl. simpl_regs. rewrite Fmain.
           erewrite wf_asm_alloc_at_beginning; eauto.
         * apply make_palloc_is_alloc.
       + eapply match_states_call_external.
         * intros. simpl_regs. rewrite (Pregmap.gso _ _ H0). rewrite (Pregmap.gso _ _ H1). auto.
         * simpl_regs. simpl. f_equal.
-          rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_commut (Ptrofs.neg _)), Ptrofs.add_neg_zero. rewrite Ptrofs.add_zero. auto.
+          rewrite Ptrofs.add_unsigned. repeat rewrite Ptrofs.unsigned_repr. auto.
+          apply align_Mptr8_range. apply Mem.stack_limit_range.
+          (* rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_commut (Ptrofs.neg _)), Ptrofs.add_neg_zero. rewrite Ptrofs.add_zero. auto. *)
         * simpl_regs.
-          simpl. rewrite <- Ptrofs.sub_add_opp.
-          unfold Ptrofs.sub.
-          rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)).
-          rewrite (Ptrofs.unsigned_repr (Mem.stack_limit + align (size_chunk Mptr) 8)).
-          3: vm_compute; intuition congruence.
+          simpl. (* rewrite <- Ptrofs.sub_add_opp. *)
+          (* unfold Ptrofs.sub. *)
+          (* rewrite (Ptrofs.unsigned_repr (size_chunk Mptr)). *)
+          (* rewrite (Ptrofs.unsigned_repr (Mem.stack_limit + align (size_chunk Mptr) 8)). *)
+          (* 3: vm_compute; intuition congruence. *)
           simpl in STORE_RETADDR. congruence.
-          generalize Mem.stack_limit_range, Mem.stack_limit_range', align_Mptr_pos. omega.
+          (* generalize Mem.stack_limit_range, Mem.stack_limit_range', align_Mptr_pos. omega. *)
         * simpl. simpl_regs. rewrite Fmain. eauto.
     - eapply match_states_stuck. simpl. rewrite Fmain. auto.
       simpl. simpl_regs. auto.
@@ -209,7 +233,7 @@ Section WITHMEMORYMODEL.
       ef
       (PCAT: pc_at s = Some (inr ef)),
     exists m2,
-      Mem.storev Mptr (m_state s) (Val.offset_ptr (rs_state s RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))
+      Mem.storev Mptr (m_state s) (Val.offset_ptr (rs_state s RSP) (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8))))
                  (rs_state s RA) = Some m2.
   Proof.
     unfold pc_at; intros s t s'  STEP; inv STEP; rewrite H, H0; try now destr.
@@ -390,7 +414,7 @@ Section WITHMEMORYMODEL.
   Lemma extcall_progress:
     forall (rs1 rs2: regset)
       (REQ : forall r : preg, r <> RSP -> r <> RA -> rs1 r = rs2 r)
-      (RRSP : rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (size_chunk Mptr)))
+      (RRSP : rs1 RSP = Val.offset_ptr (rs2 RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)))
       m2
       b ef
       (FFP : Genv.find_funct_ptr ge b = Some (External ef))
@@ -1202,16 +1226,18 @@ Section WITHMEMORYMODEL.
       with (match_states := fun s1 s2 => match_states s1 s2 /\ real_asm_inv prog s2).
     - reflexivity.
     - simpl; intros s1 IS1. inv IS1. inv H0.
-      edestruct (Mem.valid_access_store m3 Mptr bstack0 (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr) Vnullptr).
+      edestruct (Mem.valid_access_store m3 Mptr bstack0 (Mem.stack_limit) Vnullptr).
       split;[|split].
       red; intros. repeat rewrite_perms. rewrite peq_true. split.
-      cut (size_chunk Mptr <=  Mem.stack_limit). generalize align_Mptr_pos. omega. apply stack_limit_range'.
+      cut (align (size_chunk Mptr) 8 <=  Mem.stack_limit). generalize align_Mptr_pos. 
+      assert ((size_chunk Mptr) <= (align (size_chunk Mptr) 8)). apply align_le. omega.
+      omega. apply stack_limit_range''.
       constructor.
-      apply Z.divide_sub_r.
-      apply Z.divide_add_r.
+      (* apply Z.divide_sub_r. *)
+      (* apply Z.divide_add_r. *)
       apply align_Mptr_stack_limit.
-      apply align_Mptr_align8.
-      apply align_size_chunk_divides.
+      (* apply align_Mptr_align8. *)
+      (* apply align_size_chunk_divides. *)
       intros.
       red. rewrite_stack_blocks. intro. left. unfold is_stack_top. simpl. auto.
       eexists; econstructor. eauto. econstructor; eauto.
