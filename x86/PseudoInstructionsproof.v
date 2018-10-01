@@ -428,10 +428,10 @@ Section WITHMEMORYMODEL.
         econstructor. rewrite Asmgenproof0.nextinstr_pc. repeat rewrite Pregmap.gso by congruence.
         rewrite H. simpl. eauto.
         eauto. erewrite wf_asm_pc_repr'; eauto.
-        erewrite (instr_size_alloc sz pubrange ofs_ra RAX (align sz 8 - (align (size_chunk Mptr) 8))
-                                   (linear_addr RSP (align (size_chunk Mptr) 8)) RSP).
-        generalize (instr_size_positive (Psub RSP RSP (align sz 8 - (align (size_chunk Mptr) 8)))).
-        generalize (instr_size_positive (Plea RAX (linear_addr RSP (align (size_chunk Mptr) 8)))).
+        erewrite (instr_size_alloc sz pubrange ofs_ra RAX (align sz 8 - size_chunk Mptr)
+                                   (linear_addr RSP (size_chunk Mptr)) RSP).
+        generalize (instr_size_positive (Psub RSP RSP (align sz 8 - size_chunk Mptr))).
+        generalize (instr_size_positive (Plea RAX (linear_addr RSP (size_chunk Mptr)))).
         omega.
         unfold Psub, Padd. rewrite exec_instr_Plea. f_equal.
         apply Axioms.extensionality. intro r.

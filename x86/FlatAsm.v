@@ -497,7 +497,7 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
       end
  | Pcall ros sg =>
       let addr := eval_ros ge ros rs in
-      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8))) in
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
       match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
       | None => Stuck
       | Some m2 =>
@@ -513,7 +513,7 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
         match Mem.loadv Mptr m rs#RSP with
       | None => Stuck
       | Some ra =>
-        let sp := Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)) in
+        let sp := Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr)) in
         Next (rs #RSP <- sp
                  #PC <- ra
                  #RA <- Vundef) m
@@ -604,14 +604,14 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
       Genv.find_funct ge (Vptr b ofs) = Some (External ef) ->
       forall ra (LOADRA: Mem.loadv Mptr m (rs RSP) = Some ra)
         (RA_NOT_VUNDEF: ra <> Vundef)
-        (ARGS: extcall_arguments (rs # RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8)))) m (ef_sig ef) args),
+        (ARGS: extcall_arguments (rs # RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr)))) m (ef_sig ef) args),
         external_call ef (Genv.genv_senv ge) args m t res m' ->
           rs' = (set_pair (loc_external_result (ef_sig ef)) res
                           (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
                                       (undef_regs (map preg_of destroyed_at_call) rs)))
                   #PC <- ra
                   #RA <- Vundef
-                  #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (align (size_chunk Mptr) 8))) ->
+                  #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr))) ->
         step ge (State rs m) t (State rs' m').
 
 End RELSEM.
@@ -642,12 +642,12 @@ Inductive initial_state_gen (p: program) (rs: regset) m: state -> Prop :=
       (MALLOC: Mem.alloc (Mem.push_new_stage m) 0 (Mem.stack_limit + align (size_chunk Mptr) 8) = (m1,bstack))
       (MDROP: Mem.drop_perm m1 bstack 0 (Mem.stack_limit + align (size_chunk Mptr) 8) Writable = Some m2)
       (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3)
-      (MST: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit))) Vnullptr = Some m4),
+      (MST: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr))) Vnullptr = Some m4),
       let ge := (globalenv p) in
       let rs0 :=
         rs # PC <- (Genv.symbol_address ge p.(prog_main) Ptrofs.zero)
            # RA <- Vnullptr
-           # RSP <- (Vptr bstack (Ptrofs.repr (Mem.stack_limit))) in
+           # RSP <- (Vptr bstack (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr)))) in
       initial_state_gen p rs m (State rs0 m4).
 
 Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=

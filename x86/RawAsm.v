@@ -85,7 +85,7 @@ Section WITHGE.
           (RA_TYPE: Val.has_type (rs RA) Tptr)
           (SP_NOT_VUNDEF: rs RSP <> Vundef)
           (RA_NOT_VUNDEF: rs RA <> Vundef)
-          (SZRA: Mem.storev Mptr m (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (align (size_chunk Mptr) 8))))
+          (SZRA: Mem.storev Mptr m (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))
                             (rs RA) = Some m2)
           (ARGS: extcall_arguments rs m2 (ef_sig ef) args),
           external_call ef ge args m2 t res m' ->

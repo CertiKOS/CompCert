@@ -5256,7 +5256,7 @@ Proof.
   destruct RCD as (m3' & RCDSB & RMINJ).
   set (rs0' := rs # PC <- (Genv.symbol_address tge tprog.(prog_main) Ptrofs.zero)
                   # RA <- Vnullptr
-                  # RSP <- (Vptr bstack' (Ptrofs.repr Mem.stack_limit))) in *.
+                  # RSP <- (Vptr bstack' (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr))))) in *.
   edestruct storev_mapped_inject' as (m4' & ST & SMINJ). apply RMINJ. eauto. econstructor.
   rewrite <- H6, FBSTACK; eauto. reflexivity. constructor.
   exists (State rs0' m4'). split.
@@ -5279,7 +5279,7 @@ Proof.
       unfold Vnullptr. destr; auto.
       econstructor. unfold init_meminj. subst bstack. fold ge. rewrite peq_true. subst bstack'.  fold tge. eauto.
       rewrite Ptrofs.add_zero.
-      auto.
+      apply Ptrofs.sub_add_opp.
     + red. intros b g FD.
       unfold Genv.find_def in FD. eapply Genv.genv_defs_range in FD.
       revert FD. red. rewnb.
