@@ -1271,14 +1271,14 @@ Qed.
 
 
 
-Lemma callee_save_retaddr_sep:
-  forall b,
-    let fe := make_env b in
-    forall o,
-      fe_ofs_callee_save fe <= o < size_callee_save_area_rec (used_callee_save b) (fe_ofs_callee_save fe) ->
-      fe_ofs_retaddr fe <= o < fe_ofs_retaddr fe + size_chunk Mptr ->
-      False.
-Proof.
+(* Lemma callee_save_retaddr_sep: *)
+(*   forall b, *)
+(*     let fe := make_env b in *)
+(*     forall o, *)
+(*       fe_ofs_callee_save fe <= o < size_callee_save_area_rec (used_callee_save b) (fe_ofs_callee_save fe) -> *)
+(*       fe_ofs_retaddr fe <= o < fe_ofs_retaddr fe + size_chunk Mptr -> *)
+(*       False. *)
+(* Proof. *)
 (*   clear. intros b fe. *)
 (*   generalize (frame_env_separated' b). *)
 (*   simpl. intuition. *)
@@ -1296,7 +1296,7 @@ Proof.
 (*   generalize (bound_local_pos b); omega. *)
 (*   generalize (bound_stack_data_pos b); omega. *)
 (* Qed. *)
-Admitted.
+
 
 (* Lemma callee_save_link_sep: *)
 (*   forall b, *)
@@ -2832,20 +2832,19 @@ Proof.
   intros; omega.
 Qed.
 
-Lemma fe_ofs_retaddr_fe_size:
-  forall b,
-    fe_ofs_retaddr (make_env b) <= fe_size (make_env b).
-Proof.
+(* Lemma fe_ofs_retaddr_fe_size: *)
+(*   forall b, *)
+(*     fe_ofs_retaddr (make_env b) <= fe_size (make_env b). *)
+(* Proof. *)
 (*   destruct b. simpl. *)
 (*   apply le_add_pos.  *)
 (*   destruct Archi.ptr64; omega. *)
 (* Qed. *)
-Admitted.
 
-Lemma fe_ofs_retaddr_pos:
-  forall b,
-    0 <= fe_ofs_retaddr (make_env b).
-Proof.
+(* Lemma fe_ofs_retaddr_pos: *)
+(*   forall b, *)
+(*     0 <= fe_ofs_retaddr (make_env b). *)
+(* Proof. *)
 (*   destruct b. *)
 (*   Local Opaque Z.mul. *)
 (*   simpl. *)
@@ -2858,7 +2857,6 @@ Proof.
 (*   etransitivity. 2: apply align_le; try now (destruct Archi.ptr64; omega). *)
 (*   omega. *)
 (* Qed. *)
-Admitted.
 
 Lemma list_prefix_is_prefix:
   forall isg istk cs stk,
@@ -3086,10 +3084,10 @@ Proof.
   etransitivity. 2: apply align_le; try omega. simpl. omega. destruct Archi.ptr64; omega.
 Qed.
 
-Lemma fe_ofs_local_fe_size:
-  forall b,
-    fe_ofs_local (make_env b) <= fe_size (make_env b).
-Proof.
+(* Lemma fe_ofs_local_fe_size: *)
+(*   forall b, *)
+(*     fe_ofs_local (make_env b) <= fe_size (make_env b). *)
+(* Proof. *)
 (*   destruct b. simpl. *)
 (*   etransitivity. 2: apply le_add_pos. *)
 (*   etransitivity. 2: apply align_le.  *)
@@ -3100,7 +3098,7 @@ Proof.
 (*   destruct Archi.ptr64; omega. *)
 (*   destruct Archi.ptr64; omega. *)
 (* Qed. *)
-Admitted.
+
 
 Transparent fe_ofs_arg.
 
