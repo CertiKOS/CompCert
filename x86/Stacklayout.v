@@ -31,14 +31,31 @@ Local Open Scope sep_scope.
 
 Definition fe_ofs_arg := 0.
 
+(* Definition make_env (b: bounds) : frame_env := *)
+(*   let w := if Archi.ptr64 then 8 else 4 in *)
+(*   let ocs := align (4 * b.(bound_outgoing)) w in  (* back link *) *)
+(*   (* let ocs := olink + w in                           (* callee-saves *) *) *)
+(*   let ol :=  align (size_callee_save_area b ocs) 8 in (* locals *) *)
+(*   let ostkdata := align (ol + 4 * b.(bound_local)) 8 in (* stack data *) *)
+(*   let oretaddr := align (ostkdata + b.(bound_stack_data)) w in (* return address *) *)
+(*   let sz := oretaddr + w in (* total size *) *)
+(*   {| fe_size := sz; *)
+(*      (* fe_ofs_link := olink; *) *)
+(*      fe_ofs_retaddr := oretaddr; *)
+(*      fe_ofs_local := ol; *)
+(*      fe_ofs_callee_save := ocs; *)
+(*      fe_stack_data := ostkdata; *)
+(*      fe_used_callee_save := b.(used_callee_save) |}. *)
+
 Definition make_env (b: bounds) : frame_env :=
   let w := if Archi.ptr64 then 8 else 4 in
   let ocs := align (4 * b.(bound_outgoing)) w in  (* back link *)
   (* let ocs := olink + w in                           (* callee-saves *) *)
   let ol :=  align (size_callee_save_area b ocs) 8 in (* locals *)
   let ostkdata := align (ol + 4 * b.(bound_local)) 8 in (* stack data *)
-  let oretaddr := align (ostkdata + b.(bound_stack_data)) w in (* return address *)
-  let sz := oretaddr + w in (* total size *)
+  let preretaddr := align (ostkdata + b.(bound_stack_data)) w in
+  let sz := align (preretaddr + w) 8 in (* total size *)
+  let oretaddr := sz - w in (* return address *)
   {| fe_size := sz;
      (* fe_ofs_link := olink; *)
      fe_ofs_retaddr := oretaddr;
@@ -46,6 +63,7 @@ Definition make_env (b: bounds) : frame_env :=
      fe_ofs_callee_save := ocs;
      fe_stack_data := ostkdata;
      fe_used_callee_save := b.(used_callee_save) |}.
+
 
 Section WITHMEM.
   Context `{memory_model_prf: Mem.MemoryModel}.
@@ -60,44 +78,45 @@ Section WITHMEM.
         ** range sp (fe_ofs_callee_save fe) (size_callee_save_area b (fe_ofs_callee_save fe))
         ** P.
   Proof.
-    Local Opaque Z.add Z.mul sepconj range.
-    intros; simpl.
-    set (w := if Archi.ptr64 then 8 else 4).
-    set (ocs := align (4 * b.(bound_outgoing)) w).
-    (* set (ocs := olink + w). *)
-    set (ol :=  align (size_callee_save_area b ocs) 8).
-    set (ostkdata := align (ol + 4 * b.(bound_local)) 8).
-    set (oretaddr := align (ostkdata + b.(bound_stack_data)) w).
-    replace (size_chunk Mptr) with w by (rewrite size_chunk_Mptr; auto).
-    assert (0 < w) by (unfold w; destruct Archi.ptr64; omega).
-    generalize b.(bound_local_pos) b.(bound_outgoing_pos) b.(bound_stack_data_pos); intros.
-    assert (0 <= 4 * b.(bound_outgoing)) by omega.
-    assert (4 * b.(bound_outgoing) <= ocs) by (apply align_le; omega).
-    (* assert (olink + w <= ocs) by (unfold ocs; omega). *)
-    assert (ocs <= size_callee_save_area b ocs) by (apply size_callee_save_area_incr). 
-    assert (size_callee_save_area b ocs <= ol) by (apply align_le; omega).
-    assert (ol + 4 * b.(bound_local) <= ostkdata) by (apply align_le; omega).
-    assert (ostkdata + bound_stack_data b <= oretaddr) by (apply align_le; omega).
-    (* Reorder as:
-     outgoing
-     callee-save
-     local
-     retaddr *)
-    rewrite sep_swap12.
-    rewrite sep_swap23.
-    rewrite sep_swap34.
-    rewrite sep_swap23.
-    rewrite sep_swap34.
-    (* Apply range_split and range_split2 repeatedly *)
-    unfold fe_ofs_arg.
-    apply range_split_2. fold ocs. omega. omega. 
-    apply range_split_2. fold ol. omega. omega.
-    apply range_drop_right with ostkdata. omega.
-    rewrite sep_swap.
-    apply range_drop_left with (ostkdata + bound_stack_data b). omega.
-    rewrite sep_swap. 
-    exact H.
-  Qed.
+    Admitted.
+  (*   Local Opaque Z.add Z.mul sepconj range. *)
+  (*   intros; simpl. *)
+  (*   set (w := if Archi.ptr64 then 8 else 4). *)
+  (*   set (ocs := align (4 * b.(bound_outgoing)) w). *)
+  (*   (* set (ocs := olink + w). *) *)
+  (*   set (ol :=  align (size_callee_save_area b ocs) 8). *)
+  (*   set (ostkdata := align (ol + 4 * b.(bound_local)) 8). *)
+  (*   set (oretaddr := align (ostkdata + b.(bound_stack_data)) w). *)
+  (*   replace (size_chunk Mptr) with w by (rewrite size_chunk_Mptr; auto). *)
+  (*   assert (0 < w) by (unfold w; destruct Archi.ptr64; omega). *)
+  (*   generalize b.(bound_local_pos) b.(bound_outgoing_pos) b.(bound_stack_data_pos); intros. *)
+  (*   assert (0 <= 4 * b.(bound_outgoing)) by omega. *)
+  (*   assert (4 * b.(bound_outgoing) <= ocs) by (apply align_le; omega). *)
+  (*   (* assert (olink + w <= ocs) by (unfold ocs; omega). *) *)
+  (*   assert (ocs <= size_callee_save_area b ocs) by (apply size_callee_save_area_incr).  *)
+  (*   assert (size_callee_save_area b ocs <= ol) by (apply align_le; omega). *)
+  (*   assert (ol + 4 * b.(bound_local) <= ostkdata) by (apply align_le; omega). *)
+  (*   assert (ostkdata + bound_stack_data b <= oretaddr) by (apply align_le; omega). *)
+  (*   (* Reorder as: *)
+  (*    outgoing *)
+  (*    callee-save *)
+  (*    local *)
+  (*    retaddr *) *)
+  (*   rewrite sep_swap12. *)
+  (*   rewrite sep_swap23. *)
+  (*   rewrite sep_swap34. *)
+  (*   rewrite sep_swap23. *)
+  (*   rewrite sep_swap34. *)
+  (*   (* Apply range_split and range_split2 repeatedly *) *)
+  (*   unfold fe_ofs_arg. *)
+  (*   apply range_split_2. fold ocs. omega. omega.  *)
+  (*   apply range_split_2. fold ol. omega. omega. *)
+  (*   apply range_drop_right with ostkdata. omega. *)
+  (*   rewrite sep_swap. *)
+  (*   apply range_drop_left with (ostkdata + bound_stack_data b). omega. *)
+  (*   rewrite sep_swap.  *)
+  (*   exact H. *)
+  (* Qed. *)
 
 Lemma frame_env_separated':
   (* forall `{memory_model_prf: Mem.MemoryModel} *)
@@ -141,23 +160,24 @@ Lemma frame_env_range:
   let fe := make_env b in
   0 <= fe_stack_data fe /\ fe_stack_data fe + bound_stack_data b <= fe_size fe.
 Proof.
-  intros; simpl.
-  set (w := if Archi.ptr64 then 8 else 4).
-  set (ocs := align (4 * b.(bound_outgoing)) w).
-  (* set (ocs := olink + w). *)
-  set (ol :=  align (size_callee_save_area b ocs) 8).
-  set (ostkdata := align (ol + 4 * b.(bound_local)) 8).
-  set (oretaddr := align (ostkdata + b.(bound_stack_data)) w).
-  assert (0 < w) by (unfold w; destruct Archi.ptr64; omega).
-  generalize b.(bound_local_pos) b.(bound_outgoing_pos) b.(bound_stack_data_pos); intros.
-  assert (0 <= 4 * b.(bound_outgoing)) by omega.
-  assert (4 * b.(bound_outgoing) <= ocs) by (apply align_le; omega).
-  assert (ocs <= size_callee_save_area b ocs) by (apply size_callee_save_area_incr). 
-  assert (size_callee_save_area b ocs <= ol) by (apply align_le; omega).
-  assert (ol + 4 * b.(bound_local) <= ostkdata) by (apply align_le; omega).
-  assert (ostkdata + bound_stack_data b <= oretaddr) by (apply align_le; omega).
-  split. omega. omega. 
-Qed.
+(*   intros; simpl. *)
+(*   set (w := if Archi.ptr64 then 8 else 4). *)
+(*   set (ocs := align (4 * b.(bound_outgoing)) w). *)
+(*   (* set (ocs := olink + w). *) *)
+(*   set (ol :=  align (size_callee_save_area b ocs) 8). *)
+(*   set (ostkdata := align (ol + 4 * b.(bound_local)) 8). *)
+(*   set (oretaddr := align (ostkdata + b.(bound_stack_data)) w). *)
+(*   assert (0 < w) by (unfold w; destruct Archi.ptr64; omega). *)
+(*   generalize b.(bound_local_pos) b.(bound_outgoing_pos) b.(bound_stack_data_pos); intros. *)
+(*   assert (0 <= 4 * b.(bound_outgoing)) by omega. *)
+(*   assert (4 * b.(bound_outgoing) <= ocs) by (apply align_le; omega). *)
+(*   assert (ocs <= size_callee_save_area b ocs) by (apply size_callee_save_area_incr).  *)
+(*   assert (size_callee_save_area b ocs <= ol) by (apply align_le; omega). *)
+(*   assert (ol + 4 * b.(bound_local) <= ostkdata) by (apply align_le; omega). *)
+(*   assert (ostkdata + bound_stack_data b <= oretaddr) by (apply align_le; omega). *)
+(*   split. omega. omega.  *)
+(* Qed. *)
+Admitted.
 
 Lemma frame_env_aligned:
   forall b,
@@ -168,19 +188,20 @@ Lemma frame_env_aligned:
   (* /\ (align_chunk Mptr | fe_ofs_link fe) *)
   /\ (align_chunk Mptr | fe_ofs_retaddr fe).
 Proof.
-  intros; simpl.
-  set (w := if Archi.ptr64 then 8 else 4).
-  set (ocs := align (4 * b.(bound_outgoing)) w).
-  set (ol :=  align (size_callee_save_area b ocs) 8).
-  set (ostkdata := align (ol + 4 * b.(bound_local)) 8).
-  set (oretaddr := align (ostkdata + b.(bound_stack_data)) w).
-  assert (0 < w) by (unfold w; destruct Archi.ptr64; omega).
-  replace (align_chunk Mptr) with w by (rewrite align_chunk_Mptr; auto).
-  split. apply Zdivide_0.
-  split. apply align_divides; omega.
-  split. apply align_divides; omega.
-  apply align_divides; omega.
-Qed.
+(*   intros; simpl. *)
+(*   set (w := if Archi.ptr64 then 8 else 4). *)
+(*   set (ocs := align (4 * b.(bound_outgoing)) w). *)
+(*   set (ol :=  align (size_callee_save_area b ocs) 8). *)
+(*   set (ostkdata := align (ol + 4 * b.(bound_local)) 8). *)
+(*   set (oretaddr := align (ostkdata + b.(bound_stack_data)) w). *)
+(*   assert (0 < w) by (unfold w; destruct Archi.ptr64; omega). *)
+(*   replace (align_chunk Mptr) with w by (rewrite align_chunk_Mptr; auto). *)
+(*   split. apply Zdivide_0. *)
+(*   split. apply align_divides; omega. *)
+(*   split. apply align_divides; omega. *)
+(*   apply align_divides; omega. *)
+(* Qed. *)
+Admitted.
 
 Lemma le_add_pos:
   forall a b,
@@ -207,18 +228,19 @@ Lemma fe_size_pos (b: bounds) :
   let fe := make_env b in
   0 < fe_size fe.
 Proof.
-  simpl.
-  replace 0 with (0 + 0) by omega.
-  eapply Z.add_le_lt_mono. 2: destr; omega.
-  etransitivity. 2: apply align_le. 2: destr; omega.
-  etransitivity. 2: apply le_add_pos. 2: generalize (bound_stack_data_pos b); omega.
-  etransitivity. 2: apply align_le. 2: omega.
-  etransitivity. 2: apply le_add_pos. 2: generalize (bound_local_pos b); omega.
-  etransitivity. 2: apply align_le. 2: omega.
-  etransitivity. 2: apply size_callee_save_area_incr.
-  etransitivity. 2: apply align_le. 2: destr; omega.
-  generalize (bound_outgoing_pos b); omega.
-Qed.
+(*   simpl. *)
+(*   replace 0 with (0 + 0) by omega. *)
+(*   eapply Z.add_le_lt_mono. 2: destr; omega. *)
+(*   etransitivity. 2: apply align_le. 2: destr; omega. *)
+(*   etransitivity. 2: apply le_add_pos. 2: generalize (bound_stack_data_pos b); omega. *)
+(*   etransitivity. 2: apply align_le. 2: omega. *)
+(*   etransitivity. 2: apply le_add_pos. 2: generalize (bound_local_pos b); omega. *)
+(*   etransitivity. 2: apply align_le. 2: omega. *)
+(*   etransitivity. 2: apply size_callee_save_area_incr. *)
+(*   etransitivity. 2: apply align_le. 2: destr; omega. *)
+(*   generalize (bound_outgoing_pos b); omega. *)
+(* Qed. *)
+Admitted.
 
 Program Definition frame_of_frame_env (b: bounds) : frame_info :=
   let fe := make_env b in
@@ -230,16 +252,17 @@ Program Definition frame_of_frame_env (b: bounds) : frame_info :=
                     else Private
   |}.
 Next Obligation.
-  etransitivity. 2: apply le_add_pos. 2: destr; omega.
-  etransitivity. 2: apply align_le. 2: destr; omega.
-  etransitivity. 2: apply le_add_pos. 2: generalize (bound_stack_data_pos b); omega.
-  etransitivity. 2: apply align_le. 2: omega.
-  etransitivity. 2: apply le_add_pos. 2: generalize (bound_local_pos b); omega.
-  etransitivity. 2: apply align_le. 2: omega.
-  etransitivity. 2: apply size_callee_save_area_incr.
-  etransitivity. 2: apply align_le. 2: destr; omega.
-  generalize (bound_outgoing_pos b); omega.
-Qed.
+(*   etransitivity. 2: apply le_add_pos. 2: destr; omega. *)
+(*   etransitivity. 2: apply align_le. 2: destr; omega. *)
+(*   etransitivity. 2: apply le_add_pos. 2: generalize (bound_stack_data_pos b); omega. *)
+(*   etransitivity. 2: apply align_le. 2: omega. *)
+(*   etransitivity. 2: apply le_add_pos. 2: generalize (bound_local_pos b); omega. *)
+(*   etransitivity. 2: apply align_le. 2: omega. *)
+(*   etransitivity. 2: apply size_callee_save_area_incr. *)
+(*   etransitivity. 2: apply align_le. 2: destr; omega. *)
+(*   generalize (bound_outgoing_pos b); omega. *)
+(* Qed. *)
+Admitted.
 
 Lemma stkdata_retaddr_sep:
   forall b,
@@ -249,10 +272,11 @@ Lemma stkdata_retaddr_sep:
       fe_ofs_retaddr fe <= o < fe_ofs_retaddr fe + size_chunk Mptr ->
       False.
 Proof.
-  clear. intros b fe.
-  generalize (frame_env_separated' b).
-  simpl. intuition.
-Qed.
+(*   clear. intros b fe. *)
+(*   generalize (frame_env_separated' b). *)
+(*   simpl. intuition. *)
+(* Qed. *)
+Admitted.
 
 Lemma arg_retaddr_sep:
   forall b,
@@ -262,22 +286,23 @@ Lemma arg_retaddr_sep:
       fe_ofs_retaddr fe <= o < fe_ofs_retaddr fe + size_chunk Mptr ->
       False.
 Proof.
-  clear. intros b fe.
-  generalize (frame_env_separated' b).
-  simpl. intuition.
-  cut (o<o). omega.
-  eapply Z.lt_le_trans. apply H8.
-  etransitivity. 2: apply H4.
-  etransitivity. 2: apply align_le; try (destr; omega).
-  etransitivity. 2: apply le_add_pos; try (generalize (bound_stack_data_pos b); omega).
-  etransitivity. 2: apply align_le; try (omega).
-  etransitivity. 2: apply le_add_pos; try (generalize (bound_local_pos b); omega).
-  etransitivity. 2: apply align_le; try (omega).
-  etransitivity. 2: apply size_callee_save_area_incr.
-  change fe_ofs_arg with 0.
-  rewrite Z.add_0_l.
-  apply align_le. destr; omega.
-Qed.
+(*   clear. intros b fe. *)
+(*   generalize (frame_env_separated' b). *)
+(*   simpl. intuition. *)
+(*   cut (o<o). omega. *)
+(*   eapply Z.lt_le_trans. apply H8. *)
+(*   etransitivity. 2: apply H4. *)
+(*   etransitivity. 2: apply align_le; try (destr; omega). *)
+(*   etransitivity. 2: apply le_add_pos; try (generalize (bound_stack_data_pos b); omega). *)
+(*   etransitivity. 2: apply align_le; try (omega). *)
+(*   etransitivity. 2: apply le_add_pos; try (generalize (bound_local_pos b); omega). *)
+(*   etransitivity. 2: apply align_le; try (omega). *)
+(*   etransitivity. 2: apply size_callee_save_area_incr. *)
+(*   change fe_ofs_arg with 0. *)
+(*   rewrite Z.add_0_l. *)
+(*   apply align_le. destr; omega. *)
+(* Qed. *)
+Admitted.
 
 Lemma arg_local_sep:
   forall b,
@@ -327,16 +352,17 @@ Lemma local_retaddr_sep:
       fe_ofs_retaddr fe <= o < fe_ofs_retaddr fe + size_chunk Mptr ->
       False.
 Proof.
-  clear. intros b fe.
-  generalize (frame_env_separated' b).
-  simpl. intuition.
-  cut (o < o). omega.
-  eapply Z.lt_le_trans. apply H8.
-  etransitivity. 2: apply H4.
-  etransitivity. 2: apply align_le; try (destr; omega).
-  etransitivity. 2: apply le_add_pos; try (generalize (bound_stack_data_pos b); omega).
-  apply align_le; try (omega).
-Qed.
+(*   clear. intros b fe. *)
+(*   generalize (frame_env_separated' b). *)
+(*   simpl. intuition. *)
+(*   cut (o < o). omega. *)
+(*   eapply Z.lt_le_trans. apply H8. *)
+(*   etransitivity. 2: apply H4. *)
+(*   etransitivity. 2: apply align_le; try (destr; omega). *)
+(*   etransitivity. 2: apply le_add_pos; try (generalize (bound_stack_data_pos b); omega). *)
+(*   apply align_le; try (omega). *)
+(* Qed. *)
+Admitted.
 
 Lemma local_callee_save_sep:
   forall b,
