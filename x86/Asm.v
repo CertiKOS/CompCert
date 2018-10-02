@@ -392,7 +392,7 @@ Definition eval_addrmode32 (a: addrmode) (rs: regset) : val :=
              end)
            (match const with
             | inl ofs => Vint (Int.repr ofs)
-            | inr(id, ofs) => Genv.symbol_address ge id ofs
+            | inr(id, ofs) => Vptr (Block.glob id) ofs
             end)).
 
 Definition eval_addrmode64 (a: addrmode) (rs: regset) : val :=
@@ -410,7 +410,7 @@ Definition eval_addrmode64 (a: addrmode) (rs: regset) : val :=
              end)
            (match const with
             | inl ofs => Vlong (Int64.repr ofs)
-            | inr(id, ofs) => Genv.symbol_address ge id ofs
+            | inr(id, ofs) => Vptr (Block.glob id) ofs
             end)).
 
 Definition eval_addrmode (a: addrmode) (rs: regset) : val :=
@@ -602,17 +602,9 @@ Definition exec_store (chunk: memory_chunk) (m: mem)
     and all other instruction set those flags to [Vundef], to reflect
     the fact that the processor updates some or all of those flags,
     but we do not need to model this precisely.
-
-    The semantics is parametrized over the value of the stack pointer
-    at module entry, which controls the behavior of the [Pret]
-    instruction.  When [RSP <> init_sp], we interpret [Pret] as a
-    usual, internal return and jump to the location pointed to by
-    [RA]. However, when [RSP = init_sp], we intepret [Pret] as a
-    top-level return to the environment, expressed as a final state
-    rather than a step.
 *)
 
-Definition exec_instr (init_sp: val) (f: function) (i: instruction) (rs: regset) (m: mem) : outcome :=
+Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : outcome :=
   match i with
   (** Moves *)
   | Pmov_rr rd r1 =>
@@ -622,7 +614,7 @@ Definition exec_instr (init_sp: val) (f: function) (i: instruction) (rs: regset)
   | Pmovq_ri rd n =>
       Next (nextinstr_nf (rs#rd <- (Vlong n))) m
   | Pmov_rs rd id =>
-      Next (nextinstr_nf (rs#rd <- (Genv.symbol_address ge id Ptrofs.zero))) m
+      Next (nextinstr_nf (rs#rd <- (Vptr (Block.glob id) Ptrofs.zero))) m
   | Pmovl_rm rd a =>
       exec_load Mint32 m a rs rd
   | Pmovq_rm rd a =>
@@ -903,7 +895,7 @@ Definition exec_instr (init_sp: val) (f: function) (i: instruction) (rs: regset)
   | Pjmp_l lbl =>
       goto_label f lbl rs m
   | Pjmp_s id sg =>
-      Next (rs#PC <- (Genv.symbol_address ge id Ptrofs.zero)) m
+      Next (rs#PC <- (Vptr (Block.glob id) Ptrofs.zero)) m
   | Pjmp_r r sg =>
       Next (rs#PC <- (rs r)) m
   | Pjcc cond lbl =>
@@ -928,14 +920,11 @@ Definition exec_instr (init_sp: val) (f: function) (i: instruction) (rs: regset)
       | _ => Stuck
       end
   | Pcall_s id sg =>
-      Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (Genv.symbol_address ge id Ptrofs.zero)) m
+      Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (Vptr (Block.glob id) Ptrofs.zero)) m
   | Pcall_r r sg =>
       Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (rs r)) m
   | Pret =>
-      if Val.eq rs#SP init_sp then
-        Stuck
-      else
-        Next (rs#PC <- (rs#RA)) m
+      Next (rs#PC <- (rs#RA)) m
   (** Saving and restoring registers *)
   | Pmov_rm_a rd a =>
       exec_load (if Archi.ptr64 then Many64 else Many32) m a rs rd
@@ -1091,26 +1080,18 @@ Definition loc_external_result (sg: signature) : rpair preg :=
 (** Execution of the instruction at [rs#PC]. *)
 
 Inductive state: Type :=
-  | State: regset -> mem -> option val -> state.
+  | State: regset -> mem -> state.
 
 Inductive step: state -> trace -> state -> Prop :=
   | exec_step_internal:
-      forall b ofs f i rs m sp0 rs' m',
+      forall b ofs f i rs m rs' m',
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some i ->
-      exec_instr sp0 f i rs m = Next rs' m' ->
-      step (State rs m (Some sp0)) E0 (State rs' m' (Some sp0))
-  | exec_step_final_ret:
-      forall b ofs f rs m sp0 rs',
-      rs PC = Vptr b ofs ->
-      Genv.find_funct_ptr ge b = Some (Internal f) ->
-      find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some Pret ->
-      rs#SP = sp0 ->
-      rs' = rs # PC <- (rs#RA) ->
-      step (State rs m (Some sp0)) E0 (State rs' m None)
+      exec_instr f i rs m = Next rs' m' ->
+      step (State rs m) E0 (State rs' m')
   | exec_step_builtin:
-      forall b ofs f ef args res rs m sp0 vargs t vres rs' m',
+      forall b ofs f ef args res rs m vargs t vres rs' m',
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some (Pbuiltin ef args res) ->
@@ -1119,16 +1100,15 @@ Inductive step: state -> trace -> state -> Prop :=
       rs' = nextinstr_nf
              (set_res res vres
                (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) ->
-      step (State rs m (Some sp0)) t (State rs' m' (Some sp0))
+      step (State rs m) t (State rs' m')
   | exec_step_external:
-      forall b ef args res rs m sp0 t rs' m' sp0',
+      forall b ef args res rs m t rs' m',
       rs PC = Vptr b Ptrofs.zero ->
       Genv.find_funct_ptr ge b = Some (External ef) ->
       extcall_arguments rs m (ef_sig ef) args ->
       external_call ef ge args m t res m' ->
       rs' = (set_pair (loc_external_result (ef_sig ef)) res rs) #PC <- (rs RA) ->
-      sp0' = (if Val.eq rs#SP sp0 then None else Some sp0) ->
-      step (State rs m (Some sp0)) t (State rs' m' sp0').
+      step (State rs m) t (State rs' m').
 
 End RELSEM.
 
@@ -1137,8 +1117,14 @@ End RELSEM.
 
 Definition li_asm :=
   {|
-    query := regset * mem;
-    reply := regset * mem;
+    query := state;
+    reply := Empty_set;
+    query_is_internal ge q :=
+      let '(State rs m) := q in
+      match rs#PC with
+        | Vptr b ofs => Senv.block_is_internal ge b
+        | _ => false
+      end;
   |}.
 
 (** Asm does not really have a notion of control stack. However, to
@@ -1153,41 +1139,24 @@ Definition li_asm :=
 
 (** With these preparations we're ready to define our semantics. *)
 
-Inductive initial_state (ge: genv): query li_asm -> state -> Prop :=
-  | initial_state_intro rs m fb fofs f:
-      Genv.find_funct_ptr ge fb = Some (Internal f) ->
-      rs#PC = Vptr fb fofs ->
+Inductive initial_state: query li_asm -> state -> Prop :=
+  | initial_state_intro (rs: regset) (m: mem):
       rs#SP <> Vundef ->
       rs#RA <> Vundef ->
-      initial_state ge (rs, m) (State rs m (Some rs#SP)).
+      initial_state (State rs m) (State rs m).
 
-Inductive at_external (ge: genv): state -> query li_asm -> Prop :=
-  | at_external_intro rs m sp fb fofs id sg:
-      Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
-      rs#PC = Vptr fb fofs ->
-      at_external ge (State rs m sp) (rs, m).
-
-Inductive after_external: state -> reply li_asm -> state -> Prop :=
-  | after_external_intro rs m sp (rs': regset) m':
-      let sp' := if Val.eq rs'#SP sp then None else Some sp in
-      after_external
-        (State rs m (Some sp))
-        (rs', m')
-        (State rs' m' sp').
-
-Inductive final_state (ge: genv): state -> reply li_asm -> Prop :=
-  | final_state_intro rs m:
-      final_state ge (State rs m None) (rs, m).
+Inductive final_state (ge: genv): _ -> reply (li_asm -o li_asm) -> _ -> Prop :=
+  | final_state_intro s:
+      query_is_internal li_asm ge s = false ->
+      final_state ge s (inl s) (simple_initial_state (liA := li_asm) initial_state ge).
 
 Definition semantics (p: program) :=
   let ge := Genv.globalenv p in
-  Semantics li_asm li_asm
+  Semantics_gen (li_asm -o li_asm)
     step
-    (initial_state ge)
-    (at_external ge)
-    after_external
+    (simple_initial_state initial_state ge)
     (final_state ge)
-    ge.
+    ge ge.
 
 (** Determinacy of the [Asm] semantics. *)
 
@@ -1213,6 +1182,8 @@ Proof.
   intros. eapply C; eauto.
 Qed.
 
+(* XXX: introduce a proof method for [Semantics] *)
+(*
 Lemma semantics_determinate: forall p, determinate (semantics p).
 Proof.
 Ltac Equalities :=
@@ -1250,6 +1221,7 @@ Ltac Equalities :=
 - (* final states *)
   inv H; inv H0. congruence.
 Qed.
+*)
 
 (** Classification functions for processor registers (used in Asmgenproof). *)
 

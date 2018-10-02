@@ -23,39 +23,51 @@ Module FComp.
     Definition genv: Type := genvtype L1 * genvtype L2.
 
     Inductive state {A B} :=
-      | state_l (s1: A) (k2: cont li B)
-      | state_r (s2: B) (k1: cont li A).
+      | running (s: A + B) (k: cont li (A + B))
+      | conflict.
 
-    Definition liftk {A B} (k1: cont li A) (k2: cont li B) (q: query li) :=
-      match k1 q, k2 q with
-        | Some S1, None => Some (set_map (fun s1 => state_l s1 k2) S1)
-        | None, Some S2 => Some (set_map (fun s2 => state_r s2 k1) S2)
-        | Some _, Some _ => Some (fun _ => False)
-        | None, None => None
-      end.
+    Definition inlk {A B} (k: cont li A) : cont li (A + B) :=
+      fun q => option_map (set_map inl) (k q).
+
+    Definition inrk {A B} (k: cont li B) : cont li (A + B) :=
+      fun q => option_map (set_map inr) (k q).
+
+    Definition liftk {A B} (k1 k2: cont li (A + B)): cont li state :=
+      fun q =>
+        match k1 q, k2 q with
+          | Some S1, None => Some (set_map (fun S => running S k2) S1)
+          | None, Some S2 => Some (set_map (fun S => running S k1) S2)
+          | Some _, Some _ => Some (singl conflict)
+          | None, None => None
+        end.
 
     Inductive step (ge: genv): state -> trace -> state -> Prop :=
       | step_l s t s' k:
           Smallstep.step L1 (fst ge) s t s' ->
-          step ge (state_l s k) t (state_l s' k)
+          step ge (running (inl s) k) t (running (inl s') k)
       | step_r s t s' k:
           Smallstep.step L2 (snd ge) s t s' ->
-          step ge (state_r s k) t (state_r s' k).
+          step ge (running (inr s) k) t (running (inr s') k).
+
+    Definition initial_state: cont li state :=
+      liftk
+        (inlk (initial_state L1))
+        (inrk (initial_state L2)).
 
     Inductive final_state: state -> reply li -> _ -> Prop :=
-      | final_state_l s1 r1 k1 k2:
+      | final_state_l s1 r1 k1 k':
           Smallstep.final_state L1 s1 r1 k1 ->
-          final_state (state_l s1 k2) r1 (liftk k1 k2)
-      | final_state_r s2 r2 k2 k1:
+          final_state (running (inl s1) k') r1 (liftk (inlk k1) k')
+      | final_state_r s2 r2 k2 k':
           Smallstep.final_state L2 s2 r2 k2 ->
-          final_state (state_r s2 k1) r2 (liftk k1 k2).
+          final_state (running (inr s2) k') r2 (liftk (inrk k2) k').
 
     Definition semantics :=
       {|
         Smallstep.genvtype := genv;
         Smallstep.state := state;
         Smallstep.step := step;
-        Smallstep.initial_state := liftk (initial_state L1) (initial_state L2);
+        Smallstep.initial_state := initial_state;
         Smallstep.final_state := final_state;
         Smallstep.globalenv := (globalenv L1, globalenv L2);
         Smallstep.symbolenv := ge;
