@@ -1,3 +1,4 @@
+Require Import Coqlib.
 Require Import Values.
 Require Import AST.
 Require Import Globalenvs.
@@ -22,20 +23,38 @@ Require Import Smallstep.
 
 Record invariant {li: language_interface} :=
   {
-    query_inv : query li -> Prop;
-    reply_inv : query li -> reply li -> Prop;
+    inv_state : Type;
+    inv_init : inv_state;
+    query_inv : inv_state -> inv_state -> query li -> Prop;
+    reply_inv : inv_state -> inv_state -> reply li -> Prop;
   }.
 
 Arguments invariant : clear implicits.
+
+Section MKINV.
+  Context {li} (QI: query li -> Prop) (RI: query li -> reply li -> Prop).
+
+  Inductive query_mkinv : option (query li) -> option (query li) -> _ -> Prop :=
+    query_mkinv_intro q : QI q -> query_mkinv None (Some q) q.
+
+  Inductive reply_mkinv : option (query li) -> option (query li) -> _ -> Prop :=
+    reply_mkinv_intro q r : RI q r -> reply_mkinv (Some q) None r.
+
+  Definition mkinv :=
+    {|
+      inv_init := None;
+      query_inv := query_mkinv;
+      reply_inv := reply_mkinv;
+    |}.
+End MKINV.
 
 (** As a core example, here is an invariant for the C language
   interface asserting that the queries and replies are well-typed. *)
 
 Definition wt_c : invariant li_c :=
-  {|
-    query_inv q := Val.has_type_list (cq_args q) (sig_args (cq_sg q));
-    reply_inv q r := Val.has_type (fst r) (proj_sig_res (cq_sg q));
-  |}.
+  mkinv
+    (fun q => Val.has_type_list (cq_args q) (sig_args (cq_sg q)))
+    (fun q r => Val.has_type (fst r) (proj_sig_res (cq_sg q))).
 
 (** ** Preservation *)
 
@@ -47,29 +66,25 @@ Definition wt_c : invariant li_c :=
   returns, preserved by internal steps, and ensure the invariant
   interface is respected at external calls and final states. *)
 
-Record preserves {liA liB} (L: semantics liA liB) IA IB (SI: _->_-> Prop) :=
+Definition cont_preserves {li A} I (SI: _ -> _ -> Prop) w (k: cont li A) :=
+  forall w' q, query_inv I w w' q ->
+  forall S s, k q = Some S -> S s -> SI w' s.
+
+Record preserves {li} (L: semantics li) I (SI: _->_-> Prop) :=
   {
     preserves_step q s t s':
       SI q s ->
       Step L s t s' ->
       SI q s';
-    preserves_initial_state q s:
-      query_inv IB q ->
-      initial_state L q s ->
-      SI q s;
-    preserves_external q s qA AE:
-      SI q s ->
-      external L s qA AE ->
-      query_inv IA qA /\
-      forall rA s',
-        reply_inv IA qA rA ->
-        AE rA s' ->
-        SI q s';
-    preserves_final_state q s r:
-      SI q s ->
-      final_state L s r ->
-      reply_inv IB q r;
-  }.
+    preserves_initial_state:
+      cont_preserves I SI (inv_init I) (initial_state L);
+    preserves_final_state w s r k:
+      SI w s ->
+      final_state L s r k ->
+      exists w',
+        reply_inv I w w' r /\
+        cont_preserves I SI w' k;
+ }.
 
 (** ** As calling conventions *)
 
@@ -78,42 +93,41 @@ Record preserves {liA liB} (L: semantics liA liB) IA IB (SI: _->_-> Prop) :=
   conventions asserting that the source and target queries are
   identical, and furthermore satisfy the given invariant. *)
 
-Inductive rel_inv {A} (I: A -> Prop) (x: A): A -> Prop :=
-  rel_inv_intro: I x -> rel_inv I x x.
-
 Coercion cc_inv {li} (I: invariant li): callconv li li :=
   {|
-    ccworld := query li;
-    match_senv q := eq;
-    match_query q q1 q2 := query_inv I q /\ q1 = q /\ q2 = q;
-    match_reply q := rel_inv (reply_inv I q);
-  |}.
+    cc_init := inv_init I;
+    cc_query q1 q2 w w' := psat (query_inv I w w') q1 q2;
+    cc_reply r1 r2 w w' := psat (reply_inv I w w') r1 r2;
+|}.
 
 (** With this, an invariant preservation proof can itself be lifted
   into a self-simulation by the invariant calling conventions. *)
 
-Lemma preserves_fsim {liA liB} (L: semantics liA liB) IA IB IS:
-  preserves L IA IB IS ->
-  forward_simulation (cc_inv IA) (cc_inv IB) L L.
+Lemma preserves_fsim_cont {li A} (I: invariant li) (IS: _ -> A -> Prop) w k:
+  cont_preserves I IS w k ->
+  fsim_match_cont I (fun w => psat (IS w)) w k k.
+Proof.
+  intros Hk w' q _ [Hq].
+  specialize (Hk w' q Hq).
+  destruct (k q) as [S | ]; constructor.
+  intros s Hs. exists s; split; auto.
+  constructor; eauto.
+Qed.
+
+Lemma preserves_fsim {li} (L: semantics li) I IS:
+  preserves L I IS ->
+  forward_simulation (cc_inv I) L L.
 Proof.
   intros HL.
-  apply forward_simulation_step with (match_states := fun w => rel_inv (IS w)).
+  apply forward_simulation_step with (match_states := fun w => psat (IS w)).
   - auto.
-  - intros q q1 q2 (Hq & Hq1 & Hq2) s Hs. subst.
-    exists s. split; eauto.
-    constructor.
-    eapply preserves_initial_state; eauto.
-  - intros w s _ qA AE [Hs] HAE.
-    edestruct @preserves_external as (HqA & Hr); eauto.
-    exists qA, qA, AE. repeat apply conj; eauto.
-    + intros r' _ s' [Hr'] Hs'.
-      exists s'. split; eauto.
-      constructor.
-      eapply Hr; eauto.
-  - intros w s _ r [Hs] Hr.
-    exists r. split; eauto.
-    constructor.
-    eapply preserves_final_state; eauto.
+  - apply preserves_fsim_cont.
+    apply preserves_initial_state; auto.
+  - intros w s _ r k [Hs] Hsk.
+    edestruct @preserves_final_state as (w' & Hr & Hk); eauto.
+    exists w', r, k. intuition auto.
+    + constructor; auto.
+    + apply preserves_fsim_cont; auto.
   - intros w s t s' Hstep _ [Hs].
     exists s'. split; eauto.
     constructor.
@@ -172,84 +186,78 @@ Qed.
   same time, for an invariant-preserving language, we can easily show
   a simulation from the original to the strengthened version, and from
   the weakened to the original version, and these simulations can be
-  composed with that proved by the used to obtain the desired one. *)
+  composed with that proved by the user to obtain the desired one. *)
 
 (** ** Strengthening the source semantics *)
 
 Section RESTRICT.
-  Context {liA liB} (L: semantics liA liB).
-  Context (IA: invariant liA).
-  Context (IB: invariant liB).
-  Context (IS: query liB -> state L -> Prop).
+  Context {li} (L: semantics li).
+  Context (I: invariant li).
+  Context (IS: inv_state I -> state L -> Prop).
 
   Inductive restrict_step ge: _ -> trace -> _ -> Prop :=
-    restrict_step_intro q s t s':
+    restrict_step_intro w s t s':
       step L ge s t s' ->
-      IS q s ->
-      IS q s' ->
-      restrict_step ge (q, s) t (q, s').
+      IS w s ->
+      IS w s' ->
+      restrict_step ge (w, s) t (w, s').
 
-  Inductive restrict_initial_state (q: query liB): _ -> Prop :=
-    restrict_initial_state_intro s:
-      initial_state L q s ->
-      query_inv IB q ->
-      IS q s ->
-      restrict_initial_state q (q, s).
+  Inductive restrict_states w q (S: state L -> Prop): _ * state L -> Prop :=
+    restrict_states_intro w' s :
+      S s ->
+      query_inv I w w' q ->
+      IS w' s ->
+      restrict_states w q S (w', s).
 
-  Inductive restrict_after_external q qA AE rA: _ -> Prop :=
-    restrict_after_external_intro (s': state L):
-      AE rA s' ->
-      reply_inv IA qA rA ->
-      IS q s' ->
-      restrict_after_external q qA AE rA (q, s').
+  Definition restrict_cont w (k: cont li (state L)): cont li (_ * state L) :=
+    fun q => option_map (restrict_states w q) (k q).
 
-  Inductive restrict_external: _ -> query liA -> (reply liA -> _) -> Prop :=
-    restrict_external_intro q s qA AE:
-      external L s qA AE ->
-      IS q s ->
-      query_inv IA qA ->
-      restrict_external (q, s) qA (restrict_after_external q qA AE).
-
-  Inductive restrict_final_state: _ -> reply liB -> Prop :=
-    restrict_final_state_intro q s r:
-      final_state L s r ->
-      IS q s ->
-      reply_inv IB q r ->
-      restrict_final_state (q, s) r.
+  Inductive restrict_final_state: _ * state L -> reply li -> cont _ _ -> Prop :=
+    restrict_final_state_intro w w' s r k:
+      final_state L s r k ->
+      IS w s ->
+      reply_inv I w w' r ->
+      restrict_final_state (w, s) r (restrict_cont w' k).
 
   Definition restrict :=
     {|
-      state := query liB * state L;
+      state := inv_state I * state L;
       genvtype := genvtype L;
       step := restrict_step;
-      initial_state := restrict_initial_state;
-      external := restrict_external;
+      initial_state := restrict_cont (inv_init I) (initial_state L);
       final_state := restrict_final_state;
       globalenv := globalenv L;
       symbolenv := symbolenv L;
     |}.
 
+  Let ms w s s' := (w, s) = s' /\ IS w s.
+
+  Lemma restrict_fsim_cont w k:
+    cont_preserves I IS w k ->
+    fsim_match_cont I ms w k (restrict_cont w k).
+  Proof.
+    intros Hk w' q _ [Hq].
+    specialize (Hk w' q Hq). unfold restrict_cont.
+    destruct (k q) as [S | ]; constructor. intros s Hs.
+    exists (w', s). unfold ms. intuition eauto.
+    constructor; eauto.
+  Qed.
+
   Lemma restrict_fsim:
-    preserves L IA IB IS ->
-    forward_simulation (cc_inv IA) (cc_inv IB) L restrict.
+    preserves L I IS ->
+    forward_simulation I L restrict.
   Proof.
     intros HL.
-    set (ms w s s' := (w, s) = s' /\ IS w s).
     apply forward_simulation_step with (match_states := ms).
     - reflexivity.
-    - intros q q1 q2 (Hq & Hq1 & Hq2) s Hs. subst.
-      assert (IS q s) by (eapply preserves_initial_state; eauto).
-      exists (q, s). split; constructor; eauto.
-    - intros q s _ qA AE [[] Hws] HAE.
-      edestruct @preserves_external as (HqA & H); eauto.
-      exists qA, qA, (restrict_after_external q qA AE).
-      repeat apply conj; eauto.
-      + constructor; eauto.
-      + intros r _ s' [Hr] Hs1'.
-        exists (q, s'). split; constructor; eauto.
-    - intros q s _ r [[] Hqs] Hr.
-      assert (reply_inv IB q r) by eauto using preserves_final_state.
-      exists r. split; constructor; eauto.
+    - apply restrict_fsim_cont.
+      apply preserves_initial_state; auto.
+    - intros xw xs [w s] r k [Hx Hws] Hsk. inversion Hx; clear Hx; subst.
+      edestruct @preserves_final_state as (w' & Hr & Hk); eauto.
+      exists w', r, (restrict_cont w' k). intuition idtac.
+      + constructor; auto.
+      + constructor; auto.
+      + apply restrict_fsim_cont; auto.
     - intros q s t s' Hstep _ [[] Hqs].
       assert (IS q s') by (eapply preserves_step; eauto).
       exists (q, s'). split; constructor; eauto.
@@ -259,73 +267,72 @@ End RESTRICT.
 (** ** Weakening the target semantics *)
 
 Section EXPAND.
-  Context {liA liB} (L: semantics liA liB).
-  Context (IA: invariant liA).
-  Context (IB: invariant liB).
-  Context (IS: query liB -> state L -> Prop).
+  Context {li} (L: semantics li).
+  Context (I: invariant li).
+  Context (IS: inv_state I -> state L -> Prop).
 
   Inductive expand_step ge: _ -> trace -> _ -> Prop :=
-    expand_step_intro q s t s':
-      (IS q s -> step L ge s t s') ->
-      expand_step ge (q, s) t (q, s').
+    expand_step_intro (W: _ -> Prop) s t s':
+      (forall w, W w -> IS w s -> step L ge s t s') ->
+      expand_step ge (W, s) t (W, s').
 
-  Inductive expand_initial_state (q: query liB): _ -> Prop :=
-    expand_initial_state_intro s:
-      (query_inv IB q -> initial_state L q s) ->
-      expand_initial_state q (q, s).
+  Inductive expand_states (W: _ -> Prop) q (S: state L -> Prop): _ -> Prop :=
+    expand_states_intro s:
+      let W' w' := exists w, W w /\ query_inv I w w' q in
+      (forall w w', W w -> query_inv I w w' q -> S s) ->
+      expand_states W q S (W', s).
 
-  Inductive expand_after_external (q: query liB) qA AE rA: _ -> Prop :=
-    expand_after_external_intro (s': state L):
-      (reply_inv IA qA rA -> AE rA s') ->
-      expand_after_external q qA AE rA (q, s').
+  Definition expand_cont W (k: cont li (state L)): cont li _ :=
+    fun q => option_map (expand_states W q) (k q).
 
-  Inductive expand_external: _ -> query liA -> (reply liA -> _) -> Prop :=
-    expand_external_intro q s qA AE:
-      (IS q s -> external L s qA AE) ->
-      expand_external (q, s) qA (expand_after_external q qA AE).
-
-  Inductive expand_final_state: _ -> reply liB -> Prop :=
-    expand_final_state_intro q s r:
-      (IS q s -> final_state L s r) ->
-      expand_final_state (q, s) r.
+  Inductive expand_final_state: _ -> reply li -> _ -> Prop :=
+    expand_final_state_intro (W: _ -> Prop) s r k:
+      let W' w' := exists w, W w /\ reply_inv I w w' r in
+      (forall w, W w -> IS w s -> final_state L s r k) ->
+      expand_final_state (W, s) r (expand_cont W' k).
 
   Definition expand :=
     {|
-      state := query liB * state L;
+      state := (inv_state I -> Prop) * state L;
       genvtype := genvtype L;
       step := expand_step;
-      initial_state := expand_initial_state;
-      external := expand_external;
+      initial_state := expand_cont (eq (inv_init I)) (initial_state L);
       final_state := expand_final_state;
       globalenv := globalenv L;
       symbolenv := symbolenv L;
     |}.
 
+  Let ms := fun w s s' => fst s w /\ snd s = s' /\ IS w s'.
+
+  Lemma expand_fsim_cont (W: _ -> Prop) w k:
+    W w ->
+    cont_preserves I IS w k ->
+    fsim_match_cont I ms w (expand_cont W k) k.
+  Proof.
+    intros Hw Hk w' q _ [Hq].
+    specialize (Hk w' q Hq). unfold expand_cont.
+    destruct (k q) as [S | ]; constructor. intros _ [s W' Hs].
+    exists s. unfold ms, W'. simpl. eauto 10.
+  Qed.
+
   Lemma expand_fsim:
-    preserves L IA IB IS ->
-    forward_simulation (cc_inv IA) (cc_inv IB) expand L.
+    preserves L I IS ->
+    forward_simulation I expand L.
   Proof.
     intros HL.
-    set (ms w s s' := s = (w, s') /\ IS w s').
     apply forward_simulation_step with (match_states := ms).
     - reflexivity.
-    - intros q q1 q2 (Hq & Hq1 & Hq2) _ [s Hqs]. subst q1 q2 ms.
-      exists s; intuition eauto.
-      eapply preserves_initial_state; eauto.
-    - intros q qs s qA EAE [Hqs Hs] H. subst qs ms.
-      inversion H; clear H; subst.
-      edestruct @preserves_external as (HqA & HrA); eauto.
-      exists qA, qA, AE. simpl. intuition eauto.
-      destruct H0 as [Hr].
-      destruct H1 as [s' Hs'].
-      eauto 10.
-    - intros q qs s r [Hqs Hs] Hr. subst qs ms.
-      inversion Hr; clear Hr; subst.
-      exists r. intuition eauto.
-      constructor. eapply preserves_final_state; eauto.
-    - intros q qs t qs' Hstep s [Hqs Hs]. subst ms qs.
-      inversion Hstep; clear Hstep; subst.
-      exists s'. intuition eauto.
+    - eapply expand_fsim_cont; eauto.
+      eapply preserves_initial_state; auto.
+    - intros w ws s r k (Hw & Hws & Hs) Hsk.
+      destruct Hsk as [W xs r k W' Hsk]. simpl in *. subst xs W'.
+      edestruct @preserves_final_state as (w' & Hr & Hk); eauto.
+      exists w', r, k. intuition eauto.
+      + constructor; eauto.
+      + apply expand_fsim_cont; eauto.
+    - intros w ws t ws' Hstep s (Hw & Hws & Hs).
+      destruct Hstep as [W xs t s' Hstep]. simpl in *. subst.
+      exists s'. unfold ms. intuition eauto.
       eapply preserves_step; eauto.
   Qed.
 End EXPAND.
