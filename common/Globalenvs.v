@@ -592,6 +592,19 @@ Proof.
   unfold globalenv; intros. rewrite genv_public_add_globals. auto.
 Qed.
 
+Theorem globalenv_defs :
+  forall p, genv_defs (globalenv p) = prog_defmap p.
+Proof.
+  unfold globalenv, prog_defmap; intros.
+  generalize (prog_defs p). clear.
+  intro l. pattern l. revert l. apply rev_ind.
+  - reflexivity.
+  - intros [i d] defs IHdefs.
+    unfold add_globals, PTree_Properties.of_list in *.
+    rewrite !fold_left_app. simpl.
+    f_equal. assumption.
+Qed.
+
 Theorem block_is_volatile_below:
   forall ge b, block_is_volatile ge b = Some true -> Block.lt b Block.init.
 Proof.
