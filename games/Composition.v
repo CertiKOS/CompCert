@@ -27,20 +27,19 @@ Module FComp.
     for the inactive thread. *)
 
   Inductive state {G A} :=
-    | running (a : A) (k : input G -> option A)
-    | conflict.
+    | running (a : A) (k : input G -> option (A -> Prop)).
 
   Arguments state : clear implicits.
 
   (** Two continuations for the underlying can be combined into a
     continuation for the two-threaded RTS in the following way. *)
 
-  Definition liftk {G A} (k1 k2 : input G -> option A) (q : input G) :=
+  Definition liftk {G A} (k1 k2 : input G -> option (A -> Prop)) (q : input G) :=
     match k1 q, k2 q with
       | None, None => None
-      | Some a1, None => Some (running a1 k2)
-      | None, Some a2 => Some (running a2 k1)
-      | Some _, Some _ => Some conflict
+      | Some a1, None => Some (set_map (fun s => running s k2) a1)
+      | None, Some a2 => Some (set_map (fun s => running s k1) a2)
+      | Some _, Some _ => Some (fun _ => False)
     end.
 
   (** When the running thread interacts with the environment, its
@@ -64,23 +63,20 @@ Module FComp.
 
   Inductive state_rel {G A B} R : rel (state G A) (state G B) :=
     | running_rel :
-        Monotonic running (R ++> (- ==> option_rel R) ++> state_rel R)
-    | conflict_rel :
-        Monotonic conflict (state_rel R).
+        Monotonic running (R ++> (- ==> option_rel (set_le R)) ++> state_rel R).
 
   Global Existing Instance running_rel.
-  Global Existing Instance conflict_rel.
   Global Instance running_rel_params : Params (@running) 2.
 
   Global Instance liftk_sim :
     Monotonic
       (@liftk)
       (forallr -, forallr R,
-        (- ==> option_rel R) ++>
-        (- ==> option_rel R) ++>
-        (- ==> option_rel (state_rel R))).
+        (- ==> option_rel (set_le R)) ++>
+        (- ==> option_rel (set_le R)) ++>
+        (- ==> option_rel (set_le (state_rel R)))).
   Proof.
-    unfold liftk. rauto.
+    unfold liftk. repeat rstep. inversion 1.
   Qed.
 
   Global Instance liftb_sim :
@@ -88,7 +84,7 @@ Module FComp.
       (@liftb)
       (forallr -, forallr R,
         behavior_le R ++>
-        (- ==> option_rel R) ++>
+        (- ==> option_rel (set_le R)) ++>
         behavior_le (state_rel R)).
   Proof.
     unfold liftb. rauto.
@@ -99,7 +95,7 @@ Module FComp.
   Proof.
     intros α β Hαβ sa sb Hs ra Hra.
     destruct Hra as [a ka ra Hra].
-    inversion Hs as [xa b Hab xka kb Hk | ]; clear Hs; subst.
+    inversion Hs as [xa b Hab xka kb Hk]; clear Hs; subst.
     edestruct Hαβ as (rb & Hrb & Hr); eauto.
     exists (liftb rb kb). split.
     - constructor; auto.
@@ -120,8 +116,8 @@ Module FComp.
       modsem_lts := step (modsem_lts α + modsem_lts β);
       modsem_entry :=
         liftk
-          (fun q => option_map inl (modsem_entry α q))
-          (fun q => option_map inr (modsem_entry β q));
+          (fun q => option_map (set_map inl) (modsem_entry α q))
+          (fun q => option_map (set_map inr) (modsem_entry β q));
     |}.
 
   Global Instance of_ref :
@@ -146,32 +142,34 @@ Module Res.
 
   (** ** Definition *)
 
-  Definition res_behavior {G A} sw (r : behavior G A) : behavior G A :=
+  Definition xcall {G A} sw (r : behavior G A): option (A -> Prop) :=
     match r with
-      | interacts mo k =>
-        match k (sw mo) with
-          | Some a' => internal a'
-          | None => r
-        end
-      | _ => r
+      | interacts mo k => k (sw mo)
+      | _ => None
     end.
 
-  Inductive res {G A} sw (α : rts G A) : rts G A :=
-    res_intro a r :
-      α a r ->
-      res sw α a (res_behavior sw r).
+  Definition res_behavior {G A} sw (r : behavior G A) : behavior G A -> Prop :=
+    match xcall sw r with
+      | Some s => set_map internal s
+      | None => singl r
+    end.
+
+  Definition res {G A} sw (α : rts G A) : rts G A :=
+    fun a => set_bind (res_behavior sw) (α a).
 
   (** ** Monotonicity *)
+
+  Lemma set_behavior_le_top {G A B} (R : rel A B) x :
+    set_le (behavior_le (G:=G) R) x (singl goes_wrong).
+  Proof.
+    intros ? _. eexists; split; constructor.
+  Qed.
 
   Global Instance res_sim :
     Monotonic (@res) (forallr -, forallr R, - ==> sim R ++> sim R).
   Proof.
-    intros G A B R sw α β Hαβ a b Hab ra Hra.
-    destruct Hra as [a' ra Hra].
-    edestruct Hαβ as (rb & Hrb & Hr); eauto.
-    exists (res_behavior sw rb). split.
-    - constructor; auto.
-    - unfold res_behavior. rauto.
+    unfold res, res_behavior, xcall, sim. repeat rstep.
+    destruct H1; eauto using set_behavior_le_top; rauto.
   Qed.
 
   (** ** Modules *)
@@ -197,70 +195,60 @@ Module Res.
 
   (** ** Commutation with embedding *)
 
-  Inductive res_emb_comm_match {li} (L: semantics (li -o li)) :
-    rel (Behavior.state (A := Smallstep.state L))
-        (Behavior.state (A := Res.state)) :=
-    | res_emb_comm_resumed k :
-        res_emb_comm_match L
-          (Behavior.resumed (A := Smallstep.state L) k)
-          (Behavior.resumed (set_map Res.running k))
-    | res_emb_comm_running s :
-        res_emb_comm_match L
-          (Behavior.running s)
-          (Behavior.running (Res.running s))
-    | res_emb_comm_switching k :
-        res_emb_comm_match L
-          (Behavior.resumed k)
-          (Behavior.running (Res.resumed k)).
-
   Lemma res_emb_comm_step {li} (L: semantics (li -o li)):
-    sim (res_emb_comm_match L)
+    determinate L ->
+    sim eq
       (res (Res.sw li) (Behavior.step L))
       (Behavior.step (Res.semantics HComp.sw L)).
   Proof.
-    intros s1 s2 Hs r1 Hr1.
-    destruct Hr1; inversion Hs; clear Hs; subst.
-    - inversion H; clear H; subst.
-      + exists (internal (Behavior.running (Res.running s))).
-        repeat (constructor; auto).
-      + exists goes_wrong.
-        split; constructor.
-        intros [_ [s Hs]]. eauto.
-    - inversion H; clear H; subst.
-      + exists (internal (Behavior.running (Res.running s'))).
-        repeat (constructor; auto).
-      + rename r0 into r. simpl.
-        unfold Behavior.liftk at 1.
-        destruct (k (sw li r)) as [S | ] eqn:HS; simpl.
-        * exists (internal (Behavior.running (Res.resumed S))).
-          split; repeat (constructor; eauto). simpl.
-          eapply Res.step_switch; eauto.
-        * eexists.
-          split.
-          -- eapply (Behavior.step_interacts (Res.semantics HComp.sw L)).
-             econstructor; eauto.
-          -- repeat rstep. unfold Behavior.liftk, Res.liftk.
-             destruct (k x) as [S | ] eqn:Hk; simpl; constructor.
-             constructor.
-      + exists goes_wrong.
-        split; constructor.
-        * intros t s' Hs'.
-          inversion Hs'; clear Hs'; subst; simpl in *.
-          -- eapply H1; eauto.
-          -- eapply H2; eauto.
-        * intros r k H.
-          inversion H; clear H; subst.
-          eapply H2; eauto.
-    - inversion H; clear H; subst.
-      + exists (internal (Behavior.running (Res.running s))).
-        split; repeat (constructor; auto).
-      + exists goes_wrong.
-        split; repeat (constructor; auto).
-        * intros t s' Hs'.
-          inversion Hs'; clear Hs'; subst.
-          eauto.
-        * inversion 1.
-  Qed.
+    intros HL s _ [] _ [r r' Hr Hr'].
+    exists r'. split; [ | reflexivity].
+    destruct Hr; simpl in Hr'.
+    - (* wrong *)
+      destruct Hr'.
+      change (state L) with (state (Res.semantics (sw li) L)). constructor.
+    - (* internal step *)
+      destruct Hr'.
+      change (state L) with (state (Res.semantics (sw li) L)). constructor.
+      constructor; eauto.
+    - (* final state *)
+      unfold res_behavior in Hr'.
+      destruct xcall eqn:Hxc.
+      + (* switching *)
+        destruct Hr' as [r' Hr'].
+        simpl in Hxc. unfold Behavior.liftk in Hxc.
+        destruct k eqn:Hkr; simpl in Hxc; inversion Hxc; clear Hxc; subst.
+        destruct Hr' as [Hnostep | s' Hs'].
+        * change (state L) with (state (Res.semantics (sw li) L)).
+          constructor.
+          -- intros t s' Hs'. simpl in *.
+             destruct Hs'.
+             ++ eapply sd_final_nostep; eauto.
+             ++ edestruct (sd_final_determ HL s r k) as [Hr Hk]; eauto; subst.
+                admit. (* cont_determinate too weak *)
+          -- intros r' k' H'. simpl in *.
+             destruct H'. admit. (* cont_determinate too weak *)
+        * change (state L) with (state (Res.semantics (sw li) L)).
+          constructor.
+          eapply Res.step_switch; eauto. red. eauto.
+      + (* regular *)
+        destruct Hr'.
+        simpl in Hxc. unfold Behavior.liftk in Hxc.
+        destruct k eqn:Hk; simpl in Hxc; try discriminate.
+        change (state L) with (state (Res.semantics (sw li) L)).
+        constructor. constructor; eauto.
+    - (* going wrong *)
+      destruct Hr'.
+      change (state L) with (state (Res.semantics (sw li) L)).
+      constructor.
+      + intros t s' Hs'.
+        destruct Hs'.
+        * eapply H; eauto.
+        * eapply H0; eauto.
+      + intros r k Hk.
+        destruct Hk.
+        eapply H0; eauto.
+  Admitted.
 
   (** ** Commutation with [obs] *)
 
@@ -305,13 +293,30 @@ Module Res.
     otherwise [Σ n . τ^n] may be mistaken for [τ^ω]. To apply it to
     [obs (res sw α)] we use the following lemmas. *)
 
+  Lemma res_behavior_det {G A} sw (r r' : behavior G A) :
+    res_behavior sw r r' ->
+    deterministic_behavior r ->
+    deterministic_behavior r'.
+  Proof.
+    intros Hr' Hr.
+    unfold res_behavior, xcall in Hr'.
+    destruct r; try (destruct Hr'; simpl in *; auto).
+    destruct k; try (destruct Hr'; simpl in *; auto).
+  Qed.
+
   Lemma res_det {G A} sw (α : rts G A) :
     deterministic α ->
     deterministic (res sw α).
   Proof.
     intros Hα s x y Hx Hy.
-    destruct Hx. inversion Hy.
-    f_equal; eauto.
+    destruct Hx as [x x' Hx Hx'], Hy as [y y' Hy Hy'].
+    assert (H: psat deterministic_behavior x y) by eauto.
+    destruct H as [H]. clear - Hx' Hy' H.
+    unfold res_behavior, xcall in *.
+    destruct x; try (destruct Hx', Hy'; simpl in *; auto).
+    simpl in H. pose proof (H (sw m)).
+    destruct k; try (destruct Hx', Hy'; simpl in *; auto).
+    assert (a = a0) as [] by eauto. constructor. simpl. auto.
   Qed.
 
   (** In addition, we will use the following properties relating
@@ -324,14 +329,13 @@ Module Res.
     induction 1 as [a | a1 a2 a3 Ha12 Ha23].
     - constructor.
     - clear Ha23.
-      inversion Ha12 as [xa1 r2 Hr2]; clear Ha12; subst.
-      destruct Hr2 as [ | a1' r2 Hr2ext Hr2 Ha1']; [inversion H0 | ].
+      inversion Ha12 as [r1 x Hr2]; clear Ha12; subst.
+      destruct Hr2 as [ | a1' r2 Hr2ext Hr2 Ha1']; [inversion H | ].
       induction Ha1' as [a1 | a1 a1' a1'' Ha1' Ha1''].
       + eapply reachable_step with a2; eauto.
-        rewrite <- H0. constructor; auto.
+        econstructor; eauto.
       + eapply reachable_step with a1'; eauto.
-        change (internal a1') with (res_behavior sw (internal a1')).
-        constructor; auto.
+        econstructor; eauto. constructor.
   Qed.
 
   Lemma reachable_res {G A} sw (α : rts G A) a a' :
@@ -340,8 +344,7 @@ Module Res.
   Proof.
     induction 1 as [a | a1 a2 a3 Ha2 Ha3]; eauto.
     eapply reachable_step; eauto.
-    change (internal a2) with (res_behavior sw (internal a2)).
-    constructor; eauto.
+    econstructor; eauto. constructor.
   Qed.
 
   (** Another important key property is is the following: the
@@ -357,11 +360,10 @@ Module Res.
     α a (internal a').
   Proof.
     intros Hnoswitch Ha'.
-    inversion Ha'; clear Ha'; subst.
-    destruct r; try now inversion H.
-    - simpl. auto.
-    - eelim Hnoswitch.
-      exists a'. rewrite <- H. constructor. eauto.
+    inversion Ha' as [r x]; clear Ha'; subst.
+    destruct r; try (inversion H0; congruence).
+    eelim Hnoswitch.
+    exists a'. econstructor; eauto.
   Qed.
 
   (** This is used to show the following key property, which spells
@@ -390,7 +392,7 @@ Module Res.
       intros (a'''' & Ha'''').
       apply Ha2. exists a''''.
       inversion Ha''''; clear Ha''''; subst.
-      constructor.
+      econstructor; eauto.
       eapply obs_reachable; eauto.
   Qed.
 
@@ -421,22 +423,23 @@ Module Res.
     obs_res_obs sw α r a.
   Proof.
     intros Ha' H x Hx.
-    inversion Ha' as [xa ra Hra]; clear Ha'; subst.
-    destruct ra; try now inversion H1.
+    inversion Ha' as [ra xa Hra Hra']; clear Ha'; subst.
+    destruct ra; try (inversion Hra'; congruence).
     - (* internal step of α *)
-      inversion H1; clear H1; subst.
+      inversion Hra'; clear Hra'; subst.
       eapply H; eauto.
       transitivity a; eauto.
     - (* external step of α turned internal step of [res α] *)
       eapply obs_internal; eauto.
-      rewrite <- H1. constructor. eauto.
+      econstructor; eauto.
   Qed.
 
-  Lemma res_behavior_external {G A} sw (r : behavior G A) :
-    behavior_external (res_behavior sw r) ->
+  Lemma res_behavior_external {G A} sw (r r' : behavior G A) :
+    res_behavior sw r r' ->
+    behavior_external r' ->
     behavior_external r.
   Proof.
-    destruct r; inversion 1; constructor.
+    destruct r; try inversion 1; eauto.
   Qed.
 
   Lemma obs_res_obs_external {G A} sw (α : rts G A) a a' r :
@@ -451,7 +454,7 @@ Module Res.
     - induction Ha'; eauto using obs_res_obs_internal.
       intros x Hx.
       eapply obs_external with x; eauto.
-      inversion Hr; clear Hr; subst. constructor.
+      inversion Hr; clear Hr; subst. econstructor; eauto.
       eauto using obs_reachable, res_behavior_external.
   Qed.
 
@@ -468,10 +471,9 @@ Module Res.
     destruct Hr.
     - edestruct @forever_internal_res_inv as [(s' & Hs' & Hd) | ]; eauto.
       eapply obs_res_obs_external; eauto.
-      change diverges with (@res_behavior G A sw diverges). constructor.
-      eauto.
+      econstructor; eauto. constructor.
     - apply obs_res_obs_external with a'; auto.
-      inversion H0; clear H0; subst. constructor.
+      inversion H0; clear H0; subst. econstructor; eauto.
       eauto using res_behavior_external.
   Qed.
 End Res.

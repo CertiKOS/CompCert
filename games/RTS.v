@@ -2,7 +2,54 @@ Require Import LogicalRelations.
 Require Import Axioms.
 Require Import Classical.
 
+(** * Prerequisites *)
+
 Axiom prop_ext : ClassicalFacts.prop_extensionality.
+
+Inductive set_map {A B} (f: A -> B) (sA: A -> Prop) : B -> Prop :=
+  set_map_intro a : sA a -> set_map f sA (f a).
+
+Hint Constructors set_map.
+
+Global Instance set_map_le :
+  Monotonic
+    (@set_map)
+    (forallr RA, forallr RB, (RA ++> RB) ++> set_le RA ++> set_le RB).
+Proof.
+  intros A1 A2 RA B1 B2 RB f g Hfg s1 s2 Hs.
+  intros _ [a1 Ha1].
+  edestruct Hs as (a2 & Ha2 & Ha); eauto.
+Qed.
+
+Inductive set_bind {A B} (f : A -> B -> Prop) (sa: A -> Prop) : B -> Prop :=
+  set_bind_intro a b:
+    sa a -> f a b -> set_bind f sa b.
+
+Hint Constructors set_bind.
+
+Global Instance set_bind_le :
+  Monotonic
+    (@set_bind)
+    (forallr RA, forallr RB, (RA ++> set_le RB) ++> set_le RA ++> set_le RB).
+Proof.
+  intros A1 A2 RA B1 B2 RB f g Hfg sa sb Hs.
+  intros _ [a1 b1 Ha1 Hb1].
+  edestruct Hs as (a2 & Ha2 & Ha); eauto.
+  edestruct Hfg as (b2 & Hb2 & Hb); eauto.
+Qed.
+
+(** This definition is identical to [eq]. *)
+
+Inductive singl {A} (a : A) : A -> Prop :=
+  singl_intro : singl a a.
+
+Hint Constructors singl.
+
+Global Instance eq_le :
+  Monotonic (@singl) (forallr R, R ++> set_le R).
+Proof.
+  intros A B R a b Hab _ [ ]. eauto.
+Qed.
 
 
 (** * Games *)
@@ -35,7 +82,7 @@ Module RTS.
 
   Inductive behavior {G A} :=
     | internal (a' : A)
-    | interacts (m : output G) (k : input G -> option A)
+    | interacts (m : output G) (k : input G -> option (A -> Prop))
     | diverges
     | goes_wrong.
 
@@ -45,7 +92,7 @@ Module RTS.
     | internal_le :
         Monotonic internal (R ++> behavior_le R)
     | interacts_le :
-        Monotonic interacts (- ==> (- ==> option_rel R) ++> behavior_le R)
+        Monotonic interacts (- ==> (- ==> option_rel (set_le R)) ++> behavior_le R)
     | diverges_le :
         Monotonic diverges (behavior_le R)
     | goes_wrong_le ra :
@@ -68,7 +115,7 @@ Module RTS.
   Definition behavior_map {G A B} (f : A -> B) (r : behavior G A) :=
     match r with
       | internal a' => internal (f a')
-      | interacts m k => interacts m (fun mi => option_map f (k mi))
+      | interacts m k => interacts m (fun mi => option_map (set_map f) (k mi))
       | diverges => diverges
       | goes_wrong => goes_wrong
     end.
@@ -296,10 +343,18 @@ Module RTS.
 
   (** ** Structural properties *)
 
+  Definition nonbranching_cont {G A} (k1 k2 : input G -> option (A -> Prop)) :=
+    forall q S1 S2 s1 s2,
+      k1 q = Some S1 ->
+      k2 q = Some S2 ->
+      S1 s1 ->
+      S2 s2 ->
+      s1 = s2.
+
   Definition nonbranching_behaviors {G A} (r1 r2 : behavior G A) :=
     match r1, r2 with
       | internal a1, internal a2 => a1 = a2
-      | interacts m1 k1, interacts m2 k2 => m1 = m2 -> k1 = k2
+      | interacts m1 k1, interacts m2 k2 => m1 = m2 -> nonbranching_cont k1 k2
       | internal _, _ | _, internal _ => False
       | _, _ => True
     end.
@@ -307,15 +362,21 @@ Module RTS.
   Definition nonbranching {G A} (α : rts G A) :=
     forall a r1 r2, α a r1 -> α a r2 -> nonbranching_behaviors r1 r2.
 
+  Definition deterministic_behavior {G A} (r : behavior G A) :=
+    match r with
+      | interacts m k => nonbranching_cont k k
+      | _ => True
+    end.
+
   Definition deterministic {G A} (α : rts G A) :=
-    forall a r1 r2, α a r1 -> α a r2 -> r1 = r2.
+    forall a r1 r2, α a r1 -> α a r2 -> psat deterministic_behavior r1 r2.
 
   Lemma deterministic_nonbranching {G A} (α : rts G A) :
     deterministic α ->
     nonbranching α.
   Proof.
     intros Hα a r1 r2 Hr1 Hr2.
-    assert (r1 = r2) as [] by eauto.
+    pose proof (Hα a r1 r2 Hr1 Hr2) as [Hr]; eauto.
     destruct r1; simpl; auto.
   Qed.
 
@@ -390,19 +451,21 @@ Module RTS.
   Proof.
     intros Hα a r1 r2 H1 H2.
     destruct H1.
-    - destruct H2; eauto.
+    - destruct H2. { constructor. simpl. auto. }
       induction H2 as [a | a1 a2 a3 Ha12 Ha23].
-      + destruct H.
-        assert (r = internal a'); eauto. subst.
-        inversion H0.
+      + destruct H. revert H0.
+        assert (psat deterministic_behavior (internal a') r) as [Hr] by eauto.
+        inversion 1.
       + eapply IHHa23; eauto using fi_inv_internal.
     - destruct H2; eauto.
       + eapply fi_inv_reachable in H2; eauto.
-        destruct H2.
-        assert (r = internal a'0) by eauto; subst. inversion H.
+        destruct H2. revert H.
+        assert (psat deterministic_behavior (internal a'0) r) as [Hr] by eauto.
+        inversion 1.
       + induction H1 as [a | a1 a2 a3 Ha12 Ha23].
-        * destruct H4; eauto.
-          assert (r = internal a') by eauto; subst. inversion H.
+        * destruct H4; eauto. revert H.
+          assert (psat deterministic_behavior (internal a') r) as [Hr] by eauto.
+          inversion 1.
         * apply IHHa23; eauto.
           eapply reachable_inv_reachable; eauto.
   Qed.

@@ -24,29 +24,15 @@ Section HCOMP.
   Let L := Asm.semantics p.
   Let L12 := HComp.semantics (symbolenv L) L1 L2.
 
-  Inductive res_state_rel {A B} (R : rel A B) : rel (@Res.state A) (@Res.state B) :=
-    | res_running_rel:
-        Monotonic Res.running (R ++> res_state_rel R)
-    | res_resumed_rel:
-        Monotonic Res.resumed (set_le R ++> res_state_rel R).
-
-  Inductive match_fc_states : rel FComp.state (state L) :=
-    | match_fc_states_l s1 :
-        match_fc_states
+  Inductive match_states : rel FComp.state (state L) :=
+    | match_states_l s1 :
+        match_states
           (FComp.running (inl s1) (FComp.inrk (initial_state L2)))
           s1
-    | match_fc_states_r s2 :
-        match_fc_states
+    | match_states_r s2 :
+        match_states
           (FComp.running (inr s2) (FComp.inlk (initial_state L1)))
           s2.
-
-  Inductive match_states : rel (state L12) (state L) :=
-    | match_states_running s s' :
-        match_fc_states s s' ->
-        match_states (Res.running s) s'
-    | match_states_resumed (S: FComp.state -> Prop) s' :
-        (forall s, S s -> match_fc_states s s') ->
-        match_states (Res.resumed S) s'.
 
   Inductive link_cases : bool -> bool -> bool -> Prop :=
     | lc_none : link_cases false false false
@@ -79,30 +65,30 @@ Section HCOMP.
 
   Lemma asm_hcomp_fsim_cont_l :
     fsim_match_cont cc_id (fun _ => match_states) tt
-      (Res.liftk (FComp.liftk (FComp.inlk (initial_state L1))
-                              (FComp.inrk (initial_state L2))))
+      (FComp.liftk (FComp.inlk (initial_state L1))
+                   (FComp.inrk (initial_state L2)))
       (simple_initial_state Asm.initial_state (Genv.globalenv p)).
   Proof.
     intros [] [[] | q] _ [].
-    unfold Res.liftk, FComp.liftk, FComp.inlk, FComp.inrk.
+    unfold FComp.liftk, FComp.inlk, FComp.inrk.
     cbn -[query_is_internal]. unfold simple_dom.
     destruct (query_is_internal_cases q); constructor;
-    intros _ [_ [s Hs]]; inversion Hs as [x]; clear Hs; subst;
-    exists x; split; auto; repeat constructor.
+    intros _ [_ [s Hs]];
+    exists s; split; auto; repeat constructor.
   Qed.
 
   Lemma asm_hcomp_fsim_cont_r :
     fsim_match_cont cc_id (fun _ => match_states) tt
-      (Res.liftk (FComp.liftk (FComp.inrk (initial_state L2))
-                              (FComp.inlk (initial_state L1))))
+      (FComp.liftk (FComp.inrk (initial_state L2))
+                   (FComp.inlk (initial_state L1)))
       (simple_initial_state Asm.initial_state (Genv.globalenv p)).
   Proof.
     intros [] [[] | q] _ [].
-    unfold Res.liftk, FComp.liftk, FComp.inlk, FComp.inrk.
+    unfold FComp.liftk, FComp.inlk, FComp.inrk.
     cbn -[query_is_internal]. unfold simple_dom.
     destruct (query_is_internal_cases q); constructor;
-    intros _ [_ [s Hs]]; inversion Hs as [x]; clear Hs; subst;
-    exists x; split; auto; repeat constructor.
+    intros _ [_ [s Hs]];
+    exists s; split; auto; repeat constructor.
   Qed.
 
   Axiom external_call_empty :
@@ -120,7 +106,6 @@ Section HCOMP.
       destruct Hk12 as [si r ki kj Hki | si r ki kj Hki];
       destruct Hki as [si Hsi];
       inversion Hs; clear Hs; subst;
-      inversion H0; clear H0; subst;
       exists tt, (inl s), (simple_initial_state Asm.initial_state (Genv.globalenv p));
       intuition auto using asm_hcomp_fsim_cont_l, asm_hcomp_fsim_cont_r;
       constructor;
@@ -128,7 +113,7 @@ Section HCOMP.
       unfold simple_initial_state, simple_dom in Hr;
       destruct (query_is_internal_cases s); simpl in Hr; try congruence.
     - intros _ s12 t s12' Hs12' s Hs.
-      destruct Hs12' as [s12 t s12' Hs12' | s12 r12 k12 S12 Hk12 Hq | ].
+      destruct Hs12' as [s12 t s12' Hs12' | s12 r12 k12 s12' Hk12 Hs12'].
       + (* internal step *)
         destruct Hs12' as  [si t si' kj Hsi' | si t si' kj Hsi']; simpl in *.
       * inversion Hs; clear Hs; subst.
@@ -137,31 +122,22 @@ Section HCOMP.
         -- admit.
         -- eelim external_call_empty; eauto.
       * admit.
-      + (* internal switching *) 
+      + (* internal switching *)
         simpl in *.
         destruct Hk12 as [si r ki k' Hki | si r ki k' Hki]; simpl in *.
-      * destruct Hki as [si Hsi]; cbn -[li_asm] in Hq.
+      * destruct Hs12' as (S12' & Hq & Hs12').
         inversion Hs; clear Hs; subst.
-        inversion H0; clear H0; subst.
+        destruct Hki as [s Hs].
         unfold FComp.liftk in Hq.
         unfold FComp.inlk at 1, FComp.inrk at 1 3 in Hq.
-        unfold simple_initial_state at 1 2 4, simple_dom in Hq.
+        cbn -[li_asm] in Hq. unfold simple_dom in Hq.
         destruct (query_is_internal_cases s); simpl in Hq; try congruence.
         inversion Hq; clear Hq; subst.
         exists s. split.
         -- admit. (* measured simulation *)
-        -- constructor.
-           intros x [y [z Hz]].
-           destruct Hz.
+        -- destruct Hs12' as [_ [q Hq]].
+           destruct Hq.
            constructor.
       * admit.
-      + (* resuming after internal switching *)
-        inversion Hs; clear Hs; subst.
-        specialize (H1 s0 H).
-        exists s. split.
-        -- admit. (* measured simulation *)
-        -- constructor; auto.
-        (* Need measured simulation -- can use whether internal matches
-                  currently executing component as measure *)
   Admitted.
 End HCOMP.
