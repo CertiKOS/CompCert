@@ -506,4 +506,36 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
                   #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr))) ->
         step ge (State rs m) t (State rs' m').
 
+Inductive initial_state_gen (p: program) (rs: regset) m: state -> Prop :=
+  | initial_state_gen_intro:
+      forall m1 m2 m3 bstack m4
+      (MALLOC: Mem.alloc (Mem.push_new_stage m) 0 (Mem.stack_limit + align (size_chunk Mptr) 8) = (m1,bstack))
+      (MDROP: Mem.drop_perm m1 bstack 0 (Mem.stack_limit + align (size_chunk Mptr) 8) Writable = Some m2)
+      (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3)
+      (MST: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr))) Vnullptr = Some m4),
+      let ge := (globalenv p) in
+      let rs0 :=
+        rs # PC <- (Genv.symbol_address ge p.(prog_main) Ptrofs.zero)
+           # RA <- Vnullptr
+           # RSP <- (Vptr bstack (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr)))) in
+      initial_state_gen p rs m (State rs0 m4).
+
+Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=
+| initial_state_intro: forall m,
+    init_mem prog = Some m ->
+    initial_state_gen prog rs m s ->
+    initial_state prog rs s.
+
+Inductive final_state: state -> int -> Prop :=
+  | final_state_intro: forall rs m r,
+      rs#PC = Vnullptr ->
+      rs#RAX = Vint r ->
+      final_state (State rs m) r.
+
+Local Existing Instance mem_accessors_default.
+
+Definition semantics (p: program) (rs: regset) :=
+  Semantics_gen step (initial_state p rs) final_state (globalenv p) (Genv.genv_senv (globalenv p)).
+
+
 End WITHEXTERNALCALLS.
