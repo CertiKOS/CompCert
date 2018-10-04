@@ -42,7 +42,7 @@ Context {I: Type}.
 Definition instr_with_info:Type := I * segblock * ident.
 
 Definition code := list instr_with_info.
-Record function : Type := mkfunction { fn_sig: signature; fn_code: code; (* fn_frame: frame_info; *) fn_range:segblock}.
+Record function : Type := mkfunction { fn_sig: signature; fn_code: code; (* fn_frame: frame_info; *) fn_range:segblock; fn_stacksize: Z; fn_pubrange: Z * Z}.
 Definition fundef := AST.fundef function.
 Definition gdef := globdef fundef unit.
 
