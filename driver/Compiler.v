@@ -782,29 +782,39 @@ Proof.
   eapply RealAsm.real_asm_determinate.
 Qed.
 
+Lemma find_symbol_def_inversion :
+  forall (F V : Type) (p : program F V) (id : ident) (b : Values.block) (ge : Globalenvs.Genv.t F V),
+  ge = Globalenvs.Genv.globalenv p ->
+  Globalenvs.Genv.find_symbol ge id = Some b -> 
+  In (id, Globalenvs.Genv.find_def ge b) (prog_defs p).
+Admitted.
+
 Lemma flat_fn_stack_requirements_match: forall p tp
     (FM: FlatAsmgenproof.match_prog p tp),
     fn_stack_requirements p = flat_fn_stack_requirements tp.
 Proof.
-  (* intros. *)
-  (* unfold fn_stack_requirements. *)
-  (* unfold flat_fn_stack_requirements. *)
-  (* apply Axioms.extensionality. intro i. *)
-  (* destr. *)
-  (* exploit FlatAsmgenproof.find_symbol_some_pres; eauto. *)
-  (* intros (b' & ofs' & FSYM & INJ). *)
-  (* rewrite FSYM. *)
-  (* destr. exploit Globalenvs.Genv.find_symbol_funct_ptr_inversion; eauto. *)
-  (* intros IN. *)
+  intros.
+  unfold fn_stack_requirements.
+  unfold flat_fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  destr.
+  - unfold Globalenvs.Genv.find_funct_ptr.
+    exploit find_symbol_def_inversion; eauto. intros IN.
+    unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM.
+    repeat destr_in FM. eauto.
+    exploit FlatAsmgenproof.transl_prog_pres_def; eauto.
+    intros (def' & sb & IN' & TLDEF).
+    admit.
+  - assert (~ In i (prog_defs_names p)). 
+    eapply Globalenvs.Genv.find_symbol_inversion_none; eauto.
+    unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM.
+    repeat destr_in FM. 
+    assert (~ exists def sb, In (i, def, sb) (FlatAsmProgram.prog_defs tp)).
+    eapply FlatAsmgenproof.transl_prog_pres_non_def; eauto.
+    destr. apply find_some in Heqo0. destruct p0. destruct p0.
+    destruct Heqo0. exfalso. apply H0. destruct ident_eq. 
+    subst. do 2 eexists; eauto. inv H3.
 
-  (* exploit FlatAsmgenproof.init_meminj_match_sminj; eauto. *)
-  (* intros MINJ. inv MINJ. *)
-  (* erewrite (PseudoInstructions.globalenv_eq _ _ P); eauto. *)
-  (* rewrite (PseudoInstructionsproof.symbols_preserved _ _ P'). destr. *)
-  (* destr. *)
-  (* erewrite (PseudoInstructionsproof.functions_translated _ _ P'); eauto. *)
-  (* destr. *)
-  (* erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P'); eauto. *)
 Admitted.
 
 

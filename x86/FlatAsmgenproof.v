@@ -2393,27 +2393,27 @@ Proof.
   inv MINJ. eapply agree_inj_glob0; eauto.
 Qed.
 
-Lemma find_symbol_inversion_in : forall id b ofs,
-    Genv.find_symbol tge id = Some (b, ofs) ->
-    exists def sb, In (id, def, sb) (prog_defs tprog).
-Admitted.
+(* Lemma find_symbol_inversion_in : forall id b ofs, *)
+(*     Genv.find_symbol tge id = Some (b, ofs) -> *)
+(*     exists def sb, In (id, def, sb) (prog_defs tprog). *)
+(* Admitted. *)
 
-Lemma find_symbol_non_pres: forall id,
-  Globalenvs.Genv.find_symbol ge id = None ->
-  Genv.find_symbol tge id = None.
-Proof.
-  intros. unfold ge in H.
-  assert (~In id (prog_defs_names prog)) as NIN by
-        (eapply Genv.find_symbol_inversion_none; eauto).
-  assert (~ (exists def sb, In (id, def, sb) (prog_defs tprog))).
-  { 
-    unfold match_prog, transf_program in TRANSF. repeat destr_in TRANSF. eauto.
-    eapply transl_prog_pres_non_def; eauto.
-  }
-  destruct (Genv.find_symbol tge id) eqn:FSYM; auto.
-  destruct p. exploit find_symbol_inversion_in; eauto.
-  intros. congruence.
-Qed.
+(* Lemma find_symbol_non_pres: forall id, *)
+(*   Globalenvs.Genv.find_symbol ge id = None -> *)
+(*   Genv.find_symbol tge id = None. *)
+(* Proof. *)
+(*   intros. unfold ge in H. *)
+(*   assert (~In id (prog_defs_names prog)) as NIN by *)
+(*         (eapply Genv.find_symbol_inversion_none; eauto). *)
+(*   assert (~ (exists def sb, In (id, def, sb) (prog_defs tprog))). *)
+(*   {  *)
+(*     unfold match_prog, transf_program in TRANSF. repeat destr_in TRANSF. eauto. *)
+(*     eapply transl_prog_pres_non_def; eauto. *)
+(*   } *)
+(*   destruct (Genv.find_symbol tge id) eqn:FSYM; auto. *)
+(*   destruct p. exploit find_symbol_inversion_in; eauto. *)
+(*   intros. congruence. *)
+(* Qed. *)
 
   
 Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b,
