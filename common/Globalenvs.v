@@ -2028,6 +2028,17 @@ Section GENV_GLOBALENV_LINK.
 Context {F V: Type} `{Flink: Linker F} `{Vlink: Linker V} `{Fint: FundefIsInternal F}.
 Context (p1 p2 p: program F V) (Hp: link p1 p2 = Some p).
 
+Lemma globalenv_linkorder:
+  linkorder p1 p2 ->
+  linkorder (Genv.globalenv p1) (Genv.globalenv p2).
+Proof.
+  clear. intros Hp.
+  destruct Hp as (Hmain & Hpub & H).
+  simpl. split.
+  - rewrite !globalenv_public; auto.
+  - rewrite !globalenv_defs, !globalenv_public; auto.
+Qed.
+
 Lemma prog_defmap_link:
   forall i,
     (PTree.combine link_prog_merge (prog_defmap p1) (prog_defmap p2)) ! i =

@@ -328,8 +328,9 @@ Section HCOMP.
       (query_is_internal li_asm (Genv.globalenv p2) q)
       (query_is_internal li_asm (Genv.globalenv p) q).
   Proof.
-    assert (linkorder (Genv.globalenv p1) (Genv.globalenv p)) by admit.
-    assert (linkorder (Genv.globalenv p2) (Genv.globalenv p)) by admit.
+    edestruct (link_linkorder p1 p2 p Hp) as [Hp1p Hp2p]; eauto.
+    apply Genv.globalenv_linkorder in Hp1p.
+    apply Genv.globalenv_linkorder in Hp2p.
     simpl.
     destruct q as [rs m].
     destruct (rs PC); try constructor.
@@ -485,12 +486,13 @@ Section HCOMP.
     - intros _ s12 t s12' Hs12' s Hs.
       destruct Hs12' as [s12 t s12' Hs12' | s12 r12 k12 s12' Hk12 Hs12'].
       + (* internal step *)
+        apply link_linkorder in Hp as [Hp1p Hp2p].
         destruct Hs12' as  [si t si' kj Hsi' | si t si' kj Hsi']; simpl in *;
         inversion Hs; clear Hs; subst;
         left; exists si'; (split; [apply plus_one | constructor]);
-        eapply asm_step_linkorder; eauto using genv_fundef_is_internal.
-        -- admit. (* linkorder *)
-        -- admit. (* linkorder *)
+        eapply asm_step_linkorder;
+        eauto using genv_fundef_is_internal;
+        eauto using Genv.globalenv_linkorder.
       + (* internal switching *)
         simpl in *.
         destruct Hk12 as [si r ki k' Hki | si r ki k' Hki];
@@ -510,5 +512,5 @@ Section HCOMP.
         destruct Hs12' as [_ [q Hq]];
         destruct Hq;
         constructor.
-  Admitted.
+  Qed.
 End HCOMP.
