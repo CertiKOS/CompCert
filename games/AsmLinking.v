@@ -259,8 +259,8 @@ Qed.
 Definition state_is_internal ge s :=
   let '(State rs m) := s in
   match rs#PC with
-    | Vptr b ofs => Senv.block_is_internal ge b = true
-    | _ => False
+    | Vptr b ofs => Senv.block_is_internal ge b
+    | _ => false
   end.
 
 Lemma genv_fundef_is_internal (p: Asm.program):
@@ -397,10 +397,78 @@ Section HCOMP.
     exists s; split; auto; repeat constructor.
   Qed.
 
+  Definition measure (s : state (HComp.semantics (symbolenv L) L1 L2)) :=
+    match s with
+      | FComp.running (inl s1) _ =>
+        if query_is_internal li_asm (Genv.globalenv p1) s1 then 0%nat else 1%nat
+      | FComp.running (inr s2) _ =>
+        if query_is_internal li_asm (Genv.globalenv p2) s2 then 0%nat else 1%nat
+      | _ =>
+        0%nat
+    end.
+
+  Lemma measure_switch_l q S12' s12':
+    FComp.liftk
+      (FComp.inlk
+         (simple_initial_state Asm.initial_state (Genv.globalenv p1)))
+      (FComp.inrk
+         (simple_initial_state Asm.initial_state (Genv.globalenv p2)))
+      q = Some S12' ->
+    S12' s12' ->
+    measure s12' = 0%nat.
+  Proof.
+    unfold FComp.liftk.
+    unfold FComp.inlk at 1, FComp.inrk at 1 3.
+    destruct q; try discriminate.
+    cbn -[li_asm]; unfold simple_dom.
+    assert (query_is_internal li_asm (Genv.globalenv p1) q = true ->
+            forall k, measure (FComp.running (inl q) k) = 0) as Hm1.
+    {
+      intros H k. unfold measure. rewrite H. auto.
+    }
+    assert (query_is_internal li_asm (Genv.globalenv p2) q = true ->
+            forall k, measure (FComp.running (inr q) k) = 0) as Hm2.
+    {
+      intros H k. unfold measure. rewrite H. auto.
+    }
+    destruct (query_is_internal_cases q); simpl; try congruence;
+    intros H; inversion H; clear H; subst;
+    intros [_ [s Hs]]; destruct Hs; eauto.
+  Qed.
+
+  Lemma measure_switch_r q S12' s12':
+    FComp.liftk
+      (FComp.inrk
+         (simple_initial_state Asm.initial_state (Genv.globalenv p2)))
+      (FComp.inlk
+         (simple_initial_state Asm.initial_state (Genv.globalenv p1)))
+      q = Some S12' ->
+    S12' s12' ->
+    measure s12' = 0%nat.
+  Proof.
+    unfold FComp.liftk.
+    unfold FComp.inrk at 1, FComp.inlk at 1 3.
+    destruct q; try discriminate.
+    cbn -[li_asm]; unfold simple_dom.
+    assert (query_is_internal li_asm (Genv.globalenv p1) q = true ->
+            forall k, measure (FComp.running (inl q) k) = 0) as Hm1.
+    {
+      intros H k. unfold measure. rewrite H. auto.
+    }
+    assert (query_is_internal li_asm (Genv.globalenv p2) q = true ->
+            forall k, measure (FComp.running (inr q) k) = 0) as Hm2.
+    {
+      intros H k. unfold measure. rewrite H. auto.
+    }
+    destruct (query_is_internal_cases q); simpl; try congruence;
+    intros H; inversion H; clear H; subst;
+    intros [_ [s Hs]]; destruct Hs; eauto.
+  Qed.
+
   Lemma asm_hcomp_fsim :
     forward_simulation cc_id (HComp.semantics (symbolenv L) L1 L2) L.
   Proof.
-    apply forward_simulation_step with (fun _ => match_states); simpl.
+    apply forward_simulation_star with (fun _ => match_states) measure; simpl.
     - reflexivity.
     - apply asm_hcomp_fsim_cont_l.
     - intros _ s12 s r12 k12 Hs H;
@@ -419,26 +487,28 @@ Section HCOMP.
       + (* internal step *)
         destruct Hs12' as  [si t si' kj Hsi' | si t si' kj Hsi']; simpl in *;
         inversion Hs; clear Hs; subst;
-        exists si'; (split; [ | constructor]);
+        left; exists si'; (split; [apply plus_one | constructor]);
         eapply asm_step_linkorder; eauto using genv_fundef_is_internal.
         -- admit. (* linkorder *)
         -- admit. (* linkorder *)
       + (* internal switching *)
         simpl in *.
-        destruct Hk12 as [si r ki k' Hki | si r ki k' Hki]; simpl in *.
-      * destruct Hs12' as (S12' & Hq & Hs12').
-        inversion Hs; clear Hs; subst.
-        destruct Hki as [s Hs].
-        unfold FComp.liftk in Hq.
-        unfold FComp.inlk at 1, FComp.inrk at 1 3 in Hq.
-        cbn -[li_asm] in Hq. unfold simple_dom in Hq.
-        destruct (query_is_internal_cases s); simpl in Hq; try congruence.
-        inversion Hq; clear Hq; subst.
-        exists s. split.
-        -- admit. (* measured simulation *)
-        -- destruct Hs12' as [_ [q Hq]].
-           destruct Hq.
-           constructor.
-      * admit.
+        destruct Hk12 as [si r ki k' Hki | si r ki k' Hki];
+          cbn -[query_is_internal] in *;
+        destruct Hs12' as (S12' & Hq & Hs12');
+        inversion Hs; clear Hs; subst;
+        destruct Hki as [s Hs];
+        [erewrite measure_switch_l by eauto|
+         erewrite measure_switch_r by eauto];
+        unfold FComp.liftk in Hq;
+        [ unfold FComp.inlk at 1, FComp.inrk at 1 3 in Hq |
+          unfold FComp.inrk at 1, FComp.inlk at 1 3 in Hq ];
+        cbn -[li_asm] in Hq; unfold simple_dom in Hq;
+        destruct (query_is_internal_cases s); simpl in Hq; try congruence;
+        inversion Hq; clear Hq; subst;
+        right; intuition auto;
+        destruct Hs12' as [_ [q Hq]];
+        destruct Hq;
+        constructor.
   Admitted.
 End HCOMP.
