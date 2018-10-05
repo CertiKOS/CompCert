@@ -489,13 +489,13 @@ Definition fn_stack_requirements (tp: Asm.program) (id: ident) : Z :=
   end.
 
 Definition flat_fn_stack_requirements (tp: FlatAsm.program) (id: ident) : Z :=
-  match FlatAsmGlobenv.Genv.find_symbol (FlatAsmProgram.globalenv tp) id with
-  | Some (b, ofs) =>
-    match FlatAsmGlobenv.Genv.find_funct_ptr (FlatAsmProgram.globalenv tp) b ofs with
-    | Some (Internal f) => FlatAsmProgram.fn_stacksize f
+  match List.find (fun '(id',_,_) => ident_eq id id') (FlatAsmProgram.prog_defs tp) with
+  | None => 0
+  | Some (_, def, _) =>
+    match def with
+    | Some (Gfun (Internal f)) => FlatAsmProgram.fn_stacksize f
     | _ => 0
     end
-  | None => 0
   end.
 
 
@@ -785,7 +785,28 @@ Qed.
 Lemma flat_fn_stack_requirements_match: forall p tp
     (FM: FlatAsmgenproof.match_prog p tp),
     fn_stack_requirements p = flat_fn_stack_requirements tp.
+Proof.
+  (* intros. *)
+  (* unfold fn_stack_requirements. *)
+  (* unfold flat_fn_stack_requirements. *)
+  (* apply Axioms.extensionality. intro i. *)
+  (* destr. *)
+  (* exploit FlatAsmgenproof.find_symbol_some_pres; eauto. *)
+  (* intros (b' & ofs' & FSYM & INJ). *)
+  (* rewrite FSYM. *)
+  (* destr. exploit Globalenvs.Genv.find_symbol_funct_ptr_inversion; eauto. *)
+  (* intros IN. *)
+
+  (* exploit FlatAsmgenproof.init_meminj_match_sminj; eauto. *)
+  (* intros MINJ. inv MINJ. *)
+  (* erewrite (PseudoInstructions.globalenv_eq _ _ P); eauto. *)
+  (* rewrite (PseudoInstructionsproof.symbols_preserved _ _ P'). destr. *)
+  (* destr. *)
+  (* erewrite (PseudoInstructionsproof.functions_translated _ _ P'); eauto. *)
+  (* destr. *)
+  (* erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P'); eauto. *)
 Admitted.
+
 
 Theorem c_semantic_preservation_flat:
   forall p tp,

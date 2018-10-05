@@ -680,6 +680,19 @@ Proof.
   unfold find_symbol; simpl; intros. rewrite PTree.gempty in H. discriminate.
 Qed.
 
+Theorem find_symbol_inversion_none : forall p x,
+  find_symbol (globalenv p) x = None ->
+  ~ (In x (prog_defs_names p)).
+Proof.
+  intros.
+  assert ({In x (prog_defs_names p)} + {~ In x (prog_defs_names p)}) as INDEC.
+  apply in_dec. apply ident_eq. destruct INDEC.
+  - exploit find_symbol_exists_1; eauto. 
+    intros FSYM. destruct FSYM as (b & FSYM). congruence.
+  - auto.
+Qed.
+
+
 Theorem find_def_inversion:
   forall p b g,
   find_def (globalenv p) b = Some g ->

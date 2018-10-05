@@ -2125,6 +2125,33 @@ Proof.
   eapply transl_globdefs_pres_def; eauto.
 Qed.
 
+Lemma transl_globdefs_pres_non_def : forall defs g defs' i
+  (TL: transl_globdefs g defs = OK defs')
+  (IN: ~ In i (map fst defs)),
+  ~ exists def sb, In (i, def, sb) defs'.
+Proof.
+  induction defs; simpl; intros.
+  - inv TL. intros H. destruct H. destruct H. inv H.
+  - destruct a. monadInv TL. simpl in *.
+    apply Decidable.not_or in IN. destruct IN.
+    destruct x. destruct p.
+    exploit transl_globdef_pres_index; eauto.
+    intros. subst.
+    assert (~ (exists (def : option gdef) (sb : segblock), In (i, def, sb) x0)).
+    eapply IHdefs; eauto.
+    intros EX. apply H1.
+    destruct EX. destruct H2. destruct H2. inv H2. congruence.
+    do 2 eexists. eauto.
+Qed.
+
+Lemma transl_prog_pres_non_def : forall g l p dz cz p' i
+  (TL: transl_prog_with_map g l p dz cz = OK p')
+  (IN: ~ In i (prog_defs_names p)),
+  ~ exists def sb, In (i, def, sb) (prog_defs p').
+Proof.
+  intros. monadInv TL. simpl.
+  eapply transl_globdefs_pres_non_def; eauto.
+Qed.
 
 
 Lemma update_maps_gmap_in : forall defs x def g l dz cz g' l' dz' cz'
@@ -2357,8 +2384,38 @@ Proof.
     rewrite Ptrofs.add_commut. auto.
 Qed.
 
+Lemma find_symbol_some_pres: forall id b,
+  Globalenvs.Genv.find_symbol ge id = Some b ->
+  exists b' ofs', Genv.find_symbol tge id = Some (b', ofs') 
+             /\ init_meminj b = Some (b', Ptrofs.unsigned ofs').
+Proof.
+  intros. generalize init_meminj_match_sminj. intros MINJ.
+  inv MINJ. eapply agree_inj_glob0; eauto.
+Qed.
 
+Lemma find_symbol_inversion_in : forall id b ofs,
+    Genv.find_symbol tge id = Some (b, ofs) ->
+    exists def sb, In (id, def, sb) (prog_defs tprog).
+Admitted.
 
+Lemma find_symbol_non_pres: forall id,
+  Globalenvs.Genv.find_symbol ge id = None ->
+  Genv.find_symbol tge id = None.
+Proof.
+  intros. unfold ge in H.
+  assert (~In id (prog_defs_names prog)) as NIN by
+        (eapply Genv.find_symbol_inversion_none; eauto).
+  assert (~ (exists def sb, In (id, def, sb) (prog_defs tprog))).
+  { 
+    unfold match_prog, transf_program in TRANSF. repeat destr_in TRANSF. eauto.
+    eapply transl_prog_pres_non_def; eauto.
+  }
+  destruct (Genv.find_symbol tge id) eqn:FSYM; auto.
+  destruct p. exploit find_symbol_inversion_in; eauto.
+  intros. congruence.
+Qed.
+
+  
 Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b,
     Mem.alloc m1 lo hi = (m1', b) ->
     def_frame_inj m1 = def_frame_inj m1'.
