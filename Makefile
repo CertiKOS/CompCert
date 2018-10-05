@@ -105,7 +105,7 @@ BACKEND=\
 	AsmRegs.v RealAsm.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
   Segment.v \
   FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v FlatAsmProgram.v \
-  FlatAsmgen.v FlatAsmgenproof.v \
+  FlatAsmgen.v FlatAsmgenproof.v FlatAsmSep.v \
   MC.v MCgen.v \
   RockSaltAsm.v RockSaltAsmGen.v
 
