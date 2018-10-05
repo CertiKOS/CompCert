@@ -340,6 +340,68 @@ Fixpoint set_res (res: builtin_res preg) (v: val) (rs: regset) : regset :=
   | BR_splitlong hi lo => set_res lo (Val.loword v) (set_res hi (Val.hiword v) rs)
   end.
 
+(** Builtin args evaluation for horizontal composition *)
+
+(** The following verstion of eval_builtin_args does not depend on the
+  symbols environment, and is more defined than [Events.eval_builtin_args]. *)
+
+Section EVAL_BUILTIN_ARG.
+
+Context {A: Type}.
+Variable e: A -> val.
+Variable sp: val.
+Variable m: mem.
+
+Inductive eval_builtin_arg: builtin_arg A -> val -> Prop :=
+  | eval_BA: forall x,
+      eval_builtin_arg (BA x) (e x)
+  | eval_BA_int: forall n,
+      eval_builtin_arg (BA_int n) (Vint n)
+  | eval_BA_long: forall n,
+      eval_builtin_arg (BA_long n) (Vlong n)
+  | eval_BA_float: forall n,
+      eval_builtin_arg (BA_float n) (Vfloat n)
+  | eval_BA_single: forall n,
+      eval_builtin_arg (BA_single n) (Vsingle n)
+  | eval_BA_loadstack: forall chunk ofs v,
+      Mem.loadv chunk m (Val.offset_ptr sp ofs) = Some v ->
+      eval_builtin_arg (BA_loadstack chunk ofs) v
+  | eval_BA_addrstack: forall ofs,
+      eval_builtin_arg (BA_addrstack ofs) (Val.offset_ptr sp ofs)
+  | eval_BA_loadglobal: forall chunk id ofs v,
+      Mem.loadv chunk m (Vptr (Block.glob id) ofs) = Some v ->
+      eval_builtin_arg (BA_loadglobal chunk id ofs) v
+  | eval_BA_addrglobal: forall id ofs,
+      eval_builtin_arg (BA_addrglobal id ofs) (Vptr (Block.glob id) ofs)
+  | eval_BA_splitlong: forall hi lo vhi vlo,
+      eval_builtin_arg hi vhi -> eval_builtin_arg lo vlo ->
+      eval_builtin_arg (BA_splitlong hi lo) (Val.longofwords vhi vlo)
+  | eval_BA_addptr: forall a1 a2 v1 v2,
+      eval_builtin_arg a1 v1 -> eval_builtin_arg a2 v2 ->
+      eval_builtin_arg (BA_addptr a1 a2)
+                       (if Archi.ptr64 then Val.addl v1 v2 else Val.add v1 v2).
+
+Definition eval_builtin_args (al: list (builtin_arg A)) (vl: list val) : Prop :=
+  list_forall2 eval_builtin_arg al vl.
+
+Lemma eval_builtin_arg_determ:
+  forall a v, eval_builtin_arg a v -> forall v', eval_builtin_arg a v' -> v' = v.
+Proof.
+  induction 1; intros v' EV; inv EV; try congruence.
+  f_equal; eauto.
+  apply IHeval_builtin_arg1 in H3. apply IHeval_builtin_arg2 in H5. subst; auto. 
+Qed.
+
+Lemma eval_builtin_args_determ:
+  forall al vl, eval_builtin_args al vl -> forall vl', eval_builtin_args al vl' -> vl' = vl.
+Proof.
+  induction 1; intros v' EV; inv EV; f_equal; eauto using eval_builtin_arg_determ.
+Qed.
+
+End EVAL_BUILTIN_ARG.
+
+Hint Constructors eval_builtin_arg: barg.
+
 Section RELSEM.
 
 (** Looking up instructions in a code sequence by position. *)
@@ -1095,7 +1157,7 @@ Inductive step: state -> trace -> state -> Prop :=
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some (Pbuiltin ef args res) ->
-      eval_builtin_args ge rs (rs RSP) m args vargs ->
+      eval_builtin_args rs (rs RSP) m args vargs ->
       external_call ef ge vargs m t vres m' ->
       rs' = nextinstr_nf
              (set_res res vres

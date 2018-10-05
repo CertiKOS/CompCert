@@ -81,6 +81,7 @@ GAMES=\
   Composition.v \
   Bigstep.v \
   Sets.v \
+  AsmLinking.v \
 
 # Compcert Kripke Logical Relations
 
