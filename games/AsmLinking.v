@@ -322,6 +322,34 @@ Section HCOMP.
     | lc_left : link_cases true false true
     | lc_right : link_cases false true true.
 
+  Lemma lc_l x:
+    link_cases x false x.
+  Proof.
+    destruct x; constructor.
+  Qed.
+
+  Lemma lc_r x:
+    link_cases false x x.
+  Proof.
+    destruct x; constructor.
+  Qed.
+
+  Lemma link_cases_fundef (f1 f2 f: fundef):
+    link f1 f2 = Some f ->
+    link_cases
+      (ast_fundef_is_internal f1)
+      (ast_fundef_is_internal f2)
+      (ast_fundef_is_internal f).
+  Proof.
+    change (link f1 f2) with (link_fundef f1 f2).
+    destruct f1 as [f1|e1], f2 as [f2|e2], f as [f|e]; simpl;
+      try constructor;
+      try (now inversion 1).
+    - destruct e2; inversion 1.
+    - destruct e1; inversion 1.
+    - destruct e1, e2; destruct external_function_eq; inversion 1.
+  Qed.
+
   Lemma query_is_internal_cases q:
     link_cases
       (query_is_internal li_asm (Genv.globalenv p1) q)
@@ -339,14 +367,26 @@ Section HCOMP.
     destruct (Block.ident_of b) as [id | ]; [ | constructor].
     rewrite !Genv.globalenv_defs.
     rewrite !genv_fundef_is_internal.
-    destruct (link_prog_inv p1 p2 p Hp) as (_ & Hlp & _).
+    destruct (link_prog_inv p1 p2 p Hp) as (_ & Hlp & Hp12).
+    subst p. unfold prog_defmap at 3. simpl.
+    rewrite PTree_Properties.of_list_elements.
+    rewrite PTree.gcombine by reflexivity.
     specialize (Hlp id).
-    destruct (link_linkorder p1 p2 p Hp) as [Hp1 Hp2].
-    destruct Hp1 as (_ & _ & Hp1). specialize (Hp1 id).
-    destruct Hp2 as (_ & _ & Hp2). specialize (Hp2 id).
-    destruct ((prog_defmap p1) ! id) as [d1 | ].
-    - specialize Hp1 as (d & Hd & H1d & _); eauto.
-  Admitted.
+    destruct ((prog_defmap p1) ! id) as [d1 | ] eqn:Hd1; eauto using lc_r.
+    destruct ((prog_defmap p2) ! id) as [d2 | ] eqn:Hd2; eauto using lc_l.
+    specialize (Hlp _ _ eq_refl eq_refl) as (_ & _ & gd & Hlp).
+    simpl. rewrite Hlp.
+    change (link d1 d2) with (link_def d1 d2) in Hlp.
+    destruct d1 as [|], d2 as [|], gd as [|];
+    try now inversion Hlp; try constructor.
+    - simpl in Hlp.
+      apply link_cases_fundef.
+      destruct (link f f0); congruence.
+    - inversion Hlp.
+      destruct (link f f0); congruence.
+    - inversion Hlp.
+      destruct (link v v0); congruence.
+  Qed.
 
   Lemma internal_hcomp_l q :
     query_is_internal li_asm (Genv.globalenv p1) q = true ->
