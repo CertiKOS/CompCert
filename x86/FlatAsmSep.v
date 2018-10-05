@@ -6,7 +6,7 @@
 (** Separate compilation proof for the FlatAsm generation **)
 
 Require Import Coqlib Integers Values Maps AST.
-Require Import Asm FlatAsm FlatAsmBuiltin FlatAsmgen FlatAsmProgram FlatAsmgenproof.
+Require Import Asm FlatAsm FlatAsmgen FlatAsmProgram FlatAsmgenproof.
 Require Import Segment.
 Require Import Linking Errors.
 Require Import Num.

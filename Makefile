@@ -106,7 +106,7 @@ BACKEND=\
   Segment.v \
   FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v FlatAsmProgram.v \
   FlatAsmgen.v FlatAsmgenproof.v FlatAsmSep.v \
-  MC.v MCgen.v \
+  MC.v MCgen.v MCSep.v \
   RockSaltAsm.v RockSaltAsmGen.v
 
 # C front-end modules (in cfrontend/)
