@@ -729,5 +729,30 @@ Ltac Equalities :=
   inv H; inv H0. congruence.
 Qed.
 
+Theorem flat_asm_single_events p rs:
+  single_events (semantics p rs).
+Proof.
+  red. simpl. intros s t s' STEP.
+  inv STEP; simpl. omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+Qed.
+
+Theorem flat_asm_receptive p rs:
+  receptive (semantics p rs).
+Proof.
+  split.
+  - simpl. intros s t1 s1 t2 STEP MT.
+    inv STEP.
+    inv MT. eexists. eapply exec_step_internal; eauto.
+    edestruct external_call_receptive as (vres2 & m2 & EC2); eauto.
+    eexists. eapply exec_step_builtin; eauto.
+    edestruct external_call_receptive as (vres2 & m2 & EC2); eauto.
+    eexists. eapply exec_step_external; eauto.
+  - eapply flat_asm_single_events; eauto.
+Qed.
+
+
 End WITHEXTERNALCALLS.
+
 

@@ -730,11 +730,11 @@ Proof.
   exact (proj2 (cstrategy_semantic_preservation_raw' _ _ H)).
 Qed.
 
-Lemma single_events_real_asm p rs:
-  single_events (RealAsm.semantics p rs).
-Proof.
-  red; intros s t s' STEP. inv STEP; simpl; eauto using Events.external_call_trace_length.  
-Qed.
+(* Lemma single_events_real_asm p rs: *)
+(*   single_events (RealAsm.semantics p rs). *)
+(* Proof. *)
+(*   red; intros s t s' STEP. inv STEP; simpl; eauto using Events.external_call_trace_length.   *)
+(* Qed. *)
 
 Theorem c_semantic_preservation_real:
   forall p tp,
@@ -748,10 +748,10 @@ Proof.
   destruct H as (pi & MP & P).
   simpl in P. destruct P as (p2 & P & p3 & P' & EQ); inv EQ.
   eapply compose_backward_simulation.
-  apply single_events_real_asm.
+  apply RealAsm.real_asm_single_events.
   replace (fn_stack_requirements tp) with (fn_stack_requirements pi).
   eapply compose_backward_simulation.
-  apply single_events_real_asm.  
+  apply RealAsm.real_asm_single_events.  
   apply c_semantic_preservation_raw. auto.
   apply RealAsmproof2.real_asm_correct.
   eapply PseudoInstructions.check_wf; eauto.
@@ -782,13 +782,6 @@ Proof.
   eapply RealAsm.real_asm_determinate.
 Qed.
 
-Lemma single_events_flat_asm p rs:
-  single_events (FlatAsm.semantics p rs).
-Proof.
-  red; intros s t s' STEP. inv STEP; simpl; eauto using Events.external_call_trace_length.  
-Qed.
-
-
 Lemma flat_fn_stack_requirements_match: forall p tp
     (FM: FlatAsmgenproof.match_prog p tp),
     fn_stack_requirements p = flat_fn_stack_requirements tp.
@@ -810,15 +803,15 @@ Proof.
   assert (match_prog_real p pi'). red. 
   apply compose_passes_app. eexists; split; eauto.
   eapply compose_backward_simulation.
-  apply single_events_flat_asm.
+  apply FlatAsm.flat_asm_single_events.
   replace (flat_fn_stack_requirements tp) with (fn_stack_requirements pi').
   apply c_semantic_preservation_real; auto.
   apply flat_fn_stack_requirements_match; auto.
   eapply forward_to_backward_simulation.
   eapply FlatAsmgenproof.transf_program_correct; eauto.
   eapply RealAsm.real_asm_receptive.
-  admit.
-Admitted.
+  eapply FlatAsm.semantics_determinate.
+Qed.
 
 
 
