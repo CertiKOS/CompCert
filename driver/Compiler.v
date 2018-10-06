@@ -782,14 +782,6 @@ Proof.
   eapply RealAsm.real_asm_determinate.
 Qed.
 
-Lemma find_symbol_def_inversion :
-  forall (F V : Type) (p : program F V) (id : ident) (b : Values.block) (ge : Globalenvs.Genv.t F V),
-  list_norepet (map fst (prog_defs p)) ->
-  ge = Globalenvs.Genv.globalenv p ->
-  Globalenvs.Genv.find_symbol ge id = Some b -> 
-  In (id, Globalenvs.Genv.find_def ge b) (prog_defs p).
-Admitted.
-
 Lemma find_unique: forall {A B: Type} (l: list (ident * A * B)) i def sb
                      (IN: In (i, def, sb) l)
                      (NPT: list_norepet (map (fun '(i,_,_) => i) l)),
@@ -816,7 +808,7 @@ Proof.
     generalize FM. intros FM'.
     unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM'.
     repeat destr_in FM'. destruct w.
-    exploit find_symbol_def_inversion; eauto. intros IN.
+    exploit Globalenvs.Genv.find_symbol_def_inversion; eauto. intros IN.
     exploit FlatAsmgenproof.transl_prog_pres_def; eauto.
     intros (def' & sb & IN' & TLDEF).
     exploit FlatAsmgenproof.transl_prog_list_norepet; eauto.
