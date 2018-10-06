@@ -1,55 +1,11 @@
 Require Import LogicalRelations.
 Require Import Axioms.
 Require Import Classical.
+Require Import Sets.
 
 (** * Prerequisites *)
 
 Axiom prop_ext : ClassicalFacts.prop_extensionality.
-
-Inductive set_map {A B} (f: A -> B) (sA: A -> Prop) : B -> Prop :=
-  set_map_intro a : sA a -> set_map f sA (f a).
-
-Hint Constructors set_map.
-
-Global Instance set_map_le :
-  Monotonic
-    (@set_map)
-    (forallr RA, forallr RB, (RA ++> RB) ++> set_le RA ++> set_le RB).
-Proof.
-  intros A1 A2 RA B1 B2 RB f g Hfg s1 s2 Hs.
-  intros _ [a1 Ha1].
-  edestruct Hs as (a2 & Ha2 & Ha); eauto.
-Qed.
-
-Inductive set_bind {A B} (f : A -> B -> Prop) (sa: A -> Prop) : B -> Prop :=
-  set_bind_intro a b:
-    sa a -> f a b -> set_bind f sa b.
-
-Hint Constructors set_bind.
-
-Global Instance set_bind_le :
-  Monotonic
-    (@set_bind)
-    (forallr RA, forallr RB, (RA ++> set_le RB) ++> set_le RA ++> set_le RB).
-Proof.
-  intros A1 A2 RA B1 B2 RB f g Hfg sa sb Hs.
-  intros _ [a1 b1 Ha1 Hb1].
-  edestruct Hs as (a2 & Ha2 & Ha); eauto.
-  edestruct Hfg as (b2 & Hb2 & Hb); eauto.
-Qed.
-
-(** This definition is identical to [eq]. *)
-
-Inductive singl {A} (a : A) : A -> Prop :=
-  singl_intro : singl a a.
-
-Hint Constructors singl.
-
-Global Instance eq_le :
-  Monotonic (@singl) (forallr R, R ++> set_le R).
-Proof.
-  intros A B R a b Hab _ [ ]. eauto.
-Qed.
 
 
 (** * Games *)
@@ -155,6 +111,34 @@ Module RTS.
   Hint Extern 1 (Transport _ _ _ (?α _ _) _) =>
     match type of α with rts _ _ => set_le_transport α end
     : typeclass_instances.
+
+  Lemma sim_id {G A} (α : rts G A) :
+    sim eq α α.
+  Proof.
+    intros a _ [] a' Ha'. exists a'. split; eauto. reflexivity.
+  Qed.
+
+  Lemma sim_compose {G A B C} (R : rel A B) (S : rel B C) (α β γ : rts G _) :
+    sim R α β ->
+    sim S β γ ->
+    sim (rel_compose R S) α γ.
+  Proof.
+    intros Hαβ Hβγ.
+    intros a c (b & Hab & Hbc) a' Ha'.
+    edestruct Hαβ as (b' & Hb' & Hab'); eauto.
+    edestruct Hβγ as (c' & Hc' & Hbc'); eauto.
+    exists c'. split; eauto.
+    destruct Hbc'; inversion Hab'; constructor.
+    - eexists; split; eauto.
+    - intros i. specialize (H i). specialize (H2 i).
+      destruct H2; inversion H; clear H; subst; constructor.
+      revert H2 H6. clear.
+      intros H12 H23 a1 Ha1.
+      edestruct H12 as (? & ? & ?); eauto.
+      edestruct H23 as (? & ? & ?); eauto.
+      eexists; split; eauto.
+      eexists; split; eauto.
+  Qed.
 
   (** ** Externally observable behaviors *)
 
@@ -528,6 +512,28 @@ Module RTS.
         * destruct rb; inversion H; clear H; subst. eauto.
   Qed.
 
+  Lemma inl_forever_internal {G A B} (α : rts G A) (β : rts G B) a :
+    forever_internal α a ->
+    forever_internal (α + β) (inl a).
+  Proof.
+    revert a; cofix IH; intros.
+    destruct H as [a' Ha' H].
+    econstructor; eauto.
+    change (internal (inl a')) with (@behavior_map G A (A+B) inl (internal a')).
+    econstructor; auto.
+  Qed.
+
+  Lemma inr_forever_internal {G A B} (α : rts G A) (β : rts G B) b :
+    forever_internal β b ->
+    forever_internal (α + β) (inr b).
+  Proof.
+    revert b; cofix IH; intros.
+    destruct H as [b' Hb' H].
+    econstructor; eauto.
+    change (internal (inr b')) with (@behavior_map G B (A+B) inr (internal b')).
+    econstructor; auto.
+  Qed.
+
   Lemma sum_forever_internal_inv {G A B} (α : rts G A) (β : rts G B) s :
     forever_internal (α + β) s ->
     (exists a, s = inl a /\ forever_internal α a) \/
@@ -570,6 +576,20 @@ Module RTS.
                                          (b & b' & ? & ? & Hb')]; subst;
       inversion Hr; clear Hr; subst;
       eauto using behavior_external_map_inv.
+  Qed.
+
+  Lemma obs_sum {G A B} (α : rts G A) (β : rts G B) :
+    RTS.sim eq (obs α + obs β) (obs (α + β)).
+  Proof.
+    intros s _ [] r Hr.
+    exists r; split; [ | rauto].
+    destruct Hr as [a ra Hra | b rb Hrb].
+    - destruct Hra.
+      + constructor; eauto using inl_forever_internal.
+      + econstructor; eauto using inl_reachable. destruct H; constructor.
+    - destruct Hrb.
+      + constructor; eauto using inr_forever_internal.
+      + econstructor; eauto using inr_reachable. destruct H; constructor.
   Qed.
 
   Global Instance obs_params : Params (@obs) 4.

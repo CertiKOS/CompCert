@@ -14,6 +14,41 @@ Require Import ModuleSemantics.
 Require Import Sets.
 
 
+Instance arrow_pointwise_rel_refl {A B} (R : relation B) :
+  Reflexive R -> @Reflexive (A -> B) (- ==> R).
+Proof.
+  firstorder.
+Qed.
+
+Definition cont_map {Q A B} (f : A -> B) k :=
+  (fun q : Q => option_map (set_map f) (k q)).
+
+(*Definition cont_le {Q A B} (R : rel A B) : rel (Q -> _) (Q -> _) :=*)
+Notation cont_le R := (- ==> option_rel (set_le R))%rel.
+
+Lemma cont_le_compose {Q A B C} (R : rel A B) (S : rel B C) (k1 k2 k3 : Q -> _) :
+  cont_le R k1 k2 ->
+  cont_le S k2 k3 ->
+  cont_le (rel_compose R S) k1 k3.
+Proof.
+  intros H12 H23 q. specialize (H12 q). specialize (H23 q).
+  destruct H12; inversion H23; clear H23; subst; constructor.
+  intros a Ha.
+  specialize (H a Ha) as (b & Hb & Hab).
+  specialize (H2 b Hb) as (c & Hc & Hbc).
+  unfold rel_compose; eauto.
+Qed.
+
+Global Instance cont_map_le :
+  Monotonic
+    (@cont_map)
+    (forallr -, forallr R, forallr S, (R ++> S) ++> cont_le R ++> cont_le S).
+Proof.
+  unfold cont_map.
+  rauto.
+Qed.
+
+
 (** * Flat composition *)
 
 Module FComp.
@@ -71,10 +106,7 @@ Module FComp.
   Global Instance liftk_sim :
     Monotonic
       (@liftk)
-      (forallr -, forallr R,
-        (- ==> option_rel (set_le R)) ++>
-        (- ==> option_rel (set_le R)) ++>
-        (- ==> option_rel (set_le (state_rel R)))).
+      (forallr -, forallr R, cont_le R ++> cont_le R ++> cont_le (state_rel R)).
   Proof.
     unfold liftk. repeat rstep. inversion 1.
   Qed.
@@ -84,7 +116,7 @@ Module FComp.
       (@liftb)
       (forallr -, forallr R,
         behavior_le R ++>
-        (- ==> option_rel (set_le R)) ++>
+        cont_le R ++>
         behavior_le (state_rel R)).
   Proof.
     unfold liftb. rauto.
@@ -116,8 +148,8 @@ Module FComp.
       modsem_lts := step (modsem_lts α + modsem_lts β);
       modsem_entry :=
         liftk
-          (fun q => option_map (set_map inl) (modsem_entry α q))
-          (fun q => option_map (set_map inr) (modsem_entry β q));
+          (cont_map inl (modsem_entry α))
+          (cont_map inr (modsem_entry β));
     |}.
 
   Global Instance of_ref :
@@ -130,7 +162,198 @@ Module FComp.
     - apply step_sim.
       rauto.
     - intro q.
-      apply liftk_sim; repeat rstep; auto.
+      apply liftk_sim; unfold cont_map; repeat rstep; auto.
+  Qed.
+
+  (** ** Commutation with embedding *)
+
+  Definition state_l {G A B} a k : FComp.state G (A + B) :=
+    FComp.running (inl a) (cont_map inr k).
+
+  Definition state_r {G A B} b k : FComp.state G (A + B) :=
+    FComp.running (inr b) (cont_map inl k).
+
+  Inductive emb_match_states {li: language_interface} {A B} : rel _ _ :=
+    | emb_match_l (s: A) (k: cont li B) :
+        emb_match_states
+          (state_l (G:=li) (Behavior.running s) (Behavior.liftk k))
+          (Behavior.running (SFComp.state_l s k))
+    | emb_match_r (s: B) (k: cont li A) :
+        emb_match_states
+          (state_r (G:=li) (Behavior.running s) (Behavior.liftk k))
+          (Behavior.running (SFComp.state_r s k))
+    | emb_match_wrong s :
+        emb_match_states s Behavior.wrong.
+
+  Lemma emb_cont_lr {li A B} (k1: cont li A) (k2: cont li B) :
+    (cont_le emb_match_states)
+      (liftk (G:=li)
+         (cont_map inl (Behavior.liftk k1))
+         (cont_map inr (Behavior.liftk k2)))
+      (Behavior.liftk
+         (SFComp.liftk k1 k2)).
+  Proof.
+    intros q. cbv.
+    destruct k1, k2; constructor; try contradiction.
+    - intros _ [_ [_ [Hns | s Hs]]].
+      + exists Behavior.wrong.
+        repeat (constructor; auto).
+        intros [_ [s Hs]]. apply Hns; eauto.
+      + exists (Behavior.running (SFComp.state_l s k2)).
+        repeat (constructor; auto).
+        apply (set_map_intro (fun s => SFComp.state_l s k2) P s); auto.
+    - intros _ [_ [_ [Hns | s Hs]]].
+      + exists Behavior.wrong.
+        repeat (constructor; auto).
+        intros [_ [s Hs]]. apply Hns; eauto.
+      + exists (Behavior.running (SFComp.state_r s k1)).
+        repeat (constructor; auto).
+        apply (set_map_intro (fun s => SFComp.state_r s k1) P s); auto.
+  Qed.
+
+  Lemma emb_cont_rl {li A B} (k1: cont li A) (k2: cont li B) :
+    (cont_le emb_match_states)
+      (liftk (G:=li)
+         (cont_map inr (Behavior.liftk k2))
+         (cont_map inl (Behavior.liftk k1)))
+      (Behavior.liftk
+         (SFComp.liftk k1 k2)).
+  Proof.
+    intros q. cbv.
+    destruct k1, k2; constructor; try contradiction.
+    - intros _ [_ [_ [Hns | s Hs]]].
+      + exists Behavior.wrong.
+        repeat (constructor; auto).
+        intros [_ [s Hs]]. apply Hns; eauto.
+      + exists (Behavior.running (SFComp.state_l s k2)).
+        repeat (constructor; auto).
+        apply (set_map_intro (fun s => SFComp.state_l s k2) P s); auto.
+    - intros _ [_ [_ [Hns | s Hs]]].
+      + exists Behavior.wrong.
+        repeat (constructor; auto).
+        intros [_ [s Hs]]. apply Hns; eauto.
+      + exists (Behavior.running (SFComp.state_r s k1)).
+        repeat (constructor; auto).
+        apply (set_map_intro (fun s => SFComp.state_r s k1) P s); auto.
+  Qed.
+
+  Lemma emb_step {li} ge (L1 L2: semantics li):
+    RTS.sim emb_match_states
+      (step (Behavior.step L1 + Behavior.step L2))
+      (Behavior.step (SFComp.semantics ge L1 L2)).
+  Proof.
+    intros s1 s2 Hs s1' Hs1'.
+    destruct Hs1' as [s1 k1 r Hr1].
+    destruct Hr1 as [s1 r Hr1 | s1 r Hr1].
+    - inversion Hs as [s k | | ]; clear Hs; subst.
+      + inversion Hr1; clear Hr1; subst.
+        * exists (internal (Behavior.running (SFComp.state_l s' k))).
+          split; repeat (constructor; auto).
+        * exists (interacts (G:=li) r0 (Behavior.liftk (SFComp.liftk k0 k))).
+          split; repeat (constructor; auto).
+          apply (emb_cont_lr k0 k).
+        * exists (internal Behavior.wrong).
+          split; repeat (constructor; auto).
+          -- intros ? ? H. inversion H. eapply H0; eauto.
+          -- intros ? ? H. inversion H. eapply H1; eauto.
+      + exists goes_wrong.
+        split; repeat (constructor; auto).
+    - inversion Hs as [s k | | ]; clear Hs; subst.
+      + inversion Hr1; clear Hr1; subst.
+        * exists (internal (Behavior.running (SFComp.state_r s' k))).
+          split; repeat (constructor; auto).
+        * exists (interacts (G:=li) r0 (Behavior.liftk (SFComp.liftk k k0))).
+          split; repeat (constructor; auto).
+          apply (emb_cont_rl k k0).
+        * exists (internal Behavior.wrong).
+          split; repeat (constructor; auto).
+          -- intros ? ? H. inversion H. eapply H0; eauto.
+          -- intros ? ? H. inversion H. eapply H1; eauto.
+      + exists goes_wrong.
+        split; repeat (constructor; auto).
+  Qed.
+
+  (** ** Commutation with [obs] *)
+
+  Lemma step_forever_internal_inv {G A} (α : rts G A) a k :
+    forever_internal (step α) (running a k) ->
+    forever_internal α a.
+  Proof.
+    revert a. cofix IH. intros.
+    destruct H as [a' Ha' H].
+    inversion Ha'; clear Ha'; subst.
+    destruct r; inversion H3; subst.
+    exists a'0; auto.
+  Qed.
+
+  Lemma step_reachable_inv {G A} (α : rts G A) a k s' :
+    reachable (step α) (running a k) s' ->
+    exists a', s' = running a' k /\ reachable α a a'.
+  Proof.
+    remember (running a k) as s.
+    intros H. revert a k Heqs.
+    induction H as [s | s1 s2 s3 Hs12 Hs23].
+    - eauto.
+    - intros. subst.
+      inversion Hs12; clear Hs12; subst.
+      destruct r; inversion H2; clear H2; subst.
+      edestruct IHHs23 as (ai & H23 & Hai); eauto.
+  Qed.
+
+  Lemma obs_step {G A} (α : rts G A) :
+    sim eq (step (obs α)) (obs (step α)).
+  Proof.
+    intros s _ [] s' Hs'.
+    destruct Hs'.
+    exists (liftb r k). split; [ | rauto].
+    destruct H.
+    - simpl.
+      constructor.
+      revert a k H. cofix IH. intros.
+      destruct H as [a' H].
+      exists (running a' k); eauto.
+      change (internal _) with (liftb (internal a') k).
+      constructor; auto.
+    - induction H1.
+      + econstructor; eauto.
+        * destruct r; try now inversion H; simpl; auto.
+        * constructor; auto.
+      + eapply obs_internal; eauto.
+      change (internal _) with (liftb (internal a') k).
+      constructor; auto.
+  Qed.
+
+  Lemma step_obs {G A} (α : rts G A) :
+    sim eq (obs (step α)) (step (obs α)).
+  Proof.
+    intros s _ [] s' Hs'.
+    destruct Hs'.
+    - exists diverges. split; [ | rauto].
+      destruct s as [a k].
+      change diverges with (liftb diverges k).
+      constructor; eauto using step_forever_internal_inv.
+    - destruct s as [a k].
+      apply step_reachable_inv in H1 as (? & ? & ?). subst.
+      exists r. split; [ | rauto].
+      inversion H0; clear H0; subst.
+      econstructor.
+      destruct r0; try now inversion H; eauto.
+  Qed.
+
+  (** ** Full commutation theorem *)
+
+  Lemma emb_of {li} ge (L1 L2: semantics li) :
+    modref
+      (FComp.of (Behavior.of L1) (Behavior.of L2))
+      (Behavior.of (SFComp.semantics ge L1 L2)).
+  Proof.
+    eexists; simpl.
+    - eapply RTS.sim_compose. { eapply step_sim, RTS.obs_sum. }
+      eapply RTS.sim_compose. { eapply obs_step. }
+                              { eapply RTS.obs_sim, (emb_step ge L1 L2). }
+    - eapply cont_le_compose. { rauto. }
+      eapply cont_le_compose. { rauto. }
+                              { rstep. eapply emb_cont_lr. }
   Qed.
 End FComp.
 
@@ -182,7 +405,7 @@ Module Res.
 
   Definition of {li} (α : modsem (li -o li)) : modsem (li -o li) :=
     {|
-      modsem_lts := res (sw li) α;
+      modsem_lts := obs (res (sw li) α);
       modsem_entry := modsem_entry α;
     |}.
 
@@ -195,21 +418,21 @@ Module Res.
 
   (** ** Commutation with embedding *)
 
-  Lemma res_emb_comm_step {li} (L: semantics (li -o li)):
+  Lemma emb_res {li} (L: semantics (li -o li)):
     determinate L ->
     sim eq
       (res (Res.sw li) (Behavior.step L))
-      (Behavior.step (Res.semantics HComp.sw L)).
+      (Behavior.step (SRes.semantics SHComp.sw L)).
   Proof.
     intros HL s _ [] _ [r r' Hr Hr'].
     exists r'. split; [ | reflexivity].
     destruct Hr; simpl in Hr'.
     - (* wrong *)
       destruct Hr'.
-      change (state L) with (state (Res.semantics (sw li) L)). constructor.
+      change (state L) with (state (SRes.semantics (sw li) L)). constructor.
     - (* internal step *)
       destruct Hr'.
-      change (state L) with (state (Res.semantics (sw li) L)). constructor.
+      change (state L) with (state (SRes.semantics (sw li) L)). constructor.
       constructor; eauto.
     - (* final state *)
       unfold res_behavior in Hr'.
@@ -219,7 +442,7 @@ Module Res.
         simpl in Hxc. unfold Behavior.liftk in Hxc.
         destruct k eqn:Hkr; simpl in Hxc; inversion Hxc; clear Hxc; subst.
         destruct Hr' as [Hnostep | s' Hs'].
-        * change (state L) with (state (Res.semantics (sw li) L)).
+        * change (state L) with (state (SRes.semantics (sw li) L)).
           constructor.
           -- intros t s' Hs'. simpl in *.
              destruct Hs'.
@@ -228,18 +451,18 @@ Module Res.
                 admit. (* cont_determinate too weak *)
           -- intros r' k' H'. simpl in *.
              destruct H'. admit. (* cont_determinate too weak *)
-        * change (state L) with (state (Res.semantics (sw li) L)).
+        * change (state L) with (state (SRes.semantics (sw li) L)).
           constructor.
-          eapply Res.step_switch; eauto. red. eauto.
+          eapply SRes.step_switch; eauto. red. eauto.
       + (* regular *)
         destruct Hr'.
         simpl in Hxc. unfold Behavior.liftk in Hxc.
         destruct k eqn:Hk; simpl in Hxc; try discriminate.
-        change (state L) with (state (Res.semantics (sw li) L)).
+        change (state L) with (state (SRes.semantics (sw li) L)).
         constructor. constructor; eauto.
     - (* going wrong *)
       destruct Hr'.
-      change (state L) with (state (Res.semantics (sw li) L)).
+      change (state L) with (state (SRes.semantics (sw li) L)).
       constructor.
       + intros t s' Hs'.
         destruct Hs'.
@@ -462,7 +685,7 @@ Module Res.
 
   (** Putting these pieces together, *)
 
-  Lemma obs_res_comm {G A} sw (α : rts G A) :
+  Lemma res_obs {G A} sw (α : rts G A) :
     deterministic α ->
     sim eq (obs (res sw α)) (obs (res sw (obs α))).
   Proof.
@@ -476,6 +699,65 @@ Module Res.
       inversion H0; clear H0; subst. econstructor; eauto.
       eauto using res_behavior_external.
   Qed.
+
+  (** *** Other direction *)
+
+  Lemma forever_internal_res_obs_inv {G A} sw (α : rts G A) a :
+    deterministic α ->
+    forever_internal (res sw (obs α)) a ->
+    forever_internal (res sw α) a.
+  Proof.
+    intros Hα.
+    revert a. cofix IH. intros a Ha.
+    destruct Ha as [a' Ha' H].
+    inversion Ha' as [r ? Hr]; clear Ha'; subst.
+    destruct Hr as [ | ai r Hrext Hr Hai].
+    - inversion H0.
+    - destruct Hai as [a | a1 a2 a3 Ha12 Ha23].
+      + exists a'; auto. clear IH.
+        econstructor; eauto.
+      + admit.
+  Admitted.
+
+  Lemma obs_res {G A} sw (α : rts G A) :
+    deterministic α ->
+    sim eq (obs (res sw (obs α))) (obs (res sw α)).
+  Proof.
+    intros Hα s _ [] r Hr.
+    exists r. split; [ | rauto].
+    destruct Hr.
+    - eapply obs_diverges.
+      eapply forever_internal_res_obs_inv; eauto.
+    - induction H1 as [a | a1 a2 a3 Ha12 Ha23].
+      + destruct H0.
+        destruct H0.
+        * unfold res_behavior in H1. simpl in H1. inversion H1; clear H1; subst.
+          eapply obs_diverges.
+          revert a H0. cofix IH. intros.
+          destruct H0 as [a' H0].
+          econstructor; eauto.
+          econstructor; eauto.
+          unfold res_behavior. simpl. constructor.
+        * unfold res_behavior in H1.
+          eapply obs_external with a'; eauto.
+          -- econstructor; eauto.
+          -- induction H3; eauto.
+             eapply reachable_step with a'; eauto.
+             econstructor; eauto. constructor.
+      + eapply obs_reachable; eauto.
+        eapply reachable_obs_res_inv; eauto.
+  Qed.
+
+  (** ** Full commutation theorem *)
+
+  Lemma of_emb {li} (L: semantics (li -o li)) :
+    modref
+      (Behavior.of (SRes.semantics (sw li) L))
+      (Res.of (Behavior.of L)).
+  Proof.
+    econstructor; simpl.
+    - eapply RTS.sim_compose. { rstep. 
+  Admitted.
 End Res.
 
 
@@ -484,4 +766,13 @@ End Res.
 Module HComp.
   Definition of {li} (α β : modsem (li -o li)) :=
     Res.of (FComp.of α β).
+
+  (** ** Commutation with embedding *)
+
+  Lemma of_emb {li} ge (L1 L2 : Smallstep.semantics (li -o li)) :
+    modref
+      (Behavior.of (SHComp.semantics ge L1 L2))
+      (HComp.of (Behavior.of L1) (Behavior.of L2)).
+  Proof.
+  Admitted.
 End HComp.

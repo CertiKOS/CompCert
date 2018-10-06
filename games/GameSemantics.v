@@ -24,6 +24,8 @@ Bind Scope li_scope with game.
 
 (** * Modules *)
 
+(** ** Definition *)
+
 Record modsem {li : language_interface} :=
   {
     modsem_state : Type;
@@ -32,6 +34,8 @@ Record modsem {li : language_interface} :=
   }.
 
 Arguments modsem : clear implicits.
+
+(** ** Refinement preorder *)
 
 Record modref {li} (α β : modsem li) : Prop :=
   {
@@ -42,6 +46,42 @@ Record modref {li} (α β : modsem li) : Prop :=
     modref_init q :
       option_rel (set_le modref_state) (modsem_entry α q) (modsem_entry β q);
   }.
+
+Global Instance modref_preo li:
+  PreOrder (@modref li).
+Proof.
+  split.
+  - intros [A α a].
+    exists eq; simpl.
+    + apply RTS.sim_id.
+    + intros q. reflexivity.
+  - intros [A α a] [B β b] [C γ c] [RAB Hαβ Hab] [RBC Hβγ Hbc]; simpl in *.
+    eexists; simpl.
+    + eapply RTS.sim_compose; eauto.
+    + intros q. specialize (Hab q). specialize (Hbc q).
+      destruct Hab; inversion Hbc; clear Hbc; subst; constructor.
+      revert H H2. clear.
+      intros H12 H23 a1 Ha1.
+      edestruct H12 as (? & ? & ?); eauto.
+      edestruct H23 as (? & ? & ?); eauto.
+      eexists; split; eauto.
+      eexists; split; eauto.
+Qed.
+
+(** ** Observations *)
+
+Definition mobs {li} (α : modsem li) : modsem li :=
+  {|
+    modsem_lts := RTS.obs α;
+    modsem_entry := modsem_entry α;
+  |}.
+
+Global Instance mobs_ref :
+  Monotonic (@mobs) (forallr -, modref ++> modref).
+Proof.
+  intros li [A α a] [B β b] [R Hαβ Hab]; unfold mobs; simpl in *.
+  exists R; simpl; eauto. rauto.
+Qed.
 
 
 (** * Behaviors from small step semantics *)
