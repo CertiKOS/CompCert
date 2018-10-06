@@ -2045,6 +2045,13 @@ Qed.
 (*   intros. monadInvX H. simpl. auto. *)
 (* Qed. *)
 
+Lemma transl_fun_pres_stacksize : forall g i f f',
+    transl_fun g i f = OK f' ->
+    Asm.fn_stacksize f = fn_stacksize f'.
+Proof.
+  intros. monadInvX H. destr_in EQ2. inv EQ2. simpl. auto.
+Qed.
+
 Lemma transl_prog_gmap : forall g l p p' dz sz,
   transl_prog_with_map g l p dz sz = OK p' -> glob_map p' = g.
 Proof.

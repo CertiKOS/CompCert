@@ -784,10 +784,24 @@ Qed.
 
 Lemma find_symbol_def_inversion :
   forall (F V : Type) (p : program F V) (id : ident) (b : Values.block) (ge : Globalenvs.Genv.t F V),
+  list_norepet (map fst (prog_defs p)) ->
   ge = Globalenvs.Genv.globalenv p ->
   Globalenvs.Genv.find_symbol ge id = Some b -> 
   In (id, Globalenvs.Genv.find_def ge b) (prog_defs p).
 Admitted.
+
+Lemma find_unique: forall {A B: Type} (l: list (ident * A * B)) i def sb
+                     (IN: In (i, def, sb) l)
+                     (NPT: list_norepet (map (fun '(i,_,_) => i) l)),
+    find (fun '(i',_,_) => ident_eq i i') l = Some (i, def, sb).
+Proof.
+  induction l; simpl; intros. contradiction. inv IN.
+  - destruct peq; try contradiction. simpl. auto.
+  - destruct a. destruct p. inv NPT.
+    destruct (ident_eq i i0). subst.
+    generalize (in_map (fun '(i,_,_) => i) l (i0,def,sb) H). congruence.
+    exploit IHl; eauto. 
+Qed.
 
 Lemma flat_fn_stack_requirements_match: forall p tp
     (FM: FlatAsmgenproof.match_prog p tp),
@@ -799,12 +813,21 @@ Proof.
   apply Axioms.extensionality. intro i.
   destr.
   - unfold Globalenvs.Genv.find_funct_ptr.
+    generalize FM. intros FM'.
+    unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM'.
+    repeat destr_in FM'. destruct w.
     exploit find_symbol_def_inversion; eauto. intros IN.
-    unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM.
-    repeat destr_in FM. eauto.
     exploit FlatAsmgenproof.transl_prog_pres_def; eauto.
     intros (def' & sb & IN' & TLDEF).
-    admit.
+    exploit FlatAsmgenproof.transl_prog_list_norepet; eauto.
+    intros NPT.
+    erewrite find_unique; eauto.
+    destruct (Globalenvs.Genv.find_def (Globalenvs.Genv.globalenv p) b) eqn:FDEF.
+    destruct g0. destruct f. 
+    monadInv TLDEF. erewrite FlatAsmgenproof.transl_fun_pres_stacksize; eauto.
+    monadInv TLDEF. auto.
+    FlatAsmgenproof.monadInvX TLDEF. auto.
+    monadInv TLDEF. auto.
   - assert (~ In i (prog_defs_names p)). 
     eapply Globalenvs.Genv.find_symbol_inversion_none; eauto.
     unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM.
@@ -814,9 +837,7 @@ Proof.
     destr. apply find_some in Heqo0. destruct p0. destruct p0.
     destruct Heqo0. exfalso. apply H0. destruct ident_eq. 
     subst. do 2 eexists; eauto. inv H3.
-
-Admitted.
-
+Qed.
 
 Theorem c_semantic_preservation_flat:
   forall p tp,
