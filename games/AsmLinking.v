@@ -425,8 +425,6 @@ Section HCOMP.
         if query_is_internal li_asm (Genv.globalenv p1) s1 then 0%nat else 1%nat
       | SFComp.state_r s2 _ =>
         if query_is_internal li_asm (Genv.globalenv p2) s2 then 0%nat else 1%nat
-      | _ =>
-        0%nat
     end.
 
   Lemma measure_switch q S12' s12':

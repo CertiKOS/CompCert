@@ -24,15 +24,14 @@ Module SFComp.
 
     Inductive state {A B} :=
       | state_l (s: A) (k: cont li B)
-      | state_r (s: B) (k: cont li A)
-      | conflict.
+      | state_r (s: B) (k: cont li A).
 
     Definition liftk {A B} (k1: cont li A) (k2: cont li B): cont li state :=
       fun q =>
         match k1 q, k2 q with
           | Some S1, None => Some (set_map (fun S => state_l S k2) S1)
           | None, Some S2 => Some (set_map (fun S => state_r S k1) S2)
-          | Some _, Some _ => Some (singl conflict)
+          | Some _, Some _ => Some (fun _ => False)
           | None, None => None
         end.
 
