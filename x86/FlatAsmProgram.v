@@ -552,8 +552,8 @@ Definition globalenv (p: program) : genv :=
 (*   erewrite <- add_globals_pres_genv_segblocks; eauto. simpl. auto. *)
 (* Qed. *)
 
-Section WITHEXTERNALCALLS.
-Context `{external_calls_prf: ExternalCalls}.
+Section WITHMEMORYMODEL.
+Context `{memory_model: Mem.MemoryModel }.
 
 Section WITHGE.
 
@@ -582,76 +582,49 @@ Fixpoint store_init_data_list (m: mem) (b: block) (p: Z) (idl: list init_data)
       end
   end.
 
-(* Allocate global definitions like in previous assembly language.
-   Even though the internal function and data definitions will reside
-   in data and code segments, we still allocate blocks for them to
-   make the memory injection easy to define 
-*)
-Definition alloc_global (m: mem) (idg: ident * option gdef * segblock): option mem :=
-  let '(id, gdef, sb) := idg in
-  match gdef with
-  | None => 
-    let (m1, b) := Mem.alloc m 0 0 in
-    Some m1
-  | Some (Gfun f) =>
-    (** The block allocated for the internal function is dummy.
-        Internal function actually reside in the block for the code segment. *)
-    let (m1, b) := Mem.alloc m 0 1 in
-    Mem.drop_perm m1 b 0 1 Nonempty
-  | Some (Gvar v) =>
-    (** The block allocated for the data is dummy.
-        Data actually reside in the block for the code segment. *)
-    let (m1, b) := Mem.alloc m 0 0 in
-    Some m1 
-  end.
-
-Fixpoint alloc_globals (m: mem) (gl: list (ident * option gdef * segblock))
-                       {struct gl} : option mem :=
-  match gl with
-  | nil => Some m
-  | g :: gl' =>
-      match alloc_global m g with
-      | None => None
-      | Some m' => alloc_globals m' gl'
-      end
-  end.
-
-Definition store_global (smap:segid_type -> block) (m: mem) (idg: ident * option gdef * segblock): option mem :=
+(* Allocate global definitions like in previous assembly language *)
+Definition alloc_global (smap:segid_type -> block) (m: mem) (idg: ident * option gdef * segblock): option mem :=
   let '(id, gdef, sb) := idg in
   let ofs := Ptrofs.unsigned (segblock_start sb) in
   let sz := Ptrofs.unsigned (segblock_size sb) in
   let b := smap (segblock_id sb) in
   match gdef with
-  | None => Some m
+  | None => 
+    let (m1, b) := Mem.alloc m 0 0 in
+    Some m1
   | Some (Gfun f) =>
     match f with
-    | External _ => Some m
-    | Internal f =>
-      Mem.drop_perm m b ofs (ofs + sz) Nonempty
+    | External _ => let (m1, b1) := Mem.alloc m 0 1 in                  
+                   Mem.drop_perm m1 b1 0 1 Nonempty
+    | Internal f => 
+      let (m1,_) := Mem.alloc m 0 0 in
+      Mem.drop_perm m1 b ofs (ofs + sz) Nonempty
     end
   | Some (Gvar v) =>
+    let (m1,_) := Mem.alloc m 0 0 in
     let init := gvar_init v in
     let isz := init_data_list_size init in
-    match Globalenvs.store_zeros m b ofs isz with
+    match Globalenvs.store_zeros m1 b ofs isz with
     | None => None
-    | Some m1 =>
-      match store_init_data_list m1 b ofs init with
+    | Some m2 =>
+      match store_init_data_list m2 b ofs init with
       | None => None
-      | Some m2 => Mem.drop_perm m2 b ofs (ofs+isz) (Globalenvs.Genv.perm_globvar v)
+      | Some m3 => Mem.drop_perm m3 b ofs (ofs+isz) (Globalenvs.Genv.perm_globvar v)
       end
     end
   end.
 
-Fixpoint store_globals (smap:segid_type->block) (m: mem) (gl: list (ident * option gdef * segblock))
+Fixpoint alloc_globals smap (m: mem) (gl: list (ident * option gdef * segblock))
                        {struct gl} : option mem :=
   match gl with
   | nil => Some m
   | g :: gl' =>
-      match store_global smap m g with
+      match alloc_global smap m g with
       | None => None
-      | Some m' => store_globals smap m' gl'
+      | Some m' => alloc_globals smap m' gl'
       end
   end.
+
 
 End WITHGE.
 
@@ -670,13 +643,7 @@ Definition init_mem (p: program) :=
   let ge := globalenv p in
   let (initm,_) := Mem.alloc Mem.empty 0 0 in (** *r A dummy block is allocated for undefined segments *)
   let m := alloc_segments initm (list_of_segments p) in
-  (* let (m1,_) := alloc_segment initm (fst (code_seg p)) in *)
-  (* let (m2,_) := alloc_segment m1 (data_seg p) in *)
-  match alloc_globals m (prog_defs p) with
-  | None => None
-  | Some m3 =>
-    store_globals ge (gen_segblocks p) m3 (prog_defs p)
-  end.
+  alloc_globals ge (gen_segblocks p) m (prog_defs p).
 
 
 Lemma store_init_data_perm : forall (ge:genv) m m' b b' p i q k prm,
@@ -716,32 +683,6 @@ Proof.
 Qed.
 
 Existing Instance inject_perm_all.
-
-Lemma store_global_stack : forall (ge:genv) smap m def m',
-    store_global ge smap m def = Some m' ->
-    Mem.stack m' = Mem.stack m.
-Proof.
-  intros ge0 smap m def m' H.
-  destruct def. destruct p. destruct o. destruct g. destruct f.
-  - simpl in H. exploit Mem.drop_perm_stack; eauto.
-  - simpl in H. inv H. auto.
-  - simpl in H. destr_match_in H; inv H. destr_match_in H1; inv H1.
-    exploit Globalenvs.Genv.store_zeros_stack; eauto.
-    exploit store_init_data_list_stack; eauto.
-    exploit Mem.drop_perm_stack; eauto. intros. congruence.
-  - simpl in H. inv H. auto.
-Qed.
-
-Lemma store_globals_stack : forall l (ge:genv) smap m m',
-    store_globals ge smap m l = Some m' ->
-    Mem.stack m' = Mem.stack m.
-Proof.
-  induction l; intros.
-  - simpl in H. inv H. auto.
-  - simpl in H. destr_match_in H; inv H.
-    exploit store_global_stack; eauto. intros.
-    exploit IHl; eauto. intros. congruence.
-Qed.
 
 Lemma alloc_segments_perm_ofs : forall segs m1 m2
                                   (ALLOCSEGS : alloc_segments m1 segs = m2)
@@ -790,32 +731,36 @@ Qed.
 
 Definition DEF : Type := ident * option gdef * segblock.
 
-Lemma alloc_global_stack: forall (def: DEF)  m m',  
-    alloc_global m def = Some m' -> Mem.stack m = Mem.stack m'.
+Lemma alloc_global_stack: forall (def: DEF) ge smap m m',  
+    alloc_global ge smap m def = Some m' -> Mem.stack m' = Mem.stack m.
 Proof.
   intros. destruct def. destruct p. inv H.
-  destruct o. destruct g.
+  destruct o. destruct g. destruct f.
+  - destruct (Mem.alloc m 0 0) eqn:ALLOC.
+    etransitivity. exploit Mem.drop_perm_stack; eauto. 
+    erewrite Mem.alloc_stack_blocks; eauto.
   - destruct (Mem.alloc m 0 1) eqn:ALLOC.
     exploit Mem.drop_perm_stack; eauto. 
     exploit Mem.alloc_stack_blocks; eauto. intros.
     congruence.
-  - destruct (Mem.alloc m 0 0) eqn:ALLOC.
-    inv H1.
-    exploit Mem.alloc_stack_blocks; eauto. 
+  - destr_match_in H1; inv H1. destr_match_in H0; inv H0. destr_match_in H1; inv H1.
+    etransitivity. erewrite Mem.drop_perm_stack; eauto.
+    etransitivity. erewrite store_init_data_list_stack; eauto.
+    etransitivity. erewrite Globalenvs.Genv.store_zeros_stack; eauto.
+    erewrite Mem.alloc_stack_blocks; eauto.
   - destruct (Mem.alloc m 0 0) eqn:ALLOC.
     inv H1.
     exploit Mem.alloc_stack_blocks; eauto. 
 Qed.
     
-Lemma alloc_globals_stack: forall (defs: list DEF) m m',  
-    alloc_globals m defs = Some m' -> Mem.stack m = Mem.stack m'.
+Lemma alloc_globals_stack: forall (defs: list DEF) ge smap m m',  
+    alloc_globals ge smap m defs = Some m' -> Mem.stack m' = Mem.stack m.
 Proof.
   induction defs; inversion 1.
   - inv H. auto.
   - destr_match_in H1; inv H1.
-    exploit alloc_global_stack; eauto. 
-    intros STKEQ. rewrite STKEQ.
-    erewrite IHdefs; eauto.
+    etransitivity. erewrite IHdefs; eauto.
+    erewrite alloc_global_stack; eauto. 
 Qed.
     
 
@@ -826,16 +771,10 @@ Lemma init_mem_stack:
 Proof.
   intros. unfold init_mem in H.
   destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
-  exploit Mem.alloc_stack_blocks; eauto. intros.
-  destruct (alloc_segment m0 (code_seg p)) eqn:ALLOC_CODE.
-  destruct (alloc_segment m1 (data_seg p)) eqn:ALLOC_DATA.
-  destr_match_in H; inv H.
-  exploit store_globals_stack; eauto. intros.
-  apply alloc_segment_stack in ALLOC_CODE.
-  apply alloc_segment_stack in ALLOC_DATA.
-  rewrite H. erewrite <- alloc_globals_stack; eauto.
-  erewrite alloc_segments_stack; eauto. 
-  rewrite H0. erewrite Mem.empty_stack; eauto.
+  etransitivity. erewrite alloc_globals_stack; eauto.
+  erewrite alloc_segments_stack; eauto.
+  erewrite Mem.alloc_stack_blocks; eauto.
+  rewrite Mem.empty_stack. auto.
 Qed.
 
 Lemma store_init_data_nextblock : forall v (ge:genv) m b ofs m',
@@ -857,57 +796,63 @@ Proof.
     exploit IHl; eauto. intros. congruence.
 Qed.
 
-Remark store_global_nextblock:
-  forall v (ge: genv) smap m m',
-  store_global ge smap m v = Some m' ->
-  Mem.nextblock m' = Mem.nextblock m.
-Proof.
-  intros. destruct v. destruct p. destruct o. destruct g. destruct f.
-  - simpl in H. eapply Mem.nextblock_drop; eauto.
-  - simpl in H. inv H. auto.
-  - simpl in H. destr_match_in H; inv H.
-    destr_match_in H1; inv H1.
-    exploit Globalenvs.Genv.store_zeros_nextblock; eauto.
-    exploit store_init_data_list_nextblock; eauto.
-    exploit Mem.nextblock_drop; eauto.
-    intros. congruence.
-  - simpl in H. inv H. auto.
-Qed.
+(* Remark store_global_nextblock: *)
+(*   forall v (ge: genv) smap m m', *)
+(*   store_global ge smap m v = Some m' -> *)
+(*   Mem.nextblock m' = Mem.nextblock m. *)
+(* Proof. *)
+(*   intros. destruct v. destruct p. destruct o. destruct g. destruct f. *)
+(*   - simpl in H. eapply Mem.nextblock_drop; eauto. *)
+(*   - simpl in H. inv H. auto. *)
+(*   - simpl in H. destr_match_in H; inv H. *)
+(*     destr_match_in H1; inv H1. *)
+(*     exploit Globalenvs.Genv.store_zeros_nextblock; eauto. *)
+(*     exploit store_init_data_list_nextblock; eauto. *)
+(*     exploit Mem.nextblock_drop; eauto. *)
+(*     intros. congruence. *)
+(*   - simpl in H. inv H. auto. *)
+(* Qed. *)
 
-Remark store_globals_nextblock:
-  forall gl (ge: genv) smap  m m',
-  store_globals ge smap m gl = Some m' ->
-  Mem.nextblock m' = Mem.nextblock m.
-Proof.
-  induction gl; intros.
-  - inv H. auto.
-  - inv H. destr_match_in H1; inv H1.
-    exploit store_global_nextblock; eauto.
-    exploit IHgl; eauto.
-    intros. congruence.
-Qed.
+(* Remark store_globals_nextblock: *)
+(*   forall gl (ge: genv) smap  m m', *)
+(*   store_globals ge smap m gl = Some m' -> *)
+(*   Mem.nextblock m' = Mem.nextblock m. *)
+(* Proof. *)
+(*   induction gl; intros. *)
+(*   - inv H. auto. *)
+(*   - inv H. destr_match_in H1; inv H1. *)
+(*     exploit store_global_nextblock; eauto. *)
+(*     exploit IHgl; eauto. *)
+(*     intros. congruence. *)
+(* Qed. *)
 
-Lemma alloc_global_nextblock : forall (def:DEF) m m',
-  alloc_global m def = Some m' -> 
+Lemma alloc_global_nextblock : forall (def:DEF) ge smap m m',
+  alloc_global ge smap m def = Some m' -> 
   Mem.nextblock m' = Pos.succ (Mem.nextblock m).
 Proof.
-  intros. destruct def. destruct p. destruct o. destruct g.
+  intros. destruct def. destruct p. destruct o. destruct g. destruct f.
+  - simpl in *. destruct (Mem.alloc m 0 0) eqn:ALLOC.
+    etransitivity. erewrite Mem.nextblock_drop; eauto.
+    erewrite Mem.nextblock_alloc; eauto.
   - simpl in H.
     destruct (Mem.alloc m 0 1) eqn:ALLOC.
-    exploit Mem.nextblock_alloc; eauto. intros. rewrite <- H0.
-    erewrite Mem.nextblock_drop; eauto.
+    etransitivity. erewrite Mem.nextblock_drop; eauto.
+    exploit Mem.nextblock_alloc; eauto. 
   - simpl in H.
     destruct (Mem.alloc m 0 0) eqn:ALLOC.
-    inv H.
+    repeat destr_in H. 
+    etransitivity. erewrite Mem.nextblock_drop; eauto.
+    etransitivity. erewrite store_init_data_list_nextblock; eauto.
+    etransitivity. erewrite Globalenvs.Genv.store_zeros_nextblock; eauto.
     exploit Mem.nextblock_alloc; eauto. 
   - simpl in H.
     destruct (Mem.alloc m 0 0) eqn:ALLOC.
     inv H.
-    exploit Mem.nextblock_alloc; eauto. 
+    erewrite Mem.nextblock_alloc; eauto. 
 Qed.    
 
-Lemma alloc_globals_nextblock : forall (defs: list DEF) m m',
-  alloc_globals m defs = Some m' -> 
+Lemma alloc_globals_nextblock : forall (defs: list DEF) ge smap m m',
+  alloc_globals ge smap m defs = Some m' -> 
   Mem.nextblock m' = pos_advance_N (Mem.nextblock m) (List.length defs).
 Proof.
   induction defs; intros; inv H.
@@ -925,36 +870,6 @@ Proof.
   unfold alloc_segment. intros.
   exploit Mem.nextblock_alloc; eauto.
 Qed.
-
-(* Lemma add_global_pres_genv_next : *)
-(*   forall def (ge ge' : genv), *)
-(*   ge' = add_global ge def -> Genv.genv_next ge = Genv.genv_next ge'. *)
-(* Proof. *)
-(*   intros. destruct def. destruct p. *)
-(*   destruct o. destruct g. destruct f. *)
-(*   - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM. *)
-(*     destruct p. subst. simpl. auto.  *)
-(*     subst. auto. *)
-(*   - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM. *)
-(*     destruct p. subst. simpl. auto.  *)
-(*     subst. auto. *)
-(*   - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM. *)
-(*     destruct p. subst. simpl. auto.  *)
-(*     subst. auto. *)
-(*   - simpl in *. destruct (Genv.genv_symb ge i) eqn:GSYM. *)
-(*     destruct p. subst. simpl. auto.  *)
-(*     subst. auto. *)
-(* Qed. *)
-
-(* Lemma add_globals_pres_genv_next : *)
-(*   forall (defs : list (ident * option gdef * segblock)) (ge ge' : genv), *)
-(*   ge' = add_globals ge defs -> Genv.genv_next ge = Genv.genv_next ge'. *)
-(* Proof. *)
-(*   induction defs; intros; simpl in *. *)
-(*   - subst. auto. *)
-(*   - exploit IHdefs; eauto. *)
-(*     erewrite <- add_global_pres_genv_next; eauto. *)
-(* Qed. *)
 
 Lemma add_global_next_block: forall (ge:genv) def,
     Genv.genv_next (add_global ge def) = Pos.succ (Genv.genv_next ge).
@@ -983,13 +898,11 @@ Lemma init_mem_genv_next: forall (p: program) m,
 Proof.
   unfold init_mem; intros.
   destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
-  destr_match_in H; inv H.
   exploit alloc_globals_nextblock; eauto. 
   exploit Mem.nextblock_alloc; eauto. rewrite Mem.nextblock_empty. 
   erewrite alloc_segments_nextblock'; eauto. simpl.
-  intros. rewrite H in H0. simpl in H0.
-  erewrite store_globals_nextblock; eauto.
-  rewrite H0. unfold globalenv. simpl.
+  intros. rewrite H0 in H1. simpl in H1.
+  unfold globalenv. simpl.
   rewrite add_globals_next_block. simpl. auto.
 Qed.
 
@@ -1243,6 +1156,6 @@ Proof.
 Qed.
 
 
-End WITHEXTERNALCALLS.
+End WITHMEMORYMODEL.
 
 End FLATPROG.
