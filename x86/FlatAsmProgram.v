@@ -597,7 +597,8 @@ Definition alloc_global (m: mem) (idg: ident * option gdef * segblock): option m
     (** The block allocated for the internal function is dummy.
         Internal function actually reside in the block for the code segment. *)
     let (m1, b) := Mem.alloc m 0 1 in
-    Mem.drop_perm m1 b 0 1 Nonempty
+    (* Mem.drop_perm m1 b 0 1 Nonempty *)
+    Some m1
   | Some (Gvar v) =>
     (** The block allocated for the data is dummy.
         Data actually reside in the block for the code segment. *)
@@ -760,7 +761,15 @@ Proof.
     eauto.
 Qed.
 
-Axiom one_le_max_unsigned: 1 <= Ptrofs.max_unsigned.
+Lemma one_le_ptrofs_max_unsigned : 1 <= Ptrofs.max_unsigned.
+Proof.
+  unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
+  unfold Ptrofs.wordsize.
+  generalize Wordsize_Ptrofs.wordsize_not_zero. intros.
+  destruct Wordsize_Ptrofs.wordsize. congruence.
+  rewrite two_power_nat_S.
+  generalize (two_power_nat_pos n). intros. omega.
+Qed.
 
 Lemma alloc_globals_perm_ofs : forall defs m1 m2
                                   (ALLOC : alloc_globals m1 defs = Some m2)
@@ -769,26 +778,14 @@ Lemma alloc_globals_perm_ofs : forall defs m1 m2
 Proof.
   induction defs. intros.
   - simpl in ALLOC. inv ALLOC. eapply PERMOFS; eauto.
-  - intros. destruct a. destruct p0. destruct o. destruct g. destruct f. 
+  - intros. destruct a. destruct p0. destruct o. destruct g. 
     + simpl in ALLOC.
       destruct (Mem.alloc m1 0 1) eqn:ALLOC1.
-      destr_in ALLOC; inv ALLOC.
       eapply IHdefs; eauto.
       intros.
-      erewrite drop_perm_perm in H0; eauto. destruct H0.
       erewrite alloc_perm in H0; eauto.
       destruct peq. subst. 
-      generalize one_le_max_unsigned. omega.
-      eapply PERMOFS; eauto.
-    + simpl in ALLOC.
-      destruct (Mem.alloc m1 0 1) eqn:ALLOC1.
-      destr_in ALLOC; inv ALLOC.
-      eapply IHdefs; eauto.
-      intros.
-      erewrite drop_perm_perm in H0; eauto. destruct H0.
-      erewrite alloc_perm in H0; eauto.
-      destruct peq. subst. 
-      generalize one_le_max_unsigned. omega.
+      generalize one_le_ptrofs_max_unsigned. omega.
       eapply PERMOFS; eauto.
     + simpl in ALLOC.
       destruct (Mem.alloc m1 0 0) eqn:ALLOC1.
@@ -844,7 +841,6 @@ Proof.
   intros. destruct def. destruct p. inv H.
   destruct o. destruct g.
   - destruct (Mem.alloc m 0 1) eqn:ALLOC.
-    exploit Mem.drop_perm_stack; eauto. 
     exploit Mem.alloc_stack_blocks; eauto. intros.
     congruence.
   - destruct (Mem.alloc m 0 0) eqn:ALLOC.
@@ -943,7 +939,7 @@ Proof.
   - simpl in H.
     destruct (Mem.alloc m 0 1) eqn:ALLOC.
     exploit Mem.nextblock_alloc; eauto. intros. rewrite <- H0.
-    erewrite Mem.nextblock_drop; eauto.
+    inv H. auto.
   - simpl in H.
     destruct (Mem.alloc m 0 0) eqn:ALLOC.
     inv H.
@@ -1034,35 +1030,19 @@ Proof.
   intros. 
   exploit Mem.perm_valid_block; eauto. 
   unfold Mem.valid_block. intros.
-  destruct def. destruct p0. destruct o. destruct g. destruct f.
+  destruct def. destruct p0. destruct o. destruct g. 
   - simpl in ALLOC.
     destruct (Mem.alloc m 0 1) eqn:ALLOC1.
-    erewrite drop_perm_perm; eauto.
     exploit Mem.alloc_result; eauto. intros. subst.
     assert (b <> Mem.nextblock m).
     {
       destruct (peq b (Mem.nextblock m)); auto.
       subst. exfalso. eapply Plt_strict; eauto.
     }
-    split.
+    inv ALLOC.
     erewrite alloc_perm; eauto. 
     destruct peq. subst. contradiction.
     auto.
-    intros. congruence.
-  - simpl in ALLOC.
-    destruct (Mem.alloc m 0 1) eqn:ALLOC1.
-    erewrite drop_perm_perm; eauto.
-    exploit Mem.alloc_result; eauto. intros. subst.
-    assert (b <> Mem.nextblock m).
-    {
-      destruct (peq b (Mem.nextblock m)); auto.
-      subst. exfalso. eapply Plt_strict; eauto.
-    }
-    split.
-    erewrite alloc_perm; eauto. 
-    destruct peq. subst. contradiction.
-    auto.
-    intros. congruence.
   - simpl in ALLOC.
     destruct (Mem.alloc m 0 0) eqn:ALLOC1. inv ALLOC.
     erewrite alloc_perm; eauto.
