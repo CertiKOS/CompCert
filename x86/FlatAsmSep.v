@@ -56,13 +56,12 @@ Proof.
   - auto.
 Defined.
 
-Lemma transf_prog_combine : 
+Axiom transf_prog_combine : 
   forall (p1 p2: Asm.program) (tp1 tp2: FlatAsm.program) p
     (LK: link p1 p2 = Some p)
     (TF1: transf_program p1 = OK tp1)
     (TF2: transf_program p2 = OK tp2),
   exists tp, transf_program p = OK tp.
-Admitted.
 
 Lemma transl_instr_inv : forall fid sid ofs i i',
     transl_instr ofs fid sid i = OK i' ->
