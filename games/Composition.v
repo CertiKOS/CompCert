@@ -600,10 +600,11 @@ Module Res.
           -- intros t s' Hs'. simpl in *.
              destruct Hs'.
              ++ eapply sd_final_nostep; eauto.
-             ++ edestruct (sd_final_determ HL s r k) as [Hr Hk]; eauto; subst.
-                admit. (* cont_determinate too weak *)
-          -- intros r' k' H'. simpl in *.
-             destruct H'. admit. (* cont_determinate too weak *)
+             ++ edestruct (sd_final_determ HL s r k) as (?&?&_); eauto; subst.
+                destruct H1 as (S' & HS' & Hs'). assert (P0=S') by congruence.
+                subst. elim Hnostep; eauto.
+          -- intros r' k' H'. simpl in *. destruct H'.
+             edestruct (sd_final_determ HL s r k) as (?&?&_); eauto; congruence.
         * change (state L) with (state (SRes.semantics (sw li) L)).
           constructor.
           eapply SRes.step_switch; eauto. red. eauto.
@@ -624,7 +625,7 @@ Module Res.
       + intros r k Hk.
         destruct Hk.
         eapply H0; eauto.
-  Admitted.
+  Qed.
 
   Lemma res_emb {li} (L: semantics (li -o li)):
     sim eq

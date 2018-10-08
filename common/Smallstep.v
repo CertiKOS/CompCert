@@ -973,8 +973,8 @@ Record receptive {li} (L: semantics li) : Prop :=
       single_events L
   }.
 
-Definition cont_determinate {li} (L: semantics li) (k1 k2: cont li (state L)) :=
-  forall q s1 s2, resume k1 q s1 -> resume k2 q s2 -> s1 = s2.
+Definition cont_determinate {li} (L: semantics li) (k: cont li (state L)) :=
+  forall q s1 s2, resume k q s1 -> resume k q s2 -> s1 = s2.
 
 Record determinate {li} (L: semantics li) : Prop :=
   Determinate {
@@ -984,12 +984,12 @@ Record determinate {li} (L: semantics li) : Prop :=
     sd_traces:
       single_events L;
     sd_initial_determ:
-      cont_determinate L (initial_state L) (initial_state L);
+      cont_determinate L (initial_state L);
     sd_final_nostep: forall s r k,
       final_state L s r k -> Nostep L s;
     sd_final_determ: forall s r1 k1 r2 k2,
-      final_state L s r1 k1 -> final_state L s r2 k2 -> r1 = r2 /\
-      cont_determinate L k1 k2;
+      final_state L s r1 k1 -> final_state L s r2 k2 ->
+      r1 = r2 /\ k1 = k2 /\ cont_determinate L k1;
   }.
 
 Section DETERMINACY.

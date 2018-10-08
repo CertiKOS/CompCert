@@ -175,13 +175,47 @@ Module Behavior.
     (** From deterministic small-step semantics, we can obtain a
       deterministic transition system. *)
 
+    Lemma cont_deterministic k:
+      cont_determinate L k ->
+      RTS.nonbranching_cont (G := li) (liftk k) (liftk k).
+    Proof.
+      intros Hk q S1 S2 s1 s2 HS1 HS2 Hs1 Hs2.
+      assert (S2 = S1) by congruence. subst. clear HS2.
+      unfold liftk in HS1.
+      destruct k as [S | ] eqn:HS; simpl in HS1; inversion HS1; clear HS1; subst.
+      destruct Hs1 as [Hw1 | s1 Hs1], Hs2 as [Hw2 | s2 Hs2].
+      - reflexivity.
+      - elim Hw1; eauto.
+      - elim Hw2; eauto.
+      - f_equal.
+        eapply (Hk q s1 s2); eexists; eauto.
+    Qed.
+
     Lemma deterministic:
       Smallstep.determinate L ->
       RTS.deterministic step.
     Proof.
       intros HL s r1 r2 H1 H2.
-    Admitted. (* determinism -- tedious but straightforward *)
-
+      destruct H1.
+      - inversion H2; clear H2; subst.
+        repeat constructor.
+      - inversion H2; clear H2; subst.
+        + edestruct (sd_determ HL s E0 s' E0 s'0); eauto.
+          specialize (H2 eq_refl) as [].
+          repeat constructor.
+        + eelim sd_final_nostep; eauto.
+        + eelim H1; eauto.
+      - inversion H2; clear H2; subst.
+        + eelim sd_final_nostep; eauto.
+        + edestruct (sd_final_determ HL s r k r0 k0) as ([] & [] & Hk); eauto.
+          constructor. simpl.
+          eapply cont_deterministic; eauto.
+        + eelim H3; eauto.
+      - inversion H2; clear H2; subst.
+        + eelim H; eauto.
+        + eelim H0; eauto.
+        + repeat constructor.
+    Qed.
   End LTS.
 
   (** ** Monotonicity *)
