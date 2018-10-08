@@ -3933,7 +3933,37 @@ Qed.
 (*   eapply Genv.find_symbol_not_fresh; eauto. *)
 (* Qed. *)
 
-Lemma alloc_all_globals_inject :
+(* Lemma alloc_all_globals_inject : *)
+(*   forall tgdefs m2 m1' gmap lmap dsize csize  *)
+(*     (DEFNAMES: list_norepet (map fst (AST.prog_defs prog))) *)
+(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize)) *)
+(*     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog) *)
+(*     (TRANSG: transl_globdefs gmap (AST.prog_defs prog) = OK tgdefs) *)
+(*     (BOUND: dsize + csize <= Ptrofs.max_unsigned) *)
+(*     (MINJ: Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty) Mem.empty m1') *)
+(*     (BLOCKEQ: Mem.nextblock m1' = (pos_advance_N init_block (length (list_of_segments tprog)))) *)
+(*     (STK: Mem.stack m1' = nil) *)
+(*     (PERMOFS : forall b ofs k p, Mem.perm m1' b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned) *)
+(*     (DEFSPERM: forall id odef b' delta, *)
+(*        In (id, odef) (AST.prog_defs prog) -> *)
+(*        sdef_is_var_or_internal_fun odef -> *)
+(*        Genv.find_symbol tge id = Some (b', delta) -> *)
+(*        (forall ofs k p, 0 <= ofs < odef_size odef -> Mem.perm m1' b' ((Ptrofs.unsigned delta)+ofs) k p)) *)
+(*     (ALLOCG: Genv.alloc_globals ge Mem.empty (AST.prog_defs prog) = Some m2), *)
+(*     exists m2', alloc_globals tge (gen_segblocks tprog) m1' tgdefs = Some m2' *)
+(*            /\ Mem.inject (globs_meminj gmap) (def_frame_inj m2) m2 m2'. *)
+(* Proof. *)
+(*   intros. exploit (alloc_globals_inject (AST.prog_defs prog) tgdefs nil); eauto. *)
+(*   rewrite Mem.nextblock_empty; eauto. *)
+(*   intros id b def ofs k p FINDSYM IN PERM. inv IN. *)
+(*   intros id b ofs k p FINDSYM PERM. *)
+(*   exploit Mem.perm_empty; eauto. contradiction. *)
+(*   intros (m2' & ALLOCG' & WINJ). exists m2'. split; auto. *)
+(*   eapply Mem.weak_inject_to_inject; eauto. *)
+(*   intros. eapply globs_meminj_domain_valid; eauto. *)
+(* Qed. *)
+
+Lemma store_all_globals_inject :
   forall tgdefs m2 m1' gmap lmap dsize csize 
     (DEFNAMES: list_norepet (map fst (AST.prog_defs prog)))
     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
@@ -3941,7 +3971,7 @@ Lemma alloc_all_globals_inject :
     (TRANSG: transl_globdefs gmap (AST.prog_defs prog) = OK tgdefs)
     (BOUND: dsize + csize <= Ptrofs.max_unsigned)
     (MINJ: Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty) Mem.empty m1')
-    (BLOCKEQ: Mem.nextblock m1' = (pos_advance_N init_block (length (list_of_segments tprog))))
+    (BLOCKEQ: Mem.nextblock m1' = (pos_advance_N init_block (length (list_of_segments tprog) + length (AST.prog_defs prog))))
     (STK: Mem.stack m1' = nil)
     (PERMOFS : forall b ofs k p, Mem.perm m1' b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned)
     (DEFSPERM: forall id odef b' delta,
@@ -3950,7 +3980,7 @@ Lemma alloc_all_globals_inject :
        Genv.find_symbol tge id = Some (b', delta) ->
        (forall ofs k p, 0 <= ofs < odef_size odef -> Mem.perm m1' b' ((Ptrofs.unsigned delta)+ofs) k p))
     (ALLOCG: Genv.alloc_globals ge Mem.empty (AST.prog_defs prog) = Some m2),
-    exists m2', alloc_globals tge (gen_segblocks tprog) m1' tgdefs = Some m2'
+    exists m2',store_globals tge (gen_segblocks tprog) m1' tgdefs = Some m2'
            /\ Mem.inject (globs_meminj gmap) (def_frame_inj m2) m2 m2'.
 Proof.
 Admitted.
@@ -3964,7 +3994,6 @@ Admitted.
 (*   intros. eapply globs_meminj_domain_valid; eauto. *)
 (* Qed. *)
 
-
 (* Lemma globs_meminj_ofs_pos : forall gmap b b' delta, *)
 (*     globs_meminj gmap b = Some (b', delta) -> delta >= 0. *)
 (* Proof. *)
@@ -3974,13 +4003,14 @@ Admitted.
 (* Qed. *)
 
 
-Lemma alloc_segments_weak_inject: forall gmap lmap dsize csize m
+Lemma alloc_globals_segments_weak_inject: forall gmap lmap dsize csize m
     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
     (NEXTBLOCK: Mem.nextblock m = init_block)
     (STACK: Mem.stack m = nil),
-    Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty)
-                    Mem.empty (alloc_segments m (list_of_segments tprog)).
+    exists m', 
+      alloc_globals (alloc_segments m (list_of_segments tprog)) (prog_defs tprog) = Some m'
+      /\ Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty) Mem.empty m'.
 Proof.
 Admitted.
 (*   intros. unfold def_frame_inj. erewrite Mem.empty_stack; eauto. *)
@@ -4003,24 +4033,24 @@ Admitted.
 (*     auto. *)
 (* Qed. *)
 
-Lemma alloc_global_ext : forall f1 f2 (ge:FlatAsm.genv) m def,
-    (forall x, f1 x = f2 x) -> alloc_global ge f1 m def = alloc_global ge f2 m def.
-Proof.
-  intros f1 f2 ge0 m def H.
-  destruct def. destruct p. destruct o. destruct g.
-  - simpl. rewrite (H (segblock_id s)). auto.
-  - simpl. rewrite (H (segblock_id s)). auto.
-  - simpl. auto.
-Qed.
+(* Lemma alloc_global_ext : forall f1 f2 m def, *)
+(*     (forall x, f1 x = f2 x) -> alloc_global f1 m def = alloc_global ge f2 m def. *)
+(* Proof. *)
+(*   intros f1 f2 ge0 m def H. *)
+(*   destruct def. destruct p. destruct o. destruct g. *)
+(*   - simpl. rewrite (H (segblock_id s)). auto. *)
+(*   - simpl. rewrite (H (segblock_id s)). auto. *)
+(*   - simpl. auto. *)
+(* Qed. *)
 
-Lemma alloc_globals_ext : forall defs f1 f2 (ge:FlatAsm.genv) m,
-    (forall x, f1 x = f2 x) -> alloc_globals ge f1 m defs = alloc_globals ge f2 m defs.
-Proof.
-  induction defs. intros.
-  - simpl. auto.
-  - intros f1 f2 ge0 m H. simpl. erewrite alloc_global_ext; eauto.
-    destr_match. erewrite IHdefs; eauto. auto.
-Qed.
+(* Lemma alloc_globals_ext : forall defs f1 f2 (ge:FlatAsm.genv) m, *)
+(*     (forall x, f1 x = f2 x) -> alloc_globals ge f1 m defs = alloc_globals ge f2 m defs. *)
+(* Proof. *)
+(*   induction defs. intros. *)
+(*   - simpl. auto. *)
+(*   - intros f1 f2 ge0 m H. simpl. erewrite alloc_global_ext; eauto. *)
+(*     destr_match. erewrite IHdefs; eauto. auto. *)
+(* Qed. *)
 
 Definition find_segsize (segs: list segment) id : option ptrofs :=
   match (List.find (fun s => ident_eq (segid s) id) segs) with
@@ -4191,6 +4221,34 @@ Proof.
   - simpl in OFS. omega.
 Qed.
 
+Lemma alloc_globals_init_perm : 
+  forall id odef b' delta ofs k p m m'
+    (IN: In (id, odef) (AST.prog_defs prog))
+    (NVI: ~ sdef_is_var_or_internal_fun odef)
+    (FSYM: Genv.find_symbol tge id = Some (b', delta))
+    (OFS: 0 <= ofs < odef_size odef)
+    (GALLOC: alloc_globals m (prog_defs tprog) = Some m'),
+    Mem.perm m' b' ((Ptrofs.unsigned delta)+ofs) k p.
+Proof.
+  intros. destruct odef as [|def].
+  - generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'.
+    unfold transf_program in TRANSF'.
+    destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'.
+Admitted.
+
+
+Lemma transl_globdefs_pres_len : 
+  forall g defs defs'
+    (TL: transl_globdefs g defs = OK defs'),
+    length defs' = length defs.
+Proof.
+  induction defs; simpl; intros.
+  - inv TL. auto.
+  - destruct a. monadInv TL.
+    simpl. erewrite IHdefs; eauto.
+Qed.
+  
+
 Lemma init_mem_pres_inject : forall m gmap lmap dsize csize 
     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
@@ -4201,12 +4259,13 @@ Proof.
   destruct (Mem.alloc Mem.empty 0 0) eqn:IALLOC.
   exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK.
   rewrite Mem.nextblock_empty in NEXTBLOCK. simpl in NEXTBLOCK.
-  exploit alloc_segments_weak_inject; eauto.
+  exploit alloc_globals_segments_weak_inject; eauto.
   erewrite Mem.alloc_stack_blocks; eauto.
   erewrite Mem.empty_stack; eauto.
-  intros SINJ.
+  intros (m' & GALLOC & SINJ).
   set (m1 := alloc_segments m0 (list_of_segments tprog)) in *.
-  generalize (alloc_all_globals_inject). intro AAGI.
+  rewrite GALLOC.
+  generalize (store_all_globals_inject). intro AAGI.
   generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'.
   unfold transf_program in TRANSF'.
   destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'.
@@ -4216,16 +4275,26 @@ Proof.
   inversion UPDATE. subst g l z0 z.
   exploit AAGI; eauto using INITMEM, SINJ, Mem.inject_ext.
   - inv w. auto.
-  - exploit alloc_segments_nextblock; eauto. intros.
-    unfold m1. rewrite H. simpl. rewrite NEXTBLOCK. auto.
-  - unfold m1. erewrite alloc_segments_stack; eauto.
+  - erewrite alloc_globals_nextblock; eauto.
+    subst m1.
+    erewrite alloc_segments_nextblock; eauto.
+    erewrite Mem.nextblock_alloc; eauto. 
+    erewrite Mem.nextblock_empty. simpl.    
+    subst tprog. simpl.
+    erewrite transl_globdefs_pres_len; eauto.
+  - erewrite <- alloc_globals_stack; eauto.
+    subst m1. erewrite alloc_segments_stack; eauto.
     erewrite Mem.alloc_stack_blocks; eauto.
     erewrite Mem.empty_stack; eauto.
-  - eapply alloc_segments_perm_ofs; eauto. unfold m1; auto.
+  - eapply alloc_globals_perm_ofs; eauto. subst m1.
+    eapply alloc_segments_perm_ofs; eauto. 
     intros b0 ofs k p PERM. erewrite alloc_perm in PERM; eauto.
     destruct peq. omega. apply Mem.perm_empty in PERM. contradiction.
   - intros id odef b' delta IN VI SYMOFS ofs k p OFS.
-    eapply alloc_segments_init_perm; eauto.
+    destruct (vit_dec _ _ odef).
+    eapply alloc_globals_pres_perm; eauto.
+    subst m1. eapply alloc_segments_init_perm; eauto.
+    eapply alloc_globals_init_perm; eauto.
   - intros (m1' & ALLOC' & MINJ).
     exists m1'. split. subst. simpl.
     unfold tge in ALLOC'. auto.
