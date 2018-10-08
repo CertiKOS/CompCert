@@ -175,12 +175,12 @@ Module Behavior.
     (** From deterministic small-step semantics, we can obtain a
       deterministic transition system. *)
 
-    Lemma program_lts_determ:
+    Lemma deterministic:
       Smallstep.determinate L ->
       RTS.deterministic step.
     Proof.
       intros HL s r1 r2 H1 H2.
-    Abort. (* determinism -- tedious but straightforward *)
+    Admitted. (* determinism -- tedious but straightforward *)
 
   End LTS.
 

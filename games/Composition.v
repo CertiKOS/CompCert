@@ -626,6 +626,62 @@ Module Res.
         eapply H0; eauto.
   Admitted.
 
+  Lemma res_emb {li} (L: semantics (li -o li)):
+    sim eq
+      (Behavior.step (SRes.semantics SHComp.sw L))
+      (res (Res.sw li) (Behavior.step L)).
+  Proof.
+    intros s _ [] s' Hs'.
+    destruct Hs'; (eexists; split; [ | reflexivity]).
+    - exists goes_wrong; repeat constructor.
+      eapply (Behavior.step_goes_initially_wrong L).
+    - inversion H; clear H; subst.
+      + (* internal step *)
+        econstructor.
+        * eapply (Behavior.step_internal L); eauto.
+        * constructor.
+      + (* switching *)
+        econstructor.
+        * eapply (Behavior.step_interacts L); eauto.
+        * red. simpl. unfold Behavior.liftk.
+          destruct H1 as (S & HS & Hs').
+          replace (k _) with (Some S) by eauto. simpl.
+          repeat (constructor; auto).
+    - destruct H.
+      econstructor.
+      + eapply (Behavior.step_interacts L); eauto.
+      + red. simpl. unfold Behavior.liftk.
+        replace (k _) with (@None (state L -> Prop)) by eauto. simpl.
+        constructor.
+    - destruct (classic (exists r k, final_state L s r k /\
+                         exists S, k (sw li r) = Some S /\ ~ ex S)) as [Hsw|Hsw].
+      + (* switches, then goes initially wrong *)
+        destruct Hsw as (r & k & Hk & S & HS & HnS).
+        exists (interacts (G := li -o li) r (Behavior.liftk k)).
+        * eapply (Behavior.step_interacts L); eauto.
+        * unfold res_behavior, xcall, Behavior.liftk. rewrite HS. simpl.
+          repeat (econstructor; eauto); fail.
+      + (* no step or final state in original semantics *)
+        exists (internal Behavior.wrong); [ | constructor].
+        eapply (Behavior.step_goes_wrong L).
+        * intros t s' Hs'. eapply H.
+          constructor; eauto.
+        * intros r k Hrk.
+          eapply not_ex_all_not in Hsw.
+          eapply not_ex_all_not in Hsw.
+          eapply not_and_or in Hsw as [Hnfs | Hsw]; eauto.
+          destruct (k (sw li r)) as [S | ] eqn:HS.
+          -- (* switches -> would be a step *)
+            eapply not_ex_all_not in Hsw.
+            eapply not_and_or in Hsw as [Hnfs | Hsw]; eauto.
+            eapply NNPP in Hsw as (s' & Hs').
+            eapply H.
+            eapply SRes.step_switch; eauto.
+            exists S; eauto.
+          -- (* no switch -> would be a final state *)
+            eapply H0; eauto. econstructor; eauto.
+  Qed.
+
   (** ** Commutation with [obs] *)
 
   (** We prove that [res] semi-commutes with [obs], in the sense
@@ -904,13 +960,18 @@ Module Res.
   (** ** Full commutation theorem *)
 
   Lemma of_emb {li} (L: semantics (li -o li)) :
+    Smallstep.determinate L ->
     modref
       (Behavior.of (SRes.semantics (sw li) L))
       (Res.of (Behavior.of L)).
   Proof.
     econstructor; simpl.
-    - eapply RTS.sim_compose. { rstep. 
-  Admitted.
+    - eapply RTS.sim_compose.
+      + rstep. apply res_emb.
+      + apply res_obs. apply (Behavior.deterministic L); auto.
+    - intro q.
+      eapply cont_le_compose; reflexivity.
+  Qed.
 End Res.
 
 
@@ -923,13 +984,17 @@ Module HComp.
   (** ** Commutation with embedding *)
 
   Lemma of_emb {li} ge (L1 L2 : Smallstep.semantics (li -o li)) :
+    Smallstep.determinate L1 ->
+    Smallstep.determinate L2 ->
     modref
       (Behavior.of (SHComp.semantics ge L1 L2))
       (HComp.of (Behavior.of L1) (Behavior.of L2)).
   Proof.
+    intros HL1 HL2.
     unfold HComp.of, SHComp.semantics.
     etransitivity.
     - eapply Res.of_emb.
+      admit. (* flat composition preserves determinism *)
     - rstep. eapply FComp.of_emb.
-  Qed.
+  Admitted.
 End HComp.
