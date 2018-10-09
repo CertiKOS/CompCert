@@ -66,6 +66,19 @@ Module SFComp.
         Smallstep.globalenv := (globalenv L1, globalenv L2);
         Smallstep.symbolenv := ge;
       |}.
+
+    Lemma semantics_determinate:
+      determinate L1 ->
+      determinate L2 ->
+      determinate semantics.
+    Proof.
+      intros HL1 HL2.
+      split.
+      - intros s t1 s1 t2 s2 H1 H2.
+        destruct H1; inversion H2; clear H2; subst.
+        edestruct (sd_determ HL1 s t s' t2 s'0); simpl; eauto using f_equal2.
+    Abort.
+
     End FLATCOMP.
 End SFComp.
 

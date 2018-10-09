@@ -257,9 +257,9 @@ Module Behavior.
     constructor. eauto.
   Qed.
 
-  Lemma forever_internal_bsim {li} (L1 L2: semantics li) ind ord ms i S1 S2:
-    bsim_properties L2 L1 ind ord ms ->
-    ms i S2 S1 ->
+  Lemma forever_internal_bsim {li1 li2} cc L1 L2 ind ord ms i w S1 S2:
+    @bsim_properties li1 li2 cc L2 L1 ind ord ms ->
+    ms w i S2 S1 ->
     Smallstep.safe L2 S2 ->
     RTS.forever_internal (step L1) (running S1) ->
     RTS.forever_internal (step L2) (running S2).
@@ -287,13 +287,14 @@ Module Behavior.
       + exists wrong; split; constructor; eauto.
   Qed.
 
-  Lemma bsim_sound_liftk {li} L1 L2 ind ord ms (k1 k2: cont li _) q :
-    @bsim_properties li L2 L1 ind ord ms ->
-    bsim_match_cont (rel_ex ms) k2 k1 ->
-    option_rel (set_le (state_rel (flip (rel_ex ms)))) (liftk k1 q) (liftk k2 q).
+  Lemma bsim_sound_liftk {li1 li2} cc L1 L2 ind ord ms w k1 k2 w' q1 q2 :
+    @bsim_properties li1 li2 cc L2 L1 ind ord ms ->
+    bsim_match_cont cc (match_ex ms) w k2 k1 ->
+    cc_query cc q2 q1 w w' ->
+    option_rel (set_le (state_rel (flip (rel_ex (match_ex ms))))) (liftk k1 q1) (liftk k2 q2).
   Proof.
-    intros HL Hk. unfold liftk.
-    specialize (Hk q). destruct Hk as [S2 S1 HS | ]; constructor.
+    intros HL Hk Hq. unfold liftk.
+    specialize (Hk w' q2 q1 Hq). destruct Hk as [S2 S1 HS | ]; constructor.
     eapply bsim_lifts.
     - intros.
       edestruct @bsim_sets_exists as (? & ? & ?); eauto.
@@ -321,12 +322,12 @@ Module Behavior.
   Qed.
 
   Lemma bsim_sound_step {li} (L1 L2: semantics li) ind ord ms:
-    bsim_properties L2 L1 ind ord ms ->
-    RTS.sim (state_rel (flip (rel_ex ms)))
+    bsim_properties cc_id L2 L1 ind ord ms ->
+    RTS.sim (state_rel (flip (rel_ex (match_ex ms))))
       (RTS.obs (step L1))
       (RTS.obs (step L2)).
   Proof.
-    set (R := flip (rel_ex ms)). unfold flip, rel_ex in R.
+    set (R := flip (rel_ex (match_ex ms))). unfold flip, rel_ex in R.
     intros HL S1 S2 HS r1 Hr1.
     destruct (classic (safe L2 S2)) as [HS2 | ];
       [ | now eauto using unsafe_goes_wrong with coqrel ].
@@ -335,12 +336,13 @@ Module Behavior.
 
     - (* Divergence *)
       exists RTS.diverges. split; [ | rauto].
-      destruct Hs as [i Hs].
+      destruct Hs as (w & i & Hs).
       apply RTS.obs_diverges.
       eapply forever_internal_bsim; eauto.
 
     - (* Observation *)
-      assert (HS1: Smallstep.safe L1 s1) by (destruct Hs; eauto using bsim_safe).
+      assert (HS1: Smallstep.safe L1 s1)
+        by (destruct Hs as (? & ? & ?); eauto using bsim_safe).
       apply reachable_inv in Hs1' as (s1' & ? & Hs1'); auto; subst.
       revert s2 Hs HS2. clear HS1.
       revert Hr. pattern s1, s1'. revert s1 s1' Hs1'.
@@ -349,24 +351,26 @@ Module Behavior.
       + (* Final states *)
         intros s1 Hr s2 Hs Hs2.
         inversion Hr; clear Hr; subst; try now inversion Hrext.
-        destruct Hs as (i & Hs).
+        destruct Hs as (w & i & Hs).
         eapply bsim_match_final_states in H0; eauto.
-        destruct H0 as (s2' & k2 & Hs2' & Hsk2 & Hk); eauto.
+        destruct H0 as (s2' & w' & r2 & k2 & Hs2' & Hr & Hsk2 & Hk); eauto.
+        simpl in Hr; subst.
         exists (RTS.interacts (G:=li) r (liftk k2)). split.
         * eapply RTS.obs_external with (running s2'); eauto.
           -- constructor; eauto.
           -- eapply star_reachable; eauto.
         * constructor. intro q.
            eapply bsim_sound_liftk; eauto.
+           instantiate (1 := w'). constructor.
 
       + (* Silent steps *)
         intros s1 s1' s1'' Hs1' Hs1'' Hr1 s2 Hs Hs2.
         specialize (Hs1'' Hr1). clear Hr1 s1''.
-        destruct Hs as [i Hs].
+        destruct Hs as (w & i & Hs).
         edestruct (bsim_E0_star HL) as (j & s2' & Hs2' & Hs12');
           eauto using star_one.
         edestruct Hs1'' as (r2 & Hr2 & Hr12).
-        -- eexists. eauto.
+        -- eexists. eexists. eauto.
         -- eauto using star_safe.
         -- exists r2. split; eauto.
            eapply RTS.obs_reachable; eauto.
@@ -374,7 +378,7 @@ Module Behavior.
   Qed.
 
   Global Instance bsim_sound:
-    Monotonic (@of) (forallr -, backward_simulation --> modref).
+    Monotonic (@of) (forallr -, backward_simulation cc_id --> modref).
   Proof.
     intros li L1 L2 [index order match_states HL]. unfold of.
     econstructor; simpl; eauto.
@@ -382,5 +386,6 @@ Module Behavior.
     - intros q.
       eapply bsim_sound_liftk; eauto.
       eapply bsim_initial_states; eauto.
+      instantiate (1 := tt). constructor.
   Qed.
 End Behavior.

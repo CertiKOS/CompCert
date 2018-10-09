@@ -503,7 +503,10 @@ Section HCOMP.
   Proof.
     transitivity (Behavior.of (SHComp.semantics (globalenv L) L1 L2)).
     - apply Behavior.bsim_sound.
-      admit. (* flip forward simulation *)
+      apply forward_to_backward_simulation; eauto.
+      + apply asm_hcomp_fsim.
+      + admit. (* SHComp receptive *)
+      + admit. (* Asm determinate *)
     - apply HComp.of_emb.
   Admitted.
 End HCOMP.

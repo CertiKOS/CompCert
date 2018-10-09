@@ -394,8 +394,8 @@ Qed.
 
 Section BACKWARD_SIMULATIONS.
 
-Context {li} (L1 L2: semantics li).
-Context index order match_states (S: bsim_properties L1 L2 index order match_states).
+Context {li1 li2} {cc: callconv li1 li2}.
+Context L1 L2 index order match_states (S: bsim_properties cc L1 L2 index order match_states).
 
 Definition safe_along_behavior {R} (s: state L1) (b: @program_behavior R) :=
   forall t1 s' b2, Star L1 s t1 s' -> b = behavior_app t1 b2 ->
@@ -443,8 +443,8 @@ Qed.
 
 Lemma backward_simulation_star {R}:
   forall s2 t s2', Star L2 s2 t s2' ->
-  forall i s1 b, match_states i s1 s2 -> @safe_along_behavior R s1 (behavior_app t b) ->
-  exists i', exists s1', Star L1 s1 t s1' /\ match_states i' s1' s2'.
+  forall w i s1 b, match_states w i s1 s2 -> @safe_along_behavior R s1 (behavior_app t b) ->
+  exists i', exists s1', Star L1 s1 t s1' /\ match_states w i' s1' s2'.
 Proof.
   induction 1; intros.
   exists i; exists s1; split; auto. apply star_refl.
@@ -458,15 +458,15 @@ Proof.
 Qed.
 
 Lemma backward_simulation_forever_silent:
-  forall i s1 s2,
-  Forever_silent L2 s2 -> match_states i s1 s2 -> safe L1 s1 ->
+  forall w i s1 s2,
+  Forever_silent L2 s2 -> match_states w i s1 s2 -> safe L1 s1 ->
   Forever_silent L1 s1.
 Proof.
-  assert (forall i s1 s2,
-         Forever_silent L2 s2 -> match_states i s1 s2 -> safe L1 s1 ->
+  assert (forall w i s1 s2,
+         Forever_silent L2 s2 -> match_states w i s1 s2 -> safe L1 s1 ->
          forever_silent_N (step L1) order (globalenv L1) i s1).
     cofix COINDHYP; intros.
-    inv H.  destruct (bsim_simulation S _ _ _ H2 _ H0 H1) as [i' [s2' [A B]]].
+    inv H.  destruct (bsim_simulation S _ _ _ H2 _ _ H0 H1) as [i' [s2' [A B]]].
     destruct A as [C | [C D]].
     eapply forever_silent_N_plus; eauto. eapply COINDHYP; eauto.
       eapply star_safe; eauto. apply plus_star; auto.
@@ -476,17 +476,14 @@ Proof.
 Qed.
 
 Lemma backward_simulation_forever_reactive {R}:
-  forall i s1 s2 T,
-  Forever_reactive L2 s2 T -> match_states i s1 s2 -> @safe_along_behavior R s1 (Reacts T) ->
+  forall w i s1 s2 T,
+  Forever_reactive L2 s2 T -> match_states w i s1 s2 -> @safe_along_behavior R s1 (Reacts T) ->
   Forever_reactive L1 s1 T.
 Proof.
   cofix COINDHYP; intros. inv H.
   destruct (backward_simulation_star (R:=R) H2 (Reacts T0) H0) as [i' [s1' [A B]]]; eauto.
   econstructor; eauto. eapply COINDHYP; eauto. eapply star_safe_along; eauto.
 Qed.
-
-Definition match_cont_bsim (k1 k2 : query li -> state _ -> Prop) :=
-  forall q s1, k1 q s1 -> exists i s2, k2 q s2 /\ match_states i s1 s2.
 
 (*
 Lemma backward_simulation_state_behaves:
