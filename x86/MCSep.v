@@ -6,7 +6,7 @@
 (** Separate compilation proof for the MC generation **)
 
 Require Import Coqlib Integers Values Maps AST.
-Require Import Asm FlatAsmProgram MC MCgen.
+Require Import Asm FlatAsmProgram MC MCgen MCgenproof.
 Require Import Segment.
 Require Import Linking Errors FlatAsmSep.
 Require Import Num.
@@ -133,13 +133,13 @@ Proof.
   destruct p; auto.
 Qed.
 
-(* Instance TransfFlatAsmLink : TransfLink match_prog. *)
-(* Proof. *)
-(*   red. unfold match_prog. simpl link. intros p1 p2 tp1 tp2 p LK MC1 MC2. *)
-(*   inv MC1. inv MC2. *)
-(*   exploit transf_prog_combine; eauto. intros H. *)
-(*   destruct H as [p' TF]. *)
-(*   exists p'. split. unfold link_flatasmprog. *)
-(*   repeat (erewrite transf_prog_inv; eauto).  *)
-(*   rewrite LK. rewrite TF. auto. auto. *)
-(* Defined. *)
+Instance TransfMCLink : TransfLink match_prog.
+Proof.
+  red. unfold match_prog. simpl link. intros p1 p2 tp1 tp2 p LK MC1 MC2.
+  inv MC1. inv MC2.
+  exploit transf_prog_combine; eauto. intros H.
+  destruct H as [p' TF].
+  exists p'. split. unfold link_mcprog.
+  repeat (erewrite transf_prog_inv; eauto). simpl link.
+  rewrite LK. rewrite TF. auto. auto.
+Defined.
