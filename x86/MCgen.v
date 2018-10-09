@@ -95,9 +95,77 @@ Fixpoint transl_globdefs defs :=
   end.
 
 End WITH_LABEL_MAP.
-  
+
+
+
+Definition is_valid_label prog (i: FlatAsm.instr_with_info) :=
+  let '(i,_,id) := i in
+  match i with
+    Pjcc _ l
+  | Pjcc2 _ _ l
+  | Pjmp_l l => lbl_map (I:=Asm.instruction) prog id l <> None
+  | Pjmptbl _ ll =>
+    Forall (fun l => lbl_map prog id l <> None) ll
+  | _ => True
+  end.
+
+Arguments is_valid_label: simpl nomatch.
+
+Definition eq_dec_neq_dec:
+  forall {A} (Adec: forall a b : A, {a=b} + {a <> b}),
+  forall a b : A, {a <> b} + {~ a <> b}.
+Proof.
+  intros.
+  destruct (Adec a b); [right|left]; auto.
+Defined.
+
+Definition pair_eq:
+  forall {A B} (Adec: forall a b : A, {a=b} + {a <> b}) (Bdec: forall a b : B, {a=b} + {a <> b}),
+  forall a b : A * B, {a = b} + {a <> b}.
+Proof.
+  intros.
+  destruct (Adec (fst a) (fst b)).
+  destruct (Bdec (snd a) (snd b)).
+  destruct a, b; simpl in *; subst; left; auto.
+  right; intro C; inv C. congruence.
+  right; intro C; inv C. congruence.
+Defined.
+
+Definition is_valid_label_dec: forall prog i, {is_valid_label prog i} + {~ is_valid_label prog i}.
+Proof.
+  destruct i as ((i & ?) & id); simpl.
+  unfold is_valid_label. destr; try now left.
+  apply eq_dec_neq_dec. apply option_eq.
+  apply pair_eq. apply peq. apply Ptrofs.eq_dec.
+  apply eq_dec_neq_dec. apply option_eq.
+  apply pair_eq. apply peq. apply Ptrofs.eq_dec.
+  apply eq_dec_neq_dec. apply option_eq.
+  apply pair_eq. apply peq. apply Ptrofs.eq_dec.
+  apply Forall_dec.  intros. apply eq_dec_neq_dec. apply option_eq.
+  apply pair_eq. apply peq. apply Ptrofs.eq_dec.
+Defined.
+
+Definition check_fadef prog sbs (igs: ident * option gdef * segblock) : bool :=
+  let '(i, d, _) := igs in
+  match d with
+    Some (Gfun (Internal f)) =>
+    forallb (fun '(ins, sb1, ii) =>
+               proj_sumbool (ident_eq (segblock_id sb1) (code_segid)) &&
+                            proj_sumbool (ident_eq i ii) &&
+                            proj_sumbool (is_valid_label_dec prog (ins, sb1, ii))
+            ) (fn_code f) &&
+            list_norepet_dec Values.Val.eq (map (get_instr_ptr sbs) (fn_code f))
+  | _ => true
+  end.
+
+Definition check_faprog (p: FlatAsm.program) : bool :=
+  forallb (check_fadef p (gen_segblocks p)) (prog_defs p).
+
 (** Translation of a program *)
 Definition transf_program (p:FlatAsm.program) : res program := 
+  assertion check_faprog p;
+    assertion peq code_segid (segid (code_seg p));
+    assertion eq_dec_neq_dec peq code_segid (segid (data_seg p));
   do defs <- transl_globdefs (lbl_map p) (prog_defs p);
   OK (Build_program
         defs

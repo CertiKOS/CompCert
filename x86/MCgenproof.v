@@ -22,9 +22,11 @@ Open Scope Z_scope.
 
 
 Section WITHMEMORYMODEL.
-  
-Context `{memory_model: Mem.MemoryModel }.
-Existing Instance inject_perm_all.
+
+  Context `{external_calls_ops : ExternalCalls }.
+  Existing Instance Asm.mem_accessors_default.
+  Existing Instance FlatAsm.mem_accessors_default.
+  Existing Instance inject_perm_all.
 
 Definition match_prog (p: FlatAsm.program) (tp: MC.program) :=
   transf_program p = OK tp.
@@ -67,35 +69,6 @@ Let tge := globalenv tprog.
     - destr_in AG. monadInv TG. simpl.
       erewrite alloc_global_transl; eauto.
   Qed.
-
-  Lemma store_global_transl:
-    forall lmap sb d d' m m',
-      transl_globdef lmap d = OK d' ->
-      store_global ge sb m d = Some m' ->
-      store_global tge sb m d' = Some m'.
-  Proof.
-    intros lmap sb d d' m m' TG SG.
-    destruct d as ((i & od) & sg).
-    unfold transl_globdef in TG.
-    repeat destr_in TG; auto.
-    - monadInv H0. simpl in *; auto.
-    - simpl in *.
-      repeat destr_in SG.
-  Admitted.
-
-  Lemma store_globals_transl:
-    forall lmap sb d d' m m',
-      transl_globdefs lmap d = OK d' ->
-      store_globals ge sb m d = Some m' ->
-      store_globals tge sb m d' = Some m'.
-  Proof.
-    induction d; simpl; intros d' m m' TG SG.
-    - inv TG; inv SG. reflexivity.
-    - destr_in SG. monadInv TG. simpl.
-      erewrite store_global_transl; eauto.
-  Qed.
-
-
 
   Lemma add_global_symb:
     forall ge1 ge2
@@ -144,7 +117,55 @@ Let tge := globalenv tprog.
     unfold match_prog, transform_program in TRANSF. monadInv TRANSF.
     intros. erewrite add_globals_symb; eauto.
   Qed.
-  
+
+  Lemma store_init_data_transl:
+    forall ld m b o m',
+      store_init_data ge m b o ld = Some m' ->
+      store_init_data tge m b o ld = Some m'.
+  Proof.
+    destruct ld; simpl; intros; eauto.
+    erewrite <- symbol_address_same; eauto.
+  Qed.
+
+  Lemma store_init_data_list_transl:
+    forall ld m b o m',
+      store_init_data_list ge m b o ld = Some m' ->
+      store_init_data_list tge m b o ld = Some m'.
+  Proof.
+    induction ld; simpl; intros; eauto.
+    destr_in H.
+    erewrite store_init_data_transl; eauto.
+  Qed.
+
+  Lemma store_global_transl:
+    forall lmap sb d d' m m',
+      transl_globdef lmap d = OK d' ->
+      store_global ge sb m d = Some m' ->
+      store_global tge sb m d' = Some m'.
+  Proof.
+    intros lmap sb d d' m m' TG SG.
+    destruct d as ((i & od) & sg).
+    unfold transl_globdef in TG.
+    repeat destr_in TG; auto.
+    - monadInv H0. simpl in *; auto.
+    - simpl in *.
+      repeat destr_in SG.
+      erewrite store_init_data_list_transl; eauto.
+  Qed.
+
+  Lemma store_globals_transl:
+    forall lmap sb d d' m m',
+      transl_globdefs lmap d = OK d' ->
+      store_globals ge sb m d = Some m' ->
+      store_globals tge sb m d' = Some m'.
+  Proof.
+    induction d; simpl; intros d' m m' TG SG.
+    - inv TG; inv SG. reflexivity.
+    - destr_in SG. monadInv TG. simpl.
+      erewrite store_global_transl; eauto.
+  Qed.
+
+
 Lemma transf_initial_states :
   forall rs st1,
     FlatAsm.initial_state prog rs st1  ->
@@ -168,10 +189,6 @@ Proof.
 Qed.
 
 
-Context `{external_calls_ops : !ExternalCallsOps mem }.
-Context `{!EnableBuiltins mem}.
-Existing Instance Asm.mem_accessors_default.
-Existing Instance FlatAsm.mem_accessors_default.
 
 
 Lemma eval_addrmode32_same:
@@ -233,11 +250,111 @@ Proof.
   - eapply IHcode; eauto. inv CODE; auto.
 Qed.
 
-Hypothesis code_segid_segid_code_seg:
+Lemma code_segid_segid_code_seg:
   code_segid = segid (code_seg prog).
+Proof.
+  unfold match_prog, transf_program in TRANSF.
+  monadInv TRANSF. auto.
+Qed.
 
-Hypothesis code_segid_not_segid_data_seg:
+Lemma code_segid_not_segid_data_seg:
   code_segid <> segid (data_seg prog).
+Proof.
+  unfold match_prog, transf_program in TRANSF.
+  monadInv TRANSF. auto.
+Qed.
+
+Hypothesis lmap_code_seg:
+  forall id l s0 i,
+    lbl_map prog id l = Some (s0, i) -> s0 = code_segid.
+
+Lemma check_faprog_true: check_faprog prog = true.
+Proof.
+  unfold match_prog, transf_program in TRANSF.
+  monadInv TRANSF. auto.
+Qed.
+
+Lemma wf_faprog:
+  Forall
+    (fun '(i, d, _) =>
+       forall f : function,
+         d = Some (Gfun (Internal f)) ->
+         Forall (fun '(ins, sb1, ii) => segblock_id sb1 = code_segid /\ i = ii /\ is_valid_label prog (ins,sb1,ii)) (fn_code f) /\
+         list_norepet (map (get_instr_ptr (gen_segblocks prog)) (fn_code f))
+    )
+    (prog_defs prog).
+Proof.
+  assert (C := check_faprog_true).
+  unfold check_faprog in C.
+  rewrite forallb_forall in C.
+  rewrite Forall_forall. intros x IN.
+  specialize (C _ IN).
+  destruct x as [[id og] sb].
+  unfold check_fadef in C.
+  intros f EQ. subst.
+  rewrite andb_true_iff in C. destruct C as [A B].
+  rewrite forallb_forall in A.
+  unfold proj_sumbool in B. destr_in B. split; auto.
+  rewrite Forall_forall. intros xx INN. repeat destr.
+  specialize (A _ INN).
+  unfold proj_sumbool in A. repeat destr_in A.
+Qed.
+
+Lemma prog_in_code_block:
+  Forall
+    (fun '(_, d, _) =>
+       forall f : function,
+         d = Some (Gfun (Internal f)) ->
+         Forall (fun '(_, sb1, _) => segblock_id sb1 = code_segid) (fn_code f)) 
+    (prog_defs prog).
+Proof.
+  eapply Forall_impl. 2: apply wf_faprog. intros [[ia d] sb] IN H f EQ.
+  apply H in EQ.
+  eapply Forall_impl. 2: apply EQ. simpl. intros. 
+  repeat destr.
+Qed.
+
+  
+Lemma labels_valid:
+  Forall (fun '(_,o,_) =>
+            forall f,
+              o = Some (Gfun (Internal f)) ->
+              Forall (is_valid_label prog) (fn_code f)
+         ) (prog_defs prog).
+Proof.
+  eapply Forall_impl. 2: apply wf_faprog. intros [[ia d] sb] IN H f EQ.
+  apply H in EQ.
+  eapply Forall_impl. 2: apply EQ. simpl. intros.
+  repeat destr_in H1.
+Qed.
+
+Lemma code_lnr:
+  Forall (fun '(_,o,_) =>
+            forall f,
+              o = Some (Gfun (Internal f)) ->
+              list_norepet (map (get_instr_ptr (gen_segblocks prog)) (fn_code f))
+         ) (prog_defs prog).
+Proof.
+  eapply Forall_impl. 2: apply wf_faprog. intros [[ia d] sb] IN H f EQ.
+  apply H in EQ. destruct EQ; auto.
+Qed.
+
+Lemma ident_fun_correct:
+  Forall
+    (fun '(i,o,sb) =>
+       forall f,
+         o = Some (Gfun (Internal f)) ->
+         Forall
+           (fun '(_,ii) => i = ii)
+           (fn_code f)
+    )
+    (prog_defs prog).
+Proof.
+  eapply Forall_impl. 2: apply wf_faprog. intros [[ia d] sb] IN H f EQ.
+  apply H in EQ.
+  eapply Forall_impl. 2: apply EQ. simpl. intros.
+  repeat destr_in H1.
+Qed.
 
 Lemma Forall_app:
   forall {A} (P: A -> Prop) (l1 l2: list A),
@@ -276,17 +393,6 @@ Proof.
   apply IHl. inv F; auto.
 Qed.
 
-Hypothesis prog_in_code_block:
-  Forall
-    (fun '(_, d, _) =>
-       forall f : function,
-         d = Some (Gfun (Internal f)) ->
-         Forall (fun '(_, sb1, _) => segblock_id sb1 = code_segid) (fn_code f)) 
-    (prog_defs prog).
-
-Hypothesis lmap_code_seg:
-  forall id l s0 i,
-    lbl_map prog id l = Some (s0, i) -> s0 = code_segid.
 Lemma genv_lbl_map:
   forall b, Genv.genv_lbl ge b =  lblmap_to_symbmap (gen_segblocks prog) (lbl_map prog) b.
 Proof.
@@ -431,11 +537,38 @@ Proof.
   subst; left; reflexivity.
 Qed.
 
-Axiom instruction_dec:
-  forall i1 i2: instruction, {i1 = i2} + {i1 <> i2}.
 
 Axiom asm_instruction_dec:
   forall i1 i2: Asm.instruction, {i1 = i2} + {i1 <> i2}.
+
+Lemma testcond_dec:
+  forall t1 t2: testcond, {t1 = t2} + {t1 <> t2}.
+Proof.
+  destruct t1, t2; first [right; intro A; inv A; congruence | left; auto ].
+Qed.
+
+Lemma instruction_dec:
+  forall i1 i2: instruction, {i1 = i2} + {i1 <> i2}.
+Proof.
+  destruct i1, i2; try now (right; intro A; inv A).
+  - destruct (peq l l0). 2: right; intro A; inv A; congruence.
+    destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
+    subst; left; auto.
+  - destruct (peq l l0). 2: right; intro A; inv A; congruence.
+    destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
+    destruct (testcond_dec c c0). 2: right; intro A; inv A; congruence.
+    subst; left; auto.
+  - destruct (peq l l0). 2: right; intro A; inv A; congruence.
+    destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
+    destruct (testcond_dec c1 c0). 2: right; intro A; inv A; congruence.
+    destruct (testcond_dec c2 c3). 2: right; intro A; inv A; congruence.
+    subst; left; auto.
+  - destruct (list_eq_dec peq l l0). 2: right; intro A; inv A; congruence.
+    destruct (list_eq_dec Ptrofs.eq_dec tbl tbl0). 2: right; intro A; inv A; congruence.
+    destruct (ireg_eq r r0). 2: right; intro A; inv A; congruence.
+    subst; left; auto.
+  - destruct (asm_instruction_dec i i0); [left; subst; auto | right; congruence].
+Defined.
 
 Lemma acc_instrs_map_not_in:
   forall {I} sbs l acc b o i,
@@ -476,33 +609,6 @@ Proof.
     do 3 eexists; split; eauto.
 Qed.
 
-Definition is_valid_label (i: instr_with_info (I:= Asm.instruction)) :=
-  let '(i,_,id) := i in
-  match i with
-    Pjcc _ l
-  | Pjcc2 _ _ l
-  | Pjmp_l l => lbl_map prog id l <> None
-  | Pjmptbl _ ll =>
-    Forall (fun l => lbl_map prog id l <> None) ll
-  | _ => True
-  end.
-  
-Hypothesis labels_valid:
-  Forall (fun '(_,o,_) =>
-            forall f,
-              o = Some (Gfun (Internal f)) ->
-              Forall is_valid_label (fn_code f)
-         ) (prog_defs prog).
-
-Hypothesis code_lnr:
-  Forall (fun '(_,o,_) =>
-            forall f,
-              o = Some (Gfun (Internal f)) ->
-              forall sbs, list_norepet (map (get_instr_ptr sbs) (fn_code f))
-         ) (prog_defs prog).
-
- 
-
 Lemma find_instr_has_transl:
   forall p i,
     Genv.find_instr ge p = Some i ->
@@ -511,6 +617,7 @@ Lemma find_instr_has_transl:
 Proof.
   intros p i FI. destruct p; simpl in FI; try solve [inv FI].
   edestruct (in_instrs_in_code _ _ _ FI) as (f & id & sb & INdefs & INcode).
+  assert (labels_valid:=labels_valid).
   rewrite Forall_forall in labels_valid. apply labels_valid in INdefs.
   specialize (INdefs _ eq_refl).
   rewrite Forall_forall in INdefs. apply INdefs in INcode.
@@ -670,7 +777,9 @@ Lemma relate_instrs:
     (AIM: acc_instrs_map (I:= I1) sbs (get_defs_code d1) acc1 b o = Some a1),
     acc_instrs_map (I:= I2) sbs (get_defs_code d2) acc2 b o = Some a2.
 Proof.
+  assert (code_lnr:=code_lnr).
   clear - code_lnr.
+
   induction 3; simpl; intros; eauto.
   rewrite acc_instrs_map_app in AIM.
   destruct a1 as ((ida1 & od1) & sb1). simpl in *.
@@ -743,14 +852,14 @@ Lemma lnr_code_transl:
       (fun '(_, o, _) =>
          forall f : function,
            o = Some (Gfun (Internal f)) ->
-           forall sbs : segid_type -> block, list_norepet (map (get_instr_ptr sbs) (fn_code f)))
+           list_norepet (map (get_instr_ptr (gen_segblocks prog)) (fn_code f)))
       d ->
     transl_globdefs lmap d = OK x ->
     Forall
       (fun '(_, o, _) =>
          forall f : function,
            o = Some (Gfun (Internal f)) ->
-           forall sbs : segid_type -> block, list_norepet (map (get_instr_ptr sbs) (fn_code f)))
+           list_norepet (map (get_instr_ptr (gen_segblocks prog)) (fn_code f)))
       x.
 Proof.
   induction d; simpl; intros; eauto.
@@ -765,16 +874,6 @@ Proof.
     eapply lnr_transl_instrs; eauto.
 Qed.
 
-Hypothesis ident_fun_correct:
-  Forall
-    (fun '(i,o,sb) =>
-       forall f,
-         o = Some (Gfun (Internal f)) ->
-         Forall
-           (fun '(_,ii) => i = ii)
-           (fn_code f)
-    )
-    (prog_defs prog).
 
 Lemma find_instr_transl_find_instr:
   forall p i i',
@@ -791,16 +890,17 @@ Proof.
   unfold gen_instrs_map.
   unfold get_program_code.
   unfold match_prog, transf_program in TRANSF.
-  monadInv TRANSF. simpl.
   eapply relate_instrs with (R := fun i1 i2 => transl_instr (lbl_map prog) (snd i1) i1 = OK i2); eauto.
   - apply asm_instruction_dec.
   - apply instruction_dec.
-  - revert EQ ident_fun_correct.
+  - assert (ident_fun_correct := ident_fun_correct).
+    monadInv TRANSF. simpl.
+    revert EQ ident_fun_correct.
     generalize (prog_defs prog) x.
     clear.
     induction l; simpl; intros; eauto.
     inv EQ. constructor.
-    monadInv EQ. inv ident_fun_correct. constructor; eauto.
+    monadInv EQ. inv ident_fun_correct0. constructor; eauto.
     repeat (destr; simpl in *; auto).
     subst.
     monadInv EQ0. specialize (H1 _ eq_refl).
@@ -815,11 +915,12 @@ Proof.
     monadInv EQ0.
     monadInv EQ0.
     monadInv EQ0.
-  - revert code_lnr. apply Forall_impl. intros a IN. repeat destr.
+  - generalize code_lnr. apply Forall_impl. intros a IN. repeat destr.
     intro A; apply A. auto.
-  - eapply lnr_code_transl in code_lnr; eauto. revert code_lnr.
-    apply Forall_impl. intros a IN. repeat destr.
+  - eapply Forall_impl. 2: eapply lnr_code_transl.
+    intros a IN. repeat destr.
     intro A; apply A. auto.
+    eapply code_lnr. monadInv TRANSF. eauto.
   - congruence.
   - congruence.
   - congruence.
@@ -838,11 +939,86 @@ Proof.
   rewrite data_segid_same. reflexivity.
 Qed.
 
+Lemma add_global_genv_senv:
+  forall {I} (ge: genv) l,
+    Genv.genv_senv (add_global (I:=I) ge l) = Genv.genv_senv ge.
+Proof.
+  intros.
+  destruct l. destruct p. simpl. auto.
+Qed.
+
+Lemma add_globals_genv_senv:
+  forall {I} l (ge: genv),
+    Genv.genv_senv (add_globals (I:=I) ge l) = Genv.genv_senv ge.
+Proof.
+  induction l; simpl; intros; eauto.
+  rewrite IHl. apply add_global_genv_senv.
+Qed.
+
 Lemma senv_equiv:
   Senv.equiv (Genv.genv_senv ge) (Genv.genv_senv tge).
 Proof.
-  repeat apply conj.
-Admitted.
+  unfold ge, tge, globalenv. rewrite ! add_globals_genv_senv. simpl.
+  unfold match_prog in TRANSF. monadInv TRANSF. simpl.
+  repeat apply conj; auto.
+Qed.
+
+Lemma eval_builtin_arg_preserved:
+  forall {I1 I2 A} (ge : genv (I:= I1)) (tge: genv (I:=I2)) (e: A -> val) sp m al vl (EQ: forall i o, Genv.symbol_address tge i o = Genv.symbol_address ge i o),
+    FlatAsmBuiltin.eval_builtin_arg _ _ _ _ ge e sp m al vl ->
+    FlatAsmBuiltin.eval_builtin_arg _ _ _ _ tge e sp m al vl.
+Proof.
+  induction 2; simpl; intros; try econstructor; rewrite ?EQ; eauto.
+  rewrite <- EQ. econstructor.
+Qed.
+
+Lemma eval_builtin_args_preserved:
+  forall {I1 I2 A} (ge : genv (I:= I1)) (tge: genv (I:=I2)) (e: A -> val) sp m al vl (EQ: forall i o, Genv.symbol_address tge i o = Genv.symbol_address ge i o),
+    FlatAsmBuiltin.eval_builtin_args _ _ _ _ ge e sp m al vl ->
+    FlatAsmBuiltin.eval_builtin_args _ _ _ _ tge e sp m al vl.
+Proof.
+  induction 2; constructor; eauto using eval_builtin_arg_preserved.
+Qed.
+
+
+Lemma genv_defs_add_globals_rel:
+  forall lmap f b o defs tdefs (ge: genv (I:= Asm.instruction)) (tge : genv (I := instruction))
+    (REC: Genv.genv_defs ge b o = Some (Gfun (External f)) ->
+          Genv.genv_defs tge b o = Some (Gfun (External f)))
+    (NB: Genv.genv_next ge = Genv.genv_next tge),
+    Genv.genv_defs (add_globals ge defs) b o = Some (Gfun (External f)) ->
+    transl_globdefs lmap defs = OK tdefs ->
+    Genv.genv_defs (add_globals tge tdefs) b o = Some (Gfun (External f)).
+Proof.
+  induction defs; simpl; intros; eauto.
+  - inv H0. simpl. auto.
+  - monadInv H0.
+    simpl. eapply IHdefs. 3: apply H.
+    + unfold add_global. destruct a as [[a bb] c].
+      destruct x as [[x y] z]. simpl.
+      simpl in EQ. repeat destr_in EQ.
+      monadInv H1. auto. rewrite NB. destr. auto.
+      rewrite NB. destr.
+    + unfold add_global. repeat destr; simpl; try congruence.
+    + auto.
+Qed.
+
+Lemma find_funct_ptr_transf:
+  forall b ofs f,
+    Genv.find_funct_ptr ge b ofs = Some (External f) ->
+    Genv.find_funct_ptr tge b ofs = Some (External f).
+Proof.
+  unfold Genv.find_funct_ptr. intros b ofs f FD.
+  repeat destr_in FD.
+  unfold ge, tge, globalenv in Heqo |- *.
+  unfold Genv.find_def in *.
+  unfold match_prog, transf_program in TRANSF.
+  monadInv TRANSF. simpl in *. clear - Heqo EQ.
+  eapply genv_defs_add_globals_rel in Heqo; eauto.
+  rewrite Heqo. auto. simpl. congruence.
+  simpl. auto.
+Qed.
+
 
 Theorem step_simulation:
   forall S1 t S2,
@@ -872,12 +1048,18 @@ Proof.
     eapply MC.exec_step_builtin; eauto.
     erewrite codeblock_same; eauto.
     eauto.
-    admit.                      (* eval_builtin_args ge / tge *)
+    eapply eval_builtin_args_preserved.
+    intros. symmetry.
+    apply symbol_address_same. eauto.
     eapply external_call_symbols_preserved. apply senv_equiv. eauto.
-
   - (* External call *)
-    admit.
-Admitted.        
+    simpl in H1.
+    exploit find_funct_ptr_transf. eauto. intro FFP.
+    eexists; split; [|econstructor; eauto].
+    eapply MC.exec_step_external; eauto.
+    erewrite codeblock_same; eauto.
+    eapply external_call_symbols_preserved. apply senv_equiv. eauto.
+Qed.
 
 Lemma transf_final_states:
   forall st1 st2 r,
