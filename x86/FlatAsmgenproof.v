@@ -2045,6 +2045,13 @@ Qed.
 (*   intros. monadInvX H. simpl. auto. *)
 (* Qed. *)
 
+Lemma transl_fun_pres_stacksize : forall g i f f',
+    transl_fun g i f = OK f' ->
+    Asm.fn_stacksize f = fn_stacksize f'.
+Proof.
+  intros. monadInvX H. destr_in EQ2. inv EQ2. simpl. auto.
+Qed.
+
 Lemma transl_prog_gmap : forall g l p p' dz sz,
   transl_prog_with_map g l p dz sz = OK p' -> glob_map p' = g.
 Proof.
@@ -2125,6 +2132,33 @@ Proof.
   eapply transl_globdefs_pres_def; eauto.
 Qed.
 
+Lemma transl_globdefs_pres_non_def : forall defs g defs' i
+  (TL: transl_globdefs g defs = OK defs')
+  (IN: ~ In i (map fst defs)),
+  ~ exists def sb, In (i, def, sb) defs'.
+Proof.
+  induction defs; simpl; intros.
+  - inv TL. intros H. destruct H. destruct H. inv H.
+  - destruct a. monadInv TL. simpl in *.
+    apply Decidable.not_or in IN. destruct IN.
+    destruct x. destruct p.
+    exploit transl_globdef_pres_index; eauto.
+    intros. subst.
+    assert (~ (exists (def : option gdef) (sb : segblock), In (i, def, sb) x0)).
+    eapply IHdefs; eauto.
+    intros EX. apply H1.
+    destruct EX. destruct H2. destruct H2. inv H2. congruence.
+    do 2 eexists. eauto.
+Qed.
+
+Lemma transl_prog_pres_non_def : forall g l p dz cz p' i
+  (TL: transl_prog_with_map g l p dz cz = OK p')
+  (IN: ~ In i (prog_defs_names p)),
+  ~ exists def sb, In (i, def, sb) (prog_defs p').
+Proof.
+  intros. monadInv TL. simpl.
+  eapply transl_globdefs_pres_non_def; eauto.
+Qed.
 
 
 Lemma update_maps_gmap_in : forall defs x def g l dz cz g' l' dz' cz'
@@ -2152,8 +2186,6 @@ Proof.
     inv NPT. 
     exploit IHdefs; eauto.
 Qed.
-  
-
 
 Lemma find_symbol_exists : forall (x : ident) def
     (IN: In (x, def) (AST.prog_defs prog)),
@@ -2170,29 +2202,83 @@ Proof.
     unfold gidmap_to_symbmap. 
     erewrite transl_prog_gmap; eauto.
     exploit update_maps_gmap_in; eauto. red. auto.
-    intros (sid & ofs & GM). rewrite GM. eauto.
+    intros (sid & ofs & GM). rewrite GM. 
+    do 2 eexists. split; eauto.
     eapply unique_def_is_internal_fun; eauto.
     eapply transl_prog_list_norepet; eauto.
   - monadInv TLD. unfold globalenv.
     apply In_Nth in IN'. destruct IN' as (n & LT & NTH).
-    exploit (@add_globals_find_symbol_ne instruction); eauto.
+    exists (pos_advance_N (Pos.of_succ_nat num_segments) n), Ptrofs.zero.
+    erewrite add_globals_find_symbol_ne; eauto.
     red. eauto.
-    eapply transl_prog_list_norepet; eauto.
+    eapply transl_prog_list_norepet; eauto. 
   - monadInvX TLD. unfold globalenv.
     erewrite add_globals_pres_find_symbol; eauto. simpl.
     unfold gidmap_to_symbmap. 
     erewrite transl_prog_gmap; eauto.
     exploit update_maps_gmap_in; eauto. red. auto.
-    intros (sid & ofs & GM). rewrite GM. eauto.
+    intros (sid & ofs & GM). rewrite GM.
+    do 2 eexists. split; eauto.
     eapply unique_def_is_var; eauto.
     eapply transl_prog_list_norepet; eauto.
   - monadInv TLD. unfold globalenv.
     apply In_Nth in IN'. destruct IN' as (n & LT & NTH).
-    exploit (@add_globals_find_symbol_ne instruction); eauto.
+    exists (pos_advance_N (Pos.of_succ_nat num_segments) n), Ptrofs.zero.
+    erewrite add_globals_find_symbol_ne; eauto.
     red. eauto.
     eapply transl_prog_list_norepet; eauto.
 Qed.
 
+Lemma find_symbol_to_gmap : 
+  forall (x : ident) def gmap lmap dz cz b ofs
+    (IN: In (x, def) (AST.prog_defs prog))
+    (FSYM: Genv.find_symbol (globalenv tprog) x = Some (b, ofs))
+    (VI: sdef_is_var_or_internal_fun def)
+    (MKMAP: make_maps prog = (gmap, lmap, dz, cz)),
+  exists slbl, gmap x = Some slbl 
+          /\ b = gen_segblocks tprog (fst slbl) 
+          /\ ofs = snd slbl.
+Proof.
+Admitted.
+
+
+Lemma gmap_to_find_symbol: 
+  forall (x : ident) def gmap lmap dz cz slbl
+    (IN: In (x, def) (AST.prog_defs prog))
+    (VI: sdef_is_var_or_internal_fun def)
+    (MKMAP: make_maps prog = (gmap, lmap, dz, cz))
+    (GMAP: gmap x = Some slbl),
+    Genv.find_symbol (globalenv tprog) x = Some (gen_segblocks tprog (fst slbl), snd slbl).
+Proof.
+Admitted.
+
+
+(* Lemma find_symbol_exists_intern_def :  *)
+(*   forall id f gmap lmap dz cz b delta *)
+(*     (IN: In (id, Some f) (AST.prog_defs prog)) *)
+(*     (VI : sdef_is_var_or_internal_fun (Some f)) *)
+(*     (MAP: make_maps prog = (gmap, lmap, dz, cz)) *)
+(*     (FSYM: Genv.find_symbol tge id = Some (b, delta)), *)
+(*   exists slbl, gmap id = Some slbl  *)
+(*           /\ b = gen_segblocks tprog (fst slbl)  *)
+(*           /\ delta = snd slbl. *)
+(* Proof. *)
+(*   generalize TRANSF. intros TRANSF'. *)
+(*   unfold match_prog in TRANSF'. *)
+(*   unfold transf_program in TRANSF'. *)
+(*   repeat destr_in TRANSF'. *)
+(*   intros. inv MAP. *)
+(*   exploit transl_prog_pres_def; eauto. *)
+(*   intros (def' & sb & IN' & TLD). *)
+(*   monadInv TLD. *)
+(*   unfold tge, globalenv in FSYM. *)
+
+(*   Lemma add_globals_pres_find_symbol' :      *)
+(*     forall defs (ge : genv) (i : ident) def *)
+(*       (IN: In (id, def) defs) *)
+(*       (NPT: list_norepet (map fst defs)) *)
+(*       (VIS: sdef_is_var_or_internal_fun def) *)
+(*       Genv.find_symbol (add_globals ge defs) id = Genv.find_symbol ge id *)
 
 Lemma update_instrs_in_lbl : forall code p l cz id l' cz'
                                (IN: In p (labels code))
@@ -2357,8 +2443,38 @@ Proof.
     rewrite Ptrofs.add_commut. auto.
 Qed.
 
+Lemma find_symbol_some_pres: forall id b,
+  Globalenvs.Genv.find_symbol ge id = Some b ->
+  exists b' ofs', Genv.find_symbol tge id = Some (b', ofs') 
+             /\ init_meminj b = Some (b', Ptrofs.unsigned ofs').
+Proof.
+  intros. generalize init_meminj_match_sminj. intros MINJ.
+  inv MINJ. eapply agree_inj_glob0; eauto.
+Qed.
 
+(* Lemma find_symbol_inversion_in : forall id b ofs, *)
+(*     Genv.find_symbol tge id = Some (b, ofs) -> *)
+(*     exists def sb, In (id, def, sb) (prog_defs tprog). *)
+(* Admitted. *)
 
+(* Lemma find_symbol_non_pres: forall id, *)
+(*   Globalenvs.Genv.find_symbol ge id = None -> *)
+(*   Genv.find_symbol tge id = None. *)
+(* Proof. *)
+(*   intros. unfold ge in H. *)
+(*   assert (~In id (prog_defs_names prog)) as NIN by *)
+(*         (eapply Genv.find_symbol_inversion_none; eauto). *)
+(*   assert (~ (exists def sb, In (id, def, sb) (prog_defs tprog))). *)
+(*   {  *)
+(*     unfold match_prog, transf_program in TRANSF. repeat destr_in TRANSF. eauto. *)
+(*     eapply transl_prog_pres_non_def; eauto. *)
+(*   } *)
+(*   destruct (Genv.find_symbol tge id) eqn:FSYM; auto. *)
+(*   destruct p. exploit find_symbol_inversion_in; eauto. *)
+(*   intros. congruence. *)
+(* Qed. *)
+
+  
 Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b,
     Mem.alloc m1 lo hi = (m1', b) ->
     def_frame_inj m1 = def_frame_inj m1'.
@@ -2444,106 +2560,113 @@ Definition globs_meminj (gmap: GID_MAP_TYPE) : meminj :=
 (*   apply IHl. intuition. *)
 (* Qed. *)
 
-(* Lemma invert_add_global_genv_next : forall (F V: Type) (ge:Globalenvs.Genv.t F V) id def, *)
-(*     Genv.invert_symbol (Genv.add_global ge (id, def)) (Globalenvs.Genv.genv_next ge) = Some id. *)
-(* Proof. *)
-(*   intros. apply Genv.find_invert_symbol. *)
-(*   apply find_symbol_add_global_eq. *)
-(* Qed. *)
+Lemma invert_add_global_genv_next : forall (F V: Type) (ge:Globalenvs.Genv.t F V) id def,
+    Genv.invert_symbol (Genv.add_global ge (id, def)) (Globalenvs.Genv.genv_next ge) = Some id.
+Proof.
+  intros. apply Genv.find_invert_symbol.
+  apply Globalenvs.Genv.add_global_find_symbol_eq.
+Qed.
 
-(* Lemma partial_genv_invert_symbol : forall defs id def, *)
-(*     Genv.invert_symbol (partial_genv (defs ++ (id, def) :: nil)) (Globalenvs.Genv.genv_next (partial_genv defs)) = Some id. *)
-(* Proof. *)
-(*   intros defs id def. unfold partial_genv.  *)
-(*   rewrite Genv.add_globals_app. simpl. *)
-(*   apply invert_add_global_genv_next. *)
-(* Qed. *)
+Lemma partial_genv_invert_symbol : forall defs id def,
+    Genv.invert_symbol (partial_genv (defs ++ (id, def) :: nil)) (Globalenvs.Genv.genv_next (partial_genv defs)) = Some id.
+Proof.
+  intros defs id def. unfold partial_genv.
+  rewrite Genv.add_globals_app. simpl.
+  apply invert_add_global_genv_next.
+Qed.
 
-(* Lemma partial_genv_find_symbol_eq : forall defs id def, *)
-(*     Genv.find_symbol (partial_genv (defs ++ (id, def) :: nil)) id = Some (Globalenvs.Genv.genv_next (partial_genv defs)). *)
-(* Proof. *)
-(*   intros defs id def. apply Genv.invert_find_symbol. *)
-(*   apply partial_genv_invert_symbol. *)
-(* Qed. *)
+Lemma partial_genv_find_symbol_eq : forall defs id def,
+    Globalenvs.Genv.find_symbol (partial_genv (defs ++ (id, def) :: nil)) id = Some (Globalenvs.Genv.genv_next (partial_genv defs)).
+Proof.
+  intros defs id def. apply Genv.invert_find_symbol.
+  apply partial_genv_invert_symbol.
+Qed.
 
-(* Lemma partial_genv_find_symbol_neq : forall defs id id' def, *)
-(*     id <> id' ->  *)
-(*     Genv.find_symbol (partial_genv (defs ++ (id, def) :: nil)) id' = Genv.find_symbol (partial_genv defs) id'. *)
-(* Proof. *)
-(*   intros defs id id' def H. unfold partial_genv. rewrite Genv.add_globals_app. *)
-(*   simpl. rewrite find_symbol_add_global_neq; auto. *)
-(* Qed. *)
-
-
-(* Lemma partial_genv_find_symbol_inversion : forall defs x b, *)
-(*   Genv.find_symbol (partial_genv defs) x = Some b -> *)
-(*   In x (map fst defs). *)
-(* Proof. *)
-(*   unfold partial_genv. intros defs x b. *)
-(*   eapply Genv.add_globals_preserves. *)
-(*   - intros. *)
-(*     destruct (peq x id). subst. *)
-(*     rewrite find_symbol_add_global_eq in H1. inv H1. apply in_map with (f:= fst) in H0; auto. *)
-(*     rewrite find_symbol_add_global_neq in H1 by auto. eauto. *)
-(*   - setoid_rewrite PTree.gempty. congruence. *)
-(* Qed. *)
-
-(* Lemma invert_symbol_add_global_none : forall defs id def b, *)
-(*     ~In id (map fst defs) -> *)
-(*     Genv.invert_symbol (Genv.add_global (partial_genv defs) (id, def)) b = None -> *)
-(*     Genv.invert_symbol (partial_genv defs) b = None. *)
-(* Proof. *)
-(*   intros defs id def b NOTIN INVSYM. *)
-(*   destruct (Genv.invert_symbol (partial_genv defs) b) eqn:INVSYM'; auto. *)
-(*   apply Genv.invert_find_symbol in INVSYM'. *)
-(*   assert (id <> i) as FINDSYM.  *)
-(*   { *)
-(*     exploit partial_genv_find_symbol_inversion; eauto.  *)
-(*     intros IN EQ. subst. congruence. *)
-(*   } *)
-(*   eapply find_symbol_add_global_neq in FINDSYM; eauto. *)
-(*   rewrite INVSYM' in FINDSYM. *)
-(*   apply Genv.find_invert_symbol in FINDSYM.  *)
-(*   rewrite INVSYM in FINDSYM. inv FINDSYM. *)
-(* Qed. *)
-
-(* Lemma update_map_gmap_none : *)
-(*   forall (prog : Asm.program) (gmap : GID_MAP_TYPE) (lmap : LABEL_MAP_TYPE) (dsize csize efsize : Z) (id : ident) *)
-(*     (DEFSNAMES: list_norepet (map fst (AST.prog_defs prog))) *)
-(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (IN: In (id, None) (AST.prog_defs prog)), *)
-(*     gmap id = None. *)
-(* Proof. *)
-(*   intros. unfold make_maps in UPDATE. *)
-(*   eapply umind with (P := fun g l s c e => g id = None). eauto. reflexivity. *)
-(*   intros. *)
-(*   erewrite update_gmap. 2: eauto. destr. subst. *)
-(*   exploit @norepet_unique. apply DEFSNAMES. apply IN. apply H1. reflexivity. intro A; inv A. auto. *)
-(* Qed. *)
+Lemma partial_genv_find_symbol_neq : forall defs id id' def,
+    id <> id' ->
+    Globalenvs.Genv.find_symbol (partial_genv (defs ++ (id, def) :: nil)) id' = Globalenvs.Genv.find_symbol (partial_genv defs) id'.
+Proof.
+  intros defs id id' def H. unfold partial_genv. rewrite Genv.add_globals_app.
+  simpl. rewrite Genv.add_global_find_symbol_neq; auto.
+Qed.
 
 
+Lemma partial_genv_find_symbol_inversion : forall defs x b,
+  Globalenvs.Genv.find_symbol (partial_genv defs) x = Some b ->
+  In x (map fst defs).
+Proof.
+  unfold partial_genv. intros defs x b.
+  eapply Genv.add_globals_preserves.
+  - intros.
+    destruct (peq x id). subst.
+    rewrite Genv.add_global_find_symbol_eq in H1. inv H1. apply in_map with (f:= fst) in H0; auto.
+    rewrite Genv.add_global_find_symbol_neq in H1 by auto. eauto.
+  - setoid_rewrite PTree.gempty. congruence.
+Qed.
 
-(* Definition fun_non_empty (def: AST.globdef Asm.fundef unit) : Prop := *)
-(*   match def with *)
-(*   | Gfun (Internal f) => *)
-(*     (0 < length (Asm.fn_code f))%nat *)
-(*   | _ => True *)
-(*   end. *)
+Lemma invert_symbol_add_global_none : forall defs id def b,
+    ~In id (map fst defs) ->
+    Genv.invert_symbol (Genv.add_global (partial_genv defs) (id, def)) b = None ->
+    Genv.invert_symbol (partial_genv defs) b = None.
+Proof.
+  intros defs id def b NOTIN INVSYM.
+  destruct (Genv.invert_symbol (partial_genv defs) b) eqn:INVSYM'; auto.
+  apply Genv.invert_find_symbol in INVSYM'.
+  assert (id <> i) as FINDSYM.
+  {
+    exploit partial_genv_find_symbol_inversion; eauto.
+    intros IN EQ. subst. congruence.
+  }
+  assert (Genv.invert_symbol (Genv.add_global (partial_genv defs) (id, def)) b = Some i).
+  apply Genv.find_invert_symbol. 
+  erewrite Genv.add_global_find_symbol_neq; eauto.
+  congruence.
+Qed.
 
-(* Definition defs_funs_non_empty (defs: list (ident * option (AST.globdef Asm.fundef unit))) : Prop := *)
-(*   Forall (fun '(id, def) => *)
-(*             match def with *)
-(*             | None => True *)
-(*             | Some def' => fun_non_empty def' *)
-(*             end *)
-(*          ) defs. *)
+Lemma update_map_gmap_none :
+  forall (prog : Asm.program) (gmap : GID_MAP_TYPE) (lmap : LABEL_MAP_TYPE) (dsize csize : Z) (id : ident) def
+    (DEFSNAMES: list_norepet (map fst (AST.prog_defs prog)))
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (NVI: ~sdef_is_var_or_internal_fun def)
+    (IN: In (id, def) (AST.prog_defs prog)),
+    gmap id = None.
+Proof.
+  intros. unfold make_maps in UPDATE.
+  eapply umind with (P := fun g l s c => g id = None). eauto. reflexivity.
+  intros.
+  erewrite update_gmap. 2: eauto. destr. subst.
+  exploit @norepet_unique. apply DEFSNAMES. apply IN. apply H1. reflexivity. intro A; inv A. 
+  destruct d. destruct g0. destruct f.
+  - exfalso. apply NVI. red. auto.
+  - auto.
+  - exfalso. apply NVI. red. auto.
+  - auto.
+Qed.
 
-(* Lemma defs_funs_non_empty_cons_inv : forall a l, *)
-(*   defs_funs_non_empty (a::l) -> defs_funs_non_empty l. *)
-(* Proof. *)
-(*   unfold defs_funs_non_empty. intros a l H. *)
-(*   inv H. auto. *)
-(* Qed. *)
+
+
+
+Definition fun_non_empty (def: AST.globdef Asm.fundef unit) : Prop :=
+  match def with
+  | Gfun (Internal f) =>
+    (0 < length (Asm.fn_code f))%nat
+  | _ => True
+  end.
+
+Definition defs_funs_non_empty (defs: list (ident * option (AST.globdef Asm.fundef unit))) : Prop :=
+  Forall (fun '(id, def) =>
+            match def with
+            | None => True
+            | Some def' => fun_non_empty def'
+            end
+         ) defs.
+
+Lemma defs_funs_non_empty_cons_inv : forall a l,
+  defs_funs_non_empty (a::l) -> defs_funs_non_empty l.
+Proof.
+  unfold defs_funs_non_empty. intros a l H.
+  inv H. auto.
+Qed.
 
 Lemma drop_perm_pres_def_frame_inj : forall m1 lo hi m1' b p,
     Mem.drop_perm m1 b lo hi p = Some m1' ->
@@ -2553,122 +2676,132 @@ Proof.
   apply Mem.drop_perm_stack in H. rewrite H. auto.
 Qed.
 
-(* Lemma transl_fun_inversion : forall gmap lmap id f f', *)
-(*     transl_fun gmap lmap id f = OK f' -> *)
-(*     exists slbl, gmap id = Some slbl /\ fn_range f' = mkSegBlock (fst slbl) (snd slbl) (Ptrofs.repr (Asm.code_size (Asm.fn_code f))). *)
-(* Proof. *)
-(*   intros gmap lmap id f f' H. monadInvX H. *)
-(*   destruct zle; monadInv EQ2. simpl. eexists. split; eauto. *)
-(* Qed. *)
+Lemma transl_fun_inversion : forall gmap id f f',
+    transl_fun gmap id f = OK f' ->
+    exists slbl, gmap id = Some slbl /\ fn_range f' = mkSegBlock (fst slbl) (snd slbl) (Ptrofs.repr (Asm.code_size (Asm.fn_code f))).
+Proof.
+  intros gmap id f f' H. monadInvX H.
+  destruct zle; monadInv EQ2. simpl. eexists. split; eauto.
+Qed.
 
-(* Lemma partial_genv_invert_symbol_pres : forall defs id def b, *)
-(*     ~ In id (map fst defs) -> *)
-(*     b <> Globalenvs.Genv.genv_next (partial_genv defs) -> *)
-(*     Genv.invert_symbol (partial_genv (defs ++ (id, def) :: nil)) b = Genv.invert_symbol (partial_genv defs) b. *)
-(* Proof. *)
-(*   intros defs id def b NOTIN H. *)
-(*   unfold partial_genv. rewrite Genv.add_globals_app. simpl. *)
-(*   match goal with *)
-(*   | [ |- ?a = _ ] => *)
-(*     let eq := fresh "EQ" in *)
-(*     destruct a eqn:eq *)
-(*   end. *)
-(*   - apply Genv.invert_find_symbol in EQ. symmetry. apply Genv.find_invert_symbol. *)
-(*     destruct (ident_eq id i). subst i. *)
-(*     rewrite find_symbol_add_global_eq in EQ. inv EQ. *)
-(*     contradiction. *)
-(*     erewrite find_symbol_add_global_neq in EQ; eauto. *)
-(*   - symmetry. eapply invert_symbol_add_global_none in EQ; eauto. *)
-(* Qed. *)
-
-
-(* Lemma partial_genv_next : forall defs def, *)
-(*     Globalenvs.Genv.genv_next (partial_genv (defs ++ def :: nil)) = *)
-(*     Pos.succ (Globalenvs.Genv.genv_next (partial_genv defs)). *)
-(* Proof. *)
-(*   intros. unfold partial_genv. *)
-(*   rewrite Genv.add_globals_app. simpl. auto. *)
-(* Qed. *)
-
-(* Lemma defs_names_distinct_not_in : forall(F V:Type) (defs:list (ident * option (AST.globdef F V))) id def gdefs, *)
-(*     list_norepet (map fst (defs ++ (id, def) :: gdefs)) -> ~In id (map fst defs). *)
-(* Proof. *)
-(*   intros F V defs id def gdefs LNR. *)
-(*   rewrite map_app, list_norepet_app in LNR. *)
-(*   destruct LNR as (A & B & C). *)
-(*   intro IN. *)
-(*   exploit C. eauto. left; reflexivity. reflexivity. auto. *)
-(* Qed. *)
-
-(* Lemma defs_names_distinct_prefix_neq : forall (F V:Type) (defs1: list (ident * option (AST.globdef F V))) *)
-(*                                          id def defs2 id' def', *)
-(*     list_norepet (map fst (defs1 ++ (id, def) :: defs2)) -> *)
-(*     In (id', def') defs1 -> id <> id'. *)
-(* Proof. *)
-(*   intros F V defs1 id def defs2 id' def' DISTINCT IN. *)
-(*   assert (~ In id (map fst defs1)). eapply defs_names_distinct_not_in; eauto. *)
-(*   unfold not. intros. subst. *)
-(*   exploit (in_map fst defs1); eauto. *)
-(* Qed. *)
+Lemma partial_genv_invert_symbol_pres : forall defs id def b,
+    ~ In id (map fst defs) ->
+    b <> Globalenvs.Genv.genv_next (partial_genv defs) ->
+    Genv.invert_symbol (partial_genv (defs ++ (id, def) :: nil)) b = Genv.invert_symbol (partial_genv defs) b.
+Proof.
+  intros defs id def b NOTIN H.
+  unfold partial_genv. rewrite Genv.add_globals_app. simpl.
+  match goal with
+  | [ |- ?a = _ ] =>
+    let eq := fresh "EQ" in
+    destruct a eqn:eq
+  end.
+  - apply Genv.invert_find_symbol in EQ. symmetry. apply Genv.find_invert_symbol.
+    destruct (ident_eq id i). subst i.
+    rewrite Genv.add_global_find_symbol_eq in EQ. inv EQ.
+    contradiction.
+    erewrite Genv.add_global_find_symbol_neq in EQ; eauto.
+  - symmetry. eapply invert_symbol_add_global_none in EQ; eauto.
+Qed.
 
 
-(* Lemma find_symbol_add_globals_inversion :  *)
-(*   forall (F V:Type) (defs: list (ident * option (AST.globdef F V))) id r ge, *)
-(*     Genv.find_symbol (Genv.add_globals ge defs) id = r -> *)
-(*     (exists def, In (id, def) defs) \/ Genv.find_symbol ge id = r. *)
-(* Proof. *)
-(*   induction defs; intros. *)
-(*   - simpl in H. auto. *)
-(*   - simpl in H. exploit IHdefs; eauto. *)
-(*     intros [L | R]. *)
-(*     + destruct L as [def' IN]. *)
-(*       left. exists def'. apply in_cons. auto. *)
-(*     + destruct a. destruct (ident_eq id i). *)
-(*       subst. rewrite find_symbol_add_global_eq in R. left. eexists. simpl. left. eauto. *)
-(*       erewrite find_symbol_add_global_neq in R; eauto. *)
-(* Qed. *)
+Lemma partial_genv_next : forall defs def,
+    Globalenvs.Genv.genv_next (partial_genv (defs ++ def :: nil)) =
+    Pos.succ (Globalenvs.Genv.genv_next (partial_genv defs)).
+Proof.
+  intros. unfold partial_genv.
+  rewrite Genv.add_globals_app. simpl. auto.
+Qed.
 
-(* Lemma find_symbol_inversion_1 : forall defs (x : ident) (b : block), *)
-(*     Genv.find_symbol (partial_genv defs) x = Some b -> exists def, In (x, def) defs. *)
-(* Proof. *)
-(*   unfold partial_genv. intros. *)
-(*   exploit find_symbol_add_globals_inversion; eauto. *)
-(*   intros [L | R]. auto. *)
-(*   exploit Genv.find_symbol_empty_genv_absurd; eauto. contradiction. *)
-(* Qed. *)
+Lemma defs_names_distinct_not_in : forall(F V:Type) (defs:list (ident * option (AST.globdef F V))) id def gdefs,
+    list_norepet (map fst (defs ++ (id, def) :: gdefs)) -> ~In id (map fst defs).
+Proof.
+  intros F V defs id def gdefs LNR.
+  rewrite map_app, list_norepet_app in LNR.
+  destruct LNR as (A & B & C).
+  intro IN.
+  exploit C. eauto. left; reflexivity. reflexivity. auto.
+Qed.
+
+Lemma defs_names_distinct_prefix_neq : forall (F V:Type) (defs1: list (ident * option (AST.globdef F V)))
+                                         id def defs2 id' def',
+    list_norepet (map fst (defs1 ++ (id, def) :: defs2)) ->
+    In (id', def') defs1 -> id <> id'.
+Proof.
+  intros F V defs1 id def defs2 id' def' DISTINCT IN.
+  assert (~ In id (map fst defs1)). eapply defs_names_distinct_not_in; eauto.
+  unfold not. intros. subst.
+  exploit (in_map fst defs1); eauto.
+Qed.
 
 
-(* Lemma store_zeros_mapped_inject: *)
-(*   forall (f : meminj) (g : frameinj) (m1 : mem) (b1 : block) (ofs n : Z)  *)
-(*     (n1 m2 : mem) (b2 : block) (delta : Z), *)
-(*     Mem.weak_inject f g m1 m2 -> *)
-(*     store_zeros m1 b1 ofs n = Some n1 -> *)
-(*     f b1 = Some (b2, delta) -> *)
-(*     exists n2 : mem, store_zeros m2  b2 (ofs+delta) n = Some n2 /\ Mem.weak_inject f g n1 n2. *)
-(* Proof. *)
-(*   intros until n1. functional induction (store_zeros m1 b1 ofs n); intros. *)
-(*   - inv H0. exists m2. split; auto. rewrite store_zeros_equation. *)
-(*     rewrite e. auto. *)
-(*   - exploit Mem.store_mapped_weak_inject; eauto. unfold Vzero. eauto.  *)
-(*     intros (n2 & STORE & WINJ). *)
-(*     exploit IHo; eauto. intros (n3 & STOREZEROS & WINJ'). exists n3. split; eauto. *)
-(*     rewrite store_zeros_equation. rewrite e.  *)
-(*     unfold Vzero. rewrite STORE. replace (p + delta + 1) with (p + 1 + delta) by omega. auto. *)
-(*   - inv H0. *)
-(* Qed. *)
+Lemma find_symbol_add_globals_inversion :
+  forall (F V:Type) (defs: list (ident * option (AST.globdef F V))) id r ge,
+    Globalenvs.Genv.find_symbol (Globalenvs.Genv.add_globals ge defs) id = r ->
+    (exists def, In (id, def) defs) \/ Globalenvs.Genv.find_symbol ge id = r.
+Proof.
+  induction defs; intros.
+  - simpl in H. auto.
+  - simpl in H. exploit IHdefs; eauto.
+    intros [L | R].
+    + destruct L as [def' IN].
+      left. exists def'. apply in_cons. auto.
+    + destruct a. destruct (ident_eq id i).
+      subst. rewrite Genv.add_global_find_symbol_eq in R. left. eexists. simpl. left. eauto.
+      erewrite Genv.add_global_find_symbol_neq in R; eauto.
+Qed.
 
-(* Lemma store_zeros_pres_def_frame_inj : forall m1 b lo hi m1', *)
-(*     store_zeros m1 b lo hi = Some m1' -> *)
-(*     def_frame_inj m1 = def_frame_inj m1'. *)
-(* Proof. *)
-(*   intros m1 b lo hi m1' H. *)
-(*   functional induction (store_zeros m1 b lo hi); intros. *)
-(*   - inv H. auto. *)
-(*   - exploit IHo; eauto. intros. *)
-(*     exploit Mem.store_stack_blocks; eauto. *)
-(*     intros. unfold def_frame_inj in *. rewrite H1 in *. auto. *)
-(*   - inv H. *)
-(* Qed. *)
+Lemma find_symbol_inversion_1 : forall defs (x : ident) (b : block),
+    Globalenvs.Genv.find_symbol (partial_genv defs) x = Some b -> exists def, In (x, def) defs.
+Proof.
+  unfold partial_genv. intros.
+  exploit find_symbol_add_globals_inversion; eauto.
+  intros [L | R]. auto.
+  exploit Genv.find_symbol_empty_genv_absurd; eauto. contradiction.
+Qed.
+
+Lemma find_symbol_inversion_2 : forall {F V} (prog:AST.program F V) (x : ident) (b : block),
+    Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv prog) x = Some b -> 
+    exists def, In (x, def) (AST.prog_defs prog).
+Proof.
+  intros. exploit Globalenvs.Genv.find_symbol_inversion; eauto.
+  intros. unfold prog_defs_names in H0.
+  rewrite in_map_iff in H0. destruct H0. destruct H0. 
+  destruct x0. eauto. simpl in *. subst. eauto.
+Qed.
+
+
+Lemma store_zeros_mapped_inject:
+  forall (f : meminj) (g : frameinj) (m1 : mem) (b1 : block) (ofs n : Z)
+    (n1 m2 : mem) (b2 : block) (delta : Z),
+    Mem.weak_inject f g m1 m2 ->
+    store_zeros m1 b1 ofs n = Some n1 ->
+    f b1 = Some (b2, delta) ->
+    exists n2 : mem, store_zeros m2  b2 (ofs+delta) n = Some n2 /\ Mem.weak_inject f g n1 n2.
+Proof.
+  intros until n1. functional induction (store_zeros m1 b1 ofs n); intros.
+  - inv H0. exists m2. split; auto. rewrite store_zeros_equation.
+    rewrite e. auto.
+  - exploit Mem.store_mapped_weak_inject; eauto. unfold Vzero. eauto.
+    intros (n2 & STORE & WINJ).
+    exploit IHo; eauto. intros (n3 & STOREZEROS & WINJ'). exists n3. split; eauto.
+    rewrite store_zeros_equation. rewrite e.
+    unfold Vzero. rewrite STORE. replace (p + delta + 1) with (p + 1 + delta) by omega. auto.
+  - inv H0.
+Qed.
+
+Lemma store_zeros_pres_def_frame_inj : forall m1 b lo hi m1',
+    store_zeros m1 b lo hi = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  intros m1 b lo hi m1' H.
+  functional induction (store_zeros m1 b lo hi); intros.
+  - inv H. auto.
+  - exploit IHo; eauto. intros.
+    exploit Mem.store_stack_blocks; eauto.
+    intros. unfold def_frame_inj in *. rewrite H1 in *. auto.
+  - inv H.
+Qed.
 
 (* Lemma store_init_data_list_mapped_inject_aux : forall v v' gmap g m1 m1' m2 b1 b2 delta ofs, *)
 (*     Mem.weak_inject (globs_meminj gmap) g m1 m1' -> *)
@@ -2741,7 +2874,7 @@ Qed.
 
 (* Lemma store_init_data_list_mapped_inject : forall gmap g m1 m1' m2 v v' b1 b2 delta ofs, *)
 (*     Mem.weak_inject (globs_meminj gmap) g m1 m1' -> *)
-(*     transl_gvar gmap v = OK v' ->  *)
+(*     transl_gvar gmap v = OK v' -> *)
 (*     (globs_meminj gmap) b1 = Some (b2, delta) -> *)
 (*     Genv.store_init_data_list ge m1 b1 ofs (gvar_init v) = Some m2 -> *)
 (*     exists m2', store_init_data_list tge m1' b2 (ofs+delta) (FlatAsmGlobdef.gvar_init unit v') = Some m2' *)
@@ -2752,27 +2885,27 @@ Qed.
 (*   eapply store_init_data_list_mapped_inject_aux; eauto. *)
 (* Qed. *)
 
-(* Lemma store_init_data_pres_def_frame_inj : forall m1 b1 ofs v m1', *)
-(*     Genv.store_init_data ge m1 b1 ofs v = Some m1' -> *)
-(*     def_frame_inj m1 = def_frame_inj m1'. *)
-(* Proof. *)
-(*   intros. unfold Genv.store_init_data in H. *)
-(*   destruct v; try now (exploit Mem.store_stack_blocks; eauto; unfold def_frame_inj; congruence). *)
-(*   inv H. auto. *)
-(*   destr_match_in H; inv H. *)
-(*   exploit Mem.store_stack_blocks; eauto; unfold def_frame_inj; congruence. *)
-(* Qed. *)
+Lemma store_init_data_pres_def_frame_inj : forall m1 b1 ofs v m1',
+    Genv.store_init_data ge m1 b1 ofs v = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  intros. unfold Genv.store_init_data in H.
+  destruct v; try now (exploit Mem.store_stack_blocks; eauto; unfold def_frame_inj; congruence).
+  inv H. auto.
+  destr_match_in H; inv H.
+  exploit Mem.store_stack_blocks; eauto; unfold def_frame_inj; congruence.
+Qed.
 
-(* Lemma store_init_data_list_pres_def_frame_inj : forall gv m1 b1 ofs  m1', *)
-(*     Genv.store_init_data_list ge m1 b1 ofs gv = Some m1' -> *)
-(*     def_frame_inj m1 = def_frame_inj m1'. *)
-(* Proof. *)
-(*   induction gv; intros. *)
-(*   - inv H. auto. *)
-(*   - inv H. destr_match_in H1; inv H1. *)
-(*     exploit store_init_data_pres_def_frame_inj; eauto. intros. *)
-(*     rewrite H. exploit IHgv; eauto. *)
-(* Qed. *)
+Lemma store_init_data_list_pres_def_frame_inj : forall gv m1 b1 ofs  m1',
+    Genv.store_init_data_list ge m1 b1 ofs gv = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  induction gv; intros.
+  - inv H. auto.
+  - inv H. destr_match_in H1; inv H1.
+    exploit store_init_data_pres_def_frame_inj; eauto. intros.
+    rewrite H. exploit IHgv; eauto.
+Qed.
 
 (* Lemma transl_init_data_pres_size : forall gmap v v',  *)
 (*     transl_init_data gmap v = OK v' -> *)
@@ -2814,269 +2947,243 @@ Qed.
 (*   auto. *)
 (* Qed. *)
 
-(* Lemma defs_names_distinct_not_in_tail : forall(F V:Type) (defs:list (ident * option (AST.globdef F V))) id def gdefs, *)
-(*     list_norepet (map fst (defs ++ (id, def) :: gdefs)) -> ~In id (map fst gdefs). *)
-(* Proof. *)
-(*   intros F V defs id def gdefs LNR. *)
-(*   rewrite map_app, list_norepet_app in LNR. *)
-(*   destruct LNR as (A & B & C). *)
-(*   intro IN. simpl in B. inv B. congruence. *)
-(* Qed. *)
+Lemma defs_names_distinct_not_in_tail : forall(F V:Type) (defs:list (ident * option (AST.globdef F V))) id def gdefs,
+    list_norepet (map fst (defs ++ (id, def) :: gdefs)) -> ~In id (map fst gdefs).
+Proof.
+  intros F V defs id def gdefs LNR.
+  rewrite map_app, list_norepet_app in LNR.
+  destruct LNR as (A & B & C).
+  intro IN. simpl in B. inv B. congruence.
+Qed.
 
-(* Lemma genv_find_symbol_next : forall defs id def gdefs, *)
-(*     list_norepet (map fst (AST.prog_defs prog)) -> *)
-(*     AST.prog_defs prog = (defs ++ (id, def) :: gdefs) -> *)
-(*     Genv.find_symbol (Genv.globalenv prog) id = Some (Globalenvs.Genv.genv_next (partial_genv defs)). *)
-(* Proof. *)
-(*   intros defs id def gdefs NORPT H. unfold Genv.globalenv. rewrite H. *)
-(*   rewrite Genv.add_globals_app. simpl. *)
-(*   match goal with *)
-(*   | [ |- Genv.find_symbol (Genv.add_globals ?ge' ?defs') ?id' = _ ] => *)
-(*     exploit (find_symbol_add_globals_inversion Asm.fundef unit defs' id'  *)
-(*                                                (Genv.find_symbol (Genv.add_globals ge' defs') id')); eauto *)
-(*   end. *)
-(*   intros [L | R]. *)
-(*   - destruct L as [def' IN]. *)
-(*     rewrite H in NORPT.  *)
-(*     assert (~In id (map fst gdefs)). eapply defs_names_distinct_not_in_tail; eauto. *)
-(*     assert (In (fst (id, def')) (map fst gdefs)). apply in_map. auto. *)
-(*     simpl in H1. congruence. *)
-(*   - rewrite <- R. *)
-(*     erewrite find_symbol_add_global_eq; eauto. *)
-(* Qed. *)
-
-
-(* Lemma genv_invert_symbol_next : forall defs id def gdefs, *)
-(*     list_norepet (map fst (AST.prog_defs prog)) -> *)
-(*     AST.prog_defs prog = (defs ++ (id, def) :: gdefs) -> *)
-(*     Genv.invert_symbol (Genv.globalenv prog) (Globalenvs.Genv.genv_next (partial_genv defs)) = Some id. *)
-(* Proof. *)
-(*   intros defs id def gdefs NORPT H.  *)
-(*   apply Genv.find_invert_symbol. eapply genv_find_symbol_next; eauto. *)
-(* Qed. *)
-
-(* Definition aligned (ofs:Z) := forall chunk, (align_chunk chunk | ofs). *)
-
-(* Lemma chunk_divides_alignw: forall chunk, *)
-(*   (align_chunk chunk | alignw). *)
-(* Proof. *)
-(*   intros. unfold alignw. destruct chunk; simpl; red. *)
-(*   - exists 8; omega. *)
-(*   - exists 8; omega. *)
-(*   - exists 4; omega. *)
-(*   - exists 4; omega. *)
-(*   - exists 2; omega. *)
-(*   - exists 1; omega. *)
-(*   - exists 2; omega. *)
-(*   - exists 2; omega. *)
-(*   - exists 2; omega. *)
-(*   - exists 2; omega. *)
-(* Qed. *)
-
-(* Lemma alignw_aligned : forall i, *)
-(*   (alignw | i) -> aligned i. *)
-(* Proof. *)
-(*   unfold aligned. intros. *)
-(*   apply Zdivides_trans with alignw; auto. *)
-(*   apply chunk_divides_alignw. *)
-(* Qed. *)
+Lemma genv_find_symbol_next : forall defs id def gdefs,
+    list_norepet (map fst (AST.prog_defs prog)) ->
+    AST.prog_defs prog = (defs ++ (id, def) :: gdefs) ->
+    Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv prog) id = Some (Globalenvs.Genv.genv_next (partial_genv defs)).
+Proof.
+  intros defs id def gdefs NORPT H. unfold Globalenvs.Genv.globalenv. rewrite H.
+  rewrite Globalenvs.Genv.add_globals_app. simpl.
+  match goal with
+  | [ |- Globalenvs.Genv.find_symbol (Globalenvs.Genv.add_globals ?ge' ?defs') ?id' = _ ] =>
+    exploit (find_symbol_add_globals_inversion Asm.fundef unit defs' id'
+                                               (Globalenvs.Genv.find_symbol (Globalenvs.Genv.add_globals ge' defs') id')); eauto
+  end.
+  intros [L | R].
+  - destruct L as [def' IN].
+    rewrite H in NORPT.
+    assert (~In id (map fst gdefs)). eapply defs_names_distinct_not_in_tail; eauto.
+    assert (In (fst (id, def')) (map fst gdefs)). apply in_map. auto.
+    simpl in H1. congruence.
+  - rewrite <- R.
+    erewrite Genv.add_global_find_symbol_eq; eauto.
+Qed.
 
 
-(* Lemma update_map_gmap_aligned :  *)
-(*   forall defs gmap lmap dsize csize efsize *)
-(*     gmap1 lmap1 dsize1 csize1 efsize1 slbl i *)
-(*     (UPDATE: (gmap,lmap,dsize, csize, efsize) = update_maps gmap1 lmap1 dsize1 csize1 efsize1 defs) *)
-(*     (CSZALN: (alignw | csize1)) *)
-(*     (CSZBOUND: csize <= Ptrofs.max_unsigned) *)
-(*     (CSZPOS: 0 <= csize1) *)
-(*     (EFSZALN: (alignw | efsize1)) *)
-(*     (EFSZBOUND: efsize <= Ptrofs.max_unsigned) *)
-(*     (EFSZPOS: 0 <= efsize1) *)
-(*     (DSZALN: (alignw | dsize1)) *)
-(*     (DSZBOUND: dsize <= Ptrofs.max_unsigned) *)
-(*     (DSZPOS: 0 <= dsize1) *)
-(*     (GMAPALN: forall i' slbl', gmap1 i' = Some slbl' -> aligned (Ptrofs.unsigned (snd slbl'))) *)
-(*     (GMAP: gmap i = Some slbl), *)
-(*     aligned (Ptrofs.unsigned (snd slbl)). *)
-(* Proof. *)
-(*   induction defs; intros. *)
-(*   assert (csize1 <= csize). eapply csize_mono; eauto. *)
-(*   - inv UPDATE. eauto. *)
-(*   - destruct a. destruct o. destruct g. destruct f. *)
-(*     + cbn in UPDATE.  *)
-(*       destruct (update_instrs lmap1 csize1 i0 (Asm.fn_code f)) as [lmap' csize'] eqn:UPDATEINSTRS. *)
-(*       eapply IHdefs; eauto.  *)
-(*       apply align_divides. unfold alignw. omega. *)
-(*       apply Zle_trans with csize'; try apply alignw_le. *)
-(*       exploit update_instrs_code_size; eauto. intros. *)
-(*       generalize (code_size_non_neg (Asm.fn_code f)). intros. *)
-(*       omega. *)
-(*       intros i' slbl' GMAP'. *)
-(*       unfold update_gid_map in GMAP'. destruct peq.  *)
-(*       subst. inv GMAP'. unfold code_label. simpl.  *)
-(*       rewrite Ptrofs.unsigned_repr. apply alignw_aligned. auto. *)
-(*       assert (align csize' alignw <= csize). *)
-(*       { eapply csize_mono; eauto. apply align_divides. unfold alignw. omega. } *)
-(*       generalize (alignw_le csize'). intros. *)
-(*       exploit update_instrs_code_size; eauto. intros. *)
-(*       generalize (code_size_non_neg (Asm.fn_code f)). intros. *)
-(*       omega. *)
-(*       eauto. *)
-(*     + cbn in UPDATE.  *)
-(*       eapply IHdefs; eauto. *)
-(*       red in EFSZALN. destruct EFSZALN. *)
-(*       red. exists (x+1). rewrite H. rewrite Z.mul_add_distr_r. omega. *)
-(*       unfold alignw. omega. *)
-(*       intros i' slbl' GMAP'. *)
-(*       unfold update_gid_map in GMAP'. destruct peq.  *)
-(*       subst. inv GMAP'. unfold extfun_label. simpl.  *)
-(*       rewrite Ptrofs.unsigned_repr. apply alignw_aligned. auto. *)
-(*       assert (efsize1 + alignw <= efsize). *)
-(*       { eapply efsize_mono; eauto. } *)
-(*       unfold alignw in H. omega. *)
-(*       eauto. *)
-(*     + cbn in UPDATE.  *)
-(*       eapply IHdefs; eauto. *)
-(*       apply Z.divide_add_r; auto. *)
-(*       apply align_divides.  *)
-(*       unfold alignw. omega. *)
-(*       generalize (alignw_le (init_data_list_size (gvar_init v))). intros. *)
-(*       generalize (init_data_list_size_pos (gvar_init v)). intros. omega. *)
-(*       intros i' slbl' GMAP'. *)
-(*       unfold update_gid_map in GMAP'. destruct peq.  *)
-(*       subst. inv GMAP'. unfold data_label. simpl.  *)
-(*       rewrite Ptrofs.unsigned_repr. apply alignw_aligned. auto. *)
-(*       assert (dsize1 + align (init_data_list_size (gvar_init v)) alignw <= dsize). *)
-(*       { eapply dsize_mono; eauto. } *)
-(*       assert (0 <= align (init_data_list_size (gvar_init v)) alignw). *)
-(*       {  *)
-(*         apply Zle_trans with (init_data_list_size (gvar_init v)). *)
-(*         generalize (init_data_list_size_pos (gvar_init v)). omega. *)
-(*         apply alignw_le. *)
-(*       } *)
-(*       omega. *)
-(*       eauto. *)
-(*     + cbn in UPDATE. *)
-(*       eapply IHdefs; eauto. *)
-(* Qed.       *)
+Lemma genv_invert_symbol_next : forall defs id def gdefs,
+    list_norepet (map fst (AST.prog_defs prog)) ->
+    AST.prog_defs prog = (defs ++ (id, def) :: gdefs) ->
+    Genv.invert_symbol (Genv.globalenv prog) (Globalenvs.Genv.genv_next (partial_genv defs)) = Some id.
+Proof.
+  intros defs id def gdefs NORPT H.
+  apply Genv.find_invert_symbol. eapply genv_find_symbol_next; eauto.
+Qed.
 
-(* Lemma make_maps_sizes_pos :  *)
-(*   forall prog gmap lmap dsize csize efsize, *)
-(*     make_maps prog = (gmap, lmap, dsize, csize, efsize) -> *)
-(*     dsize >= 0 /\ csize >= 0 /\ efsize >= 0. *)
-(* Proof. *)
-(*   intros prog0 gmap lmap dsize csize efsize H. *)
-(*   unfold make_maps in H. *)
-(*   assert (0 <= csize).   *)
-(*   { eapply csize_mono; eauto. unfold alignw. red. exists 0. omega. } *)
-(*   assert (0 <= dsize).   *)
-(*   { eapply dsize_mono; eauto. } *)
-(*   assert (0 <= efsize).   *)
-(*   { eapply efsize_mono; eauto. } *)
-(*   omega. *)
-(* Qed. *)
+Definition aligned (ofs:Z) := forall chunk, (align_chunk chunk | ofs).
 
-(* Lemma one_le_ptrofs_max_unsigned : 1 <= Ptrofs.max_unsigned. *)
-(* Proof. *)
-(*   unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus. *)
-(*   unfold Ptrofs.wordsize. *)
-(*   generalize Wordsize_Ptrofs.wordsize_not_zero. intros. *)
-(*   destruct Wordsize_Ptrofs.wordsize. congruence. *)
-(*   rewrite two_power_nat_S.  *)
-(*   generalize (two_power_nat_pos n). intros. omega. *)
-(* Qed. *)
+Lemma chunk_divides_alignw: forall chunk,
+  (align_chunk chunk | alignw).
+Proof.
+  intros. unfold alignw. destruct chunk; simpl; red.
+  - exists 8; omega.
+  - exists 8; omega.
+  - exists 4; omega.
+  - exists 4; omega.
+  - exists 2; omega.
+  - exists 1; omega.
+  - exists 2; omega.
+  - exists 2; omega.
+  - exists 2; omega.
+  - exists 2; omega.
+Qed.
 
-(* Lemma prog_odef_size_pos : forall defs id odef gdefs, *)
-(*     defs ++ (id, odef) :: gdefs = AST.prog_defs prog -> *)
-(*     def_not_empty odef. *)
-(* Proof. *)
-(*   intros defs id odef gdefs DEFSTAIL. *)
-(*   unfold match_prog in TRANSF. unfold transf_program in TRANSF. repeat destr_in TRANSF. *)
-(*   inv w. rewrite <- DEFSTAIL in wf_prog_not_empty. red in wf_prog_not_empty. *)
-(*   rewrite Forall_forall in wf_prog_not_empty.  *)
-(*   specialize (wf_prog_not_empty odef). *)
-(*   cut (def_not_empty odef); auto.  *)
-(*   apply wf_prog_not_empty. rewrite map_app. simpl. rewrite in_app. right. apply in_eq. *)
-(* Qed.   *)
+Lemma alignw_aligned : forall i,
+  (alignw | i) -> aligned i.
+Proof.
+  unfold aligned. intros.
+  apply Zdivides_trans with alignw; auto.
+  apply chunk_divides_alignw.
+Qed.
 
-(* Lemma make_maps_ofs_ordering :  *)
-(*   forall prog defs1 defs2 i1 i2 def1 def2 slbl1 slbl2 *)
-(*     gmap lmap dsize csize efsize  *)
-(*     (SZMAX: dsize + csize + efsize <= Ptrofs.max_unsigned) *)
-(*     (NORPT: list_norepet (map fst (AST.prog_defs prog))) *)
-(*     (DEFS: AST.prog_defs prog = defs1 ++ defs2) *)
-(*     (UPDATE: (gmap, lmap, dsize, csize, efsize) = make_maps prog) *)
-(*     (IN1: In (i1, def1) defs1)  *)
-(*     (IN2: In (i2, def2) defs2) *)
-(*     (GMAP1: gmap i1 = Some slbl1) *)
-(*     (GMAP2: gmap i2 = Some slbl2) *)
-(*     (SAMESEG: fst slbl1 = fst slbl2), *)
-(*     odef_size def1 + Ptrofs.unsigned (snd slbl1) <= Ptrofs.unsigned (snd slbl2). *)
-(* Proof. *)
-(*   intros. destruct def2 as [def2|]. *)
-(*   - apply in_split in IN2. destruct IN2 as (defs3 & defs4 & DEFS2). *)
-(*     subst. *)
-(*     exploit (update_map_gmap_some prog0 gmap lmap dsize csize efsize i2  *)
-(*                                   (defs1 ++ defs3) defs4 def2); eauto. *)
-(*     rewrite <- app_assoc. auto. *)
-(*     intros (slbl & GMAP2' & BND1 & BND2). *)
-(*     rewrite GMAP2' in GMAP2. inv GMAP2. *)
-(*     rewrite Zplus_comm. eapply BND1; eauto. *)
-(*     rewrite in_app. auto. *)
-(*   - exploit update_map_gmap_none; eauto. rewrite DEFS. *)
-(*     erewrite in_app. right. eauto. intros. congruence. *)
-(* Qed. *)
 
-(* Lemma code_size_upper_bound':  *)
-(*   forall defs gmap lmap dsize csize efsize id f  *)
-(*     gmap1 lmap1 dsize1 csize1 efsize1 *)
-(*     (CZPOS: 0 <= csize1) *)
-(*     (UPDATE: update_maps gmap1 lmap1 dsize1 csize1 efsize1 defs = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (IN: In (id, Some (Gfun (Internal f))) defs), *)
-(*     code_size (Asm.fn_code f) <= csize. *)
-(* Proof. *)
-(*   induction defs. intros. inv IN. *)
-(*   intros. inv IN. *)
-(*   - unfold update_maps in UPDATE. simpl in UPDATE. *)
-(*     destruct (update_instrs lmap1 csize1 id (Asm.fn_code f)) eqn:UPDATEINSTRS. *)
-(*     assert (align z alignw <= csize). *)
-(*     { eapply csize_mono; eauto. apply alignw_divides. } *)
-(*     generalize (alignw_le z). intros. *)
-(*     exploit update_instrs_code_size; eauto. intros. subst. *)
-(*     omega. *)
-(*   - unfold update_maps in UPDATE. simpl in UPDATE. destruct a. *)
-(*     destruct (update_maps_def gmap1 lmap1 dsize1 csize1 efsize1 i o) eqn:EQ. *)
-(*     destruct p. destruct p. destruct p. *)
-(*     eapply (IHdefs _ _ _ _ _ _ _ g l z1 z0 z); eauto. *)
-(*     assert (csize1 <= z0). *)
-(*     { eapply update_csize_mono; eauto. } *)
-(*     omega. *)
-(* Qed. *)
+Lemma update_map_gmap_aligned :
+  forall defs gmap lmap dsize csize
+    gmap1 lmap1 dsize1 csize1 slbl i
+    (UPDATE: (gmap,lmap,dsize, csize) = update_maps gmap1 lmap1 dsize1 csize1 defs)
+    (CSZALN: (alignw | csize1))
+    (CSZBOUND: csize <= Ptrofs.max_unsigned)
+    (CSZPOS: 0 <= csize1)
+    (DSZALN: (alignw | dsize1))
+    (DSZBOUND: dsize <= Ptrofs.max_unsigned)
+    (DSZPOS: 0 <= dsize1)
+    (GMAPALN: forall i' slbl', gmap1 i' = Some slbl' -> aligned (Ptrofs.unsigned (snd slbl')))
+    (GMAP: gmap i = Some slbl),
+    aligned (Ptrofs.unsigned (snd slbl)).
+Proof.
+  induction defs; intros.
+  assert (csize1 <= csize). eapply csize_mono; eauto.
+  - inv UPDATE. eauto.
+  - destruct a. destruct o. destruct g. destruct f.
+    + cbn in UPDATE.
+      destruct (update_instrs lmap1 csize1 i0 (Asm.fn_code f)) as [lmap' csize'] eqn:UPDATEINSTRS.
+      eapply IHdefs; eauto.
+      apply align_divides. unfold alignw. omega.
+      apply Zle_trans with csize'; try apply alignw_le.
+      exploit update_instrs_code_size; eauto. intros.
+      generalize (code_size_non_neg (Asm.fn_code f)). intros.
+      omega.
+      intros i' slbl' GMAP'.
+      unfold update_gid_map in GMAP'. destruct peq.
+      subst. inv GMAP'. unfold code_label. simpl.
+      rewrite Ptrofs.unsigned_repr. apply alignw_aligned. auto.
+      assert (align csize' alignw <= csize).
+      { eapply csize_mono; eauto. apply align_divides. unfold alignw. omega. }
+      generalize (alignw_le csize'). intros.
+      exploit update_instrs_code_size; eauto. intros.
+      generalize (code_size_non_neg (Asm.fn_code f)). intros.
+      omega.
+      eauto.
+    + cbn in UPDATE.
+      eapply IHdefs; eauto.
+    + cbn in UPDATE.
+      eapply IHdefs; eauto.
+      apply Z.divide_add_r; auto.
+      apply align_divides.
+      unfold alignw. omega.
+      generalize (alignw_le (init_data_list_size (gvar_init v))). intros.
+      generalize (init_data_list_size_pos (gvar_init v)). intros. omega.
+      intros i' slbl' GMAP'.
+      unfold update_gid_map in GMAP'. destruct peq.
+      subst. inv GMAP'. unfold data_label. simpl.
+      rewrite Ptrofs.unsigned_repr. apply alignw_aligned. auto.
+      assert (dsize1 + align (init_data_list_size (gvar_init v)) alignw <= dsize).
+      { eapply dsize_mono; eauto. }
+      assert (0 <= align (init_data_list_size (gvar_init v)) alignw).
+      {
+        apply Zle_trans with (init_data_list_size (gvar_init v)).
+        generalize (init_data_list_size_pos (gvar_init v)). omega.
+        apply alignw_le.
+      }
+      omega.
+      eauto.
+    + cbn in UPDATE.
+      eapply IHdefs; eauto.
+Qed.
 
-(* Lemma code_size_upper_bound:  *)
-(*   forall defs prog gmap lmap dsize csize efsize id f gdefs *)
-(*     (MAKEMAPS: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (PROG: defs ++ (id, Some (Gfun (Internal f))) :: gdefs = AST.prog_defs prog), *)
-(*     code_size (Asm.fn_code f) <= csize. *)
-(* Proof. *)
-(*   intros. unfold make_maps in MAKEMAPS. *)
-(*   eapply code_size_upper_bound'; eauto. omega. *)
-(*   rewrite <- PROG. rewrite in_app. right. apply in_eq. *)
-(* Qed. *)
+Lemma make_maps_sizes_pos :
+  forall prog gmap lmap dsize csize,
+    make_maps prog = (gmap, lmap, dsize, csize) ->
+    dsize >= 0 /\ csize >= 0.
+Proof.
+  intros prog0 gmap lmap dsize csize H.
+  unfold make_maps in H.
+  assert (0 <= csize).
+  { eapply csize_mono; eauto. unfold alignw. red. exists 0. omega. }
+  assert (0 <= dsize).
+  { eapply dsize_mono; eauto. }
+  omega.
+Qed.
 
-(* Lemma transf_prog_code_size_pos: forall prog tprog id f *)
-(*     (TRANSF: transf_program prog = OK tprog) *)
-(*     (IN: In (id, Some (Gfun (Internal f))) (AST.prog_defs prog)), *)
-(*     0 < Asm.code_size (Asm.fn_code f). *)
-(* Proof. *)
-(*   intros. unfold transf_program in TRANSF0. *)
-(*   repeat destr_in TRANSF0. destruct w. *)
-(*   red in wf_prog_not_empty.  *)
-(*   erewrite Forall_forall in wf_prog_not_empty; eauto. *)
-(*   generalize (in_map snd (AST.prog_defs prog0) (id, Some (Gfun (Internal f))) IN). *)
-(*   simpl. intros IN'.  *)
-(*   exploit wf_prog_not_empty; eauto. *)
-(* Qed. *)
+Lemma prog_odef_size_pos : forall defs id odef gdefs,
+    defs ++ (id, odef) :: gdefs = AST.prog_defs prog ->
+    def_not_empty odef.
+Proof.
+  intros defs id odef gdefs DEFSTAIL.
+  unfold match_prog in TRANSF. unfold transf_program in TRANSF. repeat destr_in TRANSF.
+  inv w. rewrite <- DEFSTAIL in wf_prog_not_empty. red in wf_prog_not_empty.
+  rewrite Forall_forall in wf_prog_not_empty.
+  specialize (wf_prog_not_empty odef).
+  cut (def_not_empty odef); auto.
+  apply wf_prog_not_empty. rewrite map_app. simpl. rewrite in_app. right. apply in_eq.
+Qed.
+
+Lemma make_maps_ofs_ordering :
+  forall prog defs1 defs2 i1 i2 def1 def2 slbl1 slbl2
+    gmap lmap dsize csize
+    (SZMAX: dsize + csize  <= Ptrofs.max_unsigned)
+    (NORPT: list_norepet (map fst (AST.prog_defs prog)))
+    (DEFS: AST.prog_defs prog = defs1 ++ defs2)
+    (UPDATE: (gmap, lmap, dsize, csize) = make_maps prog)
+    (IN1: In (i1, def1) defs1)
+    (IN2: In (i2, def2) defs2)
+    (GMAP1: gmap i1 = Some slbl1)
+    (GMAP2: gmap i2 = Some slbl2)
+    (SAMESEG: fst slbl1 = fst slbl2),
+    odef_size def1 + Ptrofs.unsigned (snd slbl1) <= Ptrofs.unsigned (snd slbl2).
+Proof.
+  intros. destruct (vit_dec _ _ def2).
+  - apply in_split in IN2. destruct IN2 as (defs3 & defs4 & DEFS2).
+    subst.
+    exploit (update_map_gmap_some prog0 gmap lmap dsize csize i2
+                                  (defs1 ++ defs3) defs4 def2); eauto.
+    rewrite <- app_assoc. auto.
+    intros (slbl & GMAP2' & BND1 & BND2).
+    rewrite GMAP2' in GMAP2. inv GMAP2.
+    rewrite Zplus_comm. eapply BND1; eauto.
+    rewrite in_app. auto.
+  - exploit update_map_gmap_none; eauto. rewrite DEFS.
+    erewrite in_app. right. eauto. intros. congruence.
+Qed.
+
+Lemma code_size_upper_bound':
+  forall defs gmap lmap dsize csize id f
+    gmap1 lmap1 dsize1 csize1 
+    (CZPOS: 0 <= csize1)
+    (UPDATE: update_maps gmap1 lmap1 dsize1 csize1 defs = (gmap, lmap, dsize, csize))
+    (IN: In (id, Some (Gfun (Internal f))) defs),
+    code_size (Asm.fn_code f) <= csize.
+Proof.
+  induction defs. intros. inv IN.
+  intros. inv IN.
+  - unfold update_maps in UPDATE. simpl in UPDATE.
+    destruct (update_instrs lmap1 csize1 id (Asm.fn_code f)) eqn:UPDATEINSTRS.
+    assert (align z alignw <= csize).
+    { eapply csize_mono; eauto. apply alignw_divides. }
+    generalize (alignw_le z). intros.
+    exploit update_instrs_code_size; eauto. intros. subst.
+    omega.
+  - unfold update_maps in UPDATE. simpl in UPDATE. destruct a.
+    destruct (update_maps_def gmap1 lmap1 dsize1 csize1 i o) eqn:EQ.
+    destruct p. destruct p. 
+    eapply (IHdefs _ _ _ _ _ _ g l z0 z); eauto.
+    assert (csize1 <= z).
+    { eapply update_csize_mono; eauto. }
+    omega.
+Qed.
+
+Lemma code_size_upper_bound:
+  forall defs prog gmap lmap dsize csize id f gdefs
+    (MAKEMAPS: make_maps prog = (gmap, lmap, dsize, csize))
+    (PROG: defs ++ (id, Some (Gfun (Internal f))) :: gdefs = AST.prog_defs prog),
+    code_size (Asm.fn_code f) <= csize.
+Proof.
+  intros. unfold make_maps in MAKEMAPS.
+  eapply code_size_upper_bound'; eauto. omega.
+  rewrite <- PROG. rewrite in_app. right. apply in_eq.
+Qed.
+
+Lemma transf_prog_code_size_pos: forall prog tprog id f
+    (TRANSF: transf_program prog = OK tprog)
+    (IN: In (id, Some (Gfun (Internal f))) (AST.prog_defs prog)),
+    0 < Asm.code_size (Asm.fn_code f).
+Proof.
+  intros. unfold transf_program in TRANSF0.
+  repeat destr_in TRANSF0. destruct w.
+  red in wf_prog_not_empty.
+  erewrite Forall_forall in wf_prog_not_empty; eauto.
+  generalize (in_map snd (AST.prog_defs prog0) (id, Some (Gfun (Internal f))) IN).
+  simpl. intros IN'.
+  exploit wf_prog_not_empty; eauto.
+Qed.
 
 
 (* Lemma alloc_globals_inject :  *)
@@ -3814,38 +3921,38 @@ Qed.
 (*         eapply DEFSPERM; eauto. apply in_cons; auto. *)
 (* Qed. *)
 
-(* Lemma globs_meminj_domain_valid : forall gmap lmap dsize csize efsize m2 b p *)
-(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (ALLOCG: Genv.alloc_globals ge Mem.empty (AST.prog_defs prog) = Some m2) *)
-(*     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog) *)
-(*     (INJ: globs_meminj gmap b = Some p), *)
-(*     Mem.valid_block m2 b.  *)
-(* Proof. *)
-(*   intros. unfold globs_meminj in INJ.  *)
-(*   destr_match_in INJ; inv INJ. destr_match_in H0; inv H0. *)
-(*   assert (Genv.init_mem prog = Some m2) as INITM by auto. *)
-(*   apply Genv.invert_find_symbol in EQ. *)
-(*   eapply Genv.find_symbol_not_fresh; eauto. *)
-(* Qed. *)
+Lemma globs_meminj_domain_valid : forall gmap lmap dsize csize m2 b p
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (ALLOCG: Genv.alloc_globals ge Mem.empty (AST.prog_defs prog) = Some m2)
+    (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (INJ: globs_meminj gmap b = Some p),
+    Mem.valid_block m2 b.
+Proof.
+  intros. unfold globs_meminj in INJ.
+  destr_match_in INJ; inv INJ. destr_match_in H0; inv H0.
+  assert (Genv.init_mem prog = Some m2) as INITM by auto.
+  apply Genv.invert_find_symbol in EQ.
+  eapply Genv.find_symbol_not_fresh; eauto.
+Qed.
 
-(* Lemma alloc_all_globals_inject :  *)
-(*   forall tgdefs m2 m1' gmap lmap  code dsize csize efsize *)
+(* Lemma alloc_all_globals_inject : *)
+(*   forall tgdefs m2 m1' gmap lmap dsize csize  *)
 (*     (DEFNAMES: list_norepet (map fst (AST.prog_defs prog))) *)
-(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog) *)
-(*     (TRANSG: transl_globdefs gmap lmap (AST.prog_defs prog) = OK (tgdefs, code)) *)
-(*     (BOUND: dsize + csize + efsize <= Ptrofs.max_unsigned) *)
+(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize)) *)
+(*     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog) *)
+(*     (TRANSG: transl_globdefs gmap (AST.prog_defs prog) = OK tgdefs) *)
+(*     (BOUND: dsize + csize <= Ptrofs.max_unsigned) *)
 (*     (MINJ: Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty) Mem.empty m1') *)
 (*     (BLOCKEQ: Mem.nextblock m1' = (pos_advance_N init_block (length (list_of_segments tprog)))) *)
 (*     (STK: Mem.stack m1' = nil) *)
 (*     (PERMOFS : forall b ofs k p, Mem.perm m1' b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned) *)
-(*     (DEFSPERM: forall id odef slbl b' delta, *)
+(*     (DEFSPERM: forall id odef b' delta, *)
 (*        In (id, odef) (AST.prog_defs prog) -> *)
-(*        gmap id = Some slbl -> *)
-(*        Genv.symbol_block_offset tge slbl = (b', delta) -> *)
-(*        (forall ofs k p, 0 <= ofs < odef_size odef -> Mem.perm m1' b' (delta+ofs) k p)) *)
+(*        sdef_is_var_or_internal_fun odef -> *)
+(*        Genv.find_symbol tge id = Some (b', delta) -> *)
+(*        (forall ofs k p, 0 <= ofs < odef_size odef -> Mem.perm m1' b' ((Ptrofs.unsigned delta)+ofs) k p)) *)
 (*     (ALLOCG: Genv.alloc_globals ge Mem.empty (AST.prog_defs prog) = Some m2), *)
-(*     exists m2', alloc_globals tge (Genv.genv_segblocks tge) m1' tgdefs = Some m2' *)
+(*     exists m2', alloc_globals tge (gen_segblocks tprog) m1' tgdefs = Some m2' *)
 (*            /\ Mem.inject (globs_meminj gmap) (def_frame_inj m2) m2 m2'. *)
 (* Proof. *)
 (*   intros. exploit (alloc_globals_inject (AST.prog_defs prog) tgdefs nil); eauto. *)
@@ -3858,46 +3965,865 @@ Qed.
 (*   intros. eapply globs_meminj_domain_valid; eauto. *)
 (* Qed. *)
 
+Lemma find_symbol_nvi_lower_bound : 
+  forall def i b ofs
+    (NVI: ~sdef_is_var_or_internal_fun def)
+    (IN: In (i, def) (AST.prog_defs prog))
+    (FSYM: Genv.find_symbol (globalenv tprog) i = Some (b, ofs)),
+    Ple (pos_advance_N init_block (length (list_of_segments tprog))) b.
+Admitted.
 
-(* Lemma globs_meminj_ofs_pos : forall gmap b b' delta, *)
-(*     globs_meminj gmap b = Some (b', delta) -> delta >= 0. *)
-(* Proof. *)
-(*   unfold globs_meminj. intros. destr_match_in H; inv H. *)
-(*   destr_match_in H1; inv H1. generalize (Ptrofs.unsigned_range (snd s)). *)
+Lemma find_symbol_sb_vit : forall i odef sid ofs
+    (IN: In (i, odef) (AST.prog_defs prog))
+    (FSYM: Genv.find_symbol (globalenv tprog) i = Some (gen_segblocks tprog sid, ofs)),
+    (sdef_is_var_or_internal_fun odef).
+Proof.
+  intros.
+  destruct (vit_dec _ _ odef); eauto.
+  assert (Ple (pos_advance_N init_block (length (list_of_segments tprog))) 
+              (gen_segblocks tprog sid)).
+  eapply find_symbol_nvi_lower_bound; eauto.
+  generalize (gen_segblocks_upper_bound tprog sid).
+  intros. exfalso. eapply Plt_le_absurd; eauto.
+Qed.
+
+Lemma store_globals_inject :
+  forall gdefs tgdefs defs m1 m2 m1' gmap lmap dsize csize 
+    (DEFNAMES: list_norepet (map fst (AST.prog_defs prog)))
+    (DEFSTAIL: defs ++ gdefs = AST.prog_defs prog)
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (BOUND: dsize + csize <= Ptrofs.max_unsigned)
+    (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (TRANSG: transl_globdefs gmap gdefs = OK tgdefs)
+    (MINJ: Mem.weak_inject (globs_meminj gmap) (def_frame_inj m1) m1 m1')
+    (ALLOCG: Genv.alloc_globals ge m1 gdefs = Some m2)
+    (BLOCKEQ : Mem.nextblock m1 = Globalenvs.Genv.genv_next (partial_genv defs))
+    (BLOCKEQ' : Mem.nextblock m1' = (pos_advance_N init_block (length (list_of_segments tprog) + length (AST.prog_defs prog))))
+    (STK' : Mem.stack m1' = nil)
+    (PERMOFS : forall b ofs k p, Mem.perm m1' b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned)
+    (OFSBOUND: forall id b def ofs k p,
+        Globalenvs.Genv.find_symbol (partial_genv defs) id = Some b ->
+        In (id, def) defs -> Mem.perm m1 b ofs k p ->
+        ofs < odef_size def)
+    (FINDVALIDSYM: forall id b ofs k p,
+       Globalenvs.Genv.find_symbol ge id = Some b ->
+       Mem.perm m1 b ofs k p ->
+       Globalenvs.Genv.find_symbol (partial_genv defs) id = Some b)
+    (DEFSPERM: forall id odef slbl b',
+       In (id, odef) gdefs ->
+       gmap id = Some slbl ->
+       b' = gen_segblocks tprog (fst slbl) ->
+       (forall ofs k p, 0 <= ofs < odef_size odef -> Mem.perm m1' b' (Ptrofs.unsigned (snd slbl)+ofs) k p)),
+    exists m2', store_globals tge (gen_segblocks tprog) m1' tgdefs = Some m2'
+           /\ Mem.weak_inject (globs_meminj gmap) (def_frame_inj m2) m2 m2'.
+Proof.
+  induction gdefs; intros.
+  - monadInv TRANSG. inv ALLOCG. rewrite app_nil_r in DEFSTAIL. subst defs.
+    simpl. eexists; split; eauto.
+  - destruct a. destruct o.
+    + destruct g. destruct f.
+      * (** the head of gdefs is an internal function **)
+        monadInv TRANSG. monadInv EQ.
+        simpl in ALLOCG. destr_match_in ALLOCG; try now inversion ALLOCG.
+        destruct (Mem.alloc m1 0 1) eqn:ALLOCF.
+        exploit Mem.alloc_result; eauto using ALLOCF. intros.
+        exploit update_map_gmap_some; eauto. red. auto.
+        intros (slbl & GMAP & OFSRANGE & OFSRANGE2).
+
+        (* globs_meminj *)
+        assert (globs_meminj gmap b = Some (gen_segblocks tprog (fst slbl), Ptrofs.unsigned (snd slbl))) as BINJ.
+        {
+          unfold globs_meminj. subst. rewrite BLOCKEQ.
+          exploit genv_invert_symbol_next; eauto. intros INVSYM.
+          setoid_rewrite INVSYM.
+          erewrite gmap_to_find_symbol; eauto.
+          rewrite <- DEFSTAIL. rewrite in_app. right. apply in_eq.
+          red. auto.
+        }
+
+        (* alloc mapped injection *)
+        exploit (Mem.alloc_left_mapped_weak_inject
+                   (globs_meminj gmap) (def_frame_inj m1) m1 m1' 0 1 m0
+                   b (gen_segblocks tprog (fst slbl)) (Ptrofs.unsigned (snd slbl))
+                   BINJ MINJ ALLOCF); eauto.
+        (* valid block *)
+        exploit update_map_gmap_range1; eauto. intros.
+        exploit (gen_segblocks_in_valid tprog); eauto. intros SEGBVALID.
+        red in SEGBVALID. destruct SEGBVALID. red.
+        rewrite BLOCKEQ'. admit.
+        (* valid offset *)
+        apply Ptrofs.unsigned_range_2.
+        (* preservation of permission *)
+        intros ofs k p OFS INJPERM.
+        exploit (fun id odef slbl b' => DEFSPERM id odef slbl b'); eauto.
+        apply in_eq.
+        instantiate (1:=ofs).
+        exploit prog_odef_size_pos; eauto. intros.
+        assert (ofs = 0) by omega. subst. split; auto. omega.
+        rewrite Zplus_comm. eauto.
+        (* correct alignment *)
+        red. intros.
+        eapply update_map_gmap_aligned; eauto.
+        unfold alignw. red. exists 0. omega.
+        exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS). omega.
+        omega.
+        unfold alignw. red. exists 0. omega.
+        exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS). omega.
+        omega.
+        unfold default_gid_map. intros. congruence.
+        (* alloced memory has not been injected before *)
+        intros b0 delta' ofs k p GINJ PERM' OFSABSURD.
+        unfold globs_meminj in GINJ.
+        destr_match_in GINJ; try now inv GINJ.
+        destr_match_in GINJ; try now inv GINJ.
+        destruct p0. inv GINJ.
+        apply Genv.invert_find_symbol in EQ2.
+        exploit FINDVALIDSYM; eauto. intros.
+        exploit find_symbol_inversion_1; eauto. intros (def' & IN).        
+        assert (sdef_is_var_or_internal_fun def').
+        {
+          eapply find_symbol_sb_vit; eauto.
+          rewrite <- DEFSTAIL. rewrite in_app. auto.
+        }
+        exploit find_symbol_to_gmap; eauto.
+        rewrite <- DEFSTAIL. rewrite in_app. auto.
+        intros (slbl1 & GMAP1 & GEN & IEQ). subst.
+        assert (fst slbl1 = fst slbl).
+        { 
+          generalize (gen_segblocks_injective tprog). intros SEGSINJ.
+          red in SEGSINJ.
+          exploit SEGSINJ; eauto.
+          apply gen_segblocks_in_valid. eapply update_map_gmap_range1; eauto. auto.
+        }
+        exploit OFSBOUND; eauto. intros.
+        assert (Ptrofs.unsigned (snd slbl1) + odef_size def' <= Ptrofs.unsigned (snd slbl)).
+        { eapply (OFSRANGE _ _ _ IN GMAP1); eauto. }
+        omega.
+        (* stack frame is public *)
+        intros fi INSTK o k pp PERM INJPERM.
+        rewrite STK' in INSTK. inv INSTK.
+        (* get the new weak injection *)
+        intros MINJ'.
+        erewrite alloc_pres_def_frame_inj in MINJ'; eauto.
+
+        (* drop_perm injection *)
+        exploit transf_prog_code_size_pos; eauto.
+        rewrite <- DEFSTAIL. rewrite in_app. right. apply in_eq. intros.
+        exploit (fun j g m1 m2 b1 b2 delta =>
+                   Mem.drop_extended_parallel_weak_inject j g m1 m2 b1 b2 delta
+                                                          0 1 0 (Asm.code_size (Asm.fn_code f))); eauto using MINJ'.
+        (* inject perm *)
+        red. simpl. auto. omega.
+        (* hi *)
+        omega.
+        (* range perm *)
+        simpl. red. intros ofs OFS.
+        replace ofs with (Ptrofs.unsigned (snd slbl) + (ofs - (Ptrofs.unsigned (snd slbl)))) by omega.
+        eapply DEFSPERM with (ofs:= ofs-Ptrofs.unsigned(snd slbl)); eauto. apply in_eq.
+        simpl. omega.
+        (* source memory have no permission on extended regions *)
+        intros b' delta' ofs' k p BINJ' PERM' OFS. destruct OFS. omega.
+        unfold globs_meminj in BINJ'. destr_match_in BINJ'; inv BINJ'.
+        destr_match_in H3; inv H3.
+        destruct p0. inv H2.
+        generalize EQ2. intros IVSYM.
+        apply Genv.invert_find_symbol in IVSYM.
+        apply find_symbol_inversion_2 in IVSYM. destruct IVSYM as (def & IVSYM).
+        exploit find_symbol_sb_vit; eauto.
+        intros VIT.
+        exploit Mem.perm_alloc_inv; eauto.
+        destruct eq_block.
+        (** b' = Mem.nextblock m1 **)
+        subst.
+        rewrite BLOCKEQ in EQ2.
+        erewrite genv_invert_symbol_next in EQ2; eauto. inv EQ2.
+        erewrite gmap_to_find_symbol in EQ3; eauto. inv EQ3. intros. omega.
+        (** b' <> Mem.nextblock m1 **)
+        intros PERM''.
+        apply Genv.invert_find_symbol in EQ2.
+        exploit FINDVALIDSYM; eauto.
+        intros FINDSYM'.
+        exploit find_symbol_inversion_1; eauto. intros (def' & IN). 
+        exploit OFSBOUND; eauto. intros OFS'.
+        exploit find_symbol_to_gmap; eauto. intros (slbl1 & GMAP' & GEQ & IEQ). subst.
+        assert (Ptrofs.unsigned (snd slbl1) + odef_size def' <= Ptrofs.unsigned (snd slbl)) as SZBND.
+        { 
+          eapply OFSRANGE; eauto. 
+          generalize (gen_segblocks_injective tprog). intros SEGSINJ.
+          red in SEGSINJ.
+          exploit SEGSINJ; eauto.
+          apply gen_segblocks_in_valid. eapply update_map_gmap_range1; eauto. auto.          
+        }
+        simpl in SZBND. simpl in OFS'. omega.
+
+        intros (m2' & DROP & MINJ'').
+        erewrite drop_perm_pres_def_frame_inj in MINJ''; eauto.
+
+        (* apply the induction hypothesis *)
+        assert ((defs ++ (i, Some (Gfun (Internal f))) :: nil) ++ gdefs = AST.prog_defs prog) as DEFSTAIL'.
+        rewrite <- DEFSTAIL. rewrite <- app_assoc. simpl. auto.
+        exploit (IHgdefs x0 (defs ++ (i, Some (Gfun (Internal f))) :: nil) m); eauto using MINJ'', DEFSTAIL'.
+        (* nextblock *)
+        erewrite Mem.nextblock_drop; eauto.
+        erewrite Mem.nextblock_alloc; eauto. rewrite BLOCKEQ.
+        rewrite partial_genv_next. auto.
+        (* nextblock' *)
+        erewrite Mem.nextblock_drop; eauto.
+        (* stack *)
+        erewrite Mem.drop_perm_stack; eauto.
+        (* perm ofs *)
+        intros b0 ofs k p PERM.
+        exploit Mem.perm_drop_4; eauto.
+        (* ofsbound *)
+        intros id b0 def ofs k p FINDSYM IN PERM'.
+        rewrite in_app in IN. destruct IN as [IN | IN].
+        assert (i <> id).
+        {
+          eapply defs_names_distinct_prefix_neq; eauto.
+          rewrite <- DEFSTAIL in DEFNAMES. eauto.
+        }
+        erewrite partial_genv_find_symbol_neq in FINDSYM; eauto.
+        assert (b <> b0).
+        {
+          unfold not. subst. rewrite BLOCKEQ. intros. subst.
+          eapply Genv.find_symbol_genv_next_absurd; eauto.
+        }
+        erewrite (drop_perm_perm _ _ _ _ _ _ EQ) in PERM'. destruct PERM' as [PERM' PIN].
+        exploit Mem.perm_alloc_inv; eauto using ALLOCF.
+        rewrite dec_eq_false; auto. intros. eapply OFSBOUND; eauto.
+
+        inv IN. inv H1.
+        rewrite partial_genv_find_symbol_eq in FINDSYM. inv FINDSYM.
+        rewrite <- BLOCKEQ in PERM'.
+        erewrite (drop_perm_perm _ _ _ _ _ _ EQ) in PERM'. destruct PERM' as [PERM' PIN].
+        exploit Mem.perm_alloc_inv; eauto using ALLOCF.
+        rewrite dec_eq_true. intros.
+        simpl. assert (ofs = 0). omega. subst.
+        eapply (prog_odef_size_pos defs id (Some (Gfun (Internal f)))); eauto.
+
+        inv H1.
+        (* findvalidsym *)
+        intros id b0 ofs k p FINDSYM PERM.
+        erewrite drop_perm_perm in PERM; eauto. destruct PERM as [PERM COND].
+        erewrite alloc_perm in PERM; eauto. destruct peq.
+        subst. rewrite BLOCKEQ.
+        rewrite BLOCKEQ in FINDSYM. apply Genv.find_invert_symbol in FINDSYM.
+        unfold ge in FINDSYM. erewrite genv_invert_symbol_next in FINDSYM; eauto. inv FINDSYM.
+        erewrite partial_genv_find_symbol_eq; eauto.
+        exploit FINDVALIDSYM; eauto. intros FINDSYM'.
+        apply find_symbol_inversion_1 in FINDSYM'. destruct FINDSYM' as [DEF' FINDSYM'].
+        assert (i <> id).
+        {
+          eapply defs_names_distinct_prefix_neq; eauto.
+          rewrite <- DEFSTAIL in DEFNAMES. eauto.
+        }
+        erewrite partial_genv_find_symbol_neq; eauto.
+        (* defs perm *)
+        intros id odef slbl0 b' IN GMAP' SYMOFS ofs k p OFS.
+        eapply Mem.perm_drop_3; eauto.
+        destruct (eq_block b' (gen_segblocks tprog (fst slbl))); auto.
+        right. right.
+        assert (odef_size (Some (Gfun (Internal f))) + Ptrofs.unsigned (snd slbl) <= Ptrofs.unsigned (snd slbl0)) as SZBND.
+        {
+          eapply (make_maps_ofs_ordering prog (defs ++ (i, Some (Gfun (Internal f))) :: nil) gdefs
+                                           i id (Some (Gfun (Internal f))) odef); eauto.
+          rewrite in_app. right. apply in_eq.
+          generalize (gen_segblocks_injective tprog). unfold injective_on_valid_segs.
+          intros INJECTIVE. subst. eapply INJECTIVE; eauto.
+          eapply gen_segblocks_in_valid; eauto.
+          eapply update_map_gmap_range1; eauto.
+        }
+        simpl in SZBND.
+        exploit prog_odef_size_pos; eauto. intros. simpl in H. omega.
+        eapply DEFSPERM; eauto. apply in_cons; auto.
+
+        (* finish this case *)
+        intros (m3' & ALLOCG' & MINJ_FINAL).
+        exists m3'. split; auto. simpl.
+        exploit transl_fun_inversion; eauto.
+        intros (slbl' & GMAP' & FRANGE).
+        rewrite GMAP in GMAP'. inv GMAP'. rewrite FRANGE. simpl.
+        setoid_rewrite Ptrofs.unsigned_repr.
+        rewrite Z.add_comm. setoid_rewrite DROP. auto.
+        simpl.
+        assert (code_size (Asm.fn_code f) <= csize).
+        eapply code_size_upper_bound; eauto.
+        exploit make_maps_sizes_pos; eauto. intros (DSZPOS & CSZPOS).
+        omega.
+Admitted.
+(*       * (** the head of gdefs is an external function **) *)
+(*         monadInv TRANSG. destruct (gmap i) eqn:ILBL; try now inversion EQ. *)
+(*         destruct s. monadInv EQ. monadInv EQ2. *)
+(*         simpl in ALLOCG. destr_match_in ALLOCG; try now inversion ALLOCG. *)
+(*         destruct (Mem.alloc m1 0 1) eqn:ALLOCF. *)
+(*         exploit Mem.alloc_result; eauto using ALLOCF. intros. *)
+(*         exploit update_map_gmap_some; eauto. *)
+(*         intros (slbl & GMAP & OFSRANGE & OFSRANGE2). *)
+
+(*         (* globs_meminj *) *)
+(*         assert (globs_meminj gmap b = Some (gen_segblocks tprog (fst slbl), Ptrofs.unsigned (snd slbl))) as BINJ. *)
+(*         { *)
+(*           unfold globs_meminj. subst. rewrite BLOCKEQ. *)
+(*           exploit genv_invert_symbol_next; eauto. intros INVSYM. *)
+(*           setoid_rewrite INVSYM. rewrite GMAP. *)
+(*           unfold Genv.symbol_block_offset. unfold Genv.label_to_block_offset. *)
+(*           rewrite genv_gen_segblocks. auto. *)
+(*         } *)
+
+(*         (* alloc mapped injection *) *)
+(*         exploit (Mem.alloc_left_mapped_weak_inject *)
+(*                    (globs_meminj gmap) (def_frame_inj m1) m1 m1' 0 1 m0 *)
+(*                    b (gen_segblocks tprog (fst slbl)) (Ptrofs.unsigned (snd slbl)) *)
+(*                    BINJ MINJ ALLOCF); eauto. *)
+(*         (* valid block *) *)
+(*         exploit AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. intros. *)
+(*         exploit (gen_segblocks_in_valid tprog); eauto. intros SEGBVALID. *)
+(*         red in SEGBVALID. destruct SEGBVALID. red. *)
+(*         rewrite BLOCKEQ'. auto. *)
+(*         (* valid offset *) *)
+(*         apply Ptrofs.unsigned_range_2. *)
+(*         (* preservation of permission *) *)
+(*         intros ofs k p OFS INJPERM. *)
+(*         exploit (fun id odef slbl b' => DEFSPERM id odef slbl b' (Ptrofs.unsigned (snd slbl))); eauto. *)
+(*         apply in_eq. *)
+(*         unfold Genv.symbol_block_offset. unfold Genv.label_to_block_offset. *)
+(*         unfold tge. rewrite genv_gen_segblocks. auto. *)
+(*         instantiate (1:=ofs). *)
+(*         exploit prog_odef_size_pos; eauto. intros. *)
+(*         rewrite Zplus_comm. eauto. *)
+(*         (* correct alignment *) *)
+(*         red. intros. *)
+(*         eapply update_map_gmap_aligned; eauto. *)
+(*         unfold alignw. red. exists 0. omega. *)
+(*         exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS & EFPOS). omega. *)
+(*         omega. *)
+(*         unfold alignw. red. exists 0. omega. *)
+(*         exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS & EFPOS). omega. *)
+(*         omega. *)
+(*         unfold alignw. red. exists 0. omega. *)
+(*         exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS & EFPOS). omega. *)
+(*         omega. *)
+(*         unfold default_gid_map. intros. congruence. *)
+(*         (* alloced memory has not been injected before *) *)
+(*         intros b0 delta' ofs k p GINJ PERM' OFSABSURD. *)
+(*         unfold globs_meminj in GINJ. *)
+(*         destr_match_in GINJ; try now inv GINJ. *)
+(*         destr_match_in GINJ; try now inv GINJ. *)
+(*         unfold Genv.symbol_block_offset in GINJ. unfold Genv.label_to_block_offset in GINJ. *)
+(*         rewrite genv_gen_segblocks in GINJ. *)
+(*         inv GINJ. *)
+(*         assert (fst s0 = fst slbl). *)
+(*         { *)
+(*           eapply gen_segblocks_injective; eauto. *)
+(*           apply gen_segblocks_in_valid; eauto. *)
+(*           eapply AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. *)
+(*         } *)
+(*         apply Genv.invert_find_symbol in EQ0. *)
+(*         exploit FINDVALIDSYM; eauto. intros. *)
+(*         exploit find_symbol_inversion_1; eauto. intros (def' & IN). *)
+(*         destruct def'. *)
+(*         exploit OFSBOUND; eauto. intros. *)
+(*         assert (Ptrofs.unsigned (snd s0) + def_size g <= Ptrofs.unsigned (snd slbl)). *)
+(*         { eapply (fun sl => OFSRANGE _ _ sl  IN); eauto. } *)
+(*         omega. *)
+
+(*         assert (In (i1, None) (AST.prog_defs prog)). *)
+(*         { rewrite <- DEFSTAIL. rewrite in_app. auto. } *)
+(*         exploit update_map_gmap_none; eauto. congruence. *)
+(*         (* stack frame is public *) *)
+(*         intros fi INSTK o k pp PERM INJPERM. *)
+(*         rewrite STK' in INSTK. inv INSTK. *)
+(*         (* get the new weak injection *) *)
+(*         intros MINJ'. *)
+(*         erewrite alloc_pres_def_frame_inj in MINJ'; eauto. *)
+
+(*         (* drop_perm injection *) *)
+(*         exploit Mem.drop_parallel_weak_inject; eauto using MINJ'. *)
+(*         red. simpl. auto. *)
+(*         intros (m2' & DROP & MINJ''). *)
+(*         erewrite drop_perm_pres_def_frame_inj in MINJ''; eauto. *)
+
+(*         (* apply the induction hypothesis *) *)
+(*         assert ((defs ++ (i, Some (Gfun (External e))) :: nil) ++ gdefs = AST.prog_defs prog) as DEFSTAIL'. *)
+(*         rewrite <- DEFSTAIL. rewrite <- app_assoc. simpl. auto. *)
+(*         exploit (IHgdefs x0 (defs ++ (i, Some (Gfun (External e))) :: nil) m); eauto using MINJ'', DEFSTAIL'. *)
+(*         (* nextblock *) *)
+(*         erewrite Mem.nextblock_drop; eauto. *)
+(*         erewrite Mem.nextblock_alloc; eauto. rewrite BLOCKEQ. *)
+(*         rewrite partial_genv_next. auto. *)
+(*         (* nextblock' *) *)
+(*         erewrite Mem.nextblock_drop; eauto. *)
+(*         (* stack *) *)
+(*         erewrite Mem.drop_perm_stack; eauto. *)
+(*         (* perm ofs *) *)
+(*         intros b0 ofs k p PERM. *)
+(*         exploit Mem.perm_drop_4; eauto. *)
+(*         (* ofsbound *) *)
+(*         intros id b0 def ofs k p FINDSYM IN PERM'. *)
+(*         rewrite in_app in IN. destruct IN as [IN | IN]. *)
+(*         assert (i <> id). *)
+(*         { *)
+(*           eapply defs_names_distinct_prefix_neq; eauto. *)
+(*           rewrite <- DEFSTAIL in DEFNAMES. eauto. *)
+(*         } *)
+(*         erewrite partial_genv_find_symbol_neq in FINDSYM; eauto. *)
+(*         assert (b <> b0). *)
+(*         { *)
+(*           unfold not. subst. rewrite BLOCKEQ. intros. subst. *)
+(*           eapply Genv.find_symbol_genv_next_absurd; eauto. *)
+(*         } *)
+(*         erewrite (drop_perm_perm _ _ _ _ _ _ EQ) in PERM'. destruct PERM' as [PERM' PIN]. *)
+(*         exploit Mem.perm_alloc_inv; eauto using ALLOCF. *)
+(*         rewrite dec_eq_false; auto. intros. eapply OFSBOUND; eauto. *)
+
+(*         inv IN. inv H0. *)
+(*         rewrite partial_genv_find_symbol_eq in FINDSYM. inv FINDSYM. *)
+(*         rewrite <- BLOCKEQ in PERM'. *)
+(*         erewrite (drop_perm_perm _ _ _ _ _ _ EQ) in PERM'. destruct PERM' as [PERM' PIN]. *)
+(*         exploit Mem.perm_alloc_inv; eauto using ALLOCF. *)
+(*         rewrite dec_eq_true. intros. *)
+(*         simpl. assert (ofs = 0). omega. subst. *)
+(*         omega. *)
+
+(*         inv H0. *)
+(*         (* findvalidsym *) *)
+(*         intros id b0 ofs k p FINDSYM PERM. *)
+(*         erewrite drop_perm_perm in PERM; eauto. destruct PERM as [PERM COND]. *)
+(*         erewrite alloc_perm in PERM; eauto. destruct peq. *)
+(*         subst. rewrite BLOCKEQ. *)
+(*         rewrite BLOCKEQ in FINDSYM. apply Genv.find_invert_symbol in FINDSYM. *)
+(*         unfold ge in FINDSYM. erewrite genv_invert_symbol_next in FINDSYM; eauto. inv FINDSYM. *)
+(*         erewrite partial_genv_find_symbol_eq; eauto. *)
+(*         exploit FINDVALIDSYM; eauto. intros FINDSYM'. *)
+(*         apply find_symbol_inversion_1 in FINDSYM'. destruct FINDSYM' as [DEF' FINDSYM']. *)
+(*         assert (i <> id). *)
+(*         { *)
+(*           eapply defs_names_distinct_prefix_neq; eauto. *)
+(*           rewrite <- DEFSTAIL in DEFNAMES. eauto. *)
+(*         } *)
+(*         erewrite partial_genv_find_symbol_neq; eauto. *)
+(*         (* defs perm *) *)
+(*         intros id odef slbl0 b' delta IN GMAP' SYMOFS ofs k p OFS. *)
+(*         eapply Mem.perm_drop_3; eauto. *)
+(*         destruct (eq_block b' (gen_segblocks tprog (fst slbl))); auto. *)
+(*         right. right. *)
+(*         unfold Genv.symbol_block_offset in SYMOFS. unfold Genv.label_to_block_offset in SYMOFS. inv SYMOFS. *)
+(*         unfold tge in H1. rewrite genv_gen_segblocks in H1. *)
+(*         assert (odef_size (Some (Gfun (External e))) + Ptrofs.unsigned (snd slbl) <= Ptrofs.unsigned (snd slbl0)) as SZBND. *)
+(*         { *)
+(*           eapply (make_maps_ofs_ordering prog (defs ++ (i, Some (Gfun (External e))) :: nil) gdefs *)
+(*                                            i id (Some (Gfun (External e))) odef); eauto. *)
+(*           rewrite in_app. right. apply in_eq. *)
+(*           generalize (gen_segblocks_injective tprog). unfold injective_on_valid_segs. *)
+(*           intros INJECTIVE. eapply INJECTIVE; eauto. *)
+(*           eapply gen_segblocks_in_valid; eauto. *)
+(*           eapply AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. *)
+(*         } *)
+(*         assert (odef_size (Some (Gfun (External e))) = 1) as EFSIZE by reflexivity. *)
+(*         rewrite EFSIZE in SZBND. omega. *)
+(*         eapply DEFSPERM; eauto. apply in_cons; auto. *)
+
+(*         (* finish this case *) *)
+(*         intros (m3' & ALLOCG' & MINJ_FINAL). *)
+(*         exists m3'. split; auto. simpl. *)
+(*         rewrite GMAP in ILBL. inv ILBL. *)
+(*         unfold tge. rewrite genv_gen_segblocks. setoid_rewrite Ptrofs.unsigned_repr. *)
+(*         rewrite Z.add_comm. setoid_rewrite DROP. auto. *)
+(*         generalize one_le_ptrofs_max_unsigned. omega. *)
+ 
+(*       * (** the head of gdefs is a global variable **) *)
+(*         monadInv TRANSG. destruct (gmap i) eqn:ILBL; try now inversion EQ. *)
+(*         destruct s. monadInv EQ. monadInv EQ2. *)
+(*         simpl in ALLOCG. *)
+(*         destr_match_in ALLOCG; try now inversion ALLOCG. *)
+(*         destr_match_in EQ. *)
+(*         destr_match_in EQ; try now inversion EQ. *)
+(*         destr_match_in EQ; try now inversion EQ. *)
+(*         rename EQ2 into ALLOCINIT. *)
+(*         rename EQ3 into STOREZERO. *)
+(*         rename EQ4 into STOREINIT. *)
+(*         rename EQ into DROP. *)
+(*         exploit Mem.alloc_result; eauto using ALLOCINIT. intros. *)
+(*         exploit update_map_gmap_some; eauto. *)
+(*         intros (slbl & GMAP & OFSRANGE & OFSRANGE2). *)
+
+(*         (* globs_meminj *) *)
+(*         assert (globs_meminj gmap b = Some (gen_segblocks tprog (fst slbl), Ptrofs.unsigned (snd slbl))) as BINJ. *)
+(*         { *)
+(*           unfold globs_meminj. subst. rewrite BLOCKEQ. *)
+(*           exploit genv_invert_symbol_next; eauto. intros INVSYM. *)
+(*           setoid_rewrite INVSYM. rewrite GMAP. *)
+(*           unfold Genv.symbol_block_offset. unfold Genv.label_to_block_offset. *)
+(*           rewrite genv_gen_segblocks. auto. *)
+(*         } *)
+
+(*         (* alloc mapped injection *) *)
+(*         exploit (Mem.alloc_left_mapped_weak_inject *)
+(*                    (globs_meminj gmap) (def_frame_inj m1) m1 m1' 0 (init_data_list_size (gvar_init v)) m0 *)
+(*                    b (gen_segblocks tprog (fst slbl)) (Ptrofs.unsigned (snd slbl)) *)
+(*                    BINJ MINJ ALLOCINIT); eauto. *)
+(*         (* valid block *) *)
+(*         exploit AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. intros. *)
+(*         exploit (gen_segblocks_in_valid tprog); eauto. intros SEGBVALID. *)
+(*         red in SEGBVALID. destruct SEGBVALID. red. *)
+(*         rewrite BLOCKEQ'. auto. *)
+(*         (* valid offset *) *)
+(*         apply Ptrofs.unsigned_range_2. *)
+(*         (* preservation of permission *) *)
+(*         intros ofs k p OFS INJPERM. *)
+(*         exploit (fun id odef slbl b' => DEFSPERM id odef slbl b' (Ptrofs.unsigned (snd slbl))); eauto. *)
+(*         apply in_eq. *)
+(*         unfold Genv.symbol_block_offset. unfold Genv.label_to_block_offset. *)
+(*         unfold tge. rewrite genv_gen_segblocks. auto. *)
+(*         instantiate (1:=ofs). *)
+(*         exploit prog_odef_size_pos; eauto. intros. *)
+(*         rewrite Zplus_comm. eauto. *)
+(*         (* correct alignment *) *)
+(*         red. intros. *)
+(*         eapply update_map_gmap_aligned; eauto. *)
+(*         unfold alignw. red. exists 0. omega. *)
+(*         exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS & EFPOS). omega. *)
+(*         omega. *)
+(*         unfold alignw. red. exists 0. omega. *)
+(*         exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS & EFPOS). omega. *)
+(*         omega. *)
+(*         unfold alignw. red. exists 0. omega. *)
+(*         exploit make_maps_sizes_pos; eauto. intros (DPOS & CPOS & EFPOS). omega. *)
+(*         omega. *)
+(*         unfold default_gid_map. intros. congruence. *)
+(*         (* alloced memory has not been injected before *) *)
+(*         intros b0 delta' ofs k p GINJ PERM' OFSABSURD. *)
+(*         unfold globs_meminj in GINJ. *)
+(*         destr_match_in GINJ; try now inv GINJ. *)
+(*         destr_match_in GINJ; try now inv GINJ. *)
+(*         unfold Genv.symbol_block_offset in GINJ. unfold Genv.label_to_block_offset in GINJ. *)
+(*         rewrite genv_gen_segblocks in GINJ. inv GINJ. *)
+(*         assert (fst s0 = fst slbl). *)
+(*         { *)
+(*           eapply gen_segblocks_injective; eauto. *)
+(*           apply gen_segblocks_in_valid; eauto. *)
+(*           eapply AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. *)
+(*         } *)
+(*         apply Genv.invert_find_symbol in EQ. *)
+(*         exploit FINDVALIDSYM; eauto. intros. *)
+(*         exploit find_symbol_inversion_1; eauto. intros (def' & IN). *)
+(*         destruct def'. *)
+(*         exploit OFSBOUND; eauto. intros. *)
+(*         assert (Ptrofs.unsigned (snd s0) + def_size g <= Ptrofs.unsigned (snd slbl)). *)
+(*         { eapply (fun sl => OFSRANGE _ _ sl IN); eauto. } *)
+(*         omega. *)
+
+(*         assert (In (i1, None) (AST.prog_defs prog)). *)
+(*         { rewrite <- DEFSTAIL. rewrite in_app. auto. } *)
+(*         exploit update_map_gmap_none; eauto. congruence. *)
+(*         (* stack frame is public *) *)
+(*         intros fi INSTK o k pp PERM INJPERM. *)
+(*         rewrite STK' in INSTK. inv INSTK. *)
+(*         (* get the new weak injection *) *)
+(*         intros MINJ'. *)
+(*         erewrite alloc_pres_def_frame_inj in MINJ'; eauto. *)
+
+(*         (* store_zeros injection *) *)
+(*         exploit store_zeros_mapped_inject; eauto. *)
+(*         intros (m2' & STOREZERO' & MINJZ). *)
+(*         erewrite (store_zeros_pres_def_frame_inj m0) in MINJZ; eauto. *)
+        
+(*         (* store_init_data_list inject *) *)
+(*         exploit store_init_data_list_mapped_inject; eauto. *)
+(*         intros (m3' & STOREINIT' & MINJSI). *)
+(*         erewrite store_init_data_list_pres_def_frame_inj in MINJSI; eauto. *)
+        
+(*         (* dorp_perm inject *) *)
+(*         exploit Mem.drop_parallel_weak_inject; eauto. *)
+(*         red. simpl. auto. *)
+(*         intros (m4' & DROP' & MINJDR). *)
+(*         erewrite drop_perm_pres_def_frame_inj in MINJDR; eauto. *)
+        
+(*         (* apply the induction hypothesis *) *)
+(*         assert ((defs ++ (i, Some (Gvar v)) :: nil) ++ gdefs = AST.prog_defs prog) as DEFSTAIL'. *)
+(*         rewrite <- DEFSTAIL. rewrite <- app_assoc. simpl. auto. *)
+(*         exploit (IHgdefs x0 (defs ++ (i, Some (Gvar v)) :: nil) m); eauto using MINJDR, DEFSTAIL'. *)
+(*         (* nextblock *) *)
+(*         erewrite Mem.nextblock_drop; eauto. *)
+(*         erewrite Genv.store_init_data_list_nextblock; eauto. *)
+(*         erewrite Genv.store_zeros_nextblock; eauto. *)
+(*         erewrite Mem.nextblock_alloc; eauto. rewrite BLOCKEQ. *)
+(*         rewrite partial_genv_next. auto. *)
+(*         (* nextblock' *) *)
+(*         erewrite (Mem.nextblock_drop m3'); eauto. *)
+(*         erewrite (store_init_data_list_nextblock _ _ m2'); eauto. *)
+(*         erewrite Genv.store_zeros_nextblock; eauto. *)
+(*         (* stack *) *)
+(*         erewrite (Mem.drop_perm_stack m3'); eauto. *)
+(*         erewrite (store_init_data_list_stack _ _ m2'); eauto. *)
+(*         erewrite (Genv.store_zeros_stack m1'); eauto. *)
+(*         (* perm ofs *) *)
+(*         intros b0 ofs k p PERM. *)
+(*         exploit Mem.perm_drop_4; eauto. intros PERM'. *)
+(*         erewrite <- (store_init_data_list_perm _ _ m2') in PERM'; eauto. *)
+(*         erewrite <- (Genv.store_zeros_perm _ _ _ _ m1') in PERM'; eauto. *)
+(*         (* perm *) *)
+(*         intros id b0 def ofs k p FINDSYM IN PERM'. *)
+(*         rewrite in_app in IN. destruct IN as [IN | IN]. *)
+
+(*         assert (i <> id). *)
+(*         { *)
+(*           eapply defs_names_distinct_prefix_neq; eauto. *)
+(*           rewrite <- DEFSTAIL in DEFNAMES. eauto. *)
+(*         } *)
+(*         erewrite partial_genv_find_symbol_neq in FINDSYM; eauto. *)
+(*         assert (b <> b0). *)
+(*         { *)
+(*           unfold not. subst. rewrite BLOCKEQ. intros. subst. *)
+(*           eapply Genv.find_symbol_genv_next_absurd; eauto. *)
+(*         } *)
+(*         erewrite (drop_perm_perm _ _ _ _ _ _ DROP) in PERM'. destruct PERM' as [PERM' PIN]. *)
+(*         erewrite <- (Genv.store_init_data_list_perm _ _ _ _ _ _ _ _ _ STOREINIT) in PERM'; eauto. *)
+(*         erewrite <- (Genv.store_zeros_perm _ _ _ _ _ _ _ _ STOREZERO) in PERM'; eauto. *)
+(*         exploit Mem.perm_alloc_inv; eauto using ALLOCINIT. *)
+(*         rewrite dec_eq_false; auto. intros. eapply OFSBOUND; eauto. *)
+
+(*         inv IN. inv H0. *)
+(*         rewrite partial_genv_find_symbol_eq in FINDSYM. inv FINDSYM. *)
+(*         rewrite <- BLOCKEQ in PERM'. *)
+(*         erewrite (drop_perm_perm _ _ _ _ _ _ DROP) in PERM'. destruct PERM' as [PERM' PIN]. *)
+(*         erewrite <- (Genv.store_init_data_list_perm _ _ _ _ _ _ _ _ _ STOREINIT) in PERM'; eauto. *)
+(*         erewrite <- (Genv.store_zeros_perm _ _ _ _ _ _ _ _ STOREZERO) in PERM'; eauto. *)
+(*         exploit Mem.perm_alloc_inv; eauto using ALLOCINIT. *)
+(*         rewrite dec_eq_true. intros. *)
+(*         simpl. omega. *)
+
+(*         inv H0. *)
+        
+(*         (* findvalidsym *) *)
+(*         intros id b0 ofs k p FINDSYM PERM. *)
+(*         erewrite drop_perm_perm in PERM; eauto. destruct PERM as [PERM COND]. *)
+(*         erewrite <- Genv.store_init_data_list_perm in PERM; eauto. *)
+(*         erewrite <- Genv.store_zeros_perm in PERM; eauto. *)
+(*         erewrite alloc_perm in PERM; eauto. destruct peq. *)
+(*         subst. rewrite BLOCKEQ. *)
+(*         rewrite BLOCKEQ in FINDSYM. apply Genv.find_invert_symbol in FINDSYM. *)
+(*         unfold ge in FINDSYM. erewrite genv_invert_symbol_next in FINDSYM; eauto. inv FINDSYM. *)
+(*         erewrite partial_genv_find_symbol_eq; eauto. *)
+(*         exploit FINDVALIDSYM; eauto. intros FINDSYM'. *)
+(*         apply find_symbol_inversion_1 in FINDSYM'. destruct FINDSYM' as [DEF' FINDSYM']. *)
+(*         assert (i <> id). *)
+(*         { *)
+(*           eapply defs_names_distinct_prefix_neq; eauto. *)
+(*           rewrite <- DEFSTAIL in DEFNAMES. eauto. *)
+(*         } *)
+(*         erewrite partial_genv_find_symbol_neq; eauto. *)
+(*         (* defs perm *) *)
+(*         intros id odef slbl0 b' delta IN GMAP' SYMOFS ofs k p OFS. *)
+(*         eapply Mem.perm_drop_3; eauto. *)
+(*         destruct (eq_block b' (gen_segblocks tprog (fst slbl))); auto. *)
+(*         right. right. *)
+(*         unfold Genv.symbol_block_offset in SYMOFS. unfold Genv.label_to_block_offset in SYMOFS. inv SYMOFS. *)
+(*         unfold tge in H1. rewrite genv_gen_segblocks in H1. *)
+(*         assert (odef_size (Some (Gvar v)) + Ptrofs.unsigned (snd slbl) <= Ptrofs.unsigned (snd slbl0)) as SZBND. *)
+(*         { *)
+(*           eapply (make_maps_ofs_ordering prog (defs ++ (i, Some (Gvar v)) :: nil) gdefs *)
+(*                                            i id (Some (Gvar v)) odef); eauto. *)
+(*           rewrite in_app. right. apply in_eq. *)
+(*           generalize (gen_segblocks_injective tprog). unfold injective_on_valid_segs. *)
+(*           intros INJECTIVE. eapply INJECTIVE; eauto. *)
+(*           eapply gen_segblocks_in_valid; eauto. *)
+(*           eapply AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. *)
+(*         } *)
+(*         assert (odef_size (Some (Gvar v)) = init_data_list_size (gvar_init v)) as EFSIZE by reflexivity. *)
+(*         rewrite EFSIZE in SZBND. omega. *)
+(*         erewrite <- store_init_data_list_perm; eauto. *)
+(*         erewrite <- Genv.store_zeros_perm; eauto. *)
+(*         eapply DEFSPERM; eauto. apply in_cons; auto. *)
+
+(*         (* Finish this case *) *)
+(*         intros (m5' & ALLOCG' & MINJ_FINAL). *)
+(*         exists m5'. split; auto. simpl. *)
+(*         rewrite GMAP in ILBL. inv ILBL. *)
+(*         unfold tge. rewrite genv_gen_segblocks. *)
+(*         erewrite <- transl_gvar_pres_size; eauto. *)
+(*         setoid_rewrite STOREZERO'. *)
+(*         unfold tge in STOREINIT'. setoid_rewrite STOREINIT'. *)
+(*         rewrite Z.add_comm. *)
+(*         erewrite <- transl_gvar_pres_perm; eauto. *)
+(*         setoid_rewrite DROP'. auto. *)
+        
+(*     + (* THE head of gdefs is None *) *)
+(*       monadInv TRANSG. simpl in ALLOCG. *)
+(*       set (mz := Mem.alloc m1 0 0) in *. destruct mz eqn:ALLOCZ. subst mz. *)
+(*       eapply (IHgdefs tgdefs (defs ++ (i, None) :: nil) m m2); eauto. *)
+(*       rewrite <- DEFSTAIL. rewrite List.app_assoc_reverse. simpl. auto. *)
+(*       assert (gmap i = None). *)
+(*       { *)
+(*         eapply update_map_gmap_none; eauto. *)
+(*         rewrite <- DEFSTAIL. apply in_app. right. apply in_eq. *)
+(*       } *)
+
+(*       (* globs_meminj *) *)
+(*       assert (globs_meminj gmap b = None) as BINJ. *)
+(*       { *)
+(*         exploit Mem.alloc_result; eauto using ALLOCZ. intros. subst b. *)
+(*         unfold globs_meminj. rewrite BLOCKEQ. *)
+(*         erewrite genv_invert_symbol_next; eauto. rewrite H. congruence. *)
+(*       } *)
+
+(*       exploit Mem.alloc_left_unmapped_weak_inject; eauto using MINJ. *)
+(*       intros MINJ'. *)
+(*       erewrite alloc_pres_def_frame_inj in MINJ'; eauto. *)
+(*       (* next block *) *)
+(*       unfold partial_genv. rewrite Genv.add_globals_app. simpl. *)
+(*       exploit Mem.nextblock_alloc; eauto. intros NB. rewrite NB. f_equal. *)
+(*       rewrite BLOCKEQ. unfold partial_genv. auto. *)
+
+(*       (* perm *) *)
+(*         intros id b0 def ofs k p FINDSYM IN PERM'. *)
+(*         rewrite in_app in IN. destruct IN as [IN | IN]. *)
+
+(*         assert (i <> id). *)
+(*         { *)
+(*           eapply defs_names_distinct_prefix_neq; eauto. *)
+(*           rewrite <- DEFSTAIL in DEFNAMES. eauto. *)
+(*         } *)
+(*         erewrite partial_genv_find_symbol_neq in FINDSYM; eauto. *)
+(*         assert (b <> b0). *)
+(*         { *)
+(*           exploit Mem.alloc_result; eauto using ALLOCZ. intros. subst b. *)
+(*           unfold not. rewrite BLOCKEQ. intros. subst. *)
+(*           eapply Genv.find_symbol_genv_next_absurd; eauto. *)
+(*         } *)
+(*         exploit Mem.perm_alloc_inv; eauto using ALLOCZ. *)
+(*         rewrite dec_eq_false; auto. intros. eapply OFSBOUND; eauto. *)
+
+(*         inv IN. inv H. *)
+
+(*         inv H. *)
+
+(*         (* findvalidsym *) *)
+(*         intros id b0 ofs k p FINDSYM PERM. *)
+(*         erewrite alloc_perm in PERM; eauto. destruct peq. *)
+(*         subst. exploit Mem.alloc_result; eauto using ALLOCZ. intros. subst. *)
+(*         rewrite BLOCKEQ. *)
+(*         rewrite BLOCKEQ in FINDSYM. apply Genv.find_invert_symbol in FINDSYM. *)
+(*         unfold ge in FINDSYM. erewrite genv_invert_symbol_next in FINDSYM; eauto. inv FINDSYM. *)
+(*         erewrite partial_genv_find_symbol_eq; eauto. *)
+(*         exploit FINDVALIDSYM; eauto. intros FINDSYM'. *)
+(*         apply find_symbol_inversion_1 in FINDSYM'. destruct FINDSYM' as [DEF' FINDSYM']. *)
+(*         assert (i <> id). *)
+(*         { *)
+(*           eapply defs_names_distinct_prefix_neq; eauto. *)
+(*           rewrite <- DEFSTAIL in DEFNAMES. eauto. *)
+(*         } *)
+(*         erewrite partial_genv_find_symbol_neq; eauto. *)
+(*         (* defs perm *) *)
+(*         intros id odef slbl0 b' delta IN GMAP' SYMOFS ofs k p OFS. *)
+(*         eapply DEFSPERM; eauto. apply in_cons; auto. *)
+(* Qed. *)
+
+
+
+Lemma store_all_globals_inject :
+  forall tgdefs m2 m1' gmap lmap dsize csize 
+    (DEFNAMES: list_norepet (map fst (AST.prog_defs prog)))
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (TRANSG: transl_globdefs gmap (AST.prog_defs prog) = OK tgdefs)
+    (BOUND: dsize + csize <= Ptrofs.max_unsigned)
+    (MINJ: Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty) Mem.empty m1')
+    (BLOCKEQ: Mem.nextblock m1' = (pos_advance_N init_block (length (list_of_segments tprog) + length (AST.prog_defs prog))))
+    (STK: Mem.stack m1' = nil)
+    (PERMOFS : forall b ofs k p, Mem.perm m1' b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned)
+    (DEFSPERM: forall id odef b' delta,
+       In (id, odef) (AST.prog_defs prog) ->
+       sdef_is_var_or_internal_fun odef ->
+       Genv.find_symbol tge id = Some (b', delta) ->
+       (forall ofs k p, 0 <= ofs < odef_size odef -> Mem.perm m1' b' ((Ptrofs.unsigned delta)+ofs) k p))
+    (ALLOCG: Genv.alloc_globals ge Mem.empty (AST.prog_defs prog) = Some m2),
+    exists m2',store_globals tge (gen_segblocks tprog) m1' tgdefs = Some m2'
+           /\ Mem.inject (globs_meminj gmap) (def_frame_inj m2) m2 m2'.
+Proof.
+  intros. exploit (store_globals_inject (AST.prog_defs prog) tgdefs nil); eauto.
+  rewrite Mem.nextblock_empty; eauto.
+  intros id b def ofs k p FINDSYM IN PERM. inv IN.
+  intros id b ofs k p FINDSYM PERM.
+  exploit Mem.perm_empty; eauto. contradiction.
+  intros. subst. 
+  assert (sdef_is_var_or_internal_fun odef).
+  {
+    destruct (vit_dec _ _ odef). auto.
+    exploit update_map_gmap_none; eauto. congruence.
+  }    
+  eapply DEFSPERM; eauto.
+  eapply gmap_to_find_symbol; eauto.
+  intros (m2' & ALLOCG' & WINJ). exists m2'. split; auto.
+  eapply Mem.weak_inject_to_inject; eauto.
+  intros. eapply globs_meminj_domain_valid; eauto.
+Qed.
+
+Lemma globs_meminj_ofs_pos : forall gmap b b' delta,
+    globs_meminj gmap b = Some (b', delta) -> delta >= 0.
+Proof.
+  unfold globs_meminj. intros. destr_match_in H; inv H.
+  destr_match_in H1; inv H1. destruct p. inv H0.
+(*   generalize (Ptrofs.unsigned_range (snd s)). *)
 (*   omega. *)
 (* Qed. *)
+Admitted.
+
+Lemma alloc_globals_exists: forall I m (defs: list (ident * option (@gdef I) * segblock)),
+    exists m', alloc_globals m defs = Some m'.
+Proof.
+  clear.
+Admitted.
+
+Lemma alloc_globals_segments_valid_block : 
+  forall i b ofs m m'
+    (NEXTBLOCK: Mem.nextblock m = init_block)
+    (FSYM: Genv.find_symbol (globalenv tprog) i = Some (b, ofs))
+    (ALLOC: alloc_globals (alloc_segments m (list_of_segments tprog)) (prog_defs tprog) = Some m'),
+    Mem.valid_block m' b.
+Proof.
+  (* exploit update_map_gmap_range; eauto. intros IN. *)
+  (* generalize TRANSF. intros TRANSF'. *)
+  (* red in TRANSF'. unfold transf_program in TRANSF'. repeat destr_in TRANSF'. inv UPDATE. *)
+  (* destruct w. *)
+  (* exploit gen_segblocks_in_valid; eauto. intros SEGBVALID. *)
+  (* red in SEGBVALID. destruct SEGBVALID. *)
+  (* red. rewrite genv_gen_segblocks. *)
+  (* unfold init_block in H1. simpl in H1. *)
+  (* erewrite alloc_segments_nextblock; eauto. *)
+  (* rewrite NEXTBLOCK. unfold init_block. simpl. *)
+  (* auto. *)
+Admitted.
 
 
-(* Lemma alloc_segments_weak_inject: forall gmap lmap dsize csize efsize m *)
-(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog) *)
-(*     (NEXTBLOCK: Mem.nextblock m = init_block) *)
-(*     (STACK: Mem.stack m = nil), *)
-(*     Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty)  *)
-(*                     Mem.empty (alloc_segments m (list_of_segments tprog)). *)
-(* Proof. *)
-(*   intros. unfold def_frame_inj. erewrite Mem.empty_stack; eauto. *)
-(*   eapply Mem.empty_weak_inject; eauto. *)
-(*   - erewrite  alloc_segments_stack; eauto. *)
-(*   - intros b b' delta H. eapply globs_meminj_ofs_pos; eauto. *)
-(*   - intros b b' delta H. unfold globs_meminj in H. *)
-(*     destr_match_in H; inv H. *)
-(*     destr_match_in H1; inv H1.  *)
-(*     exploit AGREE_SMINJ_INSTR.update_map_gmap_range; eauto. intros IN. *)
-(*     generalize TRANSF. intros TRANSF'. *)
-(*     red in TRANSF'. unfold transf_program in TRANSF'. repeat destr_in TRANSF'. inv UPDATE. *)
-(*     destruct w. *)
-(*     exploit gen_segblocks_in_valid; eauto. intros SEGBVALID. *)
-(*     red in SEGBVALID. destruct SEGBVALID. *)
-(*     red. rewrite genv_gen_segblocks. *)
-(*     unfold init_block in H1. simpl in H1. *)
-(*     erewrite alloc_segments_nextblock; eauto. *)
-(*     rewrite NEXTBLOCK. unfold init_block. simpl. *)
-(*     auto. *)
-(* Qed. *)
+Lemma alloc_globals_segments_weak_inject: forall gmap lmap dsize csize m
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (TRANSPROG: transl_prog_with_map gmap lmap prog dsize csize = OK tprog)
+    (NEXTBLOCK: Mem.nextblock m = init_block)
+    (STACK: Mem.stack m = nil),
+    exists m', 
+      alloc_globals (alloc_segments m (list_of_segments tprog)) (prog_defs tprog) = Some m'
+      /\ Mem.weak_inject (globs_meminj gmap) (def_frame_inj Mem.empty) Mem.empty m'.
+Proof.
+  intros. unfold def_frame_inj. erewrite Mem.empty_stack; eauto. 
+  generalize (alloc_globals_exists Asm.instruction
+                                    (alloc_segments m (list_of_segments tprog))
+                                    (prog_defs tprog)).
+  intros (m' & ALLOC). exists m'. split. auto.
+  eapply Mem.empty_weak_inject; eauto.
+  - etransitivity. 
+    erewrite <- (alloc_globals_stack (prog_defs tprog) (alloc_segments m (list_of_segments tprog))); eauto.
+    erewrite alloc_segments_stack; eauto.
+  - intros b b' delta H. eapply globs_meminj_ofs_pos; eauto.
+  - intros b b' delta H. unfold globs_meminj in H.
+    destr_match_in H; inv H.
+    destr_match_in H1; inv H1. 
+    destruct p. inv H0.
+    eapply alloc_globals_segments_valid_block; eauto.
+Qed.
 
-(* Lemma alloc_global_ext : forall f1 f2 ge m def, *)
-(*     (forall x, f1 x = f2 x) -> alloc_global ge f1 m def = alloc_global ge f2 m def. *)
+(* Lemma alloc_global_ext : forall f1 f2 m def, *)
+(*     (forall x, f1 x = f2 x) -> alloc_global f1 m def = alloc_global ge f2 m def. *)
 (* Proof. *)
 (*   intros f1 f2 ge0 m def H. *)
 (*   destruct def. destruct p. destruct o. destruct g. *)
@@ -3906,168 +4832,356 @@ Qed.
 (*   - simpl. auto. *)
 (* Qed. *)
 
-(* Lemma alloc_globals_ext : forall defs f1 f2 ge m, *)
+(* Lemma alloc_globals_ext : forall defs f1 f2 (ge:FlatAsm.genv) m, *)
 (*     (forall x, f1 x = f2 x) -> alloc_globals ge f1 m defs = alloc_globals ge f2 m defs. *)
 (* Proof. *)
 (*   induction defs. intros. *)
 (*   - simpl. auto. *)
-(*   - intros f1 f2 ge0 m H. simpl. erewrite alloc_global_ext; eauto.  *)
+(*   - intros f1 f2 ge0 m H. simpl. erewrite alloc_global_ext; eauto. *)
 (*     destr_match. erewrite IHdefs; eauto. auto. *)
 (* Qed. *)
 
-(* Definition find_segsize (segs: list segment) id : option ptrofs := *)
-(*   match (List.find (fun s => ident_eq (segid s) id) segs) with *)
-(*   | None => None *)
-(*   | Some s => Some (segsize s) *)
-(*   end. *)
+Definition find_segsize (segs: list segment) id : option ptrofs :=
+  match (List.find (fun s => ident_eq (segid s) id) segs) with
+  | None => None
+  | Some s => Some (segsize s)
+  end.
 
-(* Definition gen_segs dsize csize efsize : list segment := *)
-(*   (mkSegment data_segid (Ptrofs.repr dsize))  *)
-(*     :: (mkSegment code_segid (Ptrofs.repr csize)) *)
-(*     :: (mkSegment extfuns_segid (Ptrofs.repr efsize)) :: nil. *)
+Definition gen_segs dsize csize : list segment :=
+  (mkSegment data_segid (Ptrofs.repr dsize))
+    :: (mkSegment code_segid (Ptrofs.repr csize))
+    :: nil.
 
-(* Lemma update_maps_gmap_ofs_le_segsize : *)
-(*   forall defs (gmap : GID_MAP_TYPE) (lmap : LABEL_MAP_TYPE) (dsize csize efsize : Z) (id : ident) *)
-(*     def slbl *)
-(*     gmap1 lmap1 dsize1 csize1 efsize1 *)
-(*     (DZLBND: dsize1 >= 0) *)
-(*     (DZUBND: dsize <= Ptrofs.max_unsigned) *)
-(*     (CZALNG: (alignw | csize1)) *)
-(*     (CZLBND: csize1 >= 0) *)
-(*     (CZUBND: csize <= Ptrofs.max_unsigned) *)
-(*     (EFZLBND: efsize1 >= 0) *)
-(*     (EFZUBND: efsize <= Ptrofs.max_unsigned) *)
-(*     (UPDATE: update_maps gmap1 lmap1 dsize1 csize1 efsize1 defs = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (NORPT: list_norepet (map fst defs)) *)
-(*     (IN: In (id, Some def) defs) *)
-(*     (GMAP: gmap id = Some slbl), *)
-(*     exists sz, find_segsize (gen_segs dsize csize efsize) (fst slbl) = Some sz /\ *)
-(*           (Ptrofs.unsigned (snd slbl)) + (def_size def) <= Ptrofs.unsigned sz. *)
-(* Proof. *)
-(*   induction defs. intros. *)
-(*   - inv IN. *)
-(*   - intros.  *)
-(*     assert (dsize1 <= dsize) as DSZLE. eapply dsize_mono; eauto. *)
-(*     assert (csize1 <= csize) as CSZLE. eapply csize_mono; eauto. *)
-(*     assert (efsize1 <= efsize) as EFSZLE. eapply efsize_mono; eauto. *)
-(*     inv IN.  *)
-(*     + destruct def. destruct f. *)
-(*       * unfold update_maps in UPDATE. simpl in UPDATE. *)
-(*         destruct (update_instrs lmap1 csize1 id (Asm.fn_code f)) eqn:UPDINSTRS. *)
-(*         exploit update_instrs_code_size; eauto. intros. subst. simpl.  *)
-(*         inv NORPT. exploit update_gmap_not_in; eauto. *)
-(*         intros GMAP'. rewrite GMAP in GMAP'. *)
-(*         unfold update_gid_map in GMAP'. rewrite peq_true in GMAP'. inv GMAP'. *)
-(*         unfold code_label. simpl.  *)
-(*         exists (Ptrofs.repr csize). split; auto. *)
-(*         repeat rewrite Ptrofs.unsigned_repr. *)
-(*         apply Zle_trans with (align (csize1 + code_size (Asm.fn_code f)) alignw). *)
-(*         apply alignw_le. eapply csize_mono; eauto. apply alignw_divides. *)
-(*         split; auto. omega. omega. *)
-(*       * unfold update_maps in UPDATE. simpl in UPDATE. *)
-(*         simpl.  *)
-(*         inv NORPT. exploit update_gmap_not_in; eauto. *)
-(*         intros GMAP'. rewrite GMAP in GMAP'. *)
-(*         unfold update_gid_map in GMAP'. rewrite peq_true in GMAP'. inv GMAP'. *)
-(*         unfold extfun_label. simpl.  *)
-(*         exists (Ptrofs.repr efsize). split; auto. *)
-(*         repeat rewrite Ptrofs.unsigned_repr. *)
-(*         apply Zle_trans with (efsize1 + alignw). unfold alignw. omega. *)
-(*         eapply efsize_mono; eauto. omega. omega. *)
-(*       * unfold update_maps in UPDATE. simpl in UPDATE. *)
-(*         simpl.  *)
-(*         inv NORPT. exploit update_gmap_not_in; eauto. *)
-(*         intros GMAP'. rewrite GMAP in GMAP'. *)
-(*         unfold update_gid_map in GMAP'. rewrite peq_true in GMAP'. inv GMAP'. *)
-(*         unfold data_label. simpl.  *)
-(*         exists (Ptrofs.repr dsize). split; auto. *)
-(*         repeat rewrite Ptrofs.unsigned_repr. *)
-(*         apply Zle_trans with (dsize1 + align (init_data_list_size (gvar_init v)) alignw). *)
-(*         generalize (alignw_le (init_data_list_size (gvar_init v))). omega.  *)
-(*         eapply dsize_mono; eauto. omega. omega. *)
-(*     + inv NORPT. unfold update_maps in UPDATE. simpl in UPDATE.  *)
-(*       destruct a.  *)
-(*       destruct (update_maps_def gmap1 lmap1 dsize1 csize1 efsize1 i o) eqn:UPDDEF. *)
-(*       destruct p. destruct p. destruct p.  *)
-(*       eapply (IHdefs _ _ _ _ _ id def slbl g l z1 z0 z); eauto. *)
-(*       assert (dsize1 <= z1). eapply update_dsize_mono; eauto. omega. *)
-(*       eapply update_csize_div; eauto. *)
-(*       assert (csize1 <= z0). eapply update_csize_mono; eauto. omega. *)
-(*       assert (efsize1 <= z). eapply update_efsize_mono; eauto. omega. *)
-(* Qed. *)
+Lemma update_maps_gmap_ofs_le_segsize :
+  forall defs (gmap : GID_MAP_TYPE) (lmap : LABEL_MAP_TYPE) (dsize csize : Z) (id : ident)
+    def slbl
+    gmap1 lmap1 dsize1 csize1 
+    (DZLBND: dsize1 >= 0)
+    (DZUBND: dsize <= Ptrofs.max_unsigned)
+    (CZALNG: (alignw | csize1))
+    (CZLBND: csize1 >= 0)
+    (CZUBND: csize <= Ptrofs.max_unsigned)
+    (UPDATE: update_maps gmap1 lmap1 dsize1 csize1 defs = (gmap, lmap, dsize, csize))
+    (NORPT: list_norepet (map fst defs))
+    (VI: sdef_is_var_or_internal_fun (Some def))
+    (IN: In (id, Some def) defs)
+    (GMAP: gmap id = Some slbl),
+    exists sz, find_segsize (gen_segs dsize csize) (fst slbl) = Some sz /\
+          (Ptrofs.unsigned (snd slbl)) + (def_size def) <= Ptrofs.unsigned sz.
+Proof.
+  induction defs. intros.
+  - inv IN.
+  - intros.
+    assert (dsize1 <= dsize) as DSZLE. eapply dsize_mono; eauto.
+    assert (csize1 <= csize) as CSZLE. eapply csize_mono; eauto.
+    inv IN.
+    + destruct def. destruct f.
+      * unfold update_maps in UPDATE. simpl in UPDATE.
+        destruct (update_instrs lmap1 csize1 id (Asm.fn_code f)) eqn:UPDINSTRS.
+        exploit update_instrs_code_size; eauto. intros. subst. simpl.
+        inv NORPT. exploit update_gmap_not_in; eauto.
+        intros GMAP'. rewrite GMAP in GMAP'.
+        unfold update_gid_map in GMAP'. rewrite peq_true in GMAP'. inv GMAP'.
+        unfold code_label. simpl.
+        exists (Ptrofs.repr csize). split; auto.
+        repeat rewrite Ptrofs.unsigned_repr.
+        apply Zle_trans with (align (csize1 + code_size (Asm.fn_code f)) alignw).
+        apply alignw_le. eapply csize_mono; eauto. apply alignw_divides.
+        split; auto. omega. omega.
+      * inv VI.
+      * unfold update_maps in UPDATE. simpl in UPDATE.
+        simpl.
+        inv NORPT. exploit update_gmap_not_in; eauto.
+        intros GMAP'. rewrite GMAP in GMAP'.
+        unfold update_gid_map in GMAP'. rewrite peq_true in GMAP'. inv GMAP'.
+        unfold data_label. simpl.
+        exists (Ptrofs.repr dsize). split; auto.
+        repeat rewrite Ptrofs.unsigned_repr.
+        apply Zle_trans with (dsize1 + align (init_data_list_size (gvar_init v)) alignw).
+        generalize (alignw_le (init_data_list_size (gvar_init v))). omega.
+        eapply dsize_mono; eauto. omega. omega.
+    + inv NORPT. unfold update_maps in UPDATE. simpl in UPDATE.
+      destruct a.
+      destruct (update_maps_def gmap1 lmap1 dsize1 csize1 i o) eqn:UPDDEF.
+      destruct p. destruct p. 
+      eapply (IHdefs _ _ _ _ id def slbl g l z0 z); eauto.
+      assert (dsize1 <= z0). eapply update_dsize_mono; eauto. omega.
+      eapply update_csize_div; eauto.
+      assert (csize1 <= z). eapply update_csize_mono; eauto. omega.
+Qed.
 
-(* Lemma transl_prog_segs : forall gmap lmap prog dsize csize efsize tprog, *)
-(*     transl_prog_with_map gmap lmap prog dsize csize efsize = OK tprog -> *)
-(*     list_of_segments tprog = gen_segs dsize csize efsize. *)
-(* Proof. *)
-(*   intros. monadInv H. unfold list_of_segments. *)
-(*   simpl. unfold gen_segs. auto. *)
-(* Qed. *)
+Lemma transl_prog_segs : forall gmap lmap prog dsize csize tprog,
+    transl_prog_with_map gmap lmap prog dsize csize = OK tprog ->
+    list_of_segments tprog = gen_segs dsize csize.
+Proof.
+  intros. monadInv H. unfold list_of_segments.
+  simpl. unfold gen_segs. auto.
+Qed.
  
-(* Lemma make_maps_gmap_ofs_le_segsize : *)
-(*   forall (gmap : GID_MAP_TYPE) (lmap : LABEL_MAP_TYPE) (dsize csize efsize : Z) (id : ident) *)
-(*     def slbl *)
-(*     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize, efsize)) *)
-(*     (IN: In (id, Some def) (AST.prog_defs prog)) *)
-(*     (GMAP: gmap id = Some slbl), *)
-(*     exists sz, find_segsize (list_of_segments tprog) (fst slbl) = Some sz /\ *)
-(*           (Ptrofs.unsigned (snd slbl)) + (def_size def) <= Ptrofs.unsigned sz. *)
-(* Proof. *)
-(*   intros. *)
-(*   generalize TRANSF. intros TRANSF'. *)
-(*   unfold match_prog, transf_program in TRANSF'. *)
-(*   repeat destr_in TRANSF'. *)
-(*   inv UPDATE. *)
-(*   unfold make_maps in Heqp. *)
-(*   assert (0 <= dsize). eapply dsize_mono; eauto. *)
-(*   assert (0 <= csize). eapply csize_mono; eauto. apply Z.divide_0_r. *)
-(*   assert (0 <= efsize). eapply efsize_mono; eauto. *)
-(*   erewrite transl_prog_segs; eauto. *)
-(*   eapply update_maps_gmap_ofs_le_segsize; eauto; try omega. *)
-(*   apply Z.divide_0_r. *)
-(*   destruct w. auto. *)
-(* Qed. *)
+Lemma make_maps_gmap_ofs_le_segsize :
+  forall (gmap : GID_MAP_TYPE) (lmap : LABEL_MAP_TYPE) (dsize csize : Z) (id : ident)
+    def slbl
+    (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
+    (VI: sdef_is_var_or_internal_fun (Some def))
+    (IN: In (id, Some def) (AST.prog_defs prog))
+    (GMAP: gmap id = Some slbl),
+    exists sz, find_segsize (list_of_segments tprog) (fst slbl) = Some sz /\
+          (Ptrofs.unsigned (snd slbl)) + (def_size def) <= Ptrofs.unsigned sz.
+Proof.
+intros.
+  generalize TRANSF. intros TRANSF'.
+  unfold match_prog, transf_program in TRANSF'.
+  repeat destr_in TRANSF'.
+  inv UPDATE.
+  unfold make_maps in Heqp.
+  assert (0 <= dsize). eapply dsize_mono; eauto.
+  assert (0 <= csize). eapply csize_mono; eauto. apply Z.divide_0_r.
+  erewrite transl_prog_segs; eauto.
+  eapply update_maps_gmap_ofs_le_segsize; eauto; try omega.
+  apply Z.divide_0_r.
+  destruct w. auto.
+Qed.
 
-(* Lemma alloc_segments_perm: forall segs m b m' ofs k p *)
-(*   (ALLOCSEGS: m' = alloc_segments m segs) *)
-(*   (PERM: Mem.perm m b ofs k p), *)
-(*   Mem.perm m' b ofs k p. *)
-(* Proof. *)
-(*   induction segs; intros. *)
-(*   - inv ALLOCSEGS. simpl. auto. *)
-(*   - inv ALLOCSEGS. simpl. *)
-(*     destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     eapply IHsegs; eauto. *)
-(*     eapply Mem.perm_alloc_1; eauto. *)
-(* Qed.     *)
+Lemma alloc_segments_pres_perm: forall segs m b m' ofs k p
+  (ALLOCSEGS: m' = alloc_segments m segs)
+  (PERM: Mem.perm m b ofs k p),
+  Mem.perm m' b ofs k p.
+Proof.
+  induction segs; intros.
+  - inv ALLOCSEGS. simpl. auto.
+  - inv ALLOCSEGS. simpl.
+    destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    eapply IHsegs; eauto.
+    eapply Mem.perm_alloc_1; eauto.
+Qed.
       
+Lemma alloc_segments_acc_segblocks_perm : forall segs m m' sid sz k p ofs smap
+    (ALLOCSEGS: m' = alloc_segments m segs)
+    (FINDSZ: find_segsize segs sid = Some sz)
+    (SMAP: smap = acc_segblocks (Mem.nextblock m) (map segid segs) (fun id => undef_seg_block))
+    (OFSBND: 0 <= ofs < Ptrofs.unsigned sz),
+    Mem.perm m' (smap sid) ofs k p.
+Proof.
+  induction segs; intros.
+  - inv FINDSZ.
+  - simpl in ALLOCSEGS.
+    destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC.
+    rewrite map_cons in SMAP. simpl in SMAP. subst.
+    destruct ident_eq.
+    + unfold find_segsize in FINDSZ.
+      simpl in FINDSZ.  subst. setoid_rewrite peq_true in FINDSZ.
+      inv FINDSZ. exploit Mem.nextblock_alloc; eauto. intros NB.
+      exploit Mem.alloc_result; eauto. intros. subst.
+      eapply alloc_segments_pres_perm; eauto.
+      apply Mem.perm_implies with (p1:=Freeable); auto.
+      eapply Mem.perm_alloc_2; eauto.
+      constructor.
+    + unfold find_segsize in FINDSZ.
+      simpl in FINDSZ.  setoid_rewrite peq_false in FINDSZ; auto.
+      eapply IHsegs; eauto.
+      erewrite <- Mem.nextblock_alloc; eauto.
+Qed.
 
-(* Lemma alloc_segments_acc_segblocks_perm : forall segs m m' sid sz k p ofs smap *)
-(*     (ALLOCSEGS: m' = alloc_segments m segs) *)
-(*     (FINDSZ: find_segsize segs sid = Some sz) *)
-(*     (SMAP: smap = acc_segblocks (Mem.nextblock m) (map segid segs) (fun id => undef_seg_block)) *)
-(*     (OFSBND: 0 <= ofs < Ptrofs.unsigned sz), *)
-(*     Mem.perm m' (smap sid) ofs k p. *)
-(* Proof. *)
-(*   induction segs; intros. *)
-(*   - inv FINDSZ. *)
-(*   - simpl in ALLOCSEGS. *)
-(*     destruct (Mem.alloc m 0 (Ptrofs.unsigned (segsize a))) eqn:ALLOC. *)
-(*     rewrite map_cons in SMAP. simpl in SMAP. subst. *)
-(*     destruct ident_eq. *)
-(*     + unfold find_segsize in FINDSZ. *)
-(*       simpl in FINDSZ.  subst. setoid_rewrite peq_true in FINDSZ. *)
-(*       inv FINDSZ. exploit Mem.nextblock_alloc; eauto. intros NB. *)
-(*       exploit Mem.alloc_result; eauto. intros. subst. *)
-(*       eapply alloc_segments_perm; eauto. *)
-(*       apply Mem.perm_implies with (p1:=Freeable); auto. *)
-(*       eapply Mem.perm_alloc_2; eauto. *)
-(*       constructor. *)
-(*     + unfold find_segsize in FINDSZ. *)
-(*       simpl in FINDSZ.  setoid_rewrite peq_false in FINDSZ; auto. *)
-(*       eapply IHsegs; eauto. *)
-(*       erewrite <- Mem.nextblock_alloc; eauto. *)
-(* Qed.       *)
+Lemma alloc_segments_init_perm : 
+  forall id odef b' delta ofs k p m
+    (IN: In (id, odef) (AST.prog_defs prog))
+    (VI: sdef_is_var_or_internal_fun odef)
+    (FSYM: Genv.find_symbol tge id = Some (b', delta))
+    (NB: Mem.nextblock m = init_block)
+    (OFS: 0 <= ofs < odef_size odef),
+    Mem.perm (alloc_segments m (list_of_segments tprog)) b' ((Ptrofs.unsigned delta)+ofs) k p.
+Proof.
+  intros. destruct odef as [|def].
+  - generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'.
+    unfold transf_program in TRANSF'.
+    destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'.
+    exploit find_symbol_to_gmap; eauto.
+    intros (slbl & GID & BEQ & DELTA). subst.
+    exploit make_maps_gmap_ofs_le_segsize; eauto.
+    intros (sz & FINDSEGSZ & BND). simpl in OFS.
+    eapply alloc_segments_acc_segblocks_perm; eauto.
+    unfold gen_segblocks. rewrite NB. reflexivity.
+    generalize (Ptrofs.unsigned_range_2 (snd slbl)); eauto. intros.
+    omega.
+  - simpl in OFS. omega.
+Qed.
+
+Definition odef_size' {I:Type} (def: (ident * option (@gdef I) * segblock)) : Z :=
+  let '(id, def', sb) := def in
+  match def' with 
+  | None => 0
+  | Some (Gfun (External f)) => 1
+  | Some _ => Ptrofs.unsigned (segblock_size sb)
+  end.
+
+Lemma alloc_globals_ne_perm : 
+  forall (I:Type) defs def' n m m' ofs k p
+    (NE: def_is_none_or_external_fun def')
+    (NTH: Nth n defs def')
+    (ALLOC: alloc_globals m defs = Some m')
+    (OFS: 0 <= ofs < @odef_size' I def'),
+    Mem.perm m' (pos_advance_N (Mem.nextblock m) n) ofs k p.
+Proof.
+  induction defs; intros; simpl in *. inv NTH.
+  destr_in ALLOC; inv ALLOC. 
+  destruct def'. destruct p0. 
+  inv NTH.
+  - red in NE. destruct NE.
+    + subst. simpl in OFS. omega.
+    + destruct H. subst. 
+      simpl in *.
+      destruct (Mem.alloc m 0 1) eqn: ALLOC. inv Heqo.
+      eapply alloc_globals_pres_perm; eauto.
+      erewrite <- Mem.alloc_result; eauto.
+      erewrite alloc_perm; eauto.
+      rewrite peq_true. omega.
+  - exploit IHdefs; eauto.
+    cut (Mem.nextblock m0 = Psucc (Mem.nextblock m)).
+    intros NB PM. rewrite NB in PM.
+    simpl. eauto.
+    erewrite alloc_global_nextblock; eauto.
+Qed.
+
+
+Lemma transl_prog_pres_odef_size : 
+  forall odef g id odef'
+    (TL: transl_globdef g id odef = OK odef')
+    (BND: odef_size odef <= Ptrofs.max_unsigned),
+    odef_size odef = odef_size' odef'.
+Proof.
+  intros. 
+  generalize (odef_size_pos odef). intros.
+  destruct odef. destruct g0. destruct f.
+  - monadInv TL. simpl. monadInvX EQ.
+    destr_in EQ3; inv EQ3. simpl.
+    rewrite Ptrofs.unsigned_repr. eauto.
+    simpl in *. omega.
+  - monadInv TL. simpl. auto.
+  - monadInvX TL. simpl.
+    rewrite Ptrofs.unsigned_repr. eauto.
+    simpl in *. omega.
+  - monadInv TL. simpl. omega.
+Qed.
+    
+
+Lemma transl_prog_pres_nvi : 
+  forall odef g id def' sb
+    (NVI: ~sdef_is_var_or_internal_fun odef)
+    (TL: transl_globdef g id odef = OK (id, def', sb)),
+    def_is_none_or_external_fun (id, def', sb).
+Proof.
+  intros. destruct odef. destruct g0. destruct f.
+  - exfalso. apply NVI. red. auto.
+  - monadInv TL. red. eauto.
+  - exfalso. apply NVI. red. auto.
+  - monadInv TL. simpl. eauto.
+Qed.
+
+Lemma size_gvar_pos: 
+  forall v, 0 <= size_gvar v.
+Proof.
+  intros. unfold size_gvar. repeat destr; try omega. subst.
+  generalize (init_data_list_size_pos (gvar_init v0)); omega.
+Qed.
+
+Lemma size_gvar_bound : 
+  forall defs id v
+    (IN: In (id, Some (Gvar v)) defs),
+    size_gvar (Some (Gvar v)) <= sizes_gvars (defs).
+Proof.
+  induction defs; intros; simpl in *. contradiction.
+  inv IN.
+  - simpl. 
+    unfold sizes_gvars. unfold sum.
+    rewrite fold_left_plus. simpl. unfold sum. simpl.
+    rewrite fold_left_plus.
+    match goal with
+    | [ |- ?a <= ?b + ?s] =>
+      cut (0 <= s)
+    end.
+    intros. 
+    generalize (alignw_le (init_data_list_size (gvar_init v))).
+    intros.
+    omega.
+    apply sum_pos. intros.
+    transitivity (size_gvar (snd x)). apply size_gvar_pos.
+    apply alignw_le.
+  - etransitivity.
+    eapply IHdefs; eauto. unfold sizes_gvars. 
+    unfold sum. simpl. rewrite fold_left_plus with (d := (align (size_gvar (snd a)) alignw)).
+    generalize (alignw_le (size_gvar (snd a))). 
+    generalize (size_gvar_pos (snd a)).
+    unfold sum. omega.
+Qed.
+
+Lemma odef_size_bound : 
+  forall g l dz cz id odef
+    (MP: make_maps prog = (g, l, dz, cz))
+    (BND: dz + cz <= Ptrofs.max_unsigned)
+    (IN: In (id, odef) (AST.prog_defs prog)),
+    odef_size odef <= Ptrofs.max_unsigned.
+Proof.
+  intros.
+  exploit make_maps_sizes_pos; eauto.
+  intros (DZ & CZ).
+  assert (0 <= dz) by omega.
+  assert (0 <= cz) by omega.
+  unfold make_maps in MP.
+  destruct odef. destruct g0. destruct f. 
+  - simpl. 
+    assert (code_size (Asm.fn_code f) <= cz).
+    eapply code_size_upper_bound' with (csize1:=0); eauto. 
+    omega. omega.
+  - simpl.
+    apply one_le_ptrofs_max_unsigned.
+  - simpl.
+    exploit updates_dsize; eauto. simpl. intros.    
+    assert (size_gvar (Some (Gvar v)) <= sizes_gvars (AST.prog_defs prog)).
+    eapply size_gvar_bound; eauto.
+    simpl in H2. omega.
+  - simpl. omega.
+Qed.
+
+Lemma alloc_globals_init_perm : 
+  forall id odef b' delta ofs k p m m'
+    (IN: In (id, odef) (AST.prog_defs prog))
+    (NVI: ~ sdef_is_var_or_internal_fun odef)
+    (FSYM: Genv.find_symbol tge id = Some (b', delta))
+    (OFS: 0 <= ofs < odef_size odef)
+    (NB: Mem.nextblock m = Pos.of_succ_nat num_segments)
+    (GALLOC: alloc_globals m (prog_defs tprog) = Some m'),
+    Mem.perm m' b' ((Ptrofs.unsigned delta)+ofs) k p.
+Proof.
+  intros. unfold tge, globalenv in FSYM.
+  generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'.
+  unfold transf_program in TRANSF'.
+  destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'.
+  exploit transl_prog_pres_def; eauto.
+  intros (def' & sb & IN' & TLDEF).
+  destruct w.
+  exploit transl_prog_list_norepet; eauto. intros NPT.
+  apply In_Nth in IN'. destruct IN' as (n & nLE & IN').
+  exploit transl_prog_pres_nvi; eauto. intros NE.
+  erewrite add_globals_find_symbol_ne in FSYM; eauto. inv FSYM.
+  rewrite Ptrofs.unsigned_zero. simpl.
+  erewrite transl_prog_pres_odef_size in OFS; eauto.
+  simpl in NB. rewrite <- NB.
+  eapply alloc_globals_ne_perm; eauto.
+  eapply odef_size_bound; eauto.
+Qed.
+  
+
+Lemma transl_globdefs_pres_len : 
+  forall g defs defs'
+    (TL: transl_globdefs g defs = OK defs'),
+    length defs' = length defs.
+Proof.
+  induction defs; simpl; intros.
+  - inv TL. auto.
+  - destruct a. monadInv TL.
+    simpl. erewrite IHdefs; eauto.
+Qed.
+  
 
 Lemma init_mem_pres_inject : forall m gmap lmap dsize csize 
     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
@@ -4075,53 +5189,53 @@ Lemma init_mem_pres_inject : forall m gmap lmap dsize csize
     (INITMEM: Genv.init_mem prog = Some m),
     exists m', init_mem tprog = Some m' /\ Mem.inject (globs_meminj gmap) (def_frame_inj m) m m'.
 Proof.
-Admitted.
-(*   unfold Genv.init_mem, init_mem. intros. *)
-(*   destruct (Mem.alloc Mem.empty 0 0) eqn:IALLOC.  *)
-(*   exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK.  *)
-(*   rewrite Mem.nextblock_empty in NEXTBLOCK. simpl in NEXTBLOCK. *)
-(*   exploit alloc_segments_weak_inject; eauto. *)
-(*   erewrite Mem.alloc_stack_blocks; eauto.  *)
-(*   erewrite Mem.empty_stack; eauto. *)
-(*   intros SINJ. *)
-(*   set (m1 := alloc_segments m0 (list_of_segments tprog)) in *. *)
-(*   generalize (alloc_all_globals_inject). intro AAGI. *)
-(*   generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'. *)
-(*   unfold transf_program in TRANSF'. *)
-(*   destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'. *)
-(*   unfold transl_prog_with_map in H0. monadInv H0.  *)
-(*   rename EQ into TRANSGLOBS. *)
-(*   rewrite H0 in *. inversion UPDATE. subst g l z1 z0 z. *)
-(*   exploit AAGI; eauto using INITMEM, SINJ, Mem.inject_ext. *)
-(*   - clear H0. inv w. auto. *)
-(*   - exploit alloc_segments_nextblock; eauto. intros. *)
-(*     unfold m1. rewrite H. simpl. rewrite NEXTBLOCK. auto. *)
-(*   - unfold m1. erewrite alloc_segments_stack; eauto. *)
-(*     erewrite Mem.alloc_stack_blocks; eauto. *)
-(*     erewrite Mem.empty_stack; eauto. *)
-(*   - eapply alloc_segments_perm_ofs; eauto. unfold m1; auto. *)
-(*     intros b0 ofs k p PERM. erewrite alloc_perm in PERM; eauto. *)
-(*     destruct peq. omega. apply Mem.perm_empty in PERM. contradiction. *)
-(*   - intros id odef slbl b' delta IN GMAP SYMOFS ofs k p OFS. *)
-(*     destruct odef as [def|]. *)
-(*     + exploit make_maps_gmap_ofs_le_segsize; eauto. *)
-(*       intros (sz & FINDSEGSZ & BND). simpl in OFS. *)
-(*       unfold Genv.symbol_block_offset in SYMOFS. *)
-(*       unfold Genv.label_to_block_offset in SYMOFS. inversion SYMOFS. *)
-(*       subst delta b'. unfold tge. rewrite H0. *)
-(*       rewrite genv_gen_segblocks. *)
-(*       unfold m1. rewrite H0.       *)
-(*       eapply alloc_segments_acc_segblocks_perm; eauto. *)
-(*       unfold gen_segblocks. rewrite NEXTBLOCK. reflexivity. *)
-(*       generalize (Ptrofs.unsigned_range_2 (snd slbl)); eauto. intros. *)
-(*       omega. *)
-(*     + simpl in OFS. omega. *)
-(*   - intros (m1' & ALLOC' & MINJ). *)
-(*     exists m1'. split. subst. simpl. *)
-(*     erewrite (alloc_globals_ext _ _ (Genv.genv_segblocks tge)); eauto.  *)
-(*     intros x1. subst tge. rewrite genv_gen_segblocks. rewrite H0. auto. *)
-(*     auto. *)
-(* Qed. *)
+  unfold Genv.init_mem, init_mem. intros.
+  destruct (Mem.alloc Mem.empty 0 0) eqn:IALLOC.
+  exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK.
+  rewrite Mem.nextblock_empty in NEXTBLOCK. simpl in NEXTBLOCK.
+  exploit alloc_globals_segments_weak_inject; eauto.
+  erewrite Mem.alloc_stack_blocks; eauto.
+  erewrite Mem.empty_stack; eauto.
+  intros (m' & GALLOC & SINJ).
+  set (m1 := alloc_segments m0 (list_of_segments tprog)) in *.
+  rewrite GALLOC.
+  generalize (store_all_globals_inject). intro AAGI.
+  generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'.
+  unfold transf_program in TRANSF'.
+  destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'.
+  unfold transl_prog_with_map in H0. 
+  destruct (transl_globdefs g (AST.prog_defs prog)) eqn: TLGLB; inversion H0. 
+  clear H0. simpl.
+  inversion UPDATE. subst g l z0 z.
+  exploit AAGI; eauto using INITMEM, SINJ, Mem.inject_ext.
+  - inv w. auto.
+  - erewrite alloc_globals_nextblock; eauto.
+    subst m1.
+    erewrite alloc_segments_nextblock; eauto.
+    erewrite Mem.nextblock_alloc; eauto. 
+    erewrite Mem.nextblock_empty. simpl.    
+    subst tprog. simpl.
+    erewrite transl_globdefs_pres_len; eauto.
+  - erewrite <- alloc_globals_stack; eauto.
+    subst m1. erewrite alloc_segments_stack; eauto.
+    erewrite Mem.alloc_stack_blocks; eauto.
+    erewrite Mem.empty_stack; eauto.
+  - eapply alloc_globals_perm_ofs; eauto. subst m1.
+    eapply alloc_segments_perm_ofs; eauto. 
+    intros b0 ofs k p PERM. erewrite alloc_perm in PERM; eauto.
+    destruct peq. omega. apply Mem.perm_empty in PERM. contradiction.
+  - intros id odef b' delta IN VI SYMOFS ofs k p OFS.
+    destruct (vit_dec _ _ odef).
+    eapply alloc_globals_pres_perm; eauto.
+    subst m1. eapply alloc_segments_init_perm; eauto.
+    eapply alloc_globals_init_perm; eauto.
+    subst m1. erewrite alloc_segments_nextblock; eauto. simpl.
+    congruence.
+  - intros (m1' & ALLOC' & MINJ).
+    exists m1'. split. subst. simpl.
+    unfold tge in ALLOC'. auto.
+    auto.
+Qed.
 
 (* Lemma find_funct_ptr_next : *)
 (*   Genv.find_funct_ptr ge (Globalenvs.Genv.genv_next ge) = None. *)
@@ -6669,3 +7783,5 @@ End PRESERVATION.
 
 
 End WITHMEMORYMODEL.
+
+

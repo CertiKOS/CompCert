@@ -225,7 +225,7 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
       if zle fofs Ptrofs.max_unsigned then
         (let sz := (Asm.code_size (Asm.fn_code f))  in
          let sblk := mkSegBlock sid ofs (Ptrofs.repr sz) in
-         OK (mkfunction (Asm.fn_sig f) code' sblk))
+         OK (mkfunction (Asm.fn_sig f) code' sblk (Asm.fn_stacksize f) (Asm.fn_pubrange f)))
       else
         Error (MSG "The size of the function exceeds limit" ::nil)
   end.

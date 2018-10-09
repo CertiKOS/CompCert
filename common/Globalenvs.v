@@ -392,6 +392,96 @@ Proof.
   rewrite <- in_rev. auto.
 Qed.
 
+
+Lemma add_global_find_symbol_eq : forall ge id o,
+    find_symbol (add_global ge (id, o)) id = Some (genv_next ge).
+Proof.
+  intros. unfold add_global, find_symbol. simpl.
+  rewrite PTree.gss. auto.
+Qed.
+
+Lemma add_global_find_symbol_neq : forall ge id' id o,
+    id' <> id -> 
+    find_symbol (add_global ge (id, o)) id' = find_symbol ge id'.
+Proof.
+  intros. unfold add_global, find_symbol. simpl.
+  rewrite PTree.gso; auto.
+Qed.
+
+Lemma add_globals_pres_find_symbol:  forall defs id ge
+    (NIN: ~In id (map fst defs)),
+    find_symbol (add_globals ge defs) id = find_symbol ge id.
+Proof.
+  induction defs; simpl; intros. auto.
+  destruct a. simpl in *.
+  apply Decidable.not_or in NIN. destruct NIN.
+  etransitivity.
+  erewrite IHdefs; eauto.
+  rewrite add_global_find_symbol_neq; auto.
+Qed.
+
+Lemma add_globals_pres_find_def: forall defs ge b,
+    Plt b (genv_next ge) ->                                   
+    find_def (add_globals ge defs) b = find_def ge b.
+Proof.
+  induction defs; simpl; intros; auto.
+  etransitivity.
+  erewrite IHdefs; eauto.
+  unfold add_global. simpl. eapply Plt_trans; eauto. 
+  apply Plt_succ.
+  unfold find_def, add_global. simpl. 
+  destruct a. simpl. destruct o; simpl; auto.
+  destruct (peq b (genv_next ge)). subst.
+  exfalso. eapply Plt_strict. eauto.
+  eapply PTree.gso. auto.
+Qed.
+
+Lemma add_global_find_def_eq: forall ge i o,
+    find_def (add_global ge (i,o)) (genv_next ge) = o.
+Proof.
+  intros. unfold find_def, add_global. simpl.
+  destruct o.
+  rewrite PTree.gss. auto.
+  destruct (PTree.get (genv_next ge) (genv_defs ge)) eqn:EQ; auto.
+  exploit genv_defs_range; eauto. intros.
+  exfalso. eapply Plt_strict. eauto.
+Qed.
+
+Lemma add_globals_find_symbol_def_inv : forall defs id b ge
+  (NPT: list_norepet (map fst defs))
+  (FSYM_NOT: find_symbol ge id = None)
+  (FSYM: find_symbol (add_globals ge defs) id = Some b),
+  In (id, find_def (add_globals ge defs) b) defs.
+Proof.
+  induction defs; simpl; intros.
+  - congruence.
+  - destruct a. simpl in NPT. inv NPT.
+    destruct (ident_eq i id).
+    + subst.
+      erewrite add_globals_pres_find_symbol in FSYM; eauto.
+      rewrite add_global_find_symbol_eq in FSYM. inv FSYM.      
+      rewrite add_globals_pres_find_def.
+      rewrite add_global_find_def_eq. auto.
+      unfold add_global. simpl. apply Plt_succ.
+    + right. eapply IHdefs; eauto.
+      erewrite add_global_find_symbol_neq; eauto.
+Qed.
+      
+Lemma find_symbol_def_inversion :
+  forall (p : program F V) (id : ident) (b : Values.block) ge,
+  list_norepet (map fst (prog_defs p)) ->
+  ge = globalenv p ->
+  find_symbol ge id = Some b -> 
+  In (id, find_def ge b) (prog_defs p).
+Proof.
+  unfold globalenv. intros. subst.  
+  apply add_globals_find_symbol_def_inv; auto.
+  unfold find_symbol, empty_genv; simpl.
+  apply PTree.gempty.
+Qed.
+  
+
+
 (** Proof principles *)
 
 Section GLOBALENV_PRINCIPLES.
@@ -679,6 +769,19 @@ Proof.
 (* base *)
   unfold find_symbol; simpl; intros. rewrite PTree.gempty in H. discriminate.
 Qed.
+
+Theorem find_symbol_inversion_none : forall p x,
+  find_symbol (globalenv p) x = None ->
+  ~ (In x (prog_defs_names p)).
+Proof.
+  intros.
+  assert ({In x (prog_defs_names p)} + {~ In x (prog_defs_names p)}) as INDEC.
+  apply in_dec. apply ident_eq. destruct INDEC.
+  - exploit find_symbol_exists_1; eauto. 
+    intros FSYM. destruct FSYM as (b & FSYM). congruence.
+  - auto.
+Qed.
+
 
 Theorem find_def_inversion:
   forall p b g,

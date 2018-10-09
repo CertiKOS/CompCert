@@ -929,16 +929,16 @@ Fixpoint link_list (l: nlist A) : option A :=
       match link_list l with None => None | Some b => link a b end
   end.
 
-Lemma link_list_linkorder:
-  forall a l b, link_list l = Some b -> nIn a l -> linkorder a b.
-Proof.
-  induction l; simpl; intros.
-- inv H. subst. apply linkorder_refl.
-- destruct (link_list l) as [b'|]; try discriminate.
-  apply link_linkorder in H. destruct H0.
-+ subst a0. tauto.
-+ apply linkorder_trans with b'. auto. tauto.
-Qed.
+(* Lemma link_list_linkorder: *)
+(*   forall a l b, link_list l = Some b -> nIn a l -> linkorder a b. *)
+(* Proof. *)
+(*   induction l; simpl; intros. *)
+(* - inv H. subst. apply linkorder_refl. *)
+(* - destruct (link_list l) as [b'|]; try discriminate. *)
+(*   apply link_linkorder in H. destruct H0. *)
+(* + subst a0. tauto. *)
+(* + apply linkorder_trans with b'. auto. tauto. *)
+(* Qed. *)
 
 End LINK_LIST.
 

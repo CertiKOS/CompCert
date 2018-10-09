@@ -79,8 +79,13 @@ Require RawAsmproof.
 Require RealAsmproof2.
 Require PseudoInstructionsproof.
 Require FlatAsmgenproof.
+Require FlatAsmGlobenv.
+Require FlatAsmProgram.
+Require FlatAsmgen.
+Require FlatAsmSep.
 (** Command-line flags. *)
 Require Import Compopts.
+
 
 (** Pretty-printers (defined in Caml). *)
 Parameter print_Clight: Clight.program -> unit.
@@ -315,6 +320,14 @@ Definition real_asm_passes :=
 Definition match_prog_real :=
   pass_match (compose_passes (passes_app CompCert's_passes real_asm_passes)).
 
+Definition flat_asm_passes :=
+  passes_app real_asm_passes
+             (mkpass FlatAsmgenproof.match_prog ::: pass_nil _).
+
+Definition match_prog_flat := 
+  pass_match (compose_passes (passes_app CompCert's_passes flat_asm_passes)).
+  
+
 (** The [transf_c_program] function, when successful, produces
   assembly code that is in the [match_prog] relation with the source C program. *)
 
@@ -401,6 +414,27 @@ Proof.
   apply PseudoInstructionsproof.transf_program_match; auto.
 Qed.
 
+Theorem transf_c_program_flat_match:
+  forall p tp,
+    transf_c_program_flatasm p = OK tp ->
+    match_prog_flat p tp.
+Proof.
+  intros p tp T. unfold transf_c_program_flatasm in T.
+  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
+  unfold match_prog_flat.
+  rewrite compose_passes_app.
+  apply transf_c_program_real_match in TP.
+  unfold match_prog_real in TP.
+  rewrite compose_passes_app in TP.
+  destruct TP as (pi1 & CP & CPR).
+  exists pi1; split; auto.
+  unfold flat_asm_passes. simpl. 
+  unfold real_asm_passes in CPR. simpl in CPR.
+  destruct CPR as (p2 & PM & p3 & PIM & EQ). subst.
+  eexists; split; eauto.
+Qed.
+
+
 (** * Semantic preservation *)
 
 (** We now prove that the whole CompCert compiler (as characterized by the
@@ -454,6 +488,17 @@ Definition fn_stack_requirements (tp: Asm.program) (id: ident) : Z :=
   | None => 0
   end.
 
+Definition flat_fn_stack_requirements (tp: FlatAsm.program) (id: ident) : Z :=
+  match List.find (fun '(id',_,_) => ident_eq id id') (FlatAsmProgram.prog_defs tp) with
+  | None => 0
+  | Some (_, def, _) =>
+    match def with
+    | Some (Gfun (Internal f)) => FlatAsmProgram.fn_stacksize f
+    | _ => 0
+    end
+  end.
+
+
 Definition printable_oracle (tp: Asm.program) : list (ident * Z) :=
   fold_left (fun acc gd =>
                match gd with
@@ -504,6 +549,11 @@ Qed.
 Definition mk_init_stk {F V} (p: AST.program F V) : StackADT.stack :=
   (Some (StackADT.make_singleton_frame_adt
            (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv p)) 0 0), nil) :: nil .
+
+Definition mk_init_stk_flat {I} (p: @FlatAsmProgram.program I) : StackADT.stack :=
+  (Some (StackADT.make_singleton_frame_adt
+           (FlatAsmGlobenv.Genv.genv_next (FlatAsmProgram.globalenv p)) 0 0), nil) :: nil .
+
 
 Theorem cstrategy_semantic_preservation:
   forall p tp,
@@ -680,11 +730,11 @@ Proof.
   exact (proj2 (cstrategy_semantic_preservation_raw' _ _ H)).
 Qed.
 
-Lemma single_events_real_asm p rs:
-  single_events (RealAsm.semantics p rs).
-Proof.
-  red; intros s t s' STEP. inv STEP; simpl; eauto using Events.external_call_trace_length.  
-Qed.
+(* Lemma single_events_real_asm p rs: *)
+(*   single_events (RealAsm.semantics p rs). *)
+(* Proof. *)
+(*   red; intros s t s' STEP. inv STEP; simpl; eauto using Events.external_call_trace_length.   *)
+(* Qed. *)
 
 Theorem c_semantic_preservation_real:
   forall p tp,
@@ -698,10 +748,10 @@ Proof.
   destruct H as (pi & MP & P).
   simpl in P. destruct P as (p2 & P & p3 & P' & EQ); inv EQ.
   eapply compose_backward_simulation.
-  apply single_events_real_asm.
+  apply RealAsm.real_asm_single_events.
   replace (fn_stack_requirements tp) with (fn_stack_requirements pi).
   eapply compose_backward_simulation.
-  apply single_events_real_asm.  
+  apply RealAsm.real_asm_single_events.  
   apply c_semantic_preservation_raw. auto.
   apply RealAsmproof2.real_asm_correct.
   eapply PseudoInstructions.check_wf; eauto.
@@ -731,6 +781,82 @@ Proof.
   eapply RealAsm.real_asm_receptive.
   eapply RealAsm.real_asm_determinate.
 Qed.
+
+Lemma find_unique: forall {A B: Type} (l: list (ident * A * B)) i def sb
+                     (IN: In (i, def, sb) l)
+                     (NPT: list_norepet (map (fun '(i,_,_) => i) l)),
+    find (fun '(i',_,_) => ident_eq i i') l = Some (i, def, sb).
+Proof.
+  induction l; simpl; intros. contradiction. inv IN.
+  - destruct peq; try contradiction. simpl. auto.
+  - destruct a. destruct p. inv NPT.
+    destruct (ident_eq i i0). subst.
+    generalize (in_map (fun '(i,_,_) => i) l (i0,def,sb) H). congruence.
+    exploit IHl; eauto. 
+Qed.
+
+Lemma flat_fn_stack_requirements_match: forall p tp
+    (FM: FlatAsmgenproof.match_prog p tp),
+    fn_stack_requirements p = flat_fn_stack_requirements tp.
+Proof.
+  intros.
+  unfold fn_stack_requirements.
+  unfold flat_fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  destr.
+  - unfold Globalenvs.Genv.find_funct_ptr.
+    generalize FM. intros FM'.
+    unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM'.
+    repeat destr_in FM'. destruct w.
+    exploit Globalenvs.Genv.find_symbol_def_inversion; eauto. intros IN.
+    exploit FlatAsmgenproof.transl_prog_pres_def; eauto.
+    intros (def' & sb & IN' & TLDEF).
+    exploit FlatAsmgenproof.transl_prog_list_norepet; eauto.
+    intros NPT.
+    erewrite find_unique; eauto.
+    destruct (Globalenvs.Genv.find_def (Globalenvs.Genv.globalenv p) b) eqn:FDEF.
+    destruct g0. destruct f. 
+    monadInv TLDEF. erewrite FlatAsmgenproof.transl_fun_pres_stacksize; eauto.
+    monadInv TLDEF. auto.
+    FlatAsmgenproof.monadInvX TLDEF. auto.
+    monadInv TLDEF. auto.
+  - assert (~ In i (prog_defs_names p)). 
+    eapply Globalenvs.Genv.find_symbol_inversion_none; eauto.
+    unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FM.
+    repeat destr_in FM. 
+    assert (~ exists def sb, In (i, def, sb) (FlatAsmProgram.prog_defs tp)).
+    eapply FlatAsmgenproof.transl_prog_pres_non_def; eauto.
+    destr. apply find_some in Heqo0. destruct p0. destruct p0.
+    destruct Heqo0. exfalso. apply H0. destruct ident_eq. 
+    subst. do 2 eexists; eauto. inv H3.
+Qed.
+
+Theorem c_semantic_preservation_flat:
+  forall p tp,
+    match_prog_flat p tp ->
+    backward_simulation (Csem.semantics (flat_fn_stack_requirements tp) p) (FlatAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
+Proof.
+  intros.
+  unfold match_prog_flat in H.
+  unfold flat_asm_passes in H.
+  rewrite compose_passes_app in H. 
+  destruct H as (pi & MP & P).
+  rewrite compose_passes_app in P.
+  destruct P as (pi' & RP & FP). simpl in FP.
+  destruct FP as (p2 & FP & EQ). subst p2.
+  assert (match_prog_real p pi'). red. 
+  apply compose_passes_app. eexists; split; eauto.
+  eapply compose_backward_simulation.
+  apply FlatAsm.flat_asm_single_events.
+  replace (flat_fn_stack_requirements tp) with (fn_stack_requirements pi').
+  apply c_semantic_preservation_real; auto.
+  apply flat_fn_stack_requirements_match; auto.
+  eapply forward_to_backward_simulation.
+  eapply FlatAsmgenproof.transf_program_correct; eauto.
+  eapply RealAsm.real_asm_receptive.
+  eapply FlatAsm.semantics_determinate.
+Qed.
+
 
 
 (** * Correctness of the CompCert compiler *)
@@ -768,6 +894,14 @@ Theorem transf_c_program_correct_real:
     backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
 Proof.
   intros. apply c_semantic_preservation_real. apply transf_c_program_real_match; auto.
+Qed.
+
+Theorem transf_c_program_correct_flat:
+  forall p tp,
+    transf_c_program_flatasm p = OK tp ->
+    backward_simulation (Csem.semantics (flat_fn_stack_requirements tp) p) (FlatAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
+Proof.
+  intros. apply c_semantic_preservation_flat. apply transf_c_program_flat_match; auto.
 Qed.
 
 (** Here is the separate compilation case.  Consider a nonempty list [c_units]
@@ -842,6 +976,28 @@ Proof.
   destruct H2 as (asm_program & P & Q).
   exists asm_program; split; auto. apply c_semantic_preservation_real; auto.
 Qed.
+
+Theorem separate_transf_c_program_correct_flat:
+  forall c_units asm_units c_program,
+  nlist_forall2 (fun cu tcu => transf_c_program_flatasm cu = OK tcu) c_units asm_units ->
+  link_list c_units = Some c_program ->
+  exists asm_program, 
+      link_list asm_units = Some asm_program
+      /\
+      let init_stk := mk_init_stk_flat asm_program in
+      backward_simulation (Csem.semantics (flat_fn_stack_requirements asm_program) c_program) (FlatAsm.semantics asm_program
+                                                                                                           (Asm.Pregmap.init Values.Vundef)
+                                                                                         ).
+Proof.
+  intros. 
+  assert (nlist_forall2 match_prog_flat c_units asm_units).
+  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_flat_match; auto. }
+  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_flat c_program asm_program).
+  { eapply link_list_compose_passes; eauto. }
+  destruct H2 as (asm_program & P & Q).
+  exists asm_program; split; auto. apply c_semantic_preservation_flat; auto.
+Qed.
+
 
 End WITHEXTERNALCALLS.
 

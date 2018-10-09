@@ -42,7 +42,7 @@ Context {I: Type}.
 Definition instr_with_info:Type := I * segblock * ident.
 
 Definition code := list instr_with_info.
-Record function : Type := mkfunction { fn_sig: signature; fn_code: code; (* fn_frame: frame_info; *) fn_range:segblock}.
+Record function : Type := mkfunction { fn_sig: signature; fn_code: code; (* fn_frame: frame_info; *) fn_range:segblock; fn_stacksize: Z; fn_pubrange: Z * Z}.
 Definition fundef := AST.fundef function.
 Definition gdef := globdef fundef unit.
 
@@ -597,7 +597,8 @@ Definition alloc_global (m: mem) (idg: ident * option gdef * segblock): option m
     (** The block allocated for the internal function is dummy.
         Internal function actually reside in the block for the code segment. *)
     let (m1, b) := Mem.alloc m 0 1 in
-    Mem.drop_perm m1 b 0 1 Nonempty
+    (* Mem.drop_perm m1 b 0 1 Nonempty *)
+    Some m1
   | Some (Gvar v) =>
     (** The block allocated for the data is dummy.
         Data actually reside in the block for the code segment. *)
@@ -760,6 +761,49 @@ Proof.
     eauto.
 Qed.
 
+Lemma one_le_ptrofs_max_unsigned : 1 <= Ptrofs.max_unsigned.
+Proof.
+  unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
+  unfold Ptrofs.wordsize.
+  generalize Wordsize_Ptrofs.wordsize_not_zero. intros.
+  destruct Wordsize_Ptrofs.wordsize. congruence.
+  rewrite two_power_nat_S.
+  generalize (two_power_nat_pos n). intros. omega.
+Qed.
+
+Lemma alloc_globals_perm_ofs : forall defs m1 m2
+                                  (ALLOC : alloc_globals m1 defs = Some m2)
+                                  (PERMOFS : forall b ofs k p, Mem.perm m1 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned),
+    (forall b ofs k p, Mem.perm m2 b ofs k p -> 0 <= ofs < Ptrofs.max_unsigned).
+Proof.
+  induction defs. intros.
+  - simpl in ALLOC. inv ALLOC. eapply PERMOFS; eauto.
+  - intros. destruct a. destruct p0. destruct o. destruct g. 
+    + simpl in ALLOC.
+      destruct (Mem.alloc m1 0 1) eqn:ALLOC1.
+      eapply IHdefs; eauto.
+      intros.
+      erewrite alloc_perm in H0; eauto.
+      destruct peq. subst. 
+      generalize one_le_ptrofs_max_unsigned. omega.
+      eapply PERMOFS; eauto.
+    + simpl in ALLOC.
+      destruct (Mem.alloc m1 0 0) eqn:ALLOC1.
+      eapply IHdefs; eauto.
+      intros.
+      erewrite alloc_perm in H0; eauto.
+      destruct peq. subst. omega.
+      eapply PERMOFS; eauto.
+    + simpl in ALLOC.
+      destruct (Mem.alloc m1 0 0) eqn:ALLOC1.
+      eapply IHdefs; eauto.
+      intros.
+      erewrite alloc_perm in H0; eauto.
+      destruct peq. subst. omega.
+      eapply PERMOFS; eauto.
+Qed.
+
+
 Lemma alloc_segments_stack: forall l m m',
     m' = alloc_segments m l -> Mem.stack m' = Mem.stack m.
 Proof.
@@ -790,13 +834,13 @@ Qed.
 
 Definition DEF : Type := ident * option gdef * segblock.
 
+
 Lemma alloc_global_stack: forall (def: DEF)  m m',  
     alloc_global m def = Some m' -> Mem.stack m = Mem.stack m'.
 Proof.
   intros. destruct def. destruct p. inv H.
   destruct o. destruct g.
   - destruct (Mem.alloc m 0 1) eqn:ALLOC.
-    exploit Mem.drop_perm_stack; eauto. 
     exploit Mem.alloc_stack_blocks; eauto. intros.
     congruence.
   - destruct (Mem.alloc m 0 0) eqn:ALLOC.
@@ -895,7 +939,7 @@ Proof.
   - simpl in H.
     destruct (Mem.alloc m 0 1) eqn:ALLOC.
     exploit Mem.nextblock_alloc; eauto. intros. rewrite <- H0.
-    erewrite Mem.nextblock_drop; eauto.
+    inv H. auto.
   - simpl in H.
     destruct (Mem.alloc m 0 0) eqn:ALLOC.
     inv H.
@@ -975,6 +1019,59 @@ Lemma alloc_segments_nextblock' : forall (l : list segment) (m: mem),
   Mem.nextblock (alloc_segments m l) = pos_advance_N (Mem.nextblock m) (length l).
 Proof.
   intros. apply alloc_segments_nextblock. auto.
+Qed.
+
+Lemma alloc_global_pres_perm :
+  forall def m b ofs k p m'
+  (PERM: Mem.perm m b ofs k p)
+  (ALLOC: alloc_global m def = Some m'),
+    Mem.perm m' b ofs k p.
+Proof.
+  intros. 
+  exploit Mem.perm_valid_block; eauto. 
+  unfold Mem.valid_block. intros.
+  destruct def. destruct p0. destruct o. destruct g. 
+  - simpl in ALLOC.
+    destruct (Mem.alloc m 0 1) eqn:ALLOC1.
+    exploit Mem.alloc_result; eauto. intros. subst.
+    assert (b <> Mem.nextblock m).
+    {
+      destruct (peq b (Mem.nextblock m)); auto.
+      subst. exfalso. eapply Plt_strict; eauto.
+    }
+    inv ALLOC.
+    erewrite alloc_perm; eauto. 
+    destruct peq. subst. contradiction.
+    auto.
+  - simpl in ALLOC.
+    destruct (Mem.alloc m 0 0) eqn:ALLOC1. inv ALLOC.
+    erewrite alloc_perm; eauto.
+    exploit Mem.alloc_result; eauto. intros. subst.
+    destruct peq.
+    subst.
+    exfalso. eapply Plt_strict; eauto.
+    auto.
+  - simpl in ALLOC.
+    destruct (Mem.alloc m 0 0) eqn:ALLOC1. inv ALLOC.
+    erewrite alloc_perm; eauto.
+    exploit Mem.alloc_result; eauto. intros. subst.
+    destruct peq.
+    subst.
+    exfalso. eapply Plt_strict; eauto.
+    auto.
+Qed.
+
+Lemma alloc_globals_pres_perm :
+  forall defs m b ofs k p m'
+  (PERM: Mem.perm m b ofs k p)
+  (ALLOC: alloc_globals m defs = Some m'),
+    Mem.perm m' b ofs k p.
+Proof.
+  induction defs; intros; simpl in *.
+  - inv ALLOC. auto.
+  - destr_in ALLOC.
+    eapply (IHdefs m0); eauto.
+    eapply alloc_global_pres_perm; eauto.
 Qed.
 
 Lemma init_mem_genv_next: forall (p: program) m,
