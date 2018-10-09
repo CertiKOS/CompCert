@@ -538,4 +538,52 @@ Definition semantics (p: program) (rs: regset) :=
   Semantics_gen step (initial_state p rs) final_state (globalenv p) (Genv.genv_senv (globalenv p)).
 
 
+Lemma semantics_determinate: forall p rs, determinate (semantics p rs).
+Proof.
+Ltac Equalities :=
+  match goal with
+  | [ H1: ?a = ?b, H2: ?a = ?c |- _ ] =>
+      rewrite H1 in H2; inv H2; Equalities
+  | _ => idtac
+  end.
+  intros; constructor; simpl; intros.
+- (* determ *)
+  inv H; inv H0; Equalities.
++ split. constructor. auto.
++ discriminate.
++ discriminate.
++ assert (vargs0 = vargs) by (eapply eval_builtin_args_determ; eauto). subst vargs0.
+  exploit external_call_determ. eexact H5. eexact H11. intros [A B].
+  split. auto. intros. destruct B; auto. subst. auto.
++ assert (args0 = args) by (eapply Asm.extcall_arguments_determ; eauto). subst args0.
+  exploit external_call_determ. eexact H4. eexact H9. intros [A B].
+  split. auto. intros. destruct B; auto. subst. auto.
+- (* trace length *)
+  red; intros; inv H; simpl.
+  omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+- (* initial states *)
+  inv H; inv H0. assert (m = m0) by congruence. subst. inv H2; inv H3.
+  assert (m1 = m5 /\ bstack = bstack0) by intuition congruence. destruct H0; subst.
+  assert (m2 = m6) by congruence. subst.
+  f_equal. congruence.
+- (* final no step *)
+  assert (NOTNULL: forall b ofs, Vnullptr <> Vptr b ofs).
+  { intros; unfold Vnullptr; destruct Archi.ptr64; congruence. }
+  inv H. red; intros; red; intros. inv H; rewrite H0 in *; eelim NOTNULL; eauto.
+- (* final states *)
+  inv H; inv H0. congruence.
+Qed.
+
+Theorem single_events p rs:
+  single_events (semantics p rs).
+Proof.
+  red. simpl. intros s t s' STEP.
+  inv STEP; simpl. omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+Qed.
+
+
 End WITHEXTERNALCALLS.
