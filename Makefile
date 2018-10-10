@@ -23,13 +23,20 @@ endif
 
 DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
-  cparser cparser/validator
+  cparser cparser/validator \
+	compcertx/backend compcertx/cfrontend compcertx/common compcertx/driver compcertx/x86
 
 RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) \
 	-R cpu_models/shared Shared \
-	-R cpu_models/x86model/Model X86Model
+	-R cpu_models/x86model/Model X86Model \
+	-R compcertx/backend compcertx.backend\
+	-R compcertx/cfrontend compcertx.cfrontend\
+	-R compcertx/common compcertx.common \
+	-R compcertx/driver compcertx.driver \
+	-R compcertx/x86 compcertx.x86
+
 
 
 COQC="$(COQBIN)coqc" -q $(COQINCLUDES) $(COQCOPTS)
@@ -133,10 +140,60 @@ PARSER=Cabs.v Parser.v
 
 DRIVER=Compopts.v Compiler.v Complements.v Compilerimpl.v
 
+COMPCERTX=  CompCertBuiltins.v \
+  SeparateCompiler.v \
+  SeparateCompilerproof.v \
+  LocationsX.v \
+  SelectionX.v \
+  RTLX.v \
+  RenumberproofX.v \
+  ValueAnalysisX.v \
+  I64helpers.v \
+  AllocproofX.v \
+  RTLtypingX.v \
+  ConstpropproofX.v \
+  RTLgenproofX.v \
+  CminorX.v \
+  CminorSelX.v \
+  DeadcodeproofX.v \
+  DeadcodeX.v \
+  LinearX.v \
+  CSEproofX.v \
+  MachX.v \
+  SelectionproofX.v \
+  CSEX.v \
+  LinearizeproofX.v \
+  ConstpropX.v \
+  TunnelingproofX.v \
+  LTLX.v \
+  ValueDomainX.v \
+  StackingproofX.v \
+  CleanupLabelsproofX.v \
+  AsmgenproofX.v \
+  AsmX.v \
+  OpX.v \
+  EventsX.v \
+  ComposePasses.v \
+  BehaviorsX.v \
+  SmallstepX.v \
+  MemimplX.v \
+  MemoryX.v \
+  ValuesX.v \
+  ClightX.v \
+  CminorgenproofX.v \
+  ClightBigstepX.v \
+  CsharpminorX.v \
+  ClightXFacts.v \
+  CshmgenproofX.v \
+	MachX2Mach2X.v \
+	TailcallproofX.v \
+	InliningproofX.v
+
+
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER)
+  $(PARSERVALIDATOR) $(PARSER) $(COMPCERTX)
 
 # Generated source files
 
