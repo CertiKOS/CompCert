@@ -10,7 +10,7 @@ Axiom prop_ext : ClassicalFacts.prop_extensionality.
 
 (** * Games *)
 
-Record game :=
+Structure game :=
   {
     input : Type;
     output : Type;

@@ -13,12 +13,13 @@ Require Import ModuleSemantics.
 (** The moves of CompCert games are queries, replies, CompCert events.
   Queries are inputs; replies and CompCert events are outputs. *)
 
-Coercion lang (li : language_interface) : game :=
+Canonical Structure lang (li : language_interface) : game :=
   {|
     input := query li;
     output := reply li;
   |}.
 
+Coercion lang : language_interface >-> game.
 Bind Scope li_scope with game.
 
 
@@ -111,7 +112,7 @@ Module Behavior.
           step (running s) (RTS.internal (running s'))
       | step_interacts s r k :
           final_state L s r k ->
-          step (running s) (RTS.interacts (G:=li) r (liftk k))
+          step (running s) (RTS.interacts r (liftk k))
       | step_goes_wrong s :
           Nostep L s ->
           (forall r k, ~ final_state L s r k) ->
@@ -177,7 +178,7 @@ Module Behavior.
 
     Lemma cont_deterministic k:
       cont_determinate L k ->
-      RTS.nonbranching_cont (G := li) (liftk k) (liftk k).
+      RTS.nonbranching_cont (liftk k) (liftk k).
     Proof.
       intros Hk q S1 S2 s1 s2 HS1 HS2 Hs1 Hs2.
       assert (S2 = S1) by congruence. subst. clear HS2.
@@ -355,7 +356,7 @@ Module Behavior.
         eapply bsim_match_final_states in H0; eauto.
         destruct H0 as (s2' & w' & r2 & k2 & Hs2' & Hr & Hsk2 & Hk); eauto.
         simpl in Hr; subst.
-        exists (RTS.interacts (G:=li) r (liftk k2)). split.
+        exists (RTS.interacts r (liftk k2)). split.
         * eapply RTS.obs_external with (running s2'); eauto.
           -- constructor; eauto.
           -- eapply star_reachable; eauto.

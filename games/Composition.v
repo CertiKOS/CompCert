@@ -185,21 +185,21 @@ Module FComp.
     | emb_match_l (s: A) (k: cont li B) :
         emb_match_states
           (Behavior.running (SFComp.state_l s k))
-          (state_l (G:=li) (Behavior.running s) (Behavior.liftk k))
+          (state_l (Behavior.running s) (Behavior.liftk k))
     | emb_match_r (s: B) (k: cont li A) :
         emb_match_states
           (Behavior.running (SFComp.state_r s k))
-          (state_r (G:=li) (Behavior.running s) (Behavior.liftk k))
+          (state_r (Behavior.running s) (Behavior.liftk k))
     | emb_match_wrong s :
-        (exists k, s = state_l (G:=li) Behavior.wrong k) \/
-        (exists k, s = state_r (G:=li) Behavior.wrong k) \/
+        (exists k, s = state_l Behavior.wrong k) \/
+        (exists k, s = state_r Behavior.wrong k) \/
         s = conflict ->
         emb_match_states Behavior.wrong s.
 
   Lemma cont_emb_lr {li A B} (k1: cont li A) (k2: cont li B) :
     (cont_le emb_match_states)
       (Behavior.liftk (SFComp.liftk k1 k2))
-      (liftk (G:=li)
+      (liftk
          (cont_map inl (Behavior.liftk k1))
          (cont_map inr (Behavior.liftk k2))).
   Proof.
@@ -227,7 +227,7 @@ Module FComp.
   Lemma cont_emb_rl {li A B} (k1: cont li A) (k2: cont li B) :
     (cont_le emb_match_states)
       (Behavior.liftk (SFComp.liftk k1 k2))
-      (liftk (G:=li)
+      (liftk
          (cont_map inr (Behavior.liftk k2))
          (cont_map inl (Behavior.liftk k1))).
   Proof.
@@ -262,40 +262,38 @@ Module FComp.
     - inversion Hs; clear Hs; subst.
       exists goes_wrong; split; [ | constructor].
       destruct H as [[k Hs2] | [[k Hs2] | Hs2]]; subst.
-      + eapply (step_intro (G:=li) _ _ (cont_map inr k) goes_wrong).
+      + eapply (step_intro _ _ (cont_map inr k) goes_wrong).
         eapply (sum_inl _ _ _ goes_wrong).
         constructor.
-      + eapply (step_intro (G:=li) _ _ (cont_map inl k) goes_wrong).
+      + eapply (step_intro _ _ (cont_map inl k) goes_wrong).
         eapply (sum_inr _ _ _ goes_wrong).
         constructor.
       + constructor.
     - inversion H; clear H; subst;
       inversion Hs; clear Hs; subst.
-      + exists (liftb (G:=li) (behavior_map inl (internal (Behavior.running s'0)))
-                              (cont_map inr (Behavior.liftk k))).
+      + exists (liftb (behavior_map inl (internal (Behavior.running s'0)))
+                      (cont_map inr (Behavior.liftk k))).
         repeat (constructor; eauto).
-      + exists (liftb (G:=li) (behavior_map inr (internal (Behavior.running s'0)))
-                              (cont_map inl (Behavior.liftk k))).
+      + exists (liftb (behavior_map inr (internal (Behavior.running s'0)))
+                      (cont_map inl (Behavior.liftk k))).
         repeat (constructor; eauto).
     - destruct H; inversion Hs; clear Hs; subst.
-      + exists (liftb (G:=li)
-                      (behavior_map inl (interacts (G:=li) r (Behavior.liftk k)))
+      + exists (liftb (behavior_map inl (interacts r (Behavior.liftk k)))
                       (cont_map inr (Behavior.liftk k'))).
         repeat (constructor; eauto).
         apply cont_emb_lr.
-      + exists (liftb (G:=li)
-                      (behavior_map inr (interacts (G:=li) r (Behavior.liftk k)))
+      + exists (liftb (behavior_map inr (interacts r (Behavior.liftk k)))
                       (cont_map inl (Behavior.liftk k'))).
         repeat (constructor; eauto).
         apply cont_emb_rl.
     - inversion Hs; clear Hs; subst.
-      + eexists (liftb (G:=li) (behavior_map inl (internal Behavior.wrong)) _).
+      + eexists (liftb (behavior_map inl (internal Behavior.wrong)) _).
         split.
         * constructor. apply sum_inl. constructor.
           -- intros t s' Hs'. eapply H. econstructor. eassumption.
           -- intros r k' Hrk'. eapply H0. econstructor. eassumption.
         * repeat econstructor; fail.
-      + eexists (liftb (G:=li) (behavior_map inr (internal Behavior.wrong)) _).
+      + eexists (liftb (behavior_map inr (internal Behavior.wrong)) _).
         split.
         * constructor. apply sum_inr. constructor.
           -- intros t s' Hs'. eapply H. econstructor. eassumption.
@@ -305,7 +303,7 @@ Module FComp.
 
   Lemma emb_cont_lr {li A B} (k1: cont li A) (k2: cont li B) :
     (cont_le (flip emb_match_states))
-      (liftk (G:=li)
+      (liftk
          (cont_map inl (Behavior.liftk k1))
          (cont_map inr (Behavior.liftk k2)))
       (Behavior.liftk
@@ -335,7 +333,7 @@ Module FComp.
 
   Lemma emb_cont_rl {li A B} (k1: cont li A) (k2: cont li B) :
     (cont_le (flip emb_match_states))
-      (liftk (G:=li)
+      (liftk
          (cont_map inr (Behavior.liftk k2))
          (cont_map inl (Behavior.liftk k1)))
       (Behavior.liftk
@@ -376,7 +374,7 @@ Module FComp.
       + inversion Hr1; clear Hr1; subst.
         * exists (internal (Behavior.running (SFComp.state_l s' k))).
           split; repeat (constructor; auto).
-        * exists (interacts (G:=li) r0 (Behavior.liftk (SFComp.liftk k0 k))).
+        * exists (interacts r0 (Behavior.liftk (SFComp.liftk k0 k))).
           split; repeat (constructor; auto).
           apply (emb_cont_lr k0 k).
         * exists (internal Behavior.wrong).
@@ -389,7 +387,7 @@ Module FComp.
       + inversion Hr1; clear Hr1; subst.
         * exists (internal (Behavior.running (SFComp.state_r s' k))).
           split; repeat (constructor; auto).
-        * exists (interacts (G:=li) r0 (Behavior.liftk (SFComp.liftk k k0))).
+        * exists (interacts r0 (Behavior.liftk (SFComp.liftk k k0))).
           split; repeat (constructor; auto).
           apply (emb_cont_rl k k0).
         * exists (internal Behavior.wrong).
@@ -535,8 +533,8 @@ Module Res.
 
   (** ** Monotonicity *)
 
-  Lemma set_behavior_le_top {G A B} (R : rel A B) x :
-    set_le (behavior_le (G:=G) R) x (singl goes_wrong).
+  Lemma set_behavior_le_top {G A B} (R : rel A B) (x : behavior G A -> Prop) :
+    set_le (behavior_le R) x (singl goes_wrong).
   Proof.
     intros ? _. eexists; split; constructor.
   Qed.
@@ -658,7 +656,7 @@ Module Res.
                          exists S, k (sw li r) = Some S /\ ~ ex S)) as [Hsw|Hsw].
       + (* switches, then goes initially wrong *)
         destruct Hsw as (r & k & Hk & S & HS & HnS).
-        exists (interacts (G := li -o li) r (Behavior.liftk k)).
+        exists (interacts r (Behavior.liftk k)).
         * eapply (Behavior.step_interacts L); eauto.
         * unfold res_behavior, xcall, Behavior.liftk. rewrite HS. simpl.
           repeat (econstructor; eauto); fail.
