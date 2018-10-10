@@ -136,7 +136,6 @@ Qed.
 Instance TransfMCLink : TransfLink match_prog.
 Proof.
   red. unfold match_prog. simpl link. intros p1 p2 tp1 tp2 p LK MC1 MC2.
-  inv MC1. inv MC2.
   exploit transf_prog_combine; eauto. intros H.
   destruct H as [p' TF].
   exists p'. split. unfold link_mcprog.
