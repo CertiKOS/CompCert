@@ -155,6 +155,9 @@ Definition transl_ireg (r: ireg) : res register :=
 Definition int_to_bits (i:Int.int) : int32 :=
   (Word.repr (Int.unsigned i)).
 
+Definition int_to_bits8 (i:Int.int) : int8 :=
+  (Word.repr (Int.unsigned i)).
+
 Definition ptrofs_to_bits (i:Ptrofs.int) : int32 :=
   (Word.repr (Ptrofs.unsigned i)).
 
@@ -380,6 +383,9 @@ Definition transl_instr (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
       do rd' <- transl_ireg rd;
         do r1' <- transl_ireg r1;
         OK (fun data_addr => [IMUL false (Reg_op rd') (Some (Reg_op r1')) None],lmap)
+    | Pimull_ri rd n =>
+      do rd' <- transl_ireg rd;
+        OK (fun data_addr => [IMUL true (Reg_op rd') (Some (Reg_op rd')) (Some (int_to_bits n))],lmap)
     (* | Pjmp_l l => *)
     (*   (* calculate the size of the instruction *) *)
     (*   do isz <- instr_size (JMP true false (Imm_op Word.zero) None); *)
@@ -398,6 +404,9 @@ Definition transl_instr (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
     | Pidivl r1 => 
       do r1' <- transl_ireg r1;
         OK (fun data_addr => [IDIV true (Reg_op r1')],lmap)
+    | Psall_ri rd n =>
+      do rd' <- transl_ireg rd; 
+        OK (fun data_addr => [SHL true (Reg_op rd') (Imm_ri (int_to_bits8 n))], lmap)
     | Plabel l =>
       OK (fun data_addr => [FNOP], update_lmap lmap f l ofs)
     | _ => 
@@ -482,6 +491,10 @@ Definition transf_program (p: MC.program) : res RockSaltAsm.program :=
      the mapping for functions and labels *)
   do r <- transf_globfuns dmap
              default_fmap default_lmap 
+             (prog_defns p) Word.zero (fun data_addr => []) [];
+    let '(_,_,fmap,lmap,_) := r in
+  do r <- transf_globfuns dmap
+             fmap lmap
              (prog_defns p) Word.zero (fun data_addr => []) [];
     let '(_,_,fmap,lmap,_) := r in
   (* The second pass of functions finishes
