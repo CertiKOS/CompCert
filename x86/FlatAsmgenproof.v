@@ -2705,7 +2705,16 @@ Proof.
 Qed.
 
 
-Lemma partial_genv_next : forall defs def,
+Lemma partial_genv_next : forall defs,
+    Globalenvs.Genv.genv_next (partial_genv defs) = Pos.of_succ_nat (length defs).
+Proof.
+  induction defs; intros; simpl. auto.
+  unfold partial_genv in *. simpl.
+  rewrite Genv.genv_next_add_globals in *. simpl in *.
+Admitted.
+
+
+Lemma partial_genv_next_succ : forall defs def,
     Globalenvs.Genv.genv_next (partial_genv (defs ++ def :: nil)) =
     Pos.succ (Globalenvs.Genv.genv_next (partial_genv defs)).
 Proof.
@@ -3973,6 +3982,21 @@ Lemma find_symbol_nvi_lower_bound :
     Ple (pos_advance_N init_block (length (list_of_segments tprog))) b.
 Admitted.
 
+Lemma find_symbol_nvi_eq:
+  forall defs i def gdefs
+    (DEFSTAIL : defs ++ (i, def) :: gdefs = AST.prog_defs prog)
+    (NVIT: ~sdef_is_var_or_internal_fun def)
+    (NPT: list_norepet (map (fun '(i, _) => i) (AST.prog_defs prog))),
+            Genv.find_symbol (globalenv tprog) i = Some (pos_advance_N (Pos.of_succ_nat num_segments) (length defs), Ptrofs.zero).
+Admitted.
+
+Lemma partial_genv_genv_next_bound: 
+  forall defs def gdefs prog i
+    (DEFSTAIL: defs ++ (i, def) :: gdefs = AST.prog_defs prog),
+    Plt (pos_advance_N (Globalenvs.Genv.genv_next (partial_genv defs)) num_segments)
+        (pos_advance_N init_block (length (list_of_segments tprog) + length (AST.prog_defs prog))).
+Admitted.
+
 Lemma find_symbol_sb_vit : forall i odef sid ofs
     (IN: In (i, odef) (AST.prog_defs prog))
     (FSYM: Genv.find_symbol (globalenv tprog) i = Some (gen_segblocks tprog sid, ofs)),
@@ -3986,6 +4010,10 @@ Proof.
   generalize (gen_segblocks_upper_bound tprog sid).
   intros. exfalso. eapply Plt_le_absurd; eauto.
 Qed.
+
+Lemma pos_advance_N_ple_add: 
+  forall b n1 n2, Ple (pos_advance_N b n1) (pos_advance_N b (n1+n2)).
+Admitted.
 
 Lemma store_globals_inject :
   forall gdefs tgdefs defs m1 m2 m1' gmap lmap dsize csize 
@@ -4050,7 +4078,9 @@ Proof.
         exploit update_map_gmap_range1; eauto. intros.
         exploit (gen_segblocks_in_valid tprog); eauto. intros SEGBVALID.
         red in SEGBVALID. destruct SEGBVALID. red.
-        rewrite BLOCKEQ'. admit.
+        rewrite BLOCKEQ'.         
+        eapply Plt_le_trans. eauto.
+        apply pos_advance_N_ple_add.
         (* valid offset *)
         apply Ptrofs.unsigned_range_2.
         (* preservation of permission *)
@@ -4166,7 +4196,7 @@ Proof.
         (* nextblock *)
         erewrite Mem.nextblock_drop; eauto.
         erewrite Mem.nextblock_alloc; eauto. rewrite BLOCKEQ.
-        rewrite partial_genv_next. auto.
+        rewrite partial_genv_next_succ. auto.
         (* nextblock' *)
         erewrite Mem.nextblock_drop; eauto.
         (* stack *)
@@ -4266,28 +4296,21 @@ Proof.
         (* } *)
 
         (* globs_meminj *)
-        assert (globs_meminj b = Some (b,0)) as BINJ.
+        assert (globs_meminj b = Some ((pos_advance_N b num_segments),0)) as BINJ.
         {
           unfold globs_meminj. subst b. rewrite BLOCKEQ.
-          erewrite genv_invert_symbol_next; eauto. admit.
-          (* rewrite H. congruence. *)
+          erewrite genv_invert_symbol_next; eauto.
+          erewrite find_symbol_nvi_eq; eauto.
+          rewrite partial_genv_next. f_equal. f_equal. admit.
         }
-
         
         (* alloc mapped injection *)
         exploit (Mem.alloc_left_mapped_weak_inject
                    globs_meminj (def_frame_inj m1) m1 m1' 0 1 m0
-                   b b 0
+                   b (pos_advance_N b num_segments) 0
                    BINJ MINJ ALLOCF); eauto.
         (* valid block *)
         red. rewrite BLOCKEQ'. subst b. rewrite BLOCKEQ.
-
-        Lemma partial_genv_genv_next_bound: forall defs def gdefs prog i
-          (DEFSTAIL: defs ++ (i, def) :: gdefs = AST.prog_defs prog),
-          Plt (Globalenvs.Genv.genv_next (partial_genv defs)) 
-              (pos_advance_N init_block (length (list_of_segments tprog) + length (AST.prog_defs prog))).
-        Admitted.
-        
         eapply partial_genv_genv_next_bound; eauto.
         (* valid offset *)
         split. omega. admit.
@@ -4341,7 +4364,7 @@ Proof.
         (* next block *)
         erewrite Mem.nextblock_drop; eauto. 
         erewrite Mem.nextblock_alloc; eauto.
-        erewrite partial_genv_next. f_equal. congruence.
+        erewrite partial_genv_next_succ. f_equal. congruence.
 
         (* ofsbound *)
         intros id b0 def ofs k p FINDSYM IN PERM'.
@@ -4508,7 +4531,7 @@ Proof.
 (*         erewrite Genv.store_init_data_list_nextblock; eauto. *)
 (*         erewrite Genv.store_zeros_nextblock; eauto. *)
 (*         erewrite Mem.nextblock_alloc; eauto. rewrite BLOCKEQ. *)
-(*         rewrite partial_genv_next. auto. *)
+(*         rewrite partial_genv_next_succ. auto. *)
 (*         (* nextblock' *) *)
 (*         erewrite (Mem.nextblock_drop m3'); eauto. *)
 (*         erewrite (store_init_data_list_nextblock _ _ m2'); eauto. *)
