@@ -4015,6 +4015,38 @@ Lemma pos_advance_N_ple_add:
   forall b n1 n2, Ple (pos_advance_N b n1) (pos_advance_N b (n1+n2)).
 Admitted.
 
+
+Lemma pos_advance_N_succ_base : forall n,
+    pos_advance_N 1 n = Pos.of_succ_nat n.
+Proof.
+  induction n; intros; simpl.
+  - auto.
+  - rewrite <- IHn. 
+    rewrite <- psucc_advance_Nsucc_eq. simpl. auto.
+Qed.
+
+Lemma pos_advance_N_succ_commut: 
+  forall n1 n2,
+    pos_advance_N (Pos.of_succ_nat n1) n2 = pos_advance_N (Pos.of_succ_nat n2) n1.
+Proof.
+  induction n1; intros; simpl. 
+  - apply pos_advance_N_succ_base.
+  - repeat rewrite <- SuccNat2Pos.inj_succ. 
+    erewrite <- IHn1. simpl. auto.
+Qed.
+
+Lemma app_same_len_prefix : forall {A:Type} (l1:list A) l2 x l1' l2' x',
+    length l1 = length l1' -> 
+    l1 ++ x :: l2 = l1' ++ x':: l2' ->
+    x = x'.
+Proof.
+  induction l1; intros; simpl in *.
+  - destruct l1'. inv H0. auto. inv H.
+  - destruct l1'. inv H. simpl in H. inv H.
+    inv H0. eapply IHl1; eauto.
+Qed.
+
+
 Lemma store_globals_inject :
   forall gdefs tgdefs defs m1 m2 m1' gmap lmap dsize csize 
     (DEFNAMES: list_norepet (map fst (AST.prog_defs prog)))
@@ -4316,26 +4348,6 @@ Proof.
           erewrite genv_invert_symbol_next; eauto.
           erewrite find_symbol_nvi_eq; eauto.
           rewrite partial_genv_next. f_equal. f_equal. 
-
-          Lemma pos_advance_N_succ_base : forall n,
-              pos_advance_N 1 n = Pos.of_succ_nat n.
-          Proof.
-            induction n; intros; simpl.
-            - auto.
-            - rewrite <- IHn. 
-              rewrite <- psucc_advance_Nsucc_eq. simpl. auto.
-          Qed.
-
-          Lemma pos_advance_N_succ_commut: 
-            forall n1 n2,
-              pos_advance_N (Pos.of_succ_nat n1) n2 = pos_advance_N (Pos.of_succ_nat n2) n1.
-          Proof.
-            induction n1; intros; simpl. 
-            - apply pos_advance_N_succ_base.
-            - repeat rewrite <- SuccNat2Pos.inj_succ. 
-              erewrite <- IHn1. simpl. auto.
-          Qed.
-
           apply pos_advance_N_succ_commut.
         }
         
@@ -4394,18 +4406,6 @@ Proof.
           rewrite pos_advance_N_succ_commut in H0. simpl in H0. 
           repeat apply Pos.succ_inj in H0. apply SuccNat2Pos.inj in H0.
           rewrite <- DEFSTAIL in EQ1. symmetry in H0.
-
-          Lemma app_same_len_prefix : forall {A:Type} (l1:list A) l2 x l1' l2' x',
-            length l1 = length l1' -> 
-            l1 ++ x :: l2 = l1' ++ x':: l2' ->
-            x = x'.
-          Proof.
-            induction l1; intros; simpl in *.
-            - destruct l1'. inv H0. auto. inv H.
-            - destruct l1'. inv H. simpl in H. inv H.
-              inv H0. eapply IHl1; eauto.
-          Qed.
-
           assert ((i, Some (Gfun (External e))) = (i0, def1)).
           eapply app_same_len_prefix; eauto. inv H. auto.
           unfold Pos.of_succ_nat. simpl. auto.
@@ -4479,6 +4479,147 @@ Proof.
         (* defs perm *)
         intros id odef slbl0 b' IN GMAP' SYMOFS ofs k p OFS.
         eapply DEFSPERM; eauto. simpl. eauto.
+
+      * admit.
+        
+    + (** the head of gdefs is None **)
+        monadInv TRANSG.
+        simpl in ALLOCG. destr_match_in ALLOCG; try now inversion ALLOCG.
+        destruct (Mem.alloc m1 0 0) eqn:ALLOCF. inv EQ0.
+        exploit Mem.alloc_result; eauto using ALLOCF. intros.
+        simpl.
+        eapply (IHgdefs x (defs ++ (i, None) :: nil) m m2); eauto.
+        rewrite <- DEFSTAIL. rewrite List.app_assoc_reverse. simpl. auto.
+        (* assert (gmap i = None). *)
+        (* {  *)
+        (*   eapply update_map_gmap_none with (def := (Some (Gfun (External e)))); eauto.  *)
+        (*   rewrite <- DEFSTAIL. apply in_app. right. apply in_eq. *)
+        (* } *)
+
+        (* globs_meminj *)
+        assert (globs_meminj b = Some ((pos_advance_N b num_segments),0)) as BINJ.
+        {
+          unfold globs_meminj. subst b. rewrite BLOCKEQ.
+          erewrite genv_invert_symbol_next; eauto.
+          erewrite find_symbol_nvi_eq; eauto.
+          rewrite partial_genv_next. f_equal. f_equal. 
+          apply pos_advance_N_succ_commut.
+        }
+        
+        (* alloc mapped injection *)
+        exploit (Mem.alloc_left_mapped_weak_inject
+                   globs_meminj (def_frame_inj m1) m1 m1' 0 0 m
+                   b (pos_advance_N b num_segments) 0
+                   BINJ MINJ ALLOCF); eauto.
+        (* valid block *)
+        red. rewrite BLOCKEQ'. subst b. rewrite BLOCKEQ.
+        eapply partial_genv_genv_next_bound; eauto.
+        (* valid offset *)
+        generalize (instr_size_repr Pmovsb). omega.
+        (* preservation of permission *)
+        intros. omega.
+        (* correct alignment *)
+        simpl. red. intros. apply Z.divide_0_r.
+        (* alloced memory has not been injected before *)
+        simpl.
+        intros b0 delta' ofs k p GINJ PERM' OFSABSURD.
+        unfold globs_meminj in GINJ.
+        destr_match_in GINJ; try now inv GINJ.
+        destr_match_in GINJ; try now inv GINJ.
+        destruct p0. inv GINJ.
+        (* assert (ofs + Ptrofs.unsigned i1 = 0) by omega. *)
+        assert (i0 = i).
+        {
+          eapply Genv.invert_find_symbol in EQ0.
+          generalize EQ0. intros FSYM.
+          apply find_symbol_inversion_2 in EQ0. destruct EQ0 as (def1 & EQ0).
+          generalize EQ0. intros IN.
+          apply in_split in EQ0. destruct EQ0 as (defs1 & gdefs1 & EQ0).
+          destruct (vit_dec _ _ def1).
+          (* def1 is vit *)
+          exploit find_symbol_to_gmap; eauto.
+          intros (slbl & GMAP & BEQ & IEQ). 
+          erewrite gmap_to_find_symbol in EQ1; eauto. inv EQ1.
+          generalize (gen_segblocks_upper_bound tprog (fst slbl)). 
+          intros PLT. erewrite BLOCKEQ in H0.
+          erewrite partial_genv_next in H0. rewrite H0 in PLT.
+          exfalso. eapply Plt_strict. simpl in PLT. eapply Plt_le_trans. apply PLT.
+          assert (pos_advance_N 4 (length defs) = Pos.succ (Pos.succ (Pos.succ (Pos.of_succ_nat (length defs))))).
+          replace (4%positive) with (Pos.of_succ_nat 3).
+          rewrite pos_advance_N_succ_commut. simpl. auto. unfold Pos.of_succ_nat. simpl. auto.
+          rewrite <- H. apply pos_advance_N_ple.
+          (* def1 is not vit *)
+          erewrite find_symbol_nvi_eq in EQ1; eauto. inv EQ1.
+          rewrite BLOCKEQ in H0. rewrite partial_genv_next in H0.
+          replace (4%positive) with (Pos.of_succ_nat 3) in H0.
+          rewrite pos_advance_N_succ_commut in H0. simpl in H0. 
+          repeat apply Pos.succ_inj in H0. apply SuccNat2Pos.inj in H0.
+          rewrite <- DEFSTAIL in EQ0. symmetry in H0.
+          assert ((i, None) = (i0, def1)).
+          eapply app_same_len_prefix; eauto. inv H. auto.
+          unfold Pos.of_succ_nat. simpl. auto.
+        }
+        subst i0. apply Genv.invert_find_symbol in EQ0.
+        erewrite genv_find_symbol_next in EQ0; eauto. inv EQ0.
+        apply Mem.perm_valid_block in PERM'. rewrite <- BLOCKEQ in PERM'.
+        red in PERM'. eapply Plt_strict; eauto.
+
+        (* stack frame is public *)
+        intros fi INSTK o k pp PERM INJPERM.
+        rewrite STK' in INSTK. inv INSTK.
+        (* get the new weak injection *)
+        intros MINJ'.
+        erewrite alloc_pres_def_frame_inj in MINJ'; eauto.
+
+        (* next block *)
+        erewrite Mem.nextblock_alloc; eauto.
+        erewrite partial_genv_next_succ. f_equal. congruence.
+
+        (* ofsbound *)
+        intros id b0 def ofs k p FINDSYM IN PERM'.
+        rewrite in_app in IN. destruct IN as [IN | IN].
+        assert (i <> id).
+        {
+          eapply defs_names_distinct_prefix_neq; eauto.
+          rewrite <- DEFSTAIL in DEFNAMES. eauto.
+        }
+        erewrite partial_genv_find_symbol_neq in FINDSYM; eauto.
+        assert (b <> b0).
+        {
+          unfold not. subst. rewrite BLOCKEQ. intros. subst.
+          eapply Genv.find_symbol_genv_next_absurd; eauto.
+        }
+        exploit Mem.perm_alloc_inv; eauto using ALLOCF.
+        rewrite dec_eq_false; auto. intros. eapply OFSBOUND; eauto.
+
+        inv IN. inv H0.
+        rewrite partial_genv_find_symbol_eq in FINDSYM. inv FINDSYM.
+        rewrite <- BLOCKEQ in PERM'.
+        exploit Mem.perm_alloc_inv; eauto using ALLOCF.
+        rewrite dec_eq_true. intros.
+        simpl. assert (ofs = 0). omega. subst.
+        omega.
+
+        inv H0.
+        (* findvalidsym *)
+        intros id b0 ofs k p FINDSYM PERM.
+        erewrite alloc_perm in PERM; eauto. destruct peq.
+        subst. rewrite BLOCKEQ.
+        rewrite BLOCKEQ in FINDSYM. apply Genv.find_invert_symbol in FINDSYM.
+        unfold ge in FINDSYM. erewrite genv_invert_symbol_next in FINDSYM; eauto. inv FINDSYM.
+        erewrite partial_genv_find_symbol_eq; eauto.
+        exploit FINDVALIDSYM; eauto. intros FINDSYM'.
+        apply find_symbol_inversion_1 in FINDSYM'. destruct FINDSYM' as [DEF' FINDSYM'].
+        assert (i <> id).
+        {
+          eapply defs_names_distinct_prefix_neq; eauto.
+          rewrite <- DEFSTAIL in DEFNAMES. eauto.
+        }
+        erewrite partial_genv_find_symbol_neq; eauto.
+        (* defs perm *)
+        intros id odef slbl0 b' IN GMAP' SYMOFS ofs k p OFS.
+        eapply DEFSPERM; eauto. simpl. eauto.
+
 
 (*       * (** the head of gdefs is a global variable **) *)
 (*         monadInv TRANSG. destruct (gmap i) eqn:ILBL; try now inversion EQ. *)
