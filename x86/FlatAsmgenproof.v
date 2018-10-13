@@ -2452,28 +2452,6 @@ Proof.
   inv MINJ. eapply agree_inj_glob0; eauto.
 Qed.
 
-(* Lemma find_symbol_inversion_in : forall id b ofs, *)
-(*     Genv.find_symbol tge id = Some (b, ofs) -> *)
-(*     exists def sb, In (id, def, sb) (prog_defs tprog). *)
-(* Admitted. *)
-
-(* Lemma find_symbol_non_pres: forall id, *)
-(*   Globalenvs.Genv.find_symbol ge id = None -> *)
-(*   Genv.find_symbol tge id = None. *)
-(* Proof. *)
-(*   intros. unfold ge in H. *)
-(*   assert (~In id (prog_defs_names prog)) as NIN by *)
-(*         (eapply Genv.find_symbol_inversion_none; eauto). *)
-(*   assert (~ (exists def sb, In (id, def, sb) (prog_defs tprog))). *)
-(*   {  *)
-(*     unfold match_prog, transf_program in TRANSF. repeat destr_in TRANSF. eauto. *)
-(*     eapply transl_prog_pres_non_def; eauto. *)
-(*   } *)
-(*   destruct (Genv.find_symbol tge id) eqn:FSYM; auto. *)
-(*   destruct p. exploit find_symbol_inversion_in; eauto. *)
-(*   intros. congruence. *)
-(* Qed. *)
-
   
 Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b,
     Mem.alloc m1 lo hi = (m1', b) ->
@@ -2812,74 +2790,94 @@ Proof.
   - inv H.
 Qed.
 
-(* Lemma store_init_data_list_mapped_inject_aux : forall v v' gmap g m1 m1' m2 b1 b2 delta ofs, *)
-(*     Mem.weak_inject (globs_meminj gmap) g m1 m1' -> *)
-(*     transl_init_data_list gmap v = OK v' ->  *)
-(*     (globs_meminj gmap) b1 = Some (b2, delta) -> *)
-(*     Genv.store_init_data_list ge m1 b1 ofs v = Some m2 -> *)
-(*     exists m2', store_init_data_list tge m1' b2 (ofs+delta) v' = Some m2' *)
-(*            /\ Mem.weak_inject (globs_meminj  gmap) g m2 m2'. *)
-(* Proof. *)
-(*   induction v; intros. *)
-(*   - monadInv H0. simpl in H2. inv H2. exists m1'. split; auto. *)
-(*   - monadInv H0. simpl in H2. destr_match_in H2; inv H2. *)
-(*     unfold Genv.store_init_data in EQ0. destruct a. *)
-(*     + monadInv EQ. exploit Mem.store_mapped_weak_inject; eauto. *)
-(*       intros (n2 & STORE & WINJ). simpl in H3. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       rewrite STORE. replace (ofs + delta + 1) with (ofs + 1 + delta) by omega. *)
-(*       auto. *)
-(*     + monadInv EQ. exploit Mem.store_mapped_weak_inject; eauto. *)
-(*       intros (n2 & STORE & WINJ). simpl in H3. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       rewrite STORE. replace (ofs + delta + 2) with (ofs + 2 + delta) by omega. *)
-(*       auto. *)
-(*     + monadInv EQ. exploit Mem.store_mapped_weak_inject; eauto. *)
-(*       intros (n2 & STORE & WINJ). simpl in H3. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       rewrite STORE. replace (ofs + delta + 4) with (ofs + 4 + delta) by omega. *)
-(*       auto. *)
-(*     + monadInv EQ. exploit Mem.store_mapped_weak_inject; eauto. *)
-(*       intros (n2 & STORE & WINJ). simpl in H3. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       rewrite STORE. replace (ofs + delta + 8) with (ofs + 8 + delta) by omega. *)
-(*       auto. *)
-(*     + monadInv EQ. exploit Mem.store_mapped_weak_inject; eauto. *)
-(*       intros (n2 & STORE & WINJ). simpl in H3. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       rewrite STORE. replace (ofs + delta + 4) with (ofs + 4 + delta) by omega. *)
-(*       auto. *)
-(*     + monadInv EQ. exploit Mem.store_mapped_weak_inject; eauto. *)
-(*       intros (n2 & STORE & WINJ). simpl in H3. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       rewrite STORE. replace (ofs + delta + 8) with (ofs + 8 + delta) by omega. *)
-(*       auto. *)
-(*     + monadInv EQ. simpl in H3. inv EQ0. *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       replace (ofs + delta + (Z.max z 0)) with (ofs + (Z.max z 0) + delta) by omega. *)
-(*       auto. *)
-(*     + monadInvX EQ. simpl in H3. destr_match_in EQ0; inv EQ0. *)
-(*       exploit Mem.store_mapped_weak_inject; eauto.  *)
-(*       econstructor. unfold globs_meminj. apply Genv.find_invert_symbol in EQ. *)
-(*       unfold ge in EQ. rewrite EQ. rewrite EQ2.  *)
-(*       unfold Genv.symbol_block_offset. unfold Genv.label_to_block_offset. eauto. *)
-(*       rewrite Ptrofs.repr_unsigned. eauto. *)
-(*       intros (n2 & STORE & WINJ).  *)
-(*       exploit IHv; eauto. intros (n3 & STOREL & WINJ'). *)
-(*       exists n3. split; eauto. simpl.  *)
-(*       unfold Genv.symbol_address. unfold Genv.label_to_ptr.  *)
-(*       unfold offset_seglabel. destruct s. simpl. simpl in STORE. unfold tge.  *)
-(*       rewrite Ptrofs.add_commut. rewrite STORE. *)
-(*       replace (ofs + delta + (if Archi.ptr64 then 8 else 4)) with (ofs + (if Archi.ptr64 then 8 else 4) + delta) by omega. *)
-(*       auto. *)
-(* Qed. *)
+Lemma globs_meminj_pres_find_symbol: 
+  forall id b,
+    Globalenvs.Genv.find_symbol ge id = Some b ->
+    exists b' ofs', Genv.find_symbol tge id = Some (b', ofs') /\
+               globs_meminj b = Some (b', Ptrofs.unsigned ofs').
+Proof.
+  intros id b FSYM.
+  unfold ge in FSYM.
+  exploit Genv.find_symbol_inversion; eauto. intros INSYM.
+  unfold prog_defs_names in INSYM.
+  rewrite in_map_iff in INSYM. destruct INSYM as (def & EQ1 & IN).
+  destruct def. simpl in EQ1. subst i.
+  generalize TRANSF. intros TRANSF'.
+  red in TRANSF'. unfold transf_program in TRANSF'. repeat destr_in TRANSF'. 
+  destruct w.
+  exploit transl_prog_pres_def; eauto.
+  intros (def' & sb & IN' & TLDEF).
+  exploit find_symbol_exists; eauto.
+  intros (b' & ofs' & FSYM').
+  exists b', ofs'. split; auto.
+  unfold globs_meminj. 
+  apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto.
+Qed.  
+
+Lemma store_init_data_list_mapped_inject_aux : forall v g m1 m1' m2 b1 b2 delta ofs,
+    Mem.weak_inject globs_meminj g m1 m1' ->
+    globs_meminj b1 = Some (b2, delta) ->
+    Genv.store_init_data_list ge m1 b1 ofs v = Some m2 ->
+    exists m2', store_init_data_list tge m1' b2 (ofs+delta) v = Some m2'
+           /\ Mem.weak_inject globs_meminj g m2 m2'.
+Proof.
+  induction v; intros.
+  - simpl in H1. inv H1. exists m1'. split; auto.
+  - simpl in H1. destr_match_in H1; inv H1.
+    unfold Genv.store_init_data in EQ. destruct a.
+    + exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). simpl in H3.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      rewrite STORE. replace (ofs + delta + 1) with (ofs + 1 + delta) by omega.
+      auto.
+    + exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). simpl in H3.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      rewrite STORE. replace (ofs + delta + 2) with (ofs + 2 + delta) by omega.
+      auto.
+    + exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). simpl in H3.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      rewrite STORE. replace (ofs + delta + 4) with (ofs + 4 + delta) by omega.
+      auto.
+    + exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). simpl in H3.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      rewrite STORE. replace (ofs + delta + 8) with (ofs + 8 + delta) by omega.
+      auto.
+    + exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). simpl in H3.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      rewrite STORE. replace (ofs + delta + 4) with (ofs + 4 + delta) by omega.
+      auto.
+    + exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). simpl in H3.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      rewrite STORE. replace (ofs + delta + 8) with (ofs + 8 + delta) by omega.
+      auto.
+    + simpl in H3. inv EQ.
+      exploit IHv; eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      replace (ofs + delta + (Z.max z 0)) with (ofs + (Z.max z 0) + delta) by omega.
+      auto.
+    + simpl in H3. destr_match_in EQ; inv EQ.
+      exploit globs_meminj_pres_find_symbol; eauto.
+      intros (b' & fos' & FSYM & INJ).
+      exploit Mem.store_mapped_weak_inject; eauto.
+      intros (n2 & STORE & WINJ). rewrite Ptrofs.repr_unsigned in STORE.
+      exploit (fun f m1 m1' m2 => IHv f m1 m1' m2 b1); eauto. intros (n3 & STOREL & WINJ').
+      exists n3. split; eauto. simpl.
+      unfold Genv.symbol_address. rewrite FSYM. 
+      rewrite STORE.
+      replace (ofs + delta + (if Archi.ptr64 then 8 else 4)) with (ofs + (if Archi.ptr64 then 8 else 4) + delta) by omega.
+      auto.
+Qed.
 
 Lemma store_init_data_list_mapped_inject : forall g m1 m1' m2 (v:globvar unit) b1 b2 delta ofs,
     Mem.weak_inject globs_meminj g m1 m1' ->
@@ -2888,11 +2886,10 @@ Lemma store_init_data_list_mapped_inject : forall g m1 m1' m2 (v:globvar unit) b
     exists m2', store_init_data_list tge m1' b2 (ofs+delta) (gvar_init v) = Some m2'
            /\ Mem.weak_inject globs_meminj g m2 m2'.
 Proof.
-Admitted.
-(*   intros gmap g m1 m1' m2 v v' b1 b2 delta ofs WINJ TRANSLV F STOREL. *)
-(*   monadInv TRANSLV. simpl. *)
-(*   eapply store_init_data_list_mapped_inject_aux; eauto. *)
-(* Qed. *)
+  intros g m1 m1' m2 v b1 b2 delta ofs WINJ F STOREL.
+  simpl.
+  eapply store_init_data_list_mapped_inject_aux; eauto.
+Qed.
 
 Lemma store_init_data_pres_def_frame_inj : forall m1 b1 ofs v m1',
     Genv.store_init_data ge m1 b1 ofs v = Some m1' ->
