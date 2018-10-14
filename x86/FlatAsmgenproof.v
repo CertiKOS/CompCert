@@ -2239,8 +2239,28 @@ Lemma find_symbol_to_gmap :
           /\ b = gen_segblocks tprog (fst slbl) 
           /\ ofs = snd slbl.
 Proof.
-Admitted.
-
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w. inv MKMAP.
+  intros. unfold globalenv in FSYM.
+  erewrite add_globals_pres_find_symbol in FSYM; eauto.
+  - simpl in FSYM.
+    unfold gidmap_to_symbmap in FSYM. 
+    erewrite transl_prog_gmap in FSYM; eauto.
+    destr_in FSYM; inv FSYM. destruct s. inv H1.
+    eauto.
+  - exploit transl_prog_pres_def; eauto.  
+    intros (def' & sb & IN' & TL).
+    destruct def. destruct g. destruct f.
+    + monadInv TL.
+      eapply unique_def_is_internal_fun; eauto.
+      eapply transl_prog_list_norepet; eauto.
+    + inv VI.
+    + monadInvX TL.
+      eapply unique_def_is_var; eauto.
+      eapply transl_prog_list_norepet; eauto.
+    + inv VI.
+Qed.
 
 Lemma gmap_to_find_symbol: 
   forall (x : ident) def gmap lmap dz cz slbl
@@ -2250,35 +2270,28 @@ Lemma gmap_to_find_symbol:
     (GMAP: gmap x = Some slbl),
     Genv.find_symbol (globalenv tprog) x = Some (gen_segblocks tprog (fst slbl), snd slbl).
 Proof.
-Admitted.
-
-
-(* Lemma find_symbol_exists_intern_def :  *)
-(*   forall id f gmap lmap dz cz b delta *)
-(*     (IN: In (id, Some f) (AST.prog_defs prog)) *)
-(*     (VI : sdef_is_var_or_internal_fun (Some f)) *)
-(*     (MAP: make_maps prog = (gmap, lmap, dz, cz)) *)
-(*     (FSYM: Genv.find_symbol tge id = Some (b, delta)), *)
-(*   exists slbl, gmap id = Some slbl  *)
-(*           /\ b = gen_segblocks tprog (fst slbl)  *)
-(*           /\ delta = snd slbl. *)
-(* Proof. *)
-(*   generalize TRANSF. intros TRANSF'. *)
-(*   unfold match_prog in TRANSF'. *)
-(*   unfold transf_program in TRANSF'. *)
-(*   repeat destr_in TRANSF'. *)
-(*   intros. inv MAP. *)
-(*   exploit transl_prog_pres_def; eauto. *)
-(*   intros (def' & sb & IN' & TLD). *)
-(*   monadInv TLD. *)
-(*   unfold tge, globalenv in FSYM. *)
-
-(*   Lemma add_globals_pres_find_symbol' :      *)
-(*     forall defs (ge : genv) (i : ident) def *)
-(*       (IN: In (id, def) defs) *)
-(*       (NPT: list_norepet (map fst defs)) *)
-(*       (VIS: sdef_is_var_or_internal_fun def) *)
-(*       Genv.find_symbol (add_globals ge defs) id = Genv.find_symbol ge id *)
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w. inv MKMAP.
+  unfold globalenv.
+  erewrite add_globals_pres_find_symbol; eauto.
+  - simpl.
+    unfold gidmap_to_symbmap.
+    erewrite transl_prog_gmap; eauto.
+    rewrite GMAP. destruct slbl. simpl. auto.
+  - exploit transl_prog_pres_def; eauto.  
+    intros (def' & sb & IN' & TL).
+    destruct def. destruct g. destruct f.
+    + monadInv TL.
+      eapply unique_def_is_internal_fun; eauto.
+      eapply transl_prog_list_norepet; eauto.
+    + inv VI.
+    + monadInvX TL.
+      eapply unique_def_is_var; eauto.
+      eapply transl_prog_list_norepet; eauto.
+    + inv VI. 
+Qed.  
+  
 
 Lemma update_instrs_in_lbl : forall code p l cz id l' cz'
                                (IN: In p (labels code))
