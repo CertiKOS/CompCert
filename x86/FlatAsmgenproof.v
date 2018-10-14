@@ -3386,7 +3386,10 @@ Proof.
     inv H0. eapply IHl1; eauto.
 Qed.
 
-Axiom zero_le_ptrofs_max: (0 <= Ptrofs.max_unsigned).
+Lemma zero_le_ptrofs_max: (0 <= Ptrofs.max_unsigned).
+Proof.
+  generalize (instr_size_repr (Asm.Pmovsb)). omega.
+Qed.
 
 Lemma four_le_suc_len :  
   forall {A:Type} (defs: list A),
