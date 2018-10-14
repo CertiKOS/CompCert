@@ -3173,13 +3173,57 @@ Proof.
   eapply Genv.find_symbol_not_fresh; eauto.
 Qed.
 
+Lemma Nth_len : forall {A:Type} l1 (x:A) l2, Nth (length l1) (l1 ++ x :: l2) x.
+Proof.
+  induction l1. simpl. intros. 
+  - constructor.
+  - intros. simpl. constructor. apply IHl1.
+Qed.
+
+Lemma transl_prog_pres_nvi : 
+  forall def i
+    (NVI: ~sdef_is_var_or_internal_fun def)
+    (IN: In (i, def) (AST.prog_defs prog)),
+  exists n def' sb, def_is_none_or_external_fun (i, def', sb) /\ Nth n (prog_defs tprog) (i, def', sb).
+Proof.
+  intros. 
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w. 
+  exploit transl_prog_pres_def; eauto.
+  intros (def' & sb & IN' & TL).
+  apply in_split in IN'. destruct IN' as (defs1' & gdefs1' & IN').
+  exists (length defs1'), def', sb. split.
+  - destruct def. destruct g0. destruct f.
+    + monadInv TL. exfalso. apply NVI. red. auto.
+    + monadInv TL. red. eauto.
+    + monadInvX TL. exfalso. apply NVI. red. auto.
+    + monadInv TL. red. eauto.
+  - rewrite IN'.
+    apply Nth_len.
+Qed.
+
 Lemma find_symbol_nvi_lower_bound : 
   forall def i b ofs
     (NVI: ~sdef_is_var_or_internal_fun def)
     (IN: In (i, def) (AST.prog_defs prog))
     (FSYM: Genv.find_symbol (globalenv tprog) i = Some (b, ofs)),
     Ple (pos_advance_N init_block (length (list_of_segments tprog))) b.
-Admitted.
+Proof.
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w. 
+  intros. unfold globalenv in FSYM.
+  exploit transl_prog_pres_def; eauto.  
+  intros (def' & sb & IN' & TL).
+  exploit transl_prog_pres_nvi; eauto.
+  intros (n & def'' & sb' & NE & NTH).
+  erewrite add_globals_find_symbol_ne in FSYM; eauto.
+  simpl in FSYM. inv FSYM.
+  simpl. apply pos_advance_N_ple.
+  eapply transl_prog_list_norepet; eauto.
+Qed.
+  
 
 Lemma find_symbol_nvi_eq:
   forall defs i def gdefs
