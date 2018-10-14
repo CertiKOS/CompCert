@@ -2132,6 +2132,40 @@ Proof.
   eapply transl_globdefs_pres_def; eauto.
 Qed.
 
+Lemma transl_globdefs_pres_def' : forall defs sdefs tdefs g i def gdefs
+  (DEFSTAIL : defs ++ (i, def) :: gdefs = sdefs)
+  (TL: transl_globdefs g sdefs = OK tdefs),
+  exists defs' gdefs' def' sb, 
+    tdefs = defs' ++ (i, def', sb) :: gdefs' 
+    /\ transl_globdefs g defs = OK defs'
+    /\ transl_globdef g i def = OK (i, def', sb)
+    /\ transl_globdefs g gdefs = OK gdefs'.
+Proof.
+  induction defs; intros; simpl. 
+  - simpl in *. subst. 
+    monadInv TL. destruct x. destruct p. 
+    exploit transl_globdef_pres_index; eauto. intros. subst.
+    exists nil, x0. repeat eexists. auto. auto.
+  - destruct a. subst. monadInv TL. destruct x. destruct p.
+    exploit IHdefs; eauto. 
+    intros (defs' & gdefs' & def' & sb & IN & TL1 & TL2 & TL3). subst.
+    rewrite EQ. rewrite TL1, TL2, TL3. simpl. 
+    exists ((i1, o0, s) :: defs'). repeat eexists. 
+Qed.
+
+Lemma transl_prog_pres_def' : forall defs gdefs g l p dz cz p' i def
+  (DEFSTAIL : defs ++ (i, def) :: gdefs = (AST.prog_defs p))
+  (TL: transl_prog_with_map g l p dz cz = OK p'),
+  exists defs' gdefs' def' sb, 
+    (prog_defs p') = defs' ++ (i, def', sb) :: gdefs' 
+    /\ transl_globdefs g defs = OK defs'
+    /\ transl_globdef g i def = OK (i, def', sb)
+    /\ transl_globdefs g gdefs = OK gdefs'.
+Proof.
+  intros. monadInv TL. simpl.
+  eapply transl_globdefs_pres_def'; eauto.
+Qed.
+
 Lemma transl_globdefs_pres_non_def : forall defs g defs' i
   (TL: transl_globdefs g defs = OK defs')
   (IN: ~ In i (map fst defs)),
@@ -2880,45 +2914,6 @@ Proof.
     rewrite H. exploit IHgv; eauto.
 Qed.
 
-(* Lemma transl_init_data_pres_size : forall gmap v v',  *)
-(*     transl_init_data gmap v = OK v' -> *)
-(*     (init_data_size v = FlatAsmGlobdef.init_data_size v'). *)
-(* Proof. *)
-(*   intros gmap v v' H. *)
-(*   unfold transl_init_data in H. *)
-(*   destruct v; try now (monadInv H; eauto). *)
-(*   monadInvX H. simpl. auto. *)
-(* Qed. *)
-
-(* Lemma transl_init_data_list_pres_size : forall gmap v v',  *)
-(*     transl_init_data_list gmap v = OK v' -> *)
-(*     (init_data_list_size v = FlatAsmGlobdef.init_data_list_size v'). *)
-(* Proof. *)
-(*   induction v; intros. *)
-(*   - monadInv H. auto. *)
-(*   - monadInv H. simpl. *)
-(*     erewrite transl_init_data_pres_size; eauto. *)
-(*     erewrite IHv; eauto. *)
-(* Qed. *)
-
-(* Lemma transl_gvar_pres_size : forall gmap v v',  *)
-(*     transl_gvar gmap v = OK v' -> *)
-(*     (init_data_list_size (gvar_init v)) = *)
-(*     (FlatAsmGlobdef.init_data_list_size (FlatAsmGlobdef.gvar_init unit v')). *)
-(* Proof. *)
-(*   intros gmap v v' TRANSLV. *)
-(*   monadInv TRANSLV. simpl. *)
-(*   eapply transl_init_data_list_pres_size; eauto. *)
-(* Qed. *)
-
-(* Lemma transl_gvar_pres_perm : forall gmap v (v':FlatAsmGlobdef.globvar unit),  *)
-(*     transl_gvar gmap v = OK v' -> *)
-(*     Genv.perm_globvar v = FlatAsmGlobdef.perm_globvar v'. *)
-(* Proof. *)
-(*   intros gmap v v' H. *)
-(*   monadInv H. unfold FlatAsmGlobdef.perm_globvar. simpl. *)
-(*   auto. *)
-(* Qed. *)
 
 Lemma defs_names_distinct_not_in_tail : forall(F V:Type) (defs:list (ident * option (AST.globdef F V))) id def gdefs,
     list_norepet (map fst (defs ++ (id, def) :: gdefs)) -> ~In id (map fst gdefs).
@@ -3224,6 +3219,36 @@ Proof.
   eapply transl_prog_list_norepet; eauto.
 Qed.
   
+Lemma transl_globdefs_pres_len  : forall g defs defs'
+    (TL: transl_globdefs g defs = OK defs'),
+    length defs = length defs'.
+Proof.
+  induction defs; intros; simpl.
+  - monadInv TL. auto.
+  - destruct a. monadInv TL. erewrite IHdefs; eauto. simpl. auto.
+Qed.
+
+Lemma transl_prog_pres_nvi' :
+  forall defs def gdefs i
+    (DEFSTAIL : defs ++ (i, def) :: gdefs = AST.prog_defs prog)
+    (NVI: ~sdef_is_var_or_internal_fun def),
+  exists def' sb, def_is_none_or_external_fun (i, def', sb) /\ Nth (length defs) (prog_defs tprog) (i, def', sb).
+Proof.
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w.
+  exploit transl_prog_pres_def'; eauto.
+  intros (defs' & gdefs' & def' & sb & IN' & TL1 & TL2 & TL3).
+  exists def', sb. split. 
+  - destruct def. destruct g0. destruct f.
+    + monadInv TL2. exfalso. apply NVI. red. auto.
+    + monadInv TL2. red. eauto.
+    + monadInvX TL2. exfalso. apply NVI. red. auto.
+    + monadInv TL2. red. eauto.
+  - rewrite IN'.
+    erewrite transl_globdefs_pres_len; eauto.
+    apply Nth_len.
+Qed.
 
 Lemma find_symbol_nvi_eq:
   forall defs i def gdefs
@@ -3231,7 +3256,16 @@ Lemma find_symbol_nvi_eq:
     (NVIT: ~sdef_is_var_or_internal_fun def)
     (NPT: list_norepet (map (fun '(i, _) => i) (AST.prog_defs prog))),
             Genv.find_symbol (globalenv tprog) i = Some (pos_advance_N (Pos.of_succ_nat num_segments) (length defs), Ptrofs.zero).
-Admitted.
+Proof.
+  intros. generalize TRANSF. intros TRANSF'.
+  unfold match_prog,transf_program in TRANSF'.
+  repeat destr_in TRANSF'. destruct w. 
+  unfold globalenv.
+  exploit transl_prog_pres_nvi'; eauto.
+  intros (def' & sb & NE & NTH).
+  erewrite add_globals_find_symbol_ne; eauto.
+  eapply transl_prog_list_norepet; eauto.
+Qed.  
 
 Lemma partial_genv_genv_next_bound: 
   forall defs def gdefs prog i
