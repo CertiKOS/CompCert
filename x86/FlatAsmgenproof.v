@@ -3228,6 +3228,15 @@ Proof.
   - destruct a. monadInv TL. erewrite IHdefs; eauto. simpl. auto.
 Qed.
 
+Lemma transl_prog_pres_len  : forall g l p p' dz cz
+    (TL: transl_prog_with_map g l p dz cz = OK p'),
+    length (prog_defs p') = length (AST.prog_defs p).
+Proof.
+  intros. monadInv TL. simpl.
+  erewrite transl_globdefs_pres_len; eauto.
+Qed.
+
+
 Lemma transl_prog_pres_nvi' :
   forall defs def gdefs i
     (DEFSTAIL : defs ++ (i, def) :: gdefs = AST.prog_defs prog)
@@ -3286,9 +3295,57 @@ Proof.
     erewrite <- IHn1. simpl. auto.
 Qed.
 
+Lemma pos_advance_N_plt : forall p n,
+  (0 < n)%nat -> Plt p (pos_advance_N p n).
+Proof.
+  induction n; intros.
+  - simpl. omega.
+  - simpl.
+    eapply Plt_le_trans. apply Pos.lt_succ_diag_r.
+    apply pos_advance_N_ple.
+Qed.
+
+Lemma pos_advande_N_plt_mono: forall n1 n2 b,
+  (n1 < n2)%nat -> Plt (pos_advance_N b n1) (pos_advance_N b n2).
+Proof.
+  induction n1; intros; simpl.
+  - apply pos_advance_N_plt. auto.
+  - destruct n2. omega.
+    assert (n1 < n2)%nat by omega. 
+    generalize (IHn1 n2 b H0). intros.
+    simpl.
+    repeat rewrite psucc_advance_Nsucc_eq. 
+    rewrite <- Pos.succ_lt_mono. auto.
+Qed.
+
 Lemma pos_advance_N_plt_add: 
   forall b n1 n2, Plt (pos_advance_N b n1) (pos_advance_N b (n1+(Datatypes.S n2))).
-Admitted.
+Proof.
+  intros. apply pos_advande_N_plt_mono.
+  omega.
+Qed.
+
+Lemma pos_advande_N_ple_mono: forall n1 n2 b,
+  (n1 <= n2)%nat -> Ple (pos_advance_N b n1) (pos_advance_N b n2).
+Proof.
+  induction n1; intros; simpl.
+  - apply pos_advance_N_ple. 
+  - destruct n2. omega.
+    assert (n1 <= n2)%nat by omega.
+    generalize (IHn1 n2 b H0). intros.
+    simpl.
+    repeat rewrite psucc_advance_Nsucc_eq. 
+    rewrite <- Pos.succ_le_mono. auto.
+Qed.
+
+
+Lemma pos_advance_N_ple_add: 
+  forall b n1 n2, Ple (pos_advance_N b n1) (pos_advance_N b (n1+n2)).
+Proof.
+  intros. apply pos_advande_N_ple_mono.
+  omega.
+Qed.
+
 
 Lemma partial_genv_genv_next_bound: 
   forall defs def gdefs prog i
@@ -3316,9 +3373,6 @@ Proof.
   intros. exfalso. eapply Plt_le_absurd; eauto.
 Qed.
 
-Lemma pos_advance_N_ple_add: 
-  forall b n1 n2, Ple (pos_advance_N b n1) (pos_advance_N b (n1+n2)).
-Admitted.
 
 
 Lemma app_same_len_prefix : forall {A:Type} (l1:list A) l2 x l1' l2' x',
@@ -4264,26 +4318,6 @@ Proof.
     eapply IHdefs; eauto.
 Qed.
 
-Lemma alloc_globals_segments_valid_block : 
-  forall i b ofs m m'
-    (NEXTBLOCK: Mem.nextblock m = init_block)
-    (FSYM: Genv.find_symbol (globalenv tprog) i = Some (b, ofs))
-    (ALLOC: alloc_globals (alloc_segments m (list_of_segments tprog)) (prog_defs tprog) = Some m'),
-    Mem.valid_block m' b.
-Proof.
-  (* exploit update_map_gmap_range; eauto. intros IN. *)
-  (* generalize TRANSF. intros TRANSF'. *)
-  (* red in TRANSF'. unfold transf_program in TRANSF'. repeat destr_in TRANSF'. inv UPDATE. *)
-  (* destruct w. *)
-  (* exploit gen_segblocks_in_valid; eauto. intros SEGBVALID. *)
-  (* red in SEGBVALID. destruct SEGBVALID. *)
-  (* red. rewrite genv_gen_segblocks. *)
-  (* unfold init_block in H1. simpl in H1. *)
-  (* erewrite alloc_segments_nextblock; eauto. *)
-  (* rewrite NEXTBLOCK. unfold init_block. simpl. *)
-  (* auto. *)
-Admitted.
-
 
 Lemma alloc_globals_segments_weak_inject: forall gmap lmap dsize csize m
     (UPDATE: make_maps prog = (gmap, lmap, dsize, csize))
@@ -4308,7 +4342,27 @@ Proof.
     destr_match_in H; inv H.
     destr_match_in H1; inv H1. 
     destruct p. inv H0.
-    eapply alloc_globals_segments_valid_block; eauto.
+    apply Genv.invert_find_symbol in EQ.
+    exploit (find_symbol_inversion_2 prog); eauto.
+    intros (def & IN).
+    red.
+    erewrite alloc_globals_nextblock; eauto.
+    erewrite alloc_segments_nextblock; eauto.
+    simpl. erewrite NEXTBLOCK. simpl.
+    destruct (vit_dec _ _ def).
+    + exploit find_symbol_to_gmap; eauto.
+      intros (slbl & GMAP & BEQ & IEQ). subst.
+      eapply Plt_le_trans.
+      apply gen_segblocks_upper_bound. simpl.
+      apply pos_advance_N_ple.
+    + apply in_split in IN. destruct IN as (defs & gdefs & DEFS).
+      erewrite transl_prog_pres_len; eauto.
+      erewrite find_symbol_nvi_eq in EQ0; eauto.
+      inv EQ0. rewrite DEFS. rewrite app_length.
+      simpl. apply pos_advance_N_plt_add.
+      generalize TRANSF. intros TRANSF'.
+      unfold match_prog, transf_program in TRANSF'.
+      repeat destr_in TRANSF'. destruct w. auto.
 Qed.
 
 
