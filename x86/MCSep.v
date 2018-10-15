@@ -283,79 +283,9 @@ Proof.
   }
   eauto.
   {
-    unfold FlatAsmgen.transl_prog_with_map in H0. monadInv H0.
-    unfold check_faprog. simpl. symmetry.
-    apply forallb_forall.
-    unfold check_fadef.
-    intros. repeat destr. rewrite andb_true_iff. split.
-    - rewrite forallb_forall. intros. repeat destr.
-    make_maps_labels
-    simpl.
-  unfold code_segid, data_segid. congruence.
-  unfold FlatAsmgen.transl_prog_with_map in H0. monadInv H0. simpl.
-  auto.
-
-
-
-    unfold flatasm_to_asm in Heqo.
-    Transparent Linker_prog. simpl in Heqo.
-    unfold link_prog in Heqo. simpl in Heqo. repeat destr_in Heqo.
-    simpl in *.
-    rewrite Forall_forall. intros x2 IN.
-    eapply transl_globdefs_back in IN. 2: eauto. simpl in IN.
-    destruct IN as (i & y & IN & TG).
-    apply PTree.elements_complete in IN.
-    rewrite PTree.gcombine in IN by auto.
-
-    
-    Lemma link_prog_merge_inv:
-      forall x y z,
-        link_prog_merge (F:=Asm.fundef) (V:= unit) x y = Some z ->
-        x = Some z \/ y = Some z.
-    Proof.
-      destruct x,y; eauto.
-      intros. simpl in H.
-      destruct o, o0; simpl in *; inv H; auto.
-      repeat destr_in H1.
-      Transparent Linker_def. simpl in *. unfold link_def in Heqo.
-      repeat destr_in Heqo; auto.
-      Transparent Linker_fundef.
-      simpl in *.
-      unfold link_fundef in Heqo0.
-      repeat destr_in Heqo0.
-      Transparent Linker_vardef.
-      simpl in *.
-      unfold link_vardef in Heqo0.
-      repeat destr_in Heqo0.
-      Transparent Linker_varinit Linker_unit.
-      simpl in *. inv Heqo. unfold link_varinit in Heqo1.
-      destruct v, v0. simpl in *. apply andb_true_iff in Heqb.
-      destruct Heqb as (Ha & Hb).
-      apply eqb_prop in Ha.
-      apply eqb_prop in Hb. subst.
-      destruct gvar_info, gvar_info0. simpl in *.
-      repeat destr_in Heqo1; eauto.
-    Qed.
-    apply link_prog_merge_inv in IN.
-    repeat destr. intros; subst. simpl in *.
-    unfold link_prog_merge in IN.
-
-    
-
-
-    Transparent Linker_option. simpl in IN.
-    unfold link_option in IN.
-    repeat destr_in IN.
-    Transparent Linker_def. simpl in Heqo3.
-    unfold link_def in Heqo3.
-    unfold link in Heqo3.
-
-
-
-    assert (exists y, (In y x  ))
+    erewrite FlatAsmgenproof.transf_check_faprog. auto. red. unfold FlatAsmgen.transf_program.
+    rewrite pred_dec_true. rewrite Heqp3. destr. auto. auto.
   }
-  eauto.
-  admit.
   unfold FlatAsmgen.transl_prog_with_map in H0. monadInv H0. simpl.
   unfold code_segid, data_segid. congruence.
   unfold FlatAsmgen.transl_prog_with_map in H0. monadInv H0. simpl.

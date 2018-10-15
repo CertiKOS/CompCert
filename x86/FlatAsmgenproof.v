@@ -4837,6 +4837,28 @@ Qed.
 (* Qed. *)
 
 
+Lemma update_map_funct':
+  forall gmap lmap dsize csize f i s,
+    make_maps prog = (gmap, lmap, dsize, csize) ->
+    list_norepet (map fst (AST.prog_defs prog)) ->
+    In (i, Some (Gfun (Internal f))) (AST.prog_defs prog) ->
+    gmap i = Some s ->
+    fst s = code_segid.
+Proof.
+  unfold make_maps. intros gmap lmap dsize csize f i s UM LNR IN GM.
+
+  eapply (umind _ _ _ _ _ _ _ _ _ UM (fun g l d c => forall s, g i = Some s -> In (i, Some (Gfun (Internal f))) (AST.prog_defs prog) -> fst s = code_segid)).
+  inversion 1.
+  - intros.
+    erewrite update_gmap in H2. 2: eauto.
+    destr_in H2; eauto.
+    subst.
+    exploit @norepet_unique. apply LNR. apply H3. apply H1. reflexivity. intro A; inv A. inv H2.
+    reflexivity.
+  - auto.
+  - auto.
+Qed.
+
 Lemma update_map_funct:
   forall gmap lmap dsize csize b f i s,
     make_maps prog = (gmap, lmap, dsize, csize) ->
@@ -4850,19 +4872,8 @@ Proof.
   exploit @Genv.find_symbol_funct_ptr_inversion. reflexivity.
   apply Genv.invert_find_symbol. unfold ge in IVS. apply IVS.
   eauto.
-  intros.
-  eapply (umind _ _ _ _ _ _ _ _ _ UM (fun g l d c => forall s, g i = Some s -> In (i, Some (Gfun (Internal f))) (AST.prog_defs prog) -> fst s = code_segid)).
-  inversion 1.
-  - intros.
-    erewrite update_gmap in H3. 2: eauto.
-    destr_in H3; eauto.
-    subst.
-    exploit @norepet_unique. apply LNR. apply H4. apply H2. reflexivity. intro A; inv A. inv H3.
-    reflexivity.
-  - auto.
-  - auto.
+  intros; eapply update_map_funct'; eauto.
 Qed.
-
 
 
 Lemma gen_segblocks_code_map : forall g l p dz cz p'
@@ -6805,6 +6816,76 @@ Qed.
 Require Import MCgen.
 Arguments is_valid_label_dec: simpl nomatch.
 
+Lemma transl_instrs_id_code:
+  forall c i  ii sbb id s i0 x x0,
+    FlatAsmgen.transl_instrs i s i0 c = OK (x, x0) ->
+    In (ii, sbb, id) x0 ->
+    segblock_id sbb = s /\ i = id.
+Proof.
+  induction c; simpl; intros; eauto.
+  inv H. easy.
+  monadInv H.
+  destruct H0.
+  - subst.
+    unfold FlatAsmgen.transl_instr in EQ.
+    repeat destr_in EQ; simpl; auto.
+  - eapply IHc; eauto.
+Qed.
+
+
+Lemma in_transl_globdefs_code:
+  forall defs g tdefs i tdef sb,
+    FlatAsmgen.transl_globdefs g defs = OK tdefs ->
+    In (i, Some tdef, sb) tdefs ->
+    exists def,
+      In (i, def) defs /\ FlatAsmgen.transl_globdef g i def = OK (i, Some tdef, sb).
+Proof.
+  induction defs; simpl; intros; eauto.
+  - inv H; easy.
+  - repeat destr_in H. monadInv H2.
+    destruct H0. subst.
+    assert (i = i0).
+    {
+      unfold FlatAsmgen.transl_globdef in EQ. repeat destr_in EQ.
+      monadInv H0. auto.
+    } subst.
+    eexists; split; eauto.
+    edestruct IHdefs as (def & IN & FATG); eauto.
+Qed.
+
+Lemma transl_fun_id_code:
+  forall g i f1 f2 ii sbb id,
+    FlatAsmgen.transl_fun g i f1 = OK f2 ->
+    In (ii, sbb, id) (fn_code f2) ->
+    exists s i0,
+      g i = Some (s, i0) /\
+      segblock_id sbb = s /\ i = id.
+Proof.
+  unfold FlatAsmgen.transl_fun.
+  intros g i f1 f2 ii sbb id TF IN.
+  do 2 destr_in TF. monadInv TF. repeat destr_in EQ0.
+  simpl in IN.
+  do 2 eexists; split; eauto.
+  eapply transl_instrs_id_code; eauto.
+Qed.
+
+Lemma transl_instrs_back:
+  forall c i  ii sbb id s i0 x x0,
+    FlatAsmgen.transl_instrs i s i0 c = OK (x, x0) ->
+    In (ii, sbb, id) x0 ->
+    exists ofs ii1,
+      FlatAsmgen.transl_instr ofs i s ii1 = OK (ii, sbb,id) /\
+      In ii1 c.
+Proof.
+  induction c; simpl; intros; eauto.
+  inv H. easy.
+  monadInv H.
+  destruct H0.
+  - subst. eauto.
+  - eapply IHc in EQ1; eauto.
+    decompose [ex and] EQ1; eauto.
+Qed.
+
 Lemma transf_check_faprog:
   wf_prog prog -> check_faprog tprog = true.
 Proof.
@@ -6820,29 +6901,115 @@ Proof.
   simpl in *.
   subst.
   rewrite andb_true_iff; split.
-
   rewrite forallb_forall.
   - intros ((ii & sbb) & id) INc.
-    rewrite andb_true_iff. split.
-    + generalize (update_map_funct _ _ _ _) clear TRANSF tge. revert x EQ IN INc. clear.
-      induction (AST.prog_defs prog); simpl; intros; eauto.
-      inv EQ; easy.
-      destr_in EQ. monadInv EQ.
-      destruct IN; eauto. subst.
-      unfold FlatAsmgen.transl_globdef in EQ0.
-      repeat destr_in EQ0. monadInv H0. clear - INc EQ0.
-      unfold FlatAsmgen.transl_fun in EQ0. repeat destr_in EQ0.
-      monadInv H0. repeat destr_in EQ0. simpl in *.
-
-      revert EQ INc. generalize (Asm.fn_code f1) (Ptrofs.unsigned i0) i s0 x x0.
-      clear. induction c; simpl; intros; eauto.
-      inv EQ. easy.
-      monadInv EQ. destruct INc; eauto.
-      subst.
-      apply andb_true_iff. split.
-      cut (s0 = code_segid). intro; subst.
-      destruct a; simpl in EQ0; inv EQ0; simpl; auto.
-
+    edestruct in_transl_globdefs_code as (def & INdefs & TG); eauto.
+    unfold FlatAsmgen.transl_globdef in TG. repeat destr_in TG.
+    monadInv H0.
+    exploit transl_fun_id_code. eauto. eauto.
+    intros (s & i0 & GID & SBB & IID).
+    rewrite SBB, IID.
+    apply andb_true_iff; split.
+    apply andb_true_iff; split.
+    2: apply peq_true.
+    eapply update_map_funct' in GID; eauto. simpl in GID. subst. apply peq_true.
+    red in wf_prog_valid_labels.
+    rewrite Forall_forall in wf_prog_valid_labels.
+    specialize (wf_prog_valid_labels _ INdefs).
+    simpl in wf_prog_valid_labels.
+    red in wf_prog_valid_labels.
+    rewrite Forall_forall in wf_prog_valid_labels.
+    unfold FlatAsmgen.transl_fun in EQ0.
+    rewrite GID in EQ0. monadInv EQ0. repeat destr_in EQ2.
+    edestruct transl_instrs_back as (ofs & ii1 & TI & INcode); eauto.
+    specialize (wf_prog_valid_labels _ INcode).
+    unfold is_valid_label_dec. destr.
+    {
+      destruct ii1; simpl in TI; repeat destr_in TI.
+      simpl in wf_prog_valid_labels.
+      specialize (wf_prog_valid_labels _ eq_refl).
+      edestruct (update_maps_lmap_in) as (sid & ofs' & LEQ).
+      apply wf_prog_norepet_defs. apply INdefs. eauto.
+      apply Heqp. unfold proj_sumbool.  destr. rewrite LEQ in n. contradict n. congruence.
+    }
+    {
+      destruct ii1; simpl in TI; repeat destr_in TI.
+      simpl in wf_prog_valid_labels.
+      specialize (wf_prog_valid_labels _ eq_refl).
+      edestruct (update_maps_lmap_in) as (sid & ofs' & LEQ).
+      apply wf_prog_norepet_defs. apply INdefs. eauto.
+      apply Heqp. unfold proj_sumbool.  destr. rewrite LEQ in n. contradict n. congruence.
+    }
+    {
+      destruct ii1; simpl in TI; repeat destr_in TI.
+      simpl in wf_prog_valid_labels.
+      specialize (wf_prog_valid_labels _ eq_refl).
+      edestruct (update_maps_lmap_in) as (sid & ofs' & LEQ).
+      apply wf_prog_norepet_defs. apply INdefs. eauto.
+      apply Heqp. unfold proj_sumbool.  destr. rewrite LEQ in n. contradict n. congruence.
+    }
+    {
+      unfold proj_sumbool. destr. contradict n.
+      rewrite Forall_forall; intros xx INN.
+      destruct ii1; simpl in TI; repeat destr_in TI.
+      simpl in wf_prog_valid_labels.
+      specialize (wf_prog_valid_labels _ INN).
+      edestruct (update_maps_lmap_in) as (sid & ofs' & LEQ).
+      apply wf_prog_norepet_defs. apply INdefs. eauto.
+      apply Heqp. congruence. 
+    }
+  - simpl.
+    edestruct in_transl_globdefs_code as (def & INdefs & TG); eauto.
+    unfold FlatAsmgen.transl_globdef in TG. repeat destr_in TG.
+    monadInv H0.
+    unfold FlatAsmgen.transl_fun in EQ0.
+    repeat destr_in EQ0. monadInv H0. repeat destr_in EQ1.
+    simpl.
+    unfold get_instr_ptr. unfold Genv.label_to_ptr.
+    unfold proj_sumbool; destr. contradict n.
+    cut (list_norepet (map (fun '(_, bi, _) => snd (segblock_to_label bi)) x1)). clear.
+    induction x1; simpl; intros; eauto. constructor.
+    repeat destr. inv H; constructor. rewrite in_map_iff in H2 |- *.
+    intros (x0 & EQ & IN). apply H2.
+    exists x0. repeat destr.
+    apply IHx1. auto.
+    exploit transl_instrs_diff_labels. 3: apply EQ0. split; auto.
+    etransitivity. 2: eapply transl_instrs_ofs_bound; eauto. apply Ptrofs.unsigned_range.
+    apply Ptrofs.unsigned_range.
+    assert (Forall (fun s => s = s0) (map (fun i1 => fst (segblock_to_label (snd (fst i1)))) x1)).
+    {
+      clear - EQ0. revert EQ0.
+      generalize (Asm.fn_code f1) (Ptrofs.unsigned i0) x0 x1. clear.
+      induction c; simpl; intros; eauto.
+      inv EQ0; constructor.
+      monadInv EQ0.
+      simpl.
+      constructor; eauto.
+      destruct a; simpl in EQ; inv EQ; simpl; auto.
+    }
+    revert H.
+    clear.
+    intros.
+    eapply list_map_norepet with (f := snd) in H0.
+    rewrite map_map in H0. erewrite map_ext. apply H0.
+    intros. repeat destr.
+    intros.
+    rewrite in_map_iff in H1, H2.
+    destruct H1 as (y1 & EQ1 & IN1).
+    destruct H2 as (y2 & EQ2 & IN2).
+    subst.
+    intro EQ.
+    rewrite Forall_forall in H.
+    generalize (H (fst (segblock_to_label (snd (fst y1))))).
+    generalize (H (fst (segblock_to_label (snd (fst y2))))).
+    intros A B.
+    trim A. apply in_map_iff. eexists; split; eauto.
+    trim B. apply in_map_iff. eexists; split; eauto.
+    subst.
+    apply H3.
+    rewrite (surjective_pairing (segblock_to_label (snd (fst y1)))).
+    rewrite (surjective_pairing (segblock_to_label (snd (fst y2)))).
+    rewrite B, EQ. reflexivity.
 Qed.
 
 End PRESERVATION.
