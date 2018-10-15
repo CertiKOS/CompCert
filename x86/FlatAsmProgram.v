@@ -617,7 +617,7 @@ Fixpoint alloc_globals (m: mem) (gl: list (ident * option gdef * segblock))
       end
   end.
 
-Definition store_global (smap:segid_type -> block) (m: mem) (idg: ident * option gdef * segblock): option mem :=
+Definition store_global n (smap:segid_type -> block) (m: mem) (idg: ident * option gdef * segblock): option mem :=
   let '(id, gdef, sb) := idg in
   let ofs := Ptrofs.unsigned (segblock_start sb) in
   let sz := Ptrofs.unsigned (segblock_size sb) in
@@ -626,7 +626,8 @@ Definition store_global (smap:segid_type -> block) (m: mem) (idg: ident * option
   | None => Some m
   | Some (Gfun f) =>
     match f with
-    | External _ => Some m
+    | External _ => 
+      Mem.drop_perm m (pos_advance_N (Pos.of_succ_nat num_segments) n) 0 1 Nonempty
     | Internal f =>
       Mem.drop_perm m b ofs (ofs + sz) Nonempty
     end
@@ -643,16 +644,20 @@ Definition store_global (smap:segid_type -> block) (m: mem) (idg: ident * option
     end
   end.
 
-Fixpoint store_globals (smap:segid_type->block) (m: mem) (gl: list (ident * option gdef * segblock))
-                       {struct gl} : option mem :=
+Fixpoint store_globals_iter n (smap:segid_type->block) (m: mem) (gl: list (ident * option gdef * segblock))
+                       : option mem :=
   match gl with
   | nil => Some m
   | g :: gl' =>
-      match store_global smap m g with
+      match store_global n smap m g with
       | None => None
-      | Some m' => store_globals smap m' gl'
+      | Some m' => store_globals_iter (Datatypes.S n) smap m' gl'
       end
   end.
+
+Definition store_globals (smap:segid_type->block) (m: mem) (gl: list (ident * option gdef * segblock))
+                       : option mem :=
+  store_globals_iter 0 smap m gl.
 
 End WITHGE.
 
@@ -718,14 +723,14 @@ Qed.
 
 Existing Instance inject_perm_all.
 
-Lemma store_global_stack : forall (ge:genv) smap m def m',
-    store_global ge smap m def = Some m' ->
+Lemma store_global_stack : forall (ge:genv) n smap m def m',
+    store_global ge n smap m def = Some m' ->
     Mem.stack m' = Mem.stack m.
 Proof.
-  intros ge0 smap m def m' H.
+  intros ge0 n smap m def m' H.
   destruct def. destruct p. destruct o. destruct g. destruct f.
   - simpl in H. exploit Mem.drop_perm_stack; eauto.
-  - simpl in H. inv H. auto.
+  - simpl in H. exploit Mem.drop_perm_stack; eauto.
   - simpl in H. destr_match_in H; inv H. destr_match_in H1; inv H1.
     exploit Globalenvs.Genv.store_zeros_stack; eauto.
     exploit store_init_data_list_stack; eauto.
@@ -733,8 +738,8 @@ Proof.
   - simpl in H. inv H. auto.
 Qed.
 
-Lemma store_globals_stack : forall l (ge:genv) smap m m',
-    store_globals ge smap m l = Some m' ->
+Lemma store_globals_iter_stack : forall l (ge:genv) n smap m m',
+    store_globals_iter ge n smap m l = Some m' ->
     Mem.stack m' = Mem.stack m.
 Proof.
   induction l; intros.
@@ -742,6 +747,14 @@ Proof.
   - simpl in H. destr_match_in H; inv H.
     exploit store_global_stack; eauto. intros.
     exploit IHl; eauto. intros. congruence.
+Qed.
+
+Lemma store_globals_stack : forall l (ge:genv) smap m m',
+    store_globals ge smap m l = Some m' ->
+    Mem.stack m' = Mem.stack m.
+Proof.
+  unfold store_globals. intros.
+  eapply store_globals_iter_stack; eauto.
 Qed.
 
 Lemma alloc_segments_perm_ofs : forall segs m1 m2
@@ -902,13 +915,13 @@ Proof.
 Qed.
 
 Remark store_global_nextblock:
-  forall v (ge: genv) smap m m',
-  store_global ge smap m v = Some m' ->
+  forall v (ge: genv) n smap m m',
+  store_global ge n smap m v = Some m' ->
   Mem.nextblock m' = Mem.nextblock m.
 Proof.
   intros. destruct v. destruct p. destruct o. destruct g. destruct f.
   - simpl in H. eapply Mem.nextblock_drop; eauto.
-  - simpl in H. inv H. auto.
+  - simpl in H. eapply Mem.nextblock_drop; eauto.
   - simpl in H. destr_match_in H; inv H.
     destr_match_in H1; inv H1.
     exploit Globalenvs.Genv.store_zeros_nextblock; eauto.
@@ -918,9 +931,9 @@ Proof.
   - simpl in H. inv H. auto.
 Qed.
 
-Remark store_globals_nextblock:
-  forall gl (ge: genv) smap  m m',
-  store_globals ge smap m gl = Some m' ->
+Remark store_globals_iter_nextblock:
+  forall gl (ge: genv) n smap m m',
+  store_globals_iter ge n smap m gl = Some m' ->
   Mem.nextblock m' = Mem.nextblock m.
 Proof.
   induction gl; intros.
@@ -929,6 +942,15 @@ Proof.
     exploit store_global_nextblock; eauto.
     exploit IHgl; eauto.
     intros. congruence.
+Qed.
+
+Remark store_globals_nextblock:
+  forall gl (ge: genv) smap m m',
+  store_globals ge smap m gl = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  unfold store_globals. intros.
+  eapply store_globals_iter_nextblock; eauto.
 Qed.
 
 Lemma alloc_global_nextblock : forall (def:DEF) m m',

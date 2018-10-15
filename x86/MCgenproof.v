@@ -138,12 +138,12 @@ Let tge := globalenv tprog.
   Qed.
 
   Lemma store_global_transl:
-    forall lmap sb d d' m m',
+    forall lmap n sb d d' m m',
       transl_globdef lmap d = OK d' ->
-      store_global ge sb m d = Some m' ->
-      store_global tge sb m d' = Some m'.
+      store_global ge n sb m d = Some m' ->
+      store_global tge n sb m d' = Some m'.
   Proof.
-    intros lmap sb d d' m m' TG SG.
+    intros lmap n sb d d' m m' TG SG.
     destruct d as ((i & od) & sg).
     unfold transl_globdef in TG.
     repeat destr_in TG; auto.
@@ -153,16 +153,26 @@ Let tge := globalenv tprog.
       erewrite store_init_data_list_transl; eauto.
   Qed.
 
+  Lemma store_globals_iter_transl:
+    forall lmap sb d d' n m m',
+      transl_globdefs lmap d = OK d' ->
+      store_globals_iter ge n sb m d = Some m' ->
+      store_globals_iter tge n sb m d' = Some m'.
+  Proof.
+    induction d; simpl; intros d' n m m' TG SG.
+    - inv TG; inv SG. reflexivity.
+    - destr_in SG. monadInv TG. simpl.
+      erewrite store_global_transl; eauto.
+  Qed.
+
   Lemma store_globals_transl:
     forall lmap sb d d' m m',
       transl_globdefs lmap d = OK d' ->
       store_globals ge sb m d = Some m' ->
       store_globals tge sb m d' = Some m'.
   Proof.
-    induction d; simpl; intros d' m m' TG SG.
-    - inv TG; inv SG. reflexivity.
-    - destr_in SG. monadInv TG. simpl.
-      erewrite store_global_transl; eauto.
+    unfold store_globals. intros.
+    eapply store_globals_iter_transl; eauto.
   Qed.
 
 
