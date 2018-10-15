@@ -7779,6 +7779,49 @@ Proof.
     edestruct step_simulation as (STEP' & MS'); eauto.
 Qed.
 
+Require Import MCgen.
+Arguments is_valid_label_dec: simpl nomatch.
+
+Lemma transf_check_faprog:
+  wf_prog prog -> check_faprog tprog = true.
+Proof.
+  destruct 1.
+  unfold check_faprog.
+  rewrite forallb_forall.
+  intros ((i & og) & sb) IN.
+  generalize TRANSF. unfold match_prog. 
+  unfold FlatAsmgen.transf_program.
+  repeat destr.
+  unfold transl_prog_with_map. intro A; monadInv A. unfold check_fadef.
+  repeat destr.
+  simpl in *.
+  subst.
+  rewrite andb_true_iff; split.
+
+  rewrite forallb_forall.
+  - intros ((ii & sbb) & id) INc.
+    rewrite andb_true_iff. split.
+    + generalize (update_map_funct _ _ _ _) clear TRANSF tge. revert x EQ IN INc. clear.
+      induction (AST.prog_defs prog); simpl; intros; eauto.
+      inv EQ; easy.
+      destr_in EQ. monadInv EQ.
+      destruct IN; eauto. subst.
+      unfold FlatAsmgen.transl_globdef in EQ0.
+      repeat destr_in EQ0. monadInv H0. clear - INc EQ0.
+      unfold FlatAsmgen.transl_fun in EQ0. repeat destr_in EQ0.
+      monadInv H0. repeat destr_in EQ0. simpl in *.
+
+      revert EQ INc. generalize (Asm.fn_code f1) (Ptrofs.unsigned i0) i s0 x x0.
+      clear. induction c; simpl; intros; eauto.
+      inv EQ. easy.
+      monadInv EQ. destruct INc; eauto.
+      subst.
+      apply andb_true_iff. split.
+      cut (s0 = code_segid). intro; subst.
+      destruct a; simpl in EQ0; inv EQ0; simpl; auto.
+
+Qed.
+
 End PRESERVATION.
 
 

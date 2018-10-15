@@ -97,19 +97,29 @@ Fixpoint transl_globdefs defs :=
 End WITH_LABEL_MAP.
 
 
+Definition is_valid_label_asm (lm: ident -> label -> option seglabel) (fid: ident) (i: Asm.instruction) :=
+  match i with
+    Pjcc _ l
+  | Pjcc2 _ _ l
+  | Pjmp_l l => lm fid l <> None
+  | Pjmptbl _ ll =>
+    Forall (fun l => lm fid l <> None) ll
+  | _ => True
+  end.
 
-Definition is_valid_label prog (i: FlatAsm.instr_with_info) :=
+Definition is_valid_label (lm: LABEL_MAP_TYPE) (i: FlatAsm.instr_with_info) :=
   let '(i,_,id) := i in
   match i with
     Pjcc _ l
   | Pjcc2 _ _ l
-  | Pjmp_l l => lbl_map (I:=Asm.instruction) prog id l <> None
+  | Pjmp_l l => lm id l <> None
   | Pjmptbl _ ll =>
-    Forall (fun l => lbl_map prog id l <> None) ll
+    Forall (fun l => lm id l <> None) ll
   | _ => True
   end.
 
 Arguments is_valid_label: simpl nomatch.
+Arguments is_valid_label_asm: simpl nomatch.
 
 Definition eq_dec_neq_dec:
   forall {A} (Adec: forall a b : A, {a=b} + {a <> b}),
@@ -159,7 +169,7 @@ Definition check_fadef prog sbs (igs: ident * option gdef * segblock) : bool :=
   end.
 
 Definition check_faprog (p: FlatAsm.program) : bool :=
-  forallb (check_fadef p (gen_segblocks p)) (prog_defs p).
+  forallb (check_fadef (lbl_map p) (gen_segblocks p)) (prog_defs p).
 
 (** Translation of a program *)
 Definition transf_program (p:FlatAsm.program) : res program := 

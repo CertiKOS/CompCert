@@ -279,7 +279,7 @@ Lemma wf_faprog:
     (fun '(i, d, _) =>
        forall f : function,
          d = Some (Gfun (Internal f)) ->
-         Forall (fun '(ins, sb1, ii) => segblock_id sb1 = code_segid /\ i = ii /\ is_valid_label prog (ins,sb1,ii)) (fn_code f) /\
+         Forall (fun '(ins, sb1, ii) => segblock_id sb1 = code_segid /\ i = ii /\ is_valid_label (lbl_map prog) (ins,sb1,ii)) (fn_code f) /\
          list_norepet (map (get_instr_ptr (gen_segblocks prog)) (fn_code f))
     )
     (prog_defs prog).
@@ -319,7 +319,7 @@ Lemma labels_valid:
   Forall (fun '(_,o,_) =>
             forall f,
               o = Some (Gfun (Internal f)) ->
-              Forall (is_valid_label prog) (fn_code f)
+              Forall (is_valid_label (lbl_map prog)) (fn_code f)
          ) (prog_defs prog).
 Proof.
   eapply Forall_impl. 2: apply wf_faprog. intros [[ia d] sb] IN H f EQ.

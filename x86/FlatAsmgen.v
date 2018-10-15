@@ -570,12 +570,61 @@ Proof.
   - right. inversion 1. auto.
 Qed.
 
+Definition has_label (i: Asm.instruction) (lab: label) :=
+  match i with
+    Pjmp_l l
+  | Pjcc _ l
+  | Pjcc2 _ _ l => l = lab
+  | Pjmptbl _ l => In lab l
+  | _ => False
+  end.
+
+Definition valid_labels_funs (f: Asm.function) :=
+  Forall
+    (fun i : Asm.instruction =>
+       forall lab : label, has_label i lab -> In lab (labels (Asm.fn_code f)))
+    (Asm.fn_code f).
+
+Definition valid_labels_funs_dec f: {valid_labels_funs f} + { ~ valid_labels_funs f}.
+Proof.
+  unfold valid_labels_funs.
+  apply Forall_dec.
+  intros.
+  destruct x; try now (left; simpl; intros lab HL; inv HL); simpl.
+  simpl. destruct (in_dec peq l (labels (Asm.fn_code f))); [left; intros; subst; auto|right; intro A; exfalso; apply n; eauto].
+  simpl. destruct (in_dec peq l (labels (Asm.fn_code f))); [left; intros; subst; auto|right; intro A; exfalso; apply n; eauto].
+  simpl. destruct (in_dec peq l (labels (Asm.fn_code f))); [left; intros; subst; auto|right; intro A; exfalso; apply n; eauto].
+  simpl.
+
+  cut ({(Forall (fun lab => In lab (labels (Asm.fn_code f))) tbl)} + { ~ (Forall (fun lab => In lab (labels (Asm.fn_code f))) tbl)}).
+  intros [A|A]; [left|right]. rewrite <- Forall_forall. auto.
+  intro B; apply A; rewrite Forall_forall; auto.
+  apply Forall_dec. intros; apply in_dec. apply peq.
+Defined.
+
+Definition valid_labels (defs: list (ident * option (globdef Asm.fundef unit))) :=
+  Forall (fun '(i,d) =>
+            match d with
+              Some (Gfun (Internal f)) => valid_labels_funs f
+            | _ => True
+            end
+         ) defs.
+
+Definition valid_labels_dec defs: {valid_labels defs} + { ~ valid_labels defs}.
+Proof.
+  unfold valid_labels. apply Forall_dec.
+  intros.
+  destr. destr. destr. destr.
+  apply valid_labels_funs_dec.         
+Defined.
+
 Record wf_prog (p:Asm.program) : Prop :=
   {
     wf_prog_not_empty: defs_not_empty (map snd (AST.prog_defs p));
     wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
     wf_prog_norepet_labels: defs_no_duplicated_labels (AST.prog_defs p);
     wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
+    wf_prog_valid_labels: valid_labels (AST.prog_defs p);
   }.
 
 Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
@@ -584,7 +633,9 @@ Proof.
   destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
   destruct (Forall_dec _ globdef_no_duplicated_labels_dec (map snd (AST.prog_defs p))).
   destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
+  destruct (valid_labels_dec (AST.prog_defs p)).
   left; constructor; auto.
+  right; inversion 1. apply n. apply wf_prog_valid_labels0.
   right. inversion 1. apply n. apply wf_prog_main_exists0.
   right; inversion 1. apply n. apply wf_prog_norepet_labels0.
   right; inversion 1. apply n. apply wf_prog_norepet_defs0.

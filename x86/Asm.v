@@ -1570,7 +1570,6 @@ Definition data_preg (r: preg) : bool :=
   | RA => false
   end.
 
-
 (* Intructions to string *)
 Definition instr_to_string (i:instruction) : string :=
   match i with 

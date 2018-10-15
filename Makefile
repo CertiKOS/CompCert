@@ -186,6 +186,7 @@ COMPCERTX=  CompCertBuiltins.v \
   ClightXFacts.v \
   CshmgenproofX.v \
 	MachX2Mach2X.v \
+	InliningX.v \
 	TailcallproofX.v \
 	InliningproofX.v
 
