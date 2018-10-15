@@ -199,17 +199,495 @@ Section WITHMEMORYMODEL.
       eapply in_frame'_in_frame. red. rewrite BLOCKS. left. reflexivity.
   Qed.
 
-  Axiom exec_instr_inject:
+  Lemma symbol_address_inject:
+    forall j id i0,
+      meminj_preserves_globals' ge j ->
+      Val.inject j (Genv.symbol_address ge id i0) (Genv.symbol_address ge id i0).
+  Proof.
+    intros j id i0 MPG.
+    destruct MPG. unfold Genv.symbol_address. simpl in H. destr; auto. apply H in Heqo.
+    econstructor; eauto.
+    rewrite Ptrofs.add_zero. auto.
+  Qed.
+  
+  Lemma eval_addrmode32_inject:
+    forall a rs1 rs2 j,
+      meminj_preserves_globals' ge j ->
+      (forall r, Val.inject j (rs1 r) (rs2 r)) ->
+      Val.inject j (eval_addrmode32 ge a rs1) (eval_addrmode32 ge a rs2).
+  Proof.
+    unfold eval_addrmode32. intros.
+    destruct a.
+    apply Val.add_inject. destr; auto.
+    apply Val.add_inject. repeat destr; eauto using Val.mul_inject.
+    repeat destr; eauto using symbol_address_inject.
+  Qed.
+
+  Lemma eval_addrmode64_inject:
+    forall a rs1 rs2 j,
+      meminj_preserves_globals' ge j ->
+      (forall r, Val.inject j (rs1 r) (rs2 r)) ->
+      Val.inject j (eval_addrmode64 ge a rs1) (eval_addrmode64 ge a rs2).
+  Proof.
+    unfold eval_addrmode64. intros.
+    destruct a.
+    apply Val.addl_inject. destr; auto.
+    apply Val.addl_inject. repeat destr; eauto using Val.mull_inject.
+    repeat destr; eauto using symbol_address_inject.
+  Qed.
+
+  Lemma eval_addrmode_inject:
+    forall a rs1 rs2 j,
+      meminj_preserves_globals' ge j ->
+      (forall r, Val.inject j (rs1 r) (rs2 r)) ->
+      Val.inject j (eval_addrmode ge a rs1) (eval_addrmode ge a rs2).
+  Proof.
+    unfold eval_addrmode.
+    intros.
+    destr; eauto using eval_addrmode32_inject, eval_addrmode64_inject.
+  Qed.
+
+  Lemma exec_load_inject:
+    forall κ m1 a rs1 rd ofs rs1' m1' rs2 m2 j g,
+      meminj_preserves_globals' ge j ->
+      Mem.inject j g m1 m2 ->
+      (forall r, Val.inject j (rs1 r) (rs2 r)) ->
+      exec_load ge κ m1 a rs1 rd ofs = Next rs1' m1' ->
+      exists rs2' m2',
+        exec_load ge κ m2 a rs2 rd ofs = Next rs2' m2' /\
+        Mem.inject j g m1' m2' /\
+        forall r, Val.inject j (rs1' r) (rs2' r).
+  Proof.
+    unfold exec_load. intros κ m1 a rs1 rd ofs rs1' m1' rs2 m2 j g MPG MINJ RINJ EL.
+    destr_in EL. inv EL.
+    edestruct Mem.loadv_inject as (v2 & LD & VINJ); eauto.
+    apply eval_addrmode_inject; auto.
+    rewrite LD. do 2 eexists; split; eauto. split; auto.
+    intros; apply val_inject_nextinstr_nf.
+    intros; apply val_inject_set; auto.
+  Qed.
+
+
+  Lemma exec_store_inject:
+    forall κ m1 a rs1 rd ofs rs1' m1' rs2 m2 j g destroyed,
+      meminj_preserves_globals' ge j ->
+      Mem.inject j g m1 m2 ->
+      (forall r, Val.inject j (rs1 r) (rs2 r)) ->
+      exec_store ge κ m1 a rs1 rd destroyed ofs = Next rs1' m1' ->
+      exists rs2' m2',
+        exec_store ge κ m2 a rs2 rd destroyed ofs = Next rs2' m2' /\
+        Mem.inject j g m1' m2' /\
+        forall r, Val.inject j (rs1' r) (rs2' r).
+  Proof.
+    unfold exec_store. intros κ m1 a rs1 rd ofs rs1' m1' rs2 m2 j g destroyed MPG MINJ RINJ ES.
+    destr_in ES. inv ES.
+    edestruct Mem.storev_mapped_inject as (m2' & ST & MINJ'); eauto.
+    apply eval_addrmode_inject; auto.
+    rewrite ST. do 2 eexists; split; eauto. split; auto.
+    intros; apply val_inject_nextinstr_nf.
+    intros; apply val_inject_undef_regs; auto.
+  Qed.
+
+
+(* Injection for cmpu_bool and cmplu_bool *)
+(* Lemma valid_ptr_inj : forall j g m m', *)
+(*     Mem.inject j g m m' -> *)
+(*     forall b i b' delta,                                   *)
+(*       j b = Some (b', delta) -> *)
+(*       Mem.valid_pointer m b (Ptrofs.unsigned i) = true -> *)
+(*       Mem.valid_pointer m' b' (Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta))) = true. *)
+(* Proof. *)
+(*   intros. eapply Mem.valid_pointer_inject'; eauto. *)
+(* Qed. *)
+
+
+(* Lemma weak_valid_ptr_inj: forall j g m m', *)
+(*   Mem.inject j g m m' -> *)
+(*   forall b1 ofs b2 delta, *)
+(*   j b1 = Some(b2, delta) -> *)
+(*   Mem.weak_valid_pointer m b1 (Ptrofs.unsigned ofs) = true -> *)
+(*   Mem.weak_valid_pointer m' b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true. *)
+(* Proof. *)
+(*   intros. eapply Mem.weak_valid_pointer_inject'; eauto. *)
+(* Qed. *)
+
+(* Lemma weak_valid_ptr_no_overflow: forall j m m', *)
+(*   Mem.inject j (def_frame_inj m) m m' -> *)
+(*   forall b1 ofs b2 delta, *)
+(*   j b1 = Some(b2, delta) -> *)
+(*   Mem.weak_valid_pointer m b1 (Ptrofs.unsigned ofs) = true -> *)
+(*   0 <= Ptrofs.unsigned ofs + Ptrofs.unsigned (Ptrofs.repr delta) <= Ptrofs.max_unsigned. *)
+(* Proof. *)
+(*   intros. eapply Mem.weak_valid_pointer_inject_no_overflow; eauto. *)
+(* Qed. *)
+
+Definition cmpu_bool_inject := fun j g m m' (MINJ: Mem.inject j g m m') =>
+                     Val.cmpu_bool_inject j (Mem.valid_pointer m) (Mem.valid_pointer m')
+                                          (fun b1 ofs b2 delta FB => Mem.valid_pointer_inject' j g m m' b1 ofs b2 delta FB MINJ)
+                                          (fun b1 ofs b2 delta FB => Mem.weak_valid_pointer_inject' j g m m' b1 ofs b2 delta FB MINJ)
+                                          (fun b ofs b' delta FB MVP => Mem.weak_valid_pointer_inject_no_overflow j g m m' b ofs b' delta MINJ MVP FB)
+                                          (fun b1 ofs1 b2 ofs2 b1' delta1 b2' delta2 =>
+                                             Mem.different_pointers_inject j g m m' b1  ofs1 b2 ofs2 b1' delta1 b2' delta2 MINJ).
+
+Lemma cmpu_inject
+     : forall (j : meminj) (g : frameinj) (m m' : mem),
+       Mem.inject j g m m' ->
+       forall (c : comparison) (v1 v2 v1' v2' : val),
+       Val.inject j v1 v1' ->
+       Val.inject j v2 v2' ->
+       Val.inject j (Val.cmpu (Mem.valid_pointer m) c v1 v2)
+                  (Val.cmpu (Mem.valid_pointer m') c v1' v2').
+Proof.
+  unfold Val.cmpu. unfold Val.of_optbool.
+  intros.
+  destr. eapply cmpu_bool_inject in Heqo; eauto.
+  rewrite Heqo. unfold Vtrue, Vfalse; destr; auto. auto.
+Qed.
+
+Definition cmplu_bool_inject := fun j g m m' (MINJ: Mem.inject j g m m') =>
+                     Val.cmplu_bool_inject j (Mem.valid_pointer m) (Mem.valid_pointer m')
+                                          (fun b1 ofs b2 delta FB => Mem.valid_pointer_inject' j g m m' b1 ofs b2 delta FB MINJ)
+                                          (fun b1 ofs b2 delta FB => Mem.weak_valid_pointer_inject' j g m m' b1 ofs b2 delta FB MINJ)
+                                          (fun b ofs b' delta FB MVP => Mem.weak_valid_pointer_inject_no_overflow j g m m' b ofs b' delta MINJ MVP FB)
+                                          (fun b1 ofs1 b2 ofs2 b1' delta1 b2' delta2 =>
+                                             Mem.different_pointers_inject j g m m' b1  ofs1 b2 ofs2 b1' delta1 b2' delta2 MINJ).
+
+Lemma cmplu_inject
+     : forall (j : meminj) (g : frameinj) (m m' : mem),
+       Mem.inject j g m m' ->
+       forall (c : comparison) (v1 v2 v1' v2' : val),
+       Val.inject j v1 v1' ->
+       Val.inject j v2 v2' ->
+       Val.opt_val_inject j (Val.cmplu (Mem.valid_pointer m) c v1 v2)
+                  (Val.cmplu (Mem.valid_pointer m') c v1' v2').
+Proof.
+  unfold Val.cmplu. unfold option_map.
+  intros.
+  destr. eapply cmplu_bool_inject in Heqo; eauto.
+  rewrite Heqo. constructor. apply Val.vofbool_inject. constructor.
+Qed.
+
+
+Lemma negative_inject:
+  forall j v v',
+    Val.inject j v v' ->
+    Val.inject j (Val.negative v) (Val.negative v').
+Proof.
+  unfold Val.negative. intros.
+  destr; auto. inv H. auto.
+Qed.
+
+
+Lemma negativel_inject:
+  forall j v v',
+    Val.inject j v v' ->
+    Val.inject j (Val.negativel v) (Val.negativel v').
+Proof.
+  unfold Val.negativel. intros.
+  destr; auto. inv H. auto.
+Qed.
+
+
+ Lemma sub_overflow_inject:
+      forall j v1 v2 v3 v4,
+        Val.inject j v1 v2 ->
+        Val.inject j v3 v4 ->
+        Val.inject j (Val.sub_overflow v1 v3) (Val.sub_overflow v2 v4).
+    Proof.
+      unfold Val.sub_overflow; intros.
+      destr; auto. inv H. destr; auto; inv H0. auto.
+    Qed.
+
+
+    Lemma subl_overflow_inject:
+      forall j v1 v2 v3 v4,
+        Val.inject j v1 v2 ->
+        Val.inject j v3 v4 ->
+        Val.inject j (Val.subl_overflow v1 v3) (Val.subl_overflow v2 v4).
+    Proof.
+      unfold Val.subl_overflow; intros.
+      destr; auto. inv H. destr; auto; inv H0. auto.
+    Qed.
+
+
+
+        Lemma eval_testcond_inject:
+      forall j rs1 rs2
+        (RINJ : forall r : PregEq.t, Val.inject j (rs1 r) (rs2 r)) c b,
+        eval_testcond c rs1 = Some b ->
+        eval_testcond c rs2 = Some b.
+    Proof.
+      unfold eval_testcond.
+      intros.
+      generalize (RINJ ZF), (RINJ CF), (RINJ OF), (RINJ SF), (RINJ PF).
+      intros A B C D E.
+      repeat destr_in H;
+        repeat match goal with
+               | H: Val.inject _ (Vint _) _ |- _ => inv H
+               | |- _ => simpl; auto
+               end.
+    Qed.
+
+    Lemma eval_testcond_of_optbool_inject:
+      forall j rs1 rs2
+        (RINJ : forall r : PregEq.t, Val.inject j (rs1 r) (rs2 r)) c,
+        Val.inject j (Val.of_optbool (eval_testcond c rs1)) (Val.of_optbool (eval_testcond c rs2)).
+    Proof.
+      unfold Val.of_optbool. intros.
+      destr. erewrite eval_testcond_inject; eauto.
+      unfold Vtrue, Vfalse; destr; eauto. auto.
+    Qed.
+
+    Ltac simpl_inject :=
+      first [
+          apply val_inject_nextinstr
+        | apply val_inject_nextinstr_nf
+        | apply val_inject_set
+        | apply val_inject_undef_regs
+        | apply Val.offset_ptr_inject
+        | apply Val.sign_ext_inject
+        | apply Val.zero_ext_inject
+        | apply Val.longofintu_inject
+        | apply Val.longofint_inject
+        | apply Val.singleoffloat_inject
+        | apply Val.floatofsingle_inject
+        | apply Val.maketotal_inject
+        | apply Val.intoffloat_inject
+        | apply Val.floatofint_inject
+        | apply Val.longoffloat_inject
+        | apply Val.floatoflong_inject
+        | apply Val.intofsingle_inject
+        | apply Val.singleofint_inject
+        | apply Val.longofsingle_inject
+        | apply Val.singleoflong_inject
+        | apply Val.loword_inject
+        | apply Val.hiword_inject
+        | apply Val.neg_inject
+        | apply Val.negl_inject
+        | apply Val.add_inject
+        | apply Val.sub_inject
+        | apply Val.mul_inject
+        | apply Val.addl_inject
+        | apply Val.subl_inject
+        | apply Val.mull_inject
+        | apply Val.mulhs_inject
+        | apply Val.mullhs_inject
+        | apply Val.mulhu_inject
+        | apply Val.mullhu_inject
+        | apply Val.shr_inject
+        | apply Val.shrl_inject
+        | apply Val.shl_inject
+        | apply Val.shll_inject
+        | apply Val.shru_inject
+        | apply Val.shrlu_inject
+        | apply Val.and_inject
+        | apply Val.andl_inject
+        | apply Val.or_inject
+        | apply Val.orl_inject
+        | apply Val.xor_inject
+        | apply Val.xorl_inject
+        | apply Val.notint_inject
+        | apply Val.notl_inject
+        | apply Val.ror_inject
+        | apply Val.rorl_inject
+        | apply eval_addrmode32_inject
+        | apply eval_addrmode64_inject
+        | apply eval_addrmode_inject
+        | apply symbol_address_inject
+        | eapply cmpu_inject; eauto
+        | eapply cmplu_inject; eauto
+        | apply negative_inject
+        | apply negativel_inject
+        | apply sub_overflow_inject
+        | apply subl_overflow_inject
+        | apply Val.addf_inject
+        | apply Val.subf_inject
+        | apply Val.mulf_inject
+        | apply Val.divf_inject
+        | apply Val.negf_inject
+        | apply Val.absf_inject
+        | apply Val.addfs_inject
+        | apply Val.subfs_inject
+        | apply Val.mulfs_inject
+        | apply Val.divfs_inject
+        | apply Val.negfs_inject
+        | apply Val.absfs_inject
+        | unfold Vzero; auto
+        ].
+
+    Lemma compare_floats_inject:
+      forall j rs1 rs2
+        (RINJ : forall r : PregEq.t, Val.inject j (rs1 r) (rs2 r)) a b c d
+        (INJ1: Val.inject j a c) (INJ2: Val.inject j b d) r,
+        Val.inject j (compare_floats a b rs1 r) (compare_floats c d rs2 r).
+    Proof.
+      unfold compare_floats.
+      intros.
+      inv INJ1; repeat simpl_inject.
+      inv INJ2; repeat simpl_inject.
+      apply Val.vofbool_inject.
+      apply Val.vofbool_inject.
+      apply Val.vofbool_inject.
+      repeat (destr; repeat simpl_inject).
+      repeat (destr; repeat simpl_inject).
+    Qed.
+
+    Lemma compare_floats32_inject:
+      forall j rs1 rs2
+        (RINJ : forall r : PregEq.t, Val.inject j (rs1 r) (rs2 r)) a b c d
+        (INJ1: Val.inject j a c) (INJ2: Val.inject j b d) r,
+        Val.inject j (compare_floats32 a b rs1 r) (compare_floats32 c d rs2 r).
+    Proof.
+      unfold compare_floats32.
+      intros.
+      inv INJ1; repeat simpl_inject.
+      inv INJ2; repeat simpl_inject.
+      apply Val.vofbool_inject.
+      apply Val.vofbool_inject.
+      apply Val.vofbool_inject.
+      repeat (destr; repeat simpl_inject).
+      repeat (destr; repeat simpl_inject).
+    Qed.
+
+    Lemma goto_label_inject:
+      forall j g rs1 rs2 m1 m2
+        (GLOBFUN_INJ: forall b f, Genv.find_funct_ptr ge b = Some f -> j b = Some (b,0))
+        (MINJ: Mem.inject j g m1 m2)
+        (RINJ : forall r : PregEq.t, Val.inject j (rs1 r) (rs2 r))
+        l f rs1' m1',
+        goto_label ge f l rs1 m1 = Next rs1' m1' ->
+        exists rs2' m2',
+          goto_label ge f l rs2 m2 = Next rs2' m2' /\
+          Mem.inject j g m1' m2' /\
+          forall r, Val.inject j (rs1' r) (rs2' r).
+    Proof.
+      unfold goto_label. intros. repeat destr_in H.
+      generalize (RINJ PC); rewrite Heqv. intro A; inv A.
+      erewrite GLOBFUN_INJ in H2; eauto. inv H2. rewrite Heqo0.
+      do 2 eexists; split; eauto. split; eauto.
+      repeat simpl_inject. econstructor; eauto. rewrite Ptrofs.add_zero. auto.
+    Qed.
+
+    Lemma eval_ros_inject:
+      forall j rs1 rs2
+        (MPG: meminj_preserves_globals' ge j)
+        (RINJ : forall r : PregEq.t, Val.inject j (rs1 r) (rs2 r)) ros,
+        Val.inject j (eval_ros ge ros rs1) (eval_ros ge ros rs2).
+    Proof.
+      unfold eval_ros.
+      intros. destr; auto. repeat simpl_inject.
+    Qed.
+
+  Lemma exec_instr_inject:
     forall j g m1 m2 rs1 rs2 f i rs1' m1'
+      (GLOBFUN_INJ: forall b f, Genv.find_funct_ptr ge b = Some f -> j b = Some (b,0))
       (MINJ: Mem.inject j g m1 m2)
       (RINJ: forall r, Val.inject j (rs1 # r) (rs2 # r))
       (IU: is_unchanged i = true)
+      (MPG: meminj_preserves_globals' ge j)
       istk1 istk2
       (EXEC: Asm.exec_instr istk1 ge f i rs1 m1 = Next rs1' m1'),      
       exists rs2' m2',
         Asm.exec_instr istk2 ge f i rs2 m2 = Next rs2' m2'
         /\ Mem.inject j g m1' m2'
         /\ (forall r, Val.inject j (rs1' # r) (rs2' # r)).
+  Proof.
+    intros j g m1 m2 rs1 rs2 f i rs1' m1' GLOBFUN_INJ MINJ RINJ IU MPG istk1 istk2 EXEC.
+    destruct i; (simpl in *; repeat destr_in EXEC;
+                 try congruence;
+
+                 match goal with
+                 | |- exists _ _, Next _ _ = Next _ _ /\ _ /\ _ =>
+                 try (do 2 eexists; split; [now eauto |
+                                            split; [
+                                              eauto with mem
+                                            | repeat
+                                                simpl_inject
+                                            ]
+                                           ]
+                     )
+                 | |- _ => try first [
+                               now (eapply exec_load_inject; eauto)
+                             | now (eapply exec_store_inject; eauto)
+                             ]
+                 end
+                ).
+
+    generalize (RINJ RDX); rewrite Heqv; inversion 1; subst.
+    generalize (RINJ RAX); rewrite Heqv0; inversion 1; subst.
+    generalize (RINJ r1); rewrite Heqv1; inversion 1; subst.
+    rewrite Heqo.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    generalize (RINJ RDX); rewrite Heqv; inversion 1; subst.
+    generalize (RINJ RAX); rewrite Heqv0; inversion 1; subst.
+    generalize (RINJ r1); rewrite Heqv1; inversion 1; subst.
+    rewrite Heqo.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    generalize (RINJ RDX); rewrite Heqv; inversion 1; subst.
+    generalize (RINJ RAX); rewrite Heqv0; inversion 1; subst.
+    generalize (RINJ r1); rewrite Heqv1; inversion 1; subst.
+    rewrite Heqo.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    generalize (RINJ RDX); rewrite Heqv; inversion 1; subst.
+    generalize (RINJ RAX); rewrite Heqv0; inversion 1; subst.
+    generalize (RINJ r1); rewrite Heqv1; inversion 1; subst.
+    rewrite Heqo.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    erewrite eval_testcond_inject; eauto. simpl.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+    erewrite eval_testcond_inject; eauto. simpl.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+    destr. destr.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+    intros.
+    setoid_rewrite Pregmap.gsspec. destr; auto. unfold Pregmap.get. auto.
+    setoid_rewrite Pregmap.gsspec. destr; auto. unfold Pregmap.get. auto.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    eapply eval_testcond_of_optbool_inject; eauto.
+    eapply eval_testcond_of_optbool_inject; eauto.
+    apply compare_floats_inject; auto.
+    apply compare_floats_inject; auto.
+
+    apply compare_floats32_inject; auto.
+    apply compare_floats32_inject; auto.
+
+    eapply goto_label_inject; eauto.
+
+    exploit eval_ros_inject; eauto.
+    unfold Genv.find_funct in *. repeat destr_in Heqo. rewrite Heqv.
+    intro A; inv A.
+    erewrite GLOBFUN_INJ in H3; eauto. inv H3. rewrite pred_dec_true. rewrite H0.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+    econstructor; eauto. apply Ptrofs.add_zero.
+
+    erewrite eval_testcond_inject; eauto. simpl.
+    eapply goto_label_inject; eauto.
+    erewrite eval_testcond_inject; eauto. simpl.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    erewrite eval_testcond_inject; eauto. simpl.
+    erewrite eval_testcond_inject; eauto. simpl.
+    eapply goto_label_inject; eauto.
+
+    erewrite eval_testcond_inject; eauto. simpl.
+    erewrite eval_testcond_inject; eauto. simpl.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    erewrite eval_testcond_inject; eauto. simpl.
+    erewrite eval_testcond_inject; eauto.
+    do 2 eexists; split; eauto. split; eauto. repeat simpl_inject.
+
+    generalize (RINJ r); rewrite Heqv; intro A; inv A.
+    rewrite Heqo.
+    eapply goto_label_inject; eauto.
+    repeat simpl_inject.
+  Qed.
   (* should be proved already somewhere *)
   
   Lemma ZEQ: forall a b,
