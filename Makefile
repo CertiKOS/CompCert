@@ -342,7 +342,7 @@ clean:
 	$(MAKE) -f Makefile.extr clean
 	$(MAKE) -C runtime clean
 	$(MAKE) -C test clean
-	$(MAKE) -C cpu_models/x86model clean
+	$(MAKE) -C cpu_models/x86model/Model clean
 	$(MAKE) -C cpu_models/shared clean
 
 
