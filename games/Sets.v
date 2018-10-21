@@ -42,6 +42,15 @@ Proof.
   destruct Hb1 as [a1]. edestruct HsA as (a2 & Ha2 & Ha); eauto.
 Qed.
 
+Global Instance set_map_ge :
+  Monotonic
+    (@set_map)
+    (forallr RA, forallr RB, (RA ++> RB) ++> set_ge RA ++> set_ge RB).
+Proof.
+  intros A1 A2 RA B1 B2 RB f g Hfg sA1 sA2 HsA b2 Hb2.
+  destruct Hb2 as [a2]. edestruct HsA as (a1 & Ha1 & Ha); eauto.
+Qed.
+
 Inductive set_bind {A B} (f : A -> set B) (sa: set A) : set B :=
   set_bind_intro a b :
     sa a -> f a b -> set_bind f sa b.
@@ -65,6 +74,29 @@ Definition set_bind_all {A B} (f : A -> set B) (sA : set A) : set B :=
 Definition set_bind_ex {A B} (f : A -> set B) (sA : set A) : set B :=
   set_inter (set_map f sA).
 
+(** The empty set *)
+
+Definition empty {A} : set A :=
+  fun _ => False.
+
+Lemma empty_le {A B} (R : rel A B) sb :
+  Related empty sb (set_le R).
+Proof.
+  destruct 1.
+Qed.
+
+Hint Extern 0 (Related empty _ (set_le _)) =>
+  eapply empty_le : typeclass_instances.
+
+Lemma empty_ge {A B} (R : rel A B) sa :
+  Related sa empty (set_ge R).
+Proof.
+  destruct 1.
+Qed.
+
+Hint Extern 0 (Related _ empty (set_ge _)) =>
+  eapply empty_ge : typeclass_instances.
+
 (** This definition is identical to [eq]. *)
 
 Inductive singl {A} (a : A) : set A :=
@@ -72,7 +104,7 @@ Inductive singl {A} (a : A) : set A :=
 
 Hint Constructors singl.
 
-Global Instance eq_le :
+Global Instance singl_le :
   Monotonic (@singl) (forallr R, R ++> set_le R).
 Proof.
   intros A B R a b Hab _ [ ]. eauto.
