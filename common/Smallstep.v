@@ -570,7 +570,7 @@ Definition fsim_match_sets {A B} (R: A -> B -> Prop) (S1 S2: _ -> Prop) :=
   forall s1, S1 s1 -> exists s2, S2 s2 /\ R s1 s2.
 
 Definition fsim_match_cont {A B} (R: _ -> A -> B -> Prop) w (k1 k2: cont _ _) :=
-  forall w' q1 q2, cc_query cc q1 q2 w w' ->
+  forall w' q1 q2, cc_query cc w w' q1 q2 ->
   option_rel (fsim_match_sets (R w')) (k1 q1) (k2 q2).
 
 Definition match_ex {W I A B} (R: W -> I -> A -> B -> Prop) : W -> A -> B -> Prop :=
@@ -595,7 +595,7 @@ Record fsim_properties : Prop := {
         match_states w i s1 s2 ->
         final_state L1 s1 r1 k1 ->
         exists r2 w' k2,
-          cc_reply cc r1 r2 w w' /\
+          cc_reply cc w w' r1 r2 /\
           final_state L2 s2 r2 k2 /\
           fsim_match_cont (match_ex match_states) w' k1 k2;
     fsim_simulation:
@@ -660,7 +660,7 @@ Hypothesis match_final_states:
   match_states w s1 s2 ->
   final_state L1 s1 r1 k1 ->
   exists w' r2 k2,
-    cc_reply cc r1 r2 w w' /\
+    cc_reply cc w w' r1 r2 /\
     final_state L2 s2 r2 k2 /\
     fsim_match_cont match_states w' k1 k2.
 
@@ -1065,7 +1065,7 @@ Record bsim_match_sets {A B} (R: A -> B -> Prop) (S1 S2: _ -> Prop) :=
   }.
 
 Definition bsim_match_cont {A B} (R: _ -> A -> B -> Prop) w (k1 k2: cont _ _) :=
-  forall w' q1 q2, cc_query cc q1 q2 w w' ->
+  forall w' q1 q2, cc_query cc w w' q1 q2 ->
   option_rel (bsim_match_sets (R w')) (k1 q1) (k2 q2).
 
 Section BSIM_PROPERTIES.
@@ -1087,7 +1087,7 @@ Record bsim_properties: Prop := {
       match_states w i s1 s2 -> safe L1 s1 -> final_state L2 s2 r2 k2 ->
       exists s1' w' r1 k1,
         Star L1 s1 E0 s1' /\
-        cc_reply cc r1 r2 w w' /\
+        cc_reply cc w w' r1 r2 /\
         final_state L1 s1' r1 k1 /\
         bsim_match_cont (match_ex match_states) w' k1 k2;
     bsim_progress:
@@ -1156,7 +1156,7 @@ Hypothesis match_initial_states:
 Hypothesis match_final_states:
   forall w s1 s2 r2 k2, match_states w s1 s2 -> final_state L2 s2 r2 k2 ->
   exists w' r1 k1,
-    cc_reply cc r1 r2 w w' /\
+    cc_reply cc w w' r1 r2 /\
     final_state L1 s1 r1 k1 /\
     bsim_match_cont match_states w' k1 k2.
 
@@ -1456,7 +1456,7 @@ Hypothesis L2_determinate: determinate L2.
 Inductive f2b_transitions: cc_state cc -> state L1 -> state L2 -> Prop :=
   | f2b_trans_final: forall w s1 s2 s1' w' r1 r2 k1 k2,
       Star L1 s1 E0 s1' ->
-      cc_reply cc r1 r2 w w' ->
+      cc_reply cc w w' r1 r2 ->
       final_state L1 s1' r1 k1 ->
       final_state L2 s2 r2 k2 ->
       fsim_match_cont cc (match_ex match_states) w' k1 k2 ->

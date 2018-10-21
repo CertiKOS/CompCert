@@ -312,7 +312,7 @@ Context L1 L2 index order match_states (S: fsim_properties cc L1 L2 (index:=inde
 
 Definition match_res w '(r1, k1) '(r2, k2): Prop :=
   exists w',
-    cc_reply cc r1 r2 w w' /\
+    cc_reply cc w w' r1 r2 /\
     fsim_match_cont cc (match_ex match_states) w' k1 k2.
 
 Lemma forward_simulation_state_behaves:

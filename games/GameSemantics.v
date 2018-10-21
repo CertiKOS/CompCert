@@ -290,7 +290,7 @@ Module Behavior.
   Lemma bsim_sound_liftk {li1 li2} cc L1 L2 ind ord ms w k1 k2 w' q1 q2 :
     @bsim_properties li1 li2 cc L2 L1 ind ord ms ->
     bsim_match_cont cc (match_ex ms) w k2 k1 ->
-    cc_query cc q2 q1 w w' ->
+    cc_query cc w w' q2 q1 ->
     option_rel (set_le (state_rel (flip (rel_ex (match_ex ms))))) (liftk k1 q1) (liftk k2 q2).
   Proof.
     intros HL Hk Hq. unfold liftk.

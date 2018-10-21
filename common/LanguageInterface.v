@@ -84,8 +84,8 @@ Record callconv T1 T2 :=
   mk_callconv {
     cc_state : Type;
     cc_init : cc_state;
-    cc_query : query T1 -> query T2 -> relation cc_state;
-    cc_reply : reply T1 -> reply T2 -> relation cc_state;
+    cc_query : cc_state -> cc_state -> rel (query T1) (query T2);
+    cc_reply : cc_state -> cc_state -> rel (reply T1) (reply T2);
   }.
 
 Arguments cc_state {_ _}.
@@ -97,10 +97,10 @@ Delimit Scope cc_scope with cc.
 Bind Scope cc_scope with callconv.
 
 Definition match_query {li1 li2} (cc: callconv li1 li2) w q1 q2 :=
-  cc_query cc q1 q2 (cc_init cc) w.
+  cc_query cc (cc_init cc) w q1 q2.
 
 Definition match_reply {li1 li2} (cc: callconv li1 li2) w r1 r2 :=
-  exists w', cc_reply cc r1 r2 w w'.
+  exists w', cc_reply cc w w' r1 r2.
 
 (** ** Identity *)
 
@@ -108,8 +108,8 @@ Program Definition cc_id {T}: callconv T T :=
   {|
     cc_state := unit;
     cc_init := tt;
-    cc_query q1 q2 w w' := q1 = q2;
-    cc_reply r1 r2 w w' := r1 = r2;
+    cc_query w w' q1 q2 := q1 = q2;
+    cc_reply w w' r1 r2 := r1 = r2;
   |}.
 
 Lemma match_cc_id {T} q:
@@ -147,14 +147,14 @@ Section COMPOSE.
     {|
       cc_state := cc_state cc12 * cc_state cc23;
       cc_init := (cc_init cc12, cc_init cc23);
-      cc_query q1 q3 w w' :=
+      cc_query w w' q1 q3 :=
         exists q2,
-          cc_query cc12 q1 q2 (fst w) (fst w') /\
-          cc_query cc23 q2 q3 (snd w) (snd w');
-      cc_reply r1 r3 w w' :=
+          cc_query cc12 (fst w) (fst w') q1 q2 /\
+          cc_query cc23 (snd w) (snd w') q2 q3;
+      cc_reply w w' r1 r3 :=
         exists r2,
-          cc_reply cc12 r1 r2 (fst w) (fst w') /\
-          cc_reply cc23 r2 r3 (snd w) (snd w');
+          cc_reply cc12 (fst w) (fst w') r1 r2 /\
+          cc_reply cc23 (snd w) (snd w') r2 r3;
     |}.
 
   Lemma match_cc_compose w12 w23 q1 q2 q3:
@@ -215,23 +215,21 @@ Section ARROW.
   Context {liA1 liA2} (ccA : callconv liA1 liA2).
   Context {liB1 liB2} (ccB : callconv liB1 liB2).
 
-  Inductive cc_arrow_query : query (liA1 -o liB1) -> query (liA2 -o liB2) ->
-                             relation (cc_state ccA * cc_state ccB) :=
+  Inductive cc_arrow_query : _ -> _ -> rel (query (_ -o _)) (query (_ -o _)) :=
     | cc_arrow_query_l wA wA' wB rA1 rA2 :
-        cc_reply ccA rA1 rA2 wA wA' ->
-        cc_arrow_query (inl rA1) (inl rA2) (wA, wB) (wA', wB)
+        cc_reply ccA wA wA' rA1 rA2 ->
+        cc_arrow_query (wA, wB) (wA', wB) (inl rA1) (inl rA2)
     | cc_arrow_query_r wA wB wB' qB1 qB2 :
-        cc_query ccB qB1 qB2 wB wB' ->
-        cc_arrow_query (inr qB1) (inr qB2) (wA, wB) (wA, wB').
+        cc_query ccB wB wB' qB1 qB2 ->
+        cc_arrow_query (wA, wB) (wA, wB') (inr qB1) (inr qB2).
 
-  Inductive cc_arrow_reply : reply (liA1 -o liB1) -> reply (liA2 -o liB2) ->
-                             relation (cc_state ccA * cc_state ccB) :=
+  Inductive cc_arrow_reply : _ -> _ -> rel (reply (_ -o _)) (reply (_ -o _)) :=
     | cc_arrow_reply_l wA wA' wB qA1 qA2 :
-        cc_query ccA qA1 qA2 wA wA' ->
-        cc_arrow_reply (inl qA1) (inl qA2) (wA, wB) (wA', wB)
+        cc_query ccA wA wA' qA1 qA2 ->
+        cc_arrow_reply (wA, wB) (wA', wB) (inl qA1) (inl qA2)
     | cc_arrow_reply_r wA wB wB' rB1 rB2 :
-        cc_reply ccB rB1 rB2 wB wB' ->
-        cc_arrow_reply (inr rB1) (inr rB2) (wA, wB) (wA, wB').
+        cc_reply ccB wB wB' rB1 rB2 ->
+        cc_arrow_reply (wA, wB) (wA, wB') (inr rB1) (inr rB2).
 
   Definition cc_arrow : callconv (liA1 -o liB1) (liA2 -o liB2) :=
     {|
@@ -253,29 +251,17 @@ Section KLR_CALLCONV.
   Context (Q: klr W (query li1) (query li2)).
   Context (R: klr W (reply li1) (reply li2)).
 
-  Definition cc_klr_query (q1: query li1) (q2: query li2) (s s': option W) :=
+  Definition cc_klr_query (s s': option W) (q1: query li1) (q2: query li2) :=
     match s, s' with
       | None, Some w => Q w q1 q2
       | _, _ => False
     end.
 
-  Definition cc_klr_reply (r1: reply li1) (r2: reply li2) (s s': option W) :=
+  Definition cc_klr_reply (s s': option W) (r1: reply li1) (r2: reply li2) :=
     match s with
       | Some w => R w r1 r2
       | _ => False
     end.
-
-  (*
-  Inductive cc_klr_query (q1: query li1) (q2: query li2): relation (option W) :=
-    cc_klr_query_intro w :
-      Q w q1 q2 ->
-      cc_klr_query q1 q2 None (Some w).
-
-  Inductive cc_klr_reply (r1: reply li1) (r2: reply li2): relation (option W) :=
-    cc_klr_reply_intro w :
-      R w r1 r2 ->
-      cc_klr_reply r1 r2 (Some w) None.
-   *)
 
   Definition cc_klr : callconv li1 li2 :=
     {|
