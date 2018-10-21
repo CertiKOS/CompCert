@@ -96,7 +96,6 @@ Proof.
     induction H1; intros lc H2; inv H2.
     + constructor.
     + constructor; eauto.
-      eexists; split; eauto.
 Qed.
 
 Global Instance compose_meminj_incr:

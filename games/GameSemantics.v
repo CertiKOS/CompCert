@@ -66,7 +66,6 @@ Proof.
       edestruct H12 as (? & ? & ?); eauto.
       edestruct H23 as (? & ? & ?); eauto.
       eexists; split; eauto.
-      eexists; split; eauto.
 Qed.
 
 (** ** Observations *)

@@ -136,8 +136,7 @@ Module RTS.
       intros H12 H23 a1 Ha1.
       edestruct H12 as (? & ? & ?); eauto.
       edestruct H23 as (? & ? & ?); eauto.
-      eexists; split; eauto.
-      eexists; split; eauto.
+      eauto 10.
   Qed.
 
   (** ** Externally observable behaviors *)
