@@ -34,11 +34,114 @@ Module RTS.
 
   (** ** Definition *)
 
+  (** Continuations *)
+
+  Inductive resumption {A} :=
+    | resume (a : A)
+    | reject.
+
+  Arguments resumption : clear implicits.
+
+  Inductive resumption_rel {A B} (R : rel A B) : rel _ _ :=
+    | resumption_rel_resume a b :
+        R a b -> resumption_rel R (resume a) (resume b)
+    | resumption_rel_reject :
+        resumption_rel R reject reject.
+
+  Global Instance resume_rel :
+    Monotonic (@resume) (forallr R, R ++> resumption_rel R).
+  Proof.
+    constructor; auto.
+  Qed.
+
+  Global Instance reject_rel :
+    Monotonic (@reject) (forallr R, resumption_rel R).
+  Proof.
+    constructor; auto.
+  Qed.
+
+  Global Instance resumption_subrel {A B} :
+    Monotonic (@resumption_rel A B) (subrel ++> subrel).
+  Proof.
+    intros RA RB HR b1 b2 Hb.
+    destruct Hb; constructor; rauto.
+  Qed.
+
+  Global Instance resumption_subrel_params :
+    Params (@resumption_rel) 3.
+
+  Global Instance resumption_rel_refl `{Reflexive} :
+    Reflexive (resumption_rel R).
+  Proof.
+    intro x. destruct x; constructor; auto.
+  Qed.
+
+  Global Instance resumption_rel_compose `{RCompose} :
+    RCompose
+      (resumption_rel RAB)
+      (resumption_rel RBC)
+      (resumption_rel RAC).
+  Proof.
+    destruct 1; inversion 1; subst; constructor.
+    ercompose; eauto.
+  Qed.
+
+  Definition resumption_map {A B} (f : A -> B) (r : resumption A) :=
+    match r with
+      | resume s => resume (f s)
+      | reject => reject
+    end.
+
+  Global Instance resumption_map_rel :
+    Monotonic
+      (@resumption_map)
+      (forallr RA, forallr RB, (RA ++> RB) ++>
+       resumption_rel RA ++> resumption_rel RB).
+  Proof.
+    unfold resumption_map. rauto.
+  Qed.
+
+  Definition cont G A :=
+    input G -> set (resumption A).
+
+  Definition cont_le {G A B} R : rel (cont G A) (cont G B) :=
+    - ==> set_le (resumption_rel R).
+
+  Hint Extern 1 (RIntro _ (cont_le _) _ _) =>
+    eapply arrow_pointwise_rintro : typeclass_instances.
+
+  Hint Extern 1 (RElim (cont_le _) _ _ _ _) =>
+    eapply arrow_pointwise_relim : typeclass_instances.
+
+  Global Instance cont_le_refl {G} `(Reflexive) :
+    Reflexive (cont_le (G:=G) R).
+  Proof.
+    intros x q. reflexivity.
+  Qed.
+
+  Global Instance cont_le_compose {G} `{RCompose} :
+    RCompose (cont_le RAB) (cont_le RBC) (cont_le (G:=G) RAC).
+  Proof.
+    intros k1 k2 k3 H12 H23 q.
+    rcompose (k2 q); eauto.
+  Qed.
+
+  Definition cont_map {G A B} (f : A -> B) (k : cont G A) : cont G B :=
+    fun q => set_map (resumption_map f) (k q).
+
+  Global Instance cont_map_le :
+    Monotonic
+      (@cont_map)
+      (forallr -, forallr R, forallr S, (R ++> S) ++> cont_le R ++> cont_le S).
+  Proof.
+    unfold cont_map. rauto.
+  Qed.
+
   (** The possible behaviors of each state in a RTS are as follows. *)
 
   Inductive behavior {G A} :=
     | internal (a' : A)
-    | interacts (m : output G) (k : input G -> option (A -> Prop))
+    | interacts (m : output G) (k : cont G A)
     | diverges
     | goes_wrong.
 
@@ -48,7 +151,7 @@ Module RTS.
     | internal_le :
         Monotonic internal (R ++> behavior_le R)
     | interacts_le :
-        Monotonic interacts (- ==> (- ==> option_rel (set_le R)) ++> behavior_le R)
+        Monotonic interacts (- ==> cont_le R ++> behavior_le R)
     | diverges_le :
         Monotonic diverges (behavior_le R)
     | goes_wrong_le ra :
@@ -68,10 +171,20 @@ Module RTS.
     intros H [a' | m k | | ]; constructor; eauto. intro. reflexivity.
   Qed.
 
+  Global Instance behavior_le_compose {G} `{RCompose} :
+    RCompose (A := behavior G A)
+      (behavior_le RAB)
+      (behavior_le RBC)
+      (behavior_le RAC).
+  Proof.
+    destruct 1; inversion 1; constructor; eauto.
+    ercompose; eauto.
+  Qed.
+
   Definition behavior_map {G A B} (f : A -> B) (r : behavior G A) :=
     match r with
       | internal a' => internal (f a')
-      | interacts m k => interacts m (fun mi => option_map (set_map f) (k mi))
+      | interacts m k => interacts m (cont_map f k)
       | diverges => diverges
       | goes_wrong => goes_wrong
     end.
@@ -118,25 +231,13 @@ Module RTS.
     intros a _ [] a' Ha'. exists a'. split; eauto. reflexivity.
   Qed.
 
-  Lemma sim_compose {G A B C} (R : rel A B) (S : rel B C) (α β γ : rts G _) :
-    sim R α β ->
-    sim S β γ ->
-    sim (rel_compose R S) α γ.
+  Global Instance sim_compose {G A B C RAB RBC RAC} :
+    forall `{!RDecompose RAB RBC RAC} `{!RCompose RAB RBC RAC},
+    @RCompose (rts G A) (rts G B) (rts G C) (sim RAB) (sim RBC) (sim RAC).
   Proof.
-    intros Hαβ Hβγ.
-    intros a c (b & Hab & Hbc) a' Ha'.
-    edestruct Hαβ as (b' & Hb' & Hab'); eauto.
-    edestruct Hβγ as (c' & Hc' & Hbc'); eauto.
-    exists c'. split; eauto.
-    destruct Hbc'; inversion Hab'; constructor.
-    - eexists; split; eauto.
-    - intros i. specialize (H i). specialize (H2 i).
-      destruct H2; inversion H; clear H; subst; constructor.
-      revert H2 H6. clear.
-      intros H12 H23 a1 Ha1.
-      edestruct H12 as (? & ? & ?); eauto.
-      edestruct H23 as (? & ? & ?); eauto.
-      eauto 10.
+    intros HRD HRC α β γ Hαβ Hβγ a c Hac.
+    rdecompose Hac as (b & Hab & Hac).
+    rcompose (β b); eauto.
   Qed.
 
   (** ** Externally observable behaviors *)
@@ -326,13 +427,11 @@ Module RTS.
 
   (** ** Structural properties *)
 
-  Definition nonbranching_cont {G A} (k1 k2 : input G -> option (A -> Prop)) :=
-    forall q S1 S2 s1 s2,
-      k1 q = Some S1 ->
-      k2 q = Some S2 ->
-      S1 s1 ->
-      S2 s2 ->
-      s1 = s2.
+  Definition nonbranching_cont {G A} (k1 k2 : cont G A) :=
+    forall q r1 r2,
+      k1 q r1 ->
+      k2 q r2 ->
+      r1 = r2.
 
   Definition nonbranching_behaviors {G A} (r1 r2 : behavior G A) :=
     match r1, r2 with

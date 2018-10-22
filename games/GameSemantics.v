@@ -6,6 +6,7 @@ Require Import Smallstep.
 Require Import Behaviors.
 Require Import RTS.
 Require Import ModuleSemantics.
+Require Import Sets.
 
 
 (** * CompCert games *)
@@ -31,7 +32,7 @@ Record modsem {li : language_interface} :=
   {
     modsem_state : Type;
     modsem_lts :> rts li modsem_state;
-    modsem_entry : input li -> option (modsem_state -> Prop);
+    modsem_entry : RTS.cont li modsem_state;
   }.
 
 Arguments modsem : clear implicits.
@@ -44,8 +45,8 @@ Record modref {li} (α β : modsem li) : Prop :=
       rel (modsem_state α) (modsem_state β);
     modref_sim :
       RTS.sim modref_state (modsem_lts α) (modsem_lts β);
-    modref_init q :
-      option_rel (set_le modref_state) (modsem_entry α q) (modsem_entry β q);
+    modref_init :
+      RTS.cont_le modref_state (modsem_entry α) (modsem_entry β);
   }.
 
 Global Instance modref_preo li:
@@ -58,14 +59,8 @@ Proof.
     + intros q. reflexivity.
   - intros [A α a] [B β b] [C γ c] [RAB Hαβ Hab] [RBC Hβγ Hbc]; simpl in *.
     eexists; simpl.
-    + eapply RTS.sim_compose; eauto.
-    + intros q. specialize (Hab q). specialize (Hbc q).
-      destruct Hab; inversion Hbc; clear Hbc; subst; constructor.
-      revert H H2. clear.
-      intros H12 H23 a1 Ha1.
-      edestruct H12 as (? & ? & ?); eauto.
-      edestruct H23 as (? & ? & ?); eauto.
-      eexists; split; eauto.
+    + ercompose; eauto.
+    + ercompose; eauto.
 Qed.
 
 (** ** Observations *)
@@ -100,8 +95,12 @@ Module Behavior.
       | lifts_goes_wrong : ~ ex S -> lifts S wrong
       | lifts_resumes s : S s -> lifts S (running s).
 
-    Definition liftk {A} (k : cont li A): cont li state :=
-      fun q => option_map lifts (k q).
+    Definition liftk {A} (k : cont li A): RTS.cont li state :=
+      fun q =>
+        match k q with
+          | Some s => set_map RTS.resume (lifts s)
+          | None => singl RTS.reject
+        end.
 
     Inductive step : rts li state :=
       | step_goes_initially_wrong :
@@ -179,16 +178,16 @@ Module Behavior.
       cont_determinate L k ->
       RTS.nonbranching_cont (liftk k) (liftk k).
     Proof.
-      intros Hk q S1 S2 s1 s2 HS1 HS2 Hs1 Hs2.
-      assert (S2 = S1) by congruence. subst. clear HS2.
-      unfold liftk in HS1.
-      destruct k as [S | ] eqn:HS; simpl in HS1; inversion HS1; clear HS1; subst.
-      destruct Hs1 as [Hw1 | s1 Hs1], Hs2 as [Hw2 | s2 Hs2].
-      - reflexivity.
-      - elim Hw1; eauto.
-      - elim Hw2; eauto.
-      - f_equal.
-        eapply (Hk q s1 s2); eexists; eauto.
+      intros Hk q r1 r2 Hr1 Hr2.
+      unfold liftk in *. destruct k as [S | ] eqn:HS.
+      - inversion Hr1 as [s1 Hs1]; clear Hr1; subst.
+        inversion Hr2 as [s2 Hs2]; clear Hr2; subst.
+        destruct Hs1 as [Hw1 | s1 Hs1], Hs2 as [Hw2 | s2 Hs2].
+        + reflexivity.
+        + elim Hw1; eauto.
+        + elim Hw2; eauto.
+        + repeat f_equal. eapply (Hk q s1 s2); eexists; eauto.
+      - destruct Hr1, Hr2. reflexivity.
     Qed.
 
     Lemma deterministic:
@@ -291,15 +290,18 @@ Module Behavior.
     @bsim_properties li1 li2 cc L2 L1 ind ord ms ->
     bsim_match_cont cc (match_ex ms) w k2 k1 ->
     cc_query cc w w' q2 q1 ->
-    option_rel (set_le (state_rel (flip (rel_ex (match_ex ms))))) (liftk k1 q1) (liftk k2 q2).
+    set_le (RTS.resumption_rel (state_rel (flip (rel_ex (match_ex ms))))) (liftk k1 q1) (liftk k2 q2).
   Proof.
     intros HL Hk Hq. unfold liftk.
-    specialize (Hk w' q2 q1 Hq). destruct Hk as [S2 S1 HS | ]; constructor.
-    eapply bsim_lifts.
-    - intros.
-      edestruct @bsim_sets_exists as (? & ? & ?); eauto.
-    - intros s1 Hs1 s2 Hs2. unfold flip, rel_ex.
-      edestruct @bsim_sets_match as (? & ? & ?); eauto.
+    specialize (Hk w' q2 q1 Hq). destruct Hk as [S2 S1 HS | ].
+    - intros _ [s1 Hs1].
+      eapply bsim_lifts in Hs1 as (s2 & Hs2 & Hs).
+      + exists (RTS.resume s2). split; constructor; eauto.
+      + intros.
+        edestruct @bsim_sets_exists as (? & ? & ?); eauto.
+      + intros s1' Hs1' s2 Hs2. unfold flip, rel_ex.
+        edestruct @bsim_sets_match as (? & ? & ?); eauto.
+    - intros _ []. eexists; split; constructor.
   Qed.
 
   Lemma reachable_inv {li} (L : semantics li) s S':
