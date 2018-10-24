@@ -1,4 +1,5 @@
 Require Import LogicalRelations.
+Require Import KLR.
 Require Import List.
 Require Import Classical.
 Require Import Events.
@@ -20,7 +21,15 @@ Canonical Structure lang (li : language_interface) : game :=
     output := reply li;
   |}.
 
+Definition cc {li1 li2} (cc : callconv li1 li2) : abrel (lang li2) (lang li1) :=
+  {|
+    abr_init := cc_init cc;
+    abr_input w w' q2 q1 := cc_query cc w w' q1 q2;
+    abr_output w w' q2 q1 := cc_reply cc w w' q1 q2;
+  |}.
+
 Coercion lang : language_interface >-> game.
+Coercion cc : callconv >-> abrel.
 Bind Scope li_scope with game.
 
 
@@ -28,27 +37,28 @@ Bind Scope li_scope with game.
 
 (** ** Definition *)
 
-Record modsem {li : language_interface} :=
+Record modsem {G : game} :=
   {
     modsem_state : Type;
-    modsem_lts :> rts li modsem_state;
-    modsem_entry : RTS.cont li modsem_state;
+    modsem_lts :> rts G modsem_state;
+    modsem_entry : RTS.cont G modsem_state;
   }.
 
 Arguments modsem : clear implicits.
 
 (** ** Refinement preorder *)
 
-Record modref {li} (α β : modsem li) : Prop :=
+Record modref {GA GB} (GR : abrel GA GB) (α β : modsem _) : Prop :=
   {
     modref_state :
-      rel (modsem_state α) (modsem_state β);
+      abr_state GR -> rel (modsem_state α) (modsem_state β);
     modref_sim :
-      RTS.sim modref_state (modsem_lts α) (modsem_lts β);
+      RTS.sim GR modref_state (modsem_lts α) (modsem_lts β);
     modref_init :
-      RTS.cont_le modref_state (modsem_entry α) (modsem_entry β);
+      RTS.cont_le GR modref_state (abr_init GR) (modsem_entry α) (modsem_entry β);
   }.
 
+(*
 Global Instance modref_preo li:
   PreOrder (@modref li).
 Proof.
@@ -62,21 +72,7 @@ Proof.
     + ercompose; eauto.
     + ercompose; eauto.
 Qed.
-
-(** ** Observations *)
-
-Definition mobs {li} (α : modsem li) : modsem li :=
-  {|
-    modsem_lts := RTS.obs α;
-    modsem_entry := modsem_entry α;
-  |}.
-
-Global Instance mobs_ref :
-  Monotonic (@mobs) (forallr -, modref ++> modref).
-Proof.
-  intros li [A α a] [B β b] [R Hαβ Hab]; unfold mobs; simpl in *.
-  exists R; simpl; eauto. rauto.
-Qed.
+*)
 
 
 (** * Behaviors from small step semantics *)
@@ -200,13 +196,13 @@ Module Behavior.
         repeat constructor.
       - inversion H2; clear H2; subst.
         + edestruct (sd_determ HL s E0 s' E0 s'0); eauto.
-          specialize (H2 eq_refl) as [].
+          specialize (H2 eq_refl) as [ ].
           repeat constructor.
         + eelim sd_final_nostep; eauto.
         + eelim H1; eauto.
       - inversion H2; clear H2; subst.
         + eelim sd_final_nostep; eauto.
-        + edestruct (sd_final_determ HL s r k r0 k0) as ([] & [] & Hk); eauto.
+        + edestruct (sd_final_determ HL s r k r0 k0) as ([ ] & [ ] & Hk); eauto.
           constructor. simpl.
           eapply cont_deterministic; eauto.
         + eelim H3; eauto.
@@ -226,12 +222,12 @@ Module Behavior.
 
     We use the following alternating simulation relation. *)
 
-  Inductive state_rel {A B} R : rel (@state A) (@state B) :=
+  Inductive state_rel {W A B} R (w : W) : rel (@state A) (@state B) :=
     | running_rel s1 s2 :
-        R s1 s2 ->
-        state_rel R (running s1) (running s2)
+        R w s2 s1 ->
+        state_rel R w (running s1) (running s2)
     | wrong_rel S1 :
-        state_rel R S1 wrong.
+        state_rel R w S1 wrong.
 
   Hint Constructors state_rel.
 
@@ -271,37 +267,32 @@ Module Behavior.
 
   Hint Extern 10 => rstep : coqrel.
 
-  Lemma bsim_lifts {A B} (R : rel A B) (k1 k2 : _ -> Prop) :
-    (forall s, k2 s -> ex k1) ->
-    (forall s, k2 s -> set_le R k1 k2) ->
-    set_le (state_rel R) (lifts k1) (lifts k2).
+  Lemma bsim_lifts {W A B} (R : klr W A B) w S1 S2 :
+    bsim_match_sets (R w) S1 S2 ->
+    set_le (state_rel R w) (lifts S2) (lifts S1).
   Proof.
-    intros Hex Hk s1 Hs1.
-    destruct Hs1 as [Hk1 | s1 Hs1].
+    intros HS s2 Hs2.
+    destruct Hs2 as [Hns2 | s2 Hs2].
     - exists wrong; split; constructor.
-      intros [s2 Hs2]. eauto.
-    - destruct (classic (ex k2)) as [[s2e Hs2e] | H2].
-      + edestruct Hk as (s2 & Hs2 & Hs); eauto.
-        exists (running s2); split; constructor; eauto.
+      intros [s1 Hs1]. apply Hns2. firstorder.
+    - destruct (classic (ex S1)) as [[s1e Hs1e] | H1].
+      + edestruct @bsim_sets_match as (s1 & Hs1 & Hs); eauto.
+        exists (running s1); split; constructor; eauto.
       + exists wrong; split; constructor; eauto.
   Qed.
 
-  Lemma bsim_sound_liftk {li1 li2} cc L1 L2 ind ord ms w k1 k2 w' q1 q2 :
-    @bsim_properties li1 li2 cc L2 L1 ind ord ms ->
-    bsim_match_cont cc (match_ex ms) w k2 k1 ->
-    cc_query cc w w' q2 q1 ->
-    set_le (RTS.resumption_rel (state_rel (flip (rel_ex (match_ex ms))))) (liftk k1 q1) (liftk k2 q2).
+  Lemma bsim_sound_liftk {li1 li2} (cc: callconv li1 li2) {A B} (R : _ -> rel A B):
+    Monotonic
+      liftk
+      (rforall w, bsim_match_cont cc R w --> RTS.cont_le cc (state_rel R) w).
   Proof.
-    intros HL Hk Hq. unfold liftk.
-    specialize (Hk w' q2 q1 Hq). destruct Hk as [S2 S1 HS | ].
-    - intros _ [s1 Hs1].
-      eapply bsim_lifts in Hs1 as (s2 & Hs2 & Hs).
-      + exists (RTS.resume s2). split; constructor; eauto.
-      + intros.
-        edestruct @bsim_sets_exists as (? & ? & ?); eauto.
-      + intros s1' Hs1' s2 Hs2. unfold flip, rel_ex.
-        edestruct @bsim_sets_match as (? & ? & ?); eauto.
-    - intros _ []. eexists; split; constructor.
+    intros w k2 k1 Hk w' q2 q1 Hq b2 Hb2. unfold liftk in *.
+    specialize (Hk w' q1 q2 Hq). destruct Hk as [S2 S1 HS | ].
+    - destruct Hb2 as [s2 Hs2].
+      eapply bsim_lifts in Hs2 as (s1 & Hs1 & Hs); eauto.
+      exists (RTS.resume s1). split; constructor; eauto.
+    - destruct Hb2 as [ ].
+      eexists; split; constructor.
   Qed.
 
   Lemma reachable_inv {li} (L : semantics li) s S':
@@ -323,71 +314,64 @@ Module Behavior.
         * eelim H0; eauto.
   Qed.
 
-  Lemma bsim_sound_step {li} (L1 L2: semantics li) ind ord ms:
-    bsim_properties cc_id L2 L1 ind ord ms ->
-    RTS.sim (state_rel (flip (rel_ex (match_ex ms))))
-      (RTS.obs (step L1))
-      (RTS.obs (step L2)).
+  Lemma bsim_sound_step {li1 li2} (cc: callconv li1 li2) L1 L2 ind ord ms:
+    bsim_properties cc L1 L2 ind ord ms ->
+    RTS.sim cc (state_rel (match_ex ms))
+      (RTS.obs (step L2))
+      (RTS.obs (step L1)).
   Proof.
-    set (R := flip (rel_ex (match_ex ms))). unfold flip, rel_ex in R.
-    intros HL S1 S2 HS r1 Hr1.
-    destruct (classic (safe L2 S2)) as [HS2 | ];
+    intros HL w S2 S1 HS r2 Hr2.
+    destruct (classic (safe L1 S1)) as [HS1 | ];
       [ | now eauto using unsafe_goes_wrong with coqrel ].
-    destruct HS as [s1 s2 Hs | ]; simpl in HS2; try contradiction.
-    inversion Hr1 as [Hs1 | S1 r Hrext Hr Hs1']; clear Hr1; subst.
+    destruct HS as [s2 s1 [i Hs] | ]; simpl in HS1; try contradiction.
+    inversion Hr2 as [Hs2 | S2 r Hrext Hr Hs2']; clear Hr2; subst.
 
     - (* Divergence *)
       exists RTS.diverges. split; [ | rauto].
-      destruct Hs as (w & i & Hs).
       apply RTS.obs_diverges.
       eapply forever_internal_bsim; eauto.
 
     - (* Observation *)
-      assert (HS1: Smallstep.safe L1 s1)
-        by (destruct Hs as (? & ? & ?); eauto using bsim_safe).
-      apply reachable_inv in Hs1' as (s1' & ? & Hs1'); auto; subst.
-      revert s2 Hs HS2. clear HS1.
-      revert Hr. pattern s1, s1'. revert s1 s1' Hs1'.
+      assert (HS2 : Smallstep.safe L2 s2) by eauto using bsim_safe.
+      apply reachable_inv in Hs2' as (s2' & ? & Hs2'); auto; subst.
+      revert i s1 Hs HS1. clear HS2.
+      revert Hr. pattern s2, s2'. revert s2 s2' Hs2'.
       apply star_E0_ind.
 
       + (* Final states *)
-        intros s1 Hr s2 Hs Hs2.
+        intros s2 Hr i s1 Hs Hs1.
         inversion Hr; clear Hr; subst; try now inversion Hrext.
-        destruct Hs as (w & i & Hs).
         eapply bsim_match_final_states in H0; eauto.
-        destruct H0 as (s2' & w' & r2 & k2 & Hs2' & Hr & Hsk2 & Hk); eauto.
+        destruct H0 as (s1' & w' & r1 & k1 & Hs1' & Hr & Hsk1 & Hk); eauto.
         simpl in Hr; subst.
-        exists (RTS.interacts r (liftk k2)). split.
-        * eapply RTS.obs_external with (running s2'); eauto.
+        exists (RTS.interacts r1 (liftk k1)). split.
+        * eapply RTS.obs_external with (running s1'); eauto.
           -- constructor; eauto.
           -- eapply star_reachable; eauto.
-        * constructor. intro q.
-           eapply bsim_sound_liftk; eauto.
-           instantiate (1 := w'). constructor.
+        * econstructor. { eapply Hr. }
+          intros w'' q1 q2 H1.
+          eapply bsim_sound_liftk; eauto.
 
       + (* Silent steps *)
-        intros s1 s1' s1'' Hs1' Hs1'' Hr1 s2 Hs Hs2.
-        specialize (Hs1'' Hr1). clear Hr1 s1''.
-        destruct Hs as (w & i & Hs).
-        edestruct (bsim_E0_star HL) as (j & s2' & Hs2' & Hs12');
+        intros s2 s2' s2'' Hs2' Hs2'' Hr2 i s1 Hs Hs1.
+        specialize (Hs2'' Hr2). clear Hr2 s2''.
+        edestruct (bsim_E0_star HL) as (j & s1' & Hs1' & Hs12');
           eauto using star_one.
-        edestruct Hs1'' as (r2 & Hr2 & Hr12).
-        -- eexists. eexists. eauto.
+        edestruct Hs2'' as (r1 & Hr1 & Hr12); eauto.
         -- eauto using star_safe.
-        -- exists r2. split; eauto.
+        -- exists r1. split; eauto.
            eapply RTS.obs_reachable; eauto.
            eapply star_reachable; eauto.
   Qed.
 
-  Global Instance bsim_sound:
-    Monotonic (@of) (forallr -, backward_simulation cc_id --> modref).
+  Global Instance bsim_sound :
+    Monotonic (@of) (forallr cc, backward_simulation cc --> modref cc).
   Proof.
-    intros li L1 L2 [index order match_states HL]. unfold of.
+    intros li1 li2 cc L1 L2 [index order match_states HL]. unfold of.
     econstructor; simpl; eauto.
     - eapply bsim_sound_step; eauto.
-    - intros q.
+    - intros w q1 q2 Hq.
       eapply bsim_sound_liftk; eauto.
       eapply bsim_initial_states; eauto.
-      instantiate (1 := tt). constructor.
   Qed.
 End Behavior.
