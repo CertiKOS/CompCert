@@ -3,60 +3,12 @@ Require Import Axioms.
 Require Import Classical.
 Require Import Sets.
 Require Import KLR.
+Require Export Games.
+
 
 (** * Prerequisites *)
 
 Axiom prop_ext : ClassicalFacts.prop_extensionality.
-
-
-(** * Games *)
-
-Structure game :=
-  {
-    input : Type;
-    output : Type;
-  }.
-
-Inductive move {G} :=
-  | input_move (m : input G) :> move
-  | output_move (m : output G) :> move.
-
-Arguments move : clear implicits.
-
-(** Abstraction relation between two games *)
-
-Record abrel (G1 G2 : game) :=
-  {
-    abr_state : Type;
-    abr_init : abr_state;
-    abr_input : abr_state -> abr_state -> rel (input G1) (input G2);
-    abr_output : abr_state -> abr_state -> rel (output G1) (output G2);
-  }.
-
-Arguments abr_state {_ _}.
-Arguments abr_init {_ _}.
-Arguments abr_input {_ _}.
-Arguments abr_output {_ _}.
-
-Definition abr_id {G} : abrel G G :=
-  {|
-    abr_state := unit;
-    abr_init := tt;
-    abr_input w w' := eq;
-    abr_output w w' := eq;
-  |}.
-
-Definition abr_compose {GA GB GC} (GRAB : abrel GA GB) (GRBC : abrel GB GC) :=
-  {|
-    abr_state := abr_state GRAB * abr_state GRBC;
-    abr_init := (abr_init GRAB, abr_init GRBC);
-    abr_input :=
-      fun '(wab, wbc) '(wab', wbc') =>
-        rel_compose (abr_input GRAB wab wab') (abr_input GRBC wbc wbc');
-    abr_output :=
-      fun '(wab, wbc) '(wab', wbc') =>
-        rel_compose (abr_output GRAB wab wab') (abr_output GRBC wbc wbc');
-  |}.
 
 
 (** * Receptive transition systems *)
@@ -138,21 +90,17 @@ Module RTS.
   Qed.
 
   Definition cont G A :=
-    input G -> set (resumption A).
+    move G -> set (resumption A).
 
-  Definition cont_le {GA GB A B} GR R w : rel (cont GA A) (cont GB B) :=
-    rforall w', abr_input GR w w' ++> set_le (resumption_rel (R w')).
+  Definition cont_le {GA GB A B} GR R: klr (gworld GR) (cont GA A) (cont GB B) :=
+    [] move_rel GR ++> k1 set_le (k1 resumption_rel R).
 
-  Hint Extern 1 (RIntro _ (cont_le _ _ _) _ _) =>
-    eapply rel_all_rintro : typeclass_instances.
-
-  Hint Extern 1 (RElim (cont_le _ _ _) _ _ _ _) =>
-    eapply rel_all_relim; eexists : typeclass_instances.
+  Hint Unfold cont_le : typeclass_instances.
 
   Global Instance cont_le_refl {G A} R `{!forall w, @Reflexive A (R w)} w :
-    Reflexive (cont_le (@abr_id G) R w).
+    Reflexive (cont_le (@grel_id G) R w).
   Proof.
-    intros x w' q _ [ ]. reflexivity.
+    intros x w' Hw' q _ [ ]. unfold k1. reflexivity.
   Qed.
 
   Global Instance cont_le_compose {GA GB GC A B C} GRAB GRBC RAB RBC RAC wab wbc :
@@ -160,11 +108,11 @@ Module RTS.
     RCompose
       (cont_le GRAB RAB wab)
       (cont_le GRBC RBC wbc)
-      (cont_le (@abr_compose GA GB GC GRAB GRBC) RAC (wab, wbc)).
+      (cont_le (@grel_compose GA GB GC GRAB GRBC) RAC (wab, wbc)).
   Proof.
-    intros H k1 k2 k3 H12 H23 [w12' w23'] q1 q3 (q2 & Hq12 & Hq23).
-    specialize (H12 w12' q1 q2 Hq12).
-    specialize (H23 w23' q2 q3 Hq23).
+    intros H k1 k2 k3 H12 H23 [w12' w23'] [Hw12' Hw23'] q1 q3 (q2 & Hq12 & Hq23).
+    specialize (H12 w12' Hw12' q1 q2 Hq12).
+    specialize (H23 w23' Hw23' q2 q3 Hq23).
     rcompose (k2 q2); eauto.
   Qed.
 
@@ -185,37 +133,47 @@ Module RTS.
 
   Inductive behavior {G A} :=
     | internal (a' : A)
-    | interacts (m : output G) (k : cont G A)
+    | interacts (m : move G) (k : cont G A)
     | diverges
     | goes_wrong.
 
   Arguments behavior : clear implicits.
 
-  Inductive behavior_le {GA GB} GR {A B} R w : rel (behavior GA A) (behavior GB B) :=
+  Inductive behavior_le {GA GB} GR {A B} R : klr _ (behavior GA A) (behavior GB B) :=
     | internal_le :
-        Monotonic internal (R w ++> behavior_le GR R w)
-    | interacts_le w' :
-        Monotonic interacts
-          (abr_output GR w w' ++> cont_le GR R w' ++> behavior_le GR R w)
+        Monotonic internal ([] R ++> behavior_le GR R)
+    | interacts_le_def w w' p1 p2 k1 k2 :
+        w ~> w' ->
+        move_rel GR w' p1 p2 ->
+        cont_le GR R w' k1 k2 ->
+        behavior_le GR R w (interacts p1 k1) (interacts p2 k2)
     | diverges_le :
-        Monotonic diverges (behavior_le GR R w)
+        Monotonic diverges ([] behavior_le GR R)
     | goes_wrong_le ra :
-        Related ra goes_wrong (behavior_le GR R w).
+        Related ra goes_wrong ([] behavior_le GR R).
 
   Global Existing Instance internal_le.
-  Global Existing Instance interacts_le.
   Global Existing Instance diverges_le.
   Global Existing Instance goes_wrong_le.
   Global Instance internal_le_params : Params (@internal) 1.
-  Global Instance interacts_le_params : Params (@interacts) 2.
+
+  Global Instance interacts_le :
+    Monotonic (@interacts)
+      (forallr GR, forallr R,
+         [] % (<> move_rel GR * cont_le GR R) ++> behavior_le GR R).
+  Proof.
+    repeat rstep.
+    destruct x as [p1 k1], y as [p2 k2], H as (w' & Hw' & Hp & Hk). cbn in *.
+    econstructor; eauto.
+  Qed.
 
   Global Instance behavior_le_refl {G A} R w :
     (forall w, @Reflexive A (R w)) ->
-    Reflexive (behavior_le (@abr_id G) R w).
+    Reflexive (behavior_le (@grel_id G) R w).
   Proof.
     intros H [a' | m k | | ]; try constructor; eauto.
     - reflexivity.
-    - apply interacts_le with tt; simpl; repeat rstep.
+    - rstep. exists tt; simpl; intuition repeat rstep.
       destruct H0. reflexivity.
   Qed.
 
@@ -224,12 +182,15 @@ Module RTS.
     RCompose
       (behavior_le GRAB RAB wab)
       (behavior_le GRBC RBC wbc)
-      (behavior_le (@abr_compose GA GB GC GRAB GRBC) RAC (wab, wbc)).
+      (behavior_le (@grel_compose GA GB GC GRAB GRBC) RAC (wab, wbc)).
   Proof.
     intros H.
     destruct 1; inversion 1; subst; try constructor; eauto.
     - ercompose; eauto.
-    - apply interacts_le with (w', w'0); ercompose; rauto.
+    - econstructor.
+      + rauto.
+      + ercompose; eauto.
+      + ercompose; eauto.
   Qed.
 
   Definition behavior_map {G A B} (f : A -> B) (r : behavior G A) :=
@@ -244,8 +205,7 @@ Module RTS.
     Monotonic
       (@behavior_map)
       (forallr GR, forallr RA : klr _, forallr RB : klr _,
-        (rforall w, RA w ++> RB w) ++>
-        (rforall w, behavior_le GR RA w ++> behavior_le GR RB w)).
+       ([] RA ++> RB) ++> [] behavior_le GR RA ++> behavior_le GR RB).
   Proof.
     unfold behavior_map. rauto.
   Qed.
@@ -265,20 +225,19 @@ Module RTS.
     in the first has a correponding behavior in the second. In
     particular, internal transitions must correspond one-to-one. *)
 
-  Definition sim {GA GB} (GR : abrel GA GB) {A B} (R : klr _ A B) : rel (rts GA A) (rts GB B) :=
-    (rforall w, R w ++> set_le (behavior_le GR R w)).
+  Definition sim {GA GB} GR {A B} R : rel (rts GA A) (rts GB B) :=
+    ([] R ++> k1 set_le (behavior_le GR R)).
 
-  Arguments sim {GA GB} GR {A B} R%rel α%rts β%rts.
+  Arguments sim {GA GB} GR%grel {A B} R%rel α%rts β%rts.
 
-  Hint Extern 1 (RElim (sim _ _ _) _ _ _ _) =>
-    eapply rel_all_relim : typeclass_instances.
+  Hint Unfold sim : typeclass_instances.
 
   Hint Extern 1 (Transport _ _ _ (?α _ _) _) =>
     match type of α with rts _ _ => set_le_transport α end
     : typeclass_instances.
 
   Lemma sim_id {G A} (α : rts G A) :
-    sim abr_id (fun _ => eq) α α.
+    sim grel_id (fun _ => eq) α α.
   Proof.
     intros w a _ [ ] a' Ha'. exists a'. split; eauto. reflexivity.
   Qed.
@@ -289,7 +248,7 @@ Module RTS.
     @RCompose (rts GA A) (rts GB B) (rts GC C)
       (sim GRAB RAB)
       (sim GRBC RBC)
-      (sim (abr_compose GRAB GRBC) RAC).
+      (sim (grel_compose GRAB GRBC) RAC).
   Proof.
     intros HRD HRC α β γ Hαβ Hβγ [wab wbc] a c Hac. red in Hαβ, Hβγ.
     rdecompose Hac as (b & Hab & Hac).
@@ -349,7 +308,7 @@ Module RTS.
 
   (** Observations are compatible with simulations. *)
 
-  Lemma forever_internal_sim {GA GB A B} (GR : abrel GA GB) (R : klr _ A B) w α β a b :
+  Lemma forever_internal_sim {GA GB A B} (GR : grel GA GB) (R : klr _ A B) w α β a b :
     sim GR R α β ->
     R w a b ->
     forever_internal α a ->
@@ -368,7 +327,7 @@ Module RTS.
       econstructor; eauto.
   Qed.
 
-  Lemma reachable_sim {GA GB A B} (GR : abrel GA GB) (R : klr _ A B) w α β a b a' :
+  Lemma reachable_sim {GA GB A B} (GR : grel GA GB) (R : klr _ A B) w α β a b a' :
     sim GR R α β ->
     R w a b ->
     reachable α a a' ->
@@ -728,7 +687,7 @@ Module RTS.
   Qed.
 
   Lemma sum_obs {G A B} (α : rts G A) (β : rts G B) :
-    RTS.sim abr_id (fun _ => eq) (obs (α + β)) (obs α + obs β).
+    RTS.sim grel_id (fun _ => eq) (obs (α + β)) (obs α + obs β).
   Proof.
     intros w s _ [ ] r Hr.
     exists r; split; [ | rauto].
@@ -745,7 +704,7 @@ Module RTS.
   Qed.
 
   Lemma obs_sum {G A B} (α : rts G A) (β : rts G B) :
-    RTS.sim abr_id (fun _ => eq) (obs α + obs β) (obs (α + β)).
+    RTS.sim grel_id (fun _ => eq) (obs α + obs β) (obs (α + β)).
   Proof.
     intros w s _ [ ] r Hr.
     exists r; split; [ | rauto].
@@ -766,3 +725,48 @@ Notation rts := RTS.rts.
 
 Delimit Scope rts_scope with rts.
 Infix "+" := RTS.sum : rts_scope.
+
+
+(** * Modules *)
+
+(** ** Definition *)
+
+Record modsem {G : game} :=
+  {
+    modsem_state : Type;
+    modsem_lts :> rts G modsem_state;
+    modsem_entry : RTS.cont G modsem_state;
+  }.
+
+Arguments modsem : clear implicits.
+
+Bind Scope modsem_scope with modsem.
+Delimit Scope modsem_scope with modsem.
+
+(** ** Refinement preorder *)
+
+Record modref {GA GB} (GR : grel GA GB) (α β : modsem _) : Prop :=
+  {
+    modref_state :
+      klr (gworld GR) (modsem_state α) (modsem_state β);
+    modref_sim :
+      RTS.sim GR modref_state (modsem_lts α) (modsem_lts β);
+    modref_init :
+      RTS.cont_le GR modref_state (ginitw GR) (modsem_entry α) (modsem_entry β);
+  }.
+
+(*
+Global Instance modref_preo li:
+  PreOrder (@modref li).
+Proof.
+  split.
+  - intros [A α a].
+    exists eq; simpl.
+    + apply RTS.sim_id.
+    + intros q. reflexivity.
+  - intros [A α a] [B β b] [C γ c] [RAB Hαβ Hab] [RBC Hβγ Hbc]; simpl in *.
+    eexists; simpl.
+    + ercompose; eauto.
+    + ercompose; eauto.
+Qed.
+*)
