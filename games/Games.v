@@ -22,9 +22,9 @@ Bind Scope game_scope with game.
 
 Record grel (G1 G2 : game) :=
   {
-    gworld : Type;
+    gworld :> Type;
     gacc : relation gworld;
-    ginitw : gworld;
+    ginitw : gworld -> Prop;
     move_rel : klr gworld (move G1) (move G2);
   }.
 
@@ -39,6 +39,7 @@ Bind Scope grel_scope with grel.
 Global Instance grel_kf {G1 G2} (GR : grel G1 G2) : KripkeFrame (gworld GR) :=
   {
     acc := gacc GR;
+    winit := ginitw GR;
   }.
 
 (** ** Identity and composition *)
@@ -47,7 +48,7 @@ Definition grel_id {G} : grel G G :=
   {|
     gworld := unit;
     gacc := ⊤;
-    ginitw := tt;
+    ginitw w := True;
     move_rel w := eq;
   |}.
 
@@ -55,7 +56,7 @@ Definition grel_compose {GA GB GC} (GRAB : grel GA GB) (GRBC : grel GB GC) :=
   {|
     gworld := gworld GRAB * gworld GRBC;
     gacc := gacc GRAB * gacc GRBC;
-    ginitw := (ginitw GRAB, ginitw GRBC);
+    ginitw := fun '(wab, wbc) => ginitw GRAB wab /\ ginitw GRBC wbc;
     move_rel :=
       fun '(wab, wbc) =>
         rel_compose (move_rel GRAB wab) (move_rel GRBC wbc);
@@ -98,7 +99,7 @@ Module Arrow.
       {|
         gworld := world;
         gacc := acc;
-        ginitw := gw (ginitw GRA) (ginitw GRB) true;
+        ginitw := fun '(gw wa wb c) => ginitw GRA wa /\ ginitw GRB wb;
         move_rel := rel;
       |}.
   End GARROW_ABREL.

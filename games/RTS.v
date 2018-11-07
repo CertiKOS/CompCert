@@ -123,8 +123,7 @@ Module RTS.
     Monotonic
       (@cont_map)
       (forallr GR, forallr R : klr _, forallr S : klr _,
-        (rforall w, R w ++> S w) ++>
-        (rforall w, cont_le GR R w ++> cont_le GR S w)).
+        (|= R ++> S) ++> (|= cont_le GR R ++> cont_le GR S)).
   Proof.
     unfold cont_map. rauto.
   Qed.
@@ -141,16 +140,16 @@ Module RTS.
 
   Inductive behavior_le {GA GB} GR {A B} R : klr _ (behavior GA A) (behavior GB B) :=
     | internal_le :
-        Monotonic internal ([] R ++> behavior_le GR R)
+        Monotonic internal (|= R ++> behavior_le GR R)
     | interacts_le_def w w' p1 p2 k1 k2 :
         w ~> w' ->
         move_rel GR w' p1 p2 ->
         cont_le GR R w' k1 k2 ->
         behavior_le GR R w (interacts p1 k1) (interacts p2 k2)
     | diverges_le :
-        Monotonic diverges ([] behavior_le GR R)
+        Monotonic diverges (|= behavior_le GR R)
     | goes_wrong_le ra :
-        Related ra goes_wrong ([] behavior_le GR R).
+        Related ra goes_wrong (|= behavior_le GR R).
 
   Global Existing Instance internal_le.
   Global Existing Instance diverges_le.
@@ -160,7 +159,7 @@ Module RTS.
   Global Instance interacts_le :
     Monotonic (@interacts)
       (forallr GR, forallr R,
-         [] % (<> move_rel GR * cont_le GR R) ++> behavior_le GR R).
+         |= % (<> move_rel GR * cont_le GR R) ++> behavior_le GR R).
   Proof.
     repeat rstep.
     destruct x as [p1 k1], y as [p2 k2], H as (w' & Hw' & Hp & Hk). cbn in *.
@@ -205,7 +204,7 @@ Module RTS.
     Monotonic
       (@behavior_map)
       (forallr GR, forallr RA : klr _, forallr RB : klr _,
-       ([] RA ++> RB) ++> [] behavior_le GR RA ++> behavior_le GR RB).
+       (|= RA ++> RB) ++> |= behavior_le GR RA ++> behavior_le GR RB).
   Proof.
     unfold behavior_map. rauto.
   Qed.
@@ -226,7 +225,7 @@ Module RTS.
     particular, internal transitions must correspond one-to-one. *)
 
   Definition sim {GA GB} GR {A B} R : rel (rts GA A) (rts GB B) :=
-    ([] R ++> k1 set_le (behavior_le GR R)).
+    (|= R ++> k1 set_le (behavior_le GR R)).
 
   Arguments sim {GA GB} GR%grel {A B} R%rel α%rts β%rts.
 
@@ -752,7 +751,7 @@ Record modref {GA GB} (GR : grel GA GB) (α β : modsem _) : Prop :=
     modref_sim :
       RTS.sim GR modref_state (modsem_lts α) (modsem_lts β);
     modref_init :
-      RTS.cont_le GR modref_state (ginitw GR) (modsem_entry α) (modsem_entry β);
+      ([] RTS.cont_le GR modref_state)%rel (modsem_entry α) (modsem_entry β);
   }.
 
 (*
