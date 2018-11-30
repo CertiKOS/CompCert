@@ -13,12 +13,6 @@ Structure game :=
     answer : Type;
   }.
 
-(*
-Inductive act (G : game) :=
-  | ext (m : move G) :> act G
-  | tau : act G.
-*)
-
 Delimit Scope game_scope with game.
 Bind Scope game_scope with game.
 
