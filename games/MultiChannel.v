@@ -20,9 +20,9 @@ Module Pow.
 
   Definition r {G1 G2} (GR : grel G1 G2) (I : Type) :=
     Build_grel (g G1 I) (g G2 I)
-      (grel_world GR)
-      (k eq * question_rel GR)
-      (k eq * answer_rel GR).
+      (I * grel_world GR)
+      (fun '(i, w) => req i * question_rel GR w)%rel
+      (fun '(i, w) => req i * answer_rel GR w)%rel.
 
   Infix "^" := g : game_scope.
   Infix "^" := r : grel_scope.
