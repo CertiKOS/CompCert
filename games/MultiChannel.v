@@ -12,7 +12,7 @@ Module Pow.
 
   (** ** Game *)
 
-  Definition g G I :=
+  Canonical Structure g G I :=
     {|
       question := I * question G;
       answer := I * answer G;
@@ -29,14 +29,14 @@ Module Pow.
 
   Definition mko {GA GB I} (i : I) (m : omove GA GB) : omove (GA ^ I) (GB ^ I) :=
     match m with
-      | inl ma => inl (i, ma)
-      | inr mq => inr (i, mq)
+      | oa ma => oa (i, ma)
+      | oq mq => oq (i, mq)
     end.
 
   Definition mkp {GA GB I} (i : I) (m : pmove GA GB) : pmove (GA ^ I) (GB ^ I) :=
     match m with
-      | inl mq => inl (i, mq)
-      | inr ma => inr (i, ma)
+      | pq mq => pq (i, mq)
+      | pa ma => pa (i, ma)
     end.
 
   (** ** Transition system *)

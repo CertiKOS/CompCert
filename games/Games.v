@@ -55,11 +55,26 @@ Definition grel_compose {GA GB GC} (GRAB : grel GA GB) (GRBC : grel GB GC) :=
 
 (** ** Moves and actions *)
 
+Definition oqmove (GA GB : game) := question GB.
+Definition pqmove (GA GB : game) := question GA.
+Definition oamove (GA GB : game) := answer GA.
+Definition pamove (GA GB : game) := answer GB.
+
+Inductive omove {GA GB : game} :=
+  | oa (m : oamove GA GB) :> omove
+  | oq (m : oqmove GA GB) :> omove.
+
+Arguments omove : clear implicits.
+
+Inductive pmove {GA GB : game} :=
+  | pq (m : pqmove GA GB) :> pmove
+  | pa (m : pamove GA GB) :> pmove.
+
+Arguments pmove : clear implicits.
+
 Inductive move {GA GB : game} : Type :=
-  | oq (m : question GB)
-  | pq (m : question GA)
-  | oa (m : answer GA)
-  | pa (m : answer GB).
+  | om (m : omove GA GB) :> move
+  | pm (m : pmove GA GB) :> move.
 
 Arguments move : clear implicits.
 
@@ -69,39 +84,6 @@ Inductive action {GA GB : game} : Type :=
   | refused : action.
 
 Arguments action : clear implicits.
-
-(** When interested in specific types of moves, we can use the
-  definitions and coercions below. *)
-
-Definition omove (GA GB : game) : Type :=
-  answer GA + question GB.
-
-Definition pmove (GA GB : game) : Type :=
-  question GA + answer GB.
-
-Definition qmove (GA GB : game) : Type :=
-  question GA + question GB.
-
-Definition amove (GA GB : game) : Type :=
-  answer GA + answer GB.
-
-Definition oqmove (GA GB : game) : Type :=
-  question GB.
-
-Coercion om {GA GB} (m : omove GA GB) : move GA GB :=
-  match m with inl n => oa n | inr n => oq n end.
-
-Coercion pm {GA GB} (m : pmove GA GB) : move GA GB :=
-  match m with inl n => pq n | inr n => pa n end.
-
-Coercion qm {GA GB} (m : qmove GA GB) : move GA GB :=
-  match m with inl n => pq n | inr n => oq n end.
-
-Coercion am {GA GB} (m : amove GA GB) : move GA GB :=
-  match m with inl n => oa n | inr n => pa n end.
-
-Coercion oqm {GA GB} (m : oqmove GA GB) : move GA GB :=
-  oq m.
 
 (** ** Plays *)
 
@@ -141,11 +123,21 @@ Section REL.
   Context {GA1 GA2} (GRA : grel GA1 GA2).
   Context {GB1 GB2} (GRB : grel GB1 GB2).
 
-  Definition qmove_rel : klr (GRA + GRB) (qmove GA1 GB1) (qmove GA2 GB2) :=
-    klr_sum (question_rel GRA) (question_rel GRB).
+  Inductive qmove_rel : klr (GRA + GRB) (move GA1 GB1) (move GA2 GB2) :=
+    | qmove_rel_pq w m1 m2 :
+        question_rel GRA w m1 m2 ->
+        qmove_rel (inl w) (pq m1) (pq m2)
+    | qmove_rel_oq w m1 m2 :
+        question_rel GRB w m1 m2 ->
+        qmove_rel (inr w) (oq m1) (oq m2).
 
-  Definition amove_rel : klr (GRA + GRB) (amove GA1 GB1) (amove GA2 GB2) :=
-    klr_sum (answer_rel GRA) (answer_rel GRB).
+  Inductive amove_rel : klr (GRA + GRB) (move GA1 GB1) (move GA2 GB2) :=
+    | amove_rel_pa w m1 m2 :
+        answer_rel GRA w m1 m2 ->
+        amove_rel (inl w) (oa m1) (oa m2)
+    | amove_rel_oa w m1 m2 :
+        answer_rel GRB w m1 m2 ->
+        amove_rel (inr w) (pa m1) (pa m2).
 
   Definition gworld :=
     list (GRA + GRB).
@@ -153,10 +145,10 @@ Section REL.
   Inductive gacc : move GA1 GB1 * move GA2 GB2 -> relation gworld :=
     | gacc_question w ws m1 m2 :
         qmove_rel w m1 m2 ->
-        gacc (qm m1, qm m2) ws (w::ws)
+        gacc (m1, m2) ws (w::ws)
     | gacc_answer w ws m1 m2 :
         amove_rel w m1 m2 ->
-        gacc (am m1, am m2) (w::ws) ws.
+        gacc (m1, m2) (w::ws) ws.
 
   Inductive play_rel : klr gworld (play GA1 GB1) (play GA2 GB2) :=
     | pnil_rel :
@@ -192,6 +184,6 @@ Section REL.
 
   Global Instance oqmove_frame: KripkeFrame (oqmove GA1 GB1 * oqmove GA2 GB2) _:=
     {
-      acc := fun '(m1, m2) => gacc (oqm m1, oqm m2);
+      acc := fun '(m1, m2) => gacc (om (oq m1), (om (oq m2)));
     }.
 End REL.

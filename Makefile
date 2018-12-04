@@ -82,6 +82,10 @@ GAMES=\
   Bigstep.v \
   Sets.v \
   AsmLinking.v \
+  Games.v \
+  ATS.v \
+  MultiChannel.v \
+  HComp.v \
 
 # Compcert Kripke Logical Relations
 
