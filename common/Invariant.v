@@ -47,7 +47,7 @@ Definition wt_c : invariant li_c :=
   returns, preserved by internal steps, and ensure the invariant
   interface is respected at external calls and final states. *)
 
-Record preserves {liA liB} (L: semantics liA liB) IA IB (SI: _->_-> Prop) :=
+Record preserves {li} (L: semantics li) IA IB (SI: _->_-> Prop) :=
   {
     preserves_step q s t s':
       SI q s ->
@@ -57,13 +57,13 @@ Record preserves {liA liB} (L: semantics liA liB) IA IB (SI: _->_-> Prop) :=
       query_inv IB q ->
       initial_state L q s ->
       SI q s;
-    preserves_external q s qA AE:
+    preserves_external q s qA:
       SI q s ->
-      external L s qA AE ->
+      at_external L s qA ->
       query_inv IA qA /\
       forall rA s',
         reply_inv IA qA rA ->
-        AE rA s' ->
+        after_external L s rA s' ->
         SI q s';
     preserves_final_state q s r:
       SI q s ->
@@ -92,7 +92,7 @@ Coercion cc_inv {li} (I: invariant li): callconv li li :=
 (** With this, an invariant preservation proof can itself be lifted
   into a self-simulation by the invariant calling conventions. *)
 
-Lemma preserves_fsim {liA liB} (L: semantics liA liB) IA IB IS:
+Lemma preserves_fsim {li} (L: semantics li) IA IB IS:
   preserves L IA IB IS ->
   forward_simulation (cc_inv IA) (cc_inv IB) L L.
 Proof.
@@ -103,9 +103,9 @@ Proof.
     exists s. split; eauto.
     constructor.
     eapply preserves_initial_state; eauto.
-  - intros w s _ qA AE [Hs] HAE.
+  - intros w s _ qA [Hs] HAE.
     edestruct @preserves_external as (HqA & Hr); eauto.
-    exists qA, qA, AE. repeat apply conj; eauto.
+    exists qA, qA. repeat apply conj; eauto.
     + intros r' _ s' [Hr'] Hs'.
       exists s'. split; eauto.
       constructor.
@@ -177,10 +177,10 @@ Qed.
 (** ** Strengthening the source semantics *)
 
 Section RESTRICT.
-  Context {liA liB} (L: semantics liA liB).
-  Context (IA: invariant liA).
-  Context (IB: invariant liB).
-  Context (IS: query liB -> state L -> Prop).
+  Context {li} (L: semantics li).
+  Context (IA: invariant li).
+  Context (IB: invariant li).
+  Context (IS: query li -> state L -> Prop).
 
   Inductive restrict_step ge: _ -> trace -> _ -> Prop :=
     restrict_step_intro q s t s':
@@ -189,28 +189,31 @@ Section RESTRICT.
       IS q s' ->
       restrict_step ge (q, s) t (q, s').
 
-  Inductive restrict_initial_state (q: query liB): _ -> Prop :=
+  Inductive restrict_initial_state (q: query li): _ -> Prop :=
     restrict_initial_state_intro s:
       initial_state L q s ->
       query_inv IB q ->
       IS q s ->
       restrict_initial_state q (q, s).
 
-  Inductive restrict_after_external q qA AE rA: _ -> Prop :=
-    restrict_after_external_intro (s': state L):
-      AE rA s' ->
-      reply_inv IA qA rA ->
-      IS q s' ->
-      restrict_after_external q qA AE rA (q, s').
-
-  Inductive restrict_external: _ -> query liA -> (reply liA -> _) -> Prop :=
-    restrict_external_intro q s qA AE:
-      external L s qA AE ->
+  Inductive restrict_at_external: _ -> query li -> Prop :=
+    restrict_at_external_intro q s qA:
+      at_external L s qA ->
       IS q s ->
       query_inv IA qA ->
-      restrict_external (q, s) qA (restrict_after_external q qA AE).
+      restrict_at_external (q, s) qA.
 
-  Inductive restrict_final_state: _ -> reply liB -> Prop :=
+  Inductive restrict_after_external: _ -> reply li -> _ -> Prop :=
+    restrict_after_external_intro q s qA rA s':
+      at_external L s qA ->
+      IS q s ->
+      query_inv IA qA ->
+      after_external L s rA s' ->
+      reply_inv IA qA rA ->
+      IS q s' ->
+      restrict_after_external (q, s) rA (q, s').
+
+  Inductive restrict_final_state: _ -> reply li -> Prop :=
     restrict_final_state_intro q s r:
       final_state L s r ->
       IS q s ->
@@ -219,11 +222,12 @@ Section RESTRICT.
 
   Definition restrict :=
     {|
-      state := query liB * state L;
+      state := query li * state L;
       genvtype := genvtype L;
       step := restrict_step;
       initial_state := restrict_initial_state;
-      external := restrict_external;
+      at_external := restrict_at_external;
+      after_external := restrict_after_external;
       final_state := restrict_final_state;
       globalenv := globalenv L;
       symbolenv := symbolenv L;
@@ -240,13 +244,13 @@ Section RESTRICT.
     - intros q q1 q2 (Hq & Hq1 & Hq2) s Hs. subst.
       assert (IS q s) by (eapply preserves_initial_state; eauto).
       exists (q, s). split; constructor; eauto.
-    - intros q s _ qA AE [[] Hws] HAE.
+    - intros q s _ qA [[] Hws] HAE.
       edestruct @preserves_external as (HqA & H); eauto.
-      exists qA, qA, (restrict_after_external q qA AE).
+      exists qA, qA.
       repeat apply conj; eauto.
       + constructor; eauto.
       + intros r _ s' [Hr] Hs1'.
-        exists (q, s'). split; constructor; eauto.
+        exists (q, s'). split; econstructor; eauto.
     - intros q s _ r [[] Hqs] Hr.
       assert (reply_inv IB q r) by eauto using preserves_final_state.
       exists r. split; constructor; eauto.
@@ -259,43 +263,49 @@ End RESTRICT.
 (** ** Weakening the target semantics *)
 
 Section EXPAND.
-  Context {liA liB} (L: semantics liA liB).
-  Context (IA: invariant liA).
-  Context (IB: invariant liB).
-  Context (IS: query liB -> state L -> Prop).
+  Context {li} (L: semantics li).
+  Context (IA: invariant li).
+  Context (IB: invariant li).
+  Context (IS: query li -> state L -> Prop).
 
   Inductive expand_step ge: _ -> trace -> _ -> Prop :=
     expand_step_intro q s t s':
       (IS q s -> step L ge s t s') ->
       expand_step ge (q, s) t (q, s').
 
-  Inductive expand_initial_state (q: query liB): _ -> Prop :=
+  Inductive expand_initial_state (q: query li): _ -> Prop :=
     expand_initial_state_intro s:
       (query_inv IB q -> initial_state L q s) ->
       expand_initial_state q (q, s).
 
-  Inductive expand_after_external (q: query liB) qA AE rA: _ -> Prop :=
-    expand_after_external_intro (s': state L):
-      (reply_inv IA qA rA -> AE rA s') ->
-      expand_after_external q qA AE rA (q, s').
+  Inductive expand_at_external: _ -> query li -> Prop :=
+    expand_external_intro q s qA:
+      (IS q s -> at_external L s qA) ->
+      expand_at_external (q, s) qA.
 
-  Inductive expand_external: _ -> query liA -> (reply liA -> _) -> Prop :=
-    expand_external_intro q s qA AE:
-      (IS q s -> external L s qA AE) ->
-      expand_external (q, s) qA (expand_after_external q qA AE).
+  Inductive expand_after_external: _ -> reply li -> _ -> Prop :=
+    expand_after_external_intro q s rA (s': state L):
+      (forall qA,
+          IS q s ->
+          at_external L s qA ->
+          query_inv IA qA ->
+          reply_inv IA qA rA ->
+          after_external L s rA s') ->
+      expand_after_external (q, s) rA (q, s').
 
-  Inductive expand_final_state: _ -> reply liB -> Prop :=
+  Inductive expand_final_state: _ -> reply li -> Prop :=
     expand_final_state_intro q s r:
       (IS q s -> final_state L s r) ->
       expand_final_state (q, s) r.
 
   Definition expand :=
     {|
-      state := query liB * state L;
+      state := query li * state L;
       genvtype := genvtype L;
       step := expand_step;
       initial_state := expand_initial_state;
-      external := expand_external;
+      at_external := expand_at_external;
+      after_external := expand_after_external;
       final_state := expand_final_state;
       globalenv := globalenv L;
       symbolenv := symbolenv L;
@@ -312,12 +322,12 @@ Section EXPAND.
     - intros q q1 q2 (Hq & Hq1 & Hq2) _ [s Hqs]. subst q1 q2 ms.
       exists s; intuition eauto.
       eapply preserves_initial_state; eauto.
-    - intros q qs s qA EAE [Hqs Hs] H. subst qs ms.
+    - intros q qs s qA [Hqs Hs] H. subst qs ms.
       inversion H; clear H; subst.
       edestruct @preserves_external as (HqA & HrA); eauto.
-      exists qA, qA, AE. simpl. intuition eauto.
+      exists qA, qA. simpl. intuition eauto.
       destruct H0 as [Hr].
-      destruct H1 as [s' Hs'].
+      inversion H1; clear H1; subst.
       eauto 10.
     - intros q qs s r [Hqs Hs] Hr. subst qs ms.
       inversion Hr; clear Hr; subst.
