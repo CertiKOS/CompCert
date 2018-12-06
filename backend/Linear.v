@@ -280,7 +280,7 @@ Inductive final_state: state -> reply li_locset -> Prop :=
 
 Definition semantics (p: program) :=
   let ge := Genv.globalenv p in
-  Semantics li_locset li_locset
+  Semantics li_locset
     step
     (initial_state ge)
     (at_external ge)

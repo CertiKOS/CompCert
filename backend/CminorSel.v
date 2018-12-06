@@ -479,7 +479,7 @@ Inductive final_state: state -> reply li_c -> Prop :=
 
 Definition semantics (p: program) :=
   let ge := Genv.globalenv p in
-  Semantics li_c li_c
+  Semantics li_c
     step
     (initial_state ge)
     (at_external ge)
