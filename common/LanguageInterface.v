@@ -25,9 +25,6 @@ Structure language_interface :=
     query_is_internal: Senv.t -> query -> bool;
   }.
 
-Delimit Scope li_scope with li.
-Bind Scope li_scope with language_interface.
-
 (** ** Interface for C-like languages *)
 
 Record c_query :=
@@ -44,21 +41,6 @@ Canonical Structure li_c :=
     reply := val * mem;
     query_is_internal ge q := Senv.block_is_internal ge (cq_fb q);
   |}.
-
-(** ** Arrow *)
-
-Definition li_arrow liA liB :=
-  {|
-    query := reply liA + query liB;
-    reply := query liA + reply liB;
-    query_is_internal ge q :=
-      match q with
-        | inl rA => true
-        | inr qB => query_is_internal liB ge qB
-      end;
-  |}.
-
-Infix "-o" := li_arrow (at level 55, right associativity) : li_scope.
 
 (** ** Miscellaneous interfaces *)
 
@@ -82,34 +64,28 @@ Definition li_empty :=
 
 Record callconv T1 T2 :=
   mk_callconv {
-    cc_state : Type;
-    cc_init : cc_state;
-    cc_query : cc_state -> cc_state -> rel (query T1) (query T2);
-    cc_reply : cc_state -> cc_state -> rel (reply T1) (reply T2);
+    ccworld : Type;
+    match_senv: klr ccworld Senv.t Senv.t;
+    match_query: klr ccworld (query T1) (query T2);
+    match_reply: klr ccworld (reply T1) (reply T2);
   }.
 
-Arguments cc_state {_ _}.
-Arguments cc_init {_ _}.
-Arguments cc_query {_ _}.
-Arguments cc_reply {_ _}.
+Arguments ccworld {_ _}.
+Arguments match_senv {_ _} _ _ _.
+Arguments match_query {_ _} _ _ _.
+Arguments match_reply {_ _} _ _ _.
 
 Delimit Scope cc_scope with cc.
 Bind Scope cc_scope with callconv.
-
-Definition match_query {li1 li2} (cc: callconv li1 li2) w q1 q2 :=
-  cc_query cc (cc_init cc) w q1 q2.
-
-Definition match_reply {li1 li2} (cc: callconv li1 li2) w r1 r2 :=
-  exists w', cc_reply cc w w' r1 r2.
 
 (** ** Identity *)
 
 Program Definition cc_id {T}: callconv T T :=
   {|
-    cc_state := unit;
-    cc_init := tt;
-    cc_query w w' q1 q2 := q1 = q2;
-    cc_reply w w' r1 r2 := r1 = r2;
+    ccworld := unit;
+    match_senv w := eq;
+    match_query w := eq;
+    match_reply w := eq;
   |}.
 
 Lemma match_cc_id {T} q:
@@ -145,16 +121,13 @@ Section COMPOSE.
 
   Definition cc_compose :=
     {|
-      cc_state := cc_state cc12 * cc_state cc23;
-      cc_init := (cc_init cc12, cc_init cc23);
-      cc_query w w' q1 q3 :=
-        exists q2,
-          cc_query cc12 (fst w) (fst w') q1 q2 /\
-          cc_query cc23 (snd w) (snd w') q2 q3;
-      cc_reply w w' r1 r3 :=
-        exists r2,
-          cc_reply cc12 (fst w) (fst w') r1 r2 /\
-          cc_reply cc23 (snd w) (snd w') r2 r3;
+      ccworld := ccworld cc12 * ccworld cc23;
+      match_senv w :=
+        rel_compose (match_senv cc12 (fst w)) (match_senv cc23 (snd w));
+      match_query w :=
+        rel_compose (match_query cc12 (fst w)) (match_query cc23 (snd w));
+      match_reply w :=
+        rel_compose (match_reply cc12 (fst w)) (match_reply cc23 (snd w));
     |}.
 
   Lemma match_cc_compose w12 w23 q1 q2 q3:
@@ -170,7 +143,6 @@ Section COMPOSE.
   Proof.
     intros Hq12 Hq23.
     exists (w12, w23). simpl. intuition eauto.
-    firstorder.
   Qed.
 
   Lemma match_query_cc_compose (P: _ -> _ -> _ -> _ -> Prop):
@@ -190,10 +162,10 @@ Section COMPOSE.
     match_reply cc23 (snd w) r2 r3 ->
     match_reply cc_compose w r1 r3.
   Proof.
-    intros [w12' H12] [w23' H23].
+    intros H12 H23.
     destruct w as [w12 w23].
     simpl in *.
-    exists (w12', w23'), r2; auto.
+    eexists; eauto.
   Qed.
 End COMPOSE.
 
@@ -209,68 +181,7 @@ Ltac inv_compose_query :=
   revert w q1 q2 Hq;
   apply match_query_cc_compose.
 
-(** ** Arrow *)
-
-Section ARROW.
-  Context {liA1 liA2} (ccA : callconv liA1 liA2).
-  Context {liB1 liB2} (ccB : callconv liB1 liB2).
-
-  Inductive cc_arrow_query : _ -> _ -> rel (query (_ -o _)) (query (_ -o _)) :=
-    | cc_arrow_query_l wA wA' wB rA1 rA2 :
-        cc_reply ccA wA wA' rA1 rA2 ->
-        cc_arrow_query (wA, wB) (wA', wB) (inl rA1) (inl rA2)
-    | cc_arrow_query_r wA wB wB' qB1 qB2 :
-        cc_query ccB wB wB' qB1 qB2 ->
-        cc_arrow_query (wA, wB) (wA, wB') (inr qB1) (inr qB2).
-
-  Inductive cc_arrow_reply : _ -> _ -> rel (reply (_ -o _)) (reply (_ -o _)) :=
-    | cc_arrow_reply_l wA wA' wB qA1 qA2 :
-        cc_query ccA wA wA' qA1 qA2 ->
-        cc_arrow_reply (wA, wB) (wA', wB) (inl qA1) (inl qA2)
-    | cc_arrow_reply_r wA wB wB' rB1 rB2 :
-        cc_reply ccB wB wB' rB1 rB2 ->
-        cc_arrow_reply (wA, wB) (wA, wB') (inr rB1) (inr rB2).
-
-  Definition cc_arrow : callconv (liA1 -o liB1) (liA2 -o liB2) :=
-    {|
-      cc_state := cc_state ccA * cc_state ccB;
-      cc_init := (cc_init ccA, cc_init ccB);
-      cc_query := cc_arrow_query;
-      cc_reply := cc_arrow_reply;
-    |}.
-End ARROW.
-
-Infix "-o" := cc_arrow : cc_scope.
-
 (** * Common calling conventions *)
-
-(** ** KLR-based calling conventions *)
-
-Section KLR_CALLCONV.
-  Context {W: Type} {li1 li2: language_interface}.
-  Context (Q: klr W (query li1) (query li2)).
-  Context (R: klr W (reply li1) (reply li2)).
-
-  Definition cc_klr_query (s s': option W) (q1: query li1) (q2: query li2) :=
-    match s, s' with
-      | None, Some w => Q w q1 q2
-      | _, _ => False
-    end.
-
-  Definition cc_klr_reply (s s': option W) (r1: reply li1) (r2: reply li2) :=
-    match s with
-      | Some w => R w r1 r2
-      | _ => False
-    end.
-
-  Definition cc_klr : callconv li1 li2 :=
-    {|
-      cc_state := option W;
-      cc_init := None;
-      cc_query := cc_klr_query;
-      cc_reply := cc_klr_reply;
-    |}.
-End KLR_CALLCONV.
 
 (** ** Generic convention for [li_c] *)
 
@@ -283,9 +194,12 @@ Record match_c_query (R: cklr) (w: world R) (q1 q2: c_query) :=
   }.
 
 Definition cc_c (R: cklr): callconv li_c li_c :=
-  cc_klr
-    (match_c_query R)
-    (<> Val.inject @@ [mi R] * match_mem R).
+  {|
+    ccworld := world R;
+    match_senv := symbols_inject @@ [mi R];
+    match_query := match_c_query R;
+    match_reply := <> Val.inject @@ [mi R] * match_mem R;
+  |}.
 
 Inductive match_c_query_tr R w: rel c_query c_query :=
   match_c_query_tr_intro q:
@@ -294,9 +208,12 @@ Inductive match_c_query_tr R w: rel c_query c_query :=
     match_c_query_tr R w q q.
 
 Definition cc_c_tr R: callconv li_c li_c :=
-  cc_klr
-    (match_c_query_tr R)
-    (<> Val.inject @@ [mi R] * match_mem R).
+  {|
+    ccworld := world R;
+    match_senv := symbols_inject @@ [mi R];
+    match_query :=  match_c_query_tr R;
+    match_reply := <> Val.inject @@ [mi R] * match_mem R;
+  |}.
 
 (** ** Rectangular diagrams *)
 
@@ -313,12 +230,12 @@ Lemma match_cc_ext id sg vargs1 m1 vargs2 m2:
       Mem.extends m1' m2'.
 Proof.
   intros Hm Hvargs.
-  exists (Some tt). split.
+  exists tt. split.
   - constructor; simpl; eauto.
     + exists 0. reflexivity.
     + apply val_inject_list_lessdef in Hvargs.
       induction Hvargs; constructor; eauto.
-  - intros vres1 m1' vres2 m2' (_ & w' & Hw' & Hvres & Hm'). simpl in *.
+  - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). simpl in *.
     split; auto.
     apply val_inject_lessdef; eauto.
 Qed.
@@ -335,13 +252,13 @@ Lemma match_cc_extends id sg vargs1 m1 vargs2 m2:
       Mem.unchanged_on (loc_out_of_bounds m1) m2 m2'.
 Proof.
   intros Hm Hvargs.
-  exists (Some (extpw m1 m2)). split.
+  exists (extpw m1 m2). split.
   - constructor; simpl; eauto.
     + exists 0. reflexivity.
     + apply val_inject_list_lessdef in Hvargs.
       induction Hvargs; constructor; eauto.
     + constructor; eauto.
-  - intros vres1 m1' vres2 m2' (_ & w' & Hw' & Hvres & Hm'). cbn [fst snd] in *.
+  - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). cbn [fst snd] in *.
     inversion Hw' as [xm1 xm2 xm1' xm2' Hperm Hunch]; subst.
     inv Hm'. simpl in Hvres. red in Hvres.
     intuition eauto.
@@ -372,10 +289,10 @@ Lemma match_cc_inject fb1 sg f vargs1 m1 fb2 vargs2 m2:
           Mem.perm m1 b ofs Max p.
 Proof.
   intros Hfb Hvargs Hm.
-  exists (Some (injpw f m1 m2)). simpl. split.
+  exists (injpw f m1 m2). simpl. split.
   - constructor; simpl; eauto.
     induction Hvargs; constructor; eauto.
-  - intros vres1 m1' vres2 m2' (_ & w' & Hw' & Hvres & Hm'). simpl in *.
+  - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). simpl in *.
     inv Hw'. inv Hm'.
     exists f'. intuition eauto.
     destruct (f b) as [[b' delta] | ] eqn:Hb.
@@ -442,7 +359,7 @@ Lemma match_query_cc_extends_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
     match_query (cc_c_tr ext) w q1 q2 ->
     P (cq_fb q1) (cq_sg q1) (cq_args q1) (cq_mem q1) q1 q2).
 Proof.
-  intros H [w|] q1 q2 Hq; try contradiction.
+  intros H w q1 q2 Hq.
   destruct Hq.
   destruct q.
   apply H; auto.
@@ -454,12 +371,12 @@ Qed.
 Lemma match_reply_cc_extends_triangle w vres1 m1' vres2 m2':
   Val.lessdef vres1 vres2 ->
   Mem.extends m1' m2' ->
-  match_reply (cc_c_tr ext) (Some w) (vres1, m1') (vres2, m2').
+  match_reply (cc_c_tr ext) w (vres1, m1') (vres2, m2').
 Proof.
   destruct w.
   intros.
   apply val_inject_lessdef in H.
-  exists None, tt; split; rauto.
+  exists tt; split; rauto.
 Qed.
 
 (** *** Injections *)
@@ -495,9 +412,12 @@ Definition cc_inject_triangle_mr nb: reply li_c -> reply li_c -> Prop :=
       meminj_wf f'.
 
 Definition cc_inject_triangle: callconv li_c li_c :=
-  cc_klr
-    cc_inject_triangle_mq
-    cc_inject_triangle_mr.
+  {|
+    ccworld := block;
+    match_senv nb := symbols_inject (Mem.flat_inj nb);
+    match_query := cc_inject_triangle_mq;
+    match_reply := cc_inject_triangle_mr;
+  |}.
 
 (** The following lemma is used to prove initial state simulations,
   as a way to inverse the [match_query] hypothesis. See also the
@@ -513,7 +433,7 @@ Lemma match_query_cc_inject_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
     match_query cc_inject_triangle w q1 q2 ->
     P (cq_fb q1) (cq_sg q1) (cq_args q1) (cq_mem q1) q1 q2).
 Proof.
-  intros H [m|] q1 q2 Hq; try contradiction.
+  intros H m q1 q2 Hq.
   destruct Hq as [fb sg vargs f Hfb Hvargs Hm]; simpl in *.
   apply H; auto.
 Qed.
@@ -526,10 +446,10 @@ Lemma match_reply_cc_inject_triangle nb f' vres1 m1' vres2 m2':
   Mem.inject f' m1' m2' ->
   inject_incr (Mem.flat_inj nb) f' ->
   meminj_wf f' ->
-  match_reply cc_inject_triangle (Some nb) (vres1, m1') (vres2, m2').
+  match_reply cc_inject_triangle nb (vres1, m1') (vres2, m2').
 Proof.
   intros Hvres Hm' Hf'.
-  exists None, f'; eauto.
+  exists f'; eauto.
 Qed.
 
 (** *** Tactics *)

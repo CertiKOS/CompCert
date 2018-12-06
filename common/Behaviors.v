@@ -146,10 +146,13 @@ Section PROGRAM_BEHAVIORS.
 Context {li} (L: semantics li).
 
 Inductive state_behaves (s: state L): program_behavior -> Prop :=
-  | state_terminates: forall t s' r k,
+  | state_terminates: forall t s' r,
       Star L s t s' ->
-      final_state L s' r k ->
-      state_behaves s (Terminates t (r, k))
+      match r with
+        | inl q => at_external L s' q
+        | inr r => final_state L s' r
+      end ->
+      state_behaves s (Terminates t r)
   | state_diverges: forall t s',
       Star L s t s' -> Forever_silent L s' ->
       state_behaves s (Diverges t)
@@ -159,15 +162,16 @@ Inductive state_behaves (s: state L): program_behavior -> Prop :=
   | state_goes_wrong: forall t s',
       Star L s t s' ->
       Nostep L s' ->
-      (forall r k, ~final_state L s' r k) ->
+      (forall q, ~ at_external L s' q) ->
+      (forall r, ~ final_state L s' r) ->
       state_behaves s (Goes_wrong t).
 
 Inductive program_behaves (q: query li): program_behavior -> Prop :=
-  | program_runs: forall S s beh,
-      initial_state L q = Some S -> S s -> state_behaves s beh ->
+  | program_runs: forall s beh,
+      initial_state L q s -> state_behaves s beh ->
       program_behaves q beh
   | program_goes_initially_wrong:
-      (forall S s, initial_state L q = Some S -> ~ S s) ->
+      (forall s, ~ initial_state L q s) ->
       program_behaves q (Goes_wrong E0).
 
 Lemma state_behaves_app:
@@ -275,9 +279,13 @@ Proof.
   destruct (not_all_ex_not _ _ H) as [s1 A]; clear H.
   destruct (not_all_ex_not _ _ A) as [t1 B]; clear A.
   destruct (imply_to_and _ _ B) as [C D]; clear B.
-  destruct (classic (exists r k, final_state L s1 r k)) as [(r & k & FINAL) | NOTFINAL].
-(* 2.1 Normal termination *)
-  exists (Terminates t1 (r, k)); econstructor; eauto.
+  destruct (classic ((exists r, final_state L s1 r) \/
+                     (exists q, at_external L s1 q)))
+    as [[(r & FINAL) | (q & EXTERNAL)] | NOTFINAL].
+(* 2.1a Normal termination *)
+  exists (Terminates t1 (inr r)); econstructor; eauto.
+(* 2.1b External call *)
+  exists (Terminates t1 (inl q)); econstructor; eauto.
 (* 2.2 Going wrong *)
   exists (Goes_wrong t1); econstructor; eauto. red. intros.
   generalize (not_ex_all_not _ _ D s'); intros.
@@ -288,8 +296,8 @@ Qed.
 Theorem program_behaves_exists q:
   exists beh, program_behaves q beh.
 Proof.
-  destruct (classic (exists S s, initial_state L q = Some S /\ S s))
-    as [(S & s0 & INIT & Ss0) | NOTINIT].
+  destruct (classic (exists s, initial_state L q s))
+    as [[s0 INIT] | NOTINIT].
 (* 1. Initial state is defined. *)
   destruct (state_behaves_exists s0) as [beh SB].
   exists beh; econstructor; eauto.
@@ -305,15 +313,19 @@ Arguments program_behaves {li} _ _ _.
 
 (** * Forward simulations and program behaviors *)
 
+(*
 Section FORWARD_SIMULATIONS.
 
-Context {li1 li2} {cc: callconv li1 li2}.
-Context L1 L2 index order match_states (S: fsim_properties cc L1 L2 (index:=index) order match_states).
+Context {li1 li2} {ccA ccB: callconv li1 li2}.
+Context L1 L2 index order match_states (S: fsim_properties ccA ccB L1 L2 (index:=index) order match_states).
 
-Definition match_res w '(r1, k1) '(r2, k2): Prop :=
-  exists w',
-    cc_reply cc w w' r1 r2 /\
-    fsim_match_cont cc (match_ex match_states) w' k1 k2.
+Inductive match_res w : rel (query li1 + reply li1) (query li2 + reply li2) :=
+  | match_res_query w' q1 q2 :
+      match_query ccA w' q1 q2 ->
+      match_res w (inl q1) (inl q2)
+  | match_res_reply r1 r2 :
+      match_reply ccB w r1 r2 ->
+      match_res w (inr r1) (inr r2).
 
 Lemma forward_simulation_state_behaves:
   forall w i s1 s2 beh1,
@@ -323,8 +335,12 @@ Proof.
   intros. inv H0.
 - (* termination *)
   exploit @simulation_star; eauto. intros [i' [s2' [A B]]].
-  edestruct @fsim_match_final_states as (r2 & w' & k2 & Hr & Hr2 & Hk); eauto.
-  exists (Terminates t (r2, k2)); split.
+  destruct r as [q1 | r1].
+  + edestruct @fsim_match_external as (w' & q2 & Hq & Hq2 & Hafter); eauto.
+    (* ... *)
+
+  edestruct @fsim_match_final_states as (r2 & Hr & Hr2); eauto.
+  exists (Terminates t (inr r2)); split.
   econstructor; eauto.
   constructor. exists w'; auto.
 - (* silent divergence *)
@@ -349,7 +365,6 @@ Qed.
 
 End FORWARD_SIMULATIONS.
 
-(*
 Theorem forward_simulation_behavior_improves {li1 li2} (cc: callconv li1 li2):
   forall L1 L2, forward_simulation cc L1 L2 ->
   forall q1 q2 w, cc_query cc q1 q2 (cc_init cc) w ->
@@ -399,7 +414,8 @@ Context L1 L2 index order match_states (S: bsim_properties cc L1 L2 index order 
 
 Definition safe_along_behavior {R} (s: state L1) (b: @program_behavior R) :=
   forall t1 s' b2, Star L1 s t1 s' -> b = behavior_app t1 b2 ->
-     (exists r k, final_state L1 s' r k)
+     (exists r, final_state L1 s' r)
+  \/ (exists q, at_external L1 s' q)
   \/ (exists t2, exists s'', Step L1 s' t2 s'').
 
 Remark safe_along_safe {R}:
@@ -418,6 +434,7 @@ Proof.
   subst. rewrite behavior_app_assoc. eauto.
 Qed.
 
+(*
 Remark not_safe_along_behavior {R}:
   forall s b,
   ~ @safe_along_behavior R s b ->
@@ -425,7 +442,8 @@ Remark not_safe_along_behavior {R}:
      behavior_prefix t b
   /\ Star L1 s t s'
   /\ Nostep L1 s'
-  /\ (forall r k, ~(final_state L1 s' r k)).
+  /\ (forall r, ~(final_state L1 s' r))
+  /\ (forall q, ~(at_external L1 s' q)).
 Proof.
   intros.
   destruct (not_all_ex_not _ _ H) as [t1 A]; clear H.
@@ -437,9 +455,10 @@ Proof.
   exists t1; exists s'.
   split. exists b2; auto.
   split. auto.
-  split. red; intros; red; intros. elim Q. exists t; exists s'0; auto.
+  split. red; intros; red; intros. elim Q. right. exists t; exists s'0; auto.
   intros; red; intros. elim P. exists r, k; auto.
 Qed.
+*)
 
 Lemma backward_simulation_star {R}:
   forall s2 t s2', Star L2 s2 t s2' ->
