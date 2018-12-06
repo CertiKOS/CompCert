@@ -119,7 +119,7 @@ Qed.
 Program Definition injp: cklr :=
   {|
     world := injp_world;
-    world_kf := {| acc := injp_acc |};
+    wacc := injp_acc;
     mi := injp_mi;
     match_mem := injp_match_mem;
   |}.

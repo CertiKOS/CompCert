@@ -293,14 +293,10 @@ Qed.
 Program Definition cklr_compose (R1 R2: cklr): cklr :=
   {|
     world := world R1 * world R2;
-    world_kf := {| acc := acc * acc |};
+    wacc := wacc R1 * wacc R2;
     mi w := compose_meminj (mi R1 (fst w)) (mi R2 (snd w));
     match_mem w := rel_compose (match_mem R1 (fst w)) (match_mem R2 (snd w));
   |}.
-
-Next Obligation.
-  simpl. typeclasses eauto.
-Qed.
 
 Next Obligation.
   rauto.

@@ -83,7 +83,7 @@ Qed.
 Program Definition ext: cklr :=
   {|
     world := unit;
-    world_kf := {| acc := ⊤ |};
+    wacc := ⊤;
     mi w := inject_id;
     match_mem w := Mem.extends;
   |}.

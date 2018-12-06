@@ -52,7 +52,7 @@ Existing Instance extp_match_mem_intro.
 Program Definition extp: cklr :=
   {|
     world := extp_world;
-    world_kf := {| acc := extp_acc |};
+    wacc := extp_acc;
     mi w := inject_id;
     match_mem := extp_match_mem;
   |}.

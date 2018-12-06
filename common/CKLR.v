@@ -56,16 +56,18 @@ Record meminj_wf f :=
 Record cklr :=
   {
     world: Type;
-    world_kf: KripkeFrame world;
+    wacc: relation world;
+
+    cklr_kf : KripkeFrame unit world := {| acc w := wacc; |};
 
     mi: world -> meminj;
     match_mem: klr world mem mem;
 
     acc_preorder:
-      PreOrder acc;
+      PreOrder wacc;
 
     mi_acc:
-      Monotonic mi (acc ++> inject_incr);
+      Monotonic mi (wacc ++> inject_incr);
 
     cklr_wf w m1 m2:
       match_mem w m1 m2 ->
@@ -74,49 +76,49 @@ Record cklr :=
     cklr_alloc:
       Monotonic
         (@Mem.alloc)
-        ([] match_mem ++> - ==> - ==>
+        (|= match_mem ++> - ==> - ==>
          <> match_mem * block_inject_sameofs @@ [mi]);
 
     cklr_free:
       Monotonic
         (@Mem.free)
-        ([] match_mem ++> %% ptrrange_inject @@ [mi] ++>
+        (|= match_mem ++> %% ptrrange_inject @@ [mi] ++>
          k1 option_le (<> match_mem));
 
     cklr_load:
       Monotonic
         (@Mem.load)
-        ([] - ==> match_mem ++> % ptr_inject @@ [mi] ++>
+        (|= - ==> match_mem ++> % ptr_inject @@ [mi] ++>
          k1 option_le (Val.inject @@ [mi]));
 
     cklr_store:
       Monotonic
         (@Mem.store)
-        ([] - ==> match_mem ++> % ptr_inject @@ [mi] ++> Val.inject @@ [mi] ++>
+        (|= - ==> match_mem ++> % ptr_inject @@ [mi] ++> Val.inject @@ [mi] ++>
          k1 option_le (<> match_mem));
 
     cklr_loadbytes:
       Monotonic
         (@Mem.loadbytes)
-        ([] match_mem ++> % ptr_inject @@ [mi] ++> - ==>
+        (|= match_mem ++> % ptr_inject @@ [mi] ++> - ==>
          k1 option_le (k1 list_rel (memval_inject @@ [mi])));
 
     cklr_storebytes:
       Monotonic
         (@Mem.storebytes)
-        ([] match_mem ++> % rptr_inject @@ [mi] ++>
+        (|= match_mem ++> % rptr_inject @@ [mi] ++>
          k1 list_rel (memval_inject @@ [mi]) ++>
          k1 option_le (<> match_mem));
 
     cklr_perm:
       Monotonic
         (@Mem.perm)
-        ([] match_mem ++> % ptr_inject @@ [mi] ++> - ==> - ==> k impl);
+        (|= match_mem ++> % ptr_inject @@ [mi] ++> - ==> - ==> k impl);
 
     cklr_valid_block:
       Monotonic
         (@Mem.valid_block)
-        ([] match_mem ++> block_inject @@ [mi] ++> k iff);
+        (|= match_mem ++> block_inject @@ [mi] ++> k iff);
 
     cklr_no_overlap w m1 m2:
       match_mem w m1 m2 ->
@@ -162,7 +164,7 @@ Record cklr :=
         ofs2 + delta2 + sz <= ofs1 + delta1
   }.
 
-Global Existing Instance world_kf.
+Global Existing Instance cklr_kf.
 Global Existing Instance acc_preorder.
 Global Existing Instance mi_acc.
 Global Instance mi_acc_params: Params (@mi) 2.
@@ -305,7 +307,7 @@ Qed.
 Global Instance cklr_loadv R:
   Monotonic
     (@Mem.loadv)
-    ([] - ==> match_mem R ++> Val.inject @@ [mi R] ++>
+    (|= - ==> match_mem R ++> Val.inject @@ [mi R] ++>
      k1 option_le (Val.inject @@ [mi R])).
 Proof.
   repeat red.
@@ -322,7 +324,7 @@ Qed.
 Global Instance cklr_storev R:
   Monotonic
     (@Mem.storev)
-    ([] - ==> match_mem R ++> Val.inject @@ [mi R] ++> Val.inject @@ [mi R] ++>
+    (|= - ==> match_mem R ++> Val.inject @@ [mi R] ++> Val.inject @@ [mi R] ++>
      k1 option_le (<> match_mem R)).
 Proof.
   intros w a x y H x0 y0 H0 x1 y1 H1.
@@ -342,7 +344,7 @@ Qed.
 Global Instance cklr_free_list R:
   Monotonic
     (@Mem.free_list)
-    ([] match_mem R ++> k1 list_rel (ptrrange_inject @@ [mi R]) ++>
+    (|= match_mem R ++> k1 list_rel (ptrrange_inject @@ [mi R]) ++>
      k1 option_le (<> match_mem R)).
 Proof.
   intros w m1 m2 Hm l1 l2 Hl.
@@ -425,7 +427,7 @@ Qed.
 Global Instance cklr_load_rptr R:
   Monotonic
     (@Mem.load)
-    ([] - ==> match_mem R ++> % rptr_inject @@ [mi R] ++>
+    (|= - ==> match_mem R ++> % rptr_inject @@ [mi R] ++>
      k1 option_le (Val.inject @@ [mi R])).
 Proof.
   intros w chunk m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr.
@@ -439,7 +441,7 @@ Qed.
 Global Instance cklr_store_rptr R:
   Monotonic
     (@Mem.store)
-    ([] - ==> match_mem R ++> % rptr_inject @@[mi R] ++> Val.inject @@[mi R] ++>
+    (|= - ==> match_mem R ++> % rptr_inject @@[mi R] ++> Val.inject @@[mi R] ++>
      k1 option_le (<> match_mem R)).
 Proof.
   intros w chunk m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr v1 v2 Hv.
@@ -453,7 +455,7 @@ Qed.
 Global Instance cklr_loadbytes_rptr R:
   Monotonic
     (@Mem.loadbytes)
-    ([] match_mem R ++> % rptr_inject @@ [mi R] ++> - ==>
+    (|= match_mem R ++> % rptr_inject @@ [mi R] ++> - ==>
      k1 option_le (k1 list_rel (memval_inject @@ [mi R]))).
 Proof.
   intros w m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr sz.

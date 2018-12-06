@@ -63,7 +63,7 @@ Qed.
 Program Definition inj : cklr :=
   {|
     world := meminj;
-    world_kf := {| acc := inject_incr |};
+    wacc := inject_incr;
     mi f := f;
     match_mem := inject_wf;
   |}.
