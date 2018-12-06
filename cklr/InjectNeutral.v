@@ -25,7 +25,7 @@ Qed.
 Program Definition injn: cklr :=
   {|
     world := block;
-    world_kf := {| acc := Block.le |};
+    wacc := Block.le;
     mi := Mem.flat_inj;
     match_mem w := (match_mem inj (Mem.flat_inj w) /\ req w @@ Mem.nextblock)%rel;
   |}.
