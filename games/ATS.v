@@ -20,6 +20,15 @@ Module ATS.
 
   Arguments ats : clear implicits.
 
+  Record strat {GA GB} :=
+    {
+      state : Type;
+      cont : Type;
+      transitions :> ats GA GB state cont;
+      init_cont : cont;
+    }.
+
+  Arguments strat : clear implicits.
 
   (** ** Simulations *)
 
@@ -100,6 +109,23 @@ Module ATS.
       (sim (grel_compose GRAB GRBC) RAC).
    *)
 
+  (** ** Refinement *)
+
+  Definition ref {GA1 GA2 GRA GB1 GB2 GRB} {σ1: strat GA1 GB1} {σ2: strat GA2 GB2} :=
+    exists RS RK,
+      sim GRA GRB RS RK σ1 σ2 /\
+      RK nil (init_cont σ1) (init_cont σ2).
+
+  Arguments ref {GA1 GA2} GRA {GB1 GB2} GRB σ1 σ2.
+
+  Global Instance ref_id G :
+    Reflexive (ref (@grel_id G) (@grel_id G)).
+  Proof.
+    intros σ.
+    eexists _, _. split.
+    - apply sim_id.
+    - reflexivity.
+  Qed.
 
   (** ** Nonbranching *)
 
@@ -130,6 +156,10 @@ Module ATS.
         refuse α k m ->
         ktrace α k (ext (oq m) :: refused :: nil).
 
+  Definition traces {GA GB} (σ : strat GA GB) : play GA GB -> Prop :=
+    ktrace σ (init_cont σ).
+
 End ATS.
 
 Notation ats := ATS.ats.
+Notation strat := ATS.strat.
