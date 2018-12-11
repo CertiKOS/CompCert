@@ -1,4 +1,5 @@
 Require Export LogicalRelations.
+Require Export OptionRel.
 Require Export Games.
 Require Import KLR.
 Require Import List.
@@ -12,9 +13,9 @@ Module ATS.
 
   Record ats {GA GB S K} :=
     {
-      step : S -> S -> Prop;
+      step : S -> option S -> Prop;
       suspend : S -> pmove GA GB * K -> Prop;
-      resume : K -> omove GA GB -> S -> Prop;
+      resume : K -> omove GA GB -> option S -> Prop;
       refuse : K -> question GB -> Prop;
     }.
 
@@ -41,11 +42,11 @@ Module ATS.
     Record sim (α1 : ats GA1 GB1 S1 K1) (α2 : ats GA2 GB2 S2 K2) :=
       {
         sim_step :
-          (|= RS ++> k1 set_le RS)%rel (step α1) (step α2);
+          (|= RS ++> k1 set_le (k1 option_ge RS))%rel (step α1) (step α2);
         sim_suspend :
           (|= RS ++> k1 set_le (<> * RK))%rel (suspend α1) (suspend α2);
         sim_resume :
-          (|= RK ++> [] -> k1 set_le RS)%rel (resume α1) (resume α2);
+          (|= RK ++> [] -> k1 set_le (k1 option_ge RS))%rel (resume α1) (resume α2);
         sim_refuse :
           (|= RK ++> [] -> k impl)%rel (refuse α1) (refuse α2);
       }.
@@ -55,7 +56,7 @@ Module ATS.
     Monotonic
       (@step)
       (forallr GRA, forallr GRB, forallr RS, forallr RK,
-       sim GRA GRB RS RK ++> |= RS ++> k1 set_le RS).
+       sim GRA GRB RS RK ++> |= RS ++> k1 set_le (k1 option_ge RS)).
   Proof.
     firstorder.
   Qed.
@@ -73,7 +74,7 @@ Module ATS.
     Monotonic
       (@resume)
       (forallr GRA, forallr GRB, forallr RS, forallr RK,
-       sim GRA GRB RS RK ++> |= RK ++> [] -> k1 set_le RS).
+       sim GRA GRB RS RK ++> |= RK ++> [] -> k1 set_le (k1 option_ge RS)).
   Proof.
     repeat intro. eapply sim_resume; eauto.
   Qed.
@@ -93,7 +94,7 @@ Module ATS.
     Reflexive (sim (@grel_id G) (@grel_id G) (k (@eq S)) (k (@eq K))).
   Proof.
     split.
-    - intros w s _ [ ]. rstep. reflexivity.
+    - intros w s _ [ ]. rstep. reflexivity || admit.
     - intros w s _ [ ]. rstep. reflexivity || admit.
     - intros w k _ [ ]. reflexivity || admit.
     - intros w k _ [ ]. reflexivity || admit.
@@ -134,15 +135,17 @@ Module ATS.
 
   (** ** Traces *)
 
-  Inductive strace {GA GB S K} (α : ats GA GB S K) : S -> play GA GB -> Prop :=
+  Inductive strace {GA GB S K} (α : ats GA GB S K) : option S -> play GA GB -> Prop :=
     | strace_step s s' t :
         step α s s' ->
         strace α s' t ->
-        strace α s (tau :: t)
+        strace α (Some s) (tau :: t)
     | strace_suspend s m k t :
         suspend α s (m, k) ->
         ktrace α k t ->
-        strace α s (ext (pm m) :: t)
+        strace α (Some s) (ext (pm m) :: t)
+    | strace_crash :
+        strace α None (crash :: nil)
   with ktrace {GA GB S K} (α : ats GA GB S K) : K -> play GA GB -> Prop :=
     | ktrace_nil k :
         ktrace α k nil

@@ -84,6 +84,7 @@ GAMES=\
   AsmLinking.v \
   Games.v \
   ATS.v \
+  Obs.v \
   MultiChannel.v \
   HComp.v \
 

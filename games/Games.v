@@ -81,7 +81,8 @@ Arguments move : clear implicits.
 Inductive action {GA GB : game} : Type :=
   | ext (m : move GA GB) :> action
   | tau : action
-  | refused : action.
+  | refused : action
+  | crash : action.
 
 Arguments action : clear implicits.
 

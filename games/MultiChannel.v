@@ -46,27 +46,27 @@ Module Pow.
     Context {GA GB I} {S K : I -> Type} (α : forall i, ats GA GB (S i) (K i)).
 
     Inductive state :=
-      st (i : I) (s : S i) (k : forall j, K j).
+      st (k : forall j, K j) (i : I) (s : S i).
 
     Definition cont :=
       forall i : I, K i.
 
-    Inductive step : relation state :=
+    Inductive step : state -> option state -> Prop :=
       step_intro i s s' k :
         ATS.step (α i) s s' ->
-        step (st i s k) (st i s' k).
+        step (st k i s) (option_map (st k i) s').
 
     Inductive suspend : state -> pmove (GA ^ I) (GB ^ I) * cont -> Prop :=
       suspend_intro i s k m ki k' :
         ATS.suspend (α i) s (m, ki) ->
         (forall j, i <> j -> k' j = k j) ->
         k' i = ki ->
-        suspend (st i s k) (mkp i m, k').
+        suspend (st k i s) (mkp i m, k').
 
-    Inductive resume : cont -> omove (GA ^ I) (GB ^ I) -> state -> Prop :=
+    Inductive resume : cont -> omove (GA ^ I) (GB ^ I) -> option state -> Prop :=
       resume_intro i k m s :
         ATS.resume (α i) (k i) m s ->
-        resume k (mko i m) (st i s k).
+        resume k (mko i m) (option_map (st k i) s).
 
     Inductive refuse : cont -> question (GB ^ I) -> Prop :=
       refuse_intro i k m :

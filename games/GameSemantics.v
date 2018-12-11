@@ -1,13 +1,14 @@
+Require Import Relations.
 Require Import LogicalRelations.
+Require Import OptionRel.
 Require Import KLR.
 Require Import List.
 Require Import Classical.
 Require Import Events.
 Require Import Smallstep.
 Require Import Behaviors.
-Require Import RTS.
-Require Import ModuleSemantics.
-Require Import Sets.
+Require Import ATS.
+Require Import Obs.
 
 
 (** * CompCert games *)
@@ -17,156 +18,143 @@ Require Import Sets.
 
 Canonical Structure lang (li : language_interface) : game :=
   {|
-    input := query li;
-    output := reply li;
+    question := query li;
+    answer := reply li;
   |}.
 
-Definition cc {li1 li2} (cc : callconv li1 li2) : abrel (lang li2) (lang li1) :=
+Definition cc {li1 li2} (cc : callconv li1 li2) : grel (lang li2) (lang li1) :=
   {|
-    abr_init := cc_init cc;
-    abr_input w w' q2 q1 := cc_query cc w w' q1 q2;
-    abr_output w w' q2 q1 := cc_reply cc w w' q1 q2;
+    question_rel w q2 q1 := match_query cc w q1 q2;
+    answer_rel w r2 r1 := match_reply cc w r1 r2;
   |}.
 
 Coercion lang : language_interface >-> game.
-Coercion cc : callconv >-> abrel.
+Coercion cc : callconv >-> grel.
 Bind Scope li_scope with game.
-
-
-(** * Modules *)
-
-(** ** Definition *)
-
-Record modsem {G : game} :=
-  {
-    modsem_state : Type;
-    modsem_lts :> rts G modsem_state;
-    modsem_entry : RTS.cont G modsem_state;
-  }.
-
-Arguments modsem : clear implicits.
-
-(** ** Refinement preorder *)
-
-Record modref {GA GB} (GR : abrel GA GB) (α β : modsem _) : Prop :=
-  {
-    modref_state :
-      abr_state GR -> rel (modsem_state α) (modsem_state β);
-    modref_sim :
-      RTS.sim GR modref_state (modsem_lts α) (modsem_lts β);
-    modref_init :
-      RTS.cont_le GR modref_state (abr_init GR) (modsem_entry α) (modsem_entry β);
-  }.
-
-(*
-Global Instance modref_preo li:
-  PreOrder (@modref li).
-Proof.
-  split.
-  - intros [A α a].
-    exists eq; simpl.
-    + apply RTS.sim_id.
-    + intros q. reflexivity.
-  - intros [A α a] [B β b] [C γ c] [RAB Hαβ Hab] [RBC Hβγ Hbc]; simpl in *.
-    eexists; simpl.
-    + ercompose; eauto.
-    + ercompose; eauto.
-Qed.
-*)
 
 
 (** * Behaviors from small step semantics *)
 
 Module Behavior.
   Section LTS.
-    Context {li} (L : Smallstep.semantics li).
+    Context {li} {L : Smallstep.semantics li}.
 
     (** ** Transition system *)
 
-    Inductive state {A} :=
-      | running (s : A)
-      | wrong.
+    (** A continuation is a stack of "at external" states. *)
 
-    Inductive lifts {A} (S : A -> Prop) : state -> Prop :=
-      | lifts_goes_wrong : ~ ex S -> lifts S wrong
-      | lifts_resumes s : S s -> lifts S (running s).
+    Definition cont :=
+      list (Smallstep.state L).
 
-    Definition liftk {A} (k : cont li A): RTS.cont li state :=
-      fun q =>
-        match k q with
-          | Some s => set_map RTS.resume (lifts s)
-          | None => singl RTS.reject
-        end.
+    (** A state is an optional state of [L], together with a stack of
+      pending "at external" states. [None] indicates the semantics
+      went wrong. *)
 
-    Inductive step : rts li state :=
-      | step_goes_initially_wrong :
-          step wrong (RTS.goes_wrong)
-      | step_internal s s' :
+    Inductive state :=
+      st (s : Smallstep.state L) (stk : cont).
+
+    Inductive state_in (S : _ -> Prop) k : option state -> Prop :=
+      | safe_state_in s : S s -> state_in S k (Some (st s k))
+      | unsafe_state_in : ~ ex S -> state_in S k None.
+
+    Inductive resume : cont -> omove li li -> option state -> Prop :=
+      | resume_initial_state k q s :
+          state_in (initial_state L q) k s ->
+          resume k (oq q) s
+      | resume_after_external s k r s' :
+          state_in (after_external L s r) k s' ->
+          resume (s :: k) (oa r) s'.
+
+    Inductive step : state -> option state -> Prop :=
+      | step_running s s' k :
           Step L s E0 s' ->
-          step (running s) (RTS.internal (running s'))
-      | step_interacts s r k :
-          final_state L s r k ->
-          step (running s) (RTS.interacts r (liftk k))
-      | step_goes_wrong s :
-          Nostep L s ->
-          (forall r k, ~ final_state L s r k) ->
-          step (running s) (RTS.internal wrong).
+          step (st s k) (Some (st s' k))
+      | step_wrong s k :
+          ~ ((exists r : reply li, final_state L s r) \/
+             (exists q : query li, at_external L s q) \/
+             (exists (t : trace) (s'' : Smallstep.state L), Step L s t s'')) ->
+          step (st s k) None.
 
-    Definition of : modsem li :=
-      {|
-        modsem_state := state;
-        modsem_lts := RTS.obs step;
-        modsem_entry := liftk (initial_state L);
-      |}.
+    Inductive suspend : state -> pmove li li * cont -> Prop :=
+      | suspend_at_external s q k :
+          at_external L s q ->
+          suspend (st s k) (pq q, s :: k)
+      | suspend_final_state s r k :
+          final_state L s r ->
+          suspend (st s k) (pa r, k).
+
+    Inductive refuse : cont -> oqmove li li -> Prop :=
+      | refuse_intro k q :
+          query_is_internal li (symbolenv L) q = false ->
+          refuse k q.
+
+    Definition of :=
+      ATS.Build_ats li li state cont step suspend resume refuse.
+
+    Definition strat :=
+      ATS.Build_strat li li (Obs.state li li cont) cont (Obs.of of) nil.
 
     (** The following properties of the transition system will be
       useful in the soundness proof below. *)
 
-    Lemma star_reachable s s' :
+    (** ** [Obs.reachable] *)
+
+    Lemma star_steps s s' ks os :
       Star L s E0 s' ->
-      RTS.reachable step (running s) (running s').
+      Obs.reachable of (Some (st s' ks)) os ->
+      Obs.reachable of (Some (st s ks)) os.
     Proof.
-      revert s s'. eapply star_E0_ind; eauto.
-      intros s1 s2 s3 Hs12 Hs23.
-      eapply RTS.reachable_step; eauto.
-      constructor; eauto.
+      intros Hs'. pattern s, s'. revert s s' Hs'.
+      apply star_E0_ind; auto.
+      intros s1 s2 s3 Hs12 Hs23 Hs3.
+      apply Obs.reachable_step with (Some (st s2 ks)); auto.
+      econstructor; eauto.
     Qed.
 
-    Lemma step_run_star s s':
-      Star L s E0 s' ->
-      RTS.obs step (running s') RTS.diverges ->
-      RTS.obs step (running s) RTS.diverges.
-    Proof.
-      intros H. pattern s, s'.
-      eapply star_E0_ind; eauto using step_internal, RTS.obs_internal.
-    Qed.
-
-    Definition safe S :=
-      match S with
-        | running s => Smallstep.safe L s
-        | wrong => False
+    Definition safe (s : option state) :=
+      match s with
+        | Some (st s k) => Smallstep.safe L s
+        | None => False
       end.
 
-    Lemma unsafe_goes_wrong S:
-      ~ safe S ->
-      RTS.obs step S RTS.goes_wrong.
+    Lemma unsafe_goes_wrong s:
+      ~ safe s ->
+      Obs.reachable of s None.
     Proof.
-      intros HS.
-      destruct S as [ | ]; simpl in *; eauto using step_goes_initially_wrong.
-      apply not_all_ex_not in HS as [s' HS].
-      apply not_all_ex_not in HS as [Hs' HS].
-      revert HS. pattern s, s'. revert s s' Hs'.
-      eapply star_E0_ind; eauto; intros.
-      - apply RTS.obs_external with wrong; auto.
-        + constructor.
-        + econstructor; eauto.
-          eapply step_goes_wrong; firstorder.
-      - eapply RTS.obs_internal; eauto.
-        constructor; eauto.
+      destruct s as [[s k] | ]; eauto using Obs.reachable_none.
+      intros Hs. unfold safe, Smallstep.safe in Hs.
+      apply not_all_ex_not in Hs as [s' Hs].
+      apply not_all_ex_not in Hs as [Hs' Hs].
+      eapply star_steps; eauto.
+      econstructor; eauto using Obs.reachable_none.
+      constructor; auto.
+    Qed.
+
+    (** ** [Obs.diverges] *)
+
+    Lemma rts_forever_silent s k:
+      Obs.diverges of (st s k) ->
+      Forever_silent L s.
+    Proof.
+      revert s. cofix IH.
+      intros.
+      destruct H. inversion H; clear H; subst.
+      econstructor; eauto.
+    Qed.
+
+    Lemma forever_silent_rts s k:
+      Forever_silent L s ->
+      Obs.diverges of (st s k).
+    Proof.
+      revert s. cofix IH.
+      intros.
+      destruct H. econstructor; eauto.
+      constructor. eauto.
     Qed.
 
     (** ** Determinism *)
 
+    (*
     (** From deterministic small-step semantics, we can obtain a
       deterministic transition system. *)
 
@@ -211,167 +199,197 @@ Module Behavior.
         + eelim H0; eauto.
         + repeat constructor.
     Qed.
+     *)
   End LTS.
+
+  Arguments cont {li} L.
+  Arguments state {li} L.
+  Arguments of {li} L.
+  Arguments strat {li} L.
 
   (** ** Monotonicity *)
 
-  (** Backward simulation of small-step semantics are sound with
+  (** Backward simulations of small-step semantics are sound with
     respect to the embedding defined above: given a backward
-    simulation between two small-step semantics, we can show
-    alternating refinement between their embeddings.
+    simulation between two small-step semantics, we can establish a
+    corresponding simulation between their embeddings.
+    We use the following simulation relation. *)
 
-    We use the following alternating simulation relation. *)
+  Section SIM.
+    Context {li1 li2} (cc : callconv li1 li2).
+    Context (L1 : semantics li1).
+    Context (L2 : semantics li2).
+    Context {ind ord} R (HL : bsim_properties cc L1 L2 ind ord R).
 
-  Inductive state_rel {W A B} R (w : W) : rel (@state A) (@state B) :=
-    | running_rel s1 s2 :
-        R w s2 s1 ->
-        state_rel R w (running s1) (running s2)
-    | wrong_rel S1 :
-        state_rel R w S1 wrong.
+    Definition after_external_rel wA wB s1 s2 :=
+      forall r1 r2,
+        match_reply cc wA r1 r2 ->
+        bsim_match_cont (rexists i, R wB i)
+          (after_external L1 s1 r1)
+          (after_external L2 s2 r2).
 
-  Hint Constructors state_rel.
+    Inductive cont_rel : klr (gworld cc cc) (cont L2) (cont L1) :=
+      | cont_nil_rel :
+          cont_rel nil nil nil
+      | cont_inl_rel wA wB s1 s2 ws k1 k2 :
+          after_external_rel wA wB s1 s2 ->
+          cont_rel ws k2 k1 ->
+          cont_rel (inl wA :: inr wB :: ws) (s2 :: k2) (s1 :: k1).
 
-  Lemma rts_forever_silent {li} (L : semantics li) s:
-    RTS.forever_internal (step L) (running s) ->
-    Forever_silent L s.
-  Proof.
-    revert s. cofix IH.
-    intros.
-    destruct H. inversion H; clear H; subst.
-    - econstructor; eauto.
-    - destruct H0. inversion H.
-  Qed.
+    Inductive state_rel : klr (gworld cc cc) (state L2) (state L1) :=
+      | state_rel_intro w i s1 s2 ws k1 k2 :
+          R w i s1 s2 ->
+          cont_rel ws k2 k1 ->
+          state_rel (inr w :: ws) (st s2 k2) (st s1 k1).
 
-  Lemma forever_silent_rts {li} (L : semantics li) s:
-    Forever_silent L s ->
-    RTS.forever_internal (step L) (running s).
-  Proof.
-    revert s. cofix IH.
-    intros.
-    destruct H. econstructor; eauto.
-    constructor. eauto.
-  Qed.
+    (** Showing the simulation for the resumption relation is
+      straightforward if intricate. *)
 
-  Lemma forever_internal_bsim {li1 li2} cc L1 L2 ind ord ms i w S1 S2:
-    @bsim_properties li1 li2 cc L2 L1 ind ord ms ->
-    ms w i S2 S1 ->
-    Smallstep.safe L2 S2 ->
-    RTS.forever_internal (step L1) (running S1) ->
-    RTS.forever_internal (step L2) (running S2).
-  Proof.
-    intros.
-    eapply forever_silent_rts.
-    eapply backward_simulation_forever_silent; eauto.
-    eapply rts_forever_silent; eauto.
-  Qed.
+    Global Instance state_in_sim w ws :
+      Monotonic state_in
+        (bsim_match_cont (rexists i, R w i) -->
+         cont_rel ws ++>
+         set_le (option_ge (state_rel (inr w :: ws)))).
+    Proof.
+      intros S2 S1 [Hex Hmatch] k2 k1 Hk s2 Hs2.
+      destruct Hs2 as [s2 Hs2 | Hn2].
+      - destruct (classic (ex S1)) as [[s1 Hs1] | Hn1].
+        + edestruct Hmatch as (s1' & Hs1' & i & Hs); eauto.
+          exists (Some (st s1' k1)). repeat (econstructor; eauto).
+        + exists None. repeat (econstructor; eauto).
+      - destruct (classic (ex S1)) as [[s1 Hs1] | Hn1].
+        + eelim Hn2; eauto.
+        + exists None. repeat (econstructor; eauto).
+    Qed.
 
-  Hint Extern 10 => rstep : coqrel.
+    Global Instance resume_sim :
+      Monotonic resume (|= cont_rel ++> []-> k1 set_le (k1 option_ge state_rel)).
+    Proof.
+      intros ws k2 k1 Hk q2 q1 ws' Hq s2 Hs2.
+      destruct Hs2 as [k2 q2 s2 Hs2 | s2 k2 r2 s2' Hs2'];
+      inversion Hq; clear Hq; subst;
+      inversion H3 as [wA m2 m1 | wB m2 m1]; clear H3; subst;
+      simpl in *.
+      - (* initial state *)
+        edestruct state_in_sim as (s1 & ? & ?); eauto.
+        + eapply bsim_initial_states; eauto.
+        + exists s1. repeat (constructor; auto).
+      - (* resume after external *)
+        inversion Hk as [| xwA wB sk1 sk2 ws k1' k2' Hsk Hk']; clear Hk; subst.
+        edestruct state_in_sim as (s1 & ? & ?); eauto.
+        + eapply Hsk; eauto.
+        + exists s1. repeat (constructor; auto).
+    Qed.
 
-  Lemma bsim_lifts {W A B} (R : klr W A B) w S1 S2 :
-    bsim_match_sets (R w) S1 S2 ->
-    set_le (state_rel R w) (lifts S2) (lifts S1).
-  Proof.
-    intros HS s2 Hs2.
-    destruct Hs2 as [Hns2 | s2 Hs2].
-    - exists wrong; split; constructor.
-      intros [s1 Hs1]. apply Hns2. firstorder.
-    - destruct (classic (ex S1)) as [[s1e Hs1e] | H1].
-      + edestruct @bsim_sets_match as (s1 & Hs1 & Hs); eauto.
-        exists (running s1); split; constructor; eauto.
-      + exists wrong; split; constructor; eauto.
-  Qed.
+    (** For [suspend], we can't show a direct simulation but we can
+      show it modulo reachability, so that once we apply the
+      observation operator the simulation will hold. *)
 
-  Lemma bsim_sound_liftk {li1 li2} (cc: callconv li1 li2) {A B} (R : _ -> rel A B):
+    Global Instance reachable_sim :
+      Monotonic
+        (Obs.reachable (of _))
+        (|= k1 option_ge state_rel ++>
+            k1 set_le (k1 option_ge (Obs.state_rel cc cc cont_rel))).
+    Proof.
+      intros ws os2 os1 Hos os2' Hs2'.
+      destruct (classic (safe os1)) as [Hsafe | ];
+        [ | exists None; split; eauto using unsafe_goes_wrong; rauto ].
+      revert os1 Hos Hsafe.
+      induction Hs2' as [s2 mk2 Hmk2 | | s2 s2' s2'' Hs2' Hs2'' IHs2'']; intros;
+      inversion Hos as [xs2 s1 Hs | ]; clear Hos; subst; try contradiction.
+      - (* target reached an exit state *)
+        destruct Hs as [wB i s1 s2 ws k1 k2 Hs Hk].
+        inversion Hmk2 as [? q2 ? Hq2 | ? r2 ? Hr2]; clear Hmk2; subst.
+        + (* at external *)
+          edestruct @bsim_match_external
+            as (wA & s1' & q1 & Hs1' & Hq1 & Hq & Hs'); eauto.
+          eexists (Some (Obs.st (pq q1, _))). split.
+          * eapply star_steps; eauto. repeat constructor; auto.
+          * repeat constructor. exists (inl wA :: inr wB :: ws).
+            repeat (constructor; auto).
+        + (* final state *)
+          edestruct @bsim_match_final_states
+            as (s1' & r1 & Hs1' & Hr & Hr1); eauto.
+          eexists (Some (Obs.st (pa r1, _))). split.
+          * eapply star_steps; eauto. repeat constructor; auto.
+          * repeat (econstructor; eauto).
+      - (* target takes an internal step *)
+        destruct Hs2' as [s2 s2' k2 Hs2' | ].
+        + inversion Hs; clear Hs; subst.
+          edestruct @bsim_E0_star as (i' & s1' & Hs1' & Hs'); eauto using star_one.
+          destruct (IHs2'' (Some (st s1' k1))) as (s1'' & Hs1'' & Hs'').
+          * repeat (econstructor; eauto).
+          * simpl in Hsafe |- *; eauto using star_safe.
+          * eexists; split; eauto.
+            eapply star_steps; eauto.
+        + inversion Hs; clear Hs; subst.
+          elim H. eapply bsim_progress; eauto.
+    Qed.
+
+    Lemma diverges_sim i w s1 s2 k1 k2:
+      R w i s1 s2 ->
+      Smallstep.safe L1 s1 ->
+      Obs.diverges (of L2) (st s2 k2) ->
+      Obs.diverges (of L1) (st s1 k1).
+    Proof.
+      intros.
+      eapply forever_silent_rts.
+      eapply backward_simulation_forever_silent; eauto.
+      eapply rts_forever_silent; eauto.
+    Qed.
+
+    Lemma obs_resume_sim :
+      Monotonic
+        (Obs.resume (of _))
+        (|= cont_rel ++> [] ->
+            k1 set_le (k1 option_ge (Obs.state_rel cc cc cont_rel))).
+    Proof.
+      intros w k2 k1 Hk m2 m1 w' Hw' s2 Hs2.
+      destruct Hs2 as [k2 m2 s2 s2' Hs2 Hs2' | k2 m2 s2 Hs2 Hs2d].
+      - edestruct resume_sim as (s1 & Hs1 & Hs); eauto.
+        edestruct reachable_sim as (s1' & Hs1' & Hs'); eauto.
+        exists s1'. split; [ | rauto]. econstructor; eauto.
+      - edestruct resume_sim as (os1 & Hos1 & Hos); eauto.
+        destruct (classic (safe os1)) as [Hsafe | Hunsafe].
+        + inversion Hos as [xs2 s1 Hs | ]; clear Hos; subst; [ | contradiction].
+          destruct Hs as [w' i s1 s2 ws k1' k2' Hs Hk'].
+          exists (Some Obs.div). repeat constructor; auto.
+          eapply Obs.resume_diverges; eauto.
+          eapply diverges_sim; eauto.
+        + exists None. split; [ | rauto].
+          eapply Obs.resume_reachable; eauto using unsafe_goes_wrong.
+    Qed.
+
+    Lemma refuse_sim :
+      Monotonic refuse (|= cont_rel ++> ([] -> k impl)).
+    Proof.
+      intros w k2 k1 Hk q2 q1 w' Hq Hq2.
+      destruct Hq2 as [k2 xq2 Hq2].
+    Admitted.
+
+    Lemma bsim_sound :
+      ATS.sim cc cc (Obs.state_rel cc cc cont_rel) cont_rel
+        (Obs.of (of L2))
+        (Obs.of (of L1)).
+    Proof.
+      split; simpl.
+      - eapply Obs.step_sim; eauto.
+      - eapply Obs.suspend_sim; eauto.
+      - eapply obs_resume_sim; eauto.
+      - eapply refuse_sim; eauto.
+    Qed.
+  End SIM.
+
+  Global Instance strat_sim :
     Monotonic
-      liftk
-      (rforall w, bsim_match_cont cc R w --> RTS.cont_le cc (state_rel R) w).
+      (@strat)
+      (forallr cc, backward_simulation cc --> ATS.ref cc cc).
   Proof.
-    intros w k2 k1 Hk w' q2 q1 Hq b2 Hb2. unfold liftk in *.
-    specialize (Hk w' q1 q2 Hq). destruct Hk as [S2 S1 HS | ].
-    - destruct Hb2 as [s2 Hs2].
-      eapply bsim_lifts in Hs2 as (s1 & Hs1 & Hs); eauto.
-      exists (RTS.resume s1). split; constructor; eauto.
-    - destruct Hb2 as [ ].
-      eexists; split; constructor.
-  Qed.
-
-  Lemma reachable_inv {li} (L : semantics li) s S':
-    Smallstep.safe L s ->
-    RTS.reachable (step L) (running s) S' ->
-    exists s', S' = running s' /\ Star L s E0 s'.
-  Proof.
-    intros Hs HS'.
-    change (safe L (running s)) in Hs.
-    remember (running s) as S eqn:HS. revert s HS.
-    induction HS' as [S | S1 S2 S3 HS12 HS23].
-    - eauto using star_refl.
-    - inversion HS12; clear HS12; subst.
-      + inversion 1; clear HS; subst.
-        edestruct IHHS23 as (s'' & Hs'' & Hsteps); eauto using star_step.
-        simpl in Hs |- *. eauto using star_safe, star_one.
-      + edestruct Hs as [(r & k & Hk) | (t & s' & Hs')]; eauto using star_refl.
-        * eelim H2; eauto.
-        * eelim H0; eauto.
-  Qed.
-
-  Lemma bsim_sound_step {li1 li2} (cc: callconv li1 li2) L1 L2 ind ord ms:
-    bsim_properties cc L1 L2 ind ord ms ->
-    RTS.sim cc (state_rel (match_ex ms))
-      (RTS.obs (step L2))
-      (RTS.obs (step L1)).
-  Proof.
-    intros HL w S2 S1 HS r2 Hr2.
-    destruct (classic (safe L1 S1)) as [HS1 | ];
-      [ | now eauto using unsafe_goes_wrong with coqrel ].
-    destruct HS as [s2 s1 [i Hs] | ]; simpl in HS1; try contradiction.
-    inversion Hr2 as [Hs2 | S2 r Hrext Hr Hs2']; clear Hr2; subst.
-
-    - (* Divergence *)
-      exists RTS.diverges. split; [ | rauto].
-      apply RTS.obs_diverges.
-      eapply forever_internal_bsim; eauto.
-
-    - (* Observation *)
-      assert (HS2 : Smallstep.safe L2 s2) by eauto using bsim_safe.
-      apply reachable_inv in Hs2' as (s2' & ? & Hs2'); auto; subst.
-      revert i s1 Hs HS1. clear HS2.
-      revert Hr. pattern s2, s2'. revert s2 s2' Hs2'.
-      apply star_E0_ind.
-
-      + (* Final states *)
-        intros s2 Hr i s1 Hs Hs1.
-        inversion Hr; clear Hr; subst; try now inversion Hrext.
-        eapply bsim_match_final_states in H0; eauto.
-        destruct H0 as (s1' & w' & r1 & k1 & Hs1' & Hr & Hsk1 & Hk); eauto.
-        simpl in Hr; subst.
-        exists (RTS.interacts r1 (liftk k1)). split.
-        * eapply RTS.obs_external with (running s1'); eauto.
-          -- constructor; eauto.
-          -- eapply star_reachable; eauto.
-        * econstructor. { eapply Hr. }
-          intros w'' q1 q2 H1.
-          eapply bsim_sound_liftk; eauto.
-
-      + (* Silent steps *)
-        intros s2 s2' s2'' Hs2' Hs2'' Hr2 i s1 Hs Hs1.
-        specialize (Hs2'' Hr2). clear Hr2 s2''.
-        edestruct (bsim_E0_star HL) as (j & s1' & Hs1' & Hs12');
-          eauto using star_one.
-        edestruct Hs2'' as (r1 & Hr1 & Hr12); eauto.
-        -- eauto using star_safe.
-        -- exists r1. split; eauto.
-           eapply RTS.obs_reachable; eauto.
-           eapply star_reachable; eauto.
-  Qed.
-
-  Global Instance bsim_sound :
-    Monotonic (@of) (forallr cc, backward_simulation cc --> modref cc).
-  Proof.
-    intros li1 li2 cc L1 L2 [index order match_states HL]. unfold of.
+    intros li1 li2 cc L1 L2 [index order match_states HL]. unfold strat.
     econstructor; simpl; eauto.
-    - eapply bsim_sound_step; eauto.
-    - intros w q1 q2 Hq.
-      eapply bsim_sound_liftk; eauto.
-      eapply bsim_initial_states; eauto.
+    exists (cont_rel cc L2 L1 match_states). split.
+    - eapply bsim_sound; eauto.
+    - constructor.
   Qed.
+
 End Behavior.
