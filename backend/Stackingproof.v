@@ -2767,12 +2767,11 @@ Proof.
 - intros w q1 q2 Hq _ [s1 Hs Hq1 Hs1].
   exploit transf_initial_states; eauto. intros [st2 [A B]].
   exists st2; split; auto. red; eauto.
-- intros w s1 s2 q1 AE1 Hs Hq1.
-  destruct Hq1 as [q1 s1 qA1 AE1 HAE1 Hs1 HqA1], Hs as (q2 & Hq & Hs).
-  destruct HAE1 as [s1 qA1 HqAE1].
+- intros w s1 s2 q1 Hs Hq1.
+  destruct Hq1 as [q1 s1 qA1 HAE1 Hs1 HqA1], Hs as (q2 & Hq & Hs).
   edestruct transf_external as (wA & qA2 & HqA & HqA2 & H); eauto.
-  eexists wA, qA2, _; repeat apply conj; eauto. { constructor; eauto. }
-  intros rA1 rA2 _ Hr [s1' HrAE1 HrA1 Hs1'].
+  eexists wA, qA2; repeat apply conj; eauto.
+  intros rA1 rA2 s1' Hr HAE. inv HAE. inv H2. inv HAE1.
   edestruct H as (s2' & HrAE2 & Hs' & Hs2'); eauto.
   eexists s2'. simpl. intuition eauto.
 - intros w [q1 s1] s2 r1 (w2 & Hq & Hs) Hs1. inv Hs1.

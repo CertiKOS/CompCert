@@ -2614,16 +2614,16 @@ Proof.
   - apply senv_preserved.
   - intros w q1 q2 Hq _ [st1 Hst1 Hq1wt Hst1wt].
     eapply initial_states_simulation; eauto.
-  - intros w qst1 st2 q1 AE1 Hst Hq1.
-    destruct Hq1 as [q st1 q1 AE1 Hq1 Hst1wt Hq1wt].
-    destruct Hq1 as [st1 q1 Hq1]. destruct Hst as [Hst Hsg].
+  - intros w qst1 st2 q1 Hst Hq1.
+    destruct Hq1 as [q st1 q1 Hq1 Hst1wt Hq1wt].
+    destruct Hst as [Hst Hsg].
     red in Hst1wt. rewrite Hsg in Hst1wt.
     edestruct external_simulation as (wA & q2 & Hq & Hq2 & H); eauto.
-    eexists wA, q2, (after_external tge st2). repeat apply conj; eauto.
-    + constructor; eauto.
-    + intros r1 r2 [xq s1'] Hr HAE. inv HAE.
-      unfold ms'.
-      edestruct H as (s2' & Hs2' & Hs'); eauto.
+    eexists wA, q2. repeat apply conj; eauto.
+    intros r1 r2 [xq s1'] Hr HAE. inv HAE. inv H4. inv Hq1.
+    unfold ms'. simpl in *.
+    edestruct H as (s2' & Hs2' & Hs'); eauto.
+    congruence.
   - intros w st1 st2 r1 Hst H. destruct H as [q st1 r1 Hst1 Hst1wt Hr1wt], Hst.
     eapply final_states_simulation; eauto.
   - intros w st1 t st1' Hstep1 st2 Hst.

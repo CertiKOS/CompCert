@@ -95,7 +95,7 @@ Lemma eval_helper:
   eval_expr ge sp e m le (Eexternal id sg args) vres.
 Proof.
   intros.
-  red in H0. apply Genv.find_def_symbol in H0. destruct H0 as (b & P & Q).
+  red in H0. eapply Genv.find_def_symbol in H0. destruct H0 as (b & P & Q).
   rewrite <- Genv.find_funct_ptr_iff in Q.
   econstructor; eauto.
 Qed.

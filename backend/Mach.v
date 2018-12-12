@@ -436,6 +436,7 @@ Definition li_mach: language_interface :=
   {|
     query := mach_query;
     reply := regset * mem;
+    query_is_internal ge q := Senv.block_is_internal ge (mq_fb q);
   |}.
 
 (** The [valid_blockv] predicate is used to characterize the initial

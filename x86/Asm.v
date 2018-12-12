@@ -340,68 +340,6 @@ Fixpoint set_res (res: builtin_res preg) (v: val) (rs: regset) : regset :=
   | BR_splitlong hi lo => set_res lo (Val.loword v) (set_res hi (Val.hiword v) rs)
   end.
 
-(** Builtin args evaluation for horizontal composition *)
-
-(** The following verstion of eval_builtin_args does not depend on the
-  symbols environment, and is more defined than [Events.eval_builtin_args]. *)
-
-Section EVAL_BUILTIN_ARG.
-
-Context {A: Type}.
-Variable e: A -> val.
-Variable sp: val.
-Variable m: mem.
-
-Inductive eval_builtin_arg: builtin_arg A -> val -> Prop :=
-  | eval_BA: forall x,
-      eval_builtin_arg (BA x) (e x)
-  | eval_BA_int: forall n,
-      eval_builtin_arg (BA_int n) (Vint n)
-  | eval_BA_long: forall n,
-      eval_builtin_arg (BA_long n) (Vlong n)
-  | eval_BA_float: forall n,
-      eval_builtin_arg (BA_float n) (Vfloat n)
-  | eval_BA_single: forall n,
-      eval_builtin_arg (BA_single n) (Vsingle n)
-  | eval_BA_loadstack: forall chunk ofs v,
-      Mem.loadv chunk m (Val.offset_ptr sp ofs) = Some v ->
-      eval_builtin_arg (BA_loadstack chunk ofs) v
-  | eval_BA_addrstack: forall ofs,
-      eval_builtin_arg (BA_addrstack ofs) (Val.offset_ptr sp ofs)
-  | eval_BA_loadglobal: forall chunk id ofs v,
-      Mem.loadv chunk m (Vptr (Block.glob id) ofs) = Some v ->
-      eval_builtin_arg (BA_loadglobal chunk id ofs) v
-  | eval_BA_addrglobal: forall id ofs,
-      eval_builtin_arg (BA_addrglobal id ofs) (Vptr (Block.glob id) ofs)
-  | eval_BA_splitlong: forall hi lo vhi vlo,
-      eval_builtin_arg hi vhi -> eval_builtin_arg lo vlo ->
-      eval_builtin_arg (BA_splitlong hi lo) (Val.longofwords vhi vlo)
-  | eval_BA_addptr: forall a1 a2 v1 v2,
-      eval_builtin_arg a1 v1 -> eval_builtin_arg a2 v2 ->
-      eval_builtin_arg (BA_addptr a1 a2)
-                       (if Archi.ptr64 then Val.addl v1 v2 else Val.add v1 v2).
-
-Definition eval_builtin_args (al: list (builtin_arg A)) (vl: list val) : Prop :=
-  list_forall2 eval_builtin_arg al vl.
-
-Lemma eval_builtin_arg_determ:
-  forall a v, eval_builtin_arg a v -> forall v', eval_builtin_arg a v' -> v' = v.
-Proof.
-  induction 1; intros v' EV; inv EV; try congruence.
-  f_equal; eauto.
-  apply IHeval_builtin_arg1 in H3. apply IHeval_builtin_arg2 in H5. subst; auto. 
-Qed.
-
-Lemma eval_builtin_args_determ:
-  forall al vl, eval_builtin_args al vl -> forall vl', eval_builtin_args al vl' -> vl' = vl.
-Proof.
-  induction 1; intros v' EV; inv EV; f_equal; eauto using eval_builtin_arg_determ.
-Qed.
-
-End EVAL_BUILTIN_ARG.
-
-Hint Constructors eval_builtin_arg: barg.
-
 Section RELSEM.
 
 (** Looking up instructions in a code sequence by position. *)
@@ -454,7 +392,7 @@ Definition eval_addrmode32 (a: addrmode) (rs: regset) : val :=
              end)
            (match const with
             | inl ofs => Vint (Int.repr ofs)
-            | inr(id, ofs) => Vptr (Block.glob id) ofs
+            | inr(id, ofs) => Genv.symbol_address ge id ofs
             end)).
 
 Definition eval_addrmode64 (a: addrmode) (rs: regset) : val :=
@@ -472,7 +410,7 @@ Definition eval_addrmode64 (a: addrmode) (rs: regset) : val :=
              end)
            (match const with
             | inl ofs => Vlong (Int64.repr ofs)
-            | inr(id, ofs) => Vptr (Block.glob id) ofs
+            | inr(id, ofs) => Genv.symbol_address ge id ofs
             end)).
 
 Definition eval_addrmode (a: addrmode) (rs: regset) : val :=
@@ -664,9 +602,17 @@ Definition exec_store (chunk: memory_chunk) (m: mem)
     and all other instruction set those flags to [Vundef], to reflect
     the fact that the processor updates some or all of those flags,
     but we do not need to model this precisely.
+
+    The semantics is parametrized over the value of the stack pointer
+    at module entry, which controls the behavior of the [Pret]
+    instruction.  When [RSP <> init_sp], we interpret [Pret] as a
+    usual, internal return and jump to the location pointed to by
+    [RA]. However, when [RSP = init_sp], we intepret [Pret] as a
+    top-level return to the environment, expressed as a final state
+    rather than a step.
 *)
 
-Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : outcome :=
+Definition exec_instr (init_sp: val) (f: function) (i: instruction) (rs: regset) (m: mem) : outcome :=
   match i with
   (** Moves *)
   | Pmov_rr rd r1 =>
@@ -676,7 +622,7 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pmovq_ri rd n =>
       Next (nextinstr_nf (rs#rd <- (Vlong n))) m
   | Pmov_rs rd id =>
-      Next (nextinstr_nf (rs#rd <- (Vptr (Block.glob id) Ptrofs.zero))) m
+      Next (nextinstr_nf (rs#rd <- (Genv.symbol_address ge id Ptrofs.zero))) m
   | Pmovl_rm rd a =>
       exec_load Mint32 m a rs rd
   | Pmovq_rm rd a =>
@@ -957,7 +903,7 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pjmp_l lbl =>
       goto_label f lbl rs m
   | Pjmp_s id sg =>
-      Next (rs#PC <- (Vptr (Block.glob id) Ptrofs.zero)) m
+      Next (rs#PC <- (Genv.symbol_address ge id Ptrofs.zero)) m
   | Pjmp_r r sg =>
       Next (rs#PC <- (rs r)) m
   | Pjcc cond lbl =>
@@ -982,11 +928,14 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
       | _ => Stuck
       end
   | Pcall_s id sg =>
-      Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (Vptr (Block.glob id) Ptrofs.zero)) m
+      Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (Genv.symbol_address ge id Ptrofs.zero)) m
   | Pcall_r r sg =>
       Next (rs#RA <- (Val.offset_ptr rs#PC Ptrofs.one) #PC <- (rs r)) m
   | Pret =>
-      Next (rs#PC <- (rs#RA)) m
+      if Val.eq rs#SP init_sp then
+        Stuck
+      else
+        Next (rs#PC <- (rs#RA)) m
   (** Saving and restoring registers *)
   | Pmov_rm_a rd a =>
       exec_load (if Archi.ptr64 then Many64 else Many32) m a rs rd
@@ -1142,35 +1091,44 @@ Definition loc_external_result (sg: signature) : rpair preg :=
 (** Execution of the instruction at [rs#PC]. *)
 
 Inductive state: Type :=
-  | State: regset -> mem -> state.
+  | State: regset -> mem -> option val -> state.
 
 Inductive step: state -> trace -> state -> Prop :=
   | exec_step_internal:
-      forall b ofs f i rs m rs' m',
+      forall b ofs f i rs m sp0 rs' m',
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some i ->
-      exec_instr f i rs m = Next rs' m' ->
-      step (State rs m) E0 (State rs' m')
+      exec_instr sp0 f i rs m = Next rs' m' ->
+      step (State rs m (Some sp0)) E0 (State rs' m' (Some sp0))
+  | exec_step_final_ret:
+      forall b ofs f rs m sp0 rs',
+      rs PC = Vptr b ofs ->
+      Genv.find_funct_ptr ge b = Some (Internal f) ->
+      find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some Pret ->
+      rs#SP = sp0 ->
+      rs' = rs # PC <- (rs#RA) ->
+      step (State rs m (Some sp0)) E0 (State rs' m None)
   | exec_step_builtin:
-      forall b ofs f ef args res rs m vargs t vres rs' m',
+      forall b ofs f ef args res rs m sp0 vargs t vres rs' m',
       rs PC = Vptr b ofs ->
       Genv.find_funct_ptr ge b = Some (Internal f) ->
       find_instr (Ptrofs.unsigned ofs) f.(fn_code) = Some (Pbuiltin ef args res) ->
-      eval_builtin_args rs (rs RSP) m args vargs ->
+      eval_builtin_args ge rs (rs RSP) m args vargs ->
       external_call ef ge vargs m t vres m' ->
       rs' = nextinstr_nf
              (set_res res vres
                (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) ->
-      step (State rs m) t (State rs' m')
+      step (State rs m (Some sp0)) t (State rs' m' (Some sp0))
   | exec_step_external:
-      forall b ef args res rs m t rs' m',
+      forall b ef args res rs m sp0 t rs' m' sp0',
       rs PC = Vptr b Ptrofs.zero ->
       Genv.find_funct_ptr ge b = Some (External ef) ->
       extcall_arguments rs m (ef_sig ef) args ->
       external_call ef ge args m t res m' ->
       rs' = (set_pair (loc_external_result (ef_sig ef)) res rs) #PC <- (rs RA) ->
-      step (State rs m) t (State rs' m').
+      sp0' = (if Val.eq rs#SP sp0 then None else Some sp0) ->
+      step (State rs m (Some sp0)) t (State rs' m' sp0').
 
 End RELSEM.
 
@@ -1179,10 +1137,10 @@ End RELSEM.
 
 Definition li_asm :=
   {|
-    query := state;
-    reply := Empty_set;
+    query := regset * mem;
+    reply := regset * mem;
     query_is_internal ge q :=
-      let '(State rs m) := q in
+      let '(rs, m) := q in
       match rs#PC with
         | Vptr b ofs => Senv.block_is_internal ge b
         | _ => false
@@ -1201,24 +1159,41 @@ Definition li_asm :=
 
 (** With these preparations we're ready to define our semantics. *)
 
-Inductive initial_state: query li_asm -> state -> Prop :=
-  | initial_state_intro (rs: regset) (m: mem):
+Inductive initial_state (ge: genv): query li_asm -> state -> Prop :=
+  | initial_state_intro rs m fb fofs f:
+      Genv.find_funct_ptr ge fb = Some (Internal f) ->
+      rs#PC = Vptr fb fofs ->
       rs#SP <> Vundef ->
       rs#RA <> Vundef ->
-      initial_state (State rs m) (State rs m).
+      initial_state ge (rs, m) (State rs m (Some rs#SP)).
 
-Inductive final_state (ge: genv): _ -> reply (li_asm -o li_asm) -> _ -> Prop :=
-  | final_state_intro s:
-      query_is_internal li_asm ge s = false ->
-      final_state ge s (inl s) (simple_initial_state (liA := li_asm) initial_state ge).
+Inductive at_external (ge: genv): state -> query li_asm -> Prop :=
+  | at_external_intro rs m sp fb fofs id sg:
+      Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
+      rs#PC = Vptr fb fofs ->
+      at_external ge (State rs m sp) (rs, m).
+
+Inductive after_external: state -> reply li_asm -> state -> Prop :=
+  | after_external_intro rs m sp (rs': regset) m':
+      let sp' := if Val.eq rs'#SP sp then None else Some sp in
+      after_external
+        (State rs m (Some sp))
+        (rs', m')
+        (State rs' m' sp').
+
+Inductive final_state (ge: genv): state -> reply li_asm -> Prop :=
+  | final_state_intro rs m:
+      final_state ge (State rs m None) (rs, m).
 
 Definition semantics (p: program) :=
   let ge := Genv.globalenv p in
-  Semantics_gen (li_asm -o li_asm)
+  Semantics li_asm
     step
-    (simple_initial_state initial_state ge)
+    (initial_state ge)
+    (at_external ge)
+    after_external
     (final_state ge)
-    ge ge.
+    ge.
 
 (** Determinacy of the [Asm] semantics. *)
 
@@ -1244,8 +1219,6 @@ Proof.
   intros. eapply C; eauto.
 Qed.
 
-(* XXX: introduce a proof method for [Semantics] *)
-(*
 Lemma semantics_determinate: forall p, determinate (semantics p).
 Proof.
 Ltac Equalities :=
@@ -1277,13 +1250,24 @@ Ltac Equalities :=
   eapply external_call_trace_length; eauto.
 - (* initial states *)
   inv H; inv H0. f_equal.
+- (* at_external no step *)
+  destruct H.
+  intros t s' Hs'.
+  inversion Hs'; clear Hs'; subst; try congruence.
+  assert (ef = EF_external id sg) by congruence; subst. simpl in H7.
+  admit. (* need axiom/definition that external_functions_sem is empty *)
+- (* at_external determinism *)
+  destruct H; inv H0; reflexivity.
+- (* after_external determinism *)
+  destruct H; inv H0; reflexivity.
 - (* final no step *)
   destruct H.
   inversion 1.
+- (* final/at_external mutually exclusive *)
+  admit. (* need to restrict definitions *)
 - (* final states *)
   inv H; inv H0. congruence.
-Qed.
-*)
+Admitted.
 
 (** Classification functions for processor registers (used in Asmgenproof). *)
 

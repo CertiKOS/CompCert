@@ -420,6 +420,7 @@ Proof.
   - eauto using wt_initial_state.
   - destruct 2. intuition.
     + eapply wt_at_external; eauto.
+      econstructor; eauto.
     + destruct H0. inv H2. inv H. constructor; eauto.
       intros l Hl. transitivity (rs l); eauto.
   - eauto using wt_final_state; eauto.

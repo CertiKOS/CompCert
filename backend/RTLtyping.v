@@ -954,14 +954,14 @@ Proof.
   econstructor; eauto.
   (* Icall *)
   assert (wt_fundef fd).
-    apply Genv.find_funct_ptr_prop with fundef unit p fb.
+    eapply Genv.find_funct_ptr_prop.
     exact wt_p. exact H1.
   econstructor; eauto.
   econstructor; eauto. inv WTI; auto.
   inv WTI. rewrite <- H9. apply wt_regset_list. auto.
   (* Itailcall *)
   assert (wt_fundef fd).
-    pattern fd. apply Genv.find_funct_ptr_prop with fundef unit p fb.
+    pattern fd. eapply Genv.find_funct_ptr_prop.
     exact wt_p. exact H1.
   econstructor; eauto.
   inv WTI. apply wt_stackframes_change_sig with (fn_sig f); auto.
@@ -996,7 +996,7 @@ Lemma wt_initial_state b sg vs m:
     wt_state p (proj_sig_res sg) S.
 Proof.
   intros. inv H. econstructor. eassumption. constructor. auto.
-  pattern (Internal f). apply Genv.find_funct_ptr_prop with fundef unit p b; auto.
+  pattern (Internal f). eapply Genv.find_funct_ptr_prop; eauto.
   assumption.
 Qed.
 
@@ -1039,8 +1039,7 @@ Proof.
   - eauto using subject_reduction.
   - intros [fb sg vargs m] s Hq Hs. simpl in *.
     eauto using wt_initial_state.
-  - intros q s [fb sg vargs m] AE Hs HAE.
-    inv HAE.
+  - intros q s [fb sg vargs m] Hs.
     split; simpl; eauto.
     + inv H. inv Hs. rewrite H4 in H2. inv H2. assumption.
     + intros [vres m'] s' Hvres Hs'.

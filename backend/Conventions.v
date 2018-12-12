@@ -156,9 +156,12 @@ Record match_locset_query (R: cklr) (w: world R) (q1 q2: locset_query) :=
   }.
 
 Definition cc_locset (R: cklr): callconv li_locset li_locset :=
-  cc_klr
-    (match_locset_query R)
-    (<> (- ==> Val.inject @@ [mi R]) * match_mem R).
+  {|
+    ccworld := world R;
+    match_senv := Events.symbols_inject @@ [mi R];
+    match_query := match_locset_query R;
+    match_reply := <> (- ==> Val.inject @@ [mi R]) * match_mem R;
+  |}.
 
 (** Triangular diagrams *)
 
@@ -169,9 +172,12 @@ Inductive match_locset_query_tr (R: cklr) (w: world R) q: locset_query -> Prop :
     match_locset_query_tr R w q q.
 
 Definition cc_locset_tr R: callconv li_locset li_locset :=
-  cc_klr
-    (match_locset_query_tr R)
-    (<> (- ==> Val.inject @@ [mi R]) * match_mem R).
+  {|
+    ccworld := world R;
+    match_senv := Events.symbols_inject @@ [mi R];
+    match_query := match_locset_query_tr R;
+    match_reply := <> (- ==> Val.inject @@ [mi R]) * match_mem R;
+  |}.
 
 (** We now define the calling convention between C and locset languages. *)
 
@@ -187,14 +193,15 @@ Inductive cc_alloc_mr: _ -> reply li_c -> reply li_locset -> Prop :=
     cc_alloc_mr (sg, rs) (res, m') (rs', m').
 
 Definition cc_alloc: callconv li_c li_locset :=
-  cc_klr
-    cc_alloc_mq
-    cc_alloc_mr.
+  {|
+    ccworld := signature * Locmap.t;
+    match_senv w := eq;
+    match_query := cc_alloc_mq;
+    match_reply := cc_alloc_mr;
+  |}.
 
-(*
 Definition alloc_sg (w: ccworld cc_alloc) := fst w.
 Definition alloc_rs (w: ccworld cc_alloc) := snd w.
-*)
 
 Lemma match_cc_alloc fb sg args rs m:
   args = map (fun p => Locmap.getpair p rs) (loc_arguments sg) ->
@@ -207,13 +214,12 @@ Lemma match_cc_alloc fb sg args rs m:
       m1' = m2'.
 Proof.
   intros Hargs.
-  exists (Some (sg, rs)). split.
+  exists (sg, rs). split.
   - constructor; eauto.
   - intros vres m1' rs' m2' Hr.
-    inv Hr. inv H. eauto.
+    inv Hr. eauto.
 Qed.
 
-(*
 Lemma match_query_cc_alloc (P: _ -> _ -> _ -> _ -> Prop):
   (forall id sg args rs m,
    args = map (fun p => Locmap.getpair p rs) (loc_arguments sg) ->
@@ -245,7 +251,6 @@ Ltac inv_alloc_query :=
   pattern (alloc_sg w), (alloc_rs w), q1, q2;
   revert w q1 q2 Hq;
   apply match_query_cc_alloc.
-*)
 
 (* XXX may be needed later
 Lemma locmap_setpair_getpair p ls l:

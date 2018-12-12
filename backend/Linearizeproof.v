@@ -746,28 +746,27 @@ Proof.
 Qed.
 
 Lemma transf_external:
-  forall st1 st2 q1 AE1,
+  forall st1 st2 q1,
     match_states st1 st2 ->
-    make_external (LTL.at_external ge) (LTL.after_external ge) st1 q1 AE1 ->
-    exists wA q2 AE2,
+    LTL.at_external ge st1 q1 ->
+    exists wA q2,
       match_query cc_id wA q1 q2 /\
-      make_external (Linear.at_external tge) (Linear.after_external tge) st2 q2 AE2 /\
+      Linear.at_external tge st2 q2 /\
       forall r1 r2 st1',
         match_reply cc_id wA r1 r2 ->
-        AE1 r1 st1' ->
+        LTL.after_external ge st1 r1 st1' ->
         exists st2',
-          AE2 r2 st2' /\
+          Linear.after_external tge st2 r2 st2' /\
           match_states st1' st2'.
 Proof.
-  intros st1 st2 q AE1 Hst Hst1. destruct Hst1 as [st1 q Hst1].
+  intros st1 st2 q Hst Hst1.
   edestruct (match_cc_id q) as (w & Hq & H); eauto.
   destruct Hst1 as [fb id sg s rs m Hfb].
   inv Hst.
   assert (f = External (EF_external id sg)) by congruence; subst f.
   inv H6.
-  eexists w, _, _; intuition; eauto.
-  - constructor.
-    econstructor; eauto.
+  eexists w, _; intuition; eauto.
+  - econstructor; eauto.
   - apply H in H0; subst.
     inv H1.
     eexists; split.
@@ -792,7 +791,7 @@ Proof.
   eapply forward_simulation_star with (match_states := fun _ => match_states).
   apply senv_preserved.
   eexact transf_initial_states.
-  intros; eapply transf_external; eauto.
+  eauto using transf_external.
   eexact transf_final_states.
   eauto using transf_step_correct.
 Qed.
