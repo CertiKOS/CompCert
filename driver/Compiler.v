@@ -544,6 +544,14 @@ Qed.
   exists a backward simulation of the dynamic semantics of [p]
   by the dynamic semantics of [tp]. *)
 
+Theorem transf_clight_program_correct:
+  forall p tp,
+  transf_clight_program p = OK tp ->
+  backward_simulation cc_compcert (Clight.semantics2 p) (Asm.semantics tp).
+Proof.
+  intros. apply clight_semantic_preservation. apply transf_c_program_match; auto.
+Qed.
+
 (*
 Theorem transf_c_program_correct:
   forall p tp,

@@ -7,7 +7,7 @@ Require Import Classical.
 Require Import Events.
 Require Import Smallstep.
 Require Import Behaviors.
-Require Import ATS.
+Require Export ATS.
 Require Import Obs.
 
 

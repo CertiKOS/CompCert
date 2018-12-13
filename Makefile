@@ -87,6 +87,7 @@ GAMES=\
   Obs.v \
   MultiChannel.v \
   HComp.v \
+  CompCertSemantics.v \
 
 # Compcert Kripke Logical Relations
 
