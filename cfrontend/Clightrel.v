@@ -47,7 +47,7 @@ Definition env_match R w :=
   PTreeRel.r (option_rel (block_inject_sameofs (mi R w) * @eq type)).
 
 Global Instance env_match_acc:
-  Monotonic (@env_match) (forallr - @ R, acc ++> subrel).
+  Monotonic (@env_match) (forallr - @ R, acc tt ++> subrel).
 Proof.
   unfold env_match. rauto.
 Qed.
@@ -62,7 +62,7 @@ Definition temp_env_match R w: rel temp_env temp_env :=
   PTreeRel.r (option_le (Val.inject (mi R w))).
 
 Global Instance temp_env_match_acc:
-  Monotonic (@temp_env_match) (forallr - @ R, acc ++> subrel).
+  Monotonic (@temp_env_match) (forallr - @ R, acc tt ++> subrel).
 Proof.
   unfold temp_env_match. rauto.
 Qed.
@@ -117,7 +117,7 @@ Qed.
 Global Instance assign_loc_match R:
   Monotonic
     (@assign_loc)
-    ([] - ==> - ==> match_mem R ++>
+    (|= - ==> - ==> match_mem R ++>
      % ptrbits_inject @@ [mi R] ++>
      Val.inject @@ [mi R] ++>
      k1 set_le (<> match_mem R)).
@@ -201,7 +201,7 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
 Global Instance alloc_variables_match R:
   Monotonic
     (@alloc_variables)
-    ([] - ==> env_match R ++> match_mem R ++> - ==>
+    (|= - ==> env_match R ++> match_mem R ++> - ==>
      % k1 set_le (<> (env_match R * match_mem R))).
 Proof.
   intros w ge e1 e2 Henv m1 m2 Hm vars [e1' m1'] H.
@@ -238,7 +238,7 @@ Qed.
 Global Instance bind_parameters_match R:
   Monotonic
     (@bind_parameters)
-    ([] - ==> env_match R ++> match_mem R ++> - ==>
+    (|= - ==> env_match R ++> match_mem R ++> - ==>
      k1 list_rel (Val.inject @@ [mi R]) ++>
      k1 set_le (<> match_mem R)).
 Proof.
@@ -365,6 +365,7 @@ Proof.
     repeat (repeat rstep; econstructor).
 
   - intros id b1 ty He1 Hb1.
+    red in He. (* XXX *)
     transport_hyps.
     eexists; eexists; split.
     + eapply eval_Evar_global; eauto.
@@ -469,7 +470,7 @@ Global Existing Instance Kswitch_match.
 Global Existing Instance Kcall_match.
 
 Global Instance cont_match_le:
-  Monotonic (@cont_match) (forallr - @ R, acc ++> subrel).
+  Monotonic (@cont_match) (forallr - @ R, acc tt ++> subrel).
 Proof.
   repeat red.
   intros R x y H x0 y0 H0.
@@ -549,7 +550,7 @@ Qed.
 Global Instance function_entry2_match R:
   Monotonic
     (@function_entry2)
-    ([] - ==> - ==> k1 list_rel (Val.inject @@ [mi R]) ++> match_mem R ++>
+    (|= - ==> - ==> k1 list_rel (Val.inject @@ [mi R]) ++> match_mem R ++>
      %% k1 set_le (<> env_match R * temp_env_match R * match_mem R)).
 Proof.
   intros w ge f vargs1 vargs2 Hvargs m1 m2 Hm [[e1 le1] m1'] H.
@@ -572,7 +573,7 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
 Global Instance step2_rel R:
   Monotonic
     (@step2)
-    ([] (fun w => psat (genv_valid R w)) ++>
+    (|= (fun w => psat (genv_valid R w)) ++>
         state_match R ++> - ==> k1 set_le (<> state_match R)).
 Proof.
   intros w xge ge Hge s1 s2 Hs t s1' H1.
@@ -621,7 +622,7 @@ Lemma semantics2_rel R p:
   forward_simulation (cc_c R) (cc_c R) (Clight.semantics2 p) (Clight.semantics2 p).
 Proof.
   pose (ms := fun w s1 s2 => genv_valid R w (globalenv p) /\
-                             klr_diam (state_match R) w s1 s2).
+                             klr_diam tt (state_match R) w s1 s2).
   apply forward_simulation_step with ms.
   - reflexivity.
   - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm] s1 Hs1.
@@ -635,18 +636,17 @@ Proof.
       erewrite (genv_valid_block_inject_eq R w _ fb1 fb2); eauto.
       econstructor; eauto.
       constructor.
-  - intros w s1 s2 q1 AE1 [Hge Hs] HAE1.
+  - intros w s1 s2 q1 [Hge Hs] Hq1.
     destruct Hs as (w' & Hw' & Hs).
-    destruct HAE1 as [s1 q1 Hq1]. destruct Hq1. inv Hs.
-    eexists w', (cq b sg _ _), _. repeat apply conj.
+    destruct Hq1. inv Hs.
+    eexists w', (cq b sg _ _). repeat apply conj.
     + assert (Hge': genv_valid R w' (globalenv p)) by (eapply cklr_wf; eauto).
       econstructor; simpl; eauto.
       eapply genv_valid_funct_ptr in H; eauto.
-    + constructor.
-      econstructor.
+    + econstructor.
       eassumption.
     + intros r1 [vres2 m2'] s1' (w'' & Hw'' & Hvres & Hm') Hs1'.
-      inv Hs1'. simpl in *.
+      inv Hs1'. cbn [fst snd] in *.
       eexists. split.
       * constructor.
       * split; eauto.

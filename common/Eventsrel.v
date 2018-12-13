@@ -97,7 +97,7 @@ Qed.
 Global Instance volatile_store_rel R:
   Monotonic
     (@volatile_store)
-    ([] symbols_inject @@ [mi R] ++> - ==> match_mem R ++>
+    (|= symbols_inject @@ [mi R] ++> - ==> match_mem R ++>
      % ptrbits_inject @@ [mi R] ++> Val.inject @@ [mi R] ++> - ==>
      k1 set_le (<> match_mem R)).
 Proof.
@@ -126,7 +126,7 @@ Hint Extern 1 (Transport _ _ _ _ _) =>
   set_le_transport @volatile_store : typeclass_instances.
 
 Notation extcall_sem_rel R :=
-  ([] symbols_inject @@ [mi R] ++>
+  (|= symbols_inject @@ [mi R] ++>
    Val.inject_list @@ [mi R] ++>
    match_mem R ++>
    - ==>

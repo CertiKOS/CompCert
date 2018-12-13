@@ -411,8 +411,8 @@ Theorem clight_semantic_preservation:
   match_prog p tp ->
   forward_simulation cc_compcert cc_compcert
     (Clight.semantics2 p)
-    (Asm.semantics tp).
-  (* /\ backward_simulation (atomic (Cstrategy.semantics p)) (Asm.semantics tp). *)
+    (Asm.semantics tp)
+  /\ backward_simulation cc_compcert (Clight.semantics2 p) (Asm.semantics tp).
 Proof.
   intros p tp M. unfold match_prog, pass_match in M; simpl in M.
 Ltac DestructM :=
@@ -423,12 +423,12 @@ Ltac DestructM :=
   end.
   repeat DestructM. subst tp.
 
+  assert (F: forward_simulation cc_compcert cc_compcert (Clight.semantics2 p) (Asm.semantics p8)).
+  {
   eapply forward_simulation_ccref.
   Focus 3.
 
   (*
-  assert (F: forward_simulation (Cstrategy.semantics p) (Asm.semantics p21)).
-  {
   eapply compose_forward_simulations.
     eapply SimplExprproof.transl_program_correct; eassumption.
   eapply compose_forward_simulations.
@@ -507,14 +507,12 @@ Ltac DestructM :=
 
     reflexivity.
 
-(*
   }
   split. auto.
   apply forward_to_backward_simulation.
-  apply factor_forward_simulation. auto. eapply sd_traces. eapply Asm.semantics_determinate.
-  apply atomic_receptive. apply Cstrategy.semantics_strongly_receptive.
-  apply Asm.semantics_determinate.
-*)
+  auto.
+  eapply Clight.semantics_receptive2.
+  eapply Asm.semantics_determinate.
 Qed.
 
 (*

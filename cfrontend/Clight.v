@@ -774,3 +774,24 @@ Proof.
   eapply external_call_trace_length; eauto.
   eapply external_call_trace_length; eauto.
 Qed.
+
+Lemma semantics_receptive2:
+  forall (p: program), receptive (semantics2 p).
+Proof.
+  intros. unfold semantics2.
+  set (ge := globalenv p). constructor; simpl; intros.
+(* receptiveness *)
+  assert (t1 = E0 -> exists s2, step2 ge s t2 s2).
+    intros. subst. inv H0. exists s1; auto.
+  inversion H; subst; auto.
+  (* builtin *)
+  exploit external_call_receptive; eauto. intros [vres2 [m2 EC2]].
+  econstructor; econstructor; eauto.
+  (* external *)
+  exploit external_call_receptive; eauto. intros [vres2 [m2 EC2]].
+  exists (Returnstate vres2 k m2). econstructor; eauto.
+(* trace length *)
+  red; simpl; intros. inv H; simpl; try omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+Qed.

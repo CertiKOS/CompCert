@@ -207,7 +207,7 @@ Qed.
 Global Instance step_rel R:
   Monotonic
     (@step)
-    ([] (fun w => psat (genv_valid R w)) ++> state_rel R ++> - ==>
+    (|= (fun w => psat (genv_valid R w)) ++> state_rel R ++> - ==>
      k1 set_le (<> state_rel R)).
 Proof.
   intros w ge ge' Hge s1 s2 Hs t s1' H1.
@@ -273,7 +273,7 @@ Global Instance semantics_rel R:
   Monotonic (@RTL.semantics) (- ==> forward_simulation (cc_c R) (cc_c R)).
 Proof.
   intros p.
-  set (ms := fun w s1 s2 => klr_diam (state_rel R) w s1 s2 /\
+  set (ms := fun w s1 s2 => klr_diam tt (state_rel R) w s1 s2 /\
                             genv_valid R w (Genv.globalenv p)).
   eapply forward_simulation_step with ms.
   - reflexivity.
@@ -284,19 +284,18 @@ Proof.
     + econstructor; eauto.
       eapply find_funct_ptr_transport; eauto.
     + split; eauto; rauto.
-  - intros w s1 s2 q1 AE1 [(w' & Hw' & Hs) Hge] HAE1.
-    destruct HAE1 as [s1 q1 Hq1].
+  - intros w s1 s2 q1 [(w' & Hw' & Hs) Hge] Hq1.
     destruct Hq1. inv Hs.
-    eexists w', (cq _ _ y1 _), _. split.
+    eexists w', (cq _ _ y1 _). split.
     + econstructor; simpl; eauto.
       clear - H7; induction H7; constructor; eauto.
     + split.
-      * constructor. econstructor.
+      * econstructor.
         assert (Hge': genv_valid R w' (Genv.globalenv p))
           by (eapply cklr_wf; eauto).
         eapply find_funct_ptr_transport; eauto.
       * intros r1 [vres2 m2'] s1' (w'' & Hw'' & Hvres & Hm') HAE. inv HAE.
-        simpl in *. eexists. split.
+        cbn [fst snd] in *. eexists. split.
         -- constructor.
         -- constructor; eauto.
            exists w''. split; rauto.
@@ -307,7 +306,7 @@ Proof.
   - intros w s1 t s1' Hstep1 s2 [(w' & Hw' & Hs) Hge].
     assert (psat (genv_valid R w') (Genv.globalenv p) (Genv.globalenv p))
       by (constructor; destruct Hs; eapply cklr_wf; eauto).
-    simpl in *.
+    simpl in Hstep1.
     transport Hstep1.
     eexists. split; eauto. split; eauto. rauto.
 Qed.

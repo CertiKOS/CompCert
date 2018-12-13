@@ -1237,37 +1237,35 @@ Qed.
 
 Theorem find_symbol_not_fresh:
   forall p id b m,
-  init_mem p = Some m ->
   find_symbol (globalenv p) id = Some b -> Mem.valid_block m b.
 Proof.
-  intros. red. erewrite <- init_mem_genv_next; eauto.
+  intros. red. apply Block.lt_le_trans with Block.init.
   eapply genv_symb_range; eauto.
+  apply Mem.init_nextblock.
 Qed.
 
 Theorem find_def_not_fresh:
   forall p b g m,
-  init_mem p = Some m ->
   find_def (globalenv p) b = Some g -> Mem.valid_block m b.
 Proof.
-  intros. red. erewrite <- init_mem_genv_next; eauto.
-  unfold find_def in H0. destruct (Block.ident_of b) eqn: Hb; try congruence.
+  intros. red. apply Block.lt_le_trans with Block.init.
+  unfold find_def in H. destruct (Block.ident_of b) eqn: Hb; try congruence.
   apply Block.ident_of_inv in Hb; subst; apply Block.lt_glob_init.
+  apply Mem.init_nextblock.
 Qed.
 
 Theorem find_funct_ptr_not_fresh:
   forall p b f m,
-  init_mem p = Some m ->
   find_funct_ptr (globalenv p) b = Some f -> Mem.valid_block m b.
 Proof.
-  intros. rewrite find_funct_ptr_iff in H0. eapply find_def_not_fresh; eauto.
+  intros. rewrite find_funct_ptr_iff in H. eapply find_def_not_fresh; eauto.
 Qed.
 
 Theorem find_var_info_not_fresh:
   forall p b gv m,
-  init_mem p = Some m ->
   find_var_info (globalenv p) b = Some gv -> Mem.valid_block m b.
 Proof.
-  intros. rewrite find_var_info_iff in H0. eapply find_def_not_fresh; eauto.
+  intros. rewrite find_var_info_iff in H. eapply find_def_not_fresh; eauto.
 Qed.
 
 Lemma init_mem_characterization_gen:
