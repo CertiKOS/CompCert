@@ -19,35 +19,35 @@ Module FComp.
   Section ATS.
     Context {GA GB : game} {I S K} (α : ats (GA ^ I) (GB ^ I) S K).
 
-    Definition state : Type := S * list I.
-    Definition cont : Type := K * list I.
+    Definition state : Type := list I * S.
+    Definition cont : Type := list I * K.
 
-    Inductive step : state -> state -> Prop :=
+    Inductive step : state -> option state -> Prop :=
       | step_intro s s' stk :
           ATS.step α s s' ->
-          step (s, stk) (s', stk).
+          step (stk, s) (option_map (pair stk) s').
 
     Inductive suspend : state -> pmove GA GB * cont -> Prop :=
       | suspend_q (m : question GA) i s k stk :
           ATS.suspend α s (Pow.mkp i (pq m), k) ->
-          suspend (s, stk) (pq m, (k, i :: stk))
+          suspend (stk, s) (pq m, (i :: stk, k))
       | suspend_a (m : answer GB) i s k stk :
           ATS.suspend α s (Pow.mkp i (pa m), k) ->
-          suspend (s, stk) (pa m, (k, stk)).
+          suspend (stk, s) (pa m, (stk, k)).
 
-    Inductive resume : cont -> omove GA GB -> state -> Prop :=
+    Inductive resume : cont -> omove GA GB -> option state -> Prop :=
       | resume_q (m : question GB) i s k stk :
           (forall j, ATS.refuse α k (j, m)) ->
           ATS.resume α k (Pow.mko i (oq m)) s ->
-          resume (k, stk) (oq m) (s, stk)
+          resume (stk, k) (oq m) (option_map (pair stk) s)
       | resume_a (m : answer GA) i s k stk :
           ATS.resume α k (Pow.mko i (oa m)) s ->
-          resume (k, i :: stk) (oa m) (s, stk).
+          resume (i :: stk, k) (oa m) (option_map (pair stk) s).
 
     Inductive refuse : cont -> oqmove GA GB -> Prop :=
       | refuse_intro (m : question GB) k stk :
           (forall i, ATS.refuse α k (i, m)) ->
-          refuse (k, stk) m.
+          refuse (stk, k) m.
 
     Definition of :=
       ATS.Build_ats GA GB state cont step suspend resume refuse.
@@ -64,13 +64,6 @@ Module FComp.
     Context {GA1 GB1 : game} {S1 K1} (α1 : ats (GA1 ^ I) (GB1 ^ I) S1 K1).
     Context {GA2 GB2 : game} {S2 K2} (α2 : ats (GA2 ^ I) (GB2 ^ I) S2 K2).
     Context {GRA : grel GA1 GA2} {GRB : grel GB1 GB2}.
-
-    Definition sum_map {A1 A2} f {B1 B2} g : A1 + B1 -> A2 + B2 :=
-      fun x =>
-        match x with
-          | inl a => inl (f a)
-          | inr b => inr (g b)
-        end.
 
     Fixpoint wstack (ws : gworld (GRA ^ I) (GRB ^ I)) : list I :=
       match ws with
@@ -89,12 +82,12 @@ Module FComp.
     Inductive state_rel (RS : klr _ S1 S2) : klr _ (state I S1) (state I S2) :=
       state_rel_intro ws s1 s2 :
         RS ws s1 s2 ->
-        state_rel RS (wproj ws) (s1, wstack ws) (s2, wstack ws).
+        state_rel RS (wproj ws) (wstack ws, s1) (wstack ws, s2).
 
     Inductive cont_rel (RK : klr _ K1 K2) : klr _ (cont I K1) (cont I K2) :=
       cont_rel_intro ws k1 k2 :
         RK ws k1 k2 ->
-        cont_rel RK (wproj ws) (k1, wstack ws) (k2, wstack ws).
+        cont_rel RK (wproj ws) (wstack ws, k1) (wstack ws, k2).
   End SIMREL.
 
   Global Instance step_sim :
@@ -102,16 +95,16 @@ Module FComp.
       (@step)
       (forallr GRA, forallr GRB, forallr - @ I, forallr RS, forallr RK,
         ATS.sim (GRA ^ I) (GRB ^ I) RS RK ++>
-        |= state_rel RS ++> k1 set_le (state_rel RS)).
+        |= state_rel RS ++> k1 set_le (k1 option_ge (state_rel RS))).
   Proof.
     intros GA1 GA2 GRA GB1 GB2 GRB I S1 S2 RS K1 K2 RK.
     intros α1 α2 Hα ws s1 s2 Hs s1' Hs1'.
     destruct Hs1' as [s1 s1' stk Hs1'].
     inversion Hs as [iws xs1 xs2]; clear Hs; subst.
     edestruct @ATS.sim_step as (s2' & Hs2' & Hs'); eauto.
-    exists (s2', wstack iws). intuition idtac.
+    exists (option_map (pair (wstack iws)) s2'). intuition idtac.
     - constructor; auto.
-    - constructor; auto.
+    - repeat rstep. constructor; auto.
   Qed.
 
   Lemma gacc_inv_pq {GA1 GA2} GRA {GB1 GB2} GRB q1 m2 ws ws' :
@@ -157,7 +150,7 @@ Module FComp.
       inversion Hm2; clear Hm2; subst.
       simpl in Hq. destruct w as [i w].
       rinversion Hq; clear Hq. destruct H. inversion Hql; clear Hql; subst.
-      eexists (pq b2, (k2, _)). split.
+      eexists (pq b2, (_, k2)). split.
       + constructor; eauto.
       + red. eexists (wproj (inl (i1, w) :: ws0)). split.
         * constructor. constructor. auto.
@@ -168,7 +161,7 @@ Module FComp.
       inversion Hm2; clear Hm2; subst.
       simpl in Ha. destruct w as [i w].
       rinversion Ha; clear Ha. destruct H. inversion Hal; clear Hal; subst.
-      eexists (pa b2, (k2, _)). split.
+      eexists (pa b2, (_, k2)). split.
       + econstructor; eauto.
       + eexists (wproj ws'). split.
         * constructor. constructor. auto.
@@ -180,7 +173,7 @@ Module FComp.
       (@resume)
       (forallr GRA, forallr GRB, forallr - @ I, forallr RS, forallr RK,
        ATS.sim (GRA ^ I) (GRB ^ I) RS RK ++>
-       |= cont_rel RK ++> ([] -> k1 set_le (state_rel RS))).
+       |= cont_rel RK ++> ([] -> k1 set_le (k1 option_ge (state_rel RS)))).
   Proof.
     intros GA1 GA2 GRA GB1 GB2 GRB I S1 S2 RS K1 K2 RK.
     intros α1 α2 Hα ws k1 k2 Hk m1 m2 ws' Hm s1 Hs1.
@@ -192,7 +185,7 @@ Module FComp.
       + instantiate (1 := inr (i1, w0) :: ws0).
         instantiate (1 := Pow.mko i1 (oq m0)).
         repeat constructor. simpl. auto.
-      + exists (s2, wstack ws0). split.
+      + exists (option_map (pair (wstack ws0)) s2). split.
         * econstructor; eauto.
           intro j. eapply ATS.sim_refuse, Hr1; eauto.
           instantiate (1 := inr (j, w0) :: ws0).
@@ -200,20 +193,20 @@ Module FComp.
           repeat constructor; eauto.
         * change (_ :: _) with (wproj (inr (i1, w0) :: ws0)).
           change (wstack ws0) with (wstack (inr (i1, w0) :: ws0)).
-          constructor; auto.
+          repeat rstep. constructor; auto.
     - inversion H4.
     - inversion H5.
     - inversion H5; clear H5; subst.
       destruct ws0 as [ | [w|w] ws]; inversion H4; clear H4; subst.
-      simpl in H2. inversion H2; clear H2; subst.
+      simpl in H. inversion H; clear H; subst.
       destruct w as [i w]; cbv [fst snd] in *.
       edestruct @ATS.sim_resume as (s2 & Hs2 & Hs); eauto.
       + instantiate (1 := ws).
         instantiate (1 := Pow.mko i (oa m0)).
         repeat constructor. simpl. auto.
-      + exists (s2, wstack ws). split.
+      + exists (option_map (pair (wstack ws)) s2). split.
         * constructor; auto.
-        * constructor; auto.
+        * repeat rstep. constructor; auto.
   Qed.
 
   Global Instance refuse_sim :
@@ -260,43 +253,43 @@ Module Res.
   Section ATS.
     Context {G S K} (α : ats G G S K).
 
-    Definition state : Type := S * list player.
-    Definition cont : Type := K * list player.
+    Definition state : Type := list player * S.
+    Definition cont : Type := list player * K.
 
-    Inductive step : state -> state -> Prop :=
+    Inductive step : state -> option state -> Prop :=
       | step_int s s' stk :
           ATS.step α s s' ->
-          step (s, stk) (s', stk)
+          step (stk, s) (option_map (pair stk) s')
       | step_q (m : question G) s k s' stk :
           ATS.suspend α s (pq m, k) ->
           ATS.resume α k (oq m) s' ->
-          step (s, stk) (s', P :: stk)
+          step (stk, s) (option_map (pair (P :: stk)) s')
       | step_a (m : answer G) s k s' stk :
           ATS.suspend α s (pa m, k) ->
           ATS.resume α k (oa m) s' ->
-          step (s, P :: stk) (s', stk).
+          step (P :: stk, s) (option_map (pair stk) s').
 
     Inductive suspend : state -> pmove G G * cont -> Prop :=
       | suspend_q (m : question G) s k stk :
           ATS.suspend α s (pq m, k) ->
           ATS.refuse α k m ->
-          suspend (s, stk) (pq m, (k, stk))
+          suspend (stk, s) (pq m, (stk, k))
       | suspend_a (m : answer G) s k stk :
           ATS.suspend α s (pa m, k) ->
-          suspend (s, O :: stk) (pa m, (k, stk)).
+          suspend (O :: stk, s) (pa m, (stk, k)).
 
-    Inductive resume : cont -> omove G G -> state -> Prop :=
+    Inductive resume : cont -> omove G G -> option state -> Prop :=
       | resume_q m k s stk :
           ATS.resume α k (oq m) s ->
-          resume (k, stk) (oq m) (s, O :: stk)
+          resume (stk, k) (oq m) (option_map (pair (O :: stk)) s)
       | resume_a m k s stk :
           ATS.resume α k (oa m) s ->
-          resume (k, stk) (oa m) (s, stk).
+          resume (stk, k) (oa m) (option_map (pair stk) s).
 
     Inductive refuse : cont -> oqmove G G -> Prop :=
       | refuse_intro k m stk :
           ATS.refuse α k m ->
-          refuse (k, stk) m.
+          refuse (stk, k) m.
 
     Definition of :=
       ATS.Build_ats G G state cont step suspend resume refuse.
@@ -328,13 +321,13 @@ Module Res.
       state_rel_intro pp ws ws' s1 s2 :
         extw true pp ws ws' ->
         RS ws s1 s2 ->
-        state_rel ws' (s1, pp) (s2, pp).
+        state_rel ws' (pp, s1) (pp, s2).
 
     Inductive cont_rel : klr (gworld GR GR) (cont K1) (cont K2) :=
       cont_rel_intro pp ws ws' k1 k2 :
         extw false pp ws ws' ->
         RK ws k1 k2 ->
-        cont_rel ws' (k1, pp) (k2, pp).
+        cont_rel ws' (pp, k1) (pp, k2).
   End SIM.
 
   Global Instance step_sim :
@@ -342,7 +335,7 @@ Module Res.
       (@step)
       (forallr GR, forallr RS, forallr RK,
         ATS.sim GR GR RS RK ++>
-        |= state_rel GR RS ++> k1 set_le (state_rel GR RS)).
+        |= state_rel GR RS ++> k1 set_le (k1 option_ge (state_rel GR RS))).
   Proof.
     intros G1 G2 GR S1 S2 RS K1 K2 RK.
     intros α1 α2 Hα ws s1 s2 Hs s1' Hs1'.
@@ -351,9 +344,9 @@ Module Res.
     inversion Hs; clear Hs; subst.
     - (* internal step *)
       edestruct @ATS.sim_step as (s2' & Hs2' & Hs'); eauto.
-      exists (s2', stk). split.
-      + constructor; auto.
-      + econstructor; eauto.
+      eexists. split.
+      + constructor; eauto.
+      + repeat rstep. econstructor; eauto.
     - (* internal question *)
       edestruct @ATS.sim_suspend as ([m2 k2] & Hqk2 & Hqk); eauto.
       destruct Hqk as (ws'' & Hq & Hk).
@@ -363,9 +356,9 @@ Module Res.
       + instantiate (1 := inr w :: inl w :: ws0).
         instantiate (1 := oq q2).
         repeat econstructor; auto.
-      + exists (s2, P :: stk). split.
+      + exists (option_map (pair (P :: stk)) s2). split.
         * econstructor; eauto.
-        * repeat econstructor; eauto.
+        * repeat rstep. repeat econstructor; eauto.
     - (* internal answer *)
       edestruct @ATS.sim_suspend as ([m2 k2] & Hqk2 & Hqk); eauto.
       destruct Hqk as (ws'' & Hq & Hk).
@@ -376,9 +369,9 @@ Module Res.
       + instantiate (1 := ws0).
         instantiate (1 := oa a2).
         repeat constructor; auto.
-      + exists (s2, stk). split.
+      + exists (option_map (pair stk) s2). split.
         * econstructor; eauto.
-        * repeat econstructor; eauto.
+        * repeat rstep; repeat econstructor; eauto.
   Qed.
 
   Global Instance suspend_sim :
@@ -397,7 +390,7 @@ Module Res.
       destruct Hkm as (ws'' & Hws'' & Hkm).
       apply FComp.gacc_inv_pq in Hws'' as (w & q2 & Hm2 & Hq & Hws''); subst.
       inversion Hm2; clear Hm2; subst.
-      exists (pq q2, (k2, stk)). split.
+      exists (pq q2, (stk, k2)). split.
       + constructor; auto.
         eapply ATS.sim_refuse; eauto.
         repeat econstructor; eauto.
@@ -410,7 +403,7 @@ Module Res.
       apply FComp.gacc_inv_pa in Hws'' as (w & a2 & Hm2 & Ha & Hws''); subst.
       inversion Hm2; clear Hm2; subst.
       inversion H2; clear H2; subst.
-      exists (pa a2, (k2, stk)). split.
+      exists (pa a2, (stk, k2)). split.
       + constructor; auto.
       + exists ws'. split.
         * repeat constructor; auto.
@@ -422,7 +415,7 @@ Module Res.
       (@resume)
       (forallr GR, forallr RS, forallr RK,
        ATS.sim GR GR RS RK ++>
-       |= cont_rel GR RK ++> ([] -> k1 set_le (state_rel GR RS))).
+       |= cont_rel GR RK ++> ([] -> k1 set_le (k1 option_ge (state_rel GR RS)))).
   Proof.
     intros G1 G2 GR S1 S2 RS K1 K2 RK.
     intros α1 α2 Hα ws k1 k2 Hk m1 m2 ws' Hm s1 Hs1.
@@ -435,9 +428,9 @@ Module Res.
       + instantiate (1 := inr w0 :: ws0).
         instantiate (1 := oq m0).
         repeat constructor; auto.
-      + exists (s2, O :: stk). split.
+      + exists (option_map (pair (O :: stk)) s2). split.
         * constructor; auto.
-        * repeat econstructor; eauto.
+        * repeat rstep. repeat econstructor; eauto.
     - inversion H5.
     - inversion H5.
     - (* external O answer *)
@@ -447,9 +440,9 @@ Module Res.
       + instantiate (1 := ws).
         instantiate (1 := oa m0).
         repeat constructor; auto.
-      + exists (s2, stk). split.
+      + exists (option_map (pair stk) s2). split.
         * constructor; auto.
-        * repeat econstructor; eauto.
+        * repeat rstep. repeat econstructor; eauto.
   Qed.
 
   Global Instance refuse_sim :

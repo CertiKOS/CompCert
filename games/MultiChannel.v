@@ -123,7 +123,7 @@ Module Pow.
         wfw (Some i) ws ->
         RS i (wproj i ws) s1 s2 ->
         (forall j, i <> j -> RK j (wproj j ws) (k1 j) (k2 j)) ->
-        state_rel ws (st i s1 k1) (st i s2 k2).
+        state_rel ws (st k1 i s1) (st k2 i s2).
 
     Definition cont_rel : klr (gworld (GRA^I) (GRB^I)) (cont K1) (cont K2) :=
       fun ws k1 k2 =>
@@ -172,15 +172,16 @@ Module Pow.
        forallr RS : fun S1 S2 => forall i, klr _ (S1 i) (S2 i),
        forallr RK : fun K1 K2 => forall i, klr _ (K1 i) (K2 i),
        (forallr - @ i, ATS.sim GRA GRB (RS i) (RK i)) ++>
-       |=  state_rel GRA GRB I RS RK ++> k1 set_le (state_rel GRA GRB I RS RK)).
+       |=  state_rel GRA GRB I RS RK ++>
+           k1 set_le (k1 option_ge (state_rel GRA GRB I RS RK))).
   Proof.
     intros GA1 GA2 GRA GB1 GB2 GRB I Idec S1 S2 RS K1 K2 RK.
     intros α β Hαβ ws x1 x2 Hx x1' Hx1'. destruct Hx1' as [i s1 s1' k1 Hs1'].
-    inversion Hx; clear Hx. apply inj_pair2 in H0. subst.
+    inversion Hx; clear Hx. apply inj_pair2 in H1. subst.
     edestruct @ATS.sim_step as (s2' & Hs2' & Hs'); eauto.
     eexists. split.
     - econstructor; eauto.
-    - econstructor; eauto.
+    - repeat rstep. econstructor; eauto.
   Qed.
 
   Axiom proof_irrelevance : forall (P:Prop) (p1 p2:P), p1 = p2.
@@ -228,7 +229,7 @@ Module Pow.
     intros GA1 GA2 GRA GB1 GB2 GRB I Idec S1 S2 RS K1 K2 RK.
     intros α β Hαβ ws x1 x2 Hx x1' Hx1'.
     destruct Hx1' as [i s1 k1 m1 ki1 k1' Hki1 Hk1' Hki1'].
-    inversion Hx; clear Hx. apply inj_pair2 in H0. subst.
+    inversion Hx; clear Hx. apply inj_pair2 in H1. subst.
     edestruct @ATS.sim_suspend as ([m2 k2i'] & Hmk2 & Hmk); eauto.
     destruct Hmk as (wi' & Hm & Hk).
     destruct (update_contmap i k2i' k2) as (k2' & Hk2'i & Hk2'j).
@@ -267,7 +268,8 @@ Module Pow.
        forallr RS : fun S1 S2 => forall i, klr _ (S1 i) (S2 i),
        forallr RK : fun K1 K2 => forall i, klr _ (K1 i) (K2 i),
        (forallr - @ i, ATS.sim GRA GRB (RS i) (RK i)) ++>
-       |=  cont_rel GRA GRB I RK ++> [] -> k1 set_le (state_rel GRA GRB I RS RK)).
+       |=  cont_rel GRA GRB I RK ++> [] ->
+           k1 set_le (k1 option_ge (state_rel GRA GRB I RS RK))).
   Proof.
     intros GA1 GA2 GRA GB1 GB2 GRB I Idec S1 S2 RS K1 K2 RK.
     intros α β Hαβ ws k1 k2 Hk m1 m2 ws' Hm s1 Hs1.
@@ -276,9 +278,9 @@ Module Pow.
     eapply wproj_acc_o in Hm as (mo2 & Hm2 & Hws' & Hm & Hws'j); eauto.
     inversion Hm2; clear Hm2; subst.
     edestruct @ATS.sim_resume as (s2 & Hs2 & Hs); eauto. { eapply Hm. }
-    exists (st i s2 k2). split.
+    exists (option_map (st k2 i) s2). split.
     - constructor; auto.
-    - constructor; auto.
+    - repeat rstep. constructor; auto.
       intros. rewrite Hws'j by auto. auto.
   Qed.
 
