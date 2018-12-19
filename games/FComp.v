@@ -2,17 +2,16 @@ Require Import ATS.
 Require Import MultiChannel.
 Require Import KLR.
 Require Import List.
+Require Import Obs.
 
 
-(** * Flat composition *)
+(** * Definition *)
 
 (** The flat composition of a family of alternating transition systems
   switches between them with each opponent question, allowing one
   component to proceed when all the others refuse. To match incoming
   answers with the right component, we keep a stack of ids which
   remembers what component asked what pending question. *)
-
-(** ** Definition *)
 
 Section ATS.
   Context {GA GB : game} {I S K} (α : ats (GA ^ I) (GB ^ I) S K).
@@ -58,7 +57,21 @@ Arguments cont : clear implicits.
 Definition strat {GA GB I} (σ : strat (GA ^ I) (GB ^ I)) :=
   ATS.Build_strat GA GB _ _ (of (ATS.transitions σ)) (nil, ATS.init_cont σ).
 
-(** ** Monotonicity *)
+
+(** * Monotonicity *)
+
+(** ** Simulation relation *)
+
+(** To prove monotonicity, given "inner" strategies [̆σ : Aᴵ → Bᴵ] and
+  a simulation relation between them, we need to construct a
+  simulation relation between the flattened strategies. The states of
+  the flattened strategies are not much more than that of the inner
+  strategies, so relating them is straightforward. Since flattening
+  changes the interaction with the environment changes significantly,
+  the main challenge is how the simulation's outer worlds and the
+  inner worlds used with the simulation relation for the original σ's
+  correspond to one another, and how they correspond to the internal
+  stack kept by the flattening operator. *)
 
 Section SIMREL.
   Context {I : Type}.
@@ -90,6 +103,8 @@ Section SIMREL.
       RK ws k1 k2 ->
       cont_rel RK (wproj ws) (wstack ws, k1) (wstack ws, k2).
 End SIMREL.
+
+(** ** Proofs *)
 
 Global Instance step_sim :
   Monotonic
@@ -253,9 +268,10 @@ Proof.
   - apply cont_rel_intro with (ws := nil); auto.
 Qed.
 
-(** ** Properties *)
 
-(** *** Singleton flattening *)
+(** * Properties *)
+
+(** ** Singleton flattening *)
 
 (** The flat composition of a single strategy leaves it unchanged. *)
 
@@ -362,3 +378,39 @@ Module Singl.
     Qed.
   End SINGL.
 End Singl.
+
+(** ** Associativity *)
+
+Module Assoc.
+  Section ASSOC.
+    Context {I J GA GB} (σ : forall (i : I) (j : J i), ATS.strat GA GB).
+    Let FFσ := strat (Pow.strat (fun i => strat (Pow.strat (σ i)))).
+    Let Fσ := strat (Pow.strat (fun '(existT _ i j) => σ i j)).
+
+    Lemma le :
+      ATS.ref grel_id grel_id FFσ Fσ.
+    Admitted.
+
+    Lemma ge :
+      ATS.ref grel_id grel_id Fσ FFσ.
+    Admitted.
+  End ASSOC.
+End Assoc.
+
+(** ** Commutation with Obs *)
+
+Module ObsComm.
+  Section OBSCOMM.
+    Context {I GA GB} (σ : I -> ATS.strat GA GB).
+    Let OFOσ := Obs.strat (strat (Pow.strat (fun i => Obs.strat (σ i)))).
+    Let OFσ := Obs.strat (strat (Pow.strat σ)).
+
+    Lemma le :
+      ATS.ref grel_id grel_id OFOσ OFσ.
+    Admitted.
+
+    Lemma ge :
+      ATS.ref grel_id grel_id OFσ OFOσ.
+    Admitted.
+  End OBSCOMM.
+End ObsComm.

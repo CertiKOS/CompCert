@@ -50,6 +50,12 @@ Module Obs.
 
   Arguments state : clear implicits.
 
+  Definition strat {GA GB} (σ : strat GA GB) :=
+    {|
+      ATS.transitions := of (ATS.transitions σ);
+      ATS.init_cont := ATS.init_cont σ;
+    |}.
+
   (** ** Monotonicity *)
 
   Section SIM.

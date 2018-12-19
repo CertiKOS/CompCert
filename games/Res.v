@@ -2,10 +2,11 @@ Require Import ATS.
 Require Import MultiChannel.
 Require Import KLR.
 Require Import List.
+Require Import Obs.
 Require FComp.
 
 
-(** * Resolution operator *)
+(** * Definition *)
 
 (** The resolution operator allows a component to interact with itself
   by feeding back its own questions to it whenever possible. To make
@@ -63,6 +64,17 @@ End ATS.
 Arguments state : clear implicits.
 Arguments cont : clear implicits.
 
+Definition strat {GA} (σ : strat GA GA) :=
+  {|
+    ATS.transitions := of (ATS.transitions σ);
+    ATS.init_cont := (nil, ATS.init_cont σ);
+  |}.
+
+
+(** * Monotonicity *)
+
+(** ** Simulation relation *)
+
 Section SIM.
   Context {G1 G2} (GR : grel G1 G2).
   Context {S1 S2} (RS : klr (gworld GR GR) S1 S2).
@@ -93,6 +105,8 @@ Section SIM.
       RK ws k1 k2 ->
       cont_rel ws' (pp, k1) (pp, k2).
 End SIM.
+
+(** ** Proofs *)
 
 Global Instance step_sim :
   Monotonic
@@ -238,3 +252,42 @@ Proof.
   intros G1 G2 GR S1 S2 RS K1 K2 RK α1 α2 H.
   split; simpl; rauto.
 Qed.
+
+
+(** * Properties *)
+
+(** ** Commutation with Obs *)
+
+Module ObsComm.
+  Section OBSCOMM.
+    Context {GA} (σ : ATS.strat GA GA).
+    Let OROσ := Obs.strat (strat (Obs.strat σ)).
+    Let ORσ := Obs.strat (strat σ).
+
+    Lemma le :
+      ATS.ref grel_id grel_id OROσ ORσ.
+    Admitted.
+
+    Lemma ge :
+      ATS.ref grel_id grel_id ORσ OROσ.
+    Admitted.
+  End OBSCOMM.
+End ObsComm.
+
+(** ** Commutation with flat composition *)
+
+Module FlatComm.
+  Section FLATCOMM.
+    Context {I GA} (σ : I -> ATS.strat GA GA).
+    Let RFRσ := strat (FComp.strat (Pow.strat (fun i => strat (σ i)))).
+    Let RFσ := strat (FComp.strat (Pow.strat σ)).
+
+    Lemma le :
+      ATS.ref grel_id grel_id RFRσ RFσ.
+    Admitted.
+
+    Lemma ge :
+      ATS.ref grel_id grel_id RFσ RFRσ.
+    Admitted.
+  End FLATCOMM.
+End FlatComm.
