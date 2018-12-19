@@ -86,6 +86,8 @@ GAMES=\
   ATS.v \
   Obs.v \
   MultiChannel.v \
+  FComp.v \
+  Res.v \
   HComp.v \
   CompCertSemantics.v \
 
