@@ -81,6 +81,12 @@ Module Pow.
   Arguments state {I} S K.
   Arguments cont {I} K.
 
+  Definition strat {GA GB I} (σ : I -> strat GA GB) : strat (GA ^ I) (GB ^ I) :=
+    {|
+      ATS.transitions := of (fun i => ATS.transitions (σ i));
+      ATS.init_cont := fun i => ATS.init_cont (σ i);
+    |}.
+
   (** ** Monotonicity *)
 
   (** We can build KLRs for these two kinds of maps. *)

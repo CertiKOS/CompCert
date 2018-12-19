@@ -57,6 +57,9 @@ Module FComp.
   Arguments state : clear implicits.
   Arguments cont : clear implicits.
 
+  Definition strat {GA GB I} (σ : strat (GA ^ I) (GB ^ I)) :=
+    ATS.Build_strat GA GB _ _ (of (ATS.transitions σ)) (nil, ATS.init_cont σ).
+
   (** ** Monotonicity *)
 
   Section SIMREL.
