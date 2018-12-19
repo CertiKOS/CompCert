@@ -242,6 +242,127 @@ Module FComp.
     split; simpl; try rauto.
   Qed.
 
+  Global Instance strat_sim :
+    Monotonic
+      (@strat)
+      (forallr GRA, forallr GRB, forallr - @ I,
+       ATS.ref (GRA ^ I) (GRB ^ I) ++> ATS.ref GRA GRB).
+  Proof.
+    intros GA1 GA2 GRA GB1 GB2 GRB I σ1 σ2 Hσ.
+    destruct Hσ as (RS & RK & Hσ & Hk0).
+    eexists _, _. simpl. split.
+    - rauto.
+    - apply cont_rel_intro with (ws := nil); auto.
+  Qed.
+
+  (** ** Properties *)
+
+  (** *** Singleton flattening *)
+
+  (** The flat composition of a single strategy leaves it unchanged. *)
+
+  Fixpoint outls {A B} (ws : list (A + B)) : list A :=
+    match ws with
+      | nil => nil
+      | inl a :: ws' => a :: outls ws'
+      | inr b :: ws' => outls ws'
+    end.
+
+  Module Singl. Section SINGL.
+    Context {GA GB} (σ : ATS.strat GA GB).
+
+    Let Fσ := strat (Pow.strat (fun i : unit => σ)).
+
+    Inductive state_rel : klr _ (ATS.state Fσ) (ATS.state σ) :=
+      state_rel_intro ws k s :
+        pworld (@grel_id GA) (@grel_id GB) ws ->
+        state_rel ws (outls ws, Pow.st k tt s) s.
+
+    Inductive cont_rel : klr _ (ATS.cont Fσ) (ATS.cont σ) :=
+      cont_rel_intro ws k :
+        oworld (@grel_id GA) (@grel_id GB) ws ->
+        cont_rel ws (outls ws, k) (k tt).
+
+    Lemma le :
+      ATS.ref grel_id grel_id Fσ σ.
+    Proof.
+      exists state_rel, cont_rel. split.
+      - split; simpl in *.
+        + intros _ _ _ [ws k s Hws] fs' Hfs'.
+          inversion Hfs' as [? ps' ? Hps']; clear Hfs'; subst. simpl in Hps'.
+          inversion Hps' as [? ? s' ? Hs']; clear Hps'; subst.
+          eexists s'. intuition auto.
+          destruct s' as [s' | ]; repeat (constructor; auto).
+        + intros _ _ _ [ws k s Hws] fmk Hfmk.
+          inversion Hfmk as [q ? ? pk ? Hpmk | a ? ? pk ? Hpmk]; clear Hfmk; subst;
+          inversion Hpmk as [? ? ? ? ki k' Hk' _ Hki]; clear Hpmk; subst;
+          destruct m; inversion H2; clear H2; subst.
+          * exists (pq q, pk tt). intuition auto.
+            exists (inl tt :: ws). repeat (constructor; auto).
+          * exists (pa a, pk tt). intuition auto.
+            destruct Hws as [w ws Hws].
+            exists ws. simpl. repeat (constructor; auto).
+        + intros _ _ _ [ws k Hws] m1 m2 ws' Hm fs Hfs.
+          inversion Hfs as [q ? ps ? ? _ Hps | a ? ps ? ? Hps]; clear Hfs; subst;
+          inversion Hps as [? ? ? s Hs]; clear Hps; subst.
+          * destruct i, m; inversion H0; clear H0; subst.
+            inversion Hm; clear Hm; subst;
+            inversion H3; clear H3; subst. destruct H2.
+            exists s. repeat (constructor; auto).
+            change (outls ws) with (outls (inr w0 :: ws)).
+            destruct s; repeat (constructor; auto).
+          * destruct i, m; inversion H1; clear H1; subst.
+            inversion Hm; clear Hm; subst;
+            inversion H4; clear H4; subst. destruct H3.
+            exists s. repeat (constructor; auto).
+            inversion H; clear H; subst.
+            destruct s; repeat (constructor; auto).
+            inversion Hws; auto.
+        + intros _ _ _ [ws k Hws] m1 m2 ws' Hm Hfref.
+          inversion Hfref as [q ? ? Hpref]; clear Hfref; subst.
+          specialize (Hpref tt).
+          inversion Hpref as [? ? ? Href]; clear Hpref; subst.
+          inversion Hm; clear Hm; subst;
+          inversion H3; clear H3; subst. destruct H2.
+          auto.
+      - repeat constructor.
+    Qed.
+
+    Lemma ge :
+      ATS.ref grel_id grel_id σ Fσ.
+    Proof.
+      exists (k1 flip state_rel), (k1 flip cont_rel). split.
+      - split; simpl in *.
+        + intros _ _ _ [ws k s Hws] s' Hs'.
+          eexists. split; repeat (constructor; eauto).
+          destruct s' as [s' | ]; repeat (constructor; auto).
+        + intros _ _ _ [ws k s Hws] [[q|r] k'] Hk'.
+          * exists (pq q, (outls (inl tt :: ws), fun 'tt => k')).
+            split; repeat (econstructor; eauto). intros [ ]. congruence.
+          * destruct Hws as [w ws Hws].
+            exists (pa r, (outls ws, fun 'tt => k')). split.
+            -- repeat (econstructor; eauto). intros [ ]. congruence.
+            -- exists ws. repeat (constructor; auto).
+        + intros _ _ _ [ws k Hws] m1 m2 ws' Hm s Hs.
+          inversion Hm; clear Hm; subst;
+          inversion H3; clear H3; subst; destruct H2.
+          * eexists (option_map (pair (outls (inr _ :: ws))) (option_map _ s)).
+            repeat (econstructor; eauto).
+            -- destruct j. congruence.
+            -- destruct s; repeat (constructor; auto).
+          * destruct w0.
+            eexists (option_map (pair _) (option_map _ s)).
+            repeat (econstructor; eauto).
+            destruct s; repeat (constructor; auto).
+            inversion Hws; auto.
+        + intros _ _ _ [ws k Hws] m1 m2 ws' Hm Href.
+          inversion Hm; clear Hm; subst;
+          inversion H3; clear H3; subst; destruct H2.
+          constructor. intros [ ]. constructor. auto.
+      - constructor. constructor.
+    Qed.
+  End SINGL. End Singl.
+
 End FComp.
 
 (** The resolution operator allows a component to interact with itself

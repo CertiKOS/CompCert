@@ -165,6 +165,15 @@ Section REL.
         play_rel ws s1 s2 ->
         play_rel ws (s1 ++ refused :: nil) (s2 ++ refused :: nil).
 
+  (** These predicate are useful for strengthening simulation
+    relations to ensure the worlds are well-formed. *)
+
+  Inductive oworld : gworld -> Prop :=
+    | oworld_nil : oworld nil
+    | oworld_cons w ws : pworld ws -> oworld (inl w :: ws)
+  with pworld : gworld -> Prop :=
+    | pworld_cons w ws : oworld ws -> pworld (inr w :: ws).
+
   (** We provide various instances of [KripkeFrame] which apply [gacc]
     to different kinds of moves. *)
 
