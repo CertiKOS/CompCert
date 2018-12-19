@@ -37,7 +37,7 @@ Module FComp.
 
     Inductive resume : cont -> omove GA GB -> option state -> Prop :=
       | resume_q (m : question GB) i s k stk :
-          (forall j, ATS.refuse α k (j, m)) ->
+          (forall j, i <> j -> ATS.refuse α k (j, m)) ->
           ATS.resume α k (Pow.mko i (oq m)) s ->
           resume (stk, k) (oq m) (option_map (pair stk) s)
       | resume_a (m : answer GA) i s k stk :
@@ -190,9 +190,8 @@ Module FComp.
         repeat constructor. simpl. auto.
       + exists (option_map (pair (wstack ws0)) s2). split.
         * econstructor; eauto.
-          intro j. eapply ATS.sim_refuse, Hr1; eauto.
+          intros j Hj. eapply ATS.sim_refuse, Hr1; eauto.
           instantiate (1 := inr (j, w0) :: ws0).
-          instantiate (1 := j). simpl.
           repeat constructor; eauto.
         * change (_ :: _) with (wproj (inr (i1, w0) :: ws0)).
           change (wstack ws0) with (wstack (inr (i1, w0) :: ws0)).
