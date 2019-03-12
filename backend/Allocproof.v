@@ -1337,7 +1337,7 @@ Proof.
   unfold no_caller_saves, callee_save_loc; intros.
   exploit EqSet.for_all_2; eauto.
   hnf. intros. simpl in H1. rewrite H1. auto.
-  lazy beta. destruct (eloc q); auto.
+  lazy beta. destruct (eloc q); auto. destruct sl; congruence.
 Qed.
 
 Lemma val_hiword_longofwords:
@@ -2478,10 +2478,10 @@ Proof.
   rewrite Locmap.gss. rewrite Locmap.gso by (red; auto). rewrite Locmap.gss.
   rewrite val_longofwords_eq_1 by auto. auto.
   red; intros. rewrite (AG l H).
-  symmetry; apply Locmap.gpo.
-  assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
-  { intros. destruct l; simpl in *. congruence. auto. }
-  generalize (loc_result_caller_save (ef_sig ef)). destruct (loc_result (ef_sig ef)); simpl; intuition auto.
+  rewrite locmap_get_set_loc_result_callee_save by auto.
+  unfold undef_caller_save_regs. destruct l; simpl in H0.
+  rewrite H; auto.
+  destruct sl; auto; congruence.
   eapply external_call_well_typed; eauto.
 
 (* return *)

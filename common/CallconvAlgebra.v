@@ -1496,7 +1496,7 @@ Lemma agree_callee_save_set_result:
 Proof.
   intros; red; intros. rewrite Locmap.gpo. apply H; auto.
   assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
-  { intros. destruct l; auto. simpl; congruence. }
+  { intros. destruct l; simpl; auto. congruence. }
   generalize (loc_result_caller_save sg). destruct (loc_result sg); simpl; intuition auto.
 Qed.
 
@@ -1652,5 +1652,10 @@ Proof.
     split.
     + inv Hr0. inv H0. simpl in *. intros ? ?. symmetry; eauto.
     + destruct Hr12 as ([ ] & _ & Hr12 & Hm12).
-      intro. eapply (val_has_type_inject inject_id). eapply Hr12. auto.
+      intuition auto.
+      * intros ty ofs.
+        specialize (H ty ofs).
+        specialize (Hr12 (S Outgoing ofs ty)). red in Hr12.
+        setoid_rewrite H in Hr12. inv Hr12. symmetry. assumption.
+      * eapply (val_has_type_inject inject_id). eapply Hr12. auto.
 Qed.

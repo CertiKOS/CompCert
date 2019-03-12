@@ -96,14 +96,29 @@ Definition call_regs (caller: locset) : locset :=
 - Callee-save machine registers have the same values as in the caller
   before the call.
 - Caller-save machine registers have the same values as in the callee.
-- Stack slots have the same values as in the caller.
+- Local and Incoming stack slots have the same values as in the caller.
+- Outgoing stack slots are set to Vundef to  reflect the fact that they
+  may have been changed by the callee.
 *)
 
 Definition return_regs (caller callee: locset) : locset :=
   fun (l: loc) =>
     match l with
     | R r => if is_callee_save r then caller (R r) else callee (R r)
+    | S Outgoing ofs ty => Vundef
     | S sl ofs ty => caller (S sl ofs ty)
+    end.
+
+(** [undef_caller_save_regs ls] models the effect of calling
+    an external function: caller-save registers and outgoing locations
+    can change unpredictably, hence we set them to [Vundef]. *)
+
+Definition undef_caller_save_regs (ls: locset) : locset :=
+  fun (l: loc) =>
+    match l with
+    | R r => if is_callee_save r then ls (R r) else Vundef
+    | S Outgoing ofs ty => Vundef
+    | S sl ofs ty => ls (S sl ofs ty)
     end.
 
 (** LTL execution states. *)
@@ -263,7 +278,7 @@ Inductive step: state -> trace -> state -> Prop :=
       Genv.find_funct_ptr ge fb = Some (External ef) ->
       args = map (fun p => Locmap.getpair p rs) (loc_arguments (ef_sig ef)) ->
       external_call ef ge args m t res m' ->
-      rs' = Locmap.setpair (loc_result (ef_sig ef)) res rs ->
+      rs' = Locmap.setpair (loc_result (ef_sig ef)) res (undef_caller_save_regs rs) ->
       step (Callstate s fb rs m)
          t (Returnstate s rs' m')
   | exec_return: forall f sp rs1 bb s rs m,

@@ -18,6 +18,7 @@
     library. *)
 
 Require Export LogicalRelations.
+Require Export String.
 Require Export ZArith.
 Require Export Znumtheory.
 Require Export List.

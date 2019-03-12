@@ -1064,7 +1064,7 @@ Transparent destroyed_at_function_entry.
   intros [res' [m2' [P [Q [R S]]]]].
   left; econstructor; split.
   apply plus_one. eapply exec_step_external; eauto.
-  eapply external_call_symbols_preserved; eauto. apply senv_preserved. auto.
+  eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   destruct STACKS.
   + (* top-level return -- through tail call of external, presumably *)
     assert (Hsp: rs0 SP = sp0) by eauto using agree_sp.
@@ -1072,6 +1072,7 @@ Transparent destroyed_at_function_entry.
     econstructor; eauto.
     apply Mem.unchanged_on_nextblock in S. eapply Block.le_trans; eauto.
     apply agree_set_other; auto. apply agree_set_pair; auto.
+    apply agree_undef_caller_save_regs; auto. 
   + (* internal return *)
     simpl in AG. (*rewrite <- (agree_sp rs sp rs0 AG) in H4.*)
     destruct (Val.eq _ _).
@@ -1083,6 +1084,7 @@ Transparent destroyed_at_function_entry.
     apply Mem.unchanged_on_nextblock in S. eapply Block.le_trans; eauto.
     eapply valid_blockv_nextblock, Mem.unchanged_on_nextblock; eauto.
     apply agree_set_other; auto. apply agree_set_pair; auto.
+    apply agree_undef_caller_save_regs; auto. 
 
 - (* return *)
   simpl in *.
