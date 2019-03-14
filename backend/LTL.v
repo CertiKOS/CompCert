@@ -288,18 +288,18 @@ Inductive step: state -> trace -> state -> Prop :=
 End RELSEM.
 
 Inductive initial_state (ge: genv): query li_locset -> state -> Prop :=
-  | initial_state_intro: forall b f rs m,
-      Genv.find_funct_ptr ge b = Some (Internal f) ->
+  | initial_state_intro: forall id f rs m,
+      Genv.find_funct_ptr ge (Block.glob id) = Some (Internal f) ->
       initial_state ge
-        (lq b (fn_sig f) rs m)
-        (Callstate (Parent rs :: nil) b rs m).
+        (lq id (fn_sig f) rs m)
+        (Callstate (Parent rs :: nil) (Block.glob id) rs m).
 
 Inductive at_external (ge: genv): state -> query li_locset -> Prop :=
-  | at_external_intro b id sg s rs m:
-      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+  | at_external_intro id name sg s rs m:
+      Genv.find_funct_ptr ge (Block.glob id) = Some (External (EF_external name sg)) ->
       at_external ge
-        (Callstate s b rs m)
-        (lq b sg rs m).
+        (Callstate s (Block.glob id) rs m)
+        (lq id sg rs m).
 
 Inductive after_external (ge: genv): state -> reply li_locset -> state -> Prop :=
   | after_external_intro b s rs m rs' m':

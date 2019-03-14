@@ -393,7 +393,7 @@ Proof.
   induction 1. econstructor; eauto. constructor.
   assumption.
   unfold ge in H. exploit Genv.find_funct_ptr_inversion; eauto.
-  intros [id IN]. eapply wt_prog; eauto.
+  intros [x IN]. eapply wt_prog; eauto.
   red; auto.
   red; auto.
 Qed.

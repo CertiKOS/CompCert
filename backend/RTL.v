@@ -318,18 +318,18 @@ End RELSEM.
   without arguments and with an empty call stack. *)
 
 Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
-  | initial_state_intro: forall b f vargs m,
-      Genv.find_funct_ptr ge b = Some (Internal f) ->
+  | initial_state_intro: forall id f vargs m,
+      Genv.find_funct_ptr ge (Block.glob id) = Some (Internal f) ->
       initial_state ge
-        (cq b (fn_sig f) vargs m)
-        (Callstate nil b vargs m).
+        (cq id (fn_sig f) vargs m)
+        (Callstate nil (Block.glob id) vargs m).
 
 Inductive at_external (ge: genv): state -> query li_c -> Prop :=
-  | at_external_intro b id sg s vargs m:
-      Genv.find_funct_ptr ge b = Some (External (EF_external id sg)) ->
+  | at_external_intro id name sg s vargs m:
+      Genv.find_funct_ptr ge (Block.glob id) = Some (External (EF_external name sg)) ->
       at_external ge
-        (Callstate s b vargs m)
-        (cq b sg vargs m).
+        (Callstate s (Block.glob id) vargs m)
+        (cq id sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
   | after_external_intro b s vargs m vres m':

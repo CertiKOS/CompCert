@@ -29,7 +29,7 @@ Structure language_interface :=
 
 Record c_query :=
   cq {
-    cq_fb: block;
+    cq_id: ident;
     cq_sg: signature;
     cq_args: list val;
     cq_mem: mem;
@@ -39,7 +39,7 @@ Canonical Structure li_c :=
   {|
     query := c_query;
     reply := val * mem;
-    query_is_internal ge q := Senv.block_is_internal ge (cq_fb q);
+    query_is_internal ge q := Senv.block_is_internal ge (Block.glob (cq_id q));
   |}.
 
 (** ** Miscellaneous interfaces *)
@@ -185,13 +185,11 @@ Ltac inv_compose_query :=
 
 (** ** Generic convention for [li_c] *)
 
-Record match_c_query (R: cklr) (w: world R) (q1 q2: c_query) :=
-  {
-    match_cq_fb: block_inject (mi R w) (cq_fb q1) (cq_fb q2);
-    match_cq_sg: cq_sg q1 = cq_sg q2;
-    match_cq_args: list_rel (Val.inject (mi R w)) (cq_args q1) (cq_args q2);
-    match_cq_mem: match_mem R w (cq_mem q1) (cq_mem q2);
-  }.
+Inductive match_c_query (R: cklr) (w: world R): relation c_query :=
+  match_c_query_intro id sg vargs1 vargs2 m1 m2:
+    list_rel (Val.inject (mi R w)) vargs1 vargs2 ->
+    match_mem R w m1 m2 ->
+    match_c_query R w (cq id sg vargs1 m1) (cq id sg vargs2 m2).
 
 Definition cc_c (R: cklr): callconv li_c li_c :=
   {|
@@ -232,9 +230,8 @@ Proof.
   intros Hm Hvargs.
   exists tt. split.
   - constructor; simpl; eauto.
-    + exists 0. reflexivity.
-    + apply val_inject_list_lessdef in Hvargs.
-      induction Hvargs; constructor; eauto.
+    apply val_inject_list_lessdef in Hvargs.
+    induction Hvargs; constructor; eauto.
   - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). simpl in *.
     split; auto.
     apply val_inject_lessdef; eauto.
@@ -254,10 +251,9 @@ Proof.
   intros Hm Hvargs.
   exists (extpw m1 m2). split.
   - constructor; simpl; eauto.
-    + exists 0. reflexivity.
-    + apply val_inject_list_lessdef in Hvargs.
-      induction Hvargs; constructor; eauto.
-    + constructor; eauto.
+    apply val_inject_list_lessdef in Hvargs.
+    induction Hvargs; constructor; eauto.
+    constructor; eauto.
   - intros vres1 m1' vres2 m2' (w' & Hw' & Hvres & Hm'). cbn [fst snd] in *.
     inversion Hw' as [xm1 xm2 xm1' xm2' Hperm Hunch]; subst.
     inv Hm'. simpl in Hvres. red in Hvres.
@@ -267,13 +263,12 @@ Qed.
 
 (** *** Injections *)
 
-Lemma match_cc_inject fb1 sg f vargs1 m1 fb2 vargs2 m2:
-  block_inject f fb1 fb2 ->
+Lemma match_cc_inject id sg f vargs1 m1 vargs2 m2:
   Val.inject_list f vargs1 vargs2 ->
   Mem.inject f m1 m2 ->
   meminj_wf f ->
   exists w,
-    match_query (cc_c injp) w (cq fb1 sg vargs1 m1) (cq fb2 sg vargs2 m2) /\
+    match_query (cc_c injp) w (cq id sg vargs1 m1) (cq id sg vargs2 m2) /\
     forall vres1 m1' vres2 m2',
       match_reply (cc_c injp) w (vres1, m1') (vres2, m2') ->
       exists f',
@@ -288,7 +283,7 @@ Lemma match_cc_inject fb1 sg f vargs1 m1 fb2 vargs2 m2:
           Mem.perm m1' b ofs Max p ->
           Mem.perm m1 b ofs Max p.
 Proof.
-  intros Hfb Hvargs Hm.
+  intros Hvargs Hm.
   exists (injpw f m1 m2). simpl. split.
   - constructor; simpl; eauto.
     induction Hvargs; constructor; eauto.
@@ -357,7 +352,7 @@ Lemma match_query_cc_extends_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
     P id sg vargs m (cq id sg vargs m) (cq id sg vargs m)) ->
   (forall w q1 q2,
     match_query (cc_c_tr ext) w q1 q2 ->
-    P (cq_fb q1) (cq_sg q1) (cq_args q1) (cq_mem q1) q1 q2).
+    P (cq_id q1) (cq_sg q1) (cq_args q1) (cq_mem q1) q1 q2).
 Proof.
   intros H w q1 q2 Hq.
   destruct Hq.
@@ -393,15 +388,14 @@ Qed.
   memories and arguments to be "inject_neutral". *)
 
 Inductive cc_inject_triangle_mq: block -> query li_c -> query li_c -> Prop :=
-  cc_inject_triangle_mq_intro fb sg vargs m:
+  cc_inject_triangle_mq_intro id sg vargs m:
     let f := Mem.flat_inj (Mem.nextblock m) in
-    block_inject f fb fb ->
     Val.inject_list f vargs vargs ->
     Mem.inject f m m ->
     cc_inject_triangle_mq
       (Mem.nextblock m)
-      (cq fb sg vargs m)
-      (cq fb sg vargs m).
+      (cq id sg vargs m)
+      (cq id sg vargs m).
 
 Definition cc_inject_triangle_mr nb: reply li_c -> reply li_c -> Prop :=
   fun '(vres1, m1') '(vres2, m2') =>
@@ -424,14 +418,13 @@ Definition cc_inject_triangle: callconv li_c li_c :=
   [inv_triangle_query] tactic below. *)
 
 Lemma match_query_cc_inject_triangle (P: _ -> _ -> _ -> _ -> _ -> _ -> Prop):
-  (forall fb sg vargs m,
-    block_inject (Mem.flat_inj (Mem.nextblock m)) fb fb ->
+  (forall id sg vargs m,
     Val.inject_list (Mem.flat_inj (Mem.nextblock m)) vargs vargs ->
     Mem.inject (Mem.flat_inj (Mem.nextblock m)) m m ->
-    P fb sg vargs m (cq fb sg vargs m) (cq fb sg vargs m)) ->
+    P id sg vargs m (cq id sg vargs m) (cq id sg vargs m)) ->
   (forall w q1 q2,
     match_query cc_inject_triangle w q1 q2 ->
-    P (cq_fb q1) (cq_sg q1) (cq_args q1) (cq_mem q1) q1 q2).
+    P (cq_id q1) (cq_sg q1) (cq_args q1) (cq_mem q1) q1 q2).
 Proof.
   intros H m q1 q2 Hq.
   destruct Hq as [fb sg vargs f Hfb Hvargs Hm]; simpl in *.
@@ -464,7 +457,7 @@ Ltac inv_triangle_query :=
   let Hq := fresh "Hq" in
   intros w q1 q2 Hq;
   try replace w with (Mem.nextblock (cq_mem q1)) by (inv Hq; eauto);
-  pattern (cq_fb q1), (cq_sg q1), (cq_args q1), (cq_mem q1), q1, q2;
+  pattern (cq_id q1), (cq_sg q1), (cq_args q1), (cq_mem q1), q1, q2;
   revert w q1 q2 Hq;
   first
     [ apply match_query_cc_extends_triangle

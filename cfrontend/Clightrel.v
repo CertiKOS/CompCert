@@ -625,24 +625,19 @@ Proof.
                              klr_diam tt (state_match R) w s1 s2).
   apply forward_simulation_step with ms.
   - reflexivity.
-  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm] s1 Hs1.
+  - intros w _ _ [id sg vargs1 vargs2 m1 m2 Hvargs Hm] s1 Hs1.
     inv Hs1. simpl in *. subst.
     assert (genv_valid R w (globalenv p)) by (eapply cklr_wf; eauto).
-    exists (Callstate fb2 vargs2 Kstop m2). split.
+    exists (Callstate (Block.glob id) vargs2 Kstop m2). split.
     + econstructor; eauto.
-      eapply find_funct_ptr_transport; eauto.
     + split; eauto.
       exists w; split; try rauto.
-      erewrite (genv_valid_block_inject_eq R w _ fb1 fb2); eauto.
-      econstructor; eauto.
-      constructor.
   - intros w s1 s2 q1 [Hge Hs] Hq1.
     destruct Hs as (w' & Hw' & Hs).
     destruct Hq1. inv Hs.
-    eexists w', (cq b sg _ _). repeat apply conj.
+    eexists w', (cq id sg _ _). repeat apply conj.
     + assert (Hge': genv_valid R w' (globalenv p)) by (eapply cklr_wf; eauto).
       econstructor; simpl; eauto.
-      eapply genv_valid_funct_ptr in H; eauto.
     + econstructor.
       eassumption.
     + intros r1 [vres2 m2'] s1' (w'' & Hw'' & Hvres & Hm') Hs1'.

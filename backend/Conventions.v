@@ -172,7 +172,7 @@ Require Import Memory.
 
 Record locset_query :=
   lq {
-    lq_fb: block;
+    lq_id: ident;
     lq_sg: signature;
     lq_rs: Locmap.t;
     lq_mem: mem;
@@ -183,16 +183,14 @@ Canonical Structure li_locset: language_interface :=
     query := locset_query;
     reply := Locmap.t * mem;
     query_is_internal ge q :=
-      Globalenvs.Senv.block_is_internal ge (lq_fb q);
+      Globalenvs.Senv.block_is_internal ge (Block.glob (lq_id q));
   |}.
 
-Record match_locset_query (R: cklr) (w: world R) (q1 q2: locset_query) :=
-  {
-    match_lq_fb: block_inject (mi R w) (lq_fb q1) (lq_fb q2);
-    match_lq_sg: lq_sg q1 = lq_sg q2;
-    match_lq_rs: (- ==> Val.inject (mi R w))%rel (lq_rs q1) (lq_rs q2);
-    match_lq_mem: match_mem R w (lq_mem q1) (lq_mem q2);
-  }.
+Inductive match_locset_query (R: cklr) (w: world R): relation locset_query :=
+  match_locset_query_intro id sg rs1 rs2 m1 m2:
+    (- ==> Val.inject (mi R w))%rel rs1 rs2 ->
+    match_mem R w m1 m2 ->
+    match_locset_query R w (lq id sg rs1 m1) (lq id sg rs2 m2).
 
 Definition cc_locset (R: cklr): callconv li_locset li_locset :=
   {|

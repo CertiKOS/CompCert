@@ -675,20 +675,20 @@ Inductive step: state -> trace -> state -> Prop :=
   without arguments and with an empty continuation. *)
 
 Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
-  | initial_state_intro: forall b f targs tres tcc vargs m,
-      Genv.find_funct_ptr ge b = Some (Internal f) ->
+  | initial_state_intro: forall id f targs tres tcc vargs m,
+      Genv.find_funct_ptr ge (Block.glob id) = Some (Internal f) ->
       type_of_function f = Tfunction targs tres tcc ->
       initial_state ge
-        (cq b (signature_of_type targs tres tcc) vargs m)
-        (Callstate b vargs Kstop m).
+        (cq id (signature_of_type targs tres tcc) vargs m)
+        (Callstate (Block.glob id) vargs Kstop m).
 
 Inductive at_external (ge: genv): state -> query li_c -> Prop :=
-  | at_external_intro b id sg targs tres cconv vargs k m:
-      let f := External (EF_external id sg) targs tres cconv in
-      Genv.find_funct_ptr ge b = Some f ->
+  | at_external_intro id name sg targs tres cconv vargs k m:
+      let f := External (EF_external name sg) targs tres cconv in
+      Genv.find_funct_ptr ge (Block.glob id) = Some f ->
       at_external ge
-        (Callstate b vargs k m)
-        (cq b sg vargs m).
+        (Callstate (Block.glob id) vargs k m)
+        (cq id sg vargs m).
 
 Inductive after_external: state -> reply li_c -> state -> Prop :=
   | after_external_intro f vargs k m vres m':

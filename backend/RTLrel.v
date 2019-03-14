@@ -66,7 +66,7 @@ Inductive state_rel R w: relation state :=
       Monotonic
         (@Callstate)
         (list_rel (stackframe_inject (mi R w)) ++>
-         block_inject (mi R w) ==> Val.inject_list (mi R w) ++>
+         block_inject_sameofs (mi R w) ==> Val.inject_list (mi R w) ++>
          match_mem R w ++> state_rel R w)
   | Returnstate_rel:
       Monotonic
@@ -241,7 +241,6 @@ Proof.
     assert (Hfb: block_inject_sameofs (mi R w) fb fb) by rauto.
     assert (y0 = fb).
     {
-      destruct H6 as [? ?].
       red in Hfb.
       congruence.
     }
@@ -254,12 +253,11 @@ Proof.
   - assert (Hfb: block_inject_sameofs (mi R w) fb fb) by rauto.
     assert (y0 = fb).
     {
-      destruct H6 as [? ?].
       red in Hfb.
       congruence.
     }
     subst.
-    transport_hyps.
+    transport e0.
     eexists; split. eapply c; eauto; fail.
     exists w'; split; rauto.
   - inv H3. inv H2.
@@ -269,6 +267,19 @@ Qed.
 Hint Extern 1 (Transport _ _ _ _ _) =>
   set_le_transport @step : typeclass_instances.
 
+Lemma block_inject_glob R w m1 m2 id b2:
+  match_mem R w m1 m2 ->
+  block_inject (mi R w) (Block.glob id) b2 ->
+  b2 = Block.glob id.
+Proof.
+  intros Hm [delta Hb].
+  apply cklr_wf in Hm as [INCR _].
+  specialize (INCR (Block.glob id)). unfold Mem.flat_inj in INCR.
+  destruct Block.lt_dec.
+  - specialize (INCR _ _ eq_refl). congruence.
+  - elim n. apply Block.lt_glob_init.
+Qed.
+
 Global Instance semantics_rel R:
   Monotonic (@RTL.semantics) (- ==> forward_simulation (cc_c R) (cc_c R)).
 Proof.
@@ -277,20 +288,20 @@ Proof.
                             genv_valid R w (Genv.globalenv p)).
   eapply forward_simulation_step with ms.
   - reflexivity.
-  - intros w [fb1 sg1 vargs1 m1] [fb2 sg vargs2 m2] [Hfb Hsg Hvargs Hm].
+  - intros w _ _ [id sg vargs1 vargs2 m1 m2 Hvargs Hm].
     intros s1 Hs1. inv Hs1. simpl in *. subst.
     assert (genv_valid R w (Genv.globalenv p)) by (eapply cklr_wf; eauto).
-    exists (Callstate nil fb2 vargs2 m2). split.
+    exists (Callstate nil (Block.glob id) vargs2 m2). split.
     + econstructor; eauto.
-      eapply find_funct_ptr_transport; eauto.
-    + split; eauto; rauto.
+    + split; eauto. rauto.
   - intros w s1 s2 q1 [(w' & Hw' & Hs) Hge] Hq1.
     destruct Hq1. inv Hs.
     eexists w', (cq _ _ y1 _). split.
     + econstructor; simpl; eauto.
       clear - H7; induction H7; constructor; eauto.
     + split.
-      * econstructor.
+      * assert (y0 = Block.glob id) by eauto using block_inject_glob. subst.
+        econstructor.
         assert (Hge': genv_valid R w' (Genv.globalenv p))
           by (eapply cklr_wf; eauto).
         eapply find_funct_ptr_transport; eauto.
