@@ -200,22 +200,6 @@ Definition cc_locset (R: cklr): callconv li_locset li_locset :=
     match_reply := <> (- ==> Val.inject @@ [mi R]) * match_mem R;
   |}.
 
-(** Triangular diagrams *)
-
-Inductive match_locset_query_tr (R: cklr) (w: world R) q: locset_query -> Prop :=
-  match_locset_query_tr_intro:
-    inject_incr (Mem.flat_inj (Mem.nextblock (lq_mem q))) (mi R w) ->
-    match_locset_query R w q q ->
-    match_locset_query_tr R w q q.
-
-Definition cc_locset_tr R: callconv li_locset li_locset :=
-  {|
-    ccworld := world R;
-    match_senv := Events.symbols_inject @@ [mi R];
-    match_query := match_locset_query_tr R;
-    match_reply := <> (- ==> Val.inject @@ [mi R]) * match_mem R;
-  |}.
-
 (** We now define the calling convention between C and locset languages. *)
 
 Inductive cc_alloc_mq: _ -> c_query -> locset_query -> Prop :=

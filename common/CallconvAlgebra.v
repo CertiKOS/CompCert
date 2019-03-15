@@ -757,45 +757,14 @@ Lemma wt_c_commut R:
   ccref (cc_c R @ wt_c) (wt_c @ cc_c R @ wt_c).
 Proof.
   apply cc_inv_c_commut.
-  - intros w [fb1 sg1 vargs1 m1] [fb2 sg2 vargs2 m2] [Hfb Hsg Hvargs Hm].
+  - intros w _ _ [id sg vargs1 vargs2 m1 m2 Hvargs Hm].
     simpl in *. subst.
-    generalize (sig_args sg2). revert Hvargs. generalize (mi R w). clear.
+    generalize (sig_args sg). revert Hvargs. generalize (mi R w). clear.
     induction 1; simpl in *; intros [ | t ts]; intuition eauto.
     revert H1; rauto.
-  - simpl. intros w q1 q2 [v1 m1] [v2 m2] [_ Hsg _ _] (f & _ & Hv & _) _ _.
-    rewrite Hsg. generalize (proj_sig_res (cq_sg q2)). red in Hv. simpl in *.
+  - simpl. intros w _ _ r1 r2 [id sg v1 v2 m1 m2 _ _] (f & _ & Hv & _) _ _.
+    generalize (proj_sig_res sg). red in Hv. simpl in *.
     clear -Hv. intro. rauto.
-Qed.
-
-(** ** Commutation with triangular diagrams *)
-
-Lemma cc_inv_c_tr_commut I R:
-  (forall w q r1 r2,
-     match_query (cc_c_tr R) w q q ->
-     match_reply (cc_c_tr R) w r1 r2 ->
-     reply_inv I q r2 ->
-     reply_inv I q r1) ->
-  ccref (I @ cc_c_tr R) (cc_c_tr R @ I).
-Proof.
-  intros H [q1 w] xq1 q2 (xxq1 & (HqI & Hxq1 & Hxxq1) & Hq12).
-  simpl in * |- . subst.
-  destruct Hq12 as [q Hw Hq].
-  exists (w, q). split; simpl.
-  - exists q; split; [constructor | ]; eauto.
-  - intros r1 _ (r2 & Hr12 & [Hr2]).
-    exists r1; split; eauto.
-    constructor.
-    eapply H; eauto.
-    constructor; eauto.
-Qed.
-
-Lemma wt_c_tr_commut R:
-  ccref (wt_c @ cc_c_tr R) (cc_c_tr R @ wt_c).
-Proof.
-  apply cc_inv_c_tr_commut. simpl.
-  intros w _ [v1 m1] [v2 m2] [q Hwq [Hfb1 _ Hargs1 Hm1]] (f & _ & Hv & Hm).
-  generalize (proj_sig_res (cq_sg q)). red in Hv. simpl in *.
-  clear -Hv. intro. rauto.
 Qed.
 
 
@@ -815,8 +784,7 @@ Lemma match_c_query_dom f q1 q2:
   match_c_query inj f q1 q2 ->
   match_c_query inj (meminj_dom f) q1 q1.
 Proof.
-  destruct q1 as [fb1 sg1 vargs1 m1], q2 as [fb2 sg2 vargs2 m2]. simpl.
-  intros [Hfb Hsg Hargs Hm]; simpl in *.
+  intros [id sg vargs1 vargs2 m1 m2 Hargs Hm]; simpl in *.
   constructor; simpl; eauto using block_inject_dom, mem_inject_dom.
   - apply val_inject_list_rel.
     eapply val_inject_list_dom.
@@ -827,40 +795,32 @@ Qed.
 
 (** ** Rectangular diagrams *)
 
-(* broken after adding match_cq_valid
 Lemma match_c_query_compose R12 R23 w12 w23:
   eqrel
     (match_c_query (R12 @ R23) (w12, w23))
     (rel_compose (match_c_query R12 w12) (match_c_query R23 w23)).
 Proof.
   split.
-  - intros [fb1 sg1 vargs1 m1] [fb3 sg3 vargs3 m3] [Hfb Hsg Hvargs Hm Hf].
+  - intros _ _ [id sg vargs1 vargs3 m1 m3 Hvargs Hm].
     simpl in *.
-    apply block_inject_compose in Hfb.
     rewrite val_inject_compose in Hvargs. apply list_rel_compose in Hvargs.
-    destruct Hfb as (fb2 & Hfb12 & Hfb23).
     destruct Hvargs as (vargs2 & Hvargs12 & Hvargs23).
     destruct Hm as (m2 & Hm12 & Hm23).
-    exists (cq fb2 sg1 vargs2 m2); split; constructor; simpl; rauto.
-  - intros [fb1 sg1 vargs1 m1] [fb3 sg3 vargs3 m3].
-    intros ([fb2 sg2 vargs2 m2]&[Hfb12 Hsg12 Hv12 Hm12]&[Hfb23 Hsg23 Hv23 Hm23]).
-    simpl in *.
+    exists (cq id sg vargs2 m2); split; constructor; simpl; rauto.
+  - intros q1 q3 (q2 & Hq12 & Hq23).
+    destruct Hq23 as [id sg vargs2 vargs3 m2 m3 Hvargs23 Hm23]. inv Hq12.
     constructor; simpl.
-    + apply block_inject_compose.
-      eexists; split; eauto.
-    + congruence.
     + rewrite val_inject_compose.
       apply list_rel_compose.
       eexists; split; eauto.
     + eexists; split; eauto.
 Qed.
-*)
 
-Lemma cc_c_ref:
+Global Instance cc_c_ref:
   Monotonic (@cc_c) (subcklr ++> ccref).
 Proof.
   intros Q R HQR. red in HQR |- *.
-  intros w [fb1 sg1 vargs1 m1] [fb2 sg2 vargs2 m2] [Hfb Hsg Hvargs Hm].
+  intros w _ _ [id sg vargs1 vargs2 m1 m2 Hvargs Hm].
   specialize (HQR w m1 m2 Hm) as (wr & HmR & Hincr & HQR').
   exists wr.
   simpl in *.
@@ -871,7 +831,6 @@ Proof.
     rauto.
 Qed.
 
-(* broken after adding match_cq_valid
 Lemma cc_c_compose R12 R23:
   cceqv (cc_c (R12 @ R23)) (cc_c R12 @ cc_c R23).
 Proof.
@@ -885,6 +844,7 @@ Proof.
     destruct H23 as (w23' & Hw23' & Hvres23 & Hm23').
     simpl in *.
     exists (w12', w23'); split; repeat rstep; simpl.
+    + rauto.
     + apply val_inject_compose. eexists; eauto.
     + eexists; eauto.
   - intros [w12 w23] q1 q3 Hq.
@@ -898,71 +858,6 @@ Proof.
     destruct Hvres as (vres2 & Hvres12 & Hvres23).
     destruct Hm' as (m2' & Hm12' & Hm23').
     exists (vres2, m2'); split; rauto.
-Qed.
-*)
-
-(** ** Triangular diagrams *)
-
-Lemma cc_c_tr_ref:
-  Monotonic (@cc_c_tr) (subcklr ++> ccref).
-Proof.
-  intros Q R HQR. red in HQR |- *.
-  intros w _ _ [[fb sg vargs m] Hw [Hfb Hsg Hvargs Hm]].
-  simpl in *.
-  specialize (HQR w m m Hm) as (wr & HmR & Hincr & HQR').
-  exists wr.
-  split.
-  - constructor; simpl.
-    + etransitivity; rauto.
-    + constructor; simpl; rauto.
-  - intros [vres1 m1'] [vres2 m2'] (w' & Hw' & Hvres & Hm'). simpl in *.
-    specialize (HQR' w' m1' m2' Hm' Hw') as (wq' & HmQ' & HwQ' & Hincr').
-    rauto.
-Qed.
-
-(* broken after adding match_cq_valid
-Lemma cc_c_tr_compose Q R:
-  ccref (cc_c_tr Q @ cc_c_tr R) (cc_c_tr (Q @ R)).
-Proof.
-  intros [wq wr] q1 q3 (q2 & Hq12 & Hq23).
-  simpl in *.
-  destruct Hq12 as [q Hincr12 Hq12].
-  destruct Hq23 as [q Hincr23 Hq23].
-  exists (wq, wr). split.
-  - constructor.
-    + simpl.
-      rewrite <- Hincr12, <- Hincr23.
-      unfold inject_incr, Mem.flat_inj, compose_meminj.
-      intros b b' delta.
-      destruct Block.lt_dec eqn:Hb; inversion 1; subst.
-      rewrite Hb.
-      reflexivity.
-    + apply match_c_query_compose.
-      eexists; eauto.
-  - intros [vres1 m1'] [vres3 m3'] ([w12' w23'] & [Hw12' Hw23'] & Hvres & Hm').
-    red in Hvres. apply val_inject_compose in Hvres.
-    destruct Hvres as (vres2 & Hvres12 & Hvres23).
-    destruct Hm' as (m2' & Hm12' & Hm23').
-    simpl in *.
-    eexists; split; rauto.
-Qed.
-*)
-
-Lemma compose_meminj_id_left f:
-  compose_meminj inject_id f = f.
-Proof.
-  apply functional_extensionality. intros b.
-  unfold compose_meminj, inject_id.
-  destruct (f b) as [[b' delta] | ]; eauto.
-Qed.
-
-Lemma compose_meminj_id_right f:
-  compose_meminj f inject_id = f.
-Proof.
-  apply functional_extensionality. intros b.
-  unfold compose_meminj, inject_id.
-  destruct (f b) as [[b' delta] | ]; eauto.
-  replace (delta + 0) with delta by xomega; eauto.
 Qed.
 
 Lemma flat_inj_wf thr:
@@ -978,85 +873,6 @@ Proof.
     auto.
 Qed.
 
-Lemma cc_extends_inject_triangle:
-  ccref cc_inject_triangle (cc_extends_triangle @ cc_inject_triangle).
-Proof.
-  inv_triangle_query.
-  intros fb sg vargs m Hfb Hvargs Hm.
-  exists (tt, Mem.nextblock m).
-  split.
-  - exists (cq fb sg vargs m).
-    split; constructor; eauto.
-    + rauto.
-    + constructor; try reflexivity.
-      rauto.
-      apply Mem.extends_refl.
-  - intros [v1' m1'] [v3' r3'].
-    intros ([v2' m2'] & ([ ] & _ & [Hv12' Hm12']) & (f' & Hf' & Hv23' & Hm23' & Hwf23')).
-    simpl in *.
-    exists f'; repeat apply conj; eauto.
-    + eapply (Mem.val_lessdef_inject_compose _ _ v2'); eauto.
-      apply val_inject_id; eauto.
-    + eapply Mem.extends_inject_compose; eauto.
-Qed.
-
-Lemma cc_inject_extends_triangle:
-  ccref cc_inject_triangle (cc_inject_triangle @ cc_extends_triangle).
-Proof.
-  inv_triangle_query.
-  intros fb sg vargs m Hfb Hvargs Hm.
-  exists (Mem.nextblock m, tt). simpl in *.
-  split.
-  - exists (cq fb sg vargs m).
-    split; constructor; eauto.
-    + rauto.
-    + constructor; try reflexivity.
-      rauto.
-      apply Mem.extends_refl.
-  - intros [v1' m1'] [v3' m3'].
-    intros ([v2' m2'] & (f' & Hf' & Hv12' & Hm12' & Hwf12') & ([ ] & _ & Hv23' & Hm23')).
-    exists f'; repeat apply conj; eauto.
-    + eapply (Mem.val_inject_lessdef_compose _ _ v2'); eauto.
-      apply val_inject_id; eauto.
-    + eapply Mem.inject_extends_compose; eauto.
-Qed.
-
-Lemma cc_inject_inject_triangle:
-  ccref cc_inject_triangle (cc_inject_triangle @ cc_inject_triangle).
-Proof.
-  inv_triangle_query.
-  intros fb sg vargs m Hfb Hvargs Hm.
-  exists (Mem.nextblock m, Mem.nextblock m). simpl in *.
-  split.
-  - exists (cq fb sg vargs m).
-    refine ((fun x => conj x x) _).
-    constructor; eauto.
-  - intros [v1' m1'] [v3' m3'].
-    intros ([v2' m2'] &
-            (f12 & Hf12 & Hv12' & Hm12' & Hwf12') &
-            (f23 & Hf23 & Hv23' & Hm23' & Hwf23')).
-    exists (compose_meminj f12 f23); split; eauto.
-    + rewrite <- flat_inj_idemp. rauto.
-    + repeat apply conj.
-      * apply val_inject_compose. eexists; eauto.
-      * eapply Mem.inject_compose; eauto.
-      * apply compose_meminj_wf; eauto.
-Qed.
-
-(** ** Relationship between rectangular and triangular diagrams *)
-
-(** Triangular diagrams are a special case of the rectangular ones. *)
-
-Lemma cc_c_tr_r R:
-  ccref (cc_c_tr R) (cc_c R).
-Proof.
-  intros w _ _ [q Hq H].
-  exists w; intuition eauto.
-Qed.
-
-(** More importantly, rectangular diagrams can absorb triangular ones
-  in the following way. *)
-
 Global Instance block_inject_refl:
   Reflexive (block_inject inject_id).
 Proof.
@@ -1071,40 +887,6 @@ Proof.
   intro. apply Mem.extends_refl.
 Qed.
 
-(* broken after adding match_cq_valid
-Lemma cc_extt_ext:
-  ccref (cc_c ext) (cc_c_tr ext @ cc_c ext).
-Proof.
-  intros [ ] q1 q2 Hq.
-  exists (tt, tt). simpl. split.
-  - eexists; split; eauto.
-    constructor; simpl.
-    + rauto.
-    + destruct q1. constructor; simpl; reflexivity.
-  - intros r1 r3 (r2 & ([ ] & _ & Hv12' & Hm12') & ([ ] & _ & Hv23' & Hm23')).
-    exists tt; split; [rauto | ]; split.
-    + rewrite <- (compose_meminj_id_right inject_id).
-      apply val_inject_compose. eexists; split; eauto.
-    + eapply Mem.extends_extends_compose; eauto.
-Qed.
-
-Lemma cc_ext_extt:
-  ccref (cc_c ext) (cc_c ext @ cc_c_tr ext).
-Proof.
-  intros [ ] q1 q2 Hq.
-  exists (tt, tt). simpl. split.
-  - eexists; split; eauto.
-    constructor; simpl.
-    + rauto.
-    + destruct q1. constructor; simpl; reflexivity.
-  - intros r1 r3 (r2 & ([ ] & _ & Hv12' & Hm12') & ([ ] & _ & Hv23' & Hm23')).
-    exists tt; split; [rauto | ]; split.
-    + rewrite <- (compose_meminj_id_right inject_id).
-      apply val_inject_compose. eexists; split; eauto.
-    + eapply Mem.extends_extends_compose; eauto.
-Qed.
-*)
-
 Lemma match_c_query_injn_inj nb q1 q2:
   match_c_query injn nb q1 q2 <->
   match_c_query inj (Mem.flat_inj nb) q1 q2 /\
@@ -1112,11 +894,11 @@ Lemma match_c_query_injn_inj nb q1 q2:
   Mem.nextblock (cq_mem q2) = nb.
 Proof.
   split.
-  - intros [Hfb Hsg Hvargs [Hm Hnb]].
-    simpl in *. red in Hnb.
-    destruct Hnb. split; eauto.
+  - intros [id sg vargs1 vargs2 m1 m2 Hvargs [Hm Hnb]].
+    simpl in *. red in Hnb. destruct Hnb.
+    split; eauto.
     constructor; eauto.
-  - intros ([Hfb Hsg Hvargs Hm] & Hnb1 & Hnb2).
+  - intros ([id sg v1 v2 m1 m2 Hv Hm] & Hnb1 & Hnb2). simpl in *.
     constructor; simpl; eauto.
     split; eauto.
     red. rewrite Hnb1, Hnb2. constructor.
@@ -1147,120 +929,6 @@ Proof.
   rewrite <- meminj_dom_flat_inj.
   eapply match_c_query_dom; eauto.
 Qed.
-
-Lemma cc_injt_inj:
-  ccref
-    (cc_c injn @ cc_c inj)
-    (cc_c injn @ cc_inject_triangle @ cc_c injn @ cc_c inj).
-Proof.
-  intros [nb f] q1 q3 (q2 & Hq12 & Hq23). simpl in * |- .
-  exists (nb, (nb, (nb, f))). split.
-  - pose proof (match_c_query_injn_l nb q1 q2 Hq12) as Hq11.
-    repeat (eexists; split); cbn [fst snd].
-    + eauto.
-    + apply match_c_query_injn_inj in Hq11 as (Hq11 & Hnb & _).
-      destruct q1, Hq11 as [Hfb Hsg Hargs [Hm Hwf]]; simpl in *. subst nb.
-      constructor; eauto.
-      apply val_inject_list_rel; eauto.
-    + eapply Hq12.
-    + assumption.
-  - intros r1 r5 (r2 & Hr12 & r3 & Hr23 & r4 & Hr34 & Hr45).
-    cbn [fst snd] in *.
-    exists r2; split; eauto.
-    clear r1 Hr12. destruct r2 as [v2 m2].
-    destruct r3 as [v3 m3], Hr23 as (f23 & Hf23 & Hv23 & Hm23 & Hwf23).
-    destruct r4 as [v4 m4], Hr34 as (nb3 & Hnb3 & Hv34 & [[Hm34 Hwf34] Hnb34]).
-    destruct r5 as [v5 r5], Hr45 as (f45 & Hf45 & Hv45 & Hm45 & Hwf45).
-    simpl in * |- .
-    exists (compose_meminj f23 (compose_meminj (Mem.flat_inj nb3) f45)).
-    split.
-    + simpl.
-      destruct Hq23 as [Hfb23 Hsg23 Hvargs23 [Hm23' Hwf23']].
-      erewrite <- (compose_flat_inj f); eauto.
-      erewrite <- (compose_flat_inj f); eauto.
-      apply match_c_query_injn_inj in Hq12 as (Hq11 & Hnb1 & Hnb2).
-      rewrite Hnb2.
-      rauto.
-    + split; cbn [fst snd].
-      * repeat eapply Values.val_inject_compose; eauto.
-      * split.
-        -- repeat eapply Mem.inject_compose; eauto.
-        -- repeat eapply compose_meminj_wf; eauto.
-Qed.
-
-Lemma cc_injt_injp:
-  ccref
-    ((cc_c injn && cc_id) @ cc_c injp)
-    ((cc_c injn && cc_id) @ cc_c injp @ cc_c_tr inj @ cc_c injp).
-Proof.
-  intros ([nb [ ]] & w12) [fb1 sg1 vs1 m1] [fb2 sg vs2 m2] (xq1 & Hq11 & Hq12).
-  destruct Hq11 as [Hq11 Hxq1]. simpl in Hxq1. subst xq1.
-  apply match_c_query_injn_inj in Hq11.
-  destruct Hq11 as ([Hfb1 _ Hvs1 Hm1] & Hnb & _).
-  destruct Hq12 as [Hfb12 Hsg12 Hvs12 xHm12]. simpl in * |- . subst sg1.
-  inversion xHm12 as [f xm1 xm2 Hm12]; clear xHm12.
-  subst xm1 xm2 w12. simpl in * |- .
-  exists ((nb,tt),
-          (injpw (meminj_dom f) m1 m1,
-           (Mem.flat_inj nb,
-            injpw f m1 m2))).
-  split.
-  - exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
-    {
-      split; constructor; simpl; eauto.
-      split; eauto.
-      red. rewrite Hnb. constructor.
-    }
-    exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
-    {
-      constructor; simpl; eauto.
-      + eapply block_inject_dom; eauto.
-      + apply val_inject_list_rel.
-        eapply val_inject_list_dom; eauto.
-        apply val_inject_list_rel; eauto.
-      + constructor.
-        eapply mem_inject_dom; eauto.
-        eapply meminj_dom_wf; eauto.
-    }
-    exists (cq fb1 sg vs1 m1); split; cbn [fst snd].
-    {
-      split; simpl.
-      + destruct Hnb. eauto.
-      + constructor; simpl; eauto.
-    }
-    constructor; eauto.
-    constructor; eauto.
-  - intros r1 r4 (xr1 & [Hr1 Hxr1] & r2 & Hr12 & r3 & Hr23 & Hr34).
-    cbn [fst snd] in *. simpl in Hxr1. subst xr1.
-    destruct r1 as [v1' m1'], Hr1 as (nb' & Hnb' & Hv1' & Hm1' & Hwf1').
-    destruct r2 as [v2' m2'], Hr12 as (w12' & Hw12' & Hv12' & xHm12').
-    destruct r3 as [v3' m3'], Hr23 as (f23 & Hf23 & Hv23' & Hm23' & Hwf23').
-    destruct r4 as [v4' m4'], Hr34 as (w34' & Hw34' & Hv34' & xHm34').
-    simpl in * |- .
-    destruct Hm1' as [Hm1' Hnb1'].
-    inversion xHm12' as [f12 xm1' xm2' Hm12']; clear xHm12'; subst.
-    inversion xHm34' as [f34 xm3' xm4' Hm34']; clear xHm34'; subst.
-    exists (v1', m1'). cbn [fst snd]. split.
-    + simpl. rauto.
-    + exists (injpw (compose_meminj f12 (compose_meminj f23 f34)) m1' m4').
-      inv Hw12'. inv Hw34'.
-      split; constructor; eauto.
-      * eapply injp_max_perm_decrease_dom; eauto.
-      * eapply Mem.unchanged_on_implies; eauto.
-        intros. apply loc_unmapped_dom; eauto.
-      * rewrite <- (meminj_dom_compose f).
-        erewrite <- (compose_flat_inj f) at 2; eauto.
-        rauto.
-      * rewrite <- (meminj_dom_compose f).
-        eapply compose_meminj_separated; eauto using mem_inject_dom.
-        erewrite <- (compose_flat_inj f); eauto.
-        eapply compose_meminj_separated; eauto.
-        admit. (* CAN'T WORK, because we could allocate an empty block
-          in the source, mapped to an already valid block in the target.
-          -> we need inject_separated in the triangle diagrams too, or
-          at least some version thereof for target blocks. *)
-Abort.
-
 
 (** * Locset languages *)
 
@@ -1447,16 +1115,15 @@ Qed.
 (** With those auxiliary definitions, we can prove the commutation
   property we want for [cc_alloc]. *)
 
+(*
 Lemma cc_alloc_commut R:
   ccref
     (cc_c R @ cc_alloc)
     (cc_alloc @ cc_locset R).
 Proof.
   intros [w walloc] q1 q3 (q2 & Hq12 & Hq23). simpl in * |- .
-  destruct Hq23 as [id2 sg args2 rs m2 Hargs2].
-  destruct q1 as [id1 sg1 args1 m1], Hq12 as [Hid Hsg Hargs Hm]. simpl in * |-.
-  subst sg1.
-  set (rs1 := rs_of_args sg args1).
+  destruct Hq23 as [id2 sg args2 rs m2 Hargs2]. inv Hq12.
+  set (rs1 := rs_of_args sg vargs1).
   exists ((sg, rs1), w). split.
   - exists (lq id1 sg rs1 m1). split.
     + econstructor; eauto.
@@ -1483,6 +1150,7 @@ Proof.
     + constructor; eauto.
       admit. (* XXX we need to make agree_callee_save part of cc_locset or add a wt component. *)
 Abort.
+*)
 
 (* XXX a version is defined in Stackingproof, except for [ls1].
   We should make sure the direction in which agree_callee_save is used
@@ -1548,72 +1216,6 @@ Proof.
       eauto using Val.hiword_lessdef.
 Qed.
 
-Lemma cc_alloc_tr_commut R:
-  ccref
-    (cc_alloc @ cc_locset_tr R)
-    (cc_c_tr R @ cc_alloc).
-Proof.
-  intros [walloc w] q1 _ (q2 & Hq12 & [Hw Hq2]). simpl in * |- .
-  destruct Hq12 as [id1 sg args1 rs m1 Hargs1].
-  destruct Hq2 as [Hid _ Hrs Hm]. simpl in * |-.
-  exists (w, (sg, rs)). split.
-  - eexists; split.
-    + constructor; eauto. simpl.
-      constructor; eauto. simpl.
-      subst args1.
-      rauto.
-    + constructor; eauto.
-  - intros r1 r2 (rI & Hr1I & HrI2). simpl in * |- .
-    destruct r1 as [vres1 m1'], Hr1I as (w' & Hw' & Hvres & Hm').
-    inv HrI2. simpl in * |- .
-    set (loc_res := map_rpair Locations.R (loc_result sg)).
-    set (rs1' := Locmap.setpair (loc_result sg) vres1 (return_regs rs (Locmap.init Vundef))).
-    eexists (rs1', m1'); simpl; split.
-    + constructor; eauto.
-      * eapply agree_callee_save_set_result; eauto.
-        eapply return_regs_agree_callee_save.
-      * subst rs1'.
-        apply locmap_getpair_setpair.
-        admit. (* XXX need typing *)
-    + exists w'. split; eauto.
-      split; eauto. simpl.
-      set (vres2 := Locmap.getpair (map_rpair Locations.R (loc_result sg)) rs').
-      set (rs2' := Locmap.setpair (loc_result sg) vres2 (return_regs rs rs')).
-      intros l. eapply Mem.val_inject_lessdef_compose with (rs2' l).
-      * subst rs1' rs2'. rauto.
-      * subst rs2'.
-        eapply locmap_setpair_getpair_lessdef.
-        -- apply Val.lessdef_refl.
-        -- clear l. intros l.
-           unfold return_regs.
-           destruct l as [r | sl ofs ty].
-           ++ destruct is_callee_save eqn:Hcs; eauto.
-              rewrite H1; eauto.
-           ++ rewrite H1; eauto.
-Abort.
-
-Lemma locset_extt_ext:
-  ccref (cc_locset ext) (cc_locset_tr ext @ cc_locset ext).
-Proof.
-  intros [ ] q1 q2 Hq.
-  exists (tt, tt). split.
-  - exists q1. simpl. split; eauto.
-    constructor.
-    + simpl. rauto.
-    + constructor; simpl; reflexivity.
-  - intros r1 r3 (r2 & ([ ] & _ & Hr12 & Hm12) & ([ ] & _ & Hr23 & Hm23)).
-    exists tt; split. constructor.
-    simpl in *.
-    red in Hr12, Hr23 |- *.
-    red in Hr12, Hr23 |- *.
-    split.
-    + intro. red.
-      apply val_inject_id; eapply Val.lessdef_trans; apply val_inject_id.
-      * apply Hr12.
-      * apply Hr23.
-    + eapply Mem.extends_extends_compose; eauto.
-Qed.
-
 Require Import Lineartyping.
 
 Lemma alloc_wt_commut:
@@ -1633,29 +1235,3 @@ Proof.
     destruct Hr12.
     exists r3; split; cbn [fst snd]; eauto.
 Abort. (* XXX does not work b/c C typing more fine-grained than reg typing? *)
-
-Lemma locset_alloc_wt_extt_commut:
-  ccref
-    (cc_alloc @ locset_wt @ cc_locset_tr ext)
-    (cc_alloc @ cc_locset_tr ext @ locset_wt).
-Proof.
-  intros ([sg ls] & q & [ ]) q0 _ (xq & H0 & xxq & (Hq & Hxq & Hxxq) & [Hw Hq12]).
-  cbn [fst snd] in *. subst.
-  exists ((sg, ls), (tt, q)). split.
-  - exists q. simpl; split; eauto.
-    exists q. simpl; split; eauto.
-    constructor; eauto.
-  - intros r0 _ (r1 & Hr0 & r2 & Hr12 & [[_ Hr]]). simpl in * |- .
-    exists r1. split; simpl; eauto.
-    exists r1. split; simpl; eauto.
-    constructor; eauto.
-    split.
-    + inv Hr0. inv H0. simpl in *. intros ? ?. symmetry; eauto.
-    + destruct Hr12 as ([ ] & _ & Hr12 & Hm12).
-      intuition auto.
-      * intros ty ofs.
-        specialize (H ty ofs).
-        specialize (Hr12 (S Outgoing ofs ty)). red in Hr12.
-        setoid_rewrite H in Hr12. inv Hr12. symmetry. assumption.
-      * eapply (val_has_type_inject inject_id). eapply Hr12. auto.
-Qed.

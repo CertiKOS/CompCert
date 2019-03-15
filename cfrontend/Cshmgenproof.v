@@ -1792,7 +1792,7 @@ Proof.
   edestruct (match_cc_id q) as (w & Hq & H).
   destruct HS. inv HSR.
   assert (fd = f) by congruence; subst fd.
-  exists w, (cq b sg vargs m); repeat apply conj; eauto.
+  exists w, (cq id sg vargs m); repeat apply conj; eauto.
   - edestruct function_ptr_translated as (cu' & tf & Htf & Hf & Hcu); eauto.
     inv TR.
     subst f. inv Hf.

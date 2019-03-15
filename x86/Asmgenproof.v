@@ -21,13 +21,13 @@ Require Import Asmgen Asmgenproof0 Asmgenproof1.
 (** * Calling convention *)
 
 Inductive cc_asmgen_mq: _ -> query li_mach -> query li_asm -> Prop :=
-  | cc_asmgen_mq_intro fb ms m1 rs m2 sp:
+  | cc_asmgen_mq_intro id ms m1 rs m2 sp:
       valid_blockv m2 sp ->
-      rs#PC = Vptr fb Ptrofs.zero ->
+      rs#PC = Vptr (Block.glob id) Ptrofs.zero ->
       rs#RA <> Vundef ->
       agree ms sp rs ->
       Mem.extends m1 m2 ->
-      cc_asmgen_mq (sp, rs#RA, Mem.nextblock m2) (mq fb sp rs#RA ms m1) (rs, m2).
+      cc_asmgen_mq (sp, rs#RA, Mem.nextblock m2) (mq id sp rs#RA ms m1) (rs, m2).
 
 Definition cc_asmgen_mr: _ -> reply li_mach -> reply li_asm -> _ :=
   fun '(sp, ra, nb) '(ms', m1') '(rs', m2') =>
@@ -43,14 +43,14 @@ Definition cc_asmgen: callconv li_mach li_asm :=
     match_reply := cc_asmgen_mr;
   |}.
 
-Lemma match_cc_asmgen fb sp ms m1 rs m2:
+Lemma match_cc_asmgen id sp ms m1 rs m2:
   valid_blockv m2 sp ->
-  rs#PC = Vptr fb Ptrofs.zero ->
+  rs#PC = Vptr (Block.glob id) Ptrofs.zero ->
   rs#RA <> Vundef ->
   agree ms sp rs ->
   Mem.extends m1 m2 ->
   exists w,
-    match_query cc_asmgen w (mq fb sp rs#RA ms m1) (rs, m2) /\
+    match_query cc_asmgen w (mq id sp rs#RA ms m1) (rs, m2) /\
     forall ms' m1' rs' m2',
       match_reply cc_asmgen w (ms', m1') (rs', m2') ->
       rs'#PC = rs#RA /\

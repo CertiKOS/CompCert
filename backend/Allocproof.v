@@ -2512,13 +2512,12 @@ Lemma initial_states_simulation:
 Proof.
   unfold ms.
   inv_compose_query.
-  intros [] [id1 sg1 args1 m1] [id2 sg2 args2 m2] [Hid Hsg Hargs Hm]. simpl in *.
-  apply coreflexivity in Hid. subst.
+  intros [] _ _ [id sg args1 args2 m1 m2 Hargs Hm]. simpl in *.
   inv_alloc_query. intros id' sg' args' rs m' Hargs' Hq. inv Hq.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   exploit sig_function_translated; eauto. intros SIG.
-  exists (LTL.Callstate (Parent rs :: nil) id2 rs m2); split.
+  exists (LTL.Callstate (Parent rs :: nil) (Block.glob id) rs m2); split.
   fold (RTL.funsig (Internal f)).
   rewrite <- SIG.
   monadInv TR.
@@ -2579,7 +2578,7 @@ Proof.
   inv H. simpl in AG.
   exists (ls, m'). split.
   - eapply match_reply_cc_compose.
-    + apply match_reply_cc_extends_triangle; eauto.
+    + apply match_reply_ext; eauto.
     + apply match_reply_cc_alloc; eauto.
       unfold loc_result, loc_result_32, loc_result_64.
       unfold proj_sig_res in H1.

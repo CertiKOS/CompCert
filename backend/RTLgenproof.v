@@ -1561,12 +1561,12 @@ Proof.
 Qed.
 
 Lemma transl_initial_states:
-  forall w q1 q2, match_query cc_extends_triangle w q1 q2 ->
+  forall w q1 q2, match_query (cc_c ext) w q1 q2 ->
   forall S, CminorSel.initial_state ge q1 S ->
   exists R, RTL.initial_state tge q2 R /\ match_states S R.
 Proof.
-  inv_triangle_query.
-  intros id sg vargs m S H.
+  inv_query_ext.
+  intros id sg vargs1 vargs2 m1 m2 Hvargs Hm S H.
   inv H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
   econstructor; split.
@@ -1576,8 +1576,6 @@ Proof.
   econstructor.
   eexact A.
   econstructor; eauto. constructor.
-  clear; induction vargs; eauto.
-  apply Mem.extends_refl.
 Qed.
 
 Lemma transl_external:
@@ -1585,10 +1583,10 @@ Lemma transl_external:
     match_states S R ->
     CminorSel.at_external ge S q1 ->
     exists wA q2,
-      match_query (cc_c extp) wA q1 q2 /\
+      match_query (cc_c ext) wA q1 q2 /\
       RTL.at_external tge R q2 /\
       forall r1 r2 S',
-        match_reply (cc_c extp) wA r1 r2 ->
+        match_reply (cc_c ext) wA r1 r2 ->
         CminorSel.after_external S r1 S' ->
         exists R',
           RTL.after_external R r2 R' /\
@@ -1596,14 +1594,14 @@ Lemma transl_external:
 Proof.
   intros S R q HSR HS.
   destruct HS as [fb id sg vargs k m Hfb]. inv HSR. inv TF.
-  edestruct match_cc_extends as (w & Hq & H); eauto.
+  edestruct match_cc_ext as (w & Hq & H); eauto.
   assert (f = External (EF_external id sg)) by congruence; subst f.
   exists w, (cq fb sg targs tm); repeat apply conj; eauto.
   - inv H0.
     econstructor; eauto.
   - intros r1 [vres2 m2'] H' Hr HS'.
     inv HS'.
-    edestruct H as (Hvres & Hm' & Hunch); eauto.
+    edestruct H as (Hvres & Hm'); eauto.
     eexists; split.
     + econstructor.
     + econstructor; eauto.
@@ -1612,15 +1610,16 @@ Qed.
 Lemma transl_final_states:
   forall w S R r1,
   match_states S R -> CminorSel.final_state S r1 ->
-  exists r2, match_reply cc_extends_triangle w r1 r2 /\ RTL.final_state R r2.
+  exists r2, match_reply (cc_c ext) w r1 r2 /\ RTL.final_state R r2.
 Proof.
   intros. inv H0. inv H. inv MS.
-  exists (tv, tm). split; auto using match_reply_cc_extends_triangle.
+  exists (tv, tm). split.
+  eapply match_reply_ext; eauto.
   constructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (cc_c extp) cc_extends_triangle
+  forward_simulation (cc_c ext) (cc_c ext)
     (CminorSel.semantics prog)
     (RTL.semantics tprog).
 Proof.

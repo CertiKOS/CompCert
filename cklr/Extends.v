@@ -175,3 +175,93 @@ Qed.
 Next Obligation.
   intuition xomega.
 Qed.
+
+
+(** * Composition theorems *)
+
+Require Import CKLRAlgebra.
+
+Lemma compose_meminj_id_left f:
+  compose_meminj inject_id f = f.
+Proof.
+  apply functional_extensionality. intros b.
+  unfold compose_meminj, inject_id.
+  destruct (f b) as [[b' delta] | ]; eauto.
+Qed.
+
+Lemma compose_meminj_id_right f:
+  compose_meminj f inject_id = f.
+Proof.
+  apply functional_extensionality. intros b.
+  unfold compose_meminj, inject_id.
+  destruct (f b) as [[b' delta] | ]; eauto.
+  replace (delta + 0) with delta by xomega; eauto.
+Qed.
+
+Lemma ext_ext :
+   eqcklr (ext @ ext) ext.
+Proof.
+  split.
+  - intros [[ ] [ ]] m1 m3 (m2 & Hm12 & Hm23).
+    exists tt. cbn in *. repeat apply conj.
+    + eauto using Mem.extends_extends_compose.
+    + rewrite compose_meminj_id_left. reflexivity.
+    + intros [ ] m1' m3' Hm _.
+      exists (tt, tt). intuition auto.
+      * exists m1'; eauto using Mem.extends_refl.
+      * rauto.
+  - intros [ ] m1 m2 Hm.
+    exists (tt, tt). cbn. repeat apply conj.
+    + exists m1; eauto using Mem.extends_refl.
+    + rewrite compose_meminj_id_left. reflexivity.
+    + intros [[ ] [ ]] m1' m3' (m2' & Hm12' & Hm23') _.
+      exists tt. intuition auto.
+      * eauto using Mem.extends_extends_compose.
+      * rauto.
+Qed.
+
+Lemma ext_inj :
+  eqcklr (ext @ inj) inj.
+Proof.
+  split.
+  - intros [[ ] f] m1 m3 (m2 & Hm12 & Hm23 & Hf).
+    exists f. cbn in *. repeat apply conj; eauto.
+    + eapply Mem.extends_inject_compose; eauto.
+    + rewrite compose_meminj_id_left. reflexivity.
+    + intros f' m1' m3' Hm' Hincr.
+      exists (tt, f'). intuition auto; cbn.
+      * exists m1'. eauto using Mem.extends_refl.
+      * rauto.
+      * rewrite compose_meminj_id_left. reflexivity.
+  - intros w m1 m2 Hm.
+    exists (tt, w). cbn. repeat apply conj.
+    + exists m1. split; auto. apply Mem.extends_refl.
+    + rewrite compose_meminj_id_left. reflexivity.
+    + intros [[ ] f'] m1' m2' (mi & Hm1i & Hmi2 & Hwf) [_ Hf']. cbn in *.
+      exists f'. intuition auto.
+      * split; auto. eapply Mem.extends_inject_compose; eauto.
+      * rewrite compose_meminj_id_left. reflexivity.
+Qed.
+
+Lemma inj_ext :
+  eqcklr (inj @ ext) inj.
+Proof.
+  split.
+  - intros [f [ ]] m1 m3 (m2 & [Hm12 Hf] & Hm23).
+    exists f. cbn in *. repeat apply conj; eauto.
+    + eapply Mem.inject_extends_compose; eauto.
+    + rewrite compose_meminj_id_right. reflexivity.
+    + intros f' m1' m3' Hm' Hincr.
+      exists (f', tt). intuition auto; cbn.
+      * exists m3'. eauto using Mem.extends_refl.
+      * rauto.
+      * rewrite compose_meminj_id_right. reflexivity.
+  - intros w m1 m2 Hm.
+    exists (w, tt). cbn. repeat apply conj.
+    + exists m2. split; auto. apply Mem.extends_refl.
+    + rewrite compose_meminj_id_right. reflexivity.
+    + intros [f' [ ]] m1' m2' (mi & [Hm1i Hwf] & Hmi2) [Hf' _]. cbn in *.
+      exists f'. intuition auto.
+      * split; auto. eapply Mem.inject_extends_compose; eauto.
+      * rewrite compose_meminj_id_right. reflexivity.
+Qed.

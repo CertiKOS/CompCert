@@ -737,7 +737,7 @@ Proof.
   intros w q1 q Hq. apply match_query_cc_id in Hq. subst.
   intros. inversion H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
-  exists (Callstate (Parent rs :: nil) b rs m); split.
+  exists (Callstate (Parent rs :: nil) (Block.glob id) rs m); split.
   fold (LTL.funsig (Internal f)).
   erewrite <- sig_preserved by eauto.
   monadInv B.

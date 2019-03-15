@@ -428,7 +428,7 @@ End RELSEM.
 
 Record mach_query :=
   mq {
-    mq_fb: block;
+    mq_id: ident;
     mq_sp: val;
     mq_ra: val;
     mq_rs: regset;
@@ -439,7 +439,7 @@ Definition li_mach: language_interface :=
   {|
     query := mach_query;
     reply := regset * mem;
-    query_is_internal ge q := Senv.block_is_internal ge (mq_fb q);
+    query_is_internal ge q := Senv.block_is_internal ge (Block.glob (mq_id q));
   |}.
 
 (** The [valid_blockv] predicate is used to characterize the initial
@@ -471,18 +471,18 @@ Qed.
 
 
 Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
-  | initial_state_intro: forall fb f sp ra rs m,
-      Genv.find_funct_ptr ge fb = Some (Internal f) ->
+  | initial_state_intro: forall id f sp ra rs m,
+      Genv.find_funct_ptr ge (Block.glob id) = Some (Internal f) ->
       initial_state ge
-        (mq fb sp ra rs m)
-        (Callstate (Parent sp ra :: nil) fb rs m).
+        (mq id sp ra rs m)
+        (Callstate (Parent sp ra :: nil) (Block.glob id) rs m).
 
 Inductive at_external (ge: genv): state -> query li_mach -> Prop :=
-  | at_external_intro fb id sg s rs m:
-      Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
+  | at_external_intro id name sg s rs m:
+      Genv.find_funct_ptr ge (Block.glob id) = Some (External (EF_external name sg)) ->
       at_external ge
-        (Callstate s fb rs m)
-        (mq fb (parent_sp s) (parent_ra s) rs m).
+        (Callstate s (Block.glob id) rs m)
+        (mq id (parent_sp s) (parent_ra s) rs m).
 
 Inductive after_external (ge: genv): state -> reply li_mach -> state -> Prop :=
   | after_external_intro fb s rs m rs' m':

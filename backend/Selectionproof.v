@@ -1086,23 +1086,22 @@ Proof.
 Qed.
 
 Lemma sel_initial_states:
-  forall w q1 q2, match_query cc_extends_triangle w q1 q2 ->
+  forall w q1 q2, match_query (cc_c ext) w q1 q2 ->
   forall S, Cminor.initial_state ge q1 S ->
   exists R, initial_state tge q2 R /\ match_states S R.
 Proof.
-  inv_triangle_query.
-  destruct 1.
+  inv_query_ext.
+  intros id sg vargs1 vargs2 m1 m2 Hvargs Hm S H.
+  inv H.
   exploit function_ptr_translated; eauto. intros (cu & f' & A & B & C).
   econstructor; split.
   {
     fold (Cminor.funsig (Internal f)).
     erewrite <- sig_function_translated by eauto.
-    pose proof B. inv B. destruct H1. monadInv H2.
+    pose proof B. inv B. destruct H0. monadInv H1.
     econstructor; eauto.
   }
   econstructor; eauto. red; intros; constructor.
-  clear; induction vargs0; eauto.
-  apply Mem.extends_refl.
 Qed.
 
 Lemma sel_external:
@@ -1110,10 +1109,10 @@ Lemma sel_external:
     match_states S R ->
     Cminor.at_external ge S q1 ->
     exists wA q2,
-      match_query (cc_c extp) wA q1 q2 /\
+      match_query (cc_c ext) wA q1 q2 /\
       CminorSel.at_external tge R q2 /\
       forall r1 r2 S',
-        match_reply (cc_c extp) wA r1 r2 ->
+        match_reply (cc_c ext) wA r1 r2 ->
         Cminor.after_external S r1 S' ->
         exists R',
           CminorSel.after_external R r2 R' /\
@@ -1121,7 +1120,7 @@ Lemma sel_external:
 Proof.
   intros S R q HSR HS.
   destruct HS as [fb id sg vargs k m Hfb]. inv HSR.
-  - edestruct match_cc_extends as (w & Hq & H); eauto.
+  - edestruct match_cc_ext as (w & Hq & H); eauto.
     destruct TF as (hf & Hhf & Hf').
     inv Hf'.
     assert (f = External (EF_external id sg)) by congruence; subst.
@@ -1131,7 +1130,7 @@ Proof.
       econstructor; eauto.
     + intros r1 [vres2 m2'] H' Hr HS'.
       inv HS'.
-      edestruct H as (Hvres & Hm' & Hunch); eauto.
+      edestruct H as (Hvres & Hm'); eauto.
       eexists; split.
       * econstructor.
       * econstructor; eauto.
@@ -1141,16 +1140,16 @@ Qed.
 
 Lemma sel_final_states:
   forall w S R r1, match_states S R -> Cminor.final_state S r1 ->
-  exists r2, match_reply cc_extends_triangle w r1 r2 /\ final_state R r2.
+  exists r2, match_reply (cc_c ext) w r1 r2 /\ final_state R r2.
 Proof.
   intros. inv H0. inv H.
-  exists (v', m'). split; eauto using match_reply_cc_extends_triangle.
+  exists (v', m'). split; eauto using match_reply_ext.
   apply match_call_cont_cont in MC. destruct MC as (cunit0 & hf0 & MC).
   inv MC. constructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (cc_c extp) cc_extends_triangle
+  forward_simulation (cc_c ext) (cc_c ext)
     (Cminor.semantics prog)
     (CminorSel.semantics tprog).
 Proof.

@@ -34,7 +34,7 @@ Require Cshmgen.
 Require Cminorgen.
 Require Selection.
 Require RTLgen.
-(* Require Tailcall. *)
+Require Tailcall.
 (* Require Inlining. *)
 (* Require Renumber. *)
 (* Require Constprop. *)
@@ -359,8 +359,7 @@ Require Import InjectNeutral.
 Require Import Clightrel.
 
 Definition cc_compcert: callconv li_c Asm.li_asm :=
-  cc_star (cc_c injp + cc_c extp + cc_c injn) @
-  cc_c injn @
+  cc_star (cc_c injp) @
   cc_c inj @
   wt_c @ cc_c ext @ cc_alloc @
   locset_wt @ Stackingproof.cc_stacking injp @
@@ -368,30 +367,23 @@ Definition cc_compcert: callconv li_c Asm.li_asm :=
 
 Lemma c_properties p:
   forward_simulation
-    (cc_star (cc_c injp + cc_c extp + cc_c injn) @ cc_c injn)
-    (cc_star (cc_c injp + cc_c extp + cc_c injn) @ cc_c injn)
+    (cc_star (cc_c injp))
+    (cc_star (cc_c injp))
     (Clight.semantics2 p)
     (Clight.semantics2 p).
 Proof.
-  eapply compose_forward_simulations; eauto using Clightrel.semantics2_rel.
   eapply cc_star_fsim.
-  repeat eapply cc_join_fsim.
-  - rewrite <- cc_join_ub_l, <- cc_join_ub_l.
-    apply Clightrel.semantics2_rel.
-  - rewrite <- cc_join_ub_l, <- cc_join_ub_r.
-    apply Clightrel.semantics2_rel.
-  - rewrite <- cc_join_ub_r.
-    apply Clightrel.semantics2_rel.
+  apply Clightrel.semantics2_rel.
 Qed.
 
 Lemma rtl_properties p:
   forward_simulation
-    (cc_c injn @ cc_c inj)
-    (cc_c injn @ cc_c inj)
+    (cc_c inj)
+    (cc_c inj)
     (RTL.semantics p)
     (RTL.semantics p).
 Proof.
-  eapply compose_forward_simulations; rauto.
+  rauto.
 Qed.
 
 Lemma cc_star_subfold_r {A B} (cc cc': callconv A A) (ccs: callconv A B):
@@ -404,6 +396,24 @@ Proof.
   repeat rstep.
   eapply cc_join_r.
   rauto.
+Qed.
+
+Require Import CKLR.
+Require Import CKLRAlgebra.
+
+Lemma cc_c_subcompose {A} (R S : CKLR.cklr) (cc : callconv li_c A):
+  cceqv (cc_c (R @ S) @ cc) (cc_c R @ cc_c S @ cc).
+Proof.
+  rewrite <- cc_compose_assoc.
+  rewrite cc_c_compose.
+  reflexivity.
+Qed.
+
+Global Instance po_subrel `{Equivalence} S `{!PreOrder S} :
+  PartialOrder R S ->
+  RIntro True subrel R S.
+Proof.
+  firstorder.
 Qed.
 
 Theorem clight_semantic_preservation:
@@ -488,25 +498,22 @@ Ltac DestructM :=
   - unfold cc_compcert.
     rewrite ?cc_compose_id_left, ?cc_compose_id_right.
     rewrite !cc_compose_assoc.
-    do 4 rewrite cc_star_subfold_r
-      by eauto using cc_join_l, cc_join_r, (reflexivity (R:=ccref)).
+    repeat rewrite cc_star_subfold_r
+      by auto using cc_join_l, cc_join_r, (reflexivity (R:=ccref)).
+    rewrite <- !cc_c_subcompose.
+    rewrite ?ext_ext, ?ext_inj.
     reflexivity.
 
   - unfold flip, cc_compcert.
     rewrite ?cc_compose_id_left, ?cc_compose_id_right.
-    repeat
-      rewrite <- (cc_compose_assoc cc_inject_triangle cc_extends_triangle),
-              <- cc_inject_extends_triangle.
     rewrite !cc_compose_assoc.
-
-    rewrite <- (cc_compose_assoc (cc_c injn) (cc_c inj) (wt_c @ _)) at 2.
-    rewrite <- (cc_compose_assoc _ (cc_c injn @ cc_c inj) _).
-    rewrite <- (cc_compose_assoc (cc_c injn) (cc_inject_triangle @ _)).
-    rewrite <- cc_injt_inj.
-    rewrite !cc_compose_assoc.
-
-    reflexivity.
-
+    repeat rewrite cc_star_subfold_r
+      by auto using cc_join_l, cc_join_r, (reflexivity (R:=ccref)).
+    rewrite <- !cc_c_subcompose.
+    repeat rstep.
+    etransitivity. apply inj_inj. repeat rstep.
+    etransitivity. apply inj_ext. repeat rstep.
+    apply inj_ext.
   }
   split. auto.
   apply forward_to_backward_simulation.
