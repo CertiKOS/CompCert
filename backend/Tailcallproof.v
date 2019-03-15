@@ -238,12 +238,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf TRANSL).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma sig_preserved:
   forall f, funsig (transf_fundef f) = funsig f.
 Proof.
@@ -403,12 +397,10 @@ Ltac EliminatedInstr :=
 Lemma transf_step_correct:
   forall s1 t s2, step ge s1 t s2 ->
   forall s1' (MS: match_states s1 s1'),
-  exists w, (exists t', match_events_query _ w t t') /\
-  forall t', match_events cc_extends w t t' ->
-  (exists s2', step tge s1' t' s2' /\ match_states s2 s2')
+  (exists s2', step tge s1' t s2' /\ match_states s2 s2')
   \/ (measure s2 < measure s1 /\ t = E0 /\ match_states s2 s1')%nat.
 Proof.
-  induction 1; intros; inv MS; try stable_step; EliminatedInstr.
+  induction 1; intros; inv MS; EliminatedInstr.
 
 - (* nop *)
   TransfInstr. left. econstructor; split.
@@ -492,9 +484,7 @@ Proof.
   exploit (@eval_builtin_args_lessdef _ ge (fun r => rs#r) (fun r => rs'#r)); eauto.
   intros (vargs' & P & Q).
   exploit external_call_mem_extends; eauto.
-  intros (w & Hwq & Hw). exists w; split; eauto.
-  intros t' Ht'. specialize (Hw t' Ht').
-  destruct Hw as [v' [m'1 [A [B [C D]]]]].
+  intros [v' [m'1 [A [B [C D]]]]].
   left. exists (State s' (transf_function f) (Vptr sp0 Ptrofs.zero) pc' (regmap_setres res v' rs') m'1); split.
   eapply exec_Ibuiltin; eauto.
   eapply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved.
@@ -540,6 +530,7 @@ Proof.
 
 - (* internal call *)
   rewrite H5 in H; inv H.
+  apply funct_ptr_translated in H5.
   exploit Mem.alloc_extends; eauto.
     instantiate (1 := 0). omega.
     instantiate (1 := fn_stacksize f). omega.
@@ -549,7 +540,6 @@ Proof.
           fn_params (transf_function f) = fn_params f).
     unfold transf_function. destruct (zeq (fn_stacksize f) 0); auto.
   destruct H as [EQ1 [EQ2 EQ3]].
-  apply funct_ptr_translated in H5.
   left. econstructor; split.
   simpl. eapply exec_function_internal; eauto. rewrite EQ1; eauto.
   rewrite EQ2. rewrite EQ3. constructor; auto.
@@ -557,11 +547,9 @@ Proof.
 
 - (* external call *)
   rewrite H5 in H; inv H.
-  exploit external_call_mem_extends; eauto.
-  intros (w & Hwq & Hw). exists w; split; eauto.
-  intros t' Ht'. specialize (Hw t' Ht').
-  destruct Hw as [res' [m2' [A [B [C D]]]]].
   apply funct_ptr_translated in H5.
+  exploit external_call_mem_extends; eauto.
+  intros [res' [m2' [A [B [C D]]]]].
   left. exists (Returnstate s' res' m2'); split.
   simpl. econstructor; eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
@@ -584,25 +572,53 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall st1, initial_state prog st1 ->
-  exists st2, initial_state tprog st2 /\ match_states st1 st2.
+  forall w q1 q2, match_query (cc_c ext) w q1 q2 ->
+  forall st1, initial_state ge q1 st1 ->
+  exists st2, initial_state tge q2 st2 /\ match_states st1 st2.
 Proof.
-  intros. inv H.
+  inv_query_ext.
+  intros id sg vargs1 vargs2 m1 m2 Hvargs Hm st1 H. inv H.
   exploit funct_ptr_translated; eauto. intro FIND.
-  exists (Callstate nil b nil m0); split.
-  econstructor; eauto. apply (Genv.init_mem_transf TRANSL). auto.
-  replace (prog_main tprog) with (prog_main prog).
-  rewrite symbols_preserved. eauto.
-  symmetry; eapply match_program_main; eauto.
-  rewrite <- H3. apply sig_preserved.
-  econstructor. eauto. constructor. constructor. apply Mem.extends_refl.
+  exists (Callstate nil (Block.glob id) vargs2 m2); split.
+  setoid_rewrite <- (sig_preserved (Internal f)). simpl.
+  econstructor; eauto.
+  econstructor. eauto. constructor. assumption. assumption.
+Qed.
+
+Lemma transf_external:
+  forall st1 st2 q1,
+    match_states st1 st2 ->
+    at_external ge st1 q1 ->
+    exists w q2,
+      match_query (cc_c ext) w q1 q2 /\
+      RTL.at_external tge st2 q2 /\
+      forall r1 r2 st1',
+        match_reply (cc_c ext) w r1 r2 ->
+        after_external st1 r1 st1' ->
+        exists st2',
+          RTL.after_external st2 r2 st2' /\
+          match_states st1' st2'.
+Proof.
+  intros st1 st2 q1 Hst H. destruct H; inv Hst.
+  edestruct match_cc_ext as (w & Hq & Hr); eauto.
+  eexists w, _. split; eauto. split.
+  - apply funct_ptr_translated in H.
+    econstructor; eauto.
+  - intros r1 r2 st1' Hr12 Hst1'.
+    inv Hst1'. destruct r2.
+    edestruct Hr as [Hvres Hm']; eauto.
+    eexists. split. econstructor.
+    econstructor; eauto.
 Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r,
-  match_states st1 st2 -> final_state st1 r -> final_state st2 r.
+  forall w st1 st2 r1,
+  match_states st1 st2 -> final_state st1 r1 ->
+  exists r2, match_reply (cc_c ext) w r1 r2 /\ final_state st2 r2.
 Proof.
-  intros. inv H0. inv H. inv H5. inv H3. constructor.
+  intros. inv H0. inv H. inv H3. exists (v', m'). split.
+  - eapply match_reply_ext; eauto.
+  - constructor.
 Qed.
 
 
@@ -610,13 +626,16 @@ Qed.
   follows. *)
 
 Theorem transf_program_correct:
-  forward_simulation cc_extends (RTL.semantics prog) (RTL.semantics tprog).
+  forward_simulation (cc_c ext) (cc_c ext)
+    (RTL.semantics prog)
+    (RTL.semantics tprog).
 Proof.
   eapply forward_simulation_opt with (measure := measure); eauto.
   apply senv_preserved.
-  eexact transf_initial_states.
+  apply transf_initial_states.
+  eauto using transf_external.
   eexact transf_final_states.
-  exact transf_step_correct.
+  intros. eapply transf_step_correct; eauto.
 Qed.
 
 End PRESERVATION.
