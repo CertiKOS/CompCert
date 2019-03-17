@@ -165,12 +165,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf TRANSL).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma sig_preserved:
   forall f, funsig (tunnel_fundef f) = funsig f.
 Proof.
@@ -210,6 +204,12 @@ Definition locmap_lessdef (ls1 ls2: locset) : Prop :=
   forall l, Val.lessdef (ls1 l) (ls2 l).
 
 Inductive match_stackframes: stackframe -> stackframe -> Prop :=
+  | match_stackframes_parent:
+      forall ls tls,
+      locmap_lessdef ls tls ->
+      match_stackframes
+        (Parent ls)
+        (Parent tls)
   | match_stackframes_intro:
       forall f sp ls0 bb tls0,
       locmap_lessdef ls0 tls0 ->
@@ -400,14 +400,10 @@ Definition measure (st: state) : nat :=
   | Returnstate s ls m => 0%nat
   end.
 
-Section WITHINITLS.
-
-Variable init_ls: locset.
-
 Lemma match_parent_locset:
   forall s ts,
   list_forall2 match_stackframes s ts ->
-  locmap_lessdef (parent_locset init_ls s) (parent_locset init_ls ts).
+  locmap_lessdef (parent_locset s) (parent_locset ts).
 Proof.
   induction 1; simpl.
 - red; auto.
@@ -415,19 +411,17 @@ Proof.
 Qed.
 
 Lemma tunnel_step_correct:
-  forall st1 t st2, step init_ls ge st1 t st2 ->
+  forall st1 t st2, step ge st1 t st2 ->
   forall st1' (MS: match_states st1 st1'),
-  exists w, (exists t', match_events_query _ w t t') /\
-  forall t', match_events cc_extends w t t' ->
-  (exists st2', step init_ls tge st1' t' st2' /\ match_states st2 st2')
+  (exists st2', step tge st1' t st2' /\ match_states st2 st2')
   \/ (measure st2 < measure st1 /\ t = E0 /\ match_states st2 st1')%nat.
 Proof.
-  induction 1; intros; try inv MS; try stable_step.
+  induction 1; intros; try inv MS.
 
 - (* entering a block *)
   assert (DEFAULT: branch_target f pc = pc ->
     (exists st2' : state,
-     step init_ls tge (State ts (tunnel_function f) sp (branch_target f pc) tls tm) E0 st2'
+     step tge (State ts (tunnel_function f) sp (branch_target f pc) tls tm) E0 st2'
      /\ match_states (Block s f sp bb rs m) st2')).
   { intros. rewrite H0. econstructor; split.
     econstructor. simpl. rewrite PTree.gmap1. rewrite H. simpl. eauto.
@@ -492,10 +486,7 @@ Proof.
   econstructor; eauto using return_regs_lessdef, match_parent_locset.
 - (* Lbuiltin *)
   exploit eval_builtin_args_lessdef. eexact LS. eauto. eauto. intros (tvargs & EVA & LDA).
-  exploit external_call_mem_extends; eauto.
-  intros (w & Hwq & Hw). exists w; split; eauto.
-  intros t' Ht'. specialize (Hw t' Ht').
-  destruct Hw as (tvres & tm' & A & B & C & D).
+  exploit external_call_mem_extends; eauto. intros (tvres & tm' & A & B & C & D).
   left; simpl; econstructor; split.
   eapply exec_Lbuiltin; eauto.
   eapply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved. 
@@ -544,9 +535,7 @@ Proof.
 - (* external function *)
   rewrite FIND in H; inv H.
   exploit external_call_mem_extends; eauto using locmap_getpairs_lessdef.
-  intros (w & Hwq & Hw). exists w; split; eauto.
-  intros t' Ht'. specialize (Hw t' Ht').
-  destruct Hw as (tvres & tm' & A & B & C & D).
+  intros (tvres & tm' & A & B & C & D).
   left; simpl; econstructor; split.
   apply function_ptr_translated in FIND.
   eapply exec_function_external; eauto.
@@ -559,41 +548,77 @@ Proof.
   constructor; auto.
 Qed.
 
-End WITHINITLS.
-
 Lemma transf_initial_states:
-  forall st1, initial_state prog st1 ->
-  exists st2, initial_state tprog st2 /\ match_states st1 st2.
+  forall w q1 q2, match_query (Conventions.cc_locset ext) w q1 q2 ->
+  forall st1, initial_state ge q1 st1 ->
+  exists st2, initial_state tge q2 st2 /\ match_states st1 st2.
 Proof.
-  intros. inversion H.
-  exists (Callstate nil b (Locmap.init Vundef) m0); split.
-  apply function_ptr_translated in H2.
-  econstructor; eauto.
-  apply (Genv.init_mem_transf TRANSL); auto.
-  rewrite (match_program_main TRANSL).
-  rewrite symbols_preserved. eauto.
-  rewrite <- H3. apply sig_preserved.
-  econstructor. eauto. constructor. red; simpl; auto. apply Mem.extends_refl.
+  intros [ ] _ _ [id sg rs1 rs2 m1 m2 Hrs Hm].
+  intros. inv H.
+  exists (Callstate (Parent rs2 :: nil) (Block.glob id) rs2 m2).
+  split.
+  - apply function_ptr_translated in H5. simpl in H5.
+    replace (fn_sig f) with (fn_sig (tunnel_function f))
+      by apply (sig_preserved (Internal f)).
+    econstructor; eauto.
+  - simpl in Hrs. rewrite val_inject_lessdef_eqrel in Hrs.
+    repeat (econstructor; eauto).
+Qed.
+
+Lemma transf_external:
+  forall st1 st2 q1,
+    match_states st1 st2 ->
+    at_external ge st1 q1 ->
+    exists w q2,
+      match_query (Conventions.cc_locset ext) w q1 q2 /\
+      at_external tge st2 q2 /\
+      forall r1 r2 st1',
+        match_reply (Conventions.cc_locset ext) w r1 r2 ->
+        after_external ge st1 r1 st1' ->
+        exists st2',
+          after_external tge st2 r2 st2' /\
+          match_states st1' st2'.
+Proof.
+  intros. destruct H0. inv H.
+  exists tt, (Conventions.lq id sg tls tm). split.
+  - constructor.
+    + rewrite val_inject_lessdef_eqrel. apply LS.
+    + simpl. auto.
+  - split.
+    + apply function_ptr_translated in H0.
+      econstructor; eauto.
+    + intros [ls' m'] [tls' tm'] st1' ([ ] & _ & Hls & Hm) H. simpl in *. inv H.
+      exists (Returnstate ts tls' tm'). split.
+      * constructor.
+      * constructor; auto.
+        intro. apply val_inject_id. apply Hls.
 Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r,
-  match_states st1 st2 -> final_state st1 r -> final_state st2 r.
+  forall w st1 st2 r1,
+  match_states st1 st2 -> final_state st1 r1 ->
+  exists r2, match_reply (Conventions.cc_locset ext) w r1 r2 /\ final_state st2 r2.
 Proof.
-  intros. inv H0. inv H. inv STK.
-  set (p := map_rpair R (Conventions1.loc_result signature_main)) in *.
-  generalize (locmap_getpair_lessdef p _ _ LS). rewrite H1; intros LD; inv LD.
-  econstructor; eauto.
+  intros. inv H0. inv H. inv STK. inv H1.
+  exists (tls, tm). split.
+  - exists tt.  cbn. split; repeat rstep.
+    apply val_inject_id. apply LS.
+  - econstructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_extends (LTL.semantics prog) (LTL.semantics tprog).
+  forward_simulation
+    (Conventions.cc_locset ext)
+    (Conventions.cc_locset ext)
+    (LTL.semantics prog)
+    (LTL.semantics tprog).
 Proof.
-  eapply forward_simulation_opt.
+  eapply forward_simulation_opt with (match_states := fun _ => match_states).
   apply senv_preserved.
   eexact transf_initial_states.
+  intros _. eexact transf_external.
   eexact transf_final_states.
-  apply tunnel_step_correct.
+  intros _. apply tunnel_step_correct.
 Qed.
 
 End PRESERVATION.
