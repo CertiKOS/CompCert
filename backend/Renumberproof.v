@@ -54,12 +54,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf TRANSL).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma sig_preserved:
   forall f, funsig (transf_fundef f) = funsig f.
 Proof.
@@ -174,11 +168,9 @@ Inductive match_states: RTL.state -> RTL.state -> Prop :=
 Lemma step_simulation:
   forall S1 t S2, RTL.step ge S1 t S2 ->
   forall S1', match_states S1 S1' ->
-  exists w, (exists t', match_events_query _ w t t') /\
-  forall t', match_events cc_id w t t' ->
-  exists S2', RTL.step tge S1' t' S2' /\ match_states S2 S2'.
+  exists S2', RTL.step tge S1' t S2' /\ match_states S2 S2'.
 Proof.
-  induction 1; intros S1' MS; inv MS; stable_step; try TR_AT.
+  induction 1; intros S1' MS; inv MS; try TR_AT.
 (* nop *)
   econstructor; split. eapply exec_Inop; eauto.
   constructor; auto. eapply reach_succ; eauto. simpl; auto.
@@ -253,16 +245,41 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall S1, RTL.initial_state prog S1 ->
-  exists S2, RTL.initial_state tprog S2 /\ match_states S1 S2.
+  forall w q1 q2, match_query cc_id w q1 q2 ->
+  forall S1, RTL.initial_state ge q1 S1 ->
+  exists S2, RTL.initial_state tge q2 S2 /\ match_states S1 S2.
 Proof.
+  intros [ ] q _ [ ].
   intros. inv H. econstructor; split.
-  econstructor.
-    eapply (Genv.init_mem_transf TRANSL); eauto.
-    rewrite symbols_preserved. rewrite (match_program_main TRANSL). eauto.
-    eapply function_ptr_translated; eauto.
-    rewrite <- H3; apply sig_preserved.
+  {
+    eapply function_ptr_translated in H0. simpl in H0.
+    replace (fn_sig f) with (fn_sig (transf_function f))
+      by eapply (sig_preserved (Internal f)).
+    constructor; auto.
+  }
   econstructor. eauto. constructor.
+Qed.
+
+Lemma transf_external:
+  forall s1 s2 q1,
+    match_states s1 s2 ->
+    at_external ge s1 q1 ->
+    exists w q2,
+      match_query cc_id w q1 q2 /\
+      at_external tge s2 q2 /\
+      forall r1 r2 s1',
+        match_reply cc_id w r1 r2 ->
+        after_external s1 r1 s1' ->
+        exists s2',
+          after_external s2 r2 s2' /\
+          match_states s1' s2'.
+Proof.
+  intros s1 s2 q Hs Hq. destruct Hq. inv Hs.
+  apply function_ptr_translated in H. simpl in H.
+  eexists tt, _. cbn. intuition auto.
+  - econstructor; eauto.
+  - inv H1. inv H0.
+    eexists; split; constructor; auto.
 Qed.
 
 Lemma transf_final_states:
@@ -272,13 +289,14 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_id (RTL.semantics prog) (RTL.semantics tprog).
+  forward_simulation cc_id cc_id (RTL.semantics prog) (RTL.semantics tprog).
 Proof.
-  eapply forward_simulation_step.
+  eapply forward_simulation_step with (match_states := fun _ => match_states).
   apply senv_preserved.
   eexact transf_initial_states.
-  eexact transf_final_states.
-  exact step_simulation.
+  intros _. eexact transf_external.
+  intros [ ]. intros. simpl. eauto using transf_final_states.
+  intros _. exact step_simulation.
 Qed.
 
 End PRESERVATION.
