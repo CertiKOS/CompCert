@@ -508,17 +508,6 @@ Proof.
   induction 1; eauto.
 Qed.
 
-Lemma match_callstack_inject_incr:
-  forall f m tm cs bound tbound,
-    match_callstack f m tm cs bound tbound ->
-    inject_incr init_f f.
-Proof.
-  intros.
-  exploit match_callstack_match_globalenvs; eauto.
-  destruct 1.
-  eauto using match_globalenvs_inject_incr.
-Qed.
-
 Lemma match_globalenvs_wf f:
   match_globalenvs f ->
   CKLR.meminj_wf f.
