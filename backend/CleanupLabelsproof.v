@@ -46,12 +46,6 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf TRANSL).
 
-Lemma genv_next_preserved:
-  Genv.genv_next tge = Genv.genv_next ge.
-Proof.
-  apply senv_preserved.
-Qed.
-
 Lemma functions_translated:
   forall v f,
   Genv.find_funct ge v = Some f ->
@@ -191,6 +185,8 @@ Qed.
 (** Correctness of clean-up *)
 
 Inductive match_stackframes: stackframe -> stackframe -> Prop :=
+  | match_stackframe_parent ls:
+      match_stackframes (Parent ls) (Parent ls)
   | match_stackframe_intro:
       forall f sp ls c,
       incl c f.(fn_code) ->
@@ -225,27 +221,20 @@ Definition measure (st: state) : nat :=
   end.
 
 Lemma match_parent_locset:
-  forall init_ls,
   forall s ts,
   list_forall2 match_stackframes s ts ->
-  parent_locset init_ls ts = parent_locset init_ls s.
+  parent_locset ts = parent_locset s.
 Proof.
   induction 1; simpl. auto. inv H; auto.
 Qed.
 
-Section WITHINITLS. 
-
-Variable init_ls: locset.
-
 Theorem transf_step_correct:
-  forall s1 t s2, step init_ls ge s1 t s2 ->
+  forall s1 t s2, step ge s1 t s2 ->
   forall s1' (MS: match_states s1 s1'),
-  exists w, (exists t', match_events_query _ w t t') /\
-  forall t', match_events cc_id w t t' ->
-  (exists s2', step init_ls tge s1' t' s2' /\ match_states s2 s2')
+  (exists s2', step tge s1' t s2' /\ match_states s2 s2')
   \/ (measure s2 < measure s1 /\ t = E0 /\ match_states s2 s1')%nat.
 Proof.
-  induction 1; intros; inv MS; stable_step; try rewrite remove_unused_labels_cons.
+  induction 1; intros; inv MS; try rewrite remove_unused_labels_cons.
 (* Lgetstack *)
   left; econstructor; split.
   econstructor; eauto.
@@ -338,37 +327,61 @@ Proof.
   econstructor; eauto.
 Qed.
 
-End WITHINITLS.
-
 Lemma transf_initial_states:
-  forall st1, initial_state prog st1 ->
-  exists st2, initial_state tprog st2 /\ match_states st1 st2.
+  forall w q1 q2, match_query cc_id w q1 q2 ->
+  forall st1, initial_state ge q1 st1 ->
+  exists st2, initial_state tge q2 st2 /\ match_states st1 st2.
 Proof.
+  intros [ ] q _ [ ].
   intros. inv H.
   econstructor; split.
-  eapply initial_state_intro with (f := transf_fundef f).
-  eapply (Genv.init_mem_transf TRANSL); eauto.
-  rewrite (match_program_main TRANSL), symbols_preserved; eauto.
-  apply function_ptr_translated; auto.
-  rewrite sig_function_translated. auto.
-  econstructor; eauto. constructor.
+  eapply initial_state_intro with (f := transf_function f).
+  apply (function_ptr_translated _ (Internal f)); auto.
+  econstructor; eauto. repeat constructor.
+Qed.
+
+Lemma transf_external:
+  forall st1 st2 q1,
+    match_states st1 st2 ->
+    at_external ge st1 q1 ->
+    exists w q2,
+      match_query cc_id w q1 q2 /\
+      at_external tge st2 q2 /\
+      forall r1 r2 st1',
+        match_reply cc_id w r1 r2 ->
+        after_external ge st1 r1 st1' ->
+        exists st2',
+          after_external tge st2 r2 st2' /\
+          match_states st1' st2'.
+Proof.
+  intros st1 st2 q Hst Hq.
+  exists tt, q. intuition auto.
+  - constructor.
+  - destruct Hq. inv Hst.
+    apply function_ptr_translated in H.
+    econstructor; eauto.
+  - destruct Hq. inv Hst. inv H0. inv H.
+    eexists. split; constructor; auto.
 Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r,
-  match_states st1 st2 -> final_state st1 r -> final_state st2 r.
+  forall w st1 st2 r1,
+  match_states st1 st2 -> final_state st1 r1 ->
+  exists r2, match_reply cc_id w r1 r2 /\ final_state st2 r2.
 Proof.
-  intros. inv H0. inv H. inv H5. econstructor; eauto.
+  intros. inv H0. inv H. inv H4. inv H1.
+  exists (rs, m). split; constructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_id (Linear.semantics prog) (Linear.semantics tprog).
+  forward_simulation cc_id cc_id (Linear.semantics prog) (Linear.semantics tprog).
 Proof.
-  eapply forward_simulation_opt.
+  eapply forward_simulation_opt with (match_states := fun _ => match_states).
   apply senv_preserved.
   eexact transf_initial_states.
+  intros _. eexact transf_external.
   eexact transf_final_states.
-  apply transf_step_correct.
+  intros _. apply transf_step_correct.
 Qed.
 
 End CLEANUP.
