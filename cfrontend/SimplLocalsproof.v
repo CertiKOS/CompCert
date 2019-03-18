@@ -206,28 +206,12 @@ Proof.
 - discriminate.
 Qed.
 
-Lemma val_casted_inject:
-  forall f v v' ty,
-  Val.inject f v v' -> val_casted v ty -> val_casted v' ty.
-Proof.
-  intros. inv H; auto.
-  inv H0; constructor; auto.
-  inv H0; constructor.
-Qed.
-
 Lemma forall2_val_casted_inject:
   forall f vl vl', Val.inject_list f vl vl' ->
   forall tyl, list_forall2 val_casted vl tyl -> list_forall2 val_casted vl' tyl.
 Proof.
   induction 1; intros tyl F; inv F; constructor; eauto. eapply val_casted_inject; eauto.
 Qed.
-
-Inductive val_casted_list: list val -> typelist -> Prop :=
-  | vcl_nil:
-      val_casted_list nil Tnil
-  | vcl_cons: forall v1 vl ty1 tyl,
-      val_casted v1 ty1 -> val_casted_list vl tyl ->
-      val_casted_list (v1 :: vl) (Tcons  ty1 tyl).
 
 Lemma val_casted_list_params:
   forall params vl,
@@ -1352,21 +1336,46 @@ Qed.
 
 (** Matching global environments *)
 
-Inductive match_globalenvs (f: meminj) (bound: block): Prop :=
+Section WITHINJ.
+Variable f_init: meminj.
+
+Inductive match_globalenvs (f: meminj): Prop :=
   | mk_match_globalenvs
-      (DOMAIN: forall b, Block.lt b bound -> f b = Some(b, 0))
-      (IMAGE: forall b1 b2 delta, f b1 = Some(b2, delta) -> Block.lt b2 bound -> b1 = b2)
-      (SYMBOLS: forall id b, Genv.find_symbol ge id = Some b -> Block.lt b bound)
-      (FUNCTIONS: forall b fd, Genv.find_funct_ptr ge b = Some fd -> Block.lt b bound)
-      (VARINFOS: forall b gv, Genv.find_var_info ge b = Some gv -> Block.lt b bound).
+      (INIT: inject_incr f_init f)
+      (DOMAIN: forall b, Block.lt b Block.init -> f b = Some(b, 0))
+      (IMAGE: forall b1 b2 delta, f b1 = Some(b2, delta) -> Block.lt b2 Block.init -> b1 = b2)
+      (SYMBOLS: forall id b, Genv.find_symbol ge id = Some b -> Block.lt b Block.init)
+      (FUNCTIONS: forall b fd, Genv.find_funct_ptr ge b = Some fd -> Block.lt b Block.init)
+      (VARINFOS: forall b gv, Genv.find_var_info ge b = Some gv -> Block.lt b Block.init).
 
 Lemma match_globalenvs_preserves_globals:
   forall f,
-  (exists bound, match_globalenvs f bound) ->
+  match_globalenvs f ->
   meminj_preserves_globals ge f.
 Proof.
-  intros. destruct H as [bound MG]. inv MG.
+  intros. inv H.
   split; intros. eauto. split; intros. eauto. symmetry. eapply IMAGE; eauto.
+Qed.
+
+Lemma match_globalenvs_inject_incr:
+  forall j,
+    match_globalenvs j ->
+    inject_incr f_init j.
+Proof.
+  destruct 1; auto.
+Qed.
+
+Lemma match_globalenvs_wf f:
+  match_globalenvs f ->
+  CKLR.meminj_wf f.
+Proof.
+  intros [ ]. split.
+  - intros b b' delta. unfold Mem.flat_inj.
+    destruct Block.lt_dec; inversion 1; subst.
+    eapply DOMAIN. blomega.
+  - intros b1 b2 [delta Hb] Hb2.
+    assert (b1 = b2); try congruence.
+    eapply IMAGE; eauto.
 Qed.
 
 (** Evaluation of expressions *)
@@ -1381,7 +1390,7 @@ Variable cenv: compilenv.
 Variables lo hi tlo thi: block.
 Hypothesis MATCH: match_envs f cenv e le m lo hi te tle tlo thi.
 Hypothesis MEMINJ: Mem.inject f m tm.
-Hypothesis GLOB: exists bound, match_globalenvs f bound.
+Hypothesis GLOB: match_globalenvs f.
 
 Lemma typeof_simpl_expr:
   forall a, typeof (simpl_expr cenv a) = typeof a.
@@ -1488,7 +1497,7 @@ Proof.
   exploit me_vars; eauto. instantiate (1 := id). intros MV. inv MV; try congruence.
   exists l; exists Ptrofs.zero; split.
   apply eval_Evar_global. auto. rewrite <- H0. apply symbols_preserved.
-  destruct GLOB as [bound GLOB1]. inv GLOB1.
+  inv GLOB.
   econstructor; eauto.
 (* deref *)
   exploit eval_simpl_expr; eauto. intros [tv [A B]].
@@ -1534,8 +1543,8 @@ End EVAL_EXPR.
 (** Matching continuations *)
 
 Inductive match_cont (f: meminj): compilenv -> cont -> cont -> mem -> block -> block -> Prop :=
-  | match_Kstop: forall cenv m bound tbound hi,
-      match_globalenvs f hi -> Block.le hi bound -> Block.le hi tbound ->
+  | match_Kstop: forall cenv m bound tbound,
+      match_globalenvs f -> Block.le Block.init bound -> Block.le Block.init tbound ->
       match_cont f cenv Kstop Kstop m bound tbound
   | match_Kseq: forall cenv s k ts tk m bound tbound,
       simpl_stmt cenv s = OK ts ->
@@ -1581,6 +1590,7 @@ Proof.
   induction 1; intros LOAD INCR INJ1 INJ2; econstructor; eauto.
 (* globalenvs *)
   inv H. constructor; intros; eauto.
+  etransitivity; eauto.
   assert (f b1 = Some (b2, delta)). rewrite <- H; symmetry; eapply INJ2; eauto. blomega.
   eapply IMAGE; eauto.
 (* call *)
@@ -1722,9 +1732,9 @@ Qed.
 Lemma match_cont_globalenv:
   forall f cenv k tk m bound tbound,
   match_cont f cenv k tk m bound tbound ->
-  exists bound, match_globalenvs f bound.
+  match_globalenvs f.
 Proof.
-  induction 1; auto. exists hi; auto.
+  induction 1; auto.
 Qed.
 
 Hint Resolve match_cont_globalenv: compat.
@@ -1737,7 +1747,7 @@ Lemma match_cont_find_funct_ptr:
   Genv.find_funct_ptr ge b = Some fd ->
   block_of tvf = Some b /\ exists tfd, Genv.find_funct_ptr tge b = Some tfd /\ transf_fundef fd = OK tfd.
 Proof.
-  intros. exploit match_cont_globalenv; eauto. intros [bound1 MG]. destruct MG.
+  intros. exploit match_cont_globalenv; eauto. destruct 1.
   assert (f b = Some(b, 0)).
     apply DOMAIN. eapply FUNCTIONS; eauto.
   apply block_of_inv in H1. subst. inv H0.
@@ -1752,7 +1762,7 @@ Lemma match_cont_find_funct:
   Val.inject f vf tvf ->
   exists tfd, Genv.find_funct tge tvf = Some tfd /\ transf_fundef fd = OK tfd.
 Proof.
-  intros. exploit match_cont_globalenv; eauto. intros [bound1 MG]. destruct MG.
+  intros. exploit match_cont_globalenv; eauto. destruct 1.
   inv H1; simpl in H0; try discriminate. destruct (Ptrofs.eq_dec ofs1 Ptrofs.zero); try discriminate.
   subst ofs1.
   assert (f b1 = Some(b1, 0)).
@@ -1777,9 +1787,9 @@ Inductive match_states: state -> state -> Prop :=
       match_states (State f s k e le m)
                    (State tf ts tk te tle tm)
   | match_call_state:
-      forall fd vargs k m tfd tvargs tk tm j targs tres cconv fb tfb
+      forall fd vargs k m tfd tvargs tk tm j targs tres cconv fb
         (FIND: Genv.find_funct_ptr ge fb = Some fd)
-        (TFIND: Genv.find_funct_ptr tge tfb = Some tfd)
+        (TFIND: Genv.find_funct_ptr tge fb = Some tfd)
         (TRFD: transf_fundef fd = OK tfd)
         (MCONT: forall cenv, match_cont j cenv k tk m (Mem.nextblock m) (Mem.nextblock tm))
         (MINJ: Mem.inject j m tm)
@@ -1787,7 +1797,7 @@ Inductive match_states: state -> state -> Prop :=
         (FUNTY: type_of_fundef fd = Tfunction targs tres cconv)
         (ANORM: val_casted_list vargs targs),
       match_states (Callstate fb vargs k m)
-                   (Callstate tfb tvargs tk tm)
+                   (Callstate fb tvargs tk tm)
   | match_return_state:
       forall v k m tv tk tm j
         (MCONT: forall cenv, match_cont j cenv k tk m (Mem.nextblock m) (Mem.nextblock tm))
@@ -2263,13 +2273,17 @@ Proof.
   eapply match_envs_set_opttemp; eauto.
 Qed.
 
+End WITHINJ.
+
+Require Import Invariant.
+
 Lemma initial_states_simulation:
-  forall w q1 q2, match_query cc_inject_triangle w q1 q2 ->
+  forall w q1 q2, match_query (cc_c inj) w q1 q2 ->
   forall S, initial_state ge q1 S ->
-  exists R, initial_state tge q2 R /\ match_states S R.
+  exists R, initial_state tge q2 R /\ match_states w S R.
 Proof.
-  intros w q1 q2 Hq.
-  intros. inv H. inv Hq.
+  inv_query_inj. intros f id sg vargs1 vargs2 m1 m2 Hvargs Hm INCR SEP.
+  intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
   pose proof (type_of_fundef_preserved _ _ B) as Hty.
   monadInv B.
@@ -2281,37 +2295,84 @@ Proof.
   generalize (match_program_main (proj1 TRANSF)). simpl; auto. *)
   eauto. unfold transf_function in EQ. destruct EQ.
   simpl in Hty. rewrite Hty. auto.
+  eapply val_casted_list_inject; eauto.
   econstructor; eauto.
-  simpl. rewrite EQ. reflexivity.
-  subst f0.
-  econstructor. instantiate (1 := Mem.nextblock m).
+- simpl. rewrite EQ. reflexivity.
+- econstructor; eauto using Mem.init_nextblock.
   constructor; intros.
-  unfold Mem.flat_inj. apply pred_dec_true; auto.
-  unfold Mem.flat_inj in H. destruct (Block.lt_dec b1 (Mem.nextblock m)); inv H. auto.
-  subst ge. simpl in H. eapply Genv.find_symbol_not_fresh; eauto.
-  subst ge. simpl in H. eapply Genv.find_funct_ptr_not_fresh; eauto.
-  subst ge. simpl in H. eapply Genv.find_var_info_not_fresh; eauto.
-  blomega. blomega.
-  erewrite <- Genv.init_mem_genv_next; eauto.
-  eapply Genv.initmem_inject; eauto.
-  constructor.
+  reflexivity.
+  { intros. specialize (INCR b b 0). unfold Mem.flat_inj in INCR.
+    destruct (Block.lt_dec b Block.init); try contradiction. auto. }
+  { intros. specialize (INCR b1 b1 0). unfold Mem.flat_inj in INCR.
+    destruct (Block.lt_dec b1 Block.init).
+    - specialize (INCR eq_refl). congruence.
+    - elim n. eauto. }
+  intros. exploit Genv.genv_symb_range; eauto.
+  intros. apply Genv.find_funct_ptr_iff in H. eapply Genv.genv_defs_range; eauto.
+  intros. apply Genv.find_var_info_iff in H. eapply Genv.genv_defs_range; eauto.
+Qed.
+
+Lemma external_simulation:
+  forall w S R q1,
+  match_states w S R ->
+  at_external ge S q1 ->
+  exists wA q2,
+    match_query (cc_c injp) wA q1 q2 /\
+    at_external tge R q2 /\
+    forall r1 r2 S',
+      match_reply (cc_c injp) wA r1 r2 ->
+      after_external S r1 S' ->
+      exists R',
+        after_external R r2 R' /\
+        match_states w S' R'.
+Proof.
+  intros w S R q1 HSR Hq1.
+  destruct Hq1 as [b id sg vargs1 k1 m1 Hb].
+  inv HSR.
+  edestruct (match_cc_inject b sg) as (wA & Hq & H'); eauto.
+  eapply match_globalenvs_wf.
+  eapply match_cont_globalenv with (cenv := VSet.empty); auto.
+  inv TRFD.
+  assert (fd = f) by congruence; subst fd.
+  exists wA, (cq b sg tvargs tm); repeat apply conj; eauto.
+  - inv H1.
+    econstructor; eauto.
+  - intros [vres1 m1'] [vres2 m2'] S' Hr HS'.
+    inv HS'.
+    eexists; split.
+    + constructor.
+    + edestruct H' as (f' & Hvres & Hm' & Hm1' & Hm2' & INCR & SEP & Hp); eauto.
+      econstructor; eauto. intros.
+      eapply match_cont_incr_bounds; eauto.
+      eapply match_cont_extcall; eauto.
+      blomega. blomega.
+      eapply Mem.unchanged_on_nextblock; eauto.
+      eapply Mem.unchanged_on_nextblock; eauto.
 Qed.
 
 Lemma final_states_simulation:
-  forall S R r,
-  match_states S R -> final_state S r -> final_state R r.
+  forall w S R r1,
+  match_states w S R -> final_state S r1 ->
+  exists r2,
+    match_reply (cc_c inj) w r1 r2 /\
+    final_state R r2.
 Proof.
   intros. inv H0. inv H.
   specialize (MCONT VSet.empty). inv MCONT.
-  inv RINJ. constructor.
+  exists (tv, tm). split.
+  - eapply match_reply_inj; eauto.
+    eapply match_globalenvs_inject_incr; auto.
+    eapply match_globalenvs_wf; eauto.
+  - constructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_inject (semantics1 prog) (semantics2 tprog).
+  forward_simulation (cc_c injp) (cc_c inj) (semantics1 prog) (semantics2 tprog).
 Proof.
   eapply forward_simulation_plus.
   apply senv_preserved.
   eexact initial_states_simulation.
+  eexact external_simulation.
   eexact final_states_simulation.
   eexact step_simulation.
 Qed.

@@ -1519,6 +1519,15 @@ Inductive val_casted: val -> type -> Prop :=
 
 Hint Constructors val_casted.
 
+Lemma val_casted_inject:
+  forall f v v' ty,
+  Val.inject f v v' -> val_casted v ty -> val_casted v' ty.
+Proof.
+  intros. inv H; auto.
+  inv H0; constructor; auto.
+  inv H0; constructor.
+Qed.
+
 Remark cast_int_int_idem:
   forall sz sg i, cast_int_int sz sg (cast_int_int sz sg i) = cast_int_int sz sg i.
 Proof.
@@ -1547,6 +1556,24 @@ Lemma cast_val_is_casted:
 Proof.
   unfold sem_cast; intros.
   destruct ty, ty'; simpl in H; DestructCases; constructor; auto.
+Qed.
+
+Inductive val_casted_list: list val -> typelist -> Prop :=
+  | vcl_nil:
+      val_casted_list nil Tnil
+  | vcl_cons: forall v1 vl ty1 tyl,
+      val_casted v1 ty1 -> val_casted_list vl tyl ->
+      val_casted_list (v1 :: vl) (Tcons  ty1 tyl).
+
+Lemma val_casted_list_inject:
+  forall f vargs1 vargs2 targs,
+  Val.inject_list f vargs1 vargs2 ->
+  val_casted_list vargs1 targs ->
+  val_casted_list vargs2 targs.
+Proof.
+  intros f vargs1 vargs2 targs H. revert targs.
+  induction H; auto.
+  inversion 1. constructor; eauto. eapply val_casted_inject; eauto.
 Qed.
 
 End VAL_CASTED.

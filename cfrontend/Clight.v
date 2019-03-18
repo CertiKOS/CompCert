@@ -678,6 +678,7 @@ Inductive initial_state (ge: genv): query li_c -> state -> Prop :=
   | initial_state_intro: forall id f targs tres tcc vargs m,
       Genv.find_funct_ptr ge (Block.glob id) = Some (Internal f) ->
       type_of_function f = Tfunction targs tres tcc ->
+      val_casted_list vargs targs ->
       initial_state ge
         (cq id (signature_of_type targs tres tcc) vargs m)
         (Callstate (Block.glob id) vargs Kstop m).

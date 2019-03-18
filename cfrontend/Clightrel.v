@@ -630,6 +630,7 @@ Proof.
     assert (genv_valid R w (globalenv p)) by (eapply cklr_wf; eauto).
     exists (Callstate (Block.glob id) vargs2 Kstop m2). split.
     + econstructor; eauto.
+      eapply val_casted_list_inject; rauto.
     + split; eauto.
       exists w; split; try rauto.
   - intros w s1 s2 q1 [Hge Hs] Hq1.
