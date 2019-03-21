@@ -472,10 +472,34 @@ Module Behavior.
     firstorder.
   Qed.
 
+  Lemma join_ub_l {M N A} (x y : t M N A) :
+    ref x (join x y).
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma join_ub_r {M N A} (x y : t M N A) :
+    ref y (join x y).
+  Proof.
+    firstorder.
+  Qed.
+
   Lemma join_lub {M N A} (x y z : t M N A) :
     ref x z ->
     ref y z ->
     ref (join x y) z.
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma meet_lb_l {M N A} (x y : t M N A) :
+    ref (meet x y) x.
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma meet_lb_r {M N A} (x y : t M N A) :
+    ref (meet x y) y.
   Proof.
     firstorder.
   Qed.
@@ -586,6 +610,8 @@ Module Behavior.
     intros; subst. inversion H0; auto.
   Qed.
 
+  (** ** Interaction *)
+
   Program Definition interact {M N} (m : M) : t M N N :=
     {| has t := t = move m \/ exists n, t = tcons m n (val n) |}.
   Next Obligation.
@@ -643,6 +669,7 @@ Module Behavior.
   Admitted.
 
 
+  (** ** Derivatives *)
 
   Program Definition delta {M N A} (x : t M N A) (m : M) (n : N) : t M N A :=
     {| has t := has x (tcons m n t) |}.
@@ -663,6 +690,12 @@ Module Behavior.
     exists (tcons m n s). intuition eauto.
   Qed.
 
+  Lemma delta_meet {M N A} (x y : t M N A) (m : M) (n : N) :
+    delta (meet x y) m n = meet (delta x m n) (delta y m n).
+  Proof.
+    apply antisymmetry; firstorder.
+  Qed.
+
   Program Definition choose {M N A} (P : A -> Prop) : t M N A :=
     {| has t := exists a, P a /\ t = val a |}.
   Next Obligation.
@@ -679,6 +712,66 @@ Module Behavior.
   (*
   Definition next {M N P Q A} (x : t M N A) : t P Q (A + (M * (N -> t M N A))) :=
    *)
+
+  (** ** Abstraction (trace relation) *)
+
+  Section ABS.
+    Context {Ma Mc Na Nc Xa Xc} (gamma : rel (trace Ma Na Xa) (trace Mc Nc Xc)).
+
+    Program Definition abs (x : t Mc Nc Xc) : t Ma Na Xa :=
+      {|
+        has t := forall ta tc, gamma ta tc -> prefix ta t -> has x tc
+      |}.
+    Next Obligation.
+      intros y s t Ht Hst ta tc Htac Hsta.
+      eapply Ht; eauto. etransitivity; eauto.
+    Qed.
+
+    Program Definition concr (y : t Ma Na Xa) : t Mc Nc Xc :=
+      {|
+        has t := exists ta tc, gamma ta tc /\ prefix t tc /\ has y ta;
+      |}.
+    Next Obligation.
+      intros x s t (ta & tc & Htac & Ht & Hta) Hst.
+      exists ta, tc. intuition auto. etransitivity; eauto.
+    Qed.
+
+    Lemma abs_concr_galois x y :
+      ref (concr x) y <-> ref x (abs y).
+    Proof.
+      split.
+      - intros Hxy t Ht ta tc Htac Htat.
+        eapply Hxy.
+        exists ta, tc. intuition eauto using closed. reflexivity.
+      - intros Hxy t (ta & tc & Htac & Ht & Hta).
+        rewrite Ht.
+        eapply Hxy; eauto. reflexivity.
+    Qed.
+
+    Instance concr_ref :
+      Monotonic concr (ref ++> ref).
+    Proof.
+      intros x y Hxy.
+      apply abs_concr_galois.
+      transitivity y; auto.
+      apply abs_concr_galois.
+      reflexivity.
+    Qed.
+
+    Lemma concr_join x y :
+      concr (join x y) = join (concr x) (concr y).
+    Proof.
+      apply antisymmetry.
+      - apply abs_concr_galois; apply join_lub; apply abs_concr_galois.
+        + apply join_ub_l.
+        + apply join_ub_r.
+      - apply join_lub; rstep.
+        + apply join_ub_l.
+        + apply join_ub_r.
+    Qed.
+  End ABS.
+
+  (** ** Abstraction (KLR) *)
 
   Lemma has_ret {M N A} (x : t M N A) (a : A) :
     has x (val a) -> ref (ret a) x.
@@ -746,7 +839,6 @@ Module Behavior.
       edestruct H3; eauto.
       eapply delta_ref; eauto.
     Qed.
-      
 
     (*
       It would be satisfying to have a Galois adjoint for pull,
@@ -812,6 +904,29 @@ Module Behavior.
       - right. intros.
         edestruct Ht as (Hm1 & _); eauto.
     Qed.
+
+    Lemma pull_meet w x2 y2 :
+      pull w (meet x2 y2) = meet (pull w x2) (pull w y2).
+    Proof.
+      apply antisymmetry.
+      - apply meet_glb; rstep; auto using meet_lb_l, meet_lb_r.
+      - intros t [Hxt Hyt]. cbn in Hxt, Hyt |- *.
+        induction Hxt; inversion Hyt; clear Hyt; subst;
+          try solve [eauto].
+        eapply pull_val; simpl; eauto.
+
+
+    Lemma pull_join w x2 y2 :
+      pull w (join x2 y2) = join (pull w x2) (pull w y2).
+    Proof.
+      apply antisymmetry.
+      - remember (join x2 y2) as z2.
+        intros t Ht. cbn in Ht |- *. revert x2 y2 Heqz2.
+        induction Ht; intros; subst; try solve [destruct H; eauto].
+        destruct H as [H|H].
+        + left. eapply pull_tcons; eauto.
+          setoid_rewrite join_
+        + subst x2. destruct H; eauto.
      *)
 
     Definition sim : klr W (t M1 N1 A) (t M2 N2 B) :=
