@@ -580,9 +580,6 @@ Proof.
   - destruct (Ptrofs.eq_dec i i0); destruct (signature_eq s s0); subst;
       try(right; intro A; inv A; congruence).
     auto.
-  - destruct (seglabel_eq_dec s s1); destruct (signature_eq s0 s2); subst;
-      try(right; intro A; inv A; congruence).
-    auto.
   - destruct (asm_instruction_dec i i0); [left; subst; auto | right; congruence].
 Defined.
 

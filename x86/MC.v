@@ -14,7 +14,6 @@ Inductive instruction : Type :=
   | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
   | MCmov_rs (rd:ireg) (lbl: seglabel) (** sv contains the pointer to the source location *)
   | MCshortcall: ptrofs -> signature -> instruction (** short call into an internal function *)
-  | MClongcall: seglabel -> signature -> instruction (** long call or call to an external fucntions *)
   | MCAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
@@ -25,7 +24,6 @@ Definition instr_to_string (i:instruction) : string :=
   | MCjmptbl _ _ => "MCjmptbl"
   | MCmov_rs _ _ => "MCmov_rs"
   | MCshortcall _ _ => "MCshortcall"
-  | MClongcall _ _ => "MClongcall"
   | MCAsminstr i => Asm.instr_to_string i
   end.
 
@@ -470,16 +468,6 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
     Next (nextinstr_nf (rs#rd <- (Genv.seglabel_to_val ge lbl)) sz) m
   | MCshortcall ofs sg =>
       let addr := Val.offset_ptr (Val.offset_ptr rs#PC sz) ofs in
-      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
-      match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
-      | None => Stuck
-      | Some m2 =>
-        Next (rs#RA <- (Val.offset_ptr rs#PC sz)
-                #PC <- addr
-                #RSP <- sp) m2
-      end
-  | MClongcall lbl sg =>
-      let addr := Genv.seglabel_to_val ge lbl in
       let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
       match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
       | None => Stuck

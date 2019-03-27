@@ -23,7 +23,6 @@ Definition de_transl_instr (i: MC.instr_with_info) : FlatAsm.instr_with_info :=
       | MCjmptbl r ol => Pjmptbl r tbl
       | MCmov_rs r val => Pmov_rs r l
       | MCshortcall ofs sg => Pcall (inr l) sg
-      | MClongcall v sg => Pcall (inr l) sg
       | MCAsminstr i => i
       end in
   (i'', sb, id).
