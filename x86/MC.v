@@ -8,12 +8,14 @@ Require Import Num.
 Require Import FlatAsmProgram.
 Require Globalenvs.
 
-
 Inductive instruction : Type :=
   | MCjmp_l (ofs: ptrofs)
   | MCjcc (c: testcond) (ofs: ptrofs)
   | MCjcc2 (c1 c2: testcond) (ofs: ptrofs)   (**r pseudo *)
   | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
+  | MCmov_rs (rd:ireg) (sv: val) (** sv contains the pointer to the source location *)
+  | MCshortcall: ptrofs -> signature -> instruction (** short call into an internal function *)
+  | MClongcall: val -> signature -> instruction (** long call or call to an external fucntions *)
   | MCAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
@@ -22,12 +24,15 @@ Definition instr_to_string (i:instruction) : string :=
   | MCjcc _ _ => "MCjcc"
   | MCjcc2 _ _ _ => "MCjcc2"
   | MCjmptbl _ _ => "MCjmptbl"
+  | MCmov_rs _ _ => "MCmov_rs"
+  | MCshortcall _ _ => "MCshortcall"
+  | MClongcall _ _ => "MClongcall"
   | MCAsminstr i => Asm.instr_to_string i
   end.
 
 Definition instr_with_info:Type := @FlatAsmProgram.instr_with_info instruction.
 
-(* The MC program *)
+(* The LC program *)
 Definition program := @FlatAsmProgram.program instruction.
 
 
@@ -452,7 +457,7 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
       | Some true, Some true => goto_label ofs sz rs m
       | Some _, Some _ => Next (nextinstr rs sz) m
       | _, _ => Stuck
-      end    
+      end
   | MCjmptbl r tbl =>
       match rs#r with
       | Vint n =>
@@ -461,6 +466,28 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
           | Some ofs => goto_label ofs sz (rs #RAX <- Vundef #RDX <- Vundef) m
           end
       | _ => Stuck
+      end
+  | MCmov_rs rd sv =>
+    Next (nextinstr_nf (rs#rd <- sv) sz) m
+  | MCshortcall ofs sg =>
+      let addr := Val.offset_ptr (Val.offset_ptr rs#PC sz) ofs in
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
+      match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
+      | None => Stuck
+      | Some m2 =>
+        Next (rs#RA <- (Val.offset_ptr rs#PC sz)
+                #PC <- addr
+                #RSP <- sp) m2
+      end
+  | MClongcall v sg =>
+      let addr := v in
+      let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
+      match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
+      | None => Stuck
+      | Some m2 =>
+        Next (rs#RA <- (Val.offset_ptr rs#PC sz)
+                #PC <- addr
+                #RSP <- sp) m2
       end
   (* The rest instructions are forwarded to FlatAsm *)
   | MCAsminstr ins =>

@@ -573,6 +573,15 @@ Proof.
   - destruct (list_eq_dec Ptrofs.eq_dec tbl tbl0). 2: right; intro A; inv A; congruence.
     destruct (ireg_eq r r0). 2: right; intro A; inv A; congruence.
     subst; left; auto.
+  - destruct (ireg_eq rd rd0); destruct (Val.eq sv sv0); subst;
+      try(right; intro A; inv A; congruence).
+    auto.
+  - destruct (Ptrofs.eq_dec i i0); destruct (signature_eq s s0); subst;
+      try(right; intro A; inv A; congruence).
+    auto.
+  - destruct (Val.eq v v0); destruct (signature_eq s s0); subst;
+      try(right; intro A; inv A; congruence).
+    auto.
   - destruct (asm_instruction_dec i i0); [left; subst; auto | right; congruence].
 Defined.
 
