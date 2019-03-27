@@ -3,10 +3,10 @@
 (* Date:   June 10, 2018 *)
 (* ******************* *)
 
-(** Separate compilation proof for the MC generation **)
+(** Separate compilation proof for the MC generation phase 1 (elimiantion of labels) **)
 
 Require Import Coqlib Integers Values Maps AST.
-Require Import Asm FlatAsmProgram MC MCgen MCgenproof.
+Require Import Asm FlatAsmProgram MC MClabelgen MClabelgenproof.
 Require Import Segment.
 Require Import Linking Errors FlatAsmSep.
 Require Import Num.
