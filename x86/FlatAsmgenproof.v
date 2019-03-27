@@ -6813,7 +6813,7 @@ Proof.
     edestruct step_simulation as (STEP' & MS'); eauto.
 Qed.
 
-Require Import MCgen.
+Require Import ValidLabel.
 Arguments is_valid_label_dec: simpl nomatch.
 
 Lemma transl_instrs_id_code:

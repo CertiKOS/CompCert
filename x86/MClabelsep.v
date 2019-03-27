@@ -9,7 +9,7 @@ Require Import Coqlib Integers Values Maps AST.
 Require Import Asm FlatAsmProgram MC MClabelgen MClabelgenproof.
 Require Import Segment.
 Require Import Linking Errors FlatAsmSep.
-Require Import Num.
+Require Import Num ValidLabel.
 
 Definition de_transl_instr (i: MC.instr_with_info) : FlatAsm.instr_with_info :=
   let '(i',sb,id) := i in 

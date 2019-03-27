@@ -1,4 +1,3 @@
-
 Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Smallstep.
 Require Import Locations Stacklayout Conventions EraseArgs.
@@ -13,9 +12,9 @@ Inductive instruction : Type :=
   | MCjcc (c: testcond) (ofs: ptrofs)
   | MCjcc2 (c1 c2: testcond) (ofs: ptrofs)   (**r pseudo *)
   | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
-  | MCmov_rs (rd:ireg) (sv: val) (** sv contains the pointer to the source location *)
+  | MCmov_rs (rd:ireg) (lbl: seglabel) (** sv contains the pointer to the source location *)
   | MCshortcall: ptrofs -> signature -> instruction (** short call into an internal function *)
-  | MClongcall: val -> signature -> instruction (** long call or call to an external fucntions *)
+  | MClongcall: seglabel -> signature -> instruction (** long call or call to an external fucntions *)
   | MCAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
@@ -467,8 +466,8 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
           end
       | _ => Stuck
       end
-  | MCmov_rs rd sv =>
-    Next (nextinstr_nf (rs#rd <- sv) sz) m
+  | MCmov_rs rd lbl =>
+    Next (nextinstr_nf (rs#rd <- (Genv.seglabel_to_val ge lbl)) sz) m
   | MCshortcall ofs sg =>
       let addr := Val.offset_ptr (Val.offset_ptr rs#PC sz) ofs in
       let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
@@ -479,8 +478,8 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
                 #PC <- addr
                 #RSP <- sp) m2
       end
-  | MClongcall v sg =>
-      let addr := v in
+  | MClongcall lbl sg =>
+      let addr := Genv.seglabel_to_val ge lbl in
       let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
       match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
       | None => Stuck

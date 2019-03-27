@@ -94,7 +94,8 @@ Definition add_global (ge:genv) (idg: ident * option gdef * segblock) : genv :=
     (Genv.genv_internal_codeblock ge)
     (Genv.genv_lbl ge)
     (Pos.succ (Genv.genv_next ge))
-    (Genv.genv_senv ge).
+    (Genv.genv_senv ge)
+    (Genv.genv_smap ge).
   
                      
 Fixpoint add_globals (ge:genv) (gl: list (ident * option gdef * segblock)) : genv :=
@@ -515,7 +516,7 @@ Qed.
 
 Definition empty_genv (p:program): genv :=
   Genv.mkgenv (prog_public p) (fun id => None) (fun b ofs => None) (fun b ofs => None) (fun b => false)
-              (fun fid lbl => None) 1%positive (prog_senv p).
+              (fun fid lbl => None) 1%positive (prog_senv p) (gen_segblocks p).
 
 Definition gidmap_to_symbmap (smap: segid_type -> block) (gmap:GID_MAP_TYPE) :=
   fun id =>
@@ -538,7 +539,8 @@ Definition globalenv (p: program) : genv :=
   let imap := gen_instrs_map smap p in
   let nextblock := Pos.of_succ_nat num_segments in
   let cbmap := gen_internal_codeblock smap p in
-  let genv := Genv.mkgenv (prog_public p) symbmap (fun b ofs => None) imap cbmap lblmap nextblock (prog_senv p) in
+  let genv := Genv.mkgenv (prog_public p) symbmap (fun b ofs => None) imap cbmap lblmap nextblock 
+                          (prog_senv p) (gen_segblocks p) in
   add_globals genv p.(prog_defs).
   
 (* (** Initialization of the memory *) *)

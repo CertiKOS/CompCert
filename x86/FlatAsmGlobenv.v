@@ -74,6 +74,7 @@ Record t: Type := mkgenv {
   genv_lbl: ident -> ident -> option (block * ptrofs);
   genv_next : block;
   genv_senv : Globalenvs.Senv.t;
+  genv_smap : segid_type -> block;
 }.
 
 (** ** Lookup functions *)
@@ -167,6 +168,10 @@ Definition find_instr (ge: t) (v:val) : option I :=
   | Vptr b ofs => (genv_instrs ge b ofs)
   | _ => None
   end.
+
+
+Definition seglabel_to_val (ge:t) lbl : val :=
+  label_to_ptr (genv_smap ge) lbl.
 
 End GENV.
 

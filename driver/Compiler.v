@@ -52,7 +52,7 @@ Require Mach2Mach2.
 Require Asmgen.
 Require PseudoInstructions.
 Require FlatAsmgen.
-Require MCgen.
+Require MClabelgen.
 Require RockSaltAsmGen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
@@ -83,8 +83,8 @@ Require FlatAsmGlobenv.
 Require FlatAsmProgram.
 Require FlatAsmgen.
 Require FlatAsmSep.
-Require MCgenproof.
-Require MCSep.
+Require MClabelgenproof.
+Require MClabelsep.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -177,7 +177,7 @@ Definition transf_cminor_program_rs (p: Cminor.program) : res RockSaltAsm.progra
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program
   @@@ time "Generation of FlatAsm" FlatAsmgen.transf_program
-  @@@ time "Generation of MC" MCgen.transf_program
+  @@@ time "Generation of MC" MClabelgen.transf_program
   @@@ time "Generation of RockSalt program" RockSaltAsmGen.transf_program.
  
 Definition transf_clight_program (p: Clight.program) : res Asm.program :=
@@ -204,7 +204,7 @@ Definition transf_c_program_flatasm p : res FlatAsm.program :=
 
 Definition transf_c_program_mc p : res MC.program :=
   transf_c_program_flatasm p
-  @@@ time "Generation of MC" MCgen.transf_program.
+  @@@ time "Generation of MC" MClabelgen.transf_program.
 
 Definition transf_c_program_rs p : res RockSaltAsm.program :=
   transf_c_program_mc p
@@ -331,7 +331,7 @@ Definition match_prog_flat :=
 
 Definition mc_passes :=
   passes_app flat_asm_passes
-             (mkpass MCgenproof.match_prog ::: pass_nil _).
+             (mkpass MClabelgenproof.match_prog ::: pass_nil _).
 
 Definition match_prog_mc := 
   pass_match (compose_passes (passes_app CompCert's_passes mc_passes)).
@@ -900,13 +900,13 @@ Proof.
 Qed.
 
 Lemma mc_fn_stack_requirements_match: forall p tp
-    (FM: MCgenproof.match_prog p tp),
+    (FM: MClabelgenproof.match_prog p tp),
     flat_fn_stack_requirements p = mc_fn_stack_requirements tp.
 Proof.
   intros.
   unfold flat_fn_stack_requirements, mc_fn_stack_requirements.
   apply Axioms.extensionality. intro i.
-  unfold MCgenproof.match_prog, MCgen.transf_program in FM.
+  unfold MClabelgenproof.match_prog, MClabelgen.transf_program in FM.
   repeat destr_in FM. monadInv H0. revert EQ. simpl.
   generalize (FlatAsmProgram.prog_defs p) x. clear.
   induction l; simpl; intros; eauto. inv EQ. simpl. auto.
@@ -916,7 +916,7 @@ Proof.
   assert (i0 = i1). repeat destr_in EQ0. monadInv H0. auto. subst.
   destruct (ident_eq i i1). simpl.
   repeat destr_in EQ0; auto. monadInv H0; auto.
-  unfold MCgen.transl_fun in EQ0. monadInv EQ0; simpl. auto.
+  unfold MClabelgen.transl_fun in EQ0. monadInv EQ0; simpl. auto.
   simpl. auto.
 Qed.
 
@@ -980,7 +980,7 @@ Proof.
   apply c_semantic_preservation_flat; auto.
   apply mc_fn_stack_requirements_match; auto.
   eapply forward_to_backward_simulation.
-  eapply MCgenproof.transf_program_correct; eauto.
+  eapply MClabelgenproof.transf_program_correct; eauto.
   unfold flat_asm_passes in RP. simpl in RP.
   destruct RP as (p2 & PI & p3 & PIP & p4 & FAP & EQ). subst.
   unfold FlatAsmgenproof.match_prog, FlatAsmgen.transf_program in FAP.

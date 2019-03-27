@@ -114,7 +114,7 @@ BACKEND=\
   FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v FlatAsmProgram.v \
 	FlatAsmgen.v FlatAsmgenproof.v FlatAsmSep.v \
   MC.v MClabelgen.v MClabelsep.v MClabelgenproof.v \
-  RockSaltAsm.v RockSaltAsmGen.v
+  RockSaltAsm.v RockSaltAsmGen.v ValidLabel.v
 
 # C front-end modules (in cfrontend/)
 

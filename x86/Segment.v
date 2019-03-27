@@ -19,6 +19,14 @@ Record segment : Type := mkSegment
 (** Label to an offset in a segment *)
 Definition seglabel: Type := segid_type * ptrofs.
 
+Lemma seglabel_eq_dec : forall (l1 l2:seglabel), {l1 = l2} + {l1 <> l2}.
+Proof.
+  intros. destruct l1, l2.
+  destruct (ident_eq s s0); destruct (Ptrofs.eq_dec i i0); subst;
+    try (right; intro; congruence).
+  auto.
+Qed.
+
 Definition offset_seglabel (l:seglabel) (ofs:ptrofs) : seglabel :=
   match l with
   | (s,o) => (s, Ptrofs.add o ofs)
