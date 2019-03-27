@@ -38,16 +38,16 @@ Definition transl_instr (fid: ident) (i:FlatAsm.instr_with_info) : res instr_wit
      match i' with
      | Pjmp_l l =>  
        do ofs <- get_lbl_offset fid l sb; 
-         OK (MCjmp_l l ofs)
+         OK (MCjmp_l ofs)
      | Pjcc c l => 
        do ofs <- get_lbl_offset fid l sb; 
-         OK (MCjcc c l ofs)
+         OK (MCjcc c ofs)
      | Pjcc2 c1 c2 l => 
        do ofs <- get_lbl_offset fid l sb; 
-         OK (MCjcc2 c1 c2 l ofs)
+         OK (MCjcc2 c1 c2 ofs)
      | Pjmptbl r tbl => 
        do ol <- get_lbl_list_offset fid tbl sb; 
-         OK (MCjmptbl r tbl ol)
+         OK (MCjmptbl r ol)
      | _ =>
        OK (MCAsminstr i')
      end; 

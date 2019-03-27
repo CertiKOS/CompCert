@@ -561,20 +561,16 @@ Lemma instruction_dec:
   forall i1 i2: instruction, {i1 = i2} + {i1 <> i2}.
 Proof.
   destruct i1, i2; try now (right; intro A; inv A).
-  - destruct (peq l l0). 2: right; intro A; inv A; congruence.
-    destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
+  - destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
     subst; left; auto.
-  - destruct (peq l l0). 2: right; intro A; inv A; congruence.
-    destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
+  - destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
     destruct (testcond_dec c c0). 2: right; intro A; inv A; congruence.
     subst; left; auto.
-  - destruct (peq l l0). 2: right; intro A; inv A; congruence.
-    destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
+  - destruct (Ptrofs.eq_dec ofs ofs0). 2: right; intro A; inv A; congruence.
     destruct (testcond_dec c1 c0). 2: right; intro A; inv A; congruence.
     destruct (testcond_dec c2 c3). 2: right; intro A; inv A; congruence.
     subst; left; auto.
-  - destruct (list_eq_dec peq l l0). 2: right; intro A; inv A; congruence.
-    destruct (list_eq_dec Ptrofs.eq_dec tbl tbl0). 2: right; intro A; inv A; congruence.
+  - destruct (list_eq_dec Ptrofs.eq_dec tbl tbl0). 2: right; intro A; inv A; congruence.
     destruct (ireg_eq r r0). 2: right; intro A; inv A; congruence.
     subst; left; auto.
   - destruct (asm_instruction_dec i i0); [left; subst; auto | right; congruence].

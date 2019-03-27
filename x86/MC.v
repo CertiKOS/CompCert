@@ -10,18 +10,18 @@ Require Globalenvs.
 
 
 Inductive instruction : Type :=
-  | MCjmp_l (l:label) (ofs: ptrofs)
-  | MCjcc (c: testcond) (l:label) (ofs: ptrofs)
-  | MCjcc2 (c1 c2: testcond) (l:label) (ofs: ptrofs)   (**r pseudo *)
-  | MCjmptbl (r: ireg) (l: list label) (tbl: list ptrofs) (**r pseudo *)
+  | MCjmp_l (ofs: ptrofs)
+  | MCjcc (c: testcond) (ofs: ptrofs)
+  | MCjcc2 (c1 c2: testcond) (ofs: ptrofs)   (**r pseudo *)
+  | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
   | MCAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
   match i with
-  | MCjmp_l _ _ => "MCjmp_l"
-  | MCjcc _ _ _ => "MCjcc"
-  | MCjcc2 _ _ _ _ => "MCjcc2"
-  | MCjmptbl _ _ _ => "MCjmptbl"
+  | MCjmp_l _ => "MCjmp_l"
+  | MCjcc _ _ => "MCjcc"
+  | MCjcc2 _ _ _ => "MCjcc2"
+  | MCjmptbl _ _ => "MCjmptbl"
   | MCAsminstr i => Asm.instr_to_string i
   end.
 
@@ -440,20 +440,20 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
   let sz := segblock_size blk in
   match i with
   (* Jump instruction in MC *)
-  | MCjmp_l _ ofs => goto_label ofs sz rs m
-  | MCjcc cond _ ofs =>
+  | MCjmp_l ofs => goto_label ofs sz rs m
+  | MCjcc cond ofs =>
     match eval_testcond cond rs with
     | Some true => goto_label ofs sz rs m
     | Some false => Next (nextinstr rs sz) m
     | None => Stuck
     end
-  | MCjcc2 cond1 cond2 _ ofs =>
+  | MCjcc2 cond1 cond2 ofs =>
       match eval_testcond cond1 rs, eval_testcond cond2 rs with
       | Some true, Some true => goto_label ofs sz rs m
       | Some _, Some _ => Next (nextinstr rs sz) m
       | _, _ => Stuck
       end    
-  | MCjmptbl r _ tbl =>
+  | MCjmptbl r tbl =>
       match rs#r with
       | Vint n =>
           match list_nth_z tbl (Int.unsigned n) with

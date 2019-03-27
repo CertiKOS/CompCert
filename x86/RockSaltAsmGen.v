@@ -299,17 +299,11 @@ Definition transl_instr (fmap: FMAP_TYPE) (lmap: LMAP_TYPE)
            (f:ident) (i: MC.instruction) (ofs: int32) : 
   res (ACCUM_INSTRS * LMAP_TYPE)  :=
   match i with
-  | MCjmp_l l ofs' =>
-    (* calculate the size of the instruction *)
-    do isz <- instr_size (JMP true false (Imm_op Word.zero) None);
-    (* calculate the offset of the jump *)
-    let rel_ofs := Word.sub (lmap f l) (Word.add ofs isz) in
+  | MCjmp_l ofs' =>
+    let rel_ofs := Word.repr (Ptrofs.unsigned ofs') in
     OK (fun data_addr => [JMP true false (Imm_op rel_ofs) None],lmap)
-  | MCjcc c l ofs' =>
-    (* calculate the size of the instruction *)
-    do isz <- instr_size (Jcc (transl_cond_type c) Word.zero);
-    (* calculate the offset of the jump *)
-    let rel_ofs := Word.sub (lmap f l) (Word.add ofs isz) in
+  | MCjcc c ofs' =>
+    let rel_ofs := Word.repr (Ptrofs.unsigned ofs') in
     OK (fun data_addr => [Jcc (transl_cond_type c) rel_ofs],lmap)
   | MCAsminstr i =>
     match i with
