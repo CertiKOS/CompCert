@@ -53,6 +53,7 @@ Require Asmgen.
 Require PseudoInstructions.
 Require FlatAsmgen.
 Require MClabelgen.
+Require MCcallgen.
 Require RockSaltAsmGen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
@@ -177,7 +178,8 @@ Definition transf_cminor_program_rs (p: Cminor.program) : res RockSaltAsm.progra
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program
   @@@ time "Generation of FlatAsm" FlatAsmgen.transf_program
-  @@@ time "Generation of MC" MClabelgen.transf_program
+  @@@ time "Generation of relative jumps in MC" MClabelgen.transf_program
+  @@ time "Generation of short calls in MC" MCcallgen.transf_program
   @@@ time "Generation of RockSalt program" RockSaltAsmGen.transf_program.
  
 Definition transf_clight_program (p: Clight.program) : res Asm.program :=
