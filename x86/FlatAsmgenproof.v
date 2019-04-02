@@ -9,7 +9,7 @@ Require Import Coqlib Integers Values Maps AST.
 Require Import Memtype Memory.
 Require Import Smallstep.
 Require Import Asm RealAsm.
-Require Import FlatAsm FlatAsmBuiltin FlatAsmgen FlatAsmProgram.
+Require Import FlatAsm FlatAsmBuiltin FlatAsmgen FlatAsmProgram FlatMemAccessors.
 Require Import Segment.
 Require Import Events.
 Require Import StackADT.
@@ -5438,7 +5438,7 @@ Qed.
 Context `{external_calls_ops : !ExternalCallsOps mem }.
 Context `{!EnableBuiltins mem}.
 Existing Instance Asm.mem_accessors_default.
-Existing Instance FlatAsm.mem_accessors_default.
+Existing Instance FlatMemAccessors.mem_accessors_default.
 
 Lemma eval_builtin_arg_inject : forall j m m' rs rs' sp sp' arg varg
     (MATCHINJ: match_inj j)
@@ -5842,9 +5842,9 @@ Ltac destr_valinj_left H :=
 Lemma eval_addrmode32_inject: forall j a rs1 rs2,
     match_inj j ->
     regset_inject j rs1 rs2 ->
-    Val.inject j (Asm.eval_addrmode32 ge a rs1) (FlatAsm.eval_addrmode32 tge a rs2).
+    Val.inject j (Asm.eval_addrmode32 ge a rs1) (FlatMemAccessors.eval_addrmode32 tge a rs2).
 Proof.
-  intros. unfold Asm.eval_addrmode32, FlatAsm.eval_addrmode32.
+  intros. unfold Asm.eval_addrmode32, FlatMemAccessors.eval_addrmode32.
   destruct a. 
   destruct base, ofs, const; simpl in *. 
   - destruct p. repeat apply Val.add_inject; auto.
@@ -5907,9 +5907,9 @@ Qed.
 Lemma eval_addrmode64_inject: forall j a rs1 rs2,
     match_inj j ->
     regset_inject j rs1 rs2 ->
-    Val.inject j (Asm.eval_addrmode64 ge a rs1) (FlatAsm.eval_addrmode64 tge a rs2).
+    Val.inject j (Asm.eval_addrmode64 ge a rs1) (FlatMemAccessors.eval_addrmode64 tge a rs2).
 Proof.
-  intros. unfold Asm.eval_addrmode32, FlatAsm.eval_addrmode32.
+  intros. unfold Asm.eval_addrmode32, FlatMemAccessors.eval_addrmode32.
   destruct a. 
   destruct base, ofs, const; simpl in *.
   - destruct p. repeat apply Val.addl_inject; auto.
@@ -5961,7 +5961,7 @@ Qed.
 Lemma eval_addrmode_inject: forall j a rs1 rs2,
     match_inj j ->
     regset_inject j rs1 rs2 ->
-    Val.inject j (Asm.eval_addrmode ge a rs1) (FlatAsm.eval_addrmode tge a rs2).
+    Val.inject j (Asm.eval_addrmode ge a rs1) (FlatMemAccessors.eval_addrmode tge a rs2).
 Proof.
   intros. unfold Asm.eval_addrmode, eval_addrmode. destruct Archi.ptr64.
   + eapply eval_addrmode64_inject; eauto.
@@ -5980,7 +5980,7 @@ Lemma exec_load_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk rd a
                           (* (GMUNDEF: gid_map_for_undef_syms gm), *)
     Asm.exec_load ge chunk m1 a rs1 rd sz = Next rs1' m1' ->
     exists rs2' m2',
-      FlatAsm.exec_load tge chunk m2 a rs2 rd sz = Next rs2' m2' /\
+      FlatMemAccessors.exec_load tge chunk m2 a rs2 rd sz = Next rs2' m2' /\
       match_states (State rs1' m1') (State rs2' m2').
 Proof.
   intros. unfold Asm.exec_load in *.
@@ -6020,7 +6020,7 @@ Lemma exec_store_step: forall j rs1 rs2 m1 m2 rs1' m1' sz chunk r a dregs
                          (* (GMUNDEF: gid_map_for_undef_syms gm), *)
     Asm.exec_store ge chunk m1 a rs1 r dregs sz = Next rs1' m1' ->
     exists rs2' m2',
-      FlatAsm.exec_store tge chunk m2 a rs2 r dregs sz = Next rs2' m2' /\
+      FlatMemAccessors.exec_store tge chunk m2 a rs2 r dregs sz = Next rs2' m2' /\
       match_states (State rs1' m1') (State rs2' m2').
 Proof.
   intros. unfold Asm.exec_store in *.

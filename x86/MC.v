@@ -4,8 +4,53 @@ Require Import Locations Stacklayout Conventions EraseArgs.
 Require Import Segment FlatAsmGlobenv FlatAsmBuiltin.
 Require Import Asm RawAsm FlatAsm.
 Require Import Num.
-Require Import FlatAsmProgram.
+Require Import FlatAsmProgram FlatMemAccessors.
 Require Globalenvs.
+
+Inductive addrmode': Type :=
+  | Addrmode' (base: option ireg)
+              (ofs: option (ireg * Z))
+              (const: seglabel).
+
+Section WITHGE.
+  Context {F V I : Type}.
+  Variable ge: Genv.t F V I.
+
+Definition eval_addrmode32' (a: addrmode') (rs: regset) : val :=
+  let '(Addrmode' base ofs const) := a in
+  Val.add  (match base with
+             | None => Vint Int.zero
+             | Some r => rs r
+            end)
+  (Val.add (match ofs with
+             | None => Vint Int.zero
+             | Some(r, sc) =>
+                if zeq sc 1
+                then rs r
+                else Val.mul (rs r) (Vint (Int.repr sc))
+             end)
+           (Genv.seglabel_to_val ge const)).
+
+Definition eval_addrmode64' (a: addrmode') (rs: regset) : val :=
+  let '(Addrmode' base ofs const) := a in
+  Val.addl (match base with
+             | None => Vlong Int64.zero
+             | Some r => rs r
+            end)
+  (Val.addl (match ofs with
+             | None => Vlong Int64.zero
+             | Some(r, sc) =>
+                if zeq sc 1
+                then rs r
+                else Val.mull (rs r) (Vlong (Int64.repr sc))
+             end)
+           (Genv.seglabel_to_val ge const)).
+
+Definition eval_addrmode' (a: addrmode') (rs: regset) : val :=
+  if Archi.ptr64 then eval_addrmode64' a rs else eval_addrmode32' a rs.
+
+End WITHGE.
+
 
 Inductive instruction : Type :=
   | MCjmp_l (ofs: ptrofs)
@@ -13,7 +58,10 @@ Inductive instruction : Type :=
   | MCjcc2 (c1 c2: testcond) (ofs: ptrofs)   (**r pseudo *)
   | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
   | MCmov_rs (rd:ireg) (lbl: seglabel) (** sv contains the pointer to the source location *)
-  | MCshortcall: ptrofs -> signature -> instruction (** short call into an internal function *)
+  | MCshortcall (ofs: ptrofs) (sg: signature) (** short call into an internal function *)
+  | MCmovl_rm (rd: ireg) (a: addrmode')
+  | MCmovl_mr (a: addrmode') (rs: ireg)
+  | MCleal (rd: ireg) (a:addrmode')
   | MCAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
@@ -24,6 +72,9 @@ Definition instr_to_string (i:instruction) : string :=
   | MCjmptbl _ _ => "MCjmptbl"
   | MCmov_rs _ _ => "MCmov_rs"
   | MCshortcall _ _ => "MCshortcall"
+  | MCmovl_rm _ _ => "MCmovl_rm"
+  | MCmovl_mr _ _ => "MCmovl_mr"
+  | MCleal _ _ => "MCleal"
   | MCAsminstr i => Asm.instr_to_string i
   end.
 
@@ -54,6 +105,22 @@ Definition eval_ros (ge : genv) (ros : ireg + ident) (rs : regset) :=
   | inr symb => Genv.symbol_address ge symb Ptrofs.zero
   end.
 
+
+Definition exec_load' {F V I} (ge: Genv.t F V I) (chunk: memory_chunk) (m: mem)
+                     (a: addrmode') (rs: regset) (rd: preg) (sz:ptrofs):=
+  match Mem.loadv chunk m (eval_addrmode' ge a rs) with
+  | Some v => Next (nextinstr_nf (rs#rd <- v) sz) m
+  | None => Stuck
+  end.
+
+Definition exec_store' {F V I} (ge: Genv.t F V I) (chunk: memory_chunk) (m: mem)
+                      (a: addrmode') (rs: regset) (r1: preg)
+                      (destroyed: list preg) (sz:ptrofs) :=
+  match Mem.storev chunk m (eval_addrmode' ge a rs) (rs r1) with
+  | Some m' =>
+    Next (nextinstr_nf (undef_regs destroyed rs) sz) m'
+  | None => Stuck
+  end.
 
 Definition exec_flatasm_instr {exec_load exec_store} `{!MemAccessors exec_load exec_store} 
            (ge: genv) (sz: ptrofs) (i:Asm.instruction) (rs: regset) (m: mem) : outcome :=
@@ -435,8 +502,7 @@ Definition exec_flatasm_instr {exec_load exec_store} `{!MemAccessors exec_load e
   | _ => Stuck
   end.
 
-
-Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load exec_store} 
+Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_store} 
            (ge: genv) (ii: instr_with_info) (rs: regset) (m: mem) : outcome :=
   let '(i,blk,fid) := ii in
   let sz := segblock_size blk in
@@ -476,6 +542,12 @@ Definition exec_instr {exec_load exec_store} `{!FlatAsm.MemAccessors exec_load e
                 #PC <- addr
                 #RSP <- sp) m2
       end
+  | MCmovl_rm rd a => 
+      exec_load' ge Mint32 m a rs rd sz
+  | MCmovl_mr a r1 => 
+      exec_store' ge Mint32 m a rs r1 nil sz
+  | MCleal rd a =>
+      Next (nextinstr (rs#rd <- (eval_addrmode32' ge a rs)) sz) m
   (* The rest instructions are forwarded to FlatAsm *)
   | MCAsminstr ins =>
     exec_flatasm_instr ge (segblock_size blk) ins rs m
