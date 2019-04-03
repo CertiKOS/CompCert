@@ -56,8 +56,6 @@ Require MClabelgen.
 Require MCcallgen.
 Require MCdatagen.
 Require FlatMCgen.
-Require RockSaltAsm.
-Require RockSaltAsmGen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -175,17 +173,6 @@ Definition transf_cminor_program (p: Cminor.program) : res Asm.program :=
   @@@ time "RTL generation" RTLgen.transl_program
   @@@ transf_rtl_program.
 
-Definition transf_cminor_program_rs (p: Cminor.program) : res RockSaltAsm.program :=
-  OK p
-  @@@ transf_cminor_program
-  @@@ PseudoInstructions.check_program
-  @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program
-  @@@ time "Generation of FlatAsm" FlatAsmgen.transf_program
-  @@@ time "Generation of relative jumps in MC" MClabelgen.transf_program
-  @@ time "Generation of short calls in MC" MCcallgen.transf_program
-  @@ time "Generation of data addresses in MC" MCdatagen.transf_program
-  @@@ time "Generation of RockSalt program" RockSaltAsmGen.transf_program.
- 
 Definition transf_clight_program (p: Clight.program) : res Asm.program :=
   OK p
    @@ print print_Clight
@@ -210,11 +197,14 @@ Definition transf_c_program_flatasm p : res FlatAsm.program :=
 
 Definition transf_c_program_mc p : res MC.program :=
   transf_c_program_flatasm p
-  @@@ time "Generation of MC" MClabelgen.transf_program.
+  @@@ time "Generation of relative jumps in MC" MClabelgen.transf_program
+  @@ time "Generation of short calls in MC" MCcallgen.transf_program
+  @@ time "Generation of data addresses in MC" MCdatagen.transf_program.
 
-Definition transf_c_program_rs p : res RockSaltAsm.program :=
+Definition transf_c_program_fmc p : res FlatMC.program :=
   transf_c_program_mc p
-  @@@ time "Generation of RockSalt program" RockSaltAsmGen.transf_program.
+  @@@ time "Generation of machine code with a flat memory" FlatMCgen.transf_program.
+
 
 (** The following lemmas help reason over compositions of passes. *)
 
