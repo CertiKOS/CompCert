@@ -61,6 +61,8 @@ Inductive instruction : Type :=
   | MCshortcall (ofs: ptrofs) (sg: signature) (** short call into an internal function *)
   | MCmovl_rm (rd: ireg) (a: addrmode')
   | MCmovl_mr (a: addrmode') (rs: ireg)
+  | MCmov_rm_a (rd:ireg) (a: addrmode')
+  | MCmov_mr_a (a: addrmode') (r1:ireg)
   | MCleal (rd: ireg) (a:addrmode')
   | MCAsminstr : Asm.instruction -> instruction.
 
@@ -75,6 +77,8 @@ Definition instr_to_string (i:instruction) : string :=
   | MCmovl_rm _ _ => "MCmovl_rm"
   | MCmovl_mr _ _ => "MCmovl_mr"
   | MCleal _ _ => "MCleal"
+  | MCmov_rm_a _ _ => "MCmov_rm_a"
+  | MCmov_mr_a _ _ => "MCmov_mr_a"
   | MCAsminstr i => Asm.instr_to_string i
   end.
 
@@ -545,6 +549,10 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
   | MCmovl_rm rd a => 
       exec_load' ge Mint32 m a rs rd sz
   | MCmovl_mr a r1 => 
+      exec_store' ge Mint32 m a rs r1 nil sz
+  | MCmov_rm_a rd a => 
+      exec_load' ge Mint32 m a rs rd sz
+  | MCmov_mr_a a r1 => 
       exec_store' ge Mint32 m a rs r1 nil sz
   | MCleal rd a =>
       Next (nextinstr (rs#rd <- (eval_addrmode32' ge a rs)) sz) m
