@@ -112,7 +112,7 @@ BACKEND=\
   FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v FlatAsmProgram.v \
 	FlatAsmgen.v FlatAsmgenproof.v FlatAsmSep.v \
   MC.v MClabelgen.v MCcallgen.v MCdatagen.v \
-  FlatMCProgram.v FlatMC.v FlatMCgen.v \
+  FlatMCProgram.v FlatMC.v FlatMCgen.v FlatBinary.v FlatBingen.v\
   ValidLabel.v
 
 # C front-end modules (in cfrontend/)

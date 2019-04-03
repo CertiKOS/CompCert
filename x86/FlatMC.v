@@ -40,6 +40,8 @@ Inductive instruction : Type :=
   | FMCsall_ri (rd:ireg) (n:int)
   | FMCnop.
 
+Definition instr_with_info: Type := instruction * ptrofs.
+
 (* The Flat Machine Code Program *)
-Definition program := @FlatMCProgram.program instruction.
+Definition program := @FlatMCProgram.program instr_with_info.
 

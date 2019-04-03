@@ -7,9 +7,7 @@ Section FLATPROG.
 
 Context {I: Type}.
 
-Definition instr_with_info: Type := I * ptrofs.
-
-Definition code := list instr_with_info.
+Definition code := list I.
 
 Record function : Type := mkfunction { fn_sig: signature; fn_code: code; }.
 

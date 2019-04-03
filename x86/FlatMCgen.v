@@ -125,7 +125,7 @@ Definition transl_fun (f:@FlatAsmProgram.function MC.instruction) : res function
 
 
 Definition transl_globdef (def: (ident * option (@FlatAsmProgram.gdef MC.instruction) * segblock)) 
-  : res (ident * option (@FlatMCProgram.gdef FlatMC.instruction)) :=
+  : res (ident * option (@FlatMCProgram.gdef FlatMC.instr_with_info)) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
@@ -172,5 +172,3 @@ Definition transf_program (p:MC.program) : res program :=
         Ptrofs.zero
         (segsize (code_seg p)))
       .
-
-
