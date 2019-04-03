@@ -159,12 +159,12 @@ Module Behavior.
       | bind_val a t :
           has (f a) t ->
           bind_trace (val a) t
-      | bind_move m :
-          bind_trace (move m) (move m)
       | bind_div :
           bind_trace div div
       | bind_undef t :
           bind_trace undef t
+      | bind_move m :
+          bind_trace (move m) (move m)
       | bind_tcons m n s t :
           bind_trace s t ->
           bind_trace (tcons m n s) (tcons m n t).
@@ -245,9 +245,9 @@ Module Behavior.
       + destruct H as (u & Hu & Hut).
         exists u. cbn. intuition auto.
         exists (val a). intuition auto.
-      + repeat (exists (move m); split; [auto | constructor]).
       + repeat (exists div; split; [auto | constructor]).
       + repeat (exists undef; split; [auto | constructor]).
+      + repeat (exists (move m); split; [auto | constructor]).
       + edestruct (IHHst (fun t => P (tcons m n t))) as (v & Hv & Hvt); auto.
         clear s Hs Hst IHHst.
         destruct Hv as (u & Hu & Huv).
@@ -258,8 +258,8 @@ Module Behavior.
       revert t Hvt; induction Huv; intros.
       + constructor. cbn. eauto.
       + inversion Hvt; clear Hvt; subst; eauto.
-      + inversion Hvt; clear Hvt; subst; eauto.
       + constructor.
+      + inversion Hvt; clear Hvt; subst; eauto.
       + inversion Hvt; clear Hvt; subst; eauto.
   Qed.
 
@@ -460,6 +460,20 @@ Module Behavior.
     intuition eauto using closed.
   Qed.
 
+  Program Definition sup {M N A I} (x : I -> t M N A) : t M N A :=
+    {| has t := exists i, has (x i) t |}.
+  Next Obligation.
+    intros M N A I x s t (i & Ht) Hst.
+    exists i. eauto using closed.
+  Qed.
+
+  Program Definition inf {M N A I} (x : I -> t M N A) : t M N A :=
+    {| has t := forall i, has (x i) t |}.
+  Next Obligation.
+    intros M N A I x s t Ht Hst.
+    intros i. eauto using closed.
+  Qed.
+
   Lemma bot_ref {M N A} (x : t M N A) :
     ref bot x.
   Proof.
@@ -492,6 +506,12 @@ Module Behavior.
     firstorder.
   Qed.
 
+  Global Instance join_ref :
+    Monotonic (@join) (forallr -, forallr -, forallr -, ref ++> ref ++> ref).
+  Proof.
+    firstorder.
+  Qed.
+
   Lemma meet_lb_l {M N A} (x y : t M N A) :
     ref (meet x y) x.
   Proof.
@@ -510,6 +530,139 @@ Module Behavior.
     ref x (meet y z).
   Proof.
     firstorder.
+  Qed.
+
+  Global Instance meet_ref :
+    Monotonic (@meet) (forallr -, forallr -, forallr -, ref ++> ref ++> ref).
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma sup_ub {M N A I} (x : I -> t M N A) :
+    forall i, ref (x i) (sup x).
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma sup_lub {M N A I} (x : I -> t M N A) y :
+    (forall i, ref (x i) y) -> ref (sup x) y.
+  Proof.
+    firstorder.
+  Qed.
+
+  Global Instance sup_ref :
+    Monotonic
+      (@sup)
+      (forallr -, forallr -, forallr -, forallr -, (- ==> ref) ++> ref).
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma inf_lb {M N A I} (x : I -> t M N A) :
+    forall i, ref (inf x) (x i).
+  Proof.
+    firstorder.
+  Qed.
+
+  Lemma inf_glb {M N A I} x (y : I -> t M N A) :
+    (forall i, ref x (y i)) -> ref x (inf y).
+  Proof.
+    firstorder.
+  Qed.
+
+  Global Instance inf_ref :
+    Monotonic
+      (@inf)
+      (forallr -, forallr -, forallr -, forallr -, (- ==> ref) ++> ref).
+  Proof.
+    firstorder.
+  Qed.
+
+  (** *** Extension to Kleisli morphisms *)
+
+  Definition zero {M N A B} : A -> t M N B :=
+    fun a => bot.
+
+  Definition plus {M N A B} (f g : A -> t M N B) :=
+    fun a => join (f a) (g a).
+
+  Definition sum {M N A B I} (f : I -> A -> t M N B) :=
+    fun a => sup (fun i => f i a).
+
+  Definition comp {M N A B C} (f : A -> t M N B) (g : B -> t M N C) :=
+    fun a => bind g (f a).
+
+  Lemma comp_ret {M N A B} (f : A -> t M N B) :
+    comp f ret = f.
+  Proof.
+    apply functional_extensionality; intro a.
+    apply bind_ret.
+  Qed.
+
+  Lemma ret_comp {M N A B} (f : A -> t M N B) :
+    comp ret f = f.
+  Proof.
+    apply functional_extensionality; intro a.
+    apply ret_bind.
+  Qed.
+
+  Lemma comp_comp {M N A B C D} (f : A -> t M N B) (g : B -> _ C) (h : C -> _ D):
+    comp (comp f g) h = comp f (comp g h).
+  Proof.
+    apply functional_extensionality; intro a.
+    symmetry. apply bind_bind.
+  Qed.
+
+  (** ** Joins distribute over bind *)
+
+  Lemma bind_join {M N A B} (x y : t M N A) (f : A -> t M N B) :
+    bind f (join x y) = join (bind f x) (bind f y).
+  Proof.
+    apply antisymmetry; firstorder.
+  Qed.
+
+  Lemma bind_sup {M N A B I} (x : I -> t M N A) (f : A -> t M N B) :
+    bind f (sup x) = sup (fun i => bind f (x i)).
+  Proof.
+    apply antisymmetry; firstorder.
+  Qed.
+
+  Lemma bind_trace_plus {M N A B} (f g : A -> t M N B) s t :
+    bind_trace (plus f g) s t ->
+    bind_trace f s t \/ bind_trace g s t.
+  Proof.
+    induction 1; firstorder.
+  Qed.
+
+  Lemma bind_trace_sum {M N A B I} (f : I -> A -> t M N B) s t :
+    inhabited I ->
+    bind_trace (sum f) s t ->
+    exists i, bind_trace (f i) s t.
+  Proof.
+    intros [i].
+    induction 1; try solve [exists i; firstorder].
+    - destruct H. eauto.
+    - destruct IHbind_trace. eauto.
+  Qed.
+
+  Lemma bind_plus {M N A B} (x : t M N A) (f g : A -> t M N B) :
+    bind (plus f g) x = join (bind f x) (bind g x).
+  Proof.
+    apply antisymmetry.
+    - intros t (s & Hs & Hst).
+      apply bind_trace_plus in Hst as [Hst | Hst]; firstorder.
+    - eapply join_lub; repeat rstep; rewrite <- ref_r; subst; firstorder.
+  Qed.
+
+  Lemma bind_sum {M N A B I} (f : I -> A -> t M N B) (x : t M N A) :
+    inhabited I ->
+    bind (sum f) x = sup (fun i => bind (f i) x).
+  Proof.
+    intros HI.
+    apply antisymmetry.
+    - intros t (s & Hs & Hst).
+      apply bind_trace_sum in Hst as [i Hst]; firstorder.
+    - eapply sup_lub; intro. repeat rstep. rewrite <- ref_r. subst. firstorder.
   Qed.
 
   (** ** Iteration *)
@@ -621,6 +774,8 @@ Module Behavior.
     - inversion Huv; subst; eauto. inversion H1; subst; eauto.
   Qed.
 
+  (** XXX bad no divergence *)
+
   Section SUBST.
     Context {A B C D X : Type} (f : A -> t C D B).
 
@@ -688,6 +843,12 @@ Module Behavior.
   Proof.
     intros t (s & Hs & Hst). cbn in *.
     exists (tcons m n s). intuition eauto.
+  Qed.
+
+  Lemma delta_join {M N A} (x y : t M N A) (m : M) (n : N) :
+    delta (join x y) m n = join (delta x m n) (delta y m n).
+  Proof.
+    apply antisymmetry; firstorder.
   Qed.
 
   Lemma delta_meet {M N A} (x y : t M N A) (m : M) (n : N) :
@@ -840,6 +1001,20 @@ Module Behavior.
       eapply delta_ref; eauto.
     Qed.
 
+    Lemma join_pull w x y:
+      ref (join (pull w x) (pull w y)) (pull w (join x y)).
+    Proof.
+      eapply join_lub; rstep; auto using join_ub_l, join_ub_r.
+    Qed.
+
+    Lemma pull_top w :
+      pull w top = top.
+    Proof.
+      apply antisymmetry; auto using top_ref.
+      intros t _. simpl.
+      apply pull_undef. firstorder.
+    Qed.
+
     (*
       It would be satisfying to have a Galois adjoint for pull,
       but it's not clear to me how to define it at the moment.
@@ -925,9 +1100,11 @@ Module Behavior.
         induction Ht; intros; subst; try solve [destruct H; eauto].
         destruct H as [H|H].
         + left. eapply pull_tcons; eauto.
-          setoid_rewrite join_
+          setoid_rewrite delta_join in H2. cbn in H2.
+          intros. change (has (pull w'' (delta x0 m2 n2)) t1).
+          erewrite join_ub_l.
         + subst x2. destruct H; eauto.
-     *)
+          *)
 
     Definition sim : klr W (t M1 N1 A) (t M2 N2 B) :=
       fun w x y => ref x (pull w y).
@@ -1011,12 +1188,12 @@ Module Behavior.
         + repeat (econstructor; eauto).
       - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
         + repeat (econstructor; eauto).
-        + eapply pull_move; eauto. econstructor; eauto.
-      - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
-        + repeat (econstructor; eauto).
         + eapply pull_div; eauto. econstructor; eauto.
       - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
         repeat (econstructor; eauto).
+      - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
+        + repeat (econstructor; eauto).
+        + eapply pull_move; eauto. econstructor; eauto.
       - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
         + repeat (econstructor; eauto).
         + eapply pull_tcons; eauto. econstructor; eauto.
@@ -1042,19 +1219,80 @@ Module Behavior.
         eapply pull_val; cbn; eauto.
     Qed.
 
+    Global Instance join_sim :
+      Monotonic
+        (@join)
+        (forallr RM, forallr RN, forallr RX,
+         |= sim RM RN RX ++> sim RM RN RX ++> sim RM RN RX).
+    Proof.
+      intros M1 M2 RM N1 N2 RN X1 X2 RX.
+      intros w x1 x2 Hx y1 y2 Hy. unfold sim in *.
+      rewrite Hx, Hy. apply join_pull.
+    Qed.
+
+    Global Instance guard_sim :
+      Monotonic
+        (@guard)
+        (forallr RM, forallr RN, |= k impl ++> sim RM RN (k ⊤)).
+    Proof.
+      intros M1 M2 RM N1 N2 RN w P Q HPQ. unfold sim in *.
+      intros t (H & Ht); subst.
+      eapply pull_val. simpl. eauto. constructor.
+    Qed.
+
+    Global Instance choose_sim :
+      Monotonic
+        (@choose)
+        (forallr RM, forallr RN, forallr RA,
+         |= (k1 set_le RA) ++> sim RM RN RA).
+    Proof.
+      intros M1 M2 RM N1 N2 RN A1 A2 RA w P Q HPQ. unfold sim in *.
+      intros t (a & Ha & Ht); subst.
+      edestruct HPQ as (b & Hb & Hab); eauto.
+      apply pull_val with b; eauto.
+      firstorder.
+    Qed.
+
+    Context {M1 M2} (RM : klr W M1 M2).
+    Context {N1 N2} (RN : klr W N1 N2).
+    Context {X1 X2} (RX : klr W X1 X2).
+
+    Global Instance sim_ref :
+      Monotonic
+        (@sim _ _ M1 M2 RM N1 N2 RN X1 X2 RX)
+        (- ==> ref --> ref ++> impl).
+    Proof.
+      unfold sim. repeat rstep. intro.
+      etransitivity; eauto.
+      etransitivity; eauto.
+      rauto.
+    Qed.
+
+    Global Instance sim_ref_params :
+      Params (@sim) 3.
+
+    Lemma join_lub_sim w x y z :
+      sim RM RN RX w x z ->
+      sim RM RN RX w y z ->
+      sim RM RN RX w (join x y) z.
+    Proof.
+      apply join_lub.
+    Qed.
+
   End SIM_PROP.
 
 End Behavior.
 
 (** Notations for behavior specifications. *)
 
-Notation beh A := (Behavior.t A).
+Notation beh M N A := (Behavior.t M N A).
 Bind Scope behavior_scope with Behavior.t.
 Delimit Scope behavior_scope with beh.
 
+Notation "x >>= f" := (Behavior.bind f x) (at level 40, left associativity).
 Infix "\/" := Behavior.join : behavior_scope.
 Notation "0" := Behavior.zero : behavior_scope.
 Notation "1" := Behavior.ret : behavior_scope.
 Infix "+" := Behavior.plus : behavior_scope.
 Infix "@" := Behavior.comp (at level 30, right associativity) : behavior_scope.
-Notation "x ^ *" := (Behavior.star x) (at level 30) : behavior_scope.
+Notation "x ^ *" := (Behavior.repeat x) (at level 30) : behavior_scope.
