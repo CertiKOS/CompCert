@@ -3,7 +3,7 @@ Require Import Asm MC Segment.
 Require Import Errors.
 Require Import FlatAsmBuiltin.
 Require Import Memtype.
-Require Import FlatAsmProgram MC.
+Require Import FlatAsmProgram.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.

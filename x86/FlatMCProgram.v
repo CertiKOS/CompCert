@@ -7,7 +7,9 @@ Section FLATPROG.
 
 Context {I: Type}.
 
-Definition code := list I.
+Definition instr_with_info: Type := I * ptrofs.
+
+Definition code := list instr_with_info.
 
 Record function : Type := mkfunction { fn_sig: signature; fn_code: code; }.
 
@@ -24,7 +26,6 @@ Record program : Type := {
   prog_data_size: ptrofs;
   prog_code_addr: ptrofs;
   prog_code_size: ptrofs;
-  prog_code: list I;
 }.
 
 End FLATPROG.

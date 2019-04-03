@@ -5,7 +5,14 @@ Require Import Num.
 Require Import Asm FlatMCProgram.
 Require Globalenvs.
 
+Inductive scale : Type :=
+| Scale1 | Scale2 | Scale4 | Scale8.
 
+Inductive addrmode: Type :=
+| Addrmode (base: option ireg)
+           (index: option (ireg * scale))
+           (disp: ptrofs).
+            
 Inductive instruction : Type :=
   | FMCjmp_l (ofs: ptrofs)
   | FMCjcc (c: testcond) (ofs: ptrofs)
@@ -31,8 +38,7 @@ Inductive instruction : Type :=
   | FMCcltd
   | FMCidivl (r1: ireg)
   | FMCsall_ri (rd:ireg) (n:int)
-  | FMClabel (l: label).
-
+  | FMCnop.
 
 (* The Flat Machine Code Program *)
 Definition program := @FlatMCProgram.program instruction.
