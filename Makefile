@@ -29,7 +29,6 @@ DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
 RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) \
-	-R cpu_models/shared Shared \
 	-R compcertx/backend compcertx.backend\
 	-R compcertx/cfrontend compcertx.cfrontend\
 	-R compcertx/common compcertx.common \
@@ -204,7 +203,6 @@ GENERATED=\
   cparser/Parser.v
 
 all:
-	$(MAKE) -C cpu_models/shared
 	@test -f .depend || $(MAKE) depend
 	$(MAKE) proof
 	$(MAKE) extraction
@@ -341,7 +339,6 @@ clean:
 	$(MAKE) -f Makefile.extr clean
 	$(MAKE) -C runtime clean
 	$(MAKE) -C test clean
-	$(MAKE) -C cpu_models/shared clean
 
 
 distclean:
