@@ -73,7 +73,7 @@ Definition transl_instr (i: MC.instruction) : res instruction :=
        | None => Error (msg "Invalid segment in the argument of MCmov_rs")
        | Some ofs => OK (Ptrofs.add ofs sofs)
        end;
-      OK (FMCmov_rs rd ofs)
+      OK (FMCmovl_rm rd (Addrmode None None ofs))
   | MCmov_rm_a rd a =>
     do a' <- transl_addr_mode a;
       OK (FMCmov_rm_a rd a')

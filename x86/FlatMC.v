@@ -26,7 +26,6 @@ Inductive instruction : Type :=
   | FMCmov_rr (rd r1: ireg)
   | FMCmovl_rm (rd: ireg) (a: addrmode)
   | FMCmovl_mr (a: addrmode) (rs: ireg)
-  | FMCmov_rs (rd:ireg) (ofs: ptrofs) 
   | FMCmov_rm_a (rd: ireg) (a: addrmode)
   | FMCmov_mr_a (a: addrmode) (r1: ireg)
   | FMCtestl_rr (r1 r2: ireg)

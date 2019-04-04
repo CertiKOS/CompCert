@@ -52,7 +52,7 @@ Fixpoint string_to_hex (s: string): hex :=
     (char_to_hex_base a) :: (string_to_hex s')
   end.
 
-Notation "H{ str }" := (string_to_hex str) : hex_scope.
+Notation "H[ str ]" := (string_to_hex str) : hex_scope.
 
 (* Translate hexadecimals to integers *)
 
@@ -85,8 +85,7 @@ Fixpoint hex_to_Z (h: hex) : Z :=
       end
   in aux 0 h.
 
-Notation "HZ{ str }" := (hex_to_Z (string_to_hex str)) : hex_scope.
-Notation "HByte{ str }" := (Byte.repr (hex_to_Z (string_to_hex str))) : hex_scope.
+Notation "HB[ str ]" := (Byte.repr (hex_to_Z (string_to_hex str))) : hex_scope.
 
 End Hex.
 
