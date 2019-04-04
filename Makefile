@@ -114,7 +114,7 @@ BACKEND=\
   MC.v MClabelgen.v MCcallgen.v MCdatagen.v \
   FlatMemAccessors.v FlatMCProgram.v FlatMC.v FlatMCgen.v \
   FlatBinary.v FlatBingen.v \
-  ValidLabel.v
+  ValidLabel.v Hex.v
 
 # C front-end modules (in cfrontend/)
 

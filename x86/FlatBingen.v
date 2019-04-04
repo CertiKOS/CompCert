@@ -4,16 +4,25 @@ Require Import Errors.
 Require Import FlatAsmBuiltin.
 Require Import Memtype.
 Require Import FlatAsmProgram FlatMCProgram FlatMC FlatBinary.
+Require Import Hex.
 Import ListNotations.
+Import Hex.
 
 Local Open Scope error_monad_scope.
+Local Open Scope hex_scope.
 
-Definition fmc_instr_encode (i: FlatMC.instruction) : FlatBinary.instruction.
-Admitted.
+Definition fmc_instr_encode (i: FlatMC.instruction) : res FlatBinary.instruction :=
+  match i with
+  | FMCjmp_l ofs =>
+    OK (HByte{"E9"} :: nil)
+  | _ =>
+    Error (msg "FMC instruction not supported")
+  end.
+
 
 Definition transl_instr' (ii: FlatMC.instr_with_info) : res instruction :=
   let '(i, sz) := ii in
-  OK (fmc_instr_encode i).
+  fmc_instr_encode i.
 
 
 (** Translation of a sequence of instructions in a function *)
