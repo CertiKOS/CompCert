@@ -84,11 +84,31 @@ Definition encode_addrmode (a: addrmode) (rd: ireg) : res (list byte) :=
   let abytes := encode_int32 (bits_to_Z bits) in
   OK (abytes ++ (encode_int32 (Ptrofs.unsigned disp))).
 
+(** Encode the conditions *)
+Definition encode_testcond (c:testcond) : list byte :=
+  match c with
+  | Cond_e   => HB["0F"] :: HB["84"] :: nil
+  | Cond_ne  => HB["0F"] :: HB["85"] :: nil
+  | Cond_b   => HB["0F"] :: HB["82"] :: nil
+  | Cond_be  => HB["0F"] :: HB["86"] :: nil
+  | Cond_ae  => HB["0F"] :: HB["83"] :: nil
+  | Cond_a   => HB["0F"] :: HB["87"] :: nil
+  | Cond_l   => HB["0F"] :: HB["8C"] :: nil
+  | Cond_le  => HB["0F"] :: HB["8E"] :: nil
+  | Cond_ge  => HB["0F"] :: HB["8D"] :: nil
+  | Cond_g   => HB["0F"] :: HB["8F"] :: nil
+  | Cond_p   => HB["0F"] :: HB["8A"] :: nil
+  | Cond_np  => HB["0F"] :: HB["8B"] :: nil
+  end.
+
 (** Encode a single instruction *)
 Definition fmc_instr_encode (i: FlatMC.instruction) : res FlatBinary.instruction :=
   match i with
   | FMCjmp_l ofs =>
     OK (HB["E9"] :: encode_int32 (Ptrofs.unsigned ofs))
+  | FMCjcc c ofs =>
+    let cbytes := encode_testcond c in
+    OK (cbytes ++ encode_int32 (Ptrofs.unsigned ofs))
   | FMCshortcall ofs _ =>
     OK (HB["E8"] :: encode_int32 (Ptrofs.unsigned ofs))
   | FMCleal rd a =>
@@ -175,8 +195,6 @@ Definition fmc_instr_encode (i: FlatMC.instruction) : res FlatBinary.instruction
     OK (HB["C1"] :: modrm :: nbytes)
   | FMCnop =>
     OK (HB["90"] :: nil)
-  | _ =>
-    Error (msg "FMC instruction not supported")
   end.
 
 Definition transl_instr' (ii: FlatMC.instr_with_info) : res instruction :=
