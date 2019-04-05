@@ -55,7 +55,7 @@ Require SegAsmgen.
 Require TAsmlabelgen.
 Require TAsmcallgen.
 Require TAsmdatagen.
-Require FlatMCgen.
+Require FlatAsmgen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -201,9 +201,9 @@ Definition transf_c_program_mc p : res TransSegAsm.program :=
   @@ time "Generation of short calls in SegAsm" TAsmcallgen.transf_program
   @@ time "Generation of data addresses in SegAsm" TAsmdatagen.transf_program.
 
-Definition transf_c_program_fmc p : res FlatMC.program :=
+Definition transf_c_program_fmc p : res FlatAsm.program :=
   transf_c_program_mc p
-  @@@ time "Generation of machine code with a flat memory" FlatMCgen.transf_program.
+  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program.
 
 
 (** The following lemmas help reason over compositions of passes. *)

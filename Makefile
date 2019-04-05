@@ -112,7 +112,7 @@ BACKEND=\
   SegMemAccessors.v SegAsm.v SegAsmGlobenv.v SegAsmBuiltin.v SegAsmProgram.v \
   SegAsmgen.v SegAsmgenproof.v SegAsmSep.v \
   TransSegAsm.v TAsmlabelgen.v TAsmcallgen.v TAsmdatagen.v \
-  FlatMCProgram.v FlatMC.v FlatMCgen.v \
+  FlatProgram.v FlatAsm.v FlatAsmgen.v \
   FlatBinary.v FlatBingen.v \
   ValidLabel.v Hex.v Bits.v
 

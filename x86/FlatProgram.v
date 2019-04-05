@@ -2,7 +2,7 @@ Require Import String Coqlib Maps.
 Require Import AST Integers.
 
 
-(* Machine code programs with a flat memory space *)
+(* Programs with a flat memory space *)
 Section FLATPROG.
 
 Context {I: Type}.

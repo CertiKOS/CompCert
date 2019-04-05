@@ -2,7 +2,7 @@ Require Import Coqlib Integers AST Maps.
 Require Import Asm Segment.
 Require Import Errors.
 Require Import Memtype.
-Require Import FlatMCProgram FlatMC FlatBinary.
+Require Import FlatProgram FlatAsm FlatBinary.
 Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.
@@ -101,108 +101,108 @@ Definition encode_testcond (c:testcond) : list byte :=
   end.
 
 (** Encode a single instruction *)
-Definition fmc_instr_encode (i: FlatMC.instruction) : res FlatBinary.instruction :=
+Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instruction :=
   match i with
-  | FMCjmp_l ofs =>
+  | Fjmp_l ofs =>
     OK (HB["E9"] :: encode_int32 (Ptrofs.unsigned ofs))
-  | FMCjcc c ofs =>
+  | Fjcc c ofs =>
     let cbytes := encode_testcond c in
     OK (cbytes ++ encode_int32 (Ptrofs.unsigned ofs))
-  | FMCshortcall ofs _ =>
+  | Fshortcall ofs _ =>
     OK (HB["E8"] :: encode_int32 (Ptrofs.unsigned ofs))
-  | FMCleal rd a =>
+  | Fleal rd a =>
     do abytes <- encode_addrmode a rd;
     OK (HB["8D"] :: abytes)
-  | FMCxorl_r rd =>
+  | Fxorl_r rd =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
     OK (HB["31"] :: modrm :: nil)
-  | FMCaddl_ri rd n =>
+  | Faddl_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["000"] ++ rdbits ] in
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["81"] :: modrm :: nbytes)
-  | FMCsubl_ri rd n =>
+  | Fsubl_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["101"] ++ rdbits ] in
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["81"] :: modrm :: nbytes)
-  | FMCsubl_rr rd r1 =>
+  | Fsubl_rr rd r1 =>
     do rdbits <- encode_ireg rd;
     do r1bits <- encode_ireg r1;
     let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
     OK (HB["2B"] :: modrm :: nil)
-  | FMCmovl_ri rd n =>
+  | Fmovl_ri rd n =>
     do rdbits <- encode_ireg rd;
     let opcode := bB[b["10111"] ++ rdbits] in
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (opcode :: nbytes)
-  | FMCmov_rr rd r1 =>
+  | Fmov_rr rd r1 =>
     do rdbits <- encode_ireg rd;
     do r1bits <- encode_ireg r1;
     let modrm := bB[ b["11"] ++ rdbits ++ r1bits] in
     OK (HB["8B"] :: modrm :: nil)
-  | FMCmovl_rm rd a =>
+  | Fmovl_rm rd a =>
     do abytes <- encode_addrmode a rd;
     OK (HB["8B"] :: abytes)
-  | FMCmovl_mr a rs =>
+  | Fmovl_mr a rs =>
     do abytes <- encode_addrmode a rs;
     OK (HB["89"] :: abytes)
-  | FMCmov_rm_a rd a =>
+  | Fmov_rm_a rd a =>
     do abytes <- encode_addrmode a rd;
     OK (HB["8B"] :: abytes)    
-  | FMCmov_mr_a a rs =>
+  | Fmov_mr_a a rs =>
     do abytes <- encode_addrmode a rs;
     OK (HB["89"] :: abytes)
-  | FMCtestl_rr r1 r2 =>
+  | Ftestl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
     do r2bits <- encode_ireg r2;
     let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
     OK (HB["85"] :: modrm :: nil)
-  | FMCret =>
+  | Fret =>
     OK (HB["C3"] :: nil)
-  | FMCimull_rr rd r1 =>
+  | Fimull_rr rd r1 =>
     do rdbits <- encode_ireg rd;
     do r1bits <- encode_ireg r1;
     let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
     OK (HB["0F"] :: HB["AF"] :: modrm :: nil)
-  | FMCimull_ri rd n =>
+  | Fimull_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["69"] :: modrm :: nbytes)
-  | FMCcmpl_rr r1 r2 =>
+  | Fcmpl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
     do r2bits <- encode_ireg r2;
     let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
     OK (HB["39"] :: modrm :: nil)
-  | FMCcmpl_ri r1 n =>
+  | Fcmpl_ri r1 n =>
     do r1bits <- encode_ireg r1;
     let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["81"] :: modrm :: nbytes)
-  | FMCcltd =>
+  | Fcltd =>
     OK (HB["99"] :: nil)
-  | FMCidivl r1 =>
+  | Fidivl r1 =>
     do r1bits <- encode_ireg r1;
     let modrm := bB[ b["11"] ++ b["110"] ++ r1bits ] in
     OK (HB["F7"] :: modrm :: nil)
-  | FMCsall_ri rd n =>
+  | Fsall_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["C1"] :: modrm :: nbytes)
-  | FMCnop =>
+  | Fnop =>
     OK (HB["90"] :: nil)
   end.
 
-Definition transl_instr' (ii: FlatMC.instr_with_info) : res instruction :=
+Definition transl_instr' (ii: FlatAsm.instr_with_info) : res instruction :=
   let '(i, sz) := ii in
   fmc_instr_encode i.
 
 
 (** Translation of a sequence of instructions in a function *)
-Fixpoint transl_instrs (instrs: list FlatMC.instr_with_info) : res (list instruction) :=
+Fixpoint transl_instrs (instrs: list FlatAsm.instr_with_info) : res (list instruction) :=
   match instrs with
   | nil => OK nil
   | i::instrs' =>
@@ -212,12 +212,12 @@ Fixpoint transl_instrs (instrs: list FlatMC.instr_with_info) : res (list instruc
   end.
 
 (** Tranlsation of a function *)
-Definition transl_fun (f:@FlatMCProgram.function FlatMC.instr_with_info) : res function :=
-  do code' <- transl_instrs (FlatMCProgram.fn_code f);
-  OK (mkfunction (FlatMCProgram.fn_sig f) code' (fn_start f) (fn_size f)).
+Definition transl_fun (f:FlatAsm.function) : res function :=
+  do code' <- transl_instrs (FlatProgram.fn_code f);
+  OK (mkfunction (FlatProgram.fn_sig f) code' (fn_start f) (fn_size f)).
 
-Definition transl_globdef (def: (ident * option (@FlatMCProgram.gdef FlatMC.instr_with_info)) )
-  : res (ident * option (@FlatMCProgram.gdef instruction)) :=
+Definition transl_globdef (def: (ident * option FlatAsm.gdef))
+  : res (ident * option FlatBinary.gdef) :=
   let '(id,def) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
@@ -241,8 +241,8 @@ Fixpoint transl_globdefs defs :=
 
 
 (** Translation of a program *)
-Definition transf_program (p:FlatMC.program) : res program := 
-  do defs <- transl_globdefs (FlatMCProgram.prog_defs p);
+Definition transf_program (p:FlatAsm.program) : res program := 
+  do defs <- transl_globdefs (FlatProgram.prog_defs p);
   OK (Build_program
         defs
         (prog_public p)

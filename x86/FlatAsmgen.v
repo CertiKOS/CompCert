@@ -3,7 +3,7 @@ Require Import Asm TransSegAsm Segment.
 Require Import Errors.
 Require Import SegAsmBuiltin.
 Require Import Memtype.
-Require Import SegAsmProgram FlatMCProgram FlatMC.
+Require Import SegAsmProgram FlatProgram FlatAsm.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
@@ -45,61 +45,61 @@ Definition transl_addr_mode (m: addrmode') : res addrmode :=
 
 Definition transl_instr (i: TransSegAsm.instruction) : res instruction :=
   match i with
-  | TAjmp_l ofs => OK (FMCjmp_l ofs)
-  | TAjcc c ofs => OK (FMCjcc c ofs)
-  | TAshortcall ofs sg => OK (FMCshortcall ofs sg)
+  | TAjmp_l ofs => OK (Fjmp_l ofs)
+  | TAjcc c ofs => OK (Fjcc c ofs)
+  | TAshortcall ofs sg => OK (Fshortcall ofs sg)
   | TAleal ofs a => 
     do a' <- transl_addr_mode a;
-      OK (FMCleal ofs a')
+      OK (Fleal ofs a')
   | TAsminstr (Paddl_ri rd n) =>
-    OK (FMCaddl_ri rd n)
+    OK (Faddl_ri rd n)
   | TAsminstr (Psubl_ri rd n) =>
-    OK (FMCsubl_ri rd n)
+    OK (Fsubl_ri rd n)
   | TAsminstr (Psubl_rr rd r1) =>
-    OK (FMCsubl_rr rd r1)
+    OK (Fsubl_rr rd r1)
   | TAsminstr (Pmovl_ri rd n) =>
-    OK (FMCmovl_ri rd n)
+    OK (Fmovl_ri rd n)
   | TAsminstr (Pmov_rr rd r1) =>
-    OK (FMCmov_rr rd r1)
+    OK (Fmov_rr rd r1)
   | TAmovl_rm rd a =>
     do a' <- transl_addr_mode a;
-      OK (FMCmovl_rm rd a')
+      OK (Fmovl_rm rd a')
   | TAmovl_mr a rs =>
     do a' <- transl_addr_mode a;
-      OK (FMCmovl_mr a' rs)
+      OK (Fmovl_mr a' rs)
   | TAmov_rs rd (sid,sofs) =>
     do ofs <- 
        match smap sid with
        | None => Error (msg "Invalid segment in the argument of MCmov_rs")
        | Some ofs => OK (Ptrofs.add ofs sofs)
        end;
-      OK (FMCmovl_rm rd (Addrmode None None ofs))
+      OK (Fmovl_rm rd (Addrmode None None ofs))
   | TAmov_rm_a rd a =>
     do a' <- transl_addr_mode a;
-      OK (FMCmov_rm_a rd a')
+      OK (Fmov_rm_a rd a')
   | TAmov_mr_a a rs =>
     do a' <- transl_addr_mode a;
-      OK (FMCmov_mr_a a' rs)
+      OK (Fmov_mr_a a' rs)
   | TAsminstr (Ptestl_rr r1 r2) =>
-    OK (FMCtestl_rr r1 r2)
+    OK (Ftestl_rr r1 r2)
   | TAsminstr (Pret) =>
-    OK FMCret 
+    OK Fret 
   | TAsminstr (Pimull_rr rd r1) =>
-    OK (FMCimull_rr rd r1)
+    OK (Fimull_rr rd r1)
   | TAsminstr (Pimull_ri rd n) =>
-    OK (FMCimull_ri rd n)
+    OK (Fimull_ri rd n)
   | TAsminstr (Pcmpl_rr r1 r2) =>
-    OK (FMCcmpl_rr r1 r2)
+    OK (Fcmpl_rr r1 r2)
   | TAsminstr (Pcmpl_ri r1 n) =>
-    OK (FMCcmpl_ri r1 n)
+    OK (Fcmpl_ri r1 n)
   | TAsminstr (Pcltd) =>
-    OK FMCcltd
+    OK Fcltd
   | TAsminstr (Pidivl r1) =>
-    OK (FMCidivl r1)
+    OK (Fidivl r1)
   | TAsminstr (Psall_ri rd n) =>
-    OK (FMCsall_ri rd n)
+    OK (Fsall_ri rd n)
   | TAsminstr (Plabel l) =>
-    OK FMCnop
+    OK Fnop
   | _ => Error (msg "Instruction not supported")
   end.
 
@@ -133,7 +133,7 @@ Definition transl_fun (f:TransSegAsm.function) : res function :=
 
 
 Definition transl_globdef (def: (ident * option TransSegAsm.gdef) * segblock) 
-  : res (ident * option FlatMC.gdef) :=
+  : res (ident * option FlatAsm.gdef) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
