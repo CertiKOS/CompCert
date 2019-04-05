@@ -199,7 +199,7 @@ Definition transf_c_program_mc p : res TransSegAsm.program :=
   transf_c_program_flatasm p
   @@@ time "Generation of relative jumps in SegAsm" TAsmlabelgen.transf_program
   @@ time "Generation of short calls in SegAsm" TAsmcallgen.transf_program
-  @@ time "Generation of data addresses in SegAsm" TAsmdatagen.transf_program.
+  @@ time "Generation of addresses of global ids in SegAsm" TAsmgidgen.transf_program.
 
 Definition transf_c_program_fmc p : res FlatAsm.program :=
   transf_c_program_mc p

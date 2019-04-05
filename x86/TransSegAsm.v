@@ -4,7 +4,7 @@ Require Import Locations Stacklayout Conventions EraseArgs.
 Require Import Segment SegAsmGlobenv SegAsmBuiltin.
 Require Import Asm RawAsm SegAsm.
 Require Import Num.
-Require Import SegAsmProgram FlatMemAccessors.
+Require Import SegAsmProgram SegMemAccessors.
 Require Globalenvs.
 
 
