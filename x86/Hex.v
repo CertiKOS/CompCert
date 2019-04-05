@@ -85,6 +85,8 @@ Fixpoint hex_to_Z (h: hex) : Z :=
       end
   in aux 0 h.
 
+Notation "HZ[ str ]" := (hex_to_Z (string_to_hex str)) : hex_scope.
+
 Notation "HB[ str ]" := (Byte.repr (hex_to_Z (string_to_hex str))) : hex_scope.
 
 End Hex.
