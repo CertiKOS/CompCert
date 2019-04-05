@@ -20,12 +20,14 @@ Definition instr_with_info:Type := @FlatAsmProgram.instr_with_info instruction.
 (** * Operational semantics *)
 
 (* Definition regset := Asm.regset. *)
-Definition genv := @FlatAsmProgram.genv instruction.
+Definition genv := @FlatAsmProgram.genv instruction unit.
 
 Notation "a # b" := (a b) (at level 1, only parsing) : asm.
 Notation "a # b <- c" := (Asm.Pregmap.set b c a) (at level 1, b at next level) : asm.
 
-Definition program := @FlatAsmProgram.program instruction.
+Definition function := @FlatAsmProgram.function instruction.
+Definition gdef := @FlatAsmProgram.gdef instruction unit.
+Definition program := @FlatAsmProgram.program instruction unit.
 
 Open Scope asm.
 

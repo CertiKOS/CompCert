@@ -41,6 +41,8 @@ Inductive instruction : Type :=
 
 Definition instr_with_info: Type := instruction * ptrofs.
 
+Definition gdef := @FlatMCProgram.gdef instr_with_info.
+
 (* The Flat Machine Code Program *)
 Definition program := @FlatMCProgram.program instr_with_info.
 

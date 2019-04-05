@@ -62,7 +62,7 @@ Proof.
   apply pair_eq. apply peq. apply Ptrofs.eq_dec.
 Defined.
 
-Definition check_fadef prog sbs (igs: ident * option gdef * segblock) : bool :=
+Definition check_fadef prog sbs (igs: ident * option FlatAsm.gdef * segblock) : bool :=
   let '(i, d, _) := igs in
   match d with
     Some (Gfun (Internal f)) =>

@@ -588,7 +588,7 @@ Definition mk_init_stk {F V} (p: AST.program F V) : StackADT.stack :=
   (Some (StackADT.make_singleton_frame_adt
            (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv p)) 0 0), nil) :: nil .
 
-Definition mk_init_stk_flat {I} (p: @FlatAsmProgram.program I) : StackADT.stack :=
+Definition mk_init_stk_flat {I D} (p: @FlatAsmProgram.program I D) : StackADT.stack :=
   (Some (StackADT.make_singleton_frame_adt
            (FlatAsmGlobenv.Genv.genv_next (FlatAsmProgram.globalenv p)) 0 0), nil) :: nil .
 

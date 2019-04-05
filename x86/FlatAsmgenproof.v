@@ -4301,7 +4301,7 @@ Proof.
   generalize (Ptrofs.unsigned_range i0). omega.
 Qed.
 
-Lemma alloc_global_exists: forall I (def: (ident * option (@gdef I) * segblock)) m,
+Lemma alloc_global_exists: forall {I D} (def: (ident * option (@gdef I D) * segblock)) m,
     exists m', alloc_global m def = Some m'.
 Proof.
   intros. destruct def. destruct p. destruct o. destruct g. destruct f.
@@ -4311,12 +4311,12 @@ Proof.
   - simpl. destruct (Mem.alloc m 0 0) eqn:ALLOC. eauto.
 Qed.
 
-Lemma alloc_globals_exists: forall I (defs: list (ident * option (@gdef I) * segblock)) m,
+Lemma alloc_globals_exists: forall {I D} (defs: list (ident * option (@gdef I D) * segblock)) m,
     exists m', alloc_globals m defs = Some m'.
 Proof.
   induction defs; intros.
   - simpl. eauto.
-  - simpl. generalize (alloc_global_exists _ a m); eauto.
+  - simpl. generalize (alloc_global_exists a m); eauto.
     intros (m' & ALLOC).  rewrite ALLOC. 
     eapply IHdefs; eauto.
 Qed.
@@ -4332,8 +4332,7 @@ Lemma alloc_globals_segments_weak_inject: forall gmap lmap dsize csize m
       /\ Mem.weak_inject globs_meminj (def_frame_inj Mem.empty) Mem.empty m'.
 Proof.
   intros. unfold def_frame_inj. erewrite Mem.empty_stack; eauto. 
-  generalize (alloc_globals_exists Asm.instruction
-                                    (prog_defs tprog)
+  generalize (alloc_globals_exists  (prog_defs tprog)
                                     (alloc_segments m (list_of_segments tprog))).
   intros (m' & ALLOC). exists m'. split. auto.
   eapply Mem.empty_weak_inject; eauto.
@@ -4534,7 +4533,7 @@ Proof.
   - simpl in OFS. omega.
 Qed.
 
-Definition odef_size' {I:Type} (def: (ident * option (@gdef I) * segblock)) : Z :=
+Definition odef_size' {I D:Type} (def: (ident * option (@gdef I D) * segblock)) : Z :=
   let '(id, def', sb) := def in
   match def' with 
   | None => 0
@@ -4543,11 +4542,11 @@ Definition odef_size' {I:Type} (def: (ident * option (@gdef I) * segblock)) : Z 
   end.
 
 Lemma alloc_globals_ne_perm : 
-  forall (I:Type) defs def' n m m' ofs k p
+  forall {I D:Type} defs def' n m m' ofs k p
     (NE: def_is_none_or_external_fun def')
     (NTH: Nth n defs def')
     (ALLOC: alloc_globals m defs = Some m')
-    (OFS: 0 <= ofs < @odef_size' I def'),
+    (OFS: 0 <= ofs < @odef_size' I D def'),
     Mem.perm m' (pos_advance_N (Mem.nextblock m) n) ofs k p.
 Proof.
   induction defs; intros; simpl in *. inv NTH.

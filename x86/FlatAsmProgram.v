@@ -38,13 +38,14 @@ Definition num_segments: nat := 3.
 Section FLATPROG.
 
 Context {I: Type}.
+Context {D: Type}.
 
 Definition instr_with_info:Type := I * segblock * ident.
 
 Definition code := list instr_with_info.
 Record function : Type := mkfunction { fn_sig: signature; fn_code: code; (* fn_frame: frame_info; *) fn_range:segblock; fn_stacksize: Z; fn_pubrange: Z * Z}.
 Definition fundef := AST.fundef function.
-Definition gdef := globdef fundef unit.
+Definition gdef := globdef fundef D.
 
 (* mapping from global identifiers to segment labels *)
 Definition GID_MAP_TYPE := ident -> option seglabel.
@@ -63,7 +64,7 @@ Record program : Type := {
   prog_senv : Globalenvs.Senv.t;
 }.
 
-Definition genv := Genv.t fundef unit instr_with_info.
+Definition genv := Genv.t fundef D instr_with_info.
 
 (** Initialization of the global environment *)
 Definition add_global (ge:genv) (idg: ident * option gdef * segblock) : genv :=

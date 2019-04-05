@@ -132,7 +132,7 @@ Definition transl_fun (f:@FlatAsmProgram.function MC.instruction) : res function
   end.
 
 
-Definition transl_globdef (def: (ident * option (@FlatAsmProgram.gdef MC.instruction) * segblock)) 
+Definition transl_globdef (def: (ident * option MC.gdef) * segblock) 
   : res (ident * option (@FlatMCProgram.gdef FlatMC.instr_with_info)) :=
   let '(id,def,sb) := def in
   match def with

@@ -84,8 +84,11 @@ Definition instr_to_string (i:instruction) : string :=
 
 Definition instr_with_info:Type := @FlatAsmProgram.instr_with_info instruction.
 
+Definition function := @FlatAsmProgram.function instruction.
+Definition gdef := @FlatAsmProgram.gdef instruction unit.
+
 (* The LC program *)
-Definition program := @FlatAsmProgram.program instruction.
+Definition program := @FlatAsmProgram.program instruction unit.
 
 
 Open Scope asm.
@@ -97,7 +100,7 @@ Context `{external_calls_prf: ExternalCalls}.
 (** * Operational semantics *)
 
 (* Definition regset := Asm.regset. *)
-Definition genv := @FlatAsmProgram.genv instruction.
+Definition genv := @FlatAsmProgram.genv instruction unit.
 
 
 Definition goto_label (ofs: ptrofs) (sz: ptrofs) (rs: regset) (m:mem):=

@@ -71,8 +71,8 @@ Definition transl_fun (f:function) : function :=
   let code' := transl_instrs (fn_code f) in
   mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f).
 
-Definition transl_globdef (def: (ident * option (@FlatAsmProgram.gdef instruction) * segblock)) 
-  : (ident * option (@FlatAsmProgram.gdef instruction) * segblock) :=
+Definition transl_globdef (def: (ident * option MC.gdef * segblock)) 
+  : (ident * option MC.gdef * segblock) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>

@@ -66,13 +66,13 @@ Fixpoint transl_instrs (fid:ident) (instrs: list FlatAsm.instr_with_info) : res 
   end.
 
 (** Tranlsation of a function *)
-Definition transl_fun (fid: ident) (f:@FlatAsmProgram.function Asm.instruction) : res function :=
+Definition transl_fun (fid: ident) (f:FlatAsm.function) : res function :=
   do code' <- transl_instrs fid (@fn_code Asm.instruction f);
   OK (mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f)).
 
 
-Definition transl_globdef (def: (ident * option (@FlatAsmProgram.gdef Asm.instruction) * segblock)) 
-  : res (ident * option (@FlatAsmProgram.gdef instruction) * segblock) :=
+Definition transl_globdef (def: (ident * option FlatAsm.gdef * segblock)) 
+  : res (ident * option MC.gdef * segblock) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
