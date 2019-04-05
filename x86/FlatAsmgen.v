@@ -45,60 +45,60 @@ Definition transl_addr_mode (m: addrmode') : res addrmode :=
 
 Definition transl_instr (i: TransSegAsm.instruction) : res instruction :=
   match i with
-  | TAjmp_l ofs => OK (Fjmp_l ofs)
-  | TAjcc c ofs => OK (Fjcc c ofs)
-  | TAshortcall ofs sg => OK (Fshortcall ofs sg)
-  | TAleal ofs a => 
+  | Sjmp_l ofs => OK (Fjmp_l ofs)
+  | Sjcc c ofs => OK (Fjcc c ofs)
+  | Sshortcall ofs sg => OK (Fshortcall ofs sg)
+  | Sleal ofs a => 
     do a' <- transl_addr_mode a;
       OK (Fleal ofs a')
-  | TAsminstr (Paddl_ri rd n) =>
+  | SAsminstr (Paddl_ri rd n) =>
     OK (Faddl_ri rd n)
-  | TAsminstr (Psubl_ri rd n) =>
+  | SAsminstr (Psubl_ri rd n) =>
     OK (Fsubl_ri rd n)
-  | TAsminstr (Psubl_rr rd r1) =>
+  | SAsminstr (Psubl_rr rd r1) =>
     OK (Fsubl_rr rd r1)
-  | TAsminstr (Pmovl_ri rd n) =>
+  | SAsminstr (Pmovl_ri rd n) =>
     OK (Fmovl_ri rd n)
-  | TAsminstr (Pmov_rr rd r1) =>
+  | SAsminstr (Pmov_rr rd r1) =>
     OK (Fmov_rr rd r1)
-  | TAmovl_rm rd a =>
+  | Smovl_rm rd a =>
     do a' <- transl_addr_mode a;
       OK (Fmovl_rm rd a')
-  | TAmovl_mr a rs =>
+  | Smovl_mr a rs =>
     do a' <- transl_addr_mode a;
       OK (Fmovl_mr a' rs)
-  | TAmov_rs rd (sid,sofs) =>
+  | Smov_rs rd (sid,sofs) =>
     do ofs <- 
        match smap sid with
        | None => Error (msg "Invalid segment in the argument of MCmov_rs")
        | Some ofs => OK (Ptrofs.add ofs sofs)
        end;
       OK (Fmovl_rm rd (Addrmode None None ofs))
-  | TAmov_rm_a rd a =>
+  | Smov_rm_a rd a =>
     do a' <- transl_addr_mode a;
       OK (Fmov_rm_a rd a')
-  | TAmov_mr_a a rs =>
+  | Smov_mr_a a rs =>
     do a' <- transl_addr_mode a;
       OK (Fmov_mr_a a' rs)
-  | TAsminstr (Ptestl_rr r1 r2) =>
+  | SAsminstr (Ptestl_rr r1 r2) =>
     OK (Ftestl_rr r1 r2)
-  | TAsminstr (Pret) =>
+  | SAsminstr (Pret) =>
     OK Fret 
-  | TAsminstr (Pimull_rr rd r1) =>
+  | SAsminstr (Pimull_rr rd r1) =>
     OK (Fimull_rr rd r1)
-  | TAsminstr (Pimull_ri rd n) =>
+  | SAsminstr (Pimull_ri rd n) =>
     OK (Fimull_ri rd n)
-  | TAsminstr (Pcmpl_rr r1 r2) =>
+  | SAsminstr (Pcmpl_rr r1 r2) =>
     OK (Fcmpl_rr r1 r2)
-  | TAsminstr (Pcmpl_ri r1 n) =>
+  | SAsminstr (Pcmpl_ri r1 n) =>
     OK (Fcmpl_ri r1 n)
-  | TAsminstr (Pcltd) =>
+  | SAsminstr (Pcltd) =>
     OK Fcltd
-  | TAsminstr (Pidivl r1) =>
+  | SAsminstr (Pidivl r1) =>
     OK (Fidivl r1)
-  | TAsminstr (Psall_ri rd n) =>
+  | SAsminstr (Psall_ri rd n) =>
     OK (Fsall_ri rd n)
-  | TAsminstr (Plabel l) =>
+  | SAsminstr (Plabel l) =>
     OK Fnop
   | _ => Error (msg "Instruction not supported")
   end.

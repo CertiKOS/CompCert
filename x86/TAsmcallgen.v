@@ -23,13 +23,13 @@ Definition get_offset (fid:ident) (sb: segblock) : option ptrofs :=
 
 Definition transl_instr (i: instruction) (sb:segblock) : instruction :=
   match i with
-  | TAsminstr (Pcall ros sg) =>
+  | SAsminstr (Pcall ros sg) =>
     match ros with
     | inl r => i
     | inr id => 
       match (get_offset id sb) with
       | None => i
-      | Some ofs => TAshortcall ofs sg
+      | Some ofs => Sshortcall ofs sg
       end
     end
   | _ => i

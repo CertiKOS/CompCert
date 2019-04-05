@@ -26,7 +26,7 @@ Definition transl_addrmode (a:addrmode) : option addrmode' :=
 Definition transl_instr_addrmode (a:addrmode) (i: Asm.instruction) 
            (cstr: addrmode' -> instruction) :=
   match transl_addrmode a with
-  | None => TAsminstr i
+  | None => SAsminstr i
   | Some a' => cstr a'
   end.
 
@@ -34,25 +34,25 @@ Definition transl_instr (i: Asm.instruction) : instruction :=
   match i with
   | Pmov_rs rd s =>
     match (gmap s) with
-    | None => TAsminstr i
-    | Some slbl => TAmov_rs rd slbl
+    | None => SAsminstr i
+    | Some slbl => Smov_rs rd slbl
     end
   | Pmovl_rm rd a =>
-    transl_instr_addrmode a i (fun a' => TAmovl_rm rd a')
+    transl_instr_addrmode a i (fun a' => Smovl_rm rd a')
   | Pmovl_mr a r1 =>
-    transl_instr_addrmode a i (fun a' => TAmovl_mr a' r1)
+    transl_instr_addrmode a i (fun a' => Smovl_mr a' r1)
   | Pleal rd a =>
-    transl_instr_addrmode a i (fun a' => TAleal rd a')
+    transl_instr_addrmode a i (fun a' => Sleal rd a')
   | Pmov_rm_a rd a =>
-    transl_instr_addrmode a i (fun a' => TAmov_rm_a rd a')
+    transl_instr_addrmode a i (fun a' => Smov_rm_a rd a')
   | Pmov_mr_a a r1 =>
-    transl_instr_addrmode a i (fun a' => TAmov_mr_a a' r1)
-  | _ => TAsminstr i
+    transl_instr_addrmode a i (fun a' => Smov_mr_a a' r1)
+  | _ => SAsminstr i
   end.
 
 Definition transl_instr' (i: instruction) : instruction :=
   match i with
-  | TAsminstr i' => transl_instr i'
+  | SAsminstr i' => transl_instr i'
   | _ => i
   end.
 

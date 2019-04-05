@@ -39,18 +39,18 @@ Definition transl_instr (fid: ident) (i:SegAsm.instr_with_info) : res instr_with
      match i' with
      | Pjmp_l l =>  
        do ofs <- get_lbl_offset fid l sb; 
-         OK (TAjmp_l ofs)
+         OK (Sjmp_l ofs)
      | Pjcc c l => 
        do ofs <- get_lbl_offset fid l sb; 
-         OK (TAjcc c ofs)
+         OK (Sjcc c ofs)
      | Pjcc2 c1 c2 l => 
        do ofs <- get_lbl_offset fid l sb; 
-         OK (TAjcc2 c1 c2 ofs)
+         OK (Sjcc2 c1 c2 ofs)
      | Pjmptbl r tbl => 
        do ol <- get_lbl_list_offset fid tbl sb; 
-         OK (TAjmptbl r ol)
+         OK (Sjmptbl r ol)
      | _ =>
-       OK (TAsminstr i')
+       OK (SAsminstr i')
      end; 
    OK (mci , sb, id).
 

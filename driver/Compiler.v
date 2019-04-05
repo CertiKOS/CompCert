@@ -54,7 +54,7 @@ Require PseudoInstructions.
 Require SegAsmgen.
 Require TAsmlabelgen.
 Require TAsmcallgen.
-Require TAsmdatagen.
+Require TAsmgidgen.
 Require FlatAsmgen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
