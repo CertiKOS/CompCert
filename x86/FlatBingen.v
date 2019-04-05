@@ -1,9 +1,8 @@
 Require Import Coqlib Integers AST Maps.
-Require Import Asm MC Segment.
+Require Import Asm Segment.
 Require Import Errors.
-Require Import FlatAsmBuiltin.
 Require Import Memtype.
-Require Import FlatAsmProgram FlatMCProgram FlatMC FlatBinary.
+Require Import FlatMCProgram FlatMC FlatBinary.
 Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.

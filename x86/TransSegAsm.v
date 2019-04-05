@@ -1,11 +1,17 @@
 Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Smallstep.
 Require Import Locations Stacklayout Conventions EraseArgs.
-Require Import Segment FlatAsmGlobenv FlatAsmBuiltin.
-Require Import Asm RawAsm FlatAsm.
+Require Import Segment SegAsmGlobenv SegAsmBuiltin.
+Require Import Asm RawAsm SegAsm.
 Require Import Num.
-Require Import FlatAsmProgram FlatMemAccessors.
+Require Import SegAsmProgram FlatMemAccessors.
 Require Globalenvs.
+
+
+(** * Transitional form from SegAsm to Flat Memory *)
+
+(** This form of SegAsm use both ordinary identifers and segment labels to
+    refer to memory objects *)
 
 Inductive addrmode': Type :=
   | Addrmode' (base: option ireg)
@@ -53,42 +59,42 @@ End WITHGE.
 
 
 Inductive instruction : Type :=
-  | MCjmp_l (ofs: ptrofs)
-  | MCjcc (c: testcond) (ofs: ptrofs)
-  | MCjcc2 (c1 c2: testcond) (ofs: ptrofs)   (**r pseudo *)
-  | MCjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
-  | MCmov_rs (rd:ireg) (lbl: seglabel) (** sv contains the pointer to the source location *)
-  | MCshortcall (ofs: ptrofs) (sg: signature) (** short call into an internal function *)
-  | MCmovl_rm (rd: ireg) (a: addrmode')
-  | MCmovl_mr (a: addrmode') (rs: ireg)
-  | MCmov_rm_a (rd:ireg) (a: addrmode')
-  | MCmov_mr_a (a: addrmode') (r1:ireg)
-  | MCleal (rd: ireg) (a:addrmode')
-  | MCAsminstr : Asm.instruction -> instruction.
+  | TAjmp_l (ofs: ptrofs)
+  | TAjcc (c: testcond) (ofs: ptrofs)
+  | TAjcc2 (c1 c2: testcond) (ofs: ptrofs)   (**r pseudo *)
+  | TAjmptbl (r: ireg) (tbl: list ptrofs) (**r pseudo *)
+  | TAmov_rs (rd:ireg) (lbl: seglabel) (** sv contains the pointer to the source location *)
+  | TAshortcall (ofs: ptrofs) (sg: signature) (** short call into an internal function *)
+  | TAmovl_rm (rd: ireg) (a: addrmode')
+  | TAmovl_mr (a: addrmode') (rs: ireg)
+  | TAmov_rm_a (rd:ireg) (a: addrmode')
+  | TAmov_mr_a (a: addrmode') (r1:ireg)
+  | TAleal (rd: ireg) (a:addrmode')
+  | TAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
   match i with
-  | MCjmp_l _ => "MCjmp_l"
-  | MCjcc _ _ => "MCjcc"
-  | MCjcc2 _ _ _ => "MCjcc2"
-  | MCjmptbl _ _ => "MCjmptbl"
-  | MCmov_rs _ _ => "MCmov_rs"
-  | MCshortcall _ _ => "MCshortcall"
-  | MCmovl_rm _ _ => "MCmovl_rm"
-  | MCmovl_mr _ _ => "MCmovl_mr"
-  | MCleal _ _ => "MCleal"
-  | MCmov_rm_a _ _ => "MCmov_rm_a"
-  | MCmov_mr_a _ _ => "MCmov_mr_a"
-  | MCAsminstr i => Asm.instr_to_string i
+  | TAjmp_l _ => "TAjmp_l"
+  | TAjcc _ _ => "TAjcc"
+  | TAjcc2 _ _ _ => "TAjcc2"
+  | TAjmptbl _ _ => "TAjmptbl"
+  | TAmov_rs _ _ => "TAmov_rs"
+  | TAshortcall _ _ => "TAshortcall"
+  | TAmovl_rm _ _ => "TAmovl_rm"
+  | TAmovl_mr _ _ => "TAmovl_mr"
+  | TAleal _ _ => "TAleal"
+  | TAmov_rm_a _ _ => "TAmov_rm_a"
+  | TAmov_mr_a _ _ => "TAmov_mr_a"
+  | TAsminstr i => Asm.instr_to_string i
   end.
 
-Definition instr_with_info:Type := @FlatAsmProgram.instr_with_info instruction.
+Definition instr_with_info:Type := @SegAsmProgram.instr_with_info instruction.
 
-Definition function := @FlatAsmProgram.function instruction.
-Definition gdef := @FlatAsmProgram.gdef instruction unit.
+Definition function := @SegAsmProgram.function instruction.
+Definition gdef := @SegAsmProgram.gdef instruction unit.
 
 (* The LC program *)
-Definition program := @FlatAsmProgram.program instruction unit.
+Definition program := @SegAsmProgram.program instruction unit.
 
 
 Open Scope asm.
@@ -100,7 +106,7 @@ Context `{external_calls_prf: ExternalCalls}.
 (** * Operational semantics *)
 
 (* Definition regset := Asm.regset. *)
-Definition genv := @FlatAsmProgram.genv instruction unit.
+Definition genv := @SegAsmProgram.genv instruction unit.
 
 
 Definition goto_label (ofs: ptrofs) (sz: ptrofs) (rs: regset) (m:mem):=
@@ -514,21 +520,21 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
   let '(i,blk,fid) := ii in
   let sz := segblock_size blk in
   match i with
-  (* Jump instruction in MC *)
-  | MCjmp_l ofs => goto_label ofs sz rs m
-  | MCjcc cond ofs =>
+  (* Jump instruction in TA *)
+  | TAjmp_l ofs => goto_label ofs sz rs m
+  | TAjcc cond ofs =>
     match eval_testcond cond rs with
     | Some true => goto_label ofs sz rs m
     | Some false => Next (nextinstr rs sz) m
     | None => Stuck
     end
-  | MCjcc2 cond1 cond2 ofs =>
+  | TAjcc2 cond1 cond2 ofs =>
       match eval_testcond cond1 rs, eval_testcond cond2 rs with
       | Some true, Some true => goto_label ofs sz rs m
       | Some _, Some _ => Next (nextinstr rs sz) m
       | _, _ => Stuck
       end
-  | MCjmptbl r tbl =>
+  | TAjmptbl r tbl =>
       match rs#r with
       | Vint n =>
           match list_nth_z tbl (Int.unsigned n) with
@@ -537,9 +543,9 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
           end
       | _ => Stuck
       end
-  | MCmov_rs rd lbl =>
+  | TAmov_rs rd lbl =>
     Next (nextinstr_nf (rs#rd <- (Genv.seglabel_to_val ge lbl)) sz) m
-  | MCshortcall ofs sg =>
+  | TAshortcall ofs sg =>
       let addr := Val.offset_ptr (Val.offset_ptr rs#PC sz) ofs in
       let sp := Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))) in
       match Mem.storev Mptr m sp (Val.offset_ptr rs#PC sz) with
@@ -549,18 +555,18 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
                 #PC <- addr
                 #RSP <- sp) m2
       end
-  | MCmovl_rm rd a => 
+  | TAmovl_rm rd a => 
       exec_load' ge Mint32 m a rs rd sz
-  | MCmovl_mr a r1 => 
+  | TAmovl_mr a r1 => 
       exec_store' ge Mint32 m a rs r1 nil sz
-  | MCmov_rm_a rd a => 
+  | TAmov_rm_a rd a => 
       exec_load' ge Mint32 m a rs rd sz
-  | MCmov_mr_a a r1 => 
+  | TAmov_mr_a a r1 => 
       exec_store' ge Mint32 m a rs r1 nil sz
-  | MCleal rd a =>
+  | TAleal rd a =>
       Next (nextinstr (rs#rd <- (eval_addrmode32' ge a rs)) sz) m
-  (* The rest instructions are forwarded to FlatAsm *)
-  | MCAsminstr ins =>
+  (* The rest instructions are forwarded to SegAsm *)
+  | TAsminstr ins =>
     exec_flatasm_instr ge (segblock_size blk) ins rs m
   end.
 
@@ -578,7 +584,7 @@ Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store}
     forall fid b ofs ef args res rs m vargs t vres rs' m' blk,
       rs PC = Vptr b ofs ->
       Genv.genv_internal_codeblock ge b = true ->
-      Genv.find_instr ge (Vptr b ofs) = Some (MCAsminstr (Pbuiltin ef args res), blk, fid)  ->
+      Genv.find_instr ge (Vptr b ofs) = Some (TAsminstr (Pbuiltin ef args res), blk, fid)  ->
       eval_builtin_args _ _ _ preg ge rs (rs RSP) m args vargs ->
         external_call ef (Genv.genv_senv ge) vargs m t vres m' ->
       forall BUILTIN_ENABLED: builtin_enabled ef,

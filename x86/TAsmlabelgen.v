@@ -1,9 +1,9 @@
 Require Import Coqlib Integers AST Maps.
-Require Import Asm FlatAsm Segment.
+Require Import Asm SegAsm Segment.
 Require Import Errors.
-Require Import FlatAsmBuiltin.
+Require Import SegAsmBuiltin.
 Require Import Memtype.
-Require Import FlatAsmProgram MC.
+Require Import SegAsmProgram TransSegAsm.
 Require Import ValidLabel.
 Import ListNotations.
 
@@ -33,30 +33,30 @@ Fixpoint get_lbl_list_offset (fid:ident) (l:list label) (sb: segblock) : res (li
   end.
 
 
-Definition transl_instr (fid: ident) (i:FlatAsm.instr_with_info) : res instr_with_info :=
+Definition transl_instr (fid: ident) (i:SegAsm.instr_with_info) : res instr_with_info :=
   let '(i',sb,id) := i in
   do mci <-
      match i' with
      | Pjmp_l l =>  
        do ofs <- get_lbl_offset fid l sb; 
-         OK (MCjmp_l ofs)
+         OK (TAjmp_l ofs)
      | Pjcc c l => 
        do ofs <- get_lbl_offset fid l sb; 
-         OK (MCjcc c ofs)
+         OK (TAjcc c ofs)
      | Pjcc2 c1 c2 l => 
        do ofs <- get_lbl_offset fid l sb; 
-         OK (MCjcc2 c1 c2 ofs)
+         OK (TAjcc2 c1 c2 ofs)
      | Pjmptbl r tbl => 
        do ol <- get_lbl_list_offset fid tbl sb; 
-         OK (MCjmptbl r ol)
+         OK (TAjmptbl r ol)
      | _ =>
-       OK (MCAsminstr i')
+       OK (TAsminstr i')
      end; 
    OK (mci , sb, id).
 
 
 (** Translation of a sequence of instructions in a function *)
-Fixpoint transl_instrs (fid:ident) (instrs: list FlatAsm.instr_with_info) : res (list instr_with_info) :=
+Fixpoint transl_instrs (fid:ident) (instrs: list SegAsm.instr_with_info) : res (list instr_with_info) :=
   match instrs with
   | nil => OK nil
   | i::instrs' =>
@@ -66,13 +66,13 @@ Fixpoint transl_instrs (fid:ident) (instrs: list FlatAsm.instr_with_info) : res 
   end.
 
 (** Tranlsation of a function *)
-Definition transl_fun (fid: ident) (f:FlatAsm.function) : res function :=
+Definition transl_fun (fid: ident) (f:SegAsm.function) : res function :=
   do code' <- transl_instrs fid (@fn_code Asm.instruction f);
   OK (mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f)).
 
 
-Definition transl_globdef (def: (ident * option FlatAsm.gdef * segblock)) 
-  : res (ident * option MC.gdef * segblock) :=
+Definition transl_globdef (def: (ident * option SegAsm.gdef * segblock)) 
+  : res (ident * option TransSegAsm.gdef * segblock) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
@@ -99,7 +99,7 @@ End WITH_LABEL_MAP.
 
 
 (** Translation of a program *)
-Definition transf_program (p:FlatAsm.program) : res program := 
+Definition transf_program (p:SegAsm.program) : res program := 
   assertion check_faprog p;
     assertion peq code_segid (segid (code_seg p));
     assertion eq_dec_neq_dec peq code_segid (segid (data_seg p));

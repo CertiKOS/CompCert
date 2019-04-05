@@ -1,9 +1,9 @@
 Require Import Coqlib Integers AST Maps.
-Require Import Asm FlatAsm Segment.
+Require Import Asm SegAsm Segment.
 Require Import Errors.
-Require Import FlatAsmBuiltin.
+Require Import SegAsmBuiltin.
 Require Import Memtype.
-Require Import FlatAsmProgram MC.
+Require Import SegAsmProgram TransSegAsm.
 Require Import ValidLabel.
 Import ListNotations.
 
@@ -23,13 +23,13 @@ Definition get_offset (fid:ident) (sb: segblock) : option ptrofs :=
 
 Definition transl_instr (i: instruction) (sb:segblock) : instruction :=
   match i with
-  | MCAsminstr (Pcall ros sg) =>
+  | TAsminstr (Pcall ros sg) =>
     match ros with
     | inl r => i
     | inr id => 
       match (get_offset id sb) with
       | None => i
-      | Some ofs => MCshortcall ofs sg
+      | Some ofs => TAshortcall ofs sg
       end
     end
   | _ => i
@@ -50,8 +50,8 @@ Definition transl_fun (f:function) : function :=
   let code' := transl_instrs (fn_code f) in
   mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f).
 
-Definition transl_globdef (def: (ident * option MC.gdef * segblock)) 
-  : (ident * option MC.gdef * segblock) :=
+Definition transl_globdef (def: (ident * option TransSegAsm.gdef * segblock)) 
+  : (ident * option TransSegAsm.gdef * segblock) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
@@ -72,7 +72,7 @@ End WITH_GID_MAP.
 
 
 (** Translation of a program *)
-Definition transf_program (p:MC.program) : program := 
+Definition transf_program (p:TransSegAsm.program) : program := 
   let defs := transl_globdefs (glob_map p) (prog_defs p) in
   (Build_program
         defs

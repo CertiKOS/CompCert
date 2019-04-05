@@ -1,9 +1,9 @@
 Require Import Coqlib Integers AST Maps.
-Require Import Asm MC Segment.
+Require Import Asm TransSegAsm Segment.
 Require Import Errors.
-Require Import FlatAsmBuiltin.
+Require Import SegAsmBuiltin.
 Require Import Memtype.
-Require Import FlatAsmProgram.
+Require Import SegAsmProgram.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
@@ -26,7 +26,7 @@ Definition transl_addrmode (a:addrmode) : option addrmode' :=
 Definition transl_instr_addrmode (a:addrmode) (i: Asm.instruction) 
            (cstr: addrmode' -> instruction) :=
   match transl_addrmode a with
-  | None => MCAsminstr i
+  | None => TAsminstr i
   | Some a' => cstr a'
   end.
 
@@ -34,25 +34,25 @@ Definition transl_instr (i: Asm.instruction) : instruction :=
   match i with
   | Pmov_rs rd s =>
     match (gmap s) with
-    | None => MCAsminstr i
-    | Some slbl => MCmov_rs rd slbl
+    | None => TAsminstr i
+    | Some slbl => TAmov_rs rd slbl
     end
   | Pmovl_rm rd a =>
-    transl_instr_addrmode a i (fun a' => MCmovl_rm rd a')
+    transl_instr_addrmode a i (fun a' => TAmovl_rm rd a')
   | Pmovl_mr a r1 =>
-    transl_instr_addrmode a i (fun a' => MCmovl_mr a' r1)
+    transl_instr_addrmode a i (fun a' => TAmovl_mr a' r1)
   | Pleal rd a =>
-    transl_instr_addrmode a i (fun a' => MCleal rd a')
+    transl_instr_addrmode a i (fun a' => TAleal rd a')
   | Pmov_rm_a rd a =>
-    transl_instr_addrmode a i (fun a' => MCmov_rm_a rd a')
+    transl_instr_addrmode a i (fun a' => TAmov_rm_a rd a')
   | Pmov_mr_a a r1 =>
-    transl_instr_addrmode a i (fun a' => MCmov_mr_a a' r1)
-  | _ => MCAsminstr i
+    transl_instr_addrmode a i (fun a' => TAmov_mr_a a' r1)
+  | _ => TAsminstr i
   end.
 
 Definition transl_instr' (i: instruction) : instruction :=
   match i with
-  | MCAsminstr i' => transl_instr i'
+  | TAsminstr i' => transl_instr i'
   | _ => i
   end.
 
@@ -71,8 +71,8 @@ Definition transl_fun (f:function) : function :=
   let code' := transl_instrs (fn_code f) in
   mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f).
 
-Definition transl_globdef (def: (ident * option MC.gdef * segblock)) 
-  : (ident * option MC.gdef * segblock) :=
+Definition transl_globdef (def: (ident * option TransSegAsm.gdef * segblock)) 
+  : (ident * option TransSegAsm.gdef * segblock) :=
   let '(id,def,sb) := def in
   match def with
   | Some (AST.Gfun (Internal f)) =>
@@ -93,7 +93,7 @@ End WITH_GID_MAP.
 
 
 (** Translation of a program *)
-Definition transf_program (p:MC.program) : program := 
+Definition transf_program (p:program) : program := 
   let defs := transl_globdefs (glob_map p) (prog_defs p) in
   (Build_program
         defs
