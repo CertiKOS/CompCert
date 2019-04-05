@@ -121,7 +121,15 @@ Fixpoint transl_instrs (instrs: list MC.instr_with_info) : res (list instr_with_
 (** Tranlsation of a function *)
 Definition transl_fun (f:@FlatAsmProgram.function MC.instruction) : res function :=
   do code' <- transl_instrs (FlatAsmProgram.fn_code f);
-  OK (mkfunction (FlatAsmProgram.fn_sig f) code').
+  let sb := (FlatAsmProgram.fn_range f) in
+  match smap (segblock_id sb) with
+  | None =>
+    Error (msg "Segment block of a function is unkown")
+  | Some ofs => 
+    OK (mkfunction (FlatAsmProgram.fn_sig f) code' 
+                   (Ptrofs.add ofs (segblock_start sb))
+                   (segblock_size sb))
+  end.
 
 
 Definition transl_globdef (def: (ident * option (@FlatAsmProgram.gdef MC.instruction) * segblock)) 

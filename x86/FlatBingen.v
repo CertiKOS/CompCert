@@ -215,7 +215,7 @@ Fixpoint transl_instrs (instrs: list FlatMC.instr_with_info) : res (list instruc
 (** Tranlsation of a function *)
 Definition transl_fun (f:@FlatMCProgram.function FlatMC.instr_with_info) : res function :=
   do code' <- transl_instrs (FlatMCProgram.fn_code f);
-  OK (mkfunction (FlatMCProgram.fn_sig f) code').
+  OK (mkfunction (FlatMCProgram.fn_sig f) code' (fn_start f) (fn_size f)).
 
 Definition transl_globdef (def: (ident * option (@FlatMCProgram.gdef FlatMC.instr_with_info)) )
   : res (ident * option (@FlatMCProgram.gdef instruction)) :=

@@ -9,7 +9,7 @@ Context {I: Type}.
 
 Definition code := list I.
 
-Record function : Type := mkfunction { fn_sig: signature; fn_code: code; }.
+Record function : Type := mkfunction { fn_sig: signature; fn_code: code; fn_start: ptrofs; fn_size: ptrofs}.
 
 Definition fundef := AST.fundef function.
 Definition gdef := globdef fundef unit.
