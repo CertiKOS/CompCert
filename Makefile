@@ -109,10 +109,10 @@ BACKEND=\
 	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
 	AsmRegs.v RealAsm.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
   Segment.v \
-  FlatAsm.v FlatAsmGlobenv.v FlatAsmBuiltin.v FlatAsmProgram.v \
-	FlatAsmgen.v FlatAsmgenproof.v FlatAsmSep.v \
+  SegMemAccessors.v SegAsm.v SegAsmGlobenv.v SegAsmBuiltin.v SegAsmProgram.v \
+  SegAsmgen.v SegAsmgenproof.v SegAsmSep.v \
   MC.v MClabelgen.v MCcallgen.v MCdatagen.v \
-  FlatMemAccessors.v FlatMCProgram.v FlatMC.v FlatMCgen.v \
+  FlatMCProgram.v FlatMC.v FlatMCgen.v \
   FlatBinary.v FlatBingen.v \
   ValidLabel.v Hex.v Bits.v
 

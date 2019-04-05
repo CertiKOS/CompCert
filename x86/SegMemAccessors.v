@@ -1,6 +1,6 @@
 Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events.
-Require Import FlatAsmGlobenv FlatAsmBuiltin FlatAsmProgram.
+Require Import SegAsmGlobenv SegAsmBuiltin SegAsmProgram.
 Require Import Asm.
 
 Section WITHEXTERNALCALLS.

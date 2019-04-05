@@ -1,7 +1,7 @@
 Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Smallstep.
 Require Import Locations Stacklayout Conventions EraseArgs.
-Require Import Segment FlatAsmGlobenv FlatAsmBuiltin.
+Require Import Segment SegAsmGlobenv SegAsmBuiltin.
 Require Import Asm RawAsm.
 Require Import Num.
 Require Globalenvs.
@@ -35,7 +35,7 @@ Definition code_segid:  segid_type := 4%positive.
 Definition num_segments: nat := 3.
 
 
-Section FLATPROG.
+Section SEGPROG.
 
 Context {I: Type}.
 Context {D: Type}.
@@ -52,7 +52,7 @@ Definition GID_MAP_TYPE := ident -> option seglabel.
 (* mapping from local labels to segment labels *)
 Definition LABEL_MAP_TYPE := ident -> ident -> option seglabel.
 
-(* The FlatAsm program *)
+(* The SegAsm program *)
 Record program : Type := {
   prog_defs: list (ident * option gdef * segblock);
   prog_public: list ident;
@@ -209,7 +209,7 @@ Qed.
 
 (* The following are definitions and properties for segment blocks *)
 (*    and the mapping from segment ids to segment blocks. They are necessary *)
-(*    for proving invariants of the transformation from RawAsm to FlatAsm. *)
+(*    for proving invariants of the transformation from RawAsm to SegAsm. *)
 (*  *)
 Section WITHSEGSLENGTH.
 
@@ -1367,4 +1367,4 @@ Qed.
 
 End WITHEXTERNALCALLS.
 
-End FLATPROG.
+End SEGPROG.

@@ -3,24 +3,24 @@
 (* Date:   June 11, 2018 *)
 (* ******************* *)
 
-(** Separate compilation proof for the FlatAsm generation **)
+(** Separate compilation proof for the SegAsm generation **)
 
 Require Import Coqlib Integers Values Maps AST.
-Require Import Asm FlatAsm FlatAsmgen FlatAsmProgram FlatAsmgenproof.
+Require Import Asm SegAsm SegAsmgen SegAsmProgram SegAsmgenproof.
 Require Import Segment.
 Require Import Linking Errors.
 Require Import Num.
 
 Open Scope Z_scope.
 
-Definition de_transl_instr (i: FlatAsm.instr_with_info) : Asm.instruction :=
+Definition de_transl_instr (i: SegAsm.instr_with_info) : Asm.instruction :=
   let '(i',_,_) := i in i'.
   
 Definition de_transl_fun (f : @function instruction) : Asm.function :=
   let code' := List.map de_transl_instr (fn_code f) in
   Asm.mkfunction (fn_sig f) code' (fn_stacksize f) (fn_pubrange f).
 
-Definition de_transl_globdef (def: ident * option FlatAsmProgram.gdef * segblock) 
+Definition de_transl_globdef (def: ident * option SegAsmProgram.gdef * segblock) 
   : (ident * option (globdef Asm.fundef unit)) :=
   let '(id, def, _) := def in
   match def with
@@ -30,13 +30,13 @@ Definition de_transl_globdef (def: ident * option FlatAsmProgram.gdef * segblock
   | Some (Gvar v) => (id, Some (Gvar v))
   end.
 
-Definition flatasm_to_asm (p:FlatAsm.program) : Asm.program :=
+Definition flatasm_to_asm (p:SegAsm.program) : Asm.program :=
   let prog_defs := List.map  de_transl_globdef (prog_defs p) in
   let prog_public := (prog_public p) in
   let prog_main := (prog_main p) in
   mkprogram prog_defs prog_public prog_main.
 
-Definition link_flatasmprog (p1 p2: FlatAsm.program) : option FlatAsm.program :=
+Definition link_flatasmprog (p1 p2: SegAsm.program) : option SegAsm.program :=
   match link (flatasm_to_asm p1) (flatasm_to_asm p2) with
   | None => None
   | Some p => 
@@ -46,7 +46,7 @@ Definition link_flatasmprog (p1 p2: FlatAsm.program) : option FlatAsm.program :=
     end
   end.
 
-Instance Linker_flatasmprog : Linker FlatAsm.program := {
+Instance Linker_flatasmprog : Linker SegAsm.program := {
   link := link_flatasmprog;
   linkorder := fun p1 p2 => True
 }.
@@ -57,7 +57,7 @@ Proof.
 Defined.
 
 Axiom transf_prog_combine : 
-  forall (p1 p2: Asm.program) (tp1 tp2: FlatAsm.program) p
+  forall (p1 p2: Asm.program) (tp1 tp2: SegAsm.program) p
     (LK: link p1 p2 = Some p)
     (TF1: transf_program p1 = OK tp1)
     (TF2: transf_program p2 = OK tp2),
@@ -129,7 +129,7 @@ Proof.
   eapply transl_prog_with_map_inv; eauto.
 Qed.
 
-Instance TransfFlatAsmLink : TransfLink match_prog.
+Instance TransfSegAsmLink : TransfLink match_prog.
 Proof.
   red. unfold match_prog. simpl link. intros p1 p2 tp1 tp2 p LK MC1 MC2.
   inv MC1. inv MC2.

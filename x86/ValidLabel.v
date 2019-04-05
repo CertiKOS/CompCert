@@ -1,7 +1,7 @@
 Require Import Coqlib Integers AST Maps.
 Require Import Asm Segment.
 Require Import Errors.
-Require Import FlatAsm FlatAsmProgram.
+Require Import SegAsm SegAsmProgram.
 Import ListNotations.
 
 Definition is_valid_label_asm (lm: ident -> label -> option seglabel) (fid: ident) (i: Asm.instruction) :=
@@ -14,7 +14,7 @@ Definition is_valid_label_asm (lm: ident -> label -> option seglabel) (fid: iden
   | _ => True
   end.
 
-Definition is_valid_label (lm: LABEL_MAP_TYPE) (i: FlatAsm.instr_with_info) :=
+Definition is_valid_label (lm: LABEL_MAP_TYPE) (i: SegAsm.instr_with_info) :=
   let '(i,_,id) := i in
   match i with
     Pjcc _ l
@@ -62,7 +62,7 @@ Proof.
   apply pair_eq. apply peq. apply Ptrofs.eq_dec.
 Defined.
 
-Definition check_fadef prog sbs (igs: ident * option FlatAsm.gdef * segblock) : bool :=
+Definition check_fadef prog sbs (igs: ident * option SegAsm.gdef * segblock) : bool :=
   let '(i, d, _) := igs in
   match d with
     Some (Gfun (Internal f)) =>
@@ -75,5 +75,5 @@ Definition check_fadef prog sbs (igs: ident * option FlatAsm.gdef * segblock) : 
   | _ => true
   end.
 
-Definition check_faprog (p: FlatAsm.program) : bool :=
+Definition check_faprog (p: SegAsm.program) : bool :=
   forallb (check_fadef (lbl_map p) (gen_segblocks p)) (prog_defs p).

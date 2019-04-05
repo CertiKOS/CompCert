@@ -4,17 +4,17 @@
 (* ******************* *)
 
 Require Import Coqlib Integers AST Maps.
-Require Import Asm FlatAsm Segment.
+Require Import Asm SegAsm Segment.
 Require Import Errors.
-Require Import FlatAsmBuiltin.
+Require Import SegAsmBuiltin.
 Require Import Memtype.
-Require Import FlatAsmProgram.
+Require Import SegAsmProgram.
 Import ListNotations.
 
 
 Local Open Scope error_monad_scope.
 
-(** Translation from CompCert Assembly (RawAsm) to FlatAsm *)
+(** Translation from CompCert Assembly (RawAsm) to SegAsm *)
 
 Definition alignw:Z := 8.
 
@@ -81,7 +81,7 @@ Variable gid_map : GID_MAP_TYPE.
 
 (* (** Translation of global variables *) *)
 (* Fixpoint transl_globvars (gdefs : list (ident * option (AST.globdef Asm.fundef unit))) *)
-(*                          : res (list (ident * option FlatAsm.gdef * segblock)) := *)
+(*                          : res (list (ident * option SegAsm.gdef * segblock)) := *)
 (*   match gdefs with *)
 (*   | nil => OK nil *)
 (*   | ((id, None) :: gdefs') => *)
@@ -101,7 +101,7 @@ Variable gid_map : GID_MAP_TYPE.
 (*   end. *)
 
 (* (* Fixpoint transl_globvars (ofs:Z) (gdefs : list (ident * option (AST.globdef Asm.fundef unit))) *) *)
-(* (*                          : res (Z * list (ident * option FlatAsm.gdef * segblock)) := *) *)
+(* (*                          : res (Z * list (ident * option SegAsm.gdef * segblock)) := *) *)
 (* (*   match gdefs with *) *)
 (* (*   | nil => OK (ofs, nil) *) *)
 (* (*   | ((id, None) :: gdefs') => *) *)
@@ -121,7 +121,7 @@ Variable gid_map : GID_MAP_TYPE.
 (* (** * Translation of instructions *) *)
 
 (* (** Translation of addressing modes *) *)
-(* Definition transl_addr_mode (m: Asm.addrmode) : res FlatAsm.addrmode := *)
+(* Definition transl_addr_mode (m: Asm.addrmode) : res SegAsm.addrmode := *)
 (*   match m with *)
 (*   | Asm.Addrmode b ofs const => *)
 (*     do const' <- *)
@@ -192,7 +192,7 @@ Variable label_map : LABEL_MAP_TYPE.
 
 
 
-Definition transl_instr (ofs:Z) (fid: ident) (sid:segid_type) (i:Asm.instruction) : res FlatAsm.instr_with_info :=
+Definition transl_instr (ofs:Z) (fid: ident) (sid:segid_type) (i:Asm.instruction) : res SegAsm.instr_with_info :=
   match i with
       Pallocframe _ _ _
     | Pfreeframe _ _
@@ -232,7 +232,7 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
 
 
 Definition transl_globdef (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
-  : res (ident * option FlatAsmProgram.gdef * segblock) :=
+  : res (ident * option SegAsmProgram.gdef * segblock) :=
   match def with
   | None => OK (id, None, (mkSegBlock undef_segid Ptrofs.zero Ptrofs.zero))
   | Some (AST.Gvar v) =>

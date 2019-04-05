@@ -5,7 +5,7 @@
 
 Require Import Axioms Coqlib Errors Maps AST Linking.
 Require Import Integers Floats Values Memory.
-Require Import FlatAsmGlobenv Segment Events.
+Require Import SegAsmGlobenv Segment Events.
 
 
 Section WITHMEMMODEL.

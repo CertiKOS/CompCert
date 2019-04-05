@@ -3,31 +3,31 @@
 (* Date:   Jan 9, 2018 *)
 (* ******************* *)
 
-(** Abstract syntax and semantics for IA32 assembly language with a flat memory space **)
+(** Abstract syntax and semantics for IA32 assembly language with segmented memory spaces **)
 
 Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Smallstep.
 Require Import Locations Stacklayout Conventions EraseArgs.
-Require Import Segment FlatAsmGlobenv FlatAsmBuiltin FlatAsmProgram.
+Require Import Segment SegAsmGlobenv SegAsmBuiltin SegAsmProgram.
 Require Import Asm RawAsm.
 Require Import Num.
-Require Import FlatMemAccessors.
+Require Import SegMemAccessors.
 Require Globalenvs.
 
 
-Definition instr_with_info:Type := @FlatAsmProgram.instr_with_info instruction.
+Definition instr_with_info:Type := @SegAsmProgram.instr_with_info instruction.
 
 (** * Operational semantics *)
 
 (* Definition regset := Asm.regset. *)
-Definition genv := @FlatAsmProgram.genv instruction unit.
+Definition genv := @SegAsmProgram.genv instruction unit.
 
 Notation "a # b" := (a b) (at level 1, only parsing) : asm.
 Notation "a # b <- c" := (Asm.Pregmap.set b c a) (at level 1, b at next level) : asm.
 
-Definition function := @FlatAsmProgram.function instruction.
-Definition gdef := @FlatAsmProgram.gdef instruction unit.
-Definition program := @FlatAsmProgram.program instruction unit.
+Definition function := @SegAsmProgram.function instruction.
+Definition gdef := @SegAsmProgram.gdef instruction unit.
+Definition program := @SegAsmProgram.program instruction unit.
 
 Open Scope asm.
 
@@ -490,7 +490,7 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
   | _ => Stuck
   end.
 
-(* (** Symbol environments are not used to describe the semantics of FlatAsm. However, we need to provide a dummy one to match the semantics framework of CompCert *) *)
+(* (** Symbol environments are not used to describe the semantics of SegAsm. However, we need to provide a dummy one to match the semantics framework of CompCert *) *)
 (* Definition dummy_senv (ge:genv) := Globalenvs.Genv.to_senv (Globalenvs.Genv.empty_genv unit unit (Genv.genv_public ge)). *)
 
 Inductive step {exec_load exec_store} `{!MemAccessors exec_load exec_store} 
