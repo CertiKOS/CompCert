@@ -113,7 +113,7 @@ BACKEND=\
   SegAsmgen.v SegAsmgenproof.v SegAsmSep.v \
   TransSegAsm.v TAsmlabelgen.v TAsmcallgen.v TAsmgidgen.v \
   FlatProgram.v FlatAsm.v FlatAsmgen.v \
-  FlatBinary.v FlatBingen.v \
+  FlatBinary.v FlatBingen.v ElfLayout.v \
   ValidLabel.v Hex.v Bits.v
 
 # C front-end modules (in cfrontend/)

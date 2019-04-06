@@ -4,6 +4,7 @@ Require Import Errors.
 Require Import SegAsmBuiltin.
 Require Import Memtype.
 Require Import SegAsmProgram FlatProgram FlatAsm.
+Require Import ElfLayout.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
@@ -159,24 +160,34 @@ Fixpoint transl_globdefs defs :=
 End WITH_SEG_MAP.
 
 
-Definition seg_map : SMAP_TYPE :=
+Definition seg_map (caddr daddr:Z) : SMAP_TYPE :=
   fun sid =>
-    if peq sid code_segid then Some Ptrofs.zero
+    if peq sid code_segid then Some (Ptrofs.repr caddr)
     else 
-    if peq sid data_segid then Some Ptrofs.zero
+    if peq sid data_segid then Some (Ptrofs.repr daddr)
     else
     None.
 
 (** Translation of a program *)
 Definition transf_program (p:TransSegAsm.program) : res program := 
-  do defs <- transl_globdefs seg_map (SegAsmProgram.prog_defs p);
+  let code_sz := Ptrofs.unsigned (segsize (code_seg p)) in
+  let data_sz := Ptrofs.unsigned (segsize (data_seg p)) in
+  let (caddr, daddr) := 
+      cal_text_data_vaddrs code_sz data_sz in
+  (* Lable to the main function in the text segment *)
+  do main_lbl <-
+     match glob_map p (SegAsmProgram.prog_main p) with
+     | None => Error (msg "Main function does not exist.")
+     | Some lbl => OK lbl
+     end;
+  do defs <- transl_globdefs (seg_map caddr daddr) (SegAsmProgram.prog_defs p);
   OK (Build_program
         defs
         (SegAsmProgram.prog_public p)
         (SegAsmProgram.prog_main p)
-        Ptrofs.zero
-        Ptrofs.zero
+        (snd main_lbl)
+        (Ptrofs.repr daddr)
         (segsize (data_seg p))
-        Ptrofs.zero
+        (Ptrofs.repr caddr)
         (segsize (code_seg p)))
       .

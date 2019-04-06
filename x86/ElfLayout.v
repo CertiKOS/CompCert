@@ -25,7 +25,6 @@ Definition create_start_stub (main_ofs: Z) : list byte :=
   in
   call_main_bytes ++ startsub.
 
-Definition startstub_size := List.length (create_start_stub 0).
 
 (* We create a simple ELF file with the following layout
    where every section is aligned at 4 bytes:
@@ -45,7 +44,7 @@ Definition startstub_size := List.length (create_start_stub 0).
 
  *)
 
-Definition align4 n := align n 4.
+Definition alignw n := align n 8.
 
 Definition elf_header_size  := 52.
 Definition prog_header_size := 32.
@@ -58,39 +57,39 @@ Definition page_alignment   := HZ["1000"].
 
 
 (* Calculate the size of text and data segments *)
+Definition startstub_size := Z.of_nat (List.length (create_start_stub 0)).
 
-let text_seg_size (code_sz:Z) : int =
-  alignw (prog_instrs_size p + startstub_size)
-
-let data_seg_size (p:program) : int =
-  align4 (List.length (p.init_data Z.zero))
+Definition text_seg_size (code_sz:Z) : Z :=
+  (** We assume code_sz is aligned to 8 bytes *)
+  code_sz + alignw startstub_size.
 
 (* Calcualte the virtual/physical addresses of a segment *)
-let calculate_seg_vaddr (seg_file_ofs: int) (seg_size: int) (start_addr: int) 
-  : (int * int) =
+Definition calculate_seg_vaddr (seg_file_ofs: Z) (seg_size: Z) (start_addr: Z) 
+  : (Z * Z) :=
   (* Set the starting address to be aligned at page boundaries *)
-  let start_addr = start_addr / page_alignment * page_alignment in
+  let start_addr := align start_addr page_alignment in
   (* Calculate the offset to the beginning of a page *)
-  let ofs_in_page = seg_file_ofs mod page_alignment in
+  let ofs_in_page := seg_file_ofs mod page_alignment in
   (* Get the virtual address the segment should begin with *)
-  let vaddr = start_addr + ofs_in_page in
+  let vaddr := start_addr + ofs_in_page in
   (* Get the virtual address for the first page after the segment *)
-  let new_start_addr = align (vaddr + seg_size) page_alignment in
-  (vaddr, new_start_addr)
+  let new_start_addr := align (vaddr + seg_size) page_alignment in
+  (vaddr, new_start_addr).
 
 
 (* Calcualte the virtual/physical addresses of the text and data segments *)
-let get_text_p_offset (p:program) = 
-  elf_header_size + num_prog_headers*prog_header_size
+Definition get_text_p_offset := 
+  elf_header_size + num_prog_headers*prog_header_size.
 
-let get_data_p_offset (p:program) = 
+Definition get_data_p_offset (code_sz: Z):= 
   elf_header_size + num_prog_headers*prog_header_size +
-  (text_seg_size p)
+  (text_seg_size code_sz).
 
-let init_addr = 0x08048000
-let cal_text_data_vaddrs (p:program) : (int * int) =
-  let (text_vaddr, vaddr_data_start) = 
-    calculate_seg_vaddr (get_text_p_offset p) (text_seg_size p) init_addr in
-  let (data_vaddr, _) =
-    calculate_seg_vaddr (get_data_p_offset p) (data_seg_size p) vaddr_data_start in
-  (text_vaddr, data_vaddr)
+Definition init_addr := HZ["08048000"].
+
+Definition cal_text_data_vaddrs (code_sz data_sz: Z): (Z * Z) :=
+  let (text_vaddr, vaddr_data_start) := 
+    calculate_seg_vaddr (get_text_p_offset) code_sz init_addr in
+  let (data_vaddr, _) :=
+    calculate_seg_vaddr (get_data_p_offset code_sz) data_sz vaddr_data_start in
+  (text_vaddr, data_vaddr).
