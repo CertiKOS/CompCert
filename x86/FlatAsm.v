@@ -2,7 +2,7 @@ Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Smallstep.
 Require Import Locations Stacklayout Conventions EraseArgs.
 Require Import Num.
-Require Import Asm FlatProgram.
+Require Import SegAsm Asm FlatProgram.
 Require Globalenvs.
 
 Inductive scale : Type :=
@@ -42,8 +42,8 @@ Inductive instruction : Type :=
 Definition instr_with_info: Type := instruction * ptrofs.
 
 Definition function := @FlatProgram.function instr_with_info.
-Definition gdef := @FlatProgram.gdef instr_with_info.
+Definition gdef := @FlatProgram.gdef instr_with_info data_info.
 
 (* The Flat Machine Code Program *)
-Definition program := @FlatProgram.program instr_with_info.
+Definition program := @FlatProgram.program instr_with_info data_info.
 

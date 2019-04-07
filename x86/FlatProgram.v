@@ -6,13 +6,14 @@ Require Import AST Integers.
 Section FLATPROG.
 
 Context {I: Type}.
+Context {D: Type}.
 
 Definition code := list I.
 
 Record function : Type := mkfunction { fn_sig: signature; fn_code: code; fn_start: ptrofs; fn_size: ptrofs}.
 
 Definition fundef := AST.fundef function.
-Definition gdef := globdef fundef unit.
+Definition gdef := globdef fundef D.
 
 (* The Flat Machine Code Program *)
 Record program : Type := {

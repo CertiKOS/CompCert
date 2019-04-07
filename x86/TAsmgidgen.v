@@ -69,7 +69,8 @@ Fixpoint transl_instrs (instrs: list instr_with_info) : list instr_with_info :=
 (** Tranlsation of a function *)
 Definition transl_fun (f:function) : function :=
   let code' := transl_instrs (fn_code f) in
-  mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f).
+  mkfunction (fn_sig f) code' (fn_range f) 
+             (fn_actual_size f) (fn_stacksize f) (fn_pubrange f).
 
 Definition transl_globdef (def: (ident * option TransSegAsm.gdef * segblock)) 
   : (ident * option TransSegAsm.gdef * segblock) :=

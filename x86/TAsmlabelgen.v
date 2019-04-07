@@ -68,7 +68,8 @@ Fixpoint transl_instrs (fid:ident) (instrs: list SegAsm.instr_with_info) : res (
 (** Tranlsation of a function *)
 Definition transl_fun (fid: ident) (f:SegAsm.function) : res function :=
   do code' <- transl_instrs fid (@fn_code Asm.instruction f);
-  OK (mkfunction (fn_sig f) code' (fn_range f) (fn_stacksize f) (fn_pubrange f)).
+  OK (mkfunction (fn_sig f) code' (fn_range f) (fn_actual_size f) 
+                 (fn_stacksize f) (fn_pubrange f)).
 
 
 Definition transl_globdef (def: (ident * option SegAsm.gdef * segblock)) 

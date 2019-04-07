@@ -20,14 +20,16 @@ Definition instr_with_info:Type := @SegAsmProgram.instr_with_info instruction.
 (** * Operational semantics *)
 
 (* Definition regset := Asm.regset. *)
-Definition genv := @SegAsmProgram.genv instruction unit.
+Record data_info := { data_actual_size: ptrofs }.
+
+Definition genv := @SegAsmProgram.genv instruction data_info.
 
 Notation "a # b" := (a b) (at level 1, only parsing) : asm.
 Notation "a # b <- c" := (Asm.Pregmap.set b c a) (at level 1, b at next level) : asm.
 
 Definition function := @SegAsmProgram.function instruction.
-Definition gdef := @SegAsmProgram.gdef instruction unit.
-Definition program := @SegAsmProgram.program instruction unit.
+Definition gdef := @SegAsmProgram.gdef instruction data_info.
+Definition program := @SegAsmProgram.program instruction data_info.
 
 Open Scope asm.
 

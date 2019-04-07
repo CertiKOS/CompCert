@@ -225,14 +225,16 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
       if zle fofs Ptrofs.max_unsigned then
         (let sz := (Asm.code_size (Asm.fn_code f))  in
          let sblk := mkSegBlock sid ofs (Ptrofs.repr sz) in
-         OK (mkfunction (Asm.fn_sig f) code' sblk (Asm.fn_stacksize f) (Asm.fn_pubrange f)))
+         let actual_size := Ptrofs.repr (align sz alignw) in
+         OK (mkfunction (Asm.fn_sig f) code' sblk actual_size 
+                        (Asm.fn_stacksize f) (Asm.fn_pubrange f)))
       else
         Error (MSG "The size of the function exceeds limit" ::nil)
   end.
 
 
 Definition transl_globdef (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
-  : res (ident * option SegAsmProgram.gdef * segblock) :=
+  : res (ident * option SegAsm.gdef * segblock) :=
   match def with
   | None => OK (id, None, (mkSegBlock undef_segid Ptrofs.zero Ptrofs.zero))
   | Some (AST.Gvar v) =>
@@ -241,7 +243,15 @@ Definition transl_globdef (id:ident) (def: option (AST.globdef Asm.fundef unit))
     | Some (sid,ofs) =>
       let sz := AST.init_data_list_size (AST.gvar_init v) in
       let sblk := mkSegBlock sid ofs (Ptrofs.repr sz) in
-      OK (id, Some (Gvar v), sblk)
+      let actual_sz := Ptrofs.repr (align sz alignw) in
+      let v' := 
+          {| 
+            gvar_info := {| data_actual_size := actual_sz |};
+            gvar_init := AST.gvar_init v;
+            gvar_readonly := AST.gvar_readonly v;
+            gvar_volatile := AST.gvar_volatile v;
+          |} in
+      OK (id, Some (Gvar v'), sblk)
     end
   | Some (AST.Gfun f) =>
     match f with
@@ -265,7 +275,7 @@ Fixpoint transl_globdefs (defs : list (ident * option (AST.globdef Asm.fundef un
   end.
   
 (** Translation of a program *)
-Definition transl_prog_with_map (p:Asm.program) (data_sz code_sz:Z): res program := 
+Definition transl_prog_with_map (p:Asm.program) (data_sz code_sz:Z): res SegAsm.program := 
   do defs <- transl_globdefs (AST.prog_defs p);
   OK (Build_program
         defs

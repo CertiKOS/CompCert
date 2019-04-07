@@ -20,14 +20,22 @@ Definition de_transl_fun (f : @function instruction) : Asm.function :=
   let code' := List.map de_transl_instr (fn_code f) in
   Asm.mkfunction (fn_sig f) code' (fn_stacksize f) (fn_pubrange f).
 
-Definition de_transl_globdef (def: ident * option SegAsmProgram.gdef * segblock) 
+Definition de_transl_globdef (def: ident * option SegAsm.gdef * segblock) 
   : (ident * option (globdef Asm.fundef unit)) :=
   let '(id, def, _) := def in
   match def with
   | None => (id, None)
   | Some (Gfun (Internal f)) => (id, Some (Gfun (Internal (de_transl_fun f))))
   | Some (Gfun (External f)) => (id, Some (Gfun (External f)))
-  | Some (Gvar v) => (id, Some (Gvar v))
+  | Some (Gvar v) => 
+    let v' := 
+        {|
+          gvar_info := tt;
+          gvar_init := gvar_init v;
+          gvar_readonly := gvar_readonly v;
+          gvar_volatile := gvar_volatile v;
+        |} in
+    (id, Some (Gvar v'))
   end.
 
 Definition flatasm_to_asm (p:SegAsm.program) : Asm.program :=
@@ -99,7 +107,9 @@ Proof.
   - monadInv H. simpl.    
     erewrite transl_fun_inv; eauto.
   - monadInv H. simpl. auto.
-  - monadInvX H. simpl. auto.
+  - monadInvX H. simpl. 
+    destruct v. simpl. destruct gvar_info.
+    auto.
   - monadInv H. simpl. auto.
 Qed.
 

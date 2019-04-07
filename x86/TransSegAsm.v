@@ -91,10 +91,10 @@ Definition instr_to_string (i:instruction) : string :=
 Definition instr_with_info:Type := @SegAsmProgram.instr_with_info instruction.
 
 Definition function := @SegAsmProgram.function instruction.
-Definition gdef := @SegAsmProgram.gdef instruction unit.
+Definition gdef := @SegAsmProgram.gdef instruction data_info.
 
 (* The LC program *)
-Definition program := @SegAsmProgram.program instruction unit.
+Definition program := @SegAsmProgram.program instruction data_info.
 
 
 Open Scope asm.
@@ -106,7 +106,7 @@ Context `{external_calls_prf: ExternalCalls}.
 (** * Operational semantics *)
 
 (* Definition regset := Asm.regset. *)
-Definition genv := @SegAsmProgram.genv instruction unit.
+Definition genv := @SegAsmProgram.genv instruction data_info.
 
 
 Definition goto_label (ofs: ptrofs) (sz: ptrofs) (rs: regset) (m:mem):=
@@ -636,7 +636,7 @@ Inductive final_state: state -> int -> Prop :=
 
 Local Existing Instance mem_accessors_default.
 
-Definition semantics (p: program) (rs: regset) :=
+Definition semantics (p: SegAsmProgram.program) (rs: regset) :=
   Semantics_gen step (initial_state p rs) final_state (globalenv p) (Genv.genv_senv (globalenv p)).
 
 
