@@ -70,6 +70,7 @@ Inductive instruction : Type :=
   | Smov_rm_a (rd:ireg) (a: addrmode')
   | Smov_mr_a (a: addrmode') (r1:ireg)
   | Sleal (rd: ireg) (a:addrmode')
+  | Snop
   | SAsminstr : Asm.instruction -> instruction.
 
 Definition instr_to_string (i:instruction) : string :=
@@ -85,6 +86,7 @@ Definition instr_to_string (i:instruction) : string :=
   | Sleal _ _ => "Sleal"
   | Smov_rm_a _ _ => "Smov_rm_a"
   | Smov_mr_a _ _ => "Smov_mr_a"
+  | Snop => "Snop"
   | SAsminstr i => Asm.instr_to_string i
   end.
 
@@ -564,6 +566,8 @@ Definition exec_instr {exec_load exec_store} `{!MemAccessors exec_load exec_stor
       exec_store' ge Mint32 m a rs r1 nil sz
   | Sleal rd a =>
       Next (nextinstr (rs#rd <- (eval_addrmode32' ge a rs)) sz) m
+  | Snop =>
+    Next (nextinstr rs sz) m
   (* The rest instructions are forwarded to SegAsm *)
   | SAsminstr ins =>
     exec_flatasm_instr ge (segblock_size blk) ins rs m

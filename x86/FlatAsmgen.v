@@ -101,6 +101,7 @@ Definition transl_instr (i: TransSegAsm.instruction) : res instruction :=
     OK (Fsall_ri rd n)
   | SAsminstr (Plabel l) =>
     OK Fnop
+  | Snop => OK Fnop
   | _ => Error (msg "Instruction not supported")
   end.
 
