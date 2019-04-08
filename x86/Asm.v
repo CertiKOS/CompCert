@@ -294,7 +294,48 @@ Inductive instruction: Type :=
   | Psubl_ri (rd: ireg) (n: int)
   | Psubq_ri (rd: ireg) (n: int64).
 
-Axiom instr_size : instruction -> Z.
+Definition addrmode_size_aux (a:addrmode) : Z :=
+  let '(Addrmode base ofs const) := a in
+  match ofs, base with
+  | None, None => 1
+  | None, Some rb =>
+    if ireg_eq rb RSP then 2 else 1
+  | Some _, _ => 2
+  end.
+
+Definition addrmode_size (a:addrmode) : Z :=
+  addrmode_size_aux a + 4.
+
+Definition instr_size (i: instruction) : Z :=
+  match i with
+  | Pjmp_l _ => 5
+  | Pjcc _ _ => 6
+  | Pcall _ _ => 5
+  | Pleal _ a => 1 + addrmode_size a
+  | Pxorl_r _ => 2
+  | Paddl_ri _ _ => 6
+  | Psubl_ri _ _ => 6
+  | Psubl_rr _ _ => 2
+  | Pmovl_ri _ _ => 5
+  | Pmov_rr _ _ => 2
+  | Pmovl_rm _ a => 1 + addrmode_size a
+  | Pmovl_mr a _ => 1 + addrmode_size a
+  | Pmov_rm_a _ a => 1 + addrmode_size a
+  | Pmov_mr_a a _ => 1 + addrmode_size a
+  | Ptestl_rr _ _ => 2
+  | Pret => 1
+  | Pimull_rr _ _ => 3
+  | Pcmpl_rr _ _ => 2
+  | Pcmpl_ri _ _ => 6
+  | Pcltd => 1
+  | Pidivl _ => 2
+  | Psall_ri _ _ => 6
+  | Plabel _ => 1
+  | Pmov_rs _ _ => 6
+  | _ => 1
+  end.
+
+Global Opaque instr_size.
 Axiom instr_size_positive : forall i, 0 < instr_size i.
 Axiom instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
 

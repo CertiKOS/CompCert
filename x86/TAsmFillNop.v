@@ -33,7 +33,7 @@ Definition append_nops (fid:ident) (f: TransSegAsm.function)
   let asz := (fn_actual_size f) in
   let n := Z.to_nat ((Ptrofs.unsigned asz) - (Ptrofs.unsigned sz)) in
   let nops := gen_nops_iter n fid (segblock_id sb)
-                            (fn_code f) sz in
+                            nil sz in
   {|
     fn_sig := fn_sig f;
     fn_code := (fn_code f) ++ nops;

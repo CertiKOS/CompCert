@@ -1,7 +1,7 @@
 Require Import Coqlib Integers Floats AST Maps.
 Require Import Errors.
 Require Import SegAsm FlatProgram FlatBinary RawBinary.
-Require Import Hex ElfLayout Memdata.
+Require Import Hex ElfLayout Memdata String.
 Import ListNotations.
 Import Hex.
 
@@ -26,7 +26,7 @@ Fixpoint accum_instrs (defs: list (ident * option FlatBinary.gdef)) :=
     code ++ (accum_instrs defs')
   end.
 
-(** Create staring sub code with nops filled in *)
+(** Create staring stub code with nops filled in *)
 Definition gen_nops (n:nat) : list byte :=
   List.map (fun _ => HB["90"]) (seq 1 n).
 
@@ -37,14 +37,20 @@ Definition create_start_stub' (main_ofs: ptrofs) :=
 
 (** Generate the complete instruction bytes by appending starting stub code
     to instructions *)
-Definition gen_instrs (p:FlatBinary.program) : list byte :=
+Definition gen_instrs (p:FlatBinary.program) : res (list byte) :=
   let code_sz := FlatProgram.prog_code_size p in
   let main_rofs := 
       Ptrofs.sub (FlatProgram.prog_main_ofs p) 
                  (Ptrofs.add (FlatProgram.prog_code_size p) (Ptrofs.repr call_size)) in
   let ssbytes := create_start_stub' main_rofs in
   let isbytes := accum_instrs (prog_defs p) in
-  ssbytes ++ isbytes.
+  if zeq (Ptrofs.unsigned code_sz) (Z.of_nat (List.length isbytes)) then
+    OK (isbytes ++ ssbytes)
+  else
+    let code_sz := Z_to_hex_string 32 (Ptrofs.unsigned code_sz) in
+    let instr_sz := Z_to_hex_string 32 (Z.of_nat (List.length isbytes)) in
+    Error (msg ("The size of generated instruction (" ++ instr_sz ++
+                ") does not match the size of the code segment (" ++ code_sz ++ ").")).
 
 
 (** Generation of data bytes *)
@@ -95,7 +101,7 @@ Fixpoint accum_init_data (defs: list (ident * option FlatBinary.gdef)) : res (li
 
 (** Translation of a program *)
 Definition transf_program (p:FlatBinary.program) : res program := 
-  let prog_code := accum_instrs (FlatProgram.prog_defs p) in
+  do prog_code <- gen_instrs p;
   do prog_data <- accum_init_data (FlatProgram.prog_defs p);
   OK ({|
          prog_code := prog_code;

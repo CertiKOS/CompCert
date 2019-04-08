@@ -40,13 +40,13 @@ Definition encode_scale (s: scale) : bits :=
 (** ** Encoding of the address modes *)
 
 (** Encode the address mode except the displacement *)
-Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res bits :=
+Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do rdbits <- encode_ireg rd;
   match ss, bs with
   | None, None =>
     (** No scale index and base register *)
-    OK (b["00"] ++ rdbits ++ b["101"])
+    OK ([bB[b["00"] ++ rdbits ++ b["101"]]])
 
   | None, Some rb =>
     (** No scale index and with a base register *)
@@ -54,33 +54,37 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res bits :=
     if ireg_eq rb RSP then
     (** When the base register is RSP, an SIB byte for RSP following
     the ModR/M byte is needed *)
-      OK (b["10"] ++ rdbits ++ b["100"] ++
-          b["00"] ++ b["100"] ++ rbbits)
+      let bits := b["10"] ++ rdbits ++ b["100"] ++
+                  b["00"] ++ b["100"] ++ rbbits in
+      OK (encode_int 2 (bits_to_Z bits))
     else
     (** Otherwise, no SIB byte is needed *)
-      OK (b["10"] ++ rdbits ++ rbbits)
+      OK ([bB[b["10"] ++ rdbits ++ rbbits]])
 
   | Some (rs, scale), None =>
     (** With a scale and without a base register *)
     let scbits := encode_scale scale in
     do rsbits <- encode_ireg rs;
-    OK (b["00"] ++ rdbits ++ b["100"] ++
-        scbits ++ rsbits ++ b["101"])
+    let bits := 
+        b["00"] ++ rdbits ++ b["100"] ++
+        scbits ++ rsbits ++ b["101"] in
+    OK (encode_int 2 (bits_to_Z bits))
 
   | Some (rs, scale), Some rb =>
     (** With a scale and a base register *)
     let scbits := encode_scale scale in
     do rsbits <- encode_ireg rs;
     do rbbits <- encode_ireg rb;
-    OK (b["10"] ++ rdbits ++ b["100"] ++
-        scbits ++ rsbits ++ rbbits)
+    let bits := 
+        b["10"] ++ rdbits ++ b["100"] ++
+        scbits ++ rsbits ++ rbbits in
+    OK (encode_int 2 (bits_to_Z bits))
   end.
     
 (** Encode the full address mode *)
 Definition encode_addrmode (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
-  do bits <- encode_addrmode_aux a rd;
-  let abytes := encode_int32 (bits_to_Z bits) in
+  do abytes <- encode_addrmode_aux a rd;
   OK (abytes ++ (encode_int32 (Ptrofs.unsigned disp))).
 
 (** Encode the conditions *)

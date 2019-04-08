@@ -5,7 +5,10 @@ Require Import SegAsmBuiltin.
 Require Import Memtype.
 Require Import SegAsmProgram TransSegAsm.
 Require Import ValidLabel.
+Require Import Hex String Ascii.
 Import ListNotations.
+Import Hex.
+
 
 Local Open Scope error_monad_scope.
 
@@ -96,8 +99,28 @@ Fixpoint transl_globdefs defs :=
     OK (tdef :: tdefs')
   end.
 
-End WITH_LABEL_MAP.
+End WITH_LABEL_MAP.          
+      
+Fixpoint fun_sizes_msg (defs: list (ident * option SegAsm.gdef * segblock)) : string :=
+  match defs with
+  | nil => EmptyString
+  | (id, def, sb) :: defs' =>
+    let sz := Z_to_hex_string 32 (Ptrofs.unsigned (segblock_size sb)) in
+    let s : string :=
+        match def with
+        | Some (Gfun (Internal f)) => 
+          let s := append (append "fun size: (" sz) "); " in
+          let asz := Z_to_hex_string 32 (Ptrofs.unsigned (fn_actual_size f)) in
+          append s (append (append "fun actual size (" asz) ");")
+        | _ => EmptyString
+        end
+    in
+    s ++ (fun_sizes_msg defs')
+  end.
 
+Definition code_size_msg (p:SegAsm.program) : string :=
+  append "code size is: "
+         (Z_to_hex_string 32 (Ptrofs.unsigned (segsize (code_seg p)))).
 
 (** Translation of a program *)
 Definition transf_program (p:SegAsm.program) : res program := 
@@ -105,6 +128,7 @@ Definition transf_program (p:SegAsm.program) : res program :=
     assertion peq code_segid (segid (code_seg p));
     assertion eq_dec_neq_dec peq code_segid (segid (data_seg p));
   do defs <- transl_globdefs (lbl_map p) (prog_defs p);
+  (* Error (msg ((fun_sizes_msg (prog_defs p)) ++ (code_size_msg p))). *)
   OK (Build_program
         defs
         (prog_public p)
