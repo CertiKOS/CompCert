@@ -54,13 +54,13 @@ let compile_c_ast sourcename csyntax ofile =
   if !option_machine_code then
   begin
     let asm =
-      match (Compiler.transf_c_program_rs csyntax) with
+      match (Compiler.transf_c_program_bin csyntax) with
       | Errors.OK asm ->
           asm
       | Errors.Error msg ->
           eprintf "%s: %a" sourcename print_error msg;
           exit 2 in
-    (* Create an ELF file from the RockSalt Asm program *)
+    (* Create an ELF file from the Raw Binary program *)
     let elf_file = gen_elf asm in
     (* Write the ELF file *)
     write_elf ofile elf_file
@@ -126,7 +126,7 @@ let compile_cminor_file ifile ofile =
            exit 2 in
   if ! option_machine_code then
   begin let asm =
-    match (Compiler.transf_cminor_program_rs cm) with
+    match (Compiler.transf_cminor_program_bin cm) with
     | Errors.OK asm ->
         asm
     | Errors.Error msg ->

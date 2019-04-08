@@ -212,6 +212,30 @@ Definition transf_c_program_bin p : res RawBinary.program :=
   @@@ time "Generation of raw binary code" RawBingen.transf_program.
 
 
+
+Definition transf_cminor_program_real (p:Cminor.program) : res Asm.program :=
+  transf_cminor_program p
+  @@@ PseudoInstructions.check_program
+  @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
+
+Definition transf_cminor_program_flatasm (p:Cminor.program) : res SegAsm.program :=
+  transf_cminor_program_real p
+  @@@ time "Generation of SegAsm" SegAsmgen.transf_program.
+
+Definition transf_cminor_program_tasm (p:Cminor.program) : res TransSegAsm.program :=
+  transf_cminor_program_flatasm p
+  @@@ time "Generation of relative jumps in SegAsm" TAsmlabelgen.transf_program
+  @@ time "Generation of short calls in SegAsm" TAsmcallgen.transf_program
+  @@ time "Generation of addresses of global ids in SegAsm" TAsmgidgen.transf_program
+  @@ time "Fill in nops in SegAsm" TAsmFillNop.transf_program.
+
+Definition transf_cminor_program_bin (p:Cminor.program) : res RawBinary.program :=
+  transf_cminor_program_tasm p
+  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
+  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
+  @@@ time "Generation of raw binary code" RawBingen.transf_program.
+
+
 (** The following lemmas help reason over compositions of passes. *)
 
 Lemma print_identity:
