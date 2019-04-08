@@ -1,4 +1,4 @@
-(* Translation from flat binary to ELF files *)
+(* Translation from raw binary to ELF files *)
 (* Author        : Yuting Wang *)
 (* Date Created  : 04-05-2019 *)
 
@@ -6,8 +6,7 @@ open Camlcoq
 open Elf
 open Errors
 open ElfLayout
-open FlatProgram
-open FlatBinary
+open RawBinary
 
 
 (* Create the program headers from a flat binary program *)

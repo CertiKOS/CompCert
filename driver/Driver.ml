@@ -10,7 +10,7 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-open RSAsmToElf
+open RawBinToElf
 open Elf
 open Printf
 open Commandline

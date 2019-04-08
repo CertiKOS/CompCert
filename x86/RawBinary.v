@@ -6,6 +6,7 @@ Require Import AST Integers.
 Record program : Type := {
   prog_code : list byte;
   prog_data : list byte;
+  prog_entry : ptrofs;
   prog_data_addr  : ptrofs;
   prog_data_size  : ptrofs;
   prog_code_addr  : ptrofs;

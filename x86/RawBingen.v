@@ -100,6 +100,8 @@ Definition transf_program (p:FlatBinary.program) : res program :=
   OK ({|
          prog_code := prog_code;
          prog_data := prog_data;
+         prog_entry := Ptrofs.add (FlatProgram.prog_code_addr p)
+                                  (FlatProgram.prog_code_size p);
          prog_data_addr := (FlatProgram.prog_data_addr p);
          prog_data_size := (FlatProgram.prog_data_size p);
          prog_code_addr := (FlatProgram.prog_code_addr p);
