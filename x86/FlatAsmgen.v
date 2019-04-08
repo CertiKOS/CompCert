@@ -56,6 +56,8 @@ Definition transl_instr (i: TransSegAsm.instruction) : res instruction :=
   | Sleal ofs a => 
     do a' <- transl_addr_mode a;
       OK (Fleal ofs a')
+  | SAsminstr (Pxorl_r rd) =>
+    OK (Fxorl_r rd)
   | SAsminstr (Paddl_ri rd n) =>
     OK (Faddl_ri rd n)
   | SAsminstr (Psubl_ri rd n) =>
