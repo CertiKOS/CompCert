@@ -9,6 +9,7 @@ Local Open Scope error_monad_scope.
 
 Definition Snop_size := 1%Z.
 
+(** * Fill in Nops for code areas added for alignment *)
 
 Fixpoint gen_nops_iter (n:nat) (fid:ident) (segid:ident) 
          (instrs: list instr_with_info) (sz: ptrofs)

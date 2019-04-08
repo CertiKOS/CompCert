@@ -114,7 +114,8 @@ BACKEND=\
   TransSegAsm.v TAsmlabelgen.v TAsmcallgen.v TAsmgidgen.v TAsmFillNop.v \
   FlatProgram.v FlatAsm.v FlatAsmgen.v \
   FlatBinary.v FlatBingen.v ElfLayout.v \
-  ValidLabel.v Hex.v Bits.v
+  ValidLabel.v Hex.v Bits.v \
+  RawBingen.v RawBinary.v
 
 # C front-end modules (in cfrontend/)
 

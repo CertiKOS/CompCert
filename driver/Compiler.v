@@ -58,6 +58,7 @@ Require TAsmgidgen.
 Require TAsmFillNop.
 Require FlatAsmgen.
 Require FlatBingen.
+Require RawBingen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -204,10 +205,11 @@ Definition transf_c_program_tasm p : res TransSegAsm.program :=
   @@ time "Generation of addresses of global ids in SegAsm" TAsmgidgen.transf_program
   @@ time "Fill in nops in SegAsm" TAsmFillNop.transf_program.
 
-Definition transf_c_program_bin p : res FlatBinary.program :=
+Definition transf_c_program_bin p : res RawBinary.program :=
   transf_c_program_tasm p
   @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
-  @@@ time "Generation of assembly with a flat memory" FlatBingen.transf_program.
+  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
+  @@@ time "Generation of raw binary code" RawBingen.transf_program.
 
 
 (** The following lemmas help reason over compositions of passes. *)
