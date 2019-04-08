@@ -16,7 +16,7 @@ Require Globalenvs.
 Inductive addrmode': Type :=
   | Addrmode' (base: option ireg)
               (ofs: option (ireg * Z))
-              (const: seglabel).
+              (const: Z + seglabel).
 
 Section WITHGE.
   Context {F V I : Type}.
@@ -35,7 +35,10 @@ Definition eval_addrmode32' (a: addrmode') (rs: regset) : val :=
                 then rs r
                 else Val.mul (rs r) (Vint (Int.repr sc))
              end)
-           (Genv.seglabel_to_val ge const)).
+           (match const with
+            | inl ofs => Vint (Int.repr ofs)
+            | inr slbl => Genv.seglabel_to_val ge slbl
+            end)).
 
 Definition eval_addrmode64' (a: addrmode') (rs: regset) : val :=
   let '(Addrmode' base ofs const) := a in
@@ -50,7 +53,10 @@ Definition eval_addrmode64' (a: addrmode') (rs: regset) : val :=
                 then rs r
                 else Val.mull (rs r) (Vlong (Int64.repr sc))
              end)
-           (Genv.seglabel_to_val ge const)).
+           (match const with 
+            | inl ofs => Vlong (Int64.repr ofs)
+            | inr slbl => Genv.seglabel_to_val ge slbl
+            end)).
 
 Definition eval_addrmode' (a: addrmode') (rs: regset) : val :=
   if Archi.ptr64 then eval_addrmode64' a rs else eval_addrmode32' a rs.

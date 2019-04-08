@@ -28,7 +28,7 @@ Definition transl_scale (s:Z) : res scale :=
 
 Definition transl_addr_mode (m: addrmode') : res addrmode :=
   match m with
-  | Addrmode' b ofs (sid, sofs) =>
+  | Addrmode' b ofs const =>
     do index <-
          match ofs with
          | None => OK None
@@ -37,9 +37,13 @@ Definition transl_addr_mode (m: addrmode') : res addrmode :=
              OK (Some (r, sc))
          end;
     do disp <- 
-       match smap sid with
-       | None => Error (msg "Invalid segment found during address mode translation")
-       | Some disp => OK (Ptrofs.add disp sofs)
+       match const with
+       | inl z => OK (Ptrofs.repr z)
+       | inr (sid, sofs) =>
+         match smap sid with
+         | None => Error (msg "Invalid segment found during address mode translation")
+         | Some disp => OK (Ptrofs.add disp sofs)
+         end
        end;
     OK (Addrmode b index disp)
   end.
@@ -102,7 +106,9 @@ Definition transl_instr (i: TransSegAsm.instruction) : res instruction :=
   | SAsminstr (Plabel l) =>
     OK Fnop
   | Snop => OK Fnop
-  | _ => Error (msg "Instruction not supported")
+  | _ => 
+    let str := instr_to_string i in
+    Error (MSG "Instruction " :: MSG str :: MSG " not supported" :: nil)
   end.
 
 Definition transl_instr' (ii: TransSegAsm.instr_with_info) : res instr_with_info :=

@@ -15,11 +15,11 @@ Variable gmap: GID_MAP_TYPE.
 Definition transl_addrmode (a:addrmode) : option addrmode' :=
   let '(Addrmode base ofs const) := a in
   match const with
-  | inl z => None
+  | inl z => Some (Addrmode' base ofs (inl z))
   | inr (id, ofs') => 
     match (gmap id) with
     | None => None
-    | Some slbl => Some (Addrmode' base ofs slbl)
+    | Some slbl => Some (Addrmode' base ofs (inr slbl))
     end
   end.
 
