@@ -12,9 +12,14 @@ Local Open Scope hex_scope.
 Local Open Scope bits_scope.
 
 (** * Encoding of instructions *)
-Definition encode_int32 (i: Z) : list byte :=
-  encode_int 4 i.
+Definition encode_int_big (n:nat) (i: Z) : list byte :=
+  rev (bytes_of_int n i).
 
+Definition encode_int_little (n:nat) (i: Z) : list byte :=
+  bytes_of_int n i.
+
+Definition encode_int32 (i:Z) : list byte :=
+  encode_int 4 i.
 
 Definition encode_ireg (r: ireg) : res bits :=
   match r with
@@ -56,7 +61,7 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
     the ModR/M byte is needed *)
       let bits := b["10"] ++ rdbits ++ b["100"] ++
                   b["00"] ++ b["100"] ++ rbbits in
-      OK (encode_int 2 (bits_to_Z bits))
+      OK (encode_int_big 2 (bits_to_Z bits))
     else
     (** Otherwise, no SIB byte is needed *)
       OK ([bB[b["10"] ++ rdbits ++ rbbits]])
@@ -68,7 +73,7 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
     let bits := 
         b["00"] ++ rdbits ++ b["100"] ++
         scbits ++ rsbits ++ b["101"] in
-    OK (encode_int 2 (bits_to_Z bits))
+    OK (encode_int_big 2 (bits_to_Z bits))
 
   | Some (rs, scale), Some rb =>
     (** With a scale and a base register *)
@@ -78,14 +83,14 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
     let bits := 
         b["10"] ++ rdbits ++ b["100"] ++
         scbits ++ rsbits ++ rbbits in
-    OK (encode_int 2 (bits_to_Z bits))
+    OK (encode_int_big 2 (bits_to_Z bits))
   end.
     
 (** Encode the full address mode *)
 Definition encode_addrmode (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
-  OK (abytes ++ (encode_int32 (Ptrofs.unsigned disp))).
+  OK (abytes ++ (encode_int_little 4 (Ptrofs.unsigned disp))).
 
 (** Encode the conditions *)
 Definition encode_testcond (c:testcond) : list byte :=
