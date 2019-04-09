@@ -199,7 +199,7 @@ Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instructio
   | Fsall_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
+    let nbytes := [Byte.repr (Int.unsigned n)] in
     OK (HB["C1"] :: modrm :: nbytes)
   | Fnop =>
     OK (HB["90"] :: nil)
