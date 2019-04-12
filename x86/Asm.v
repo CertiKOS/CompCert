@@ -294,6 +294,9 @@ Inductive instruction: Type :=
   | Psubl_ri (rd: ireg) (n: int)
   | Psubq_ri (rd: ireg) (n: int64).
 
+
+(** Compute the sizes of instructions and prove their properties *)
+
 Definition addrmode_size_aux (a:addrmode) : Z :=
   let '(Addrmode base ofs const) := a in
   match ofs, base with
@@ -310,6 +313,14 @@ Proof.
   destr; omega. omega.
 Qed.
 
+Lemma addrmode_size_aux_upper_bound: forall a, addrmode_size_aux a <= 2.
+Proof.
+  intros. destruct a. simpl. 
+  destruct ofs; try omega.
+  destruct base; try omega.
+  destr; omega.
+Qed.
+
 Definition addrmode_size (a:addrmode) : Z :=
   addrmode_size_aux a + 4.
 
@@ -317,6 +328,14 @@ Lemma addrmode_size_pos: forall a, addrmode_size a > 0.
 Proof.
   intros. unfold addrmode_size. 
   generalize (addrmode_size_aux_pos a). omega.
+Qed.
+
+Definition amod_size_ub := 6.
+
+Lemma addrmode_size_upper_bound: forall a, addrmode_size a <= amod_size_ub.
+Proof.
+  intros. unfold addrmode_size. 
+  generalize (addrmode_size_aux_upper_bound a). unfold amod_size_ub. omega.
 Qed.
 
 Global Opaque addrmode_size.
@@ -366,28 +385,37 @@ Proof.
   omega.
 Qed.
 
+Local Transparent Archi.ptr64.
+
 Lemma z_le_ptrofs_max32: forall n, 
     n < two_power_nat 32 -> 
     n <= Ptrofs.max_unsigned.
 Proof.
-  intros. apply z_le_ptrofs_max. destr. 
+  intros. apply z_le_ptrofs_max. unfold Archi.ptr64. assumption.
 Qed.
 
+Ltac solve_n_le_ptrofs_max :=
+  match goal with
+  | [ |- ?a <= Ptrofs.max_unsigned ] =>
+    apply z_le_ptrofs_max32; reflexivity
+  end.
+
+Ltac solve_amod_le_ptrofs_max :=
+  match goal with
+  | [ |- ?n + addrmode_size ?a <= Ptrofs.max_unsigned ] =>
+    apply Z.le_trans with (1 + amod_size_ub);
+    [ generalize (addrmode_size_upper_bound a); omega | solve_n_le_ptrofs_max ]
+  end.
 
 Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
 Proof.
-  intros. unfold instr_size. destruct i. 
-  split; try omega.
-
-
-Lemma one_le_ptrofs_max: 1 <= Ptrofs.max_unsigned.
-Proof.
-  unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
-  unfold Ptrofs.wordsize. unfold Wordsize_Ptrofs.wordsize.
-  destruct Archi.ptr64. simpl; omega.
-
-
-
+  intros. unfold instr_size. 
+  destruct i; split; try omega; 
+  try solve_n_le_ptrofs_max;
+  try (generalize (addrmode_size_pos a); omega);
+  try solve_amod_le_ptrofs_max.
+Qed.
+  
 Global Opaque instr_size.
 
 
