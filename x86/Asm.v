@@ -303,8 +303,23 @@ Definition addrmode_size_aux (a:addrmode) : Z :=
   | Some _, _ => 2
   end.
 
+Lemma addrmode_size_aux_pos: forall a, addrmode_size_aux a > 0.
+Proof.
+  intros. unfold addrmode_size_aux. destruct a.
+  destruct ofs. omega. destruct base. 
+  destr; omega. omega.
+Qed.
+
 Definition addrmode_size (a:addrmode) : Z :=
   addrmode_size_aux a + 4.
+
+Lemma addrmode_size_pos: forall a, addrmode_size a > 0.
+Proof.
+  intros. unfold addrmode_size. 
+  generalize (addrmode_size_aux_pos a). omega.
+Qed.
+
+Global Opaque addrmode_size.
 
 Definition instr_size (i: instruction) : Z :=
   match i with
@@ -335,9 +350,46 @@ Definition instr_size (i: instruction) : Z :=
   | _ => 1
   end.
 
+Lemma instr_size_positive : forall i, 0 < instr_size i.
+Proof.
+  intros. unfold instr_size. 
+  destruct i; try omega;
+    try (generalize (addrmode_size_pos a); omega). 
+Qed.  
+
+Lemma z_le_ptrofs_max: forall n, 
+    n < two_power_nat (if Archi.ptr64 then 64 else 32) -> 
+    n <= Ptrofs.max_unsigned.
+Proof.
+  intros. unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
+  unfold Ptrofs.wordsize. unfold Wordsize_Ptrofs.wordsize.
+  omega.
+Qed.
+
+Lemma z_le_ptrofs_max32: forall n, 
+    n < two_power_nat 32 -> 
+    n <= Ptrofs.max_unsigned.
+Proof.
+  intros. apply z_le_ptrofs_max. destr. 
+Qed.
+
+
+Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
+Proof.
+  intros. unfold instr_size. destruct i. 
+  split; try omega.
+
+
+Lemma one_le_ptrofs_max: 1 <= Ptrofs.max_unsigned.
+Proof.
+  unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
+  unfold Ptrofs.wordsize. unfold Wordsize_Ptrofs.wordsize.
+  destruct Archi.ptr64. simpl; omega.
+
+
+
 Global Opaque instr_size.
-Axiom instr_size_positive : forall i, 0 < instr_size i.
-Axiom instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
+
 
 
 Definition code := list instruction.
