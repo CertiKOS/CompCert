@@ -776,6 +776,7 @@ Module Behavior.
 
   (** XXX bad no divergence *)
 
+  (*
   Section SUBST.
     Context {A B C D X : Type} (f : A -> t C D B).
 
@@ -822,9 +823,10 @@ Module Behavior.
       simpl.
       admit.
   Admitted.
+   *)
 
 
-  (** ** Derivatives *)
+  (** ** Interaction (§3.6) *)
 
   Program Definition delta {M N A} (x : t M N A) (m : M) (n : N) : t M N A :=
     {| has t := has x (tcons m n t) |}.
@@ -867,12 +869,53 @@ Module Behavior.
   Definition next_move {M N P Q A} (x : t M N A) : t P Q M :=
     choose (fun m => has x (move m)).
 
-  Definition ret_val {M N P Q A} (x : t M N A) : t P Q A :=
-    choose (fun v => has x (val v)).
+  Inductive rho_has {M N P Q A} (x : t M N A) : trace P Q A -> Prop :=
+    | rho_val v : has x (val v) -> rho_has x (val v)
+    | rho_div : has x div -> rho_has x div
+    | rho_undef t : has x undef -> rho_has x t.
 
-  (*
-  Definition next {M N P Q A} (x : t M N A) : t P Q (A + (M * (N -> t M N A))) :=
-   *)
+  Hint Constructors rho_has.
+
+  Program Definition rho {M N P Q A} (x : t M N A) : t P Q A :=
+    {| has := rho_has x |}.
+  Next Obligation.
+    destruct 1; inversion 1; subst; constructor; eauto using closed.
+  Qed.
+
+  Lemma rho_decr {M N A} (x : t M N A) :
+    ref (rho x) x.
+  Proof.
+    destruct 1; eauto using closed.
+  Qed.
+
+  Lemma decompose {M N A} (x : t M N A) :
+    x = join (rho x) (next_move x >>= fun m => interact m >>= delta x m).
+  Proof.
+    apply antisymmetry.
+    - intros t Ht. simpl.
+      destruct t; eauto 10.
+      + right. exists (val m). intuition eauto.
+        constructor. simpl. eauto.
+      + right. exists (val m). intuition eauto using closed.
+        constructor. simpl. eauto.
+        exists (tcons m n (val n)). intuition eauto.
+    - apply join_lub.
+      + apply rho_decr.
+      + intros t (s & (m & Hm & Hs) & Hst); subst.
+        inversion Hst; clear Hst; subst. simpl in H0.
+        destruct H0 as (? & [? | (? & ?)] & Hst); subst.
+        * inversion Hst; auto.
+        * inversion Hst; clear Hst; subst.
+          inversion H3; clear H3; subst.
+          simpl in H0. auto.
+  Qed.
+
+  Definition subst_step {M N P Q A} (f : M -> t P Q N) (x : t M N A) :=
+    next_move x >>= fun m => f m >>= fun n => ret (delta x m n).
+
+  Definition subst {M N P Q A} (f : M -> t P Q N) (x : t M N A) :=
+    repeat (subst_step f) x >>= rho.
+
 
   (** ** Abstraction (trace relation) *)
 
