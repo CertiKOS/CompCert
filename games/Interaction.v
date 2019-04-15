@@ -670,6 +670,80 @@ Module Behavior.
   Section REPEAT.
     Context {M N A} (f : A -> t M N A).
 
+    Fixpoint pow n a :=
+      match n with O => ret a | S n => f a >>= pow n end.
+
+    Definition star :=
+      sum pow.
+
+    Ltac mnorm :=
+      repeat progress (rewrite ?bind_ret, ?ret_bind, ?bind_bind; unfold comp).
+
+    Lemma pow_rotate n a :
+      (pow n a >>= f) = (f a >>= pow n).
+    Proof.
+      revert a; induction n; intros; cbn.
+      - mnorm. auto.
+      - rewrite <- bind_bind. f_equal; eauto using functional_extensionality.
+    Qed.
+
+    Lemma star_rotate a :
+      (star a >>= f) = (f a >>= star).
+    Proof.
+      unfold star. rewrite bind_sum. 2: repeat constructor.
+      unfold sum at 1. rewrite bind_sup.
+      f_equal. apply functional_extensionality. intro n.
+      apply pow_rotate.
+    Qed.
+
+    Lemma pow_plus n p a :
+      pow (n + p) a = pow n a >>= pow p.
+    Proof.
+      revert a.
+      induction n; cbn; intros.
+      - rewrite ret_bind; auto.
+      - apply functional_extensionality in IHn.
+        rewrite IHn. clear.
+        rewrite <- !bind_bind. f_equal.
+    Qed.
+
+    Global Instance funext_rel A B :
+      Related (- ==> eq)%rel (@eq (A -> B)) subrel.
+    Proof.
+      exact functional_extensionality.
+    Qed.
+
+    Global Instance funext_proper {A B C} (f : (A -> B) -> C) :
+      Proper (pointwise_relation A eq ++> eq) f.
+    Proof.
+      intros x y Hxy. f_equal. apply functional_extensionality. assumption.
+    Qed.
+
+    Lemma star_unfold_l a :
+      star a = join (ret a) (f a >>= star).
+    Proof.
+      apply antisymmetry.
+      - apply sup_lub.
+        intros [ | n].
+        + apply join_ub_l.
+        + etransitivity; [ | apply join_ub_r].
+          unfold comp, star. simpl. rewrite bind_sum; [ | repeat constructor].
+          apply (sup_ub (fun n => f a >>= pow n) n).
+      - apply join_lub.
+        + change (ret a) with ((fun i => pow i a) O). eapply sup_ub.
+        + unfold star. rewrite bind_sum; [ | repeat constructor].
+          eapply sup_lub. intros i.
+          setoid_rewrite <- (sup_ub _ (S i)). cbn.
+          reflexivity.
+    Qed.
+
+    Lemma star_unfold_r a :
+      star a = join (ret a) (star a >>= f).
+    Proof.
+      rewrite star_rotate.
+      apply star_unfold_l.
+    Qed.
+
     CoInductive diverges (a : A) : Prop :=
       | diverges_val a' :
           has (f a) (val a') ->
@@ -679,29 +753,37 @@ Module Behavior.
           has (f a) undef ->
           diverges a.
 
-    Inductive repeat_has (a : A) : trace M N A -> Prop :=
-      | repeat_refl :
-          repeat_has a (val a)
-      | repeat_step s t :
-          repeat_has a s ->
-          bind_trace f s t ->
-          repeat_has a t
-      | repeat_div :
-          diverges a ->
-          repeat_has a div.
-
-    Hint Constructors repeat_has.
-
-    Program Definition repeat (a : A) : t M N A :=
-      {| has := repeat_has a |}.
+    Program Definition divs a : t M N A :=
+      {|
+        has t := t = div /\ diverges a
+      |}.
     Next Obligation.
-      intros a s t Ht Hs. revert s Hs.
-      induction Ht; intros.
-      - inversion Hs; clear Hs; subst; eauto.
-      - edestruct @bind_trace_closed as (? & ? & ?); eauto.
-      - inversion Hs; clear Hs; subst; eauto.
+      intros a s t [Ht Ha] Hst; subst.
+      inversion Hst. auto.
     Qed.
   End REPEAT.
+
+  Definition repeat {M N A} (f : A -> t M N A) :=
+    star (plus f (divs f)).
+
+  Global Instance pow_r :
+    Monotonic
+      (@pow)
+      (forallr - @ M, forallr - @ N, forallr R,
+        (R ++> r M N R) ++> - ==> R ++> r M N R).
+  Proof.
+    intros M N A B R f g Hfg n.
+    induction n; simpl; intros; repeat rstep; eauto.
+  Qed.
+
+  Global Instance star_r :
+    Monotonic
+      (@star)
+      (forallr -, forallr -, forallr R, (R ++> r _ _ R) ++> R ++> r _ _ R).
+  Proof.
+    intros M N A B R f g Hfg a b Hab.
+    unfold star.
+  Admitted.
 
   Global Instance diverges_r :
     Monotonic
@@ -719,10 +801,22 @@ Module Behavior.
       eapply diverges_undef; eauto.
   Qed.
 
+  Global Instance divs_r :
+    Monotonic
+      (@divs)
+      (forallr -, forallr -, forallr R, (R ++> r _ _ R) ++> R ++> r _ _ R).
+  Proof.
+    intros M N A B R f g Hfg x y Hxy u (Hu & Ha). subst.
+    exists div. cbn. intuition auto.
+    eapply diverges_r; eauto.
+  Qed.
+
   Global Instance repeat_r :
     Monotonic
       (@repeat)
       (forallr -@M, forallr -@N, forallr R, (R ++> r M N R) ++> R ++> r M N R).
+  Admitted.
+  (*
   Proof.
     intros M N A B R f g Hfg x y Hxy u Hu.
     induction Hu; intros.
@@ -733,6 +827,7 @@ Module Behavior.
     - exists div; intuition eauto. constructor.
       revert H. rauto.
   Qed.
+   *)
 
   (** ** Misc. *)
 
