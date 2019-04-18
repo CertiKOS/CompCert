@@ -406,7 +406,7 @@ Module Behavior.
     Monotonic
       (@has)
       (forallr - @ M, forallr - @ N, forallr R,
-       r M N R ++> set_le (trace_rel M N R)).
+       r M N R ++> set_le (trace_rel M N R)) | 10.
   Proof.
     firstorder.
   Qed.
@@ -414,7 +414,7 @@ Module Behavior.
   Global Instance ret_r :
     Monotonic
       (@ret)
-      (forallr - @ M, forallr - @ N, forallr R, R ++> r M N R).
+      (forallr - @ M, forallr - @ N, forallr R, R ++> r M N R) | 10.
   Proof.
     unfold r. repeat rstep.
     intros _ [ ]. cbn. eauto.
@@ -424,7 +424,7 @@ Module Behavior.
     Monotonic
       (@bind)
       (forallr - @ M, forallr - @ N, forallr RA, forallr RB,
-        (RA ++> r M N RB) ++> r M N RA ++> r M N RB).
+        (RA ++> r M N RB) ++> r M N RA ++> r M N RB) | 10.
   Proof.
     intros M N A1 A2 RA B1 B2 RB f1 f2 Hf x1 x2 Hx t1 (s1 & Hs1 & Hst1). cbn.
     edestruct has_r as (s2 & Hs2 & Hs); eauto.
@@ -686,7 +686,7 @@ Module Behavior.
     apply antisymmetry.
     - intros t (s & Hs & Hst).
       apply bind_trace_plus in Hst as [Hst | Hst]; firstorder.
-    - eapply join_lub; repeat rstep; rewrite <- ref_r; subst; firstorder.
+    - eapply join_lub; repeat rstep; firstorder.
   Qed.
 
   Lemma bind_sum {M N A B I} (f : I -> A -> t M N B) (x : t M N A) :
@@ -697,7 +697,7 @@ Module Behavior.
     apply antisymmetry.
     - intros t (s & Hs & Hst).
       apply bind_trace_sum in Hst as [i Hst]; firstorder.
-    - eapply sup_lub; intro. repeat rstep. rewrite <- ref_r. subst. firstorder.
+    - eapply sup_lub; intro. repeat rstep. firstorder.
   Qed.
 
   Lemma bind_bot {M N A} (x : t M N A) :
@@ -712,6 +712,9 @@ Module Behavior.
 
   (** ** Iteration *)
 
+  Ltac mnorm :=
+    repeat progress (rewrite ?bind_ret, ?ret_bind, ?bind_bind; unfold comp).
+
   Section REPEAT.
     Context {M N A} (f : A -> t M N A).
 
@@ -720,9 +723,6 @@ Module Behavior.
 
     Definition star :=
       sum pow.
-
-    Ltac mnorm :=
-      repeat progress (rewrite ?bind_ret, ?ret_bind, ?bind_bind; unfold comp).
 
     Lemma pow_rotate n a :
       (pow n a >>= f) = (f a >>= pow n).
@@ -801,9 +801,7 @@ Module Behavior.
       induction n; intro a; cbn.
       - mnorm. auto.
       - rewrite <- bind_bind.
-        transitivity (f a >>= h); auto.
-        repeat rstep.
-        rewrite <- ref_r. subst. auto.
+        setoid_rewrite IHn. auto.
     Qed.
 
     Lemma star_ind_r (x : t M N A) :
@@ -815,11 +813,9 @@ Module Behavior.
       eapply sup_lub. intro n.
       induction n; cbn.
       - mnorm. reflexivity.
-      - transitivity (x >>= (fun a => pow n a >>= f)).
-        { rstep. 2: reflexivity. intros a _ [ ]. rewrite pow_rotate. reflexivity. }
+      - setoid_rewrite <- pow_rotate.
         rewrite bind_bind.
-        transitivity (x >>= f); auto.
-        repeat rstep. subst. reflexivity.
+        rewrite IHn. auto.
     Qed.
 
     CoInductive diverges (a : A) : Prop :=
@@ -1125,12 +1121,6 @@ Module Behavior.
   Global Instance funext_subrel {A B} :
     Related (pointwise_relation A eq) (@eq (A -> B)) subrel.
   Proof.
-  Admitted.
-
-  Global Instance bind_ref M N A B :
-    Proper (pointwise_relation A ref ==> ref ==> ref) (@bind M N A B).
-  Proof.
-    admit.
   Admitted.
 
   Lemma interact_subst {M N P Q} (f : M -> t P Q N) (m : M) :
@@ -1445,17 +1435,30 @@ Module Behavior.
         (forallr RM, forallr RN, forallr RA, forallr RB,
            (RA ++> sim (W:=W) RM RN RB) ++> sim RM RN RA ++> sim RM RN RB).
     Proof.
+
+(** Notes on debugging rewriting:
+  To try out the resolution you can simply use the approach:
+
+  assert (exists R S T,
+            Proper (R ==> S) op1 /\
+            ProperProxy R arg /\
+            Proper (S ==> T) op2 /\
+            ...)
+
+then go "repeat eexists; repeat apply conj; red"
+and step through each goal with "rstep" *)
+
+      assert (forall A B (RA : relation A) (RB : relation B) (f g : A -> B),
+                 RIntro (forall x y, RA x y -> RB (g x) (f y))
+                        (RA --> flip RB)%signature f g) as Hcontra
+        by firstorder.
+
       intros M1 M2 RM N1 N2 RN A1 A2 RA B1 B2 RB f1 f2 Hf x1 x2 Hx.
       intros t1 (s1 & Hs1 & Hst1). revert x1 x2 Hx Hs1.
       induction Hst1; intros; eauto.
       - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
-        + assert (ref (pull RM RN RB (f2 b)) (pull RM RN RB (x2 >>= f2))).
-          transitivity (pull RM RN RB (ret b >>= f2)).
-          * rewrite ret_bind. reflexivity.
-          * apply has_ret in H1. repeat rstep.
-            subst. reflexivity.
-          * rewrite <- H0.  eauto.
-            eapply Hf; eauto.
+        + apply has_ret in H1. rewrite <- H1, ret_bind.
+          revert H. repeat rstep. eapply Hf; rauto.
         + repeat (econstructor; eauto).
       - apply Hx in Hs1. inversion Hs1; clear Hs1; subst.
         + repeat (econstructor; eauto).
@@ -1470,10 +1473,9 @@ Module Behavior.
         + eapply pull_tcons; eauto. econstructor; eauto.
           intros.
           change (has (pull RM RN RB (delta (x2 >>= f2) m2 n2)) t0).
-          cut (has (pull RM RN RB (delta x2 m2 n2 >>= f2)) t0); eauto.
-          repeat rstep. apply delta_bind.
+          rewrite <- delta_bind.
+          apply H4 in H. change (has (pull RM RN RA (delta x2 m2 n2)) s) in H.
           eapply IHHst1; eauto.
-          2: instantiate (1 := pull RM RN RA (delta x2 m2 n2)); cbn; eauto.
           red. reflexivity.
     Qed.
 
