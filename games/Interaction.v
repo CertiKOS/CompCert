@@ -117,6 +117,12 @@ Module Behavior.
   (** With some axioms, we get extensional equality for interactive
     computations. *)
 
+  Global Instance ref_preo M N A :
+    PreOrder (@ref M N A).
+  Proof.
+    firstorder.
+  Qed.
+
   Global Instance ref_antisym M N A :
     Antisymmetric _ eq (@ref M N A).
   Proof.
@@ -211,6 +217,35 @@ Module Behavior.
   Notation "x >>= f" := (bind f x) (at level 40, left associativity).
 
   (** *** Properties *)
+
+  Global Instance ret_ref :
+    Monotonic
+      (@ret)
+      (forallr -, forallr -, forallr -, - ==> ref).
+  Proof.
+    firstorder.
+  Qed.
+
+  Global Instance bind_trace_ref :
+    Monotonic
+      (@bind_trace)
+      (forallr -, forallr -, forallr -, forallr -,
+        (- ==> ref) ++> - ==> - ==> impl).
+  Proof.
+    intros M N A B f g Hfg s t Hst.
+    induction Hst; constructor; eauto.
+    firstorder.
+  Qed.
+
+  Global Instance bind_ref :
+    Monotonic
+      (@bind)
+      (forallr -, forallr -, forallr -, forallr -,
+        (- ==> ref) ++> ref ++> ref).
+  Proof.
+    repeat rstep. intros t (? & ? & Ht). cbn in *.
+    eapply bind_trace_ref in Ht; eauto.
+  Qed.
 
   Lemma ret_bind {M N A B} (f : A -> t M N B) (a : A) :
     bind f (ret a) = f a.
