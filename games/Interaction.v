@@ -700,6 +700,16 @@ Module Behavior.
     - eapply sup_lub; intro. repeat rstep. rewrite <- ref_r. subst. firstorder.
   Qed.
 
+  Lemma bind_bot {M N A} (x : t M N A) :
+    ref (x >>= fun _ => bot) x.
+  Proof.
+    (* rewrite <- (bind_ret x) at 2. rstep. *)
+    intros t (s & Hs & Hst). revert Hs.
+    cut (prefix t s); eauto using closed.
+    induction Hst; eauto.
+    inversion H.
+  Qed.
+
   (** ** Iteration *)
 
   Section REPEAT.
@@ -777,6 +787,39 @@ Module Behavior.
     Proof.
       rewrite star_rotate.
       apply star_unfold_l.
+    Qed.
+
+    Lemma star_ind_l {B} (g h : A -> t M N B) :
+      (forall a, ref (f a >>= h) (h a)) ->
+      (forall a, ref (g a) (h a)) ->
+      (forall a, ref (star a >>= g) (h a)).
+    Proof.
+      intros Hf Hg a.
+      setoid_rewrite bind_sup.
+      eapply sup_lub. intro n.
+      revert a.
+      induction n; intro a; cbn.
+      - mnorm. auto.
+      - rewrite <- bind_bind.
+        transitivity (f a >>= h); auto.
+        repeat rstep.
+        rewrite <- ref_r. subst. auto.
+    Qed.
+
+    Lemma star_ind_r (x : t M N A) :
+      ref (x >>= f) x ->
+      ref (x >>= star) x.
+    Proof.
+      intros H.
+      setoid_rewrite bind_sum; [ | repeat constructor].
+      eapply sup_lub. intro n.
+      induction n; cbn.
+      - mnorm. reflexivity.
+      - transitivity (x >>= (fun a => pow n a >>= f)).
+        { rstep. 2: reflexivity. intros a _ [ ]. rewrite pow_rotate. reflexivity. }
+        rewrite bind_bind.
+        transitivity (x >>= f); auto.
+        repeat rstep. subst. reflexivity.
     Qed.
 
     CoInductive diverges (a : A) : Prop :=
@@ -893,7 +936,7 @@ Module Behavior.
     intros; subst. inversion H0; auto.
   Qed.
 
-  (** ** Interaction *)
+  (** ** Interaction (§3.6) *)
 
   Program Definition interact {M N} (m : M) : t M N N :=
     {| has t := t = move m \/ exists n, t = tcons m n (val n) |}.
@@ -903,60 +946,6 @@ Module Behavior.
     - inversion Huv; subst; eauto.
     - inversion Huv; subst; eauto. inversion H1; subst; eauto.
   Qed.
-
-  (** XXX bad no divergence *)
-
-  (*
-  Section SUBST.
-    Context {A B C D X : Type} (f : A -> t C D B).
-
-    Fixpoint subst_trace (s : trace A B X) : t C D X :=
-      match s with
-        | val x => ret x
-        | move m => f m >>= fun _ => bot
-        | div => diverge
-        | undef => top
-        | tcons m n t' =>
-          f m >>= filter (eq n) >>= fun _ => subst_trace t'
-      end.
-
-    Program Definition subst (x : t A B X) :=
-      {| has t := exists s, has x s /\ has (subst_trace s) t |}.
-    Next Obligation.
-      intros x s t (u & Hu & Ht) Hst.
-      eauto using closed.
-    Qed.
-
-  End SUBST.
-
-  Lemma bind_bot {M N A} (x : t M N A) :
-    ref (x >>= fun _ => bot) x.
-  Proof.
-    (* rewrite <- (bind_ret x) at 2. rstep. *)
-    intros t (s & Hs & Hst). revert Hs.
-    cut (prefix t s); eauto using closed.
-    induction Hst; eauto.
-    inversion H.
-  Qed.
-
-  Lemma subst_interact {M N P Q} (m : M) (f : M -> t P Q N) :
-    subst f (interact m) = (f m).
-  Proof.
-    apply antisymmetry.
-    - intros t (s & Hs & Hst).
-      destruct Hs as [Hs | (n & Hs)]; subst.
-      + unfold subst_trace in Hst.
-        eapply bind_bot; eauto.
-      + unfold subst_trace in Hst.
-        admit.
-    - intros s Hs.
-      simpl.
-      admit.
-  Admitted.
-   *)
-
-
-  (** ** Interaction (§3.6) *)
 
   Program Definition delta {M N A} (x : t M N A) (m : M) (n : N) : t M N A :=
     {| has t := has x (tcons m n t) |}.
@@ -1018,6 +1007,14 @@ Module Behavior.
     destruct 1; eauto using closed.
   Qed.
 
+  Lemma rho_ret {M N P Q A} (v : A) :
+    rho (@ret M N A v) = @ret P Q A v.
+  Proof.
+    apply antisymmetry.
+    - destruct 1; inversion H; cbn; auto.
+    - destruct 1. repeat constructor.
+  Qed.
+
   Lemma decompose {M N A} (x : t M N A) :
     x = join (rho x) (next_move x >>= fun m => interact m >>= delta x m).
   Proof.
@@ -1046,6 +1043,112 @@ Module Behavior.
   Definition subst {M N P Q A} (f : M -> t P Q N) (x : t M N A) :=
     repeat (subst_step f) x >>= rho.
 
+  Lemma subst_interact {M N A} (x : t M N A) :
+    subst interact x = x.
+  Proof.
+    eapply antisymmetry.
+    - unfold subst.
+      unfold repeat.
+      (*
+      rewrite (decompose x) at 2.
+      pose (f x := join (M:=M) (N:=N) (rho x) (next_move (A:=A) x >>= fun m => interact m >>= delta x m)).
+      change (join _ _) with (f x).
+       *)
+      (*etransitivity; [ | eapply rho_decr].*)
+      change x with ((fun x => x) x) at 2. revert x.
+      eapply star_ind_l; eauto using rho_decr.
+      intros x. unfold plus.
+      rewrite bind_join.
+      eapply join_lub.
+      + unfold subst_step.
+        intros t (s & (u & (m & Hm & Hu) & Hus) & Hst). subst.
+        inversion Hus; clear Hus; subst.
+        destruct H0 as (u & Hu & Hus). cbn in *.
+        destruct Hu as [Hu | (n & Hu)]; subst.
+        * inversion Hus; clear Hus; subst.
+          inversion Hst; clear Hst; subst.
+          auto.
+        * inversion Hus; clear Hus; subst.
+          inversion H3; clear H3; subst. destruct H0.
+          inversion Hst; clear Hst; subst.
+          inversion H3; clear H3; subst. cbn in *.
+          auto.
+      + admit.
+    - intros t Ht. revert x Ht.
+      induction t; intros; cbn.
+      + exists (val x). split.
+        * exists 0. cbn. reflexivity.
+        * constructor. constructor. auto.
+      + exists (val x). split.
+        * exists 0. cbn. reflexivity.
+        * constructor. constructor. auto.
+      + exists (val x). split.
+        * exists 0. cbn. reflexivity.
+        * constructor. constructor. auto.
+      + exists (move m). split.
+        * exists 1. eexists. split.
+          -- left. cbn. exists (val m). split; eauto.
+             constructor. exists (move m). split; constructor. auto.
+          -- constructor.
+        * constructor.
+      + specialize (IHt (delta x m n)). simpl in IHt.
+        destruct IHt as (s & (k & Hs) & Hst); auto.
+        exists (tcons m n s). split; eauto.
+        exists (S k). cbn [pow].
+        exists (tcons m n (val (delta x m n))). split; eauto 10.
+        left. exists (val m). split. { econstructor. eauto using closed. }
+        constructor. exists (tcons m n (val n)). split; cbn; eauto.
+        constructor. constructor. cbn. auto.
+  Admitted.
+
+  Lemma next_move_interact {M N P Q} (m : M) :
+    @next_move M N P Q _ (interact m) = ret m.
+  Proof.
+    apply antisymmetry.
+    - intros t Ht. cbn in *.
+      destruct Ht as (m' & [Hm' | Hm'] & Ht); inversion Hm'; clear Hm'; subst.
+      + auto.
+      + inversion H.
+    - intros _ [ ]. cbn. eauto.
+  Qed.
+
+  Lemma delta_interact {M N} (m : M) (n : N) :
+    delta (interact m) m n = ret n.
+  Proof.
+    apply antisymmetry.
+    - intros t Ht. cbn in *.
+      destruct Ht as [Ht | [n' Ht]]; inversion Ht; clear Ht; subst.
+      reflexivity.
+    - intros _ [ ]. cbn. eauto.
+  Qed.
+
+  Global Instance funext_subrel {A B} :
+    Related (pointwise_relation A eq) (@eq (A -> B)) subrel.
+  Proof.
+  Admitted.
+
+  Global Instance bind_ref M N A B :
+    Proper (pointwise_relation A ref ==> ref ==> ref) (@bind M N A B).
+  Proof.
+    admit.
+  Admitted.
+
+  Lemma interact_subst {M N P Q} (f : M -> t P Q N) (m : M) :
+    subst f (interact m) = f m.
+  Proof.
+    apply antisymmetry.
+    - admit.
+    - unfold subst, repeat, star, sum, plus.
+      rewrite bind_sup, <- (sup_ub _ 1). cbn.
+      rewrite !bind_join, <- join_ub_l. mnorm.
+      unfold subst_step.
+      rewrite next_move_interact. mnorm.
+      rewrite <- bind_bind.
+      replace (fun a => ret (delta (interact m) m a) >>= rho) with (@ret P Q N).
+      + mnorm. reflexivity.
+      + apply functional_extensionality. intro n.
+        mnorm. rewrite delta_interact. rewrite rho_ret. reflexivity.
+  Admitted.
 
   (** ** Abstraction (trace relation) *)
 
