@@ -826,19 +826,65 @@ Module Behavior.
       | diverges_undef :
           has (f a) undef ->
           diverges a.
-
-    Program Definition divs a : t M N A :=
-      {|
-        has t := t = div /\ diverges a
-      |}.
-    Next Obligation.
-      intros a s t [Ht Ha] Hst; subst.
-      inversion Hst. auto.
-    Qed.
   End REPEAT.
+
+  Program Definition divs {M N P Q A B} (f : A -> t M N A) (a : A) : t P Q B :=
+    {|
+      has t := t = div /\ diverges f a
+    |}.
+  Next Obligation.
+    intros M N P Q A B f a s t [Ht Ha] Hst; subst.
+    inversion Hst. auto.
+  Qed.
+
+  Lemma divs_bind {M N P Q A B} (f : A -> t M N A) (g : A -> t P Q B) (a : A) :
+    divs f a >>= g = divs f a.
+  Proof.
+    apply antisymmetry.
+    - intros t (s & [Hs Ha] & Hst). subst.
+      inversion Hst; clear Hst; subst.
+      constructor; auto.
+    - intros t [Ht H]. subst.
+      exists div. split; constructor; auto.
+  Qed.
 
   Definition repeat {M N A} (f : A -> t M N A) :=
     star (plus f (divs f)).
+
+  Lemma repeat_unfold_l {M N A} (f : A -> t M N A) (a : A) :
+    repeat f a = join (ret a) (join (f a >>= repeat f) (divs f a)).
+  Proof.
+    unfold repeat.
+    rewrite star_unfold_l.
+    unfold plus at 2.
+    rewrite bind_join.
+    rewrite divs_bind.
+    reflexivity.
+  Qed.
+
+  Lemma repeat_ind_l {M N A B} (f : A -> t M N A) (g h : A -> t M N B) :
+    (forall a, ref (f a >>= h) (h a)) ->
+    (forall a, ref (g a) (h a)) ->
+    (forall a, ref (divs f a) (h a)) ->
+    (forall a, ref (repeat f a >>= g) (h a)).
+  Proof.
+    intros Hf Hg Hd. unfold repeat.
+    apply star_ind_l; eauto. intro a.
+    setoid_rewrite bind_join.
+    apply join_lub; auto.
+    rewrite divs_bind; auto.
+  Qed.
+
+  Lemma repeat_ind_r {M N A} (f : A -> t M N A) (x : t M N A) :
+    ref (x >>= f) x ->
+    ref (x >>= divs f) x ->
+    ref (x >>= repeat f) x.
+  Proof.
+    intros Hf Hd. unfold repeat.
+    apply star_ind_r.
+    rewrite bind_plus.
+    apply join_lub; auto.
+  Qed.
 
   Global Instance pow_r :
     Monotonic
@@ -878,9 +924,10 @@ Module Behavior.
   Global Instance divs_r :
     Monotonic
       (@divs)
-      (forallr -, forallr -, forallr R, (R ++> r _ _ R) ++> R ++> r _ _ R).
+      (forallr -, forallr -, forallr -, forallr -, forallr R, forallr S,
+         (R ++> r _ _ R) ++> R ++> r _ _ S).
   Proof.
-    intros M N A B R f g Hfg x y Hxy u (Hu & Ha). subst.
+    intros M N P Q A1 A2 R B1 B2 S f g Hfg x y Hxy u (Hu & Ha). subst.
     exists div. cbn. intuition auto.
     eapply diverges_r; eauto.
   Qed.
@@ -1044,18 +1091,8 @@ Module Behavior.
   Proof.
     eapply antisymmetry.
     - unfold subst.
-      unfold repeat.
-      (*
-      rewrite (decompose x) at 2.
-      pose (f x := join (M:=M) (N:=N) (rho x) (next_move (A:=A) x >>= fun m => interact m >>= delta x m)).
-      change (join _ _) with (f x).
-       *)
-      (*etransitivity; [ | eapply rho_decr].*)
       change x with ((fun x => x) x) at 2. revert x.
-      eapply star_ind_l; eauto using rho_decr.
-      intros x. unfold plus.
-      rewrite bind_join.
-      eapply join_lub.
+      apply repeat_ind_l; eauto using rho_decr; intros.
       + unfold subst_step.
         intros t (s & (u & (m & Hm & Hu) & Hus) & Hst). subst.
         inversion Hus; clear Hus; subst.
@@ -1069,7 +1106,16 @@ Module Behavior.
           inversion Hst; clear Hst; subst.
           inversion H3; clear H3; subst. cbn in *.
           auto.
-      + admit.
+      + intros t [Ht Hd]. subst.
+        destruct Hd as [a' Ha' Hd | H].
+        * cbn in Ha'. destruct Ha' as (s & (m & Hm & Hsm) & Ha'). subst.
+          inversion Ha'; clear Ha'; subst.
+          cbn in H0. destruct H0 as (s & [Hs | [n Hs]] & Ha');
+            inversion Ha'; congruence.
+        * cbn in H. destruct H as (s & (m & Hm & Hsm) & Ha'). subst.
+          inversion Ha'; clear Ha'; subst.
+          cbn in H0. destruct H0 as (s & [Hs | [n Hs]] & Ha');
+            inversion Ha'; congruence.
     - intros t Ht. revert x Ht.
       induction t; intros; cbn.
       + exists (val x). split.
@@ -1095,7 +1141,7 @@ Module Behavior.
         left. exists (val m). split. { econstructor. eauto using closed. }
         constructor. exists (tcons m n (val n)). split; cbn; eauto.
         constructor. constructor. cbn. auto.
-  Admitted.
+  Qed.
 
   Lemma next_move_interact {M N P Q} (m : M) :
     @next_move M N P Q _ (interact m) = ret m.
@@ -1118,16 +1164,121 @@ Module Behavior.
     - intros _ [ ]. cbn. eauto.
   Qed.
 
+  (*
   Global Instance funext_subrel {A B} :
     Related (pointwise_relation A eq) (@eq (A -> B)) subrel.
   Proof.
   Admitted.
+*)
+
+  Lemma rho_interact {M N P Q} (m : M) :
+    rho (interact m) = @bot P Q N.
+  Proof.
+    apply antisymmetry; auto using bot_ref.
+    intros t [v Hv | Hd | Hundef]; cbn in *; firstorder congruence.
+  Qed.
+
+  Lemma join_bot_l {M N A} (x : t M N A) :
+    join bot x = x.
+  Proof.
+    apply antisymmetry; firstorder.
+  Qed.
+
+  Lemma join_bot_r {M N A} (x : t M N A) :
+    join x bot = x.
+  Proof.
+    apply antisymmetry; firstorder.
+  Qed.
+
+  Lemma next_move_ret {M N P Q A} a :
+    @next_move M N P Q A (ret a) = bot.
+  Proof.
+    apply antisymmetry; try firstorder.
+    intros t Ht. cbn in Ht. firstorder congruence.
+  Qed.
+
+  Lemma bot_bind {M N A B} (f : A -> t M N B) :
+    bot >>= f = bot.
+  Proof.
+    apply antisymmetry; destruct 1. cbn in *. tauto.
+  Qed.
+
+  Lemma div_subst_step_ret {K L M N P Q A B} (f : M -> t P Q N) (a : A) :
+    divs (subst_step f) (ret a) = @bot K L B.
+  Proof.
+    apply antisymmetry; auto using bot_ref.
+    intros t [Ht H]. subst. exfalso.
+    destruct H as [a' Ha' H | H].
+    - cbn in Ha'. firstorder congruence.
+    - cbn in H. firstorder congruence.
+  Qed.
+
+  (*
+  Lemma div_subst_step_interact {K L M N P Q B} (f : M -> t P Q N) m :
+    divs (subst_step f) (interact m) = @bot K L B.
+  Proof.
+    apply antisymmetry; auto using bot_ref.
+    intros t [Ht H]. subst. exfalso.
+    destruct H as [a' Ha' H | H].
+    - admit.
+    - cbn in H. firstorder try congruence.
+      inversion H; clear H; subst.
+      inversion H0; clear H0; subst.
+  Qed.
+*)
+
+  Lemma subst_step_ret {M N P Q A} (f : M -> t P Q N) (a : A) :
+    repeat (subst_step f) (ret a) = ret (ret a).
+  Proof.
+    rewrite repeat_unfold_l.
+    rewrite div_subst_step_ret, join_bot_r.
+    unfold subst_step at 2.
+    rewrite next_move_ret, !bot_bind.
+    rewrite join_bot_r. reflexivity.
+  Qed.
 
   Lemma interact_subst {M N P Q} (f : M -> t P Q N) (m : M) :
     subst f (interact m) = f m.
   Proof.
     apply antisymmetry.
-    - admit.
+    - unfold subst.
+      rewrite repeat_unfold_l.
+      rewrite !bind_join.
+      repeat apply join_lub; mnorm.
+      + rewrite rho_interact. apply bot_ref.
+      + unfold subst_step at 2.
+        rewrite next_move_interact.
+        rewrite ret_bind.
+        rewrite <- (bind_bind _ _ (f m)). setoid_rewrite ret_bind.
+        setoid_rewrite delta_interact.
+        setoid_rewrite subst_step_ret.
+        rewrite <- bind_bind.
+        setoid_rewrite ret_bind.
+        setoid_rewrite rho_ret.
+        rewrite bind_ret.
+        reflexivity.
+      + intros t Ht. cbn in Ht. firstorder subst.
+        destruct H1 as [a' Ha' Hd | Hundef].
+        * cbn in *. firstorder (congruence || subst).
+          inversion H; clear H; subst.
+          inversion H1; clear H1; subst.
+          cbn in *. firstorder subst.
+          setoid_rewrite delta_interact in H1.
+          inversion H1; clear H1; subst.
+          -- cbn in *. inversion H2; clear H2; subst.
+             destruct Hd as [a' Ha' Hd | Hundef].
+             ++ cbn in *. firstorder congruence.
+             ++ cbn in *. firstorder congruence.
+          -- eauto using closed.
+        * cbn in Hundef. firstorder subst.
+          -- inversion H; clear H; subst.
+             inversion H1; clear H1; subst.
+             setoid_rewrite delta_interact in H2.
+             cbn in *. firstorder subst.
+             inversion H1; clear H1; subst.
+             ++ cbn in *. congruence.
+             ++ eauto using closed.
+          -- congruence.
     - unfold subst, repeat, star, sum, plus.
       rewrite bind_sup, <- (sup_ub _ 1). cbn.
       rewrite !bind_join, <- join_ub_l. mnorm.
@@ -1138,7 +1289,14 @@ Module Behavior.
       + mnorm. reflexivity.
       + apply functional_extensionality. intro n.
         mnorm. rewrite delta_interact. rewrite rho_ret. reflexivity.
-  Admitted.
+  Qed.
+
+  Lemma subst_subst {M N P Q R S A} (x : t M N A) (f : M -> t P Q N) (g : P -> t R S Q) :
+    subst (fun a => subst g (f a)) x = subst g (subst f x).
+  Proof.
+    unfold subst.
+    unfold subst_step.
+  Abort.
 
   (** ** Abstraction (trace relation) *)
 
