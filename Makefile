@@ -23,10 +23,10 @@ endif
 
 DIRS=lib common $(ARCHDIRS) backend cfrontend driver \
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
-  cparser cparser/MenhirLib cklr games
+  cparser cparser/MenhirLib cklr games intm
 
 RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight \
-  cparser cklr games
+  cparser cklr games intm
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) -R coqrel coqrel
 
@@ -90,6 +90,17 @@ GAMES=\
   Res.v \
   HComp.v \
   CompCertSemantics.v \
+
+# Interaction Monad
+
+INTM=\
+  IntmDef.v \
+  IntmTactics.v \
+  IntmIter.v \
+  IntmDecomp.v \
+  IntmSubst.v \
+  IntmAbs.v \
+  Interaction.v \
 
 # Compcert Kripke Logical Relations
 
@@ -156,7 +167,7 @@ DRIVER=Compopts.v Compiler.v Complements.v
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(CKLR) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER) $(GAMES)
+  $(PARSERVALIDATOR) $(PARSER) $(GAMES) $(INTM)
 
 # Generated source files
 
