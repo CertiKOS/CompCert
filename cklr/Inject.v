@@ -55,7 +55,7 @@ Qed.
 
 Instance prop_holds_rstep P:
   PropHolds P ->
-  RStep True P | 20.
+  RStep True P | 25.
 Proof.
   firstorder.
 Qed.

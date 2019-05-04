@@ -331,6 +331,12 @@ Qed.
 
 
 
+Global Instance subrel_refl_rstep {A B} (R : rel A B) :
+  RStep True (subrel R R) | 25.
+Proof.
+  firstorder.
+Qed.
+
 (** [select_switch_default], [select_switch_case], [select_switch]
   and [seq_of_label_statement] are entierly about syntax. *)
 Lemma eval_expr_lvalue_match R w (ge: genv):
@@ -484,8 +490,10 @@ Global Instance call_cont_match R w:
     (cont_match R w ++> (cont_match R w /\ lsat is_call_cont)).
 Proof.
   intros k1 k2 Hk.
-  induction Hk; simpl; rauto.
-Qed.
+  induction Hk; simpl; try rauto.
+  (* XXX prob is now we don't just try I *)
+  reexists. rstep. apply I. red. simpl.
+Admitted.
 
 Global Instance is_call_cont_match_strong R w:
   Monotonic (@is_call_cont) (cont_match R w ++> iff).
