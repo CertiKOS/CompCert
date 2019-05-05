@@ -19,7 +19,7 @@ Module Behavior.
     mu x >>= fun m => f m >>= fun n => ret (delta x m n).
 
   Definition subst {M N P Q A} (f : M -> t P Q N) (x : t M N A) :=
-    repeat (subst_step f) x >>= fun y => (rho y \/ omega y)%beh.
+    repeat (subst_step f) x >>= fun y => rho y.
 
   Lemma eta {A B} (f : A -> B) :
     (fun a => f a) = f.
@@ -28,10 +28,9 @@ Module Behavior.
   Qed.
 
   Hint Rewrite @eta : monad.
-  Ltac monad := repeat mnorm; auto with monad.
 
   Lemma divs_flat {M N P Q A B} f :
-    @divs M N P Q A B f = @divs M N P Q A B (fun a => rho (f a)).
+    @divs M N P Q A B f = @divs M N P Q A B (fun a => nu (f a)).
   Proof.
     apply functional_extensionality. intro a.
     apply antisymmetry.
@@ -57,10 +56,9 @@ Module Behavior.
       + unfold subst_step.
         rewrite (decompose a) at 2.
         monad.
-      + auto using rho_decr, omega_decr with monad.
+      + monad.
       + unfold subst_step.
-        rewrite divs_flat.
-        repeat mnorm.
+        rewrite divs_flat. mnorm.
         intros t Ht. destruct Ht as [Ht Hd]. subst.
         destruct Hd; cbn in *; eauto using closed.
     - intros t Ht. unfold subst, repeat.
@@ -89,7 +87,7 @@ Module Behavior.
   Qed.
 
   Lemma div_subst_step_interact {K L M N P Q B} (f : M -> t P Q N) m :
-    ref (divs (subst_step f) (interact m)) (@ups _ _ K L _ B (f m)).
+    ref (divs (subst_step f) (interact m)) (@phi _ _ K L _ B (f m)).
   Proof.
     intros t [Ht H]. subst. cbn.
     destruct H as [a' Ha' H].
@@ -129,18 +127,15 @@ Module Behavior.
       rewrite !bind_join.
       repeat apply join_lub.
       + monad.
-      + rewrite div_subst_step_interact.
-        monad.
-      + unfold subst_step at 2.
-        set (resid := fun y => (@rho M N P Q N y \/ @omega M N P Q N N y)%beh).
-        mnorm. subst resid. simpl. monad.
+      + rewrite div_subst_step_interact. monad.
+      + unfold subst_step at 2. monad.
     - unfold subst, repeat.
       rewrite <- (pow_star 1). cbn.
       unfold subst_step. monad.
   Qed.
 
 Lemma ref_ups_mu {M N P Q A} (x : t M N A) :
-  @ref P Q _ (ups x) (mu x).
+  @ref P Q _ (phi x) (mu x).
 Proof.
   firstorder.
 Qed.
