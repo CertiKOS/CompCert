@@ -11,14 +11,27 @@ Require Import IntmDecomp.
 Require Import IntmAbs.
 Require Import Behaviors.
 
+Import IntmDef.Behavior.
+Import IntmIter.Behavior.
+Import IntmAbs.Behavior.
+
+
+(** * Languages *)
+
 Definition sem li :=
   query li -> beh (query li) (reply li) (reply li).
 
 Bind Scope behavior_scope with sem.
 
-Import IntmDef.Behavior.
-Import IntmIter.Behavior.
-Import IntmAbs.Behavior.
+Class Semof (li : language_interface) (P : Type) :=
+  {
+    semof : P -> sem li;
+  }.
+
+Notation "〚 p 〛" := (semof p).
+
+
+(** * Embedding small-step semantics *)
 
 Section EMBEDDING.
   Context {li} (L : Smallstep.semantics li).
@@ -38,12 +51,6 @@ Section EMBEDDING.
      (q <- choose (at_external L s);
       r <- interact q;
       pick (after_external L s r))).
-
-  Definition semof (q : query li) : beh (query li) (reply li) (reply li) :=
-    s <- pick (initial_state L q);
-    z <- repeat istep s;
-    _ <- assert (safe L z);
-    choose (final_state L z).
 
   Lemma assert_true {M N} (P : Prop) :
     P -> @assert M N P = ret tt.
@@ -167,6 +174,15 @@ End EMBEDDING.
 Hint Rewrite @assert_true @assert_false using eauto : monad.
 Hint Immediate safe_star.
 
+Global Instance smallstep_semof li : Semof li (semantics li) :=
+  {
+    semof L q :=
+      (s <- pick (initial_state L q);
+       z <- repeat (istep L) s;
+       _ <- assert (safe L z);
+       choose (final_state L z))%beh
+  }.
+
 Section STAR.
 
   Lemma star_ub {M N A} (k : nat) (f : A -> t M N A) (a : A) :
@@ -289,13 +305,13 @@ Section SOUNDNESS.
       red. rewrite <- join_pull, pull_top. monad.
   Qed.
 
+  Definition ccsim : rel (sem li2) (sem li1) :=
+    |= k1 flip (match_query cc) ++> k1 SIM (k1 flip (match_reply cc)).
+
   Lemma soundness :
-    Related
-      (semof L2)
-      (semof L1)
-      (|= k1 flip (match_query cc) ++> k1 SIM (k1 flip (match_reply cc))).
+    Related (semof L2) (semof L1) ccsim.
   Proof.
-    intros w q1 q2 Hq. unfold semof.
+    intros w q1 q2 Hq. cbn.
     rstep. rstep; [ | repeat (rstep; eauto using @bsim_initial_states) ].
     intros s2 s1 Hs. do 2 red in Hq.
     rewrite <- (bind_repeat_star (istep L1)). mnorm.
