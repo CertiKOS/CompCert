@@ -73,7 +73,14 @@ Module Behavior.
     inversion H.
   Qed.
 
-  Hint Rewrite @bind_join @bind_sup @bind_plus @bind_bot_l : monad.
+  Lemma top_bind {M N A B} (f : A -> beh M N B) :
+    top >>= f = top.
+  Proof.
+    apply antisymmetry; try firstorder.
+    intros t _. exists undef. firstorder.
+  Qed.
+
+  Hint Rewrite @bind_join @bind_sup @bind_plus @bind_bot_l @top_bind : monad.
   Hint Rewrite @bind_sum using repeat constructor : monad.
 
 End Behavior.

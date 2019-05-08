@@ -131,7 +131,7 @@ Module Behavior.
 
   Hint Rewrite @divs_bind : monad.
 
-  Definition inf {M N A B} (f : A -> t M N A) (a : A) : t M N B :=
+  Definition omega {M N A B} (f : A -> t M N A) (a : A) : t M N B :=
     star f a >>= divs f.
 
   Definition repeat {M N A} (f : A -> t M N A) (a : A) : t M N A :=
@@ -245,5 +245,5 @@ Module Behavior.
 End Behavior.
 
 Notation "x '^*'" := (Behavior.star x) (at level 30) : behavior_scope.
-Notation "x '^ω'" := (Behavior.inf x) (at level 30) : behavior_scope.
+Notation "x '^ω'" := (Behavior.omega x) (at level 30) : behavior_scope.
 Notation "x '^∞'" := (Behavior.repeat x) (at level 30) : behavior_scope.

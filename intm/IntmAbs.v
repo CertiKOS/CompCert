@@ -140,6 +140,12 @@ Module Behavior.
       eapply join_lub; rstep; auto using join_ub_l, join_ub_r.
     Qed.
 
+    Lemma sup_pull {I} (x : I -> _) :
+      ref (sup (fun i => pull (x i))) (pull (sup x)).
+    Proof.
+      eapply sup_lub; intro; rstep; auto using sup_ub.
+    Qed.
+
     Lemma pull_top :
       pull top = top.
     Proof.
@@ -245,8 +251,10 @@ Module Behavior.
     Lemma pull_ret b :
       pull (ret b) = choose (fun a => R a b).
     Proof.
-    Admitted.
-
+      apply antisymmetry.
+      - inversion 1; clear H; subst; inversion H0; clear H0; subst; eauto.
+      - intros t (a & Ha & Ht); subst; eauto.
+    Qed.
   End SIM.
 
   Global Instance pull_ref_params :
@@ -364,6 +372,18 @@ and step through each goal with "rstep" *)
       intros M1 M2 RM N1 N2 RN X1 X2 RX.
       intros x1 x2 Hx y1 y2 Hy. unfold sim in *.
       rewrite Hx, Hy. apply join_pull.
+    Qed.
+
+    Global Instance sup_sim :
+      Monotonic
+        (@sup)
+        (forallr RM : klr W, forallr RN : klr W, forallr RX : rel, forallr -,
+          (- ==> sim RM RN RX) ++> sim RM RN RX).
+    Proof.
+      intros M1 M2 RM N1 N2 RN X1 X2 RX I.
+      intros f1 f2 Hf. unfold sim.
+      apply sup_lub. intros i. specialize (Hf i). red in Hf. rewrite Hf.
+      rstep. monad.
     Qed.
 
     Global Instance guard_sim :
