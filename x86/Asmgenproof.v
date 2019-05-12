@@ -1173,6 +1173,9 @@ Theorem transf_program_correct:
 Proof.
   eapply forward_simulation_star with (measure := measure).
   apply senv_preserved.
+  { destruct 1. cbn. rewrite H0.
+    apply (Genv.block_is_internal_transf_partial TRANSF).
+    clear. intros. destruct f, tf; try discriminate. auto. }
   eexact transf_initial_states.
   eexact transf_external.
   eexact transf_final_states.

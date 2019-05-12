@@ -615,6 +615,15 @@ Proof.
   discriminate.
 Qed.
 
+Lemma globalenv_fundef_is_internal p :
+  genv_fundef_is_internal (globalenv p) = Fii.
+Proof.
+  unfold globalenv. set (ge0 := empty_genv (prog_public p)).
+  generalize (prog_defs p) ge0 (eq_refl : genv_fundef_is_internal ge0 = Fii).
+  clear. intros l. pattern l. revert l. apply rev_ind; auto.
+  intros. unfold add_globals. rewrite fold_left_app; cbn. eauto.
+Qed.
+
 (** ** Coercing a global environment into a symbol environment *)
 
 Definition to_senv (ge: t) : Senv.t :=
@@ -1797,6 +1806,20 @@ Proof.
   eapply alloc_globals_match; eauto. apply progmatch.
 Qed.
 
+Theorem block_is_internal_match:
+  (forall c f tf, match_fundef c f tf ->
+    fundef_is_internal tf = true ->
+    fundef_is_internal f = true) ->
+  forall b,
+    block_is_internal (globalenv tp) b = true ->
+    block_is_internal (globalenv p) b = true.
+Proof.
+  intros Hmatch b.
+  unfold block_is_internal, find_funct_ptr.
+  destruct (find_def_match_2 b) as [? ? [ | ] | ]; cbn; try discriminate.
+  rewrite !globalenv_fundef_is_internal. eauto.
+Qed.
+
 End MATCH_PROGRAMS.
 
 (** Special case for partial transformations that do not depend on the compilation unit *)
@@ -1847,6 +1870,17 @@ Proof.
   eapply (init_mem_match progmatch).
 Qed.
 
+Theorem block_is_internal_transf_partial:
+  (forall f tf, transf f = OK tf ->
+    fundef_is_internal tf = true ->
+    fundef_is_internal f = true) ->
+  forall b,
+    block_is_internal (globalenv tp) b = true ->
+    block_is_internal (globalenv p) b = true.
+Proof.
+  intro. apply (block_is_internal_match progmatch); auto.
+Qed.
+
 End TRANSFORM_PARTIAL.
 
 (** Special case for total transformations that do not depend on the compilation unit *)
@@ -1893,6 +1927,18 @@ Theorem init_mem_transf:
   forall m, init_mem p = Some m -> init_mem tp = Some m.
 Proof.
   eapply (init_mem_match progmatch).
+Qed.
+
+Theorem block_is_internal_transf:
+  (forall f,
+    fundef_is_internal (transf f) = true ->
+    fundef_is_internal f = true) ->
+  forall b,
+    block_is_internal (globalenv tp) b = true ->
+    block_is_internal (globalenv p) b = true.
+Proof.
+  intro. apply (block_is_internal_match progmatch).
+  intros; subst; auto.
 Qed.
 
 End TRANSFORM_TOTAL.

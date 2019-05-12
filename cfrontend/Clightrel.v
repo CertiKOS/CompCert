@@ -633,6 +633,7 @@ Proof.
                              klr_diam tt (state_match R) w s1 s2).
   apply forward_simulation_step with ms.
   - reflexivity.
+  - destruct 1. auto.
   - intros w _ _ [id sg vargs1 vargs2 m1 m2 Hvargs Hm] s1 Hs1.
     inv Hs1. simpl in *. subst.
     assert (genv_valid R w (globalenv p)) by (eapply cklr_wf; eauto).

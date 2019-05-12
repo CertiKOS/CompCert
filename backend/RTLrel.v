@@ -288,6 +288,7 @@ Proof.
                             genv_valid R w (Genv.globalenv p)).
   eapply forward_simulation_step with ms.
   - reflexivity.
+  - destruct 1. cbn. auto.
   - intros w _ _ [id sg vargs1 vargs2 m1 m2 Hvargs Hm].
     intros s1 Hs1. inv Hs1. simpl in *. subst.
     assert (genv_valid R w (Genv.globalenv p)) by (eapply cklr_wf; eauto).

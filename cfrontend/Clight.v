@@ -737,6 +737,7 @@ Definition semantics1 (p: program) :=
   let ge := globalenv p in
   Semantics_gen li_c
     step1
+    (query_is_internal li_c ge)
     (initial_state ge)
     (at_external ge)
     after_external
@@ -747,6 +748,7 @@ Definition semantics2 (p: program) :=
   let ge := globalenv p in
   Semantics_gen li_c
     step2
+    (query_is_internal li_c ge)
     (initial_state ge)
     (at_external ge)
     after_external

@@ -1155,6 +1155,8 @@ Theorem transf_program_correct:
 Proof.
   apply forward_simulation_opt with (match_states := fun _ => match_states) (measure := measure).
   apply senv_preserved.
+  { destruct 1. cbn. apply (Genv.block_is_internal_match TRANSF).
+    destruct 1 as (? & ? & ?). destruct f, tf; try discriminate. auto. }
   apply sel_initial_states; auto.
   eauto using sel_external.
   apply sel_final_states; auto.

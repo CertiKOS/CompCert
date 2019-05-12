@@ -478,6 +478,7 @@ Record semantics li: Type := Semantics_gen {
   state: Type;
   genvtype: Type;
   step : genvtype -> state -> trace -> state -> Prop;
+  valid_query: query li -> bool;
   initial_state: query li -> state -> Prop;
   at_external: state -> query li -> Prop;
   after_external: state -> reply li -> state -> Prop;
@@ -498,6 +499,7 @@ Definition Semantics li {state funtype vartype: Type}
   {| state := state;
      genvtype := Genv.t funtype vartype;
      step := step;
+     valid_query := query_is_internal li globalenv;
      initial_state := initial_state;
      final_state := final_state;
      at_external := at_external;
@@ -529,6 +531,10 @@ Record fsim_properties (L1: semantics li1) (L2: semantics li2)
                        (index: Type) (order: index -> index -> Prop)
                        (match_states: ccworld ccB -> index -> state L1 -> state L2 -> Prop) : Prop := {
     fsim_order_wf: well_founded order;
+    fsim_match_valid_queries:
+      forall w q1 q2, match_query ccB w q1 q2 ->
+      valid_query L2 q2 = true ->
+      valid_query L1 q1 = true;
     fsim_match_initial_states:
       forall w q1 q2, match_query ccB w q1 q2 ->
       forall s1, initial_state L1 q1 s1 ->
@@ -605,6 +611,11 @@ Hypothesis public_preserved:
 
 Variable match_states: ccworld ccB -> state L1 -> state L2 -> Prop.
 
+Hypothesis match_valid_query:
+  forall w q1 q2, match_query ccB w q1 q2 ->
+  valid_query L2 q2 = true ->
+  valid_query L1 q1 = true.
+
 Hypothesis match_initial_states:
   forall w q1 q2, match_query ccB w q1 q2 ->
   forall s1, initial_state L1 q1 s1 ->
@@ -660,6 +671,7 @@ Lemma forward_simulation_star_wf: forward_simulation L1 L2.
 Proof.
   apply Forward_simulation with order (fun w idx s1 s2 => idx = s1 /\ match_states w s1 s2);
   constructor.
+- auto.
 - auto.
 - intros. exploit match_initial_states; eauto.
   intros [s2 [A B]].
@@ -847,6 +859,7 @@ Remark forward_simulation_identity {li}:
 Proof.
   intros. apply forward_simulation_step with (fun w s1 s2 => s2 = s1); intros.
 - auto.
+- destruct H. auto.
 - exists s1; auto.
   apply match_query_cc_id in H; split; congruence.
 - subst s2; auto.
@@ -881,6 +894,9 @@ Proof.
 - (* well founded *)
   unfold ff_order. apply wf_lex_ord. apply wf_clos_trans.
   eapply fsim_order_wf; eauto. eapply fsim_order_wf; eauto.
+- (* valid queries *)
+  intros w q1 q3 (q2 & Hq12 & Hq23).
+  eauto using @fsim_match_valid_queries.
 - (* initial states *)
   subst ff_match_states. simpl.
   inv_compose_query.
@@ -1047,6 +1063,11 @@ Context (match_states: ccworld cc -> index -> state L1 -> state L2 -> Prop).
 
 Record bsim_properties: Prop := {
     bsim_order_wf: well_founded order;
+    bsim_match_valid_queries:
+      forall w q1 q2,
+        match_query cc w q1 q2 ->
+        valid_query L2 q2 = true ->
+        valid_query L1 q1 = true;
     bsim_initial_states:
       forall w q1 q2,
         match_query cc w q1 q2 ->
@@ -1130,6 +1151,12 @@ Hypothesis public_preserved:
   forall id, Senv.public_symbol (symbolenv L2) id = Senv.public_symbol (symbolenv L1) id.
 
 Variable match_states: ccworld cc -> state L1 -> state L2 -> Prop.
+
+Hypothesis match_valid_queries:
+  forall w q1 q2,
+    match_query cc w q1 q2 ->
+    valid_query L2 q2 = true ->
+    valid_query L1 q1 = true.
 
 Hypothesis match_initial_states:
   forall w q1 q2,
@@ -1407,6 +1434,9 @@ Proof.
   constructor.
 - (* well founded *)
   unfold bb_order. apply wf_lex_ord. apply wf_clos_trans. eapply bsim_order_wf; eauto. eapply bsim_order_wf; eauto.
+- (* valid queries *)
+  intros w q1 q3 (q2 & Hq12 & Hq23).
+  eauto using bsim_match_valid_queries.
 - (* initial states *)
   intros [w w'] q1 q3 (q2 & Hq12 & Hq23).
   eauto using compose_bsim_match_cont, bsim_initial_states.
@@ -1737,6 +1767,8 @@ Proof.
   apply Backward_simulation with _ f2b_order (f2b_match_states L1 L2 match_states); constructor.
 - (* well founded *)
   apply wf_f2b_order.
+- (* valid queries *)
+  eauto using fsim_match_valid_queries.
 - (* initial states *)
   intros. split.
   + intros. exploit (fsim_match_initial_states FS); eauto.

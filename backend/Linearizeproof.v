@@ -790,6 +790,10 @@ Theorem transf_program_correct:
 Proof.
   eapply forward_simulation_star with (match_states := fun _ => match_states).
   apply senv_preserved.
+  {
+    destruct 1. apply (Genv.block_is_internal_transf_partial TRANSF); auto.
+    intros f tf Htf. destruct f, tf; try discriminate. auto.
+  }
   eexact transf_initial_states.
   eauto using transf_external.
   eexact transf_final_states.

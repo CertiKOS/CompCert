@@ -99,6 +99,7 @@ Proof.
   intros HL.
   apply forward_simulation_step with (match_states := fun w => rel_inv (IS w)).
   - auto.
+  - intros q q1 q2 (Hq & Hq1 & Hq2) H. congruence.
   - intros q q1 q2 (Hq & Hq1 & Hq2) s Hs. subst.
     exists s. split; eauto.
     constructor.
@@ -225,6 +226,7 @@ Section RESTRICT.
       state := query li * state L;
       genvtype := genvtype L;
       step := restrict_step;
+      valid_query := valid_query L;
       initial_state := restrict_initial_state;
       at_external := restrict_at_external;
       after_external := restrict_after_external;
@@ -241,6 +243,7 @@ Section RESTRICT.
     set (ms w s s' := (w, s) = s' /\ IS w s).
     apply forward_simulation_step with (match_states := ms).
     - reflexivity.
+    - intros q q1 q2 (Hq & Hq1 & Hq2) H. cbn in *. congruence.
     - intros q q1 q2 (Hq & Hq1 & Hq2) s Hs. subst.
       assert (IS q s) by (eapply preserves_initial_state; eauto).
       exists (q, s). split; constructor; eauto.
@@ -303,6 +306,7 @@ Section EXPAND.
       state := query li * state L;
       genvtype := genvtype L;
       step := expand_step;
+      valid_query := valid_query L;
       initial_state := expand_initial_state;
       at_external := expand_at_external;
       after_external := expand_after_external;
@@ -319,6 +323,7 @@ Section EXPAND.
     set (ms w s s' := s = (w, s') /\ IS w s').
     apply forward_simulation_step with (match_states := ms).
     - reflexivity.
+    - intros q q1 q2 (Hq & Hq1 & Hq2) H. cbn in *. congruence.
     - intros q q1 q2 (Hq & Hq1 & Hq2) _ [s Hqs]. subst q1 q2 ms.
       exists s; intuition eauto.
       eapply preserves_initial_state; eauto.

@@ -2350,6 +2350,8 @@ Theorem transl_program_correct:
 Proof.
   eapply forward_simulation_star with (match_states := match_states); eauto.
   apply senv_preserved.
+  { destruct 1. cbn. apply (Genv.block_is_internal_transf_partial TRANSL); auto.
+    intros f tf Htf. destruct f, tf; try discriminate; auto. }
   eexact transl_initial_states.
   eexact transl_external.
   eexact transl_final_states.

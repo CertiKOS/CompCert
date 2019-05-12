@@ -2746,6 +2746,9 @@ Proof.
   eapply restrict_fsim, wt_semantics, wt_prog.
   eapply forward_simulation_plus with (match_states := ms).
 - apply senv_preserved.
+- intros w [id1 ] [id2 ] [Hid _]. cbn in *. subst.
+  eapply (Genv.block_is_internal_transf_partial TRANSF).
+  intros f tf Htf. destruct f, tf; try discriminate. auto.
 - intros w q1 q2 Hq _ [s1 Hs Hq1 Hs1].
   exploit transf_initial_states; eauto. intros [st2 [A B]].
   exists st2; split; auto. red; eauto.

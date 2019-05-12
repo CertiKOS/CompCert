@@ -2611,6 +2611,9 @@ Proof.
   pose (ms' := fun w '(q, s1) s2 => ms w s1 s2 /\ cq_sg q = alloc_sg (snd w)).
   eapply forward_simulation_plus with (match_states := ms').
   - apply senv_preserved.
+  - intros w q1 q3 (q2 & Hq12 & Hq23). destruct Hq12. inversion Hq23; subst.
+    cbn. apply (Genv.block_is_internal_transf_partial TRANSF). clear.
+    intros f tf Htf Hf. destruct f, tf; try discriminate. auto.
   - intros w q1 q2 Hq _ [st1 Hst1 Hq1wt Hst1wt].
     eapply initial_states_simulation; eauto.
   - intros w qst1 st2 q1 Hst Hq1.

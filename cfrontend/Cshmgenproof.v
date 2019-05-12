@@ -1823,6 +1823,10 @@ Theorem transl_program_correct:
 Proof.
   eapply forward_simulation_plus with (match_states := fun _ => match_states).
   apply senv_preserved.
+  {
+    intros [ ] q _ [ ] H. apply (Genv.block_is_internal_match TRANSL); auto.
+    destruct 1; try discriminate. cbn. auto.
+  }
   intros; eapply transl_initial_states; eauto.
   intros; eapply transl_external; eauto.
   intros; eapply transl_final_states; eauto.

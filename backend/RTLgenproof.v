@@ -1625,6 +1625,8 @@ Theorem transf_program_correct:
 Proof.
   eapply forward_simulation_star_wf with (match_states := fun _ => match_states) (order := lt_state).
   apply senv_preserved.
+  { destruct 1. cbn. apply (Genv.block_is_internal_transf_partial TRANSL).
+    intros. destruct f, tf; try discriminate. auto. }
   eexact transl_initial_states.
   eauto using transl_external.
   eexact transl_final_states.

@@ -101,6 +101,7 @@ INTM=\
   IntmSubst.v \
   IntmAbs.v \
   Interaction.v \
+  SmallstepInteraction.v \
 
 # Compcert Kripke Logical Relations
 

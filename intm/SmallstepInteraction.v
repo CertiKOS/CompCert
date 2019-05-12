@@ -177,7 +177,8 @@ Hint Immediate safe_star.
 Global Instance smallstep_semof li : Semof li (semantics li) :=
   {
     semof L q :=
-      (s <- pick (initial_state L q);
+      (_ <- guard (valid_query L q = true);
+       s <- pick (initial_state L q);
        z <- repeat (istep L) s;
        _ <- assert (safe L z);
        choose (final_state L z))%beh
@@ -311,8 +312,9 @@ Section SOUNDNESS.
   Lemma soundness :
     Related (semof L2) (semof L1) ccsim.
   Proof.
-    intros w q1 q2 Hq. cbn.
-    rstep. rstep; [ | repeat (rstep; eauto using @bsim_initial_states) ].
+    intros w q1 q2 Hq. cbn. rstep.
+    rstep; [intros _ _ _ | rstep; red; eauto using @bsim_match_valid_queries ].
+    rstep; [ | repeat (rstep; eauto using @bsim_initial_states) ].
     intros s2 s1 Hs. do 2 red in Hq.
     rewrite <- (bind_repeat_star (istep L1)). mnorm.
     rstep.

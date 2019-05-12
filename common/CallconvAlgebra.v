@@ -121,6 +121,9 @@ Proof.
   eexists I lt R'.
   destruct H.
   split; eauto.
+  - intros w q1 q2 Hq.
+    destruct (HB w q1 q2 Hq) as (Hq' & Hr').
+    eapply fsim_match_valid_queries; eauto.
   - intros w q1 q2 Hq s1 Hs1.
     destruct (HB w q1 q2 Hq) as (Hq' & Hr').
     edestruct fsim_match_initial_states as (i & s2 & Hs2 & Hs); eauto.
@@ -360,6 +363,7 @@ Section JOIN.
         constructor. inversion 1. subst. eauto.
       + induction (fsim_order_wf H2 x).
         constructor. inversion 1. subst. eauto.
+    - intros [w|w] q1 q2 Hq; simpl in *; eauto using fsim_match_valid_queries.
     - intros [w|w] q1 q2 Hq s1 Hs1; simpl in *.
       edestruct (fsim_match_initial_states H1) as (i & s2 & Hs2 & Hs); eauto.
       edestruct (fsim_match_initial_states H2) as (i & s2 & Hs2 & Hs); eauto.
@@ -632,6 +636,8 @@ Section CC_POW_STAR_FSIM.
     unfold simulation_holds in Hsc.
     split.
     - apply pow_star_order_wf.
+    - intros [n w] q1 q2 Hq. simpl in *.
+      eauto using fsim_match_valid_queries.
     - intros [n w] q1 q2 Hq s1 Hs1. simpl in *.
       edestruct @fsim_match_initial_states as (i & s2 & Hs2 & Hs); eauto.
       exists (existT _ n i), s2. split; auto.
