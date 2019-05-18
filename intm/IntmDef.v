@@ -258,7 +258,7 @@ Module Behavior.
   Qed.
 
   Lemma ret_bind {M N A B} (f : A -> t M N B) (a : A) :
-    bind f (ret a) = f a.
+    (ret a >>= f) = f a.
   Proof.
     apply antisymmetry.
     - intros t (s & [ ] & Hst). cbn in *. subst.
@@ -268,7 +268,7 @@ Module Behavior.
   Qed.
 
   Lemma bind_ret {M N A} (x : t M N A) :
-    bind ret x = x.
+    (x >>= ret) = x.
   Proof.
     apply antisymmetry.
     - intros t (s & Hs & Hst). revert x Hs.
@@ -281,13 +281,13 @@ Module Behavior.
   Qed.
 
   Lemma bind_ret_eta {M N A} (x : t M N A) :
-    bind (fun a => ret a) x = x.
+    (x >>= fun a => ret a) = x.
   Proof.
     apply bind_ret.
   Qed.
 
   Lemma bind_bind {M N A B C} (f : B -> t M N C) (g : A -> t M N B) x :
-    bind f (bind g x) = bind (fun a => bind f (g a)) x.
+    ((x >>= g) >>= f) = (x >>= fun a => g a >>= f).
   Proof.
     apply antisymmetry.
     - intros t (v & (u & Hu & Huv) & Hvt).

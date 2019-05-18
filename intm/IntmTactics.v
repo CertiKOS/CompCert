@@ -4,17 +4,18 @@ Require Import IntmDef.
 
 Module Behavior.
   Import IntmDef.Behavior.
+  Local Open Scope behavior_scope.
 
   (** ** Joins distribute over bind *)
 
   Lemma bind_join {M N A B} (x y : t M N A) (f : A -> t M N B) :
-    bind f (join x y) = join (bind f x) (bind f y).
+    ((x \/ y) >>= f) = (x >>= f \/ y >>= f).
   Proof.
     apply antisymmetry; firstorder.
   Qed.
 
   Lemma bind_sup {M N A B I} (x : I -> t M N A) (f : A -> t M N B) :
-    bind f (sup x) = sup (fun i => bind f (x i)).
+    (sup x >>= f) = sup (fun i => x i >>= f).
   Proof.
     apply antisymmetry; firstorder.
   Qed.
@@ -38,7 +39,7 @@ Module Behavior.
   Qed.
 
   Lemma bind_plus {M N A B} (x : t M N A) (f g : A -> t M N B) :
-    bind (fun a => join (f a) (g a)) x = join (bind f x) (bind g x).
+    (x >>= fun a => f a \/ g a) = (x >>= f \/ x >>= g).
   Proof.
     apply antisymmetry.
     - intros t (s & Hs & Hst).
@@ -48,7 +49,7 @@ Module Behavior.
 
   Lemma bind_sum {M N A B I} (f : I -> A -> t M N B) (x : t M N A) :
     inhabited I ->
-    bind (fun a => sup (fun i => f i a)) x = sup (fun i => bind (f i) x).
+    (x >>= fun a => sup (fun i => f i a)) = sup (fun i => x >>= f i).
   Proof.
     intros HI.
     apply antisymmetry.
