@@ -205,9 +205,17 @@ Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instructio
     OK (HB["90"] :: nil)
   end.
 
+(** To be implemented and proved by Xu XiangZhe *)
+Parameter fmc_instr_decode : FlatBinary.instruction -> res FlatAsm.instruction.
+
+Lemma encode_decode_same : forall i bytes,
+    fmc_instr_encode i = OK bytes -> fmc_instr_decode bytes = OK i.
+Admitted.
+
 Definition transl_instr' (ii: FlatAsm.instr_with_info) : res instruction :=
   let '(i, sz) := ii in
   fmc_instr_encode i.
+(** To be implemented and proved by Xu XiangZhe *)
 
 
 (** Translation of a sequence of instructions in a function *)
