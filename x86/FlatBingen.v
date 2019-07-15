@@ -222,6 +222,11 @@ Fixpoint sublist {X:Type} (lst: list X) (n: nat): list X :=
            end
   end.
 
+Definition decode_int_n (lst: list byte)(n: nat): Z := decode_int (sublist lst n).
+
+Compute (decode_int_n [HB["00"];HB["00"];HB["00"];HB["80"]] 2).
+
+(* parse the reg *)
 Definition addrmode_parse_reg(reg: byte)(mc:list byte): res(ireg) :=
   if Byte.eq_dec reg (Byte.repr 0) then OK(RAX)
   else if Byte.eq_dec reg (Byte.repr   1) then OK(RCX)
@@ -234,6 +239,23 @@ Definition addrmode_parse_reg(reg: byte)(mc:list byte): res(ireg) :=
                                      else Error(msg "reg not found").
 
 Compute (addrmode_parse_reg (Byte.repr 2) [HB["23"]]).
+
+(* parse SIB *)
+
+(* parse the scale *)
+Definition addrmode_SIB_parse_scale(ss: byte): res(scale) :=
+  if Byte.eq_dec ss (Byte.repr 0) then OK(Scale1)
+  else if Byte.eq_dec ss (Byte.repr 1) then OK(Scale2)
+       else if Byte.eq_dec ss (Byte.repr 2) then OK(Scale4)
+            else if Byte.eq_dec ss (Byte.repr 3) then OK(Scale8)
+                 else Error(msg "Scale not found").
+
+Compute (addrmode_SIB_parse_scale (Byte.repr 2)).
+
+(* parse the sib *)
+
+Definition addrmode_SIB_parse_index(sib: byte)(mod: byte)(mc:list byte): res(scale) :=
+  
 
 (* decode addr mode *)
 Definition decode_addrmode(mc:list byte): res(ireg * addrmode):=
