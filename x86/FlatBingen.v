@@ -7,6 +7,7 @@ Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.
 
+
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
 Local Open Scope bits_scope.
@@ -33,6 +34,7 @@ Definition encode_ireg (r: ireg) : res bits :=
   | RDI => OK (b["111"])
   | _ => Error (msg "Encoding of register not supported")
   end.
+
 
 Definition encode_scale (s: scale) : bits :=
   match s with
@@ -206,10 +208,83 @@ Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instructio
   end.
 
 (** To be implemented and proved by Xu XiangZhe *)
-Parameter fmc_instr_decode : FlatBinary.instruction -> res FlatAsm.instruction.
+(* Parameter fmc_instr_decode : FlatBinary.instruction -> res FlatAsm.instruction. *)
+
+
+(* utils *)
+
+Fixpoint sublist {X:Type} (lst: list X) (n: nat): list X :=
+  match lst with
+  |nil => nil 
+  |h::t => match n with
+           |O => nil
+           |S n' => h::sublist t n'
+           end
+  end.
+
+Definition addrmode_parse_reg(reg: byte)(mc:list byte): res(ireg) :=
+  if Byte.eq_dec reg (Byte.repr 0) then OK(RAX)
+  else if Byte.eq_dec reg (Byte.repr   1) then OK(RCX)
+       else if Byte.eq_dec reg (Byte.repr   2) then OK(RDX)
+            else if Byte.eq_dec reg (Byte.repr   3) then OK(RBX)
+                 else if Byte.eq_dec reg (Byte.repr   4) then OK(RSP)
+                      else if Byte.eq_dec reg (Byte.repr  5) then OK(RBP)
+                           else if Byte.eq_dec reg (Byte.repr   6) then OK(RSI)
+                                else if Byte.eq_dec reg (Byte.repr  7) then OK(RDI)
+                                     else Error(msg "reg not found").
+
+Compute (addrmode_parse_reg (Byte.repr 2) [HB["23"]]).
+
+(* decode addr mode *)
+Definition decode_addrmode(mc:list byte): res(ireg * addrmode):=
+  match mc with
+  |nil => Error(msg "Addr mode is null")
+  |h::t=> let MOD := Byte.shru h (Byte.repr 6) in
+          let RM := Byte.shru (Byte.and h (Byte.repr 56)) (Byte.repr 3) in
+          let REG := Byte.and h (Byte.repr 7) in
+          do reg <-addrmode_parse_reg REG t;
+          OK(reg, Addrmode (Some reg) None (Ptrofs.repr 0))
+end.
+
+
+
+Parameter fmc_instr_decode: list byte -> res (FlatAsm.instruction * list byte).
+
+Definition fmc_instr_decode (mc: list byte) : res (FlatAsm.instruction * list byte):
+    match mc with
+    | nil => Error(msg "Nothing to decode")
+    | h::t => if Byte.eq_dec h HB["90"]
+            then OK(Fnop,t)
+            else OK(Fnop,t)
+end.
+
+Lemma encode_decode_same : forall i bytes,
+    fmc_instr_encode i = OK bytes
+    -> forall l, fmc_instr_decode (bytes ++ l) = OK (i, l).
+Admitted.
+
+
+Definition fmc_instr_decode (mc: FlatBinary.instruction): res FlatAsm.instruction := 
+  match mc with
+  | nil => Error(msg "Nothing to decode")
+  | h::t => if Byte.eq_dec h HB["90"]
+            then OK(Fnop)
+            else OK(Fnop)
+end.
+
 
 Lemma encode_decode_same : forall i bytes,
     fmc_instr_encode i = OK bytes -> fmc_instr_decode bytes = OK i.
+Proof.
+  induction i.
+  - intro bytes.
+    unfold fmc_instr_encode.
+    intro H.
+    inversion H.
+    unfold fmc_instr_decode.
+    
+    
+
 Admitted.
 
 Definition transl_instr' (ii: FlatAsm.instr_with_info) : res instruction :=
