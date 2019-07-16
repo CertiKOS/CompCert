@@ -227,7 +227,7 @@ Definition decode_int_n (lst: list byte)(n: nat): Z := decode_int (sublist lst n
 Compute (decode_int_n [HB["00"];HB["00"];HB["00"];HB["80"]] 2).
 
 (* parse the reg *)
-Definition addrmode_parse_reg(reg: byte)(mc:list byte): res(ireg) :=
+Definition addrmode_parse_reg(reg: byte): res(ireg) :=
   if Byte.eq_dec reg (Byte.repr 0) then OK(RAX)
   else if Byte.eq_dec reg (Byte.repr   1) then OK(RCX)
        else if Byte.eq_dec reg (Byte.repr   2) then OK(RDX)
@@ -238,7 +238,7 @@ Definition addrmode_parse_reg(reg: byte)(mc:list byte): res(ireg) :=
                                 else if Byte.eq_dec reg (Byte.repr  7) then OK(RDI)
                                      else Error(msg "reg not found").
 
-Compute (addrmode_parse_reg (Byte.repr 2) [HB["23"]]).
+Compute (addrmode_parse_reg (Byte.repr 2)).
 
 (* parse SIB *)
 
@@ -252,10 +252,80 @@ Definition addrmode_SIB_parse_scale(ss: byte): res(scale) :=
 
 Compute (addrmode_SIB_parse_scale (Byte.repr 2)).
 
+(* parse index utility *)
+
+Definition addrmode_SIB_parse_index (idx: byte)(index: ireg) (s: scale): option (ireg * scale):=
+  if Byte.eq_dec idx HB["4"] then
+    None
+  else
+    Some (index, s).
+
+(* parse base utility *)
+
+Definition addrmode_SIB_parse_base (mode_b: byte)(base: ireg)(bs : byte)(mc:list byte) : res ((option ireg) * ptrofs) :=
+  if Byte.eq_dec bs HB["5"] then
+    if Byte.eq_dec mode_b HB["0"] then
+      let ofs := decode_int_n mc 4 in
+      (* no base, offset 32 *)
+      OK(None, Ptrofs.repr ofs)
+    else
+      if Byte.eq_dec mode_b HB["1"] then
+        let ofs := decode_int_n mc 1 in
+        (* offset 8 *)
+        OK(Some base, Ptrofs.repr ofs)
+      else
+        if Byte.eq_dec mode_b HB["2"] then
+          let ofs := decode_int_n mc 4 in
+          (* offset 32 *)
+          OK(Some base, Ptrofs.repr ofs)
+        else
+          (* error *)
+          Error(msg "error in parse sib base")
+  else
+    if Byte.eq_dec mode_b HB["0"] then
+      (* no offset *)
+      OK(Some base, Ptrofs.repr 0)
+    else
+      if Byte.eq_dec mode_b HB["1"] then
+        let ofs := decode_int_n mc 1 in
+        (* offset 8 *)
+        OK(Some base, Ptrofs.repr ofs)
+      else
+        if Byte.eq_dec mode_b HB["2"] then
+          let ofs := decode_int_n mc 4 in
+          (* offset 32 *)
+          OK(Some base, Ptrofs.repr ofs)
+        else
+          (* error *)
+          Error(msg "error in parse sib base").
+                         
+      
+
 (* parse the sib *)
 
-Definition addrmode_SIB_parse_index(sib: byte)(mod: byte)(mc:list byte): res(scale) :=
-  
+Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmode) :=
+  let idx := ( Byte.shru (Byte.and sib (Byte.repr 56)) (Byte.repr 3)) in
+  let ss :=  (Byte.shru sib (Byte.repr 6)) in
+  let bs := (Byte.and sib (Byte.repr 7)) in
+  do index <- addrmode_parse_reg idx;
+  do scale <- addrmode_SIB_parse_scale ss;
+  do base <- addrmode_parse_reg bs;
+  let index_s := addrmode_SIB_parse_index idx index scale in
+  do base_offset <- addrmode_SIB_parse_base mod_b base bs mc;
+  OK(Addrmode (fst base_offset) (index_s) (snd base_offset)).
+
+(* test begins here *)
+
+(* ebp eax*1 2018915346 *)
+Compute (addrmode_parse_SIB HB["05"] HB["02"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
+(* esp eax*2 18 *)
+Compute (addrmode_parse_SIB HB["44"] HB["01"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
+(* edi None  0 *)
+Compute (addrmode_parse_SIB HB["E7"] HB["00"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
+(* None ebp*8 2018915346 *)
+Compute (addrmode_parse_SIB HB["ED"] HB["00"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
+
+(* test ends here *)
 
 (* decode addr mode *)
 Definition decode_addrmode(mc:list byte): res(ireg * addrmode):=
