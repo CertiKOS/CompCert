@@ -222,6 +222,24 @@ Fixpoint sublist {X:Type} (lst: list X) (n: nat): list X :=
            end
   end.
 
+Fixpoint remove_first_n  {X:Type} (lst: list X) (n: nat): list X :=
+  match lst with
+  |nil => nil
+  |h::t =>match n with
+          |O => lst
+          |S n' => remove_first_n t n'
+        end
+  end.
+
+Fixpoint get_n {X:Type} (lst: list X) (n: nat): res X :=
+  match lst with
+  |nil => Error (msg "list index out of bound")
+  |h::t => match n with
+           |O => OK(h)
+           | S n' => get_n lst n'
+           end
+  end.
+
 Definition decode_int_n (lst: list byte)(n: nat): Z := decode_int (sublist lst n).
 
 Compute (decode_int_n [HB["00"];HB["00"];HB["00"];HB["80"]] 2).
@@ -303,7 +321,7 @@ Definition addrmode_SIB_parse_base (mode_b: byte)(base: ireg)(bs : byte)(mc:list
 
 (* parse the sib *)
 
-Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmode) :=
+Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmode * (list byte)) :=
   let idx := ( Byte.shru (Byte.and sib (Byte.repr 56)) (Byte.repr 3)) in
   let ss :=  (Byte.shru sib (Byte.repr 6)) in
   let bs := (Byte.and sib (Byte.repr 7)) in
@@ -312,7 +330,13 @@ Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmo
   do base <- addrmode_parse_reg bs;
   let index_s := addrmode_SIB_parse_index idx index scale in
   do base_offset <- addrmode_SIB_parse_base mod_b base bs mc;
-  OK(Addrmode (fst base_offset) (index_s) (snd base_offset)).
+    if Byte.eq_dec mod_b HB["0"]  then
+      if Byte.eq_dec bs HB["5"] then
+        OK(Addrmode (fst base_offset) (index_s) (snd base_offset),(remove_first_n mc 4))
+      else
+        OK(Addrmode (fst base_offset) (index_s) (snd base_offset),mc)
+    else
+      OK(Addrmode (fst base_offset) (index_s) (snd base_offset),mc).
 
 (* test begins here *)
 
@@ -328,16 +352,67 @@ Compute (addrmode_parse_SIB HB["ED"] HB["00"] [HB["12"]; HB["34"]; HB["56"]; HB[
 (* test ends here *)
 
 (* decode addr mode *)
-Definition decode_addrmode(mc:list byte): res(ireg * addrmode):=
+Definition decode_addrmode(mc:list byte): res(ireg * addrmode * (list byte)):=
   match mc with
   |nil => Error(msg "Addr mode is null")
   |h::t=> let MOD := Byte.shru h (Byte.repr 6) in
-          let RM := Byte.shru (Byte.and h (Byte.repr 56)) (Byte.repr 3) in
-          let REG := Byte.and h (Byte.repr 7) in
-          do reg <-addrmode_parse_reg REG t;
-          OK(reg, Addrmode (Some reg) None (Ptrofs.repr 0))
+          let REG := Byte.shru (Byte.and h (Byte.repr 56)) (Byte.repr 3) in
+          let RM := Byte.and h (Byte.repr 7) in
+          do reg <-addrmode_parse_reg REG;
+            if Byte.eq_dec MOD HB["0"] then
+              do ea_reg <- addrmode_parse_reg RM;
+                if Byte.eq_dec RM HB["4"] then
+                  do sib <- get_n t 0;
+                  do result <- addrmode_parse_SIB sib MOD (remove_first_n t 1);
+                    OK(reg, fst result, snd result)
+                else if Byte.eq_dec RM HB["5"] then
+                       let ofs:=decode_int_n t 4 in
+                       OK(reg, Addrmode None None (Ptrofs.repr ofs), remove_first_n t 4)
+                     else
+                       OK(reg, Addrmode (Some ea_reg) None (Ptrofs.repr 0), t)
+            else if Byte.eq_dec MOD HB["1"] then
+                   do ea_reg <- addrmode_parse_reg RM;
+                     if Byte.eq_dec RM HB["4"] then
+                       do sib <- get_n t 0;
+                       do result <- addrmode_parse_SIB sib MOD (remove_first_n t 1);
+                         OK(reg, fst result, remove_first_n (snd result) 1)
+                     else
+                       let ofs:=decode_int_n t 1 in
+                       OK(reg, Addrmode (Some ea_reg) None (Ptrofs.repr ofs), remove_first_n t 1)
+                 else if Byte.eq_dec MOD HB["2"] then
+                        do ea_reg <- addrmode_parse_reg RM;
+                          if Byte.eq_dec RM HB["4"] then
+                            do sib<- get_n t 0;                             
+                              do result <- addrmode_parse_SIB sib MOD (remove_first_n t 1);
+                              OK(reg, fst result, remove_first_n (snd result) 4)
+                          else
+                            let ofs:=decode_int_n t 4 in
+                            OK(reg, Addrmode (Some ea_reg) None (Ptrofs.repr ofs), remove_first_n t 4)
+                      else
+                        Error( msg "unknown address mode")
 end.
 
+(* test begins here *)
+
+(* eax <- edi 8ebp 1 *)
+Compute (decode_addrmode [HB["44"];HB["EF"];HB["01"];HB["AA"];HB["03"];HB["04"]]).
+
+(* ecx <- edi 1 *)
+Compute (decode_addrmode [HB["4F"];HB["01"];HB["AA"];HB["03"];HB["04"]]).
+
+(* ecx <- edi 2147483647 *)
+Compute (decode_addrmode [HB["8F"];HB["FF"];HB["FF"];HB["FF"];HB["7F"];HB["AA"]]).
+
+(* ecx <- edi*1 000000ff *)
+Compute (decode_addrmode [HB["0C"];HB["3D"];HB["FF"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
+
+(* ecx <- 00000002 *)
+Compute (decode_addrmode [HB["0D"];HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
+
+(* ecx <- 00000002 *)
+Compute (decode_addrmode [HB["0C"];HB["25"];HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
+
+(* test ends here *)
 
 
 Parameter fmc_instr_decode: list byte -> res (FlatAsm.instruction * list byte).
