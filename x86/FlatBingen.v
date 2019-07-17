@@ -248,13 +248,13 @@ Compute (decode_int_n [HB["00"];HB["00"];HB["00"];HB["80"]] 2).
 Definition addrmode_parse_reg(reg: byte): res(ireg) :=
   if Byte.eq_dec reg (Byte.repr 0) then OK(RAX)
   else if Byte.eq_dec reg (Byte.repr   1) then OK(RCX)
-       else if Byte.eq_dec reg (Byte.repr   2) then OK(RDX)
-            else if Byte.eq_dec reg (Byte.repr   3) then OK(RBX)
-                 else if Byte.eq_dec reg (Byte.repr   4) then OK(RSP)
-                      else if Byte.eq_dec reg (Byte.repr  5) then OK(RBP)
-                           else if Byte.eq_dec reg (Byte.repr   6) then OK(RSI)
-                                else if Byte.eq_dec reg (Byte.repr  7) then OK(RDI)
-                                     else Error(msg "reg not found").
+  else if Byte.eq_dec reg (Byte.repr   2) then OK(RDX)
+  else if Byte.eq_dec reg (Byte.repr   3) then OK(RBX)
+  else if Byte.eq_dec reg (Byte.repr   4) then OK(RSP)
+  else if Byte.eq_dec reg (Byte.repr  5) then OK(RBP)
+  else if Byte.eq_dec reg (Byte.repr   6) then OK(RSI)
+  else if Byte.eq_dec reg (Byte.repr  7) then OK(RDI)
+  else Error(msg "reg not found").
 
 Compute (addrmode_parse_reg (Byte.repr 2)).
 
@@ -415,14 +415,198 @@ Compute (decode_addrmode [HB["0C"];HB["25"];HB["02"];HB["00"];HB["00"];HB["00"];
 (* test ends here *)
 
 
-Parameter fmc_instr_decode: list byte -> res (FlatAsm.instruction * list byte).
+(* parse instructions *)
 
-Definition fmc_instr_decode (mc: list byte) : res (FlatAsm.instruction * list byte):
+
+(* common routines *)
+
+Definition decode_rr_operand (modrm: byte): res(ireg * ireg) :=
+   do rd <- addrmode_parse_reg (Byte.shru (Byte.and modrm HB["38"]) HB["3"]);
+     do rs <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+     OK(rd,rs).
+
+(* decode instructions *)
+
+Definition decode_jmp_l (mc: list byte) : res (FlatAsm.instruction * list byte):=
+  let ofs := decode_int_n mc 4 in
+  OK(Fjmp_l (Ptrofs.repr ofs), remove_first_n mc 4).
+
+
+Definition decode_jcc (mc: list byte) : res (FlatAsm.instruction * list byte):=
+  let ofs := Ptrofs.repr (decode_int_n (remove_first_n mc 1) 4) in
+  do cond <- get_n mc 0;
+  if Byte.eq_dec cond HB["84"] then OK(Fjcc Cond_e ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["85"] then OK(Fjcc Cond_ne ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["82"] then OK(Fjcc Cond_b ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["86"] then OK(Fjcc Cond_be ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["83"] then OK(Fjcc Cond_ae ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["87"] then OK(Fjcc Cond_a ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["8C"] then OK(Fjcc Cond_l ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["8E"] then OK(Fjcc Cond_le ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["8D"] then OK(Fjcc Cond_ge ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["8F"] then OK(Fjcc Cond_g ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["8A"] then OK(Fjcc Cond_p ofs, remove_first_n mc 5)
+  else if Byte.eq_dec cond HB["8B"] then OK(Fjcc Cond_np ofs, remove_first_n mc 5)
+       else Error (msg "Unknown jcc condition").
+
+Definition decode_imull_rr (mc: list byte) : res (FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rds <- decode_rr_operand modrm;
+    OK(Fimull_rr (fst rds) (snd rds), remove_first_n mc 1).
+
+Definition decode_imull_ri (mc: list byte) : res (FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+      let n := decode_int_n (remove_first_n mc 1) 4 in
+      OK(Fimull_ri rd (Int.repr n), remove_first_n mc 5).
+    
+
+Definition decode_0f (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do code <- get_n mc 0;
+  if Byte.eq_dec  code HB["AF"] then
+    decode_imull_rr (sublist mc 1)
+  else
+    decode_jcc mc.
+
+Definition decode_shortcall (mc: list byte): res(FlatAsm.instruction * list byte):=
+  let ofs := Ptrofs.repr (decode_int_n mc 4) in
+  OK(Fshortcall ofs (mksignature [] None (mkcallconv false false false)), remove_first_n mc 4).
+
+Definition decode_leal (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do addrs <- decode_addrmode mc;
+    OK(Fleal (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
+
+(* test begins here *)
+(* Fleal RCX 2 *)
+Compute (decode_leal  [HB["0C"];HB["25"];HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
+(* test ends here *)
+
+Definition decode_xorl_r (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+       OK(Fxorl_r rd, remove_first_n mc 1).
+
+(* test_xor begins here *)
+(* test_xor ends here *)
+
+Definition decode_addl_ri  (mc: list byte): res(FlatAsm.instruction * list byte):=
+    do modrm <- get_n mc 0;
+      do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+      let n := decode_int_n (remove_first_n mc 1) 4 in
+      OK(Faddl_ri rd (Int.repr n), remove_first_n mc 5).
+
+(* test add ri begins here *)
+(* add eax, 0 *)
+Compute (decode_addl_ri  [HB["C0"];HB["00"];HB["00"];HB["00"];HB["00"];HB["AA"];HB["BB"]]).
+
+(* test add ri ends here *)
+
+Definition decode_subl_ri (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    let n := decode_int_n (remove_first_n mc 1) 4 in
+    OK(Fsubl_ri rd (Int.repr n), remove_first_n mc 5).
+
+Definition decode_cmpl_ri (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+      let n := decode_int_n (remove_first_n mc 1) 4 in
+      OK(Faddl_ri rd (Int.repr n), remove_first_n mc 5).
+  
+Definition decode_81  (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    let opcode := Byte.shru (Byte.and modrm HB["38"]) HB["3"] in
+    if Byte.eq_dec opcode HB["7"] then decode_cmpl_ri mc
+    else if Byte.eq_dec opcode HB["0"] then decode_addl_ri mc
+         else if Byte.eq_dec opcode HB["5"] then decode_subl_ri mc
+              else Error(msg" instruction begins with 81 cannot be found").
+    
+Definition decode_subl_rr (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rd <- addrmode_parse_reg (Byte.shru (Byte.and modrm HB["38"]) HB["3"]);
+    do rs <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    OK(Fsubl_rr rd rs, remove_first_n mc 1).
+
+(* note that the opcode of movl begins with 0xB, so we can use this info to dispatch this instruction*)
+Definition decode_movl_ri  (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do opcode <- get_n mc 0;
+    do rd <- addrmode_parse_reg (Byte.and opcode HB["7"]);
+    let n := decode_int_n (remove_first_n mc 1) 4 in
+    OK(Fmovl_ri rd (Int.repr n), remove_first_n mc 5).
+
+Definition decode_mov_rr  (mc: list byte): res(FlatAsm.instruction * list byte):=
+   do modrm <- get_n mc 0;
+    do rds <- decode_rr_operand modrm;
+    OK(Fmov_rr (fst rds) (snd rds), remove_first_n mc 1).
+
+Definition decode_movl_rm (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do addrs <- decode_addrmode mc;
+    OK(Fmovl_rm (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
+
+Definition decode_movl_mr (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do addrs <- decode_addrmode mc;
+    OK(Fmovl_mr  (snd (fst addrs)) (fst (fst addrs)), (snd addrs)).
+
+Definition decode_movl_rm_a (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do addrs <- decode_addrmode mc;
+    OK(Fmov_rm_a (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
+
+Definition decode_movl_mr_a (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do addrs <- decode_addrmode mc;
+    OK(Fmov_mr_a  (snd (fst addrs)) (fst (fst addrs)), (snd addrs)).
+
+Definition decode_testl_rr  (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rds <- decode_rr_operand modrm;
+     OK(Ftestl_rr (fst rds) (snd rds), remove_first_n mc 1).
+
+Definition decode_cmpl_rr   (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rds <- decode_rr_operand modrm;
+     OK(Fcmpl_rr (fst rds) (snd rds), remove_first_n mc 1).
+
+Definition decode_idivl  (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    OK(Fidivl rd, remove_first_n mc 1).
+
+Definition decode_sall_ri (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+      let n := decode_int_n (remove_first_n mc 1) 4 in
+      OK(Fsall_ri rd (Int.repr n), remove_first_n mc 5).
+
+Definition decode_8b (mc: list byte): res(FlatAsm.instruction * list byte):=
+  do modrm <- get_n mc 0;
+    if Byte.eq_dec (Byte.and modrm HB["C0"]) HB["C0"] then
+      decode_mov_rr mc
+    else
+      decode_movl_rm mc.
+
+(*Parameter fmc_instr_decode: list byte -> res (FlatAsm.instruction * list byte).*)
+
+Definition fmc_instr_decode (mc: list byte) : res (FlatAsm.instruction * list byte):=
     match mc with
     | nil => Error(msg "Nothing to decode")
-    | h::t => if Byte.eq_dec h HB["90"]
-            then OK(Fnop,t)
-            else OK(Fnop,t)
+    | h::t => if Byte.eq_dec h HB["90"] then OK(Fnop,t)
+              else if Byte.eq_dec h HB["E9"] then decode_jmp_l t
+              else if Byte.eq_dec h HB["0F"] then decode_0f t
+              else if Byte.eq_dec h HB["E8"] then decode_shortcall t
+              else if Byte.eq_dec h HB["8D"] then decode_leal t
+              else if Byte.eq_dec h HB["31"] then decode_xorl_r t
+              else if Byte.eq_dec h HB["81"] then decode_81 t
+              else if Byte.eq_dec h HB["2B"] then decode_subl_rr t
+              else if Byte.eq_dec (Byte.and h HB["F0"]) HB["B0"] then decode_movl_ri mc
+              else if Byte.eq_dec h HB["8B"] then decode_8b t
+              else if Byte.eq_dec h HB["89"] then decode_movl_mr t
+              else if Byte.eq_dec h HB["85"] then decode_testl_rr t
+              else if Byte.eq_dec h HB["C3"] then OK(Fret,t)
+              else if Byte.eq_dec h HB["69"] then decode_imull_ri t
+              else if Byte.eq_dec h HB["39"] then decode_cmpl_rr t
+              else if Byte.eq_dec h HB["99"] then OK(Fcltd,t)
+              else if Byte.eq_dec h HB["F7"] then decode_idivl t
+              else if Byte.eq_dec h HB["C1"] then decode_sall_ri t
+              else Error(msg "Unknown opcode!")
 end.
 
 Lemma encode_decode_same : forall i bytes,
