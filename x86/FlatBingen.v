@@ -183,6 +183,7 @@ Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instructio
     let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["69"] :: modrm :: nbytes)
   | Fcmpl_rr r1 r2 =>
+
     do r1bits <- encode_ireg r1;
     do r2bits <- encode_ireg r2;
     let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
@@ -431,6 +432,15 @@ Definition decode_jmp_l (mc: list byte) : res (FlatAsm.instruction * list byte):
   let ofs := decode_int_n mc 4 in
   OK(Fjmp_l (Ptrofs.repr ofs), remove_first_n mc 4).
 
+(* Example jmp_test1:
+  (decode_jmp_l [HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"] ]) =
+  OK(Fjmp_l (Ptrofs.repr 02), [HB["AA"]]).
+Proof.
+  unfold decode_jmp_l. simpl.
+  assert(H_decode_int: forall l,
+            decode_int_n ([Byte.repr 2; Byte.repr 0; Byte.repr 0; Byte.repr 0]++l) 4 = 2) by admit.
+  apply (H_decode_int [Byte.repr 170]).
+  reflexivity. *)
 
 Definition decode_jcc (mc: list byte) : res (FlatAsm.instruction * list byte):=
   let ofs := Ptrofs.repr (decode_int_n (remove_first_n mc 1) 4) in
@@ -607,11 +617,117 @@ Definition fmc_instr_decode (mc: list byte) : res (FlatAsm.instruction * list by
               else if Byte.eq_dec h HB["F7"] then decode_idivl t
               else if Byte.eq_dec h HB["C1"] then decode_sall_ri t
               else Error(msg "Unknown opcode!")
-end.
+    end.
+
+Check Fjcc = Fjcc.
+
+
+Definition instr_eq (ins1 ins2: FlatAsm.instruction): Prop :=
+  match ins1 with
+(*  |Fjmp_l ofs => match ins2 with
+                 |Fjmp_l ofs2 => ofs = ofs2
+                 |_ => False
+                 end
+  |Fjcc c ofs => match ins2 with
+                 |Fjcc c2 ofs2 => c=c2 /\ ofs = ofs2
+                 |_ => False
+                 end                                          *)
+  |Fshortcall ofs _ => match ins2 with
+                       |Fshortcall ofs2 _ => ofs = ofs2
+                       |_ => False
+                       end
+                         
+  |_ => ins1 = ins2
+  end.
+
+Lemma encode_decode_int32_same : forall n l,
+    (decode_int_n ((encode_int32 n) ++ l) 4) = n.
+Proof.
+  
+Admitted.
 
 Lemma encode_decode_same : forall i bytes,
     fmc_instr_encode i = OK bytes
-    -> forall l, fmc_instr_decode (bytes ++ l) = OK (i, l).
+    -> forall l i', instr_eq i i' -> fmc_instr_decode (bytes ++ l) = OK (i', l).
+  intros i bytes H_encode l i' H_ins_eq.
+  unfold fmc_instr_encode in H_encode.
+  destruct i.
+  - (* Fjmp_l ofs *)
+    assert (H_tmp: bytes = HB["E9"]::(encode_int32(Ptrofs.unsigned ofs))). {
+      inversion H_encode.
+      reflexivity.
+    }
+    unfold fmc_instr_decode.
+    rewrite H_tmp.
+    simpl.
+    assert (H_eq: (Byte.repr 233) = (Byte.repr 233)). {
+      reflexivity.
+    }
+    destruct ( Byte.eq_dec (Byte.repr 233) (Byte.repr 144)).
+    + inversion e.
+    + destruct ( Byte.eq_dec (Byte.repr 233) (Byte.repr 233)).
+
+      ++ unfold decode_jmp_l. unfold instr_eq in H_ins_eq.
+         assert(H_de: (decode_int_n (encode_int32 (Ptrofs.unsigned ofs) ++ l) 4)=Ptrofs.unsigned ofs). {
+            apply (encode_decode_int32_same (Ptrofs.unsigned ofs) l).
+         }
+         rewrite -> H_de.
+            rewrite <- H_ins_eq.
+            assert(H_lst: remove_first_n (encode_int32 (Ptrofs.unsigned ofs) ++ l) 4 = l) by admit.
+            rewrite -> H_lst.
+            assert(H_ptrofs: Ptrofs.repr (Ptrofs.unsigned ofs)=ofs) by admit.
+            rewrite -> H_ptrofs.
+            reflexivity.
+
+     ++ assert(Byte.repr 233 = Byte.repr 233) by admit.
+        apply n0 in H.
+        exfalso.
+        apply H.
+  (* Fjcc cc ofs *)
+  - 
+    unfold fmc_instr_decode.
+    assert(H_nn: forall l,  bytes++l <> nil). {
+      inversion H_encode.
+      unfold encode_testcond.
+      destruct c;
+      intuition; inversion H.
+    }
+    destruct (bytes++l) eqn:EQ.
+    + apply (H_nn l) in EQ. inversion EQ.
+    + inversion H_encode.
+      unfold encode_testcond in H_encode.
+      destruct c eqn:H_cond in H_encode.
+      ++ assert(H_bytesEQ: [HB[ "0F"]; HB[ "84"]] ++ encode_int32 (Ptrofs.unsigned ofs) = bytes). {
+           inversion H_encode. reflexivity.
+         }
+         rewrite <- H_bytesEQ in EQ.
+         assert(H_iEQ: i = HB["0F"]). {
+           inversion EQ.
+           reflexivity.
+         }
+         rewrite -> H_iEQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB.
+         +++ inversion EQB.
+         +++ destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1.
+             ++++ inversion EQB1.
+             ++++ destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2.
+                  +++++ unfold decode_0f.
+                  
+                  assert (Hl0 = [HB["84"]]++encode_int32(Ptrofs.unsigned ofs)) ++ l).
+        
+         
+    induction ((encode_testcond c ++ encode_int32 (Ptrofs.unsigned ofs)) ++ l).
+    + admit.
+    + simpl.
+    inversion H_encode.
+
+    
+    
+    
+            
+    
+
+  
 Admitted.
 
 
