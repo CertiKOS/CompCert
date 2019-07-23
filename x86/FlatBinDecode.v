@@ -6,7 +6,7 @@ Require Import FlatProgram FlatAsm FlatBinary.
 Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.
-Import FlatBingen.
+Require Import FlatBingen.
 
 
 Local Open Scope error_monad_scope.
@@ -457,20 +457,21 @@ Proof.
   - intros. subst. simpl. auto.
 Qed.
 
-Lemma encode_int32_size : forall ofs, List.length (encode_int32 (Ptrofs.unsigned ofs)) = 4%nat.
+
+Lemma encode_int32_size : forall ofs, List.length (FlatBingen.encode_int32 (Ptrofs.unsigned ofs)) = 4%nat.
 Proof.
-  intros. unfold encode_int32.
+  intros. unfold FlatBingen.encode_int32.
   rewrite encode_int_length. auto.
 Qed.
 
-Lemma encode_int32_size_Z :forall n, List.length (encode_int32 n) = 4%nat.
+Lemma encode_int32_size_Z :forall n, List.length (FlatBingen.encode_int32 n) = 4%nat.
 Proof.
-  intros. unfold encode_int32. rewrite encode_int_length. auto.
+  intros. unfold FlatBingen.encode_int32. rewrite encode_int_length. auto.
 Qed.
 
 
 Lemma remove_prefix_byte: forall l ofs,
-    remove_first_n (encode_int32 (Ptrofs.unsigned ofs) ++l) 4 = l.
+    remove_first_n (FlatBingen.encode_int32 (Ptrofs.unsigned ofs) ++l) 4 = l.
 Proof.
   intros.
   generalize (encode_int32_size ofs). intro ECSize.
@@ -552,63 +553,66 @@ Proof.
 Qed.
   
 Lemma encode_decode_int32_same: forall n,
-    decode_int_n (encode_int32 n) 4 = n.
+    valid_int32 n -> decode_int_n (FlatBingen.encode_int32 n) 4 = n.
 Proof.
   intros. subst. unfold decode_int_n. rewrite sublist_id.
-  unfold encode_int32. rewrite (decode_encode_int 4 n).
-                         rewrite (decode_encode_int_4 (Int.repr n)).
+  unfold FlatBingen.encode_int32. apply encode_decode_int32_int2Z. apply H.
+Qed.
 
 Lemma encode_decode_int32_same_prefix : forall n l,
-    (decode_int_n ((encode_int32 n) ++ l) 4) = n.
+    valid_int32 n -> (decode_int_n ((FlatBingen.encode_int32 n) ++ l) 4) = n.
 Proof.
   intros. rewrite <- (encode_int32_size_Z n).
   rewrite decode_prefix.
-  - rewrite (encode_int32_size_Z n). 
+  - rewrite encode_int32_size_Z. rewrite (encode_decode_int32_same n);auto.
   - auto.
+Qed.
+         
+(* Lemma encode_decode_same : forall i bytes, *)
+(*     fmc_instr_encode i = OK bytes *)
+(*     -> forall l, exists i', fmc_instr_decode (bytes ++ l) = OK (i', l) /\ instr_eq i i'. *)
          
 Lemma encode_decode_same : forall i bytes,
     fmc_instr_encode i = OK bytes
     -> forall l, exists i', fmc_instr_decode (bytes ++ l) = OK (i', l) /\ instr_eq i i'.
-         
-Lemma encode_decode_same : forall i bytes,
-    fmc_instr_encode i = OK bytes
-    -> forall l i', instr_eq i i' -> fmc_instr_decode (bytes ++ l) = OK (i', l).
-  intros i bytes H_encode l i' H_ins_eq.
+  intros i bytes H_encode l.
   unfold fmc_instr_encode in H_encode.
   destruct i.
   - (* Fjmp_l ofs *)
-    assert (H_tmp: bytes = HB["E9"]::(encode_int32(Ptrofs.unsigned ofs))). {
+    exists (Fjmp_l  ofs). split.
+    assert (H_tmp: bytes = HB["E9"]::(FlatBingen.encode_int32(Ptrofs.unsigned ofs))). {
       inversion H_encode.
       reflexivity.
     }
     unfold fmc_instr_decode.
     rewrite H_tmp.
     simpl.
-    assert (H_eq: (Byte.repr 233) = (Byte.repr 233)). {
-      reflexivity.
-    }
     destruct ( Byte.eq_dec (Byte.repr 233) (Byte.repr 144)).
     + inversion e.
     + destruct ( Byte.eq_dec (Byte.repr 233) (Byte.repr 233)).
-
-      ++ unfold decode_jmp_l. unfold instr_eq in H_ins_eq.
-         assert(H_de: (decode_int_n (encode_int32 (Ptrofs.unsigned ofs) ++ l) 4)=Ptrofs.unsigned ofs). {
-            apply (encode_decode_int32_same (Ptrofs.unsigned ofs) l).
-         }
+    ++ unfold decode_jmp_l.
+       assert(H_de: (decode_int_n (FlatBingen.encode_int32 (Ptrofs.unsigned ofs) ++ l) 4)=Ptrofs.unsigned ofs). {
+         apply (encode_decode_int32_same_prefix (Ptrofs.unsigned ofs) l).
+         apply Ptrofs.unsigned_range.
+       }
          rewrite -> H_de.
-         rewrite <- H_ins_eq.
          generalize (remove_prefix_byte l ofs). intro H_lst.
             rewrite -> H_lst.
-            assert(H_ptrofs: Ptrofs.repr (Ptrofs.unsigned ofs)=ofs) by admit.
+            assert(H_ptrofs: Ptrofs.repr (Ptrofs.unsigned ofs)=ofs). {
+              apply Ptrofs.repr_unsigned.
+            }
             rewrite -> H_ptrofs.
             reflexivity.
-
-     ++ assert(Byte.repr 233 = Byte.repr 233) by admit.
+      ++ assert(Byte.repr 233 = Byte.repr 233). {
+           reflexivity.
+         }
         apply n0 in H.
         exfalso.
         apply H.
+    + unfold instr_eq. auto.
   (* Fjcc cc ofs *)
-  - 
+  - exists (Fjcc c ofs). split.
+    *
     unfold fmc_instr_decode.
     assert(H_nn: forall l,  bytes++l <> nil). {
       inversion H_encode.
@@ -620,8 +624,8 @@ Lemma encode_decode_same : forall i bytes,
     + apply (H_nn l) in EQ. inversion EQ.
     + inversion H_encode.
       unfold encode_testcond in H_encode.
-      destruct c eqn:H_cond in H_encode.
-      ++ assert(H_bytesEQ: [HB[ "0F"]; HB[ "84"]] ++ encode_int32 (Ptrofs.unsigned ofs) = bytes). {
+      destruct c eqn: H_cond.
+      ++ assert(H_bytesEQ: [HB[ "0F"]; HB[ "84"]] ++ FlatBingen.encode_int32 (Ptrofs.unsigned ofs) = bytes). {
            inversion H_encode. reflexivity.
          }
          rewrite <- H_bytesEQ in EQ.
@@ -633,14 +637,222 @@ Lemma encode_decode_same : forall i bytes,
          destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB.
          +++ inversion EQB.
          +++ destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1.
-             ++++ inversion EQB1.
-             ++++ destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2.
-                  +++++ unfold decode_0f.
+         ++++ inversion EQB1.
+         ++++ destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2.
+         +++++ inversion EQ.
+         unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 132) (Byte.repr 175)) eqn: EQb.
+         ++++++ inversion EQb.
+         ++++++ unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 132) (Byte.repr 132)) eqn: EQB3.
+         +++++++ simpl. rewrite (encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned).
+         ++++++++ f_equal.
+         ++++++++ apply Ptrofs.unsigned_range.
+         +++++++ inversion EQB3.
+         +++++ inversion EQB2.
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 133) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 133) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 133) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++  rewrite <- H10 in EQ; inversion EQ. simpl.
+          destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+          inversion EQ. unfold decode_0f. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 130) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+          simpl. unfold decode_jcc. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 130) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+          destruct ( Byte.eq_dec (Byte.repr 130) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+          destruct ( Byte.eq_dec (Byte.repr 130) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+          f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+          rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++  rewrite <- H10 in EQ; inversion EQ. simpl.
+          destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+          inversion EQ. unfold decode_0f. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 134) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+          simpl. unfold decode_jcc. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 134) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+          destruct ( Byte.eq_dec (Byte.repr 134) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+          destruct ( Byte.eq_dec (Byte.repr 134) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+          destruct ( Byte.eq_dec (Byte.repr 134) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+          f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+          rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++  rewrite <- H10 in EQ; inversion EQ. simpl.
+          destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+          inversion EQ. unfold decode_0f. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 131) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+          simpl. unfold decode_jcc. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 131) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+          destruct ( Byte.eq_dec (Byte.repr 131) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+          destruct ( Byte.eq_dec (Byte.repr 131) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+          destruct ( Byte.eq_dec (Byte.repr 131) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+          destruct ( Byte.eq_dec (Byte.repr 131) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+          f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+          rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++  rewrite <- H10 in EQ; inversion EQ. simpl.
+          destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+          destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+          inversion EQ. unfold decode_0f. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+          simpl. unfold decode_jcc. simpl.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+          destruct ( Byte.eq_dec (Byte.repr 135) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+          f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+          rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+         destruct ( Byte.eq_dec (Byte.repr 140) (Byte.repr 140)) eqn: EQB10; inversion EQB10.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 140)) eqn: EQB10; inversion EQB10.
+         destruct ( Byte.eq_dec (Byte.repr 142) (Byte.repr 142)) eqn: EQB11; inversion EQB11.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 140)) eqn: EQB10; inversion EQB10.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 142)) eqn: EQB11; inversion EQB11.
+         destruct ( Byte.eq_dec (Byte.repr 141) (Byte.repr 141)) eqn: EQB12; inversion EQB12.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 140)) eqn: EQB10; inversion EQB10.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 142)) eqn: EQB11; inversion EQB11.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 141)) eqn: EQB12; inversion EQB12.
+         destruct ( Byte.eq_dec (Byte.repr 143) (Byte.repr 143)) eqn: EQB13; inversion EQB13.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 140)) eqn: EQB10; inversion EQB10.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 142)) eqn: EQB11; inversion EQB11.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 141)) eqn: EQB12; inversion EQB12.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 143)) eqn: EQB13; inversion EQB13.
+         destruct ( Byte.eq_dec (Byte.repr 138) (Byte.repr 138)) eqn: EQB14; inversion EQB14.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.   
+      ++ rewrite <- H10 in EQ; inversion EQ. simpl.
+         destruct (Byte.eq_dec (Byte.repr 15) (Byte.repr 144)) eqn: EQB; inversion EQB.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 233)) eqn:EQB1;inversion EQB1.
+         destruct ( Byte.eq_dec (Byte.repr 15) (Byte.repr 15)) eqn:EQB2; inversion EQB2.
+         inversion EQ. unfold decode_0f. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 175)) eqn: EQB3; inversion EQB3.
+         simpl. unfold decode_jcc. simpl.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 132)) eqn: EQB4; inversion EQB4.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 133)) eqn: EQB5; inversion EQB5.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 130)) eqn: EQB6; inversion EQB6.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 134)) eqn: EQB7; inversion EQB7.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 131)) eqn: EQB8; inversion EQB8.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 135)) eqn: EQB9; inversion EQB9.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 140)) eqn: EQB10; inversion EQB10.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 142)) eqn: EQB11; inversion EQB11.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 141)) eqn: EQB12; inversion EQB12.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 143)) eqn: EQB13; inversion EQB13.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 138)) eqn: EQB14; inversion EQB14.
+         destruct ( Byte.eq_dec (Byte.repr 139) (Byte.repr 139)) eqn: EQB15; inversion EQB15.
+         f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+         rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+      * unfold instr_eq. auto.
+  (* Fshortcall ofs sg *)
+  - exists (Fshortcall ofs (mksignature [] None (mkcallconv false false false))).
+    split.
+    * unfold fmc_instr_decode. inversion H_encode. simpl.
+      destruct (Byte.eq_dec (Byte.repr 232) (Byte.repr 144)) eqn: EQ1 ; inversion EQ1.
+      destruct (Byte.eq_dec (Byte.repr 232) (Byte.repr 233)) eqn: EQ2 ; inversion EQ2.
+      destruct (Byte.eq_dec (Byte.repr 232) (Byte.repr 15)) eqn: EQ3; inversion EQ3.
+      destruct (Byte.eq_dec (Byte.repr 232) (Byte.repr 232)) eqn: EQ4 ; inversion EQ4.
+      unfold decode_shortcall. f_equal. f_equal. rewrite(encode_decode_int32_same_prefix).
+      rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range.
+    * unfold instr_eq. auto.
+  (* Fleal rd a *)
+  - exists (Fleal rd a). split.
+    * unfold fmc_instr_decode. inversion H_encode. unfold encode_addrmode in H10.
+      unfold encode_addrmode_aux in H10. unfold encode_ireg in H10.
+      generalize rd.
+      destruct rd eqn:EQ1 in H10.
+      + simpl in H10.
+         
+                  
 (*                   
-                  assert (Hl0 = [HB["84"]]++encode_int32(Ptrofs.unsigned ofs)) ++ l).
+                  assert (Hl0 = [HB["84"]]++FlatBingen.encode_int32(Ptrofs.unsigned ofs)) ++ l).
         
          
-    induction ((encode_testcond c ++ encode_int32 (Ptrofs.unsigned ofs)) ++ l).
+    induction ((encode_testcond c ++ FlatBingen.encode_int32 (Ptrofs.unsigned ofs)) ++ l).
     + admit.
     + simpl.
     inversion H_encode. *)
@@ -669,61 +881,3 @@ Proof.
 
 Admitted. *)
 
-Definition transl_instr' (ii: FlatAsm.instr_with_info) : res instruction :=
-  let '(i, sz) := ii in
-  fmc_instr_encode i.
-(** To be implemented and proved by Xu XiangZhe *)
-
-
-(** Translation of a sequence of instructions in a function *)
-Fixpoint transl_instrs (instrs: list FlatAsm.instr_with_info) : res (list instruction) :=
-  match instrs with
-  | nil => OK nil
-  | i::instrs' =>
-    do instr <- transl_instr' i;
-    do tinstrs' <- transl_instrs instrs';
-    OK (instr :: tinstrs')
-  end.
-
-(** Tranlsation of a function *)
-Definition transl_fun (f:FlatAsm.function) : res function :=
-  do code' <- transl_instrs (FlatProgram.fn_code f);
-  OK (mkfunction (FlatProgram.fn_sig f) code' (fn_start f) (fn_size f)).
-
-Definition transl_globdef (def: (ident * option FlatAsm.gdef))
-  : res (ident * option FlatBinary.gdef) :=
-  let '(id,def) := def in
-  match def with
-  | Some (AST.Gfun (Internal f)) =>
-    do f' <- transl_fun f;
-      OK (id, Some (AST.Gfun (Internal f')))
-  | Some (AST.Gfun (External f)) => 
-    OK (id, Some (AST.Gfun (External f)))
-  | Some (AST.Gvar v) =>
-    OK (id, Some (AST.Gvar v))
-  | None => OK (id, None)
-  end.
-
-Fixpoint transl_globdefs defs :=
-  match defs with
-  | nil => OK nil
-  | def::defs' =>
-    do tdef <- transl_globdef def;
-    do tdefs' <- transl_globdefs defs';
-    OK (tdef :: tdefs')
-  end.
-
-
-(** Translation of a program *)
-Definition transf_program (p:FlatAsm.program) : res program := 
-  do defs <- transl_globdefs (FlatProgram.prog_defs p);
-  OK (Build_program
-        defs
-        (prog_public p)
-        (prog_main p)
-        (prog_main_ofs p)
-        (prog_data_addr p)
-        (prog_data_size p)
-        (prog_code_addr p)
-        (prog_code_size p))
-      .
