@@ -123,7 +123,7 @@ Global Instance assign_loc_match R:
      k1 set_le (<> match_mem R)).
 Proof.
   intros w ce ty m1 m2 Hm [b1 ofs1] [b2 ofs2] Hptr v1 v2 Hv m1' Hm1'.
-  destruct Hm1' as [v1 chunk m1' | ofs1 b1' ofs1' bytes1 m1'].
+  destruct Hm1' as [v1 chunk m1' | b1' ofs1' bytes1 m1'].
   - transport_hyps.
     eexists; split; [ | rauto].
     eapply assign_loc_value; eauto.
