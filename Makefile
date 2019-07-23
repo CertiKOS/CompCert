@@ -23,10 +23,10 @@ endif
 
 DIRS=lib common $(ARCHDIRS) backend cfrontend driver \
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
-  cparser cparser/MenhirLib cklr games intm
+  cparser cparser/MenhirLib cklr
 
 RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight \
-  cparser cklr games intm
+  cparser cklr
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) -R coqrel coqrel
 
@@ -70,38 +70,6 @@ COMMON=Errors.v AST.v Linking.v \
   LanguageInterface.v Invariant.v CallconvAlgebra.v ModuleSemantics.v \
   Separation.v \
   CKLR.v Valuesrel.v Eventsrel.v Globalenvsrel.v \
-
-# Game semantics
-GAMES=\
-  PCST.v \
-  LTS.v \
-  Trees.v \
-  RTS.v \
-  GameSemantics.v \
-  Composition.v \
-  Bigstep.v \
-  Sets.v \
-  AsmLinking.v \
-  Games.v \
-  ATS.v \
-  Obs.v \
-  MultiChannel.v \
-  FComp.v \
-  Res.v \
-  HComp.v \
-  CompCertSemantics.v \
-
-# Interaction Monad
-
-INTM=\
-  IntmDef.v \
-  IntmTactics.v \
-  IntmIter.v \
-  IntmDecomp.v \
-  IntmSubst.v \
-  IntmAbs.v \
-  Interaction.v \
-  SmallstepInteraction.v \
 
 # Compcert Kripke Logical Relations
 
@@ -168,7 +136,7 @@ DRIVER=Compopts.v Compiler.v Complements.v
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(CKLR) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER) $(GAMES) $(INTM)
+  $(PARSERVALIDATOR) $(PARSER)
 
 # Generated source files
 
