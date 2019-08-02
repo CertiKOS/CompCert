@@ -6,10 +6,10 @@ Require Import SegAsm FlatProgram.
 Require Globalenvs.
 
 (* An instruction is a list of bytes *)
-Definition instruction := list byte.
+Definition code_type := list byte.
 
-Definition function := @FlatProgram.function instruction.
-Definition gdef := @FlatProgram.gdef instruction data_info.
+Definition function := @FlatProgram.function code_type.
+Definition gdef := @FlatProgram.gdef code_type data_info.
 
 (* A program with binary representation of code and data *)
-Definition program := @FlatProgram.program instruction data_info.
+Definition program := @FlatProgram.program code_type data_info.
