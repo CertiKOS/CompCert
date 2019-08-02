@@ -266,6 +266,8 @@ Definition decode_jcc (mc: list byte) : res (FlatAsm.instruction * list byte):=
   else if Byte.eq_dec cond HB["8B"] then OK(Fjcc Cond_np ofs, remove_first_n mc 5)
        else Error (msg "Unknown jcc condition").
 
+Compute (decode_rr_operand HB["D8"]).
+
 Definition decode_imull_rr (mc: list byte) : res (FlatAsm.instruction * list byte):=
   do modrm <- get_n mc 0;
     do rds <- decode_rr_operand modrm;
@@ -281,7 +283,7 @@ Definition decode_imull_ri (mc: list byte) : res (FlatAsm.instruction * list byt
 Definition decode_0f (mc: list byte): res(FlatAsm.instruction * list byte):=
   do code <- get_n mc 0;
   if Byte.eq_dec  code HB["AF"] then
-    decode_imull_rr (sublist mc 1)
+    decode_imull_rr (remove_first_n mc 1)
   else
     decode_jcc mc.
 
@@ -328,7 +330,7 @@ Definition decode_cmpl_ri (mc: list byte): res(FlatAsm.instruction * list byte):
   do modrm <- get_n mc 0;
      do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
       let n := decode_int_n (remove_first_n mc 1) 4 in
-      OK(Faddl_ri rd (Int.repr n), remove_first_n mc 5).
+      OK(Fcmpl_ri rd (Int.repr n), remove_first_n mc 5).
   
 Definition decode_81  (mc: list byte): res(FlatAsm.instruction * list byte):=
   do modrm <- get_n mc 0;
@@ -380,7 +382,7 @@ Definition decode_testl_rr  (mc: list byte): res(FlatAsm.instruction * list byte
 Definition decode_cmpl_rr   (mc: list byte): res(FlatAsm.instruction * list byte):=
   do modrm <- get_n mc 0;
     do rds <- decode_rr_operand modrm;
-     OK(Fcmpl_rr (fst rds) (snd rds), remove_first_n mc 1).
+     OK(Fcmpl_rr (snd rds) (fst rds), remove_first_n mc 1).
 
 Definition decode_idivl  (mc: list byte): res(FlatAsm.instruction * list byte):=
   do modrm <- get_n mc 0;
@@ -390,8 +392,8 @@ Definition decode_idivl  (mc: list byte): res(FlatAsm.instruction * list byte):=
 Definition decode_sall_ri (mc: list byte): res(FlatAsm.instruction * list byte):=
   do modrm <- get_n mc 0;
      do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-      let n := decode_int_n (remove_first_n mc 1) 4 in
-      OK(Fsall_ri rd (Int.repr n), remove_first_n mc 5).
+      let n := decode_int_n (remove_first_n mc 1) 1 in
+      OK(Fsall_ri rd (Int.repr n), remove_first_n mc 2).
 
 Definition decode_8b (mc: list byte): res(FlatAsm.instruction * list byte):=
   do modrm <- get_n mc 0;
@@ -423,10 +425,25 @@ Definition fmc_instr_decode (mc: list byte) : res (FlatAsm.instruction * list by
               else if Byte.eq_dec h HB["99"] then OK(Fcltd,t)
               else if Byte.eq_dec h HB["F7"] then decode_idivl t
               else if Byte.eq_dec h HB["C1"] then decode_sall_ri t
-              else Error(msg "Unknown opcode!")
+                   (* else decode_testl_rr mc *)
+                   else Error(msg "Unknown opcode!")
     end.
 
 Check Fjcc = Fjcc.
+
+
+
+
+
+
+
+Compute (fmc_instr_decode [HB["C1"] ;HB["E2"] ;HB["05"] ;HB["00"] ;HB["01"];HB["AA"]]).
+
+
+
+
+
+
 
 
 Definition instr_eq (ins1 ins2: FlatAsm.instruction): Prop :=
