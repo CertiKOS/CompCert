@@ -1293,3 +1293,63 @@ Proof.
 
 Admitted. *)
 
+(** * Decoder pass *)
+Fixpoint transl_code_aux (n:nat) (c:FlatBinary.code_type) : res (list instr_with_info) :=
+  match n with
+  | O => Error (msg "Not enough fuel")
+  | S n' =>
+    match c with
+    | nil => OK nil
+    | _ =>
+      do (i, c') <- fmc_instr_decode c;
+      do ii <- transl_code_aux n' c';
+      let sz := Ptrofs.repr (Z.of_nat (length c - length c')) in
+      OK ((i,sz) :: ii)
+    end
+  end.
+
+Fixpoint transl_code (c:FlatBinary.code_type) : res (list instr_with_info) :=
+  transl_code_aux (length c + 1) c.
+
+Set Printing All.
+Definition transl_fun (f:FlatBinary.function) : res FlatAsm.function :=
+  do code' <- transl_code (FlatProgram.fn_code f);
+  OK (mkfunction (FlatProgram.fn_sig f) code' (fn_start f) (fn_size f)).
+
+Definition transl_globdef (def: (ident * option FlatBinary.gdef))
+  : res (ident * option FlatAsm.gdef) :=
+  let '(id,def) := def in
+  match def with
+  | Some (AST.Gfun (Internal f)) =>
+    do f' <- transl_fun f;
+      OK (id, Some (AST.Gfun (Internal f')))
+  | Some (AST.Gfun (External f)) => 
+    OK (id, Some (AST.Gfun (External f)))
+  | Some (AST.Gvar v) =>
+    OK (id, Some (AST.Gvar v))
+  | None => OK (id, None)
+  end.
+
+Fixpoint transl_globdefs defs :=
+  match defs with
+  | nil => OK nil
+  | def::defs' =>
+    do tdef <- transl_globdef def;
+    do tdefs' <- transl_globdefs defs';
+    OK (tdef :: tdefs')
+  end.
+
+
+(** Translation of a program *)
+Definition transf_program (p:FlatBinary.program) : res FlatAsm.program := 
+  do defs <- transl_globdefs (FlatProgram.prog_defs p);
+  OK (Build_program
+        defs
+        (prog_public p)
+        (prog_main p)
+        (prog_main_ofs p)
+        (prog_data_addr p)
+        (prog_data_size p)
+        (prog_code_addr p)
+        (prog_code_size p))
+      .
