@@ -113,7 +113,7 @@ Definition encode_testcond (c:testcond) : list byte :=
   end.
 
 (** Encode a single instruction *)
-Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instruction :=
+Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.code_type :=
   match i with
   | Fjmp_l ofs =>
     OK (HB["E9"] :: encode_int32 (Ptrofs.unsigned ofs))
@@ -209,20 +209,20 @@ Definition fmc_instr_encode (i: FlatAsm.instruction) : res FlatBinary.instructio
     OK (HB["90"] :: nil)
   end.
 
-  Definition transl_instr' (ii: FlatAsm.instr_with_info) : res instruction :=
+Definition transl_instr' (ii: FlatAsm.instr_with_info) : res FlatBinary.code_type :=
   let '(i, sz) := ii in
   fmc_instr_encode i.
 
 
 
 (** Translation of a sequence of instructions in a function *)
-Fixpoint transl_instrs (instrs: list FlatAsm.instr_with_info) : res (list instruction) :=
+Fixpoint transl_instrs (instrs: list FlatAsm.instr_with_info) : res FlatBinary.code_type :=
   match instrs with
   | nil => OK nil
   | i::instrs' =>
     do instr <- transl_instr' i;
     do tinstrs' <- transl_instrs instrs';
-    OK (instr :: tinstrs')
+    OK (instr ++ tinstrs')
   end.
 
 (** Tranlsation of a function *)

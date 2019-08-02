@@ -40,10 +40,10 @@ Inductive instruction : Type :=
   | Fnop.
 
 Definition instr_with_info: Type := instruction * ptrofs.
-
-Definition function := @FlatProgram.function instr_with_info.
-Definition gdef := @FlatProgram.gdef instr_with_info data_info.
+Definition code_type := list instr_with_info.
+Definition function := @FlatProgram.function code_type.
+Definition gdef := @FlatProgram.gdef code_type data_info.
 
 (* The Flat Machine Code Program *)
-Definition program := @FlatProgram.program instr_with_info data_info.
+Definition program := @FlatProgram.program code_type data_info.
 

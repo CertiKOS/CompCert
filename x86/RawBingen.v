@@ -10,9 +10,6 @@ Local Open Scope error_monad_scope.
 
 (** * Generation of raw binary from FlatBinary programs *)
 
-Definition flatten_code (l: list instruction) : list byte :=
-  flat_map (fun i => i) l.
-
 (** Collect the instruction bytes *)  
 Fixpoint accum_instrs (defs: list (ident * option FlatBinary.gdef)) :=
   match defs with
@@ -20,7 +17,7 @@ Fixpoint accum_instrs (defs: list (ident * option FlatBinary.gdef)) :=
   | (id, def) :: defs' =>
     let code := 
         match def with
-        | Some (Gfun (Internal f)) => flatten_code (fn_code f)
+        | Some (Gfun (Internal f)) => (fn_code f)
         | _ => []
         end in
     code ++ (accum_instrs defs')
