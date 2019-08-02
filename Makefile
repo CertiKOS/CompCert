@@ -115,7 +115,8 @@ BACKEND=\
   FlatProgram.v FlatAsm.v FlatAsmgen.v \
   FlatBinary.v FlatBingen.v ElfLayout.v \
   ValidLabel.v Hex.v Bits.v \
-  RawBingen.v RawBinary.v
+  RawBingen.v RawBinary.v \
+  FlatBinDecode.v
 
 # C front-end modules (in cfrontend/)
 
