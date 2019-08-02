@@ -174,6 +174,8 @@ Cd "extraction".
 Separate Extraction
    Compiler.transf_c_program Compiler.transf_cminor_program 
    Compiler.transf_c_program_bin Compiler.transf_cminor_program_bin
+   Compiler.transf_c_program_decode_encode_bin
+   Compiler.transf_cminor_program_decode_encode_bin
    Cexecimpl.do_initial_state Cexecimpl.do_step Cexecimpl.at_final_state
    Cexecimpl.step_expr Cexecimpl.init_mem Cexecimpl.state
    Ctypes.merge_attributes Ctypes.remove_attributes Ctypes.build_composite_env

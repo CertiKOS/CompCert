@@ -65,6 +65,20 @@ let compile_c_ast sourcename csyntax ofile =
     (* Write the ELF file *)
     write_elf ofile elf_file
   end
+  else if !option_re_machine_code then
+  begin
+    let asm =
+      match (Compiler.transf_c_program_decode_encode_bin csyntax) with
+      | Errors.OK asm ->
+          asm
+      | Errors.Error msg ->
+          eprintf "%s: %a" sourcename print_error msg;
+          exit 2 in
+    (* Create an ELF file from the Raw Binary program *)
+    let elf_file = gen_elf asm in
+    (* Write the ELF file *)
+    write_elf ofile elf_file
+  end
   else begin
     (* Convert to Asm *)
     let asm =
@@ -136,6 +150,18 @@ let compile_cminor_file ifile ofile =
   let elf_file = gen_elf asm in
   (* Write the ELF file *)
   write_elf ofile elf_file end
+  else if ! option_re_machine_code then
+  begin let asm =
+    match (Compiler.transf_cminor_program_decode_encode_bin cm) with
+    | Errors.OK asm ->
+        asm
+    | Errors.Error msg ->
+        eprintf "%s: %a" ifile print_error msg;
+        exit 2 in
+  (* Create an ELF file from the RockSalt Asm program *)
+  let elf_file = gen_elf asm in
+  (* Write the ELF file *)
+  write_elf ofile elf_file end
   else begin
  (* Convert to Asm *)
   let asm =
@@ -186,7 +212,7 @@ let process_c_file sourcename =
           then output_filename sourcename ".c" ".s"
           else Filename.temp_file "compcert" ".s" in
         let objname = output_filename ~final: !option_c sourcename ".c" ".o" in
-        if ! option_machine_code then begin
+        if ! option_machine_code || !option_re_machine_code then begin
           compile_c_file sourcename preproname objname;
         end else begin
            compile_c_file sourcename preproname asmname;
@@ -552,7 +578,8 @@ let cmdline_actions =
   (* GCC compatibility: .h files can be preprocessed with -E *)
   Suffix ".h", Self (fun s ->
       push_action process_h_file s; incr num_source_files; incr num_input_files);
-  Exact "-machinecode", Set option_machine_code
+  Exact "-machinecode", Set option_machine_code;
+  Exact "-re_machinecode", Set option_re_machine_code
   ]
 
 let _ =

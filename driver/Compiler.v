@@ -93,6 +93,8 @@ Require SegAsmSep.
 (** Command-line flags. *)
 Require Import Compopts.
 
+Require Import FlatBinDecode.
+
 
 (** Pretty-printers (defined in Caml). *)
 Parameter print_Clight: Clight.program -> unit.
@@ -212,6 +214,14 @@ Definition transf_c_program_bin p : res RawBinary.program :=
   @@@ time "Generation of raw binary code" RawBingen.transf_program.
 
 
+Definition transf_c_program_decode_encode_bin p : res RawBinary.program :=
+  transf_c_program_tasm p
+  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
+  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
+  @@@ time "Decode binary back into FlatAsm" FlatBinDecode.transf_program
+  @@@ time "Encode FlatAsm back into binary" FlatBingen.transf_program
+  @@@ time "Generation of raw binary code" RawBingen.transf_program.
+
 
 Definition transf_cminor_program_real (p:Cminor.program) : res Asm.program :=
   transf_cminor_program p
@@ -233,6 +243,14 @@ Definition transf_cminor_program_bin (p:Cminor.program) : res RawBinary.program 
   transf_cminor_program_tasm p
   @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
   @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
+  @@@ time "Generation of raw binary code" RawBingen.transf_program.
+
+Definition transf_cminor_program_decode_encode_bin (p:Cminor.program) : res RawBinary.program :=
+  transf_cminor_program_tasm p
+  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
+  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
+  @@@ time "Decode binary back into FlatAsm" FlatBinDecode.transf_program
+  @@@ time "Encode FlatAsm back into binary" FlatBingen.transf_program
   @@@ time "Generation of raw binary code" RawBingen.transf_program.
 
 
