@@ -678,9 +678,26 @@ Lemma byte_testbit_shru : forall byte i bi,
 Admitted.
 
 
+Lemma non_zero_len_not_nil : forall (A:Type) (l: list A),
+    (length l > 0)%nat -> (l <> nil).
+Proof.
+  destruct l; simpl.
+  - intros. omega.
+  - intros H. intro EQ. discriminate.
+Qed.
+
 Lemma list_len_gt1: forall (A:Type) (l:list A) n,
     length l = S n -> exists l' (t:A), l = l' ++ [t].
-Admitted.
+Proof.
+  intros A0 l n H.
+  destruct l.
+  + simpl in H. omega.
+  + exists (removelast (a::l)).
+    exists (last (a::l) a).
+    rewrite <- (app_removelast_last a).
+    ++ auto.
+    ++ apply non_zero_len_not_nil. omega.
+Qed.
 
 Lemma encode_int_big_test_lsb : forall bits b byte,
     encode_int_big 1 (2 * bits_to_Z bits + bool_to_Z b) = [byte]
@@ -794,6 +811,122 @@ Proof.
    simpl;auto.
 Qed.
 
+
+Lemma byte_shru_zero: forall x,
+    Byte.shru x (Byte.repr 0) = x.
+Proof.
+  intros x.
+  unfold Byte.shru.
+  rewrite Byte.unsigned_repr.
+  + unfold Z.shiftr. unfold Z.shiftl. simpl. rewrite Byte.repr_unsigned. auto.
+  + unfold Byte.max_unsigned.
+    unfold Byte.modulus.
+    unfold Byte.wordsize.
+    unfold Wordsize_8.wordsize.
+    unfold two_power_nat.
+    unfold shift_nat. simpl. omega.
+Qed.
+
+Lemma bits_to_Z_range: forall n l,
+    length l = n -> 0<= bits_to_Z l < two_power_nat (length l).
+Proof.
+  induction n.
+  + intros l.
+    intros H.
+    rewrite (zero_length_list l).
+    split.
+    ++ simpl. omega.
+    ++ simpl. unfold two_power_nat. simpl.
+       omega.
+    ++ apply H.
+  + split.
+    ++ generalize (list_len_gt1 _ l n H).
+       intros (l' & t & H10).
+       rewrite H10.
+       rewrite (bits_to_Z_prefix).
+       rewrite H10 in H.
+       rewrite app_length in H.
+       simpl in H.
+       assert(0<= bits_to_Z l' < two_power_nat (length l' ) ) as l'Range. {
+         apply( IHn l').
+         omega.
+       }
+       assert(bool_to_Z t >=0) as tRange. {
+         unfold bool_to_Z.
+         destruct t;omega.
+       }
+       omega.
+    ++ generalize (list_len_gt1 _ l n H).
+       intros (l' & t & H10).
+       rewrite H10.
+       rewrite app_length.
+       simpl.
+       rewrite bits_to_Z_prefix.
+       rewrite H10 in H.
+       rewrite app_length in H.
+       simpl in H.
+       assert(0<= bits_to_Z l' <= two_power_nat (length l' )-1 ) as l'Range. {
+         assert(0<= bits_to_Z l' < two_power_nat (length l' ) ) as l'Range. {
+           apply (IHn l'). omega.
+         }
+         omega.
+       }
+       assert (plus (length l') 1%nat = S (length l')) as Hadd. {
+         omega.
+       }
+       rewrite Hadd.
+       rewrite two_power_nat_S.
+       assert(0<= bool_to_Z t <=1) as tRange. {
+         unfold bool_to_Z.
+         destruct t;omega.
+       }
+       omega.
+Qed.
+
+     
+
+  
+Lemma two_power_mono: forall n2 n1,
+    ge n1  n2 -> (two_power_nat n1) >= (two_power_nat n2).
+Proof.
+  induction n2.
+  + intros n0 H. unfold two_power_nat. simpl.
+    induction n0.
+    ++ simpl. omega.
+    ++ setoid_rewrite (two_power_nat_S).
+       assert(two_power_nat n0 >=1) as basic. {
+         assert((n0>=0)%nat) as n0Range. {
+           omega.
+         }
+         unfold two_power_nat.
+         apply(IHn0 n0Range).
+       }
+       omega.
+  + intros n1 H.
+    induction n1.
+    ++ inversion H.
+    ++ assert(two_power_nat n1 >= two_power_nat n2) as basic. {
+         assert((n1>=n2)%nat) as n1n2. {
+           inversion H;omega.
+         }
+         apply(IHn2 n1 n1n2).
+       }
+       repeat rewrite two_power_nat_S.
+       omega.
+Qed.
+
+Lemma div2_shiftl_eq: forall l1 b,
+    Z.div2 ( 2 * bits_to_Z l1 + bool_to_Z b) =  (bits_to_Z l1).
+Proof.
+  (* intros l1 b. *)
+  (* generalize l1. *)
+  (* induction (length l1) eqn:EQL. *)
+  (* + admit. *)
+  (* + generalize (list_len_gt1 _ l1 n EQL). *)
+  (*   intros (l' & t & H). *)
+Admitted.
+
+
 Lemma shru_bits: forall n l1 l2,
     le (length(l1++l2)) 8%nat ->
     eq (length(l2)) n ->
@@ -803,42 +936,96 @@ Proof.
   - intros l1 l2 LE EQ.
     generalize (zero_length_list _ EQ). intro. subst.
     rewrite app_nil_r in *.
-
-    Lemma byte_shru_zero: forall x,
-        Byte.shru x (Byte.repr 0) = x.
-    Admitted.
-
     apply byte_shru_zero.
 
   - intros l1 l2 LE EQ.
     generalize (list_len_gt1 _ _ _ EQ).
     intros (l2' & b & L2). subst.
     rewrite app_assoc.
-    admit. 
-    
-
-  (* intros. unfold Byte.shru. *)
-  (* simpl. f_equal. *)
-  (* unfold Z.shiftr. *)
-  (* assert(Z.of_nat n<=8) as nRange by admit. *)
-  (* unfold Z.shiftl. *)
-  (* rewrite(Byte.unsigned_repr_eq). *)
-  (* assert((Z.of_nat n mod Byte.modulus)=Z.of_nat n) as nValue by admit. *)
-  (* rewrite nValue. *)
-  (* induction l2. *)
-  (* - simpl. *)
-  (*   unfold length in H10. *)
-  (*   rewrite <- H10. *)
-  (*   simpl. *)
-  (*   assert(l1++[]=l1) as nilRefl by admit. *)
-  (*   rewrite nilRefl. *)
-  (*   rewrite (Byte.unsigned_repr_eq). *)
-  (*   admit. *)
-  (* - assert(ge n 1%nat) as nLB by admit. *)
-  (*   unfold Z.of_nat. *)
-  (*   destruct n. inversion nLB. *)
-  (*   simpl. *)
+    unfold Byte.shru.
+    (* f_equal. *)
+    unfold Z.shiftr.
+    unfold Z.shiftl.
+    rewrite Byte.unsigned_repr.
+    + simpl.
+      destruct n' eqn:EQN'.
+      ++ simpl.
+         assert(l2'=[]) as l2N. {
+           rewrite app_length in EQ.
+           simpl in EQ.
+           destruct (length l2') eqn: EQL.
+           + rewrite <- (zero_length_list l2').
+             auto. apply EQL.
+           + inversion EQ. simpl in H10. omega.
+         }
+         rewrite l2N. rewrite <- app_assoc. simpl.
+         rewrite Byte.unsigned_repr_eq.
+         rewrite bits_to_Z_prefix.
+         assert( (2 * bits_to_Z l1 + bool_to_Z b) mod Byte.modulus =  (2 * bits_to_Z l1 + bool_to_Z b)) as range. {
+           apply Zmod_small.
+           rewrite l2N in LE.
+           simpl in LE.           
+           assert(0<= bits_to_Z l1 < 128) as l1Range. {
+             assert (le (length l1) 7%nat) as l1Len. {
+               rewrite app_length in LE.
+               simpl in LE.
+               omega.
+             }
+             generalize (bits_to_Z_range (length l1) l1).
+             intros H.
+             destruct H.
+             - auto.
+             - split.
+               -- omega.
+               -- induction (length l1).
+                  --- unfold two_power_nat in H10. simpl in H10. omega.
+                  --- assert(bits_to_Z l1 < two_power_nat 7%nat) as ub by admit.
+                      unfold two_power_nat in ub.
+                      simpl in ub.
+                      auto.               
+           }
+           assert(0<=bool_to_Z b < 2 ) as bRange. {
+             unfold bool_to_Z.
+             destruct b; omega.
+           }
+           destruct l1Range.
+           destruct bRange.
+           split.
+           - omega.
+           - assert(Byte.modulus = 256) as modu. {
+               unfold Byte.modulus.
+               unfold Byte.wordsize.
+               unfold Wordsize_8.wordsize.
+               unfold two_power_nat.
+               simpl.
+               auto.
+             }
+             rewrite modu.
+             omega.
+         }
+         rewrite range.
+         
+        
+         rewrite div2_shiftl_eq.
+         auto.
+      ++ simpl.
+         rewrite Pplus_one_succ_r.
+         rewrite Pos.iter_add.
+         simpl.
+         assert(Z.div2 (Byte.unsigned bB[ (l1 ++ l2') ++ [b]])=(Byte.unsigned bB[(l1++l2')]))as div_prefix by admit.
+         rewrite div_prefix.
+         assert(le (length(l1++l2')) 8%nat) as len by admit.
+         assert(eq (length(l2')) (S n)) as lenl2 by admit.
+         generalize (IHn' l1 l2' len lenl2).
+         intros H.
+         unfold Byte.shru in H.
+         unfold Z.shiftr in H. unfold Z.shiftl in H.
+         rewrite Byte.unsigned_repr in H.
+         +++ simpl in H. apply H.
+         +++ admit.
+    + admit.
 Admitted.
+              
 
 (** Reflexivity between the encoding and decoding of addressing modes *) 
 Lemma encode_decode_addrmode_refl: forall a rd x l,
@@ -874,13 +1061,13 @@ Proof.
     * intros (b1 & b2 & B1 & B2 & ECD & ADDR).
       setoid_rewrite <- ECD. 
       simpl. rewrite ADDR. simpl.
-      assert((Byte.shru b1 (Byte.repr 6))=(Byte.repr 2)) as modValue. admit. (* { *)
-      (*   rewrite B2. *)
-      (*   setoid_rewrite (shru_bits b["10"] ( x ++ sublist (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++ x2) 3) 6). *)
-      (*   - simpl. auto. *)
-      (*   - admit. *)
-      (*   - admit. *)
-      (* } *)
+      assert((Byte.shru b1 (Byte.repr 6))=(Byte.repr 2)) as modValue. {
+        rewrite B2.
+        setoid_rewrite (shru_bits 6 b["10"] ( x ++ sublist (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++ x2) 3)).
+        - simpl. auto.
+        - admit.
+        - admit.
+      }
       rewrite modValue. branch_byte_eq.
       assert((Byte.and b1 (Byte.repr 7))=(Byte.repr 4)) as regValue by admit.
       rewrite regValue. unfold addrmode_parse_reg.
