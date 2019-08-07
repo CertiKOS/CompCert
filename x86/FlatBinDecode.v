@@ -827,6 +827,12 @@ Proof.
     unfold shift_nat. simpl. omega.
 Qed.
 
+Lemma bool_to_Z_range: forall t, 0 <= bool_to_Z t <=1.
+Proof.
+  unfold bool_to_Z.
+  destruct t;omega.
+Qed.
+
 Lemma bits_to_Z_range: forall n l,
     length l = n -> 0<= bits_to_Z l < two_power_nat (length l).
 Proof.
@@ -876,10 +882,7 @@ Proof.
        }
        rewrite Hadd.
        rewrite two_power_nat_S.
-       assert(0<= bool_to_Z t <=1) as tRange. {
-         unfold bool_to_Z.
-         destruct t;omega.
-       }
+       generalize (bool_to_Z_range t).
        omega.
 Qed.
 
@@ -915,16 +918,54 @@ Proof.
        omega.
 Qed.
 
-Lemma div2_shiftl_eq: forall l1 b,
-    Z.div2 ( 2 * bits_to_Z l1 + bool_to_Z b) =  (bits_to_Z l1).
+
+Lemma div2_discard: forall n b,
+    Z.div2 (2*n + bool_to_Z b) = Z.div2 (2*n).
 Proof.
-  (* intros l1 b. *)
-  (* generalize l1. *)
-  (* induction (length l1) eqn:EQL. *)
-  (* + admit. *)
-  (* + generalize (list_len_gt1 _ l1 n EQL). *)
-  (*   intros (l' & t & H). *)
-Admitted.
+  intros. 
+  repeat rewrite Zdiv2_div. 
+  rewrite (Zdiv_unique _ 2 n (bool_to_Z b)).
+  rewrite (Zdiv_unique _ 2 n 0); try omega.
+  omega.
+  generalize (bool_to_Z_range b).
+  omega.
+Qed.       
+       
+
+
+Lemma div2_id: forall n,
+    Z.div2 (2*n) = n.
+Proof.
+  intros.
+  rewrite Zdiv2_div.
+  rewrite (Zdiv_unique _ 2 n 0); omega.
+Qed.
+
+
+
+Lemma div2_shiftr_eq: forall n l1 b,
+    n = length l1 -> Z.div2 ( 2 * bits_to_Z l1 + bool_to_Z b) =  (bits_to_Z l1).
+Proof.
+  induction n.
+  + intros l1 b H.
+    rewrite (zero_length_list l1);auto.
+    simpl.
+    rewrite Zdiv2_div.
+    rewrite (Zdiv_unique _ 2 0 (bool_to_Z b));try omega.
+    generalize (bool_to_Z_range b).
+    omega.
+  + intros l1 b H.
+    symmetry in H.
+    generalize (list_len_gt1 _ l1 n H).
+    intros (l' & t & H10).
+    rewrite H10.
+    rewrite bits_to_Z_prefix.
+
+    generalize(div2_discard  (2 * bits_to_Z l' + bool_to_Z t) b).
+    intros H11.
+    rewrite H11.
+    apply div2_id.
+Qed.
 
 
 Lemma shru_bits: forall n l1 l2,
@@ -979,7 +1020,13 @@ Proof.
                -- omega.
                -- induction (length l1).
                   --- unfold two_power_nat in H10. simpl in H10. omega.
-                  --- assert(bits_to_Z l1 < two_power_nat 7%nat) as ub by admit.
+                  --- assert(bits_to_Z l1 < two_power_nat 7%nat) as ub. {
+                        assert(two_power_nat (S n) <= two_power_nat 7) as ub1. {
+                          generalize (two_power_mono (S n) 7).
+                          omega.
+                        }
+                        omega.
+                      }
                       unfold two_power_nat in ub.
                       simpl in ub.
                       auto.               
@@ -1006,13 +1053,79 @@ Proof.
          rewrite range.
          
         
-         rewrite div2_shiftl_eq.
-         auto.
+         rewrite (div2_shiftr_eq (length l1) _);auto.
       ++ simpl.
          rewrite Pplus_one_succ_r.
          rewrite Pos.iter_add.
          simpl.
-         assert(Z.div2 (Byte.unsigned bB[ (l1 ++ l2') ++ [b]])=(Byte.unsigned bB[(l1++l2')]))as div_prefix by admit.
+         assert(Z.div2 (Byte.unsigned bB[ (l1 ++ l2') ++ [b]])=(Byte.unsigned bB[(l1++l2')]))as div_prefix. {
+           rewrite bits_to_Z_prefix.
+           rewrite Byte.unsigned_repr.
+           + rewrite (div2_shiftr_eq (length(l1++l2')));auto.
+             rewrite Byte.unsigned_repr.
+             auto.
+             assert(length(l1++l2') = length(l1++l2')) as lenRefl. {
+               auto.
+             }
+             generalize (bits_to_Z_range (length(l1++l2')) (l1++l2') lenRefl).
+             intros H.
+             assert((length (l1++l2')<=7)%nat) as lenRange. {
+               rewrite app_length in LE.
+               rewrite app_length in LE.
+               simpl in LE.
+               rewrite plus_assoc in LE.
+               rewrite <- app_length in LE.               
+               omega.
+             }
+             unfold Byte.max_unsigned.
+             unfold Byte.modulus.
+             assert(two_power_nat (length (l1 ++ l2')) <= two_power_nat 7) as tpnRange. {
+               generalize (two_power_mono (length(l1++l2')) 7 lenRange).
+               omega.
+             }
+             unfold Byte.wordsize.
+             unfold Wordsize_8.wordsize.
+             assert(two_power_nat 7 < two_power_nat 8 -1) as tpnRange1. {
+               unfold two_power_nat.
+               simpl.
+               omega.
+             }
+             omega.
+           + generalize (bool_to_Z_range b).
+             intros H.
+             assert((length (l1++l2')<=7)%nat) as lenRange. {
+               rewrite app_length in LE.
+               rewrite app_length in LE.
+               simpl in LE.
+               rewrite plus_assoc in LE.
+               rewrite <- app_length in LE.               
+               omega.
+             }
+             assert(two_power_nat (length (l1 ++ l2')) <= two_power_nat 7) as tpnRange. {
+               generalize (two_power_mono (length(l1++l2')) 7 lenRange).
+               omega.
+             }
+             assert(two_power_nat 7 = 128) as tpn7. {
+               unfold two_power_nat.
+               simpl.
+               omega.
+             }
+             rewrite tpn7 in tpnRange.
+              assert(length(l1++l2') = length(l1++l2')) as lenRefl. {
+               auto.
+             }
+              generalize (bits_to_Z_range (length(l1++l2')) (l1++l2') lenRefl).
+              intros H10.
+              unfold Byte.max_unsigned.
+              assert(Byte.modulus = 256) as modo. {
+                unfold Byte.modulus.
+                unfold two_power_nat.
+                simpl.
+                auto.
+              }
+              rewrite modo.              
+              omega.
+         }              
          rewrite div_prefix.
          assert(le (length(l1++l2')) 8%nat) as len by admit.
          assert(eq (length(l2')) (S n)) as lenl2 by admit.
