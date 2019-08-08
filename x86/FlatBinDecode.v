@@ -1127,17 +1127,51 @@ Proof.
               omega.
          }              
          rewrite div_prefix.
-         assert(le (length(l1++l2')) 8%nat) as len by admit.
-         assert(eq (length(l2')) (S n)) as lenl2 by admit.
+         assert(le (length(l1++l2')) 8%nat) as len. {
+           rewrite app_length in LE.
+           rewrite app_length in LE.
+           simpl in LE.
+           rewrite plus_assoc in LE.
+           rewrite <- app_length in LE.
+           omega.
+         }
+         assert(eq (length(l2')) (S n)) as lenl2. {
+           rewrite app_length in EQ.
+           simpl in EQ.
+           omega.
+         }
          generalize (IHn' l1 l2' len lenl2).
          intros H.
          unfold Byte.shru in H.
          unfold Z.shiftr in H. unfold Z.shiftl in H.
          rewrite Byte.unsigned_repr in H.
          +++ simpl in H. apply H.
-         +++ admit.
-    + admit.
-Admitted.
+         +++
+           rewrite app_length in EQ. simpl in EQ.
+           repeat rewrite app_length in LE.
+           simpl in LE.
+           assert(Byte.max_unsigned = 255) as byteMax. {
+             unfold Byte.max_unsigned. simpl. auto.
+           }
+           assert(Z.of_nat (S n)<=8) as nRange. {             
+             assert(Z.of_nat (S n) = Z.of_nat n +1 ) as pls. {
+               rewrite Nat2Z.inj_succ.
+               simpl.
+               omega.
+             }
+             rewrite pls.
+             omega.             
+           }
+           rewrite byteMax.
+           omega.
+           
+    +  rewrite app_length in EQ. simpl in EQ.
+       repeat rewrite app_length in LE.
+       simpl in LE.
+       unfold Byte.max_unsigned. simpl.
+       rewrite Zpos_P_of_succ_nat.
+       omega.
+Qed.
               
 
 (** Reflexivity between the encoding and decoding of addressing modes *) 
