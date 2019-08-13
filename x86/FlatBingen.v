@@ -70,23 +70,29 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
       OK ([bB[b["10"] ++ rdbits ++ rbbits]])
 
   | Some (rs, scale), None =>
-    (** With a scale and without a base register *)
-    let scbits := encode_scale scale in
-    do rsbits <- encode_ireg rs;
-    let bits := 
-        b["00"] ++ rdbits ++ b["100"] ++
-        scbits ++ rsbits ++ b["101"] in
-    OK (encode_int_big 2 (bits_to_Z bits))
+    if (ireg_eq rs RSP) then
+      Error (msg "RSP cannot be the index of SIB")
+    else
+      (** With a scale and without a base register *)
+      let scbits := encode_scale scale in
+      do rsbits <- encode_ireg rs;
+      let bits := 
+          b["00"] ++ rdbits ++ b["100"] ++
+          scbits ++ rsbits ++ b["101"] in
+      OK (encode_int_big 2 (bits_to_Z bits))
 
   | Some (rs, scale), Some rb =>
-    (** With a scale and a base register *)
-    let scbits := encode_scale scale in
-    do rsbits <- encode_ireg rs;
-    do rbbits <- encode_ireg rb;
-    let bits := 
-        b["10"] ++ rdbits ++ b["100"] ++
-        scbits ++ rsbits ++ rbbits in
-    OK (encode_int_big 2 (bits_to_Z bits))
+    if (ireg_eq rs RSP) then
+      Error (msg "RSP cannot be the index of SIB")
+    else    
+      (** With a scale and a base register *)
+      let scbits := encode_scale scale in
+      do rsbits <- encode_ireg rs;
+      do rbbits <- encode_ireg rb;
+      let bits := 
+          b["10"] ++ rdbits ++ b["100"] ++
+          scbits ++ rsbits ++ rbbits in
+      OK (encode_int_big 2 (bits_to_Z bits))
   end.
     
 (** Encode the full address mode *)

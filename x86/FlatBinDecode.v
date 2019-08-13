@@ -1172,7 +1172,130 @@ Proof.
        rewrite Zpos_P_of_succ_nat.
        omega.
 Qed.
-              
+
+Lemma bits_to_Z_suffix: forall n l1 a,
+    (n= length l1)%nat ->
+    bits_to_Z (a::l1) = (bool_to_Z a) * (two_power_nat (length l1)) + bits_to_Z l1.
+Proof.
+  induction n.
+  + intros l1 a H.
+    symmetry in H.
+    generalize (zero_length_list l1 H).
+    intros H10.
+    rewrite H10.
+    simpl.
+    rewrite two_power_nat_O.
+    omega.
+
+
+  + intros l1 a H.
+    symmetry in H.
+    generalize (list_len_gt1 bool l1 n H).
+    intros (l' & t & H1).
+    rewrite H.
+    rewrite H1.
+    setoid_rewrite (bits_to_Z_prefix (a::l') t).
+    assert (length l' = n) as lenL'. {
+      rewrite H1 in H.
+      rewrite app_length in H.
+      simpl in H.
+      omega.
+    }
+    setoid_rewrite (IHn l' a).
+    ++ rewrite lenL'.
+       setoid_rewrite (bits_to_Z_prefix l' t).
+       rewrite two_power_nat_S.
+       repeat rewrite Zmult_assoc.
+       repeat rewrite Z.mul_add_distr_l.
+       repeat rewrite Zmult_assoc.
+       repeat rewrite Zplus_assoc.
+       replace ( 2 * bool_to_Z a * two_power_nat n) with ( bool_to_Z a * 2 * two_power_nat n).
+       +++ omega.
+       +++
+         rewrite Zmult_assoc_reverse.
+         rewrite (Z.mul_shuffle3 (bool_to_Z a) 2 (two_power_nat n)).
+         rewrite Zmult_assoc.
+         auto.
+    ++ symmetry in  lenL'.
+       auto.
+Qed.
+
+
+Lemma bits_to_Z_cons_eq : forall a l1 l2,
+    bits_to_Z ((a::l1) ++ l2) = (bool_to_Z a)*(two_power_nat (length (l1++l2))) +
+                                bits_to_Z (l1 ++ l2).
+Proof.  
+  intros a l1 l2.
+  setoid_rewrite <- (app_comm_cons l1 l2 a).
+  rewrite (bits_to_Z_suffix (length(l1++l2))  (l1++l2) a).
+  auto. auto.
+Qed.
+
+Lemma bits_to_Z_mod : forall l1 l2,
+    bits_to_Z (l1 ++ l2) mod (2 ^ (Z.of_nat (length l2))) = bits_to_Z l2.
+Proof.
+  induction l1.
+  - intros l2. simpl.
+    apply Zdiv.Zmod_small.
+    rewrite <- two_power_nat_equiv.
+    eapply bits_to_Z_range; eauto.
+  - intros l2.
+    rewrite bits_to_Z_cons_eq.
+    rewrite app_length. rewrite two_power_nat_equiv.
+    rewrite Nat2Z.inj_add.
+    rewrite Z.pow_add_r; try omega.
+    rewrite Z.mul_assoc. rewrite Z.add_comm.
+    rewrite Z.mod_add.
+    apply IHl1.
+    apply Z.pow_nonzero; try omega.
+Qed.
+
+Lemma Z_and7: forall l1 l2,
+    (length (l1++l2) <=8)%nat ->
+    (length l2 = 3)%nat->
+    Z.land (bits_to_Z (l1 ++ l2)) 7 = bits_to_Z l2.
+Proof.
+  intros l1 l2 LENBND L2.
+  assert (7 = Z.ones 3) as OEQ. {
+    rewrite Z.ones_equiv. simpl. auto.
+  }
+  rewrite OEQ, Z.land_ones; try omega.
+  replace 3 with (Z.of_nat (length l2)).
+  apply bits_to_Z_mod.
+  rewrite L2.
+  auto.
+Qed.
+
+  
+Lemma and7: forall l1 l2,
+    (length (l1++l2) <=8)%nat ->
+    (length l2 = 3)%nat->
+    Byte.and bB[l1++l2] (Byte.repr 7) = bB[l2].
+Proof.
+  intros. unfold Byte.and.
+  f_equal.
+  repeat rewrite Byte.unsigned_repr.
+  apply Z_and7; auto.
+  + unfold Byte.max_unsigned. unfold Byte.modulus. unfold two_power_nat. simpl.
+    omega.
+  + assert(length(l1++l2) = length(l1++l2)) as len by auto.
+    generalize (bits_to_Z_range (length(l1++l2)) (l1++l2) len).
+    intros H11.
+    assert(two_power_nat (length (l1++l2)) <= two_power_nat 8) as ub. {
+      generalize (two_power_mono (length(l1++l2)) 8 H).
+      intros H12.
+      omega.
+    }
+    assert (Byte.max_unsigned = 255) as maxByte. {
+      unfold Byte.max_unsigned. unfold Byte.modulus. simpl. auto.
+    }
+    assert (two_power_nat 8 = 256) as tp. {
+      unfold two_power_nat. simpl. auto.
+    }
+    rewrite tp in ub.
+    rewrite maxByte.
+    omega.
+Qed.
 
 (** Reflexivity between the encoding and decoding of addressing modes *) 
 Lemma encode_decode_addrmode_refl: forall a rd x l,
@@ -1184,9 +1307,11 @@ Proof.
   case index eqn:EQI.
   + case base eqn: EQB.
     ++ destruct p.
+       destruct (ireg_eq i0 RSP) eqn:EQR in EQ1; inversion EQ1.
+       monadInv EQ1.
        (* Set Printing All. *)
        set (X := (b[ "10"]) ) in EQ1.
-       monadInv EQ1.
+       (* monadInv EQ1. *)
        exploit (encode_decode_reg_refl rd x b["10"] (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++ x2) EQ0); eauto.
     * 
       unfold length.
@@ -1212,17 +1337,59 @@ Proof.
         rewrite B2.
         setoid_rewrite (shru_bits 6 b["10"] ( x ++ sublist (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++ x2) 3)).
         - simpl. auto.
-        - admit.
-        - admit.
+        -
+          setoid_rewrite (sublist_prefix [char_to_bool "1" ; char_to_bool "0" ; char_to_bool "0"] (encode_scale s ++ x1 ++ x2)).
+          repeat rewrite app_length.
+          simpl.
+          rewrite (encode_reg_length rd);auto.
+        - setoid_rewrite (sublist_prefix [char_to_bool "1" ; char_to_bool "0" ; char_to_bool "0"] (encode_scale s ++ x1 ++ x2)).
+          repeat rewrite app_length.
+          simpl.
+          rewrite (encode_reg_length rd);auto.
       }
       rewrite modValue. branch_byte_eq.
-      assert((Byte.and b1 (Byte.repr 7))=(Byte.repr 4)) as regValue by admit.
+      assert((Byte.and b1 (Byte.repr 7))=(Byte.repr 4)) as regValue. {
+
+        rewrite B2.
+        setoid_rewrite (and7 ( b[ "10"] ++ x) (sublist (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++ x2) 3) ).
+        + unfold sublist. simpl. destruct( encode_scale s ++ x1 ++ x2);auto.
+        + auto. setoid_rewrite (sublist_prefix [char_to_bool "1" ; char_to_bool "0" ; char_to_bool "0"] (encode_scale s ++ x1 ++ x2)).
+          repeat rewrite app_length.
+          simpl.
+          rewrite (encode_reg_length rd);auto.
+        + setoid_rewrite (sublist_prefix [char_to_bool "1" ; char_to_bool "0" ; char_to_bool "0"] (encode_scale s ++ x1 ++ x2)).
+          simpl.
+          auto.
+      }
       rewrite regValue. unfold addrmode_parse_reg.
       repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
         rewrite byte_eq_true.
       simpl. branch_byte_eq.
       unfold addrmode_parse_SIB.
-      assert((Byte.shru (Byte.and b2 (Byte.repr 56)) (Byte.repr 3))=bB[x1]) as indexBits by admit.
+      assert((Byte.shru (Byte.and b2 (Byte.repr 56)) (Byte.repr 3))=bB[x1]) as indexBits. {
+        rewrite <- Byte.and_shru.
+        rewrite B1.
+        setoid_rewrite (remove_first_prefix [char_to_bool "1" ; char_to_bool "0" ; char_to_bool "0" ] (encode_scale s ++ x1 ++ x2) 3).
+        replace ( encode_scale s ++ x1 ++ x2) with (( encode_scale s ++ x1 )++ x2).
+        
+        + setoid_rewrite (shru_bits 3 (encode_scale s ++ x1) x2).
+          ++ assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as valueOfShr. {
+               unfold Byte.shru. f_equal.
+             }
+             rewrite valueOfShr.
+             rewrite and7;auto.
+             +++ repeat rewrite app_length.
+                 rewrite (encode_scale_length).
+                 rewrite (encode_reg_length i0);auto.
+             +++ rewrite (encode_reg_length i0);auto.
+          ++ repeat rewrite app_length.
+             rewrite (encode_scale_length).
+             rewrite (encode_reg_length i0);auto.
+             rewrite (encode_reg_length i);auto.
+          ++ rewrite (encode_reg_length i);auto.
+        + rewrite app_assoc. auto.
+        + simpl. auto.
+      }
       rewrite indexBits.
       assert( addrmode_parse_reg bB[ x1] = OK i0) as indexValue. {
         apply (encode_parse_reg_refl i0).
@@ -1230,16 +1397,47 @@ Proof.
       }
       rewrite indexValue.
       simpl.
-      assert((Byte.shru b2 (Byte.repr 6))=bB[(encode_scale s)]) as scaleBits by admit.
+      assert((Byte.shru b2 (Byte.repr 6))=bB[(encode_scale s)]) as scaleBits. {
+        rewrite B1.
+        setoid_rewrite (remove_first_prefix [char_to_bool "1" ; char_to_bool "0" ;char_to_bool "0"] (encode_scale s ++ x1 ++ x2) 3).
+        + setoid_rewrite (shru_bits 6 (encode_scale s) (x1++x2)).
+          ++ auto.
+          ++
+            repeat rewrite app_length.
+            rewrite (encode_scale_length).
+            rewrite (encode_reg_length i0);auto.
+            rewrite (encode_reg_length i);auto.
+          ++
+            repeat rewrite app_length.
+            rewrite (encode_reg_length i0);auto.
+            rewrite (encode_reg_length i);auto.
+        + simpl. auto.
+      }
       rewrite scaleBits.
       assert(addrmode_SIB_parse_scale bB[ encode_scale s] = (OK s)) as scale_refl. {
         apply (encode_parse_scale_refl s).
       }
       rewrite scale_refl.
       simpl.
-      assert((Byte.and b2 (Byte.repr 7)) = bB[x2]) as baseBits by admit.
+      assert((Byte.and b2 (Byte.repr 7)) = bB[x2]) as baseBits. {
+        rewrite B1.
+        setoid_rewrite (remove_first_prefix  [char_to_bool "1" ; char_to_bool "0" ;char_to_bool "0"] (encode_scale s ++ x1 ++ x2) 3).
+        + rewrite app_assoc.
+          setoid_rewrite (and7 (encode_scale s ++ x1) x2);auto.
+          ++
+            repeat rewrite app_length.
+            rewrite (encode_scale_length).
+            rewrite (encode_reg_length i0);auto.
+            rewrite (encode_reg_length i);auto.
+          ++ rewrite (encode_reg_length i);auto.
+        + simpl. auto.
+      }
       rewrite baseBits.
-      assert(addrmode_parse_reg bB[ x2] = (OK i)) as baseValue by admit.
+      assert(addrmode_parse_reg bB[ x2] = (OK i)) as baseValue. {
+        rewrite (encode_parse_reg_refl i).
+        + auto.
+        + apply EQ1.
+      }
       rewrite baseValue.
       simpl.
       unfold addrmode_SIB_parse_base.
@@ -1249,7 +1447,18 @@ Proof.
       simpl. rewrite byte_eq_false;try prove_byte_neq.
       simpl.
   - repeat f_equal.
-    -- admit.
+    --
+      unfold addrmode_SIB_parse_index.
+      assert(bB[x1] <> HB["4"]) as x1EQ. {
+        unfold not.
+        intros H.
+        unfold encode_ireg in EQ.
+        case i0 eqn:EQI; inversion EQ; rewrite <- H12 in H; simpl in H; inversion H.
+        auto.
+      }
+      rewrite byte_eq_false.
+      --- auto.
+      --- apply x1EQ.
     -- specialize (encode_decode_int_little_refl (Ptrofs.unsigned disp) l).
        intros.
        (* Set Printing All. *)
@@ -1260,7 +1469,17 @@ Proof.
      repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]).
      simpl.
      repeat f_equal.
-     -- admit.
+     --
+       unfold addrmode_SIB_parse_index.
+       assert(bB[x1] <> HB["4"]) as x1EQ. {
+        unfold not.
+        intros H.
+        unfold encode_ireg in EQ.
+        case i0 eqn:EQI; inversion EQ; rewrite <- H12 in H; simpl in H; inversion H.
+        auto.
+       }
+       rewrite byte_eq_false.
+       auto. auto.
      --  specialize (encode_decode_int_little_refl (Ptrofs.unsigned disp) l).
          intros.
          (* Set Printing All. *)
@@ -1271,18 +1490,61 @@ Proof.
 
          
          ++ destruct p.
+            destruct (ireg_eq i RSP) in EQ1; inversion EQ1.
             monadInv EQ1.
-            exploit (encode_decode_reg_refl rd x b["00"] (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++char_to_bool "1" :: char_to_bool "0" :: [char_to_bool "1"]) EQ0); eauto. admit.
+            exploit (encode_decode_reg_refl rd x b["00"] (char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: encode_scale s ++ x1 ++char_to_bool "1" :: char_to_bool "0" :: [char_to_bool "1"]) EQ0); eauto. simpl.
+            repeat rewrite app_length.
+            rewrite (encode_scale_length).
+            rewrite (encode_reg_length i);auto.
             intros(b1 & b2 & B2 & B1 & Eenc & EAddr ).
             setoid_rewrite <- Eenc.
             unfold decode_addrmode.
             simpl.
             rewrite EAddr.
             simpl.
-            assert ((Byte.shru b1 (Byte.repr 6))=(Byte.repr 0)) as modBits by admit.
+            assert ((Byte.shru b1 (Byte.repr 6))=(Byte.repr 0)) as modBits. {
+              rewrite B1.
+              setoid_rewrite (shru_bits 6  b[ "00"] (x++ sublist
+             (char_to_bool "1"
+              :: char_to_bool "0"
+              :: char_to_bool "0" :: encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]) 3)).
+              simpl. auto.
+              +
+                repeat rewrite app_length.
+                setoid_rewrite(sublist_prefix [char_to_bool "1"
+                                               ;char_to_bool "0" ; char_to_bool "0"] ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+                simpl.
+                rewrite (encode_reg_length rd); auto. 
+                
+                
+              + repeat rewrite app_length.
+                setoid_rewrite(sublist_prefix [char_to_bool "1"
+                                               ;char_to_bool "0" ; char_to_bool "0"] ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+                simpl.
+                rewrite (encode_reg_length rd); auto. 
+            }
             rewrite modBits.
             rewrite byte_eq_true.
-            assert ((Byte.and b1 (Byte.repr 7))=(Byte.repr 4)) as rmBits by admit.
+            assert ((Byte.and b1 (Byte.repr 7))=(Byte.repr 4)) as rmBits. {
+              rewrite B1.
+              setoid_rewrite (and7 (b[ "00"]++x) (sublist
+             (char_to_bool "1"
+              :: char_to_bool "0"
+              :: char_to_bool "0" :: encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]) 3)).
+              + f_equal. setoid_rewrite (sublist_prefix [char_to_bool "1"
+                                                         ; char_to_bool "0"; char_to_bool "0"] ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+                simpl. auto.
+              +
+                 repeat rewrite app_length.
+                setoid_rewrite(sublist_prefix [char_to_bool "1"
+                                               ;char_to_bool "0" ; char_to_bool "0"] ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+                simpl.
+                rewrite (encode_reg_length rd); auto. 
+              +  repeat rewrite app_length.
+                setoid_rewrite(sublist_prefix [char_to_bool "1"
+                                               ;char_to_bool "0" ; char_to_bool "0"] ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+                simpl. auto.
+            }
             rewrite rmBits.
             unfold addrmode_parse_reg.
             repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
@@ -1290,17 +1552,69 @@ Proof.
             simpl.
             rewrite byte_eq_true.
             unfold addrmode_parse_SIB.
-            assert ((Byte.shru (Byte.and b2 (Byte.repr 56)) (Byte.repr 3)) = bB[x1]) as indexBits by admit.
+            assert ((Byte.shru (Byte.and b2 (Byte.repr 56)) (Byte.repr 3)) = bB[x1]) as indexBits. {
+              rewrite <- Byte.and_shru.
+              assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as value7. {
+                unfold Byte.shru. f_equal.
+              }
+              rewrite value7.
+              rewrite B2.
+              rewrite (remove_first_prefix [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]
+                                           ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+              replace (encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]) with ((encode_scale s ++ x1)++[char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]).
+              setoid_rewrite (shru_bits 3 (encode_scale s ++ x1)  [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]).
+              rewrite (and7 (encode_scale s) x1).
+              auto.
+              +
+                repeat rewrite app_length.
+                rewrite (encode_scale_length).
+                rewrite (encode_reg_length i); auto.
+              + rewrite (encode_reg_length i); auto.
+              + repeat rewrite app_length.
+                rewrite (encode_scale_length).
+                rewrite (encode_reg_length i); auto.              
+              + simpl. auto.
+              + rewrite app_assoc. auto.
+              + simpl. auto.               
+            }
             rewrite indexBits.
             exploit (encode_parse_reg_refl i);eauto.
             intros. rewrite H. simpl.
-            assert ((Byte.shru b2 (Byte.repr 6)) = bB[(encode_scale s)]) as scaleBits by admit.
+            assert ((Byte.shru b2 (Byte.repr 6)) = bB[(encode_scale s)]) as scaleBits. {
+              rewrite B2.
+              rewrite (remove_first_prefix  [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]
+                                            ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+              replace (encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]) with ((encode_scale s) ++ x1++[char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]).
+              setoid_rewrite (shru_bits 6 (encode_scale s)  (x1++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+              auto.
+              + repeat rewrite app_length.
+                rewrite (encode_scale_length).
+                rewrite (encode_reg_length i); auto.
+              + repeat rewrite app_length.             
+                rewrite (encode_reg_length i); auto.
+              
+              + auto.
+              + auto.
+            }
             rewrite scaleBits.
             assert(addrmode_SIB_parse_scale bB[ encode_scale s] = (OK s)) as scale_refl. {
               apply (encode_parse_scale_refl s).
             }
             rewrite scale_refl. simpl.
-            assert( (Byte.and b2 (Byte.repr 7)) = (Byte.repr 5)) as baseBits by admit.
+            assert( (Byte.and b2 (Byte.repr 7)) = (Byte.repr 5)) as baseBits. {
+              rewrite B2.
+              rewrite (remove_first_prefix  [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]
+                                            ( encode_scale s ++ x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+              rewrite app_assoc.
+              rewrite(and7 ( encode_scale s ++ x1)  [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]).
+              simpl. auto.
+              + repeat rewrite app_length.
+                rewrite (encode_scale_length).
+                rewrite (encode_reg_length i); auto.              
+              + auto.
+              + auto.
+            }
+               
             rewrite baseBits.
             unfold addrmode_parse_reg.
             repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
@@ -1312,32 +1626,87 @@ Proof.
             repeat rewrite byte_eq_true.
             simpl.
             repeat f_equal.
-     -- admit.
+     --
+       unfold addrmode_SIB_parse_index.
+       assert(bB[x1] <> HB["4"]) as x1EQ. {
+         unfold not.
+         intros H11.
+
+         unfold encode_ireg in EQ.
+         case i eqn:EQI; inversion EQ; rewrite <- H13 in H11; simpl in H11; inversion H11.
+         auto.
+       }
+      rewrite byte_eq_false. auto. auto.
      --  specialize (encode_decode_int_little_refl (Ptrofs.unsigned disp) l).
          intros.
          (* Set Printing All. *)
-         simpl in H10.
-         rewrite H10.  rewrite (Ptrofs.repr_unsigned). auto.
+         simpl in H11.
+         rewrite H11.  rewrite (Ptrofs.repr_unsigned). auto.
      + destruct base.
        ++ monadInv EQ1. destruct (ireg_eq i RSP) eqn:EQReg.
           +++ inversion EQ2. unfold decode_addrmode.
               exploit (encode_decode_reg_refl rd x b["10"] (b[ "100"] ++ b[ "00"] ++ b[ "100"] ++ x1));eauto.
-  - admit.
+  - repeat rewrite app_length.
+    simpl.
+    rewrite (encode_reg_length i); auto.
+    
   - intros (b1 & b2 & B2 & B1 & Eenc & EAddr).
     setoid_rewrite <- Eenc.
     simpl.
-    assert( (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3)) = bB[x]) as regBits by admit.
+    assert( (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3)) = bB[x]) as regBits. {
+      rewrite <- Byte.and_shru.
+      assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as valueOfShr. {
+               unfold Byte.shru. f_equal.
+      }
+      rewrite valueOfShr.
+      rewrite B1.
+      rewrite app_assoc.
+      setoid_rewrite (shru_bits 3 (b[ "10"] ++ x) ( sublist (b[ "100"] ++ b[ "00"] ++ b[ "100"] ++ x1) 3)).
+      + setoid_rewrite (and7 b["10"] x).
+        auto.
+        ++ repeat rewrite app_length.
+           simpl.
+           rewrite (encode_reg_length rd); auto.
+              
+        ++ rewrite (encode_reg_length rd); auto.
+      + repeat rewrite app_length.
+        setoid_rewrite (sublist_prefix b["100"] ( b[ "00"] ++ b[ "100"] ++ x1)).
+        simpl.
+        rewrite (encode_reg_length rd);auto.
+      + setoid_rewrite (sublist_prefix b["100"] (b[ "00"] ++ b[ "100"] ++ x1)). simpl. auto.
+    }
     rewrite regBits.
     assert ( addrmode_parse_reg bB[ x] = (OK rd)) as regValue. {
       apply (encode_parse_reg_refl rd). auto.
     }
     rewrite regValue.
     simpl.
-    assert((Byte.shru b1 (Byte.repr 6))=(Byte.repr 2)) as modBits by admit.
+    assert((Byte.shru b1 (Byte.repr 6))=(Byte.repr 2)) as modBits. {
+      rewrite B1.
+      setoid_rewrite (shru_bits 6  b[ "10"] ( x ++ sublist (b[ "100"] ++ b[ "00"] ++ b[ "100"] ++ x1) 3)).
+      simpl. auto.
+      +
+        repeat rewrite app_length.
+        simpl.
+        rewrite (encode_reg_length rd); auto.
+      +
+        repeat rewrite app_length.
+        simpl.
+        rewrite (encode_reg_length rd); auto.
+    }
     rewrite modBits.
     repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
       rewrite byte_eq_true.
-    assert((Byte.and b1 (Byte.repr 7)) = (Byte.repr 4)) as ea_regBits by admit.
+    assert((Byte.and b1 (Byte.repr 7)) = (Byte.repr 4)) as ea_regBits. {
+      rewrite B1.
+      rewrite app_assoc.
+      setoid_rewrite (and7  (b[ "10"] ++ x) ( sublist (b[ "100"] ++ b[ "00"] ++ b[ "100"] ++ x1) 3)).
+      + setoid_rewrite (sublist_prefix b["100"]  (b[ "00"] ++ b[ "100"] ++ x1)). auto.
+      + repeat rewrite app_length.
+        simpl.
+        rewrite (encode_reg_length rd); auto.
+      +  setoid_rewrite (sublist_prefix b["100"]  (b[ "00"] ++ b[ "100"] ++ x1)). auto.
+    }
     rewrite ea_regBits.
     unfold addrmode_parse_reg.
     repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
@@ -1345,19 +1714,57 @@ Proof.
     simpl.
     rewrite byte_eq_true.
     unfold addrmode_parse_SIB.
-    assert((Byte.shru (Byte.and b2 (Byte.repr 56)) (Byte.repr 3)) = (Byte.repr 4)) as indexBits by admit.
+    assert((Byte.shru (Byte.and b2 (Byte.repr 56)) (Byte.repr 3)) = (Byte.repr 4)) as indexBits. {
+      rewrite <- Byte.and_shru.
+      assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as valueOfShr. {
+        unfold Byte.shru. f_equal.
+      }
+      rewrite valueOfShr.
+      rewrite B2.
+      rewrite (remove_first_prefix b["100"] ( b[ "00"] ++ b[ "100"] ++ x1)).
+      +
+        rewrite app_assoc.
+        setoid_rewrite (shru_bits 3 ( b[ "00"] ++ b[ "100"]) x1).
+        simpl. unfold Byte.and. f_equal.
+        ++ repeat rewrite app_length.
+           simpl.
+           rewrite (encode_reg_length i); auto.
+        ++ rewrite (encode_reg_length i); auto.
+      + auto.
+    }
     rewrite indexBits.
     unfold addrmode_parse_reg.
     simpl.
     repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
       rewrite byte_eq_true.
     simpl.
-    assert ( (Byte.shru b2 (Byte.repr 6)) = (Byte.repr 0)) as scaleBits by admit.
+    assert ( (Byte.shru b2 (Byte.repr 6)) = (Byte.repr 0)) as scaleBits. {
+      rewrite B2.
+      rewrite (remove_first_prefix b["100"] (b[ "00"] ++ b[ "100"] ++ x1)).
+      setoid_rewrite (shru_bits 6 b["00"] ( b[ "100"] ++ x1)). auto.
+      + repeat rewrite app_length.
+        simpl.
+        rewrite (encode_reg_length i); auto.
+      + repeat rewrite app_length.
+        simpl.
+        rewrite (encode_reg_length i); auto.
+      + auto.
+    }
     rewrite scaleBits. unfold addrmode_SIB_parse_scale.
     repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
       rewrite byte_eq_true.
     simpl.
-    assert( (Byte.and b2 (Byte.repr 7)) = bB[x1]) as baseBits by admit.
+    assert( (Byte.and b2 (Byte.repr 7)) = bB[x1]) as baseBits. {
+      rewrite B2.
+      rewrite (remove_first_prefix b["100"] ( b[ "00"] ++ b[ "100"] ++ x1)).
+      rewrite app_assoc.
+      setoid_rewrite (and7 (b[ "00"] ++ b[ "100"]) x1). auto.
+      + repeat rewrite app_length.
+        simpl.
+        rewrite (encode_reg_length i); auto.
+      + rewrite (encode_reg_length i); auto.
+      + auto.
+    }
     rewrite baseBits.
     assert(addrmode_parse_reg bB[ x1] = (OK i)) as baseValue. {
       apply(encode_parse_reg_refl i). auto.
@@ -1365,7 +1772,12 @@ Proof.
     setoid_rewrite baseValue.
     simpl.
     unfold addrmode_SIB_parse_base.
-    assert(x1 = b["100"]) as iRsp by admit.
+    assert(x1 = b["100"]) as iRsp. {
+      rewrite e in EQ.
+      unfold encode_ireg in EQ.
+      inversion EQ.
+      auto.
+    }
     rewrite iRsp.
     repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
       rewrite byte_eq_true.
@@ -1381,40 +1793,133 @@ Proof.
     -- prove_byte_neq.
        +++ set (b1 := bB[ b[ "10"] ++ x ++ x1]) in EQ2. inversion EQ2. unfold decode_addrmode.
            simpl.
-           assert( (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3)) = bB[x]) as REGBits by admit.
+           assert( (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3)) = bB[x]) as REGBits. {
+             unfold b1.
+             rewrite <- Byte.and_shru.
+             assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as valueOfShr. {
+               unfold Byte.shru. f_equal.
+             }             
+             rewrite valueOfShr.
+             rewrite app_assoc.
+             setoid_rewrite(shru_bits 3 (b["10"]++x) x1).
+             setoid_rewrite (and7 b["10"] x). auto.
+             + repeat rewrite app_length.
+               simpl.
+               rewrite (encode_reg_length rd); auto.
+             + repeat rewrite app_length.
+               simpl.
+               rewrite (encode_reg_length rd); auto.
+             + repeat rewrite app_length.
+               simpl.
+               rewrite (encode_reg_length rd); auto.
+               rewrite (encode_reg_length i); auto.
+             + rewrite (encode_reg_length i); auto.
+           }
+
            rewrite REGBits.
            rewrite (encode_parse_reg_refl rd).
            simpl.
-           assert((Byte.shru b1 (Byte.repr 6))=(Byte.repr 2)) as modBits by admit.
+           assert((Byte.shru b1 (Byte.repr 6))=(Byte.repr 2)) as modBits. {
+             unfold b1.
+             setoid_rewrite (shru_bits 6 b["10"] (x++x1)).
+             auto.
+             + repeat rewrite app_length.
+               simpl.
+               rewrite (encode_reg_length rd); auto.
+               rewrite (encode_reg_length i); auto.
+             + repeat rewrite app_length.
+               simpl.
+               rewrite (encode_reg_length rd); auto.
+               rewrite (encode_reg_length i); auto.
+           }
            rewrite modBits.
            repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
              rewrite byte_eq_true.
-           assert((Byte.and b1 (Byte.repr 7)) = bB[x1]) as ea_regBits by admit.
+           assert((Byte.and b1 (Byte.repr 7)) = bB[x1]) as ea_regBits. {
+             unfold b1.
+             rewrite app_assoc.
+             setoid_rewrite(and7  (b[ "10"] ++ x) x1). auto.
+             + repeat rewrite app_length.
+               simpl.
+               rewrite (encode_reg_length rd); auto.
+               rewrite (encode_reg_length i) ; auto.
+             + rewrite (encode_reg_length i); auto.
+           }
            rewrite ea_regBits.
            rewrite (encode_parse_reg_refl i).
            simpl.
-           assert( x1 <> b["100"]) as iNERsp by admit.
+           assert( x1 <> b["100"]) as iNERsp. {
+             unfold not.
+             intros H.
+             rewrite H in EQ.
+             unfold encode_ireg in EQ.
+             destruct i;inversion EQ.
+             auto.
+           }
+
            rewrite byte_eq_false.
            repeat f_equal.  specialize (encode_decode_int_little_refl (Ptrofs.unsigned disp) l).
            intros.
            (* Set Printing All. *)
            simpl in H.
            rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
-    * admit.
+    *
+      unfold not. intros H.
+      unfold encode_ireg in EQ.
+      destruct i; inversion EQ; rewrite <- H12 in H; simpl in H; inversion H.
+      auto.     
     * auto.
     * auto.
       ++ set (b1:= bB[ b[ "00"] ++ x ++ b[ "101"]]) in EQ1.
          inversion EQ1.
          unfold decode_addrmode.
          simpl.
-         assert( (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3)) = bB[x]) as REGBits by admit.
+         assert( (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3)) = bB[x]) as REGBits. {
+            unfold b1.
+             rewrite <- Byte.and_shru.
+             assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as valueOfShr. {
+               unfold Byte.shru. f_equal.
+             }             
+             rewrite valueOfShr.
+             rewrite app_assoc.
+             setoid_rewrite(shru_bits 3 (b["00"]++x) b["101"]).
+             setoid_rewrite (and7 b["00"] x). auto.
+            + repeat rewrite app_length.
+              simpl.
+              rewrite (encode_reg_length rd); auto.
+            + repeat rewrite app_length.
+              simpl.
+              rewrite (encode_reg_length rd); auto.
+            + repeat rewrite app_length.
+              simpl.
+              rewrite (encode_reg_length rd); auto.
+            + auto.
+         }
          rewrite REGBits.
          rewrite (encode_parse_reg_refl rd).
          simpl.
-         assert( (Byte.shru b1 (Byte.repr 6)) = (Byte.repr 0)) as modBits by admit.
+         assert( (Byte.shru b1 (Byte.repr 6)) = (Byte.repr 0)) as modBits. {
+           unfold b1.
+           setoid_rewrite (shru_bits 6 b["00"] (x++b["101"])).
+           auto.
+           + repeat rewrite app_length.
+             simpl.
+             rewrite (encode_reg_length rd); auto.
+           + repeat rewrite app_length.
+             simpl.
+             rewrite (encode_reg_length rd); auto.
+         }
          rewrite modBits.
          rewrite byte_eq_true.
-         assert((Byte.and b1 (Byte.repr 7))=(Byte.repr 5)) as ea_regBits by admit.
+         assert((Byte.and b1 (Byte.repr 7))=(Byte.repr 5)) as ea_regBits. {
+           unfold b1.
+           setoid_rewrite (and7 (b["00"]++x) b["101"]).
+           auto.
+           + repeat rewrite app_length.
+             simpl.
+             rewrite (encode_reg_length rd); auto.
+           + auto.
+         }
          rewrite ea_regBits.
          unfold addrmode_parse_reg.
          repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
@@ -1428,7 +1933,7 @@ Proof.
          rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
     * prove_byte_neq.
     * auto.
-Admitted.
+Qed.
 
 
        
