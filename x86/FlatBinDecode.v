@@ -620,6 +620,29 @@ Ltac branch_byte_eq :=
       rewrite byte_eq_true
     end.
 
+Ltac prove_byte_and_neq :=
+  now (unfold Byte.and;
+       repeat (rewrite Byte.unsigned_repr; [ |unfold Byte.max_unsigned; simpl; omega]);
+       simpl;
+       prove_byte_neq).
+
+Ltac prove_opcode_neq :=
+  match goal with
+  | [ EQ: encode_ireg ?rd = OK _ |- _ ] =>
+    now (case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H)
+  end.
+
+Ltac branch_byte_eq' :=
+  match goal with
+  | |- (if Byte.eq_dec (Byte.and _ _) (Byte.repr _) then _ else _) = OK _ =>
+    rewrite byte_eq_false; [ branch_byte_eq' | prove_byte_and_neq ]    
+  | |- (if Byte.eq_dec _ _ then _ else _) = OK _ =>
+    rewrite byte_eq_false; [ branch_byte_eq' | try prove_byte_neq; prove_opcode_neq ]
+  | |- (if Byte.eq_dec ?a ?a then _ else _) = OK _ =>
+    rewrite byte_eq_true
+  | _ => idtac
+  end.
+
 
 Lemma encode_decode_ireg_refl: forall reg l,
     encode_ireg reg = OK l ->
@@ -1231,6 +1254,43 @@ Proof.
   auto. auto.
 Qed.
 
+Lemma bits_to_Z_cat: forall l1 l2,
+    bits_to_Z (l1 ++ l2) = Z.shiftl (bits_to_Z l1) (Z.of_nat (length l2)) + bits_to_Z l2.
+Proof.
+  induction l1.
+  + intros l2.
+    simpl.
+    rewrite Z.shiftl_mul_pow2.
+    simpl. auto.
+    generalize (Zle_0_nat (length l2)).
+    omega.
+  + intros l2.
+    rewrite bits_to_Z_cons_eq.
+    rewrite Z.shiftl_mul_pow2.
+    rewrite IHl1.
+    rewrite Z.shiftl_mul_pow2.
+    rewrite (bits_to_Z_suffix (length l1) l1 a).
+    rewrite app_length.
+    repeat rewrite two_power_nat_equiv.
+    rewrite Nat2Z.inj_add.
+    setoid_rewrite (Z.pow_add_r 2 (Z.of_nat (length l1)) (Z.of_nat (length l2))).
+    rewrite Z.mul_add_distr_r.
+    rewrite Z.mul_assoc.
+    rewrite Z.add_assoc.
+    omega.
+    generalize (Zle_0_nat (length l1)).
+    omega.
+    generalize (Zle_0_nat (length l2)).
+    omega.
+    omega.
+    generalize (Zle_0_nat (length l2)).
+    omega.
+    generalize (Zle_0_nat (length l2)).
+    omega.
+Qed.
+
+
+
 Lemma bits_to_Z_mod : forall l1 l2,
     bits_to_Z (l1 ++ l2) mod (2 ^ (Z.of_nat (length l2))) = bits_to_Z l2.
 Proof.
@@ -1296,11 +1356,33 @@ Proof.
     rewrite maxByte.
     omega.
 Qed.
+      
 
-Lemma bits_to_Z_or: forall l1 l2,
-    bits_to_Z (l1++l2) = Z.lor (Z.shiftl (bits_to_Z l1) (Z.of_nat (length l2))) (bits_to_Z l2).
-Admitted.
+Lemma Znneg_bits_inj: forall a b,
+    (forall n, n >= 0 -> (Z.testbit a n) = (Z.testbit b n)) -> a = b.
+Proof.
+  intros. apply Z.bits_inj.
+  red. intros.
+  destruct n.
+  - apply H; omega.
+  - apply H. generalize (Zgt_pos_0 p). omega.
+  - simpl. auto.
+Qed.
 
+Lemma Z_add_is_or: forall x y,
+    Z.land x y = 0 -> x + y = Z.lor x y.
+Proof.
+  intros x y AND.
+  apply Znneg_bits_inj.
+  intros n GE0.
+  rewrite Z.lor_spec.
+  apply Int.Z_add_is_or. omega.
+  intros j JRNG.
+  rewrite <- Z.land_spec, AND.
+  apply Z.bits_0.
+Qed.
+
+  
 
 Lemma and_short: forall l n,
     Z.land (bits_to_Z l) (Z.shiftl n (Z.of_nat (length l))) = 0.
@@ -1354,6 +1436,19 @@ Proof.
     auto.
 Qed.
 
+
+Lemma bits_to_Z_or: forall l1 l2,
+    bits_to_Z (l1++l2) = Z.lor (Z.shiftl (bits_to_Z l1) (Z.of_nat (length l2))) (bits_to_Z l2).
+Proof.
+  intros. 
+  erewrite <- Z_add_is_or.
+  rewrite bits_to_Z_cat.
+  auto.
+  rewrite Z.land_comm.
+  rewrite and_short.
+  auto.
+Qed.
+
 Lemma andf0_Z:forall l1 l2,
     (length(l1++l2) <= 8)%nat ->
     (length l2 = 4)%nat ->
@@ -1370,7 +1465,35 @@ Proof.
   rewrite desc.
   rewrite Z.land_lor_distr_l.
   rewrite <- Z.shiftl_land.
-  assert(Z.land (bits_to_Z l1) 15 = bits_to_Z l1) by admit.
+  assert(Z.land (bits_to_Z l1) 15 = bits_to_Z l1). {
+    replace 15 with (Z.ones 4).
+    rewrite Z.land_ones.
+    rewrite (Zmod_unique (bits_to_Z l1) (2^4) 0 (bits_to_Z l1)).
+    auto.
+    auto.
+    generalize (bits_to_Z_range (length l1) l1 eq_refl).
+    intros H11.
+    rewrite two_power_nat_equiv in H11.
+    assert ((length l1 <= 4)%nat). {
+      rewrite app_length in *.
+      rewrite H10 in H.
+      omega.
+    }
+    assert(two_power_nat (length l1) <= two_power_nat 4). {
+      generalize(two_power_mono (length l1) 4). omega.
+    }
+    repeat rewrite two_power_nat_equiv in H13.
+    repeat rewrite <- Zpower_nat_Z in *.
+    simpl. unfold Z.pow_pos. simpl.
+    unfold Zpower_nat in H13.
+    simpl in H13.
+    unfold Zpower_nat in H11.    
+    omega.
+    omega.
+    unfold Z.ones.
+    simpl.
+    omega.
+  }
   rewrite H11.
   assert(Z.land (bits_to_Z l2) (Z.shiftl 15 4) = 0). {
     generalize (and_short l2 15).
@@ -1390,7 +1513,7 @@ Proof.
     auto.
   }
   auto.
-Admitted.
+Qed.
 
 Lemma andf0:forall l1 l2,
     (length(l1++l2) <= 8)%nat ->
@@ -2064,8 +2187,20 @@ Proof.
   unfold Byte.shru.
   f_equal.
 Qed.
-       
-      
+
+Lemma byte_and_C0: forall l1 l2,
+    (length l1 <= 2)%nat ->
+    (length l2 = 6)%nat ->
+    Byte.and bB[l1++l2] HB["C0"] = bB[l1++b["000000"]].
+Admitted.
+
+Lemma decode_encode_rr_operand_refl: forall l r1 r2 x x0,
+    (length l = 2)%nat ->
+    encode_ireg r1 = OK x ->
+    encode_ireg r2 = OK x0 ->
+    decode_rr_operand bB[l++x++x0] = OK(r1, r2).
+Admitted.
+
 (** Reflexivity between the encoding and decoding of instructions*) 
 Lemma encode_decode_refl : forall i bytes,
     fmc_instr_encode i = OK bytes
@@ -2389,15 +2524,8 @@ Lemma encode_decode_refl : forall i bytes,
     + unfold fmc_instr_decode.
       (*  (bB[ b[ "10111"] ++ rdbits] :: encode_int32 (Int.unsigned n)) *)
       monadInv H_encode.
-      simpl.
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
-      rewrite byte_eq_false; try(case rd eqn:EQR; unfold encode_ireg in EQ; inversion EQ; simpl; unfold not; intros H; inversion H).
+      simpl.      
+      branch_byte_eq'.
       assert (Byte.and bB[ b[ "10111"] ++ x] HB["F0"] =  HB["B0"]) as opcode. {
         
         setoid_rewrite (andf0 b["1011"] (b["1"]++x)).
@@ -2430,29 +2558,96 @@ Lemma encode_decode_refl : forall i bytes,
       rewrite (encode_reg_length rd);auto.
     + unfold instr_eq.
       auto.
-  -
-
+  - exists (Fmov_rr rd r1).
+    (* [HB[ "8B"]; bB[ b[ "11"] ++ rdbits ++ r1bits]] *)
+    split.
+    + monadInv H_encode.
+      simpl.
+      branch_byte_eq'.
+      unfold decode_8b.
+      simpl.
+     
+      assert(Byte.and  bB[ b[ "11"] ++ x ++ x0] HB["C0"] = HB["C0"]) as opValue. {
+        rewrite byte_and_C0.
+        simpl. auto. auto. rewrite app_length. rewrite (encode_reg_length rd),(encode_reg_length r1);auto.
+      }
+      unfold bits_to_Z in opValue.
+      simpl in opValue.
+      rewrite opValue.
+      rewrite byte_eq_true.
+      unfold decode_mov_rr.
+      simpl.
       
-             
+      setoid_rewrite (decode_encode_rr_operand_refl b["11"] rd r1 x x0);auto.
+    + unfold instr_eq. auto.
+  - exists (Fmovl_rm rd a).
+    split.
+    + monadInv H_encode.
+      simpl.
+      branch_byte_eq'.
+      unfold decode_8b.
+      destruct a.
+      destruct base.
+      ++ destruct index.
+         unfold encode_addrmode in EQ.
+         unfold encode_addrmode_aux in EQ.
+         simpl in EQ.
+         monadInv EQ.
+         monadInv EQ0.
+         destruct p in EQ1.
+         destruct (ireg_eq i0 RSP) eqn:EQR; inversion EQ1.
+         monadInv EQ1.
+         simpl.
+         replace 256 with (2^8).
+         rewrite <- Z.shiftr_div_pow2.
+         Lemma Z_shru_bits: forall n l1 l2,
+             (length l2 = n)%nat ->
+             Z.shiftr (bits_to_Z (l1++l2)) (Z.of_nat n) = bits_to_Z l1.
+         Admitted.
+         assert(length(encode_scale s ++ x1 ++ x2) = 8%nat) as len by admit.
+         generalize (Z_shru_bits 8 (b["10"] ++ x ++ b["100"]) ( encode_scale s ++ x1 ++ x2) len).
+         intros H.
+         repeat rewrite <- app_assoc in H.
+         simpl in H.
+         rewrite H.
+         assert((length b["10"] <= 2)%nat) as len2 by (simpl;omega).
+         assert((length (x ++ b[ "100"]) = 6)%nat) as len6 by admit.
+         generalize (byte_and_C0 b["10"] (x++b["100"]) len2 len6).
+         intros H11.
+         simpl in H11.
+         rewrite H11.
+         rewrite byte_eq_false.
 
-    
+         
          
 
-      
-                  
-(*                   
-                  assert (Hl0 = [HB["84"]]++FlatBingen.encode_int32(Ptrofs.unsigned ofs)) ++ l).
-        
-         
-    induction ((encode_testcond c ++ FlatBingen.encode_int32 (Ptrofs.unsigned ofs)) ++ l).
     + admit.
-    + simpl.
-    inversion H_encode. *)
+  - exists (Fmovl_mr a rs).
+    split.
+    (* (HB[ "89"] :: abytes) *)
+    + monadInv H_encode.
+      simpl.
+      branch_byte_eq'.
+      unfold decode_movl_mr.
+      simpl.
+      generalize (encode_decode_addrmode_refl a rs x l EQ).
+      intros H.
+      rewrite H.
+      simpl.auto.
+    + unfold instr_eq.
+      auto.
+  - exists (Fmov_rm_a rd a).
+    split.
+    + monadInv H_encode.
+      simpl.
+      branch_byte_eq'.
+      unfold decode_8b.
+      
+      simpl.
+
 
     
-    
-    
-            
+
     
 
   
