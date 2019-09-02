@@ -710,42 +710,74 @@ Proof.
   - intros H. intro EQ. discriminate.
 Qed.
 
-Lemma bits_to_Z_first : forall n  l1 a,
-    length l1 = n ->
-    bits_to_Z(a::l1) = (bool_to_Z a)*(2^Z.of_nat (length l1)) + bits_to_Z l1.
+
+Lemma bits_to_Z_last: forall l a acc,
+        bits_to_Z_acc acc (l ++ [a]) = 2 * bits_to_Z_acc acc l  + bool_to_Z a.
 Proof.
-  induction n.
-  + admit.
-  + intros l1 a H.
-    assert ((length l1 > 0)%nat) by admit.
-    generalize (non_zero_len_not_nil bool l1 H10).
-    intros Hl1.
-    destruct l1 eqn: EQL. inversion H.
-    assert (length l = n) as lenl by admit.
-    generalize (IHn l b lenl).
-    intros IHn'.
-    rewrite IHn'.
-    destruct a.
+  induction l; intros.
+  - simpl. auto.
+  - simpl. apply IHl.
+Qed.
+
+Lemma app_cons_comm: forall (A:Type) (l1:list A) a l2,
+    (l1 ++ [a]) ++ l2 = l1 ++ a :: l2.
+Proof.
+  induction l1; intros. 
+  - simpl. auto.
+  - simpl. f_equal. apply IHl1.
+Qed.
+
+Lemma bits_to_Z_app : forall l2 l1 acc,
+    bits_to_Z_acc acc (l1++l2) = bits_to_Z_acc (bits_to_Z_acc acc l1) l2.
+Proof.
+  induction l2; intros.
+  - rewrite app_nil_r. simpl. auto.
+  - replace (l1 ++ a :: l2) with ((l1 ++ [a]) ++ l2).
+    simpl.
+    setoid_rewrite <- bits_to_Z_last.
+    apply IHl2.
+    apply app_cons_comm.
+Qed.
+
     
-    (* ++ destruct b. *)
 
-    (*   rewrite bits_to_Z_aux. admit. *)
-    (* unfold bits_to_Z in IHn'. *)
-    (* unfold bits_to_Z. *)
+(* Lemma bits_to_Z_first : forall n  l1 a, *)
+(*     length l1 = n -> *)
+(*     bits_to_Z(a::l1) = (bool_to_Z a)*(2^Z.of_nat (length l1)) + bits_to_Z l1. *)
+(* Proof. *)
+(*   simpl. *)
+(*   induction n. *)
+(*   + admit. *)
+(*   + intros l1 a H. *)
+(*     assert ((length l1 > 0)%nat) by admit. *)
+(*     generalize (non_zero_len_not_nil bool l1 H10). *)
+(*     intros Hl1. *)
+(*     destruct l1 eqn: EQL. inversion H. *)
+(*     assert (length l = n) as lenl by admit. *)
+(*     generalize (IHn l b lenl). *)
+(*     intros IHn'. *)
+(*     rewrite IHn'. *)
+(*     destruct a. *)
+    
+(*     (* ++ destruct b. *) *)
 
-    (* rewrite IHn'. *)
-    (* destruct a. *)
-    (* ++ *)
+(*     (*   rewrite bits_to_Z_aux. admit. *) *)
+(*     (* unfold bits_to_Z in IHn'. *) *)
+(*     (* unfold bits_to_Z. *) *)
+
+(*     (* rewrite IHn'. *) *)
+(*     (* destruct a. *) *)
+(*     (* ++ *) *)
       
-    (*   assert (length l = n) as lenl by admit. *)
-    (*   generalize (IHn l b lenl). *)
-    (*   intros H11. *)
-    (*   unfold bits_to_Z. *)
-    (*   simpl in H11. *)
+(*     (*   assert (length l = n) as lenl by admit. *) *)
+(*     (*   generalize (IHn l b lenl). *) *)
+(*     (*   intros H11. *) *)
+(*     (*   unfold bits_to_Z. *) *)
+(*     (*   simpl in H11. *) *)
       
 
-    (*   simpl. *)
-    (* simpl. *)
+(*     (*   simpl. *) *)
+(*     (* simpl. *) *)
     
     
     
@@ -753,100 +785,97 @@ Proof.
 
 
     
-    (* help needed *)
-Admitted.
+(*     (* help needed *) *)
+(* Admitted. *)
 
-Lemma bits_to_Z_cons_eq' : forall n  l1 l2,
-    length l1 = n ->
-    bits_to_Z (l1 ++ l2) = (bits_to_Z l1)*(two_power_nat (length l2)) +
-                           bits_to_Z l2.
-Proof.
-  induction n.
-  +
-    intros l1 l2 H.
-    rewrite (zero_length_list l1).
-    simpl. auto. auto.
+(* Lemma bits_to_Z_cons_eq' : forall n  l1 l2, *)
+(*     length l1 = n -> *)
+(*     bits_to_Z (l1 ++ l2) = (bits_to_Z l1)*(two_power_nat (length l2)) + *)
+(*                            bits_to_Z l2. *)
+(* Proof. *)
+(*   induction n. *)
+(*   + *)
+(*     intros l1 l2 H. *)
+(*     rewrite (zero_length_list l1). *)
+(*     simpl. auto. auto. *)
 
-  + intros l1 l2 H.
-    assert ((length l1 > 0)%nat) as Hnz. {
-      rewrite H.
-      omega.
-    }
+(*   + intros l1 l2 H. *)
+(*     assert ((length l1 > 0)%nat) as Hnz. { *)
+(*       rewrite H. *)
+(*       omega. *)
+(*     } *)
     
-    generalize (non_zero_len_not_nil bool l1 Hnz).
-    intros H10.
-    generalize( exists_last H10).
-    intros (l' & a & Hl1).
-    rewrite Hl1.
-    rewrite <- app_assoc.
-    assert((length l' = n)%nat) as llen. {
-      rewrite Hl1 in H.
-      rewrite app_length in H.
-      simpl in H.
-      omega.
-    }
-    generalize (IHn l' ([a]++l2) llen).
-    intros H11.
-    generalize (IHn l' [a] llen).
-    intros H12.
-    rewrite H11.
-    setoid_rewrite (bits_to_Z_first (length l2) l2 a).
-    rewrite H12.
-    rewrite app_length.
-    repeat rewrite two_power_nat_equiv.
-    rewrite (Nat2Z.inj_add (length[a]) (length l2)).
-    rewrite Z.pow_add_r.
-    rewrite Z.mul_assoc.
-    rewrite Z.mul_add_distr_r.
-    simpl.
-    rewrite <- Zplus_assoc.
-    auto.
-    simpl. omega. omega.
-    auto.
-Qed.
+(*     generalize (non_zero_len_not_nil bool l1 Hnz). *)
+(*     intros H10. *)
+(*     generalize( exists_last H10). *)
+(*     intros (l' & a & Hl1). *)
+(*     rewrite Hl1. *)
+(*     rewrite <- app_assoc. *)
+(*     assert((length l' = n)%nat) as llen. { *)
+(*       rewrite Hl1 in H. *)
+(*       rewrite app_length in H. *)
+(*       simpl in H. *)
+(*       omega. *)
+(*     } *)
+(*     generalize (IHn l' ([a]++l2) llen). *)
+(*     intros H11. *)
+(*     generalize (IHn l' [a] llen). *)
+(*     intros H12. *)
+(*     rewrite H11. *)
+(*     setoid_rewrite (bits_to_Z_first (length l2) l2 a). *)
+(*     rewrite H12. *)
+(*     rewrite app_length. *)
+(*     repeat rewrite two_power_nat_equiv. *)
+(*     rewrite (Nat2Z.inj_add (length[a]) (length l2)). *)
+(*     rewrite Z.pow_add_r. *)
+(*     rewrite Z.mul_assoc. *)
+(*     rewrite Z.mul_add_distr_r. *)
+(*     simpl. *)
+(*     rewrite <- Zplus_assoc. *)
+(*     auto. *)
+(*     simpl. omega. omega. *)
+(*     auto. *)
+(* Qed. *)
 
 
-Lemma bits_to_Z_prefix': forall n bits b,
-    (length bits = n)%nat ->
-    bits_to_Z (bits ++ [b]) = 2 * (bits_to_Z bits) + bool_to_Z b.
-Proof.
-  induction n.
-  + intros bits0 b H.
-    rewrite (zero_length_list bits0).
-    simpl. auto. auto.
-  + intros bits0 b H.
-    assert ((length bits0 > 0)%nat) as Hnz. {
-      rewrite H.
-      omega.
-    }
+(* Lemma bits_to_Z_prefix': forall n bits b, *)
+(*     (length bits = n)%nat -> *)
+(*     bits_to_Z (bits ++ [b]) = 2 * (bits_to_Z bits) + bool_to_Z b. *)
+(* Proof. *)
+(*   induction n. *)
+(*   + intros bits0 b H. *)
+(*     rewrite (zero_length_list bits0). *)
+(*     simpl. auto. auto. *)
+(*   + intros bits0 b H. *)
+(*     assert ((length bits0 > 0)%nat) as Hnz. { *)
+(*       rewrite H. *)
+(*       omega. *)
+(*     } *)
     
-    generalize (non_zero_len_not_nil bool bits0 Hnz).
-    intros H10.
-    generalize( exists_last H10).
-    intros (l' & a & Hlst).
-    rewrite Hlst.
-    rewrite (bits_to_Z_cons_eq' (length (l'++[a]))  (l'++[a]) [b]).
-    assert(two_power_nat (length [b]) = 2). {
-      simpl. unfold two_power_nat.
-      simpl. auto.
-    }
-    rewrite H11.
-    rewrite Z.mul_comm.
-    simpl. auto.
-    auto.
-Qed.
-
+(*     generalize (non_zero_len_not_nil bool bits0 Hnz). *)
+(*     intros H10. *)
+(*     generalize( exists_last H10). *)
+(*     intros (l' & a & Hlst). *)
+(*     rewrite Hlst. *)
+(*     rewrite (bits_to_Z_cons_eq' (length (l'++[a]))  (l'++[a]) [b]). *)
+(*     assert(two_power_nat (length [b]) = 2). { *)
+(*       simpl. unfold two_power_nat. *)
+(*       simpl. auto. *)
+(*     } *)
+(*     rewrite H11. *)
+(*     rewrite Z.mul_comm. *)
+(*     simpl. auto. *)
+(*     auto. *)
+(* Qed. *)
 
 
 
 Lemma bits_to_Z_prefix: forall bits b,
     bits_to_Z (bits ++ [b]) = 2 * (bits_to_Z bits) + bool_to_Z b.
 Proof.
-  intros bits0 b.
-  apply (bits_to_Z_prefix' (length bits0) bits0 b).
-  auto.
+  unfold bits_to_Z. intros.
+  rewrite bits_to_Z_app. simpl. auto.
 Qed.
-    
 
 
 Lemma list_len_gt1: forall (A:Type) (l:list A) n,
@@ -863,9 +892,9 @@ Proof.
 Qed.
 
 Lemma encode_decode_int_little_refl: forall i l,
-    decode_int_n ((encode_int_little 4 i)++l) 4 = i.
+    valid_int32 i -> decode_int_n ((encode_int_little 4 i)++l) 4 = i.
 Proof.
-  intros i l.
+  intros i l HV.
   unfold encode_int_little.
   unfold decode_int_n.
   rewrite sublist_prefix.
@@ -873,9 +902,17 @@ Proof.
   intros H.
   unfold encode_int in H.
   rewrite Int.unsigned_repr in H.
-  unfold decode_int.  
-  (* help needed *)
-Admitted.
+  unfold decode_int.
+  unfold rev_if_be.
+  destruct Archi.big_endian eqn:EQ. inversion EQ.
+  rewrite (int_of_bytes_of_int).
+  rewrite Z.mod_small. auto.
+  unfold valid_int32 in  HV. simpl.
+  omega.
+  unfold Int.max_unsigned.
+  simpl.
+  unfold valid_int32 in HV. unfold two_power_pos in HV. simpl in HV. omega.
+Qed.
 
 Lemma encode_parse_reg_refl: forall rd x,
     encode_ireg rd = OK x
@@ -945,8 +982,8 @@ Proof.
     intros H.
     rewrite (zero_length_list l).
     split.
-    ++ simpl. omega.
-    ++ simpl. unfold two_power_nat. simpl.
+    ++ cbn. omega.
+    ++ cbn. unfold two_power_nat. simpl.
        omega.
     ++ apply H.
   + split.
@@ -1053,7 +1090,7 @@ Proof.
   induction n.
   + intros l1 b H.
     rewrite (zero_length_list l1);auto.
-    simpl.
+    cbn.
     rewrite Zdiv2_div.
     rewrite (Zdiv_unique _ 2 0 (bool_to_Z b));try omega.
     generalize (bool_to_Z_range b).
@@ -1287,7 +1324,7 @@ Proof.
     generalize (zero_length_list l1 H).
     intros H10.
     rewrite H10.
-    simpl.
+    cbn.
     rewrite two_power_nat_O.
     omega.
 
@@ -1999,6 +2036,17 @@ Proof.
        (* Set Printing All. *)
        simpl in H.
        rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
+       generalize(Ptrofs.unsigned_range disp).
+       intros Hrange.
+       unfold Ptrofs.modulus in Hrange.
+       unfold two_power_nat in Hrange.
+       unfold Ptrofs.wordsize in Hrange.
+       unfold Wordsize_Ptrofs.wordsize in Hrange.
+       destruct Archi.ptr64 eqn: EQBits.
+       inversion EQBits.      
+       simpl in Hrange.
+       unfold valid_int32.
+       unfold two_power_pos. simpl. omega.
   -  repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]);
        rewrite byte_eq_true. simpl.
      repeat (rewrite byte_eq_false; [ idtac | prove_byte_neq ]).
@@ -2020,7 +2068,17 @@ Proof.
          (* Set Printing All. *)
          simpl in H.
          rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
-
+         generalize(Ptrofs.unsigned_range disp).
+         intros Hrange.
+         unfold Ptrofs.modulus in Hrange.
+         unfold two_power_nat in Hrange.
+         unfold Ptrofs.wordsize in Hrange.
+         unfold Wordsize_Ptrofs.wordsize in Hrange.
+         destruct Archi.ptr64 eqn: EQBits.
+         inversion EQBits.      
+         simpl in Hrange.
+         unfold valid_int32.
+         unfold two_power_pos. simpl. omega.
 
 
          
@@ -2177,6 +2235,17 @@ Proof.
          (* Set Printing All. *)
          simpl in H11.
          rewrite H11.  rewrite (Ptrofs.repr_unsigned). auto.
+         generalize(Ptrofs.unsigned_range disp).
+         intros Hrange.
+         unfold Ptrofs.modulus in Hrange.
+         unfold two_power_nat in Hrange.
+         unfold Ptrofs.wordsize in Hrange.
+         unfold Wordsize_Ptrofs.wordsize in Hrange.
+         destruct Archi.ptr64 eqn: EQBits.
+         inversion EQBits.      
+         simpl in Hrange.
+         unfold valid_int32.
+         unfold two_power_pos. simpl. omega.
      + destruct base.
        ++ monadInv EQ1. destruct (ireg_eq i RSP) eqn:EQReg.
           +++ inversion EQ2. unfold decode_addrmode.
@@ -2325,6 +2394,17 @@ Proof.
        (* Set Printing All. *)
        simpl in H.
        rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
+       generalize(Ptrofs.unsigned_range disp).
+       intros Hrange.
+       unfold Ptrofs.modulus in Hrange.
+       unfold two_power_nat in Hrange.
+       unfold Ptrofs.wordsize in Hrange.
+       unfold Wordsize_Ptrofs.wordsize in Hrange.
+       destruct Archi.ptr64 eqn: EQBits.
+       inversion EQBits.      
+       simpl in Hrange.
+       unfold valid_int32.
+       unfold two_power_pos. simpl. omega.
     -- prove_byte_neq.
        +++ set (b1 := bB[ b[ "10"] ++ x ++ x1]) in EQ2. inversion EQ2. unfold decode_addrmode.
            simpl.
@@ -2398,6 +2478,17 @@ Proof.
            (* Set Printing All. *)
            simpl in H.
            rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
+           generalize(Ptrofs.unsigned_range disp).
+           intros Hrange.
+           unfold Ptrofs.modulus in Hrange.
+           unfold two_power_nat in Hrange.
+           unfold Ptrofs.wordsize in Hrange.
+           unfold Wordsize_Ptrofs.wordsize in Hrange.
+           destruct Archi.ptr64 eqn: EQBits.
+           inversion EQBits.      
+           simpl in Hrange.
+           unfold valid_int32.
+           unfold two_power_pos. simpl. omega.
     *
       unfold not. intros H.
       unfold encode_ireg in EQ.
@@ -2466,6 +2557,17 @@ Proof.
          (* Set Printing All. *)
          simpl in H.
          rewrite H.  rewrite (Ptrofs.repr_unsigned). auto.
+         generalize(Ptrofs.unsigned_range disp).
+         intros Hrange.
+         unfold Ptrofs.modulus in Hrange.
+         unfold two_power_nat in Hrange.
+         unfold Ptrofs.wordsize in Hrange.
+         unfold Wordsize_Ptrofs.wordsize in Hrange.
+         destruct Archi.ptr64 eqn: EQBits.
+         inversion EQBits.      
+         simpl in Hrange.
+         unfold valid_int32.
+         unfold two_power_pos. simpl. omega.
     * prove_byte_neq.
     * auto.
 Qed.
@@ -2969,7 +3071,7 @@ Lemma encode_decode_refl : forall i bytes,
       simpl.
       branch_byte_eq.
       unfold decode_81.
-      simpl.
+      cbn.
       rewrite <- Byte.and_shru.
       rewrite shru563.
       repeat fold (bits_to_Z  (b[ "11"] ++ b[ "000"])).
@@ -2982,7 +3084,7 @@ Lemma encode_decode_refl : forall i bytes,
         rewrite (encode_reg_length rd); auto.
       }
       unfold bits_to_Z in shruValue.
-      simpl in shruValue.
+      cbn in shruValue.
       rewrite shruValue.
       assert(Byte.and (Byte.repr 24) (Byte.repr 7) = Byte.repr 0). {
         unfold Byte.and. f_equal.
@@ -3007,8 +3109,8 @@ Lemma encode_decode_refl : forall i bytes,
         generalize (list_len_gt1 _ (encode_int32 (Int.unsigned n)) 3 H10).
         intros (l' & t & H11).
         unfold encode_int32. unfold encode_int. unfold bytes_of_int.
-        (* help needed *)
-        admit.
+        unfold rev_if_be. destruct Archi.big_endian eqn:EQED.
+        inversion EQED. eauto.
       }
       destruct H11 as (e1 & e2 & e3 & e4 & H12).
       rewrite H12.
@@ -3038,7 +3140,7 @@ Lemma encode_decode_refl : forall i bytes,
       unfold fmc_instr_decode. simpl.
       branch_byte_eq.
       unfold decode_81.
-      simpl.
+      cbn.
       rewrite <- Byte.and_shru.
       rewrite shru563.
       assert(Byte.shru (bB[b[ "11"] ++ b[ "101"] ++ x]) (Byte.repr 3) = (bB[b[ "11"] ++ b[ "101"]])) as shruValue. {
@@ -3089,7 +3191,7 @@ Lemma encode_decode_refl : forall i bytes,
       simpl. 
       branch_byte_eq.
       unfold decode_subl_rr.
-      simpl.
+      cbn.
       rewrite <- Byte.and_shru.
       rewrite shru563.
       assert(Byte.shru  bB[ b[ "11"] ++ x ++ x0] (Byte.repr 3) =  bB[ b[ "11"] ++ x]) as shruValue. {
@@ -3128,7 +3230,7 @@ Lemma encode_decode_refl : forall i bytes,
     + unfold fmc_instr_decode.
       (*  (bB[ b[ "10111"] ++ rdbits] :: encode_int32 (Int.unsigned n)) *)
       monadInv H_encode.
-      simpl.      
+      cbn.
       branch_byte_eq'.
       assert (Byte.and bB[ b[ "10111"] ++ x] HB["F0"] =  HB["B0"]) as opcode. {
         
@@ -3172,7 +3274,7 @@ Lemma encode_decode_refl : forall i bytes,
       simpl.
       branch_byte_eq'.
       unfold decode_8b.
-      simpl.
+      cbn.
      
       assert(Byte.and  bB[ b[ "11"] ++ x ++ x0] HB["C0"] = HB["C0"]) as opValue. {
         rewrite byte_and_C0.
@@ -3441,9 +3543,7 @@ Lemma encode_decode_refl : forall i bytes,
     + simpl. branch_byte_eq'.
       auto.
     + simpl. auto.
-      
-Admitted.
-
+Qed.
 
 
 (** * Decoder pass *)

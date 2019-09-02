@@ -25,14 +25,15 @@ Notation "b[ str ]" := (string_to_bits str) : bits_scope.
 Definition bool_to_Z (b:bool) :=
   if b then 1 else 0.
 
-Fixpoint bits_to_Z (bs: bits) : Z :=
-  let fix aux acc bs :=
-      match bs with
-      | nil => acc
-      | b :: bt => 
-        aux (acc*2 + (bool_to_Z b)) bt
-      end
-  in aux 0 bs.
+Fixpoint bits_to_Z_acc acc bs :=
+  match bs with
+  | nil => acc
+  | b :: bt => 
+    bits_to_Z_acc (2*acc + (bool_to_Z b)) bt
+  end.
+         
+Definition bits_to_Z (bs: bits) : Z :=
+  bits_to_Z_acc 0 bs.
 
 Notation "bB[ bits ]" := (Byte.repr (bits_to_Z bits)) : bits_scope.
 
