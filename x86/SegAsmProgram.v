@@ -604,7 +604,7 @@ Definition alloc_global (m: mem) (idg: ident * option gdef * segblock): option m
     Some m1
   | Some (Gvar v) =>
     (** The block allocated for the data is dummy.
-        Data actually reside in the block for the code segment. *)
+        Data actually reside in the block for the data segment. *)
     let (m1, b) := Mem.alloc m 0 0 in
     Some m1 
   end.
