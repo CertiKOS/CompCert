@@ -263,3 +263,5 @@ Section WITHEXTERNALCALLS.
       Next (nextinstr rs  sz) m
     | _ => Stuck
     end.
+
+End WITHEXTERNALCALLS.
