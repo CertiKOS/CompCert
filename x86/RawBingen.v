@@ -41,13 +41,15 @@ Definition gen_instrs (p:FlatBinary.program) : res (list byte) :=
                  (Ptrofs.add (FlatProgram.prog_code_size p) (Ptrofs.repr call_size)) in
   let ssbytes := create_start_stub' main_rofs in
   let isbytes := accum_instrs (prog_defs p) in
-  if zeq (Ptrofs.unsigned code_sz) (Z.of_nat (List.length isbytes)) then
-    OK (isbytes ++ ssbytes)
-  else
-    let code_sz := Z_to_hex_string 32 (Ptrofs.unsigned code_sz) in
-    let instr_sz := Z_to_hex_string 32 (Z.of_nat (List.length isbytes)) in
-    Error (msg ("The size of generated instruction (" ++ instr_sz ++
-                ") does not match the size of the code segment (" ++ code_sz ++ ").")).
+  OK (isbytes ++ ssbytes).
+
+  (* if zeq (Ptrofs.unsigned code_sz) (Z.of_nat (List.length isbytes)) then *)
+  (*   OK (isbytes ++ ssbytes) *)
+  (* else *)
+  (*   let code_sz := Z_to_hex_string 32 (Ptrofs.unsigned code_sz) in *)
+  (*   let instr_sz := Z_to_hex_string 32 (Z.of_nat (List.length isbytes)) in *)
+  (*   Error (msg ("The size of generated instruction (" ++ instr_sz ++ *)
+  (*               ") does not match the size of the code segment (" ++ code_sz ++ ").")). *)
 
 
 (** Generation of data bytes *)
