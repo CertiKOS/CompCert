@@ -3,7 +3,7 @@
 (* Date:   Sep 13, 2019 *)
 (* *******************  *)
 
-(** * The language of relocatble assembly *)
+(** * The language of relocatble binary *)
 
 Require Import Coqlib Maps Integers Values AST.
 Require Import Globalenvs.
@@ -11,16 +11,14 @@ Require Import Asm RelocProgram.
 
 
 (** Define the programs *)
-Definition instr_with_info:Type := instruction * secblock * ident.
+Definition code := list byte.
 
-Definition code := list instr_with_info.
-
-Module RelocAsmParams.
+Module RelocBinParams.
   
   Definition C:= code.
   Definition D:= unit.
 
-End RelocAsmParams.
+End RelocBinParams.
 
-Module Prog := RelocProg(RelocAsmParams).
+Module Prog := RelocProg(RelocBinParams).
 Import Prog.
