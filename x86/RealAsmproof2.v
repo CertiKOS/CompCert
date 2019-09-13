@@ -16,6 +16,10 @@ Require Import Conventions1.
 Require Import AsmFacts.
 Require Import RawAsm RealAsm.
 Require Import AsmRegs.
+Require Import RealAsmgen.
+Require Import Errors.
+Require Import Linking.
+
 
 Section WITHMEMORYMODEL.
   
@@ -31,10 +35,31 @@ Section WITHMEMORYMODEL.
                                     (memory_model_ops := memory_model_ops)
                                     }.
 
+  Section PRESERVATION.
+
   Variable prog: Asm.program.
+  Hypothesis TRANSF: prog_no_jmp_rel prog.
   Let ge := Genv.globalenv prog.
   Definition bstack := Genv.genv_next ge.
-  Section PRESERVATION.
+
+  Lemma find_jmp_rel_absurd: forall b f ofs i,
+    Genv.find_funct_ptr ge b = Some (Internal f) ->
+    find_instr ofs (fn_code f) = Some i -> 
+    instr_not_jmp_rel i.
+  Proof.
+    intros b f ofs i FPTR FI.
+    exploit Genv.find_funct_ptr_inversion; eauto.
+    unfold ge in FPTR. eauto.
+    intros (id & IN).
+    red in TRANSF. 
+    rewrite Forall_forall in TRANSF.
+    exploit TRANSF; eauto. simpl.
+    exploit Asmgenproof0.find_instr_in; eauto. 
+    intros INi NJ.
+    red in NJ.
+    rewrite Forall_forall in NJ.
+    auto.
+  Qed.
 
   Definition pc_at (s: state): option ((function * instruction) + external_function) :=
     let '(State rs m) := s in
@@ -316,6 +341,16 @@ Section WITHMEMORYMODEL.
     unfold goto_label. intros. destr. rewrite <- SEQ. destr. destr. eauto.
   Qed.
 
+  Lemma goto_ofs_seq:
+    forall sz ofs rs1 rs2 m rs' m'
+      (GL : goto_ofs ge sz ofs rs1 m = Next rs' m')
+      (SEQ: rs1 PC = rs2 PC),
+    exists (rs2' : regset) (m2' : mem), goto_ofs ge sz ofs rs2 m = Next rs2' m2'.
+  Proof.
+    unfold goto_ofs. intros. destr_in GL. destr_in GL. inv GL. 
+    rewrite <- SEQ, Heqo. eauto.
+  Qed.
+
   Ltac force_rewrite_match H :=
     match goal with
       H: ?b = _ |- context [ match ?a with _ => _ end ] =>
@@ -565,6 +600,11 @@ Section WITHMEMORYMODEL.
         exfalso; apply PC1. constructor 2. auto.
         eapply exec_store_seq; eauto. congruence.
         eapply exec_store_seq; eauto. congruence.
+        eapply goto_ofs_seq; eauto. apply REQ; congruence.
+        erewrite <- eval_testcond_seq by eauto. repeat destr_in H6; eauto. eapply goto_ofs_seq; eauto. apply REQ; congruence.
+        erewrite <- eval_testcond_seq by eauto. destr_in H6.
+        erewrite <- eval_testcond_seq by eauto. repeat destr_in H6; eauto. eapply goto_ofs_seq; eauto. apply REQ; congruence.
+        rewrite <- REQ by congruence. destr. destr. eapply goto_ofs_seq. eauto. simpl_regs. apply REQ; congruence.
         
         eapply eval_builtin_args_eq_rs in H4. rewrite REQ in H4.
         right; do 2 eexists. eapply exec_step_builtin. rewrite <- REQ; eauto. congruence. all: eauto. congruence.
@@ -613,6 +653,21 @@ Section WITHMEMORYMODEL.
     repeat destr_in GL. inv GL2.
     constructor. intros. regs_eq.
   Qed.
+
+  Lemma goto_ofs_match:
+    forall sz ofs rs2 m2 rs2' m2' rs1,
+      (forall r: preg, r<>RA -> rs1 r = rs2 r) ->
+      goto_ofs ge sz ofs rs2 m2 = Next rs2' m2' ->
+      exists rs1' m1', goto_ofs ge sz ofs rs1 m2 = Next rs1' m1' /\ seq (State rs1' m1') (State rs2' m2').
+  Proof.
+    intros sz ofs rs2 m2 rs2' m2' rs1 REQ GL2.
+    edestruct goto_ofs_seq as (rs1' & m1' & GL). eauto. symmetry; apply REQ. congruence. rewrite GL.
+    do 2 eexists; split; eauto.
+    unfold goto_ofs in GL2, GL. rewrite REQ in GL by congruence.
+    repeat destr_in GL. inv GL2.
+    constructor. intros. regs_eq.
+  Qed.
+
   Lemma goto_label_PC:
     forall f l r m r0 m0
       (GL: goto_label ge f l r m = Next r0 m0)
@@ -654,6 +709,7 @@ Section WITHMEMORYMODEL.
       generalize (instr_size_positive ifree) (instr_size_positive (Plabel l)). omega.
     }
   Qed.
+
   
   Lemma exec_instr_normal:
     forall rs1 rs2 m1 m2 b ofs f i rs2' m2',
@@ -712,6 +768,16 @@ Section WITHMEMORYMODEL.
         contradict NIC. constructor.
         contradict NII. constructor 2; auto.
         contradict NII. constructor. constructor.
+
+        eapply goto_ofs_match; eauto.
+        eapply goto_ofs_match; eauto.
+        erewrite eval_testcond_seq by eauto. rewrite Heqo0. eapply goto_ofs_match; eauto.
+        erewrite eval_testcond_seq by eauto. rewrite Heqo0. 
+        do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq; repeat destr; simpl; regs_eq].
+        erewrite eval_testcond_seq by eauto. rewrite Heqo0.
+        do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq; repeat destr; simpl; regs_eq].
+        eapply goto_ofs_match. 2: eauto. intros; regs_eq.
+        
     }
     destruct (Val.eq (rs2' PC) (Val.offset_ptr (rs2 PC) (Ptrofs.repr (instr_size i)))).
     {
@@ -746,6 +812,11 @@ Section WITHMEMORYMODEL.
     generalize (goto_label_PC _ _ _ _ _ _ H0 _ _ PC2 FFP). simpl. intros (A & B); repeat destr; eauto.
     contradict NIC. constructor.
     contradict NII. constructor 2. auto.
+    exploit find_jmp_rel_absurd; eauto. intros. contradiction.
+    exploit find_jmp_rel_absurd; eauto. intros. contradiction.
+    exploit find_jmp_rel_absurd; eauto. intros. contradiction.
+    exploit find_jmp_rel_absurd; eauto. intros. contradiction.
+
     rewrite PC2, FFP, FI. intro A. inv A. inv H. destruct H as [H|H]; inv H.
   Qed.
 
@@ -1242,5 +1313,73 @@ Section WITHMEMORYMODEL.
   Qed.
 
   End PRESERVATION.
+
+  Definition match_prog (p: Asm.program) (tp: Asm.program) :=
+    match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+
+  Lemma transf_program_match:
+    forall p tp, transf_program p = OK tp -> match_prog p tp.
+  Proof.
+    intros. eapply match_transform_partial_program; eauto.
+  Qed.
+
+  Lemma match_prog_inv: forall t tp,
+    match_prog t tp -> t = tp /\ prog_no_jmp_rel t.
+  Proof.
+    intros t tp MT. red in MT. red in MT. red in MT.
+    destruct MT as (MT & EQ1 & EQ2).
+    set (P := 
+           (match_ident_option_globdef (fun (_ : program Asm.fundef unit) (f tf : Asm.fundef) => transf_fundef f = OK tf) 
+                                       (@eq unit) t)) in *.
+    destruct t, tp. simpl in *. subst. 
+    apply list_forall2_ind with (P:=P) (l:= prog_defs) (l0:= prog_defs0).
+    - split; simpl; auto.
+      red. simpl. apply Forall_forall. intros x H. inv H.
+    - intros a1 al b1 bl Pab LP (EQ1 & NJ). inv EQ1. 
+      red in NJ. rewrite Forall_forall in NJ. split.
+      + f_equal.
+        f_equal. red in Pab. red in Pab. destruct Pab as [Pab1 Pab2].
+        destruct a1, b1. simpl in *. subst. f_equal.
+        destruct o. inv Pab2. 
+        destruct g. inv H0. 
+        destruct f. monadInv H2. unfold transf_function in EQ.
+        destr_in EQ; inv EQ.
+        simpl in *. inv H2. auto.
+        inv H0. inv H1. auto.
+        inv Pab2. auto.
+      + red. apply Forall_forall. 
+        intros x IN. simpl in *. destruct IN as [IN1 | IN2].
+        * subst. red in Pab. red in Pab. destruct Pab as [Pab1 Pab2].
+          destruct x, b1. simpl in *. subst.
+          destruct o; auto. destruct g; auto.
+          inv Pab2. inv H0. unfold transf_fundef in H2.
+          unfold transf_partial_fundef in H2. destr_in H2; monadInv H2.
+          unfold transf_function in EQ.
+          destruct func_no_jmp_rel_dec; inv EQ. auto. 
+          red. auto.
+        * apply NJ. auto.
+    - auto.
+  Qed.     
+
+  Section PRESERVATION2.
+
+  Variable prog: Asm.program.
+  Variable tprog: Asm.program.
+  Hypothesis TRANSF: match_prog prog tprog.
+  Let ge := Genv.globalenv prog.
+  
+  Hypothesis WF: wf_asm_prog ge.
+  Hypothesis prog_no_rsp: asm_prog_no_rsp ge.
+
+  Theorem real_asm_correct' rs:
+    backward_simulation (RawAsm.semantics prog rs) (RealAsm.semantics tprog rs).
+  Proof.
+    red in TRANSF. 
+    unfold transf_program in TRANSF.
+    exploit match_prog_inv; eauto. intros (EQ & NJ). subst.
+    apply real_asm_correct; auto.
+  Qed.
+
+  End PRESERVATION2.
         
 End WITHMEMORYMODEL.

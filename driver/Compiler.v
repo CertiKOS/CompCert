@@ -82,6 +82,7 @@ Require Stackingproof.
 Require Asmgenproof.
 Require RawAsmproof.
 Require RealAsmproof2.
+Require RealAsmgen.
 Require PseudoInstructionsproof.
 Require SegAsmgenproof.
 Require SegAsmGlobenv.
@@ -193,6 +194,7 @@ Definition transf_c_program (p: Csyntax.program) : res Asm.program :=
 
 Definition transf_c_program_real p : res Asm.program :=
   transf_c_program p
+  @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
@@ -225,6 +227,7 @@ Definition transf_c_program_decode_encode_bin p : res RawBinary.program :=
 
 Definition transf_cminor_program_real (p:Cminor.program) : res Asm.program :=
   transf_cminor_program p
+  @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
@@ -359,7 +362,8 @@ Fixpoint passes_app {A B C} (l1: Passes A B) (l2: Passes B C) : Passes A C :=
 (* Defined. *)
 
 Definition real_asm_passes :=
-      mkpass PseudoInstructions.match_check_prog
+      mkpass RealAsmproof2.match_prog
+  ::: mkpass PseudoInstructions.match_check_prog
   ::: mkpass PseudoInstructionsproof.match_prog
   ::: pass_nil _.
 
@@ -456,12 +460,15 @@ Theorem transf_c_program_real_match:
 Proof.
   intros p tp T. unfold transf_c_program_real in T.
   destruct (transf_c_program p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
-  destruct (PseudoInstructions.check_program p1) eqn:CHK; simpl in T; try discriminate. inv T.
+  destruct (RealAsmgen.transf_program p1) eqn:RTP; simpl in T; try discriminate.
+  destruct (PseudoInstructions.check_program p0) eqn:CHK; simpl in T; try discriminate. inv T.
   unfold match_prog_real.
   rewrite compose_passes_app.
   fold match_prog. exists p1; split.
   eapply transf_c_program_match; eauto.
   simpl. eexists; split; eauto.
+  eapply RealAsmproof2.transf_program_match; eauto.
+  eexists; split; eauto.
   eapply PseudoInstructions.check_program_match; eauto.
   eexists; split; eauto.
   apply PseudoInstructionsproof.transf_program_match; auto.
@@ -485,7 +492,8 @@ Proof.
   exists pi1; split; auto.
   unfold flat_asm_passes. simpl. 
   unfold real_asm_passes in CPR. simpl in CPR.
-  destruct CPR as (p3 & PM & p4 & PIM & EQ). subst.
+  destruct CPR as (p2 & RPM & p3 & PM & p4 & PIM & EQ). subst.
+  eexists; split; eauto.
   eexists; split; eauto.
 Qed.
 
@@ -832,14 +840,15 @@ Proof.
   rewrite compose_passes_app in H.
   fold match_prog in H.
   destruct H as (pi & MP & P).
-  simpl in P. destruct P as (p2 & P & p3 & P' & EQ); inv EQ.
+  simpl in P. destruct P as (p2 & P & p3 & P' & p4 & P'' & EQ); inv EQ.
+  exploit RealAsmproof2.match_prog_inv; eauto. intros (EQ & NJ). subst.
   eapply compose_backward_simulation.
   apply RealAsm.real_asm_single_events.
-  replace (fn_stack_requirements tp) with (fn_stack_requirements pi).
+  replace (fn_stack_requirements tp) with (fn_stack_requirements p2).
   eapply compose_backward_simulation.
   apply RealAsm.real_asm_single_events.  
   apply c_semantic_preservation_raw. auto.
-  apply RealAsmproof2.real_asm_correct.
+  apply RealAsmproof2.real_asm_correct'; eauto.
   eapply PseudoInstructions.check_wf; eauto.
   red; intros.
   eapply AsmFacts.check_asm_code_no_rsp_correct.
@@ -847,12 +856,12 @@ Proof.
   {
     unfold fn_stack_requirements.
     apply Axioms.extensionality. intro i.
-    erewrite (PseudoInstructions.globalenv_eq _ _ P); eauto.
-    rewrite (PseudoInstructionsproof.symbols_preserved _ _ P'). destr.
+    erewrite (PseudoInstructions.globalenv_eq _ _ P'); eauto.
+    rewrite (PseudoInstructionsproof.symbols_preserved _ _ P''). destr.
     destr.
-    erewrite (PseudoInstructionsproof.functions_translated _ _ P'); eauto.
+    erewrite (PseudoInstructionsproof.functions_translated _ _ P''); eauto.
     destr.
-    erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P'); eauto.
+    erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P''); eauto.
   }
   eapply forward_to_backward_simulation.
   eapply compose_forward_simulations.

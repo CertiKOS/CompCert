@@ -311,6 +311,17 @@ Section WITHMEMORYMODEL.
     destr_in H. inv H. erewrite functions_translated; eauto.
   Qed.
 
+  Lemma goto_ofs_senv_equiv:
+    forall sz ofs rs m rs' m',
+      goto_ofs ge sz ofs rs m = Next rs' m' ->
+      goto_ofs tge sz ofs rs m = Next rs' m'.
+  Proof.
+    unfold goto_ofs.
+    intros.
+    destr.
+    destr_in H. inv H. erewrite functions_translated; eauto.
+  Qed.
+
   Lemma functions_only_translated:
     forall b,
       Genv.find_funct_ptr ge b = None ->
@@ -364,6 +375,17 @@ Section WITHMEMORYMODEL.
     destr_in H. erewrite functions_only_translated; eauto.
   Qed.
 
+  Lemma goto_ofs_senv_equiv':
+    forall sz ofs rs m,
+      goto_ofs ge sz ofs rs m = Stuck ->
+      goto_ofs tge sz ofs rs m = Stuck.
+  Proof.
+    unfold goto_ofs.
+    intros.
+    destr.
+    destr_in H. erewrite functions_only_translated; eauto.
+  Qed.
+
   Lemma goto_label_eq:
     forall f l rs m,
       goto_label ge f l rs m =
@@ -373,6 +395,17 @@ Section WITHMEMORYMODEL.
     destruct (goto_label ge f l rs m) eqn:GL.
     symmetry; eapply goto_label_senv_equiv; eauto.
     symmetry; eapply goto_label_senv_equiv'; eauto.
+  Qed.
+
+  Lemma goto_ofs_eq:
+    forall sz ofs rs m,
+      goto_ofs ge sz ofs rs m =
+      goto_ofs tge sz ofs rs m.
+  Proof.
+    intros.
+    destruct (goto_ofs ge sz ofs rs m) eqn:GL.
+    symmetry; eapply goto_ofs_senv_equiv; eauto.
+    symmetry; eapply goto_ofs_senv_equiv'; eauto.
   Qed.
 
   Lemma eval_ros_eq:
@@ -395,6 +428,7 @@ Section WITHMEMORYMODEL.
     destruct EQ as (A & B & C & D). simpl in *. rewrite B. auto.
     erewrite eval_addrmode32_senv_equiv; eauto.
     erewrite eval_addrmode64_senv_equiv; eauto.
+
     eapply goto_label_eq; eauto.
     unfold Genv.find_funct.
     rewrite eval_ros_eq.
@@ -404,6 +438,12 @@ Section WITHMEMORYMODEL.
     destr. destr. destr. destr. eapply goto_label_eq; eauto.
     destr. destr. eapply goto_label_eq; eauto.
     destr. f_equal. f_equal. f_equal. apply eval_ros_eq.
+    
+    eapply goto_ofs_eq; eauto.
+    destr. destr. eapply goto_ofs_eq; eauto.
+    destr. destr. destr. destr. eapply goto_ofs_eq; eauto.
+    destr. destr. eapply goto_ofs_eq; eauto.
+    
   Qed.
   
   Lemma pseudo_instructions_step:

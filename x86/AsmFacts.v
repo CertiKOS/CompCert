@@ -181,6 +181,10 @@ Section WITHMEMORYMODEL.
     | Pjcc _ _
     | Pjcc2 _ _ _ => nil
     | Pjmptbl r tbl => IR RAX :: IR RDX :: nil
+    | Pjmp_l_rel _
+    | Pjcc_rel _ _
+    | Pjcc2_rel _ _ _ => nil
+    | Pjmptbl_rel r tbl => IR RAX :: IR RDX :: nil
     | Pcall ros sg => nil
     | Pret => nil
     (* (** Saving and restoring registers *) *)
@@ -265,6 +269,11 @@ Section WITHMEMORYMODEL.
     solvegl H7.
     solvegl H7.
     solvegl H7.
+    Ltac solveofs H := unfold goto_ofs in H; repeat destr_in H; simpl_regs; auto.
+    solveofs H7.
+    solveofs H7.
+    solveofs H7.
+    solveofs H7.
   Qed.
 
   Definition check_asm_instr_no_rsp i :=
@@ -787,6 +796,16 @@ Section WITHMEMORYMODEL.
     unfold goto_label in GOTO; repeat destr_in GOTO.
   Qed.
 
+  Lemma goto_ofs_stack:
+    forall (ge: Genv.t Asm.fundef unit) sz ofs m1 rs1 rs2 m2,
+      goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
+      Mem.stack m2 = Mem.stack m1 /\ (forall b o k p, Mem.perm m2 b o k p <-> Mem.perm m1 b o k p).
+  Proof.
+    intros ge sz ofs m1 rs1 rs2 m2 GOTO.
+    unfold goto_ofs in GOTO; repeat destr_in GOTO.
+  Qed.
+
+
   Lemma asmgen_no_change_stack i:
     asm_instr_no_stack i.
   Proof.
@@ -797,6 +816,7 @@ Section WITHMEMORYMODEL.
                 | now (eapply exec_load_stack; eauto)
                 | now (eapply exec_store_stack; eauto)
                 | now ( eapply goto_label_stack; eauto)
+                | now ( eapply goto_ofs_stack; eauto)
                 | idtac ].
     Unshelve. all: auto.
     exact Mint32. exact PC. exact Ptrofs.zero.
@@ -845,7 +865,12 @@ Section WITHMEMORYMODEL.
     destruct i; simpl in EI; inv EI; try (apply Ple_refl);
       first [now eapply exec_load_nb; eauto
             | now (eapply exec_store_nb; eauto)
-            | unfold goto_label in *; destr_all; rewnb; try xomega ].
+            | unfold goto_label in *; destr_all; rewnb; try xomega
+            ].
+    unfold goto_ofs in *; destr_all; xomega.
+    unfold goto_ofs in *; destr_all; xomega.
+    unfold goto_ofs in *; destr_all; xomega.
+    unfold goto_ofs in *; destr_all; xomega.
   Qed.
   
   Lemma val_inject_set:
@@ -977,6 +1002,16 @@ Section WITHMEMORYMODEL.
     apply Mem.unchanged_on_refl.
   Qed.
   
+  Lemma goto_ofs_unchanged_stack:
+    forall (ge: Genv.t Asm.fundef unit) m1 rs1 sz ofs rs2 m2 P,
+      goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
+      Mem.unchanged_on P m1 m2.
+  Proof.
+    intros ge m1 rs1 sz ofs rs2 m2 P GL.
+    unfold goto_ofs in GL. repeat destr_in GL.
+    apply Mem.unchanged_on_refl.
+  Qed.
+
   Lemma exec_instr_unchanged_stack:
     forall (ge: Genv.t Asm.fundef unit) f i rs1 m1 rs2 m2 init_stk l,
       Mem.stack m1 = l ++ init_stk ->
@@ -995,6 +1030,7 @@ Section WITHMEMORYMODEL.
               | now (eapply exec_load_unchanged_stack; eauto)
               | now (eapply exec_store_unchanged_stack; eauto)
               | now (eapply goto_label_unchanged_stack; eauto)
+              | now (eapply goto_ofs_unchanged_stack; eauto)
               | idtac
               ].
       apply Mem.strong_unchanged_on_weak, Mem.push_new_stage_unchanged_on.

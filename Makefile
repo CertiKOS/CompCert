@@ -107,7 +107,7 @@ BACKEND=\
   Inlining.v Inliningspec.v Inliningproof.v \
   Tailcall.v Tailcallproof.v \
 	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
-	AsmRegs.v RealAsm.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
+	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
   Segment.v \
   SegMemAccessors.v SegAsm.v SegAsmGlobenv.v SegAsmBuiltin.v SegAsmProgram.v \
   SegAsmgen.v SegAsmgenproof.v SegAsmSep.v \

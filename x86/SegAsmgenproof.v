@@ -6666,7 +6666,15 @@ Proof.
     eexists _, _; split; eauto. econstructor; eauto.
     repeat apply regset_inject_expand; auto.
     apply Val.offset_ptr_inject. eauto.
-Qed.
+
+  - (* Pjmp_l_rel *) admit.
+
+  - (* Pjcc_rel *) admit.
+
+  - (* Pjcc2_rel *) admit.
+
+  - (* Pjmptbl_rel *) admit.
+Admitted.
 
 Theorem step_simulation:
   forall S1 t S2,
