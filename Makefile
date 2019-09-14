@@ -117,7 +117,7 @@ BACKEND=\
   ValidLabel.v Hex.v Bits.v \
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
-  RelocAsmProgram.v RelocAsm.v
+  RelocProgram.v RelocAsm.v RelocBin.v
 
 # C front-end modules (in cfrontend/)
 

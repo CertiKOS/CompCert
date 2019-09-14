@@ -3,7 +3,7 @@
 (* Date:   Sep 13, 2019 *)
 (* *******************  *)
 
-(** * Assembly language with information about symbols and relocation *)
+(** * Template of languages with information about symbols and relocation *)
 
 Require Import Coqlib Maps Integers Values AST.
 Require Import Globalenvs.
@@ -66,19 +66,17 @@ Definition reloctable := list relocentry.
 
 
 (** ** Definition of program constructs *)
-Module Type RelocAsmParams.
-  Parameter (I D: Type).
-End RelocAsmParams.
+Module Type RelocProgParams.
+  Parameter C :Type.  (* Type of code in a function*)
+  Parameter D: Type. (* Type of global data *)
+End RelocProgParams.
 
 
-Module RelocAsmProg (P: RelocAsmParams).
+Module RelocProg (P: RelocProgParams).
 
 Import P.
 
-Definition instr_with_info:Type := I * secblock * ident.
-
-Definition code := list instr_with_info.
-Record function : Type := mkfunction { fn_sig: signature; fn_code: code; fn_range:secblock; fn_actual_size: Z; fn_stacksize: Z; fn_pubrange: Z * Z}.
+Record function : Type := mkfunction { fn_sig: signature; fn_code: C; fn_range:secblock; fn_actual_size: Z; fn_stacksize: Z; fn_pubrange: Z * Z}.
 Definition fundef := AST.fundef function.
 Definition gdef := globdef fundef D.
 
@@ -91,4 +89,4 @@ Record program : Type := {
   prog_senv : Globalenvs.Senv.t;
 }.
 
-End RelocAsmProg.
+End RelocProg.
