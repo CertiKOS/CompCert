@@ -74,8 +74,11 @@ Section WITHEXTERNALCALLS.
     end.
   
   Definition trans_function (f: function) :res function :=
-    do instrs <- (eliminate_local_label_aux (fn_code f) 0 (fn_code f));
-    OK (mkfunction (fn_sig f) instrs (fn_stacksize f) (fn_pubrange f)).
+    if func_no_jmp_rel_dec f then 
+      do instrs <- (eliminate_local_label_aux (fn_code f) 0 (fn_code f));
+      OK (mkfunction (fn_sig f) instrs (fn_stacksize f) (fn_pubrange f))
+    else
+      Error (msg "Some source function contains relative jumps").
 
   Definition transf_fundef (f: Asm.fundef) : res Asm.fundef :=
     transf_partial_fundef trans_function f.
