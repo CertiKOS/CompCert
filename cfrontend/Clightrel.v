@@ -493,7 +493,8 @@ Proof.
   induction Hk; simpl; try rauto.
   (* XXX prob is now we don't just try I *)
   reexists. rstep. apply I. red. simpl.
-Admitted.
+  destruct IHHk. split. constructor; eauto. constructor.
+Qed.
 
 Global Instance is_call_cont_match_strong R w:
   Monotonic (@is_call_cont) (cont_match R w ++> iff).
