@@ -17,23 +17,10 @@ Local Open Scope error_monad_scope.
 
 (** * Generation of symbol table *)
 
-Section WITH_SEC_PARAMS.
-
-
-Variable data_secid: ident.
-Variable code_secid: ident.
-
-Definition data_label (ofs:Z) : seclabel := (data_secid, ofs).
-Definition code_label (ofs:Z) : seclabel := (code_secid, ofs).
-
-End WITH_SEC_PARAMS.
-
-
 (** ** Translate the program using the symbol table *)
-Section WITH_SYMB_AND_SEC_TABLE.
+Section WITH_SYMB_TABLE.
 
 Variable stbl: symbtable.
-Variable sectbl: sectable.
 
 Definition transl_instr (ofs:Z) (fid: ident) (sid:ident) (i:Asm.instruction) : res instr_with_info :=
   match i with
@@ -106,7 +93,7 @@ Fixpoint transl_globdefs (defs : list (ident * option (AST.globdef Asm.fundef un
   end.
   
 (** Translation of a program *)
-Definition transl_prog (p:Asm.program) : res program := 
+Definition transl_prog (sectbl:sectable) (p:Asm.program) : res program := 
   do defs <- transl_globdefs (AST.prog_defs p);
   OK (Build_program
         defs
@@ -118,7 +105,7 @@ Definition transl_prog (p:Asm.program) : res program :=
         (Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)))
       .
 
-End WITH_SYMB_AND_SEC_TABLE.
+End WITH_SYMB_TABLE.
 
 
 (** ** Compute the symbol table *)
@@ -128,6 +115,7 @@ Section WITH_CODE_DATA_SEC.
 Variables (dsec csec:ident).
 
 Section WITH_CODE_DATA_SIZE.
+
 Variables (dsize csize: Z).
 
 (** get_symbol_entry takes the ids and the current sizes of data and text sections and 
@@ -207,28 +195,15 @@ Definition update_code_data_size (def: option (AST.globdef Asm.fundef unit)) : (
     (dsize, csize+sz)
   end.
 
-(** Create the section table *)
-Definition create_sec_table :=
-  let empty_tbl := PTree.empty section in
-  let data_section := {| sec_type := sec_data; sec_size := dsize |} in
-  let code_section := {| sec_type := sec_text; sec_size := csize |} in
-  let stbl := PTree.set dsec data_section empty_tbl in
-  let stbl1 := PTree.set csec code_section stbl in
-  stbl1.
-
 End WITH_CODE_DATA_SIZE.
 
 (** Generate the symbol and section table *)
-Definition gen_symb_sec_tables defs :=
-  let '(symbtbl, dsize, csize) := 
-      fold_left (fun '(stbl, dsize, csize) '(id, def) => 
-                   let stbl' := update_symbtable dsize csize stbl id def in
-                   let '(dsize', csize') := update_code_data_size dsize csize def in
-                   (stbl', dsize', csize'))
-                defs (PTree.empty symbentry, 0, 0) in
-  let sectbl := create_sec_table dsize csize in
-  (sectbl, symbtbl).
-
+Definition gen_symb_table defs :=
+  fold_left (fun '(stbl, dsize, csize) '(id, def) => 
+               let stbl' := update_symbtable dsize csize stbl id def in
+               let '(dsize', csize') := update_code_data_size dsize csize def in
+               (stbl', dsize', csize'))
+            defs (PTree.empty symbentry, 0, 0).
 
 End WITH_CODE_DATA_SEC.
 
@@ -325,16 +300,22 @@ Qed.
 Definition sec_data_id := 1%positive.
 Definition sec_code_id := 2%positive.
 
-Definition sections_size (t:sectable) :=
-  let l := PTree.elements t in
-  fold_left (fun sz '(_,s) => sec_size s + sz) l 0.
+(** Create the section table *)
+Definition create_sec_table dsize csize :=
+  let empty_tbl := PTree.empty section in
+  let data_section := {| sec_type := sec_data; sec_size := dsize |} in
+  let code_section := {| sec_type := sec_text; sec_size := csize |} in
+  let stbl := PTree.set sec_data_id data_section empty_tbl in
+  let stbl1 := PTree.set sec_code_id code_section stbl in
+  stbl1.
 
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=
   if check_wellformedness p then
-    let '(sec_tbl, symb_tbl) := gen_symb_sec_tables sec_data_id sec_code_id (AST.prog_defs p) in
+    let '(symb_tbl, dsize, csize) := gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) in
+    let sec_tbl := create_sec_table dsize csize in
     if zle (sections_size sec_tbl) Ptrofs.max_unsigned then 
-      transl_prog symb_tbl sec_tbl p
+      transl_prog symb_tbl sec_tbl p 
     else 
       Error (msg "Size of sections too big")
   else

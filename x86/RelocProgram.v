@@ -19,6 +19,10 @@ Record section : Type :=
 
 Definition sectable := PTree.t section.
 
+Definition sections_size (t:sectable) :=
+  let l := PTree.elements t in
+  fold_left (fun sz '(_,s) => sec_size s + sz) l 0.
+
 Definition seclabel : Type := ident * Z.
 
 Record secblock:Type := 
