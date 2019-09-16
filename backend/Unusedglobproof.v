@@ -761,15 +761,13 @@ Inductive match_states: state -> state -> Prop :=
          (MEMINJ: Mem.inject j m tm),
       match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
                    (State ts f (Vptr tsp Ptrofs.zero) pc trs tm)
-  | match_states_call: forall s fd args m ts targs tm j fb tfb
-         (FIND: Genv.find_funct_ptr ge fb = Some fd)
-         (TFIND: Genv.find_funct_ptr tge tfb = Some fd)
+  | match_states_call: forall s fd args m ts targs tm j
          (STACKS: match_stacks j s ts (Mem.nextblock m) (Mem.nextblock tm))
          (KEPT: forall id, ref_fundef fd id -> kept id)
          (ARGINJ: Val.inject_list j args targs)
          (MEMINJ: Mem.inject j m tm),
-      match_states (Callstate s fb args m)
-                   (Callstate ts tfb targs tm)
+      match_states (Callstate s fd args m)
+                   (Callstate ts fd targs tm)
   | match_states_return: forall s res m ts tres tm j
          (STACKS: match_stacks j s ts (Mem.nextblock m) (Mem.nextblock tm))
          (RESINJ: Val.inject j res tres)
@@ -783,10 +781,8 @@ Lemma external_call_inject:
   external_call ef ge vargs m1 t vres m2 ->
   Mem.inject f m1 m1' ->
   Val.inject_list f vargs vargs' ->
-  exists w, (exists t', match_events_query _ w t t') /\
-  forall t', match_events cc_inject w t t' ->
   exists f', exists vres', exists m2',
-    external_call ef tge vargs' m1' t' vres' m2'
+    external_call ef tge vargs' m1' t vres' m2'
     /\ Val.inject f' vres vres'
     /\ Mem.inject f' m2 m2'
     /\ Mem.unchanged_on (loc_unmapped f) m1 m2
@@ -794,33 +790,31 @@ Lemma external_call_inject:
     /\ inject_incr f f'
     /\ inject_separated f f' m1 m1'.
 Proof.
-  intros. edestruct external_call_mem_inject_gen; eauto.
+  intros. eapply external_call_mem_inject_gen; eauto.
   apply globals_symbols_inject; auto.
-  admit. (* discrepancy ge/tge -- change ec_mem_inject? *)
-Admitted.
+Qed.
 
 Lemma find_function_inject:
-  forall j ros rs fb fd trs,
+  forall j ros rs fd trs,
   meminj_preserves_globals j ->
-  find_block ge ros rs = Some fb ->
-  Genv.find_funct_ptr ge fb = Some fd ->
+  find_function ge ros rs = Some fd ->
   match ros with inl r => regset_inject j rs trs | inr id => kept id end ->
-  exists tfb,
-    find_block tge ros trs = Some tfb /\ Genv.find_funct_ptr tge tfb = Some fd /\ (forall id, ref_fundef fd id -> kept id).
+  find_function tge ros trs = Some fd /\ (forall id, ref_fundef fd id -> kept id).
 Proof.
   intros. destruct ros as [r|id]; simpl in *.
-- apply block_of_inv in H0. 
-  specialize (H2 r). rewrite H0 in H2. inv H2.
-  rewrite Genv.find_funct_ptr_iff in H1.
+- exploit Genv.find_funct_inv; eauto. intros (b & R). rewrite R in H0.
+  rewrite Genv.find_funct_find_funct_ptr in H0.
+  specialize (H1 r). rewrite R in H1. inv H1.
+  rewrite Genv.find_funct_ptr_iff in H0.
   exploit defs_inject; eauto. intros (A & B & C).
   rewrite <- Genv.find_funct_ptr_iff in A.
-  rewrite B; eauto. simpl in *; eauto.
-  exists b2; auto.
-- exploit symbols_inject_2; eauto. intros (tb & P & Q). rewrite P.
-  rewrite Genv.find_funct_ptr_iff in H1.
+  rewrite B; auto.
+- destruct (Genv.find_symbol ge id) as [b|] eqn:FS; try discriminate.
+  exploit symbols_inject_2; eauto. intros (tb & P & Q). rewrite P.
+  rewrite Genv.find_funct_ptr_iff in H0.
   exploit defs_inject; eauto. intros (A & B & C).
   rewrite <- Genv.find_funct_ptr_iff in A.
-  eexists; eauto.
+  auto.
 Qed.
 
 Lemma eval_builtin_arg_inject:
@@ -881,18 +875,16 @@ Proof.
 - exists (@nil val); split; constructor.
 - simpl in H5.
   exploit eval_builtin_arg_inject; eauto using in_or_app. intros (v1' & A & B).
-  destruct IHlist_rel as (vl' & C & D); eauto using in_or_app.
+  destruct IHlist_forall2 as (vl' & C & D); eauto using in_or_app.
   exists (v1' :: vl'); split; constructor; auto.
 Qed.
 
 Theorem step_simulation:
   forall S1 t S2, step ge S1 t S2 ->
   forall S1' (MS: match_states S1 S1'),
-  exists w, (exists t', match_events_query _ w t t') /\
-  forall t', match_events cc_inject w t t' ->
-  exists S2', step tge S1' t' S2' /\ match_states S2 S2'.
+  exists S2', step tge S1' t S2' /\ match_states S2 S2'.
 Proof.
-  induction 1; intros; inv MS; try stable_step.
+  induction 1; intros; inv MS.
 
 - (* nop *)
   econstructor; split.
@@ -949,9 +941,9 @@ Proof.
 
 - (* call *)
   exploit find_function_inject.
-  eapply match_stacks_preserves_globals; eauto. eauto. eauto.
+  eapply match_stacks_preserves_globals; eauto. eauto.
   destruct ros as [r|id]. eauto. apply KEPT. red. econstructor; econstructor; split; eauto. simpl; auto.
-  intros (tfb & FB & A & B).
+  intros (A & B).
   econstructor; split. eapply exec_Icall; eauto.
   econstructor; eauto.
   econstructor; eauto.
@@ -961,9 +953,9 @@ Proof.
 
 - (* tailcall *)
   exploit find_function_inject.
-  eapply match_stacks_preserves_globals; eauto. eauto. eauto.
+  eapply match_stacks_preserves_globals; eauto. eauto.
   destruct ros as [r|id]. eauto. apply KEPT. red. econstructor; econstructor; split; eauto. simpl; auto.
-  intros (tfb & FB & A & B).
+  intros (A & B).
   exploit Mem.free_parallel_inject; eauto. rewrite ! Z.add_0_r. intros (tm' & C & D).
   econstructor; split.
   eapply exec_Itailcall; eauto.
@@ -982,9 +974,7 @@ Proof.
   intros (vargs' & P & Q).
   exploit external_call_inject; eauto.
   eapply match_stacks_preserves_globals; eauto.
-  intros (w & Hwq & Hw). exists w; split; eauto.
-  intros t' Ht'. specialize (Hw t' Ht').
-  destruct Hw as (j' & tv & tm' & A & B & C & D & E & F & G).
+  intros (j' & tv & tm' & A & B & C & D & E & F & G).
   econstructor; split.
   eapply exec_Ibuiltin; eauto.
   eapply match_states_regular with (j := j'); eauto.
@@ -1023,7 +1013,6 @@ Proof.
   destruct or; simpl; auto.
 
 - (* internal function *)
-  rewrite FIND in H; inv H.
   exploit Mem.alloc_parallel_inject. eauto. eauto. apply Z.le_refl. apply Z.le_refl.
   intros (j' & tm' & tstk & C & D & E & F & G).
   assert (STK: stk = Mem.nextblock m) by (eapply Mem.alloc_result; eauto).
@@ -1040,12 +1029,9 @@ Proof.
   apply init_regs_inject; auto. apply val_inject_list_incr with j; auto.
 
 - (* external function *)
-  rewrite FIND in H; inv H.
   exploit external_call_inject; eauto.
   eapply match_stacks_preserves_globals; eauto.
-  intros (w & Hwq & Hw). exists w; split; eauto.
-  intros t' Ht'. specialize (Hw t' Ht').
-  destruct Hw as (j' & tres & tm' & A & B & C & D & E & F & G).
+  intros (j' & tres & tm' & A & B & C & D & E & F & G).
   econstructor; split.
   eapply exec_function_external; eauto.
   eapply match_states_return with (j := j'); eauto.
@@ -1088,23 +1074,21 @@ Lemma init_meminj_invert_strong:
   forall b b' delta,
   init_meminj b = Some(b', delta) ->
   delta = 0 /\
-  exists id,
+  exists id gd,
      Genv.find_symbol ge id = Some b
   /\ Genv.find_symbol tge id = Some b'
-  /\ forall gd,
-       Genv.find_def ge b = Some gd ->
-       Genv.find_def tge b' = Some gd /\
-       forall i, ref_def gd i -> kept i.
+  /\ Genv.find_def ge b = Some gd
+  /\ Genv.find_def tge b' = Some gd
+  /\ (forall i, ref_def gd i -> kept i).
 Proof.
   intros. exploit init_meminj_invert; eauto. intros (A & id & B & C).
-  split; auto.
-  esplit.
-  split; eauto.
-  split; eauto.
-  intros gd Hgd.
-  exploit defs_inject. apply init_meminj_preserves_globals.
-  eauto. eauto. intros (X & _ & Y). 
-  eauto.
+  assert (exists gd, (prog_defmap p)!id = Some gd).
+  { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. }
+  destruct H0 as [gd DM]. rewrite Genv.find_def_symbol in DM.
+  destruct DM as (b'' & P & Q). fold ge in P. rewrite P in B; inv B.
+  fold ge in Q. exploit defs_inject. apply init_meminj_preserves_globals.
+  eauto. eauto. intros (X & _ & Y).
+  split. auto. exists id, gd; auto.
 Qed.
 
 Section INIT_MEM.
@@ -1120,7 +1104,7 @@ Lemma bytes_of_init_inject:
 Proof.
   induction il as [ | i1 il]; simpl; intros.
 - constructor.
-- rstep.
+- apply list_forall2_app.
 + destruct i1; simpl; try (apply inj_bytes_inject).
   induction (Z.to_nat z); simpl; constructor. constructor. auto.
   destruct (Genv.find_symbol ge i) as [b|] eqn:FS.
@@ -1135,11 +1119,11 @@ Proof.
 + apply IHil. intros id [ofs IN]. apply H. exists ofs; auto with coqlib.
 Qed.
 
-Lemma list_forall2_same_prefix_length {A B: Type} (P: A -> B -> Prop) l1:
-  forall l2 r1 r2,
-    list_forall2 P (l1 ++ r1) (l2 ++ r2) ->
-    length l1 = length l2 ->
-    list_forall2 P l1 l2 /\ list_forall2 P r1 r2.
+Lemma Mem_getN_forall2:
+  forall (P: memval -> memval -> Prop) c1 c2 i n p,
+  list_forall2 P (Mem.getN n p c1) (Mem.getN n p c2) ->
+  p <= i -> i < p + Z.of_nat n ->
+  P (ZMap.get i c1) (ZMap.get i c2).
 Proof.
   induction n; simpl Mem.getN; intros.
 - simpl in H1. omegaContradiction.
@@ -1148,151 +1132,26 @@ Proof.
 + apply IHn with (p0 + 1); auto. omega. omega.
 Qed.
 
-Lemma init_mem_inj_2:
-  Mem.inject init_meminj m tm.
+Lemma init_mem_inj_1:
+  Mem.mem_inj init_meminj m tm.
 Proof.
-  apply Mem.zero_delta_inject.
-- intros b1 b2 delta H.
-  apply init_meminj_invert in H.
-  destruct H; auto.
-- intros b1 b2 H.
-  apply init_meminj_invert in H.
-  destruct H as (_ & id & Hsymb & Htsymb).
-  split; eapply Genv.find_symbol_not_fresh; eauto.
-- intros b1 [] H.
-  apply init_meminj_invert in H.
-  destruct H as (_ & id1 & Hid1 & Htid1).
-  intros b2 H.
-  apply init_meminj_invert in H.
-  destruct H as (_ & id2 & Hid2 & Htid2).
-  cut (id1 = id2); [ congruence | ].
-  eapply Senv.find_symbol_injective with (t := Genv.to_senv tge); eauto.
-- intros b1 b2 H o k p0 H0.
-  apply init_meminj_invert_strong in H.
-  destruct H as (_ & id & Hid & Htid & Htdef).
-  destruct (Genv.find_def ge b1) as [ def | ] eqn:DEF.
-  *
-  specialize (Htdef _ (eq_refl _)).
-  destruct Htdef as (Htdef & _).
+  intros; constructor; intros.
+- exploit init_meminj_invert_strong; eauto. intros (A & id & gd & B & C & D & E & F).
   exploit (Genv.init_mem_characterization_gen p); eauto.
   exploit (Genv.init_mem_characterization_gen tp); eauto.
-  destruct def as [f|v].
-  + destruct 1 as (Htperm & Htperm_impl) .
-    destruct 1 as (Hperm & Hperm_impl).
-    apply Hperm_impl in H0.
-    destruct H0; subst.
-    apply Mem.perm_cur; auto.
-  + destruct 1 as (Htperm & Htperm_impl & _).
-    destruct 1 as (Hperm & Hperm_impl & _).
-    apply Hperm_impl in H0.
-    destruct H0 as (LE & ORD).
-    eapply Htperm in LE.
-    apply Mem.perm_cur; auto.
-    eapply Mem.perm_implies; eauto.
-  *
-  exploit (Genv.init_mem_characterization_gen_strong p); eauto.
-  intros [GINIT _].
-  edestruct GINIT; eauto.
-- intros b1 b2 H o k p0 H0.
-  apply init_meminj_invert_strong in H.
-  destruct H as (_ & id & Hid & Htid & Htdef).
-  destruct (Genv.find_def ge b1) as [ def | ] eqn:DEF.
-  *
-  specialize (Htdef _ (eq_refl _)).
-  destruct Htdef as (Htdef & _).
+  destruct gd as [f|v].
++ intros (P2 & Q2) (P1 & Q1).
+  apply Q1 in H0. destruct H0. subst.
+  apply Mem.perm_cur. auto.
++ intros (P2 & Q2 & R2 & S2) (P1 & Q1 & R1 & S1).
+  apply Q1 in H0. destruct H0. subst.
+  apply Mem.perm_cur. eapply Mem.perm_implies; eauto.
+  apply P2. omega.
+- exploit init_meminj_invert; eauto. intros (A & id & B & C).
+  subst delta. apply Z.divide_0_r.
+- exploit init_meminj_invert_strong; eauto. intros (A & id & gd & B & C & D & E & F).
   exploit (Genv.init_mem_characterization_gen p); eauto.
   exploit (Genv.init_mem_characterization_gen tp); eauto.
-  destruct def as [f|v].
-  + destruct 1 as (Htperm & Htperm_impl).
-    destruct 1 as (Hperm & Hperm_impl).
-    apply Htperm_impl in H0.
-    destruct H0; subst.
-    left.
-    apply Mem.perm_cur; auto.
-  + destruct 1 as (Htperm & Htperm_impl & _).
-    destruct 1 as (Hperm & Hperm_impl & _).
-    apply Htperm_impl in H0.
-    destruct H0 as (LE & ORD).
-    eapply Hperm in LE.
-    left.
-    apply Mem.perm_cur; auto.
-    eapply Mem.perm_implies; eauto.
-  *
-  exploit (Genv.init_mem_characterization_gen_strong p); eauto.
-  intros [GINIT _].
-  right; eauto.
-- intros b1 b2 H o v1 H0.
-  apply init_meminj_invert_strong in H.
-  destruct H as (_ & id & Hid & Htid & Htdef).
-  destruct (Genv.find_def ge b1) as [ def | ] eqn:DEF.
-  *
-  specialize (Htdef _ (eq_refl _)).
-  destruct Htdef as (Htdef & Hkept).
-  exploit (Genv.init_mem_characterization_gen p); eauto.
-  exploit (Genv.init_mem_characterization_gen tp); eauto.
-  destruct def as [f|v].
-  + intros _.
-    destruct 1 as (_ & Hperm).
-    exfalso.
-    apply Mem.loadbytes_range_perm in H0.
-    assert (o <= o < o + 1) as Hrange by omega.
-    apply H0 in Hrange.
-    apply Hperm in Hrange.
-    destruct Hrange; discriminate.
-  + destruct 1 as (_ & _& _ & TREAD).
-    destruct 1 as (_ & Hperm & _ & READ).
-    generalize H0. intro H0_.
-    apply Mem.loadbytes_range_perm in H0.
-    assert (o <= o < o + 1) as Hrange by omega.
-    apply H0 in Hrange.
-    apply Hperm in Hrange.
-    destruct Hrange as (LE & Hrange).
-    assert (NO: gvar_volatile v = false).
-    { unfold Genv.perm_globvar in Hrange. destruct (gvar_volatile v); auto. inv Hrange. }
-    specialize (READ NO).
-    specialize (TREAD NO).
-    apply bytes_of_init_inject in Hkept.
-    replace (init_data_list_size (gvar_init v))
-    with
-    (o + (init_data_list_size (gvar_init v) - o))
-      in READ, TREAD
-      by omega.
-    apply Mem.loadbytes_split in READ; try omega.
-    destruct READ as (b1l & b1r & Hb1l & Hb1r & EQ1).
-    apply Mem.loadbytes_split in TREAD; try omega.
-    destruct TREAD as (b2l & b2r & Hb2l & Hb2r & EQ2).
-    apply Mem.loadbytes_length in Hb1l.
-    apply Mem.loadbytes_length in Hb2l.
-    fold ge in EQ1.
-    rewrite EQ1 in Hkept.
-    fold tge in EQ2.
-    rewrite EQ2 in Hkept.
-    apply list_forall2_same_prefix_length in Hkept; try congruence.
-    destruct Hkept as (_ & Hkept).
-    rewrite Z.add_0_l in Hb1r, Hb2r.
-    replace (init_data_list_size (gvar_init v) - o)
-    with (1 + (init_data_list_size (gvar_init v) - 1 - o))
-      in Hb1r, Hb2r
-      by omega.
-    apply Mem.loadbytes_split in Hb1r; try omega.
-    destruct Hb1r as (h1 & t1 & LOAD1 & _ & ?); subst.
-    apply Mem.loadbytes_split in Hb2r; try omega.
-    destruct Hb2r as (h2 & t2 & LOAD2 & _ & ?); subst.
-    rewrite H0_ in LOAD1.
-    inversion LOAD1; clear LOAD1; subst.
-    generalize LOAD2. intro LOAD2_.
-    apply Mem.loadbytes_length in LOAD2_.
-    destruct h2 as [ | ? [ | ] ] ; try discriminate.
-    inversion Hkept; subst.
-    eauto.
-  *
-  apply Mem.loadbytes_range_perm in H0.
-  exploit (Genv.init_mem_characterization_gen_strong p); eauto.
-  intros [GINIT _].
-  edestruct GINIT; eauto.
-  eapply H0.
-  instantiate (1 := o); omega.
-(*
   destruct gd as [f|v].
 + intros (P2 & Q2) (P1 & Q1).
   apply Q1 in H0. destruct H0; discriminate.
@@ -1337,7 +1196,6 @@ Proof.
   apply Q2 in H0. destruct H0. subst.
   left. apply Mem.perm_cur. eapply Mem.perm_implies; eauto.
   apply P1. omega.
-*)
 Qed.
 
 End INIT_MEM.
@@ -1377,16 +1235,15 @@ Lemma transf_initial_states:
 Proof.
   intros. inv H. exploit init_mem_inject; eauto. intros (j & tm & A & B & C).
   exploit symbols_inject_2. eauto. eapply kept_main. eexact H1. intros (tb & P & Q).
-  generalize H2; intro FIND.
   rewrite Genv.find_funct_ptr_iff in H2.
   exploit defs_inject. eauto. eexact Q. exact H2.
   intros (R & S & T).
   rewrite <- Genv.find_funct_ptr_iff in R.
-  exists (Callstate nil tb nil tm); split.
+  exists (Callstate nil f nil tm); split.
   econstructor; eauto.
   fold tge. erewrite match_prog_main by eauto. auto.
   econstructor; eauto.
-  econstructor. auto.
+  constructor. auto.
   erewrite <- Genv.init_mem_genv_next by eauto. apply Block.le_refl.
   erewrite <- Genv.init_mem_genv_next by eauto. apply Block.le_refl.
 Qed.
@@ -1399,7 +1256,7 @@ Proof.
 Qed.
 
 Lemma transf_program_correct_1:
-  forward_simulation cc_inject (semantics p) (semantics tp).
+  forward_simulation (semantics p) (semantics tp).
 Proof.
   intros.
   eapply forward_simulation_step.
@@ -1412,8 +1269,7 @@ Qed.
 End SOUNDNESS.
 
 Theorem transf_program_correct:
-  forall p tp, match_prog p tp ->
-  forward_simulation cc_inject (semantics p) (semantics tp).
+  forall p tp, match_prog p tp -> forward_simulation (semantics p) (semantics tp).
 Proof.
   intros p tp (used & A & B).  apply transf_program_correct_1 with used; auto.
 Qed.

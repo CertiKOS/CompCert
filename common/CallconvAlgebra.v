@@ -1118,46 +1118,6 @@ Proof.
   unfold return_regs. rauto.
 Qed.
 
-(** With those auxiliary definitions, we can prove the commutation
-  property we want for [cc_alloc]. *)
-
-(*
-Lemma cc_alloc_commut R:
-  ccref
-    (cc_c R @ cc_alloc)
-    (cc_alloc @ cc_locset R).
-Proof.
-  intros [w walloc] q1 q3 (q2 & Hq12 & Hq23). simpl in * |- .
-  destruct Hq23 as [id2 sg args2 rs m2 Hargs2]. inv Hq12.
-  set (rs1 := rs_of_args sg vargs1).
-  exists ((sg, rs1), w). split.
-  - exists (lq id1 sg rs1 m1). split.
-    + econstructor; eauto.
-      subst. subst rs1.
-      revert args1 Hargs. clear.
-      admit. (** XXX: we would need to exploit the fact that no two
-           arguments use the same location as one of their register
-           pairs, but this should be possible. *)
-      (* OR, we could loosen cc_alloc to use extends and/or an arbitrary CLR. *)
-      (* NB, could also construct a regset function manually, that
-        won't necessarily have the same restrictions as if we use setpair;
-        since this is an intermediate construction we don't care and
-        it may be easier to come up with a thing with the right
-        properties in this way. *)
-    + constructor; eauto.
-      simpl. intro.
-      eapply rs_of_args_inject; eauto.
-  - intros r1 [rs2' m2'] (rI & Hr1I & HrI2). simpl in * |- .
-    inversion Hr1I as [xsg xrs vres rs' m' Hrs Hvres]; clear Hr1I; subst.
-    destruct HrI2 as (w' & Hw' & Hrs12' & Hm12'). simpl in * |- .
-    exists (Locmap.getpair (map_rpair Locations.R (loc_result sg)) rs2', m2').
-    split; simpl.
-    + rauto.
-    + constructor; eauto.
-      admit. (* XXX we need to make agree_callee_save part of cc_locset or add a wt component. *)
-Abort.
-*)
-
 (* XXX a version is defined in Stackingproof, except for [ls1].
   We should make sure the direction in which agree_callee_save is used
   is consistent across CompCert, and also that the Stackingproof
@@ -1221,23 +1181,3 @@ Proof.
       eapply Val.lessdef_trans, val_hiword_longofwords.
       eauto using Val.hiword_lessdef.
 Qed.
-
-Require Import Lineartyping.
-
-Lemma alloc_wt_commut:
-  ccref (cc_alloc @ locset_wt) (wt_c @ cc_alloc @ locset_wt).
-Proof.
-  intros [[sg rs] q2] q1 xq2 (xxq2 & Hq12 & Hq2 & Hxxq2 & Hxq2). simpl in * |-.
-  inversion Hq12 as [fb xsg args xrs m Hargs]. subst. simpl in * |- .
-  set (q1 := cq fb sg _ m) in *.
-  set (q2 := lq fb sg rs m) in *.
-  eexists (q1, (_, q2)). split.
-  - exists q1. split; [ | exists q2; split]; eauto; cbn [fst snd].
-    + simpl. split; eauto.
-      admit. (* loc_arguments sig_args has_type_list Locmap.getpair *)
-    + eassumption.
-    + simpl. eauto.
-  - intros r1 r4 (r2 & Hr12 & r3 & Hr23 & Hr34). cbn [fst snd] in *.
-    destruct Hr12.
-    exists r3; split; cbn [fst snd]; eauto.
-Abort. (* XXX does not work b/c C typing more fine-grained than reg typing? *)

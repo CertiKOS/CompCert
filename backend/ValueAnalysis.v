@@ -231,21 +231,8 @@ Definition alloc_global (rm: romem) (idg: ident * globdef fundef unit): romem :=
       else PTree.remove id rm
   end.
 
-(* [CompCertX] We parameterize over [romem_for], since we may not be able
-   to use it in the per-module setting. *)
-
-Class ROMemFor: Type :=
-  {
-    romem_for: program -> romem
-  }.
-
-Definition romem_for_wp (p: program) : romem :=
+Definition romem_for (p: program) : romem :=
   List.fold_left alloc_global p.(prog_defs) (PTree.empty _).
-
-Program Definition romem_for_wp_instance: ROMemFor :=
-  {|
-    romem_for := romem_for_wp
-  |}.
 
 (** * Soundness proof *)
 
@@ -905,27 +892,9 @@ Qed.
 
 (** Construction 6: external call *)
 
-Theorem external_call_match' :
-  forall (ge: genv) vargs m vres m' bc rm am,
-  forall (external_call_mem_inject:
-            meminj_preserves_globals ge (inj_of_bc bc) ->
-            Mem.inject (inj_of_bc bc) m m ->
-            Val.inject_list (inj_of_bc bc) vargs vargs ->
-            exists f', exists vres', exists m2',
-                                       Val.inject f' vres vres'
-                                       /\ Mem.inject f' m' m2'
-                                       /\ Mem.unchanged_on (loc_unmapped (inj_of_bc bc)) m m'
-                                       /\ inject_incr (inj_of_bc bc) f'
-                                       /\ inject_separated (inj_of_bc bc) f' m m)
-         (external_call_readonly:
-            Mem.unchanged_on (loc_not_writable m) m m')
-         (external_call_max_perm: forall (b : block) (ofs : Z)
-                                         (p : Memtype.permission),
-                                    Mem.valid_block m b ->
-                                    Mem.perm m' b ofs Memtype.Max p ->
-                                    Mem.perm m b ofs Memtype.Max p)
-         (external_call_nextblock:
-            Ple (Mem.nextblock m) (Mem.nextblock m')),
+Theorem external_call_match:
+  forall ef (ge: genv) vargs m t vres m' bc rm am,
+  external_call ef ge vargs m t vres m' ->
   genv_match bc ge ->
   (forall v, In v vargs -> vmatch bc v Vtop) ->
   romatch bc m rm ->
@@ -941,15 +910,16 @@ Theorem external_call_match' :
   /\ bc_nostack bc'
   /\ (forall b ofs n, Mem.valid_block m b -> bc b = BCinvalid -> Mem.loadbytes m' b ofs n = Mem.loadbytes m b ofs n).
 Proof.
-  intros until am. intros until 4. intros GENV ARGS RO MM NOSTACK.
+  intros until am; intros EC GENV ARGS RO MM NOSTACK.
   (* Part 1: using ec_mem_inject *)
-  exploit external_call_mem_inject.
+  exploit (@external_call_mem_inject ef _ _ ge vargs m t vres m' (inj_of_bc bc) m vargs).
   apply inj_of_bc_preserves_globals; auto.
+  exact EC.
   eapply mmatch_inj; eauto. eapply mmatch_below; eauto.
   revert ARGS. generalize vargs.
   induction vargs0; simpl; intros; constructor.
   eapply vmatch_inj; eauto. auto.
-  intros (j' & vres' & m'' & IRES & IMEM & UNCH1 & IINCR & ISEP).
+  intros (j' & vres' & m'' & EC' & IRES & IMEM & UNCH1 & UNCH2 & IINCR & ISEP).
   assert (JBELOW: forall b, Block.lt b (Mem.nextblock m) -> j' b = inj_of_bc bc b).
   {
     intros. destruct (inj_of_bc bc b) as [[b' delta] | ] eqn:EQ.
@@ -1031,7 +1001,7 @@ Proof.
   intros. eapply Mem.loadbytes_unchanged_on_1. eapply external_call_readonly; eauto.
   auto. intros; red. apply Q.
   intros; red; intros; elim (Q ofs).
-  eapply external_call_max_perm; eauto.
+  eapply external_call_max_perm with (m2 := m'); eauto.
   destruct (j' b); congruence.
 - (* mmatch top *)
   constructor; simpl; intros.
@@ -1053,53 +1023,9 @@ Proof.
   apply UNCH1; auto. intros; red. unfold inj_of_bc; rewrite H0; auto.
 Qed.
 
-Theorem external_call_match:
-  forall ef (ge: genv) vargs m t vres m' bc rm am,
-  external_call ef ge vargs m t vres m' ->
-  genv_match bc ge ->
-  (forall v, In v vargs -> vmatch bc v Vtop) ->
-  romatch bc m rm ->
-  mmatch bc m am ->
-  bc_nostack bc ->
-  exists bc',
-     bc_incr bc bc'
-  /\ (forall b, Plt b (Mem.nextblock m) -> bc' b = bc b)
-  /\ vmatch bc' vres Vtop
-  /\ genv_match bc' ge
-  /\ romatch bc' m' rm
-  /\ mmatch bc' m' mtop
-  /\ bc_nostack bc'
-  /\ (forall b ofs n, Mem.valid_block m b -> bc b = BCinvalid -> Mem.loadbytes m' b ofs n = Mem.loadbytes m b ofs n).
-Proof.
-  intros.
-  eapply external_call_match'; eauto.
-  intros.
-  exploit external_call_mem_inject; eauto.
-  intros [w Hw].
-  assert (Ht: match_events cc_inject w t t) by admit. (* need lemma: extcall of self-injecting produces self-injecting trace. *)
-  specialize (Hw t Ht).
-  destruct Hw as [? [? [? [? [? [? [? [? [? ?]]]]]]]]]; eauto 8.
-  eapply external_call_readonly; eauto.
-  intros; eapply external_call_max_perm; eauto.
-  eapply external_call_nextblock; eauto.
-Admitted.
-
-Remark list_forall2_in_l:
-  forall (A B: Type) (P: A -> B -> Prop) x1 l1 l2,
-  list_forall2 P l1 l2 -> In x1 l1 -> exists x2, In x2 l2 /\ P x1 x2.
-Proof.
-  induction 1; simpl; intros.
-- contradiction.
-- destruct H1.
-  + subst. exists b1; auto.
-  + exploit IHlist_forall2; eauto. intros (x2 & U & V). exists x2; auto.
-Qed.
-
 (** ** Semantic invariant *)
 
 Section SOUNDNESS.
-
-Context `{romem_for_instance: ROMemFor}.
 
 Variable prog: program.
 Variable ge: genv.
@@ -1345,8 +1271,8 @@ Proof.
     eapply mmatch_stack; eauto.
   * intros. exploit list_in_map_inv; eauto. intros (r & P & Q). subst v.
     apply D with (areg ae r).
-    rewrite forallb_forall in H3. apply vpincl_ge.
-    apply H3. apply in_map; auto.
+    rewrite forallb_forall in H2. apply vpincl_ge.
+    apply H2. apply in_map; auto.
     auto with va.
 + (* public call *)
   exploit analyze_successor; eauto. simpl; eauto. rewrite TR. intros SUCC.
@@ -1533,21 +1459,21 @@ Proof.
 - (* return *)
   inv STK.
   + (* from public call *)
-    exploit return_from_public_call; eauto.
-    intros; rewrite SAME; auto.
-    intros (bc1 & A & B & C & D & E & F & G).
-    destruct (analyze rm f)#pc as [ |ae' am'] eqn:EQ; simpl in AN; try contradiction. destruct AN as [A1 A2].
-    eapply sound_regular_state with (bc := bc1); eauto.
-    apply sound_stack_exten with bc'; auto.
-    eapply ematch_ge; eauto. apply ematch_update. auto. auto.
+   exploit return_from_public_call; eauto.
+   intros; rewrite SAME; auto.
+   intros (bc1 & A & B & C & D & E & F & G).
+   destruct (analyze rm f)#pc as [ |ae' am'] eqn:EQ; simpl in AN; try contradiction. destruct AN as [A1 A2].
+   eapply sound_regular_state with (bc := bc1); eauto.
+   apply sound_stack_exten with bc'; auto.
+   eapply ematch_ge; eauto. apply ematch_update. auto. auto.
   + (* from private call *)
-    exploit return_from_private_call; eauto.
-    intros; rewrite SAME; auto.
-    intros (bc1 & A & B & C & D & E & F & G).
-    destruct (analyze rm f)#pc as [ |ae' am'] eqn:EQ; simpl in AN; try contradiction. destruct AN as [A1 A2].
-    eapply sound_regular_state with (bc := bc1); eauto.
-    apply sound_stack_exten with bc'; auto.
-    eapply ematch_ge; eauto. apply ematch_update. auto. auto.
+   exploit return_from_private_call; eauto.
+   intros; rewrite SAME; auto.
+   intros (bc1 & A & B & C & D & E & F & G).
+   destruct (analyze rm f)#pc as [ |ae' am'] eqn:EQ; simpl in AN; try contradiction. destruct AN as [A1 A2].
+   eapply sound_regular_state with (bc := bc1); eauto.
+   apply sound_stack_exten with bc'; auto.
+   eapply ematch_ge; eauto. apply ematch_update. auto. auto.
 Qed.
 
 End SOUNDNESS.
@@ -1559,8 +1485,6 @@ End SOUNDNESS.
   whole program.  *)
 
 Section LINKING.
-
-Context {romem_for_instance: ROMemFor}.
 
 Variable prog: program.
 Let ge := Genv.globalenv prog.
@@ -1845,27 +1769,6 @@ Proof.
   eapply Block.lt_le_trans. apply Block.lt_glob_init. apply Mem.init_nextblock.
   intros; intro EQ; subst. apply Block.glob_inj in EQ. auto.
   intros. eapply Mem.loadbytes_drop; eauto.
-- destruct (Mem.alloc m 0 0) as [m1 b1] eqn:ALLOC.
-  inv H1.
-  unfold Genv.find_symbol in H2; simpl in H2.
-  unfold Genv.find_var_info, Genv.find_def in H3; simpl in H3.
-  rewrite PTree.gsspec in H2. destruct (peq id id1).
-  inv H2.
-  {
-    destruct ((Genv.genv_defs g) ! (Genv.genv_next g)) eqn:EQ; try discriminate.
-    apply Genv.genv_defs_range in EQ.
-    xomega.
-  }
-  assert (Plt b (Genv.genv_next g)) by (eapply Genv.genv_symb_range; eauto).
-  destruct ((Genv.genv_defs g) ! b) as [ [ | ] | ] eqn:EQ; try discriminate.
-  inv H3.
-  assert (Mem.valid_block m b) by (red; rewrite <- H; auto).
-  assert (b <> b1) by (apply Mem.valid_not_valid_diff with m; eauto with mem).
-  apply bmatch_inv with m.
-  eapply H0; eauto.
-  unfold Genv.find_var_info. unfold Genv.find_def. rewrite EQ. reflexivity.
-  intros.
-  eapply Mem.loadbytes_alloc_unchanged; eauto.
 Qed.
 
 Lemma alloc_globals_match:
@@ -1921,7 +1824,7 @@ Proof.
 Qed.
 
 Lemma romem_for_consistent_2:
-  forall cunit, linkorder cunit prog -> romem_consistent (prog_defmap prog) (romem_for_wp cunit).
+  forall cunit, linkorder cunit prog -> romem_consistent (prog_defmap prog) (romem_for cunit).
 Proof.
   intros; red; intros.
   exploit (romem_for_consistent cunit); eauto. intros (v & DM & RO & VO & DEFN & AB).
@@ -1942,7 +1845,7 @@ Theorem initial_mem_matches:
      genv_match bc ge
   /\ bc_below bc (Mem.nextblock m)
   /\ bc_nostack bc
-  /\ (forall cunit, linkorder cunit prog -> romatch bc m (romem_for_wp cunit))
+  /\ (forall cunit, linkorder cunit prog -> romatch bc m (romem_for cunit))
   /\ (forall b, Mem.valid_block m b -> bc b <> BCinvalid).
 Proof.
   intros.
@@ -1951,11 +1854,10 @@ Proof.
   intros.
   assert (A: initial_mem_match bc m ge).
   {
-    apply alloc_globals_match with (m := Mem.empty); try assumption.
-    rewrite Mem.nextblock_empty. reflexivity.
+    apply alloc_globals_match with (m := Mem.empty); auto.
     red. unfold Genv.find_symbol; simpl; intros. rewrite PTree.gempty in H1; discriminate.
   }
-  assert (B: romem_consistent (prog_defmap prog) (romem_for_wp cunit)) by (apply romem_for_consistent_2; auto).
+  assert (B: romem_consistent (prog_defmap prog) (romem_for cunit)) by (apply romem_for_consistent_2; auto).
   red; intros.
   exploit B; eauto. intros (v & DM & RO & NVOL & DEFN & EQ).
   rewrite Genv.find_def_symbol in DM. destruct DM as (b1 & FS & FD).
@@ -1973,9 +1875,6 @@ Qed.
 End INITIAL.
 
 Require Import Axioms.
-
-Section WITHROMEMWP.
-Local Existing Instance romem_for_wp_instance.
 
 Theorem sound_initial:
   forall prog st, initial_state prog st -> sound_state prog st.
@@ -1998,8 +1897,6 @@ Proof.
 - exact NOSTACK.
 Qed.
 
-End WITHROMEMWP.
-
 Hint Resolve areg_sound aregs_sound: va.
 
 (** * Interface with other optimizations *)
@@ -2015,9 +1912,6 @@ Definition avalue (a: VA.t) (r: reg) : aval :=
   | VA.Bot => Vbot
   | VA.State ae am => AE.get r ae
   end.
-
-Section WITHROMEM.
-Context `{romem_for_instance: ROMemFor}.
 
 Lemma avalue_sound:
   forall cunit prog s f sp pc e m r,
@@ -2116,5 +2010,3 @@ Proof.
   intros. InvSoundState. rewrite AN. exists bc; split; auto.
   eapply aaddr_arg_sound_1; eauto.
 Qed.
-
-End WITHROMEM.
