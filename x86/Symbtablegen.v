@@ -120,11 +120,12 @@ Variables (dsize csize: Z).
 
 (** get_symbol_entry takes the ids and the current sizes of data and text sections and 
     a global definition as input, and outputs the corresponding symbol entry *) 
-Definition get_symbol_entry (def: option (AST.globdef Asm.fundef unit)) : symbentry :=
+Definition get_symbol_entry (id:ident) (def: option (AST.globdef Asm.fundef unit)) : symbentry :=
   match def with
   | None =>
     (** This is an external symbol with unknown type *)
     {|
+      symbentry_id := id;
       symbentry_type := symb_notype;
       symbentry_value := 0;
       symbentry_secindex := secindex_undef 
@@ -134,6 +135,7 @@ Definition get_symbol_entry (def: option (AST.globdef Asm.fundef unit)) : symben
     | nil => 
       (** This is an external data symbol *)
       {|
+        symbentry_id := id;
         symbentry_type := symb_data;
         symbentry_value := 0;
         symbentry_secindex := secindex_undef 
@@ -141,6 +143,7 @@ Definition get_symbol_entry (def: option (AST.globdef Asm.fundef unit)) : symben
     | [Init_space sz] =>
       (** This is an external data symbol in the COMM section *)
       {|
+        symbentry_id := id;
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
         symbentry_secindex := secindex_comm 
@@ -148,6 +151,7 @@ Definition get_symbol_entry (def: option (AST.globdef Asm.fundef unit)) : symben
     | _ =>
       (** This is an internal data symbol *)
       {|
+        symbentry_id := id;
         symbentry_type := symb_data;
         symbentry_value := dsize;
         symbentry_secindex := secindex_normal dsec
@@ -156,12 +160,14 @@ Definition get_symbol_entry (def: option (AST.globdef Asm.fundef unit)) : symben
   | Some (Gfun (External ef)) =>
     (** This is an external function symbol *)
     {|
+      symbentry_id := id;
       symbentry_type := symb_func;
       symbentry_value := 0;
       symbentry_secindex := secindex_undef
     |}
   | Some (Gfun (Internal f)) =>
-    {|
+    {|      
+      symbentry_id := id;
       symbentry_type := symb_func;
       symbentry_value := csize;
       symbentry_secindex := secindex_normal csec
@@ -171,7 +177,7 @@ Definition get_symbol_entry (def: option (AST.globdef Asm.fundef unit)) : symben
 (** Update the symbol table given a global definition *)
 Definition update_symbtable (stbl: symbtable) (i: ident) 
            (def: option (AST.globdef Asm.fundef unit)): symbtable :=
-  let se := get_symbol_entry def in
+  let se := get_symbol_entry i def in
   PTree.set i se stbl.
 
 

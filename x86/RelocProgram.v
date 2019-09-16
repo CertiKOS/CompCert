@@ -46,6 +46,7 @@ Inductive secindex : Type :=
 
 Record symbentry : Type :=
 {
+  symbentry_id : ident;  (** This symbol's original id in its source program *)
   symbentry_type: symbtype;
   symbentry_value: Z;  (** This holds the alignment info if secindex is secindex_comm,
                            otherwise, it holds the offset from the beginning of the section *)
