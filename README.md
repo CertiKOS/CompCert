@@ -69,7 +69,7 @@ backward simulations. We also relate it to the syntactic linking of
 assembly programs defined in CompCert in the context of separate
 compilation: we show that the semantics of the linked assembly program
 is a refinement of the linked semantics of its components. This is the
-post important property in the context of compositional verification:
+most important property in the context of compositional verification:
 the semantic linking operator serves as a specification for the
 linking of assembly components programs once they have been compiled.
 
