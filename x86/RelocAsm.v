@@ -23,4 +23,4 @@ Module RelocAsmParams.
 End RelocAsmParams.
 
 Module Prog := RelocProg(RelocAsmParams).
-Import Prog.
+Export Prog.

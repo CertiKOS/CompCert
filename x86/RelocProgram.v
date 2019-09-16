@@ -9,7 +9,7 @@ Require Import Coqlib Maps Integers Values AST.
 Require Import Globalenvs.
 
 (** ** Sections *)
-Inductive sectype : Type := SecText | SecData.
+Inductive sectype : Type := sec_text | sec_data.
 
 Record section : Type :=
 {
@@ -33,7 +33,7 @@ Definition segblock_to_label (sb: secblock) : seclabel :=
 
 
 (** ** Symbol table *)
-Inductive symbtype : Type := SymbFunc | SymbData.
+Inductive symbtype : Type := symb_func | symb_data | symb_notype.
 
 Inductive secindex : Type :=
 | secindex_normal (id:ident)
@@ -43,9 +43,9 @@ Inductive secindex : Type :=
 Record symbentry : Type :=
 {
   symbentry_type: symbtype;
-  symbentry_value: Z;  (** This holds the alignment info if secidx is secindex_comm,
+  symbentry_value: Z;  (** This holds the alignment info if secindex is secindex_comm,
                            otherwise, it holds the offset from the beginning of the section *)
-  symbentry_secidx: secindex;
+  symbentry_secindex: secindex;
 }.
 
 Definition symbtable := PTree.t symbentry.
@@ -62,7 +62,7 @@ Record relocentry : Type :=
   reloc_addend : Z;
 }.
 
-Definition reloctable := list relocentry.
+Definition reloctable := PTree.t relocentry.
 
 
 (** ** Definition of program constructs *)
@@ -76,14 +76,15 @@ Module RelocProg (P: RelocProgParams).
 
 Import P.
 
-Record function : Type := mkfunction { fn_sig: signature; fn_code: C; fn_range:secblock; fn_actual_size: Z; fn_stacksize: Z; fn_pubrange: Z * Z}.
+Record function : Type := mkfunction { fn_sig: signature; fn_code: C; fn_stacksize: Z; fn_pubrange: Z * Z}.
 Definition fundef := AST.fundef function.
-Definition gdef := globdef fundef D.
+Definition gdef := AST.globdef fundef D.
 
 Record program : Type := {
-  prog_defs: list (ident * option gdef * secblock);
+  prog_defs: list (ident * option gdef);
   prog_public: list ident;
   prog_main: ident;
+  prog_sectable: sectable;
   prog_symbtable: symbtable;
   prog_reloctable: reloctable;
   prog_senv : Globalenvs.Senv.t;
