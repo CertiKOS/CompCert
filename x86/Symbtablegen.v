@@ -4,9 +4,8 @@
 (* *******************  *)
 
 Require Import Coqlib Integers AST Maps.
-Require Import Asm SegAsm Segment.
+Require Import Asm.
 Require Import Errors.
-Require Import SegAsmBuiltin.
 Require Import Memtype.
 Require Import RelocProgram RelocAsm.
 Import ListNotations.
@@ -17,8 +16,6 @@ Set Implicit Arguments.
 Local Open Scope error_monad_scope.
 
 (** * Generation of symbol table *)
-
-Definition alignw:Z := 8.
 
 Section WITH_SEC_PARAMS.
 
