@@ -220,8 +220,6 @@ Inductive deref_loc (ty: type) (m: mem) (b: block) (ofs: ptrofs) : val -> Prop :
   This is allowed only if [ty] indicates an access by value or by copy.
   [m'] is the updated memory state. *)
 
-(** [CompCertX:test-compcert-protect-stack-arg] As we now need to protect some locations against writing, this protection may need the global environment. *)
-
 Section SEMANTICS.
 
 Variable ge: genv.

@@ -2056,13 +2056,6 @@ Proof.
     eauto.
 Qed.
 
-(** [CompCertX:test-compcert-protect-stack-arg] We have to prove that
-the memory injection introduced by the compilation pass is independent
-of the initial memory i.e. it does not inject new blocks into blocks
-already existing in the initial memory. This is stronger than
-[meminj_preserves_globals], which only preserves blocks associated to
-the global environment. *)
-
 (** The proof of semantic preservation relies on simulation diagrams
   of the following form:
 <<
