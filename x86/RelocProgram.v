@@ -95,4 +95,13 @@ Record program : Type := {
   prog_senv : Globalenvs.Senv.t;
 }.
 
+Definition prog_to_prog (p: program) : AST.program fundef D :=
+  {|
+    AST.prog_defs := prog_defs p;
+    AST.prog_public := prog_public p;
+    AST.prog_main := prog_main p;
+  |}.
+
+Coercion prog_to_prog : program >-> AST.program.
+
 End RelocProg.

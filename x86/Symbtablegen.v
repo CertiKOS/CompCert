@@ -22,7 +22,7 @@ Section WITH_SYMB_TABLE.
 
 Variable stbl: symbtable.
 
-Definition transl_instr (ofs:Z) (fid: ident) (sid:ident) (i:Asm.instruction) : res instr_with_info :=
+Definition transl_instr (ofs:Z) (sid:ident) (i:Asm.instruction) : res instr_with_info :=
   match i with
       Pallocframe _ _ _
     | Pfreeframe _ _
@@ -35,18 +35,18 @@ Definition transl_instr (ofs:Z) (fid: ident) (sid:ident) (i:Asm.instruction) : r
             secblock_start := ofs;
             secblock_size := sz
           |} in
-      OK (i, sblk, fid)
+      OK (i, sblk)
   end.
 
 (** Translation of a sequence of instructions in a function *)
-Fixpoint transl_instrs (fid:ident) (sid:ident) (ofs:Z) (instrs: list Asm.instruction) : res (list instr_with_info) :=
+Fixpoint transl_instrs (sid:ident) (ofs:Z) (instrs: list Asm.instruction) : res (list instr_with_info) :=
   match instrs with
   | nil => OK nil
   | i::instrs' =>
     let sz := instr_size i in
     let nofs := ofs+sz in
-    do instr <- transl_instr ofs fid sid i;
-    do tinstrs' <- transl_instrs fid sid nofs instrs';
+    do instr <- transl_instr ofs sid i;
+    do tinstrs' <- transl_instrs sid nofs instrs';
     OK (instr :: tinstrs')
   end.
 
@@ -60,7 +60,7 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
     match symbentry_type e, symbentry_secindex e with
     | SymbFunc, secindex_normal sid =>
       let ofs := symbentry_value e in
-      do code' <- transl_instrs fid sid ofs (Asm.fn_code f);
+      do code' <- transl_instrs sid ofs (Asm.fn_code f);
       OK (mkfunction (Asm.fn_sig f) code' (Asm.fn_stacksize f) (Asm.fn_pubrange f))
     | _, _ => 
       Error (msg "Translation of internal function fails: invalid symbol entry found")

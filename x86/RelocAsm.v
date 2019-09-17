@@ -11,7 +11,7 @@ Require Import Asm RelocProgram.
 
 
 (** Define the programs *)
-Definition instr_with_info:Type := instruction * secblock * ident.
+Definition instr_with_info:Type := instruction * secblock.
 
 Definition code := list instr_with_info.
 
