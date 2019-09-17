@@ -353,7 +353,8 @@ Definition instr_size (i: instruction) : Z :=
   | Pjcc _ _ => 6
   | Pjmp_l_rel _ => 5
   | Pjcc_rel _ _ => 6
-  | Pcall _ _ => 5
+  | Pcall (inr _) _ => 5
+  | Pjmp (inr _) _ => 5
   | Pleal _ a => 1 + addrmode_size a
   | Pxorl_r _ => 2
   | Paddl_ri _ _ => 6
@@ -382,7 +383,8 @@ Lemma instr_size_positive : forall i, 0 < instr_size i.
 Proof.
   intros. unfold instr_size. 
   destruct i; try omega;
-    try (generalize (addrmode_size_pos a); omega). 
+    try (generalize (addrmode_size_pos a); omega);
+    try (destr; omega).
 Qed.  
 
 Lemma z_le_ptrofs_max: forall n, 
@@ -423,6 +425,10 @@ Proof.
   try solve_n_le_ptrofs_max;
   try (generalize (addrmode_size_pos a); omega);
   try solve_amod_le_ptrofs_max.
+  destr; omega.
+  destr; try solve_n_le_ptrofs_max.
+  destr; omega.
+  destr; try solve_n_le_ptrofs_max.
 Qed.
   
 Global Opaque instr_size.

@@ -91,7 +91,7 @@ Record program : Type := {
   prog_main: ident;
   prog_sectable: sectable;
   prog_symbtable: symbtable;
-  prog_reloctable: reloctable;
+  prog_reloctables: PTree.t reloctable; (** Given the index of a section, it returns its relocation table *)
   prog_senv : Globalenvs.Senv.t;
 }.
 
@@ -105,3 +105,7 @@ Definition prog_to_prog (p: program) : AST.program fundef D :=
 Coercion prog_to_prog : program >-> AST.program.
 
 End RelocProg.
+
+(** Section table ids *)
+Definition sec_data_id := 1%positive.
+Definition sec_code_id := 2%positive.

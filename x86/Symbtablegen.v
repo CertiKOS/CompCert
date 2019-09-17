@@ -101,7 +101,7 @@ Definition transl_prog (sectbl:sectable) (p:Asm.program) : res program :=
         (AST.prog_main p)
         sectbl
         stbl
-        (PTree.empty relocentry)
+        (PTree.empty reloctable)
         (Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)))
       .
 
@@ -302,9 +302,6 @@ Proof.
   right. inversion 1. apply n. auto.
 Qed.
 
-
-Definition sec_data_id := 1%positive.
-Definition sec_code_id := 2%positive.
 
 (** Create the section table *)
 Definition create_sec_table dsize csize :=
