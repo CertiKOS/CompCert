@@ -355,6 +355,7 @@ Global Instance external_call_rel R:
 Proof.
   intros ef.
   destruct ef; simpl; try rauto.
+  repeat intro. destruct a0. contradiction.
 Qed.
 
 Hint Extern 1 (Transport _ _ _ _ _) =>

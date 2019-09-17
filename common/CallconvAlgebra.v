@@ -1134,13 +1134,15 @@ Proof.
   generalize (loc_result_caller_save sg). destruct (loc_result sg); simpl; intuition auto.
 Qed.
 
-Lemma loc_result_pair sg rlo rhi:
+Lemma loc_result_pair' sg rlo rhi:
   loc_result sg = Twolong rlo rhi ->
   sig_res sg = Some Tlong /\
   Loc.diff (R rhi) (R rlo) /\
   Archi.splitlong = true.
 Proof.
-Admitted.
+  intros H. pose proof (loc_result_pair sg) as Hsg. rewrite H in Hsg.
+  intuition auto. cbn. auto.
+Qed.
 
 Lemma locmap_getpair_setpair sg v ls:
   Val.has_type v (proj_sig_res sg) ->
@@ -1152,7 +1154,7 @@ Proof.
   unfold setlpair, Locmap.getpair.
   destruct loc_result eqn:Hlr; simpl.
   - apply Locmap.gss.
-  - edestruct loc_result_pair as (Hres & Hdiff & Hsplit); eauto.
+  - edestruct loc_result_pair' as (Hres & Hdiff & Hsplit); eauto.
     rewrite Locmap.gss.
     rewrite Locmap.gso, Locmap.gss; eauto.
     eapply val_longofwords_eq_2; eauto.

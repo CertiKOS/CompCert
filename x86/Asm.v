@@ -1182,7 +1182,7 @@ Inductive at_external (ge: genv): state -> query li_asm -> Prop :=
   | at_external_intro rs m sp fb fofs id sg:
       Genv.find_funct_ptr ge fb = Some (External (EF_external id sg)) ->
       rs#PC = Vptr fb fofs ->
-      at_external ge (State rs m sp) (rs, m).
+      at_external ge (State rs m (Some sp)) (rs, m).
 
 Inductive after_external: state -> reply li_asm -> state -> Prop :=
   | after_external_intro rs m sp (rs': regset) m':
@@ -1265,8 +1265,7 @@ Ltac Equalities :=
   destruct H.
   intros t s' Hs'.
   inversion Hs'; clear Hs'; subst; try congruence.
-  assert (ef = EF_external id sg) by congruence; subst. simpl in H7.
-  admit. (* need axiom/definition that external_functions_sem is empty *)
+  assert (ef = EF_external id sg) by congruence; subst. simpl in H7. auto.
 - (* at_external determinism *)
   destruct H; inv H0; reflexivity.
 - (* after_external determinism *)
@@ -1275,10 +1274,10 @@ Ltac Equalities :=
   destruct H.
   inversion 1.
 - (* final/at_external mutually exclusive *)
-  admit. (* need to restrict definitions *)
+  inv H. inv H0.
 - (* final states *)
   inv H; inv H0. congruence.
-Admitted.
+Qed.
 
 (** Classification functions for processor registers (used in Asmgenproof). *)
 
