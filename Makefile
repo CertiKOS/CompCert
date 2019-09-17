@@ -299,6 +299,25 @@ check-proof: $(FILES)
 print-includes:
 	@echo $(COQINCLUDES)
 
+# Building the CompCert-RBGS artifact
+
+DIFFFLAGS= -U10
+
+compcert-rbgs: FORCE
+	rm -rf $@.n $@
+	mkdir $@.n
+	git archive HEAD | tar -C $@.n -x
+	(cd coqrel && git archive HEAD) | tar -C $@.n/coqrel -x
+	git diff $(DIFFFLAGS) v3.5 globmem > $@.n/compcert-globmem.diff
+	git diff $(DIFFFLAGS) globmem > $@.n/compcert-rbgs.diff
+	mv $@.n $@
+
+%.tar.bz2: %
+	tar -cjf $@.n $<
+	mv $@.n $@
+
+artifact: compcert-rbgs.tar.bz2
+
 -include .depend
 
 FORCE:

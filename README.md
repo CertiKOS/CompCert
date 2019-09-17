@@ -3,11 +3,11 @@ A version of CompCert featuring an open module semantics, designed to
 target the framework of *refinement-based game semantics*.
 
 ## Note on anonymity
-The text below includes links to [github.com](http://github.com).
-They have been obfuscated using [tinyurl.com](http://tinyurl.com)
+The text below links to our [github.com](http://github.com) repositories.
+The links have been obfuscated using [tinyurl.com](http://tinyurl.com)
 to allow reviewers to avoid any identifying information.
 Our understanding is that anonymity does not need to be preserved
-after the first round of review, so we encourage reviewers to proceed
+after reviews have been submitted, so we encourage reviewers to proceed
 nonetheless.
 
 ## Overview
@@ -47,10 +47,10 @@ mapping.
 
 We will include two diffs when distributing this development:
 
-  * `globmem.diff` contains the changes to the memory model described
+  * `compcert-globmem.diff` contains the changes to the memory model described
     above. Please refer to [this page](https://preview.tinyurl.com/yy8etrou)
     for further discussion.
-  * `composable-compcert.diff` contains our changes to the semantic
+  * `compcert-rbgs.diff` contains our changes to the semantic
     model and our updated proofs. The most notable ones are discussed
     below.
 
