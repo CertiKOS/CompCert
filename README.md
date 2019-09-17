@@ -1,8 +1,10 @@
 # CompCert-RBGS
+
 A version of CompCert featuring an open module semantics, designed to
 target the framework of *refinement-based game semantics*.
 
 ## Note on anonymity
+
 The text below links to our [github.com](http://github.com) repositories.
 The links have been obfuscated using [tinyurl.com](http://tinyurl.com)
 to allow reviewers to avoid any identifying information.
@@ -11,13 +13,21 @@ after reviews have been submitted, so we encourage reviewers to proceed
 nonetheless.
 
 ## Overview
+
 This is a modified version of CompCert v3.5. The language semantics
 have been updated to model open modules, and a correctness theorem
 has been rederived in this updated setting. Our compiler is mostly
 restricted to translation passes, and to the x86 architecture.
 
 ## Building
-Our modifications rely on the Coqrel library, which must be built
+
+Since our compiler uses Clight as the source language, the first few
+passes are not available and the full extracted compiler cannot be
+built. However the Coq version of the Clight to Asm compiler can be
+compiled in the following way.
+
+Build requirements are similar to that of CompCert v3.5, In addition,
+our modifications rely on the Coqrel library, which must be built
 first. We will include Coqrel in any self-contained archive we
 distribute, but if you are working in a git clone, you must first
 retreive it with the following commands:
@@ -38,6 +48,7 @@ If appropriate to your setting, we recommend you use a -j option when
 invoking make so as to enable parallel compilation.
 
 ## Changes to CompCert
+
 Our changes build on a modified version of the CompCert memory model.
 This version partitions the block namespace into global blocks
 (named after the corresponding global identifier), and dynamically
@@ -57,6 +68,7 @@ We will include two diffs when distributing this development:
 (XXX: Do that here.)
 
 ## Github repositories
+
 This code is available [on github](https://preview.tinyurl.com/y5rv37k8)
 (note this link points to a specific branch).
 
