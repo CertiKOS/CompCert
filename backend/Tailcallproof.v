@@ -252,18 +252,21 @@ Proof.
   destruct (zeq (fn_stacksize f) 0); auto.
 Qed.
 
-Lemma find_block_translated:
-  forall ros rs rs' b,
-  find_block ge ros rs = Some b ->
+Lemma find_function_translated:
+  forall ros rs rs' f,
+  find_function ge ros rs = Some f ->
   regs_lessdef rs rs' ->
-  find_block tge ros rs' = Some b.
+  find_function tge ros rs' = Some (transf_fundef f).
 Proof.
-  intros until b; destruct ros; simpl.
+  intros until f; destruct ros; simpl.
   intros.
-  apply block_of_inv in H.
-  generalize (H0 r). rewrite H. intro LD. inv LD. auto.
-  intros.
-  rewrite symbols_preserved. auto.
+  assert (rs'#r = rs#r).
+    exploit Genv.find_funct_inv; eauto. intros [b EQ].
+    generalize (H0 r). rewrite EQ. intro LD. inv LD. auto.
+  rewrite H1. apply functions_translated; auto.
+  rewrite symbols_preserved. destruct (Genv.find_symbol ge i); intros.
+  apply funct_ptr_translated; auto.
+  discriminate.
 Qed.
 
 (** Consider an execution of a call/move/nop/return sequence in the
@@ -331,13 +334,12 @@ Inductive match_states: state -> state -> Prop :=
       match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
                    (State s' (transf_function f) (Vptr sp Ptrofs.zero) pc rs' m')
   | match_states_call:
-      forall s f args m s' args' m' b,
-      Genv.find_funct_ptr ge b = Some f ->
+      forall s f args m s' args' m',
       match_stackframes s s' ->
       Val.lessdef_list args args' ->
       Mem.extends m m' ->
-      match_states (Callstate s b args m)
-                   (Callstate s' b args' m')
+      match_states (Callstate s f args m)
+                   (Callstate s' (transf_fundef f) args' m')
   | match_states_return:
       forall s v m s' v' m',
       match_stackframes s s' ->
@@ -450,34 +452,32 @@ Proof.
   econstructor; eauto.
 
 - (* call *)
-  exploit find_block_translated; eauto. intro FB'.
-  exploit funct_ptr_translated; eauto. intro FIND'.
+  exploit find_function_translated; eauto. intro FIND'.
   TransfInstr.
 + (* call turned tailcall *)
   assert ({ m'' | Mem.free m' sp0 0 (fn_stacksize (transf_function f)) = Some m''}).
-    apply Mem.range_perm_free. rewrite stacksize_preserved. rewrite H8.
+    apply Mem.range_perm_free. rewrite stacksize_preserved. rewrite H7.
     red; intros; omegaContradiction.
   destruct X as [m'' FREE].
-  left. exists (Callstate s' fb (rs'##args) m''); split.
+  left. exists (Callstate s' (transf_fundef fd) (rs'##args) m''); split.
   eapply exec_Itailcall; eauto. apply sig_preserved.
-  econstructor. eauto. eapply match_stackframes_tail; eauto. apply regs_lessdef_regs; auto.
+  constructor. eapply match_stackframes_tail; eauto. apply regs_lessdef_regs; auto.
   eapply Mem.free_right_extends; eauto.
-  rewrite stacksize_preserved. rewrite H8. intros. omegaContradiction.
+  rewrite stacksize_preserved. rewrite H7. intros. omegaContradiction.
 + (* call that remains a call *)
   left. exists (Callstate (Stackframe res (transf_function f) (Vptr sp0 Ptrofs.zero) pc' rs' :: s')
-                          fb (rs'##args) m'); split.
+                          (transf_fundef fd) (rs'##args) m'); split.
   eapply exec_Icall; eauto. apply sig_preserved.
-  econstructor. eauto. constructor; auto. apply regs_lessdef_regs; auto. auto.
+  constructor. constructor; auto. apply regs_lessdef_regs; auto. auto.
 
 - (* tailcall *)
-  exploit find_block_translated; eauto. intro FB'.
-  exploit funct_ptr_translated; eauto. intro FIND'.
+  exploit find_function_translated; eauto. intro FIND'.
   exploit Mem.free_parallel_extends; eauto. intros [m'1 [FREE EXT]].
   TransfInstr.
-  left. exists (Callstate s' fb (rs'##args) m'1); split.
+  left. exists (Callstate s' (transf_fundef fd) (rs'##args) m'1); split.
   eapply exec_Itailcall; eauto. apply sig_preserved.
   rewrite stacksize_preserved; auto.
-  econstructor. eauto. auto.  apply regs_lessdef_regs; auto. auto.
+  constructor. auto.  apply regs_lessdef_regs; auto. auto.
 
 - (* builtin *)
   TransfInstr.
@@ -529,8 +529,6 @@ Proof.
   eapply Mem.free_left_extends; eauto.
 
 - (* internal call *)
-  rewrite H5 in H; inv H.
-  apply funct_ptr_translated in H5.
   exploit Mem.alloc_extends; eauto.
     instantiate (1 := 0). omega.
     instantiate (1 := fn_stacksize f). omega.
@@ -539,15 +537,13 @@ Proof.
           fn_entrypoint (transf_function f) = fn_entrypoint f /\
           fn_params (transf_function f) = fn_params f).
     unfold transf_function. destruct (zeq (fn_stacksize f) 0); auto.
-  destruct H as [EQ1 [EQ2 EQ3]].
+  destruct H0 as [EQ1 [EQ2 EQ3]].
   left. econstructor; split.
   simpl. eapply exec_function_internal; eauto. rewrite EQ1; eauto.
   rewrite EQ2. rewrite EQ3. constructor; auto.
   apply regs_lessdef_init_regs. auto.
 
 - (* external call *)
-  rewrite H5 in H; inv H.
-  apply funct_ptr_translated in H5.
   exploit external_call_mem_extends; eauto.
   intros [res' [m2' [A [B [C D]]]]].
   left. exists (Returnstate s' res' m2'); split.
@@ -572,53 +568,25 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall w q1 q2, match_query (cc_c ext) w q1 q2 ->
-  forall st1, initial_state ge q1 st1 ->
-  exists st2, initial_state tge q2 st2 /\ match_states st1 st2.
+  forall st1, initial_state prog st1 ->
+  exists st2, initial_state tprog st2 /\ match_states st1 st2.
 Proof.
-  inv_query_ext.
-  intros id sg vargs1 vargs2 m1 m2 Hvargs Hm st1 H. inv H.
+  intros. inv H.
   exploit funct_ptr_translated; eauto. intro FIND.
-  exists (Callstate nil (Block.glob id) vargs2 m2); split.
-  setoid_rewrite <- (sig_preserved (Internal f)). simpl.
-  econstructor; eauto.
-  econstructor. eauto. constructor. assumption. assumption.
-Qed.
-
-Lemma transf_external:
-  forall st1 st2 q1,
-    match_states st1 st2 ->
-    at_external ge st1 q1 ->
-    exists w q2,
-      match_query (cc_c ext) w q1 q2 /\
-      RTL.at_external tge st2 q2 /\
-      forall r1 r2 st1',
-        match_reply (cc_c ext) w r1 r2 ->
-        after_external st1 r1 st1' ->
-        exists st2',
-          RTL.after_external st2 r2 st2' /\
-          match_states st1' st2'.
-Proof.
-  intros st1 st2 q1 Hst H. destruct H; inv Hst.
-  edestruct match_cc_ext as (w & Hq & Hr); eauto.
-  eexists w, _. split; eauto. split.
-  - apply funct_ptr_translated in H.
-    econstructor; eauto.
-  - intros r1 r2 st1' Hr12 Hst1'.
-    inv Hst1'. destruct r2.
-    edestruct Hr as [Hvres Hm']; eauto.
-    eexists. split. econstructor.
-    econstructor; eauto.
+  exists (Callstate nil (transf_fundef f) nil m0); split.
+  econstructor; eauto. apply (Genv.init_mem_transf TRANSL). auto.
+  replace (prog_main tprog) with (prog_main prog).
+  rewrite symbols_preserved. eauto.
+  symmetry; eapply match_program_main; eauto.
+  rewrite <- H3. apply sig_preserved.
+  constructor. constructor. constructor. apply Mem.extends_refl.
 Qed.
 
 Lemma transf_final_states:
-  forall w st1 st2 r1,
-  match_states st1 st2 -> final_state st1 r1 ->
-  exists r2, match_reply (cc_c ext) w r1 r2 /\ final_state st2 r2.
+  forall st1 st2 r,
+  match_states st1 st2 -> final_state st1 r -> final_state st2 r.
 Proof.
-  intros. inv H0. inv H. inv H3. exists (v', m'). split.
-  - eapply match_reply_ext; eauto.
-  - constructor.
+  intros. inv H0. inv H. inv H5. inv H3. constructor.
 Qed.
 
 
@@ -626,16 +594,13 @@ Qed.
   follows. *)
 
 Theorem transf_program_correct:
-  forward_simulation (cc_c ext) (cc_c ext)
-    (RTL.semantics prog)
-    (RTL.semantics tprog).
+  forward_simulation (RTL.semantics prog) (RTL.semantics tprog).
 Proof.
   eapply forward_simulation_opt with (measure := measure); eauto.
   apply senv_preserved.
-  apply transf_initial_states.
-  eauto using transf_external.
+  eexact transf_initial_states.
   eexact transf_final_states.
-  intros. eapply transf_step_correct; eauto.
+  exact transf_step_correct.
 Qed.
 
 End PRESERVATION.

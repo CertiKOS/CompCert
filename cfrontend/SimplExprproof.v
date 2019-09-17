@@ -1041,13 +1041,11 @@ Inductive match_states: Csem.state -> state -> Prop :=
       match_cont k tk ->
       match_states (Csem.State f s k e m)
                    (State tf ts tk e le m)
-  | match_callstates: forall fd args k m tfd tk fb tfb,
-      Genv.find_funct_ptr ge fb = Some fd ->
-      Genv.find_funct_ptr tge tfb = Some tfd ->
+  | match_callstates: forall fd args k m tfd tk,
       tr_fundef fd tfd ->
       match_cont k tk ->
-      match_states (Csem.Callstate fb args k m)
-                   (Callstate tfb args tk m)
+      match_states (Csem.Callstate fd args k m)
+                   (Callstate tfd args tk m)
   | match_returnstates: forall res k m tk,
       match_cont k tk ->
       match_states (Csem.Returnstate res k m)
@@ -1897,37 +1895,37 @@ Proof.
   auto.
 
 (* call *)
-  exploit tr_top_leftcontext; eauto. clear H13.
+  exploit tr_top_leftcontext; eauto. clear H12.
   intros [dst' [sl1 [sl2 [a' [tmp' [P [Q [R S]]]]]]]].
-  inv P. inv H6.
+  inv P. inv H5.
   (* for effects *)
   exploit tr_simple_rvalue; eauto. intros [SL1 [TY1 EV1]].
   exploit tr_simple_exprlist; eauto. intros [SL2 EV2].
   subst. simpl Kseqlist.
-  exploit function_ptr_translated; eauto. intros [tfd [J K]].
+  exploit functions_translated; eauto. intros [tfd [J K]].
   econstructor; split.
   left. eapply plus_left. constructor.  apply star_one.
   econstructor; eauto. rewrite <- TY1; eauto.
   exploit type_of_fundef_preserved; eauto. congruence.
   traceEq.
-  econstructor; eauto. econstructor; eauto.
+  constructor; auto. econstructor; eauto.
   intros. change sl2 with (nil ++ sl2). apply S.
   constructor. auto. auto.
   (* for value *)
   exploit tr_simple_rvalue; eauto. intros [SL1 [TY1 EV1]].
   exploit tr_simple_exprlist; eauto. intros [SL2 EV2].
   subst. simpl Kseqlist.
-  exploit function_ptr_translated; eauto. intros [tfd [J K]].
+  exploit functions_translated; eauto. intros [tfd [J K]].
   econstructor; split.
   left. eapply plus_left. constructor.  apply star_one.
   econstructor; eauto. rewrite <- TY1; eauto.
   exploit type_of_fundef_preserved; eauto. congruence.
   traceEq.
-  econstructor; eauto. econstructor; eauto.
+  constructor; auto. econstructor; eauto.
   intros. apply S.
   destruct dst'; constructor.
-  auto. intros. constructor. rewrite H6; auto. apply PTree.gss.
-  auto. intros. constructor. rewrite H6; auto. apply PTree.gss.
+  auto. intros. constructor. rewrite H5; auto. apply PTree.gss.
+  auto. intros. constructor. rewrite H5; auto. apply PTree.gss.
   intros. apply PTree.gso. intuition congruence.
   auto.
 
@@ -2246,18 +2244,17 @@ Proof.
   econstructor; eauto.
 
 (* internal function *)
-  rewrite H7 in H; inv H.
-  inv H10. inversion H3; subst.
+  inv H7. inversion H3; subst.
   econstructor; split.
-  left; apply plus_one. eapply step_internal_function. eauto. econstructor.
-  rewrite H6; rewrite H8; auto.
-  rewrite H6; rewrite H8. eapply alloc_variables_preserved; eauto.
+  left; apply plus_one. eapply step_internal_function. econstructor.
+  rewrite H6; rewrite H7; auto.
+  rewrite H6; rewrite H7. eapply alloc_variables_preserved; eauto.
   rewrite H6. eapply bind_parameters_preserved; eauto.
   eauto.
   constructor; auto.
 
 (* external function *)
-  rewrite H5 in H; inv H. inv H8.
+  inv H5.
   econstructor; split.
   left; apply plus_one. econstructor; eauto.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
@@ -2300,7 +2297,7 @@ Proof.
   destruct TRANSL. destruct H as (A & B & C). simpl in B. auto. 
   eexact FIND.
   rewrite <- H3. apply type_of_fundef_preserved. auto.
-  econstructor; eauto. constructor.
+  constructor. auto. constructor.
 Qed.
 
 Lemma transl_final_states:

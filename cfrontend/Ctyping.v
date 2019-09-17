@@ -510,18 +510,17 @@ Inductive wt_function (ce: composite_env) (e: typenv) : function -> Prop :=
       wt_stmt ce (bind_vars (bind_vars e f.(fn_params)) f.(fn_vars)) f.(fn_return) f.(fn_body) ->
       wt_function ce e f.
 
-Fixpoint bind_globdef (e: typenv) (l: list (ident * option (globdef fundef type))) : typenv :=
+Fixpoint bind_globdef (e: typenv) (l: list (ident * globdef fundef type)) : typenv :=
   match l with
   | nil => e
-  | (id, None) :: l => bind_globdef e l
-  | (id, Some (Gfun fd)) :: l => bind_globdef (PTree.set id (type_of_fundef fd) e) l
-  | (id, Some (Gvar v)) :: l => bind_globdef (PTree.set id v.(gvar_info) e) l
+  | (id, Gfun fd) :: l => bind_globdef (PTree.set id (type_of_fundef fd) e) l
+  | (id, Gvar v) :: l => bind_globdef (PTree.set id v.(gvar_info) e) l
   end.
 
 Inductive wt_program : program -> Prop :=
   | wt_program_intro: forall p,
       let e := bind_globdef (PTree.empty _) p.(prog_defs) in
-      (forall id f, In (id, Some (Gfun (Internal f))) p.(prog_defs) ->
+      (forall id f, In (id, Gfun (Internal f)) p.(prog_defs) ->
          wt_function p.(prog_comp_env) e f) ->
       wt_program p.
 
@@ -1359,20 +1358,17 @@ Proof.
   { unfold e, e'. revert MATCH; generalize (prog_defs p) (AST.prog_defs tp) (PTree.empty type).
     induction l as [ | [id gd] l ]; intros l' t M; inv M.
     auto.
-    destruct y as [id' gd']; destruct H1; simpl in *. inv H0; simpl.
-    auto.
-    inv H1; simpl.
+    destruct b1 as [id' gd']; destruct H1; simpl in *. inv H0; simpl.
     replace (type_of_fundef f2) with (type_of_fundef f1); auto.
-    unfold retype_fundef in H0. destruct f1; monadInv H0; auto. monadInv EQ0; auto.
-    inv H. simpl. auto.
+    unfold retype_fundef in H2. destruct f1; monadInv H2; auto. monadInv EQ0; auto.
+    inv H1. simpl. auto.
   }
   rewrite ENVS.
   intros id f. revert MATCH; generalize (prog_defs p) (AST.prog_defs tp).
   induction 1; simpl; intros.
   contradiction.
-  destruct H0; auto. subst y; inv H. simpl in H1. inv H1. 
-  inv H3.
-  destruct f1; monadInv H5. eapply retype_function_sound; eauto.
+  destruct H0; auto. subst b1; inv H. simpl in H1. inv H1. 
+  destruct f1; monadInv H4. eapply retype_function_sound; eauto.
 Qed.
 
 (** * Subject reduction *)
@@ -1388,8 +1384,6 @@ Proof.
 - auto.
 - destruct (Int.eq n Int.zero); auto.
 Qed.
-
-Hint Resolve pres_cast_int_int: ty.
 
 Lemma wt_val_casted:
   forall v ty, val_casted v ty -> wt_val v ty.
@@ -1619,14 +1613,14 @@ Lemma wt_deref_loc:
 Proof.
   induction 1.
 - (* by value, non volatile *)
-  simpl in H1. exploit Mem.load_loadbytes; eauto. intros (? & _ & EQ); rewrite EQ.
+  simpl in H1. exploit Mem.load_result; eauto. intros EQ; rewrite EQ.
   apply wt_decode_val; auto.
 - (* by value, volatile *)
   inv H1.
   + (* truly volatile *)
     eapply wt_load_result; eauto.
   + (* not really volatile *)
-    exploit Mem.load_loadbytes; eauto. intros (? & _ & EQ); rewrite EQ.
+    exploit Mem.load_result; eauto. intros EQ; rewrite EQ.
     apply wt_decode_val; auto.
 - (* by reference *)
   destruct ty; simpl in H; try discriminate; auto with ty.
@@ -1862,7 +1856,7 @@ Let gtenv := bind_globdef (PTree.empty _) prog.(prog_defs).
 
 Hypothesis WT_EXTERNAL:
   forall id ef args res cc vargs m t vres m',
-  In (id, Some (Gfun (External ef args res cc))) prog.(prog_defs) ->
+  In (id, Gfun (External ef args res cc)) prog.(prog_defs) ->
   external_call ef ge vargs m t vres m' ->
   wt_val vres res.
 
@@ -1977,9 +1971,9 @@ Definition fundef_return (fd: fundef) : type :=
   end.
 
 Lemma wt_find_funct:
-  forall v fd, Genv.find_funct_ptr ge v = Some fd -> wt_fundef fd.
+  forall v fd, Genv.find_funct ge v = Some fd -> wt_fundef fd.
 Proof.
-  intros. apply Genv.find_funct_ptr_prop with (p := prog) (b := v); auto.
+  intros. apply Genv.find_funct_prop with (p := prog) (v := v); auto.
   intros. inv WTPROG. destruct f; simpl; auto. apply H1 with id; auto.
 Qed.
 
@@ -1997,8 +1991,8 @@ Inductive wt_state: state -> Prop :=
   | wt_call_state: forall b fd vargs k m
         (WTK: wt_call_cont k (fundef_return fd))
         (WTFD: wt_fundef fd)
-        (FIND: Genv.find_funct_ptr ge b = Some fd),
-      wt_state (Callstate b vargs k m)
+        (FIND: Genv.find_funct ge b = Some fd),
+      wt_state (Callstate fd vargs k m)
   | wt_return_state: forall v k m ty
         (WTK: wt_call_cont k ty)
         (VAL: wt_val v ty),
@@ -2070,10 +2064,10 @@ Proof.
   eapply wt_rred; eauto. change (wt_expr_kind ge te RV a). eapply wt_subexpr; eauto.
 - (* call *)
   assert (A: wt_expr_kind ge te RV a) by (eapply wt_subexpr; eauto).
-  simpl in A. inv H. inv A. simpl in H10; rewrite H5 in H10; inv H10.
-  assert (fundef_return fd0 = ty).
-  { destruct fd0; simpl in *.
-    unfold type_of_function in H4. congruence.
+  simpl in A. inv H. inv A. simpl in H9; rewrite H4 in H9; inv H9.
+  assert (fundef_return fd = ty).
+  { destruct fd; simpl in *.
+    unfold type_of_function in H3. congruence.
     congruence. }
   econstructor.
   rewrite H. econstructor; eauto.
@@ -2128,10 +2122,8 @@ Proof.
 - inv WTS; eauto with ty.
 - exploit wt_find_label. eexact WTB. eauto. eapply call_cont_wt'; eauto.
   intros [A B]. eauto with ty.
-- rewrite FIND in H; inv H.
-  simpl in WTFD; inv WTFD. econstructor; eauto. apply wt_call_cont_stmt_cont; auto.
-- rewrite FIND in H; inv H.
-  exploit (Genv.find_funct_ptr_inversion prog); eauto. intros (id & A).
+- simpl in WTFD; inv WTFD. econstructor; eauto. apply wt_call_cont_stmt_cont; auto.
+- exploit (Genv.find_funct_inversion prog); eauto. intros (id & A).
   econstructor; eauto.
 - inv WTK. eauto with ty.
 Qed.
@@ -2145,14 +2137,10 @@ Qed.
 Theorem wt_initial_state:
   forall S, initial_state prog S -> wt_state S.
 Proof.
-  intros. inv H.
-  unfold ge, ge0 in *.
-  econstructor. constructor.
+  intros. inv H. econstructor. constructor.
   apply Genv.find_funct_ptr_prop with (p := prog) (b := b); auto.
   intros. inv WTPROG. destruct f0; simpl; auto. apply H4 with id; auto.
-  eauto. eauto.
+  instantiate (1 := (Vptr b Ptrofs.zero)). rewrite Genv.find_funct_find_funct_ptr. auto.
 Qed.
 
 End PRESERVATION.
-
-Hint Constructors wt_expr_cont wt_stmt_cont wt_stmt wt_state: ty.

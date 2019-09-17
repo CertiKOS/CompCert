@@ -60,24 +60,15 @@ Proof.
   destruct f; reflexivity.
 Qed.
 
-Lemma find_block_translated:
-  forall ros rs,
-    find_block tge ros rs = find_block ge ros rs.
-Proof.
-  unfold find_block; intros. destruct ros as [r|id]; auto.
-  apply symbols_preserved.
-Qed.
-
 Lemma find_function_translated:
-  forall ros rs fd fb,
-  find_block ge ros rs = Some fb ->
-  Genv.find_funct_ptr ge fb = Some fd ->
-  find_block tge ros rs = Some fb /\
-  Genv.find_funct_ptr tge fb = Some (transf_fundef fd).
+  forall ros rs fd,
+  find_function ge ros rs = Some fd ->
+  find_function tge ros rs = Some (transf_fundef fd).
 Proof.
-  intros.
-  exploit function_ptr_translated; eauto.
-  rewrite find_block_translated. auto.
+  unfold find_function; intros. destruct ros as [r|id].
+  eapply functions_translated; eauto.
+  rewrite symbols_preserved. destruct (Genv.find_symbol ge id); try congruence.
+  eapply function_ptr_translated; eauto.
 Qed.
 
 (** Effect of an injective renaming of nodes on a CFG. *)
@@ -155,11 +146,10 @@ Inductive match_states: RTL.state -> RTL.state -> Prop :=
         (REACH: reach f pc),
       match_states (State stk f sp pc rs m)
                    (State stk' (transf_function f) sp (renum_pc (pnum f) pc) rs m)
-  | match_callstates: forall stk f args m stk' b
-        (FIND: Genv.find_funct_ptr ge b = Some f)
+  | match_callstates: forall stk f args m stk'
         (STACKS: list_forall2 match_frames stk stk'),
-      match_states (Callstate stk b args m)
-                   (Callstate stk' b args m)
+      match_states (Callstate stk f args m)
+                   (Callstate stk' (transf_fundef f) args m)
   | match_returnstates: forall stk v m stk'
         (STACKS: list_forall2 match_frames stk stk'),
       match_states (Returnstate stk v m)
@@ -193,16 +183,16 @@ Proof.
   constructor; auto. eapply reach_succ; eauto. simpl; auto.
 (* call *)
   econstructor; split.
-  exploit find_function_translated; eauto. intros (FB & FIND).
   eapply exec_Icall with (fd := transf_fundef fd); eauto.
+    eapply find_function_translated; eauto.
     apply sig_preserved.
-  econstructor. eauto. constructor; auto. constructor. eapply reach_succ; eauto. simpl; auto.
+  constructor. constructor; auto. constructor. eapply reach_succ; eauto. simpl; auto.
 (* tailcall *)
   econstructor; split.
-  exploit find_function_translated; eauto. intros (FB & FIND).
   eapply exec_Itailcall with (fd := transf_fundef fd); eauto.
+    eapply find_function_translated; eauto.
     apply sig_preserved.
-  econstructor; eauto.
+  constructor. auto.
 (* builtin *)
   econstructor; split.
   eapply exec_Ibuiltin; eauto.
@@ -225,15 +215,11 @@ Proof.
   eapply exec_Ireturn; eauto.
   constructor; auto.
 (* internal function *)
-  rewrite FIND in H; inv H.
   simpl. econstructor; split.
-  apply function_ptr_translated in FIND.
-  eapply exec_function_internal; eauto. 
-  econstructor; eauto. unfold reach. constructor.
+  eapply exec_function_internal; eauto.
+  constructor; auto. unfold reach. constructor.
 (* external function *)
-  rewrite FIND in H; inv H.
   econstructor; split.
-  apply function_ptr_translated in FIND.
   eapply exec_function_external; eauto.
     eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   constructor; auto.
@@ -245,41 +231,16 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall w q1 q2, match_query cc_id w q1 q2 ->
-  forall S1, RTL.initial_state ge q1 S1 ->
-  exists S2, RTL.initial_state tge q2 S2 /\ match_states S1 S2.
+  forall S1, RTL.initial_state prog S1 ->
+  exists S2, RTL.initial_state tprog S2 /\ match_states S1 S2.
 Proof.
-  intros [ ] q _ [ ].
   intros. inv H. econstructor; split.
-  {
-    eapply function_ptr_translated in H0. simpl in H0.
-    replace (fn_sig f) with (fn_sig (transf_function f))
-      by eapply (sig_preserved (Internal f)).
-    constructor; auto.
-  }
-  econstructor. eauto. constructor.
-Qed.
-
-Lemma transf_external:
-  forall s1 s2 q1,
-    match_states s1 s2 ->
-    at_external ge s1 q1 ->
-    exists w q2,
-      match_query cc_id w q1 q2 /\
-      at_external tge s2 q2 /\
-      forall r1 r2 s1',
-        match_reply cc_id w r1 r2 ->
-        after_external s1 r1 s1' ->
-        exists s2',
-          after_external s2 r2 s2' /\
-          match_states s1' s2'.
-Proof.
-  intros s1 s2 q Hs Hq. destruct Hq. inv Hs.
-  apply function_ptr_translated in H. simpl in H.
-  eexists tt, _. cbn. intuition auto.
-  - econstructor; eauto.
-  - inv H1. inv H0.
-    eexists; split; constructor; auto.
+  econstructor.
+    eapply (Genv.init_mem_transf TRANSL); eauto.
+    rewrite symbols_preserved. rewrite (match_program_main TRANSL). eauto.
+    eapply function_ptr_translated; eauto.
+    rewrite <- H3; apply sig_preserved.
+  constructor. constructor.
 Qed.
 
 Lemma transf_final_states:
@@ -289,14 +250,13 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation cc_id cc_id (RTL.semantics prog) (RTL.semantics tprog).
+  forward_simulation (RTL.semantics prog) (RTL.semantics tprog).
 Proof.
-  eapply forward_simulation_step with (match_states := fun _ => match_states).
+  eapply forward_simulation_step.
   apply senv_preserved.
   eexact transf_initial_states.
-  intros _. eexact transf_external.
-  intros [ ]. intros. simpl. eauto using transf_final_states.
-  intros _. exact step_simulation.
+  eexact transf_final_states.
+  exact step_simulation.
 Qed.
 
 End PRESERVATION.

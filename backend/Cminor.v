@@ -863,46 +863,30 @@ End NATURALSEM.
 (** Big-step execution of a whole program *)
 
 (*
-Inductive bigstep_program_terminates (p: program):
-  query li_c -> trace -> reply li_c -> Prop :=
+Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
   | bigstep_program_terminates_intro:
-      forall id b f vargs m0 t m r,
+      forall b f m0 t m r,
       let ge := Genv.globalenv p in
-      Ple (Genv.genv_next ge) (Mem.nextblock m0) ->
-      Genv.find_symbol ge (str2ident id) = Some b ->
+      Genv.init_mem p = Some m0 ->
+      Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
-<<<<<<< HEAD
-      Val.has_type_list vargs (sig_args (funsig f)) ->
-      eval_funcall ge m0 f vargs t m r ->
-      bigstep_program_terminates p (cq id (funsig f) vargs m0) t (r, m).
-=======
       funsig f = signature_main ->
-      eval_funcall ge m0 b nil t m (Vint r) ->
+      eval_funcall ge m0 f nil t m (Vint r) ->
       bigstep_program_terminates p t r.
->>>>>>> origin/compcert-callblock
 
-Inductive bigstep_program_diverges (p: program):
-  query li_c -> traceinf -> Prop :=
+Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
   | bigstep_program_diverges_intro:
-      forall id b f vargs m0 t,
+      forall b f m0 t,
       let ge := Genv.globalenv p in
-      Ple (Genv.genv_next ge) (Mem.nextblock m0) ->
-      Genv.find_symbol ge (str2ident id) = Some b ->
+      Genv.init_mem p = Some m0 ->
+      Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
-<<<<<<< HEAD
-      Val.has_type_list vargs (sig_args (funsig f)) ->
-      evalinf_funcall ge m0 f vargs t ->
-      bigstep_program_diverges p (cq id (funsig f) vargs m0) t.
-=======
       funsig f = signature_main ->
-      evalinf_funcall ge m0 b nil t ->
+      evalinf_funcall ge m0 f nil t ->
       bigstep_program_diverges p t.
->>>>>>> origin/compcert-callblock
 
 Definition bigstep_semantics (p: program) :=
-  Bigstep_semantics (li_c ==> li_c)
-    (bigstep_program_terminates p)
-    (bigstep_program_diverges p).
+  Bigstep_semantics (bigstep_program_terminates p) (bigstep_program_diverges p).
 
 (** ** Correctness of the big-step semantics with respect to the transition semantics *)
 
@@ -967,27 +951,27 @@ Proof.
   apply eval_funcall_exec_stmt_ind2; intros.
 
 (* funcall internal *)
-  destruct (H3 k) as [S [A B]].
+  destruct (H2 k) as [S [A B]].
   assert (call_cont k = k) by (apply call_cont_is_call_cont; auto).
   eapply star_left. econstructor; eauto.
   eapply star_trans. eexact A.
-  inversion B; clear B; subst out; simpl in H4; simpl; try contradiction.
+  inversion B; clear B; subst out; simpl in H3; simpl; try contradiction.
   (* Out normal *)
   subst vres. apply star_one. apply step_skip_call; auto.
   (* Out_return None *)
   subst vres. replace k with (call_cont k') by congruence.
   apply star_one. apply step_return_0; auto.
   (* Out_return Some *)
-  destruct H4. subst vres.
+  destruct H3. subst vres.
   replace k with (call_cont k') by congruence.
   apply star_one. eapply step_return_1; eauto.
   (* Out_tailcall_return *)
-  subst vres. red in H5. subst m3. rewrite H7. apply star_refl.
+  subst vres. red in H4. subst m3. rewrite H6. apply star_refl.
 
   reflexivity. traceEq.
 
 (* funcall external *)
-  apply star_one. econstructor; eauto.
+  apply star_one. constructor; auto.
 
 (* skip *)
   econstructor; split.
@@ -1007,7 +991,7 @@ Proof.
 (* call *)
   econstructor; split.
   eapply star_left. econstructor; eauto.
-  eapply star_right. apply H5. red; auto.
+  eapply star_right. apply H4. red; auto.
   constructor. reflexivity. traceEq.
   subst e'. constructor.
 
@@ -1108,7 +1092,7 @@ Proof.
 (* tailcall *)
   econstructor; split.
   eapply star_left. econstructor; eauto.
-  apply H6. apply is_call_cont_call_cont. traceEq.
+  apply H5. apply is_call_cont_call_cont. traceEq.
   econstructor.
 Qed.
 

@@ -517,15 +517,13 @@ let print_globvardecl p  id v =
 
 let print_globdecl p (id,gd) =
   match gd with
-  | Some (Gfun f) -> print_fundecl p id f
-  | Some (Gvar v) -> print_globvardecl p id v
-  | None -> ()
+  | Gfun f -> print_fundecl p id f
+  | Gvar v -> print_globvardecl p id v
 
 let print_globdef p (id, gd) =
   match gd with
-  | Some(Gfun f) -> print_fundef p id f
-  | Some(Gvar v) -> print_globvar p id v
-  | None -> ()
+  | Gfun f -> print_fundef p id f
+  | Gvar v -> print_globvar p id v
 
 let struct_or_union = function Struct -> "struct" | Union -> "union"
 
