@@ -89,8 +89,10 @@ Require SegAsmGlobenv.
 Require SegAsmProgram.
 Require SegAsmgen.
 Require SegAsmSep.
-(* Require MClabelgenproof. *)
-(* Require MClabelsep. *)
+Require RelocAsm.
+Require Asmlabelgen.
+Require Symbtablegen.
+Require NormalizeSymb.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -197,6 +199,12 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
+
+Definition transf_c_program_reloc (p: Csyntax.program) : res RelocAsm.Prog.program :=
+  transf_c_program_real p
+  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
+  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
+  @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program.
 
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p
