@@ -1337,7 +1337,7 @@ Proof.
   unfold no_caller_saves, callee_save_loc; intros.
   exploit EqSet.for_all_2; eauto.
   hnf. intros. simpl in H1. rewrite H1. auto.
-  lazy beta. destruct (eloc q); auto. destruct sl; congruence.
+  lazy beta. destruct (eloc q). auto. destruct sl; congruence.
 Qed.
 
 Lemma val_hiword_longofwords:
