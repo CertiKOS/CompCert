@@ -13,12 +13,14 @@ Require Import Asm RelocProgram.
 (** Define the programs *)
 Definition code := list byte.
 
+Definition globvar := AST.globvar (option (seclabel * list byte)).
+
 Module RelocBinParams.
   
   Definition C:= code.
-  Definition D:= unit.
+  Definition D:= option (seclabel * list byte).
 
 End RelocBinParams.
 
 Module Prog := RelocProg(RelocBinParams).
-Import Prog.
+Export Prog.
