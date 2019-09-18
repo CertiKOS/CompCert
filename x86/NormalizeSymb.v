@@ -40,6 +40,10 @@ Definition transl_instr (i:Asm.instruction) : res instruction :=
     Pallocframe _ _ _
   | Pfreeframe _ _
   | Pload_parent_pointer _ _ => Error (msg "Source program contains pseudo instructions")
+  | Pjmp_l _
+  | Pjcc _ _
+  | Pjcc2 _ _ _
+  | Pjmptbl _ _ => Error (msg "Source program contains jumps to labels")
   | Pmov_rs rd id =>
     match PTree.get id idmap with
     | None => Error (msg "Translation of Pmov_rs failed: the source id is unmapped")

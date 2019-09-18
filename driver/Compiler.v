@@ -93,6 +93,7 @@ Require RelocAsm.
 Require Asmlabelgen.
 Require Symbtablegen.
 Require NormalizeSymb.
+Require RelocAsmgen.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -204,7 +205,8 @@ Definition transf_c_program_reloc (p: Csyntax.program) : res RelocAsm.Prog.progr
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program.
+  @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
+  @@@ time "Generation of relocation table" RelocAsmgen.transf_program.
 
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p

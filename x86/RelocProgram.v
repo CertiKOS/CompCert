@@ -46,7 +46,7 @@ Definition symbtable := PTree.t symbentry.
 
 
 (** ** Relocation table *)
-Inductive reloctype : Type := RelocAbs | RelocRel.
+Inductive reloctype : Type := reloc_abs | reloc_rel.
 
 Record relocentry : Type :=
 {
