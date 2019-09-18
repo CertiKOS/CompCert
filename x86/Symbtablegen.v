@@ -29,13 +29,8 @@ Definition transl_instr (ofs:Z) (sid:ident) (i:Asm.instruction) : res instr_with
     | Pload_parent_pointer _ _ => Error (msg "Source program contains pseudo instructions")
     | _ =>
       let sz := instr_size i in
-      let sblk := 
-          {| 
-            secblock_id := sid;
-            secblock_start := ofs;
-            secblock_size := sz
-          |} in
-      OK (i, sblk)
+      let slbl := (sid, ofs) in
+      OK (i, slbl)
   end.
 
 (** Translation of a sequence of instructions in a function *)
@@ -53,7 +48,7 @@ Fixpoint transl_instrs (sid:ident) (ofs:Z) (instrs: list Asm.instruction) : res 
 (** Tranlsation of an internal function *)
 Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
   match PTree.get fid stbl with
-  | None => Error (MSG "Translation of function fails: no symbol entry for this function" :: nil)
+  | None => Error (msg "Translation of function fails: no symbol entry for this function")
   | Some e =>
     (** The entry for internal function must be of type SymbFunc and 
         has a normal index pointing to the code section *)
@@ -67,12 +62,40 @@ Definition transl_fun (fid: ident) (f:Asm.function) : res function :=
     end
   end.
 
+Definition gen_gvar_seclabel (id:ident) (gv: AST.globvar unit) : res (option seclabel) :=
+  match gvar_init gv with
+  | nil
+  | [Init_space _] =>  OK None
+  | _ =>
+    match stbl ! id with
+    | None => Error (msg "Generation of symbol labels for internal variables fails:\
+                         no symbol entry for this variable")
+    | Some e =>
+      match symbentry_type e, symbentry_secindex e with
+      | SymbData, secindex_normal sid =>
+        let ofs := symbentry_value e in
+        OK (Some (sid, ofs))
+      | _, _ =>
+        Error (msg "Translation of internal variable fails: invalid symbol entry found")
+      end
+    end
+  end.
+
+Definition transl_gvar (id:ident) (gv:AST.globvar unit) :=
+  do slbl <- gen_gvar_seclabel id gv;
+  OK {| gvar_info := slbl;
+        gvar_init := gv.(gvar_init);
+        gvar_readonly := gv.(gvar_readonly);
+        gvar_volatile := gv.(gvar_volatile);
+     |}.
 
 Definition transl_globdef (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
   : res (option gdef) :=
   match def with
   | None => OK None
-  | Some (AST.Gvar v) => OK (Some (Gvar v))
+  | Some (AST.Gvar v) => 
+    do v' <- transl_gvar id v;
+    OK (Some (Gvar v'))
   | Some (AST.Gfun f) =>
     match f with
     | External f => OK (Some (Gfun (External f)))

@@ -135,9 +135,9 @@ Definition transl_instr (i:Asm.instruction) : res instruction :=
   end.
 
 Definition transl_instr' (ii:instr_with_info) : res instr_with_info :=
-  let '(i, sblk) := ii in
+  let '(i, slbl) := ii in
   do i' <- transl_instr i;
-  OK (i', sblk).
+  OK (i', slbl).
 
 Definition transl_func (f: function) : res function :=
   do code <- 
@@ -161,7 +161,7 @@ Definition transl_init_data (d:init_data) : res init_data :=
   | _ => OK d
   end.
 
-Definition transl_globvar (g:globvar unit) :=
+Definition transl_globvar (g:globvar) :=
   do init <- fold_right (fun d r =>
                           do r' <- r;
                           do d' <- transl_init_data d;

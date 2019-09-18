@@ -25,17 +25,6 @@ Definition sections_size (t:sectable) :=
 
 Definition seclabel : Type := ident * Z.
 
-Record secblock:Type := 
-{
-  secblock_id: ident;
-  secblock_start : Z;  (**r The begining of the block relative to the starting point of the segment *)
-  secblock_size : Z;
-}.
-
-Definition segblock_to_label (sb: secblock) : seclabel :=
-  (secblock_id sb,  secblock_start sb).
-
-
 (** ** Symbol table *)
 Inductive symbtype : Type := symb_func | symb_data | symb_notype.
 

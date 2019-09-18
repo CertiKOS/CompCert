@@ -11,14 +11,16 @@ Require Import Asm RelocProgram.
 
 
 (** Define the programs *)
-Definition instr_with_info:Type := instruction * secblock.
+Definition instr_with_info:Type := instruction * seclabel.
 
 Definition code := list instr_with_info.
+
+Definition globvar := AST.globvar (option seclabel).
 
 Module RelocAsmParams.
   
   Definition C:= code.
-  Definition D:= unit.
+  Definition D:= option seclabel.
 
 End RelocAsmParams.
 
