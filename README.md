@@ -3,15 +3,6 @@
 A version of CompCert featuring an open module semantics, designed to
 target the framework of *refinement-based game semantics*.
 
-## Note on anonymity
-
-The text below links to our [github.com](http://github.com) repositories.
-The links have been obfuscated using [tinyurl.com](http://tinyurl.com)
-to allow reviewers to avoid any identifying information.
-Our understanding is that anonymity does not need to be preserved
-after reviews have been submitted, so we encourage reviewers to proceed
-nonetheless.
-
 ## Overview
 
 This is a modified version of CompCert v3.5. The language semantics
@@ -26,7 +17,7 @@ passes are not available and the full extracted compiler cannot be
 built. However the Coq version of the Clight to Asm compiler can be
 compiled in the following way.
 
-Build requirements are similar to that of CompCert v3.5, In addition,
+Build requirements are similar to that of CompCert v3.5. In addition,
 our modifications rely on the Coqrel library, which must be built
 first. We will include Coqrel in any self-contained archive we
 distribute, but if you are working in a git clone, you must first
@@ -56,38 +47,12 @@ allocated blocks (which are assigned a `positive` identifier in the
 usual way). This ensures that components agree on the `Genv.find_symbol`
 mapping.
 
-We will include two diffs when distributing this development:
+We will include two diffs when distributing this development so
+that these two sets of changes can be examined separately:
 
-  * `compcert-globmem.diff` contains the changes to the memory model described
-    above. Please refer to [this page](https://preview.tinyurl.com/yy8etrou)
-    for further discussion.
+  * `compcert-globmem.diff` contains the changes to the memory model;
   * `compcert-rbgs.diff` contains our changes to the semantic
-    model and our updated proofs. The most notable ones are discussed
-    below.
-
-(XXX: Do that here.)
-
-## Github repositories
-
-This code is available [on github](https://preview.tinyurl.com/y5rv37k8)
-(note this link points to a specific branch).
-
-A [more up-to-date version](https://preview.tinyurl.com/y6ot5rmk)
-of our work can be found there as well.
-
-The up-to-date verson covers more passes and features a
-`Smallstep`-level semantic linking operator. This operator preserves
-backward simulations. We also relate it to the syntactic linking of
-assembly programs defined in CompCert in the context of separate
-compilation: we show that the semantics of the linked assembly program
-is a refinement of the linked semantics of its components. This is the
-most important property in the context of compositional verification:
-the semantic linking operator serves as a specification for the
-linking of assembly components programs once they have been compiled.
-
-Our work on refinement-based game semantics can be found
-[here](https://preview.tinyurl.com/y6d6m54d).
-It (XXX: will soon) include a formalization of the interaction monad.
+    model and our updated proofs.
 
 The remainder of this document is the original `README.md` distributed
 with CompCert v3.5.
