@@ -91,6 +91,8 @@ Require SegAsmgen.
 Require SegAsmSep.
 Require RelocAsm.
 Require Asmlabelgen.
+Require PadNops.
+Require PadInitData.
 Require Symbtablegen.
 Require NormalizeSymb.
 Require RelocAsmgen.
@@ -205,6 +207,8 @@ Definition transf_c_program_real p : res Asm.program :=
 Definition transf_c_program_reloc (p: Csyntax.program) : res RelocBin.Prog.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
+  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
+  @@ time "Pad space to make the alignment of data correct" PadNops.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
   @@@ time "Generation of relocation table" RelocAsmgen.transf_program

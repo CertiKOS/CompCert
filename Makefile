@@ -118,7 +118,7 @@ BACKEND=\
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
   RelocProgram.v RelocAsm.v RelocBin.v \
-  Asmlabelgen.v PadNops.v \
+  Asmlabelgen.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v
 
 # C front-end modules (in cfrontend/)
