@@ -94,6 +94,7 @@ Require Asmlabelgen.
 Require Symbtablegen.
 Require NormalizeSymb.
 Require RelocAsmgen.
+Require RelocBingen.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -201,12 +202,13 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
-Definition transf_c_program_reloc (p: Csyntax.program) : res RelocAsm.Prog.program :=
+Definition transf_c_program_reloc (p: Csyntax.program) : res RelocBin.Prog.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
-  @@@ time "Generation of relocation table" RelocAsmgen.transf_program.
+  @@@ time "Generation of relocation table" RelocAsmgen.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen.transf_program.
 
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p
