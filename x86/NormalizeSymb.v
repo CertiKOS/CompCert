@@ -7,7 +7,8 @@ Require Import Coqlib Integers AST Maps.
 Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
-Require Import RelocProgram RelocAsm.
+Require Import RelocProgram.
+Require Import SeqTable.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -20,7 +21,7 @@ Section WITH_NORM_ID_MAPPING.
 
 Variable idmap: PTree.t ident.
 
-(** ** Translation of instructions and functions *)
+(** ** Translation of instructions *)
 
 Definition transl_addrmode (a:addrmode) : res addrmode :=
   let '(Addrmode base ofs const) := a in
@@ -138,23 +139,16 @@ Definition transl_instr (i:Asm.instruction) : res instruction :=
   | _ => OK i
   end.
 
-Definition transl_instr' (ii:instr_with_info) : res instr_with_info :=
-  let '(i, slbl) := ii in
-  do i' <- transl_instr i;
-  OK (i', slbl).
+Definition transl_code (c: code) : res code :=
+  fold_right (fun i r =>
+                do r' <- r;
+                do i' <- transl_instr i;
+                OK (i' :: r'))
+             (OK []) c.
 
-Definition transl_func (f: function) : res function :=
-  do code <- 
-     fold_right (fun ii r =>
-                   do ii' <- transl_instr' ii;
-                   do r' <- r;
-                   OK (ii' :: r')) (OK []) (fn_code f);
-  OK (mkfunction (fn_sig f) code (fn_stacksize f) (fn_pubrange f)).
 
-Definition transf_fundef (f: fundef) : res fundef :=
-  transf_partial_fundef transl_func f.
+(** ** Translation of global data *)
 
-(** Translation of global variables *)
 Definition transl_init_data (d:init_data) : res init_data :=
   match d with
   | Init_addrof id ofs =>
@@ -165,25 +159,27 @@ Definition transl_init_data (d:init_data) : res init_data :=
   | _ => OK d
   end.
 
-Definition transl_globvar (g:globvar) :=
-  do init <- fold_right (fun d r =>
-                          do r' <- r;
-                          do d' <- transl_init_data d;
-                          OK (d' :: r')) (OK []) (gvar_init g);
-  OK (mkglobvar (gvar_info g) init (gvar_readonly g) (gvar_volatile g)).
+Definition transl_init_data_list (d: list init_data) : res (list init_data) :=
+  fold_right (fun d r =>
+                do r' <- r;
+                do d' <- transl_init_data d;
+                OK (d' :: r'))
+             (OK []) d.
 
-(** Translation of global definitions *)
-Definition transf_globdef (def:option gdef) :=
-  match def with
-  | None => OK None
-  | Some (Gvar v) => 
-    do v' <- transl_globvar v;
-    OK (Some (Gvar v'))
-  | Some (Gfun f) =>
-    do f' <- transf_fundef f;
-    OK (Some (Gfun f'))
-  end.
-  
+Definition transl_section (sec: section) : res section :=
+  do v <- 
+     match sec_info_ty sec as t 
+           return (interp_sec_info_type t -> res (interp_sec_info_type t)) with
+     | sec_info_instr => fun c => transl_code c
+     | sec_info_init_data => fun d => transl_init_data_list d
+     | _=> fun i => OK i
+     end (sec_info sec);
+  OK {| sec_type := sec_type sec;
+        sec_size := sec_size sec;
+        sec_info_ty := sec_info_ty sec;
+        sec_info := v;
+     |}.
+
 End WITH_NORM_ID_MAPPING.
 
 (** ** Translation of programs *)
@@ -191,32 +187,38 @@ End WITH_NORM_ID_MAPPING.
 (** Create a mapping from global ids to normalized symbol indexes *)
 Definition create_norm_id_mapping (stbl: symbtable) :=
   let empty_map := PTree.empty ident in
-  let '(idmap, smap, _) := 
-      PTree.fold (fun '(idmap, smap, nextid) id e =>
+  let '(idmap, _) := 
+      fold_left (fun '(idmap, nextid) '(id, e) =>
                     let idmap' := PTree.set id nextid idmap in
-                    let smap' := PTree.set nextid e smap in
-                    (idmap', smap', Pos.succ nextid)) 
+                    (idmap', Pos.succ nextid)) 
                  stbl 
-                 (PTree.empty ident, PTree.empty symbentry, 1%positive) in
-  (idmap, smap).
+                 (PTree.empty ident, 1%positive) in
+  idmap.
       
+Definition dummy_symbentry :=
+  {| symbentry_type  := symb_notype;
+     symbentry_value := 0;
+     symbentry_secindex := secindex_undef;
+     symbentry_size  := 0;
+  |}.
 
 (** Transform the program *)
 Definition transf_program (p: program) : res program :=
-  let '(idmap,stbl) := create_norm_id_mapping (prog_symbtable p) in
-  do gdefs <- 
-     fold_right (fun '(id, gdef) r =>
+  let idmap := create_norm_id_mapping (prog_symbtable p) in
+  let stbl' := (1%positive, dummy_symbentry) :: (prog_symbtable p) in
+  do sectbl <- 
+     fold_right (fun sec r =>
                    do r' <- r;
-                     do gdef' <- transf_globdef idmap gdef;
-                     OK ((id, gdef') :: r'))
+                   do sec' <- transl_section idmap sec;
+                   OK (sec' :: r'))
      (OK []) 
-     (prog_defs p);
+     (prog_sectable p);
   OK {|
-      prog_defs := gdefs;
+      prog_defs := p.(prog_defs);
       prog_public := p.(prog_public);
       prog_main := p.(prog_main);
       prog_sectable := p.(prog_sectable);
-      prog_symbtable := stbl;
+      prog_symbtable := stbl';
       prog_reloctables := p.(prog_reloctables);
       prog_senv := p.(prog_senv);
     |}.

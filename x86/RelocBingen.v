@@ -5,7 +5,7 @@
 
 Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
-Require Import Asm RelocProgram RelocAsm RelocBin.
+Require Import Asm RelocProgram.
 Require Import Hex Bits Memdata.
 Import Hex Bits.
 Import ListNotations.

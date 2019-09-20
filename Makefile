@@ -117,7 +117,8 @@ BACKEND=\
   ValidLabel.v Hex.v Bits.v \
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
-  RelocProgram.v RelocAsm.v RelocBin.v \
+  SeqTable.v \
+  RelocProgram.v \
   Asmlabelgen.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v
 
