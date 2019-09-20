@@ -133,7 +133,7 @@ Definition encode_testcond (c:testcond) : list byte :=
   end.
 
 (** Encode a single instruction *)
-Definition encode_instr (i: instruction) : res code :=
+Definition encode_instr (i: instruction) : res (list byte) :=
   match i with
   | Pjmp_l_rel ofs =>
     OK (HB["E9"] :: encode_int32 ofs)
@@ -228,36 +228,15 @@ Definition encode_instr (i: instruction) : res code :=
     OK (HB["90"] :: nil)
   end.
 
-Definition transl_instr' (ii: instr_with_info) : res code :=
-  let '(i, sz) := ii in
-  encode_instr i.
-
-
 (** Translation of a sequence of instructions in a function *)
-Fixpoint transl_instrs (instrs: list instr_with_info) : res code :=
-  match instrs with
-  | nil => OK nil
-  | i::instrs' =>
-    do instr <- transl_instr' i;
-    do tinstrs' <- transl_instrs instrs';
-    OK (instr ++ tinstrs')
-  end.
+Definition transl_code (c:code) : res (list byte) :=
+  fold_right (fun i r =>
+                do code <- r;
+                do c <- encode_instr i;
+                OK (c ++ code))
+             (OK [])
+             c.
 
-(** Tranlsation of a function *)
-Definition transl_fun (f:RelocAsm.Prog.function) : res function :=
-  do code' <- transl_instrs (RelocAsm.Prog.fn_code f);
-  OK (mkfunction (RelocAsm.Prog.fn_sig f) code' 
-                 (RelocAsm.Prog.fn_stacksize f) 
-                 (RelocAsm.Prog.fn_pubrange f)).
-
-Definition transf_fundef (f:RelocAsm.Prog.fundef) : res fundef :=
-  match f with
-  | External ef => OK (External ef)
-  | Internal f =>  
-    do f' <- transl_fun f;
-    OK (Internal f')
-  end.
-    
 
 (** ** Encoding of data *)
 
@@ -280,44 +259,49 @@ Definition transl_init_data_list (l: list init_data) : res (list byte) :=
                 OK (dbytes ++ rbytes))
              (OK []) l.
 
-(** Translation of global variables *)
-Definition transf_globvar (gv:RelocAsm.globvar) : res globvar :=
-  do bytes <- transl_init_data_list (gvar_init gv);
-  let info :=  match gvar_info gv with
-               | None => None
-               | Some slbl => Some (slbl, bytes)
-               end in
-  OK (mkglobvar info (gvar_init gv) (gvar_readonly gv) (gvar_volatile gv)).
-  
-Definition transf_globdef (def: (ident * option RelocAsm.Prog.gdef))
-  : res (ident * option gdef) :=
-  let '(id,def) := def in
-  match def with
-  | Some (AST.Gfun f) =>
-    do f' <- transf_fundef f;
-    OK (id, Some (AST.Gfun f'))
-  | Some (AST.Gvar v) =>
-    do v' <- transf_globvar v;
-    OK (id, Some (AST.Gvar v'))
-  | None => OK (id, None)
+
+(** ** Translation of a program *)
+Definition encode_sec_info_type (ty:sec_info_type) :=
+  match ty with
+  | sec_info_instr => sec_info_byte
+  | sec_info_init_data => sec_info_byte
+  | _ => ty
   end.
 
-Fixpoint transf_globdefs defs :=
-  fold_right (fun def r =>
-                do defs <- r;
-                do def' <- transf_globdef def;
-                OK (def' :: defs))
-             (OK []) defs.
+Definition transl_section (sec:section) : res section :=
+  do i <- 
+     match sec_info_ty sec as a 
+           return (interp_sec_info_type a -> 
+                   res (interp_sec_info_type (encode_sec_info_type a)))
+     with
+     | sec_info_null 
+     | sec_info_byte => fun i => OK i
+     | sec_info_init_data => fun l => transl_init_data_list l
+     | sec_info_instr => fun code => transl_code code
+     end (sec_info sec);
+  OK {| sec_type := sec_type sec;
+        sec_size := sec_size sec;
+        sec_info_ty := encode_sec_info_type (sec_info_ty sec);
+        sec_info := i 
+     |} .
 
-(** Translation of a program *)
-Definition transf_program (p:RelocAsm.Prog.program) : res program := 
-  do defs <- transf_globdefs (RelocAsm.Prog.prog_defs p);
-  OK {| prog_defs := defs;
-        prog_public := RelocAsm.Prog.prog_public p;
-        prog_main := RelocAsm.Prog.prog_main p;
-        prog_sectable := RelocAsm.Prog.prog_sectable p;
-        prog_symbtable := RelocAsm.Prog.prog_symbtable p;
-        prog_reloctables := RelocAsm.Prog.prog_reloctables p;
-        prog_senv := RelocAsm.Prog.prog_senv p;
+  
+Definition transl_sectable (stbl: sectable) : res sectable :=
+  fold_right (fun sec r =>
+                do stbl <- r;
+                do sec' <- transl_section sec;
+                OK (sec' :: stbl))
+             (OK [])
+             stbl.
+
+Definition transf_program (p:program) : res program := 
+  do stbl <- transl_sectable (prog_sectable p);
+  OK {| prog_defs := prog_defs p;
+        prog_public := prog_public p;
+        prog_main := prog_main p;
+        prog_sectable := stbl;
+        prog_symbtable := prog_symbtable p;
+        prog_reloctables := prog_reloctables p;
+        prog_senv := prog_senv p;
      |}.
 

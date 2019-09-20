@@ -89,7 +89,6 @@ Require SegAsmGlobenv.
 Require SegAsmProgram.
 Require SegAsmgen.
 Require SegAsmSep.
-Require RelocAsm.
 Require Asmlabelgen.
 Require PadNops.
 Require PadInitData.
@@ -204,7 +203,7 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
-Definition transf_c_program_reloc (p: Csyntax.program) : res RelocBin.Prog.program :=
+Definition transf_c_program_reloc (p: Csyntax.program) : res RelocProgram.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
