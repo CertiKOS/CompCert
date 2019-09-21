@@ -96,6 +96,7 @@ Require Symbtablegen.
 Require NormalizeSymb.
 Require RelocAsmgen.
 Require RelocBingen.
+Require Stubgen.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -211,7 +212,9 @@ Definition transf_c_program_reloc (p: Csyntax.program) : res RelocProgram.progra
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
   @@@ time "Generation of relocation table" RelocAsmgen.transf_program
-  @@@ time "Encoding of instructions and data" RelocBingen.transf_program.
+  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
+  @@@ time "Added the starting stub code" Stubgen.transf_program.
+  
 
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p
