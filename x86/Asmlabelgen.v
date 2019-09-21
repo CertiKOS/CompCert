@@ -1,3 +1,11 @@
+(* *******************  *)
+(* Author: Xiangzhe Xu  *)
+(* Date:   Sep 16, 2019 *)
+(* *******************  *)
+
+
+
+
 Require Import Coqlib Integers AST Maps.
 Require Import Events.
 Require Import Asm.
@@ -20,57 +28,64 @@ Fixpoint findAllLabel (l: list label)(all:list instruction): res (list Z) :=
    end
   end.
 
-Fixpoint eliminate_local_label_aux (c:list instruction) (currentOfs : Z) (all:list instruction) : res (list instruction):=
-  match c with
-  |[] => OK []
-  |h::tail =>     
-   let sz := instr_size h in
-   match h with
-   |Pjmp_l lbl =>
-    match label_pos lbl 0 all with
-    (* label not found *)
-    |None =>   Error (msg"Label not found")
-    |Some pos =>
-     let relOfs := currentOfs + sz - pos in
-     do t <- (eliminate_local_label_aux tail (currentOfs+sz) all);
-       OK ((Pjmp_l_rel relOfs) :: t)
-    end
-
-   |Pjcc cond lbl =>
-    match label_pos lbl 0 all with
-    (* label not found *)
-    |None =>  Error (msg"Label not found")
-    |Some pos =>
-     let relOfs := currentOfs + sz - pos in
-     do t <- (eliminate_local_label_aux tail (currentOfs+sz) all);
-       OK ((Pjcc_rel cond relOfs) :: t)         
-    end
-
-   |Pjcc2 cond1 cond2 lbl =>
-    match label_pos lbl 0 all with
-    (* label not found *)
-    |None =>  Error (msg"Label not found")
-    |Some pos =>
-     let relOfs := currentOfs + sz - pos in
-     do t <- (eliminate_local_label_aux tail (currentOfs+sz) all);
-       OK ((Pjcc2_rel cond1 cond2 relOfs) :: t)
-    end
-
-   |Pjmptbl r tbl =>
-    do lst <-  findAllLabel tbl all;
-      let ofsLst := map (Zminus (sz + currentOfs)) lst in
-      do t <-  (eliminate_local_label_aux tail (currentOfs+sz) all);
-        OK ((Pjmptbl_rel r ofsLst) :: t)
-           
-   |_ =>
-    do t <- (eliminate_local_label_aux tail (currentOfs+sz) all);
-      OK (h :: t)
+Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res instruction :=
+  let sz := instr_size i in
+  match i with
+  |Pjmp_l lbl =>
+   match label_pos lbl 0 code with
+   (* label not found *)
+   |None =>   Error (msg"Label not found")
+   |Some pos =>
+    let relOfs := ofs + sz - pos in
+    OK (Pjmp_l_rel relOfs)
    end
+
+  |Pjcc cond lbl =>
+   match label_pos lbl 0 code with
+   (* label not found *)
+   |None =>  Error (msg"Label not found")
+   |Some pos =>
+    let relOfs := ofs + sz - pos in
+    OK (Pjcc_rel cond relOfs)
+   end
+
+  |Pjcc2 cond1 cond2 lbl =>
+   match label_pos lbl 0 code with
+   (* label not found *)
+   |None =>  Error (msg"Label not found")
+   |Some pos =>
+    let relOfs := ofs + sz - pos in
+    OK (Pjcc2_rel cond1 cond2 relOfs)
+   end
+
+  |Pjmptbl r tbl =>
+   do lst <-  findAllLabel tbl code;
+   let ofsLst := map (Zminus (sz + ofs)) lst in
+   OK (Pjmptbl_rel r ofsLst)
+          
+  |_ =>
+   OK i 
   end.
+
+
+Definition acc_transl_instr c r i :=
+  do r' <- r;
+    let '(ofs, code) := r' in
+    do i' <- transl_instr i ofs c;
+      OK (ofs + instr_size i, (i' :: code)).
+  
+Definition transl_code (c:code) : res code :=
+  do rs <- 
+     fold_left (acc_transl_instr c)
+               c
+               (OK (0, []));
+  let '(_, c') := rs in
+  OK (rev c').
+
 
 Definition trans_function (f: function) :res function :=
   if func_no_jmp_rel_dec f then 
-    do instrs <- (eliminate_local_label_aux (fn_code f) 0 (fn_code f));
+    do instrs <- transl_code (fn_code f);
       OK (mkfunction (fn_sig f) instrs (fn_stacksize f) (fn_pubrange f))
   else
     Error (msg "Some source function contains relative jumps").
