@@ -45,7 +45,7 @@ Definition encode_symbtype (t:symbtype) :=
 Definition symb_glob_bind := 1.
 
 Definition encode_glob_symb_info (t:symbtype) := 
-  symb_glob_bind * 16 + encode_symbtype t.
+  symb_glob_bind * (Z.pow 2 4) + encode_symbtype t.
 
 Definition encode_secindex (i:secindex) :=
   let shn_comm := HZ["FFF2"] in
