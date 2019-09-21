@@ -23,7 +23,7 @@ Local Open Scope bits_scope.
 
 Definition create_start_stub : list byte := 
   let call_main_bytes := 
-      (HB["E8"] :: n_zeros_bytes 4) in             (* call   main *)
+      (HB["E8"] :: zero_bytes 4) in             (* call   main *)
   let startsub := 
     [HB["89"]; HB["C3"];                                 (* mov    %eax,%ebx *)
      HB["B8"]; HB["01"]; HB["00"]; HB["00"]; HB["00"];   (* mov    $0x1,%eax *)

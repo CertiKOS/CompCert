@@ -10,5 +10,5 @@ Definition encode_int_little (n:nat) (i: Z) : list byte :=
 Definition encode_int32 (i:Z) : list byte :=
   encode_int 4 i.
 
-Definition n_zeros_bytes (n:nat) : list byte :=
+Definition zero_bytes (n:nat) : list byte :=
   List.map (fun _ => Byte.zero) (seq 1 n).

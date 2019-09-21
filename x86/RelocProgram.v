@@ -94,5 +94,8 @@ Record program : Type := {
 (* Coercion prog_to_prog : program >-> AST.program. *)
 
 (** Section table ids *)
-Definition sec_data_id := 1%positive.
-Definition sec_code_id := 2%positive.
+Definition sec_data_id     := 1%positive.
+Definition sec_code_id     := 2%positive.
+Definition sec_symbtbl_id  := 3%positive.
+Definition sec_rel_data_id := 4%positive.
+Definition sec_rel_code_id := 5%positive.

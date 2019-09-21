@@ -121,7 +121,7 @@ BACKEND=\
   RelocProgram.v \
   Asmlabelgen.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v \
-  Stubgen.v
+  Stubgen.v SymbtableEncode.v
 
 # C front-end modules (in cfrontend/)
 

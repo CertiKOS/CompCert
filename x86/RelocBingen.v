@@ -98,7 +98,7 @@ Definition encode_addrmode (a: addrmode) (rd: ireg) : res (list byte) :=
              | inl ofs => ofs
              | inr _ => 0
              end in
-  OK (abytes ++ (encode_int_little 4 ofs)).
+  OK (abytes ++ (encode_int32 ofs)).
 
 (** Encode the conditions *)
 Definition encode_testcond (c:testcond) : list byte :=
@@ -126,7 +126,7 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     let cbytes := encode_testcond c in
     OK (cbytes ++ encode_int32 ofs)
   | Pcall (inr id) _ =>
-    OK (HB["E8"] :: n_zeros_bytes 4)
+    OK (HB["E8"] :: zero_bytes 4)
   | Pleal rd a =>
     do abytes <- encode_addrmode a rd;
     OK (HB["8D"] :: abytes)
@@ -233,8 +233,8 @@ Definition transl_init_data (d:init_data) : res (list byte) :=
   | Init_int64 i => OK (encode_int 8 (Int64.unsigned i))
   | Init_float32 f => OK (encode_int 4 (Int64.unsigned (Float.to_bits (Float.of_single f))))
   | Init_float64 f => OK (encode_int 4 (Int64.unsigned (Float.to_bits f)))
-  | Init_space n => OK (n_zeros_bytes (nat_of_Z n))
-  | Init_addrof id ofs => OK (n_zeros_bytes 4)
+  | Init_space n => OK (zero_bytes (nat_of_Z n))
+  | Init_addrof id ofs => OK (zero_bytes 4)
   end.
 
 Definition transl_init_data_list (l: list init_data) : res (list byte) :=
