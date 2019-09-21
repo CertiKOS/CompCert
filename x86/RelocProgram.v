@@ -10,7 +10,7 @@ Require Import Globalenvs SeqTable Asm.
 
 
 (** ** Sections *)
-Inductive sectype : Type := sec_text | sec_data | sec_null.
+Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_rela | sec_null.
 
 Inductive sec_info_type : Type := sec_info_byte | sec_info_instr | sec_info_init_data | sec_info_null.
 

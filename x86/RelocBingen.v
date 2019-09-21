@@ -6,28 +6,13 @@
 Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
 Require Import Asm RelocProgram.
-Require Import Hex Bits Memdata.
+Require Import Hex Bits Memdata Encode.
 Import Hex Bits.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
 Local Open Scope bits_scope.
-
-
-(** * Encoding of instructions and initialization data *)
-
-Definition encode_int_big (n:nat) (i: Z) : list byte :=
-  rev (bytes_of_int n i).
-
-Definition encode_int_little (n:nat) (i: Z) : list byte :=
-  bytes_of_int n i.
-
-Definition encode_int32 (i:Z) : list byte :=
-  encode_int 4 i.
-
-Definition n_zeros_bytes (n:nat) : list byte :=
-  List.map (fun _ => Byte.zero) (seq 1 n).
 
 
 (** * Encoding of instructions and functions *)

@@ -117,10 +117,11 @@ BACKEND=\
   ValidLabel.v Hex.v Bits.v \
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
-  SeqTable.v \
+  SeqTable.v Encode.v \
   RelocProgram.v \
   Asmlabelgen.v PadNops.v PadInitData.v \
-  Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v
+  Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v \
+  Stubgen.v
 
 # C front-end modules (in cfrontend/)
 
