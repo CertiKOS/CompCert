@@ -89,11 +89,16 @@ Require SegAsmGlobenv.
 Require SegAsmProgram.
 Require SegAsmgen.
 Require SegAsmSep.
-Require RelocAsm.
 Require Asmlabelgen.
+Require PadNops.
+Require PadInitData.
 Require Symbtablegen.
 Require NormalizeSymb.
 Require RelocAsmgen.
+Require RelocBingen.
+Require Stubgen.
+Require SymbtableEncode.
+Require ReloctablesEncode.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -201,12 +206,19 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
-Definition transf_c_program_reloc (p: Csyntax.program) : res RelocAsm.Prog.program :=
+Definition transf_c_program_reloc (p: Csyntax.program) : res RelocProgram.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
+  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
+  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
-  @@@ time "Generation of relocation table" RelocAsmgen.transf_program.
+  @@@ time "Generation of relocation table" RelocAsmgen.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
+  @@@ time "Added the starting stub code" Stubgen.transf_program
+  @@ time "Encoding of the symbol table" SymbtableEncode.transf_program
+  @@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program.
+  
 
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p

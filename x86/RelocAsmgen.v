@@ -9,14 +9,15 @@ Require Import Coqlib Integers AST Maps.
 Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
-Require Import RelocProgram RelocAsm.
+Require Import RelocProgram.
+Require Import SeqTable.
 Import ListNotations.
 
 Set Implicit Arguments.
 
 Local Open Scope error_monad_scope.
 
-(** ** Translation of instructions and functions *)
+(** ** Translation of instructions *)
 
 Definition addrmode_reloc_offset (a:addrmode) : res Z :=
   match a with 
@@ -56,8 +57,7 @@ Definition instr_addendum (i:instruction) : res Z :=
 
 
 (** Compute the relocation entry of an instruction with a relative reference *)
-Definition compute_instr_rel_relocentry (slbl:seclabel) (i:instruction) (symb:ident)  :=
-  let '(sid, sofs) := slbl in
+Definition compute_instr_rel_relocentry (sofs:Z) (i:instruction) (symb:ident)  :=
   do iofs <- instr_reloc_offset i;
   do addend <- instr_addendum i;
   OK {| reloc_offset := sofs + iofs; 
@@ -66,8 +66,7 @@ Definition compute_instr_rel_relocentry (slbl:seclabel) (i:instruction) (symb:id
         reloc_addend := addend |}.
 
 (** Compute the relocation entry of an instruction with an absolute reference *)
-Definition compute_instr_abs_relocentry (slbl: seclabel) (i:instruction) (addend:Z) (symb:ident) :=
-  let '(sid, sofs) := slbl in
+Definition compute_instr_abs_relocentry (sofs:Z) (i:instruction) (addend:Z) (symb:ident) :=
   do iofs <- instr_reloc_offset i;
   OK {| reloc_offset := sofs + iofs; 
         reloc_type := reloc_abs;
@@ -76,20 +75,21 @@ Definition compute_instr_abs_relocentry (slbl: seclabel) (i:instruction) (addend
 
 (** Compute the relocation entry of an instruciton with 
     an addressing mode whose displacement is (id + offset) *)
-Definition compute_instr_disp_relocentry (slbl: seclabel) (i:instruction) (disp: ident*ptrofs) :=
+Definition compute_instr_disp_relocentry (sofs: Z) (i:instruction) (disp: ident*ptrofs) :=
   let '(symb,addend) := disp in
-  compute_instr_abs_relocentry slbl i (Ptrofs.unsigned addend) symb.
+  compute_instr_abs_relocentry sofs i (Ptrofs.unsigned addend) symb.
 
 
-Definition transl_instr_with_addrmode (rtbl:reloctable) (next_rid:ident) 
-           (slbl:seclabel) (i: instruction) rb ss disp (cstr:addrmode -> instruction) :=
-    do e <- compute_instr_disp_relocentry slbl i disp;
+Definition transl_instr_with_addrmode (rtbl:reloctable) 
+           (sofs:Z) (i: instruction) rb ss disp (cstr:addrmode -> instruction) :=
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    let next_rid := Pos.of_nat (length rtbl) in
     let instr' := cstr (Addrmode rb ss (inr (next_rid,Ptrofs.zero))) in
-    OK (PTree.set next_rid e rtbl, Psucc next_rid, (instr', slbl)).
+    OK (e :: rtbl, instr').
 
-Definition transl_instr_with_info (rtbl:reloctable) (next_rid:ident)
-           (ii: instr_with_info) : res (reloctable * ident * instr_with_info) :=
-  let '(i,slbl) := ii in
+
+Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloctable * instruction) :=
+  let next_rid := Pos.of_nat (length rtbl) in
   match i with
     Pallocframe _ _ _
   | Pfreeframe _ _
@@ -99,26 +99,26 @@ Definition transl_instr_with_info (rtbl:reloctable) (next_rid:ident)
   | Pjcc2 _ _ _
   | Pjmptbl _ _ => Error (msg "Source program contains jumps to labels")
   | Pjmp (inr id) sg => 
-    do e <- compute_instr_rel_relocentry slbl i id;
-    let ii' := (Pjmp (inr next_rid) sg, slbl) in
-    OK (PTree.set next_rid e rtbl, Psucc next_rid, ii')
+    do e <- compute_instr_rel_relocentry sofs i id;
+    let i' := Pjmp (inr next_rid) sg in
+    OK (e :: rtbl, i')
   | Pcall (inr id) sg =>
-    do e <- compute_instr_rel_relocentry slbl i id;
-    let ii' := (Pcall (inr next_rid) sg, slbl) in
-    OK (PTree.set next_rid e rtbl, Psucc next_rid, ii')
+    do e <- compute_instr_rel_relocentry sofs i id;
+    let i' := Pcall (inr next_rid) sg in
+    OK (e :: rtbl, i')
   | Pmov_rs rd id => 
-    do e <- compute_instr_abs_relocentry slbl i 0 id;
-    let ii' := (Pmov_rs rd next_rid, slbl) in
-    OK (PTree.set next_rid e rtbl, Psucc next_rid, ii')
+    do e <- compute_instr_abs_relocentry sofs i 0 id;
+    let i' := Pmov_rs rd next_rid in
+    OK (e :: rtbl, i')
 
   | Pmovl_rm rd (Addrmode rb ss (inr disp)) =>
-    transl_instr_with_addrmode rtbl next_rid slbl i rb ss disp
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmovl_rm rd a)
 
   | Pmovq_rm rd a =>
     Error (msg "Relocation failed: instruction not supported yet")
   | Pmovl_mr (Addrmode rb ss (inr disp)) rs =>
-    transl_instr_with_addrmode rtbl next_rid slbl i rb ss disp
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmovl_mr a rs)
   | Pmovq_mr a rs =>
     Error (msg "Relocation failed: instruction not supported yet")
@@ -153,73 +153,52 @@ Definition transl_instr_with_info (rtbl:reloctable) (next_rid:ident)
     Error (msg "Relocation failed: instruction not supported yet")
   (** Integer arithmetic *)
   | Pleal rd (Addrmode rb ss (inr disp))  =>
-    transl_instr_with_addrmode rtbl next_rid slbl i rb ss disp
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pleal rd a)
   | Pleaq rd a =>
     Error (msg "Relocation failed: instruction not supported yet")
   (** Saving and restoring registers *)
   | Pmov_rm_a rd (Addrmode rb ss (inr disp)) =>  (**r like [Pmov_rm], using [Many64] chunk *)
-    transl_instr_with_addrmode rtbl next_rid slbl i rb ss disp
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmov_rm_a rd a)
   | Pmov_mr_a (Addrmode rb ss (inr disp)) rs =>   (**r like [Pmov_mr], using [Many64] chunk *)
-    transl_instr_with_addrmode rtbl next_rid slbl i rb ss disp
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmov_mr_a a rs)
   | Pmovsd_fm_a rd a => (**r like [Pmovsd_fm], using [Many64] chunk *)
     Error (msg "Relocation failed: instruction not supported yet")
   | Pmovsd_mf_a a r1 =>  (**r like [Pmovsd_mf], using [Many64] chunk *)
     Error (msg "Relocation failed: instruction not supported yet")
   | _ =>
-    OK (rtbl, next_rid, (i,slbl))
+    OK (rtbl, i)
   end.
 
 
-Definition transl_func (rtbl:reloctable) (next_rid:ident) (f: function) 
-  : res (reloctable * ident * function) :=
+Definition dummy_relocentry :=
+  {| reloc_offset := 0;
+     reloc_type := reloc_null;
+     reloc_symb := 1%positive;
+     reloc_addend := 0;
+  |}.
+
+Definition transl_code (c:code) : res (reloctable * code) :=
   do rs <- 
-     fold_right (fun ii r =>
+     fold_left (fun r i =>
                    do r' <- r;
-                   let '(rtbl, next_id, code) := r' in
-                   do ri <- transl_instr_with_info rtbl next_id ii;
-                   let '(rtbl', next_id', ii') := ri in
-                   OK (rtbl', next_id', ii' :: code)) 
-     (OK (rtbl, next_rid, [])) (fn_code f);
-  let '(rtbl', next_rid', code) := rs in
-  OK (rtbl', next_rid', mkfunction (fn_sig f) code (fn_stacksize f) (fn_pubrange f)).
+                   let '(sofs, rtbl, code) := r' in
+                   do ri <- transl_instr sofs rtbl i;
+                   let '(rtbl', i') := ri in
+                   OK (sofs + instr_size i, rtbl',  i' :: code)) 
+     c
+     (OK (0, [dummy_relocentry], []));
+  let '(_, rtbl', c') := rs in
+  OK (rev rtbl', rev c').
 
-Definition transf_fundef (rtbl:reloctable) (next_rid:ident) (fd: fundef) 
-  : res (reloctable * ident * fundef) :=
-  match fd with
-  | External _ => OK (rtbl, next_rid, fd)
-  | Internal f =>
-    do r <- transl_func rtbl next_rid f;
-    let '(rtbl', next_rid', f') := r in
-    OK (rtbl', next_rid', Internal f')
-  end.
-
-Definition transf_fundefs (defs: list (ident * option gdef))
-  : res (reloctable * list (ident * option gdef)) :=
-  do r <-
-      fold_right (fun '(id, def) r =>
-                    do r' <- r;
-                    let '(rtbl, next_rid, l) := r' in
-                    match def with
-                    | Some (Gfun fd) => 
-                      do rg <- transf_fundef rtbl next_rid fd;
-                      let '(rtbl', next_rid', fd') := rg in
-                      OK (rtbl', next_rid', (id, Some (Gfun fd'))::l)
-                    | _ =>
-                      OK (rtbl, next_rid, (id, def)::l)
-                    end
-                 )
-                 (OK (PTree.empty relocentry, 1%positive, nil))
-                 defs;
-  let '(rtbl, _, defs') := r in
-  OK (rtbl, defs').
 
 (** ** Translation of global variables *)
 
-Definition transl_init_data (rtbl:reloctable) (next_rid:ident)
-           (dofs:Z) (d:init_data) : (reloctable * ident * init_data) :=
+Definition transl_init_data (dofs:Z) (rtbl:reloctable) 
+           (d:init_data) : (reloctable * init_data) :=
+  let next_rid := Pos.of_nat (length rtbl) in
   match d with
   | Init_addrof id ofs =>
     let e := {| reloc_offset := dofs;
@@ -228,74 +207,61 @@ Definition transl_init_data (rtbl:reloctable) (next_rid:ident)
                 reloc_addend := Ptrofs.unsigned ofs;
              |} in
     let d' := Init_addrof next_rid (Ptrofs.zero) in
-    (PTree.set next_rid e rtbl, Psucc next_rid, d')
+    (e :: rtbl, d')
   | _ => 
-    (rtbl, next_rid, d)
+    (rtbl, d)
   end.
 
 (** Tranlsation of a list of initialization data and generate
-    relocation entries. It takes as input the relocation table, the next
-    available id for the relocation entries, the offset of data 
-    in the data section and the list of init data *)
+    relocation entries *)
 
-Definition transl_init_data_list (rtbl:reloctable) (next_rid:ident)
-           (dofs:Z) (l:list init_data) : (reloctable * ident * Z * list init_data) :=
-  fold_right (fun d '(rtbl, next_id, dofs, l) =>
-                let '(rtbl', next_id', d') := transl_init_data rtbl next_id dofs d in
-                (rtbl', next_id', (dofs + init_data_size d), d' :: l))
-             (rtbl, next_rid, dofs, []) l.
+Definition transl_init_data_list (l:list init_data) : (reloctable * list init_data) :=
+  let '(_, rtbl, l') :=
+      fold_left (fun '(dofs, rtbl, l) d =>
+                   let '(rtbl', d') := transl_init_data dofs rtbl d in
+                   (dofs + init_data_size d, rtbl', d' :: l))
+                l 
+                (0, [dummy_relocentry], []) in
+  (rev rtbl, rev l').
 
-Definition transf_globvar (rtbl:reloctable) (next_rid:ident) (gv:globvar) :=
-  match gv.(gvar_init) with
-  | nil
-  | [Init_space _] => OK (rtbl, next_rid, gv)
-  | _ => 
-    match gv.(gvar_info) with
-    | None => Error (msg "Relocation of global variable fails: no section label found")
-    | Some (sid,ofs) =>
-      let '(rtbl', next_rid', _, l) := 
-          transl_init_data_list rtbl next_rid ofs gv.(gvar_init) in
-      OK (rtbl', next_rid', mkglobvar gv.(gvar_info) l gv.(gvar_readonly) gv.(gvar_volatile))
-    end
-  end.
-    
-Definition transf_globvars (defs: list (ident * option gdef))
-  : res (reloctable * list (ident * option gdef)) :=
-  do r <-
-      fold_right (fun '(id, def) r =>
-                    do r' <- r;
-                    let '(rtbl, next_rid, l) := r' in
-                    match def with
-                    | Some (Gvar v) => 
-                      do rg <- transf_globvar rtbl next_rid v;
-                      let '(rtbl', next_rid', v') := rg in
-                      OK (rtbl', next_rid', (id, Some (Gvar v'))::l)
-                    | _ =>
-                      OK (rtbl, next_rid, (id, def)::l)
-                    end
-                 )
-                 (OK (PTree.empty relocentry, 1%positive, nil))
-                 defs;
-  let '(rtbl, _, defs') := r in
-  OK (rtbl, defs').
 
 (** ** Translation of the program *)
 
+Definition transl_section (sec:section) : res (reloctable * section) :=
+  do rs <- 
+     match sec_info_ty sec as a 
+           return (interp_sec_info_type a -> res (reloctable * interp_sec_info_type a))
+     with
+     | sec_info_null 
+     | sec_info_byte => fun i => OK ([dummy_relocentry], i)
+     | sec_info_init_data => fun l => OK (transl_init_data_list l)
+     | sec_info_instr => fun code => transl_code code
+     end (sec_info sec);
+  let '(rtbl, i) := rs in
+  let sec' := {| sec_type := sec_type sec;
+                 sec_size := sec_size sec;
+                 sec_info_ty := sec_info_ty sec;
+                 sec_info := i |} in
+  OK (rtbl, sec').
+  
+Definition transl_sectable (stbl: sectable) : res (reloctables * sectable) :=
+  fold_right (fun sec r =>
+                do r' <- r;
+                let '(rtbls, stbl) := r' in
+                do rs <- transl_section sec;
+                let '(rtbl, sec') := rs in
+                OK (rtbl :: rtbls, sec' :: stbl))
+             (OK ([], []))
+             stbl.
+
 Definition transf_program (p:program) : res program :=
-  let defs := prog_defs p in
-  do rf <- transf_fundefs defs;
-  let '(frtbl, defs1) := rf in
-  do rv <- transf_globvars defs1;
-  let '(vrtbl, defs2) := rv in
-  let reloctables := 
-      PTree.set sec_code_id frtbl 
-                (PTree.set sec_data_id vrtbl 
-                           (PTree.empty reloctable)) in
-  OK {| prog_defs := defs1;
+  do rs <- transl_sectable (prog_sectable p);
+  let '(rtbls, stbl) := rs in
+  OK {| prog_defs := p.(prog_defs);
         prog_public := p.(prog_public);
         prog_main := p.(prog_main);
-        prog_sectable := p.(prog_sectable);
+        prog_sectable := stbl;
         prog_symbtable := p.(prog_symbtable);
-        prog_reloctables := reloctables;
+        prog_reloctables := rtbls;
         prog_senv := p.(prog_senv);
      |}.
