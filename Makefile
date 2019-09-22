@@ -121,7 +121,7 @@ BACKEND=\
   RelocProgram.v \
   Asmlabelgen.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v \
-  Stubgen.v SymbtableEncode.v ReloctablesEncode.v
+  Stubgen.v SymbtableEncode.v ReloctablesEncode.v RelocElfgen.v
 
 # Encoding of data into bytes
 

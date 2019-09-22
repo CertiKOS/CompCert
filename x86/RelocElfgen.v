@@ -47,38 +47,7 @@ Local Open Scope bits_scope.
 
 (** ** Generation of ELF header *)
 
-Definition get_sections_size (t: SeqTable.t RelocProgram.section) :=
-  match t with
-  | nil => 0
-  | h :: l => fold_left (fun acc sec => sec_size sec + acc) l 0
-  end.
-
-(** THIS IS NOT QUITE RIGHT *)
-Definition get_elf_shoff (p:program) :=
-  elf_header_size + 
-  get_sections_size (prog_sectable p).
-
-  
-Definition gen_elf_header (p:program) : elf_header :=
-  let sectbl_size := Z.of_nat (SeqTable.size (prog_sectable p)) in
-  {| e_class        := ELFCLASS32;
-     e_encoding     := if Archi.big_endian then ELFDATA2MSB else ELFDATA2LSB;
-     e_version      := EV_CURRENT;
-     e_type         := ET_REL;
-     e_machine      := EM_386;
-     e_entry        := 0;
-     e_phoff        := 0;
-     e_shoff        := get_elf_shoff p;
-     e_flags        := 0;
-     e_ehsize       := elf_header_size;
-     e_phentsize    := prog_header_size;
-     e_phnum        := 0;
-     e_shentsize    := sec_header_size;
-     e_shnum        := sectbl_size + 2;      (** with additional sections .strtab and .shstrtab *)
-     e_shstrndx     := sectbl_size + 1;
-  |}.
-
-(** The default shstrtab is '.data .text .symtab .reladata .relatext .strtab .shstrtab' *)
+(** The default shstrtab is '.data .text .symtab .reladata .relatext .shstrtab .strtab ' *)
 Local Open Scope string_byte_scope.
 Definition data_str := HB["00"] :: SB[".data"].
 Definition text_str := HB["00"] :: SB[".text"].
@@ -98,6 +67,8 @@ Definition default_shstrtab :=
   shstrtab_str ++
   strtab_str.
 
+Definition shstrtab_sec_size := Z.of_nat (length (default_shstrtab)).
+
 Definition data_str_ofs := 1.
 Definition text_str_ofs := data_str_ofs + (Z.of_nat (length data_str)).
 Definition symtab_str_ofs := text_str_ofs + (Z.of_nat (length text_str)).
@@ -105,6 +76,39 @@ Definition reladata_str_ofs := symtab_str_ofs + (Z.of_nat (length symtab_str)).
 Definition relatext_str_ofs := reladata_str_ofs + (Z.of_nat (length reladata_str)).
 Definition shstrtab_str_ofs := relatext_str_ofs + (Z.of_nat (length relatext_str)).
 Definition strtab_str_ofs := shstrtab_str_ofs + (Z.of_nat (length shstrtab_str)).
+
+
+Definition get_sections_size (t: SeqTable.t RelocProgram.section) :=
+  match t with
+  | nil => 0
+  | h :: l => fold_left (fun acc sec => sec_size sec + acc) l 0
+  end.
+
+Definition get_elf_shoff (p:program) :=
+  elf_header_size +
+  get_sections_size (prog_sectable p) +
+  shstrtab_sec_size.
+
+  
+Definition gen_elf_header (p:program) : elf_header :=
+  let sectbl_size := Z.of_nat (SeqTable.size (prog_sectable p)) in
+  {| e_class        := ELFCLASS32;
+     e_encoding     := if Archi.big_endian then ELFDATA2MSB else ELFDATA2LSB;
+     e_version      := EV_CURRENT;
+     e_type         := ET_REL;
+     e_machine      := EM_386;
+     e_entry        := 0;
+     e_phoff        := 0;
+     e_shoff        := get_elf_shoff p;      (** Needs to be further adjusted when .strtab is introduced *)
+     e_flags        := 0;
+     e_ehsize       := elf_header_size;
+     e_phentsize    := prog_header_size;
+     e_phnum        := 0;
+     e_shentsize    := sec_header_size;
+     e_shnum        := sectbl_size + 1;      (** Needs to be further adjusted when .strtab is introduced *)
+     e_shstrndx     := sectbl_size;
+  |}.
+
 
 Fixpoint list_first_n {A:Type} (n:nat) (l:list A) :=
   match n, l with
@@ -202,16 +206,52 @@ Definition gen_relatext_sec_header p :=
      sh_entsize  := reloc_entry_size;
   |}.
 
+Definition get_shstrtab_offset t :=
+  (get_sections_size t).
+
 Definition gen_shstrtab_sec_header p :=
   let t := (prog_sectable p) in
   {| sh_name     := shstrtab_str_ofs;
      sh_type     := SHT_STRTAB;
      sh_flags    := [];
      sh_addr     := 0;
-     sh_offset   := get_sh_offset sec_rel_code_id t;
-     sh_size     := get_section_size sec_rel_code_id t;
-     sh_link     := Z.pos sec_symbtbl_id;
-     sh_info     := Z.pos sec_code_id;
+     sh_offset   := get_shstrtab_offset t;
+     sh_size     := shstrtab_sec_size;
+     sh_link     := 0;
+     sh_info     := 0;
      sh_addralign := 1;
-     sh_entsize  := reloc_entry_size;
+     sh_entsize  := 0;
   |}.
+
+(** Generation of the Elf file 
+    without the actual string table section and its header *)
+
+Definition transl_section (sec: RelocProgram.section) : res section :=
+  match sec_info_ty sec as t
+        return interp_sec_info_type t -> res section
+  with
+  | sec_info_byte => fun bytes => OK bytes
+  | _ => fun _ => Error (msg "Section has not been encoded into bytes")
+  end (sec_info sec).
+
+Definition gen_sections (t:sectable) : res (list section) :=
+  fold_right (fun sec r => 
+                do r' <- r;
+                do sec' <- transl_section sec;
+                OK (sec' :: r'))
+             (OK [])
+             t.
+
+Definition gen_reloc_elf (p:program) : res elf_file :=
+  do secs <- gen_sections (prog_sectable p);
+  let headers := [null_section_header;
+                  gen_data_sec_header p;
+                  gen_text_sec_header p;
+                  gen_symtab_sec_header p;
+                  gen_reladata_sec_header p;
+                  gen_relatext_sec_header p;
+                  gen_shstrtab_sec_header p] in
+  OK {| elf_head      := gen_elf_header p;
+        elf_sections  := secs;
+        elf_section_headers := headers;
+     |}.
