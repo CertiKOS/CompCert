@@ -19,6 +19,13 @@ Local Open Scope bits_scope.
 
 (** * Definition of the relocatable ELF files *)
 
+Definition elf_header_size := 52.
+Definition prog_header_size := 32.
+Definition sec_header_size  := 40.
+Definition symb_entry_size := 16.
+Definition reloc_entry_size := 12.
+
+
 (** ** ELF header *)
 
 (** File class *)
@@ -101,7 +108,7 @@ Record elf_header : Type :=
 {
     e_class      : elf_file_class;
     e_encoding   : elf_data;
-    e_verssion   : elf_version;
+    e_version   : elf_version;
     e_type       : elf_file_type;
     e_machine    : elf_machine;
     e_entry      : Z; (* entry point of the program *)
