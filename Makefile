@@ -24,9 +24,10 @@ endif
 DIRS=lib common $(ARCHDIRS) encode backend cfrontend driver debug\
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
   cparser cparser/validator \
-	compcertx/backend compcertx/cfrontend compcertx/common compcertx/driver compcertx/x86
+	compcertx/backend compcertx/cfrontend compcertx/common compcertx/driver compcertx/x86 \
+  elf
 
-RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
+RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser elf encode
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d)) \
 	-R compcertx/backend compcertx.backend\
@@ -126,6 +127,9 @@ BACKEND=\
 
 ENCODE=Encode.v Bits.v Hex.v
 
+# ELF files
+ELF=RelocElf.v
+
 # C front-end modules (in cfrontend/)
 
 CFRONTEND=Ctypes.v Cop.v Csyntax.v Csem.v Ctyping.v Cstrategy.v Cexec.v \
@@ -204,7 +208,7 @@ COMPCERTX=  CompCertBuiltins.v \
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER) $(COMPCERTX) $(ENCODE)
+  $(PARSERVALIDATOR) $(PARSER) $(COMPCERTX) $(ENCODE) $(ELF)
 
 # Generated source files
 

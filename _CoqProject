@@ -8,8 +8,8 @@
 -R flocq compcert.flocq
 -R exportclight compcert.exportclight
 -R cparser compcert.cparser
--R cpu_models/shared Shared
--R cpu_models/x86model/Model X86Model
+-R encode compcert.encode
+-R elf compcert.elf
 -R compcertx/backend compcertx.backend
 -R compcertx/cfrontend compcertx.cfrontend
 -R compcertx/common compcertx.common
