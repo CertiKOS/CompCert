@@ -21,7 +21,7 @@ else
 ARCHDIRS=$(ARCH)_$(BITSIZE) $(ARCH)
 endif
 
-DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
+DIRS=lib common $(ARCHDIRS) encode backend cfrontend driver debug\
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
   cparser cparser/validator \
 	compcertx/backend compcertx/cfrontend compcertx/common compcertx/driver compcertx/x86
@@ -74,7 +74,7 @@ COMMON=Errors.v AST.v Linking.v \
   Events.v Globalenvs.v Memdata.v MemPerm.v Assoc.v StackADT.v StackInj.v Memtype.v Memory.v \
   Memimpl.v \
   Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
-  Separation.v
+  Separation.v SeqTable.v
 
 # Back-end modules (in backend/, $(ARCH)/)
 
@@ -114,14 +114,17 @@ BACKEND=\
   TransSegAsm.v TAsmlabelgen.v TAsmcallgen.v TAsmgidgen.v TAsmFillNop.v \
   FlatProgram.v FlatAsm.v FlatAsmgen.v \
   FlatBinary.v FlatBingen.v ElfLayout.v \
-  ValidLabel.v Hex.v Bits.v \
+  ValidLabel.v \
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
-  SeqTable.v Encode.v \
   RelocProgram.v \
   Asmlabelgen.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v RelocAsmgen.v RelocBingen.v \
   Stubgen.v SymbtableEncode.v ReloctablesEncode.v
+
+# Encoding of data into bytes
+
+ENCODE=Encode.v Bits.v Hex.v
 
 # C front-end modules (in cfrontend/)
 
@@ -201,7 +204,7 @@ COMPCERTX=  CompCertBuiltins.v \
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER) $(COMPCERTX)
+  $(PARSERVALIDATOR) $(PARSER) $(COMPCERTX) $(ENCODE)
 
 # Generated source files
 

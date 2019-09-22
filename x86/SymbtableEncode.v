@@ -58,8 +58,8 @@ Definition encode_secindex (i:secindex) :=
       end in
   encode_int 2 v.
 
-Definition encode_symbentry (e:symbentry) : list byte :=
-  let st_name_bytes := zero_bytes 4 in (** Symbol names are not filled in yet at this point *)
+Definition encode_symbentry (id:ident) (e:symbentry) : list byte :=
+  let st_name_bytes := encode_int32 (Z.pos id) in (** We use the identifiers for symbols as names for the moment  *)
   let st_value_bytes := encode_int32 (symbentry_value e) in
   let st_size_bytes := encode_int32 (symbentry_size e) in
   let st_info_bytes := 
@@ -70,7 +70,7 @@ Definition encode_symbentry (e:symbentry) : list byte :=
    st_info_bytes ++ st_other_bytes ++ st_shndx_bytes).
   
 Definition encode_symbtable (t:symbtable) : list byte :=
-  fold_right (fun '(_,e) bytes => (encode_symbentry e) ++ bytes)
+  fold_right (fun '(id,e) bytes => (encode_symbentry id e) ++ bytes)
              [] t.
 
 Definition create_symbtable_section (t:symbtable) : section :=
