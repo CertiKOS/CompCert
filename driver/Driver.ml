@@ -79,6 +79,13 @@ let compile_c_ast sourcename csyntax ofile =
     (* Write the ELF file *)
     write_elf ofile elf_file
   end
+  else if !option_reloc_elf then
+    match Compiler.transf_c_program_bytes csyntax with
+    | Errors.OK bs ->
+       ElfFileOutput.write_elf ofile bs
+    | Errors.Error msg ->
+       eprintf "%s: %a" sourcename print_error msg;
+       exit 2
   else begin
     (* Convert to Asm *)
     let asm =
@@ -579,7 +586,8 @@ let cmdline_actions =
   Suffix ".h", Self (fun s ->
       push_action process_h_file s; incr num_source_files; incr num_input_files);
   Exact "-machinecode", Set option_machine_code;
-  Exact "-re_machinecode", Set option_re_machine_code
+  Exact "-re_machinecode", Set option_re_machine_code;
+  Exact "-relf", Set option_reloc_elf;
   ]
 
 let _ =

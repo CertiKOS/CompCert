@@ -25,7 +25,7 @@ let rec int_to_pos (i:int) : positive =
     let s = sprintf "%i" i in
     raise (Invalid_argument s)
 
-let rec int_to_Z (i:int) : coq_Z =
+let int_to_Z (i:int) : coq_Z =
   if i = 0 then
     Z0
   else if i > 0 then
@@ -39,7 +39,7 @@ let string_to_list (s:string) : char list =
   String.iter (fun c -> l := c::(!l)) s;
   List.rev !l
 
-let find_symbol_string_bytes a : Byte.int res =
+let find_symbol_string_bytes a : Byte.int list res =
   try 
     let s = (Hashtbl.find string_of_atom a) in
     let coq_zs = List.map (fun c -> int_to_Z (Char.code c)) (string_to_list s) in

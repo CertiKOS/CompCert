@@ -117,6 +117,9 @@ Extract Constant Compopts.thumb =>
 Extract Constant Compopts.debug =>
   "fun _ -> !Clflags.option_g".
 
+(* Strtablegen *)
+Extract Constant Strtablegen.find_symbol_string_bytes => "SymbolString.find_symbol_string_bytes".
+
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".
 Extract Constant Compiler.print_Cminor => "PrintCminor.print_if".
@@ -176,6 +179,7 @@ Separate Extraction
    Compiler.transf_c_program_bin Compiler.transf_cminor_program_bin
    Compiler.transf_c_program_decode_encode_bin
    Compiler.transf_cminor_program_decode_encode_bin
+   Compiler.transf_c_program_bytes
    Cexecimpl.do_initial_state Cexecimpl.do_step Cexecimpl.at_final_state
    Cexecimpl.step_expr Cexecimpl.init_mem Cexecimpl.state
    Ctypes.merge_attributes Ctypes.remove_attributes Ctypes.build_composite_env
