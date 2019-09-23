@@ -16,11 +16,12 @@ Set Asymmetric Patterns.
 
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
+Local Open Scope string_byte_scope.
 
 (** * Encoding of the relocatble ELF files into bytes *)
 
 Definition encode_e_ident (eh:elf_header) :=
-  HB["7F"] :: HB["E"] :: HB["L"] :: HB["F"] ::
+  HB["7F"] :: CB["E"] :: CB["L"] :: CB["F"] ::
     (elf_class_to_byte (e_class eh)) ::
     (elf_data_to_byte (e_encoding eh)) ::
     (elf_version_to_byte (e_version eh)) ::
