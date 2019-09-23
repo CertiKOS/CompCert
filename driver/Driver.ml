@@ -80,12 +80,14 @@ let compile_c_ast sourcename csyntax ofile =
     write_elf ofile elf_file
   end
   else if !option_reloc_elf then
+  begin
     match Compiler.transf_c_program_bytes csyntax with
-    | Errors.OK bs ->
-       ElfFileOutput.write_elf ofile bs
-    | Errors.Error msg ->
-       eprintf "%s: %a" sourcename print_error msg;
-       exit 2
+     | Errors.OK bs ->
+        ElfFileOutput.write_elf ofile bs
+     | Errors.Error msg ->
+        eprintf "%s: %a" sourcename print_error msg;
+        exit 2
+  end
   else begin
     (* Convert to Asm *)
     let asm =
@@ -219,7 +221,7 @@ let process_c_file sourcename =
           then output_filename sourcename ".c" ".s"
           else Filename.temp_file "compcert" ".s" in
         let objname = output_filename ~final: !option_c sourcename ".c" ".o" in
-        if ! option_machine_code || !option_re_machine_code then begin
+        if ! option_machine_code || !option_re_machine_code || !option_reloc_elf then begin
           compile_c_file sourcename preproname objname;
         end else begin
            compile_c_file sourcename preproname asmname;
@@ -629,7 +631,8 @@ let _ =
         exit 2
       end;
     let linker_args = time "Total compilation time" perform_actions () in
-    if (not nolink) && linker_args <> [] && (not !option_machine_code) && (not !option_re_machine_code) then begin
+    if (not nolink) && linker_args <> [] && (not !option_machine_code) 
+       && (not !option_re_machine_code) && (not !option_reloc_elf) then begin
       linker (output_filename_default "a.out") linker_args
     end;
    if  Cerrors.check_errors () then exit 2
