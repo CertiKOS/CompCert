@@ -15,10 +15,13 @@ Definition get {V:Type} (i:Pos.t) (tbl:t V) :=
 
 Fixpoint set_nat {V:Type} (i:nat) (v:V) (tbl: t V) :=
   match i, tbl with
-  | O, h::l => 
+  | O, h::l =>
     Some (v::l)
   | S i', h::l =>
-    set_nat i' v l
+    match set_nat i' v l with
+    | None => None
+    | Some l' => Some (h :: l')
+    end
   | _, _ => None
   end.
 

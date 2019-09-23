@@ -26,22 +26,22 @@ Local Open Scope bits_scope.
 
    1. ELF Header                                       (52 bytes)
    2. Sections
-      a) .data section (global variables)                 
-      b) .text section (instructions)                     
-      c) .symtab section (symbol table)                   
-      d) .reladata section (relocation of .data)          
-      e) .relatext section (relocation of .text)
-      f) .shstrtab section (section string table)
-      g) .strtab section (string table)
+      -- .data section (global variables)                 
+      -- .text section (instructions)                     
+      -- .strtab section (string table)
+      -- .symtab section (symbol table)                   
+      -- .reladata section (relocation of .data)          
+      -- .relatext section (relocation of .text)
+      -- .shstrtab section (section string table)
    3. Section headers
-      a) Null header                      (40 bytes)
-      b) header for .data      (40 bytes)
-      c) header for .text      (40 bytes)
-      d) header for .symbtab      (40 bytes)
-      e) header for .reladata
-      f) header for .relatext
-      g) header for .shstrtab
-      h) header for .strtab
+      -- Null header                      (40 bytes)
+      -- header for .data      (40 bytes)
+      -- header for .text      (40 bytes)
+      -- header for .strtab
+      -- header for .symbtab      (40 bytes)
+      -- header for .reladata
+      -- header for .relatext
+      -- header for .shstrtab
  *)
 
 
@@ -223,6 +223,21 @@ Definition gen_shstrtab_sec_header p :=
      sh_entsize  := 0;
   |}.
 
+Definition gen_strtab_sec_header p :=
+  let t := (prog_sectable p) in
+  {| sh_name     := strtab_str_ofs;
+     sh_type     := SHT_STRTAB;
+     sh_flags    := [];
+     sh_addr     := 0;
+     sh_offset   := get_sh_offset sec_strtbl_id t;
+     sh_size     := get_section_size sec_strtbl_id t;
+     sh_link     := 0;
+     sh_info     := 0;
+     sh_addralign := 1;
+     sh_entsize  := 0;
+  |}.
+
+
 (** Generation of the Elf file 
     without the actual string table section and its header *)
 
@@ -235,18 +250,23 @@ Definition transl_section (sec: RelocProgram.section) : res section :=
   end (sec_info sec).
 
 Definition gen_sections (t:sectable) : res (list section) :=
-  fold_right (fun sec r => 
-                do r' <- r;
-                do sec' <- transl_section sec;
-                OK (sec' :: r'))
-             (OK [])
-             t.
+  match t with
+  | nil => Error (msg "No section found")
+  | dummy :: t' =>
+    fold_right (fun sec r => 
+                  do r' <- r;
+                    do sec' <- transl_section sec;
+                    OK (sec' :: r'))
+               (OK [])
+               t'
+  end.
 
 Definition gen_reloc_elf (p:program) : res elf_file :=
   do secs <- gen_sections (prog_sectable p);
   let headers := [null_section_header;
                   gen_data_sec_header p;
                   gen_text_sec_header p;
+                  gen_strtab_sec_header p;
                   gen_symtab_sec_header p;
                   gen_reladata_sec_header p;
                   gen_relatext_sec_header p;
