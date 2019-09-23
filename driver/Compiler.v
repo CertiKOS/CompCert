@@ -101,6 +101,8 @@ Require Strtablegen.
 Require SymbtableEncode.
 Require ReloctablesEncode.
 Require RelocElfgen.
+Require EncodeRelocElf.
+Require RelocElf.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -208,7 +210,7 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
-Definition transf_c_program_reloc (p: Csyntax.program) : res RelocElf.elf_file :=
+Definition transf_c_program_reloc (p: Csyntax.program) : res (list Integers.byte) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
@@ -221,7 +223,8 @@ Definition transf_c_program_reloc (p: Csyntax.program) : res RelocElf.elf_file :
   @@@ time "Generation of the symbol table" Strtablegen.transf_program
   @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
   @@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
-  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf.
+  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
+  @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
   
 
 Definition transf_c_program_flatasm p : res SegAsm.program :=

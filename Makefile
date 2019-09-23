@@ -128,7 +128,7 @@ BACKEND=\
 ENCODE=Encode.v Bits.v Hex.v
 
 # ELF files
-ELF=RelocElf.v
+ELF=RelocElf.v EncodeRelocElf.v
 
 # C front-end modules (in cfrontend/)
 

@@ -2,20 +2,18 @@
 (* Author        : Yuting Wang *)
 (* Date Created  : Sep-22-2019 *)
 
-Require Import Coqlib Integers AST Maps.
-Require Import Asm.
+Require Import Coqlib Integers Maps.
 Require Import Errors.
 Require Import Encode.
-Require Import SeqTable Memdata.
-Require Import Hex Bits String Ascii.
-Import Hex Bits.
+Require Import Memdata.
+Require Import Hex.
+Import Hex.
 Import ListNotations.
 
 Set Implicit Arguments.
 
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
-Local Open Scope bits_scope.
 
 (** * Definition of the relocatable ELF files *)
 
