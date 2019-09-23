@@ -305,6 +305,7 @@ Definition transf_program (p:Asm.program) : res program :=
             prog_public := AST.prog_public p;
             prog_main := AST.prog_main p;
             prog_sectable := sec_tbl;
+            prog_strtable := PTree.empty Z;
             prog_symbtable := symb_tbl;
             prog_reloctables := nil;
             prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)

@@ -218,6 +218,7 @@ Definition transf_program (p: program) : res program :=
       prog_public := p.(prog_public);
       prog_main := p.(prog_main);
       prog_sectable := p.(prog_sectable);
+      prog_strtable := prog_strtable p;
       prog_symbtable := stbl';
       prog_reloctables := p.(prog_reloctables);
       prog_senv := p.(prog_senv);

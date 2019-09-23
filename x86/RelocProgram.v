@@ -10,7 +10,7 @@ Require Import Globalenvs SeqTable Asm.
 
 
 (** ** Sections *)
-Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_rela | sec_null.
+Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_strtbl | sec_rela | sec_null.
 
 Inductive sec_info_type : Type := sec_info_byte | sec_info_instr | sec_info_init_data | sec_info_null.
 
@@ -71,6 +71,9 @@ Definition reloctable := SeqTable.t relocentry.
 Definition reloctables := SeqTable.t reloctable.
 
 
+(** ** String table *)
+Definition strtable := PTree.t Z.
+
 (** ** Definition of program constructs *)
 Definition gdef := AST.globdef fundef unit.
 
@@ -80,6 +83,7 @@ Record program : Type := {
   prog_main: ident;
   prog_sectable: sectable;
   prog_symbtable: symbtable;
+  prog_strtable: strtable;
   prog_reloctables: reloctables; (** Given the index of a section, it returns its relocation table *)
   prog_senv : Globalenvs.Senv.t;
 }.
@@ -96,6 +100,7 @@ Record program : Type := {
 (** Section table ids *)
 Definition sec_data_id     := 1%positive.
 Definition sec_code_id     := 2%positive.
-Definition sec_symbtbl_id  := 3%positive.
-Definition sec_rel_data_id := 4%positive.
-Definition sec_rel_code_id := 5%positive.
+Definition sec_strtbl_id   := 3%positive.
+Definition sec_symbtbl_id  := 4%positive.
+Definition sec_rel_data_id := 5%positive.
+Definition sec_rel_code_id := 6%positive.

@@ -58,38 +58,53 @@ Definition encode_secindex (i:secindex) :=
       end in
   encode_int 2 v.
 
-Definition encode_symbentry (id:ident) (e:symbentry) : list byte :=
-  let st_name_bytes := encode_int32 (Z.pos id) in (** We use the identifiers for symbols as names for the moment  *)
-  let st_value_bytes := encode_int32 (symbentry_value e) in
-  let st_size_bytes := encode_int32 (symbentry_size e) in
-  let st_info_bytes := 
-      bytes_of_int 1 (encode_glob_symb_info (symbentry_type e)) in
-  let st_other_bytes := [Byte.repr 0] in
-  let st_shndx_bytes := encode_secindex (symbentry_secindex e) in
-  (st_name_bytes ++ st_value_bytes ++ st_size_bytes ++
-   st_info_bytes ++ st_other_bytes ++ st_shndx_bytes).
-  
-Definition encode_symbtable (t:symbtable) : list byte :=
-  fold_right (fun '(id,e) bytes => (encode_symbentry id e) ++ bytes)
-             [] t.
+Section WITH_STRTAB.
 
-Definition create_symbtable_section (t:symbtable) : section :=
-  let bytes := encode_symbtable t in
-  {| sec_type := sec_symbtbl;
-     sec_size := Z.of_nat (length bytes);
-     sec_info_ty := sec_info_byte;
-     sec_info := bytes;
-  |}.
+Variable (strtab: strtable).
+
+Definition encode_symbentry (id:ident) (e:symbentry)  : res (list byte) :=
+  match strtab ! id with
+  | None => Error (msg "No string associated with this symbol")
+  | Some si => 
+    let st_name_bytes := encode_int32 si in 
+    let st_value_bytes := encode_int32 (symbentry_value e) in
+    let st_size_bytes := encode_int32 (symbentry_size e) in
+    let st_info_bytes := 
+        bytes_of_int 1 (encode_glob_symb_info (symbentry_type e)) in
+    let st_other_bytes := [Byte.repr 0] in
+    let st_shndx_bytes := encode_secindex (symbentry_secindex e) in
+    OK (st_name_bytes ++ st_value_bytes ++ st_size_bytes ++
+                      st_info_bytes ++ st_other_bytes ++ st_shndx_bytes)
+  end.
+  
+Definition encode_symbtable (t:symbtable) : res (list byte) :=
+  fold_right (fun '(id,e) r => 
+                do bytes <- r;
+                do ebytes <- (encode_symbentry id e);
+                OK (ebytes ++ bytes))
+             (OK []) t.
+
+Definition create_symbtable_section (t:symbtable) : res section :=
+  do bytes <- encode_symbtable t;
+  OK {| sec_type := sec_symbtbl;
+        sec_size := Z.of_nat (length bytes);
+        sec_info_ty := sec_info_byte;
+        sec_info := bytes;
+     |}.
+
+End WITH_STRTAB.
 
 (** Transform the program *)
-Definition transf_program p : program :=
+Definition transf_program p : res program :=
   let t := prog_symbtable p in
-  let s := create_symbtable_section t in
-  {| prog_defs := prog_defs p;
-     prog_public := prog_public p;
-     prog_main := prog_main p;
-     prog_sectable := (prog_sectable p) ++ [s];
-     prog_symbtable := prog_symbtable p;
-     prog_reloctables := (prog_reloctables p);
-     prog_senv := prog_senv p;
-  |}.
+  let strtab := (prog_strtable p) in
+  do s <- create_symbtable_section strtab t;
+  OK {| prog_defs := prog_defs p;
+        prog_public := prog_public p;
+        prog_main := prog_main p;
+        prog_sectable := (prog_sectable p) ++ [s];
+        prog_strtable := strtab;
+        prog_symbtable := prog_symbtable p;
+        prog_reloctables := (prog_reloctables p);
+        prog_senv := prog_senv p;
+     |}.

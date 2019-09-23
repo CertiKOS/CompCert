@@ -97,6 +97,7 @@ Require NormalizeSymb.
 Require RelocAsmgen.
 Require RelocBingen.
 Require Stubgen.
+Require Strtablegen.
 Require SymbtableEncode.
 Require ReloctablesEncode.
 Require RelocElfgen.
@@ -217,7 +218,8 @@ Definition transf_c_program_reloc (p: Csyntax.program) : res RelocElf.elf_file :
   @@@ time "Generation of relocation table" RelocAsmgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
   @@@ time "Added the starting stub code" Stubgen.transf_program
-  @@ time "Encoding of the symbol table" SymbtableEncode.transf_program
+  @@@ time "Generation of the symbol table" Strtablegen.transf_program
+  @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
   @@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf.
   
