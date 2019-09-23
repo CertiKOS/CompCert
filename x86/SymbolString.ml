@@ -31,7 +31,7 @@ let rec int_to_Z (i:int) : coq_Z =
   else if i > 0 then
     Zpos (int_to_pos i)
   else
-    Zneg (int_to_pos i)
+    Zneg (int_to_pos (-i))
 
 
 let string_to_list (s:string) : char list =

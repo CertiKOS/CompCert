@@ -210,7 +210,7 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
-Definition transf_c_program_reloc (p: Csyntax.program) : res (list Integers.byte) :=
+Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
