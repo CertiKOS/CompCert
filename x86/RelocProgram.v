@@ -104,3 +104,4 @@ Definition sec_strtbl_id   := 3%positive.
 Definition sec_symbtbl_id  := 4%positive.
 Definition sec_rel_data_id := 5%positive.
 Definition sec_rel_code_id := 6%positive.
+Definition sec_shstrtbl_id := 7%positive.

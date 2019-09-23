@@ -11,6 +11,7 @@ Require Import Errors.
 Require Import RelocProgram Encode.
 Require Import SeqTable Memdata.
 Require Import RelocElf.
+Require Import Shstrtablegen.
 Require Import Hex Bits.
 Import Hex Bits.
 Import ListNotations.
@@ -47,37 +48,6 @@ Local Open Scope bits_scope.
 
 (** ** Generation of ELF header *)
 
-(** The default shstrtab is '.data .text .symtab .reladata .relatext .shstrtab .strtab ' *)
-Local Open Scope string_byte_scope.
-Definition data_str := HB["00"] :: SB[".data"].
-Definition text_str := HB["00"] :: SB[".text"].
-Definition symtab_str := HB["00"] :: SB[".symtab"].
-Definition reladata_str := HB["00"] :: SB[".reladata"].
-Definition relatext_str := HB["00"] :: SB[".relatext"].
-Definition shstrtab_str := HB["00"] :: SB[".shstrtab"].
-Definition strtab_str := HB["00"] :: SB[".strtab"].
-
-
-Definition default_shstrtab := 
-  data_str ++ 
-  text_str ++
-  symtab_str ++
-  reladata_str ++
-  relatext_str ++
-  shstrtab_str ++
-  strtab_str.
-
-Definition shstrtab_sec_size := Z.of_nat (length (default_shstrtab)).
-
-Definition data_str_ofs := 1.
-Definition text_str_ofs := data_str_ofs + (Z.of_nat (length data_str)).
-Definition symtab_str_ofs := text_str_ofs + (Z.of_nat (length text_str)).
-Definition reladata_str_ofs := symtab_str_ofs + (Z.of_nat (length symtab_str)).
-Definition relatext_str_ofs := reladata_str_ofs + (Z.of_nat (length reladata_str)).
-Definition shstrtab_str_ofs := relatext_str_ofs + (Z.of_nat (length relatext_str)).
-Definition strtab_str_ofs := shstrtab_str_ofs + (Z.of_nat (length shstrtab_str)).
-
-
 Definition get_sections_size (t: SeqTable.t RelocProgram.section) :=
   match t with
   | nil => 0
@@ -86,8 +56,7 @@ Definition get_sections_size (t: SeqTable.t RelocProgram.section) :=
 
 Definition get_elf_shoff (p:program) :=
   elf_header_size +
-  get_sections_size (prog_sectable p) +
-  shstrtab_sec_size.
+  get_sections_size (prog_sectable p).
 
   
 Definition gen_elf_header (p:program) : elf_header :=
@@ -99,14 +68,14 @@ Definition gen_elf_header (p:program) : elf_header :=
      e_machine      := EM_386;
      e_entry        := 0;
      e_phoff        := 0;
-     e_shoff        := get_elf_shoff p;      (** Needs to be further adjusted when .strtab is introduced *)
+     e_shoff        := get_elf_shoff p;      
      e_flags        := 0;
      e_ehsize       := elf_header_size;
      e_phentsize    := prog_header_size;
      e_phnum        := 0;
      e_shentsize    := sec_header_size;
-     e_shnum        := sectbl_size + 1;      (** Needs to be further adjusted when .strtab is introduced *)
-     e_shstrndx     := sectbl_size;
+     e_shnum        := sectbl_size;      
+     e_shstrndx     := Z.pos sec_shstrtbl_id;
   |}.
 
 
@@ -206,17 +175,14 @@ Definition gen_relatext_sec_header p :=
      sh_entsize  := reloc_entry_size;
   |}.
 
-Definition get_shstrtab_offset t :=
-  (get_sections_size t).
-
 Definition gen_shstrtab_sec_header p :=
   let t := (prog_sectable p) in
   {| sh_name     := shstrtab_str_ofs;
      sh_type     := SHT_STRTAB;
      sh_flags    := [];
      sh_addr     := 0;
-     sh_offset   := get_shstrtab_offset t;
-     sh_size     := shstrtab_sec_size;
+     sh_offset   := get_sh_offset sec_shstrtbl_id t;
+     sh_size     := get_section_size sec_shstrtbl_id t;
      sh_link     := 0;
      sh_info     := 0;
      sh_addralign := 1;
