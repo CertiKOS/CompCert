@@ -36,7 +36,7 @@ Definition get_strings_map_bytes (symbols: list ident) : res (PTree.t Z * list b
                                    (map', sz'))
                                 idbytes (PTree.empty Z, 0) in
   let sbytes := fold_right (fun '(id,bytes) acc => bytes ++ acc) [] idbytes in
-  OK (strmap, sbytes).
+  OK (strmap, sbytes ++ [HB["00"]]).
                              
 Definition create_strtab_section (strs: list byte) :=
   {| sec_type := sec_strtbl;

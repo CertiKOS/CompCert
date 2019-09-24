@@ -38,7 +38,7 @@ Definition default_shstrtab :=
   reladata_str ++
   relatext_str ++
   shstrtab_str ++
-  strtab_str.
+  strtab_str ++ [HB["00"]].
 
 Definition shstrtab_sec_size := Z.of_nat (length (default_shstrtab)).
 
