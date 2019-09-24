@@ -11,7 +11,7 @@ Require Import Errors.
 Require Import RelocProgram Encode.
 Require Import SeqTable Memdata.
 Require Import RelocElf.
-Require Import Shstrtablegen.
+Require Import ShstrtableEncode.
 Require Import Hex Bits.
 Import Hex Bits.
 Import ListNotations.
