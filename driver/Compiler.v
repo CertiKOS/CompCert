@@ -94,16 +94,16 @@ Require PadNops.
 Require PadInitData.
 Require Symbtablegen.
 Require NormalizeSymb.
-Require RelocAsmgen.
+Require Reloctablesgen.
 Require RelocBingen.
 Require Stubgen.
-Require Strtablegen.
+Require StrtableEncode.
 Require SymbtableEncode.
 Require ReloctablesEncode.
 Require RelocElfgen.
 Require EncodeRelocElf.
 Require RelocElf.
-Require Shstrtablegen.
+Require ShstrtableEncode.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -218,13 +218,13 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
-  @@@ time "Generation of relocation table" RelocAsmgen.transf_program
+  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
-  @@@ time "Generation of the string table" Strtablegen.transf_program
+  @@@ time "Generation of the string table" StrtableEncode.transf_program
   @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
   @@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
-  @@@ time "Generation of the section header string table" Shstrtablegen.transf_program
+  @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
   
