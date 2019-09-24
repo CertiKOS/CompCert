@@ -141,7 +141,7 @@ Definition gen_symtab_sec_header p :=
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_symbtbl_id t;
      sh_size     := get_section_size sec_symbtbl_id t;
-     sh_link     := 0;
+     sh_link     := Z.pos sec_strtbl_id;
      sh_info     := 0;
      sh_addralign := 1;
      sh_entsize  := symb_entry_size;
@@ -229,15 +229,18 @@ Definition gen_sections (t:sectable) : res (list section) :=
 
 Definition gen_reloc_elf (p:program) : res elf_file :=
   do secs <- gen_sections (prog_sectable p);
-  let headers := [null_section_header;
-                  gen_data_sec_header p;
-                  gen_text_sec_header p;
-                  gen_strtab_sec_header p;
-                  gen_symtab_sec_header p;
-                  gen_reladata_sec_header p;
-                  gen_relatext_sec_header p;
-                  gen_shstrtab_sec_header p] in
-  OK {| elf_head      := gen_elf_header p;
-        elf_sections  := secs;
-        elf_section_headers := headers;
-     |}.
+  if (beq_nat (length secs) 7) then
+    let headers := [null_section_header;
+                      gen_data_sec_header p;
+                      gen_text_sec_header p;
+                      gen_strtab_sec_header p;
+                      gen_symtab_sec_header p;
+                      gen_reladata_sec_header p;
+                      gen_relatext_sec_header p;
+                      gen_shstrtab_sec_header p] in
+    OK {| elf_head      := gen_elf_header p;
+          elf_sections  := secs;
+          elf_section_headers := headers;
+       |}
+  else
+    Error [MSG "Number of sections is incorrect (not 7): "; POS (Pos.of_nat (length secs))].

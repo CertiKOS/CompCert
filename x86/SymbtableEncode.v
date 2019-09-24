@@ -99,7 +99,8 @@ Definition transf_program p : res program :=
   let t := prog_symbtable p in
   let strtab := (prog_strtable p) in
   do s <- create_symbtable_section strtab t;
-  OK {| prog_defs := prog_defs p;
+  let p' :=
+      {| prog_defs := prog_defs p;
         prog_public := prog_public p;
         prog_main := prog_main p;
         prog_sectable := (prog_sectable p) ++ [s];
@@ -107,4 +108,9 @@ Definition transf_program p : res program :=
         prog_symbtable := prog_symbtable p;
         prog_reloctables := (prog_reloctables p);
         prog_senv := prog_senv p;
-     |}.
+     |} in
+  let len := (length (prog_sectable p')) in
+  if beq_nat len 5 then
+    OK p'
+  else
+    Error [MSG "In SymtableEncode: Number of sections is incorrect (not 5): "; POS (Pos.of_nat len)].

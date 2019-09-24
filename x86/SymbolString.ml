@@ -7,7 +7,6 @@
 
 open Printf
 open Camlcoq
-open Errors
 open Integers
 open BinNums
 
@@ -17,7 +16,7 @@ let rec int_to_pos (i:int) : positive =
   else if i > 1 then      
     let un = int_to_pos (i / 2) in
     let rm = i mod 2 in
-    if i = 0 then
+    if rm = 0 then
       Coq_xO un
     else
       Coq_xI un
@@ -39,12 +38,13 @@ let string_to_list (s:string) : char list =
   String.iter (fun c -> l := c::(!l)) s;
   List.rev !l
 
-let find_symbol_string_bytes a : Byte.int list res =
+let find_symbol_string_bytes a : Byte.int list Errors.res =
   try 
     let s = (Hashtbl.find string_of_atom a) in
+    (* Printf.printf "Found symbol %s\n" s; *)
     let coq_zs = List.map (fun c -> int_to_Z (Char.code c)) (string_to_list s) in
-    OK (List.map (fun z -> Byte.repr z) coq_zs)
+    Errors.OK (List.map (fun z -> Byte.repr z) coq_zs)
   with
   | Not_found ->
-    Error [MSG(coqstring_of_camlstring "Cannot find the string of the symbol ");
-           CTX a]
+    Errors.Error [Errors.MSG(coqstring_of_camlstring "Cannot find the string of the symbol ");
+                  Errors.CTX a]

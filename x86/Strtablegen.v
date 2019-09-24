@@ -50,7 +50,8 @@ Definition transf_program (p:program) : res program :=
   do r <- get_strings_map_bytes symbols;
   let '(strmap, sbytes) := r in
   let strsec := create_strtab_section sbytes in
-  OK {| prog_defs := p.(prog_defs);
+  let p' :=
+      {| prog_defs := p.(prog_defs);
         prog_public := p.(prog_public);
         prog_main := p.(prog_main);
         prog_sectable := p.(prog_sectable) ++ [strsec];
@@ -58,4 +59,9 @@ Definition transf_program (p:program) : res program :=
         prog_symbtable := p.(prog_symbtable);
         prog_reloctables := p.(prog_reloctables);
         prog_senv := p.(prog_senv);
-     |}.
+     |} in
+  let len := (length (prog_sectable p')) in
+  if beq_nat len 4 then
+    OK p'
+  else
+    Error [MSG "In Strtablegen: number of sections is incorrect (not 4): "; POS (Pos.of_nat len)].

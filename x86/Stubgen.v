@@ -94,7 +94,8 @@ Definition transf_program (p:program) : res program :=
           SeqTable.set sec_code_id rtbl' (prog_reloctables p) 
     with
     | Some stbl, Some rtbls =>
-      OK {| prog_defs := prog_defs p;
+      let p':=
+          {| prog_defs := prog_defs p;
             prog_public := prog_public p;
             prog_main := prog_main p;
             prog_sectable := stbl;
@@ -102,13 +103,14 @@ Definition transf_program (p:program) : res program :=
             prog_symbtable := prog_symbtable p;
             prog_reloctables := rtbls;
             prog_senv := prog_senv p;
-         |}
+         |} in
+      let len := (length (prog_sectable p')) in
+      if beq_nat len 3 then
+        OK p'
+      else
+        Error [MSG "In SymtableEncode: Number of sections is incorrect (not 3): "; POS (Pos.of_nat len)]
     | _, _ =>
       Error (msg "Update of code section and its relocation table fails")
     end
   end.
     
-      
-    
-    
-  

@@ -103,6 +103,7 @@ Require ReloctablesEncode.
 Require RelocElfgen.
 Require EncodeRelocElf.
 Require RelocElf.
+Require Shstrtablegen.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -219,7 +220,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
   @@@ time "Generation of relocation table" RelocAsmgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
-  @@@ time "Added the starting stub code" Stubgen.transf_program
+  (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@@ time "Generation of the string table" Strtablegen.transf_program
   @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
   @@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
