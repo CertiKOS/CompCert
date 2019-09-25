@@ -99,7 +99,7 @@ Definition get_sh_offset id (t:sectable) :=
   elf_header_size + (sectable_prefix_size id t).
 
 Definition get_section_size id (t:sectable) :=
-  match SeqTable.get id t with
+  match SeqTable.get (SecIndex.interp id) t with
   | None => 0
   | Some s => sec_size s
   end.

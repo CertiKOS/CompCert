@@ -62,7 +62,7 @@ Definition compute_instr_rel_relocentry (sofs:Z) (i:instruction) (symb:ident)  :
   do addend <- instr_addendum i;
   OK {| reloc_offset := sofs + iofs; 
         reloc_type := reloc_rel;
-        reloc_symb := symb;
+        reloc_symb := (SymbIndex.interp symb);
         reloc_addend := addend |}.
 
 (** Compute the relocation entry of an instruction with an absolute reference *)
@@ -70,7 +70,7 @@ Definition compute_instr_abs_relocentry (sofs:Z) (i:instruction) (addend:Z) (sym
   do iofs <- instr_reloc_offset i;
   OK {| reloc_offset := sofs + iofs; 
         reloc_type := reloc_abs;
-        reloc_symb := symb;
+        reloc_symb := (SymbIndex.interp symb);
         reloc_addend := addend |}.
 
 (** Compute the relocation entry of an instruciton with 
@@ -89,7 +89,7 @@ Definition transl_instr_with_addrmode (rtbl:reloctable)
 
 
 Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloctable * instruction) :=
-  let next_rid := Pos.of_nat (length rtbl) in
+  let next_rid := Pos.of_succ_nat (length rtbl) in
   match i with
     Pallocframe _ _ _
   | Pfreeframe _ _
@@ -173,13 +173,6 @@ Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloc
   end.
 
 
-Definition dummy_relocentry :=
-  {| reloc_offset := 0;
-     reloc_type := reloc_null;
-     reloc_symb := 1%positive;
-     reloc_addend := 0;
-  |}.
-
 Definition transl_code (c:code) : res (reloctable * code) :=
   do rs <- 
      fold_left (fun r i =>
@@ -189,7 +182,7 @@ Definition transl_code (c:code) : res (reloctable * code) :=
                    let '(rtbl', i') := ri in
                    OK (sofs + instr_size i, rtbl',  i' :: code)) 
      c
-     (OK (0, [dummy_relocentry], []));
+     (OK (0, [], []));
   let '(_, rtbl', c') := rs in
   OK (rev rtbl', rev c').
 
@@ -198,12 +191,12 @@ Definition transl_code (c:code) : res (reloctable * code) :=
 
 Definition transl_init_data (dofs:Z) (rtbl:reloctable) 
            (d:init_data) : (reloctable * init_data) :=
-  let next_rid := Pos.of_nat (length rtbl) in
+  let next_rid := Pos.of_succ_nat (length rtbl) in
   match d with
   | Init_addrof id ofs =>
     let e := {| reloc_offset := dofs;
                 reloc_type := reloc_abs;
-                reloc_symb := id;
+                reloc_symb := (SymbIndex.interp id);
                 reloc_addend := Ptrofs.unsigned ofs;
              |} in
     let d' := Init_addrof next_rid (Ptrofs.zero) in
@@ -221,21 +214,26 @@ Definition transl_init_data_list (l:list init_data) : (reloctable * list init_da
                    let '(rtbl', d') := transl_init_data dofs rtbl d in
                    (dofs + init_data_size d, rtbl', d' :: l))
                 l 
-                (0, [dummy_relocentry], []) in
+                (0, [], []) in
   (rev rtbl, rev l').
 
 
 (** ** Translation of the program *)
 
-Definition transl_section (sec:section) : res (reloctable * section) :=
+Definition transl_section (sec:section) : res ((option reloctable) * section) :=
   do rs <- 
      match sec_info_ty sec as a 
-           return (interp_sec_info_type a -> res (reloctable * interp_sec_info_type a))
+           return (interp_sec_info_type a -> res (option reloctable * interp_sec_info_type a))
      with
      | sec_info_null 
-     | sec_info_byte => fun i => OK ([dummy_relocentry], i)
-     | sec_info_init_data => fun l => OK (transl_init_data_list l)
-     | sec_info_instr => fun code => transl_code code
+     | sec_info_byte => fun i => OK (None, i)
+     | sec_info_init_data => fun l => 
+                              let '(rtbl, sec) := transl_init_data_list l in
+                              OK (Some rtbl, sec)
+     | sec_info_instr => fun code => 
+                          do r <- transl_code code;
+                          let '(rtbl, sec) := r in
+                          OK (Some rtbl, sec)
      end (sec_info sec);
   let '(rtbl, i) := rs in
   let sec' := {| sec_type := sec_type sec;
@@ -244,14 +242,14 @@ Definition transl_section (sec:section) : res (reloctable * section) :=
                  sec_info := i |} in
   OK (rtbl, sec').
   
-Definition transl_sectable (stbl: sectable) : res (reloctables * sectable) :=
+Definition transl_sectable (stbl: sectable) : res (SeqTable.t (option reloctable) * sectable) :=
   fold_right (fun sec r =>
                 do r' <- r;
                 let '(rtbls, stbl) := r' in
                 do rs <- transl_section sec;
                 let '(rtbl, sec') := rs in
                 OK (rtbl :: rtbls, sec' :: stbl))
-             (OK ([], []))
+             (OK (nil, []))
              stbl.
 
 Definition transf_program (p:program) : res program :=

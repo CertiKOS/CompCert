@@ -37,9 +37,9 @@ Definition encode_reloctype (t:reloctype) :=
   end.
 
 
-Definition encode_reloc_info (t:reloctype) (symb:ident) : list byte :=
+Definition encode_reloc_info (t:reloctype) (symb:N) : list byte :=
   let te := encode_reloctype t in
-  let se := Z.pos symb in
+  let se := Z.of_N symb in
   encode_int32 (se * (Z.pow 2 8) + te).
 
 Definition encode_relocentry (e:relocentry) : list byte :=
@@ -62,12 +62,12 @@ Definition create_reloctable_section (t:reloctable) : section :=
   
 
 (** The first relocation table is dummy and not encoded *)
-Definition create_reloctables_sections (ts:reloctables) : list section :=
-  match ts with 
-  | nil => []
-  | dummy :: t => map create_reloctable_section t
-  end.
-
+Definition create_reloctables_sections (ts:SeqTable.t (option reloctable)) : list section :=
+  fold_right (fun ot l =>
+                match ot with
+                | None => l
+                | Some t => (create_reloctable_section t)::l
+                end) [] ts.
 
 (** Transforma the program *)
 Definition transf_program p : program :=

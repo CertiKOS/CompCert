@@ -185,27 +185,19 @@ End WITH_NORM_ID_MAPPING.
 (** ** Translation of programs *)
 
 (** Create a mapping from global ids to normalized symbol indexes *)
-Definition create_norm_id_mapping (stbl: symbtable) :=
+Definition create_norm_id_mapping (ids: list ident) :=
   let empty_map := PTree.empty ident in
   let '(idmap, _) := 
-      fold_left (fun '(idmap, nextid) '(id, e) =>
+      fold_left (fun '(idmap, nextid) id =>
                     let idmap' := PTree.set id nextid idmap in
                     (idmap', Pos.succ nextid)) 
-                 stbl 
+                 ids
                  (PTree.empty ident, 1%positive) in
   idmap.
       
-Definition dummy_symbentry :=
-  {| symbentry_type  := symb_notype;
-     symbentry_value := 0;
-     symbentry_secindex := secindex_undef;
-     symbentry_size  := 0;
-  |}.
-
 (** Transform the program *)
 Definition transf_program (p: program) : res program :=
-  let idmap := create_norm_id_mapping (prog_symbtable p) in
-  let stbl' := (1%positive, dummy_symbentry) :: (prog_symbtable p) in
+  let idmap := create_norm_id_mapping (map fst (prog_defs p)) in
   do sectbl <- 
      fold_right (fun sec r =>
                    do r' <- r;
@@ -219,7 +211,7 @@ Definition transf_program (p: program) : res program :=
       prog_main := p.(prog_main);
       prog_sectable := sectbl;
       prog_strtable := prog_strtable p;
-      prog_symbtable := stbl';
+      prog_symbtable := prog_symbtable p;
       prog_reloctables := p.(prog_reloctables);
       prog_senv := p.(prog_senv);
     |}.

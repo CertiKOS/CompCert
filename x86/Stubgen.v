@@ -34,7 +34,7 @@ Definition create_start_stub : list byte :=
 Definition create_start_stub_relocentry (main_symb:ident) (codesize:Z) : relocentry :=
   {| reloc_offset := codesize + 1; (** Points to the *main* symbol in * call main *  *)
      reloc_type   := reloc_rel;
-     reloc_symb   := main_symb;
+     reloc_symb   := SymbIndex.interp main_symb;
      reloc_addend := -4
   |}.
 
@@ -42,10 +42,16 @@ Definition create_start_stub_relocentry (main_symb:ident) (codesize:Z) : relocen
 Fixpoint find_symb (id:ident) (stbl:symbtable) : res Z := 
   match stbl with 
   | nil => Error (msg "cannot find the 'main' symbol")
-  | (id',_)::l => 
-    if ident_eq id id' then OK 0
-    else do i <- find_symb id l;
-         OK (i+1)
+  | e::l => 
+    match symbentry_id e with
+    | None => 
+      do i <- find_symb id l;
+      OK (i+1)
+    | Some id' => 
+      if ident_eq id id' then OK 0
+      else do i <- find_symb id l;
+        OK (i+1)
+    end
   end.
 
 Fixpoint find_symb' (id:ident) (stbl:symbtable) : res positive :=
@@ -74,24 +80,27 @@ Definition expand_code_section (sec:section) (instrs: list byte) :=
     Error (msg "Expandtion of section failed: section does not contain instructions")
   end.
 
-Definition append_reloc_entry (rtbl:reloctable) (e:relocentry) :=
-  rtbl ++ [e].
+Definition append_reloc_entry (rtbl: option reloctable) (e:relocentry) :=
+  match rtbl with
+  | None => None
+  | Some t => Some (t ++ [e])
+  end.
 
 Definition transf_program (p:program) : res program :=
   do main_symb <- find_symb' (prog_main p) (prog_symbtable p);
-  match SeqTable.get sec_code_id (prog_sectable p) with
+  match SeqTable.get (SecIndex.interp sec_code_id) (prog_sectable p) with
   | None => Error (msg "No .text section found")
   | Some txt_sec =>
     do txt_sec' <- expand_code_section txt_sec create_start_stub;
     let e := create_start_stub_relocentry main_symb (sec_size txt_sec) in
     do rtbl' <- 
-       match SeqTable.get sec_code_id (prog_reloctables p) with
+       match SeqTable.get (SecIndex.interp sec_code_id) (prog_reloctables p) with
        | None => Error (msg "Cannot find the relocation table for .text")
        | Some rtbl => 
          OK (append_reloc_entry rtbl e)
        end;
-    match SeqTable.set sec_code_id txt_sec' (prog_sectable p),
-          SeqTable.set sec_code_id rtbl' (prog_reloctables p) 
+    match SeqTable.set (SecIndex.interp sec_code_id) txt_sec' (prog_sectable p),
+          SeqTable.set (SecIndex.interp sec_code_id) rtbl' (prog_reloctables p) 
     with
     | Some stbl, Some rtbls =>
       let p':=

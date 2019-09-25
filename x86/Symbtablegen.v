@@ -34,7 +34,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
   match def with
   | None =>
     (** This is an external symbol with unknown type *)
-    {|
+    {|symbentry_id := Some id;
       symbentry_type := symb_notype;
       symbentry_value := 0;
       symbentry_secindex := secindex_undef;
@@ -44,7 +44,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     match AST.gvar_init gvar with
     | nil => 
       (** This is an external data symbol *)
-      {|
+      {|symbentry_id := Some id;
         symbentry_type := symb_data;
         symbentry_value := 0;
         symbentry_secindex := secindex_undef;
@@ -52,7 +52,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       |}
     | [Init_space sz] =>
       (** This is an external data symbol in the COMM section *)
-      {|
+      {|symbentry_id := Some id;
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
         symbentry_secindex := secindex_comm;
@@ -60,26 +60,26 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       |}
     | _ =>
       (** This is an internal data symbol *)
-      {|
+      {|symbentry_id := Some id;
         symbentry_type := symb_data;
         symbentry_value := dsize;
-        symbentry_secindex := secindex_normal dsec;
+        symbentry_secindex := secindex_normal (SecIndex.interp dsec);
         symbentry_size := AST.init_data_list_size (AST.gvar_init gvar);
       |}
     end
   | Some (Gfun (External ef)) =>
     (** This is an external function symbol *)
-    {|
+    {|symbentry_id := Some id;
       symbentry_type := symb_func;
       symbentry_value := 0;
       symbentry_secindex := secindex_undef;
       symbentry_size := 0;
     |}
   | Some (Gfun (Internal f)) =>
-    {|      
+    {|symbentry_id := Some id;
       symbentry_type := symb_func;
       symbentry_value := csize;
-      symbentry_secindex := secindex_normal csec;
+      symbentry_secindex := secindex_normal (SecIndex.interp csec);
       symbentry_size := code_size (fn_code f);
     |}
   end.
@@ -111,10 +111,10 @@ Definition gen_symb_table defs :=
   let '(rstbl, dsize, csize) := 
       fold_left (fun '(stbl, dsize, csize) '(id, def) => 
                    let e := get_symbentry dsize csize id def in
-                   let stbl' := (id,e) :: stbl in
+                   let stbl' := e :: stbl in
                    let '(dsize', csize') := update_code_data_size dsize csize def in
                    (stbl', dsize', csize'))
-                defs (nil, 0, 0) in
+                defs ([dummy_symbentry], 0, 0) in
   (rev rstbl, dsize, csize).
 
 End WITH_CODE_DATA_SEC.
@@ -278,19 +278,11 @@ Definition create_data_section (defs: list (ident * option (globdef fundef unit)
      sec_info_ty := sec_info_init_data;
      sec_info := data;
   |}.
-
-Definition create_undef_section :=
-  {| sec_type := sec_null;
-     sec_size := 0;
-     sec_info_ty := sec_info_null;
-     sec_info := tt;
-  |}.
   
 Definition create_sec_table defs : sectable :=
-  let undef_sec := create_undef_section in
   let data_sec := create_data_section defs in
   let code_sec := create_code_section defs in
-  [undef_sec; data_sec; code_sec].
+  [null_section; data_sec; code_sec].
 
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=

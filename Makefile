@@ -75,7 +75,7 @@ COMMON=Errors.v AST.v Linking.v \
   Events.v Globalenvs.v Memdata.v MemPerm.v Assoc.v StackADT.v StackInj.v Memtype.v Memory.v \
   Memimpl.v \
   Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
-  Separation.v SeqTable.v
+  Separation.v 
 
 # Back-end modules (in backend/, $(ARCH)/)
 
@@ -122,7 +122,7 @@ BACKEND=\
   Asmlabelgen.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
-  ShstrtableEncode.v RelocElfgen.v
+  ShstrtableEncode.v RelocElfgen.v SeqTable.v
 
 # Encoding of data into bytes
 

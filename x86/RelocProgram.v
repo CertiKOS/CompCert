@@ -8,6 +8,46 @@
 Require Import Coqlib Maps Integers Values AST.
 Require Import Globalenvs SeqTable Asm.
 
+(** In the programs we use postives (ident) for indexing into various
+    tables.  However, the indexes of tables are natural numbers.
+    Thus, we need to define interpretation of positives into natural
+    numbers for different tables. The following sigature is for this
+    purpose. *)
+Module Type INDEX.
+  Parameter interp : ident -> N.
+  Parameter deinterp : N -> option ident.
+
+  Axiom interp_round_trip : forall i, deinterp (interp i) = Some i. 
+End INDEX.
+
+Module IdIndex <: INDEX.
+  Definition interp i := Npos i.
+  Definition deinterp i := match i with
+                           | N0 => None
+                           | Npos p => Some p
+                           end.
+  Lemma interp_round_trip : forall i, deinterp (interp i) = Some i. 
+  Proof.
+    intros i. simpl. auto.
+  Qed.
+
+End IdIndex.
+
+Module SubOneIndex <: INDEX.
+  Definition interp i := Pos.pred_N i.
+  Definition deinterp i := Some (N.succ_pos i).
+
+  Lemma interp_round_trip : forall i, deinterp (interp i) = Some i. 
+  Proof.
+    intros i. unfold deinterp, interp.
+    f_equal. unfold N.succ_pos, Pos.pred_N.
+    destruct i. simpl. auto.
+    rewrite Pos.succ_pred_double. auto.
+    auto.
+  Qed.
+
+End SubOneIndex.
+
 
 (** ** Sections *)
 Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_strtbl | sec_rela | sec_null.
@@ -30,7 +70,18 @@ Record section : Type :=
   sec_info: interp_sec_info_type sec_info_ty;
 }.
 
-Definition sectable := SeqTable.t section.
+Definition null_section :=
+  {| sec_type := sec_null;
+     sec_size := 0;
+     sec_info_ty := sec_info_null;
+     sec_info := tt;
+  |}.
+
+
+(** Positive indexes to sections are mapped by the identity function,
+    the 0-th section is a pre-defined null section *)
+Module SecIndex := IdIndex.
+Definition sectable := @SeqTable.t section.
 
 Definition sections_size stbl :=
   fold_left (fun sz sec => sz + (sec_size sec)) stbl 0.
@@ -41,12 +92,13 @@ Definition seclabel : Type := ident * Z.
 Inductive symbtype : Type := symb_func | symb_data | symb_notype.
 
 Inductive secindex : Type :=
-| secindex_normal (id:ident)
+| secindex_normal (idx:N)
 | secindex_comm
 | secindex_undef.
 
 Record symbentry : Type :=
 {
+  symbentry_id: option ident;  (** The original identifier of the symbol *) 
   symbentry_type: symbtype;
   symbentry_value: Z;  (** This holds the alignment info if secindex is secindex_comm,
                            otherwise, it holds the offset from the beginning of the section *)
@@ -54,7 +106,18 @@ Record symbentry : Type :=
   symbentry_size: Z;
 }.
 
-Definition symbtable := SeqTable.t (ident * symbentry).
+Definition dummy_symbentry : symbentry :=
+  {| symbentry_id := None;
+     symbentry_type := symb_notype;
+     symbentry_value := 0;
+     symbentry_secindex := secindex_undef;
+     symbentry_size := 0;
+  |}.
+
+(** Positive indexes to symbols are mapped by the identity function,
+    the 0-th section is a pre-defined dummy symbol *)
+Module SymbIndex := IdIndex.
+Definition symbtable := SeqTable.t symbentry.
 
 (** ** Relocation table *)
 Inductive reloctype : Type := reloc_abs | reloc_rel | reloc_null.
@@ -63,13 +126,13 @@ Record relocentry : Type :=
 {
   reloc_offset: Z;
   reloc_type  : reloctype;
-  reloc_symb  : ident;    (* Index into the symbol table *)
+  reloc_symb  : N;    (* Index into the symbol table *)
   reloc_addend : Z;
 }.
 
+(** Positive indexes to symbols are mapped by subtraction by one *)
+Module RelocIndex := SubOneIndex.
 Definition reloctable := SeqTable.t relocentry.
-Definition reloctables := SeqTable.t reloctable.
-
 
 (** ** String table *)
 Definition strtable := PTree.t Z.
@@ -84,7 +147,7 @@ Record program : Type := {
   prog_sectable: sectable;
   prog_symbtable: symbtable;
   prog_strtable: strtable;
-  prog_reloctables: reloctables; (** Given the index of a section, it returns its relocation table *)
+  prog_reloctables: SeqTable.t (option reloctable); (** Given the index of a section, it returns its relocation table (if exists) *)
   prog_senv : Globalenvs.Senv.t;
 }.
 

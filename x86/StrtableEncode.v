@@ -46,7 +46,12 @@ Definition create_strtab_section (strs: list byte) :=
   |}.
 
 Definition transf_program (p:program) : res program :=
-  let symbols := map (fun '(id, _) => id) (prog_symbtable p) in
+  let symbols := 
+      fold_right (fun e ids => 
+                    match symbentry_id e with
+                    | None => ids
+                    | Some id => id :: ids
+                    end) [] (prog_symbtable p) in
   do r <- get_strings_map_bytes symbols;
   let '(strmap, sbytes) := r in
   let strsec := create_strtab_section sbytes in
