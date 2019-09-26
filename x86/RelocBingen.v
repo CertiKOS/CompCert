@@ -6,7 +6,7 @@
 Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
 Require Import Asm RelocProgram.
-Require Import Hex Bits Memdata Encode.
+Require Import Hex Bits Memdata Encode SeqTable.
 Import Hex Bits.
 Import ListNotations.
 
@@ -38,6 +38,16 @@ Definition encode_scale (s: Z) : res bits :=
   | 4 => OK b["10"]
   | 8 => OK b["11"]
   | _ => Error (msg "Translation of scale failed")
+  end.
+
+Section WITH_RELOC_TABLE.
+
+Variable rtbl: reloctable.
+
+Definition get_reloc_addend (rid:ident) : res Z :=
+  match SeqTable.get (RelocIndex.interp rid) rtbl with
+  | None => Error [MSG "Cannot find the relocation entry "; POS rid]
+  | Some e => OK (reloc_addend e)
   end.
 
 (** ** Encoding of the address modes *)
@@ -94,10 +104,10 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
 Definition encode_addrmode (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
-  let ofs := match disp with
-             | inl ofs => ofs
-             | inr _ => 0
-             end in
+  do ofs <- match disp with
+           | inl ofs => OK ofs
+           | inr (id,_) => get_reloc_addend id
+           end;
   OK (abytes ++ (encode_int32 ofs)).
 
 (** Encode the conditions *)
@@ -126,7 +136,8 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     let cbytes := encode_testcond c in
     OK (cbytes ++ encode_int32 ofs)
   | Pcall (inr id) _ =>
-    OK (HB["E8"] :: zero_bytes 4)
+    do addend <- get_reloc_addend id;
+    OK (HB["E8"] :: encode_int32 addend)
   | Pleal rd a =>
     do abytes <- encode_addrmode a rd;
     OK (HB["8D"] :: abytes)
@@ -234,7 +245,9 @@ Definition transl_init_data (d:init_data) : res (list byte) :=
   | Init_float32 f => OK (encode_int 4 (Int64.unsigned (Float.to_bits (Float.of_single f))))
   | Init_float64 f => OK (encode_int 4 (Int64.unsigned (Float.to_bits f)))
   | Init_space n => OK (zero_bytes (nat_of_Z n))
-  | Init_addrof id ofs => OK (zero_bytes 4)
+  | Init_addrof id ofs => 
+    do addend <- get_reloc_addend id;
+    OK (encode_int32 addend)
   end.
 
 Definition transl_init_data_list (l: list init_data) : res (list byte) :=
@@ -244,6 +257,7 @@ Definition transl_init_data_list (l: list init_data) : res (list byte) :=
                 OK (dbytes ++ rbytes))
              (OK []) l.
 
+End WITH_RELOC_TABLE.
 
 (** ** Translation of a program *)
 Definition encode_sec_info_type (ty:sec_info_type) :=
@@ -253,7 +267,7 @@ Definition encode_sec_info_type (ty:sec_info_type) :=
   | _ => ty
   end.
 
-Definition transl_section (sec:section) : res section :=
+Definition transl_section (sec:section) (rtbl:option reloctable) : res section :=
   do i <- 
      match sec_info_ty sec as a 
            return (interp_sec_info_type a -> 
@@ -261,8 +275,18 @@ Definition transl_section (sec:section) : res section :=
      with
      | sec_info_null 
      | sec_info_byte => fun i => OK i
-     | sec_info_init_data => fun l => transl_init_data_list l
-     | sec_info_instr => fun code => transl_code code
+     | sec_info_init_data => 
+       fun l => 
+         match rtbl with
+         | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
+         | Some rtbl => transl_init_data_list rtbl l
+         end
+     | sec_info_instr => 
+       fun code => 
+         match rtbl with
+         | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
+         | Some rtbl => transl_code rtbl code
+         end
      end (sec_info sec);
   OK {| sec_type := sec_type sec;
         sec_size := sec_size sec;
@@ -271,16 +295,25 @@ Definition transl_section (sec:section) : res section :=
      |} .
 
   
-Definition transl_sectable (stbl: sectable) : res sectable :=
-  fold_right (fun sec r =>
-                do stbl <- r;
-                do sec' <- transl_section sec;
-                OK (sec' :: stbl))
-             (OK [])
-             stbl.
+Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) : res sectable :=
+  do r <- 
+     fold_left (fun r sec =>
+               do r' <- r;
+               let '(stbl,si) := r' in
+               match SecIndex.deinterp si with
+               | None => OK (sec :: stbl, N.succ si)
+               | Some sec_index =>
+                 do sec' <- transl_section sec (PTree.get sec_index rtbls);
+                 OK (sec' :: stbl, N.succ si)
+               end
+               )
+     stbl
+     (OK ([],0%N));
+  let '(stbl', _) := r in
+  OK (rev stbl').
 
 Definition transf_program (p:program) : res program := 
-  do stbl <- transl_sectable (prog_sectable p);
+  do stbl <- transl_sectable (prog_sectable p) (prog_reloctables p);
   OK {| prog_defs := prog_defs p;
         prog_public := prog_public p;
         prog_main := prog_main p;

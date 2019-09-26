@@ -89,7 +89,7 @@ Definition transl_instr_with_addrmode (rtbl:reloctable)
 
 
 Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloctable * instruction) :=
-  let next_rid := Pos.of_succ_nat (length rtbl) in
+  let next_rid := RelocIndex.deinterp' (N.of_nat (length rtbl)) in
   match i with
     Pallocframe _ _ _
   | Pfreeframe _ _
@@ -191,7 +191,7 @@ Definition transl_code (c:code) : res (reloctable * code) :=
 
 Definition transl_init_data (dofs:Z) (rtbl:reloctable) 
            (d:init_data) : (reloctable * init_data) :=
-  let next_rid := Pos.of_succ_nat (length rtbl) in
+  let next_rid := RelocIndex.deinterp' (N.of_nat (length rtbl)) in
   match d with
   | Init_addrof id ofs =>
     let e := {| reloc_offset := dofs;
@@ -242,15 +242,29 @@ Definition transl_section (sec:section) : res ((option reloctable) * section) :=
                  sec_info := i |} in
   OK (rtbl, sec').
   
-Definition transl_sectable (stbl: sectable) : res (SeqTable.t (option reloctable) * sectable) :=
-  fold_right (fun sec r =>
+Definition transl_sectable (stbl: sectable) :=
+  do r <- 
+     fold_left (fun r sec =>
                 do r' <- r;
-                let '(rtbls, stbl) := r' in
+                let '(rtbls, stbl, si) := r' in
                 do rs <- transl_section sec;
                 let '(rtbl, sec') := rs in
-                OK (rtbl :: rtbls, sec' :: stbl))
-             (OK (nil, []))
-             stbl.
+                match SecIndex.deinterp si with
+                | None => OK (rtbls, sec' :: stbl, N.succ si)
+                | Some sec_idx =>
+                  let rtbls' := 
+                      match rtbl with
+                      | None => rtbls
+                      | Some rtbl => PTree.set sec_idx rtbl rtbls
+                      end in
+                  OK (rtbls', sec' :: stbl, N.succ si)
+                end)
+     stbl
+     (OK (PTree.empty reloctable, [], 0%N));
+  let '(rtbls, stbl, _) := r in
+  OK (rtbls, rev stbl).
+   
+  
 
 Definition transf_program (p:program) : res program :=
   do rs <- transl_sectable (prog_sectable p);

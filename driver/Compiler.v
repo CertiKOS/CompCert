@@ -223,7 +223,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@@ time "Generation of the string table" StrtableEncode.transf_program
   @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
-  @@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
+  @@@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
   @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.

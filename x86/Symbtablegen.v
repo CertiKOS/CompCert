@@ -296,7 +296,7 @@ Definition transf_program (p:Asm.program) : res program :=
             prog_sectable := sec_tbl;
             prog_strtable := PTree.empty Z;
             prog_symbtable := symb_tbl;
-            prog_reloctables := nil;
+            prog_reloctables := PTree.empty reloctable;
             prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)
          |}
     else 

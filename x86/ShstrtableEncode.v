@@ -20,13 +20,13 @@ Local Open Scope hex_scope.
 Local Open Scope bits_scope.
 
 
-(** The default shstrtab is '.data .text .symtab .reladata .relatext .shstrtab .strtab ' *)
+(** The default shstrtab is '.data .text .symtab .rela.data .rela.text .shstrtab .strtab ' *)
 Local Open Scope string_byte_scope.
 Definition data_str := HB["00"] :: SB[".data"].
 Definition text_str := HB["00"] :: SB[".text"].
 Definition symtab_str := HB["00"] :: SB[".symtab"].
-Definition reladata_str := HB["00"] :: SB[".reladata"].
-Definition relatext_str := HB["00"] :: SB[".relatext"].
+Definition reladata_str := HB["00"] :: SB[".rel.data"].
+Definition relatext_str := HB["00"] :: SB[".rel.text"].
 Definition shstrtab_str := HB["00"] :: SB[".shstrtab"].
 Definition strtab_str := HB["00"] :: SB[".strtab"].
 

@@ -21,7 +21,7 @@ Definition elf_header_size := 52.
 Definition prog_header_size := 32.
 Definition sec_header_size  := 40.
 Definition symb_entry_size := 16.
-Definition reloc_entry_size := 12.
+Definition reloc_entry_size := 8.
 
 
 (** ** ELF header *)
@@ -139,7 +139,7 @@ Inductive section_type :=
 | SHT_PROGBITS  (* program *)
 | SHT_STRTAB    (* string table *)
 | SHT_SYMTAB    (* symbol table *)
-| SHT_RELA      (* relocation table *)
+| SHT_REL       (* relocation table *)
 | SHT_NOBITS    (* unintialized data *)
 .
 
@@ -149,7 +149,7 @@ Definition section_type_value sht :=
   | SHT_PROGBITS => 1
   | SHT_STRTAB => 3
   | SHT_SYMTAB => 2
-  | SHT_RELA  => 4
+  | SHT_REL    => 9
   | SHT_NOBITS => 8
   end.
 
@@ -183,9 +183,9 @@ Record section_header :=
   sh_addr        : Z;   (* starting address of the section in the memory *)
   sh_offset      : Z;   (* offset to the beginning of the section in the file *)
   sh_size        : Z;   (* size of the section *)
-  sh_link        : Z;   (* when sh_type is STH_RELA, it contains 
+  sh_link        : Z;   (* when sh_type is STH_REL, it contains 
                            the section header index of the associated symbol table *)
-  sh_info        : Z;   (* when sh_type is STH_RELA, it contains 
+  sh_info        : Z;   (* when sh_type is STH_REL, it contains 
                            the section header index of the section to which the relocation applies *)
   sh_addralign   : Z;   (* alignment of the section *)
   sh_entsize     : Z;   (* size of each entry in this section *)

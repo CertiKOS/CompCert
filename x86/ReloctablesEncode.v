@@ -25,7 +25,6 @@ Local Open Scope bits_scope.
     typedef struct {
       Elf32_Addr     r_offset;
       Elf32_Word     r_info;
-      Elf32_SWord    r_addend;
     }
 *)
 
@@ -45,8 +44,7 @@ Definition encode_reloc_info (t:reloctype) (symb:N) : list byte :=
 Definition encode_relocentry (e:relocentry) : list byte :=
   let r_offset_bytes := encode_int32 (reloc_offset e) in
   let r_info_bytes := encode_reloc_info (reloc_type e) (reloc_symb e) in
-  let r_addend_bytes := encode_int32 (reloc_addend e) in
-  (r_offset_bytes ++ r_info_bytes ++ r_addend_bytes).
+  (r_offset_bytes ++ r_info_bytes).
 
 Definition encode_reloctable (t:reloctable) : list byte :=
     fold_right (fun e bytes => (encode_relocentry e) ++ bytes)
@@ -54,31 +52,36 @@ Definition encode_reloctable (t:reloctable) : list byte :=
 
 Definition create_reloctable_section (t:reloctable) : section :=
   let bytes := encode_reloctable t in
-  {| sec_type := sec_rela;
+  {| sec_type := sec_rel;
      sec_size := Z.of_nat (length bytes);
      sec_info_ty := sec_info_byte;
      sec_info := bytes;
   |}.
   
 
-(** The first relocation table is dummy and not encoded *)
-Definition create_reloctables_sections (ts:SeqTable.t (option reloctable)) : list section :=
-  fold_right (fun ot l =>
-                match ot with
-                | None => l
-                | Some t => (create_reloctable_section t)::l
-                end) [] ts.
+Definition create_reloctables_sections (ts:PTree.t reloctable) : res (list section) :=
+  match PTree.get sec_data_id ts with
+  | None => Error (msg "Relocation table for .data not found")
+  | Some sd =>
+    match PTree.get sec_code_id ts with
+    | None => Error (msg "Relocation table for .text not found")
+    | Some sc =>
+      OK [create_reloctable_section sd; create_reloctable_section sc]
+    end
+  end.
+    
+
 
 (** Transforma the program *)
-Definition transf_program p : program :=
+Definition transf_program p : res program :=
   let ts := prog_reloctables p in
-  let s := create_reloctables_sections ts in
-  {| prog_defs := prog_defs p;
-     prog_public := prog_public p;
-     prog_main := prog_main p;
-     prog_sectable := (prog_sectable p) ++ s;
-     prog_strtable := (prog_strtable p);
-     prog_symbtable := prog_symbtable p;
-     prog_reloctables := (prog_reloctables p);
-     prog_senv := prog_senv p;
-  |}.
+  do s <- create_reloctables_sections ts;
+  OK {| prog_defs := prog_defs p;
+        prog_public := prog_public p;
+        prog_main := prog_main p;
+        prog_sectable := (prog_sectable p) ++ s;
+        prog_strtable := (prog_strtable p);
+        prog_symbtable := prog_symbtable p;
+        prog_reloctables := (prog_reloctables p);
+        prog_senv := prog_senv p;
+     |}.

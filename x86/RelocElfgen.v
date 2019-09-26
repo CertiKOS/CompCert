@@ -75,7 +75,7 @@ Definition gen_elf_header (p:program) : elf_header :=
      e_phnum        := 0;
      e_shentsize    := sec_header_size;
      e_shnum        := sectbl_size;      
-     e_shstrndx     := Z.pos sec_shstrtbl_id;
+     e_shstrndx     := Z.of_N (SecIndex.interp sec_shstrtbl_id);
   |}.
 
 
@@ -141,36 +141,36 @@ Definition gen_symtab_sec_header p :=
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_symbtbl_id t;
      sh_size     := get_section_size sec_symbtbl_id t;
-     sh_link     := Z.pos sec_strtbl_id;
+     sh_link     := Z.of_N (SecIndex.interp sec_strtbl_id);
      sh_info     := 0;
      sh_addralign := 1;
      sh_entsize  := symb_entry_size;
   |}.
 
-Definition gen_reladata_sec_header p :=
+Definition gen_reldata_sec_header p :=
   let t := (prog_sectable p) in
   {| sh_name     := reladata_str_ofs;
-     sh_type     := SHT_RELA;
+     sh_type     := SHT_REL;
      sh_flags    := [];
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_rel_data_id t;
      sh_size     := get_section_size sec_rel_data_id t;
-     sh_link     := Z.pos sec_symbtbl_id;
-     sh_info     := Z.pos sec_data_id;
+     sh_link     := Z.of_N (SecIndex.interp sec_symbtbl_id);
+     sh_info     := Z.of_N (SecIndex.interp sec_data_id);
      sh_addralign := 1;
      sh_entsize  := reloc_entry_size;
   |}.
 
-Definition gen_relatext_sec_header p :=
+Definition gen_reltext_sec_header p :=
   let t := (prog_sectable p) in
   {| sh_name     := relatext_str_ofs;
-     sh_type     := SHT_RELA;
+     sh_type     := SHT_REL;
      sh_flags    := [];
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_rel_code_id t;
      sh_size     := get_section_size sec_rel_code_id t;
-     sh_link     := Z.pos sec_symbtbl_id;
-     sh_info     := Z.pos sec_code_id;
+     sh_link     := Z.of_N (SecIndex.interp sec_symbtbl_id);
+     sh_info     := Z.of_N (SecIndex.interp sec_code_id);
      sh_addralign := 1;
      sh_entsize  := reloc_entry_size;
   |}.
@@ -218,7 +218,7 @@ Definition transl_section (sec: RelocProgram.section) : res section :=
 Definition gen_sections (t:sectable) : res (list section) :=
   match t with
   | nil => Error (msg "No section found")
-  | dummy :: t' =>
+  | null :: t' =>
     fold_right (fun sec r => 
                   do r' <- r;
                     do sec' <- transl_section sec;
@@ -235,8 +235,8 @@ Definition gen_reloc_elf (p:program) : res elf_file :=
                       gen_text_sec_header p;
                       gen_strtab_sec_header p;
                       gen_symtab_sec_header p;
-                      gen_reladata_sec_header p;
-                      gen_relatext_sec_header p;
+                      gen_reldata_sec_header p;
+                      gen_reltext_sec_header p;
                       gen_shstrtab_sec_header p] in
     OK {| elf_head      := gen_elf_header p;
           elf_sections  := secs;

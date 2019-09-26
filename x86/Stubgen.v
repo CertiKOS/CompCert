@@ -80,11 +80,9 @@ Definition expand_code_section (sec:section) (instrs: list byte) :=
     Error (msg "Expandtion of section failed: section does not contain instructions")
   end.
 
-Definition append_reloc_entry (rtbl: option reloctable) (e:relocentry) :=
-  match rtbl with
-  | None => None
-  | Some t => Some (t ++ [e])
-  end.
+Definition append_reloc_entry (t: reloctable) (e:relocentry) :=
+  (t ++ [e]).
+
 
 Definition transf_program (p:program) : res program :=
   do main_symb <- find_symb' (prog_main p) (prog_symbtable p);
@@ -94,15 +92,15 @@ Definition transf_program (p:program) : res program :=
     do txt_sec' <- expand_code_section txt_sec create_start_stub;
     let e := create_start_stub_relocentry main_symb (sec_size txt_sec) in
     do rtbl' <- 
-       match SeqTable.get (SecIndex.interp sec_code_id) (prog_reloctables p) with
+       match PTree.get sec_code_id (prog_reloctables p) with
        | None => Error (msg "Cannot find the relocation table for .text")
        | Some rtbl => 
          OK (append_reloc_entry rtbl e)
        end;
-    match SeqTable.set (SecIndex.interp sec_code_id) txt_sec' (prog_sectable p),
-          SeqTable.set (SecIndex.interp sec_code_id) rtbl' (prog_reloctables p) 
+    match SeqTable.set (SecIndex.interp sec_code_id) txt_sec' (prog_sectable p)
     with
-    | Some stbl, Some rtbls =>
+    | Some stbl =>
+      let rtbls := PTree.set sec_code_id rtbl' (prog_reloctables p) in
       let p':=
           {| prog_defs := prog_defs p;
             prog_public := prog_public p;
@@ -118,7 +116,7 @@ Definition transf_program (p:program) : res program :=
         OK p'
       else
         Error [MSG "In SymtableEncode: Number of sections is incorrect (not 3): "; POS (Pos.of_nat len)]
-    | _, _ =>
+    | _ =>
       Error (msg "Update of code section and its relocation table fails")
     end
   end.

@@ -36,6 +36,7 @@ End IdIndex.
 Module SubOneIndex <: INDEX.
   Definition interp i := Pos.pred_N i.
   Definition deinterp i := Some (N.succ_pos i).
+  Definition deinterp' i := (N.succ_pos i).
 
   Lemma interp_round_trip : forall i, deinterp (interp i) = Some i. 
   Proof.
@@ -50,7 +51,7 @@ End SubOneIndex.
 
 
 (** ** Sections *)
-Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_strtbl | sec_rela | sec_null.
+Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_strtbl | sec_rel | sec_null.
 
 Inductive sec_info_type : Type := sec_info_byte | sec_info_instr | sec_info_init_data | sec_info_null.
 
@@ -147,7 +148,7 @@ Record program : Type := {
   prog_sectable: sectable;
   prog_symbtable: symbtable;
   prog_strtable: strtable;
-  prog_reloctables: SeqTable.t (option reloctable); (** Given the index of a section, it returns its relocation table (if exists) *)
+  prog_reloctables: PTree.t reloctable; (** Given the index of a section, it returns its relocation table (if exists) *)
   prog_senv : Globalenvs.Senv.t;
 }.
 
