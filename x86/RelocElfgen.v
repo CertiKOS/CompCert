@@ -49,10 +49,7 @@ Local Open Scope bits_scope.
 (** ** Generation of ELF header *)
 
 Definition get_sections_size (t: SeqTable.t RelocProgram.section) :=
-  match t with
-  | nil => 0
-  | h :: l => fold_left (fun acc sec => sec_size sec + acc) l 0
-  end.
+  fold_left (fun acc sec => sec_size sec + acc) t 0.
 
 Definition get_elf_shoff (p:program) :=
   elf_header_size +
@@ -87,14 +84,9 @@ Fixpoint list_first_n {A:Type} (n:nat) (l:list A) :=
   end.
 
 Fixpoint sectable_prefix_size (id:ident) t :=
-  match t with
-  | nil => 0
-  | h :: t' => 
-    let l := list_first_n (pred (Pos.to_nat id)) t' in
-    get_sections_size l
-  end.
-    
-
+  let l := list_first_n (Pos.to_nat id) t in
+  get_sections_size l.
+                      
 Definition get_sh_offset id (t:sectable) :=
   elf_header_size + (sectable_prefix_size id t).
 
