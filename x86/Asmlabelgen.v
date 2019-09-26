@@ -36,7 +36,7 @@ Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res instruction :
    (* label not found *)
    |None =>   Error (msg"Label not found")
    |Some pos =>
-    let relOfs := ofs + sz - pos in
+    let relOfs :=  pos - (ofs+sz)  in
     OK (Pjmp_l_rel relOfs)
    end
 
@@ -45,7 +45,7 @@ Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res instruction :
    (* label not found *)
    |None =>  Error (msg"Label not found")
    |Some pos =>
-    let relOfs := ofs + sz - pos in
+    let relOfs := pos - (ofs+sz) in
     OK (Pjcc_rel cond relOfs)
    end
 
@@ -54,7 +54,7 @@ Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res instruction :
    (* label not found *)
    |None =>  Error (msg"Label not found")
    |Some pos =>
-    let relOfs := ofs + sz - pos in
+    let relOfs := pos - (ofs+sz) in
     OK (Pjcc2_rel cond1 cond2 relOfs)
    end
 
