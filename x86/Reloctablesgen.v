@@ -83,7 +83,7 @@ Definition compute_instr_disp_relocentry (sofs: Z) (i:instruction) (disp: ident*
 Definition transl_instr_with_addrmode (rtbl:reloctable) 
            (sofs:Z) (i: instruction) rb ss disp (cstr:addrmode -> instruction) :=
     do e <- compute_instr_disp_relocentry sofs i disp;
-    let next_rid := Pos.of_nat (length rtbl) in
+    let next_rid := RelocIndex.deinterp' (N.of_nat (length rtbl)) in
     let instr' := cstr (Addrmode rb ss (inr (next_rid,Ptrofs.zero))) in
     OK (e :: rtbl, instr').
 

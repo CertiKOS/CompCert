@@ -182,6 +182,9 @@ Definition encode_instr (i: instruction) : res (list byte) :=
   | Pmov_mr_a a rs =>
     do abytes <- encode_addrmode a rs;
     OK (HB["89"] :: abytes)
+  | Pmov_rs rd id =>
+    do abytes <- encode_addrmode (Addrmode None None (inr (id,Ptrofs.zero))) rd;
+    OK (HB["8B"] :: abytes)  
   | Ptestl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
     do r2bits <- encode_ireg r2;
@@ -220,8 +223,12 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
     let nbytes := [Byte.repr (Int.unsigned n)] in
     OK (HB["C1"] :: modrm :: nbytes)
-  | Fnop =>
+  | Plabel _
+  | Pnop =>
     OK (HB["90"] :: nil)
+  | _ =>
+    Error [MSG "Encoding of the instruction is not supported yet: ";
+           MSG (instr_to_string i)]
   end.
 
 (** Translation of a sequence of instructions in a function *)
