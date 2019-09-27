@@ -40,14 +40,11 @@ Let ge := Genv.globalenv prog.
 Let tge := Genv.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
-
+Hypothesis TRANSF_PROG: transf_program prog = OK tprog.
 
 Inductive match_states : Asm.state -> Asm.state -> Prop :=
-|match_states_intro:
-   forall rs rs' m m'
-          (RSEQ: rs = rs')
-          (MEXT: Mem.extends m m'),
-   match_states (Asm.State rs m) (Asm.State rs' m').
+|match_states_intro m rs:
+   match_states (Asm.State rs m) (Asm.State rs m).
 
 Variable init_stk: stack.
 
@@ -152,7 +149,9 @@ Proof.
     rewrite <- FIND. f_equal. omega.
 Admitted.
 
-  
+
+
+
 Lemma find_instr_in_tprog: forall code ofs code' i,
     transl_code code = OK code'
     -> find_instr ofs code = Some i
@@ -169,87 +168,23 @@ Proof.
   rewrite Z.add_0_r in TLI.
   eauto.
 Qed.
-  
 
-(* Lemma find_instr_in_tprog: forall code all_code sofs ofs code' i, *)
-(*     eliminate_local_label_aux code sofs all_code = OK code' *)
-(*     -> find_instr ofs code = Some i *)
-(*     -> exists i', eliminate_local_label_aux (i::nil) (sofs+ofs) all_code = OK (i'::nil) /\ find_instr ofs code' = Some i'. *)
-(* Proof. *)
-(*   induction code; simpl. *)
-(*   intros. congruence. *)
-(*   intros. destruct a. *)
-(*   - monadInv H.  *)
-(*     destruct zeq. inv H0. *)
-(*     + eexists. split. auto. auto. *)
-(*     + exploit IHcode; eauto. *)
-(*       destruct 1 as (i' & ELIM & FIND). *)
-(*       exists i'. split. *)
-(*       destruct i; auto. *)
-(*       simpl in ELIM. *)
-(*       destruct (label_pos l 0 all_code) eqn:EQ_POS; try congruence. *)
-(*       inv ELIM. f_equal. f_equal; auto. f_equal. omega. *)
-(*       admit. *)
-(*       admit. *)
-(*       admit. *)
-(*       simpl. destruct zeq. congruence. *)
-(*       auto. *)
 
-      
-
-(*       destruct i; simpl; split; eauto. *)
-(*       exists i. split. destruct i; split; eauto. *)
-
-(*   intros f ofs x i HTrans HFind. *)
-(*   destruct i eqn:EQI; try(unfold eliminate_local_label_aux; simpl; *)
-(*                           exists i; split; rewrite EQI; auto). *)
-(*   + *)
-    
-(*     Lemma elim_lbl_prefix: forall h tail x f ofs, *)
-(*       exists i', eliminate_local_label_aux (h::nil) ofs (fn_code f) = OK (i'::nil) -> *)
-(*                  eliminate_local_label_aux (tail) (ofs + (instr_size h)) (fn_code f) = OK x -> *)
-(*                  eliminate_local_label_aux (h::tail) ofs (fn_code f)  = OK(i'::x). *)
-(*     Admitted. *)
-    
-                 
-
-(* Admitted. *)
 
 
 Lemma transf_refl:
-  forall f f' ofs i cond  cond1 cond2  r tbl lbl,
+  forall f f' ofs i,
     trans_function f = OK f' ->
     find_instr ofs (fn_code f) = Some i ->
     exists i',
       find_instr ofs (fn_code f') = Some i' /\
-      (((i <> Pjmp_l lbl /\ i <> Pjcc cond lbl /\ i <> Pjcc2 cond1 cond2 lbl /\ i <> Pjmptbl r tbl ) /\ i = i')
+      (((forall cond  cond1 cond2  r tbl lbl, i <> Pjmp_l lbl /\ i <> Pjcc cond lbl /\ i <> Pjcc2 cond1 cond2 lbl /\ i <> Pjmptbl r tbl ) /\ i = i')
        \/(exists l, i = Pjmp_l l /\ (exists relOfs, i' = Pjmp_l_rel relOfs))
        \/(exists condition l, i = Pjcc condition l /\ (exists relOfs cond', i' = Pjcc_rel cond' relOfs))
        \/(exists condition1 condition2 l, i = Pjcc2 condition1 condition2 l /\ (exists relOfs cond1' cond2', i' = Pjcc2_rel cond1' cond2' relOfs))
        \/(exists reg tl, i = Pjmptbl reg tl /\ (exists r' ofsLst, i' = Pjmptbl_rel r' ofsLst))). 
 Proof.
-  intros f f' ofs i cond cond1 cond2 r tbl lbl Htrans HfindInstr.
-  (* destruct i eqn:EQI. *)
-  (* 179: exists i; *)
-  (*   split; *)
-  (*   unfold trans_function in Htrans; *)
-  (*   destruct (func_no_jmp_rel_dec f) eqn:EQF. *)
-  
-  (*   ++ set (I := i) in EQI; *)
-  (*     monadInv Htrans; *)
-  (*     simpl; *)
-  (*     rewrite <- EQI in HfindInstr; *)
-  (*     generalize (find_instr_in_tprog (fn_code f) ofs x I EQ HfindInstr); *)
-  (*     intros HtInstr; *)
-  (*     destruct HtInstr as [i' [HElim HtFind]]; *)
-  (*     rewrite HtFind; *)
-  (*     rewrite EQI in HElim. *)
-  (*     unfold transl_code in HElim; *)
-  (*     simpl in HElim; *)
-  (*     monadInv HElim; *)
-  (*     rewrite <- EQI; *)
-  (*     auto. *)
-
+  intros f f' ofs i Htrans HfindInstr.
   
   destruct i eqn:EQI;
   try  (exists i;
@@ -283,7 +218,7 @@ Proof.
     simpl in HTransI'.
     destruct (label_pos l 0 (fn_code f)) eqn: EQFL.
     ++    
-    exists ( Pjmp_l_rel ((ofs + instr_size (Pjmp_l l) - z))).
+    exists ( Pjmp_l_rel (z - (ofs + instr_size (Pjmp_l l)))).
     split.
     simpl. rewrite HTfindInstr. f_equal. inversion HTransI'. auto.
     right. left. eauto.
@@ -329,12 +264,77 @@ Proof.
     destruct Hinstr as (i' & HTransI' & HTfindInstr).
     rewrite EQI in HTransI'.
     simpl in HTransI'.
-    destruct (findAllLabel tbl0 (fn_code f)) eqn: EQFL.
+    destruct (findAllLabel tbl (fn_code f)) eqn: EQFL.
     ++ inversion HTransI'. exists i'. simpl. split. auto. right. right.
-       right. right. exists r0, tbl0. split. auto. eauto.
+       right. right. exists r, tbl. split. auto. eauto.
     ++ inversion HTransI'.
     ++ inversion Htrans.
 Qed.
+
+
+Lemma transf_symbol_refl: forall id,
+    (Genv.symbol_address tge id Ptrofs.zero) = (Genv.symbol_address ge id Ptrofs.zero).
+Proof.
+  intros id.
+  unfold Genv.symbol_address.
+  red in TRANSF.
+  unfold ge, tge.
+  rewrite (Genv.find_symbol_transf_partial TRANSF id). auto.
+Qed.
+
+
+Lemma transf_addrmode_refl: forall a rs,
+    eval_addrmode ge a rs = eval_addrmode tge a rs.
+Admitted.
+
+Lemma transf_addrmode32_refl: forall a rs,
+    eval_addrmode32 ge a rs = eval_addrmode32 tge a rs.
+Admitted.
+
+Lemma transf_addrmode64_refl: forall a rs,
+    eval_addrmode64 ge a rs = eval_addrmode64 tge a rs.
+Admitted.
+
+Lemma transf_ros_refl: forall ros rs,
+    eval_ros tge ros rs = eval_ros ge ros rs.
+Admitted.
+
+
+Section WITHMATCH.
+          
+Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
+Context {transf: A -> res B} {p: AST.program A V} {tp: AST.program B V}.
+Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp.
+                
+Theorem find_funct_ptr_transf_partial_inv:
+  forall b ef,
+  Genv.find_funct_ptr (Genv.globalenv tp) b = Some ef ->
+  exists f,
+  Genv.find_funct_ptr (Genv.globalenv p) b = Some f /\ transf f = OK ef.
+Proof.
+Admitted.
+
+End WITHMATCH.
+
+
+
+Lemma offsets_after_call_transf_refl: forall c x,
+    transl_code c = OK x
+    ->(offsets_after_call x 0) = (offsets_after_call c 0).
+Proof.
+  intros c x HTrans.
+  induction c.
+  + simpl. monadInv  HTrans. simpl in EQ. inversion EQ. rewrite <- H0 in EQ0. inversion EQ0.
+    simpl. auto.
+  + unfold offsets_after_call.
+    unfold transl_code in HTrans.
+    setoid_rewrite (fold_left_app _ [a] c) in HTrans.
+    
+  unfold offsets_after_call.
+
+Admitted.
+
+
 
 Theorem step_simulation:
   forall S1 t S2, step init_stk ge S1 t S2 ->
@@ -342,74 +342,380 @@ Theorem step_simulation:
                     (exists S2', step init_stk tge S1' t S2' /\ match_states S2 S2').
 Proof.
   intros S1 t S2 HStep S1' MS.
-  induction HStep.
-  - (* *)
-    generalize (Genv.find_funct_ptr_transf_partial TRANSF _ H0).
+  inversion MS.
+  exists S2.
+  split.
+  + induction HStep.
+  ++ (* *)
+    generalize(Mem.extends_refl m).
+    intros MEXT.
+    generalize (Genv.find_funct_ptr_transf_partial TRANSF _ H2).
     destruct 1 as [tf [FPTR TF]].
     unfold tge. eauto.
     monadInv TF.
-
-    exists (State rs' m').
-    split.
-    inversion MS.
+    unfold trans_function in EQ. destruct (func_no_jmp_rel_dec f);inversion EQ.
+    monadInv H5.
+    generalize (find_instr_in_tprog _ _ _ _ EQ0 H3).
+    intros (i' & HInstrTransf & Hfind).
     econstructor; subst; eauto.
-
-    +
-                       
-    unfold Genv.find_funct_ptr.
-    assert (Genv.find_def tge b = Genv.find_def ge b). {
-      (* unfold Mem.extends in MEXT. *)
-      
-      
-
-
-      
-      inversion H6.
-      + unfold Genv.find_def.
-        unfold tge.
-        unfold Genv.globalenv.
-        rewrite <- H10.
-        simpl.
-        unfold ge.
-        unfold Genv.globalenv.
-        rewrite <- H9.
-        simpl.
-        auto.
-      + unfold Genv.find_def.
-        unfold tge.
-        unfold Genv.globalenv.
-        rewrite <- H9.
-        simpl.
-        unfold match_ident_option_globdef in H10.
-        unfold Genv.genv_defs.
-        
-        
-
-        admit.
+    inversion H.
+    auto.
+    assert(In i (fn_code f)) as Hin. {
+      admit.
     }
-    unfold Genv.find_funct_ptr in H0.
-    rewrite H8.
-    apply H0.
-  + 
+      
+    (* destruct i eqn:EQI. *)
+    (* +++ *)
+    (*   simpl in HInstrTransf. inversion HInstrTransf. simpl. simpl in H4. *)
+    (*   rewrite <- H4. inversion MS. auto. *)
 
-  unfold Mem.extends in MEXT.
-  simpl in MEXT.
-  exists (State rs0 m').
-  split.
-  
-  
+    destruct i eqn:EQI;
+      try (
+          simpl in HInstrTransf; inversion HInstrTransf; simpl; simpl in H4;
+          try (rewrite <- H4; inversion MS; auto);
+          (* symbol *)
+          try ( generalize (transf_symbol_refl id);
+                intros Hid;
+                rewrite <- Hid; auto);
+          try (
+              (* load/store *)
+              try unfold exec_load;
+              try unfold exec_store;
+              generalize(transf_addrmode_refl a rs);
+              intros HAddrmode; rewrite HAddrmode; 
+              auto);
+          try (
+              (* lea *)
+              try generalize(transf_addrmode32_refl a rs);
+              intros HAddrmode32;
+              try generalize(transf_addrmode64_refl a rs);
+              intros HAddrmode64;
+              unfold eval_addrmode in HAddrmode32;
+              unfold eval_addrmode in HAddrmode64;
+              try rewrite HAddrmode32;
+              try rewrite HAddrmode64;
+              auto);
+          try (
+              (* ros *)
+              rewrite transf_ros_refl;
+              destruct ( Genv.find_funct ge (eval_ros ge ros rs0)) eqn:EQF; inversion H4;
+              rewrite <- H8;
+              rewrite EQF;
+              generalize (Genv.find_funct_transf_partial TRANSF _ EQF);
+              intros(tf & HfunctionFind & HfunctionTransf);
+              rewrite HfunctionFind;
+              auto
+            );
+          try (
+              (* rel *)
+              unfold func_no_jmp_rel in f0;
+              generalize (Forall_forall instr_not_jmp_rel (fn_code f));
+              intros HForall;
+              destruct HForall;
+              rewrite <- EQI in Hin;
+              generalize (H0 f0 i Hin);
+              intros HNRel; rewrite EQI in HNRel;
+              simpl in HNRel; inversion HNRel
+            )
+        ).
+    (* destruct i eqn:EQI; *)
+    (*   try ( destruct HInsProperty; *)
+    (*         [ now(destruct H0 as (HNE & HI'); *)
+    (*               rewrite <- HI'; *)
+    (*               unfold exec_instr; *)
+    (*               unfold exec_instr in H4; *)
+    (*               inversion H4; *)
+    (*               try( *)
+    (*                   (* symbol *) *)
+    (*                   generalize (transf_symbol_refl id); *)
+    (*                   intros Hid; *)
+    (*                   rewrite <- Hid); *)
+    (*               inversion H; try rewrite H6; *)
+    (*               try ( *)
+    (*                   (* load/store *) *)
+    (*                   try unfold exec_load; *)
+    (*                   try unfold exec_store; *)
+    (*                   generalize(transf_addrmode_refl a rs0); *)
+    (*                   intros HAddrmode; rewrite HAddrmode;  *)
+    (*                   auto); *)
+    (*               try ( *)
+    (*                   (* lea *) *)
+    (*                   try generalize(transf_addrmode32_refl a rs0); *)
+    (*                   intros HAddrmode32; *)
+    (*                   try generalize(transf_addrmode64_refl a rs0); *)
+    (*                   intros HAddrmode64; *)
+    (*                   unfold eval_addrmode in HAddrmode32; *)
+    (*                   unfold eval_addrmode in HAddrmode64; *)
+    (*                   try rewrite HAddrmode32; *)
+    (*                   try rewrite HAddrmode64; *)
+    (*                   auto) *)
+    (*              ) *)
+    (*         | *)
+    (*         destruct H0; inversion H0; inversion H5; *)
+    (*         inversion H6; inversion H7; inversion H8; inversion H9; inversion H10]). *)
+    +++
+      (* jmp_l *)
+      destruct (label_pos l 0 (fn_code f)) eqn:EQLb; inversion H5.
+      monadInv HInstrTransf.
+      simpl.
+      unfold goto_label.
+      rewrite EQLb.
+      rewrite H1.
+      rewrite H2.
+      unfold goto_ofs.
+      rewrite H1.
+      rewrite FPTR.
+      f_equal.
+      f_equal.
+      f_equal.
+      
+      repeat rewrite Ptrofs.add_signed.      
+      f_equal.
+      repeat rewrite Ptrofs.signed_repr.
+      
+      assert (instr_size (Pjmp_l_rel (z - (Ptrofs.unsigned ofs + instr_size (Pjmp_l l)))) = instr_size (Pjmp_l l)) as Hsize. {
+        admit.
+      }
+      rewrite Hsize.
+      assert (Ptrofs.unsigned ofs = Ptrofs.signed ofs) as Hofs. {
+        admit.
+      }
+      rewrite Hofs.      
+      repeat rewrite Z.add_assoc.
+      rewrite Zplus_minus.
+      auto.
+      (*** TBD *)
+      admit.
+      (*** TBD *)
+      admit.
+      (*** TBD *)
+      admit.
+      (*** TBD *)
+      admit.
+      (*** TBD *)
+      admit.
 
-  + destruct i eqn:EQI.
-    ++ inversion H2.
-       induction MS.
+    +++
+      (* Pjcc c l *)
+      rewrite <- H8.
+      destruct (eval_testcond c rs0) eqn:EQC;inversion H4.
+      destruct b0.
+      ++++
+        rewrite <- H9.
+        rewrite H4.
+        unfold goto_label in H12.
+        destruct (label_pos l 0 (fn_code f)) eqn:EQLb; inversion H12.
+        rewrite H1.
+        rewrite H2.
+        monadInv  H5.
+        simpl.
+        rewrite EQC.
+        simpl.
+        unfold goto_ofs.
+        rewrite H1.
+        rewrite FPTR.
+        simpl.
+        f_equal.
+        f_equal.
+        f_equal.
+        repeat rewrite Ptrofs.add_signed.      
+        f_equal.
+        repeat rewrite Ptrofs.signed_repr.
+        rewrite <- (Pjcc_rel_size_eq   (z - (Ptrofs.unsigned ofs + instr_size (Pjcc c l))) l).
+        assert (Ptrofs.signed ofs = Ptrofs.unsigned ofs) as Hofs by admit.
+        rewrite Hofs.
+        repeat rewrite Z.add_assoc.
+        rewrite Zplus_minus.
+        auto.
+        admit. admit. admit. admit. admit.
+        
+      ++++
+        rewrite <- H9. rewrite H4.
+        destruct (label_pos l 0 (fn_code f)) eqn:EQLb; inversion H5.
+        monadInv  H5.
+        simpl.
+        rewrite EQC.
+        inversion H12.
+        f_equal.
+    +++
+      (* pjcc2 *)
+      rewrite <- H8.
+      rewrite <- H9.
+      rewrite H4.
+      destruct (label_pos l 0 (fn_code f)) eqn:EQLb; inversion H5.
+      simpl.
+      destruct (eval_testcond c1 rs0); inversion H4.
+      destruct b0 eqn:EQB.
+      ++++
+        destruct (eval_testcond c2 rs0); inversion H4.
+        destruct b1 eqn:EQB1.
+        +++++ unfold goto_ofs.
+        rewrite H1. rewrite FPTR.
+        unfold goto_label. rewrite EQLb. rewrite H1. rewrite H2.
+        f_equal. f_equal. f_equal.
+        repeat rewrite Ptrofs.add_signed.
+        f_equal.
+        repeat rewrite Ptrofs.signed_repr.
+        rewrite <- (Pjcc2_rel_size_eq _ l _ _).
+        assert(Ptrofs.signed ofs = Ptrofs.unsigned ofs) as Hofs by admit.
+        rewrite Hofs.
+        repeat rewrite Z.add_assoc.
+        rewrite Zplus_minus.
+        auto.
+        admit. admit. admit. admit. admit.
+        +++++
+          auto.
+      ++++ auto.
+    +++
+    (* pjmptbl *)
+      rewrite <- H8. rewrite <- H9. rewrite H4.
+      monadInv H5.
+      simpl.
+      destruct (rs r);inversion H4.
+      rewrite (list_nth_z_map).
+      destruct (list_nth_z tbl (Int.unsigned i)) eqn:EQnth; inversion H4.
+      generalize(list_nth_z_range _ _ EQnth).
+      intros HIRange.
+      Lemma transf_lbl_list: forall tbl c x,
+          findAllLabel tbl c = OK x
+          -> list_length_z tbl = list_length_z x.
+      Admitted.
 
-  destruct step .
-    induction 1.
-  intros S1 t S2 H S1' MS.
+      generalize (transf_lbl_list tbl (fn_code f) x EQ1).
+      intros EQLen.
 
-  destruct step.
-  exists (Asm.State 
+      Lemma list_get_n: forall {A:Type}  n (l:list A),
+          n < list_length_z l
+          ->exists a, list_nth_z l n = Some a.
+      Admitted.
+      assert (Int.unsigned i < list_length_z x) as HxLen. {        
+        setoid_rewrite <- EQLen.
+        omega.
+      }
 
+      Lemma transf_lbl_prop: forall tbl c x i lbl z,
+          findAllLabel tbl c = OK x
+          -> list_nth_z tbl i = Some lbl
+          -> list_nth_z x i = Some z
+          -> (label_pos lbl 0 c) = Some z.
+      Admitted.
+      generalize (list_get_n (Int.unsigned i) x HxLen).
+      intros (a & HnthX).
+      rewrite HnthX. simpl. unfold goto_label.
+      generalize (transf_lbl_prop tbl (fn_code f) x (Int.unsigned i) l a EQ1 EQnth HnthX).
+      intros Hpos.
+      rewrite Hpos. unfold goto_label in H6.
+      rewrite Hpos in H6.
+      destruct ( (rs # RAX <- Vundef) # RDX <- Vundef PC) eqn:EQPC; inversion H6.
+      assert ( (rs # RAX <- Vundef) # RDX <- Vundef PC = rs PC) as HPC. {
+        unfold Pregmap.set.
+        destruct (PregEq.eq PC RDX).
+        inversion e.
+        destruct (PregEq.eq PC RAX).
+        inversion e.
+        auto.
+      }
+      rewrite HPC in EQPC.
+      rewrite EQPC in H1.
+      inversion H1.
+      rewrite H2.
+      unfold goto_ofs.
+      rewrite HPC. rewrite EQPC. rewrite H9. rewrite FPTR.
+      f_equal. f_equal. f_equal.
+      rewrite H11.
+      repeat rewrite Ptrofs.add_signed.
+      repeat rewrite Ptrofs.signed_repr.
+      f_equal.
+      assert(Ptrofs.signed ofs  = Ptrofs.unsigned ofs) as Hofs by admit.
+      rewrite Hofs.
+
+      rewrite <- (Pjmptbl_rel_size_eq r tbl  (Z.add (-(instr_size (Pjmptbl r tbl) + Ptrofs.unsigned ofs))) ## x).
+      repeat rewrite Z.add_assoc.
+      omega.
+      admit. admit. admit. admit. admit.
+      
+    +++ subst. rewrite H4.
+
+      Lemma check_ra_after_call_eq : forall v a b,
+        check_ra_after_call ge v = left a <-> check_ra_after_call tge v = left b.
+      Admitted.
+
+      destruct check_ra_after_call eqn:N; try congruence.
+      rewrite check_ra_after_call_eq in N. unfold tge in N.
+      rewrite N.
+      destruct (Mem.check_top_tc m); inversion H4.
+      auto.
+                                                    
+      (* Lemma transf_ra_refl: forall v, *)
+      (*   ra_after_call ge v = ra_after_call tge v. *)
+      (* Admitted. *)
+      
+      (* destruct (check_ra_after_call (Genv.globalenv tprog) (rs RA)) eqn:EQRA. *)
+      (* destruct (check_ra_after_call ge (rs RA)) eqn:EQRA'. *)
+      (* auto. *)
+      (* generalize (transf_ra_refl (rs RA)). *)
+      (* intros HRA. *)
+      (* destruct (Mem.check_top_tc m); inversion H4. *)
+          
+  ++
+    generalize(Genv.find_funct_ptr_transf_partial TRANSF _  H2).
+    intros (tf & FPTR & HTransf).
+    unfold tge.  monadInv HTransf.
+    subst. rewrite H.
+    eapply exec_step_builtin; eauto.
+    unfold trans_function in EQ.
+    destruct (func_no_jmp_rel_dec);inversion EQ.
+    monadInv EQ.
+    generalize (find_instr_in_tprog _ _ _ _ EQ0 H3).
+    intros (i' & HTrans & Hfind). simpl.
+    rewrite Hfind. inversion HTrans.
+    auto.
+    apply eval_builtin_args_preserved with (ge1 := ge); eauto.
+    intros id.
+    generalize (Genv.find_symbol_transf_partial TRANSF id).
+    intros Hsmybol.
+    auto.
+    apply external_call_symbols_preserved with (ge1:=ge); eauto.
+    eapply Genv.senv_transf_partial; eauto.
+  ++
+    generalize(Genv.find_funct_ptr_transf_partial TRANSF _  H2).
+    intros (tf & FPTR & HTransf).
+    unfold tge.  monadInv HTransf.
+    subst. rewrite H.
+    eapply exec_step_external; eauto.
+    apply external_call_symbols_preserved with (ge1:=ge); eauto.
+    eapply Genv.senv_transf_partial; eauto.
+    unfold ra_after_call.
+    unfold ra_after_call in H7.
+    destruct H7 as (HRA & HRAP).
+    split.
+    +++ inversion H. auto.
+    +++ intros b0 o HRAPointer f HFindF.
+        generalize (HRAP _ _ HRAPointer). intro FACALL.
+
+        destruct (Genv.find_funct_ptr ge b0) eqn:FPTR1.
+        generalize (FACALL _ eq_refl). intros FACALL1.
+        generalize (Genv.find_funct_ptr_transf_partial TRANSF _ FPTR1).
+        destruct 1 as (tf & TFPTR & TF).
+        rewrite TFPTR in HFindF. inv HFindF.
+        unfold is_after_call in FACALL1.
+        destruct f0;try contradiction.
+        monadInv TF.
+        unfold is_after_call.
+        
+        unfold trans_function in EQ.
+        destruct (func_no_jmp_rel_dec f0); inversion EQ.
+        monadInv H7.
+        generalize(offsets_after_call_transf_refl (fn_code f0) x0 EQ0).
+        intros EQOfs.
+        simpl. rewrite EQOfs. auto.
+        
+        generalize (Genv.find_funct_ptr_transf_none_partial TRANSF _ FPTR1).
+        intros TPNone.
+        rewrite TPNone in HFindF.
+        inversion HFindF.
+        
+  + destruct S2. constructor.
 Admitted.
 
 

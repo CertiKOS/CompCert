@@ -2564,6 +2564,17 @@ Proof.
   intros (cu & tf & P & Q & R); exists tf; auto.
 Qed.
 
+
+
+Lemma find_funct_ptr_transf_none_partial:
+  forall b,
+    find_funct_ptr (globalenv p) b = None ->
+    find_funct_ptr (globalenv tp) b = None.
+Proof.
+  eapply (find_funct_ptr_match_none progmatch).
+Qed.
+
+
 Theorem find_symbol_transf_partial:
   forall (s : ident),
   find_symbol (globalenv tp) s = find_symbol (globalenv p) s.
