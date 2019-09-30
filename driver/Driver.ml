@@ -632,7 +632,7 @@ let _ =
       end;
     let linker_args = time "Total compilation time" perform_actions () in
     if (not nolink) && linker_args <> [] && (not !option_machine_code) 
-       && (not !option_re_machine_code) && (not !option_reloc_elf) then begin
+       && (not !option_re_machine_code) then begin
       linker (output_filename_default "a.out") linker_args
     end;
    if  Cerrors.check_errors () then exit 2

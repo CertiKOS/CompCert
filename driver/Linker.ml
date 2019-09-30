@@ -21,6 +21,10 @@ open Driveraux
 let linker exe_name files =
   let cmd = List.concat [
     Configuration.linker;
+    (if !option_reloc_elf then
+       ["-m32"]
+     else 
+       []);
     ["-o"; exe_name];
     files;
     (if Configuration.has_runtime_lib
