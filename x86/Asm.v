@@ -382,6 +382,30 @@ Definition instr_size (i: instruction) : Z :=
   | _ => 1
   end.
 
+Lemma Pjmp_rel_size_eq : forall ofs l,
+    instr_size (Pjmp_l_rel ofs) = instr_size (Pjmp_l l).
+Proof.
+  simpl. auto.
+Qed.
+
+Lemma Pjcc_rel_size_eq: forall ofs l cond,
+    instr_size (Pjcc cond l) = instr_size (Pjcc_rel cond ofs).
+Proof.
+  simpl. auto.
+Qed.
+
+Lemma Pjcc2_rel_size_eq: forall ofs l cond1 cond2,
+    instr_size (Pjcc2 cond1 cond2 l) = instr_size (Pjcc2_rel cond1 cond2 ofs).
+Proof.
+  simpl. auto.
+Qed.
+
+Lemma Pjmptbl_rel_size_eq: forall r tbl tbl',
+    instr_size (Pjmptbl r tbl) = instr_size (Pjmptbl_rel r tbl').
+Proof.
+  simpl. auto.
+Qed.
+
 Lemma instr_size_positive : forall i, 0 < instr_size i.
 Proof.
   intros. unfold instr_size. 
@@ -1089,7 +1113,7 @@ Proof.
   destruct (check_is_after_call f (Ptrofs.unsigned i)).
   left. split. congruence. intros b0 o A; inv A; rewrite FFP; congruence.
   right; intros (B & A); specialize (A _ _ eq_refl _ FFP). congruence.
-Qed.
+Defined.
 
 Definition eval_ros (ge: genv) (ros: ireg + ident) (rs: regset) : val :=
   match ros with

@@ -2,5 +2,5 @@
 for ef in $(ls *.o)
 do  
     ./$ef
-    echo "$ef:" $?
+    echo $?
 done

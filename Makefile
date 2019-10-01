@@ -119,7 +119,7 @@ BACKEND=\
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
   RelocProgram.v \
-  Asmlabelgen.v PadNops.v PadInitData.v \
+  Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v

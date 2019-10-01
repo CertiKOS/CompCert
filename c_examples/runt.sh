@@ -2,5 +2,5 @@
 for ef in $(ls *.out)
 do  
     ./$ef
-    echo "$ef:" $?
+    echo $?
 done
