@@ -7,7 +7,7 @@ clean:
 compile:
 	# ../ccomp -timings -relf *.c
 	# ls *.o|sed 's/\(.*\)\.o/gcc -m32 -static -nostdlib stubstart.s \1.o -o \1.out/g'|sh
-	ls *.c|sed 's/\(.*\)\.c/\.\.\/ccomp -relf \1.c -o \1.out/g'|sh
+	ls *.c|sed 's/\(.*\)\.c/\.\.\/ccomp -relf -static \1.c -o \1.out/g'|sh
 
 test: compile
 	chmod +x *.out

@@ -9,6 +9,7 @@ Require Import Asm.
 Require Import Errors.
 Require Import RelocProgram Encode.
 Require Import SeqTable Memdata.
+Require Import SymbolString.
 Require Import Hex Bits.
 Import Hex Bits.
 Import ListNotations.
@@ -20,16 +21,18 @@ Local Open Scope hex_scope.
 Local Open Scope bits_scope.
 
 
-(** This an external function in ML for 
-    finding the strings associated with the global symbols *)
-Parameter find_symbol_string_bytes : ident -> res (list byte).
-
 Definition get_strings_map_bytes (symbols: list ident) : res (PTree.t Z * list byte) :=
   do idbytes <-
      fold_right (fun id r =>
                    do idbytes <- r;
-                   do bytes <- find_symbol_string_bytes id;
-                   OK ((id, HB["00"] :: bytes) :: idbytes)) (OK []) symbols;
+                   match find_symbol_pos id with
+                   | None =>     
+                     Error [MSG "Cannot find the string of the symbol "; CTX id]
+                   | Some pos_nums =>
+                     let bytes := map (fun p => Byte.repr (Zpos p)) pos_nums in
+                     OK ((id, HB["00"] :: bytes) :: idbytes)
+                   end
+                ) (OK []) symbols;
   let '(strmap, _) := fold_left (fun '(map,sz) '(id, bytes) => 
                                    let map' := PTree.set id (sz+1) map in
                                    let sz'  := sz + Z.of_nat(length bytes) in

@@ -122,7 +122,7 @@ BACKEND=\
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
-  ShstrtableEncode.v RelocElfgen.v SeqTable.v
+  ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v
 
 # Encoding of data into bytes
 
