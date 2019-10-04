@@ -267,41 +267,26 @@ Definition transl_init_data_list (l: list init_data) : res (list byte) :=
 End WITH_RELOC_TABLE.
 
 (** ** Translation of a program *)
-Definition encode_sec_info_type (ty:sec_info_type) :=
-  match ty with
-  | sec_info_instr => sec_info_byte
-  | sec_info_init_data => sec_info_byte
-  | _ => ty
-  end.
 
 Definition transl_section (sec:section) (rtbl:option reloctable) : res section :=
-  do i <- 
-     match sec_info_ty sec as a 
-           return (interp_sec_info_type a -> 
-                   res (interp_sec_info_type (encode_sec_info_type a)))
-     with
-     | sec_info_null 
-     | sec_info_byte => fun i => OK i
-     | sec_info_init_data => 
-       fun l => 
-         match rtbl with
-         | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
-         | Some rtbl => transl_init_data_list rtbl l
-         end
-     | sec_info_instr => 
-       fun code => 
-         match rtbl with
-         | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
-         | Some rtbl => transl_code rtbl code
-         end
-     end (sec_info sec);
-  OK {| sec_type := sec_type sec;
-        sec_size := sec_size sec;
-        sec_info_ty := encode_sec_info_type (sec_info_ty sec);
-        sec_info := i 
-     |} .
+  match sec with
+  | sec_text code =>
+    match rtbl with
+    | None => Error [MSG "Encoding failed: No relocation table found for .text section"]
+    | Some rtbl => 
+      do bytes <- transl_code rtbl code;
+      OK (sec_bytes bytes)
+    end
+  | sec_data l =>
+    match rtbl with
+    | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
+    | Some rtbl => 
+      do bytes <- transl_init_data_list rtbl l;
+      OK (sec_bytes bytes)
+    end
+  | _ => OK sec
+  end.
 
-  
 Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) : res sectable :=
   do r <- 
      fold_left (fun r sec =>

@@ -62,22 +62,10 @@ Fixpoint find_symb' (id:ident) (stbl:symbtable) : res positive :=
 
 (** ** Transformation of the program *)
 Definition expand_code_section (sec:section) (instrs: list byte) :=
-  match sec_type sec with 
-  | sec_text =>
-    do info' <- 
-       match sec_info_ty sec as t 
-             return interp_sec_info_type t -> res (interp_sec_info_type t)
-       with
-       | sec_info_byte => fun i => OK (i ++ instrs)
-       | _ => fun i => Error (msg "Expandtion of section failed: section does not contain bytes")
-       end (sec_info sec);
-    let isz := Z.of_nat (length instrs) in
-    OK {| sec_type := sec_type sec;
-          sec_size := sec_size sec + isz;
-          sec_info_ty := sec_info_ty sec;
-          sec_info := info' |}
+  match sec with
+  | sec_bytes bs => OK (sec_bytes (bs ++ instrs))
   | _ =>
-    Error (msg "Expandtion of section failed: section does not contain instructions")
+    Error (msg "Expandtion of section failed: section does not contain instructions in bytes")
   end.
 
 Definition append_reloc_entry (t: reloctable) (e:relocentry) :=

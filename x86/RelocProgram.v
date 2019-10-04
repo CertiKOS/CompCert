@@ -51,33 +51,20 @@ End SubOneIndex.
 
 
 (** ** Sections *)
-Inductive sectype : Type := sec_text | sec_data | sec_symbtbl | sec_strtbl | sec_rel | sec_null.
 
-Inductive sec_info_type : Type := sec_info_byte | sec_info_instr | sec_info_init_data | sec_info_null.
+Inductive section : Type :=
+| sec_null
+| sec_text (code: list instruction)
+| sec_data (init: list init_data)
+| sec_bytes (bs: list byte).
 
-Definition interp_sec_info_type (I: sec_info_type) :=
-  match I with
-  | sec_info_byte => list byte
-  | sec_info_instr => list instruction
-  | sec_info_init_data => list init_data
-  | sec_info_null => unit
+Definition sec_size (s: section) : Z :=
+  match s with
+  | sec_null => 0
+  | sec_text c => code_size c
+  | sec_data d => AST.init_data_list_size d
+  | sec_bytes bs => Z.of_nat (length bs)
   end.
-
-Record section : Type :=
-{
-  sec_type: sectype;
-  sec_size: Z;
-  sec_info_ty : sec_info_type;
-  sec_info: interp_sec_info_type sec_info_ty;
-}.
-
-Definition null_section :=
-  {| sec_type := sec_null;
-     sec_size := 0;
-     sec_info_ty := sec_info_null;
-     sec_info := tt;
-  |}.
-
 
 (** Positive indexes to sections are mapped by the identity function,
     the 0-th section is a pre-defined null section *)

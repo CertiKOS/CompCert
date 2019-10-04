@@ -251,11 +251,7 @@ Definition create_code_section (defs: list (ident * option (globdef fundef unit)
   let code := fold_right (fun '(id, def) instrs =>
                             (get_def_instrs def) ++ instrs)
                          [] defs in
-  {| sec_type := sec_text;
-     sec_size := code_size code;
-     sec_info_ty := sec_info_instr;
-     sec_info := code;
-  |}.
+  sec_text code.
 
 (** Create the data section *)
 Definition get_def_init_data (def: option (globdef fundef unit)) : list init_data :=
@@ -273,16 +269,12 @@ Definition create_data_section (defs: list (ident * option (globdef fundef unit)
   let data := fold_right (fun '(id, def) dinit =>
                             (get_def_init_data def) ++ dinit)
                          [] defs in
-  {| sec_type := sec_text;
-     sec_size := AST.init_data_list_size data;
-     sec_info_ty := sec_info_init_data;
-     sec_info := data;
-  |}.
+  sec_data data.
   
 Definition create_sec_table defs : sectable :=
   let data_sec := create_data_section defs in
   let code_sec := create_code_section defs in
-  [null_section; data_sec; code_sec].
+  [sec_null; data_sec; code_sec].
 
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=

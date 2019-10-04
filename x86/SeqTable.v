@@ -33,6 +33,9 @@ Section WITHV.
   Definition size (tbl:t V) :=
     length tbl.
 
+  Definition filter (f: V -> bool) (tbl: t V) :=
+    List.filter f tbl.
+
 End WITHV.
 
 End SeqTable.
