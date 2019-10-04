@@ -33,18 +33,27 @@ let int_to_Z (i:int) : coq_Z =
     Zneg (int_to_pos (-i))
 
 
+let rec int_to_N (i:int) : coq_N =
+  if i = 0 then
+    N0
+  else if i > 0 then      
+    Npos (int_to_pos i)
+  else
+    let s = sprintf "%i" i in
+    raise (Invalid_argument s)
+
+
 let string_to_list (s:string) : char list =
   let l = ref [] in
   String.iter (fun c -> l := c::(!l)) s;
   List.rev !l
 
-let find_symbol_string_bytes a : Byte.int list Errors.res =
+let find_symbol_pos a : positive list option =
   try 
     let s = (Hashtbl.find string_of_atom a) in
     (* Printf.printf "Found symbol %s\n" s; *)
-    let coq_zs = List.map (fun c -> int_to_Z (Char.code c)) (string_to_list s) in
-    Errors.OK (List.map (fun z -> Byte.repr z) coq_zs)
+    let pos = List.map (fun c -> int_to_pos (Char.code c)) (string_to_list s) in
+    Some pos
   with
   | Not_found ->
-    Errors.Error [Errors.MSG(coqstring_of_camlstring "Cannot find the string of the symbol ");
-                  Errors.CTX a]
+     None

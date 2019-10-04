@@ -118,7 +118,7 @@ Extract Constant Compopts.debug =>
   "fun _ -> !Clflags.option_g".
 
 (* Strtablegen *)
-Extract Constant StrtableEncode.find_symbol_string_bytes => "SymbolString.find_symbol_string_bytes".
+Extract Constant SymbolString.find_symbol_pos => "FindSymbolString.find_symbol_pos".
 
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".

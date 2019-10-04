@@ -167,18 +167,16 @@ Definition transl_init_data_list (d: list init_data) : res (list init_data) :=
              (OK []) d.
 
 Definition transl_section (sec: section) : res section :=
-  do v <- 
-     match sec_info_ty sec as t 
-           return (interp_sec_info_type t -> res (interp_sec_info_type t)) with
-     | sec_info_instr => fun c => transl_code c
-     | sec_info_init_data => fun d => transl_init_data_list d
-     | _=> fun i => OK i
-     end (sec_info sec);
-  OK {| sec_type := sec_type sec;
-        sec_size := sec_size sec;
-        sec_info_ty := sec_info_ty sec;
-        sec_info := v;
-     |}.
+  match sec with
+  | sec_text c => 
+    do c' <- transl_code c;
+    OK (sec_text c')
+  | sec_data d => 
+    do d' <- transl_init_data_list d;
+    OK (sec_data d')
+  | _ => 
+    OK sec
+  end.
 
 End WITH_NORM_ID_MAPPING.
 

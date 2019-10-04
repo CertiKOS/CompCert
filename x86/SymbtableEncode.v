@@ -91,11 +91,7 @@ Definition encode_symbtable (t:symbtable) : res (list byte) :=
 
 Definition create_symbtable_section (t:symbtable) : res section :=
   do bytes <- encode_symbtable t;
-  OK {| sec_type := sec_symbtbl;
-        sec_size := Z.of_nat (length bytes);
-        sec_info_ty := sec_info_byte;
-        sec_info := bytes;
-     |}.
+  OK (sec_bytes bytes).
 
 End WITH_STRTAB.
 

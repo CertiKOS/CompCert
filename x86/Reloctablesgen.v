@@ -221,27 +221,18 @@ Definition transl_init_data_list (l:list init_data) : (reloctable * list init_da
 (** ** Translation of the program *)
 
 Definition transl_section (sec:section) : res ((option reloctable) * section) :=
-  do rs <- 
-     match sec_info_ty sec as a 
-           return (interp_sec_info_type a -> res (option reloctable * interp_sec_info_type a))
-     with
-     | sec_info_null 
-     | sec_info_byte => fun i => OK (None, i)
-     | sec_info_init_data => fun l => 
-                              let '(rtbl, sec) := transl_init_data_list l in
-                              OK (Some rtbl, sec)
-     | sec_info_instr => fun code => 
-                          do r <- transl_code code;
-                          let '(rtbl, sec) := r in
-                          OK (Some rtbl, sec)
-     end (sec_info sec);
-  let '(rtbl, i) := rs in
-  let sec' := {| sec_type := sec_type sec;
-                 sec_size := sec_size sec;
-                 sec_info_ty := sec_info_ty sec;
-                 sec_info := i |} in
-  OK (rtbl, sec').
-  
+  match sec with
+  | sec_text code =>
+    do r <- transl_code code;
+    let '(rtbl, code) := r in
+    OK (Some rtbl, sec_text code)
+  | sec_data l =>
+    let '(rtbl, l') := transl_init_data_list l in
+    OK (Some rtbl, sec_data l')
+  | _ => 
+    OK (None, sec)
+  end.
+ 
 Definition transl_sectable (stbl: sectable) :=
   do r <- 
      fold_left (fun r sec =>

@@ -196,16 +196,13 @@ Definition gen_strtab_sec_header p :=
   |}.
 
 
-(** Generation of the Elf file 
-    without the actual string table section and its header *)
+(** Generation of the Elf file *)
 
 Definition transl_section (sec: RelocProgram.section) : res section :=
-  match sec_info_ty sec as t
-        return interp_sec_info_type t -> res section
-  with
-  | sec_info_byte => fun bytes => OK bytes
-  | _ => fun _ => Error (msg "Section has not been encoded into bytes")
-  end (sec_info sec).
+  match sec with
+  | sec_bytes bs => OK bs
+  | _ => Error (msg "Section has not been encoded into bytes")
+  end.
 
 Definition gen_sections (t:sectable) : res (list section) :=
   match t with

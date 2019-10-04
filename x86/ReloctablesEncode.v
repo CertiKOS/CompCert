@@ -52,11 +52,7 @@ Definition encode_reloctable (t:reloctable) : list byte :=
 
 Definition create_reloctable_section (t:reloctable) : section :=
   let bytes := encode_reloctable t in
-  {| sec_type := sec_rel;
-     sec_size := Z.of_nat (length bytes);
-     sec_info_ty := sec_info_byte;
-     sec_info := bytes;
-  |}.
+  sec_bytes bytes.
   
 
 Definition create_reloctables_sections (ts:PTree.t reloctable) : res (list section) :=

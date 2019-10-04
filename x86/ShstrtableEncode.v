@@ -52,11 +52,7 @@ Definition strtab_str_ofs := shstrtab_str_ofs + (Z.of_nat (length shstrtab_str))
 
 
 Definition create_shstrtab_section :=
-  {| sec_type := sec_strtbl;
-     sec_size := Z.of_nat (List.length default_shstrtab);
-     sec_info_ty := sec_info_byte;
-     sec_info := default_shstrtab;
-  |}.
+  sec_bytes default_shstrtab.
 
 Definition transf_program (p:program) : res program :=
   let sec := create_shstrtab_section in
