@@ -22,7 +22,7 @@ Require Import CleanupLabels.
 Module LabelsetFacts := FSetFacts.Facts(Labelset).
 
 Definition match_prog (p tp: Linear.program) :=
-  match_program (fun ctx f tf => tf = transf_fundef f) eq p tp.
+  match_program is_fundef_internal (fun ctx f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
   forall p, match_prog p (transf_program p).
@@ -362,10 +362,10 @@ Proof.
   econstructor; split.
   eapply initial_state_intro with (f0 := transf_fundef f).
   eapply (Genv.init_mem_transf TRANSL); eauto.
-  rewrite (match_program_main TRANSL), symbols_preserved; eauto.
+  rewrite (match_program_main is_fundef_internal TRANSL), symbols_preserved; eauto.
   apply function_ptr_translated; auto.
   rewrite sig_function_translated. auto. eauto. eauto.
-  rewrite (match_program_main TRANSL); constructor; auto. constructor.
+  rewrite (match_program_main is_fundef_internal TRANSL); constructor; auto. constructor.
 Qed.
 
 Lemma transf_final_states:

@@ -2540,9 +2540,9 @@ End MATCH_PROGRAMS.
 
 Section TRANSFORM_PARTIAL.
 
-Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
+Context {A B V: Type} (fi: A -> bool) {LA: Linker A} {LV: Linker V}.
 Context {transf: A -> res B} {p: program A V} {tp: program B V}.
-Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp.
+Hypothesis progmatch: match_program fi (fun cu f tf => transf f = OK tf) eq p tp.
 
 Theorem find_funct_ptr_transf_partial:
   forall b f,
@@ -2602,9 +2602,9 @@ End TRANSFORM_PARTIAL.
 
 Section TRANSFORM_TOTAL.
 
-Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
+Context {A B V: Type} (fi: A -> bool) {LA: Linker A} {LV: Linker V}.
 Context {transf: A -> B} {p: program A V} {tp: program B V}.
-Hypothesis progmatch: match_program (fun cu f tf => tf = transf f) eq p tp.
+Hypothesis progmatch: match_program fi (fun cu f tf => tf = transf f) eq p tp.
 
 Theorem find_funct_ptr_transf:
   forall b f,

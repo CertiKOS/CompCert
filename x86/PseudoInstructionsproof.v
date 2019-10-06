@@ -19,7 +19,7 @@ Require Import RealAsmproof2.
 Require Import AsmRegs.
 
 Definition match_prog (p: Asm.program) (tp: Asm.program) :=
-  Linking.match_program (fun _ f tf => tf = transf_fundef f) eq p tp.
+  Linking.match_program Linking.is_fundef_internal (fun _ f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = tp -> match_prog p tp.
@@ -42,7 +42,7 @@ Section WITHMEMORYMODEL.
                                     }.
 
   Variable prog tprog: Asm.program.
-  Hypothesis TRANSF: Linking.match_program (fun _ f1 f2 => f2 = transf_fundef f1) eq prog tprog.
+  Hypothesis TRANSF: Linking.match_program Linking.is_fundef_internal (fun _ f1 f2 => f2 = transf_fundef f1) eq prog tprog.
   Let ge := Genv.globalenv prog.
   Let tge := Genv.globalenv tprog.
 

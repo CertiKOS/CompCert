@@ -16,7 +16,7 @@ Require AsmFacts.
 
 
 Definition match_prog (p tp:Asm.program) :=
-  match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+  match_program is_fundef_internal (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 
 Lemma transf_program_match:
@@ -301,9 +301,9 @@ Admitted.
 
 Section WITHMATCH.
           
-Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
+Context {A B V: Type} (fi: A -> bool) {LA: Linker A} {LV: Linker V}.
 Context {transf: A -> res B} {p: AST.program A V} {tp: AST.program B V}.
-Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp.
+Hypothesis progmatch: match_program fi (fun cu f tf => transf f = OK tf) eq p tp.
                 
 Theorem find_funct_ptr_transf_partial_inv:
   forall b ef,
@@ -703,7 +703,7 @@ Proof.
     eauto.
     inv H0.
     econstructor; eauto.
-    rewrite (match_program_main TRANSF); eauto.
+    rewrite (match_program_main is_fundef_internal TRANSF); eauto.
     generalize (Genv.find_symbol_transf_partial TRANSF (prog_main prog)).
     intros HFind.
     rewrite <- H1.

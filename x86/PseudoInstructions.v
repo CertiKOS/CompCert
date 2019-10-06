@@ -92,7 +92,7 @@ Proof.
 Qed.
 
 Definition match_check_prog (p: Asm.program) (tp: Asm.program) :=
-  Linking.match_program (fun _ f tf => transf_check_fundef f = OK tf) eq p tp (* /\ *)
+  Linking.match_program Linking.is_fundef_internal (fun _ f tf => transf_check_fundef f = OK tf) eq p tp (* /\ *)
   (* exists (bmain : Values.block) (fmain : Asm.function), *)
   (*   Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv p) (prog_main p) = Some bmain /\ *)
   (*   Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p) bmain = Some (Internal fmain) *).
@@ -226,7 +226,7 @@ Proof.
   inv H1.
   unfold rs0, ge0.
   econstructor; eauto.
-  setoid_rewrite (Linking.match_program_main TRANSF).
+  setoid_rewrite (Linking.match_program_main Linking.is_fundef_internal TRANSF).
   rewrite symbols_preserved. eauto.
 Qed.
 

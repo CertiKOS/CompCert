@@ -19,7 +19,7 @@ Require Import Inlining Inliningspec.
 Require Import StackInj.
 
 Definition match_prog (prog tprog: program) :=
-  match_program (fun cunit f tf => transf_fundef (funenv_program cunit) f = OK tf) eq prog tprog.
+  match_program is_fundef_internal  (fun cunit f tf => transf_fundef (funenv_program cunit) f = OK tf) eq prog tprog.
 
 Lemma transf_program_match:
   forall prog tprog, transf_program prog = OK tprog -> match_prog prog tprog.
@@ -1933,7 +1933,7 @@ Proof.
             eapply Mem.record_stack_block_perm'; eauto.
             eapply Mem.perm_inject; eauto.
             eapply Mem.record_stack_block_perm; eauto.
-            constructor.
+            (* constructor. *)
             rewrite dec_eq_false; auto.
             intros.
             eapply Mem.perm_alloc_4. eauto. eapply Mem.record_stack_block_perm; eauto. auto.

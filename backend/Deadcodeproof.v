@@ -22,7 +22,7 @@ Section WITHROMEMFOR.
 Context `{romem_for_instance: ROMemFor}.
 
 Definition match_prog (prog tprog: RTL.program) :=
-  match_program (fun cu f tf => transf_fundef (romem_for cu) f = OK tf) eq prog tprog.
+  match_program is_fundef_internal (fun cu f tf => transf_fundef (romem_for cu) f = OK tf) eq prog tprog.
 
 Lemma transf_program_match:
   forall prog tprog, transf_program prog = OK tprog -> match_prog prog tprog.
@@ -609,7 +609,7 @@ Proof.
   destruct args.
   * (* kept as is because no arguments -- should never happen *)
   simpl in *.
-  exploit needs_of_operation_sound. intros; eapply ma_perm; eauto. constructor.
+  exploit needs_of_operation_sound. intros; eapply ma_perm; eauto. (* constructor. *)
   eauto. instantiate (1 := nreg ne res). eauto with na. eauto with na. intros [tv [A B]].
   econstructor; split.
   eapply exec_Iop with (v0 := tv); eauto.
@@ -627,7 +627,7 @@ Proof.
   eapply eagree_update; eauto 2 with na.
 + (* preserved operation *)
   simpl in *.
-  exploit needs_of_operation_sound. intros; eapply ma_perm; eauto. constructor. eauto. eauto 2 with na. eauto with na.
+  exploit needs_of_operation_sound. intros; eapply ma_perm; eauto. (* constructor.  *)eauto. eauto 2 with na. eauto with na.
   intros [tv [A B]].
   econstructor; split.
   eapply exec_Iop with (v0 := tv); eauto.
@@ -933,7 +933,7 @@ Proof.
   TransfInstr; UseTransfer.
   econstructor; split.
   eapply exec_Icond; eauto.
-  eapply needs_of_condition_sound. intros; eapply ma_perm; eauto. constructor. eauto. eauto with na.
+  eapply needs_of_condition_sound. intros; eapply ma_perm; eauto. (* constructor.  *)eauto. eauto with na.
   eapply match_succ_states; eauto 2 with na.
   simpl; destruct b; auto.
 

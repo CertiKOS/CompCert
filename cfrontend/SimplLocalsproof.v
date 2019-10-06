@@ -22,14 +22,14 @@ Module VSF := FSetFacts.Facts(VSet).
 Module VSP := FSetProperties.Properties(VSet).
 
 Definition match_prog (p tp: program) : Prop :=
-    match_program (fun ctx f tf => transf_fundef f = OK tf) eq p tp
+    match_program is_fundef_internal (fun ctx f tf => transf_fundef f = OK tf) eq p tp
  /\ prog_types tp = prog_types p.
 
 Lemma match_transf_program:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
 Proof.
   unfold transf_program; intros. monadInv H. 
-  split; auto. apply match_transform_partial_program. rewrite EQ. destruct x; auto.
+  split; auto. apply match_transform_partial_program. setoid_rewrite EQ. destruct x; auto.
 Qed.
 
 
@@ -2735,7 +2735,7 @@ Proof.
   eapply (Genv.init_mem_transf_partial (proj1 TRANSF)). eauto.
   replace (prog_main tprog) with (prog_main prog). 
   instantiate (1 := b). rewrite <- H1. apply symbols_preserved.
-  generalize (match_program_main (proj1 TRANSF)). simpl; auto.
+  generalize (match_program_main is_fundef_internal (proj1 TRANSF)). simpl; auto.
   eauto.
   rewrite <- H3; apply type_of_fundef_preserved; auto.
   eauto. eauto.

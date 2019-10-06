@@ -23,7 +23,7 @@ Section WITHROMEMFOR.
 Context `{romem_for_instance: ROMemFor}.
 
 Definition match_prog (prog tprog: RTL.program) :=
-  match_program (fun cu f tf => transf_fundef (romem_for cu) f = OK tf) eq prog tprog.
+  match_program is_fundef_internal (fun cu f tf => transf_fundef (romem_for cu) f = OK tf) eq prog tprog.
 
 Lemma transf_program_match:
   forall prog tprog, transf_program prog = OK tprog -> match_prog prog tprog.
@@ -1207,7 +1207,7 @@ Proof.
 
 - (* Itailcall *)
   exploit find_function_translated; eauto. intros (cu' & tf & FIND' & TRANSF' & LINK').
-  exploit Mem.free_parallel_extends; eauto. constructor. intros [m2' [A B]].
+  exploit Mem.free_parallel_extends; eauto. (* constructor.  *)intros [m2' [A B]].
   exploit Mem.tailcall_stage_extends; eauto. inv SI. inv MSA1.
   eapply Mem.free_top_tframe_no_perm; eauto. intros (m3' & TC & EXT).
   econstructor; split.
@@ -1293,7 +1293,7 @@ Proof.
   unfold transfer; rewrite H; auto.
 
 - (* Ireturn *)
-  exploit Mem.free_parallel_extends; eauto. constructor. intros [m2' [A B]].
+  exploit Mem.free_parallel_extends; eauto. (* constructor. *) intros [m2' [A B]].
   econstructor; split.
   eapply exec_Ireturn; eauto.
   econstructor; eauto.

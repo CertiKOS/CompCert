@@ -1979,5 +1979,5 @@ Local Transparent Linker_fundef Linking.Linker_fundef.
   simpl; rewrite dec_eq_true; eauto.
   left; constructor. congruence.
 - intros. exists tt. auto.
-- replace (program_of_program p) with pp. auto. inv E; destruct pp; auto.
+- replace (program_of_program p) with pp. eauto. inv E; destruct pp; auto.
 Qed.

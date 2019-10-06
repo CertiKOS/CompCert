@@ -21,7 +21,7 @@ Require Import Debugvar.
 (** * Relational characterization of the transformation *)
 
 Definition match_prog (p tp: program) :=
-  match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+  match_program is_fundef_internal (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
@@ -564,9 +564,9 @@ Proof.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
   exists (Callstate nil tf (Locmap.init Vundef) (Mem.push_new_stage m2) (fn_stack_requirements (prog_main tprog))); split.
   econstructor; eauto. eapply (Genv.init_mem_transf_partial TRANSF); eauto.
-  rewrite (match_program_main TRANSF), symbols_preserved. auto.
+  rewrite (match_program_main is_fundef_internal TRANSF), symbols_preserved. auto.
   rewrite <- H3. apply sig_preserved. auto.
-  rewrite (match_program_main TRANSF). constructor. constructor. auto.
+  rewrite (match_program_main is_fundef_internal TRANSF). constructor. constructor. auto.
 Qed.
 
 Lemma transf_final_states:

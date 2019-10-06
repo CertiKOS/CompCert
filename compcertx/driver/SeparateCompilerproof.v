@@ -250,10 +250,11 @@ Lemma transf_clight_to_linear_correct:
 
   Lemma match_program_no_more_functions:
     forall {F1 V1 F2 V2}
+      (fi: F1 -> bool)
       `{Linking.Linker F1} `{Linking.Linker V1}
       Mf Mv
       (p1: AST.program F1 V1) (p2: AST.program F2 V2),
-      Linking.match_program Mf Mv p1 p2 ->
+      Linking.match_program fi Mf Mv p1 p2 ->
       forall b,
         Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p1) b = None ->
         Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p2) b = None.

@@ -25,7 +25,7 @@ Require Import Stacking.
 Local Open Scope sep_scope.
 
 Definition match_prog (p: Linear.program) (tp: Mach.program) :=
-  match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+  match_program is_fundef_internal (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
@@ -4112,7 +4112,7 @@ Proof.
   assert (initial_state tprog (Callstate nil b (Regmap.init Vundef) (Mem.push_new_stage m1))).
   {
     econstructor; eauto.
-    rewrite (match_program_main TRANSF).
+    rewrite (match_program_main is_fundef_internal TRANSF).
     rewrite symbols_preserved. eauto.
   }
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].

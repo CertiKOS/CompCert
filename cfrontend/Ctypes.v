@@ -1439,6 +1439,17 @@ Proof.
   destruct opt. left; exists a; auto. right; auto. 
 Defined.
 
+Definition is_fundef_internal {A:Type} (fd: fundef A) : bool :=
+  match fd with
+  | Internal _ => true
+  | External _ _ _ _ => false
+  end.
+
+Definition linker_prog_fundef {A V: Type} {LV: Linker V}: Linker (AST.program (fundef A) V) :=
+  Linker_prog _ _ is_fundef_internal.
+
+Existing Instance linker_prog_fundef.
+
 Definition link_program {F:Type} (p1 p2: program F): option (program F) :=
   match link (program_of_program p1) (program_of_program p2) with
   | None => None
@@ -1500,7 +1511,7 @@ Hypothesis link_match_fundef:
   exists tf, link tf1 tf2 = Some tf /\ match_fundef f tf.
 
 Let match_program (p: program F) (tp: program G) : Prop :=
-    Linking.match_program (fun ctx f tf => match_fundef f tf) eq p tp
+    Linking.match_program is_fundef_internal (fun ctx f tf => match_fundef f tf) eq p tp
  /\ prog_types tp = prog_types p.
 
 Theorem link_match_program:
@@ -1514,8 +1525,9 @@ Local Transparent Linker_program.
   destruct (link (program_of_program p1) (program_of_program p2)) as [pp|] eqn:LP; try discriminate.
   assert (A: exists tpp,
                link (program_of_program tp1) (program_of_program tp2) = Some tpp
-             /\ Linking.match_program (fun ctx f tf => match_fundef f tf) eq pp tpp).
-  { eapply Linking.link_match_program. 
+             /\ Linking.match_program is_fundef_internal (fun ctx f tf => match_fundef f tf) eq pp tpp).
+  { unfold Linking.match_program.
+    eapply Linking.link_match_program. 
   - intros. exploit link_match_fundef; eauto. intros (tf & A & B). exists tf; auto.
   - intros.
     Local Transparent Linker_types.

@@ -19,7 +19,7 @@ Require Import Op Locations LTL.
 Require Import Tunneling.
 
 Definition match_prog (p tp: program) :=
-  match_program (fun ctx f tf => tf = tunnel_fundef f) eq p tp.
+  match_program is_fundef_internal (fun ctx f tf => tf = tunnel_fundef f) eq p tp.
 
 Lemma transf_program_match:
   forall p, match_prog p (tunnel_program p).
@@ -411,7 +411,7 @@ Proof.
   exists (Callstate nil (tunnel_fundef f) (Locmap.init Vundef) (Mem.push_new_stage m2) (fn_stack_requirements (prog_main tprog))); split.
   econstructor; eauto.
   apply (Genv.init_mem_transf TRANSL); auto.
-  rewrite (match_program_main TRANSL).
+  rewrite (match_program_main is_fundef_internal TRANSL).
   rewrite symbols_preserved. eauto.
   apply function_ptr_translated; auto.
   rewrite <- H3. apply sig_preserved.

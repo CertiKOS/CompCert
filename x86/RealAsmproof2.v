@@ -1315,7 +1315,7 @@ Section WITHMEMORYMODEL.
   End PRESERVATION.
 
   Definition match_prog (p: Asm.program) (tp: Asm.program) :=
-    match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+    match_program is_fundef_internal  (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
   Lemma transf_program_match:
     forall p tp, transf_program p = OK tp -> match_prog p tp.
@@ -1356,7 +1356,7 @@ Section WITHMEMORYMODEL.
           unfold transf_partial_fundef in H2. destr_in H2; monadInv H2.
           unfold transf_function in EQ.
           destruct func_no_jmp_rel_dec; inv EQ. auto. 
-          red. auto.
+          (* red. auto. *)
         * apply NJ. auto.
     - auto.
   Qed.     

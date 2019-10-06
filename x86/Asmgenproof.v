@@ -20,7 +20,7 @@ Require Import Asmgen Asmgenproof0 Asmgenproof1.
 Require AsmFacts.
 
 Definition match_prog (p: Mach.program) (tp: Asm.program) :=
-  match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+  match_program is_fundef_internal (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
@@ -1484,7 +1484,7 @@ Proof.
   - econstructor.
     eapply (Genv.init_mem_transf_partial TRANSF); eauto.
     eauto.
-    rewrite (match_program_main TRANSF).
+    rewrite (match_program_main is_fundef_internal TRANSF).
     rewrite symbols_preserved. eauto.
   - replace (Genv.symbol_address (Genv.globalenv tprog) (prog_main tprog) Ptrofs.zero)
     with (Vptr fb Ptrofs.zero).
@@ -1508,9 +1508,9 @@ Proof.
            reflexivity.
         -- red. rewrite_stack_blocks. constructor; auto.
     + unfold Genv.symbol_address.
-      rewrite (match_program_main TRANSF).
+      rewrite (match_program_main is_fundef_internal TRANSF).
       rewrite symbols_preserved.
-      unfold ge; rewrite H1. auto.
+      unfold ge; setoid_rewrite H1. auto.
 Qed.
 
 Lemma transf_final_states:

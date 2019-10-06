@@ -660,11 +660,11 @@ Definition printable_oracle (tp: Asm.program) : list (ident * Z) :=
                end) (prog_defs tp) nil.
 
 Lemma match_program_no_more_functions:
-  forall {F1 V1 F2 V2}
+  forall {F1 V1 F2 V2} (fi: F1 -> bool)
          `{Linker F1} `{Linker V1}
          Mf Mv
          (p1: program F1 V1) (p2: program F2 V2),
-    match_program Mf Mv p1 p2 ->
+    match_program fi Mf Mv p1 p2 ->
     forall b,
     Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p1) b = None ->
     Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p2) b = None.

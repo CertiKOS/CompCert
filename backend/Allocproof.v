@@ -22,7 +22,7 @@ Require Import Op Registers RTL Locations Conventions RTLtyping LTL.
 Require Import Allocation.
 
 Definition match_prog (p: RTL.program) (tp: LTL.program) :=
-  match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+  match_program is_fundef_internal (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
@@ -2363,9 +2363,9 @@ Proof.
   econstructor; eauto.
   eapply (Genv.init_mem_transf_partial TRANSF); eauto.
   rewrite symbols_preserved.
-  rewrite (match_program_main TRANSF).  auto.
+  rewrite (match_program_main is_fundef_internal TRANSF).  auto.
   congruence.
-  rewrite (match_program_main TRANSF).  
+  rewrite (match_program_main is_fundef_internal TRANSF).  
   constructor; auto.
   constructor. rewrite SIG; rewrite H3; auto.
   rewrite SIG, H3, loc_arguments_main. auto.

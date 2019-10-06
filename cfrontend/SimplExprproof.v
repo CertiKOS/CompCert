@@ -21,7 +21,7 @@ Require Import SimplExpr SimplExprspec.
 (** ** Relational specification of the translation. *)
 
 Definition match_prog (p: Csyntax.program) (tp: Clight.program) :=
-    match_program (fun ctx f tf => tr_fundef f tf) eq p tp
+    match_program is_fundef_internal (fun ctx f tf => tr_fundef f tf) eq p tp
  /\ prog_types tp = prog_types p.
 
 Lemma transf_program_match:

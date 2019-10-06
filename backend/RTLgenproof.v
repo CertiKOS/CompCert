@@ -349,7 +349,7 @@ Qed.
 Require Import Errors.
 
 Definition match_prog (p: CminorSel.program) (tp: RTL.program) :=
-  match_program (fun cu f tf => transl_fundef f = Errors.OK tf) eq p tp.
+  match_program is_fundef_internal (fun cu f tf => transl_fundef f = Errors.OK tf) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transl_program p = OK tp -> match_prog p tp.

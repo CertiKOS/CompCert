@@ -1352,7 +1352,7 @@ Proof.
   set (ce := prog_comp_env p) in *.
   set (e := bind_globdef (PTree.empty type) (prog_defs p)) in *.
   set (e' := bind_globdef (PTree.empty type) (AST.prog_defs tp)) in *.
-  assert (M: match_program (fun ctx f tf => retype_fundef ce e f = OK tf) eq p tp)
+  assert (M: match_program is_fundef_internal (fun ctx f tf => retype_fundef ce e f = OK tf) eq p tp)
   by (eapply match_transform_partial_program; eauto).
   destruct M as (MATCH & _). simpl in MATCH.
   assert (ENVS: e' = e).

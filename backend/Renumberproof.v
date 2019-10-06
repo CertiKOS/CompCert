@@ -18,7 +18,7 @@ Require Import Values Memory Globalenvs Events Smallstep.
 Require Import Op Registers RTL Renumber.
 
 Definition match_prog (p tp: RTL.program) :=
-  match_program (fun ctx f tf => tf = transf_fundef f) eq p tp.
+  match_program is_fundef_internal (fun ctx f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
   forall p, match_prog p (transf_program p).
@@ -258,7 +258,7 @@ Proof.
   intros. inv H. econstructor; split.
   econstructor.
   eapply (Genv.init_mem_transf TRANSL); eauto.
-  rewrite symbols_preserved. rewrite (match_program_main TRANSL). eauto.
+  rewrite symbols_preserved. rewrite (match_program_main is_fundef_internal TRANSL). eauto.
   eapply function_ptr_translated; eauto.
   rewrite <- H3; apply sig_preserved.
   eauto. eauto.

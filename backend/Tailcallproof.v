@@ -203,7 +203,7 @@ Qed.
 (** * Proof of semantic preservation *)
 
 Definition match_prog (p tp: RTL.program) :=
-  match_program (fun cu f tf => tf = transf_fundef f) eq p tp.
+  match_program is_fundef_internal (fun cu f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
   forall p, match_prog p (transf_program p).
