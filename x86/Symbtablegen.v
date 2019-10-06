@@ -106,14 +106,20 @@ Definition update_code_data_size (def: option (AST.globdef Asm.fundef unit)) : (
 
 End WITH_CODE_DATA_SIZE.
 
+Definition acc_symb (ssize: symbtable * Z * Z) 
+           (iddef: ident * option (AST.globdef Asm.fundef unit)) :=
+  let '(stbl, dsize, csize) := ssize in
+  let (id, def) := iddef in
+  let e := get_symbentry dsize csize id def in
+  let stbl' := e :: stbl in
+  let '(dsize', csize') := update_code_data_size dsize csize def in
+  (stbl', dsize', csize').
+
+
 (** Generate the symbol and section table *)
 Definition gen_symb_table defs :=
   let '(rstbl, dsize, csize) := 
-      fold_left (fun '(stbl, dsize, csize) '(id, def) => 
-                   let e := get_symbentry dsize csize id def in
-                   let stbl' := e :: stbl in
-                   let '(dsize', csize') := update_code_data_size dsize csize def in
-                   (stbl', dsize', csize'))
+      fold_left acc_symb
                 defs ([dummy_symbentry], 0, 0) in
   (rev rstbl, dsize, csize).
 
@@ -247,9 +253,12 @@ Definition get_def_instrs (def: option (globdef fundef unit)) : code :=
   | _ => []
   end.
 
+Definition acc_instrs (iddef: ident * option (globdef fundef unit)) instrs :=
+  let (id, def) := iddef in
+  (get_def_instrs def) ++ instrs.
+
 Definition create_code_section (defs: list (ident * option (globdef fundef unit))) : section :=
-  let code := fold_right (fun '(id, def) instrs =>
-                            (get_def_instrs def) ++ instrs)
+  let code := fold_right acc_instrs
                          [] defs in
   sec_text code.
 
@@ -265,9 +274,12 @@ Definition get_def_init_data (def: option (globdef fundef unit)) : list init_dat
   | _ => []
   end.
 
+Definition acc_init_data (iddef: ident * option (globdef fundef unit)) dinit :=
+  let '(id, def) := iddef in
+  (get_def_init_data def) ++ dinit.
+
 Definition create_data_section (defs: list (ident * option (globdef fundef unit))) : section :=
-  let data := fold_right (fun '(id, def) dinit =>
-                            (get_def_init_data def) ++ dinit)
+  let data := fold_right acc_init_data
                          [] defs in
   sec_data data.
   
