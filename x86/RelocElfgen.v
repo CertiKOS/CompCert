@@ -204,16 +204,16 @@ Definition transl_section (sec: RelocProgram.section) : res section :=
   | _ => Error (msg "Section has not been encoded into bytes")
   end.
 
+Definition acc_sections sec r :=
+  do r' <- r;
+  do sec' <- transl_section sec;
+  OK (sec' :: r').
+
 Definition gen_sections (t:sectable) : res (list section) :=
   match t with
   | nil => Error (msg "No section found")
   | null :: t' =>
-    fold_right (fun sec r => 
-                  do r' <- r;
-                    do sec' <- transl_section sec;
-                    OK (sec' :: r'))
-               (OK [])
-               t'
+    fold_right acc_sections (OK []) t'
   end.
 
 Definition gen_reloc_elf (p:program) : res elf_file :=
