@@ -294,7 +294,7 @@ Qed.
 
 Section LINKER_PROG.
 
-Context {F V: Type} {is_fun_internal: F -> bool} {LF: Linker F} {LV: Linker V} (p1 p2: program F V).
+Context {F V: Type} (is_fun_internal: F -> bool) {LF: Linker F} {LV: Linker V} (p1 p2: program F V).
 
 
 (* Let dm1 := prog_option_defmap p1. *)
@@ -482,7 +482,7 @@ Qed.
 End LINKER_PROG.
 
 Instance Linker_prog (F V: Type) (f_internal: F -> bool) {LF: Linker F} {LV: Linker V} : Linker (program F V) := {
-  link := link_prog;
+  link := link_prog f_internal;
   linkorder := fun _ _ => True;
   (*   fun p1 p2 => *)
   (*    p1.(prog_main) = p2.(prog_main) *)
@@ -495,7 +495,6 @@ Instance Linker_prog (F V: Type) (f_internal: F -> bool) {LF: Linker F} {LV: Lin
   (*    /\ (~In id p2.(prog_public) -> gd2 = gd1) *)
 }.
 Proof.
-  auto.
   auto.
   auto.
   auto.

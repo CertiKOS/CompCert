@@ -267,3 +267,14 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
     end
   end.
   
+
+Instance Linker_reloc_prog : Linker program :=
+{
+  link := link_reloc_prog;
+  linkorder := fun _ _ => True;
+}.
+Proof.
+  auto.
+  auto.
+  auto.
+Defined.
