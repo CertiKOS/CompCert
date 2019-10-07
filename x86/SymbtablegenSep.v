@@ -70,6 +70,74 @@ Proof.
   destruct zle; try monadInv MATCH. simpl. auto.
 Qed.
 
+
+Lemma link_gen_symb_commut : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2,
+    link_defs is_fundef_internal defs1 defs2 = Some defs ->
+    gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
+    exists stbl dsz csz,
+      link_symbtable_aux (reloc_offset_fun (create_data_section defs1) (create_code_section defs1))
+                         (SeqTable.filter is_not_dummy_symbentry stbl1) 
+                         (SeqTable.filter is_not_dummy_symbentry stbl2) 
+                         [] = Some stbl
+      /\ gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz, csz).
+Admitted.
+
+
+Lemma link_pres_wf_prog: forall p1 p2 p defs,
+    link_defs is_fundef_internal (AST.prog_defs p1) (AST.prog_defs p2) = Some defs ->
+    wf_prog p1 -> wf_prog p2 -> 
+    p = {| AST.prog_defs := defs; 
+           AST.prog_public := AST.prog_public p1 ++ AST.prog_public p2; 
+           AST.prog_main := AST.prog_main p1 |} ->
+    wf_prog p.
+Admitted.
+
+Lemma acc_init_data_app : forall def l1 l2,
+    (acc_init_data def l1) ++ l2 = acc_init_data def (l1 ++ l2).
+Proof.
+  intros def l1 l2. destruct def as (id & def').
+  simpl. rewrite app_assoc. auto.
+Qed.
+
+Lemma fold_right_acc_init_data_app : forall defs l,
+    fold_right acc_init_data [] defs ++ l = fold_right acc_init_data l defs.
+Proof.
+  induction defs. 
+  - intros l. simpl. auto.
+  - intros l. simpl. 
+    rewrite acc_init_data_app. rewrite IHdefs. auto.
+Qed.
+
+
+Lemma link_acc_init_data_comm : forall defs1 defs2 defs,
+    link_defs is_fundef_internal defs1 defs2 = Some defs ->
+    fold_right acc_init_data [] defs = fold_right acc_init_data [] (defs1 ++ defs2).
+Admitted.
+
+
+Lemma acc_instrs_app : forall def l1 l2,
+    (acc_instrs def l1) ++ l2 = acc_instrs def (l1 ++ l2).
+Proof.
+  intros def l1 l2. destruct def as (id & def').
+  simpl. rewrite app_assoc. auto.
+Qed.
+
+Lemma fold_right_acc_instrs_app : forall defs l,
+    fold_right acc_instrs [] defs ++ l = fold_right acc_instrs l defs.
+Proof.
+  induction defs. 
+  - intros l. simpl. auto.
+  - intros l. simpl. 
+    rewrite acc_instrs_app. rewrite IHdefs. auto.
+Qed.
+
+Lemma link_acc_instrs_comm : forall defs1 defs2 defs,
+    link_defs is_fundef_internal defs1 defs2 = Some defs ->
+    fold_right acc_instrs [] defs = fold_right acc_instrs [] (defs1 ++ defs2).
+Admitted.
+
+
 Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
     link p1 p2 = Some p -> match_prog p1 tp1 -> match_prog p2 tp2 -> 
     exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp.
@@ -101,9 +169,30 @@ Proof.
   destruct zle; try monadInv MATCH2; simpl.
 
   unfold link_symbtable.
+  exploit link_gen_symb_commut; eauto.
+  destruct 1 as (stbl & dsz & csz & LINKS & GENS).
+  eexists. split.
+  setoid_rewrite LINKS. reflexivity.
+  unfold transf_program.
+
+  exploit link_pres_wf_prog; eauto.
+  intros WF. 
+  destruct check_wellformedness; try congruence.
+  simpl. rewrite GENS.
+  
+  destruct zle. 
+  repeat f_equal.
+  unfold create_sec_table. repeat f_equal.
+  unfold create_data_section. f_equal.
+  rewrite fold_right_acc_init_data_app.
+  rewrite <- fold_right_app.
+  apply link_acc_init_data_comm; auto.
+  unfold create_code_section. f_equal.
+  rewrite fold_right_acc_instrs_app.
+  rewrite <- fold_right_app.
+  apply link_acc_instrs_comm; auto.
 
   Admitted.
-
 
 Instance TransfLinkSymbtablegen : TransfLink match_prog :=
   link_transf_symbtablegen.

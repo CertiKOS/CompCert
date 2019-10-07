@@ -260,7 +260,7 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
                   prog_symbtable := symbtbl;
                   prog_strtable  := prog_strtable p1;
                   prog_reloctables := prog_reloctables p1;
-                  prog_senv := prog_senv p1; |}
+                  prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv ap); |}
         end
       end
     | _, _ => None
