@@ -70,18 +70,70 @@ Proof.
   destruct zle; try monadInv MATCH. simpl. auto.
 Qed.
 
+(* Lemma link_defs_acc_symb_comm : forall defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2, *)
+(*       link_defs_aux is_fundef_internal defs1 defs2 postponed = Some defs -> *)
+(*       fold_left (acc_symb sec_data_id sec_code_id) defs1 (entries1', dsz1', csz1') = (entries1 ++ entries1', dsz1, csz1) -> *)
+(*       fold_left (acc_symb sec_data_id sec_code_id) defs2 (entries2', dsz2', csz2') = (entries2 ++ entries2', dsz2, csz2) -> *)
+(*       exists stbl,  *)
+(*         link_symbtable_aux (reloc_offset_fun' dsz1 csz1) *)
+(*                            (rev entries1) *)
+(*                            (rev entries2) *)
+(*                             = Some stbl /\ *)
+(*         fold_left (acc_symb sec_data_id sec_code_id) defs ([dummy_symbentry], 0, 0) =  *)
+(*         (rev stbl, dsz1 + dsz2, csz1 + csz2). *)
+(* Proof. *)
+(*   intros defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2 LINK ACC1 ACC2. *)
+(*   unfold link_symbtable. *)
 
-Lemma link_gen_symb_commut : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2,
-    link_defs is_fundef_internal defs1 defs2 = Some defs ->
-    gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
-    gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
-    exists stbl dsz csz,
-      link_symbtable_aux (reloc_offset_fun (create_data_section defs1) (create_code_section defs1))
-                         (SeqTable.filter is_not_dummy_symbentry stbl1) 
-                         (SeqTable.filter is_not_dummy_symbentry stbl2) 
-                         [] = Some stbl
-      /\ gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz, csz).
-Admitted.
+
+(* Lemma link_defs_acc_symb_comm : forall defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2, *)
+(*       link_defs_aux is_fundef_internal defs1 defs2 [] = Some defs -> *)
+(*       fold_left (acc_symb sec_data_id sec_code_id) defs1 ([dummy_symbentry], 0, 0) = (rstbl1, dsz1, csz1) -> *)
+(*       fold_left (acc_symb sec_data_id sec_code_id) defs2 ([dummy_symbentry], 0, 0) = (rstbl2, dsz2, csz2) -> *)
+(*       exists stbl,  *)
+(*         link_symbtable (reloc_offset_fun (create_data_section defs1) (create_code_section defs1))  *)
+(*                        (rev rstbl1) (rev rstbl2) = Some stbl /\ *)
+(*         fold_left (acc_symb sec_data_id sec_code_id) defs ([dummy_symbentry], 0, 0) =  *)
+(*         (rev stbl, dsz1 + dsz2, csz1 + csz2). *)
+(* Proof. *)
+(*   induction defs1 as [| def defs1']. *)
+(*   - intros defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2 LINK ACC1 ACC2. *)
+(*     simpl in *. inv LINK. inv ACC1. *)
+(*     simpl. *)
+(*     admit. *)
+(*   - intros defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2 LINK ACC1 ACC2. *)
+(*     simpl in *. destruct def as (id1 & def1). *)
+(*     destruct (partition (fun '(id', _) => ident_eq id' id1) defs2) as (defs2' & defs2'') eqn:PART. *)
+(*     destruct defs2' as [| def2 defs2''']. *)
+    
+
+(*   intros defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2  *)
+(*   unfold link_symbtable. *)
+
+
+(* Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2, *)
+(*     link_defs is_fundef_internal defs1 defs2 = Some defs -> *)
+(*     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) -> *)
+(*     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) -> *)
+(*     exists stbl, *)
+(*       link_symbtable (reloc_offset_fun (create_data_section defs1) (create_code_section defs1)) *)
+(*                      stbl1 stbl2 = Some stbl *)
+(*       /\ gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz1 + dsz2, csz1 + csz2). *)
+(* Proof. *)
+(*   intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 LINK GS1 GS2. *)
+(*   unfold link_defs in LINK. *)
+(*   unfold gen_symb_table in GS1, GS2. *)
+(*   destruct (fold_left (acc_symb sec_data_id sec_code_id) defs1 ([dummy_symbentry], 0, 0))  *)
+(*     as (r1 & csz1') eqn:GSEQ1. destruct r1 as (rstbl1 & dsz1'). inv GS1. *)
+(*   destruct (fold_left (acc_symb sec_data_id sec_code_id) defs2 ([dummy_symbentry], 0, 0))  *)
+(*     as (r2 & csz') eqn:GSEQ2. destruct r2 as (rstbl2 & dsz2'). inv GS2. *)
+(*   unfold gen_symb_table. *)
+(*   exploit link_defs_acc_symb_comm; eauto. *)
+(*   destruct 1 as (stbl & LINKS & ACC). *)
+(*   exists stbl. split; auto. rewrite ACC.  *)
+(*   rewrite rev_involutive. auto. *)
+(* Qed. *)
+
 
 
 Lemma link_pres_wf_prog: forall p1 p2 p defs,
@@ -168,29 +220,29 @@ Proof.
   destruct p as (stbl2 & dsz2).
   destruct zle; try monadInv MATCH2; simpl.
 
-  unfold link_symbtable.
-  exploit link_gen_symb_commut; eauto.
-  destruct 1 as (stbl & dsz & csz & LINKS & GENS).
-  eexists. split.
-  setoid_rewrite LINKS. reflexivity.
-  unfold transf_program.
+  (* unfold link_symbtable. *)
+  (* exploit link_gen_symb_comm; eauto. *)
+  (* destruct 1 as (stbl & LINKS & GENS). *)
+  (* eexists. split. *)
+  (* setoid_rewrite LINKS. reflexivity. *)
+  (* unfold transf_program. *)
 
-  exploit link_pres_wf_prog; eauto.
-  intros WF. 
-  destruct check_wellformedness; try congruence.
-  simpl. rewrite GENS.
+  (* exploit link_pres_wf_prog; eauto. *)
+  (* intros WF.  *)
+  (* destruct check_wellformedness; try congruence. *)
+  (* simpl. rewrite GENS. *)
   
-  destruct zle. 
-  repeat f_equal.
-  unfold create_sec_table. repeat f_equal.
-  unfold create_data_section. f_equal.
-  rewrite fold_right_acc_init_data_app.
-  rewrite <- fold_right_app.
-  apply link_acc_init_data_comm; auto.
-  unfold create_code_section. f_equal.
-  rewrite fold_right_acc_instrs_app.
-  rewrite <- fold_right_app.
-  apply link_acc_instrs_comm; auto.
+  (* destruct zle.  *)
+  (* repeat f_equal. *)
+  (* unfold create_sec_table. repeat f_equal. *)
+  (* unfold create_data_section. f_equal. *)
+  (* rewrite fold_right_acc_init_data_app. *)
+  (* rewrite <- fold_right_app. *)
+  (* apply link_acc_init_data_comm; auto. *)
+  (* unfold create_code_section. f_equal. *)
+  (* rewrite fold_right_acc_instrs_app. *)
+  (* rewrite <- fold_right_app. *)
+  (* apply link_acc_instrs_comm; auto. *)
 
   Admitted.
 

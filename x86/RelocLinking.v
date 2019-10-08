@@ -65,7 +65,7 @@ Definition link_symbtype (t1 t2: symbtype) :=
 (*   | secindex_normal _ , secindex_normal _ => ONone *)
 (*   end. *)
 
-Definition postpone_link_symb (e2: symbentry) : bool :=
+Definition is_symbentry_internal (e2: symbentry) : bool :=
   let i2 := symbentry_secindex e2 in
   match i2 with
   | secindex_undef
@@ -127,64 +127,69 @@ Definition reloc_symbtable (t:symbtable) : option symbtable :=
                 end) 
              (Some []) t.
 
+End WITH_RELOC_OFFSET.
 
-(** Linking of symbol tables t1 and t2 with the 
-    internal definitions in t2 (denoted by postponed) 
-    appended to after these in t1.
-    We assume t1 and t2 contain symbols with distinct ids *)
-Fixpoint link_symbtable_aux (t1 t2 postponed: symbtable) : option symbtable :=
+(** Linking of symbol tables t1 and t2 with the linking of 
+    the symbols for internal definitions in t2 postponed.
+    We assume t1 and t2 contain symbols with distinct ids.
+    This function returns a triple of symbol tables with:
+    - linked symbols
+    - the symbols left to be linked in t1 
+      (contain external symbols that will later be linked with
+      internal symbols in t2)
+    - the symbols left to be linked in t2 
+      (contains all the internal symbols in t2 and
+      external symbols in t2 that are not found in t1)
+ *)
+Fixpoint link_symbtable1 (t1 t2: symbtable) : option (symbtable * symbtable * symbtable) :=
   match t1 with
   | nil => 
-    (** Perform the relocation to the internal definitions in t2 and
-        concatnate them with the unsolved symbols in t2 *)
-    match reloc_symbtable postponed with
+    Some (nil, nil, t2)
+  | e1 :: t1' =>
+    match link_symbtable1 t1' t2 with
     | None => None
-    | Some p' =>  Some ((rev p') ++ t2)
-    end
-  | e1 :: t1' => 
-    match symbentry_id e1 with
-    | None => None
-    | Some id1 => 
-      (** e2s contains symbols with the same id as e1 *)
-      let (e2s, t2') := partition (symbentry_id_eq id1) t2 in
-      match e2s with
-      | nil => 
-        (** If there is no symbol with the same id as e1 in t2,
-            then e1 is a distinct symbol. 
-            Perform the rest of the linking and put e1 to the head 
-            of the result *)
-        match link_symbtable_aux t1' t2 postponed with
-        | None => None
-        | Some t => Some (e1 :: t)
-        end
-      | e2::_ =>
-        (** If there is a symbol e2 with the same id as e1 in t2,
-            then link e1 with e2 *)
-        match link_symb e1 e2 with
-        | None => None
-        | Some e3 => 
-          (** If linking of e1 and e2 succeeds, depending on 
-              whether e2 is an internal definition or not,
-              either the result is added to 'postponed' and appended later,
-              or the result made to be the head of the final result *)
-          if postpone_link_symb e2 then
-            link_symbtable_aux t1' t2' (e3 :: postponed)
+    | Some (t1_linked, t1_rest, t2_rest) =>
+      match symbentry_id e1 with
+      | None => None
+      | Some id1 => 
+        (** e2s contains symbols with the same id as e1 *)
+        let (e2s, t2_rest') := partition (symbentry_id_eq id1) t2_rest in
+        match e2s with
+        | nil => 
+          (** If there is no symbol with the same id as e1 in t2,
+            then e1 is a distinct symbol *)
+          Some (e1 :: t1_linked, t1_rest, t2_rest)
+        | e2 :: _ =>
+          (** If there is a symbol e2 with the same id as e1 in t2 *)
+          if is_symbentry_internal e2 then
+            if is_symbentry_internal e1 then
+              None
+            else
+              (** Postpone the linking with e2 if it is an internal definition *)
+              Some (t1_linked, e1 :: t1_rest, t2_rest)
           else
-            match (link_symbtable_aux t1' t2' postponed) with
+            match link_symb e1 e2 with
             | None => None
-            | Some t => Some (e3 :: t)
+            | Some e3 => Some (e3 :: t1_linked, t1_rest, t2_rest')
             end
         end
       end
     end
   end.
-    
+
 Definition link_symbtable (t1 t2: symbtable) : option symbtable :=
   let t1' := SeqTable.filter is_not_dummy_symbentry t1 in
   let t2' := SeqTable.filter is_not_dummy_symbentry t2 in 
-  link_symbtable_aux t1' t2' [].
+  match link_symbtable1 t1' t2' with
+  | None => None
+  | Some (t1_linked, t1_rest, t2_rest) =>
+    match link_symbtable1 t2_rest t1_rest with
+    | None => None
+    | Some (t2_linked, _, _) => 
+      Some (dummy_symbentry :: t1_linked ++ t2_linked)
+    end
+  end.
 
-End WITH_RELOC_OFFSET.
 
 Definition link_section (s1 s2: section) : option section :=
   match s1, s2 with
@@ -218,9 +223,7 @@ Definition link_sectable (s1 s2: sectable) : option sectable :=
     None
   end.
 
-Definition reloc_offset_fun (data_sec code_sec: section): N -> option Z :=
-  let dsz := sec_size data_sec in
-  let csz := sec_size code_sec in
+Definition reloc_offset_fun (dsz csz: Z): N -> option Z :=
   (fun i => if N.eq_dec i (SecIndex.interp sec_data_id) then
            Some dsz
          else if N.eq_dec i (SecIndex.interp sec_code_id) then
@@ -246,21 +249,26 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
     let code_sec1 := SeqTable.get (SecIndex.interp sec_code_id) stbl1 in
     match data_sec1, code_sec1 with
     | Some data_sec1', Some code_sec1' =>
-      let f_rofs := reloc_offset_fun data_sec1' code_sec1' in
       match link_sectable stbl1 stbl2 with
       | None => None
       | Some sectbl =>
-        match link_symbtable f_rofs (prog_symbtable p1) (prog_symbtable p2) with
+        let t1 := (prog_symbtable p1) in
+        let f_rofs := reloc_offset_fun (sec_size data_sec1') (sec_size code_sec1') in
+        match reloc_symbtable f_rofs (prog_symbtable p2) with
         | None => None
-        | Some symbtbl =>
-          Some {| prog_defs   := AST.prog_defs ap;
-                  prog_public := AST.prog_public ap;
-                  prog_main   := AST.prog_main ap;
-                  prog_sectable  := sectbl;
-                  prog_symbtable := symbtbl;
-                  prog_strtable  := prog_strtable p1;
-                  prog_reloctables := prog_reloctables p1;
-                  prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv ap); |}
+        | Some t2 =>
+          match link_symbtable t1 t2 with
+          | None => None
+          | Some symbtbl =>
+            Some {| prog_defs   := AST.prog_defs ap;
+                    prog_public := AST.prog_public ap;
+                    prog_main   := AST.prog_main ap;
+                    prog_sectable  := sectbl;
+                    prog_symbtable := symbtbl;
+                    prog_strtable  := prog_strtable p1;
+                    prog_reloctables := prog_reloctables p1;
+                    prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv ap); |}
+          end
         end
       end
     | _, _ => None

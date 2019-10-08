@@ -323,7 +323,7 @@ Definition is_var_internal (v: globvar V) :=
   | _ => true
   end.
 
-Definition postpone_def (def: option (globdef F V)) : bool :=
+Definition is_def_internal (def: option (globdef F V)) : bool :=
   match def with
   | None => false
   | Some g =>
@@ -333,48 +333,61 @@ Definition postpone_def (def: option (globdef F V)) : bool :=
     end
   end.
       
-(** Linking of global definitions defs1 and defs2 with the 
-    internal definitions in defs2 (denoted by postponed) 
-    appended to after these in defs1.
-    We assume defs1 and defs2 contain definitions with distinct ids *)
-Fixpoint link_defs_aux (defs1 defs2 postponed: list (ident * option (globdef F V))) :=
+(** Linking of global definitions defs1 and defs2 with the linking of
+    internal definitions in defs2 postponed.
+    We assume defs1 and defs2 contain definitions with distinct ids.
+    This function returns a triple of lists of definitions with:
+    - linked definitions
+    - the definitions left to be linked in defs1 
+      (contain external definitions that will later be linked with
+      internal definitions in defs2)
+    - the definitions left to be linked in defs2 
+      (contains all the internal definitions in defs2 and
+      external definitions in t2 that are not found in defs1)    
+ *)
+Fixpoint link_defs1 (defs1 defs2: list (ident * option (globdef F V))) :=
   match defs1 with 
   | nil =>
-    Some ((rev postponed) ++ defs2)
+    Some (nil, nil, defs2)
   | (id1, def1)::defs1' =>
-    let (defs2', defs2'') := 
-        partition (fun '(id', _) => ident_eq id' id1) defs2 in
-    match defs2' with
-    | nil =>
-      (** If there is no symbol with the same id,
-            then def1 is a distinct definition. 
-            Perform the rest of the linking and put e1 to the head 
-            of the result *)
-      match link_defs_aux defs1' defs2 postponed with
-      | None => None
-      | Some defs => Some ((id1, def1) :: defs)
-      end
-    | (_, def2) :: _ =>
-      match link def1 def2 with
-      | None => None
-      | Some def => 
-        (** If linking of def1 and def2 succeeds, depending on 
-            whether def2 is an internal definition or not,
-            either the result is added to 'postponed' and appended later,
-            or the result made to be the head of the final result *)
-        if postpone_def def2 then
-          link_defs_aux defs1' defs2'' ((id1, def) :: postponed)
+    match link_defs1 defs1' defs2 with
+    | None => None
+    | Some (defs1_linked, defs1_rest, defs2_rest) =>
+      (** defs2' contains definitions with the same id as def1 *)
+      let (defs2', defs2_rest') := 
+          partition (fun '(id', _) => ident_eq id' id1) defs2_rest in
+      match defs2' with
+      | nil =>
+        (** If there is no definition with the same id as def1 in defs2 *)
+        Some ((id1, def1) :: defs1_linked, defs1_rest, defs2_rest)
+      | (_, def2) :: _ =>
+        (** If there is a definition def2 with the same id as def1 in defs2 *)
+        if is_def_internal def2 then
+          if is_def_internal def1 then
+            None
+          else
+            (** Postpone the linking with def2 if it is an internal definition *)
+            Some (defs1_linked, (id1, def1) :: defs1_rest, defs2_rest)
         else
-          match (link_defs_aux defs1' defs2'' postponed) with
+          match link def1 def2 with
           | None => None
-          | Some defs => Some ((id1, def) :: defs)
+          | Some def => Some ((id1, def) :: defs1_linked, defs1_rest, defs2_rest')
           end
       end
     end
   end.
           
+Definition link_defs defs1 defs2 := 
+  match link_defs1 defs1 defs2 with
+  | None => None
+  | Some (defs1_linked, defs1_rest, defs2_rest) =>
+    match link_defs1 defs2_rest defs1_rest with
+    | None => None
+    | Some (defs2_linked, _, _) =>
+      Some (defs1_linked ++ defs2_linked)
+    end
+  end.
 
-Definition link_defs defs1 defs2 := link_defs_aux defs1 defs2 nil.
 
 Definition prog_unique_idents (p: program F V) :=
   let idents := map fst (prog_defs p) in
