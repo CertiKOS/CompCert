@@ -626,14 +626,14 @@ Definition encode_instr (i: instruction) : res (list byte) :=
            MSG (instr_to_string i)]
   end.
 
+Definition acc_instrs i r := 
+  do code <- r;
+  do c <- encode_instr i;
+  OK (c ++ code).
+
 (** Translation of a sequence of instructions in a function *)
 Definition transl_code (c:code) : res (list byte) :=
-  fold_right (fun i r =>
-                do code <- r;
-                do c <- encode_instr i;
-                OK (c ++ code))
-             (OK [])
-             c.
+  fold_right acc_instrs (OK []) c.
 
 
 (** ** Encoding of data *)
@@ -652,12 +652,13 @@ Definition transl_init_data (d:init_data) : res (list byte) :=
     OK (encode_int32 addend)
   end.
 
+Definition acc_init_data d r := 
+  do rbytes <- r;
+  do dbytes <- transl_init_data d;
+  OK (dbytes ++ rbytes).
+
 Definition transl_init_data_list (l: list init_data) : res (list byte) :=
-  fold_right (fun d r =>
-                do rbytes <- r;
-                do dbytes <- transl_init_data d;
-                OK (dbytes ++ rbytes))
-             (OK []) l.
+  fold_right acc_init_data (OK []) l.
 
 End WITH_RELOC_TABLE.
 
@@ -682,18 +683,19 @@ Definition transl_section (sec:section) (rtbl:option reloctable) : res section :
   | _ => OK sec
   end.
 
+Definition acc_sections rtbls r sec := 
+  do r' <- r;
+  let '(stbl,si) := r' in
+  match SecIndex.deinterp si with
+  | None => OK (sec :: stbl, N.succ si)
+  | Some sec_index =>
+    do sec' <- transl_section sec (PTree.get sec_index rtbls);
+    OK (sec' :: stbl, N.succ si)
+  end.
+
 Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) : res sectable :=
   do r <- 
-     fold_left (fun r sec =>
-               do r' <- r;
-               let '(stbl,si) := r' in
-               match SecIndex.deinterp si with
-               | None => OK (sec :: stbl, N.succ si)
-               | Some sec_index =>
-                 do sec' <- transl_section sec (PTree.get sec_index rtbls);
-                 OK (sec' :: stbl, N.succ si)
-               end
-               )
+     fold_left (acc_sections rtbls)
      stbl
      (OK ([],0%N));
   let '(stbl', _) := r in

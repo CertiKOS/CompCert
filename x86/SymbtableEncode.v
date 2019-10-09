@@ -82,12 +82,13 @@ Definition encode_symbentry (e:symbentry)  : res (list byte) :=
   OK (st_name_bytes ++ st_value_bytes ++ st_size_bytes ++
                     st_info_bytes ++ st_other_bytes ++ st_shndx_bytes).
   
+Definition acc_bytes e r :=
+  do bytes <- r;
+  do ebytes <- (encode_symbentry e);
+  OK (ebytes ++ bytes).
+
 Definition encode_symbtable (t:symbtable) : res (list byte) :=
-  fold_right (fun e r => 
-                do bytes <- r;
-                do ebytes <- (encode_symbentry e);
-                OK (ebytes ++ bytes))
-             (OK []) t.
+  fold_right acc_bytes (OK []) t.
 
 Definition create_symbtable_section (t:symbtable) : res section :=
   do bytes <- encode_symbtable t;

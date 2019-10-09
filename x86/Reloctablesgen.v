@@ -173,16 +173,16 @@ Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloc
   end.
 
 
+Definition acc_instrs r i := 
+  do r' <- r;
+  let '(sofs, rtbl, code) := r' in
+  do ri <- transl_instr sofs rtbl i;
+  let '(rtbl', i') := ri in
+  OK (sofs + instr_size i, rtbl',  i' :: code).
+
 Definition transl_code (c:code) : res (reloctable * code) :=
   do rs <- 
-     fold_left (fun r i =>
-                   do r' <- r;
-                   let '(sofs, rtbl, code) := r' in
-                   do ri <- transl_instr sofs rtbl i;
-                   let '(rtbl', i') := ri in
-                   OK (sofs + instr_size i, rtbl',  i' :: code)) 
-     c
-     (OK (0, [], []));
+     fold_left acc_instrs c (OK (0, [], []));
   let '(_, rtbl', c') := rs in
   OK (rev rtbl', rev c').
 
@@ -208,13 +208,14 @@ Definition transl_init_data (dofs:Z) (rtbl:reloctable)
 (** Tranlsation of a list of initialization data and generate
     relocation entries *)
 
+Definition acc_init_data r d := 
+  let '(dofs, rtbl, l) := r in
+  let '(rtbl', d') := transl_init_data dofs rtbl d in
+  (dofs + init_data_size d, rtbl', d' :: l).
+
 Definition transl_init_data_list (l:list init_data) : (reloctable * list init_data) :=
   let '(_, rtbl, l') :=
-      fold_left (fun '(dofs, rtbl, l) d =>
-                   let '(rtbl', d') := transl_init_data dofs rtbl d in
-                   (dofs + init_data_size d, rtbl', d' :: l))
-                l 
-                (0, [], []) in
+      fold_left acc_init_data l (0, [], []) in
   (rev rtbl, rev l').
 
 
@@ -233,24 +234,25 @@ Definition transl_section (sec:section) : res ((option reloctable) * section) :=
     OK (None, sec)
   end.
  
+Definition acc_sections r sec := 
+  do r' <- r;
+  let '(rtbls, stbl, si) := r' in
+  do rs <- transl_section sec;
+  let '(rtbl, sec') := rs in
+  match SecIndex.deinterp si with
+  | None => OK (rtbls, sec' :: stbl, N.succ si)
+  | Some sec_idx =>
+    let rtbls' := 
+        match rtbl with
+        | None => rtbls
+        | Some rtbl => PTree.set sec_idx rtbl rtbls
+        end in
+    OK (rtbls', sec' :: stbl, N.succ si)
+  end.
+
 Definition transl_sectable (stbl: sectable) :=
   do r <- 
-     fold_left (fun r sec =>
-                do r' <- r;
-                let '(rtbls, stbl, si) := r' in
-                do rs <- transl_section sec;
-                let '(rtbl, sec') := rs in
-                match SecIndex.deinterp si with
-                | None => OK (rtbls, sec' :: stbl, N.succ si)
-                | Some sec_idx =>
-                  let rtbls' := 
-                      match rtbl with
-                      | None => rtbls
-                      | Some rtbl => PTree.set sec_idx rtbl rtbls
-                      end in
-                  OK (rtbls', sec' :: stbl, N.succ si)
-                end)
-     stbl
+     fold_left acc_sections stbl
      (OK (PTree.empty reloctable, [], 0%N));
   let '(rtbls, stbl, _) := r in
   OK (rtbls, rev stbl).

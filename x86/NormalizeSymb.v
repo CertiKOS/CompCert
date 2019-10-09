@@ -139,12 +139,13 @@ Definition transl_instr (i:Asm.instruction) : res instruction :=
   | _ => OK i
   end.
 
+Definition acc_instrs (i: instruction) (r: res (list instruction)) :=
+  do r' <- r;
+  do i' <- transl_instr i;
+  OK (i' :: r').
+
 Definition transl_code (c: code) : res code :=
-  fold_right (fun i r =>
-                do r' <- r;
-                do i' <- transl_instr i;
-                OK (i' :: r'))
-             (OK []) c.
+  fold_right acc_instrs (OK []) c.
 
 
 (** ** Translation of global data *)
@@ -159,12 +160,13 @@ Definition transl_init_data (d:init_data) : res init_data :=
   | _ => OK d
   end.
 
+Definition acc_init_data (d:init_data) (r: res (list init_data)) :=
+  do r' <- r;
+  do d' <- transl_init_data d;
+  OK (d' :: r').
+
 Definition transl_init_data_list (d: list init_data) : res (list init_data) :=
-  fold_right (fun d r =>
-                do r' <- r;
-                do d' <- transl_init_data d;
-                OK (d' :: r'))
-             (OK []) d.
+  fold_right acc_init_data (OK []) d.
 
 Definition transl_section (sec: section) : res section :=
   match sec with
@@ -182,27 +184,29 @@ End WITH_NORM_ID_MAPPING.
 
 (** ** Translation of programs *)
 
+Definition acc_mapping r id := 
+  let '(idmap, nextid) := r in
+  let idmap' := PTree.set id nextid idmap in
+  (idmap', Pos.succ nextid).
+
 (** Create a mapping from global ids to normalized symbol indexes *)
 Definition create_norm_id_mapping (ids: list ident) :=
   let empty_map := PTree.empty ident in
   let '(idmap, _) := 
-      fold_left (fun '(idmap, nextid) id =>
-                    let idmap' := PTree.set id nextid idmap in
-                    (idmap', Pos.succ nextid)) 
-                 ids
-                 (PTree.empty ident, 1%positive) in
+      fold_left acc_mapping ids (PTree.empty ident, 1%positive) in
   idmap.
       
+
+Definition acc_sections idmap sec r :=
+  do r' <- r;
+  do sec' <- transl_section idmap sec;
+  OK (sec' :: r').
+
 (** Transform the program *)
 Definition transf_program (p: program) : res program :=
   let idmap := create_norm_id_mapping (map fst (prog_defs p)) in
   do sectbl <- 
-     fold_right (fun sec r =>
-                   do r' <- r;
-                   do sec' <- transl_section idmap sec;
-                   OK (sec' :: r'))
-     (OK []) 
-     (prog_sectable p);
+     fold_right (acc_sections idmap) (OK []) (prog_sectable p);
   OK {|
       prog_defs := p.(prog_defs);
       prog_public := p.(prog_public);
