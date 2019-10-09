@@ -3,6 +3,13 @@
 (* Date:   Sep 16, 2019 *)
 (* *******************  *)
 
+
+(* *******************  *)
+(* Modify: Xiangzhe Xu  *)
+(* Date:   Oct 09, 2019 *)
+(* *******************  *)
+
+
 (** * Generation of the relocation table and references to it *)
 
 Require Import Coqlib Integers AST Maps.
@@ -46,7 +53,52 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
     OK (1 + aofs)
   | Pmov_mr_a a _ =>
     do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
+      OK (1 + aofs)
+  | Pmovsd_fm_a frd a
+  | Pmovsd_fm frd a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (3 + aofs)
+  | Pmovsd_mf_a a fr1
+  | Pmovsd_mf a fr1 =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (3 + aofs)
+  | Pmovss_fm frd a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (3 + aofs)
+  | Pmovss_mf a fr1 =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (3 + aofs)
+  | Pfldl_m a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (1 + aofs)
+  | Pfstpl_m a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (1 + aofs)
+  | Pflds_m a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (1 + aofs)
+  | Pfstps_m a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (1 + aofs)
+  | Pmovb_mr a rs =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (1 + aofs)
+  | Pmovw_mr a rs =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (2 + aofs)
+  | Pmovzb_rm rd a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (2 + aofs)
+  | Pmovzw_rm rd a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (2 + aofs)
+  | Pmovsb_rm rd a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (2 + aofs)
+  | Pmovsw_rm rd a =>
+    do aofs <- addrmode_reloc_offset a;
+      OK (2 + aofs)         
+         
   | _ => Error (msg "Calculation of addenddum failed: Instruction not supported yet by relocation")
   end.
 
@@ -110,64 +162,66 @@ Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloc
     do e <- compute_instr_abs_relocentry sofs i 0 id;
     let i' := Pmov_rs rd next_rid in
     OK (e :: rtbl, i')
-
   | Pmovl_rm rd (Addrmode rb ss (inr disp)) =>
     transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmovl_rm rd a)
-
-  | Pmovq_rm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
   | Pmovl_mr (Addrmode rb ss (inr disp)) rs =>
     transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmovl_mr a rs)
-  | Pmovq_mr a rs =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovsd_fm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovsd_mf a r1 =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovss_fm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovss_mf a r1 =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pfldl_m a =>               (**r [fld] double precision *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pfstpl_m a =>             (**r [fstp] double precision *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pflds_m a =>               (**r [fld] simple precision *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pfstps_m a =>              (**r [fstp] simple precision *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  (** Moves with conversion *)
-  | Pmovb_mr a rs =>    (**r [mov] (8-bit int) *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovw_mr a rs =>    (**r [mov] (16-bit int) *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovzb_rm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovsb_rm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovzw_rm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovsw_rm rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  (** Integer arithmetic *)
-  | Pleal rd (Addrmode rb ss (inr disp))  =>
-    transl_instr_with_addrmode rtbl sofs i rb ss disp
-                               (fun a => Pleal rd a)
-  | Pleaq rd a =>
-    Error (msg "Relocation failed: instruction not supported yet")
-  (** Saving and restoring registers *)
-  | Pmov_rm_a rd (Addrmode rb ss (inr disp)) =>  (**r like [Pmov_rm], using [Many64] chunk *)
+  | Pmov_rm_a rd (Addrmode rb ss (inr disp)) =>
     transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmov_rm_a rd a)
-  | Pmov_mr_a (Addrmode rb ss (inr disp)) rs =>   (**r like [Pmov_mr], using [Many64] chunk *)
+  | Pmov_mr_a  (Addrmode rb ss (inr disp)) r1 =>
     transl_instr_with_addrmode rtbl sofs i rb ss disp
-                               (fun a => Pmov_mr_a a rs)
-  | Pmovsd_fm_a rd a => (**r like [Pmovsd_fm], using [Many64] chunk *)
-    Error (msg "Relocation failed: instruction not supported yet")
-  | Pmovsd_mf_a a r1 =>  (**r like [Pmovsd_mf], using [Many64] chunk *)
-    Error (msg "Relocation failed: instruction not supported yet")
+                               (fun a => Pmov_mr_a a r1)
+  | Pmovsd_fm_a frd (Addrmode rb ss (inr disp)) =>
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovsd_fm_a frd a)
+  | Pmovsd_fm frd (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovsd_fm frd a)
+  | Pmovsd_mf_a (Addrmode rb ss (inr disp)) fr1 => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovsd_mf_a a fr1 )
+  | Pmovsd_mf (Addrmode rb ss (inr disp)) fr1 => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovsd_mf a fr1)
+  | Pmovss_fm frd (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovss_fm frd a)
+  | Pmovss_mf (Addrmode rb ss (inr disp)) fr1 => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovss_mf a fr1)
+  | Pfldl_m (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pfldl_m a)
+  | Pfstpl_m (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pfstpl_m a)
+  | Pflds_m (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pflds_m a)
+  | Pfstps_m (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pfstps_m a)
+  | Pmovb_mr (Addrmode rb ss (inr disp)) rs => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovb_mr a rs)
+  | Pmovw_mr (Addrmode rb ss (inr disp)) rs => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovw_mr a rs)
+  | Pmovzb_rm rd (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovzb_rm rd a)
+  | Pmovzw_rm rd (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovzw_rm rd a)
+  | Pmovsb_rm rd (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovsb_rm rd a)
+  | Pmovsw_rm rd (Addrmode rb ss (inr disp)) => 
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pmovsw_rm rd a)    
   | _ =>
     OK (rtbl, i)
   end.
