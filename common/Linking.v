@@ -317,10 +317,9 @@ Context {F V: Type} (is_fun_internal: F -> bool) {LF: Linker F} {LV: Linker V} (
 (*   end. *)
 
 Definition is_var_internal (v: globvar V) :=
-  match gvar_init v with
-  | nil 
-  | (Init_space _) :: nil => false
-  | _ => true
+  match classify_init (gvar_init v) with
+  | Init_definitive _ => true
+  | _ => false
   end.
 
 Definition is_def_internal (def: option (globdef F V)) : bool :=

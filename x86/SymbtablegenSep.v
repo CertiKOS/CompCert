@@ -4,11 +4,15 @@ Require Import Errors.
 Require Import Memtype.
 Require Import Asm RelocProgram.
 Require Import Symbtablegen.
-Require Import Linking RelocLinking.
+Require Import Linking LinkingProp.
+Require Import RelocLinking.
 Require Import SeqTable.
+Require Import RelationClasses.
 Import ListNotations.
 
 Set Implicit Arguments.
+
+(** * Commutativity of linking and Symbtablgen *)
 
 Definition match_prog (p: Asm.program) (tp: program) :=
   transf_program p = OK tp.
@@ -70,6 +74,8 @@ Proof.
   destruct zle; try monadInv MATCH. simpl. auto.
 Qed.
 
+
+(** ** Commutativity of linking and generation of the symbol table *)
 (* Lemma link_defs_acc_symb_comm : forall defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2, *)
 (*       link_defs_aux is_fundef_internal defs1 defs2 postponed = Some defs -> *)
 (*       fold_left (acc_symb sec_data_id sec_code_id) defs1 (entries1', dsz1', csz1') = (entries1 ++ entries1', dsz1, csz1) -> *)
@@ -173,47 +179,60 @@ Admitted.
 
 (** ** Commutativity of linking and section generation *)
 
-Inductive list_in_order (A:Type) (f: A -> bool) : list A -> list A -> Prop :=
-| lorder_nil : list_in_order f nil nil
-| lorder_left_false : forall e l1 l2, 
-    f e = false -> list_in_order f l1 l2 -> list_in_order f (e :: l1) l2
-| lorder_right_false : forall e l1 l2,
-    f e = false -> list_in_order f l1 l2 -> list_in_order f l1 (e :: l2)
-| lorder_true : forall e l1 l2,
-    f e = true -> list_in_order f l1 l2 -> list_in_order f (e::l1) (e::l2).
+Class PERWithFun (A:Type) (aeq:A -> A -> Prop) `{PER A aeq} (f:A -> bool) :=
+{
+  eq_imply_fun_true: forall e1 e2, aeq e1 e2 -> f e1 = true /\ f e2 = true;
+  (** Equality between elements in a restricted domain *)
+  fun_true_imply_eq: forall e, f e = true -> aeq e e;
+}.
 
-Lemma list_in_order_false_inv : forall (A:Type) (l1' l1 l2: list A) f e,
-    f e = false -> l1' = (e :: l1) -> list_in_order f l1' l2 -> list_in_order f l1 l2.
+Section WithEquivAndFun.
+
+Context `{PERWithFun}.
+
+Inductive list_in_order : list A -> list A -> Prop :=
+| lorder_nil : list_in_order nil nil
+| lorder_left_false : forall e l1 l2, 
+    f e = false -> list_in_order l1 l2 -> list_in_order (e :: l1) l2
+| lorder_right_false : forall e l1 l2,
+    f e = false -> list_in_order l1 l2 -> list_in_order l1 (e :: l2)
+| lorder_true : forall e1 e2 l1 l2,
+    aeq e1 e2 -> list_in_order l1 l2 -> list_in_order (e1::l1) (e2::l2).
+
+Lemma list_in_order_false_inv : forall (l1' l1 l2: list A) e,
+    f e = false -> l1' = (e :: l1) -> list_in_order l1' l2 -> list_in_order l1 l2.
 Proof.
   induction 3. 
-  - inv H0.
-  - inv H0. auto.
+  - inv H2.
+  - inv H2. auto.
   - apply lorder_right_false; auto.
-  - inv H0. congruence.
+  - subst. inv H2. apply eq_imply_fun_true in H3. destruct H3.
+    congruence.
 Qed.
 
-Lemma list_in_order_true_inv : forall (A:Type) (l1' l1 l2: list A) f e,
-    f e = true -> l1' = (e :: l1) -> list_in_order f l1' l2 -> 
-    exists l3 l4, l2 = l3 ++ (e :: l4) /\ 
+Lemma list_in_order_true_inv : forall (l1' l1 l2: list A)  e1,
+    f e1 = true -> l1' = (e1 :: l1) -> list_in_order l1' l2 -> 
+    exists l3 l4 e2, l2 = l3 ++ (e2 :: l4) /\ 
+             aeq e1 e2 /\
              Forall (fun e' => f e' = false) l3 /\
-             list_in_order f l1 l4.
+             list_in_order l1 l4.
 Proof.
   induction 3.
-  - inv H0.
-  - inv H0. congruence.
+  - inv H2.
+  - inv H2. congruence.
   - subst. 
     generalize (IHlist_in_order eq_refl).
-    destruct 1 as (l3 & l4 & EQ & FP & ORDER). subst.
-    exists (e0 :: l3), l4. split.
+    destruct 1 as (l3 & l4 & e2 & EQ & EEQ & FP & ORDER). subst.
+    exists (e :: l3), l4, e2. split.
     rewrite <- app_comm_cons. auto. split; auto.
-  - inv H0. exists nil, l2. split. auto.
+  - inv H2. exists nil, l2, e2. split. auto.
     split; auto.
 Qed.
 
-Lemma list_in_order_right_false_list : forall (A:Type) f (l2' l1 l2: list A),
+Lemma list_in_order_right_false_list : forall (l2' l1 l2: list A),
     Forall (fun e : A => f e = false) l2' ->
-    list_in_order f l1 l2 -> 
-    list_in_order f l1 (l2' ++ l2).
+    list_in_order l1 l2 -> 
+    list_in_order l1 (l2' ++ l2).
 Proof.
   induction l2'.
   - intros l1 l2 FALL ORDER. simpl. auto.
@@ -227,48 +246,50 @@ Proof.
 Qed.
 
 
-Lemma list_in_order_trans : forall (A:Type) f (l1 l2 l3: list A),
-    list_in_order f l1 l2 -> list_in_order f l2 l3 -> list_in_order f l1 l3.
+Lemma list_in_order_trans : forall (l1 l2 l3: list A),
+    list_in_order l1 l2 -> list_in_order l2 l3 -> list_in_order l1 l3.
 Proof.
-  intros A f l1 l2 l3 ORDER.
+  intros l1 l2 l3 ORDER.
   generalize l3.
   induction ORDER.
   - auto.
   - intros l0 ORDER1. constructor; auto.
   - intros l0 ORDER1. 
-    generalize (list_in_order_false_inv H (eq_refl (e::l2)) ORDER1). auto.
+    generalize (list_in_order_false_inv H1 (eq_refl (e::l2)) ORDER1). auto.
   - intros l0 ORDER1.
-    generalize (list_in_order_true_inv H (eq_refl (e::l2)) ORDER1).
-    destruct 1 as (l2' & l2'' & EQ & FP & ORDER2).
+    generalize (eq_imply_fun_true _ _ H1). destruct 1 as (FEQ1 & FEQ2).
+    generalize (list_in_order_true_inv FEQ2 (eq_refl (e2::l2)) ORDER1).
+    destruct 1 as (l2' & l2'' & e3 & EQ & EEQ & ALL & ORDER2).
     subst.
     apply IHORDER in ORDER2.
     apply list_in_order_right_false_list; auto.
     apply lorder_true; auto.
+    apply PER_Transitive with e2; auto.
 Qed.    
 
-Lemma list_in_order_cons : forall (A:Type) f (l1 l2:list A) e,
-    list_in_order f l1 l2 -> list_in_order f (e::l1) (e::l2).
+Lemma list_in_order_cons : forall (l1 l2:list A) e,
+    list_in_order l1 l2 -> list_in_order (e::l1) (e::l2).
 Proof.
-  intros A f l1 l2 e ORDER.
+  intros l1 l2 e ORDER.
   destruct (f e) eqn:EQ.
-  apply lorder_true; auto.
-  apply lorder_left_false; auto.
-  apply lorder_right_false; auto.
+  - apply lorder_true; auto.
+    apply fun_true_imply_eq. auto.
+  - apply lorder_left_false; auto.
+    apply lorder_right_false; auto.
 Qed.
 
-Lemma list_in_order_refl: forall (A:Type) f (l:list A),
-    list_in_order f l l.
+Lemma list_in_order_refl: forall (l:list A),
+    list_in_order l l.
 Proof.
   induction l; intros.
   - apply lorder_nil.
   - apply list_in_order_cons. auto.
 Qed.
 
-
-Lemma partition_pres_list_in_order: forall (A:Type) pf f (l l1 l2: list A),
+Lemma partition_pres_list_in_order: forall pf (l l1 l2: list A),
     partition pf l = (l1, l2) ->
     Forall (fun e => f e = false) l1 ->
-    list_in_order f l l2.
+    list_in_order l l2.
 Proof.
   induction l.
   - intros l1 l2 PART ALL. simpl in *. inv PART. constructor.
@@ -285,198 +306,199 @@ Proof.
       apply IHl with l1; auto.
 Qed.
 
+End WithEquivAndFun.
 
-Lemma extern_var_init_data_nil : forall v,
-    is_var_internal v = false ->
-    get_def_init_data (Some (Gvar v)) = [].
-Proof.
-  intros v H. simpl in *. 
-  unfold is_var_internal in H. 
-  destruct (gvar_init v); try congruence.
-  destruct i; try congruence.
-  destruct l; try congruence.
-Qed.
-
-Lemma extern_init_data_nil : forall def,
-    is_def_internal is_fundef_internal def = false -> get_def_init_data def = nil.
-Proof.
-  intros def H.
-  destruct def. destruct g. 
-  - simpl in *. auto.
-  - simpl in H. apply extern_var_init_data_nil. auto.
-  - simpl in *. auto.
-Qed.
+Arguments list_in_order [A] _ _ _ _.
 
 
-Lemma acc_init_data_app : forall def l1 l2,
-    (acc_init_data def l1) ++ l2 = acc_init_data def (l1 ++ l2).
-Proof.
-  intros def l1 l2. destruct def as (id & def').
-  simpl. rewrite app_assoc. auto.
-Qed.
+Section WithFunVar.
 
-Lemma fold_right_acc_init_data_app : forall defs l,
-    fold_right acc_init_data [] defs ++ l = fold_right acc_init_data l defs.
-Proof.
-  induction defs. 
-  - intros l. simpl. auto.
-  - intros l. simpl. 
-    rewrite acc_init_data_app. rewrite IHdefs. auto.
-Qed.
+Context {F V:Type}.
 
-
-Definition def_internal (iddef : ident * option (AST.globdef Asm.fundef unit)) :=
-  let '(_,def) := iddef in
+(** Equality between internal definitions *)
+Definition def_internal (def: option (AST.globdef (AST.fundef F) V)) :=
   is_def_internal is_fundef_internal def.
 
-Lemma acc_init_data_in_order_eq : forall defs1 defs2,
-    list_in_order def_internal defs1 defs2 ->
-    fold_right acc_init_data [] defs1 = fold_right acc_init_data [] defs2.
-Proof.
-  induction 1.
-  - simpl. auto.
-  - destruct e as (id, def). simpl.     
-    erewrite extern_init_data_nil; eauto.
-  - destruct e as (id, def). simpl.
-    erewrite extern_init_data_nil; eauto.
-  - destruct e as (id, def). simpl.
-    rewrite IHlist_in_order. auto.
-Qed.
-
-Lemma is_def_internal_dec' : forall (F V:Type) (f:F -> bool) (def: option (globdef F V)),
-    {is_def_internal f def = true} + {is_def_internal f def <> true}.
-Proof.
-  decide equality.
-Qed.
-
-Lemma is_def_internal_dec : forall (F V:Type) (f:F -> bool) (def: option (globdef F V)),
-    {is_def_internal f def = true} + {is_def_internal f def = false}.
-Proof.
-  intros F V f def.
-  generalize (is_def_internal_dec' f def).
-  intro H.
-  inv H. auto.
-  rewrite not_true_iff_false in H0. auto.
-Qed.
-
-
-Lemma link_fundef_inv1 : forall (F:Type) (f: AST.fundef F) f' e, 
-    link_fundef f (External e) = Some f' -> f = f'.
-Proof.
-  intros F f f' e LINK.
-  destruct f. simpl in *. destruct e; try congruence.
-  simpl in LINK. destruct (external_function_eq e0 e); congruence.
-Qed.
-
-Lemma link_extern_fundef_inv: forall (F:Type) 
-                                (f f' f'': AST.fundef F),
-    is_fundef_internal f = false ->
-    link f' f = Some f'' -> 
-    f' = f''.
-Proof.
-  intros F f f' f'' FINT LINK.
-  unfold link in LINK. 
-  Transparent Linker_fundef.
-  unfold Linker_fundef in LINK.
-  destruct f; simpl in *. congruence.
-  simpl in LINK.
-  apply link_fundef_inv1 in LINK. auto.
-Qed.
-
-Lemma link_extern_gfundef_inv: forall (F V:Type) (LV: Linker V)
-                             (f: AST.fundef F) (g g': (globdef (AST.fundef F) V)),
-    is_fundef_internal f = false ->
-    link g (Gfun f) = Some g' -> 
-    g = g'.
-Proof.
-  intros F V LV f g g' INT LINK.
-  destruct g. 
-  - unfold link in LINK. 
-    Transparent Linker_def.
-    unfold Linker_def in LINK.
-    simpl in LINK. destruct (link_fundef f0 f) eqn:LINKF; try congruence.
-    inv LINK.
-    generalize (link_extern_fundef_inv _ _ INT LINKF).
-    intros. subst.
-    auto.
-  - simpl in LINK. congruence.
-Qed.
-
-
-Lemma link_extern_var_inv: forall (V:Type) (LV:Linker V)
-                                (v v' v'': globvar V),
-    is_var_internal v = false ->
-    link v' v = Some v'' -> 
-    v' = v''.
-Proof.
-  intros V LV v v' v'' VINT LINK.
-  unfold link in LINK. 
-  Transparent Linker_vardef.
-  unfold Linker_vardef in LINK.
-  unfold link_vardef in LINK.
-  destruct (link (gvar_info v') (gvar_info v)) eqn:LINK_INFO; try congruence.
-  destruct (link (gvar_init v') (gvar_init v)) eqn:LINK_INIT; try congruence.
-  destruct (eqb (gvar_readonly v') (gvar_readonly v) && eqb (gvar_volatile v') (gvar_volatile v)) eqn:EQB; 
-    try congruence.
-  inv LINK.
-  destruct v; simpl in *. 
-  unfold link,link in LINK_INFO. 
+Inductive def_eq : 
+  option (AST.globdef (AST.fundef F) V) -> option (AST.globdef (AST.fundef F) V) -> Prop :=
+| fundef_eq : forall f, is_fundef_internal f = true -> def_eq (Some (Gfun f)) (Some (Gfun f))
+| vardef_eq : forall v1 v2, 
+    is_var_internal v1 = true -> is_var_internal v2 = true ->
+    gvar_init v1 = gvar_init v2 -> def_eq (Some (Gvar v1)) (Some (Gvar v2)).
   
-  Admitted.
-
-Lemma link_extern_gvar_inv: forall (F V:Type) (LV: Linker V)
-                              (v: globvar V) (g g': (globdef (AST.fundef F) V)),
-    is_var_internal v = false ->
-    link g (Gvar v) = Some g' -> 
-    g = g'.
+Lemma def_eq_symm : forall f1 f2, def_eq f1 f2 -> def_eq f2 f1.
 Proof.
-  intros F V LV v g g' INT LINK.
-  destruct g. 
-  - unfold link in LINK. 
-    Transparent Linker_def.
-    unfold Linker_def in LINK.
-    simpl in LINK. congruence.
-  - simpl in LINK. 
-    destruct (link_vardef v0 v) eqn:LINKV; try congruence.
-    inv LINK.
-    generalize (link_extern_var_inv _ _ _ INT LINKV).
-    intros. subst.
-    auto.
-Qed.   
-
-
-Lemma link_def_inv2 : forall (F V: Type) (LV: Linker V) (def1 def2 def: option (globdef (AST.fundef F) V)),
-    def1 <> None ->
-    is_def_internal is_fundef_internal def2 = false ->
-    link_option def1 def2 = Some def ->
-    def = def1.
-Proof.
-  intros F V LV def1 def2 def NOTNONE INT LINK.
-  destruct def2. destruct g.
-  - simpl in *. unfold link_option in LINK.
-    destruct def1 as [|def1].
-    destruct (link g (Gfun f)) eqn:LEQ; try congruence.
-    inv LINK.
-    generalize (link_extern_gfundef_inv _ _ _ INT LEQ). intros. subst. auto.
-    inv LINK.
-    congruence.
-  - simpl in *. unfold link_option in LINK.
-    destruct def1 as [|def1].
-    destruct (link g (Gvar v)) eqn:LEQ; try congruence.
-    inv LINK.
-    generalize (link_extern_gvar_inv _ _ _ INT LEQ). intros. subst. auto.
-    congruence.    
-  - simpl in *. unfold link_option in LINK.
-    destruct def1 as [|def1].
-    inv LINK. auto.
-    inv LINK. auto.
+  intros. inv H.
+  - constructor. auto.
+  - econstructor; eauto.
 Qed.
 
+Lemma def_eq_trans: forall f1 f2 f3, 
+    def_eq f1 f2 -> def_eq f2 f3 -> def_eq f1 f3.
+Proof.
+  intros f1 f2 f3 EQ1 EQ2. inv EQ1. 
+  - inv EQ2. constructor. auto.
+  - inv EQ2. econstructor; eauto.
+    eapply eq_trans; eauto.
+Qed.
 
-Lemma link_defs1_in_order : forall defs1 defs2 defs1_linked defs1_rest defs2_rest,
+Lemma def_eq_imply_internal : forall f1 f2,
+    def_eq f1 f2 -> def_internal f1 = true /\ def_internal f2 = true.
+Proof.
+  intros f1 f2 EQ.
+  inv EQ.
+  - simpl. auto.
+  - simpl in *. auto.
+Qed.
+
+Lemma def_interal_imply_eq : 
+  forall f, def_internal f = true -> def_eq f f.
+Proof.
+  intros f INT.
+  destruct f. destruct g.
+  - constructor; auto.
+  - simpl in *. constructor; auto.
+  - simpl in *. congruence.
+Qed.
+
+Instance PERDefEq : PER def_eq :=
+{
+  PER_Symmetric := def_eq_symm;
+  PER_Transitive := def_eq_trans;
+}.
+
+Instance DefEq : PERWithFun def_internal :=
+{
+  eq_imply_fun_true := def_eq_imply_internal;
+  fun_true_imply_eq := def_interal_imply_eq;
+}.
+
+(** Equality between id and internal definition pairs *)
+Definition id_def_internal (iddef: ident * option (AST.globdef (AST.fundef F) V)) :=
+  let '(id, def) := iddef in
+  def_internal def.
+
+Definition id_def_eq (iddef1 iddef2: ident * option (AST.globdef (AST.fundef F) V)) : Prop :=
+  let '(id1, def1) := iddef1 in
+  let '(id2, def2) := iddef2 in
+  id1 = id2 /\ def_eq def1 def2.
+
+Lemma id_def_eq_symm : forall f1 f2, id_def_eq f1 f2 -> id_def_eq f2 f1.
+Proof.
+  intros. unfold id_def_eq in *.
+  destruct f1, f2. destruct H. split; auto.
+  apply def_eq_symm; auto.
+Qed.
+
+Lemma id_def_eq_trans: forall f1 f2 f3, 
+    id_def_eq f1 f2 -> id_def_eq f2 f3 -> id_def_eq f1 f3.
+Proof.
+  intros f1 f2 f3 EQ1 EQ2. 
+  unfold id_def_eq in *. destruct f1, f2, f3.
+  destruct EQ1, EQ2. split.
+  eapply eq_trans; eauto.
+  eapply def_eq_trans; eauto.
+Qed.
+
+Lemma id_def_eq_imply_internal : forall f1 f2,
+    id_def_eq f1 f2 -> id_def_internal f1 = true /\ id_def_internal f2 = true.
+Proof.
+  intros f1 f2 EQ.
+  unfold id_def_eq in EQ.
+  destruct f1, f2. destruct EQ. subst.
+  simpl. 
+  apply def_eq_imply_internal; eauto.
+Qed.
+
+Lemma id_def_interal_imply_eq : 
+  forall f, id_def_internal f = true -> id_def_eq f f.
+Proof.
+  intros f INT.
+  destruct f. destruct o. destruct g.
+  - simpl. split; auto. constructor; auto.
+  - simpl in *. split; auto. constructor; auto.
+  - simpl in *. split; auto. congruence.
+Qed.
+
+Instance PERIdDefEq : PER id_def_eq :=
+{
+  PER_Symmetric := id_def_eq_symm;
+  PER_Transitive := id_def_eq_trans;
+}.
+
+Instance IdDefEq : PERWithFun id_def_internal :=
+{
+  eq_imply_fun_true := id_def_eq_imply_internal;
+  fun_true_imply_eq := id_def_interal_imply_eq;
+}.
+
+
+Lemma link_external_defs : forall {LV: Linker V} (def1 def2 def: option (globdef (AST.fundef F) V)),
+    def_internal def1 = false ->
+    def_internal def2 = false ->
+    link_option def1 def2 = Some def ->
+    def_internal def = false.
+Proof.
+  intros LV def1 def2 def INT1 INT2 LINK.
+  unfold link_option in LINK.
+  destruct def1, def2.
+  - 
+    destruct (link g g0) eqn:LINKG; try congruence. inv LINK.
+    unfold link in LINKG.
+    Transparent Linker_def.
+    unfold Linker_def in LINKG.
+    unfold link_def in LINKG.
+    destruct g, g0.
+    + destruct (link f f0) eqn:LINKF; try congruence. inv LINKG.
+      unfold link in LINKF.
+      Transparent Linker_fundef.
+      unfold Linker_fundef in LINKF.
+      simpl in *.
+      apply link_external_fundefs with f f0; eauto.
+    + congruence.
+    + congruence.
+    + destruct (link v v0) eqn:LINKV; try congruence. inv LINKG.
+      simpl in *.     
+      apply link_external_vars with _ v v0; eauto.
+  - inv LINK. auto.
+  - inv LINK. auto.
+  - inv LINK. auto.
+Qed.    
+  
+
+Lemma link_internal_external_defs : forall {LV: Linker V} (def1 def2 def: option (globdef (AST.fundef F) V)),
+    def_internal def1 = true ->
+    def_internal def2 = false ->
+    link_option def1 def2 = Some def ->
+    def_eq def def1.
+Proof.
+(*   intros F V LV def1 def2 def NOTNONE INT LINK. *)
+(*   destruct def2. destruct g. *)
+(*   - simpl in *. unfold link_option in LINK. *)
+(*     destruct def1 as [|def1]. *)
+(*     destruct (link g (Gfun f)) eqn:LEQ; try congruence. *)
+(*     inv LINK. *)
+(*     generalize (link_extern_gfundef_inv _ _ _ INT LEQ). intros. subst. auto. *)
+(*     inv LINK. *)
+(*     congruence. *)
+(*   - simpl in *. unfold link_option in LINK. *)
+(*     destruct def1 as [|def1]. *)
+(*     destruct (link g (Gvar v)) eqn:LEQ; try congruence. *)
+(*     inv LINK. *)
+(*     generalize (link_extern_gvar_inv _ _ _ INT LEQ). intros. subst. auto. *)
+(*     congruence.     *)
+(*   - simpl in *. unfold link_option in LINK. *)
+(*     destruct def1 as [|def1]. *)
+(*     inv LINK. auto. *)
+(*     inv LINK. auto. *)
+(* Qed. *)
+Admitted.
+
+
+Lemma link_defs1_in_order : forall {LV: Linker V} defs1 defs2 defs1_linked defs1_rest defs2_rest,
     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
-    list_in_order def_internal defs1 defs1_linked /\
-    list_in_order def_internal defs2 defs2_rest.
+    list_in_order id_def_eq id_def_internal defs1 defs1_linked /\
+    list_in_order id_def_eq id_def_internal defs2 defs2_rest.
 Proof.
   induction defs1 as [|def1 defs1'].
   - intros defs2 defs1_linked defs1_rest defs2_rest LINK.
@@ -519,20 +541,100 @@ Proof.
         destruct 1 as (LORDER1 & LORDER2).
         assert (defs2'' = nil). admit.
         subst. split.
-        ** destruct def1 as [def1|].
-           *** assert (Some def1 <> None) as NEQ by congruence .
-               generalize (link_def_inv2 _ def2 NEQ DEFINT2 LINK_SYMB).
-               intros. subst.
-               apply list_in_order_cons. auto.
+        ** destruct (def_internal def1) eqn:DEFINT1.
+           *** generalize (link_internal_external_defs _ def2 DEFINT1 DEFINT2 LINK_SYMB).
+               intros DEQ. 
+               apply lorder_true. simpl. split; auto.
+               apply PER_Symmetric; auto.
+               auto.
            *** simpl in LINK_SYMB. inv LINK_SYMB.
                apply lorder_left_false; auto.
                apply lorder_right_false; auto.
-        ** generalize (partition_pres_list_in_order _ def_internal _ PART).
+               simpl. 
+               apply link_external_defs with def1 def2; eauto.
+        ** generalize (partition_pres_list_in_order _ _ PART).
            intros LORDER3.
            apply list_in_order_trans with defs2_rest'; auto.
 Admitted.          
-          
-                
+
+End WithFunVar.
+(** *)
+
+Lemma extern_var_init_data_nil : forall v,
+    is_var_internal v = false ->
+    get_def_init_data (Some (Gvar v)) = [].
+Proof.
+  intros v H. simpl in *.
+  unfold is_var_internal in H.
+  destruct (gvar_init v); try congruence.
+  destruct i; simpl in *; try congruence.
+  destruct l; simpl in *; try congruence.
+Qed.
+
+Lemma extern_init_data_nil : forall def,
+    def_internal def = false -> get_def_init_data def = nil.
+Proof.
+  intros def H.
+  destruct def. destruct g. 
+  - simpl in *. auto.
+  - simpl in H. apply extern_var_init_data_nil. auto.
+  - simpl in *. auto.
+Qed.
+
+
+Lemma acc_init_data_app : forall def l1 l2,
+    (acc_init_data def l1) ++ l2 = acc_init_data def (l1 ++ l2).
+Proof.
+  intros def l1 l2. destruct def as (id & def').
+  simpl. rewrite app_assoc. auto.
+Qed.
+
+Lemma fold_right_acc_init_data_app : forall defs l,
+    fold_right acc_init_data [] defs ++ l = fold_right acc_init_data l defs.
+Proof.
+  induction defs. 
+  - intros l. simpl. auto.
+  - intros l. simpl. 
+    rewrite acc_init_data_app. rewrite IHdefs. auto.
+Qed.
+
+Lemma get_def_init_data_eq : forall d1 d2,
+      def_eq d1 d2 -> get_def_init_data d1 = get_def_init_data d2.
+Proof.
+  intros d1 d2 EQ. inv EQ.
+  - simpl. auto.
+  - simpl in *. rewrite H1. auto.
+Qed.
+
+Lemma acc_init_data_eq: forall d1 d2 l,
+    id_def_eq d1 d2 -> acc_init_data d1 l = acc_init_data d2 l.
+Proof.
+  intros d1 d2 l EQ.
+  destruct d1, d2. simpl in *. destruct EQ. subst.
+  f_equal. apply get_def_init_data_eq. auto.
+Qed.
+
+Lemma acc_init_data_in_order_eq : forall defs1 defs2,
+    list_in_order id_def_eq id_def_internal defs1 defs2 ->
+    fold_right acc_init_data [] defs1 = fold_right acc_init_data [] defs2.
+Proof.
+  induction 1.
+  - simpl. auto.
+  - destruct e as (id, def). simpl.     
+    erewrite extern_init_data_nil; eauto.
+  - destruct e as (id, def). simpl.
+    erewrite extern_init_data_nil; eauto.
+  - simpl.
+    rewrite IHlist_in_order. auto.
+    apply acc_init_data_eq; auto.
+Qed.          
+
+(** Hint for Asm definitions *)                
+Definition PERIdAsmDefEq := (@PERIdDefEq Asm.function unit).
+Existing Instance PERIdAsmDefEq.
+Definition IdAsmDefEq := (@IdDefEq Asm.function unit).
+Existing Instance IdAsmDefEq.
+
 Lemma link_acc_init_data_comm : forall defs1 defs2 defs,
     link_defs is_fundef_internal defs1 defs2 = Some defs ->
     fold_right acc_init_data [] defs = 
