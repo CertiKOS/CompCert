@@ -74,11 +74,6 @@ Proof.
   destruct zle; try monadInv MATCH. simpl. auto.
 Qed.
 
-Lemma gen_symb_table_size: forall defs d_id c_id stbl dsz csz,
-    gen_symb_table d_id c_id defs = (stbl, dsz, csz) ->
-    sec_size (create_data_section defs) = dsz /\
-    sec_size (create_code_section defs) = csz.
-Admitted.
 
 (** ** Commutativity of linking and generation of the symbol table *)
 (* Lemma link_defs_acc_symb_comm : forall defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2, *)
@@ -915,6 +910,88 @@ Proof.
   rewrite (acc_instrs_in_order_eq ORDER1).
   rewrite (acc_instrs_in_order_eq ORDER5). auto.  
 Qed.
+
+(** Symbol table size *)
+Lemma init_data_list_size_app : forall l1 l2,
+    init_data_list_size (l1 ++ l2) = (init_data_list_size l1) + (init_data_list_size l2).
+Proof.
+  induction l1 as [| e l2'].
+  - intros l2. simpl. auto.
+  - intros l2. simpl in *.
+    rewrite IHl2'; omega.
+Qed.
+
+Lemma code_size_app: forall l1 l2,
+    code_size (l1 ++ l2) = code_size l1 + code_size l2.
+Proof.
+  induction l1 as [| e l2'].
+  - intros l2. simpl. auto.
+  - intros l2. simpl in *.
+    rewrite IHl2'; omega.
+Qed.
+
+Lemma update_code_data_size_inv : forall def dsz csz dincr cincr,
+    dincr = init_data_list_size (get_def_init_data def) ->
+    cincr = code_size (get_def_instrs def) ->
+    update_code_data_size dsz csz def = (dincr + dsz, cincr + csz).
+Proof.
+  intros def dsz csz dincr cincr DINCR CINCR.
+  unfold update_code_data_size. destruct def. destruct g. destruct f.
+  - simpl in *. subst. f_equal; omega.
+  - simpl in *. subst. f_equal; omega.
+  - simpl in DINCR, CINCR. subst.
+    destruct (gvar_init v).
+    + simpl. auto.
+    + destruct i; try (f_equal; omega).
+      destruct l; f_equal; omega.
+  - simpl in *. subst. f_equal; omega.
+Qed.
+
+Lemma acc_symb_size: forall d_id c_id defs s1 s2 dsz1 csz1 dsz2 csz2 data code,
+    fold_left (acc_symb d_id c_id) defs (s1, dsz1, csz1) = (s2, dsz2, csz2) ->
+    init_data_list_size data = dsz1 ->
+    code_size code = csz1 ->
+    init_data_list_size (fold_right acc_init_data data defs) = dsz2 /\ 
+    code_size (fold_right acc_instrs code defs) = csz2.
+Proof.
+  induction defs as [| def defs].
+  - intros s1 s2 dsz1 csz1 dsz2 csz2 data code SYMB INIT CODE.
+    simpl in *. inv SYMB. auto.
+  - intros s1 s2 dsz1 csz1 dsz2 csz2 data code SYMB INIT CODE.
+    destruct def as (id, def).
+    simpl in *. destr_in SYMB.
+    rewrite init_data_list_size_app.
+    rewrite code_size_app.
+    erewrite update_code_data_size_inv in Heqp; eauto.
+    inv Heqp.
+    rewrite <- init_data_list_size_app in SYMB.
+    rewrite <- code_size_app in SYMB.
+    generalize (IHdefs _ _ _ _ _ _ _ _ SYMB 
+                       (@eq_refl _ (init_data_list_size (get_def_init_data def ++ data)))
+                       (@eq_refl _ (code_size (get_def_instrs def ++ code)))).
+    destruct 1. subst. split.
+    + rewrite <- (fold_right_acc_init_data_app defs data).
+      rewrite <- (fold_right_acc_init_data_app defs (get_def_init_data def ++ data)).
+      repeat rewrite init_data_list_size_app.
+      omega.
+    + rewrite <- (fold_right_acc_instrs_app defs code).
+      rewrite <- (fold_right_acc_instrs_app defs (get_def_instrs def ++ code)).
+      repeat rewrite code_size_app.
+      omega.
+Qed.
+
+
+Lemma gen_symb_table_size: forall defs d_id c_id stbl dsz csz,
+    gen_symb_table d_id c_id defs = (stbl, dsz, csz) ->
+    sec_size (create_data_section defs) = dsz /\
+    sec_size (create_code_section defs) = csz.
+Proof.
+  intros defs d_id c_id stbl dsz csz SGEN.
+  simpl. unfold gen_symb_table in SGEN.
+  destr_in SGEN. destruct p. inv SGEN. 
+  eapply acc_symb_size; eauto.
+Qed.
+
 
 (** Main linking theorem *)
 Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
