@@ -132,12 +132,23 @@ Lemma gen_symb_table_index_in_range : forall defs sec_data_id sec_code_id stbl d
     symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl.
 Admitted.
 
-Lemma reloc_symbtable_exists : forall stbl f dsz csz,
+Lemma reloc_symbtable_exists_aux : forall stbl f dsz csz,
     symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl ->
     f = (reloc_offset_fun dsz csz) ->
     exists stbl', reloc_symbtable f stbl = Some stbl' /\
              Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
 Admitted.
+
+Lemma reloc_symbtable_exists: forall stbl f defs d c dsz csz,
+    gen_symb_table sec_data_id sec_code_id defs = (stbl, d, c) ->
+    f = (reloc_offset_fun dsz csz) ->
+    exists stbl', reloc_symbtable f stbl = Some stbl' /\
+             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
+Proof.
+  intros. apply reloc_symbtable_exists_aux with dsz csz.
+  eapply gen_symb_table_index_in_range; eauto.
+  auto.
+Qed.
 
 
 Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
@@ -150,21 +161,60 @@ Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 cs
       link_symbtable stbl1 stbl2' = Some stbl
       /\ gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz1 + dsz2, csz1 + csz2).
 Proof.
-Admitted.
-(*   intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 LINK GS1 GS2. *)
-(*   unfold link_defs in LINK. *)
-(*   unfold gen_symb_table in GS1, GS2. *)
-(*   destruct (fold_left (acc_symb sec_data_id sec_code_id) defs1 ([dummy_symbentry], 0, 0)) *)
-(*     as (r1 & csz1') eqn:GSEQ1. destruct r1 as (rstbl1 & dsz1'). inv GS1. *)
-(*   destruct (fold_left (acc_symb sec_data_id sec_code_id) defs2 ([dummy_symbentry], 0, 0)) *)
-(*     as (r2 & csz') eqn:GSEQ2. destruct r2 as (rstbl2 & dsz2'). inv GS2. *)
-(*   unfold gen_symb_table. *)
-(*   exploit link_defs_acc_symb_comm; eauto. *)
-(*   destruct 1 as (stbl & LINKS & ACC). *)
-(*   exists stbl. split; auto. rewrite ACC. *)
-(*   rewrite rev_involutive. auto. *)
-(* Qed. *)
+  intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs LINK GS1 GS2 FOFS.
 
+  unfold link_defs in LINK.
+  destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINKDEFS1; 
+    try congruence.
+  destruct r as (p & defs2_rest). destruct p as (defs1_linked, defs1_rest).
+  destruct (link_defs1 is_fundef_internal defs2_rest defs1_rest) as [r|] eqn:LINKDEFS2; 
+    try congruence.
+  destruct r. destruct p as (defs2_linked & r). inv LINK.
+
+  unfold link_symbtable.
+
+
+  Lemma link_defs1_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2,
+      link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
+      gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
+      gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
+      exists stbl1_linked stbl1_rest stbl2_rest,
+        link_symbtable1 (SeqTable.filter is_not_dummy_symbentry stbl1) 
+                        (SeqTable.filter is_not_dummy_symbentry stbl2) = Some (stbl1_linked, stbl1_rest, stbl2_rest) /\
+        gen_symb_table sec_data_id sec_code_id defs1_linked = (stbl1_linked, dsz1, csz1) /\
+        gen_symb_table sec_data_id sec_code_id defs1_rest = (stbl1_rest, 0, 0) /\
+        gen_symb_table sec_data_id sec_code_id defs2_rest = (stbl2_rest, dsz2, csz2).
+  Admitted.
+
+  generalize (link_defs1_comm _ _ LINKDEFS1 GS1 GS2).
+  destruct 1 as (stbl1_linked & stlb1_rest & stbl2_rest & LINKSTBL1 & GSLINKED1 & GSREST1 & GSREST2).
+  generalize (reloc_symbtable_exists _ GS2 (@eq_refl _ (reloc_offset_fun dsz1 csz1))).
+  destruct 1 as (stbl2' & RELOC & RELOC_PROP).
+  eexists. exists stbl2'. split; auto.
+
+  Lemma reloc_symbtable_filter_comm : forall rf f stbl stbl',
+    reloc_symbtable rf stbl = Some stbl' ->
+    reloc_symbtable rf (SeqTable.filter f stbl) = Some (SeqTable.filter f stbl').
+  Admitted.
+    
+  generalize (reloc_symbtable_filter_comm _ is_not_dummy_symbentry _ RELOC).
+  intros RELOC2.
+  
+  
+  Lemma reloc_link_symbtable_comm: forall rf stbl1 stbl2 stbl2' stbl1_linked stbl1_rest stbl2_rest,
+      reloc_symbtable rf stbl2 = Some stbl2' ->
+      link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) ->
+      exists stbl2_rest', reloc_symbtable rf stbl2_rest = Some stbl2_rest' /\
+                     link_symbtable1 stbl1 stbl2' = Some (stbl1_linked, stbl1_rest, stbl2_rest').
+  Admitted.
+
+  generalize (reloc_link_symbtable_comm _ _ _ RELOC2 LINKSTBL1).
+  destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').
+  rewrite LINKSTBL1'.
+  
+  generalize (link_defs1_comm _ _ LINKDEFS2 GSREST2 GSREST1).
+  destruct 1 as (stbl_linked2 & sr1 & sr2 & LINKSTBL2 & GSLINKED2 & GS3 & GS4).
+Admitted.
 
 
 Lemma link_pres_wf_prog: forall p1 p2 p defs,
@@ -725,6 +775,8 @@ Qed.
 End WithFunVar.
 (** *)
 
+Axiom defs_size_inbound: forall defs, sections_size (create_sec_table defs) <= Ptrofs.max_unsigned.
+
 (** Data section generation and linking *)
 
 Lemma extern_var_init_data_nil : forall v,
@@ -1023,17 +1075,6 @@ Proof.
   destruct p as (stbl2 & dsz2).
   destruct zle; try monadInv MATCH2; simpl.
   
-
-  (* generalize (gen_symb_table_index_in_range _ _ _ GSEQ2). *)
-  (* intro SIDX_RANGE2.   *)
-  (* generalize (reloc_symbtable_exists  *)
-  (*               SIDX_RANGE2  *)
-  (*               (eq_refl  *)
-  (*                  (reloc_offset_fun (sec_size (create_data_section (AST.prog_defs p1))) *)
-  (*                                    (sec_size (create_code_section (AST.prog_defs p1)))))). *)
-  (* destruct 1 as (stbl2' & RELOC2 & RELOC_REL). *)
-  (* setoid_rewrite RELOC2. *)
-
   exploit link_gen_symb_comm; eauto.
   destruct 1 as (stbl & stbl2' & RELOC & LINKS & GENS).
   generalize (gen_symb_table_size _ _ _ GSEQ1).
@@ -1055,12 +1096,12 @@ Proof.
   repeat f_equal.
   unfold create_sec_table. repeat f_equal.
   unfold create_data_section. f_equal.
-  (* rewrite fold_right_acc_init_data_app. *)
-  (* rewrite <- fold_right_app. *)
   apply link_acc_init_data_comm; auto.
   unfold create_code_section. f_equal.
   apply link_acc_instrs_comm; auto.
-  Admitted.
+  generalize (defs_size_inbound defs).
+  intros; omega.
+Qed.
 
 Instance TransfLinkSymbtablegen : TransfLink match_prog :=
   link_transf_symbtablegen.
