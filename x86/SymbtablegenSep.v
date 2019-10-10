@@ -150,6 +150,38 @@ Proof.
   auto.
 Qed.
 
+Lemma link_defs1_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2,
+    link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
+    gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
+    exists stbl1_linked stbl1_rest stbl2_rest,
+      link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) /\
+      gen_symb_table sec_data_id sec_code_id defs1_linked = (stbl1_linked, dsz1, csz1) /\
+      gen_symb_table sec_data_id sec_code_id defs1_rest = (stbl1_rest, 0, 0) /\
+      gen_symb_table sec_data_id sec_code_id defs2_rest = (stbl2_rest, dsz2, csz2).
+Admitted.
+
+Lemma reloc_link_symbtable_comm2: forall rf stbl1 stbl2 stbl2' stbl1_linked stbl1_rest stbl2_rest,
+    reloc_symbtable rf stbl2 = Some stbl2' ->
+    link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) ->
+    exists stbl2_rest', reloc_symbtable rf stbl2_rest = Some stbl2_rest' /\
+                   link_symbtable1 stbl1 stbl2' = Some (stbl1_linked, stbl1_rest, stbl2_rest').
+Admitted.
+
+Lemma reloc_link_symbtable_comm1: forall rf stbl1 stbl2 stbl1' stbl1_linked stbl1_rest stbl2_rest,
+    reloc_symbtable rf stbl1 = Some stbl1' ->
+    link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) ->
+    exists stbl1_linked', reloc_symbtable rf stbl1_linked = Some stbl1_linked' /\
+                     link_symbtable1 stbl1' stbl2 = Some (stbl1_linked', stbl1_rest, stbl2_rest).
+Admitted.
+
+Lemma gen_symb_table_app : forall defs1 defs2 stbl1 stbl2 stbl2' dsz1 dsz2 csz1 csz2,
+    gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
+    reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
+    gen_symb_table sec_data_id sec_code_id (defs1 ++ defs2) = (stbl1 ++ stbl2', dsz1 + dsz2, csz1 + csz2).
+Admitted.
+
 
 Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
     link_defs is_fundef_internal defs1 defs2 = Some defs ->
@@ -171,51 +203,23 @@ Proof.
     try congruence.
   destruct r. destruct p as (defs2_linked & r). inv LINK.
 
-  unfold link_symbtable.
-
-
-  Lemma link_defs1_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2,
-      link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
-      gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
-      gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
-      exists stbl1_linked stbl1_rest stbl2_rest,
-        link_symbtable1 (SeqTable.filter is_not_dummy_symbentry stbl1) 
-                        (SeqTable.filter is_not_dummy_symbentry stbl2) = Some (stbl1_linked, stbl1_rest, stbl2_rest) /\
-        gen_symb_table sec_data_id sec_code_id defs1_linked = (stbl1_linked, dsz1, csz1) /\
-        gen_symb_table sec_data_id sec_code_id defs1_rest = (stbl1_rest, 0, 0) /\
-        gen_symb_table sec_data_id sec_code_id defs2_rest = (stbl2_rest, dsz2, csz2).
-  Admitted.
-
   generalize (link_defs1_comm _ _ LINKDEFS1 GS1 GS2).
   destruct 1 as (stbl1_linked & stlb1_rest & stbl2_rest & LINKSTBL1 & GSLINKED1 & GSREST1 & GSREST2).
   generalize (reloc_symbtable_exists _ GS2 (@eq_refl _ (reloc_offset_fun dsz1 csz1))).
   destruct 1 as (stbl2' & RELOC & RELOC_PROP).
-  eexists. exists stbl2'. split; auto.
-
-  Lemma reloc_symbtable_filter_comm : forall rf f stbl stbl',
-    reloc_symbtable rf stbl = Some stbl' ->
-    reloc_symbtable rf (SeqTable.filter f stbl) = Some (SeqTable.filter f stbl').
-  Admitted.
-    
-  generalize (reloc_symbtable_filter_comm _ is_not_dummy_symbentry _ RELOC).
-  intros RELOC2.
-  
-  
-  Lemma reloc_link_symbtable_comm: forall rf stbl1 stbl2 stbl2' stbl1_linked stbl1_rest stbl2_rest,
-      reloc_symbtable rf stbl2 = Some stbl2' ->
-      link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) ->
-      exists stbl2_rest', reloc_symbtable rf stbl2_rest = Some stbl2_rest' /\
-                     link_symbtable1 stbl1 stbl2' = Some (stbl1_linked, stbl1_rest, stbl2_rest').
-  Admitted.
-
-  generalize (reloc_link_symbtable_comm _ _ _ RELOC2 LINKSTBL1).
-  destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').
-  rewrite LINKSTBL1'.
-  
+  generalize (reloc_link_symbtable_comm2 _ _ _ RELOC LINKSTBL1).
+  destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').  
   generalize (link_defs1_comm _ _ LINKDEFS2 GSREST2 GSREST1).
   destruct 1 as (stbl_linked2 & sr1 & sr2 & LINKSTBL2 & GSLINKED2 & GS3 & GS4).
-Admitted.
+  generalize (reloc_link_symbtable_comm1 _ _ _ RELOC2' LINKSTBL2).
+  destruct 1 as (stbl2_linked' & RELOC2 & LINKREST2).
 
+  unfold link_symbtable.
+  eexists. exists stbl2'. split; auto.
+  rewrite LINKSTBL1'.
+  rewrite LINKREST2. split; auto.  
+  eapply gen_symb_table_app; eauto.
+Qed.
 
 Lemma link_pres_wf_prog: forall p1 p2 p defs,
     link_defs is_fundef_internal (AST.prog_defs p1) (AST.prog_defs p2) = Some defs ->

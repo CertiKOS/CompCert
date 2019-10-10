@@ -120,7 +120,7 @@ Definition acc_symb (ssize: symbtable * Z * Z)
 Definition gen_symb_table defs :=
   let '(rstbl, dsize, csize) := 
       fold_left acc_symb
-                defs ([dummy_symbentry], 0, 0) in
+                defs (nil, 0, 0) in
   (rev rstbl, dsize, csize).
 
 End WITH_CODE_DATA_SEC.
@@ -299,7 +299,7 @@ Definition transf_program (p:Asm.program) : res program :=
             prog_main := AST.prog_main p;
             prog_sectable := sec_tbl;
             prog_strtable := PTree.empty Z;
-            prog_symbtable := symb_tbl;
+            prog_symbtable := dummy_symbentry :: symb_tbl;
             prog_reloctables := PTree.empty reloctable;
             prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)
          |}

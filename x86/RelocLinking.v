@@ -178,18 +178,25 @@ Fixpoint link_symbtable1 (t1 t2: symbtable) : option (symbtable * symbtable * sy
   end.
 
 Definition link_symbtable (t1 t2: symbtable) : option symbtable :=
-  let t1' := SeqTable.filter is_not_dummy_symbentry t1 in
-  let t2' := SeqTable.filter is_not_dummy_symbentry t2 in 
-  match link_symbtable1 t1' t2' with
+  match link_symbtable1 t1 t2 with
   | None => None
   | Some (t1_linked, t1_rest, t2_rest) =>
     match link_symbtable1 t2_rest t1_rest with
     | None => None
     | Some (t2_linked, _, _) => 
-      Some (dummy_symbentry :: t1_linked ++ t2_linked)
+      Some (t1_linked ++ t2_linked)
     end
   end.
 
+Definition link_symbtable' (t1 t2: symbtable) :=
+  match t1, t2 with
+  | dummy1 :: t1', dummy2 :: t2' => 
+    match link_symbtable t1' t2' with
+    | None => None
+    | Some t => Some (dummy_symbentry :: t)
+    end
+  | _, _ => None
+  end.
 
 Definition link_section (s1 s2: section) : option section :=
   match s1, s2 with
@@ -257,7 +264,7 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
         match reloc_symbtable f_rofs (prog_symbtable p2) with
         | None => None
         | Some t2 =>
-          match link_symbtable t1 t2 with
+          match link_symbtable' t1 t2 with
           | None => None
           | Some symbtbl =>
             Some {| prog_defs   := AST.prog_defs ap;
