@@ -74,6 +74,11 @@ Proof.
   destruct zle; try monadInv MATCH. simpl. auto.
 Qed.
 
+Lemma gen_symb_table_size: forall defs d_id c_id stbl dsz csz,
+    gen_symb_table d_id c_id defs = (stbl, dsz, csz) ->
+    sec_size (create_data_section defs) = dsz /\
+    sec_size (create_code_section defs) = csz.
+Admitted.
 
 (** ** Commutativity of linking and generation of the symbol table *)
 (* Lemma link_defs_acc_symb_comm : forall defs1 defs2 defs rstbl1 dsz1 csz1 rstbl2 dsz2 csz2, *)
@@ -827,6 +832,18 @@ Proof.
 Qed.
 
 
+(** Code section generation and linking *)
+Lemma extern_fun_nil : forall def,
+    def_internal def = false -> get_def_instrs def = nil.
+Proof.
+  intros def H.
+  destruct def. destruct g; simpl in *.
+  - unfold is_fundef_internal in H.
+    destruct f; try congruence.
+  - auto.
+  - simpl in *. auto.
+Qed.
+
 Lemma acc_instrs_app : forall def l1 l2,
     (acc_instrs def l1) ++ l2 = acc_instrs def (l1 ++ l2).
 Proof.
@@ -843,12 +860,61 @@ Proof.
     rewrite acc_instrs_app. rewrite IHdefs. auto.
 Qed.
 
-(** Code section generation and linking *)
-Lemma link_acc_instrs_comm : forall defs1 defs2 defs,
-    link_defs is_fundef_internal defs1 defs2 = Some defs ->
-    fold_right acc_instrs [] defs = fold_right acc_instrs [] (defs1 ++ defs2).
-Admitted.
+Lemma get_def_instrs_eq : forall d1 d2,
+      def_eq d1 d2 -> get_def_instrs d1 = get_def_instrs d2.
+Proof.
+  intros d1 d2 EQ. inv EQ.
+  - auto.
+  - simpl in *. auto.
+Qed.
 
+Lemma acc_instrs_eq: forall d1 d2 l,
+    id_def_eq d1 d2 -> acc_instrs d1 l = acc_instrs d2 l.
+Proof.
+  intros d1 d2 l EQ.
+  destruct d1, d2. simpl in *. destruct EQ. subst.
+  f_equal. apply get_def_instrs_eq. auto.
+Qed.
+
+Lemma acc_instrs_in_order_eq : forall defs1 defs2,
+    list_in_order id_def_eq id_def_internal defs1 defs2 ->
+    fold_right acc_instrs [] defs1 = fold_right acc_instrs [] defs2.
+Proof.
+  induction 1.
+  - simpl. auto.
+  - destruct e as (id, def). simpl.     
+    erewrite extern_fun_nil; eauto.
+  - destruct e as (id, def). simpl.
+    erewrite extern_fun_nil; eauto.
+  - simpl.
+    rewrite IHlist_in_order.
+    apply acc_instrs_eq; auto.
+Qed.
+
+
+Lemma link_acc_instrs_comm : forall defs1 defs2 defs,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
+    link_defs is_fundef_internal defs1 defs2 = Some defs ->
+    fold_right acc_instrs [] defs = 
+    (fold_right acc_instrs [] defs1) ++ (fold_right acc_instrs [] defs2).
+Proof.
+  intros defs1 defs2 defs NORPT1 NORPT2 LINK.
+  unfold link_defs in LINK.
+  destruct (link_defs1 is_fundef_internal defs1 defs2) eqn:LINK1; try inv LINK.
+  destruct p as (r & defs2_rest). destruct r as (defs1_linked & defs1_rest).
+  destruct (link_defs1 is_fundef_internal defs2_rest defs1_rest) eqn:LINK2; try inv H0.
+  destruct p. destruct p as (defs2_linked & p). inv H1.
+  rewrite fold_right_app. rewrite <- fold_right_acc_instrs_app.
+  generalize (link_defs_rest_norepet_pres1 _ is_fundef_internal defs1 defs2 NORPT1 LINK1).
+  intros NORPT3.
+  apply link_defs1_in_order in LINK1; auto. destruct LINK1 as (ORDER1 & ORDER2).
+  apply link_defs1_in_order in LINK2; auto. destruct LINK2 as (ORDER3 & ORDER4).
+  generalize (list_in_order_trans ORDER2 ORDER3).
+  intros ORDER5.
+  rewrite (acc_instrs_in_order_eq ORDER1).
+  rewrite (acc_instrs_in_order_eq ORDER5). auto.  
+Qed.
 
 (** Main linking theorem *)
 Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
@@ -893,13 +959,6 @@ Proof.
 
   exploit link_gen_symb_comm; eauto.
   destruct 1 as (stbl & stbl2' & RELOC & LINKS & GENS).
-
-  Lemma gen_symb_table_size: forall defs d_id c_id stbl dsz csz,
-      gen_symb_table d_id c_id defs = (stbl, dsz, csz) ->
-      sec_size (create_data_section defs) = dsz /\
-      sec_size (create_code_section defs) = csz.
-  Admitted.
-
   generalize (gen_symb_table_size _ _ _ GSEQ1).
   destruct 1 as (DSZ & CSZ).
   setoid_rewrite DSZ.
@@ -923,12 +982,8 @@ Proof.
   (* rewrite <- fold_right_app. *)
   apply link_acc_init_data_comm; auto.
   unfold create_code_section. f_equal.
-  rewrite fold_right_acc_instrs_app.
-  rewrite <- fold_right_app.
   apply link_acc_instrs_comm; auto.
-
   Admitted.
 
 Instance TransfLinkSymbtablegen : TransfLink match_prog :=
   link_transf_symbtablegen.
-
