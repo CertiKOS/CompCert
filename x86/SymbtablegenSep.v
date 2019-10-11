@@ -29,6 +29,165 @@ Proof.
     f_equal. apply IHl1; auto.
 Qed.
 
+Lemma part_not_in_nil : forall F V id (defs defs' l: list (ident * option (globdef (AST.fundef F) V))),
+    partition (fun '(id', _) => ident_eq id' id) defs = (l, defs') ->
+    ~ In id (map fst defs) ->
+    l = nil.
+Proof.
+  induction defs. 
+  - intros defs' l PART NIN.
+    simpl in *. inv PART. auto.
+  - intros defs' l PART NIN.
+    simpl in *. destr_in PART. 
+    destruct a, ident_eq; simpl in *; subst; inv PART.
+    exfalso. apply NIN. auto.
+    eapply IHdefs; eauto.
+Qed.
+
+Lemma lst_norepet_partition_inv : forall F V id (defs defs1 defs2: list (ident * option (globdef (AST.fundef F) V))),
+    list_norepet (map fst defs) ->
+    partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
+    defs1 = nil \/ exists def, defs1 = [def].
+Proof.
+  induction defs.
+  - intros defs1 defs2 NORPT PART.
+    simpl in *. inv PART. auto.
+  - intros defs1 defs2 NORPT PART.
+    simpl in *. inv NORPT.
+    destr_in PART. destruct a.
+    destruct ident_eq; simpl in *; inv PART.
+    + generalize (part_not_in_nil _ _ Heqp H1).
+      intros. subst.
+      eauto.
+    + eauto.
+Qed.
+
+Lemma partition_pres_list_norepet : forall F V f (l l1 l2: list (ident * option (globdef (AST.fundef F) V))),
+    partition f l = (l1, l2) -> 
+    list_norepet (map fst l) ->
+    list_norepet (map fst l1) /\ list_norepet (map fst l2).
+Proof.
+  induction l.
+  - intros l1 l2 PART NORPT.
+    simpl in *. inv PART. auto.
+  - intros l1 l2 PART NORPT.
+    simpl in *. inv NORPT. destr_in PART.
+    destr_in PART. 
+    + inv PART.
+      generalize (IHl _ _ (@eq_refl _ (l0, l2)) H2).
+      destruct 1. split; auto. simpl. constructor; auto.
+      intro IN. apply H1. 
+      generalize (elements_in_partition _ _ Heqp).
+      intros ELEM.
+      apply list_in_map_inv in IN. 
+      destruct IN as (b & EQ & IN). 
+      rewrite in_map_iff.
+      exists b.  split; auto.
+      rewrite ELEM. auto.
+    + inv PART.
+      generalize (IHl _ _ (@eq_refl _ (l1, l3)) H2).
+      destruct 1.
+      split; auto.
+      simpl. constructor; auto.
+      intro IN. apply H1.
+      generalize (elements_in_partition _ _ Heqp).
+      intros ELEM.
+      rewrite in_map_iff in *.
+      destruct IN as (x & EQ & IN).
+      eexists; split; eauto.
+      rewrite ELEM. auto.
+Qed.
+
+Lemma link_defs_rest_elem : 
+  forall F V (LV: Linker V) f 
+    (defs1 defs2 defs1_linked defs1_rest defs2_rest: list (ident * option (globdef (AST.fundef F) V))),
+    link_defs1 f defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
+    (forall x, In x defs1_rest -> In x defs1) /\ (forall x, In x defs2_rest -> In x defs2).
+Proof.
+  induction defs1.
+  - intros defs2 defs1_linked defs1_rest defs2_rest LINK.
+    simpl in *. inv LINK. auto.
+  - intros defs2 defs1_linked defs1_rest defs2_rest LINK.
+    simpl in *. destruct a.
+    destr_in LINK. destruct p. destruct p.
+    destr_in LINK. destruct l2.
+    + inv LINK.
+      generalize (partition_inv_nil1 _ _ Heqp). intros. subst.
+      generalize (IHdefs1 _ _ _ _ Heqo0). 
+      destruct 1. split; auto.
+    + destruct p. destr_in LINK.
+      * destr_in LINK. inv LINK.
+        generalize (IHdefs1 _ _ _ _ Heqo0). 
+        destruct 1. split; auto.
+        intros x IN. inv IN; auto.
+      * destr_in LINK. inv LINK.
+        generalize (IHdefs1 _ _ _ _ Heqo0).
+        destruct 1. split; auto.
+        intros x IN.
+        apply H0.
+        rewrite elements_in_partition; eauto.
+Qed.
+
+Lemma link_defs_rest_norepet_pres1 : 
+  forall F V (LV: Linker V) f 
+    (defs1 defs2 defs1_linked defs1_rest defs2_rest: list (ident * option (globdef (AST.fundef F) V))),
+    list_norepet (map fst defs1) ->
+    link_defs1 f defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
+    list_norepet (map fst defs1_rest).
+Proof.
+  induction defs1.
+  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
+    simpl in *. inv LINK. auto.
+  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
+    simpl in *. destruct a.
+    destr_in LINK. destruct p. destruct p.
+    destr_in LINK. destruct l2.
+    + inv LINK. inv NORPT.
+      eapply IHdefs1; eauto.
+    + destruct p. destr_in LINK.
+      * destr_in LINK. inv LINK.
+        inv NORPT.
+        generalize (IHdefs1 _ _ _ _ H2 Heqo0). 
+        intros. simpl. constructor; auto.
+        intros IN. apply H1. rewrite in_map_iff in *.
+        destruct IN as (x & EQF & IN1). 
+        exists x. split; auto. 
+        generalize (link_defs_rest_elem _ _ _ _ Heqo0).
+        destruct 1. auto.
+      * destr_in LINK. inv LINK. inv NORPT.
+        generalize (IHdefs1 _ _ _ _ H2 Heqo0).
+        auto.
+Qed.
+        
+Lemma link_defs_rest_norepet_pres2 : 
+  forall F V (LV: Linker V) f 
+    (defs1 defs2 defs1_linked defs1_rest defs2_rest: list (ident * option (globdef (AST.fundef F) V))),
+    list_norepet (map fst defs2) ->
+    link_defs1 f defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
+    list_norepet (map fst defs2_rest).
+Proof.
+  induction defs1.
+  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
+    simpl in *. inv LINK. auto.
+  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
+    simpl in *. destruct a.
+    destr_in LINK. destruct p. destruct p.
+    destr_in LINK. destruct l2.
+    + inv LINK.
+      generalize (partition_inv_nil1 _ _ Heqp). intros. subst.
+      generalize (IHdefs1 _ _ _ _ NORPT Heqo0). auto.
+    + destruct p. destr_in LINK.
+      * destr_in LINK. inv LINK.
+        generalize (IHdefs1 _ _ _ _ NORPT Heqo0). auto.
+      * destr_in LINK. inv LINK.
+        generalize (IHdefs1 _ _ _ _ NORPT Heqo0).
+        intros. 
+        generalize (partition_pres_list_norepet _ _ Heqp H).
+        destruct 1. auto.
+Qed.
+
+
+
 Lemma get_symbentry_id : forall d_id c_id dsz csz id def,
     symbentry_id (get_symbentry d_id c_id dsz csz id def) = Some id.
 Proof.
@@ -228,6 +387,7 @@ Admitted.
 
 Lemma link_defs1_acc_symb_comm : forall asf defs1 defs2 defs1_linked defs1_rest defs2_rest rstbl1 rstbl2 dsz1 dsz2 csz1 csz2 dsz1' csz1',
     asf = acc_symb sec_data_id sec_code_id ->
+    list_norepet (map fst defs2) ->
     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
     fold_left asf defs1 ([], dsz1', csz1') = (rstbl1, dsz1, csz1) ->
     fold_left asf defs2 ([], 0, 0) = (rstbl2, dsz2, csz2) ->
@@ -239,11 +399,11 @@ Lemma link_defs1_acc_symb_comm : forall asf defs1 defs2 defs1_linked defs1_rest 
 Proof.
   induction defs1 as [|def1 defs1].
   - intros until csz1'.
-    intros ASF LINK ACC1 ACC2.
+    intros ASF NORPT LINK ACC1 ACC2.
     simpl in *. inv ACC1. inv LINK. simpl.
     repeat eexists; auto.
   - intros until csz1'.
-    intros ASF LINK ACC1 ACC2. 
+    intros ASF NORPT LINK ACC1 ACC2. 
     simpl in *. destruct def1 as (id1 & def1).
     destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINK_TAIL;
       try congruence.
@@ -255,7 +415,7 @@ Proof.
     rewrite <- ASF in ACC1.
     generalize (acc_symb_inv _ _ _ _ ASF ACC1).
     destruct 1 as (stbl1' & STEQ & ACC1').
-    generalize (IHdefs1 _ _ _ _ _ _ _ _ _ _ _ _ ASF LINK_TAIL ACC1' ACC2).
+    generalize (IHdefs1 _ _ _ _ _ _ _ _ _ _ _ _ ASF NORPT LINK_TAIL ACC1' ACC2).
     destruct 1 as (stbl1_linked & stbl1_rest & stbl2_rest & LINK_SYMB_TAIL & ACC_LINK1 & ACC_REST1 & ACC_REST2).
     
     destruct (partition (fun '(id', _) => ident_eq id' id1) defs2_rest') as (defs2' & defs2_rest'') eqn:PART.
@@ -374,18 +534,26 @@ Proof.
         split.
         rewrite ASF in ACC_REST1. auto.
 
-        assert (defs2'0 = nil). admit. subst defs2'0.
+        assert (defs2'0 = nil).
+        { 
+          generalize (link_defs_rest_norepet_pres2 _ _ _ _ NORPT LINK_TAIL).
+          intros NORPT'.
+          generalize (lst_norepet_partition_inv _ _ NORPT' PART).
+          destruct 1 as [ DEQ | DEQ ]; try congruence.
+          destruct DEQ as (def2' & DEQ).
+          inv DEQ. auto.
+        }  
+        subst defs2'0.
         assert (Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) [(id, def2)]) as DEF2INT'.
         { constructor. auto. apply Forall_nil. }
         generalize (acc_symb_partition_extern_intern _ _ ASF PART ACC_REST2 DEF2INT').
         destruct 1 as (stbl2' & stbl2_rest' & PART2 & ACC2_REST').
         rewrite PART' in PART2. inv PART2. auto.
-
-Admitted.
-        
+Qed.
         
 
 Lemma link_defs1_gen_symbtbl_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2,
+    list_norepet (map fst defs2) ->
     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
@@ -396,10 +564,10 @@ Lemma link_defs1_gen_symbtbl_comm : forall defs1 defs2 defs1_linked defs1_rest d
       gen_symb_table sec_data_id sec_code_id defs2_rest = (stbl2_rest, dsz2, csz2).
 Proof.
   intros until csz2. 
-  intros LINK GS1 GS2. unfold gen_symb_table in GS1, GS2.
+  intros NORPT LINK GS1 GS2. unfold gen_symb_table in GS1, GS2.
   destr_in GS1. destruct p. inv GS1.
   destr_in GS2. destruct p. inv GS2.
-  generalize (link_defs1_acc_symb_comm _ _ _ _ (@eq_refl _ (acc_symb sec_data_id sec_code_id)) LINK Heqp Heqp0).
+  generalize (link_defs1_acc_symb_comm _ _ _ _ (@eq_refl _ (acc_symb sec_data_id sec_code_id)) NORPT LINK Heqp Heqp0).
   destruct 1 as (t1 & t1' & t2 & LINKS & GS1 & GS2 & GS3).
   unfold gen_symb_table.
   rewrite LINKS, GS1, GS2, GS3. 
@@ -429,6 +597,8 @@ Admitted.
 
 
 Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
     link_defs is_fundef_internal defs1 defs2 = Some defs ->
     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
@@ -438,7 +608,7 @@ Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 cs
       link_symbtable stbl1 stbl2' = Some stbl
       /\ gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz1 + dsz2, csz1 + csz2).
 Proof.
-  intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs LINK GS1 GS2 FOFS.
+  intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs NORPT1 NORPT2 LINK GS1 GS2 FOFS.
 
   unfold link_defs in LINK.
   destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINKDEFS1; 
@@ -448,13 +618,15 @@ Proof.
     try congruence.
   destruct r. destruct p as (defs2_linked & r). inv LINK.
 
-  generalize (link_defs1_gen_symbtbl_comm _ _ LINKDEFS1 GS1 GS2).
+  generalize (link_defs1_gen_symbtbl_comm _ _ NORPT2 LINKDEFS1 GS1 GS2).
   destruct 1 as (stbl1_linked & stlb1_rest & stbl2_rest & LINKSTBL1 & GSLINKED1 & GSREST1 & GSREST2).
   generalize (reloc_symbtable_exists _ GS2 (@eq_refl _ (reloc_offset_fun dsz1 csz1))).
   destruct 1 as (stbl2' & RELOC & RELOC_PROP).
   generalize (reloc_link_symbtable_comm2 _ _ _ RELOC LINKSTBL1).
   destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').  
-  generalize (link_defs1_gen_symbtbl_comm _ _ LINKDEFS2 GSREST2 GSREST1).
+  generalize (link_defs_rest_norepet_pres1 _ _ _ _ NORPT1 LINKDEFS1).
+  intros NORPT1'.
+  generalize (link_defs1_gen_symbtbl_comm _ _ NORPT1' LINKDEFS2 GSREST2 GSREST1).
   destruct 1 as (stbl_linked2 & sr1 & sr2 & LINKSTBL2 & GSLINKED2 & GS3 & GS4).
   generalize (reloc_link_symbtable_comm1 _ _ _ RELOC2' LINKSTBL2).
   destruct 1 as (stbl2_linked' & RELOC2 & LINKREST2).
@@ -789,163 +961,7 @@ Proof.
 Qed.  
 
 
-Lemma part_not_in_nil : forall id (defs defs' l: list (ident * option (globdef (AST.fundef F) V))),
-    partition (fun '(id', _) => ident_eq id' id) defs = (l, defs') ->
-    ~ In id (map fst defs) ->
-    l = nil.
-Proof.
-  induction defs. 
-  - intros defs' l PART NIN.
-    simpl in *. inv PART. auto.
-  - intros defs' l PART NIN.
-    simpl in *. destr_in PART. 
-    destruct a, ident_eq; simpl in *; subst; inv PART.
-    exfalso. apply NIN. auto.
-    eapply IHdefs; eauto.
-Qed.
-
-Lemma lst_norepet_partition_inv : forall id (defs defs1 defs2: list (ident * option (globdef (AST.fundef F) V))),
-    list_norepet (map fst defs) ->
-    partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
-    defs1 = nil \/ exists def, defs1 = [def].
-Proof.
-  induction defs.
-  - intros defs1 defs2 NORPT PART.
-    simpl in *. inv PART. auto.
-  - intros defs1 defs2 NORPT PART.
-    simpl in *. inv NORPT.
-    destr_in PART. destruct a.
-    destruct ident_eq; simpl in *; inv PART.
-    + generalize (part_not_in_nil _ _ Heqp H1).
-      intros. subst.
-      eauto.
-    + eauto.
-Qed.
   
-Lemma partition_pres_list_norepet : forall f (l l1 l2: list (ident * option (globdef (AST.fundef F) V))),
-    partition f l = (l1, l2) -> 
-    list_norepet (map fst l) ->
-    list_norepet (map fst l1) /\ list_norepet (map fst l2).
-Proof.
-  induction l.
-  - intros l1 l2 PART NORPT.
-    simpl in *. inv PART. auto.
-  - intros l1 l2 PART NORPT.
-    simpl in *. inv NORPT. destr_in PART.
-    destr_in PART. 
-    + inv PART.
-      generalize (IHl _ _ (@eq_refl _ (l0, l2)) H2).
-      destruct 1. split; auto. simpl. constructor; auto.
-      intro IN. apply H1. 
-      generalize (elements_in_partition _ _ Heqp).
-      intros ELEM.
-      apply list_in_map_inv in IN. 
-      destruct IN as (b & EQ & IN). 
-      rewrite in_map_iff.
-      exists b.  split; auto.
-      rewrite ELEM. auto.
-    + inv PART.
-      generalize (IHl _ _ (@eq_refl _ (l1, l3)) H2).
-      destruct 1.
-      split; auto.
-      simpl. constructor; auto.
-      intro IN. apply H1.
-      generalize (elements_in_partition _ _ Heqp).
-      intros ELEM.
-      rewrite in_map_iff in *.
-      destruct IN as (x & EQ & IN).
-      eexists; split; eauto.
-      rewrite ELEM. auto.
-Qed.
-
-Lemma link_defs_rest_elem : 
-  forall (LV: Linker V) f 
-    (defs1 defs2 defs1_linked defs1_rest defs2_rest: list (ident * option (globdef (AST.fundef F) V))),
-    link_defs1 f defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
-    (forall x, In x defs1_rest -> In x defs1) /\ (forall x, In x defs2_rest -> In x defs2).
-Proof.
-  induction defs1.
-  - intros defs2 defs1_linked defs1_rest defs2_rest LINK.
-    simpl in *. inv LINK. auto.
-  - intros defs2 defs1_linked defs1_rest defs2_rest LINK.
-    simpl in *. destruct a.
-    destr_in LINK. destruct p. destruct p.
-    destr_in LINK. destruct l2.
-    + inv LINK.
-      generalize (partition_inv_nil1 _ _ Heqp). intros. subst.
-      generalize (IHdefs1 _ _ _ _ Heqo0). 
-      destruct 1. split; auto.
-    + destruct p. destr_in LINK.
-      * destr_in LINK. inv LINK.
-        generalize (IHdefs1 _ _ _ _ Heqo0). 
-        destruct 1. split; auto.
-        intros x IN. inv IN; auto.
-      * destr_in LINK. inv LINK.
-        generalize (IHdefs1 _ _ _ _ Heqo0).
-        destruct 1. split; auto.
-        intros x IN.
-        apply H0.
-        rewrite elements_in_partition; eauto.
-Qed.
-
-Lemma link_defs_rest_norepet_pres1 : 
-  forall (LV: Linker V) f 
-    (defs1 defs2 defs1_linked defs1_rest defs2_rest: list (ident * option (globdef (AST.fundef F) V))),
-    list_norepet (map fst defs1) ->
-    link_defs1 f defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
-    list_norepet (map fst defs1_rest).
-Proof.
-  induction defs1.
-  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
-    simpl in *. inv LINK. auto.
-  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
-    simpl in *. destruct a.
-    destr_in LINK. destruct p. destruct p.
-    destr_in LINK. destruct l2.
-    + inv LINK. inv NORPT.
-      eapply IHdefs1; eauto.
-    + destruct p. destr_in LINK.
-      * destr_in LINK. inv LINK.
-        inv NORPT.
-        generalize (IHdefs1 _ _ _ _ H2 Heqo0). 
-        intros. simpl. constructor; auto.
-        intros IN. apply H1. rewrite in_map_iff in *.
-        destruct IN as (x & EQF & IN1). 
-        exists x. split; auto. 
-        generalize (link_defs_rest_elem _ _ _ _ Heqo0).
-        destruct 1. auto.
-      * destr_in LINK. inv LINK. inv NORPT.
-        generalize (IHdefs1 _ _ _ _ H2 Heqo0).
-        auto.
-Qed.
-        
-Lemma link_defs_rest_norepet_pres2 : 
-  forall (LV: Linker V) f 
-    (defs1 defs2 defs1_linked defs1_rest defs2_rest: list (ident * option (globdef (AST.fundef F) V))),
-    list_norepet (map fst defs2) ->
-    link_defs1 f defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
-    list_norepet (map fst defs2_rest).
-Proof.
-  induction defs1.
-  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
-    simpl in *. inv LINK. auto.
-  - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK.
-    simpl in *. destruct a.
-    destr_in LINK. destruct p. destruct p.
-    destr_in LINK. destruct l2.
-    + inv LINK.
-      generalize (partition_inv_nil1 _ _ Heqp). intros. subst.
-      generalize (IHdefs1 _ _ _ _ NORPT Heqo0). auto.
-    + destruct p. destr_in LINK.
-      * destr_in LINK. inv LINK.
-        generalize (IHdefs1 _ _ _ _ NORPT Heqo0). auto.
-      * destr_in LINK. inv LINK.
-        generalize (IHdefs1 _ _ _ _ NORPT Heqo0).
-        intros. 
-        generalize (partition_pres_list_norepet _ _ Heqp H).
-        destruct 1. auto.
-Qed.
-
 Lemma link_defs1_in_order : forall {LV: Linker V} defs1 defs2 defs1_linked defs1_rest defs2_rest,
     list_norepet (map fst defs2) ->
     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
@@ -1315,7 +1331,8 @@ Proof.
   destruct p as (stbl2 & dsz2).
   destruct zle; try monadInv MATCH2; simpl.
   
-  exploit link_gen_symb_comm; eauto.
+  generalize (link_gen_symb_comm _ _ NRPT1 NRPT2 LINKDEFS GSEQ1 GSEQ2 
+                                 (@eq_refl _ (reloc_offset_fun dsz1 csz1))); eauto.
   destruct 1 as (stbl & stbl2' & RELOC & LINKS & GENS).
   generalize (gen_symb_table_size _ _ _ GSEQ1).
   destruct 1 as (DSZ & CSZ).
