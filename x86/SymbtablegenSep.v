@@ -12,6 +12,34 @@ Import ListNotations.
 
 Set Implicit Arguments.
 
+Lemma app_cons_comm : forall (A:Type) (l1 l2: list A) a,
+    l1 ++ (a :: l2) = (l1 ++ [a]) ++ l2.
+Proof.
+  induction l1.
+  - intros. auto.
+  - simpl. intros. rewrite IHl1. auto.
+Qed.
+
+Lemma partition_inv_nil1 : forall (A:Type) f (l1 l2:list A),
+    partition f l1 = ([], l2) -> l1 = l2.
+Proof.
+  induction l1; intros; simpl in *.
+  - inv H. auto.
+  - destr_in H. destr_in H. inv H.
+    f_equal. apply IHl1; auto.
+Qed.
+
+Lemma get_symbentry_id : forall d_id c_id dsz csz id def,
+    symbentry_id (get_symbentry d_id c_id dsz csz id def) = Some id.
+Proof.
+  intros until def.
+  destruct def. destruct g. destruct f.
+  simpl; auto.
+  simpl; auto.
+  simpl. destruct (gvar_init v); auto. destruct i; auto. destruct l; auto.
+  simpl; auto.
+Qed.
+
 (** * Commutativity of linking and Symbtablgen *)
 
 Definition match_prog (p: Asm.program) (tp: program) :=
@@ -150,7 +178,103 @@ Proof.
   auto.
 Qed.
 
-Lemma link_defs1_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2,
+Lemma acc_symb_inv: forall asf defs stbl1 dsz1 csz1 stbl2 dsz2 csz2,
+    asf = (acc_symb sec_data_id sec_code_id) ->
+    fold_left asf defs (stbl1, dsz1, csz1) = (stbl2, dsz2, csz2) ->
+    exists stbl1', stbl2 = stbl1' ++ stbl1 /\
+              fold_left asf defs ([], dsz1, csz1) = (stbl1', dsz2, csz2).
+Proof.
+  induction defs.
+  - intros stbl1 dsz1 csz1 stbl2 dsz2 csz2 ASF ACC.
+    simpl in *. inv ACC. exists nil. eauto.
+  - intros until csz2. intros ASF ACC. simpl in *.
+    rewrite ASF in ACC. simpl in ACC. destruct a as (id & def).
+    destruct (update_code_data_size dsz1 csz1 def) as [dsize' csize'] eqn:UPDATE.
+    rewrite <- ASF in ACC.
+    generalize (IHdefs _ _ _ _ _ _ ASF ACC).
+    destruct 1 as (stbl1' & EQ & ACC1).
+    rewrite app_cons_comm in EQ.
+    rewrite EQ.
+    eexists. split; auto.
+    subst. simpl.
+    rewrite UPDATE. 
+
+    Lemma acc_symb_append : forall defs dsz1' csz1' stbl1 dsz1 csz1 stbl2,
+        fold_left (acc_symb sec_data_id sec_code_id) defs ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
+        fold_left (acc_symb sec_data_id sec_code_id) defs (stbl2, dsz1', csz1') = (stbl1 ++ stbl2, dsz1, csz1).
+    Proof.
+    Admitted.
+
+    apply acc_symb_append. auto.
+Qed.
+
+
+Lemma link_defs1_acc_symb_comm : forall asf defs1 defs2 defs1_linked defs1_rest defs2_rest rstbl1 rstbl2 dsz1 dsz2 csz1 csz2 dsz1' csz1',
+    asf = acc_symb sec_data_id sec_code_id ->
+    link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
+    fold_left asf defs1 ([], dsz1', csz1') = (rstbl1, dsz1, csz1) ->
+    fold_left asf defs2 ([], 0, 0) = (rstbl2, dsz2, csz2) ->
+    exists rstbl1_linked rstbl1_rest rstbl2_rest,
+      link_symbtable1 (rev rstbl1) (rev rstbl2) = Some (rev rstbl1_linked, rev rstbl1_rest, rev rstbl2_rest) /\
+      fold_left asf defs1_linked ([], dsz1', csz1') = (rstbl1_linked, dsz1, csz1) /\
+      fold_left asf defs1_rest ([], 0, 0) = (rstbl1_rest, 0, 0) /\
+      fold_left asf defs2_rest ([], 0, 0) = (rstbl2_rest, dsz2, csz2).
+Proof.
+  induction defs1 as [|def1 defs1].
+  - intros until csz1'.
+    intros ASF LINK ACC1 ACC2.
+    simpl in *. inv ACC1. inv LINK. simpl.
+    repeat eexists; auto.
+  - intros until csz1'.
+    intros ASF LINK ACC1 ACC2. 
+    simpl in *. destruct def1 as (id1 & def1).
+    destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINK_TAIL;
+      try congruence.
+    destruct r as (p & defs2_rest'). 
+    destruct p as (defs1_linked' & defs1_rest').
+    rewrite ASF in ACC1. simpl in ACC1.
+    destruct (update_code_data_size dsz1' csz1' def1) as (dsz1'' & csz1'') eqn:UPDATE.
+    
+
+    rewrite <- ASF in ACC1.
+    generalize (acc_symb_inv _ _ _ _ ASF ACC1).
+    destruct 1 as (stbl1' & STEQ & ACC1').
+    generalize (IHdefs1 _ _ _ _ _ _ _ _ _ _ _ _ ASF LINK_TAIL ACC1' ACC2).
+    destruct 1 as (stbl1_linked & stbl1_rest & stbl2_rest & LINK_SYMB_TAIL & ACC_LINK1 & ACC_REST1 & ACC_REST2).
+    
+    destruct (partition (fun '(id', _) => ident_eq id' id1) defs2_rest') as (defs2' & defs2_rest'') eqn:PART.
+    subst rstbl1. rewrite rev_unit.
+    simpl. rewrite LINK_SYMB_TAIL.
+    rewrite get_symbentry_id.
+
+    destruct defs2' as [|defs2'].
+    + (* No definition with id1 was found in the second module *)
+      generalize (partition_inv_nil1 _ _ PART). intros. subst defs2_rest''.
+      inversion LINK. 
+      subst defs1_linked. subst defs1_rest. subst defs2_rest.
+      assert (partition (symbentry_id_eq id1) (rev stbl2_rest) = ([], (rev stbl2_rest))) as PART'. admit.
+      rewrite PART'.
+      rewrite <- rev_unit. 
+      do 3 eexists. split. auto.
+      split; auto. subst asf. simpl. rewrite UPDATE.
+      apply acc_symb_append. auto.
+    + (* Some definition with id1 was found in the second module *)
+      destruct defs2' as (id, def2).
+      destruct (is_def_internal is_fundef_internal def2) eqn:DEF2_INT.
+      * (* The found definition is internal *)
+        destruct (is_def_internal is_fundef_internal def1) eqn:DEF1_INT; try congruence.
+        inversion LINK; clear LINK.
+        subst defs1_linked'. subst defs1_rest. subst defs2_rest'.
+        admit.
+      * (* The found definition is external *)
+        destruct (link_option def1 def2) as [def|] eqn:LINKDEF; try congruence.
+        inversion LINK. subst defs1_linked. subst defs1_rest'. subst defs2_rest''.
+        admit.
+Admitted.
+        
+        
+
+Lemma link_defs1_gen_symbtbl_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2,
     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) ->
     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
@@ -159,7 +283,17 @@ Lemma link_defs1_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest st
       gen_symb_table sec_data_id sec_code_id defs1_linked = (stbl1_linked, dsz1, csz1) /\
       gen_symb_table sec_data_id sec_code_id defs1_rest = (stbl1_rest, 0, 0) /\
       gen_symb_table sec_data_id sec_code_id defs2_rest = (stbl2_rest, dsz2, csz2).
-Admitted.
+Proof.
+  intros until csz2. 
+  intros LINK GS1 GS2. unfold gen_symb_table in GS1, GS2.
+  destr_in GS1. destruct p. inv GS1.
+  destr_in GS2. destruct p. inv GS2.
+  generalize (link_defs1_acc_symb_comm _ _ _ _ (@eq_refl _ (acc_symb sec_data_id sec_code_id)) LINK Heqp Heqp0).
+  destruct 1 as (t1 & t1' & t2 & LINKS & GS1 & GS2 & GS3).
+  unfold gen_symb_table.
+  rewrite LINKS, GS1, GS2, GS3. 
+  repeat eexists; eauto.
+Qed.
 
 Lemma reloc_link_symbtable_comm2: forall rf stbl1 stbl2 stbl2' stbl1_linked stbl1_rest stbl2_rest,
     reloc_symbtable rf stbl2 = Some stbl2' ->
@@ -203,13 +337,13 @@ Proof.
     try congruence.
   destruct r. destruct p as (defs2_linked & r). inv LINK.
 
-  generalize (link_defs1_comm _ _ LINKDEFS1 GS1 GS2).
+  generalize (link_defs1_gen_symbtbl_comm _ _ LINKDEFS1 GS1 GS2).
   destruct 1 as (stbl1_linked & stlb1_rest & stbl2_rest & LINKSTBL1 & GSLINKED1 & GSREST1 & GSREST2).
   generalize (reloc_symbtable_exists _ GS2 (@eq_refl _ (reloc_offset_fun dsz1 csz1))).
   destruct 1 as (stbl2' & RELOC & RELOC_PROP).
   generalize (reloc_link_symbtable_comm2 _ _ _ RELOC LINKSTBL1).
   destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').  
-  generalize (link_defs1_comm _ _ LINKDEFS2 GSREST2 GSREST1).
+  generalize (link_defs1_gen_symbtbl_comm _ _ LINKDEFS2 GSREST2 GSREST1).
   destruct 1 as (stbl_linked2 & sr1 & sr2 & LINKSTBL2 & GSLINKED2 & GS3 & GS4).
   generalize (reloc_link_symbtable_comm1 _ _ _ RELOC2' LINKSTBL2).
   destruct 1 as (stbl2_linked' & RELOC2 & LINKREST2).
@@ -577,15 +711,6 @@ Proof.
     + eauto.
 Qed.
   
-Lemma partition_inv_nil1 : forall (A:Type) f (l1 l2:list A),
-    partition f l1 = ([], l2) -> l1 = l2.
-Proof.
-  induction l1; intros; simpl in *.
-  - inv H. auto.
-  - destr_in H. destr_in H. inv H.
-    f_equal. apply IHl1; auto.
-Qed.
-
 Lemma partition_pres_list_norepet : forall f (l l1 l2: list (ident * option (globdef (AST.fundef F) V))),
     partition f l = (l1, l2) -> 
     list_norepet (map fst l) ->
