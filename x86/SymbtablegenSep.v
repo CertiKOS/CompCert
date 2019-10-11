@@ -183,11 +183,20 @@ Proof.
     apply acc_symb_append_nil. auto.
 Qed.
 
+Lemma acc_symb_partition_extern_intern: forall asf id defs defs1 defs2 rstbl dsz csz,
+    asf = acc_symb sec_data_id sec_code_id ->
+    partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
+    fold_left asf defs ([], 0, 0) = (rstbl, dsz, csz) ->
+    Forall (fun '(id', def) => is_def_internal is_fundef_internal def = false) defs1 ->
+    exists stbl1 stbl2,
+      partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\
+      fold_left asf defs2 ([], 0, 0) = (rev stbl2, dsz, csz).
+Admitted.
 
 Definition match_def_symbentry (id_def: ident * option gdef) e :=
   let '(id, def) := id_def in
   exists dsz csz, e = get_symbentry sec_data_id sec_code_id dsz csz id def.
-
+    
 Lemma acc_symb_pres_partition: forall asf id defs defs1 defs2 rstbl dsz csz,
     asf = acc_symb sec_data_id sec_code_id ->
     partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
@@ -198,16 +207,17 @@ Lemma acc_symb_pres_partition: forall asf id defs defs1 defs2 rstbl dsz csz,
       Forall2 match_def_symbentry defs2 stbl2.
 Admitted.
 
+Lemma match_def_symbentry_pres_internal_prop : forall id def e,
+    match_def_symbentry (id, def) e ->
+    is_def_internal is_fundef_internal def = is_symbentry_internal e.
+Admitted.
+
 
 Lemma get_symbentry_pres_internal_prop : forall id dsz csz def,
     is_def_internal is_fundef_internal def = 
     is_symbentry_internal (get_symbentry sec_data_id sec_code_id dsz csz id def).
 Admitted.
 
-Lemma match_def_symbentry_pres_internal_prop : forall id def e,
-    match_def_symbentry (id, def) e -> 
-    is_def_internal is_fundef_internal def = is_symbentry_internal e.
-Admitted.
 
 Lemma update_code_data_size_external : forall def1 dsz1 csz1 dsz1' csz1',
     is_def_internal is_fundef_internal def1 = false ->
@@ -302,10 +312,10 @@ Proof.
       * (* The found definition is external *)
         destruct (link_option def1 def2) as [def|] eqn:LINKDEF; try congruence.
         inversion LINK. subst defs1_linked. subst defs1_rest'. subst defs2_rest''.
-        rewrite PART'. inv MATCH1.
+        rewrite PART'. inversion MATCH1. subst x l stbl1.
         erewrite <- match_def_symbentry_pres_internal_prop; eauto.
         rewrite DEF2_INT. red in H1. destruct H1 as (dsz & csz & EQ).
-        subst.
+        subst y.
         
         Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
             partition f l = (l1, l2) -> 
@@ -340,7 +350,37 @@ Proof.
         erewrite link_get_symbentry_comm; eauto.
         rewrite <- rev_unit. rewrite <- (rev_involutive stbl2).
         do 3 eexists; split; auto.
-        simpl. 
+        rewrite ASF. simpl. 
+        
+        Lemma link_extern_def_update_code_data_size: forall def1 def2 def dsz1 csz1,
+            is_def_internal is_fundef_internal def2 = false
+            -> link_option def1 def2 = Some def
+            -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
+        Admitted.
+
+        erewrite <- link_extern_def_update_code_data_size; eauto.
+        rewrite UPDATE.
+        split; auto.
+
+        Lemma link_extern_def_pres_symbentry : forall def1 def2 def dsz1 csz1 id, 
+            is_def_internal is_fundef_internal def2 = false 
+            -> link_option def1 def2 = Some def 
+            -> get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1 = 
+              get_symbentry sec_data_id sec_code_id dsz1 csz1 id def.
+        Admitted.
+
+        erewrite <- link_extern_def_pres_symbentry; eauto.
+        apply acc_symb_append_nil. rewrite ASF in ACC_LINK1. auto.
+        split.
+        rewrite ASF in ACC_REST1. auto.
+
+        assert (defs2'0 = nil). admit. subst defs2'0.
+        assert (Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) [(id, def2)]) as DEF2INT'.
+        { constructor. auto. apply Forall_nil. }
+        generalize (acc_symb_partition_extern_intern _ _ ASF PART ACC_REST2 DEF2INT').
+        destruct 1 as (stbl2' & stbl2_rest' & PART2 & ACC2_REST').
+        rewrite PART' in PART2. inv PART2. auto.
+
 Admitted.
         
         
