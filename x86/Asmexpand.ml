@@ -525,9 +525,11 @@ let expand_instruction instr =
      emit (Pmov_rr (rd,RSP));
      if Archi.ptr64 then begin
        let (sz, _) = sp_adjustment_64 sz in
+       let sz = sz + 8 in
        emit (Paddq_ri (rd, Z.of_uint sz))
      end else begin
        let sz = sp_adjustment_32 sz in
+       let sz = sz + 4 in
        emit (Paddl_ri (rd, Z.of_uint sz))
      end
   | Pjmp(_, sg) | Pcall(_, sg) ->
