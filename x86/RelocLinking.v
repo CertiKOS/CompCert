@@ -73,15 +73,24 @@ Definition is_symbentry_internal (e2: symbentry) : bool :=
   | _ => true
   end.
 
+Definition update_symbtype (e: symbentry) t :=
+  {| symbentry_id    := symbentry_id e;
+     symbentry_type  := t;
+     symbentry_value := symbentry_value e;
+     symbentry_secindex := symbentry_secindex e;
+     symbentry_size  := symbentry_size e; |}.
+
 Definition link_symb (e1 e2: symbentry) : option symbentry :=
   match link_symbtype (symbentry_type e1) (symbentry_type e2) with
   | None => None
-  | Some _ =>
+  | Some t =>
     let sz1 := symbentry_size e1 in
     let sz2 := symbentry_size e2 in
     let i1 := symbentry_secindex e1 in
     let i2 := symbentry_secindex e2 in
     match i1, i2 with
+    | secindex_undef, secindex_undef =>
+      Some (update_symbtype e1 t)
     | _, secindex_undef => Some e1
     | secindex_undef, _ => Some e2
     | _, secindex_comm =>

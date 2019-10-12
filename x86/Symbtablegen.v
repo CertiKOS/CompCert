@@ -56,7 +56,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
         symbentry_secindex := secindex_comm;
-        symbentry_size := sz;
+        symbentry_size := Z.max sz 0;
       |}
     | _ =>
       (** This is an internal data symbol *)

@@ -12,6 +12,49 @@ Import ListNotations.
 
 Set Implicit Arguments.
 
+Lemma Z_max_0 : forall z, z >= 0 -> Z.max z 0 = z.
+Proof.
+  intros. apply Zmax_left. auto.
+Qed.
+
+Lemma length_S_inv : forall A (l: list A) n,
+    length l = S n ->
+    exists l' a, l = l' ++ [a] /\ length l' = n.
+Proof.
+  (* induction l. *)
+  (* - intros. inv H. *)
+  (* - intros. simpl in *. inv H. *)
+  (*   destruct l. simpl. exists nil. simpl. eauto. *)
+  (*   simpl in *. *)
+  (*   generalize (IHl (length l) eq_refl). *)
+  (*   destruct 1 as (l' & a' & EQ & LEN). *)
+  (*   subst. *)
+Admitted.
+
+Lemma rev_nil_inv : forall A n (l:list A),
+    length l = n -> rev l = [] -> l = nil.
+Proof.
+  destruct n.
+  - intros. 
+    rewrite length_zero_iff_nil in H. subst. auto.
+  - intros.
+    generalize (length_S_inv _ H).
+    destruct 1 as (l' & a & EQ & LEN).
+    subst. rewrite rev_unit in H0.
+    inv H0.
+Qed.
+
+Lemma rev_single : forall A (l:list A) a,
+    rev l = [a] -> l = [a].
+Proof.
+  induction l. 
+  - cbn in *. congruence.
+  - intros. simpl in H.
+    replace [a0] with (nil ++ [a0]) in H by auto.
+    apply app_inj_tail in H.
+    destruct H; subst. 
+Admitted.
+
 Lemma app_cons_comm : forall (A:Type) (l1 l2: list A) a,
     l1 ++ (a :: l2) = (l1 ++ [a]) ++ l2.
 Proof.
@@ -28,6 +71,22 @@ Proof.
   - destr_in H. destr_in H. inv H.
     f_equal. apply IHl1; auto.
 Qed.
+
+Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
+    partition f l = (l1, l2) -> 
+    (forall x, In x l1 -> f x = true) /\ (forall x, In x l2 -> f x = false).
+Proof.
+  induction l; intros until l2; simpl.
+  - inversion 1. subst. 
+    split; intros; simpl in *; contradiction.
+  - intros PART. destr_in PART. 
+    generalize (IHl _ _ (@eq_refl _ (l0, l3))).
+    destruct 1 as (IN1 & IN2).
+    destr_in PART; inv PART; split; intros; auto.
+    inv H; auto.
+    inv H; auto.
+Qed.
+
 
 Lemma part_not_in_nil : forall F V id (defs defs' l: list (ident * option (globdef (AST.fundef F) V))),
     partition (fun '(id', _) => ident_eq id' id) defs = (l, defs') ->
@@ -342,46 +401,340 @@ Proof.
     apply acc_symb_append_nil. auto.
 Qed.
 
-Lemma acc_symb_partition_extern_intern: forall asf id defs defs1 defs2 rstbl dsz csz,
+Lemma update_code_data_size_external_size_inv : forall def1 dsz1 csz1 dsz1' csz1',
+    is_def_internal is_fundef_internal def1 = false ->
+    update_code_data_size dsz1 csz1 def1 = (dsz1', csz1') ->
+    dsz1' = dsz1 /\ csz1' = csz1.
+Proof.
+  intros def1 dsz1 csz1 dsz1' csz1' INT UPDATE.
+  destruct def1. destruct g. destruct f.
+  - simpl in *. congruence.
+  - simpl in *. inv UPDATE. auto.
+  - simpl in INT.
+    unfold is_var_internal in INT.
+    unfold update_code_data_size in UPDATE.
+    destruct (gvar_init v).
+    + simpl in *. inv UPDATE. auto.
+    + destruct i; try (simpl in INT; congruence).
+      simpl in INT. destruct l.
+      * inv UPDATE. auto.
+      * congruence.
+  - simpl in *. inv UPDATE. auto.
+Qed.
+
+Lemma update_code_data_size_external_ignore_size : forall def1 dsz1 csz1,
+    is_def_internal is_fundef_internal def1 = false ->
+    update_code_data_size dsz1 csz1 def1 = (dsz1, csz1).
+Proof.
+Admitted.
+
+Lemma get_extern_symbentry_ignore_size: forall id def dsz1 csz1 dsz2 csz2,
+    is_def_internal is_fundef_internal def = false ->
+    get_symbentry sec_data_id sec_code_id dsz1 csz1 id def =
+    get_symbentry sec_data_id sec_code_id dsz2 csz2 id def.
+Proof.
+  intros until csz2. intros INT.
+  destruct def. destruct g. destruct f.
+  - cbn in *. congruence.
+  - cbn in *. auto.
+  - cbn in *. unfold is_var_internal in INT.
+    destruct (gvar_init v); cbn in *; auto.
+    destruct i; try congruence.
+    destruct l; auto.
+    congruence.
+  - cbn in *. auto.
+Qed.
+
+Lemma acc_symb_partition_extern_intern: forall asf id defs defs1 defs2 rstbl dsz1 csz1 dsz2 csz2,
     asf = acc_symb sec_data_id sec_code_id ->
     partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
-    fold_left asf defs ([], 0, 0) = (rstbl, dsz, csz) ->
+    fold_left asf defs ([], dsz1, csz1) = (rstbl, dsz2, csz2) ->
     Forall (fun '(id', def) => is_def_internal is_fundef_internal def = false) defs1 ->
     exists stbl1 stbl2,
       partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\
-      fold_left asf defs2 ([], 0, 0) = (rev stbl2, dsz, csz).
-Admitted.
-
+      fold_left asf defs1 ([], 0, 0) = (rev stbl1, 0, 0) /\
+      fold_left asf defs2 ([], dsz1, csz1) = (rev stbl2, dsz2, csz2).
+Proof.
+  induction defs as [|def defs].
+  - intros until csz2.
+    intros ASF PART ACC EXT.
+    simpl in *. inv PART. inv ACC. simpl.
+    eauto.
+  - intros until csz2.
+    intros ASF PART ACC EXT.
+    simpl in *. destr_in PART. destruct def as (id' & def).
+    destruct ident_eq; subst.
+    + simpl in *. destr_in ACC. inv PART.
+      generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
+      destruct 1 as (rstbl' & EQ & ACC'). subst.
+      inv EXT.
+      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC' H2).
+      destruct 1 as (stbl1' & stbl2' & PART' & ACC'' & ACC''').
+      rewrite rev_unit. simpl.
+      rewrite PART'.
+      unfold symbentry_id_eq. rewrite get_symbentry_id.
+      rewrite dec_eq_true.
+      do 2 eexists; split; auto. 
+      generalize (update_code_data_size_external_size_inv _ _ _ H1 Heqp0).
+      destruct 1; subst. 
+      split; auto.
+      generalize (update_code_data_size_external_ignore_size def 0 0 H1).
+      intros UPDATE'. rewrite UPDATE'.
+      simpl. 
+      rewrite (get_extern_symbentry_ignore_size id def dsz1 csz1 0 0); auto.
+      apply acc_symb_append_nil. auto.
+    + simpl in *. destr_in ACC. inv PART.
+      generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
+      destruct 1 as (rstbl' & EQ & ACC'). subst.
+      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC' EXT).
+      destruct 1 as (stbl1' & stbl2' & PART' & ACC'' & ACC''').
+      rewrite rev_unit. simpl.
+      rewrite PART'.
+      unfold symbentry_id_eq. rewrite get_symbentry_id.
+      rewrite dec_eq_false; auto.
+      do 2 eexists; split; auto.
+      rewrite Heqp0. 
+      split; auto.
+      apply acc_symb_append_nil. auto.
+Qed.
+      
+      
 Definition match_def_symbentry (id_def: ident * option gdef) e :=
   let '(id, def) := id_def in
   exists dsz csz, e = get_symbentry sec_data_id sec_code_id dsz csz id def.
     
-Lemma acc_symb_pres_partition: forall asf id defs defs1 defs2 rstbl dsz csz,
+Lemma acc_symb_pres_partition: forall asf id defs defs1 defs2 rstbl dsz1 csz1 dsz2 csz2,
     asf = acc_symb sec_data_id sec_code_id ->
     partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
-    fold_left asf defs ([], 0, 0) = (rstbl, dsz, csz) ->
+    fold_left asf defs ([], dsz1, csz1) = (rstbl, dsz2, csz2) ->
     exists stbl1 stbl2,
       partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\
       Forall2 match_def_symbentry defs1 stbl1  /\
       Forall2 match_def_symbentry defs2 stbl2.
-Admitted.
-
-Lemma match_def_symbentry_pres_internal_prop : forall id def e,
-    match_def_symbentry (id, def) e ->
-    is_def_internal is_fundef_internal def = is_symbentry_internal e.
-Admitted.
+Proof.
+  induction defs as [|def defs].
+  - intros until csz2. 
+    intros ASF PART ACC.
+    simpl in *. inv PART. inv ACC. simpl. eauto.
+  - intros until csz2.
+    intros ASF PART ACC. subst.
+    simpl in *.
+    destruct def as (id', def).
+    destr_in PART. destr_in ACC.
+    generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
+    destruct 1 as (rstbl' & EQ & ACC'). subst.
+    destruct ident_eq; inv PART; simpl in *.
+    + rewrite rev_unit.
+      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC').
+      destruct 1 as (stbl1' & stbl2' & PART' & MATCH1 & MATCH2).
+      simpl. rewrite PART'.
+      unfold symbentry_id_eq. 
+      rewrite get_symbentry_id. 
+      rewrite dec_eq_true.
+      do 2 eexists; split; eauto.
+      split; auto.
+      constructor; auto.
+      red. eauto.
+    + rewrite rev_unit.
+      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC').
+      destruct 1 as (stbl1' & stbl2' & PART' & MATCH1 & MATCH2).
+      simpl. rewrite PART'.
+      unfold symbentry_id_eq. 
+      rewrite get_symbentry_id. 
+      rewrite dec_eq_false; auto.
+      do 2 eexists; split; eauto.
+      split; auto.
+      constructor; auto.
+      red. eauto.
+Qed.      
 
 
 Lemma get_symbentry_pres_internal_prop : forall id dsz csz def,
     is_def_internal is_fundef_internal def = 
     is_symbentry_internal (get_symbentry sec_data_id sec_code_id dsz csz id def).
+Proof.
+  intros. destruct def.
+  destruct g. destruct f.
+  - cbn. auto.
+  - cbn. auto.
+  - cbn. unfold is_var_internal. 
+    destruct (gvar_init v); cbn; auto.
+    destruct i; cbn; auto.
+    destruct l; cbn; auto.
+  - cbn. auto.
+Qed.
+
+Lemma match_def_symbentry_pres_internal_prop : forall id def e,
+    match_def_symbentry (id, def) e ->
+    is_def_internal is_fundef_internal def = is_symbentry_internal e.
+Proof.
+  intros id def e MATCH.
+  red in MATCH. destruct MATCH as (dsz & csz & SYMB). subst.
+  apply get_symbentry_pres_internal_prop.
+Qed.
+
+
+Local Transparent Linker_def.
+Local Transparent Linker_fundef.
+Local Transparent Linker_vardef.
+Local Transparent Linker_varinit.
+
+
+Lemma link_get_symbentry_comm: forall def1 def2 def id dsz1 dsz2 csz1 csz2,
+    is_def_internal is_fundef_internal def2 = false ->
+    link_option def1 def2 = Some def 
+    -> link_symb (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1)
+                (get_symbentry sec_data_id sec_code_id dsz2 csz2 id def2) = 
+      Some (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def).
+Proof.
+  intros until csz2.
+  intros INT LINK. subst.
+  destruct def2. destruct g. destruct f; cbn in *; try congruence.
+  - unfold link_option in LINK.
+    destruct def1 as [def1|].
+    destr_in LINK. inv LINK.
+    unfold link in Heqo.
+    unfold Linker_def in Heqo.
+    unfold link_def in Heqo. destruct def1 as [def1|v]; try congruence.
+    unfold link in Heqo. unfold Linker_fundef in Heqo.
+    destr_in Heqo; try congruence. inv Heqo.
+    unfold link_fundef in Heqo0.
+    destruct def1 as [f'|ef].
+    + destruct e; try congruence. inv Heqo0.
+      cbn. auto.
+    + destruct external_function_eq; try congruence. subst.
+      inv Heqo0. cbn. auto.
+    + inv LINK. cbn. auto.
+  - unfold link_option in LINK.
+    destruct def1 as [def1|].
+    + simpl in LINK. unfold link_def in LINK.
+      destruct def1 as [|v1]; try congruence.
+      simpl in LINK. destr_in LINK.
+      inv LINK. destr_in Heqo; try congruence. inv Heqo.
+      unfold link_vardef in Heqo0.
+      simpl in INT. unfold is_var_internal in INT.
+      destr_in Heqo0. destr_in Heqo0. destr_in Heqo0.
+      inv Heqo0.
+      cbn in Heqo1. unfold link_varinit in Heqo1.
+      cbn.
+      destruct (gvar_init v1), (gvar_init v).
+      * cbn in *. inv Heqo1. unfold update_symbtype. simpl. auto.
+      * cbn in *. 
+        destruct i; try congruence.
+        destruct l0; try congruence.
+        inv Heqo1. cbn. auto.
+      * cbn in *. 
+        destruct i; try (inv Heqo1; simpl; auto).
+        destruct l0.
+        ** inv H0. cbn. auto.
+        ** inv H0. cbn. auto.
+      * destruct i0; cbn in *; try congruence.
+        destruct l1; cbn in *; try congruence.
+        destruct i.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct l0.
+           *** destruct zeq; try congruence.
+               subst. inv Heqo1. cbn.
+               rewrite Z_max_0.
+               rewrite Z.add_comm. simpl.
+               apply dec_eq_true.
+               generalize (Z.le_max_l 0 z). 
+               intros. rewrite Z.max_comm. omega.
+           *** destruct zeq; try congruence.
+               subst. inv Heqo1. cbn.
+               erewrite (@Z_max_0 (Z.max z0 0 + (init_data_size i + init_data_list_size l0))).
+               apply dec_eq_true.
+               apply Z.le_ge.
+               apply Z.add_nonneg_nonneg.
+               apply Z.le_max_r.
+               apply Z.add_nonneg_nonneg.
+               apply Z.ge_le. apply init_data_size_pos.
+               apply Z.ge_le. apply init_data_list_size_pos.
+        ** destruct zeq; try congruence. subst. inv Heqo1.
+           rewrite Z_max_0.
+           cbn. rewrite dec_eq_true. auto.
+           apply Z.le_ge.
+           apply Z.add_nonneg_nonneg.
+           apply Z.ge_le. apply init_data_size_pos.
+           apply Z.ge_le. apply init_data_list_size_pos.
+    + simpl in INT. inv LINK.
+      cbn.
+      unfold is_var_internal in INT.
+      destruct (gvar_init v); cbn in *; try congruence.
+      * unfold update_symbtype. simpl. auto.
+      * destruct i; try congruence.
+        destruct l; cbn in *; try congruence.
+  - simpl in *.
+    unfold link_option in LINK.
+    destruct def1 as [def1|].
+    + inv LINK.
+      simpl.
+      destruct def1. destruct f. 
+      ** cbn. auto.
+      ** cbn. auto.
+      ** cbn. 
+         destruct (gvar_init v).
+         cbn. unfold update_symbtype. cbn. auto.
+         destruct i; cbn; auto.
+         destruct l; cbn; auto.
+    + inv LINK. cbn. 
+      unfold update_symbtype. cbn. auto.
+Qed.
+
+
+Lemma link_extern_def_update_code_data_size: forall def1 def2 def dsz1 csz1,
+    is_def_internal is_fundef_internal def2 = false
+    -> link_option def1 def2 = Some def
+    -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
 Admitted.
 
 
-Lemma update_code_data_size_external : forall def1 dsz1 csz1 dsz1' csz1',
-    is_def_internal is_fundef_internal def1 = false ->
-    update_code_data_size dsz1 csz1 def1 = (dsz1', csz1') ->
-    dsz1' = dsz1 /\ csz1' = csz1.
+Lemma link_extern_def_pres_symbentry : forall def1 def2 def dsz1 csz1 id, 
+    is_def_internal is_fundef_internal def2 = false 
+    -> link_option def1 def2 = Some def 
+    -> get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1 = 
+      get_symbentry sec_data_id sec_code_id dsz1 csz1 id def.
 Admitted.
 
 
@@ -422,14 +775,14 @@ Proof.
     subst rstbl1. rewrite rev_unit.
     simpl. rewrite LINK_SYMB_TAIL.
     rewrite get_symbentry_id.
-    generalize (acc_symb_pres_partition _ _ ASF PART ACC_REST2).
-    destruct 1 as (stbl1 & stbl2 & PART' & MATCH1 & MATCH2).
 
     destruct defs2' as [|defs2'].
     + (* No definition with id1 was found in the second module *)
       generalize (partition_inv_nil1 _ _ PART). intros. subst defs2_rest''.
       inversion LINK. 
       subst defs1_linked. subst defs1_rest. subst defs2_rest.
+      generalize (acc_symb_pres_partition _ _ _ _ ASF PART ACC_REST2).
+      destruct 1 as (stbl1 & stbl2 & PART' & MATCH1 & MATCH2).
       inversion MATCH1; clear MATCH1. subst stbl1.
       generalize (partition_inv_nil1 _ _ PART'). intros. subst stbl2.
       rewrite PART'.
@@ -445,6 +798,8 @@ Proof.
         destruct (is_def_internal is_fundef_internal def1) eqn:DEF1_INT; try congruence.
         inversion LINK; clear LINK.
         subst defs1_linked'. subst defs1_rest. subst defs2_rest'.
+        generalize (acc_symb_pres_partition _ _ _ _ ASF PART ACC_REST2).
+        destruct 1 as (stbl1 & stbl2 & PART' & MATCH1 & MATCH2).
         rewrite PART'. inv MATCH1.                
         erewrite <- match_def_symbentry_pres_internal_prop; eauto.
         rewrite DEF2_INT.
@@ -453,87 +808,17 @@ Proof.
         rewrite <- rev_unit.
         do 3 eexists. split; auto.
         split; auto.
-        generalize (update_code_data_size_external _ _ _ DEF1_INT UPDATE).
+        generalize (update_code_data_size_external_size_inv _ _ _ DEF1_INT UPDATE).
         destruct 1. subst. auto.
         split; auto.
         simpl. destr.
-        generalize (update_code_data_size_external _ _ _ DEF1_INT Heqp).
+        generalize (update_code_data_size_external_size_inv _ _ _ DEF1_INT Heqp).
         destruct 1. subst.
-
-        Lemma get_extern_symbentry_ignore_size: forall id def dsz1 csz1 dsz2 csz2,
-            is_def_internal is_fundef_internal def = false ->
-            get_symbentry sec_data_id sec_code_id dsz1 csz1 id def =
-            get_symbentry sec_data_id sec_code_id dsz2 csz2 id def.
-        Admitted.
-
         rewrite (get_extern_symbentry_ignore_size id1 def1 0 0 dsz1' csz1'); auto.
         apply acc_symb_append_nil. auto.
 
       * (* The found definition is external *)
         destruct (link_option def1 def2) as [def|] eqn:LINKDEF; try congruence.
-        inversion LINK. subst defs1_linked. subst defs1_rest'. subst defs2_rest''.
-        rewrite PART'. inversion MATCH1. subst x l stbl1.
-        erewrite <- match_def_symbentry_pres_internal_prop; eauto.
-        rewrite DEF2_INT. red in H1. destruct H1 as (dsz & csz & EQ).
-        subst y.
-        
-        Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
-            partition f l = (l1, l2) -> 
-            (forall x, In x l1 -> f x = true) /\ (forall x, In x l2 -> f x = false).
-        Proof.
-          induction l; intros until l2; simpl.
-          - inversion 1. subst. 
-            split; intros; simpl in *; contradiction.
-          - intros PART. destr_in PART. 
-            generalize (IHl _ _ (@eq_refl _ (l0, l3))).
-            destruct 1 as (IN1 & IN2).
-            destr_in PART; inv PART; split; intros; auto.
-            inv H; auto.
-            inv H; auto.
-        Qed.
-
-        generalize (elements_in_partition_prop _ _ PART').
-        destruct 1 as (ELEM1 & ELEM2).
-        generalize (ELEM1 _ (in_eq _ _)).
-        unfold symbentry_id_eq. rewrite get_symbentry_id.
-        intros IDEQ. destruct ident_eq; try congruence. subst id1.
-        
-          
-        Lemma link_get_symbentry_comm: forall def1 def2 def id e1 e2 dsz1 dsz2 csz1 csz2,
-            is_def_internal is_fundef_internal def2 = false 
-            -> link_option def1 def2 = Some def 
-            -> e1 = (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1) 
-            -> e2 = (get_symbentry sec_data_id sec_code_id dsz2 csz2 id def2)
-            -> link_symb e1 e2  = Some e1.
-        Admitted.
-
-        erewrite link_get_symbentry_comm; eauto.
-        rewrite <- rev_unit. rewrite <- (rev_involutive stbl2).
-        do 3 eexists; split; auto.
-        rewrite ASF. simpl. 
-        
-        Lemma link_extern_def_update_code_data_size: forall def1 def2 def dsz1 csz1,
-            is_def_internal is_fundef_internal def2 = false
-            -> link_option def1 def2 = Some def
-            -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
-        Admitted.
-
-        erewrite <- link_extern_def_update_code_data_size; eauto.
-        rewrite UPDATE.
-        split; auto.
-
-        Lemma link_extern_def_pres_symbentry : forall def1 def2 def dsz1 csz1 id, 
-            is_def_internal is_fundef_internal def2 = false 
-            -> link_option def1 def2 = Some def 
-            -> get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1 = 
-              get_symbentry sec_data_id sec_code_id dsz1 csz1 id def.
-        Admitted.
-
-        erewrite <- link_extern_def_pres_symbentry; eauto.
-        apply acc_symb_append_nil. rewrite ASF in ACC_LINK1. auto.
-        split.
-        rewrite ASF in ACC_REST1. auto.
-
         assert (defs2'0 = nil).
         { 
           generalize (link_defs_rest_norepet_pres2 _ _ _ _ NORPT LINK_TAIL).
@@ -546,9 +831,33 @@ Proof.
         subst defs2'0.
         assert (Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) [(id, def2)]) as DEF2INT'.
         { constructor. auto. apply Forall_nil. }
-        generalize (acc_symb_partition_extern_intern _ _ ASF PART ACC_REST2 DEF2INT').
-        destruct 1 as (stbl2' & stbl2_rest' & PART2 & ACC2_REST').
-        rewrite PART' in PART2. inv PART2. auto.
+        generalize (acc_symb_partition_extern_intern _ _ _ _ ASF PART ACC_REST2 DEF2INT').
+        destruct 1 as (stbl2' & stbl2_rest' & PART' & ACC2_REST' & ACC2_REST'').
+        inversion LINK. subst defs1_linked. subst defs1_rest'. subst defs2_rest''.
+        rewrite PART'. 
+        rewrite ASF in ACC2_REST'; simpl in ACC2_REST'.
+        rewrite (update_code_data_size_external_ignore_size def2 0 0) in ACC2_REST'; auto.
+        inversion ACC2_REST'.           
+        symmetry in H0. apply rev_single in H0. subst stbl2'.
+        rewrite <- get_symbentry_pres_internal_prop. rewrite DEF2_INT.
+        (* rewrite DEF2_INT. red in H1. destruct H1 as (dsz & csz & EQ). *)
+        (* subst y.         *)
+        generalize (elements_in_partition_prop _ _ PART').
+        destruct 1 as (ELEM1 & ELEM2).
+        generalize (ELEM1 _ (in_eq _ _)).
+        unfold symbentry_id_eq. rewrite get_symbentry_id.
+        intros IDEQ. destruct ident_eq; try congruence. subst id1.
+        generalize (link_get_symbentry_comm _ _ id dsz1' 0 csz1' 0 DEF2_INT LINKDEF).
+        intros LINKSYMB.
+        rewrite LINKSYMB.
+        rewrite <- rev_unit. rewrite <- (rev_involutive stbl2_rest').
+        do 3 eexists; split; auto.
+        split; auto.
+        rewrite ASF. simpl.
+        erewrite <- link_extern_def_update_code_data_size; eauto.
+        rewrite UPDATE.
+        erewrite <- link_extern_def_pres_symbentry; eauto.
+        apply acc_symb_append_nil. rewrite ASF in ACC_LINK1. auto.
 Qed.
         
 
