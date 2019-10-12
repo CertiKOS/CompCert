@@ -730,14 +730,6 @@ Lemma link_extern_def_update_code_data_size: forall def1 def2 def dsz1 csz1,
 Admitted.
 
 
-Lemma link_extern_def_pres_symbentry : forall def1 def2 def dsz1 csz1 id, 
-    is_def_internal is_fundef_internal def2 = false 
-    -> link_option def1 def2 = Some def 
-    -> get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1 = 
-      get_symbentry sec_data_id sec_code_id dsz1 csz1 id def.
-Admitted.
-
-
 Lemma link_defs1_acc_symb_comm : forall asf defs1 defs2 defs1_linked defs1_rest defs2_rest rstbl1 rstbl2 dsz1 dsz2 csz1 csz2 dsz1' csz1',
     asf = acc_symb sec_data_id sec_code_id ->
     list_norepet (map fst defs2) ->
@@ -856,7 +848,6 @@ Proof.
         rewrite ASF. simpl.
         erewrite <- link_extern_def_update_code_data_size; eauto.
         rewrite UPDATE.
-        erewrite <- link_extern_def_pres_symbentry; eauto.
         apply acc_symb_append_nil. rewrite ASF in ACC_LINK1. auto.
 Qed.
         
