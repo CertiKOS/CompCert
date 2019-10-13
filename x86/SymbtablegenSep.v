@@ -1350,26 +1350,399 @@ Proof.
   repeat eexists; eauto.
 Qed.
 
+Lemma partition_reloc_symbtable_comm : forall f l l1 l2 rf l',
+    (forall e e', reloc_symb rf e = Some e' -> f e = f e') 
+    -> partition f l = (l1, l2)
+    -> reloc_symbtable rf l = Some l'
+    -> exists l1' l2', partition f l' = (l1', l2') 
+                 /\ reloc_symbtable rf l1 = Some l1'
+                 /\ reloc_symbtable rf l2 = Some l2'.
+Proof.
+  induction l as [| e l].
+  - intros l1 l2 rf l' PRES PART RELOC.
+    cbn in *. inv PART. inv RELOC.
+    exists nil, nil.
+    split; auto.
+  - intros l1 l2 rf l' PRES PART RELOC.
+    cbn in *. destr_in PART. destruct (f e) eqn:PEQ.
+    + inv PART.
+      unfold reloc_iter in RELOC. 
+      destr_in RELOC; try congruence.
+      destr_in RELOC; try congruence.
+      inv RELOC.
+      generalize (IHl _ _ _ _ PRES eq_refl Heqo).
+      destruct 1 as (l1' & l2' & PART' & RELOC1 & RELOC2).
+      exists (s :: l1'), l2'. 
+      erewrite PRES in PEQ; eauto.
+      cbn. rewrite PEQ. rewrite PART'.
+      split; auto.
+      split; auto.
+      unfold reloc_iter. setoid_rewrite RELOC1.
+      rewrite Heqo0. auto.
+    + inv PART.
+      unfold reloc_iter in RELOC. 
+      destr_in RELOC; try congruence.
+      destr_in RELOC; try congruence.
+      inv RELOC.
+      generalize (IHl _ _ _ _ PRES eq_refl Heqo).
+      destruct 1 as (l1' & l2' & PART' & RELOC1 & RELOC2).
+      exists (l1'), (s ::l2'). 
+      erewrite PRES in PEQ; eauto.
+      cbn. rewrite PEQ. rewrite PART'.
+      split; auto.
+      split; auto.
+      unfold reloc_iter. setoid_rewrite RELOC2.
+      rewrite Heqo0. auto.
+Qed.    
+
+
+Lemma reloc_symb_pres_internal_prop : forall rf s1 s2,
+    reloc_symb rf s1 = Some s2 
+    -> is_symbentry_internal s1 = is_symbentry_internal s2.
+Proof.
+  intros rf s1 s2 RELOC.
+  unfold reloc_symb in RELOC. 
+  unfold is_symbentry_internal.
+  destr_in RELOC.
+  destr_in RELOC.
+  inv RELOC. cbn. auto.
+  inv RELOC. rewrite Heqs. auto.
+  inv RELOC. rewrite Heqs. auto.
+Qed.
+
+Lemma reloc_external_symb : forall rf s,
+    is_symbentry_internal s = false
+    -> reloc_symb rf s = Some s. 
+Proof.
+  intros rf s RELOC.
+  unfold is_symbentry_internal in RELOC.
+  unfold reloc_symb. destr_in RELOC.
+Qed.  
+
+Lemma reloc_symb_pres_id: forall rf e e', 
+      reloc_symb rf e = Some e' -> symbentry_id e = symbentry_id e'.
+Proof.
+  intros rf e e' RELOC.
+  unfold reloc_symb in RELOC.
+  destruct e. cbn in *.
+  destruct symbentry_secindex. destruct (rf idx).
+  inv RELOC. cbn. auto.
+  congruence.
+  inv RELOC. cbn. auto.
+  inv RELOC. cbn. auto.
+Qed.
+
+Lemma reloc_symb_pres_type: forall rf e e', 
+      reloc_symb rf e = Some e' -> symbentry_type e = symbentry_type e'.
+Proof.
+  intros rf e e' RELOC.
+  unfold reloc_symb in RELOC.
+  destruct e. cbn in *.
+  destruct symbentry_secindex. destruct (rf idx).
+  inv RELOC. cbn. auto.
+  congruence.
+  inv RELOC. cbn. auto.
+  inv RELOC. cbn. auto.
+Qed.
+
+Lemma reloc_symb_pres_secindex: forall rf e e', 
+      reloc_symb rf e = Some e' -> symbentry_secindex e = symbentry_secindex e'.
+Proof.
+  intros rf e e' RELOC.
+  unfold reloc_symb in RELOC.
+  destruct e. cbn in *.
+  destruct symbentry_secindex. destruct (rf idx).
+  inv RELOC. cbn. auto.
+  congruence.
+  inv RELOC. cbn. auto.
+  inv RELOC. cbn. auto.
+Qed.
+
+Lemma reloc_symb_pres_size: forall rf e e', 
+      reloc_symb rf e = Some e' -> symbentry_size e = symbentry_size e'.
+Proof.
+  intros rf e e' RELOC.
+  unfold reloc_symb in RELOC.
+  destruct e. cbn in *.
+  destruct symbentry_secindex. destruct (rf idx).
+  inv RELOC. cbn. auto.
+  congruence.
+  inv RELOC. cbn. auto.
+  inv RELOC. cbn. auto.
+Qed.
+
+Lemma reloc_symb_pres_update_symbtype : forall rf e e' t,
+    reloc_symb rf e = Some e' ->
+    reloc_symb rf (update_symbtype e t) = Some (update_symbtype e' t).
+Proof.
+  intros rf e e' t RELOC.
+  destruct e. unfold reloc_symb in *. cbn in *.
+  destr_in RELOC; try congruence; subst.
+  destr_in RELOC; try congruence.
+  inv RELOC. auto.
+Qed.
+
+
+
+Lemma reloc_symb_id_eq: forall id rf e e', 
+      reloc_symb rf e = Some e' -> symbentry_id_eq id e = symbentry_id_eq id e'.
+Proof.
+  intros.
+  unfold symbentry_id_eq.
+  erewrite reloc_symb_pres_id; eauto.
+Qed.
+
 Lemma reloc_link_symbtable_comm2: forall rf stbl1 stbl2 stbl2' stbl1_linked stbl1_rest stbl2_rest,
     reloc_symbtable rf stbl2 = Some stbl2' ->
     link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) ->
     exists stbl2_rest', reloc_symbtable rf stbl2_rest = Some stbl2_rest' /\
                    link_symbtable1 stbl1 stbl2' = Some (stbl1_linked, stbl1_rest, stbl2_rest').
-Admitted.
+Proof.
+  induction stbl1 as [|e stbl1].
+  - intros until stbl2_rest.
+    intros RELOC LINK. cbn in *. inv LINK.
+    eauto.
+  - intros until stbl2_rest.
+    intros RELOC LINK. cbn in *.
+    destr_in LINK; try congruence. destruct p. destruct p.
+    destr_in LINK; try congruence. destr_in LINK. 
+    generalize (IHstbl1 _ _ _ _ _ RELOC Heqo).
+    destruct 1 as (stbl2_rest' & RELOC' & LINK').
+    destruct l.
+    + inv LINK. generalize (partition_inv_nil1 _ _ Heqp). intros. subst l0.
+      exists stbl2_rest'; split; auto.
+      rewrite LINK'.      
+      generalize (partition_reloc_symbtable_comm _ _ _ (reloc_symb_id_eq i rf) Heqp RELOC').
+      destruct 1 as (l1' & l2' & PART & RELOC1 & RELOC2).
+      cbn in RELOC1. inv RELOC1.
+      generalize (partition_inv_nil1 _ _ PART). intros. subst l2'.
+      rewrite PART. auto.
+    + destr_in LINK.
+      * destr_in LINK; try congruence.
+        inv LINK.
+        exists stbl2_rest'. split; auto.
+        rewrite LINK'. 
+        generalize (partition_reloc_symbtable_comm _ _ _ (reloc_symb_id_eq i rf) Heqp RELOC').
+        destruct 1 as (l1' & l2' & PART & RELOC1 & RELOC2).
+        rewrite PART. cbn in RELOC1.
+        unfold reloc_iter in RELOC1.
+        destr_in RELOC1; try congruence.
+        destr_in RELOC1; try congruence.
+        inv RELOC1.
+        erewrite <- reloc_symb_pres_internal_prop; eauto.
+        rewrite Heqb. auto.
+      * destr_in LINK; try congruence.
+        inv LINK.
+        rewrite LINK'.
+        generalize (partition_reloc_symbtable_comm _ _ _ (reloc_symb_id_eq i rf) Heqp RELOC').
+        destruct 1 as (l1' & l2' & PART & RELOC1 & RELOC2).
+        rewrite RELOC2. eexists; split; eauto.
+        rewrite PART.
+        cbn in RELOC1. unfold reloc_iter in RELOC1.
+        destr_in RELOC1; try congruence.
+        destr_in RELOC1; try congruence. inv RELOC1.
+        erewrite <- reloc_symb_pres_internal_prop; eauto.
+        rewrite Heqb.         
+        erewrite reloc_external_symb in Heqo3; eauto. inv Heqo3.
+        rewrite Heqo1. auto.
+Qed.
+  
+
+Lemma reloc_link_symb_comm : forall e1 e2 e e1' rf,
+    is_symbentry_internal e2 = false 
+    -> reloc_symb rf e1 = Some e1'
+    -> link_symb e1 e2 = Some e
+    -> exists e', reloc_symb rf e = Some e' /\ link_symb e1' e2 = Some e'.
+Proof.
+  intros e1 e2 e e1' rf INT RELOC LINK.
+  unfold link_symb in *.
+  erewrite <- reloc_symb_pres_type; eauto.
+  erewrite <- reloc_symb_pres_secindex; eauto.
+  erewrite <- reloc_symb_pres_size; eauto.
+  destr_in LINK; try congruence.
+  destr_in LINK.
+  - destr_in LINK; try congruence.
+    + destruct zeq; try congruence. inv LINK.
+      rewrite RELOC. eexists; split; eauto.
+    + inv LINK. eauto.
+  - destr_in LINK; try congruence.
+    + destruct zeq; try congruence. inv LINK.
+      exists e; split; auto.
+      apply reloc_external_symb; auto.
+    + destruct zeq; try congruence. inv LINK.
+      rewrite RELOC. eexists; split; eauto. 
+    + inv LINK. rewrite RELOC. eexists; split; eauto. 
+  - destr_in LINK; try congruence.
+    + inv LINK.
+      exists e; split; auto.
+      apply reloc_external_symb; auto.
+    + inv LINK. exists e; split; auto.
+      apply reloc_external_symb; auto.
+    + inv LINK. 
+      eexists; split; eauto.     
+      apply reloc_symb_pres_update_symbtype; auto.
+Qed.
+
 
 Lemma reloc_link_symbtable_comm1: forall rf stbl1 stbl2 stbl1' stbl1_linked stbl1_rest stbl2_rest,
     reloc_symbtable rf stbl1 = Some stbl1' ->
     link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) ->
     exists stbl1_linked', reloc_symbtable rf stbl1_linked = Some stbl1_linked' /\
                      link_symbtable1 stbl1' stbl2 = Some (stbl1_linked', stbl1_rest, stbl2_rest).
-Admitted.
+Proof.
+    induction stbl1 as [|e stbl1].
+  - intros until stbl2_rest.
+    intros RELOC LINK. cbn in *. inv RELOC. inv LINK.
+    exists nil. split; auto.
+  - intros until stbl2_rest.
+    intros RELOC LINK. cbn in *.
+    unfold reloc_iter in RELOC.
+    destr_in RELOC; try congruence.
+    destr_in RELOC; try congruence. inv RELOC.
+    destr_in LINK; try congruence. destruct p. destruct p.
+    destr_in LINK; try congruence. destr_in LINK. 
+    generalize (IHstbl1 _ _ _ _ _ Heqo Heqo1).
+    destruct 1 as (stbl1_rest' & RELOC' & LINK').
+    destruct l0.
+    + inv LINK. generalize (partition_inv_nil1 _ _ Heqp). intros. subst l1.
+      exists (s :: stbl1_rest'); split; auto.
+      cbn. unfold reloc_iter.
+      setoid_rewrite RELOC'. rewrite Heqo0. auto.
+      cbn. rewrite LINK'. 
+      erewrite <- reloc_symb_pres_id; eauto. rewrite Heqo2.
+      rewrite Heqp. auto.
+    + destr_in LINK.
+      * destr_in LINK; try congruence.
+        inv LINK.
+        exists stbl1_rest'. split; auto.
+        cbn.
+        rewrite LINK'. 
+        erewrite <- reloc_symb_pres_id; eauto. rewrite Heqo2.
+        rewrite Heqp. rewrite Heqb. 
+        erewrite <- reloc_symb_pres_internal_prop; eauto. rewrite Heqb0.
+        erewrite reloc_external_symb in Heqo0; eauto. inv Heqo0.
+        auto.
+      * destr_in LINK; try congruence.
+        inv LINK.
+        generalize (reloc_link_symb_comm _ _ _ Heqb Heqo0 Heqo3).
+        destruct 1 as (e' & RELOCS & LINKS).
+        exists (e' :: stbl1_rest'). split.
+        ** cbn. unfold reloc_iter.
+           setoid_rewrite RELOC'. rewrite RELOCS. auto.
+        ** cbn.
+           rewrite LINK'. 
+           erewrite <- reloc_symb_pres_id; eauto. rewrite Heqo2.
+           rewrite Heqp. rewrite Heqb. rewrite LINKS.
+           auto.
+Qed.
 
-Lemma gen_symb_table_app : forall defs1 defs2 stbl1 stbl2 stbl2' dsz1 dsz2 csz1 csz2,
+Lemma update_size_offset : forall def dsz csz dsz1 csz1 dofs cofs,
+    update_code_data_size dsz csz def = (dsz1, csz1) ->
+    update_code_data_size (dofs + dsz) (cofs + csz) def = (dofs + dsz1, cofs + csz1).
+Proof.
+  intros until cofs. intros UPDATE.
+  destruct def. destruct g. destruct f.
+  - cbn in *. inv UPDATE. f_equal; omega.
+  - cbn in *. inv UPDATE. f_equal; omega.
+  - unfold update_code_data_size in *.
+    destr_in UPDATE. 
+    destruct i; try (inv UPDATE; cbn; f_equal; omega).
+    destruct l; try (inv UPDATE; cbn; f_equal; omega).
+  - cbn in *. inv UPDATE. auto.
+Qed.
+
+Lemma reloc_get_symbentry : forall dofs cofs dsz csz id def e,
+    reloc_symb (reloc_offset_fun dofs cofs) (get_symbentry sec_data_id sec_code_id dsz csz id def) = Some e
+    -> e = (get_symbentry sec_data_id sec_code_id (dsz + dofs) (csz + cofs) id def).
+Proof.
+  intros until e. intro RELOC.
+  destruct def. destruct g. destruct f.
+  - cbn in *. inv RELOC. f_equal.
+  - cbn in *. inv RELOC. auto.
+  - cbn in *. destr_in RELOC. cbn in *. inv RELOC. auto.
+    destruct i; cbn in *; try congruence.
+    destruct l; cbn in *; try congruence.
+  - cbn in *. inv RELOC. auto.
+Qed.
+
+Lemma acc_symb_reloc: forall asf defs stbl stbl' dsz1 dsz2 csz1 csz2 dofs cofs,
+    asf = (acc_symb sec_data_id sec_code_id) 
+    -> fold_left asf defs ([], dsz1, csz1) = (stbl, dsz2, csz2)
+    -> reloc_symbtable (reloc_offset_fun dofs cofs) (rev stbl) = Some stbl'
+    -> fold_left asf defs ([], dofs + dsz1, cofs + csz1) = (rev stbl', dofs + dsz2, cofs + csz2).
+Proof.
+  induction defs as [|def defs].
+  - intros until cofs. intros ASF ACC RELOC.
+    cbn in *. inv ACC. cbn in RELOC. inv RELOC. auto.
+  - intros until cofs. intros ASF ACC RELOC.
+    subst. cbn in *. destruct def as [id def].
+    destr_in ACC.
+    generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
+    destruct 1 as (stbl1 & EQ & ACC1). subst.    
+    erewrite update_size_offset; eauto.
+    rewrite rev_unit in RELOC.
+    cbn in RELOC. unfold reloc_iter in RELOC.
+    destr_in RELOC; try congruence.
+    destr_in RELOC; try congruence.
+    inv RELOC.
+    generalize (IHdefs _ _ _ _ _ _ _ _ eq_refl ACC1 Heqo).
+    intros ACC'.
+    generalize (acc_symb_append_nil _ _ _ _ _ 
+                                    [get_symbentry sec_data_id sec_code_id (dofs + dsz1) (cofs + csz1) id def] ACC').
+    intros ACC''. setoid_rewrite ACC''.
+    cbn. f_equal. f_equal.
+    apply reloc_get_symbentry in Heqo0. subst. 
+    f_equal. f_equal. f_equal; omega.
+Qed.    
+
+
+Lemma acc_symb_reloc_comm: forall asf defs1 defs2 stbl1 stbl2 stbl2'
+                             dsz1 dsz2 csz1 csz2 dsz1' csz1',
+    asf = (acc_symb sec_data_id sec_code_id) 
+    -> fold_left asf defs1 ([], dsz1, csz1) = (stbl1, dsz1', csz1')
+    -> fold_left asf defs2 ([], 0, 0) = (stbl2, dsz2, csz2)
+    -> reloc_symbtable (reloc_offset_fun dsz1' csz1') (rev stbl2) = Some stbl2'
+    -> fold_left asf (defs1 ++ defs2) ([], dsz1, csz1) = ((rev stbl2') ++ stbl1, dsz1' + dsz2, csz1' + csz2).
+Proof.
+  induction defs1.
+  - intros until csz1'.
+    intros ASF ACC1 ACC2 RELOC.
+    cbn in *. inv ACC1.
+    rewrite app_nil_r.
+    replace ([], dsz1', csz1') with (@nil symbentry, dsz1'+0, csz1'+0).
+    eapply acc_symb_reloc; eauto.
+    f_equal. f_equal. omega. omega.
+  - intros until csz1'.
+    intros ASF ACC1 ACC2 RELOC.
+    cbn in *. rewrite ASF in ACC1. unfold acc_symb in ACC1.
+    destruct a as [id def]. destr_in ACC1.
+    generalize (acc_symb_inv _ _ _ _ eq_refl ACC1).
+    destruct 1 as (stbl1' & SEQ & ACC1'). subst.
+    generalize (IHdefs1 _ _ _ _ _ _ _ _ _ _ eq_refl ACC1' ACC2 RELOC).
+    intros ACC'.
+    unfold acc_symb. rewrite Heqp. 
+    setoid_rewrite acc_symb_append_nil; eauto.
+    rewrite app_assoc. auto.
+Qed.
+  
+
+Lemma gen_symb_table_reloc_comm : forall defs1 defs2 stbl1 stbl2 stbl2' dsz1 dsz2 csz1 csz2,
     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
     gen_symb_table sec_data_id sec_code_id (defs1 ++ defs2) = (stbl1 ++ stbl2', dsz1 + dsz2, csz1 + csz2).
-Admitted.
+Proof.
+  intros until csz2.
+  intros GS1 GS2 RELOC.
+  unfold gen_symb_table in GS1, GS2.
+  destr_in GS1; inv GS1.
+  destr_in GS2; inv GS2.
+  destruct p, p0. inv H0. inv H1.
+  unfold gen_symb_table.  
+  erewrite acc_symb_reloc_comm; eauto.
+  rewrite rev_app_distr. rewrite rev_involutive.
+  auto.
+Qed.
 
 
 Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
@@ -1411,7 +1784,7 @@ Proof.
   eexists. exists stbl2'. split; auto.
   rewrite LINKSTBL1'.
   rewrite LINKREST2. split; auto.  
-  eapply gen_symb_table_app; eauto.
+  eapply gen_symb_table_reloc_comm; eauto.
 Qed.
 
 
