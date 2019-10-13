@@ -12,11 +12,6 @@ Import ListNotations.
 
 Set Implicit Arguments.
 
-Lemma Z_max_0 : forall z, z >= 0 -> Z.max z 0 = z.
-Proof.
-  intros. apply Zmax_left. auto.
-Qed.
-
 Lemma length_S_inv : forall A (l: list A) n,
     length l = S n ->
     exists l' a, l = l' ++ [a] /\ length l' = n.
@@ -257,6 +252,76 @@ Proof.
   simpl. destruct (gvar_init v); auto. destruct i; auto. destruct l; auto.
   simpl; auto.
 Qed.
+
+Lemma get_var_entry_size : forall dsz csz id v, 
+    symbentry_size (get_symbentry sec_data_id sec_code_id dsz csz id (Some (Gvar v))) = AST.init_data_list_size (gvar_init v).
+Proof.
+  intros.
+  cbn. destruct (gvar_init v); auto.
+  destruct i; auto.
+  destruct l; auto.
+  cbn. omega.
+Qed.
+
+Lemma get_internal_var_entry : forall dsec csec dsz csz id v,
+    is_var_internal v = true ->
+    get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
+    {|symbentry_id := Some id;
+      symbentry_type := symb_data;
+      symbentry_value := dsz;
+      symbentry_secindex := secindex_normal (SecIndex.interp dsec);
+      symbentry_size := AST.init_data_list_size (AST.gvar_init v);
+    |}.
+Proof.
+  intros dsec csec dsz csz id v INT.
+  unfold is_var_internal in INT.
+  cbn.
+  destruct (gvar_init v); cbn in INT; try congruence.
+  destruct i; cbn in INT; try congruence.
+  destruct l; cbn in INT; try congruence.
+Qed.
+
+Lemma get_comm_var_entry : forall dsec csec dsz csz id v,
+    is_var_comm v = true ->
+    get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
+    {|symbentry_id := Some id;
+      symbentry_type := symb_data;
+      symbentry_value := 8 ; 
+      symbentry_secindex := secindex_comm;
+      symbentry_size := Z.max (AST.init_data_list_size (gvar_init v)) 0;
+    |}.
+Proof.
+  intros dsec csec dsz csz id v INT.
+  unfold is_var_comm in INT.
+  cbn.
+  destruct (gvar_init v); cbn in INT; try congruence.
+  destruct i; cbn in INT; try congruence.
+  destruct l; cbn in INT; try congruence.
+  cbn. f_equal.
+  rewrite Z.add_comm. cbn.
+  rewrite (@Z_max_0 (Z.max z 0)). auto.
+  apply Z.le_ge.
+  apply Z.le_max_r.
+Qed.
+
+Lemma get_external_var_entry : forall dsec csec dsz csz id v,
+    is_var_extern v = true ->
+    get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
+    {|symbentry_id := Some id;
+      symbentry_type := symb_data;
+      symbentry_value := 0;
+      symbentry_secindex := secindex_undef;
+      symbentry_size := 0;
+    |}.
+Proof.
+  intros dsec csec dsz csz id v INT.
+  unfold is_var_extern in INT.
+  cbn.
+  destruct (gvar_init v); cbn in INT; try congruence.
+  destruct i; cbn in INT; try congruence.
+  destruct l; cbn in INT; try congruence.
+Qed.
+
 
 (** * Commutativity of linking and Symbtablgen *)
 
@@ -626,6 +691,54 @@ Proof.
   simpl. auto.
 Qed.
 
+Lemma get_comm_var_entry_secindex:
+  forall (dsz1 csz1 : Z) (id : ident) v,
+  is_var_comm v = true 
+  -> symbentry_secindex
+      (get_symbentry sec_data_id sec_code_id dsz1 csz1 id
+                         (Some (Gvar v))) = secindex_comm.
+Proof.
+  intros. subst. cbn. 
+  unfold is_var_comm in H.
+  destruct (gvar_init v); cbn in H; try congruence.
+  cbn. auto.
+  destruct i; cbn in H; try congruence.
+  destruct l; cbn in H; try congruence.
+  cbn. auto.
+Qed.
+
+Lemma get_extern_var_entry_secindex:
+  forall (dsz1 csz1 : Z) (id : ident) v,
+  is_var_extern v = true 
+  -> symbentry_secindex
+          (get_symbentry sec_data_id sec_code_id dsz1 csz1 id
+                         (Some (Gvar v))) = secindex_undef.
+Proof.
+  intros. subst. cbn. 
+  unfold is_var_extern in H.
+  destruct (gvar_init v); cbn in H; try congruence.
+  cbn. auto.
+  destruct i; cbn in H; try congruence.
+  destruct l; cbn in H; try congruence.
+Qed.
+
+
+Lemma get_intvar_entry_secindex:
+  forall (dsz1 csz1 : Z) (id : ident) v,
+  is_var_internal v = true 
+  -> symbentry_secindex
+          (get_symbentry sec_data_id sec_code_id dsz1 csz1 id
+                         (Some (Gvar v))) = 
+    (secindex_normal (SecIndex.interp sec_data_id)).
+Proof.
+  intros. cbn.
+  unfold is_var_internal in H.
+  destruct (gvar_init v); cbn in H; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+Qed.
+
+
 (* Lemma symbentry_secindex_dec : forall e, *)
 (*     {symbentry_secindex e = secindex_undef} + *)
 (*     {symbentry_secindex e <> secindex_undef}. *)
@@ -733,6 +846,48 @@ Proof.
 Qed.
 
 
+Lemma link_get_symbentry_extvars_init_comm :
+  forall v1 v2 id dsz1 csz1 dsz2 csz2 (inf:unit) init rd vl,
+    is_var_internal v1 = false 
+    -> is_var_internal v2 = false 
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> link_symb
+        (get_symbentry sec_data_id sec_code_id dsz1 csz1 id
+                       (Some (Gvar v1)))
+        (get_symbentry sec_data_id sec_code_id dsz2 csz2 id
+                       (Some (Gvar v2))) =
+      Some
+        (get_symbentry sec_data_id sec_code_id dsz1 csz1 id
+                       (Some (Gvar (mkglobvar inf init rd vl)))).
+Proof.
+  intros until vl.
+  intros INT1 INT2 LINK.
+  rewrite var_not_internal_iff in INT1, INT2.
+  destruct INT1 as [INT1|INT1]; destruct INT2 as [INT2|INT2].
+  - generalize (link_comm_vars_init _ _ INT1 INT2 LINK).
+    destruct 1 as (EQ & INIT). subst.
+    repeat (rewrite get_comm_var_entry; auto).
+    cbn.
+    rewrite EQ.
+    destruct zeq; try congruence.
+  - generalize (link_comm_extern_var_init _ _ INT1 INT2 LINK).
+    intros. subst.
+    rewrite (get_comm_var_entry _ _ _ _ _ _ INT1).
+    rewrite (get_external_var_entry _ _ _ _ _ _ INT2).
+    rewrite get_comm_var_entry; auto.
+  - generalize (link_extern_comm_var_init _ _ INT1 INT2 LINK).
+    intros. subst.
+    rewrite (get_comm_var_entry _ _ _ _ _ _ INT2).
+    rewrite (get_external_var_entry _ _ _ _ _ _ INT1).
+    rewrite get_comm_var_entry; auto.
+  - generalize (link_extern_vars_init _ _ INT1 INT2 LINK).
+    intros. subst.
+    rewrite (get_external_var_entry _ _ _ _ _ _ INT2).
+    rewrite (get_external_var_entry _ _ _ _ _ _ INT1).
+    rewrite get_external_var_entry; auto.
+Qed.    
+    
+
 Lemma link_get_symbentry_right_extvar_init_comm :
   forall v1 v2 id dsz1 csz1 dsz2 csz2 (inf:unit) init rd vl,
     is_var_internal v2 = false 
@@ -748,10 +903,32 @@ Lemma link_get_symbentry_right_extvar_init_comm :
 Proof.
   intros until vl.
   intros INT LINK.
-
-
-Admitted.  
-
+  destruct (is_var_internal v1) eqn:INT1.
+  generalize INT. intros INT'.
+  rewrite var_not_internal_iff in INT.
+  destruct INT as [INT|INT].
+  - generalize (link_internal_comm_varinit _ _ _ INT1 INT LINK).
+    destruct 1 as (IEQ & SEQ & CLS1). subst.
+    unfold link_symb.
+    repeat rewrite get_var_entry_type.
+    cbn -[get_symbentry].
+    rewrite get_intvar_entry_secindex; auto.
+    rewrite get_comm_var_entry_secindex; auto.
+    rewrite get_var_entry_size.
+    rewrite get_var_entry_size.
+    rewrite SEQ.
+    apply dec_eq_true. 
+  - unfold link_symb.
+    repeat rewrite get_var_entry_type.
+    cbn -[get_symbentry].
+    rewrite get_intvar_entry_secindex; auto.
+    rewrite get_extern_var_entry_secindex; auto.
+    generalize (link_internal_external_varinit _ _ _ INT1 INT' LINK).
+    destruct 1 as (INITEQ & CLS).
+    f_equal. cbn. rewrite INITEQ. auto.
+  - apply link_get_symbentry_extvars_init_comm; auto.
+Qed.
+    
 
 Lemma link_getsymbentry_right_extvar : forall id def1 def v dsz1 csz1 dsz2 csz2,
     is_var_internal v = false
@@ -777,13 +954,21 @@ Proof.
     unfold link_symb.   
     rewrite get_var_entry_type.
     rewrite get_none_entry_type.
-    replace (link_symbtype symb_notype symb_func) with (Some symb_func) by auto.
+    replace (link_symbtype symb_notype symb_data) with (Some symb_data) by auto.
     rewrite get_none_entry_secindex.
-(*     rewrite get_extvar_entry_secindex; auto. *)
-(*     unfold update_symbtype. cbn.  *)
-(*     destruct f. cbn in *; congruence. auto. *)
-(* Qed. *)
-Admitted.
+    rewrite var_not_internal_iff in INT. 
+    destruct INT as [INT|INT].
+    + rewrite get_comm_var_entry_secindex; auto.
+      f_equal.
+      apply get_extern_symbentry_ignore_size.
+      cbn. rewrite var_not_internal_iff. auto.
+    + rewrite get_extern_var_entry_secindex; auto.
+      f_equal.
+      generalize (extern_var_init_nil v INT).
+      intros IL. 
+      cbn. rewrite IL. 
+      unfold update_symbtype. cbn. auto.
+Qed.
 
 Lemma link_get_symbentry_comm: forall def1 def2 def id dsz1 dsz2 csz1 csz2,
     is_def_internal is_fundef_internal def2 = false ->
@@ -800,150 +985,6 @@ Proof.
     + apply link_getsymbentry_right_extvar; auto.
   - apply link_get_symbentry_right_none_comm. auto.
 Qed.
-  
-
-(* Lemma link_get_symbentry_comm: forall def1 def2 def id dsz1 dsz2 csz1 csz2, *)
-(*     is_def_internal is_fundef_internal def2 = false -> *)
-(*     link_option def1 def2 = Some def  *)
-(*     -> link_symb (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1) *)
-(*                 (get_symbentry sec_data_id sec_code_id dsz2 csz2 id def2) =  *)
-(*       Some (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def). *)
-(* Proof. *)
-(*   intros until csz2. *)
-(*   intros INT LINK. *)
-(*   unfold link_option in LINK. *)
-(*   destruct def2. destruct g. destruct f; cbn in *; try congruence. *)
-(*   - unfold link_option in LINK. *)
-(*     destruct def1 as [def1|]. *)
-(*     destr_in LINK. inv LINK. *)
-(*     unfold link in Heqo. *)
-(*     unfold Linker_def in Heqo. *)
-(*     unfold link_def in Heqo. destruct def1 as [def1|v]; try congruence. *)
-(*     unfold link in Heqo. unfold Linker_fundef in Heqo. *)
-(*     destr_in Heqo; try congruence. inv Heqo. *)
-(*     unfold link_fundef in Heqo0. *)
-(*     destruct def1 as [f'|ef]. *)
-(*     + destruct e; try congruence. inv Heqo0. *)
-(*       cbn. auto. *)
-(*     + destruct external_function_eq; try congruence. subst. *)
-(*       inv Heqo0. cbn. auto. *)
-(*     + inv LINK. cbn. auto. *)
-(*   - unfold link_option in LINK. *)
-(*     destruct def1 as [def1|]. *)
-(*     + simpl in LINK. unfold link_def in LINK. *)
-(*       destruct def1 as [|v1]; try congruence. *)
-(*       simpl in LINK. destr_in LINK. *)
-(*       inv LINK. destr_in Heqo; try congruence. inv Heqo. *)
-(*       unfold link_vardef in Heqo0. *)
-(*       simpl in INT. unfold is_var_internal in INT. *)
-(*       destr_in Heqo0. destr_in Heqo0. destr_in Heqo0. *)
-(*       inv Heqo0. *)
-(*       cbn in Heqo1. unfold link_varinit in Heqo1. *)
-(*       cbn. *)
-(*       destruct (gvar_init v1), (gvar_init v). *)
-(*       * cbn in *. inv Heqo1. unfold update_symbtype. simpl. auto. *)
-(*       * cbn in *.  *)
-(*         destruct i; try congruence. *)
-(*         destruct l0; try congruence. *)
-(*         inv Heqo1. cbn. auto. *)
-(*       * cbn in *.  *)
-(*         destruct i; try (inv Heqo1; simpl; auto). *)
-(*         destruct l0. *)
-(*         ** inv H0. cbn. auto. *)
-(*         ** inv H0. cbn. auto. *)
-(*       * destruct i0; cbn in *; try congruence. *)
-(*         destruct l1; cbn in *; try congruence. *)
-(*         destruct i. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct l0. *)
-(*            *** destruct zeq; try congruence. *)
-(*                subst. inv Heqo1. cbn. *)
-(*                rewrite Z_max_0. *)
-(*                rewrite Z.add_comm. simpl. *)
-(*                apply dec_eq_true. *)
-(*                generalize (Z.le_max_l 0 z).  *)
-(*                intros. rewrite Z.max_comm. omega. *)
-(*            *** destruct zeq; try congruence. *)
-(*                subst. inv Heqo1. cbn. *)
-(*                erewrite (@Z_max_0 (Z.max z0 0 + (init_data_size i + init_data_list_size l0))). *)
-(*                apply dec_eq_true. *)
-(*                apply Z.le_ge. *)
-(*                apply Z.add_nonneg_nonneg. *)
-(*                apply Z.le_max_r. *)
-(*                apply Z.add_nonneg_nonneg. *)
-(*                apply Z.ge_le. apply init_data_size_pos. *)
-(*                apply Z.ge_le. apply init_data_list_size_pos. *)
-(*         ** destruct zeq; try congruence. subst. inv Heqo1. *)
-(*            rewrite Z_max_0. *)
-(*            cbn. rewrite dec_eq_true. auto. *)
-(*            apply Z.le_ge. *)
-(*            apply Z.add_nonneg_nonneg. *)
-(*            apply Z.ge_le. apply init_data_size_pos. *)
-(*            apply Z.ge_le. apply init_data_list_size_pos. *)
-(*     + simpl in INT. inv LINK. *)
-(*       cbn. *)
-(*       unfold is_var_internal in INT. *)
-(*       destruct (gvar_init v); cbn in *; try congruence. *)
-(*       * unfold update_symbtype. simpl. auto. *)
-(*       * destruct i; try congruence. *)
-(*         destruct l; cbn in *; try congruence. *)
-(*   - simpl in *. *)
-(*     unfold link_option in LINK. *)
-(*     destruct def1 as [def1|]. *)
-(*     + inv LINK. *)
-(*       simpl. *)
-(*       destruct def1. destruct f.  *)
-(*       ** cbn. auto. *)
-(*       ** cbn. auto. *)
-(*       ** cbn.  *)
-(*          destruct (gvar_init v). *)
-(*          cbn. unfold update_symbtype. cbn. auto. *)
-(*          destruct i; cbn; auto. *)
-(*          destruct l; cbn; auto. *)
-(*     + inv LINK. cbn.  *)
-(*       unfold update_symbtype. cbn. auto. *)
-(* Qed. *)
 
 
 Lemma link_extern_def_update_code_data_size: forall def1 def2 def dsz1 csz1,
