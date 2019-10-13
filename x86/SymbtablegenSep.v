@@ -397,41 +397,10 @@ Admitted.
 
 (** ** Commutativity of linking and generation of the symbol table *)
 
-Definition symbentry_index_in_range range e :=
-  match symbentry_secindex e with
-  | secindex_normal i => In i range
-  | _ => True
-  end.
 
-Definition symbtable_indexes_in_range range t :=
-  Forall (symbentry_index_in_range range) t.
-
-Lemma gen_symb_table_index_in_range : forall defs sec_data_id sec_code_id stbl dsz csz,
-    gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz, csz) ->
-    symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl.
-Admitted.
-
-Lemma reloc_symbtable_exists_aux : forall stbl f dsz csz,
-    symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl ->
-    f = (reloc_offset_fun dsz csz) ->
-    exists stbl', reloc_symbtable f stbl = Some stbl' /\
-             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
-Admitted.
-
-Lemma reloc_symbtable_exists: forall stbl f defs d c dsz csz,
-    gen_symb_table sec_data_id sec_code_id defs = (stbl, d, c) ->
-    f = (reloc_offset_fun dsz csz) ->
-    exists stbl', reloc_symbtable f stbl = Some stbl' /\
-             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
-Proof.
-  intros. apply reloc_symbtable_exists_aux with dsz csz.
-  eapply gen_symb_table_index_in_range; eauto.
-  auto.
-Qed.
-
-Lemma acc_symb_append : forall defs dsz1 csz1 stbl1 dsz2 csz2 stbl2 stbl3,
-    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl1, dsz1, csz1) = (stbl2, dsz2, csz2) ->
-    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl1 ++ stbl3, dsz1, csz1) = (stbl2 ++ stbl3, dsz2, csz2).
+Lemma acc_symb_append : forall d_id c_id defs dsz1 csz1 stbl1 dsz2 csz2 stbl2 stbl3,
+    fold_left (acc_symb d_id c_id) defs (stbl1, dsz1, csz1) = (stbl2, dsz2, csz2) ->
+    fold_left (acc_symb d_id c_id) defs (stbl1 ++ stbl3, dsz1, csz1) = (stbl2 ++ stbl3, dsz2, csz2).
 Proof.
   induction defs.
   - intros until stbl2. intros stbl3 ACC. simpl in *.
@@ -442,18 +411,18 @@ Proof.
     apply IHdefs. auto.
 Qed.
 
-Lemma acc_symb_append_nil : forall defs dsz1 csz1 dsz2 csz2 stbl2 stbl3,
-    fold_left (acc_symb sec_data_id sec_code_id) defs ([], dsz1, csz1) = (stbl2, dsz2, csz2) ->
-    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl3, dsz1, csz1) = (stbl2 ++ stbl3, dsz2, csz2).
+Lemma acc_symb_append_nil : forall d_id c_id defs dsz1 csz1 dsz2 csz2 stbl2 stbl3,
+    fold_left (acc_symb d_id c_id) defs ([], dsz1, csz1) = (stbl2, dsz2, csz2) ->
+    fold_left (acc_symb d_id c_id) defs (stbl3, dsz1, csz1) = (stbl2 ++ stbl3, dsz2, csz2).
 Proof.
-  intros defs dsz1 csz1 dsz2 csz2 stbl2 stbl3 ACC.
+  intros until stbl3. intros ACC.
   replace stbl3 with ([] ++ stbl3) by auto.
   apply acc_symb_append. auto.
 Qed.
 
 
-Lemma acc_symb_inv: forall asf defs stbl1 dsz1 csz1 stbl2 dsz2 csz2,
-    asf = (acc_symb sec_data_id sec_code_id) ->
+Lemma acc_symb_inv: forall asf d_id c_id defs stbl1 dsz1 csz1 stbl2 dsz2 csz2,
+    asf = (acc_symb d_id c_id) ->
     fold_left asf defs (stbl1, dsz1, csz1) = (stbl2, dsz2, csz2) ->
     exists stbl1', stbl2 = stbl1' ++ stbl1 /\
               fold_left asf defs ([], dsz1, csz1) = (stbl1', dsz2, csz2).
@@ -473,6 +442,115 @@ Proof.
     subst. simpl.
     rewrite UPDATE. 
     apply acc_symb_append_nil. auto.
+Qed.
+
+Definition symbentry_index_in_range range e :=
+  match symbentry_secindex e with
+  | secindex_normal i => In i range
+  | _ => True
+  end.
+
+Definition symbtable_indexes_in_range range t :=
+  Forall (symbentry_index_in_range range) t.
+
+Lemma get_symbentry_in_range: forall d_id c_id dsz csz id def,
+  symbentry_index_in_range [SecIndex.interp d_id; SecIndex.interp c_id] (get_symbentry d_id c_id dsz csz id def).
+Proof.
+  intros.
+  destruct def. destruct g. destruct f.
+  - cbn. auto.
+  - cbn. auto.
+  - destruct (is_var_internal v) eqn:INT.
+    + rewrite get_internal_var_entry; auto. cbn. auto.
+    + rewrite var_not_internal_iff in INT.
+      destruct INT as [INT | INT].
+      * rewrite get_comm_var_entry; auto. cbn. auto.
+      * rewrite get_external_var_entry; auto. cbn. auto.
+  - cbn. auto.
+Qed.
+
+Lemma acc_symb_index_in_range: forall d_id c_id defs dsz1 csz1 tbl dsz2 csz2,
+      fold_left (acc_symb d_id c_id) defs ([], dsz1, csz1) = (tbl, dsz2, csz2)
+      -> symbtable_indexes_in_range (map SecIndex.interp [d_id; c_id]) (rev tbl).
+Proof.
+  induction defs as [| def defs].
+  - intros until csz2. intros ACC. cbn in *.
+    inv ACC. red. cbn. apply Forall_nil.
+  - intros until csz2. intros ACC. cbn in *.
+    destruct def as [id def]. destr_in ACC.
+    generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
+    destruct 1 as (stbl1' & EQ & ACC'). subst.
+    rewrite rev_unit.
+    generalize (IHdefs _ _ _ _ _ ACC').
+    intros IN_RNG.
+    red. rewrite Forall_forall.
+    intros x IN.
+    inv IN.
+    + apply get_symbentry_in_range.
+    + red in IN_RNG.
+      rewrite Forall_forall in IN_RNG.
+      apply IN_RNG; auto.
+Qed.
+
+Lemma gen_symb_table_index_in_range : forall defs sec_data_id sec_code_id stbl dsz csz,
+    gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz, csz) ->
+    symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl.
+Proof.
+  intros until csz.
+  intros GS.
+  unfold gen_symb_table in GS. destr_in GS. destruct p. inv GS.
+  eapply acc_symb_index_in_range; eauto.
+Qed.
+
+
+Lemma reloc_symbentry_exists: forall e dsz csz,
+  symbentry_index_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) e ->
+  exists e', reloc_symb (reloc_offset_fun dsz csz) e = Some e'.
+Proof.
+  intros e dsz csz IN.
+  red in IN. unfold reloc_symb.
+  destruct (symbentry_secindex e); eauto.
+  cbn in IN.
+  unfold reloc_offset_fun.
+  destruct IN as [IN|IN].
+  - rewrite IN. destruct N.eq_dec; try congruence. subst.
+    eauto.
+  - destruct IN as [IN|IN]; try contradiction. subst.
+    destruct N.eq_dec. unfold SecIndex.interp in e0. inv e0.
+    destruct N.eq_dec; try congruence. subst.
+    eauto.
+Qed.
+
+Lemma reloc_symbtable_exists_aux : forall stbl f dsz csz,
+    symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl ->
+    f = (reloc_offset_fun dsz csz) ->
+    exists stbl', reloc_symbtable f stbl = Some stbl' /\
+             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
+Proof.
+  induction stbl as [|e stbl].
+  - intros f dsz csz INRNG eq. subst.
+    cbn. eexists; eauto.
+  - intros f dsz csz INRNG eq. subst.
+    inv INRNG.
+    generalize (IHstbl _ dsz csz H2 eq_refl).
+    destruct 1 as (stbl' & RELOC & INRNG').
+    unfold reloc_symbtable.
+    cbn. setoid_rewrite RELOC.
+    unfold reloc_iter.
+    generalize (reloc_symbentry_exists _ dsz csz H1).
+    destruct 1 as (e' & RELOC').
+    rewrite RELOC'. eexists; split; eauto.
+Qed.
+
+Lemma reloc_symbtable_exists: forall stbl f defs d c dsz csz,
+    gen_symb_table sec_data_id sec_code_id defs = (stbl, d, c) ->
+    f = (reloc_offset_fun dsz csz) ->
+    exists stbl', reloc_symbtable f stbl = Some stbl' /\
+             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
+Proof.
+  intros. apply reloc_symbtable_exists_aux with dsz csz.
+  eapply gen_symb_table_index_in_range; eauto.
+  auto.
 Qed.
 
 Lemma update_code_data_size_external_size_inv : forall def1 dsz1 csz1 dsz1' csz1',
@@ -2028,6 +2106,7 @@ Proof.
   setoid_rewrite DSZ.
   setoid_rewrite CSZ.
   rewrite RELOC.
+  unfold reloc_iter. cbn.
   rewrite LINKS.
 
   eexists. split. reflexivity.

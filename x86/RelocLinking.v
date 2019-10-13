@@ -124,17 +124,18 @@ Definition reloc_symb (e:symbentry) : option symbentry :=
   | _ => Some e
   end.
 
+Definition reloc_iter e t :=
+  match t with
+  | None => None
+  | Some t' => 
+    match reloc_symb e with
+    | None => None
+    | Some e' => Some (e' :: t')
+    end
+  end.
+
 Definition reloc_symbtable (t:symbtable) : option symbtable :=
-  fold_right (fun e t =>
-                match t with
-                | None => None
-                | Some t' => 
-                  match reloc_symb e with
-                  | None => None
-                  | Some e' => Some (e' :: t')
-                  end
-                end) 
-             (Some []) t.
+  fold_right reloc_iter (Some []) t.
 
 End WITH_RELOC_OFFSET.
 
