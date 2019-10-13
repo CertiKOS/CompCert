@@ -500,7 +500,18 @@ Lemma update_code_data_size_external_ignore_size : forall def1 dsz1 csz1,
     is_def_internal is_fundef_internal def1 = false ->
     update_code_data_size dsz1 csz1 def1 = (dsz1, csz1).
 Proof.
-Admitted.
+  intros def1 dsz1 csz1 INT.
+  destruct def1. destruct g.
+  destruct f; cbn in INT; try congruence.
+  - cbn. auto.
+  - cbn in INT.
+    unfold update_code_data_size.
+    unfold is_var_internal in INT.
+    destruct (gvar_init v); cbn in INT; try congruence.
+    destruct i; cbn in INT; try congruence.
+    destruct l; cbn in INT; try congruence.
+  - cbn. auto.
+Qed.
 
 Lemma get_extern_symbentry_ignore_size: forall id def dsz1 csz1 dsz2 csz2,
     is_def_internal is_fundef_internal def = false ->
@@ -987,11 +998,134 @@ Proof.
 Qed.
 
 
+Lemma link_none_update_code_data_size: forall def1 def dsz1 csz1,
+    link_option def1 None = Some def
+    -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
+Proof.
+  intros until csz1.
+  intros LINK.
+  unfold link_option in LINK.
+  destruct def1 as [def1|].
+  - inv LINK. auto.
+  - inv LINK. auto.
+Qed.
+
+Lemma link_update_size_extvars_init_comm :
+  forall v1 (v2:globvar unit) dsz1 csz1 (inf:unit) init rd vl,
+    is_var_internal v1 = false 
+    -> is_var_internal v2 = false 
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> update_code_data_size dsz1 csz1 (Some (Gvar v1)) =
+      update_code_data_size dsz1 csz1
+                            (Some (Gvar (mkglobvar inf init rd vl))).
+Proof.
+  intros until vl.
+  intros INT1 INT2 LINK.
+  rewrite update_code_data_size_external_ignore_size; auto.
+  rewrite update_code_data_size_external_ignore_size; auto.
+  cbn.
+  generalize (link_external_varinit _ _ _ INT1 INT2 LINK).
+  intros.
+  unfold is_var_internal. cbn.
+  destruct (classify_init init); congruence.
+Qed.    
+
+
+Lemma link_update_size_right_extvar_init_comm :
+  forall v1 (v2: globvar unit) dsz1 csz1 (inf:unit) init rd vl,
+    is_var_internal v2 = false 
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> update_code_data_size dsz1 csz1 (Some (Gvar v1)) =
+      update_code_data_size dsz1 csz1 (Some (Gvar (mkglobvar inf init rd vl))).
+Proof.
+  intros until vl.
+  intros INT LINK.
+  destruct (is_var_internal v1) eqn:INT1.
+  generalize INT. intros INT'.
+  rewrite var_not_internal_iff in INT.
+  destruct INT as [INT|INT].
+  - generalize (link_internal_comm_varinit _ _ _ INT1 INT LINK).
+    destruct 1 as (IEQ & SEQ & CLS1). subst.
+    auto.
+  - generalize (link_internal_external_varinit _ _ _ INT1 INT' LINK).
+    destruct 1 as (INITEQ & CLS). subst.
+    auto.
+  - apply link_update_size_extvars_init_comm with v2; auto.
+Qed.
+
+
+Lemma link_extern_vardef_update_code_data_size: forall def1 v def dsz1 csz1,
+        is_var_internal v = false
+        -> link_option def1 (Some (Gvar v)) = Some def
+        -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
+Proof.
+  intros until csz1.
+  intros INT LINK.
+  destruct def1 as [def1|].
+  - cbn in LINK.
+    destr_in LINK; try congruence. inv LINK.
+    destruct def1; try (cbn in *; congruence).
+    simpl in Heqo. destr_in Heqo; try congruence.
+    inv Heqo.
+    unfold link_vardef in Heqo0.
+    repeat (destr_in Heqo0; try congruence).
+    cbn in Heqo1.
+    apply link_update_size_right_extvar_init_comm with v; auto.
+  - cbn in LINK. inv LINK.
+    rewrite (update_code_data_size_external_ignore_size (Some (Gvar v))).
+    simpl. auto.
+    cbn. auto.
+Qed.
+  
+Lemma link_update_size_right_extfun_comm :
+  forall f1 f2 f dsz1 csz1,
+    is_fundef_internal f2 = false 
+    -> link_fundef f1 f2 = Some f
+    -> update_code_data_size dsz1 csz1 (Some (Gfun f1)) =
+       update_code_data_size dsz1 csz1 (Some (Gfun f)).
+Proof.
+  intros until csz1.
+  intros INT LINK.
+  destruct f2; try (cbn in INT; congruence).
+  apply link_fundef_inv1 in LINK. subst.
+  auto.
+Qed.
+  
+
+Lemma link_extern_fundef_update_code_data_size: forall def1 f def dsz1 csz1,
+        is_fundef_internal f = false
+        -> link_option def1 (Some (Gfun f)) = Some def
+        -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
+Proof.
+  intros until csz1.
+  intros INT LINK.
+  destruct def1 as [def1|].
+  - cbn in LINK.
+    destr_in LINK; try congruence. inv LINK.
+    destruct def1; try (cbn in *; congruence).
+    simpl in Heqo. destr_in Heqo; try congruence.
+    inv Heqo.
+    apply link_update_size_right_extfun_comm with f; auto.    
+  - cbn in LINK.  inv LINK.
+    rewrite (update_code_data_size_external_ignore_size (Some (Gfun f))).
+    simpl. auto.
+    cbn. auto.
+Qed.
+
+
 Lemma link_extern_def_update_code_data_size: forall def1 def2 def dsz1 csz1,
     is_def_internal is_fundef_internal def2 = false
     -> link_option def1 def2 = Some def
     -> update_code_data_size dsz1 csz1 def1 = update_code_data_size dsz1 csz1 def.
-Admitted.
+Proof.
+  intros until csz1.
+  intros INT LINK.
+  destruct def2 as [def2|].
+  - cbn in INT. destruct def2.
+    + apply link_extern_fundef_update_code_data_size with f; auto.
+    + apply link_extern_vardef_update_code_data_size with v; auto.
+  - apply link_none_update_code_data_size. auto.
+Qed.
 
 
 Lemma link_defs1_acc_symb_comm : forall asf defs1 defs2 defs1_linked defs1_rest defs2_rest rstbl1 rstbl2 dsz1 dsz2 csz1 csz2 dsz1' csz1',

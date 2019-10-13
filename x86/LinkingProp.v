@@ -4,6 +4,11 @@ Import ListNotations.
 
 Set Implicit Arguments.
 
+Lemma Z_max_0 : forall z, z >= 0 -> Z.max z 0 = z.
+Proof.
+  intros. apply Zmax_left. auto.
+Qed.
+
 Lemma is_def_internal_dec' : forall (F V:Type) (f:F -> bool) (def: option (globdef F V)),
     {is_def_internal f def = true} + {is_def_internal f def <> true}.
 Proof.
@@ -127,6 +132,127 @@ Proof.
   inv LINK. auto.
   destr_in LINK; try congruence.
   inv LINK. auto.
+Qed.
+
+Definition is_var_comm V (v: globvar V) := 
+  match classify_init (gvar_init v) with
+  | Init_common _ => true
+  | _ => false
+  end.
+
+Definition is_var_extern V (v: globvar V) := 
+  match classify_init (gvar_init v) with
+  | Init_extern => true
+  | _ => false
+  end.
+
+Lemma extern_var_init_nil : forall V (v:globvar V),
+  is_var_extern v = true -> gvar_init v = nil.
+Proof.
+  intros V v EXT.
+  unfold is_var_extern in EXT.
+  destruct (gvar_init v); try congruence.
+  destr_in EXT; try congruence.
+Qed.
+
+
+Lemma var_not_internal_iff : forall V (v: globvar V),
+    is_var_internal v = false <->
+    is_var_comm v = true \/ is_var_extern v = true.
+Proof. 
+  intros V v; split;
+  unfold is_var_internal, is_var_comm, is_var_extern;
+  destruct (classify_init (gvar_init v)); try congruence; auto.
+  destruct 1; try congruence.
+Qed.
+
+Lemma link_internal_comm_varinit: forall (V: Type) (LV: Linker V)(v1 v2: globvar V) l, 
+    is_var_internal v1 = true ->
+    is_var_comm v2 = true ->
+    link_varinit (gvar_init v1) (gvar_init v2) = Some l ->
+    gvar_init v1 = l /\
+    init_data_list_size (gvar_init v1) = init_data_list_size (gvar_init v2) /\
+    classify_init l = Init_definitive l.
+Proof.
+  intros V LV v1 v2 l INT1 INT2 LINK.
+  unfold link_varinit in LINK.
+  unfold is_var_internal, is_var_comm in *.
+  destr_in LINK. destr_in LINK.
+  destruct zeq; try congruence.
+  subst. inv LINK. cbn.
+  split; auto.
+  erewrite Z_max_0.
+  split. omega. auto.
+  apply init_data_list_size_pos.
+Qed.
+
+Lemma link_comm_vars_init : forall V (v1 v2: globvar V) init,
+    is_var_comm v1 = true
+    -> is_var_comm v2 = true
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> (init_data_list_size (gvar_init v1)) =
+      (init_data_list_size (gvar_init v2)) /\
+      init = gvar_init v2.
+Proof.
+  intros V v1 v2 init INT1 INT2 LINK.
+  unfold is_var_comm in *.
+  destruct (gvar_init v1); cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  destruct (gvar_init v2); cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  destruct zeq; try congruence.
+  inv LINK.
+  repeat (rewrite Z.add_comm; cbn).
+  split; auto.
+  apply Z_max_0.
+  apply Z.le_ge. apply Z.le_max_r.
+Qed.
+
+Lemma link_comm_extern_var_init : forall V (v1 v2: globvar V) init,
+    is_var_comm v1 = true
+    -> is_var_extern v2 = true
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> init = (gvar_init v1).
+Proof.
+  intros V v1 v2 init INT1 INT2 LINK.
+  unfold is_var_comm, is_var_extern in *.
+  destruct (gvar_init v1); cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  destruct (gvar_init v2); cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+Qed.
+
+Lemma link_extern_comm_var_init : forall V (v1 v2: globvar V) init,
+    is_var_extern v1 = true
+    -> is_var_comm v2 = true
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> init = (gvar_init v2).
+Proof.
+  intros V v1 v2 init INT1 INT2 LINK.
+  unfold is_var_comm, is_var_extern in *.
+  destruct (gvar_init v1); cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+Qed.
+
+Lemma link_extern_vars_init : forall V (v1 v2: globvar V) init,
+    is_var_extern v1 = true
+    -> is_var_extern v2 = true
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some init
+    -> init = nil.
+Proof.
+  intros V v1 v2 init INT1 INT2 LINK.
+  unfold is_var_extern in *.
+  destruct (gvar_init v1); cbn in *; try congruence.
+  destruct (gvar_init v2); cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
 Qed.
 
 Lemma link_internal_external_vars: forall (V:Type) (LV: Linker V) (v1 v2 v3: globvar V),
