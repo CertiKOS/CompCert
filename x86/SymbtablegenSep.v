@@ -12,6 +12,39 @@ Import ListNotations.
 
 Set Implicit Arguments.
 
+Local Transparent Linker_def.
+Local Transparent Linker_fundef.
+Local Transparent Linker_vardef.
+Local Transparent Linker_varinit.
+
+Lemma map_pres_subset_rel: forall A B (l1 l2:list A) (f: A -> B),
+    (forall x, In x l1 -> In x l2)
+    -> (forall y, In y (map f l1) -> In y (map f l2)).
+Proof.
+  intros A B l1 l2 f SUB y IN.
+  rewrite in_map_iff in *.
+  destruct IN as (x & EQ & IN). subst.
+  eauto.
+Qed.
+
+Lemma Forall_app_distr: forall A f (l1 l2 : list A),
+    Forall f (l1 ++ l2) 
+    <-> Forall f l1 /\ Forall f l2.
+Proof.
+  induction l1 as [|e l1].
+  - intros l2. cbn. split; auto.
+    tauto.
+  - cbn. intros. generalize (IHl1 l2).
+    destruct 1 as [F1 F2].
+    split.
+    + intros F3. inv F3.
+      generalize (F1 H2). 
+      destruct 1. split; auto.
+    + intros F3. destruct F3 as [F4 F5]. inv F4.
+      auto.
+Qed.
+
+
 Lemma length_S_inv : forall A n (l: list A),
     length l = S n ->
     exists l' a, l = l' ++ [a] /\ length l' = n.
@@ -588,6 +621,147 @@ Proof.
   eapply list_norepet_app; eauto.
 Qed.
   
+Lemma eq_gvar_init_pres_aligned : forall v1 v2,
+    gvar_init v1 = gvar_init v2 
+    -> def_aligned (Some (Gvar v1))
+    -> def_aligned (Some (Gvar v2)).
+Proof.
+  intros. cbn in *. rewrite <- H.
+  auto.
+Qed.
+
+Lemma link_varinit_internal_external_pres_aligned:
+  forall (v1 v2: globvar unit) l inf rd vl,
+    is_var_internal v2 = false
+    -> def_aligned (Some (Gvar v1))
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some l
+    -> def_aligned (Some (Gvar (mkglobvar inf l rd vl))).
+Proof.
+  intros v1 v2 l inf rd vl INT2 ALIGN LINK.
+  destruct (is_var_internal v1) eqn:INT1.
+  - generalize (link_internal_external_varinit _ _ _ INT1 INT2 LINK).
+    destruct 1 as (EQ & CLS). subst.   
+    apply eq_gvar_init_pres_aligned with v1; auto.
+  - generalize (link_external_varinit _ _ _ INT1 INT2 LINK).
+    intros CLS.
+    destruct l. cbn. auto.
+    cbn in *. destruct i; try congruence.
+    destruct l; try congruence. auto.
+Qed.
+
+
+Lemma link_vardef_internal_external_pres_aligned:
+  forall v1 v2 v,
+    is_var_internal v2 = false
+    -> def_aligned (Some (Gvar v1))
+    -> link_vardef v1 v2 = Some v
+    -> def_aligned (Some (Gvar v)).
+Proof.
+  intros v1 v2 v INT ALIGN LINK.
+  unfold link_vardef in LINK. 
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  inv LINK. unfold is_var_internal in INT.
+  eapply link_varinit_internal_external_pres_aligned; eauto.
+Qed.
+  
+
+Lemma external_var_aligned: forall v,
+    is_var_internal v = false -> def_aligned (Some (Gvar v)).
+Proof.
+  intros v INT.
+  unfold is_var_internal in INT.
+  cbn. destruct (gvar_init v); cbn in *; try congruence.
+  auto.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  auto.
+Qed.
+
+
+Lemma link_option_internal_external_pres_aligned: forall def1 def2 def,
+    is_def_internal is_fundef_internal def2 = false
+    -> def_aligned def1
+    -> link_option def1 def2 = Some def
+    -> def_aligned def.
+Proof.
+  intros def1 def2 def INT ALIGN LINK.
+  destruct def2. destruct g. destruct f; cbn in *; try congruence.
+  - destruct def1. destruct g. destruct f. 
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destruct e; try congruence. inv Heqo0. auto.
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destr_in Heqo0; try congruence. 
+    + cbn in LINK. congruence.
+    + cbn in LINK. inv LINK. auto.
+  - destruct def1. destruct g.
+    + cbn in *. congruence.
+    + cbn in LINK. destr_in LINK; try congruence.
+      destr_in Heqo; try congruence. inv Heqo. inv LINK.
+      cbn in INT.
+      eapply link_vardef_internal_external_pres_aligned; eauto.
+    + cbn in *. inv LINK.       
+      eapply external_var_aligned; eauto.
+  - destruct def1. cbn in LINK. inv LINK. auto.
+    cbn in *. inv LINK. auto.
+Qed.
+
+
+Lemma link_pres_linked_aligned: 
+  forall defs1 defs2 defs1_linked defs1_rest defs2_rest,
+    link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest)
+    -> Forall def_aligned (map snd defs1)
+    -> Forall def_aligned (map snd defs1_linked) .
+Proof.
+  induction defs1 as [|def defs1].
+  - intros defs2 defs1_linked defs1_rest defs2_rest LINK ALIGN.
+    simpl in *. inv LINK. inv ALIGN. cbn. auto.
+  - intros defs2 defs1_linked defs1_rest defs2_rest LINK ALIGN.
+    simpl in *. destruct def.
+    destr_in LINK. destruct p. destruct p.
+    inv ALIGN.
+    generalize (IHdefs1 _ _ _ _ Heqo0 H2).
+    intro ALIGN'.
+    destr_in LINK. destruct l2.
+    + inv LINK.
+      generalize (partition_inv_nil1 _ _ Heqp).
+      intros. subst.
+      cbn in *. auto.
+    + destruct p. destr_in LINK.
+      * destr_in LINK; try congruence. 
+      * destr_in LINK; try congruence.
+        inv LINK. cbn.
+        constructor; auto.
+        eapply link_option_internal_external_pres_aligned; eauto.
+Qed.
+
+Lemma link_pres_defs_aligned1: 
+  forall defs1 defs2 defs1_linked defs1_rest defs2_rest,
+    link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest)
+    -> Forall def_aligned (map snd defs1)
+    -> Forall def_aligned (map snd defs2)
+    -> Forall def_aligned (map snd defs1_linked) 
+      /\ Forall def_aligned (map snd defs1_rest) 
+      /\ Forall def_aligned (map snd defs2_rest).
+Proof.
+  intros until defs2_rest.
+  intros LINK ALIGN1 ALIGN2.
+  generalize (link_defs_rest_elem _ _ _ _ LINK).
+  destruct 1 as (ELEM1 & ELEM2).
+  repeat split.
+  - eapply link_pres_linked_aligned; eauto.
+  - rewrite Forall_forall in *.
+    intros x IN. apply ALIGN1.
+    eapply map_pres_subset_rel; eauto.
+  - rewrite Forall_forall in *.
+    intros x IN. apply ALIGN2.
+    eapply map_pres_subset_rel; eauto.
+Qed.
+    
+
 
 Lemma link_pres_defs_aligned: 
   forall defs1 defs2 defs,
@@ -600,9 +774,13 @@ Proof.
   unfold link_defs in LINK.
   destr_in LINK; try congruence. destruct p. destruct p.
   destr_in LINK; try congruence. destruct p. destruct p.
-  inv LINK.
-  Admitted.
-  
+  inv LINK. rewrite map_app.
+  generalize (link_pres_defs_aligned1 _ _  Heqo ALIGN1 ALIGN2).
+  destruct 1 as (ALIGN1' & ALIGN1_REST & ALIGN2_REST).
+  generalize (link_pres_defs_aligned1 _ _  Heqo0 ALIGN2_REST ALIGN1_REST).
+  destruct 1 as (ALIGN3 & ALIGN4 & ALIGN5).
+  rewrite Forall_app_distr; eauto.
+Qed.
 
 
 Lemma link_pres_wf_prog: forall p1 p2 p defs,
@@ -964,10 +1142,6 @@ Proof.
 Qed.
 
 
-Local Transparent Linker_def.
-Local Transparent Linker_fundef.
-Local Transparent Linker_vardef.
-Local Transparent Linker_varinit.
 
 Lemma get_var_entry_type : forall dsz1 csz1 id v,
     symbentry_type (get_symbentry sec_data_id sec_code_id dsz1 csz1 id (Some (Gvar v))) = symb_data.
