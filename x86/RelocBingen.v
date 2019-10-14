@@ -3,6 +3,12 @@
 (* Date:   Sep 18, 2019 *)
 (* *******************  *)
 
+(* *******************  *)
+(* Modify: Xiangzhe Xu  *)
+(* Date:   Oct 09, 2019 *)
+(* *******************  *)
+
+
 Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
 Require Import Asm RelocProgram.
@@ -573,7 +579,6 @@ Definition encode_instr (i: instruction) : res (list byte) :=
   | Pjmp (inr id) sg =>
     do addend <- get_reloc_addend id;
       OK (HB["E9"] :: encode_int32 addend)
-    (*** TBD *)
   | Pjmp (inl reg) sg =>
     do rm <- encode_ireg reg;
       (* reg field must be 4 *)

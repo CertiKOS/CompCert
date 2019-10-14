@@ -162,6 +162,9 @@ Definition transl_instr (sofs:Z) (rtbl:reloctable) (i: instruction) : res (reloc
     do e <- compute_instr_abs_relocentry sofs i 0 id;
     let i' := Pmov_rs rd next_rid in
     OK (e :: rtbl, i')
+  | Pleal rd (Addrmode rb ss (inr disp)) =>
+    transl_instr_with_addrmode rtbl sofs i rb ss disp
+                               (fun a => Pleal rd a)
   | Pmovl_rm rd (Addrmode rb ss (inr disp)) =>
     transl_instr_with_addrmode rtbl sofs i rb ss disp
                                (fun a => Pmovl_rm rd a)

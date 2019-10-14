@@ -356,6 +356,7 @@ Definition instr_size (i: instruction) : Z :=
   | Pjmp_l_rel _ => 5
   | Pjcc_rel _ _ => 6
   | Pcall (inr _) _ => 5
+  | Pcall (inl _) _ => 5
   | Pjmp (inr _) _ => 5
   | Pleal _ a => 1 + addrmode_size a
   | Pxorl_r _ => 2
@@ -379,6 +380,69 @@ Definition instr_size (i: instruction) : Z :=
   | Plabel _ => 1
   | Pmov_rs _ _ => 6
   | Pnop => 1
+  | Pmovsd_ff frd fr1 => 4
+  | Pmovsd_fm_a frd a => 3 + addrmode_size a
+  | Pmovsd_fm frd a => 3 + addrmode_size a
+  | Pmovsd_mf_a a fr1 => 3 + addrmode_size a
+  | Pmovsd_mf a fr1 => 3 + addrmode_size a
+  | Pmovss_fm frd a => 3 + addrmode_size a
+  | Pmovss_mf a fr1 => 3 + addrmode_size a
+  | Pfldl_m a 
+  | Pfstpl_m a 
+  | Pflds_m a 
+  | Pfstps_m a => 1 + addrmode_size a
+  | Pxchg_rr r1 r2 => 2
+  | Pmovb_mr a rs => 1 + addrmode_size a
+  | Pmovw_mr a rs => 2 + addrmode_size a
+  | Pmovzb_rr rd rs => 3
+  | Pmovzb_rm rd a => 2 + addrmode_size a
+  | Pmovzw_rr rd rs => 3
+  | Pmovzw_rm rd a => 2 + addrmode_size a
+  | Pmovsb_rr rd rs => 3
+  | Pmovsb_rm rd a => 2 + addrmode_size a
+  | Pmovsw_rr rd rs => 3
+  | Pmovsw_rm rd a => 2 + addrmode_size a
+  | Pcvtsd2ss_ff _ _ 
+  | Pcvtss2sd_ff _ _ 
+  | Pcvttsd2si_rf _ _ 
+  | Pcvtsi2sd_fr _ _
+  | Pcvttss2si_rf _ _ 
+  | Pcvtsi2ss_fr _ _ => 4
+  | Pnegl rd => 2
+  | Pimull_r r1 => 2
+  | Pmull_r r1 => 2
+  | Pdivl r1 => 2
+  | Pandl_rr rd r1  => 2
+  | Pandl_ri rd n => 6
+  | Porl_rr rd r1 => 2
+  | Porl_ri rd n => 6
+  | Pxorl_rr rd r1 => 2
+  | Pxorl_ri rd n => 6
+  | Pnotl rd => 2
+  | Psall_rcl rd => 2
+  | Pshrl_rcl rd => 2
+  | Pshrl_ri rd n => 3
+  | Psarl_rcl rd => 2
+  | Psarl_ri rd n => 3
+  | Pshld_ri rd r1 n => 4
+  | Prorl_ri rd n => 3
+  | Ptestl_ri r1 n => 6
+  | Pcmov c rd r1 => 3
+  | Psetcc c rd => 3
+  | Paddd_ff frd fr1 => 4
+  | Padds_ff frd fr1 => 4
+  | Psubd_ff frd fr1 => 4
+  | Psubs_ff frd fr1 => 4
+  | Pmuld_ff frd fr1 => 4
+  | Pmuls_ff frd fr1 => 4
+  | Pdivd_ff frd fr1 => 4
+  | Pdivs_ff frd fr1 => 4
+  | Pcomisd_ff fr1 fr2 => 4
+  | Pcomiss_ff fr1 fr2 => 3
+  | Pxorpd_f frd => 4
+  | Pxorps_f frd => 3
+  | Pimull_ri rd n => 6
+
   | _ => 1
   end.
 
@@ -441,7 +505,7 @@ Ltac solve_n_le_ptrofs_max :=
 Ltac solve_amod_le_ptrofs_max :=
   match goal with
   | [ |- ?n + addrmode_size ?a <= Ptrofs.max_unsigned ] =>
-    apply Z.le_trans with (1 + amod_size_ub);
+    apply Z.le_trans with (n + amod_size_ub);
     [ generalize (addrmode_size_upper_bound a); omega | solve_n_le_ptrofs_max ]
   end.
 
