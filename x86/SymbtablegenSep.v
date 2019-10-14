@@ -12,24 +12,28 @@ Import ListNotations.
 
 Set Implicit Arguments.
 
-Lemma length_S_inv : forall A (l: list A) n,
+Lemma length_S_inv : forall A n (l: list A),
     length l = S n ->
     exists l' a, l = l' ++ [a] /\ length l' = n.
 Proof.
-  (* induction l. *)
-  (* - intros. inv H. *)
-  (* - intros. simpl in *. inv H. *)
-  (*   destruct l. simpl. exists nil. simpl. eauto. *)
-  (*   simpl in *. *)
-  (*   generalize (IHl (length l) eq_refl). *)
-  (*   destruct 1 as (l' & a' & EQ & LEN). *)
-  (*   subst. *)
-Admitted.
+  induction n.
+  - intros. destruct l. cbn in *.
+    congruence.
+    cbn in H. inv H.
+    rewrite length_zero_iff_nil in H1.
+    subst. exists nil. cbn. eauto.
+  - intros. simpl in *. 
+    destruct l. cbn in H. congruence.
+    cbn in H. inv H.
+    generalize (IHn _ H1).
+    destruct 1 as (l' & a0 & eq & LEN). subst.
+    exists (a :: l'). cbn. eexists; split; eauto.
+Qed.
 
-Lemma rev_nil_inv : forall A n (l:list A),
+Lemma rev_nil_inv_len : forall A n (l:list A),
     length l = n -> rev l = [] -> l = nil.
 Proof.
-  destruct n.
+  induction n.
   - intros. 
     rewrite length_zero_iff_nil in H. subst. auto.
   - intros.
@@ -39,16 +43,24 @@ Proof.
     inv H0.
 Qed.
 
+Lemma rev_nil_inv : forall A (l:list A),
+    rev l = [] -> l = nil.
+Proof.
+  intros. eapply rev_nil_inv_len; eauto.
+Qed.
+
 Lemma rev_single : forall A (l:list A) a,
     rev l = [a] -> l = [a].
 Proof.
-  induction l. 
+  induction l.
   - cbn in *. congruence.
   - intros. simpl in H.
     replace [a0] with (nil ++ [a0]) in H by auto.
     apply app_inj_tail in H.
     destruct H; subst. 
-Admitted.
+    generalize (rev_nil_inv _ H).
+    intros. subst. auto.
+Qed.
 
 Lemma app_cons_comm : forall (A:Type) (l1 l2: list A) a,
     l1 ++ (a :: l2) = (l1 ++ [a]) ++ l2.
