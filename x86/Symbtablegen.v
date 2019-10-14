@@ -177,24 +177,24 @@ End WITH_CODE_DATA_SEC.
 (*   - simpl. left. auto. *)
 (* Defined. *)
 
-Definition main_exists main (defs: list (ident * option (AST.globdef Asm.fundef unit))) :=
-  Exists (fun '(id, def) => 
-            main = id 
-            /\ match def with
-              | None => False
-              | Some _ => True
-              end) defs.
+(* Definition main_exists main (defs: list (ident * option (AST.globdef Asm.fundef unit))) := *)
+(*   Exists (fun '(id, def) =>  *)
+(*             main = id  *)
+(*             /\ match def with *)
+(*               | None => False *)
+(*               | Some _ => True *)
+(*               end) defs. *)
 
-Definition main_exists_dec main defs : {main_exists main defs } + {~ main_exists main defs}.
-Proof.
-  apply Exists_dec. intros. destruct x.
-  generalize (ident_eq main i). intros.
-  destruct o; inv H.
-  - left. auto.
-  - right. inversion 1. auto.
-  - right. inversion 1. auto.
-  - right. inversion 1. auto.
-Qed.
+(* Definition main_exists_dec main defs : {main_exists main defs } + {~ main_exists main defs}. *)
+(* Proof. *)
+(*   apply Exists_dec. intros. destruct x. *)
+(*   generalize (ident_eq main i). intros. *)
+(*   destruct o; inv H. *)
+(*   - left. auto. *)
+(*   - right. inversion 1. auto. *)
+(*   - right. inversion 1. auto. *)
+(*   - right. inversion 1. auto. *)
+(* Qed. *)
 
 Local Open Scope Z_scope.
 
@@ -230,17 +230,14 @@ Qed.
 Record wf_prog (p:Asm.program) : Prop :=
   {
     wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
-    wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
     wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
   }.
 
 Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
 Proof.
   destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
-  destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
   destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
   left; constructor; auto.
-  right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
 Qed.

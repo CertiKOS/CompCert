@@ -587,23 +587,6 @@ Proof.
   }  
   eapply list_norepet_app; eauto.
 Qed.
-
-  
-
-Lemma link_pres_main_exists: 
-  forall defs1 defs2 defs main1 main2,
-    link_defs is_fundef_internal defs1 defs2 = Some defs
-    -> main_exists main1 defs1
-    -> main_exists main2 defs2
-    -> main_exists main1 defs.
-Proof.
-  intros until main2.
-  intros LINK MAIN1 MAIN2.
-  unfold link_defs in LINK.
-  destr_in LINK; try congruence. destruct p. destruct p.
-  destr_in LINK; try congruence. destruct p. destruct p.
-  inv LINK.
-  Admitted.
   
 
 Lemma link_pres_defs_aligned: 
@@ -635,7 +618,6 @@ Proof.
   inv WF1. inv WF2.
   constructor.
   - cbn. eapply link_pres_list_norepet; eauto.
-  - cbn. eapply link_pres_main_exists; eauto.
   - cbn. eapply link_pres_defs_aligned; eauto.
 Qed.
  
