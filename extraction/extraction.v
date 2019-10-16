@@ -120,6 +120,10 @@ Extract Constant Compopts.debug =>
 (* Strtablegen *)
 Extract Constant SymbolString.find_symbol_pos => "FindSymbolString.find_symbol_pos".
 
+(* CheckDef *)
+Extract Constant CheckDef.is_def_builtin => "CheckDefImpl.is_def_builtin".
+Extract Constant CheckDef.is_def_string_literal => "CheckDefImpl.is_def_string_literal".
+
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".
 Extract Constant Compiler.print_Cminor => "PrintCminor.print_if".

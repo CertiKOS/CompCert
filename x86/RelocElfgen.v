@@ -125,6 +125,17 @@ Definition gen_text_sec_header p :=
      sh_entsize  := 0;
   |}.
 
+(** We assume local symbols come before global symbols,
+ so one greater than the index of the last local symbol is exactly 
+ the size of local symbols*)
+Definition one_greater_last_local_symb_index p :=
+  let t := (prog_symbtable p) in
+  let locals := SeqTable.filter (fun s => match symbentry_bind s with
+                                    | bind_local => true
+                                    | _ => false
+                                    end) t in
+  Z.of_nat (length locals).
+
 Definition gen_symtab_sec_header p :=
   let t := (prog_sectable p) in
   {| sh_name     := symtab_str_ofs;
@@ -134,7 +145,7 @@ Definition gen_symtab_sec_header p :=
      sh_offset   := get_sh_offset sec_symbtbl_id t;
      sh_size     := get_section_size sec_symbtbl_id t;
      sh_link     := Z.of_N (SecIndex.interp sec_strtbl_id);
-     sh_info     := 0;
+     sh_info     := one_greater_last_local_symb_index p;
      sh_addralign := 1;
      sh_entsize  := symb_entry_size;
   |}.
