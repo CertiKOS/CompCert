@@ -649,8 +649,8 @@ Definition transl_init_data (d:init_data) : res (list byte) :=
   | Init_int16 i => OK (encode_int 2 (Int.unsigned i))
   | Init_int32 i => OK (encode_int 4 (Int.unsigned i))
   | Init_int64 i => OK (encode_int 8 (Int64.unsigned i))
-  | Init_float32 f => OK (encode_int 4 (Int64.unsigned (Float.to_bits (Float.of_single f))))
-  | Init_float64 f => OK (encode_int 4 (Int64.unsigned (Float.to_bits f)))
+  | Init_float32 f => OK (encode_int 4 (Int.unsigned (Float32.to_bits f)))
+  | Init_float64 f => OK (encode_int 8 (Int64.unsigned (Float.to_bits f)))
   | Init_space n => OK (zero_bytes (nat_of_Z n))
   | Init_addrof id ofs => 
     do addend <- get_reloc_addend id;
