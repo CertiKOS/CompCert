@@ -42,10 +42,14 @@ Definition encode_symbtype (t:symbtype) :=
   | symb_notype => 0
   end.
 
-Definition symb_glob_bind := 1.
+Definition encode_symbbind (b:bindtype) :=
+  match b with
+  | bind_local => 0
+  | bind_global => 1
+  end.
 
-Definition encode_glob_symb_info (t:symbtype) := 
-  symb_glob_bind * (Z.pow 2 4) + encode_symbtype t.
+Definition encode_glob_symb_info (b:bindtype) (t:symbtype) := 
+  (encode_symbbind b) * (Z.pow 2 4) + encode_symbtype t.
 
 Definition encode_secindex (i:secindex) :=
   let shn_comm := HZ["FFF2"] in
@@ -76,7 +80,7 @@ Definition encode_symbentry (e:symbentry)  : res (list byte) :=
   let st_value_bytes := encode_int32 (symbentry_value e) in
   let st_size_bytes := encode_int32 (symbentry_size e) in
   let st_info_bytes := 
-      bytes_of_int 1 (encode_glob_symb_info (symbentry_type e)) in
+      bytes_of_int 1 (encode_glob_symb_info (symbentry_bind e) (symbentry_type e)) in
   let st_other_bytes := [Byte.repr 0] in
   let st_shndx_bytes := encode_secindex (symbentry_secindex e) in
   OK (st_name_bytes ++ st_value_bytes ++ st_size_bytes ++

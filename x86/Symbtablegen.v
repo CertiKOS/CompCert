@@ -8,6 +8,7 @@ Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
 Require Import RelocProgram.
+Require Import CheckDef.
 Import ListNotations.
 
 
@@ -31,10 +32,14 @@ Variables (dsize csize: Z).
 (** get_symbol_entry takes the ids and the current sizes of data and text sections and 
     a global definition as input, and outputs the corresponding symbol entry *) 
 Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) : symbentry :=
+  let bindty := 
+      if is_def_local id then bind_local else bind_global 
+  in
   match def with
   | None =>
     (** This is an external symbol with unknown type *)
     {|symbentry_id := Some id;
+      symbentry_bind := bindty;
       symbentry_type := symb_notype;
       symbentry_value := 0;
       symbentry_secindex := secindex_undef;
@@ -45,6 +50,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     | nil => 
       (** This is an external data symbol *)
       {|symbentry_id := Some id;
+        symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := 0;
         symbentry_secindex := secindex_undef;
@@ -53,6 +59,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     | [Init_space sz] =>
       (** This is an external data symbol in the COMM section *)
       {|symbentry_id := Some id;
+        symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
         symbentry_secindex := secindex_comm;
@@ -61,6 +68,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     | _ =>
       (** This is an internal data symbol *)
       {|symbentry_id := Some id;
+        symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := dsize;
         symbentry_secindex := secindex_normal (SecIndex.interp dsec);
@@ -70,6 +78,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
   | Some (Gfun (External ef)) =>
     (** This is an external function symbol *)
     {|symbentry_id := Some id;
+      symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := 0;
       symbentry_secindex := secindex_undef;
@@ -77,6 +86,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     |}
   | Some (Gfun (Internal f)) =>
     {|symbentry_id := Some id;
+      symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := csize;
       symbentry_secindex := secindex_normal (SecIndex.interp csec);

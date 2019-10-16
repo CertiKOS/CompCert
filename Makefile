@@ -123,7 +123,7 @@ BACKEND=\
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
-  RelocLinking.v
+  RelocLinking.v CheckDef.v
 
 # Encoding of data into bytes
 

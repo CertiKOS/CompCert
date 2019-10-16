@@ -84,9 +84,14 @@ Inductive secindex : Type :=
 | secindex_comm
 | secindex_undef.
 
+Inductive bindtype : Type :=
+| bind_local
+| bind_global.
+
 Record symbentry : Type :=
 {
   symbentry_id: option ident;  (** The original identifier of the symbol *) 
+  symbentry_bind: bindtype;
   symbentry_type: symbtype;
   symbentry_value: Z;  (** This holds the alignment info if secindex is secindex_comm,
                            otherwise, it holds the offset from the beginning of the section *)
@@ -96,6 +101,7 @@ Record symbentry : Type :=
 
 Definition dummy_symbentry : symbentry :=
   {| symbentry_id := None;
+     symbentry_bind := bind_local;
      symbentry_type := symb_notype;
      symbentry_value := 0;
      symbentry_secindex := secindex_undef;

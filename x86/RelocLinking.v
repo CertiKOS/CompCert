@@ -106,6 +106,7 @@ Definition reloc_symb (e:symbentry) : option symbentry :=
     | Some ofs => 
       let val' := symbentry_value e + ofs in
       Some {| symbentry_id := symbentry_id e;
+              symbentry_bind := symbentry_bind e;
               symbentry_type := symbentry_type e;
               symbentry_value := val';
               symbentry_secindex := symbentry_secindex e;
