@@ -91,6 +91,7 @@ Require SegAsmgen.
 Require SegAsmSep.
 Require Asmlabelgen.
 Require Asmlabelgenproof.
+Require Asmpielim.
 Require PadNops.
 Require PadInitData.
 Require Symbtablegen.
@@ -214,6 +215,7 @@ Definition transf_c_program_real p : res Asm.program :=
 
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte) :=
   transf_c_program_real p
+  @@@ time "Psedoinstruction elimination" Asmpielim.transf_program
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
