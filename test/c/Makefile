@@ -1,7 +1,7 @@
 include ../../Makefile.config
 
 CCOMP=../../ccomp
-CCOMPFLAGS=$(CCOMPOPTS) -stdlib ../../runtime  -dasm -relf
+CCOMPFLAGS=$(CCOMPOPTS) -stdlib ../../runtime  -dasm #-relf
 
 CFLAGS=-O1 -Wall
 
