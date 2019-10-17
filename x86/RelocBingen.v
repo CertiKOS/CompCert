@@ -507,7 +507,7 @@ Definition encode_instr (i: instruction) : res (list byte) :=
       OK(cc ++ modrm :: nil)
   | Psetcc c rd =>
     do rm <- encode_ireg rd;
-      let cc := encode_testcond_cmov c in
+      let cc := encode_testcond_setcc c in
       (* reg field is not used *)
       let modrm := bB[b["11"] ++ b["000"] ++ rm] in
       OK(cc ++ modrm :: nil)
@@ -633,8 +633,12 @@ Definition encode_instr (i: instruction) : res (list byte) :=
 
 Definition acc_instrs i r := 
   do code <- r;
-  do c <- encode_instr i;
-  OK (c ++ code).
+    do c <- encode_instr i;
+    if zeq (Z.of_nat (length c)) (instr_size i) then
+      OK (c ++ code)
+    else
+      Error [MSG "Error in encoding: length does not match "; MSG(instr_to_string i)].
+      
 
 (** Translation of a sequence of instructions in a function *)
 Definition transl_code (c:code) : res (list byte) :=

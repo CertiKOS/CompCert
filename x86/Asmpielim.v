@@ -20,7 +20,7 @@ Local Open Scope error_monad_scope.
 Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res (list instruction) :=
   match i with
   |Psetcc c rd =>
-   OK [Psetcc c rd; Pmovzb_rr rd rd]
+   OK [Pmovzb_rr rd rd; Psetcc c rd]
   |_ =>
    OK [i] 
   end.
