@@ -321,16 +321,16 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     do abytes <- encode_addrmode_f a XMM0;
       OK(HB["DD"] :: abytes)
   | Pfstpl_m a =>
-    (* the rd bits must be 002 *)
-    do abytes <- encode_addrmode_f a XMM2;
+    (* the rd bits must be 003 *)
+    do abytes <- encode_addrmode_f a XMM3;
       OK(HB["DD"] :: abytes)
   | Pflds_m a =>
     (* the rd bits must be 000 *)
     do abytes <- encode_addrmode_f a XMM0;
       OK(HB["D9"] :: abytes)
   | Pfstps_m a =>
-    (* the rd bits must be 002 *)
-    do abytes <- encode_addrmode_f a XMM2;
+    (* the rd bits must be 003 *)
+    do abytes <- encode_addrmode_f a XMM3;
       OK(HB["D9"] :: abytes)
   | Pxchg_rr r1 r2 =>
     do rm <- encode_ireg r1;
@@ -388,7 +388,7 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     do reg <- encode_ireg rd;
       do rm <- encode_freg fr1;
       let modrm := bB[ b["11"] ++ reg ++ rm ] in
-      OK(HB["F2"] :: HB["0F"] :: HB["2D"] :: modrm ::nil)
+      OK(HB["F2"] :: HB["0F"] :: HB["2C"] :: modrm ::nil)
   | Pcvtsi2sd_fr frd r1 =>
     do reg <- encode_freg frd;
       do rm <- encode_ireg r1;
@@ -398,7 +398,7 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     do reg <- encode_ireg rd;
       do rm <- encode_freg fr1;
       let modrm := bB[ b["11"] ++ reg ++ rm ] in
-      OK(HB["F3"] :: HB["0F"] :: HB["2D"] :: modrm ::nil)
+      OK(HB["F3"] :: HB["0F"] :: HB["2C"] :: modrm ::nil)
   | Pcvtsi2ss_fr frd r1 =>
     do reg <- encode_freg frd;
       do rm <- encode_ireg r1;
@@ -408,7 +408,7 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     do rm <- encode_ireg rd;
       (* reg field must be 3 *)
       let modrm := bB[b["11"] ++ b["011"] ++ rm] in
-      OK(HB["F6"] :: modrm :: nil)
+      OK(HB["F7"] :: modrm :: nil)
   | Pimull_r r1 =>
     do rm <- encode_ireg r1;
       (* reg field must be 5 *)
