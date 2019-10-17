@@ -19,6 +19,8 @@ typedef struct tn {
 } treeNode;
 
 
+int BIN_GLB_DB2 = 2;
+
 treeNode* NewTreeNode(treeNode* left, treeNode* right, long item)
 {
     treeNode*    new;
@@ -99,8 +101,8 @@ int main(int argc, char* argv[])
     for (depth = minDepth; depth <= maxDepth; depth += 2)
     {
         long    i, iterations, check;
-
-        iterations = pow(2, maxDepth - depth + minDepth);
+        long tmp_local = maxDepth - depth + minDepth;
+        iterations = pow(BIN_GLB_DB2, tmp_local);
 
         check = 0;
 

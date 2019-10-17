@@ -16,10 +16,11 @@ static inline double integr(double (*f)(double), double low, double high, int n)
   for (i = n, x = low; i > 0; i--, x += h) s += f(x);
   return s * h;
 }
-
+double INTEGR_GLB_DB1 = 0.0;
+double INTEGR_GLB_DB2 = 1.0;
 double test(int n)
 {
-  return integr(square, 0.0, 1.0, n);
+  return integr(square, INTEGR_GLB_DB1, INTEGR_GLB_DB2, n);
 }
 
 int main(int argc, char ** argv)

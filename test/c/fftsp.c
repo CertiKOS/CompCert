@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 #ifndef PI
-#define PI  3.14159265358979323846
+double PI=3.14159265358979323846;
 #endif
 
 /********************************************************/
@@ -18,6 +18,21 @@
 /*     Ref: Electronics Letters, Jan. 5, 1984           */
 /*     Complex input and output data in arrays x and y  */
 /*     Length is n.                                     */
+double FFTSP_GLB_DB1_ZERO = 0.0;
+
+double FFTSP_GLB_DB2 = 2.0;
+
+float FFT_GLB_FLT1 = 3.0f;
+
+double FFT_GLB_DB3 = 1.0;
+
+float FFTSP_GLB_FLT2_HALF = 0.5f;
+
+double FFTSP_GLB_DB5_HALF = 0.5;
+
+double FFTSP_GLB_DB6 = 1e-3;
+double FFTSP_GLB_DB_M1 = -1;
+
 /********************************************************/
 
 int dfft(float x[], float y[], int np)
@@ -41,22 +56,22 @@ int dfft(float x[], float y[], int np)
   
   if (n != np) {
     for (i = np+1; i <= n; i++) {
-      px[i] = 0.0; 
-      py[i] = 0.0; 
+      px[i] = FFTSP_GLB_DB1_ZERO;
+      py[i] = FFTSP_GLB_DB1_ZERO;
     }
     /*printf("nuse %d point fft",n); */
   }
 
   n2 = n+n;
-  tpi = 2.0 * PI;
+  tpi = FFTSP_GLB_DB2 * PI;
   for (k = 1;  k <= m-1; k++ ) {
     n2 = n2 / 2; 
     n4 = n2 / 4; 
     e  = tpi / (float)n2; 
-    a  = 0.0;
+    a  = FFTSP_GLB_DB1_ZERO;
     
     for (j = 1; j<= n4 ; j++) {
-      a3 = 3.0f * a; 
+      a3 = FFT_GLB_FLT1 * a; 
       cc1 = cosf(a); 
       ss1 = sinf(a);
       
@@ -82,7 +97,7 @@ int dfft(float x[], float y[], int np)
           s3 = r1 - s2; r1 = r1 + s2; 
           s2 = r2 - s1; r2 = r2 + s1;
           px[i2] = r1*cc1 - s2*ss1; 
-          py[i2] = -s2*cc1 - r1*ss1;
+          py[i2] = FFTSP_GLB_DB_M1*s2*cc1 - r1*ss1;
           px[i3] = s3*cc3 + r2*ss3;
           py[i3] = r2*cc3 - s3*ss3;
         }
@@ -163,24 +178,24 @@ int main(int argc, char ** argv)
   pxr = xr;
   pxi = xi;
   for (nruns = 0; nruns < NRUNS; nruns++) {
-    *pxr = (enp - 1.0) * 0.5f;
-    *pxi = 0.0;
+    *pxr = (enp - FFT_GLB_DB3) * FFTSP_GLB_FLT2_HALF;
+    *pxi = FFTSP_GLB_DB1_ZERO;
     n2 = np / 2;  
-    *(pxr+n2) = -0.5;
-    *(pxi+n2) =  0.0;
+    *(pxr+n2) = FFTSP_GLB_DB_M1*FFTSP_GLB_DB5_HALF;
+    *(pxi+n2) = FFTSP_GLB_DB1_ZERO;
     for (i = 1; i <= npm; i++) {
       j = np - i;
-      *(pxr+i) = -0.5;
-      *(pxr+j) = -0.5;
+      *(pxr+i) = FFTSP_GLB_DB_M1*FFTSP_GLB_DB5_HALF;
+      *(pxr+j) = FFTSP_GLB_DB_M1*FFTSP_GLB_DB5_HALF;
       z = t * (float)i;  
-      y = -0.5f*(cosf(z)/sinf(z));
+      y = FFTSP_GLB_DB_M1*FFTSP_GLB_FLT2_HALF * (cosf(z) / sinf(z));
       *(pxi+i) =  y;
-      *(pxi+j) = -y;
+      *(pxi+j) = FFTSP_GLB_DB_M1*y;
     }
     dfft(xr,xi,np);
   }
-  zr = 0.0; 
-  zi = 0.0; 
+  zr = FFTSP_GLB_DB1_ZERO;
+  zi = FFTSP_GLB_DB1_ZERO;
   npm = np-1;
   for (i = 0; i <= npm; i++ ) {
     a = fabsf(pxr[i] - i);
@@ -190,7 +205,7 @@ int main(int argc, char ** argv)
   }
   zm = zr;
   if (zr < zi) zm = zi;
-  if (zm < 1e-3)
+  if (zm < FFTSP_GLB_DB6)
     printf("%d points, result OK\n", np);
   else
     printf("%d points, WRONG result %e\n", np, zm);

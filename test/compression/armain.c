@@ -54,7 +54,7 @@
 #include <string.h>
 #include "optlist.h"
 #include "arcode.h"
-
+#undef XXZ
 /***************************************************************************
 *                               PROTOTYPES
 ***************************************************************************/
@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
     char *inFile, *outFile; /* name of input & output files */
     char encode;            /* encode/decode */
     char staticModel;       /* static/adaptive model*/
+    int i = 1000;
 
     /* initialize data */
     inFile = NULL;
@@ -91,9 +92,11 @@ int main(int argc, char *argv[])
     /* parse command line */
     optList = GetOptList(argc, argv, "acdi:o:h?");
     thisOpt = optList;
-
-    while (thisOpt != NULL)
+    
+    while (thisOpt != NULL && i-- > 0)
     {
+        printf("alive %d: ",i);
+        printf("%c\n",thisOpt->option);
         switch(thisOpt->option)
         {
             case 'a':       /* adaptive model vs. static */
@@ -166,8 +169,8 @@ int main(int argc, char *argv[])
                     FreeOptList(optList);
                     exit(EXIT_FAILURE);
                 }
-
-                strcpy(outFile, thisOpt->argument);
+                
+                strcpy(outFile, thisOpt->argument);            
                 break;
 
             case 'h':
@@ -219,11 +222,11 @@ int main(int argc, char *argv[])
 
     /* we have valid parameters encode or decode */
     if (encode)
-    {
+    {        
         ArEncodeFile(inFile, outFile, staticModel);
     }
     else
-    {
+    {        
         ArDecodeFile(inFile, outFile, staticModel);
     }
 
