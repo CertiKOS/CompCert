@@ -626,6 +626,8 @@ Definition encode_instr (i: instruction) : res (list byte) :=
   | Plabel _
   | Pnop =>
     OK (HB["90"] :: nil)
+  | Pbuiltin ef _ _ =>
+    Error [MSG "Encoding of builtin not supported: "; MSG (extfun_str ef)]
   | _ =>
     Error [MSG "Encoding of the instruction is not supported yet: ";
            MSG (instr_to_string i)]
