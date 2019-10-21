@@ -1954,7 +1954,7 @@ End WITHEXTERNALCALLS.
 
 (** ** Commutation with linking *)
 
-Instance TransfCshmgenLink : TransfLink match_prog.
+Instance TransfCshmgenLink : TransfLink match_prog eq.
 Proof.
   red; intros. destruct (link_linkorder _ _ _ H) as (LO1 & LO2).
   generalize H.

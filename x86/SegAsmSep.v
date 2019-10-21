@@ -139,13 +139,13 @@ Proof.
   eapply transl_prog_with_map_inv; eauto.
 Qed.
 
-Instance TransfSegAsmLink : TransfLink match_prog.
+Instance TransfSegAsmLink : TransfLink match_prog eq.
 Proof.
   red. unfold match_prog. simpl link. intros p1 p2 tp1 tp2 p LK MC1 MC2.
   inv MC1. inv MC2.
   exploit transf_prog_combine; eauto. intros H.
   destruct H as [p' TF].
-  exists p'. split. unfold link_flatasmprog.
+  exists p', p'. split. unfold link_flatasmprog.
   repeat (erewrite transf_prog_inv; eauto). 
   rewrite LK. rewrite TF. auto. auto.
 Defined.

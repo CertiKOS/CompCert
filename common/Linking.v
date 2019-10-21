@@ -790,12 +790,12 @@ Theorem link_match_program:
   match_program_gen match_fundef match_varinfo ctx1 p1 tp1 ->
   match_program_gen match_fundef match_varinfo ctx2 p2 tp2 ->
   linkorder ctx1 ctx -> linkorder ctx2 ctx ->
-  exists tp, link tp1 tp2 = Some tp /\ match_program_gen match_fundef match_varinfo ctx p tp.
+  exists tp tp', link tp1 tp2 = Some tp /\ match_program_gen match_fundef match_varinfo ctx p tp' /\ tp = tp'.
 Proof.
   intros. destruct (link_prog_inv _ _ _ H) as (P & Q & R).
   generalize H0; intros (A1 & B1 & C1).
   generalize H1; intros (A2 & B2 & C2).
-  econstructor; split.
+  do 2 eexists; split.
 - apply link_prog_succeeds. 
 + congruence. 
 + intros. 
@@ -804,7 +804,7 @@ Proof.
   exploit Q; eauto. intros (X & Y & gd & Z).
   exploit link_match_option_globdef. eexact H2. eexact H3. eauto. eauto. eauto.
   intros (tg & TL & _). intuition congruence.
-- split; [|split].
+- split; split; [|split].
 + rewrite R. apply PTree.elements_canonical_order'. intros id. 
   rewrite ! PTree.gcombine by auto.
   generalize (match_program_option_defmap _ _ _ _ _ H0 id) (match_program_option_defmap _ _ _ _ _ H1 id).
@@ -822,13 +822,36 @@ Qed.
 End LINK_MATCH_PROGRAM.
 
 (** We now wrap this commutation diagram into a class, and provide some common instances. *)
+Require Import RelationClasses.
 
-Class TransfLink {A B: Type} {LA: Linker A} {LB: Linker B} (transf: A -> B -> Prop) :=
+Class SyntaxEqLinkComm {A:Type} (stxeq: A -> A -> Prop) (lnk: A -> A -> option A) :=
+  syntax_eq_link_comm:
+    forall M1 M2 M M1' M2', 
+      lnk M1 M2 = Some M 
+      -> stxeq M1 M1' -> stxeq M2 M2'
+      -> exists M', lnk M1' M2' = Some M' /\ stxeq M M'.
+
+Class SyntaxEqTransfComm {A B: Type}
+      (transf: A -> B -> Prop)
+      (stxeq1: A -> A -> Prop) (stxeq2: B -> B -> Prop) :=
+  syntax_eq_transf_comm: forall M1 M2 M1',
+    transf M1 M1' -> stxeq1 M1 M2
+    -> exists M2', transf M2 M2' /\ stxeq2 M1' M2'.
+
+Class TransfLink {A B: Type} {LA: Linker A} {LB: Linker B} (transf: A -> B -> Prop) 
+      (stxeq: B -> B -> Prop) `{Equivalence _ stxeq}:=
   transf_link:
     forall (p1 p2: A) (tp1 tp2: B) (p: A),
     link p1 p2 = Some p ->
     transf p1 tp1 -> transf p2 tp2 ->
-    exists tp, link tp1 tp2 = Some tp /\ transf p tp.
+    exists tp tp', link tp1 tp2 = Some tp /\ transf p tp' /\ stxeq tp tp'.
+
+(* Class TransfLink {A B: Type} {LA: Linker A} {LB: Linker B} (transf: A -> B -> Prop) := *)
+(*   transf_link: *)
+(*     forall (p1 p2: A) (tp1 tp2: B) (p: A), *)
+(*     link p1 p2 = Some p -> *)
+(*     transf p1 tp1 -> transf p2 tp2 -> *)
+(*     exists tp, link tp1 tp2 = Some tp /\ transf p tp. *)
 
 Remark link_transf_partial_fundef:
   forall (A B: Type) (tr1 tr2: A -> res B) (f1 f2: fundef A) (tf1 tf2: fundef B) (f: fundef A),
@@ -854,7 +877,7 @@ Instance TransfPartialContextualLink
   TransfLink (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
               match_program
                 (fun cu f tf => AST.transf_partial_fundef (tr_fun (ctx_for cu)) f = OK tf)
-                eq p1 p2).
+                eq p1 p2) eq.
 Proof.
   red. intros. destruct (link_linkorder _ _ _ H) as [LO1 LO2].
   eapply link_match_program; eauto.
@@ -868,7 +891,7 @@ Instance TransfPartialLink
   TransfLink (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
               match_program
                 (fun cu f tf => AST.transf_partial_fundef tr_fun f = OK tf)
-                eq p1 p2).
+                eq p1 p2) eq.
 Proof.
   red. intros. destruct (link_linkorder _ _ _ H) as [LO1 LO2].
   eapply link_match_program; eauto.
@@ -883,7 +906,7 @@ Instance TransfTotallContextualLink
   TransfLink (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
               match_program
                 (fun cu f tf => tf = AST.transf_fundef (tr_fun (ctx_for cu)) f)
-                eq p1 p2).
+                eq p1 p2) eq.
 Proof.
   red. intros. destruct (link_linkorder _ _ _ H) as [LO1 LO2].
   eapply link_match_program; eauto.
@@ -901,7 +924,7 @@ Instance TransfTotalLink
   TransfLink (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
               match_program
                 (fun cu f tf => tf = AST.transf_fundef tr_fun f)
-                eq p1 p2).
+                eq p1 p2) eq.
 Proof.
   red. intros. destruct (link_linkorder _ _ _ H) as [LO1 LO2].
   eapply link_match_program; eauto.
@@ -947,19 +970,30 @@ End LINK_LIST.
 
 Section LINK_LIST_MATCH.
 
-Context {A B: Type} {LA: Linker A} {LB: Linker B} (prog_match: A -> B -> Prop) {TL: TransfLink prog_match}.
+Context {A B: Type} {LA: Linker A} {LB: Linker B} (prog_match: A -> B -> Prop) 
+        (stxeq: B -> B -> Prop) {EQ: Equivalence stxeq}
+        {TL: TransfLink prog_match stxeq}
+        {CM: SyntaxEqLinkComm stxeq link}.
 
 Theorem link_list_match:
   forall al bl, nlist_forall2 prog_match al bl ->
   forall a, link_list al = Some a ->
-  exists b, link_list bl = Some b /\ prog_match a b.
+  exists b b', link_list bl = Some b /\ prog_match a b' /\ stxeq b b'.
 Proof.
   induction 1; simpl; intros a' L.
-- inv L. exists b; auto. 
+- inv L. exists b, b; repeat split; auto. 
+  apply Equivalence_Reflexive.
 - destruct (link_list l) as [a1|] eqn:LL; try discriminate.
-  exploit IHnlist_forall2; eauto. intros (b' & P & Q).
-  red in TL. exploit TL; eauto. intros (b'' & U & V).
-  rewrite P; exists b''; auto.
+  exploit IHnlist_forall2; eauto. intros (b' & b'' & P & Q & SEQ).
+  red in TL. exploit TL; eauto. intros (tp & tp' & U & V & SEQ').
+  rewrite P.
+  apply Equivalence_Symmetric in SEQ.
+  assert (stxeq b b) as SEQ'' by apply Equivalence_Reflexive.
+  generalize (syntax_eq_link_comm _ _ _ _ _ U SEQ'' SEQ).
+  intros (b''' & LINK & SEQ''').
+  exists b''', tp'. split; auto. split; auto.
+  apply Equivalence_Transitive with tp; auto.
+  apply Equivalence_Symmetric; auto.
 Qed.
 
 End LINK_LIST_MATCH.
@@ -970,9 +1004,23 @@ Set Implicit Arguments.
 
 (** A generic language is a type of programs and a linker. *)
 
-Structure Language := mklang { lang_prog :> Type; lang_link: Linker lang_prog }.
+Structure Language := mklang { lang_prog :> Type; lang_link: Linker lang_prog; 
+                               lang_stxeq: Relation_Definitions.relation lang_prog;
+                               lang_stxeq_equiv: Equivalence lang_stxeq;
+                               lang_stxeq_link_comm: SyntaxEqLinkComm lang_stxeq link;
+                             }.
 
-Canonical Structure Language_gen (A: Type) (L: Linker A) : Language := @mklang A L.
+(* Canonical Structure Language_gen (A: Type) (L: Linker A) (stxeq: A -> A -> Prop)  *)
+(*   (equiv: Equivalence stxeq) (comm: SyntaxEqLinkComm stxeq link) : Language := @mklang A L stxeq equiv comm. *)
+
+Instance eq_link_comm {A:Type} (lnk: A -> A -> option A): 
+  SyntaxEqLinkComm eq lnk.
+Proof.
+  red. intros. subst. eauto.
+Qed.
+
+Canonical Structure Language_gen_simple (A: Type) (L: Linker A) : Language := 
+  @mklang A L eq eq_equivalence (eq_link_comm link).
 
 (** A compilation pass from language [S] (source) to language [T] (target)
   is a matching relation between [S] programs and [T] programs,
@@ -981,27 +1029,53 @@ Canonical Structure Language_gen (A: Type) (L: Linker A) : Language := @mklang A
 
 Record Pass (S T: Language) := mkpass {
   pass_match :> lang_prog S -> lang_prog T -> Prop;
-  pass_match_link: @TransfLink (lang_prog S) (lang_prog T) (lang_link S) (lang_link T) pass_match
+  pass_stxeq_transf_comm : SyntaxEqTransfComm pass_match (lang_stxeq S) (lang_stxeq T);
+  pass_match_link: @TransfLink (lang_prog S) (lang_prog T) (lang_link S) (lang_link T) pass_match 
+                               (lang_stxeq T) (lang_stxeq_equiv T);
 }.
 
-Arguments mkpass {S} {T} (pass_match) {pass_match_link}.
+Arguments mkpass {S} {T} (pass_match) {pass_stxeq_transf_comm} {pass_match_link}.
 
 Program Definition pass_identity (l: Language): Pass l l :=
   {| pass_match := fun p1 p2 => p1 = p2;
-     pass_match_link := _ |}.
+     pass_stxeq_transf_comm := _;
+     pass_match_link := _ 
+  |}.
 Next Obligation.
-  red; intros. subst. exists p; auto. 
+  red; intros. subst. exists M2; auto. 
+Defined.
+Next Obligation.
+  red; intros. subst. exists p, p; repeat (split; auto).
+  apply (@Equivalence_Reflexive _ (lang_stxeq l) (lang_stxeq_equiv l)).
 Defined.
 
 Program Definition pass_compose {l1 l2 l3: Language} (pass: Pass l1 l2) (pass': Pass l2 l3) : Pass l1 l3 :=
   {| pass_match := fun p1 p3 => exists p2, pass_match pass p1 p2 /\ pass_match pass' p2 p3;
+     pass_stxeq_transf_comm := _;
      pass_match_link := _ |}.
+Next Obligation.
+  red. intros M1 M2 M1' TRANSF SEQ.
+  destruct TRANSF as (M1'' & TRANSF1 & TRANSF2).
+  generalize (@syntax_eq_transf_comm _ _ _ (lang_stxeq l1) (lang_stxeq l2) 
+                                     (pass_stxeq_transf_comm pass) _ _ _ TRANSF1 SEQ).
+  intros (M2' & TRANSF3 & SEQ1).
+  generalize (@syntax_eq_transf_comm _ _ _ (lang_stxeq l2) (lang_stxeq l3) 
+                                     (pass_stxeq_transf_comm pass') _ _ _ TRANSF2 SEQ1).
+  intros (M2'' & TRANSF4 & SEQ2).
+  exists M2''. split; eauto.
+Qed.
 Next Obligation.
   red; intros.
   destruct H0 as (p1' & A1 & B1).
   destruct H1 as (p2' & A2 & B2).
-  edestruct (pass_match_link pass) as (p' & A & B); eauto.
-  edestruct (pass_match_link pass') as (tp & C & D); eauto.
+  edestruct (pass_match_link pass) as (p' & p'' & A & B & SEQ1); eauto.
+  edestruct (pass_match_link pass') as (tp & tp' & C & D & SEQ2); eauto.
+  (* assert (lang_stxeq l2 p'' p') as SEQ3. *)
+  (* { apply (@Equivalence_Symmetric _ _ (lang_stxeq_equiv l2)); auto. } *)
+  edestruct (@syntax_eq_transf_comm _ _ _ _ _ (pass_stxeq_transf_comm pass') _ _ _ D SEQ1)
+    as (p''' & TRANSF & SEQ3).
+  exists tp, p'''. repeat (split; eauto).
+  apply (@Equivalence_Transitive _ _ (lang_stxeq_equiv l3)) with tp'; auto.
 Defined.
 
 (** A list of compilation passes that can be composed. *)
@@ -1050,17 +1124,27 @@ Theorem link_list_compose_passes:
   nlist_forall2 (pass_match (compose_passes passes)) src_units tgt_units ->
   forall src_prog,
   @link_list _ (lang_link src) src_units = Some src_prog ->
-  exists tgt_prog,
+  exists tgt_prog tgt_prog',
   @link_list _ (lang_link tgt) tgt_units = Some tgt_prog
-  /\ pass_match (compose_passes passes) src_prog tgt_prog.
+  /\ pass_match (compose_passes passes) src_prog tgt_prog' 
+  /\ (lang_stxeq tgt tgt_prog tgt_prog').
 Proof.
   induction passes; simpl; intros src_units tgt_units F2 src_prog LINK.
-- apply nlist_forall2_identity in F2. subst tgt_units. exists src_prog; auto.
+- apply nlist_forall2_identity in F2. subst tgt_units. 
+  exists src_prog, src_prog; repeat (split; auto).
+  apply (@Equivalence_Reflexive _ _ (lang_stxeq_equiv l)).
 - apply nlist_forall2_compose_inv in F2. destruct F2 as (interm_units & P & Q).
-  edestruct (@link_list_match _ _ (lang_link l1) (lang_link l2) (pass_match p))
-  as (interm_prog & U & V).
-  apply pass_match_link. eauto. eauto.  
-  exploit IHpasses; eauto. intros (tgt_prog & X & Y).
-  exists tgt_prog; split; auto. exists interm_prog; auto. 
+  edestruct (@link_list_match _ _ (lang_link l1) (lang_link l2) (pass_match p) (lang_stxeq l2))
+  as (interm_prog & interm_prog' & U & V & EQ).
+  apply pass_match_link. 
+  apply (lang_stxeq_link_comm l2).
+  eauto. eauto.  
+  exploit IHpasses; eauto. intros (tgt_prog & targ_prog' & X & Y & EQ').
+  edestruct (@syntax_eq_transf_comm _ _ _ _ _ 
+                                    (pass_stxeq_transf_comm (compose_passes passes)) _ _ _ Y EQ)
+    as (targ_prog'' & TRANSF & SEQ).
+  exists tgt_prog, targ_prog''; split; auto. 
+  split. exists interm_prog'. split; auto. 
+  eapply (@Equivalence_Transitive _ _ (lang_stxeq_equiv l3)); eauto.
 Qed.
 

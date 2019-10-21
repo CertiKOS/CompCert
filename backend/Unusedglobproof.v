@@ -1787,11 +1787,11 @@ Theorem link_match_program:
   forall p1 p2 tp1 tp2 p,
   link p1 p2 = Some p ->
   match_prog p1 tp1 -> match_prog p2 tp2 ->
-  exists tp, link tp1 tp2 = Some tp /\ match_prog p tp.
+  exists tp tp', link tp1 tp2 = Some tp /\ match_prog p tp' /\ tp = tp'.
 Proof.
   intros. destruct H0 as (used1 & A1 & B1). destruct H1 as (used2 & A2 & B2).
   destruct (link_prog_inv _ _ _ H) as (U & V & W).
-  econstructor; split. 
+  do 2 eexists. repeat split. 
 - apply link_prog_succeeds.
 + rewrite (match_prog_main _ _ _ B1), (match_prog_main _ _ _ B2). auto.
 + intros. 
@@ -1835,4 +1835,4 @@ Proof.
 * intros. apply PTree.elements_keys_norepet. 
 Qed.
 
-Instance TransfSelectionLink : TransfLink match_prog := link_match_program.
+Instance TransfSelectionLink : TransfLink match_prog eq := link_match_program.

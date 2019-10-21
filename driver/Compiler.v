@@ -332,13 +332,18 @@ Proof.
   intros. unfold match_if, partial_if in *. destruct (flag tt). auto. congruence.
 Qed.
 
+Require Import RelationClasses.
+
 Instance TransfIfLink {A: Type} {LA: Linker A}
-                      (flag: unit -> bool) (transf: A -> A -> Prop) (TL: TransfLink transf)
-                      : TransfLink (match_if flag transf).
+                      (flag: unit -> bool) (transf: A -> A -> Prop) 
+                      (stxeq: A -> A -> Prop) `{Equivalence _ stxeq}
+                      (TL: TransfLink transf stxeq)
+                      : TransfLink (match_if flag transf) stxeq.
 Proof.
   unfold match_if. destruct (flag tt).
 - auto.
-- red; intros. subst tp1 tp2. exists p; auto.
+- red; intros. subst tp1 tp2. exists p,p; repeat (split; auto).
+  apply Equivalence_Reflexive.
 Qed.
 
 (** This is the list of compilation passes of CompCert in relational style.
@@ -351,6 +356,12 @@ Qed.
 
 Local Open Scope linking_scope.
 
+Instance eq_transf_comm {A B:Type} (tr:A -> B -> Prop) : 
+  SyntaxEqTransfComm tr eq eq.
+Proof.
+  red. intros. subst. eauto.
+Defined.
+  
 Definition CompCert's_passes :=
       mkpass SimplExprproof.match_prog
   ::: mkpass SimplLocalsproof.match_prog
@@ -1239,9 +1250,10 @@ Proof.
   intros. 
   assert (nlist_forall2 match_prog c_units asm_units).
   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog c_program asm_program).
+  assert (exists asm_program asm_program', link_list asm_units = Some asm_program /\ match_prog c_program asm_program' 
+                                      /\ asm_program = asm_program').
   { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
+  destruct H2 as (asm_program & asm_program' & P & Q & EQ). subst asm_program'.
   exists asm_program; split; auto. apply c_semantic_preservation; auto.
 Qed.
 
@@ -1260,9 +1272,10 @@ Proof.
   intros. 
   assert (nlist_forall2 match_prog c_units asm_units).
   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog c_program asm_program).
+  assert (exists asm_program asm_program', link_list asm_units = Some asm_program /\ match_prog c_program asm_program'
+                                      /\ asm_program = asm_program').
   { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
+  destruct H2 as (asm_program & asm_program' & P & Q & EQ). subst asm_program'.
   exists asm_program; split; auto. apply c_semantic_preservation_raw; auto.
 Qed.
 
@@ -1281,9 +1294,10 @@ Proof.
   intros. 
   assert (nlist_forall2 match_prog_real c_units asm_units).
   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_real_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_real c_program asm_program).
+  assert (exists asm_program asm_program', link_list asm_units = Some asm_program /\ match_prog_real c_program asm_program'
+                                      /\ asm_program = asm_program').
   { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
+  destruct H2 as (asm_program & asm_program' & P & Q & EQ). subst asm_program'.
   exists asm_program; split; auto. apply c_semantic_preservation_real; auto.
 Qed.
 
@@ -1303,9 +1317,10 @@ Proof.
   intros. 
   assert (nlist_forall2 match_prog_reloc c_units asm_units).
   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_elim_label_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_reloc c_program asm_program).
+  assert (exists asm_program asm_program', link_list asm_units = Some asm_program /\ match_prog_reloc c_program asm_program'
+                                      /\ asm_program = asm_program').
   { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
+  destruct H2 as (asm_program & asm_program' & P & Q & EQ). subst asm_program'.
   exists asm_program; split; auto. apply c_semantic_preservation_reloc; auto.
 Qed.
 
@@ -1325,9 +1340,10 @@ Proof.
   intros. 
   assert (nlist_forall2 match_prog_flat c_units asm_units).
   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_flat_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_flat c_program asm_program).
+  assert (exists asm_program asm_program', link_list asm_units = Some asm_program /\ match_prog_flat c_program asm_program'
+                                      /\ asm_program = asm_program').
   { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
+  destruct H2 as (asm_program & asm_program' & P & Q & EQ). subst asm_program'.
   exists asm_program; split; auto. apply c_semantic_preservation_flat; auto.
 Qed.
 
