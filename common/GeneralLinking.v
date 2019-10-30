@@ -214,6 +214,14 @@ Fixpoint nlist_to_list A (l: nlist A) : list A :=
   | ncons a l' => a :: (nlist_to_list l')
   end.
 
+Lemma nlist_forall2_Forall : forall A B R (l1: nlist A) (l2: nlist B),
+    nlist_forall2 R l1 l2 -> Forall2 R (nlist_to_list l1) (nlist_to_list l2).
+Proof.
+  induction l1 as [|a l1]; intros; inv H; cbn in *.
+  - constructor; auto.
+  - constructor; auto.
+Qed.
+
 Section LINK_LIST_MATCH.
 
 Context (S T: Language).
@@ -465,13 +473,16 @@ Instance IdDefEq : PERWithFun id_def_internal :=
   fun_true_imply_eq := id_def_interal_imply_eq;
 }.
 
+Definition accum_prog_defs (progs: list (program F V)) := 
+  fold_right (fun p l => (prog_defs p) ++ l) [] progs.
+
 Instance ProgDefsMatch: DefsMatch (program F V) :=
 {
   defs_match l1 l2 := 
     let l1' := nlist_to_list l1 in
     let l2' := nlist_to_list l2 in
-    let defs1 := fold_right (fun p l => (prog_defs p) ++ l) [] l1' in
-    let defs2 := fold_right (fun p l => (prog_defs p) ++ l) [] l2' in
+    let defs1 := accum_prog_defs l1' in
+    let defs2 := accum_prog_defs l2' in
     list_in_order id_def_eq id_def_internal defs1 defs2;
 }.
 Proof.
@@ -625,36 +636,102 @@ Instance ProgLinkingSynEq {LF: Linker F} {LV: Linker V}
 End ProgLanguage.
 
 
+Lemma list_forall2_permutation: forall A B (f:A -> B -> Prop) (l1 l1': list A) l2,
+    list_forall2 f l1 l2 -> Permutation l1 l1' -> 
+    exists l2', list_forall2 f l1' l2' /\ Permutation l2 l2'.
+Proof.
+  intros. generalize dependent l2.
+  induction H0; cbn; intros.
+  - inv H. exists nil. split; auto. constructor.
+  - inv H. generalize (IHPermutation _ H5).
+    intros (l2'' & FA & PERM).
+    exists (b1 :: l2''). split; auto.
+    constructor; auto.
+  - inv H. inv H4.
+    exists (b0 :: b1 :: bl0). split; auto.
+    repeat (constructor; auto).
+    constructor.
+  - edestruct IHPermutation1 as (l2' & FA1 & PERM1); eauto.
+    edestruct IHPermutation2 as (l2'' & FA2 & PERM2); eauto.
+    eexists; split; eauto.
+    eapply perm_trans; eauto.
+Qed.
+
 (** More properties about match program *)
-Section MATCH_PROGRAM_GENERIC.
 
-Context {C F1 V1 F2 V2: Type} {LC: Linker C} 
-        {LF: Linker F1} {LV: Linker V1}.
-Variable match_fundef: C -> F1 -> F2 -> Prop.
-Variable match_varinfo: V1 -> V2 -> Prop.
-
-Lemma match_program_gen_permute: forall (ctx:C) (p1 p1': program F1 V1) (p2: program F2 V2), 
+Lemma match_program_gen_permute: 
+  forall {C F1 V1 F2 V2: Type} {LC: Linker C} 
+    {LF: Linker F1} {LV: Linker V1}
+    (match_fundef: C -> F1 -> F2 -> Prop)
+    (match_varinfo: V1 -> V2 -> Prop)
+    (ctx:C) (p1 p1': program F1 V1) (p2: program F2 V2), 
   match_program_gen match_fundef match_varinfo ctx p1 p2 -> syneq p1 p1' ->
   exists p2', match_program_gen match_fundef match_varinfo ctx p1' p2' /\ syneq p2 p2'.
 Proof.
-  cbn in *. intros ctx p1 p1' p2 MATCH PERM.
+  cbn in *. 
+  intros until p2.
+  intros MATCH (PERM & MINEQ & PUBEQ).
   unfold match_program_gen in *.
-  destruct MATCH as (MATCH & MAINEQ & PUBEQ).
-  
-  
+  destruct MATCH as (MATCH & MAINEQ1 & PUBEQ1).
+  generalize (list_forall2_permutation MATCH PERM).
+  intros (defs2 & MATCH' & PERM').
+  exists {| prog_defs := defs2; 
+       prog_public := prog_public p1; 
+       prog_main := prog_main p1 |}.
+  cbn.
+  repeat (split; try congruence).
+Qed.
 
+Lemma link_prog_order_permutation: 
+  forall {F V} {LF: Linker F} {LV: Linker V}
+    (p1 p2: program F V),
+    prog_main p1 = prog_main p2 ->
+    incl (prog_public p1) (prog_public p2) ->
+    list_norepet (map fst (prog_defs p1)) ->
+    list_norepet (map fst (prog_defs p2)) ->
+    Permutation (prog_defs p1) (prog_defs p2) ->
+    linkorder p1 p2.
+Proof.
+  Local Transparent Linker_prog.
+  Local Transparent Linker_option.
+  cbn.
+  intros F V LF LV p1 p2 MAINEQ PUB NORPT1 NORPT2 PERM.
+  repeat (split; auto).
+  unfold prog_option_defmap.
+  intros id gd1 GET.
+  exists gd1.
+  rewrite <- permutation_pres_ptree_get with (l1:=prog_defs p1); auto.
+  split; auto. split; auto.
+  apply Linking.Linker_option_obligation_1.
+Qed.
 
 Lemma match_program_gen_ctx_syneq: 
-  forall {F V} {LF: Linker F} {LV: Linker V}
+  forall {F1 V1} {LF: Linker F1} {LV: Linker V1}
+    {F2 V2} {LF: Linker F2} {LV: Linker V2}
     (ctx1 ctx2: program F1 V1) (p1: program F1 V1) (p2: program F2 V2) mf mv,
     syneq ctx1 ctx2 ->
+    list_norepet (map fst (prog_defs ctx1)) ->
+    list_norepet (map fst (prog_defs ctx2)) ->
     match_program_gen mf mv ctx1 p1 p2 ->
     match_program_gen mf mv ctx2 p1 p2.
 Proof.
-  clear.
-Admitted. 
+  intros until mv. 
+  intros SEQ NORPT1 NORPT2 MATCH. cbn in SEQ.
+  destruct SEQ as (PERM & MAINEQ & PUBEQ).  
+  eapply match_program_gen_extend_ctx; eauto.
+  eapply link_prog_order_permutation; eauto.
+  rewrite PUBEQ. red. auto.
+Qed.  
 
-End MATCH_PROGRAM_GENERIC.
+
+(** We require matching programs to have unique definitions *)
+Definition match_program' {F1 V1} {F2 V2}
+           {LF: Linker F1} {LV: Linker V1}
+           (match_fundef: program F1 V1 -> F1 -> F2 -> Prop)
+           (match_varinfo: V1 -> V2 -> Prop) 
+           p1 p2 :=
+  list_norepet (map fst (prog_defs p1)) /\
+  match_program match_fundef match_varinfo p1 p2.
 
 
 (** Properties needed to define compiler passes *)
@@ -666,37 +743,48 @@ Instance ProgTransfSynEq {C F1 V1 F2 V2: Type}
          {LF2: Linker F2} {LV2: Linker V2}
          (match_fundef: program F1 V1 -> F1 -> F2 -> Prop)
          (match_varinfo: V1 -> V2 -> Prop):
-         TransfSynEq (fun (p1: program F1 V1) (p2: program F2 V2) => match_program match_fundef match_varinfo p1 p2).
+         TransfSynEq (fun (p1: program F1 V1) (p2: program F2 V2) => match_program' match_fundef match_varinfo p1 p2).
 Proof.
   red. intros m1 m2 m1' TR SEQ.
-  unfold match_program in *.
+  unfold match_program in *. 
+  red in TR. destruct TR as (NORPT & TR).
   edestruct (match_program_gen_permute TR SEQ) as (m2'' & MATCH & SEQ1); eauto.
   exists m2''. split; auto.
+  red. split.
+  apply permutation_map_pres_list_norepet with (l1:=(prog_defs m1)); auto.
+  apply SEQ.
   eapply match_program_gen_ctx_syneq; eauto.
+  apply permutation_map_pres_list_norepet with (l1:=(prog_defs m1)); auto.
+  apply SEQ.
 Qed.
 
 
 (** Commutativity between the translation and matching of definitions *)
-Section WithFunInternals.
 
-Context {F1 F2 V1 V2:Type}.
-Context {LV1: Linker V1} {LF1: Linker F1}.
-Context {LV2: Linker V2} {LF2: Linker F2}.
-Variable (is_fun_internal: forall A:Type, A -> bool).
-Variable (match_fundef: program F1 V1 -> F1 -> F2 -> Prop).
-Variable (match_varinfo: V1 -> V2 -> Prop).
+Definition match_fundef_pres_internal
+           {C F1 F2:Type}
+           (is_fun_internal: forall A:Type, A -> bool)
+           (match_fundef: C -> F1 -> F2 -> Prop) :=
+  forall ctx f1 f2, match_fundef ctx f1 f2 -> is_fun_internal F1 f1 = is_fun_internal F2 f2.
 
-Definition prog_defs_match1 := @ProgDefsMatch _ V1 (@is_fun_internal F1).
-Definition prog_defs_match2 := @ProgDefsMatch _ V2 (@is_fun_internal F2).
-Existing Instance prog_defs_match1.
-Existing Instance prog_defs_match2.
-
-Instance ProgTransfDefsMatch :
-         TransfDefsMatch (fun (p1: program F1 V1) (p2: program F2 V2) => match_program match_fundef match_varinfo p1 p2).
+Instance ProgTransfDefsMatch {F1 F2 V1 V2:Type}
+         {LV1: Linker V1} {LF1: Linker F1}
+         {LV2: Linker V2} {LF2: Linker F2}
+         (is_fun_internal: forall A:Type, A -> bool)
+         (match_fundef: program F1 V1 -> F1 -> F2 -> Prop)
+         (match_varinfo: V1 -> V2 -> Prop) 
+         (match_fundef_internal: match_fundef_pres_internal is_fun_internal match_fundef):
+         @TransfDefsMatch _ _
+                          (@ProgDefsMatch _ V1 (@is_fun_internal F1))
+                          (@ProgDefsMatch _ V2 (@is_fun_internal F2))
+                          (fun (p1: program F1 V1) (p2: program F2 V2) => match_program' match_fundef match_varinfo p1 p2).
 Proof.
   red. intros ms ms' tms tms' DM TR1 TR2.
   cbn in *.
-  remember (fold_right (fun p l => prog_defs p ++ l) [] (nlist_to_list ms)) as defs1.
+  list_forall2 (match_ident_option_globdef match_fundef match_varinfo ctx) (prog_defs p1) (prog_defs p2) /\
+  apply nlist_forall2_Forall in TR1.
+  apply nlist_forall2_Forall in TR2.
+  remember  as defs1.
   remember (fold_right (fun p l => prog_defs p ++ l) [] (nlist_to_list tms)) as defs2.
   (* remember (id_def_eq is_fun_internal) as defeq. *)
   (* remember (id_def_internal is_fun_internal) as defint. *)
@@ -704,7 +792,6 @@ Proof.
   clear.
   Admitted.
 
-End WithFunInternals.
 
 Instance ProgTransfDefsMatchVarEq {F1 F2 V: Type}
          {LV: Linker V}

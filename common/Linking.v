@@ -529,6 +529,18 @@ Inductive match_globdef (ctx: C): globdef F1 V1 -> globdef F2 V2 -> Prop :=
       match_globvar v1 v2 ->
       match_globdef ctx (Gvar v1) (Gvar v2).
 
+Lemma match_globdef_extend_ctx : forall (ctx1 ctx2:C) def1 def2,
+    linkorder ctx1 ctx2 ->
+    match_globdef ctx1 def1 def2 ->
+    match_globdef ctx2 def1 def2.
+Proof.
+  intros ctx1 ctx2 def1 def2 ORDER MATCH.
+  inv MATCH.
+  - apply match_globdef_fun with ctx'; auto.
+    eapply linkorder_trans; eauto.
+  - constructor. auto.
+Qed.
+
 (*
 Definition match_ident_globdef
      (ctx: C) (ig1: ident * globdef F1 V1) (ig2: ident * globdef F2 V2) : Prop :=
@@ -539,10 +551,40 @@ Definition match_ident_option_globdef
      (ctx: C) (ig1: ident * option (globdef F1 V1)) (ig2: ident * option (globdef F2 V2)) : Prop :=
   fst ig1 = fst ig2 /\ option_rel (match_globdef ctx) (snd ig1) (snd ig2).
 
+Lemma match_ident_option_globdef_extend_ctx: 
+  forall (ctx1 ctx2:C) ig1 ig2,
+    linkorder ctx1 ctx2 ->
+    match_ident_option_globdef ctx1 ig1 ig2 ->
+    match_ident_option_globdef ctx2 ig1 ig2.
+Proof.
+  intros. inv H0. inv H2.
+  - red. split; auto.
+    rewrite <- H3. rewrite <- H4. 
+    constructor.
+  - red. split; auto.
+    rewrite <- H0. rewrite <- H3.
+    constructor.
+    eapply match_globdef_extend_ctx; eauto.
+Qed.
+
 Definition match_program_gen (ctx: C) (p1: program F1 V1) (p2: program F2 V2) : Prop :=
   list_forall2 (match_ident_option_globdef ctx) p1.(prog_defs) p2.(prog_defs)
   /\ p2.(prog_main) = p1.(prog_main)
   /\ p2.(prog_public) = p1.(prog_public).
+
+Lemma match_program_gen_extend_ctx: 
+  forall (ctx1 ctx2:C) p1 p2,
+    linkorder ctx1 ctx2 ->
+    match_program_gen ctx1 p1 p2 ->
+    match_program_gen ctx2 p1 p2.
+Proof.
+  unfold match_program_gen.
+  intros ctx1 ctx2 p1 p2 ORDER (MATCH & MAINEQ & PUBEQ).
+  split; auto.
+  apply list_forall2_imply with (match_ident_option_globdef ctx1); auto.
+  intros.
+  eapply match_ident_option_globdef_extend_ctx; eauto.
+Qed.
 
 Theorem match_program_defmap:
   forall ctx p1 p2, match_program_gen ctx p1 p2 ->
@@ -649,7 +691,7 @@ Theorem match_transform_partial_program2:
   match_program_gen match_fundef match_varinfo ctx p tp.
 Proof.
   unfold transform_partial_program2; intros. monadInv H.
-  red; simpl; split; auto. 
+  red; simpl; repeat (split; auto). 
   revert x EQ. generalize (prog_defs p). 
   induction l as [ | [i g] l]; simpl; intros.
 - monadInv EQ. constructor.
