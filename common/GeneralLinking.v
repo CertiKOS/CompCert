@@ -301,17 +301,27 @@ End LINK_LIST_MATCH.
 (** We now adapt the old linking theorems to the new framework *)
 
 (** Define the syntactic equality as permutation of definitons *)
-
+  
 Instance ProgSynEq F V : SynEq (program F V) :=
 {
-  syneq a b := Permutation (prog_defs a) (prog_defs b);
+  syneq a b := 
+    Permutation (prog_defs a) (prog_defs b) /\ 
+    (prog_main a) = (prog_main b) /\
+    (prog_public a) = (prog_public b)
+  ;
 }.
 Proof.
-  - intros. apply Permutation_refl.
-  - intros. apply Permutation_sym; auto.
-  - intros. apply Permutation_trans with (prog_defs b); auto.
+  - intros. repeat (split; auto). 
+  - intros. destruct H as (H1 & H2 & H3).
+    repeat (split; auto). 
+    apply Permutation_sym; auto.
+  - intros. destruct H as (H1 & H2 & H3).
+    destruct H0 as (H10 & H20 & H30).
+    repeat (split; auto).
+    apply Permutation_trans with (prog_defs b); auto.
+    eapply eq_trans; eauto.
+    eapply eq_trans; eauto.
 Defined.
-
 
 (** Define checking of internal definitions *)
 Definition is_var_internal {V} (v: globvar V) :=
@@ -332,23 +342,19 @@ Definition is_def_internal {F V} (is_fun_internal: F -> bool) (def: option (glob
 
 (** The instance of the linking framework for CompCert programs *)
 
-Section WithFunVar.
+Section ProgLanguage.
 
 Context {F V:Type}.
 
-Definition is_fundef_internal {A:Type} (fd: fundef A) : bool :=
-  match fd with
-  | Internal _ => true
-  | External _ => false
-  end.
+Context (is_fun_internal: F -> bool).
 
 (** Equality between internal definitions *)
-Definition def_internal (def: option (AST.globdef (AST.fundef F) V)) :=
-  is_def_internal is_fundef_internal def.
+Definition def_internal (def: option (AST.globdef F V)) :=
+  is_def_internal is_fun_internal def.
 
 Inductive def_eq : 
-  option (AST.globdef (AST.fundef F) V) -> option (AST.globdef (AST.fundef F) V) -> Prop :=
-| fundef_eq : forall f, is_fundef_internal f = true -> def_eq (Some (Gfun f)) (Some (Gfun f))
+  option (AST.globdef F V) -> option (AST.globdef F V) -> Prop :=
+| fundef_eq : forall f, is_fun_internal f = true -> def_eq (Some (Gfun f)) (Some (Gfun f))
 | vardef_eq : forall v1 v2, 
     is_var_internal v1 = true -> is_var_internal v2 = true ->
     gvar_init v1 = gvar_init v2 -> def_eq (Some (Gvar v1)) (Some (Gvar v2)).
@@ -401,11 +407,11 @@ Instance DefEq : PERWithFun def_internal :=
 }.
 
 (** Equality between id and internal definition pairs *)
-Definition id_def_internal (iddef: ident * option (AST.globdef (AST.fundef F) V)) :=
+Definition id_def_internal (iddef: ident * option (AST.globdef F V)) :=
   let '(id, def) := iddef in
   def_internal def.
 
-Definition id_def_eq (iddef1 iddef2: ident * option (AST.globdef (AST.fundef F) V)) : Prop :=
+Definition id_def_eq (iddef1 iddef2: ident * option (AST.globdef F V)) : Prop :=
   let '(id1, def1) := iddef1 in
   let '(id2, def2) := iddef2 in
   id1 = id2 /\ def_eq def1 def2.
@@ -459,7 +465,7 @@ Instance IdDefEq : PERWithFun id_def_internal :=
   fun_true_imply_eq := id_def_interal_imply_eq;
 }.
 
-Instance ProgDefsMatch: DefsMatch (program (fundef F) V) :=
+Instance ProgDefsMatch: DefsMatch (program F V) :=
 {
   defs_match l1 l2 := 
     let l1' := nlist_to_list l1 in
@@ -484,83 +490,263 @@ Proof.
     eapply list_in_order_trans; eauto.
     apply list_in_order_symm. auto.
 Defined.
+  
 
-Lemma prog_linking_syneq_comm {LV: Linker V}: 
-  forall m1 m2 m1' m2' m : (program (fundef F) V),
+Lemma permutation_pres_ptree_get_some: forall A (l1 l2: list (ident * A)) a e,
+    list_norepet (map fst l2) ->
+    Permutation l1 l2 -> (PTree_Properties.of_list l1) ! a = Some e -> 
+    (PTree_Properties.of_list l2) ! a = Some e.
+Proof. 
+  intros A l1 l2 a e NORPT PERM GET.
+  apply PTree_Properties.of_list_norepet; auto.
+  eapply Permutation_in; eauto.
+  apply PTree_Properties.in_of_list; auto.
+Qed.
+
+Lemma permutation_pres_ptree_get: forall A (l1 l2: list (ident * A)) a,
+    list_norepet (map fst l1) -> 
+    list_norepet (map fst l2) -> 
+    Permutation l1 l2 -> 
+    (PTree_Properties.of_list l1) ! a = (PTree_Properties.of_list l2) ! a.
+Proof. 
+  intros A l1 l2 a NORPT1 NORPT2 PERM.
+  destruct ((PTree_Properties.of_list l1) ! a) eqn:GET1.
+  - symmetry. 
+    eapply permutation_pres_ptree_get_some; eauto.
+  - destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
+    apply Permutation_sym in PERM.
+    generalize (@permutation_pres_ptree_get_some _ _ _ a a0 NORPT1 PERM GET2).
+    intros. congruence.
+Qed.
+
+Lemma NoDup_list_norepet_equiv : forall A (l: list A),
+    NoDup l <-> list_norepet l.
+Proof.
+  induction l as [|a l].
+  - split; intros. constructor. constructor.
+  - split; intros. 
+    + inv H. constructor; auto. rewrite <- IHl. auto.
+    + inv H. constructor; auto. rewrite IHl. auto.
+Qed.
+
+Lemma permutation_pres_list_norepet: forall A (l1 l2: list A),
+  list_norepet l1 -> Permutation l1 l2 -> list_norepet l2.
+Proof.
+  intros. rewrite <- NoDup_list_norepet_equiv in *.
+  eapply Permutation_NoDup; eauto.
+Qed.
+
+Lemma permutation_map_pres_list_norepet: forall {A B} (l1 l2: list A) (f:A -> B),
+  list_norepet (map f l1) -> Permutation l1 l2 -> list_norepet (map f l2).
+Proof.
+  intros. 
+  apply permutation_pres_list_norepet with (map f l1); auto.
+  apply Permutation_map; auto.
+Qed.
+
+
+Lemma prog_linking_syneq_comm {LF: Linker F} {LV: Linker V}: 
+  forall m1 m2 m1' m2' m : (program F V),
     link m1 m2 = Some m -> syneq m1 m1' -> syneq m2 m2' -> 
     exists m', link m1' m2' = Some m' /\ syneq m m'.
 Proof.
-Admitted.
+  cbn in *. 
+  intros m1 m2 m1' m2' m LINK SEQ1 SEQ2.
+  apply link_prog_inv in LINK.
+  destruct LINK as (MINEQ & NORPT1 & NORPT2 & LK & EQ). subst.
+  cbn.
+  destruct SEQ1 as (PERM1 & MAINEQ1 & PUBEQ1).
+  destruct SEQ2 as (PERM2 & MAINEQ2 & PUBEQ2).
+  assert (prog_main m1' = prog_main m2') as MAINEQ' by congruence.
+  Existing Instance Linker_option.
+  assert (forall (id : positive) (gd1 gd2 : option (globdef F V)),
+          (prog_option_defmap m1') ! id = Some gd1 ->
+          (prog_option_defmap m2') ! id = Some gd2 ->
+          In id (prog_public m1') /\ In id (prog_public m2') /\ link gd1 gd2 <> None)
+    as PROP.
+  { 
+    intros id gd1 gd2 GD1 GD2.
+    unfold prog_option_defmap in *.
+    generalize (Permutation_sym PERM1). intros PERM1'.
+    generalize (permutation_pres_ptree_get_some id NORPT1 PERM1' GD1).
+    intros GD1'.
+    generalize (Permutation_sym PERM2). intros PERM2'.
+    generalize (permutation_pres_ptree_get_some id NORPT2 PERM2' GD2).
+    intros GD2'.
+    exploit LK; eauto.
+    intros (PUB1 & PUB2 & gd & LKK).
+    repeat (split; auto).
+    congruence.
+    congruence.
+    congruence.
+  }
+  generalize (permutation_map_pres_list_norepet fst NORPT1 PERM1). 
+  intros NORPT1'.
+  generalize (permutation_map_pres_list_norepet fst NORPT2 PERM2). 
+  intros NORPT2'.
+  generalize (link_prog_succeeds _ _ MAINEQ' NORPT1' NORPT2' PROP).
+  intros LINK'. setoid_rewrite LINK'.
+  eexists; split; eauto. cbn.
+  repeat (split; try congruence).
+  apply NoDup_Permutation.
+  - apply NoDup_map_inv with (f:=fst). 
+    rewrite NoDup_list_norepet_equiv.
+    apply PTree.elements_keys_norepet.
+  - apply NoDup_map_inv with (f:=fst). 
+    rewrite NoDup_list_norepet_equiv.
+    apply PTree.elements_keys_norepet.
+  - intros. destruct x as [id def].
+    split.
+    + intros IN. 
+      apply PTree.elements_correct.
+      rewrite PTree.gcombine; auto.
+      unfold prog_option_defmap.
+      rewrite <- (permutation_pres_ptree_get id NORPT1 NORPT1' PERM1).
+      rewrite <- (permutation_pres_ptree_get id NORPT2 NORPT2' PERM2).
+      rewrite <- PTree.gcombine; auto.
+      apply PTree.elements_complete; auto.
+    + intros IN.
+      apply PTree.elements_correct.
+      rewrite PTree.gcombine; auto.
+      unfold prog_option_defmap.
+      rewrite (permutation_pres_ptree_get id NORPT1 NORPT1' PERM1).
+      rewrite (permutation_pres_ptree_get id NORPT2 NORPT2' PERM2).
+      rewrite <- PTree.gcombine; auto.
+      apply PTree.elements_complete; auto.
+Qed.    
 
-Instance ProgLinkingSynEq (LV: Linker V)
-  : @LinkingSynEq (program (fundef F) V) _ _ :=
+
+Instance ProgLinkingSynEq {LF: Linker F} {LV: Linker V}
+  : @LinkingSynEq (program F V) _ _ :=
 {
   linking_syneq_comm := prog_linking_syneq_comm;
 }.
 
-End WithFunVar.
+End ProgLanguage.
 
 
 (** More properties about match program *)
 Section MATCH_PROGRAM_GENERIC.
 
-Context {C F1 V1 F2 V2: Type} {LC: Linker C} {LF: Linker F1} {LV: Linker V1}.
+Context {C F1 V1 F2 V2: Type} {LC: Linker C} 
+        {LF: Linker F1} {LV: Linker V1}.
 Variable match_fundef: C -> F1 -> F2 -> Prop.
 Variable match_varinfo: V1 -> V2 -> Prop.
 
 Lemma match_program_gen_permute: forall (ctx:C) (p1 p1': program F1 V1) (p2: program F2 V2), 
   match_program_gen match_fundef match_varinfo ctx p1 p2 -> syneq p1 p1' ->
-  exists p2', match_program_gen match_fundef match_varinfo ctx p1 p2 /\ syneq p1' p2'.
-Admitted.
-
-End MATCH_PROGRAM_GENERIC.
-
-(** Commutativity betwen the translation and syntactic equality *)
-Instance TransfPartialContextSynEq
-         {A B C V: Type} {LV: Linker V}
-         (tr_fun: C -> A -> res B)
-         (ctx_for: program (fundef A) V -> C):
-         TransfSynEq (fun (p1: program F V) (p2: program F V) =>
-                        match_program
-                          (fun cu f tf => AST.transf_partial_fundef (tr_fun (ctx_for cu)) f = OK tf)
-                          eq p1 p2).
+  exists p2', match_program_gen match_fundef match_varinfo ctx p1' p2' /\ syneq p2 p2'.
 Proof.
-  red. intros m1 m2 m1' TR SEQ.
-  unfold match_program in *.
-  generalize 
+  cbn in *. intros ctx p1 p1' p2 MATCH PERM.
+  unfold match_program_gen in *.
+  destruct MATCH as (MATCH & MAINEQ & PUBEQ).
+  
   
 
 
-(** Commutativity between the translation and matching of definitions *)
-Existing Instance ProgDefsMatch.
-Instance TransfPartialContextDefsMatch
-         {A B C V: Type} {LV: Linker V}
-         (tr_fun: C -> A -> res B)
-         (ctx_for: program (fundef A) V -> C):
-         TransfDefsMatch (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
-                            match_program
-                              (fun cu f tf => AST.transf_partial_fundef (tr_fun (ctx_for cu)) f = OK tf)
-                              eq p1 p2).
+Lemma match_program_gen_ctx_syneq: 
+  forall {F V} {LF: Linker F} {LV: Linker V}
+    (ctx1 ctx2: program F1 V1) (p1: program F1 V1) (p2: program F2 V2) mf mv,
+    syneq ctx1 ctx2 ->
+    match_program_gen mf mv ctx1 p1 p2 ->
+    match_program_gen mf mv ctx2 p1 p2.
 Proof.
-Admitted.
+  clear.
+Admitted. 
 
+End MATCH_PROGRAM_GENERIC.
+
+
+(** Properties needed to define compiler passes *)
+
+(** Commutativity betwen the translation and syntactic equality *)
+Instance ProgTransfSynEq {C F1 V1 F2 V2: Type} 
+         {LC: Linker C} 
+         {LF1: Linker F1} {LV1: Linker V1}
+         {LF2: Linker F2} {LV2: Linker V2}
+         (match_fundef: program F1 V1 -> F1 -> F2 -> Prop)
+         (match_varinfo: V1 -> V2 -> Prop):
+         TransfSynEq (fun (p1: program F1 V1) (p2: program F2 V2) => match_program match_fundef match_varinfo p1 p2).
+Proof.
+  red. intros m1 m2 m1' TR SEQ.
+  unfold match_program in *.
+  edestruct (match_program_gen_permute TR SEQ) as (m2'' & MATCH & SEQ1); eauto.
+  exists m2''. split; auto.
+  eapply match_program_gen_ctx_syneq; eauto.
+Qed.
+
+
+(** Commutativity between the translation and matching of definitions *)
+Section WithFunInternals.
+
+Context {F1 F2 V1 V2:Type}.
+Context {LV1: Linker V1} {LF1: Linker F1}.
+Context {LV2: Linker V2} {LF2: Linker F2}.
+Variable (is_fun_internal: forall A:Type, A -> bool).
+Variable (match_fundef: program F1 V1 -> F1 -> F2 -> Prop).
+Variable (match_varinfo: V1 -> V2 -> Prop).
+
+Definition prog_defs_match1 := @ProgDefsMatch _ V1 (@is_fun_internal F1).
+Definition prog_defs_match2 := @ProgDefsMatch _ V2 (@is_fun_internal F2).
+Existing Instance prog_defs_match1.
+Existing Instance prog_defs_match2.
+
+Instance ProgTransfDefsMatch :
+         TransfDefsMatch (fun (p1: program F1 V1) (p2: program F2 V2) => match_program match_fundef match_varinfo p1 p2).
+Proof.
+  red. intros ms ms' tms tms' DM TR1 TR2.
+  cbn in *.
+  remember (fold_right (fun p l => prog_defs p ++ l) [] (nlist_to_list ms)) as defs1.
+  remember (fold_right (fun p l => prog_defs p ++ l) [] (nlist_to_list tms)) as defs2.
+  (* remember (id_def_eq is_fun_internal) as defeq. *)
+  (* remember (id_def_internal is_fun_internal) as defint. *)
+  (* induction DM. *)
+  clear.
+  Admitted.
+
+End WithFunInternals.
+
+Instance ProgTransfDefsMatchVarEq {F1 F2 V: Type}
+         {LV: Linker V}
+         {LF1: Linker F1} {LF2: Linker F2}
+         (is_fun_internal: forall A:Type, A -> bool)
+         (match_fundef: program F1 V -> F1 -> F2 -> Prop):
+         @TransfDefsMatch _ _ 
+                          (@ProgDefsMatch _ V (is_fun_internal F1))
+                          (@ProgDefsMatch _ V (is_fun_internal F2))
+                          (fun (p1: program F1 V) (p2: program F2 V) => match_program match_fundef eq p1 p2).
+Proof.
+  red. apply (@transf_defs_match_comm _ _ _ _ _ 
+                                      (@ProgTransfDefsMatch _ _ _ _ _ _ _ _ is_fun_internal match_fundef eq)).
+Qed.
+
+Definition is_fundef_internal {A:Type} (fd: fundef A) : bool :=
+  match fd with
+  | Internal _ => true
+  | External _ => false
+  end.
+
+(** Commutativity between transformation and linking *)
 Instance TransfPartialContextualLink
          {A B C V: Type} {LV: Linker V}
          (tr_fun: C -> A -> res B)
          (ctx_for: program (fundef A) V -> C):
-         TransfLink (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
-              match_program
-                (fun cu f tf => AST.transf_partial_fundef (tr_fun (ctx_for cu)) f = OK tf)
-                eq p1 p2).
+         @TransfLink _ _ _ _ _ _ 
+                     (ProgDefsMatch is_fundef_internal)
+                     (ProgDefsMatch is_fundef_internal)
+                     (fun (p1: program (fundef A) V) (p2: program (fundef B) V) =>
+                        match_program
+                          (fun cu f tf => AST.transf_partial_fundef (tr_fun (ctx_for cu)) f = OK tf)
+                          eq p1 p2).
 Proof.
   red. intros until m'.
   intros LINK TR1 TR2 SEQ DM.
   generalize (Linking.transf_link _ _ _ _ _ LINK TR1 TR2).
   intros (tp & LINK1 & TR3).
-  generalize (transf_syneq_comm _ _ _ TR3 SEQ).
+  generalize (transf_syneq_comm m m' tp TR3 SEQ).
   intros (tp1 & TR4 & SEQ2).
   exists tp1, tp. repeat (split; auto).
-  apply transf_defs_match_comm with (ncons m1 (nbase m2)) (nbase m'); auto.
+  apply (@transf_defs_match_comm _ _ _ _ _ with (ncons m1 (nbase m2)) (nbase m'); auto.
   - constructor; eauto.
     constructor; eauto.
   - constructor; eauto.
