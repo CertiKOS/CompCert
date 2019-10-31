@@ -109,21 +109,6 @@ Proof.
     eapply Permutation_list_norepet_map; eauto.
 Qed.
 
-Fixpoint PTree_extract_elements {A:Type} (ids: list ident) (t: PTree.t A) :=
-  match ids with 
-  | nil => Some (nil, t)
-  | id :: ids' =>
-    match PTree_extract_elements ids' t with
-    | None => None
-    | Some (vals, t') => 
-      match t'!id with
-      | None => None
-      | Some val => 
-        Some ((id, val) :: vals, (PTree.remove id t'))
-      end
-    end
-  end.
-
 Lemma PTree_remove_pres_in:
   forall (A : Type) i j (t : PTree.t A) v,
     i <> j -> In (i, v) (PTree.elements t) ->
@@ -226,6 +211,39 @@ Proof.
       eapply PTree_remove_pres_in'; eauto.
 Qed.    
 
+
+(** Extract elements from PTrees in order *)
+Fixpoint PTree_extract_elements {A:Type} (ids: list ident) (t: PTree.t A) :=
+  match ids with 
+  | nil => Some (nil, t)
+  | id :: ids' =>
+    match PTree_extract_elements ids' t with
+    | None => None
+    | Some (vals, t') => 
+      match t'!id with
+      | None => None
+      | Some val => 
+        Some ((id, val) :: vals, (PTree.remove id t'))
+      end
+    end
+  end.
+
+Lemma PTree_extract_elements_app : forall {A} (ids1 ids2: list ident) (t t': PTree.t A) defs,
+    PTree_extract_elements (ids1 ++ ids2) t = Some (defs, t') ->
+    exists t1 defs1 defs2, PTree_extract_elements ids2 t = Some (defs2, t1) /\
+                      PTree_extract_elements ids1 t1 = Some (defs1, t') /\
+                      defs = defs1 ++ defs2.
+Proof.
+  induction ids1 as [|id1 ids1]; cbn.
+  - intros ids2 t t' defs EXT.
+    do 3 eexists. split; eauto.
+  - intros ids2 t t' defs EXT.
+    destr_in EXT. destruct p. destr_in EXT. inv EXT.
+    edestruct IHids1 as (t1' & defs1' & defs2' &  EXT1 & EXT2 & EQ); eauto. subst.
+    do 3 eexists; split; eauto.
+    rewrite EXT2. rewrite Heqo0. split; eauto.
+Qed.
+    
 
 Lemma PTree_extract_elements_permutation : forall {A:Type} (ids: list ident) (t t':PTree.t A) vals,
   PTree_extract_elements ids t = Some (vals, t') ->
@@ -333,6 +351,30 @@ Proof.
 Qed.
 
 
+Lemma link_prog_merge_internal_exists: 
+  forall {F V} {LV: Linker V} 
+    (defs1: list (ident * option (globdef (fundef F) V))) ids1 t t2 id,
+    ids1 = map fst (filter_internal_defs is_fundef_internal defs1) ->
+    t = PTree.combine link_prog_merge (PTree_Properties.of_list defs1) t2 ->
+    In id ids1 -> 
+    exists def, t!id = def.
+Proof.
+Admitted.
+
+Lemma extract_defs_exists1: 
+  forall {F V: Type} {LV:Linker V} 
+    (p1 p2: program (fundef F) V) t ids1,
+    ids1 = collect_internal_def_ids is_fundef_internal p1 ->
+    t = PTree.combine link_prog_merge 
+                      (prog_option_defmap p1) 
+                      (prog_option_defmap p2) ->
+    exists defs t',
+      PTree_extract_elements ids1 t = Some (defs, t').
+Proof.
+  Admitted.
+
+
+
 Lemma extract_defs_exists: 
   forall {F V: Type} {LV:Linker V} 
     (p1 p2: program (fundef F) V) t ids1 ids2,
@@ -345,19 +387,31 @@ Lemma extract_defs_exists:
       PTree_extract_elements (ids1 ++ ids2) t = Some (defs, t').
 Proof.
   intros F V LV p1 p2 t ids1 ids2 IDS1 IDS2 T. subst.
-  
-
-  Lemma link_prog_merge_internal_exists: 
-    forall {F V} {LV: Linker V} 
-      (defs1: list (ident * option (globdef (fundef F) V))) ids1 t t2 id,
-      ids1 = map fst (filter_internal_defs is_fundef_internal defs1) ->
-      t = PTree.combine link_prog_merge (PTree_Properties.of_list defs1) t2 ->
-      In id ids1 -> 
-      exists def, t!id = def.
-  Admitted.
-  
   unfold collect_internal_def_ids. 
   unfold prog_option_defmap.
+
+
+Definition PTree_ids_in_domain {A} ids (t:PTree.t A) :=
+  Forall (fun id => exists v, t ! id = Some v) ids.
+
+Lemma link_prog_merge_ids_in_domain2 : 
+  forall {F V: Type} {LV:Linker V}
+    (p1 p2: program (fundef F) V),
+    PTree_ids_in_domain 
+      (collect_internal_def_ids is_fundef_internal p2)
+      (PTree.combine link_prog_merge 
+                    (prog_option_defmap p1) 
+                    (prog_option_defmap p2)).
+Admitted.
+  
+Lemma PTree_extract_elements_in_domain: forall A ids (t:PTree.t A),
+    PTree_ids_in_domain ids t ->
+    exists elems t', PTree_extract_elements ids t = Some (elems, t').
+Admitted.
+
+  generalize (link_prog_merge_ids_in_domain2 p1 p2).
+  intros DM.
+  edestruct PTree_extract_elements_in_domain as (elems2 & t1 & EXT); eauto.
   
 Admitted.
 
