@@ -10,15 +10,6 @@ Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Permutation.
 Require Import Asm RealAsm.
 
-Definition match_prog (p: Asm.program) (tp: Asm.program) :=
-  Permutation (prog_defs p) (prog_defs tp).
-
-Lemma transf_program_match:
-  forall p, match_prog p p.
-Proof.
-  intros. red. apply Permutation_refl.
-Qed.
-
 
 (** Preservation of semantics under permutation *)
 Section PRESERVATION.
