@@ -55,6 +55,8 @@ Qed.
   the dynamic semantics of [asm_program] by the dynamic semantics of [c_program].
 *)
 
+Remove Hints OrderedLinking.Linker_prog_ordered : typeclass_instances.
+
 Theorem separate_transf_c_program_correct:
   forall c_units asm_units c_program,
   Coqlib.nlist_forall2 (fun cu tcu => Compiler.transf_c_program cu = Errors.OK tcu) c_units asm_units ->
