@@ -297,8 +297,6 @@ Definition collect_internal_def_ids (p: program F V) :=
   let int_defs := filter_internal_defs (prog_defs p) in
   map fst int_defs.
 
-
-
 Definition link_prog_ordered p1 p2 :=
   let dm1 := prog_option_defmap p1 in
   let dm2 := prog_option_defmap p2 in
@@ -335,6 +333,9 @@ Proof.
   auto.
   auto.
 Defined.
+
+Global Opaque Linker_prog_ordered.
+
 
 (** matching modulo the permutation of definitions *)
 
@@ -416,6 +417,7 @@ Admitted.
 Admitted.
 
 
+Local Transparent Linker_prog_ordered.
 
 (** Commutativity between permutation and linking *)
 Instance TransfPermuteLink {F V} {LV: Linker V}

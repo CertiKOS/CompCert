@@ -12,7 +12,7 @@ Require Import Permutation.
 
 Definition symbtable_syneq (s1 s2: symbtable) : Prop :=
   Permutation (PTree.elements (symbtable_to_tree s1))
-              (PTree.elements (symbtable_to_tree s1)).
+              (PTree.elements (symbtable_to_tree s2)).
 
 Definition reloc_prog_syneq (p tp: program) : Prop :=
   Permutation (prog_defs p) (prog_defs tp) 

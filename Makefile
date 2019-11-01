@@ -124,7 +124,7 @@ BACKEND=\
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v SymbtablegenSep.v
+  RelocProgSyneq.v SymbtablegenSep.v PermuteRealAsmproof.v
 
 # Encoding of data into bytes
 

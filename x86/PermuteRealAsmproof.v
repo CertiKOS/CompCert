@@ -5,7 +5,7 @@
 
 (** * Preservation of semantics under the permutation of definitions for RealAsm *)
 Require Import Coqlib Errors.
-Require Import Integers Floats AST Linking.
+Require Import Integers Floats AST Linking OrderedLinking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Permutation.
 Require Import Asm RealAsm.
@@ -27,3 +27,5 @@ Theorem transf_program_correct:
   forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef))
                      (RealAsm.semantics tprog (Pregmap.init Vundef)).
 Admitted.
+
+End PRESERVATION.
