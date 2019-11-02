@@ -1,5 +1,5 @@
 Require Import Coqlib Integers AST Maps.
-Require Import Linking OrderedLinking.
+Require Import Linking.
 Import ListNotations.
 
 Set Implicit Arguments.

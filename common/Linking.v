@@ -296,6 +296,31 @@ Section LINKER_PROG.
 
 Context {F V: Type} {LF: Linker F} {LV: Linker V} (p1 p2: program F V).
 
+Variable is_fun_internal: F -> bool.
+
+Definition is_var_internal (v: globvar V) :=
+  match classify_init (gvar_init v) with
+  | Init_definitive _ => true
+  | _ => false
+  end.
+
+Definition is_def_internal (def: option (globdef F V)) : bool :=
+  match def with
+  | None => false
+  | Some g =>
+    match g with
+    | Gvar v => is_var_internal v
+    | Gfun f => is_fun_internal f
+    end
+  end.
+
+Definition filter_internal_defs (idgs: list (ident * option (globdef F V))) :=
+  filter (fun '(id,def) => is_def_internal def) idgs.
+
+Definition collect_internal_def_ids (p: program F V) :=
+  let int_defs := filter_internal_defs (prog_defs p) in
+  map fst int_defs.
+
 Let dm1 := prog_option_defmap p1.
 Let dm2 := prog_option_defmap p2.
 
@@ -428,6 +453,12 @@ Proof.
 Qed.
 
 End LINKER_PROG.
+
+Definition is_fundef_internal {A:Type} (fd: fundef A) : bool :=
+  match fd with
+  | Internal _ => true
+  | External _ => false
+  end.
 
 Instance Linker_prog (F V: Type) {LF: Linker F} {LV: Linker V} : Linker (program F V) := {
   link := link_prog;

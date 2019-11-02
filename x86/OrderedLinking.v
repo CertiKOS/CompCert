@@ -4,12 +4,49 @@
 (* ********************* *)
 
 Require Import Coqlib Integers Values Maps AST.
-Require Import Linking Errors.
+Require Import Linking Errors LinkingProp.
 Require Import Permutation.
 
 
 (** * Linking of Asm program such that the order of internal definitions is preserved **)
 
+Lemma in_map_incl: forall A B a (l l': list A) (f: A -> B),
+    In a (map f l) -> incl l l' -> In a (map f l').
+Proof.
+  induction l as [|b l].
+  - cbn. intros. contradiction.
+  - cbn. intros l' f [EQ | IN] INCL.
+    + subst. apply in_map. red in INCL. 
+      apply INCL. apply in_eq.
+    + apply IHl; auto.
+      eapply incl_cons_inv; eauto.
+Qed.
+
+Lemma filter_incl: forall A f (l: list A), incl (filter f l) l.
+Proof. 
+  induction l as [|a l]; cbn; intros.
+  - red. auto.
+  - red. red in IHl.
+    intros b H. destruct (f a).
+    + inv H. apply in_eq.
+      intuition.
+    + intuition.
+Qed.
+
+Lemma list_norepet_filter_fst_pres: forall A B (l:list (A * B)) f,
+    list_norepet (map fst l) -> list_norepet (map fst (filter f l)).
+Proof.
+  induction l as [|a l].
+  - intros. cbn. constructor.
+  - intros. cbn in *.
+    destruct (f a).
+    + cbn. inv H. constructor; auto.
+      intros IN. apply H2.         
+      eapply in_map_incl; eauto.
+      eapply filter_incl; eauto.
+    + apply IHl.
+      inv H. auto.
+Qed.
 
 (** Bunch of properties about Permutation and PTree *)
 Lemma NoDup_list_norepet_equiv : forall A (l: list A),
@@ -272,30 +309,19 @@ Section WITHFV.
 Context {F V: Type}.
 Context {LF: Linker F}.
 Context {LV: Linker V}.
+
 Variable is_fun_internal: F -> bool.
 
-Definition is_var_internal (v: globvar V) :=
-  match classify_init (gvar_init v) with
-  | Init_definitive _ => true
-  | _ => false
-  end.
+Lemma list_norepet_internal_ids: forall (p: program F V) ,
+    list_norepet (map fst (prog_defs p)) ->
+    list_norepet (collect_internal_def_ids is_fun_internal p).
+Proof.
+  intros. 
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  apply list_norepet_filter_fst_pres; auto.
+Qed.
 
-Definition is_def_internal (def: option (globdef F V)) : bool :=
-  match def with
-  | None => false
-  | Some g =>
-    match g with
-    | Gvar v => is_var_internal v
-    | Gfun f => is_fun_internal f
-    end
-  end.
-
-Definition filter_internal_defs (idgs: list (ident * option (globdef F V))) :=
-  filter (fun '(id,def) => is_def_internal def) idgs.
-
-Definition collect_internal_def_ids (p: program F V) :=
-  let int_defs := filter_internal_defs (prog_defs p) in
-  map fst int_defs.
 
 Definition link_prog_ordered p1 p2 :=
   let dm1 := prog_option_defmap p1 in
@@ -304,8 +330,8 @@ Definition link_prog_ordered p1 p2 :=
      && list_norepet_dec ident_eq (map fst (prog_defs p1))
      && list_norepet_dec ident_eq (map fst (prog_defs p2)) then
     let t := PTree.combine link_prog_merge dm1 dm2 in
-    let ids1 := collect_internal_def_ids p1 in
-    let ids2 := collect_internal_def_ids p2 in
+    let ids1 := collect_internal_def_ids is_fun_internal p1 in
+    let ids2 := collect_internal_def_ids is_fun_internal p2 in
     match PTree_extract_elements (ids1 ++ ids2) t with
     | None => None
     | Some (defs, t') => 
@@ -317,12 +343,6 @@ Definition link_prog_ordered p1 p2 :=
     None.
 
 End WITHFV.
-
-Definition is_fundef_internal {A:Type} (fd: fundef A) : bool :=
-  match fd with
-  | Internal _ => true
-  | External _ => false
-  end.
 
 Instance Linker_prog_ordered (F V: Type) {LV: Linker V} : Linker (program (fundef F) V) := {
   link a b := link_prog_ordered is_fundef_internal a b;
@@ -351,34 +371,207 @@ Proof.
   repeat (split; auto).
 Qed.
 
-
-Lemma link_prog_merge_internal_exists: 
-  forall {F V} {LV: Linker V} 
-    (defs1: list (ident * option (globdef (fundef F) V))) ids1 t t2 id,
-    ids1 = map fst (filter_internal_defs is_fundef_internal defs1) ->
-    t = PTree.combine link_prog_merge (PTree_Properties.of_list defs1) t2 ->
-    In id ids1 -> 
-    exists def, t!id = def.
+Lemma PTree_extract_elements_pres_get : forall A id ids defs (t t':PTree.t A),
+    ~In id ids ->
+    PTree_extract_elements ids t = Some (defs, t') ->
+    t ! id = t' ! id.
 Proof.
-Admitted.
+  induction ids as [|id1 ids].
+  - cbn. intros. inv H0. auto.
+  - cbn. intros defs t t' NIN MATCH.
+    apply Decidable.not_or in NIN. destruct NIN as [NEQ NIN].
+    destr_in MATCH. destruct p. destr_in MATCH.
+    inv MATCH.
+    erewrite PTree.gro; eauto.
+Qed.
 
-Lemma extract_defs_exists1: 
-  forall {F V: Type} {LV:Linker V} 
-    (p1 p2: program (fundef F) V) t ids1,
-    ids1 = collect_internal_def_ids is_fundef_internal p1 ->
-    t = PTree.combine link_prog_merge 
-                      (prog_option_defmap p1) 
-                      (prog_option_defmap p2) ->
-    exists defs t',
-      PTree_extract_elements ids1 t = Some (defs, t').
+Lemma PTree_extract_elements_exists: forall A ids (t: PTree.t A),
+    list_norepet ids ->
+    incl ids (map fst (PTree.elements t)) ->
+    exists defs t', PTree_extract_elements ids t = Some (defs, t').
 Proof.
-  Admitted.
+  induction ids as [|id ids].
+  - cbn. intros. eauto.
+  - cbn. 
+    intros t NORPT INCL. inv NORPT.
+    red in INCL.
+    edestruct IHids as (defs1 & t1' & EXT); eauto.
+    red. intuition.
+    rewrite EXT.
+    assert (In id (map fst (PTree.elements t))) as IN by intuition.
+    edestruct PTree_Properties.of_list_dom as (v & GET); eauto.
+    rewrite PTree_Properties.of_list_elements in GET.
+    erewrite <- PTree_extract_elements_pres_get; eauto.
+    rewrite GET. eauto.
+Qed.
+
+Lemma collect_internal_def_ids_inv: forall {F V} (p: program (fundef F) V) id,
+    list_norepet (map fst (prog_defs p)) ->
+    In id (collect_internal_def_ids is_fundef_internal p) ->
+    exists def, (prog_option_defmap p)!id = Some def /\ 
+           is_def_internal is_fundef_internal def = true.
+Proof.
+  intros F V p id NORPT IN.
+  unfold prog_option_defmap.
+  unfold collect_internal_def_ids in IN.
+  apply list_in_map_inv in IN.
+  destruct IN as ((id', def) & EQ & IN). subst.
+  unfold filter_internal_defs in IN.
+  rewrite filter_In in IN.
+  destruct IN as (IN & DEF).
+  eexists; split; eauto.
+  cbn.
+  apply PTree_Properties.of_list_norepet; eauto.
+Qed.
+
+Existing Instance Linker_option.
+Definition prog_linkable {F V} {LF: Linker F} {LV: Linker V} (p1 p2: program F V) :=
+  forall (id : positive) (gd1 gd2 : option (globdef F V)),
+    (prog_option_defmap p1) ! id = Some gd1 ->
+    (prog_option_defmap p2) ! id = Some gd2 ->
+    In id (prog_public p1) /\ In id (prog_public p2) /\ (exists gd, link gd1 gd2 = Some gd).
 
 
+Lemma link_prog_linkable:
+  forall {F V} {LF: Linker F} {LV: Linker V} (p1 p2 p:program F V),
+    link_prog p1 p2 = Some p ->
+    prog_linkable p1 p2.
+Proof.
+  intros.
+  generalize (link_prog_inv _ _ _ H).
+  intros (MAINEQ & NORPT1 & NORPT2 & PROP & P).
+  red. auto.
+Qed.
+
+
+Lemma link_prog_merge_some1: 
+  forall {F V} {LF: Linker F} {LV: Linker V} a (def: option (globdef F V)) (p1 p2: program F V),
+    prog_linkable p1 p2 ->
+    (prog_option_defmap p1)!a = Some def ->
+    exists def', link_prog_merge (Some def) ((PTree_Properties.of_list (prog_defs p2)) ! a) = Some def'.
+Proof.
+  intros F V LF LV a def p1 p2 LINKABLE GET.
+  cbn. unfold link_option.
+  destr; eauto.
+  red in LINKABLE.
+  generalize (LINKABLE _ _ _ GET Heqo).
+  intros (IN1 & IN2 & (gd & LINK)). 
+  destr; eauto.
+Qed.
+
+
+Lemma link_prog_merge_pres_get1: forall {F V} {LF: Linker F} {LV: Linker V} a (def: option (globdef F V)) (p1 p2: program F V),
+    prog_linkable p1 p2 ->
+    (prog_option_defmap p1) ! a = Some def ->
+    exists def', 
+      (PTree.combine link_prog_merge (prog_option_defmap p1)
+                     (prog_option_defmap p2)) ! a = Some def'.
+Proof.
+  intros F V LF LV a def p1 p2 CHECK GET.
+  unfold prog_option_defmap in *.
+  rewrite PTree.gcombine; auto.
+  rewrite GET.
+  eapply link_prog_merge_some1; eauto.
+Qed.
+
+
+Lemma link_prog_merge_some2: 
+  forall {F V} {LF: Linker F} {LV: Linker V} a (def: option (globdef F V)) (p1 p2: program F V),
+    prog_linkable p1 p2 ->
+    (prog_option_defmap p2)!a = Some def ->
+    exists def', link_prog_merge ((PTree_Properties.of_list (prog_defs p1)) ! a) (Some def) = Some def'.
+Proof.
+  intros F V LF LV a def p1 p2 LINKABLE GET.
+  cbn. 
+  red in LINKABLE.
+  unfold link_prog_merge.
+  destr; eauto.
+  generalize (LINKABLE _ _ _ Heqo GET).
+  intros (IN1 & IN2 & (gd & LINK)). 
+  eauto.
+Qed.
+
+Lemma link_prog_merge_pres_get2: forall {F V} {LF: Linker F} {LV: Linker V} a (def: option (globdef F V)) (p1 p2: program F V),
+    prog_linkable p1 p2 ->
+    (prog_option_defmap p2) ! a = Some def ->
+    exists def', 
+      (PTree.combine link_prog_merge (prog_option_defmap p1)
+                     (prog_option_defmap p2)) ! a = Some def'.
+Proof.
+  intros F V LF LV a def p1 p2 CHECK GET.
+  unfold prog_option_defmap in *.
+  rewrite PTree.gcombine; auto.
+  rewrite GET.
+  eapply link_prog_merge_some2; eauto.
+Qed.
+
+
+Existing Instance Linker_option.
+Existing Instance Linker_fundef.
+
+Lemma link_internal_fundefs_none: forall F (f1 f2:fundef F),
+    is_fundef_internal f1 = true ->
+    is_fundef_internal f2 = true ->
+    link_fundef f1 f2 = None.
+Proof.
+  intros F f1 f2 INT1 INT2.
+  destruct f1, f2.
+  - cbn. auto.
+  - cbn in *. congruence.
+  - cbn in *. congruence.
+  - cbn in *. congruence.
+Qed.
+
+Lemma link_internal_varinit_none: forall {V} {LV: Linker V} (v1 v2:globvar V),
+    is_var_internal v1 = true ->
+    is_var_internal v2 = true ->
+    link_varinit (gvar_init v1) (gvar_init v2) = None.
+Proof.
+  intros V LV v1 v2 INT1 INT2.
+  unfold link_varinit.
+  unfold is_var_internal in *.
+  destr_in INT1.
+  destr_in INT2.
+Qed.
+
+
+Lemma link_internal_vardefs_none: forall {V} {LV: Linker V} (v1 v2:globvar V),
+    is_var_internal v1 = true ->
+    is_var_internal v2 = true ->
+    link_vardef v1 v2 = None.
+Proof.
+  Local Transparent Linker_varinit.
+  intros V LV v1 v2 INT1 INT2.
+  unfold link_vardef.
+  destr. destr. destr.
+  generalize (link_internal_varinit_none _ _ INT1 INT2).
+  cbn in *.
+  intros. congruence.
+Qed.
+
+Lemma link_int_defs_none: forall {F V} {LV: Linker V} (def1 def2: option (globdef (fundef F) V)),
+    is_def_internal is_fundef_internal def1 = true ->
+    is_def_internal is_fundef_internal def2 = true ->
+    link def1 def2 = None.
+Proof.
+  Local Transparent Linker_option Linker_def Linker_fundef Linker_vardef.
+  intros F V LV def1 def2 INT1 INT2.
+  cbn. unfold link_option.
+  unfold is_def_internal in *.
+  destr_in INT1. destr_in INT2.
+  destr_in INT1; destr_in INT2; subst.
+  - unfold link. cbn.   
+    erewrite link_internal_fundefs_none; eauto.
+  - cbn. 
+    erewrite link_internal_vardefs_none; eauto.
+Qed.
 
 Lemma extract_defs_exists: 
   forall {F V: Type} {LV:Linker V} 
-    (p1 p2: program (fundef F) V) t ids1 ids2,
+    (p1 p2 p: program (fundef F) V) t ids1 ids2,
+    prog_linkable p1 p2 ->
+    list_norepet (map fst (prog_defs p1)) ->
+    list_norepet (map fst (prog_defs p2)) ->
     ids1 = collect_internal_def_ids is_fundef_internal p1 ->
     ids2 = collect_internal_def_ids is_fundef_internal p2 ->
     t = PTree.combine link_prog_merge 
@@ -387,37 +580,68 @@ Lemma extract_defs_exists:
     exists defs t',
       PTree_extract_elements (ids1 ++ ids2) t = Some (defs, t').
 Proof.
-  intros F V LV p1 p2 t ids1 ids2 IDS1 IDS2 T. subst.
-  unfold collect_internal_def_ids. 
-  unfold prog_option_defmap.
-
-
-Definition PTree_ids_in_domain {A} ids (t:PTree.t A) :=
-  Forall (fun id => exists v, t ! id = Some v) ids.
-
-Lemma link_prog_merge_ids_in_domain2 : 
-  forall {F V: Type} {LV:Linker V}
-    (p1 p2: program (fundef F) V),
-    PTree_ids_in_domain 
-      (collect_internal_def_ids is_fundef_internal p2)
-      (PTree.combine link_prog_merge 
-                    (prog_option_defmap p1) 
-                    (prog_option_defmap p2)).
-Admitted.
-  
-Lemma PTree_extract_elements_in_domain: forall A ids (t:PTree.t A),
-    PTree_ids_in_domain ids t ->
-    exists elems t', PTree_extract_elements ids t = Some (elems, t').
-Admitted.
-
-  generalize (link_prog_merge_ids_in_domain2 p1 p2).
-  intros DM.
-  edestruct PTree_extract_elements_in_domain as (elems2 & t1 & EXT); eauto.
-  
-Admitted.
+  intros F V LV p1 p2 p t ids1 ids2 PROP NORPT1 NORPT2 IDS1 IDS2 T. subst.
+  eapply PTree_extract_elements_exists; eauto.
+  rewrite list_norepet_app.
+  repeat split.
+  eapply list_norepet_internal_ids; eauto.
+  eapply list_norepet_internal_ids; eauto.
+  - red.
+    intros x y IN1 IN2 EQ. subst.
+    generalize (collect_internal_def_ids_inv _ _ NORPT1 IN1).
+    intros (def1 & GET1 & INT1).
+    generalize (collect_internal_def_ids_inv _ _ NORPT2 IN2).
+    intros (def2 & GET2 & INT2).
+    edestruct PROP as (PUB1 & PUB2 & (gd & LINK')); eauto.        
+    assert (link def1 def2 = None) by (apply link_int_defs_none; auto).
+    congruence.
+  - apply incl_app.
+    + red. intros.
+      generalize (collect_internal_def_ids_inv _ _ NORPT1 H).
+      intros (def & GET & INT).
+      rewrite in_map_iff.
+      generalize (link_prog_merge_pres_get1 _ _ _ p2 PROP GET). 
+      intros (def' & COMB).
+      exists (a, def'). split; auto.
+      apply PTree.elements_correct. auto. 
+    + red. intros.
+      generalize (collect_internal_def_ids_inv _ _ NORPT2 H).
+      intros (def & GET & INT).
+      rewrite in_map_iff.
+      generalize (link_prog_merge_pres_get2 _ _ p1 p2 PROP GET). 
+      intros (def' & COMB).
+      exists (a, def'). split; auto.
+      apply PTree.elements_correct. auto. 
+Qed.    
 
 
 Local Transparent Linker_prog_ordered.
+
+Lemma prog_linkable_permutation: 
+  forall {F V} {LF: Linker F} {LV: Linker V}
+    (p1 p2 tp1 tp2 p: program F V),
+    link p1 p2 = Some p ->
+    prog_public p1 = prog_public tp1 ->
+    prog_public p2 = prog_public tp2 ->
+    Permutation (prog_defs p1) (prog_defs tp1) ->
+    Permutation (prog_defs p2) (prog_defs tp2) ->
+    prog_linkable tp1 tp2.
+Proof.
+  intros F V LF LV p1 p2 tp1 tp2 p LINK PUB1 PUB2 PERM1 PERM2.
+  generalize (link_prog_inv _ _ _ LINK).
+  intros (MAINEQ & NORPT1 & NORPT2 & LINKABLE & P). clear P.
+  intros id gd1 gd2 GET1 GET2.
+  unfold prog_option_defmap in *.
+  generalize (Permutation_list_norepet_map _ _ _ _ _ PERM1 NORPT1). intros NORPT1'.
+  generalize (Permutation_list_norepet_map _ _ _ _ _ PERM2 NORPT2). intros NORPT2'.
+  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT1 NORPT1' PERM1) in GET1; eauto.
+  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT2 NORPT2' PERM2) in GET2; eauto.
+  edestruct LINKABLE as (IN1 & IN2 & (gd & LINK')); eauto.
+  repeat (split; eauto).
+  rewrite <- PUB1. auto.
+  rewrite <- PUB2. auto.
+Qed.
+
 
 (** Commutativity between permutation and linking *)
 Instance TransfPermuteLink {F V} {LV: Linker V}
@@ -427,6 +651,7 @@ Proof.
   red. unfold match_prog. cbn. 
   intros until p.
   intros LINK (PERM1 & MAINEQ1 & PUBEQ1) (PERM2 & MAINEQ2 & PUBEQ2).
+  generalize LINK. intros LINK'.
   unfold link_prog in LINK.
   destr_in LINK. inv LINK. cbn.
   repeat (rewrite andb_true_iff in Heqb). 
@@ -445,6 +670,7 @@ Proof.
   { eapply Permutation_list_norepet_map; eauto. }
   destruct list_norepet_dec; try contradiction. cbn.  
   edestruct (@extract_defs_exists F V _ tp1 tp2) as (defs1 & t1 & EXTR); eauto.
+  eapply prog_linkable_permutation; eauto.
   rewrite EXTR. 
   eexists; split; eauto.
   cbn.
