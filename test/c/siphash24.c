@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <string.h>
+// #define DEBUG
 typedef unsigned long long u64;
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -83,24 +84,59 @@ int crypto_auth( unsigned char *out, const unsigned char *in, unsigned long long
     v0 ^= m;
   }
 
-  switch( left )
-  {
-  case 7: b |= ( ( u64 )in[ 6] )  << 48;
+  // switch( left )
+  // {
+  // case 7: b |= ( ( u64 )in[ 6] )  << 48;
 
-  case 6: b |= ( ( u64 )in[ 5] )  << 40;
+  // case 6: b |= ( ( u64 )in[ 5] )  << 40;
 
-  case 5: b |= ( ( u64 )in[ 4] )  << 32;
+  // case 5: b |= ( ( u64 )in[ 4] )  << 32;
 
-  case 4: b |= ( ( u64 )in[ 3] )  << 24;
+  // case 4: b |= ( ( u64 )in[ 3] )  << 24;
 
-  case 3: b |= ( ( u64 )in[ 2] )  << 16;
+  // case 3: b |= ( ( u64 )in[ 2] )  << 16;
 
-  case 2: b |= ( ( u64 )in[ 1] )  <<  8;
+  // case 2: b |= ( ( u64 )in[ 1] )  <<  8;
 
-  case 1: b |= ( ( u64 )in[ 0] ); break;
+  // case 1: b |= ( ( u64 )in[ 0] ); break;
 
-  case 0: break;
-  }
+  // case 0: break;
+  // }
+
+  if(left == 7) { goto c7; }
+
+  if(left == 6) { goto c6; }
+
+  if(left == 5) { goto c5; }
+
+  if(left == 4) { goto c4; }
+
+  if(left == 3) { goto c3; }
+
+  if(left == 2) { goto c2; }
+
+  if(left == 1) { goto c1; }
+
+  if(left == 0) { goto c0; }
+
+c7:
+b |= ( ( u64 )in[ 6] )  << 48;
+c6:
+b |= ( ( u64 )in[ 5] )  << 40;
+c5:
+b |= ( ( u64 )in[ 4] )  << 32;
+c4:
+b |= ( ( u64 )in[ 3] )  << 24;
+c3:
+b |= ( ( u64 )in[ 2] )  << 16;
+c2:
+b |= ( ( u64 )in[ 1] )  <<  8;
+c1:
+b |= ( ( u64 )in[ 0] );
+goto cend;
+c0:
+
+cend:
 
 #ifdef DEBUG
   printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 );
