@@ -553,7 +553,7 @@ Compute (fmc_instr_decode [HB["C1"] ;HB["E2"] ;HB["05"] ;HB["00"] ;HB["01"];HB["
 
 
 
-
+Compute (Ptrofs.repr 0).
 
 
 
@@ -599,8 +599,15 @@ Definition instr_eq (ins1 ins2: instruction): Prop :=
            |Pnop => True
            |_ => False
            end
+  |Pmov_rs rd id => match ins2 with
+                    |Pmov_rs rd id => True
+                    |Pmovl_rm rd1 a => (Addrmode None None (inr (id, (Ptrofs.repr 0)))) = a /\ rd1 = rd
+                    |_ => False
+                    end
   |_ => ins1 = ins2
   end.
+
+Compute (Ptrofs.repr 0).
 
 
 
@@ -862,134 +869,6 @@ Proof.
 Qed.
 
     
-
-(* Lemma bits_to_Z_first : forall n  l1 a, *)
-(*     length l1 = n -> *)
-(*     bits_to_Z(a::l1) = (bool_to_Z a)*(2^Z.of_nat (length l1)) + bits_to_Z l1. *)
-(* Proof. *)
-(*   simpl. *)
-(*   induction n. *)
-(*   + admit. *)
-(*   + intros l1 a H. *)
-(*     assert ((length l1 > 0)%nat) by admit. *)
-(*     generalize (non_zero_len_not_nil bool l1 H10). *)
-(*     intros Hl1. *)
-(*     destruct l1 eqn: EQL. inversion H. *)
-(*     assert (length l = n) as lenl by admit. *)
-(*     generalize (IHn l b lenl). *)
-(*     intros IHn'. *)
-(*     rewrite IHn'. *)
-(*     destruct a. *)
-    
-(*     (* ++ destruct b. *) *)
-
-(*     (*   rewrite bits_to_Z_aux. admit. *) *)
-(*     (* unfold bits_to_Z in IHn'. *) *)
-(*     (* unfold bits_to_Z. *) *)
-
-(*     (* rewrite IHn'. *) *)
-(*     (* destruct a. *) *)
-(*     (* ++ *) *)
-      
-(*     (*   assert (length l = n) as lenl by admit. *) *)
-(*     (*   generalize (IHn l b lenl). *) *)
-(*     (*   intros H11. *) *)
-(*     (*   unfold bits_to_Z. *) *)
-(*     (*   simpl in H11. *) *)
-      
-
-(*     (*   simpl. *) *)
-(*     (* simpl. *) *)
-    
-    
-    
-        
-
-
-    
-(*     (* help needed *) *)
-(* Admitted. *)
-
-(* Lemma bits_to_Z_cons_eq' : forall n  l1 l2, *)
-(*     length l1 = n -> *)
-(*     bits_to_Z (l1 ++ l2) = (bits_to_Z l1)*(two_power_nat (length l2)) + *)
-(*                            bits_to_Z l2. *)
-(* Proof. *)
-(*   induction n. *)
-(*   + *)
-(*     intros l1 l2 H. *)
-(*     rewrite (zero_length_list l1). *)
-(*     simpl. auto. auto. *)
-
-(*   + intros l1 l2 H. *)
-(*     assert ((length l1 > 0)%nat) as Hnz. { *)
-(*       rewrite H. *)
-(*       omega. *)
-(*     } *)
-    
-(*     generalize (non_zero_len_not_nil bool l1 Hnz). *)
-(*     intros H10. *)
-(*     generalize( exists_last H10). *)
-(*     intros (l' & a & Hl1). *)
-(*     rewrite Hl1. *)
-(*     rewrite <- app_assoc. *)
-(*     assert((length l' = n)%nat) as llen. { *)
-(*       rewrite Hl1 in H. *)
-(*       rewrite app_length in H. *)
-(*       simpl in H. *)
-(*       omega. *)
-(*     } *)
-(*     generalize (IHn l' ([a]++l2) llen). *)
-(*     intros H11. *)
-(*     generalize (IHn l' [a] llen). *)
-(*     intros H12. *)
-(*     rewrite H11. *)
-(*     setoid_rewrite (bits_to_Z_first (length l2) l2 a). *)
-(*     rewrite H12. *)
-(*     rewrite app_length. *)
-(*     repeat rewrite two_power_nat_equiv. *)
-(*     rewrite (Nat2Z.inj_add (length[a]) (length l2)). *)
-(*     rewrite Z.pow_add_r. *)
-(*     rewrite Z.mul_assoc. *)
-(*     rewrite Z.mul_add_distr_r. *)
-(*     simpl. *)
-(*     rewrite <- Zplus_assoc. *)
-(*     auto. *)
-(*     simpl. omega. omega. *)
-(*     auto. *)
-(* Qed. *)
-
-
-(* Lemma bits_to_Z_prefix': forall n bits b, *)
-(*     (length bits = n)%nat -> *)
-(*     bits_to_Z (bits ++ [b]) = 2 * (bits_to_Z bits) + bool_to_Z b. *)
-(* Proof. *)
-(*   induction n. *)
-(*   + intros bits0 b H. *)
-(*     rewrite (zero_length_list bits0). *)
-(*     simpl. auto. auto. *)
-(*   + intros bits0 b H. *)
-(*     assert ((length bits0 > 0)%nat) as Hnz. { *)
-(*       rewrite H. *)
-(*       omega. *)
-(*     } *)
-    
-(*     generalize (non_zero_len_not_nil bool bits0 Hnz). *)
-(*     intros H10. *)
-(*     generalize( exists_last H10). *)
-(*     intros (l' & a & Hlst). *)
-(*     rewrite Hlst. *)
-(*     rewrite (bits_to_Z_cons_eq' (length (l'++[a]))  (l'++[a]) [b]). *)
-(*     assert(two_power_nat (length [b]) = 2). { *)
-(*       simpl. unfold two_power_nat. *)
-(*       simpl. auto. *)
-(*     } *)
-(*     rewrite H11. *)
-(*     rewrite Z.mul_comm. *)
-(*     simpl. auto. *)
-(*     auto. *)
-(* Qed. *)
-
 
 
 Lemma bits_to_Z_prefix: forall bits b,
@@ -1997,45 +1876,235 @@ Proof.
 Qed.
     
 
-(*       Definition addrmode_reloc_id (a:addrmode) : res ident := *)
-(*         let '(Addrmode bs ss const) := a in *)
-(*         match const with *)
-(*         | inl _ => Error (msg "No identifer needs to be relocated") *)
-(*         | inr (id,_) => OK id *)
-(*         end. *)
+Definition addrmode_reloc_id (a:addrmode) : res ident :=
+  let '(Addrmode bs ss const) := a in
+  match const with
+  | inl _ => Error (msg "No identifer needs to be relocated")
+  | inr (id,_) => OK id
+  end.
+
+Definition instr_reloc_id (i:instruction) : res ident :=
+  match i with
+  | Pmov_rs _ id => OK id
+  | Pcall (inr id) _ => OK id
+  | Pjmp (inr id) _ => OK id
+  | Pleal rd a => addrmode_reloc_id a
+  | Pmovl_rm _ a => addrmode_reloc_id a
+  | Pmovl_mr a _ => addrmode_reloc_id a
+  | Pmov_rm_a _ a => addrmode_reloc_id a
+  | Pmov_mr_a a _ => addrmode_reloc_id a
+  | _ => Error (msg "Calculation of addenddum failed: Instruction not supported yet by relocation")
+  end.
+
+Require Reloctablesgen.
       
-(*       Definition instr_reloc_id (i:instruction) : res ident := *)
-(*         match i with *)
-(*         | Pmov_rs _ id => OK id *)
-(*         | Pcall (inr id) _ => OK id *)
-(*         | Pjmp (inr id) _ => OK id *)
-(*         | Pleal rd a => addrmode_reloc_id a *)
-(*         | Pmovl_rm _ a => addrmode_reloc_id a *)
-(*         | Pmovl_mr a _ => addrmode_reloc_id a *)
-(*         | Pmov_rm_a _ a => addrmode_reloc_id a *)
-(*         | Pmov_mr_a a _ => addrmode_reloc_id a *)
-(*         | _ => Error (msg "Calculation of addenddum failed: Instruction not supported yet by relocation") *)
-(*         end. *)
+Definition reloctable_offsets_consist (rtbl: reloctable) (c1:code)(i:instruction) :=
+  forall ofs id,
+    
+    Reloctablesgen.instr_reloc_offset i = OK ofs ->
+    (* if the instruction needs to be relocated *)
+    instr_reloc_id i = OK id ->
+    (* there's a related reloctable entry && the place where relocation happens is reloc_offset *)
+    exists e, SeqTable.get (RelocIndex.interp id) rtbl = Some e /\
+              reloc_offset e = code_size c1 + ofs.
 
-(*       Require Reloctablesgen. *)
-      
-(*       Definition reloctable_offsets_consist (rtbl: reloctable) (c:code) := *)
-(*         forall c1 i ofs id, *)
-(*         c = c1 ++ [i] ->         *)
-(*         Reloctablesgen.instr_reloc_offset i = OK ofs -> *)
-(*         instr_reloc_id i = OK id -> *)
-(*         exists e, SeqTable.get (RelocIndex.interp id) rtbl = Some e /\ *)
-(*              reloc_offset e = code_size c1 + ofs. *)
+Definition get_addrmode (i:instruction): option addrmode:=
+  match i with
+  | Pjmp_l_rel ofs => None
+  | Pjcc_rel c ofs => None
+  | Pcall (inr id) _ => None
+  | Pleal rd a => Some a
+  | Pxorl_r rd => None
+  | Paddl_ri rd n => None
+  | Psubl_ri rd n => None
+  | Psubl_rr rd r1 => None
+  | Pmovl_ri rd n => None
+  | Pmov_rr rd r1 => None
+  | Pmovl_rm rd a => Some a
+  | Pmovl_mr a rs => Some a
+  | Pmov_rm_a rd a => Some a
+  | Pmov_mr_a a rs => Some a
+  | Pmov_rs rd id => Some (Addrmode None None (inr (id, (Ptrofs.repr 0))))
+  | Ptestl_rr r1 r2 => None
+  | Pret => None
+  | Pimull_rr rd r1 => None
+  | Pimull_ri rd n => None
+  | Pcmpl_rr r1 r2 => None
+  | Pcmpl_ri r1 n => None
+  | Pcltd => None
+  | Pidivl r1 => None
+  | Psall_ri rd n => None
+  | Plabel _
+  | Pnop => None
+  |_ => None
+  end.
 
+Lemma encode_decode_addrmode_refl: forall i c1 a rd x l rtbl,
+    reloctable_offsets_consist rtbl c1 i
+    -> get_addrmode i = Some a
+    -> encode_addrmode rtbl a rd = OK x
+    -> decode_addrmode (x++l) = OK (rd, a, l).
+Proof.
+  intros i c1 a rd x l rtbl HReloc HAddrmode HEncode.
+  unfold encode_addrmode in HEncode.
+  destruct a.
+  unfold encode_addrmode_aux in HEncode.
+  destruct ofs eqn:EQofs.
+  + destruct p. destruct base eqn:EQB.
+    ++ (* ofs = some i0 z, base = some i1 *)
+      destruct (ireg_eq i0 RSP) eqn:EQR.
+      +++ monadInv HEncode. monadInv EQ.
+      +++ monadInv HEncode. monadInv EQ.
+          destruct const eqn:EQconst.
+          ++++ admit.
+          ++++
+            (* relocate *)
+            unfold decode_addrmode.
+            simpl. replace 256 with (two_p 8).
+            rewrite <- Byte.Zshiftr_div_two_p.
+            simpl.
+            assert((length(x2 ++ x3 ++ x4) = 8)%nat) as Hlen by admit.
+            generalize (Z_shru_bits 8 (char_to_bool "1" :: char_to_bool "0" :: x ++ char_to_bool "1" :: char_to_bool "0" :: [char_to_bool "0"] ) (x2 ++ x3 ++ x4) Hlen).            
+            intros Hzshru.
+            replace ((char_to_bool "1"
+                  :: char_to_bool "0"
+                     :: x ++
+                        [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]) ++
+                 x2 ++ x3 ++ x4) with  (char_to_bool "1"
+                     :: char_to_bool "0"
+                        :: x ++
+                           char_to_bool "1"
+                           :: char_to_bool "0"
+                           :: char_to_bool "0" :: x2 ++ x3 ++ x4) in Hzshru.
+            replace 8 with (Z.of_nat 8).
+            rewrite Hzshru.
+            rewrite <- Byte.and_shru.
+            Lemma byte_shru563:
+              Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7.
+            Proof.
+              unfold Byte.shru.
+              f_equal.
+            Qed.
+            
+            setoid_rewrite (shru_bits 3 ( char_to_bool "1"
+               :: char_to_bool "0"
+               :: x) [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]).
+            rewrite  byte_shru563.
+            setoid_rewrite (and7 ( [char_to_bool "1" ; char_to_bool "0"]) x).
+            assert(addrmode_parse_reg bB[ x] = OK rd) as Hreg by admit.
+            rewrite Hreg.
+            simpl.
+            assert ( (Byte.shru
+         bB[ char_to_bool "1"
+             :: char_to_bool "0"
+                :: x ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]]
+         (Byte.repr 6)) = Byte.repr 2) as Hneq by admit.
+            rewrite byte_eq_false.
+            rewrite byte_eq_false.
+            rewrite Hneq.
+            rewrite byte_eq_true.
+            assert(((length
+                       ((char_to_bool "1" :: char_to_bool "0" :: x) ++
+                                                                  [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]) <= 8)%nat)) as HlenLess by admit.
+            assert( (length [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"] = 3%nat)) as HlenEq3 by admit.
+            generalize  (and7 ( char_to_bool "1"
+                                             :: char_to_bool "0"
+                                             :: x)  [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"] HlenLess HlenEq3).
+            intros Hand.
+            assert((Byte.and
+        bB[ char_to_bool "1"
+            :: char_to_bool "0"
+               :: x ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]]
+        (Byte.repr 7)) = Byte.repr 4) as Heq4 by admit.
+            rewrite Heq4.
+            unfold addrmode_parse_reg.
+            rewrite byte_eq_false.
+            rewrite byte_eq_false.
+            rewrite byte_eq_false.
+            rewrite byte_eq_false.
+            rewrite byte_eq_true.
+            simpl.
+            inversion EQR.
+            
+            simpl.
+            setoid_rewrite Hand.
+            
+            
+    ++ (* ofs = some i0 z, base = None *)
+      admit.
+  + destruct base eqn:EQB.
+    ++ (* ofs = None, base = some i0 *)
+      admit.
+    ++ (* ofs = None, base = None *)
+      admit.
+  
+Admitted.
 
-(*         Lemma encode_decode_instr_refl: forall a c1 b1 x b2 rtbl, *)
-(*           reloctable_offsets_consist rtbl (c1 ++ [a]) -> *)
-(*           allCode = b1 ++ x ++ b2 -> *)
-(*           transl_code rtbl c1 = OK b1 -> *)
-(*           encode_instr rtbl a = OK x -> *)
-(*           fmc_instr_decode (x ++ b2) = OK (a, b2). *)
-(*         Proof. *)
+Lemma encode_decode_instr_refl: forall a c1 b1 x b2 rtbl,
+    (* if a needs to be relocated *)
+    reloctable_offsets_consist rtbl c1 a ->
+    allCode = b1 ++ x ++ b2 ->
+    transl_code rtbl c1 = OK b1 ->
+    encode_instr rtbl a = OK x ->
+    exists i, fmc_instr_decode (x ++ b2) = OK (i, b2) /\ instr_eq a i.
+Proof.
+  intros a c1 b1 x b2 rtbl HReloc HAll HTrans HEncode.
+  case a eqn:EQA; inversion HEncode;
+    try monadInv H10; simpl.
+  (* Pmov_rr rd r1 *)
+  + exists (Pmov_rr rd r1).
+    split.
+    branch_byte_eq. assert(Byte.and (Byte.repr 139) (Byte.repr 240) <> (Byte.repr 176)) as HandNeq by admit.
+  rewrite byte_eq_false; auto.
+  admit.
+  auto.
+  (* Pmovl_ri rd n *)
+  + exists (Pmovl_ri rd n).
+    split.
+    branch_byte_eq'.
+    assert (Byte.and (bB[ char_to_bool "1"
+             :: char_to_bool "0"
+                :: char_to_bool "1"
+                :: char_to_bool "1" :: char_to_bool "1" :: x0]) (Byte.repr 240) = Byte.repr 176) as Handeq by admit.
+    rewrite Handeq. rewrite byte_eq_true.
+    admit.
+    auto.
+  (* Pmov_rs rd id *)
+  + exists (Pmovl_rm rd (Addrmode None None (inr (id, (Ptrofs.repr 0))))).
+    split.
+    branch_byte_eq.
+    assert(Byte.and (Byte.repr 139) (Byte.repr 240) <> (Byte.repr 176)) as HandNeq by admit.
+    rewrite byte_eq_false; auto.
+    unfold decode_8b.
+    monadInv EQ. monadInv EQ0. 
+    simpl get_n.
+    simpl.
+    rewrite byte_eq_false.
+    unfold decode_movl_rm.
+    unfold encode_instr in HEncode.
+    unfold reloctable_offsets_consist in HReloc.
 
+    generalize (encode_decode_addrmode_refl (Pmov_rs rd id) c1  (Addrmode None None (inr (id, Ptrofs.zero))) rd x0 b2 rtbl HReloc).
+    intros HAddr.
+    replace (bB[ char_to_bool "0"
+          :: char_to_bool "0"
+             :: x3 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]]
+      :: encode_int32 x2 ++ b2) with (x0++b2).
+    rewrite HAddr.
+    ++ simpl.
+       auto.
+    ++ auto. 
+    ++ simpl. rewrite EQ1. simpl. rewrite EQ. simpl.
+       f_equal.
+       rewrite <- H11.
+       rewrite <- H12.
+       simpl. auto.
+
+       
+    
+  
+  
+Admitted.
 (* (** Reflexivity between the encoding and decoding of addressing modes *)  *)
 (* Lemma encode_decode_addrmode_refl: forall a rd x l rtbl, *)
 (*     encode_addrmode rtbl a rd = OK x -> *)
