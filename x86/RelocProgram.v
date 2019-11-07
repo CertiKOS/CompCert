@@ -162,3 +162,23 @@ Definition sec_symbtbl_id  := 4%positive.
 Definition sec_rel_data_id := 5%positive.
 Definition sec_rel_code_id := 6%positive.
 Definition sec_shstrtbl_id := 7%positive.
+
+
+(** Ultility function s*)
+Definition add_symb_to_tree (s:symbentry) (t: PTree.t symbentry) :=
+  match symbentry_id s with
+  | None => t
+  | Some id => PTree.set id s t
+  end.
+
+Definition symbtable_to_tree (t:symbtable) : PTree.t symbentry :=
+  fold_right add_symb_to_tree (PTree.empty symbentry) t.
+
+Definition acc_symb_ids (s:symbentry) (ids: list ident) :=
+  match symbentry_id s with
+  | None => ids
+  | Some id => id :: ids
+  end.
+
+Definition get_symbentry_ids (t:symbtable) : list ident :=
+  fold_right acc_symb_ids nil t.

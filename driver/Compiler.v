@@ -106,6 +106,9 @@ Require RelocElfgen.
 Require EncodeRelocElf.
 Require RelocElf.
 Require ShstrtableEncode.
+Require OrderedLinking.
+Require SymbtablegenSep.
+Require PermuteRealAsmproof.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -235,7 +238,6 @@ Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program.
 
-
   
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p
@@ -314,6 +316,9 @@ Definition transf_cminor_program_bytes (p: Cminor.program) : res (list Integers.
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
 
+Definition transf_c_program_test_symbtablegen (p: Csyntax.program) :=
+  transf_c_program_real p
+  @@@ time "Generation of the symbol table" Symbtablegen.transf_program.
 
 
 (** The following lemmas help reason over compositions of passes. *)
@@ -441,6 +446,12 @@ Definition reloc_asm_passes :=
 
 Definition match_prog_reloc :=
   pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) reloc_asm_passes)).
+
+Definition test_symbtablegen_passes :=
+  (mkpass OrderedLinking.match_prog ::: mkpass SymbtablegenSep.match_prog ::: pass_nil _).
+
+Definition match_prog_test_symbtablegen :=
+  pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) test_symbtablegen_passes)).
 
 (* Definition mc_passes := *)
 (*   passes_app flat_asm_passes *)
@@ -601,6 +612,26 @@ Qed.
 (*   eexists; split; eauto. *)
 (* Qed. *)
 
+Theorem transf_c_program_test_symbtablegen_match :
+  forall p tp,
+    transf_c_program_test_symbtablegen p = OK tp ->
+    match_prog_test_symbtablegen p tp.
+Proof.
+  intros p tp T. unfold transf_c_program_test_symbtablegen in T.
+  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
+  red.
+  rewrite compose_passes_app.
+  exists p1. split.
+  apply transf_c_program_real_match; auto.
+  simpl. 
+  exists p1. split. red. repeat (split; auto).
+  exists tp. split; auto.
+  red. 
+  exists tp. split; auto.
+  red. repeat (split; auto).
+  red. auto.
+Qed.
+  
 (** * Semantic preservation *)
 
 (** We now prove that the whole CompCert compiler (as characterized by the
@@ -1248,6 +1279,8 @@ Qed.
   the dynamic semantics of [asm_program] by the dynamic semantics of [c_program].
 *)
 
+Remove Hints OrderedLinking.Linker_prog_ordered : typeclass_instances.
+
 Theorem separate_transf_c_program_correct:
   forall c_units asm_units c_program,
   nlist_forall2 (fun cu tcu => transf_c_program cu = OK tcu) c_units asm_units ->
@@ -1261,6 +1294,7 @@ Proof.
   intros. 
   assert (nlist_forall2 match_prog c_units asm_units).
   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_match; auto. }
+  Set Printing Implicit.
   assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog c_program asm_program).
   { eapply link_list_compose_passes; eauto. }
   destruct H2 as (asm_program & P & Q).

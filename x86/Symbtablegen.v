@@ -29,12 +29,13 @@ Section WITH_CODE_DATA_SIZE.
 
 Variables (dsize csize: Z).
 
+Definition get_bind_ty id :=
+  if is_def_local id then bind_local else bind_global.
+
 (** get_symbol_entry takes the ids and the current sizes of data and text sections and 
     a global definition as input, and outputs the corresponding symbol entry *) 
 Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) : symbentry :=
-  let bindty := 
-      if is_def_local id then bind_local else bind_global 
-  in
+  let bindty := get_bind_ty id in
   match def with
   | None =>
     (** This is an external symbol with unknown type *)
@@ -63,7 +64,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
         symbentry_secindex := secindex_comm;
-        symbentry_size := sz;
+        symbentry_size := Z.max sz 0;
       |}
     | _ =>
       (** This is an internal data symbol *)

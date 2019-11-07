@@ -1676,7 +1676,7 @@ Lemma link_valid_used_set:
   valid_used_set p (IS.union used1 used2).
 Proof.
   intros until used2; intros L V1 V2.
-  destruct (link_prog_inv_strong _ _ _ L) as (X & Y & Z).
+  destruct (link_prog_inv_strong _ _ _ L) as (X & NORPT1 & NORPT2 & Y & Z).
   rewrite Z; clear Z; constructor.
 - intros. rewrite ISF.union_iff in H. rewrite ISF.union_iff.
   apply prog_defmap_option_defmap in H0.
@@ -1790,10 +1790,12 @@ Theorem link_match_program:
   exists tp, link tp1 tp2 = Some tp /\ match_prog p tp.
 Proof.
   intros. destruct H0 as (used1 & A1 & B1). destruct H1 as (used2 & A2 & B2).
-  destruct (link_prog_inv _ _ _ H) as (U & V & W).
+  destruct (link_prog_inv _ _ _ H) as (U & NORPT1 & NORPT2 & V & W).
   econstructor; split. 
 - apply link_prog_succeeds.
 + rewrite (match_prog_main _ _ _ B1), (match_prog_main _ _ _ B2). auto.
++ inv B1. auto.
++ inv B2. auto.
 + intros. 
   rewrite (match_prog_option_def _ _ _ B1) in H0.
   rewrite (match_prog_option_def _ _ _ B2) in H1.
