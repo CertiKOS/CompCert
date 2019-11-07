@@ -128,7 +128,7 @@ Definition expand_builtin_inline i name args res :=
                        BA_splitlong (BA(IR bh)) (BA(IR bl))],
                        BR_splitlong (BR(IR rh)) (BR(IR rl)) =>
      if (ireg_eq ah RDX && ireg_eq al RAX && ireg_eq bh RCX && ireg_eq bl RBX && ireg_eq rh RDX && ireg_eq rl RAX) then
-       OK [Paddl_rr RAX RBX; Padcl_rr RDX RCX]
+       OK [ Padcl_rr RDX RCX ; Paddl_rr RAX RBX]
      else
        Error (msg "Error in expanding of builtin: __builtin_addl arguments incorrect")
   | _, _, _ =>

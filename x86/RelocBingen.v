@@ -623,6 +623,16 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
     let nbytes := [Byte.repr (Int.unsigned n)] in
     OK (HB["C1"] :: modrm :: nbytes)
+  | Paddl_rr rd r2 =>
+    do rdbits <- encode_ireg rd;
+      do r2bits <- encode_ireg r2;
+      let modrm := bB[b["11"] ++ r2bits ++ rdbits] in
+      OK (HB["01"] :: modrm :: nil)
+  | Padcl_rr rd r2 =>
+    do rdbits <- encode_ireg rd;
+      do r2bits <- encode_ireg r2;
+      let modrm := bB[b["11"] ++ r2bits ++ rdbits] in
+      OK (HB["11"] :: modrm :: nil)
   | Plabel _
   | Pnop =>
     OK (HB["90"] :: nil)

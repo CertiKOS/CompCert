@@ -442,7 +442,8 @@ Definition instr_size (i: instruction) : Z :=
   | Pxorpd_f frd => 4
   | Pxorps_f frd => 3
   | Pimull_ri rd n => 6
-
+  | Paddl_rr _ _ => 2
+  | Padcl_rr _ _ => 2
   | _ => 1
   end.
 
