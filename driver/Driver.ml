@@ -171,6 +171,15 @@ let compile_cminor_file ifile ofile =
   let elf_file = gen_elf asm in
   (* Write the ELF file *)
   write_elf ofile elf_file end
+  else if !option_reloc_elf then
+  begin
+    match Compiler.transf_cminor_program_bytes cm with
+     | Errors.OK bs ->
+        ElfFileOutput.write_elf ofile bs
+     | Errors.Error msg ->
+        eprintf "%s: %a" ifile print_error msg;
+        exit 2
+  end
   else begin
  (* Convert to Asm *)
   let asm =

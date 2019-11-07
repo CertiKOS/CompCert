@@ -91,6 +91,7 @@ Require SegAsmgen.
 Require SegAsmSep.
 Require Asmlabelgen.
 Require Asmlabelgenproof.
+Require Asmpielim.
 Require PadNops.
 Require PadInitData.
 Require Symbtablegen.
@@ -214,6 +215,7 @@ Definition transf_c_program_real p : res Asm.program :=
 
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte) :=
   transf_c_program_real p
+  @@@ time "Psedoinstruction elimination" Asmpielim.transf_program
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
@@ -292,6 +294,26 @@ Definition transf_cminor_program_decode_encode_bin (p:Cminor.program) : res RawB
   @@@ time "Decode binary back into FlatAsm" FlatBinDecode.transf_program
   @@@ time "Encode FlatAsm back into binary" FlatBingen.transf_program
   @@@ time "Generation of raw binary code" RawBingen.transf_program.
+
+
+Definition transf_cminor_program_bytes (p: Cminor.program) : res (list Integers.byte) :=
+  transf_cminor_program_real p
+  @@@ time "Psedoinstruction elimination" Asmpielim.transf_program
+  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
+  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
+  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
+  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
+  @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
+  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
+  (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
+  @@@ time "Generation of the string table" StrtableEncode.transf_program
+  @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
+  @@@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
+  @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program
+  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
+  @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
+
 
 
 (** The following lemmas help reason over compositions of passes. *)

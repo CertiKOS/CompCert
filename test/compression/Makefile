@@ -1,7 +1,11 @@
 include ../../Makefile.config
 
+
+# CC=gcc 
+# CFLAGS=-m32
+
 CC=../../ccomp 
-CFLAGS=-U__GNUC__ -stdlib ../../runtime -dclight -dasm
+CFLAGS=-U__GNUC__ -stdlib ../../runtime -dclight -relf -dasm
 LIBS=
 TIME=xtime -o /dev/null -mintime 1.0
 
@@ -33,7 +37,7 @@ TESTEXPND=/tmp/testexpnd.out
 test:
 	@rm -f $(TESTCOMPR) $(TESTEXPND)
 	@echo "Test data: $(TESTFILE)"
-	@for i in $(EXE); do \
+	for i in $(EXE); do \
           echo "$$i: compression..."; \
           ./$$i -c -i $(TESTFILE) -o $(TESTCOMPR); \
           echo "$$i: decompression..."; \
