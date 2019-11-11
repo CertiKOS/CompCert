@@ -1,5 +1,5 @@
 (* ******************* *)
-(* Author: Yuting Wang *)
+(* Author: PLDI-authors *)
 (* Date:   Feb 7, 2018 *)
 (* ******************* *)
 

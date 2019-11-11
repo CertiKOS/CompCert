@@ -1,10 +1,10 @@
 (* *******************  *)
-(* Author: Yuting Wang  *)
+(* Author: PLDI-authors  *)
 (* Date:   Sep 18, 2019 *)
 (* *******************  *)
 
 (* *******************  *)
-(* Modify: Xiangzhe Xu  *)
+(* Modify: PLDI-authors  *)
 (* Date:   Oct 09, 2019 *)
 (* *******************  *)
 

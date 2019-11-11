@@ -1,5 +1,5 @@
 (* *******************  *)
-(* Author: Xiangzhe Xu  *)
+(* Author: PLDI-authors  *)
 (* Date:   Oct 16, 2019 *)
 (* *******************  *)
 

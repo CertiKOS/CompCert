@@ -1,5 +1,5 @@
 (* Rocksalt assembly program *)
-(* Author        : Yuting Wang *)
+(* Author        : PLDI-authors *)
 (* Date Created  : 10-28-2017 *)
 
 Require Import Integers AST.

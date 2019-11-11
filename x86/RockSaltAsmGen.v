@@ -1,5 +1,5 @@
 (* Translation from MC to Rocksalt assembly *)
-(* Author        : Yuting Wang *)
+(* Author        : PLDI-authors *)
 (* Date Created  : 10-23-2017 *)
 (* Last Modified  : 8-22-2018 *)
 

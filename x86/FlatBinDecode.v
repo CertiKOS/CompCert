@@ -14,7 +14,7 @@ Local Open Scope hex_scope.
 Local Open Scope bits_scope.
 
 
-(** To be implemented and proved by Xu XiangZhe *)
+(** To be implemented and proved by PLDI-authors *)
 (* Parameter fmc_instr_decode : FlatBinary.instruction -> res FlatAsm.instruction. *)
 
 
