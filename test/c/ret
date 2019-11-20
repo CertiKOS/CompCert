@@ -1,0 +1,73 @@
+aes.compcert
+0.59user 0.00system 0:00.59elapsed 100%CPU (0avgtext+0avgdata 1340maxresident)k
+0inputs+0outputs (0major+56minor)pagefaults 0swaps
+almabench.compcert
+0.48user 0.00system 0:00.48elapsed 100%CPU (0avgtext+0avgdata 1724maxresident)k
+0inputs+0outputs (0major+67minor)pagefaults 0swaps
+binarytrees.compcert
+0.52user 0.00system 0:00.52elapsed 100%CPU (0avgtext+0avgdata 5740maxresident)k
+0inputs+0outputs (0major+1084minor)pagefaults 0swaps
+bisect.compcert
+2.56user 0.00system 0:02.56elapsed 100%CPU (0avgtext+0avgdata 1788maxresident)k
+0inputs+0outputs (0major+68minor)pagefaults 0swaps
+chomp.compcert
+0.89user 0.00system 0:00.90elapsed 99%CPU (0avgtext+0avgdata 10216maxresident)k
+0inputs+0outputs (0major+2290minor)pagefaults 0swaps
+fannkuch.compcert
+1.87user 0.00system 0:01.87elapsed 100%CPU (0avgtext+0avgdata 1064maxresident)k
+0inputs+0outputs (0major+52minor)pagefaults 0swaps
+fft.compcert
+0.63user 0.00system 0:00.63elapsed 100%CPU (0avgtext+0avgdata 5756maxresident)k
+0inputs+0outputs (0major+1090minor)pagefaults 0swaps
+fftsp.compcert
+0.57user 0.00system 0:00.57elapsed 100%CPU (0avgtext+0avgdata 1572maxresident)k
+0inputs+0outputs (0major+71minor)pagefaults 0swaps
+fftw.compcert
+0.54user 0.00system 0:00.54elapsed 100%CPU (0avgtext+0avgdata 1340maxresident)k
+0inputs+0outputs (0major+57minor)pagefaults 0swaps
+fib.compcert
+0.45user 0.00system 0:00.45elapsed 100%CPU (0avgtext+0avgdata 1196maxresident)k
+0inputs+0outputs (0major+52minor)pagefaults 0swaps
+integr.compcert
+0.02user 0.00system 0:00.02elapsed 100%CPU (0avgtext+0avgdata 1320maxresident)k
+0inputs+0outputs (0major+52minor)pagefaults 0swaps
+knucleotide.compcert
+0.70user 0.00system 0:00.70elapsed 100%CPU (0avgtext+0avgdata 3968maxresident)k
+0inputs+0outputs (0major+943minor)pagefaults 0swaps
+lists.compcert
+0.47user 0.00system 0:00.47elapsed 100%CPU (0avgtext+0avgdata 1312maxresident)k
+0inputs+0outputs (0major+64minor)pagefaults 0swaps
+mandelbrot.compcert
+0.75user 0.00system 0:00.75elapsed 100%CPU (0avgtext+0avgdata 1324maxresident)k
+0inputs+0outputs (0major+53minor)pagefaults 0swaps
+nbody.compcert
+4.85user 0.00system 0:04.85elapsed 100%CPU (0avgtext+0avgdata 1708maxresident)k
+0inputs+0outputs (0major+62minor)pagefaults 0swaps
+nsievebits.compcert
+0.42user 0.00system 0:00.42elapsed 99%CPU (0avgtext+0avgdata 12168maxresident)k
+0inputs+0outputs (0major+2812minor)pagefaults 0swaps
+nsieve.compcert
+0.41user 0.01system 0:00.42elapsed 99%CPU (0avgtext+0avgdata 5896maxresident)k
+0inputs+0outputs (0major+21952minor)pagefaults 0swaps
+perlin.compcert
+17.58user 0.00system 0:17.58elapsed 100%CPU (0avgtext+0avgdata 1584maxresident)k
+0inputs+0outputs (0major+64minor)pagefaults 0swaps
+qsort.compcert
+0.65user 0.00system 0:00.65elapsed 100%CPU (0avgtext+0avgdata 1940maxresident)k
+0inputs+0outputs (0major+345minor)pagefaults 0swaps
+sha1.compcert
+0.63user 0.00system 0:00.63elapsed 100%CPU (0avgtext+0avgdata 1392maxresident)k
+0inputs+0outputs (0major+55minor)pagefaults 0swaps
+sha3.compcert
+0.69user 0.00system 0:00.69elapsed 100%CPU (0avgtext+0avgdata 1488maxresident)k
+0inputs+0outputs (0major+78minor)pagefaults 0swaps
+siphash24.compcert
+2.01user 0.00system 0:02.01elapsed 100%CPU (0avgtext+0avgdata 1332maxresident)k
+0inputs+0outputs (0major+53minor)pagefaults 0swaps
+spectral.compcert
+3.83user 0.00system 0:03.84elapsed 99%CPU (0avgtext+0avgdata 1816maxresident)k
+0inputs+0outputs (0major+89minor)pagefaults 0swaps
+vmach.compcert
+0.96user 0.00system 0:00.96elapsed 100%CPU (0avgtext+0avgdata 1060maxresident)k
+0inputs+0outputs (0major+50minor)pagefaults 0swaps
+

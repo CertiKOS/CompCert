@@ -1,0 +1,73 @@
+aes.gcc
+0.71user 0.00system 0:00.71elapsed 100%CPU (0avgtext+0avgdata 1256maxresident)k
+0inputs+0outputs (0major+53minor)pagefaults 0swaps
+almabench.gcc
+0.63user 0.00system 0:00.63elapsed 100%CPU (0avgtext+0avgdata 1904maxresident)k
+0inputs+0outputs (0major+67minor)pagefaults 0swaps
+binarytrees.gcc
+0.80user 0.00system 0:00.80elapsed 100%CPU (0avgtext+0avgdata 5792maxresident)k
+0inputs+0outputs (0major+1086minor)pagefaults 0swaps
+bisect.gcc
+3.61user 0.00system 0:03.61elapsed 100%CPU (0avgtext+0avgdata 1408maxresident)k
+0inputs+0outputs (0major+58minor)pagefaults 0swaps
+chomp.gcc
+1.02user 0.00system 0:01.02elapsed 100%CPU (0avgtext+0avgdata 10112maxresident)k
+0inputs+0outputs (0major+2312minor)pagefaults 0swaps
+fannkuch.gcc
+3.75user 0.00system 0:03.75elapsed 100%CPU (0avgtext+0avgdata 1264maxresident)k
+0inputs+0outputs (0major+51minor)pagefaults 0swaps
+fft.gcc
+0.95user 0.00system 0:00.95elapsed 99%CPU (0avgtext+0avgdata 5816maxresident)k
+0inputs+0outputs (0major+1088minor)pagefaults 0swaps
+fftsp.gcc
+0.75user 0.00system 0:00.75elapsed 100%CPU (0avgtext+0avgdata 1560maxresident)k
+0inputs+0outputs (0major+69minor)pagefaults 0swaps
+fftw.gcc
+1.54user 0.00system 0:01.54elapsed 100%CPU (0avgtext+0avgdata 1252maxresident)k
+0inputs+0outputs (0major+56minor)pagefaults 0swaps
+fib.gcc
+0.44user 0.00system 0:00.44elapsed 100%CPU (0avgtext+0avgdata 1260maxresident)k
+0inputs+0outputs (0major+51minor)pagefaults 0swaps
+integr.gcc
+0.00user 0.00system 0:00.00elapsed 100%CPU (0avgtext+0avgdata 1244maxresident)k
+0inputs+0outputs (0major+52minor)pagefaults 0swaps
+knucleotide.gcc
+1.00user 0.00system 0:01.00elapsed 99%CPU (0avgtext+0avgdata 4036maxresident)k
+0inputs+0outputs (0major+940minor)pagefaults 0swaps
+lists.gcc
+1.20user 0.00system 0:01.20elapsed 100%CPU (0avgtext+0avgdata 1116maxresident)k
+0inputs+0outputs (0major+65minor)pagefaults 0swaps
+mandelbrot.gcc
+1.15user 0.00system 0:01.15elapsed 100%CPU (0avgtext+0avgdata 1172maxresident)k
+0inputs+0outputs (0major+49minor)pagefaults 0swaps
+nbody.gcc
+5.90user 0.00system 0:05.90elapsed 100%CPU (0avgtext+0avgdata 1588maxresident)k
+0inputs+0outputs (0major+62minor)pagefaults 0swaps
+nsievebits.gcc
+0.68user 0.00system 0:00.68elapsed 100%CPU (0avgtext+0avgdata 12364maxresident)k
+0inputs+0outputs (0major+2813minor)pagefaults 0swaps
+nsieve.gcc
+0.69user 0.01system 0:00.70elapsed 99%CPU (0avgtext+0avgdata 5816maxresident)k
+0inputs+0outputs (0major+21950minor)pagefaults 0swaps
+perlin.gcc
+22.76user 0.00system 0:22.76elapsed 100%CPU (0avgtext+0avgdata 1532maxresident)k
+0inputs+0outputs (0major+60minor)pagefaults 0swaps
+qsort.gcc
+1.08user 0.02system 0:01.11elapsed 99%CPU (0avgtext+0avgdata 1916maxresident)k
+0inputs+0outputs (0major+344minor)pagefaults 0swaps
+sha1.gcc
+0.66user 0.00system 0:00.66elapsed 100%CPU (0avgtext+0avgdata 1320maxresident)k
+0inputs+0outputs (0major+54minor)pagefaults 0swaps
+sha3.gcc
+1.62user 0.00system 0:01.62elapsed 100%CPU (0avgtext+0avgdata 1460maxresident)k
+0inputs+0outputs (0major+76minor)pagefaults 0swaps
+siphash24.gcc
+4.09user 0.00system 0:04.09elapsed 100%CPU (0avgtext+0avgdata 1176maxresident)k
+0inputs+0outputs (0major+50minor)pagefaults 0swaps
+spectral.gcc
+4.90user 0.00system 0:04.90elapsed 100%CPU (0avgtext+0avgdata 1796maxresident)k
+0inputs+0outputs (0major+91minor)pagefaults 0swaps
+vmach.gcc
+2.20user 0.00system 0:02.20elapsed 99%CPU (0avgtext+0avgdata 1324maxresident)k
+0inputs+0outputs (0major+52minor)pagefaults 0swaps
+

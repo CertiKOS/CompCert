@@ -31,6 +31,7 @@ all_gcc: $(PROGS:%=%.gcc)
 	$(CCOMP) $(CCOMPFLAGS) -S $*.c
 
 %.gcc: %.c
+	$(CC) $(CFLAGS) -c -o $*.gcco $*.c $(LIBS)
 	$(CC) $(CFLAGS) -o $*.gcc $*.c $(LIBS)
 
 test:
