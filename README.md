@@ -36,3 +36,16 @@ mailing list.
 
 For inquiries on the commercial version of CompCert, please contact
 info@absint.com
+
+## CompCertELF
+
+
+For installing CompCertELF, the following configuration is recommended:
+
++ OCaml 4.02.3
++ Coq 8.6.1
++ Menhir 20170712
+
+After having the tools mentioned above, run ./configure x86_32-linux && make.
+
+
