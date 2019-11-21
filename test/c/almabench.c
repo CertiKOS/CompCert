@@ -301,7 +301,7 @@ double GLB_DB12 = 12;
 double GLB_DB180 = 180;
 double tmp_local_24 = 24.0;
 
-void inline radecdist(double state[2][3], double rdd[3])
+static void inline radecdist(double state[2][3], double rdd[3])
 {
     double tmp_local_r2h = GLB_DB12 / PI;
     double tmp_local_r2d = GLB_DB180/ PI;

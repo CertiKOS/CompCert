@@ -109,6 +109,8 @@ Require ShstrtableEncode.
 Require OrderedLinking.
 Require SymbtablegenSep.
 Require PermuteRealAsmproof.
+Require RelocBinDecode2.
+Require RelocBingen2.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -238,6 +240,26 @@ Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program.
 
+  
+Definition transf_decode p: res (list Integers.byte) :=
+  transf_c_program_real p
+    @@@ time "Psedoinstruction elimination" Asmpielim.transf_program
+  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
+  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
+  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
+  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
+  @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program
+  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen2.transf_program
+  @@@ time "Decode the insturctions " RelocBinDecode2.transf_program
+  @@@ time "Encoding for the second time" RelocBingen2.transf_program
+  @@@ time "Generation of the string table" StrtableEncode.transf_program
+  @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
+  @@@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
+  @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program
+  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
+  @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
+  
   
 Definition transf_c_program_flatasm p : res SegAsm.program :=
   transf_c_program_real p

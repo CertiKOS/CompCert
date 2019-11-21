@@ -15,7 +15,7 @@ double SPE_GLB_DB1 = 1.0;
 
 static inline double eval_A(int i, int j) { return SPE_GLB_DB1/((i+j) * (i + j + SPE_GLB_INT1) / 2 + i + SPE_GLB_INT1); }
 
-inline void eval_A_times_u(int N, const double u[], double Au[])
+static inline void eval_A_times_u(int N, const double u[], double Au[])
 {
   int i,j;
   for(i=0;i<N;i++)
@@ -25,7 +25,7 @@ inline void eval_A_times_u(int N, const double u[], double Au[])
     }
 }
 
-inline void eval_At_times_u(int N, const double u[], double Au[])
+static inline void eval_At_times_u(int N, const double u[], double Au[])
 {
   int i,j;
   for(i=0;i<N;i++)

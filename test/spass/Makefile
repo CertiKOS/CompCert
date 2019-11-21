@@ -1,7 +1,7 @@
 include ../../Makefile.config
 
 CC=../../ccomp 
-CFLAGS=-stdlib ../../runtime -dparse -dclight -dasm -fstruct-return
+CFLAGS=-stdlib ../../runtime -dparse -dclight -dasm -fstruct-return -relf
 
 SRCS=analyze.c clause.c clock.c closure.c cnf.c component.c                 \
   condensing.c context.c defs.c dfgparser.c dfgscanner.c doc-proof.c        \
@@ -15,7 +15,7 @@ SRCS=analyze.c clause.c clock.c closure.c cnf.c component.c                 \
 all: spass
 
 spass: $(SRCS:.c=.o)
-	$(CC) $(CFLAGS) -o spass $(SRCS:.c=.o) $(LIBMATH)
+	-$(CC) $(CFLAGS) -o spass $(SRCS:.c=.o) $(LIBMATH)
 
 clean:
 	rm -f spass

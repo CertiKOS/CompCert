@@ -35,7 +35,7 @@ treeNode* NewTreeNode(treeNode* left, treeNode* right, long item)
 } /* NewTreeNode() */
 
 
-inline long ItemCheck(treeNode* tree)
+static inline long ItemCheck(treeNode* tree)
 {
     if (tree->left == NULL)
         return tree->item;
@@ -44,7 +44,7 @@ inline long ItemCheck(treeNode* tree)
 } /* ItemCheck() */
 
 
-inline treeNode* BottomUpTree(long item, unsigned depth)
+static inline treeNode* BottomUpTree(long item, unsigned depth)
 {
     if (depth > 0)
         return NewTreeNode
