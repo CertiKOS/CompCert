@@ -70,6 +70,7 @@ COMMON=Errors.v AST.v Linking.v \
   LanguageInterface.v \
   SmallstepLinking.v \
   CallconvAlgebra.v \
+  Loader.v \
 
 # Behaviors.v Determinism.v 
 # Invariant.v \
