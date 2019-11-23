@@ -65,21 +65,22 @@ VLIB=Axioms.v Coqlib.v Intv.v Maps.v Heaps.v Lattice.v Ordered.v \
 
 COMMON=Errors.v AST.v Linking.v \
   Events.v Globalenvs.v Memdata.v Memtype.v Memory.v \
-  Values.v Smallstep.v Behaviors.v Switch.v Determinism.v Unityping.v \
+  Values.v Smallstep.v Switch.v Unityping.v \
   Separation.v \
   LanguageInterface.v \
   SmallstepLinking.v \
-  Invariant.v \
   CallconvAlgebra.v \
+
+# Behaviors.v Determinism.v 
+# Invariant.v \
 
 # Compcert Kripke Logical Relations
 
 CKLR=\
   CKLR.v CKLRAlgebra.v \
-  Extends.v ExtendsFootprint.v \
-  Inject.v InjectFootprint.v InjectNeutral.v \
+  Extends.v Inject.v InjectFootprint.v \
   Mapsrel.v \
-  Valuesrel.v Eventsrel.v Globalenvsrel.v \
+  Valuesrel.v Eventsrel.v \
   Coprel.v Clightrel.v \
   Registersrel.v RTLrel.v \
 
@@ -93,15 +94,9 @@ BACKEND=\
   Registers.v RTL.v \
   RTLgen.v RTLgenspec.v RTLgenproof.v \
   Tailcall.v Tailcallproof.v \
-  Inlining.v Inliningspec.v Inliningproof.v \
   Renumber.v Renumberproof.v \
   RTLtyping.v \
   Kildall.v Liveness.v \
-  ValueDomain.v ValueAOp.v ValueAnalysis.v \
-  ConstpropOp.v Constprop.v ConstpropOpproof.v Constpropproof.v \
-  CSEdomain.v CombineOp.v CSE.v CombineOpproof.v CSEproof.v \
-  NeedDomain.v NeedOp.v Deadcode.v Deadcodeproof.v \
-  Unusedglob.v Unusedglobproof.v \
   Machregs.v Locations.v Conventions1.v Conventions.v LTL.v \
   Allocation.v Allocproof.v \
   Tunneling.v Tunnelingproof.v \
@@ -114,14 +109,24 @@ BACKEND=\
   Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v \
   AsmLinking.v \
 
+  # ValueDomain.v ValueAOp.v ValueAnalysis.v \
+  # Inlining.v Inliningspec.v Inliningproof.v \
+  # ConstpropOp.v Constprop.v ConstpropOpproof.v Constpropproof.v \
+  # CSEdomain.v CombineOp.v CSE.v CombineOpproof.v CSEproof.v \
+  # NeedDomain.v NeedOp.v Deadcode.v Deadcodeproof.v \
+  # Unusedglob.v Unusedglobproof.v \
+
 # C front-end modules (in cfrontend/)
 
-CFRONTEND=Ctypes.v Cop.v Csyntax.v Csem.v Ctyping.v Cstrategy.v Cexec.v \
-  Initializers.v Initializersproof.v \
-  SimplExpr.v SimplExprspec.v SimplExprproof.v \
-  Clight.v ClightBigstep.v SimplLocals.v SimplLocalsproof.v \
+CFRONTEND=Ctypes.v Cop.v Csyntax.v \
+  Clight.v SimplLocals.v SimplLocalsproof.v \
   Cshmgen.v Cshmgenproof.v \
   Csharpminor.v Cminorgen.v Cminorgenproof.v \
+
+# ClightBigstep.v 
+# SimplExpr.v SimplExprspec.v SimplExprproof.v \
+# Csem.v Ctyping.v Cstrategy.v Cexec.v \
+# Initializers.v Initializersproof.v \
 
 # LR(1) parser validator
 
@@ -135,7 +140,7 @@ PARSER=Cabs.v Parser.v
 
 # Putting everything together (in driver/)
 
-DRIVER=Compopts.v Compiler.v Complements.v
+DRIVER=Compopts.v Compiler.v #Complements.v
 
 # All source files
 
@@ -152,8 +157,8 @@ GENERATED=\
 all:
 	@test -f .depend || $(MAKE) depend
 	$(MAKE) proof
-	$(MAKE) extraction
-	$(MAKE) ccomp
+	#$(MAKE) extraction
+	#$(MAKE) ccomp
 ifeq ($(HAS_RUNTIME_LIB),true)
 	$(MAKE) runtime
 endif

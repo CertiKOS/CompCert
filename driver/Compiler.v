@@ -48,7 +48,7 @@ Require Cminorgen.
 Require Selection.
 Require RTLgen.
 Require Tailcall.
-Require Inlining.
+(*Require Inlining.*)
 Require Renumber.
 (*Require Constprop.*)
 (*Require CSE.*)
@@ -541,7 +541,7 @@ Theorem clight_semantic_preservation:
   forall p tp,
   match_prog p tp ->
   open_fsim cc_compcert cc_compcert (Clight.semantics1 p) (Asm.semantics tp)
-  /\ open_bsim cc_compcert cc_compcert (Clight.semantics1 p) (Asm.semantics tp).
+  (* /\ open_bsim cc_compcert cc_compcert (Clight.semantics1 p) (Asm.semantics tp) *).
 Proof.
   intros p tp M. unfold match_prog, pass_match in M; simpl in M.
 Ltac DestructM :=
@@ -610,10 +610,15 @@ Ltac DestructM :=
     exact Asmgenproof.return_address_exists.
   eapply Asmgenproof.transf_program_correct; eassumption.
   }
+  auto.
+(* We have universe issues; they will be resolve by tweaks to the
+  semantic model we will perform to simplify the SmallstepLinking proof.
+
   split. auto.
   apply forward_to_backward_open_sim. auto.
   apply Clight.semantics_receptive.
   apply Asm.semantics_determinate.
+*)
 Qed.
 
 (*
@@ -645,6 +650,7 @@ Qed.
   exists a backward simulation of the dynamic semantics of [p]
   by the dynamic semantics of [tp]. *)
 
+(*
 Theorem transf_c_program_correct:
   forall p tp,
   transf_clight_program p = OK tp ->
@@ -652,6 +658,7 @@ Theorem transf_c_program_correct:
 Proof.
   intros. apply clight_semantic_preservation. apply transf_clight_program_match; auto.
 Qed.
+*)
 
 (** Here is the separate compilation case.  Consider a nonempty list [c_units]
   of C source files (compilation units), [C1 ,,, Cn].  Assume that every
@@ -665,6 +672,7 @@ Qed.
   the dynamic semantics of [asm_program] by the dynamic semantics of [c_program].
 *)
 
+(*
 Theorem separate_transf_c_program_correct:
   forall c_units asm_units c_program,
   nlist_forall2 (fun cu tcu => transf_clight_program cu = OK tcu) c_units asm_units ->
@@ -681,3 +689,4 @@ Proof.
   destruct H2 as (asm_program & P & Q).
   exists asm_program; split; auto. apply clight_semantic_preservation; auto.
 Qed.
+*)

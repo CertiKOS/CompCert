@@ -28,6 +28,7 @@ Require Import LanguageInterface.
 Require Import Integers.
 
 Set Implicit Arguments.
+Set Universe Polymorphism.
 
 (** * Closures of transitions relations *)
 
