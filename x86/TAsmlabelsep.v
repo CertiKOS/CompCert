@@ -296,17 +296,9 @@ Proof.
   auto.
 Qed.
 
-Lemma transl_instr_inv : forall l fid i i',
+Axiom transl_instr_inv : forall l fid i i',
     transl_instr l fid i = OK i' ->
     de_transl_instr i' = i.
-Proof.
-(*   intros. destruct i. destruct p. destruct i0; simpl in H; monadInv H; auto. *)
-(*   monadInv EQ. auto. *)
-(*   monadInv EQ. auto. *)
-(*   monadInv EQ. auto. *)
-(*   monadInv EQ. auto. *)
-(* Qed. *)
-Admitted.
 
 Lemma transl_instrs_inv : forall l fid code code',
     transl_instrs l fid code = OK code' ->

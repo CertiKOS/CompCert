@@ -547,16 +547,15 @@ Proof.
       apply IN_RNG; auto.
 Qed.
 
-Lemma gen_symb_table_index_in_range : forall defs sec_data_id sec_code_id stbl dsz csz,
+Axiom gen_symb_table_index_in_range : forall defs sec_data_id sec_code_id stbl dsz csz,
     gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz, csz) ->
     symbtable_indexes_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) stbl.
-Proof.
-  intros until csz.
-  intros GS.
-  unfold gen_symb_table in GS. destr_in GS. destruct p. inv GS.
+  (* intros until csz. *)
+  (* intros GS. *)
+  (* unfold gen_symb_table in GS. destr_in GS. destruct p. inv GS. *)
 (*   eapply acc_symb_index_in_range; eauto. *)
 (* Qed. *)
-Admitted.
+
 
 Lemma reloc_symbentry_exists: forall e dsz csz,
   symbentry_index_in_range (map SecIndex.interp [sec_data_id; sec_code_id]) e ->
@@ -1777,20 +1776,19 @@ Proof.
 Qed.
   
 
-Lemma gen_symb_table_reloc_comm : forall defs1 defs2 stbl1 stbl2 stbl2' dsz1 dsz2 csz1 csz2,
+Axiom gen_symb_table_reloc_comm : forall defs1 defs2 stbl1 stbl2 stbl2' dsz1 dsz2 csz1 csz2,
     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) ->
     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
     gen_symb_table sec_data_id sec_code_id (defs1 ++ defs2) = (stbl1 ++ stbl2', dsz1 + dsz2, csz1 + csz2).
-Proof.
-  intros until csz2.
-  intros GS1 GS2 RELOC.
-  unfold gen_symb_table in GS1, GS2.
-  destr_in GS1; inv GS1.
-  destr_in GS2; inv GS2.
-  destruct p, p0. inv H0. inv H1.
-  unfold gen_symb_table.  
-Admitted.
+(* Proof. *)
+(*   intros until csz2. *)
+(*   intros GS1 GS2 RELOC. *)
+(*   unfold gen_symb_table in GS1, GS2. *)
+(*   destr_in GS1; inv GS1. *)
+(*   destr_in GS2; inv GS2. *)
+(*   destruct p, p0. inv H0. inv H1. *)
+(*   unfold gen_symb_table.   *)
 (*   erewrite acc_symb_reloc_comm; eauto. *)
 (*   rewrite rev_app_distr. rewrite rev_involutive. *)
 (*   auto. *)
@@ -2555,12 +2553,9 @@ Qed.
 
 Existing Instance Linker_prog_ordered.
 
-Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
+Axiom link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
     link p1 p2 = Some p -> match_prog p1 tp1 -> match_prog p2 tp2 ->
     exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp.
-Proof.
-  cbn in *.
-  Admitted.
 
 Instance TransfLinkSymbtablegen : TransfLink match_prog :=
   link_transf_symbtablegen.

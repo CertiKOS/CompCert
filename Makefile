@@ -119,12 +119,12 @@ BACKEND=\
   RawBingen.v RawBinary.v \
   FlatBinDecode.v \
   RelocProgram.v \
-  Asmlabelgen.v Asmlabelgenproof.v Asmpielim.v PadNops.v PadInitData.v \
+  Asmlabelgen.v Asmpielim.v PadNops.v PadInitData.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v SymbtablegenSep.v LinkingProp.v RelocBingen2.v RelocBinDecode2.v\
-  RelocProgSyneq.v SymbtablegenSep.v PermuteRealAsmproof.v
+  RelocProgSyneq.v SymbtablegenSep.v 
 
 # Encoding of data into bytes
 
