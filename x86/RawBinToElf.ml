@@ -1,7 +1,3 @@
-(* Translation from raw binary to ELF files *)
-(* Author        : Yuting Wang *)
-(* Date Created  : 04-05-2019 *)
-
 open Camlcoq
 open Elf
 open Errors
