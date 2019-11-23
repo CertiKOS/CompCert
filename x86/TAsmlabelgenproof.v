@@ -1,5 +1,5 @@
 (* ******************* *)
-(* Author: Pierre Wilke *)
+(* Author: Pldi author *)
 (* Date:   Jul 5, 2018 *)
 (* ******************* *)
 
