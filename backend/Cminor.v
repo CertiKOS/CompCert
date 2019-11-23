@@ -859,6 +859,7 @@ Definition bigstep_semantics (p: program) :=
 
 (** ** Correctness of the big-step semantics with respect to the transition semantics *)
 
+(*
 Section BIGSTEP_TO_TRANSITION.
 
 Variable prog: program.
@@ -1168,3 +1169,4 @@ Proof.
 Qed.
 
 End BIGSTEP_TO_TRANSITION.
+*)

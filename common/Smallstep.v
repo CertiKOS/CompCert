@@ -1094,6 +1094,7 @@ End BACKWARD_SIMULATION_SEQUENCES.
 
 (** ** Composing two backward simulations *)
 
+(*
 Section COMPOSE_BACKWARD_SIMULATIONS.
 
 Variable L1: semantics.
@@ -1228,6 +1229,7 @@ Proof.
 - (* symbols *)
   intros. transitivity (Senv.public_symbol (symbolenv L2) id); eapply bsim_public_preserved; eauto.
 Qed.
+*)
 
 (** ** Converting a forward simulation to a backward simulation *)
 
