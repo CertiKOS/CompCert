@@ -72,7 +72,7 @@ Definition gen_elf_header (p:program) : elf_header :=
      e_phnum        := 0;
      e_shentsize    := sec_header_size;
      e_shnum        := sectbl_size;      
-     e_shstrndx     := Z.of_N (SecIndex.interp sec_shstrtbl_id);
+     e_shstrndx     := Z.of_N sec_shstrtbl_id;
   |}.
 
 
@@ -83,15 +83,15 @@ Fixpoint list_first_n {A:Type} (n:nat) (l:list A) :=
   | _ , nil =>  nil
   end.
 
-Fixpoint sectable_prefix_size (id:ident) t :=
-  let l := list_first_n (Pos.to_nat id) t in
+Fixpoint sectable_prefix_size (id:N) t :=
+  let l := list_first_n (N.to_nat id) t in
   get_sections_size l.
                       
 Definition get_sh_offset id (t:sectable) :=
   elf_header_size + (sectable_prefix_size id t).
 
 Definition get_section_size id (t:sectable) :=
-  match SeqTable.get (SecIndex.interp id) t with
+  match SeqTable.get id t with
   | None => 0
   | Some s => sec_size s
   end.
@@ -144,7 +144,7 @@ Definition gen_symtab_sec_header p :=
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_symbtbl_id t;
      sh_size     := get_section_size sec_symbtbl_id t;
-     sh_link     := Z.of_N (SecIndex.interp sec_strtbl_id);
+     sh_link     := Z.of_N sec_strtbl_id;
      sh_info     := one_greater_last_local_symb_index p;
      sh_addralign := 1;
      sh_entsize  := symb_entry_size;
@@ -158,8 +158,8 @@ Definition gen_reldata_sec_header p :=
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_rel_data_id t;
      sh_size     := get_section_size sec_rel_data_id t;
-     sh_link     := Z.of_N (SecIndex.interp sec_symbtbl_id);
-     sh_info     := Z.of_N (SecIndex.interp sec_data_id);
+     sh_link     := Z.of_N sec_symbtbl_id;
+     sh_info     := Z.of_N sec_data_id;
      sh_addralign := 1;
      sh_entsize  := reloc_entry_size;
   |}.
@@ -172,8 +172,8 @@ Definition gen_reltext_sec_header p :=
      sh_addr     := 0;
      sh_offset   := get_sh_offset sec_rel_code_id t;
      sh_size     := get_section_size sec_rel_code_id t;
-     sh_link     := Z.of_N (SecIndex.interp sec_symbtbl_id);
-     sh_info     := Z.of_N (SecIndex.interp sec_code_id);
+     sh_link     := Z.of_N sec_symbtbl_id;
+     sh_info     := Z.of_N sec_code_id;
      sh_addralign := 1;
      sh_entsize  := reloc_entry_size;
   |}.

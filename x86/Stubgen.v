@@ -31,13 +31,17 @@ Definition create_start_stub : list byte :=
   in
   call_main_bytes ++ startsub.
 
-Definition create_start_stub_relocentry (main_symb:ident) (codesize:Z) : relocentry :=
-  {| reloc_offset := codesize + 1; (** Points to the *main* symbol in * call main *  *)
-     reloc_type   := reloc_rel;
-     reloc_symb   := SymbIndex.interp main_symb;
-     reloc_addend := -4
-  |}.
-
+Definition create_start_stub_relocentry (map: symb_index_map_type) (main_symb:ident) (codesize:Z) : res relocentry :=
+  match map ! main_symb with
+  | None =>
+    Error [MSG "Cannot find the index for main function: "; POS main_symb]
+  | Some idx =>
+    OK {| reloc_offset := codesize + 1; (** Points to the *main* symbol in * call main *  *)
+          reloc_type   := reloc_rel;
+          reloc_symb   := idx;
+          reloc_addend := -4
+       |}
+  end.
 
 Fixpoint find_symb (id:ident) (stbl:symbtable) : res Z := 
   match stbl with 
@@ -74,21 +78,22 @@ Definition append_reloc_entry (t: reloctable) (e:relocentry) :=
 
 Definition transf_program (p:program) : res program :=
   do main_symb <- find_symb' (prog_main p) (prog_symbtable p);
-  match SeqTable.get (SecIndex.interp sec_code_id) (prog_sectable p) with
+  match SeqTable.get sec_code_id (prog_sectable p) with
   | None => Error (msg "No .text section found")
   | Some txt_sec =>
     do txt_sec' <- expand_code_section txt_sec create_start_stub;
-    let e := create_start_stub_relocentry main_symb (sec_size txt_sec) in
+    let map := gen_symb_index_map p.(prog_symbtable) in
+    do e <- create_start_stub_relocentry map main_symb (sec_size txt_sec);
     do rtbl' <- 
-       match PTree.get sec_code_id (prog_reloctables p) with
+       match get_reloctable sec_code_id (prog_reloctables p) with
        | None => Error (msg "Cannot find the relocation table for .text")
        | Some rtbl => 
          OK (append_reloc_entry rtbl e)
        end;
-    match SeqTable.set (SecIndex.interp sec_code_id) txt_sec' (prog_sectable p)
+    match SeqTable.set sec_code_id txt_sec' (prog_sectable p)
     with
     | Some stbl =>
-      let rtbls := PTree.set sec_code_id rtbl' (prog_reloctables p) in
+      let rtbls := set_reloctable sec_code_id rtbl' (prog_reloctables p) in
       let p':=
           {| prog_defs := prog_defs p;
             prog_public := prog_public p;

@@ -23,7 +23,7 @@ Local Open Scope error_monad_scope.
 
 Section WITH_CODE_DATA_SEC.
 
-Variables (dsec csec:ident).
+Variables (dsec csec:N).
 
 Section WITH_CODE_DATA_SIZE.
 
@@ -71,7 +71,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := dsize;
-        symbentry_secindex := secindex_normal (SecIndex.interp dsec);
+        symbentry_secindex := secindex_normal dsec;
         symbentry_size := AST.init_data_list_size (AST.gvar_init gvar);
       |}
     end
@@ -89,7 +89,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := csize;
-      symbentry_secindex := secindex_normal (SecIndex.interp csec);
+      symbentry_secindex := secindex_normal csec;
       symbentry_size := code_size (fn_code f);
     |}
   end.

@@ -55,11 +55,11 @@ Definition create_reloctable_section (t:reloctable) : section :=
   sec_bytes bytes.
   
 
-Definition create_reloctables_sections (ts:PTree.t reloctable) : res (list section) :=
-  match PTree.get sec_data_id ts with
+Definition create_reloctables_sections (ts:reloctable_map) : res (list section) :=
+  match get_reloctable sec_data_id ts with
   | None => Error (msg "Relocation table for .data not found")
   | Some sd =>
-    match PTree.get sec_code_id ts with
+    match get_reloctable sec_code_id ts with
     | None => Error (msg "Relocation table for .text not found")
     | Some sc =>
       OK [create_reloctable_section sd; create_reloctable_section sc]

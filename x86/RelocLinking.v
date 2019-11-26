@@ -201,10 +201,10 @@ Definition link_section (s1 s2: section) : option section :=
   end.
 
 Definition link_sectable (s1 s2: sectable) : option sectable :=
-  let sec_data1 := SeqTable.get (SecIndex.interp sec_data_id) s1 in
-  let sec_text1 := SeqTable.get (SecIndex.interp sec_code_id) s1 in
-  let sec_data2 := SeqTable.get (SecIndex.interp sec_data_id) s2 in
-  let sec_text2 := SeqTable.get (SecIndex.interp sec_code_id) s2 in
+  let sec_data1 := SeqTable.get sec_data_id s1 in
+  let sec_text1 := SeqTable.get sec_code_id s1 in
+  let sec_data2 := SeqTable.get sec_data_id s2 in
+  let sec_text2 := SeqTable.get sec_code_id s2 in
   match sec_data1, sec_text1, sec_data2, sec_text2 with
   | Some sec_data1', Some sec_text1', Some sec_data2', Some sec_text2' =>
     let res_sec_text := link_section sec_text1' sec_text2' in
@@ -222,9 +222,9 @@ Definition link_sectable (s1 s2: sectable) : option sectable :=
 Definition reloc_offset_fun (data_sec code_sec: section): N -> option Z :=
   let dsz := sec_size data_sec in
   let csz := sec_size code_sec in
-  (fun i => if N.eq_dec i (SecIndex.interp sec_data_id) then
+  (fun i => if N.eq_dec i sec_data_id then
            Some dsz
-         else if N.eq_dec i (SecIndex.interp sec_code_id) then
+         else if N.eq_dec i sec_code_id then
            Some csz
          else
            None).
@@ -243,8 +243,8 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
   | Some ap =>
     let stbl1 := prog_sectable p1 in
     let stbl2 := prog_sectable p2 in
-    let data_sec1 := SeqTable.get (SecIndex.interp sec_data_id) stbl1 in
-    let code_sec1 := SeqTable.get (SecIndex.interp sec_code_id) stbl1 in
+    let data_sec1 := SeqTable.get sec_data_id stbl1 in
+    let code_sec1 := SeqTable.get sec_code_id stbl1 in
     match data_sec1, code_sec1 with
     | Some data_sec1', Some code_sec1' =>
       let f_rofs := reloc_offset_fun data_sec1' code_sec1' in

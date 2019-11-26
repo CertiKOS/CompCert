@@ -8,46 +8,46 @@
 Require Import Coqlib Maps Integers Values AST.
 Require Import Globalenvs SeqTable Asm.
 
-(** In the programs we use postives (ident) for indexing into various
-    tables.  However, the indexes of tables are natural numbers.
-    Thus, we need to define interpretation of positives into natural
-    numbers for different tables. The following sigature is for this
-    purpose. *)
-Module Type INDEX.
-  Parameter interp : ident -> N.
-  Parameter deinterp : N -> option ident.
+(* (** In the programs we use postives (ident) for indexing into various *)
+(*     tables.  However, the indexes of tables are natural numbers. *)
+(*     Thus, we need to define interpretation of positives into natural *)
+(*     numbers for different tables. The following sigature is for this *)
+(*     purpose. *) *)
+(* Module Type INDEX. *)
+(*   Parameter interp : ident -> N. *)
+(*   Parameter deinterp : N -> option ident. *)
 
-  Axiom interp_round_trip : forall i, deinterp (interp i) = Some i. 
-End INDEX.
+(*   Axiom interp_round_trip : forall i, deinterp (interp i) = Some i.  *)
+(* End INDEX. *)
 
-Module IdIndex <: INDEX.
-  Definition interp i := Npos i.
-  Definition deinterp i := match i with
-                           | N0 => None
-                           | Npos p => Some p
-                           end.
-  Lemma interp_round_trip : forall i, deinterp (interp i) = Some i. 
-  Proof.
-    intros i. simpl. auto.
-  Qed.
+(* Module IdIndex <: INDEX. *)
+(*   Definition interp i := Npos i. *)
+(*   Definition deinterp i := match i with *)
+(*                            | N0 => None *)
+(*                            | Npos p => Some p *)
+(*                            end. *)
+(*   Lemma interp_round_trip : forall i, deinterp (interp i) = Some i.  *)
+(*   Proof. *)
+(*     intros i. simpl. auto. *)
+(*   Qed. *)
 
-End IdIndex.
+(* End IdIndex. *)
 
-Module SubOneIndex <: INDEX.
-  Definition interp i := Pos.pred_N i.
-  Definition deinterp i := Some (N.succ_pos i).
-  Definition deinterp' i := (N.succ_pos i).
+(* Module SubOneIndex <: INDEX. *)
+(*   Definition interp i := Pos.pred_N i. *)
+(*   Definition deinterp i := Some (N.succ_pos i). *)
+(*   Definition deinterp' i := (N.succ_pos i). *)
 
-  Lemma interp_round_trip : forall i, deinterp (interp i) = Some i. 
-  Proof.
-    intros i. unfold deinterp, interp.
-    f_equal. unfold N.succ_pos, Pos.pred_N.
-    destruct i. simpl. auto.
-    rewrite Pos.succ_pred_double. auto.
-    auto.
-  Qed.
+(*   Lemma interp_round_trip : forall i, deinterp (interp i) = Some i.  *)
+(*   Proof. *)
+(*     intros i. unfold deinterp, interp. *)
+(*     f_equal. unfold N.succ_pos, Pos.pred_N. *)
+(*     destruct i. simpl. auto. *)
+(*     rewrite Pos.succ_pred_double. auto. *)
+(*     auto. *)
+(*   Qed. *)
 
-End SubOneIndex.
+(* End SubOneIndex. *)
 
 
 (** ** Sections *)
@@ -68,7 +68,7 @@ Definition sec_size (s: section) : Z :=
 
 (** Positive indexes to sections are mapped by the identity function,
     the 0-th section is a pre-defined null section *)
-Module SecIndex := IdIndex.
+(* Module SecIndex := IdIndex. *)
 Definition sectable := @SeqTable.t section.
 
 Definition sections_size stbl :=
@@ -110,7 +110,7 @@ Definition dummy_symbentry : symbentry :=
 
 (** Positive indexes to symbols are mapped by the identity function,
     the 0-th section is a pre-defined dummy symbol *)
-Module SymbIndex := IdIndex.
+(* Module SymbIndex := IdIndex. *)
 Definition symbtable := SeqTable.t symbentry.
 
 (** ** Relocation table *)
@@ -125,7 +125,7 @@ Record relocentry : Type :=
 }.
 
 (** Positive indexes to symbols are mapped by subtraction by one *)
-Module RelocIndex := SubOneIndex.
+(* Module RelocIndex := SubOneIndex. *)
 Definition reloctable := SeqTable.t relocentry.
 
 (** ** String table *)
@@ -134,6 +134,12 @@ Definition strtable := PTree.t Z.
 (** ** Definition of program constructs *)
 Definition gdef := AST.globdef fundef unit.
 
+Definition reloctable_map := ZTree.t reloctable.
+Definition set_reloctable (i:N) (rtbl:reloctable) (rmap:reloctable_map) :=
+  ZTree.set (Z.of_N i) rtbl rmap.
+Definition get_reloctable (i:N) (rmap: reloctable_map) :=
+  ZTree.get (Z.of_N i) rmap.
+
 Record program : Type := {
   prog_defs: list (ident * option gdef);
   prog_public: list ident;
@@ -141,9 +147,34 @@ Record program : Type := {
   prog_sectable: sectable;
   prog_symbtable: symbtable;
   prog_strtable: strtable;
-  prog_reloctables: PTree.t reloctable; (** Given the index of a section, it returns its relocation table (if exists) *)
+  prog_reloctables: reloctable_map; (** Given the index of a section, it returns its relocation table (if exists) *)
   prog_senv : Globalenvs.Senv.t;
 }.
+
+(** Generate the mapping from symbol ids to indexes *)
+Definition symb_index_map_type := PTree.t N.
+
+Definition acc_symb_index_map (rs:(N * symb_index_map_type)) (e:symbentry) : N * symb_index_map_type :=
+  let '(index, map) := rs in
+  let map' := 
+      match symbentry_id e with
+      | None => map
+      | Some id => PTree.set id index map
+      end in
+  (N.succ index, map').
+
+Definition gen_symb_index_map (stbl: symbtable) : symb_index_map_type :=
+  let '(_, map) := fold_left acc_symb_index_map stbl (0%N, PTree.empty N) in
+  map.
+
+Definition reloc_ofs_map_type := ZTree.t relocentry.
+
+Definition acc_reloc_ofs_map (e:relocentry) (rs: reloc_ofs_map_type): reloc_ofs_map_type :=
+  let ofs := reloc_offset e in
+  ZTree.set ofs e rs.
+
+Definition gen_reloc_ofs_map (rtbl: reloctable) :  reloc_ofs_map_type :=
+  fold_right acc_reloc_ofs_map (ZTree.empty relocentry) rtbl.
 
 (* Definition prog_to_prog (p: program) : AST.program fundef unit := *)
 (*   {| *)
@@ -155,10 +186,11 @@ Record program : Type := {
 (* Coercion prog_to_prog : program >-> AST.program. *)
 
 (** Section table ids *)
-Definition sec_data_id     := 1%positive.
-Definition sec_code_id     := 2%positive.
-Definition sec_strtbl_id   := 3%positive.
-Definition sec_symbtbl_id  := 4%positive.
-Definition sec_rel_data_id := 5%positive.
-Definition sec_rel_code_id := 6%positive.
-Definition sec_shstrtbl_id := 7%positive.
+Definition sec_data_id     := 1%N.
+Definition sec_code_id     := 2%N.
+Definition sec_strtbl_id   := 3%N.
+Definition sec_symbtbl_id  := 4%N.
+Definition sec_rel_data_id := 5%N.
+Definition sec_rel_code_id := 6%N.
+Definition sec_shstrtbl_id := 7%N.
+

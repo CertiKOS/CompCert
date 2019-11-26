@@ -7,6 +7,7 @@ Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
 Require Import Asm RelocProgram.
 Require Import Hex Bits Memdata Encode SeqTable.
+Require Import Reloctablesgen.
 Import Hex Bits.
 Import ListNotations.
 
@@ -40,15 +41,19 @@ Definition encode_scale (s: Z) : res bits :=
   | _ => Error (msg "Translation of scale failed")
   end.
 
-Section WITH_RELOC_TABLE.
+Section WITH_RELOC_OFS_MAP.
 
-Variable rtbl: reloctable.
+Variable rtbl_ofs_map: reloc_ofs_map_type.
 
-Definition get_reloc_addend (rid:ident) : res Z :=
-  match SeqTable.get (RelocIndex.interp rid) rtbl with
-  | None => Error [MSG "Cannot find the relocation entry "; POS rid]
+Definition get_reloc_addend (ofs:Z) : res Z :=
+  match ZTree.get ofs rtbl_ofs_map with
+  | None => Error [MSG "Cannot find the relocation entry at the offset "; POS (Z.to_pos ofs)]
   | Some e => OK (reloc_addend e)
   end.
+
+Definition get_instr_reloc_addend (ofs:Z) (i:instruction) : res Z :=
+  do iofs <- instr_reloc_offset i;
+  get_reloc_addend (ofs + iofs).
 
 (** ** Encoding of the address modes *)
 
@@ -101,12 +106,12 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
   end.
     
 (** Encode the full address mode *)
-Definition encode_addrmode (a: addrmode) (rd: ireg) : res (list byte) :=
+Definition encode_addrmode (sofs: Z) (i:instruction) (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
   do ofs <- match disp with
            | inl ofs => OK ofs
-           | inr (id,_) => get_reloc_addend id
+           | inr (id,_) => get_instr_reloc_addend sofs i
            end;
   OK (abytes ++ (encode_int32 ofs)).
 
@@ -128,7 +133,7 @@ Definition encode_testcond (c:testcond) : list byte :=
   end.
 
 (** Encode a single instruction *)
-Definition encode_instr (i: instruction) : res (list byte) :=
+Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   match i with
   | Pjmp_l_rel ofs =>
     OK (HB["E9"] :: encode_int32 ofs)
@@ -136,10 +141,10 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     let cbytes := encode_testcond c in
     OK (cbytes ++ encode_int32 ofs)
   | Pcall (inr id) _ =>
-    do addend <- get_reloc_addend id;
+    do addend <- get_instr_reloc_addend ofs i;
     OK (HB["E8"] :: encode_int32 addend)
   | Pleal rd a =>
-    do abytes <- encode_addrmode a rd;
+    do abytes <- encode_addrmode ofs i a rd;
     OK (HB["8D"] :: abytes)
   | Pxorl_r rd =>
     do rdbits <- encode_ireg rd;
@@ -171,19 +176,19 @@ Definition encode_instr (i: instruction) : res (list byte) :=
     let modrm := bB[ b["11"] ++ rdbits ++ r1bits] in
     OK (HB["8B"] :: modrm :: nil)
   | Pmovl_rm rd a =>
-    do abytes <- encode_addrmode a rd;
+    do abytes <- encode_addrmode ofs i a rd;
     OK (HB["8B"] :: abytes)
   | Pmovl_mr a rs =>
-    do abytes <- encode_addrmode a rs;
+    do abytes <- encode_addrmode ofs i a rs;
     OK (HB["89"] :: abytes)
   | Pmov_rm_a rd a =>
-    do abytes <- encode_addrmode a rd;
+    do abytes <- encode_addrmode ofs i a rd;
     OK (HB["8B"] :: abytes)    
   | Pmov_mr_a a rs =>
-    do abytes <- encode_addrmode a rs;
+    do abytes <- encode_addrmode ofs i a rs;
     OK (HB["89"] :: abytes)
   | Pmov_rs rd id =>
-    do abytes <- encode_addrmode (Addrmode None None (inr (id,Ptrofs.zero))) rd;
+    do abytes <- encode_addrmode ofs i (Addrmode None None (inr (id,Ptrofs.zero))) rd;
     OK (HB["8B"] :: abytes)  
   | Ptestl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
@@ -231,19 +236,22 @@ Definition encode_instr (i: instruction) : res (list byte) :=
            MSG (instr_to_string i)]
   end.
 
-Definition acc_instrs i r := 
-  do code <- r;
-  do c <- encode_instr i;
-  OK (c ++ code).
+Definition acc_instrs r i := 
+  do r' <- r;
+  let '(ofs, code) := r' in
+  do c <- encode_instr ofs i;
+  OK (ofs + instr_size i, rev c ++ code).
 
 (** Translation of a sequence of instructions in a function *)
 Definition transl_code (c:code) : res (list byte) :=
-  fold_right acc_instrs (OK []) c.
+  do r <- fold_left acc_instrs c (OK (0, []));
+  let '(_, c') := r in
+  OK (rev c').
 
 
 (** ** Encoding of data *)
 
-Definition transl_init_data (d:init_data) : res (list byte) :=
+Definition transl_init_data (dofs:Z) (d:init_data) : res (list byte) :=
   match d with
   | Init_int8 i => OK [Byte.repr (Int.unsigned i)]
   | Init_int16 i => OK (encode_int 2 (Int.unsigned i))
@@ -253,19 +261,22 @@ Definition transl_init_data (d:init_data) : res (list byte) :=
   | Init_float64 f => OK (encode_int 8 (Int64.unsigned (Float.to_bits f)))
   | Init_space n => OK (zero_bytes (nat_of_Z n))
   | Init_addrof id ofs => 
-    do addend <- get_reloc_addend id;
+    do addend <- get_reloc_addend dofs;
     OK (encode_int32 addend)
   end.
 
-Definition acc_init_data d r := 
-  do rbytes <- r;
-  do dbytes <- transl_init_data d;
-  OK (dbytes ++ rbytes).
+Definition acc_init_data r d := 
+  do r' <- r;
+  let '(ofs, rbytes) := r' in
+  do dbytes <- transl_init_data ofs d;
+  OK (ofs + init_data_size d, rev dbytes ++ rbytes).
 
 Definition transl_init_data_list (l: list init_data) : res (list byte) :=
-  fold_right acc_init_data (OK []) l.
+  do r <- fold_left acc_init_data l (OK (0, []));
+  let '(_,bytes) := r in
+  OK (rev bytes).
 
-End WITH_RELOC_TABLE.
+End WITH_RELOC_OFS_MAP.
 
 (** ** Translation of a program *)
 
@@ -274,15 +285,17 @@ Definition transl_section (sec:section) (rtbl:option reloctable) : res section :
   | sec_text code =>
     match rtbl with
     | None => Error [MSG "Encoding failed: No relocation table found for .text section"]
-    | Some rtbl => 
-      do bytes <- transl_code rtbl code;
+    | Some rtbl =>
+      let rofs_map := gen_reloc_ofs_map rtbl in
+      do bytes <- transl_code rofs_map code;
       OK (sec_bytes bytes)
     end
   | sec_data l =>
     match rtbl with
     | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
     | Some rtbl => 
-      do bytes <- transl_init_data_list rtbl l;
+      let rofs_map := gen_reloc_ofs_map rtbl in
+      do bytes <- transl_init_data_list rofs_map l;
       OK (sec_bytes bytes)
     end
   | _ => OK sec
@@ -291,12 +304,8 @@ Definition transl_section (sec:section) (rtbl:option reloctable) : res section :
 Definition acc_sections rtbls r sec := 
   do r' <- r;
   let '(stbl,si) := r' in
-  match SecIndex.deinterp si with
-  | None => OK (sec :: stbl, N.succ si)
-  | Some sec_index =>
-    do sec' <- transl_section sec (PTree.get sec_index rtbls);
-    OK (sec' :: stbl, N.succ si)
-  end.
+  do sec' <- transl_section sec (get_reloctable si rtbls);
+  OK (sec' :: stbl, N.succ si).
 
 Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) : res sectable :=
   do r <- 
