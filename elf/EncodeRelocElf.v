@@ -7,6 +7,7 @@ Require Import Errors.
 Require Import Encode.
 Require Import Memdata.
 Require Import RelocElf.
+Require Import Asm.
 Require Import Hex.
 Import Hex.
 Import ListNotations.
@@ -63,7 +64,12 @@ Definition encode_section_header (sh: section_header) :=
 Definition encode_section_headers (shs: list section_header) :=
   fold_right (fun sh r => (encode_section_header sh) ++ r) [] shs.
 
-Definition encode_elf_file (ef: elf_file) : list byte :=
-  (encode_elf_header (elf_head ef)) ++
-  (encode_sections (elf_sections ef)) ++
-  (encode_section_headers (elf_section_headers ef)).
+Definition encode_elf_file (ef: elf_file) : (list byte * program) :=
+  let bs := 
+      (encode_elf_header (elf_head ef)) ++
+      (encode_sections (elf_sections ef)) ++
+      (encode_section_headers (elf_section_headers ef)) in
+  let p := {| AST.prog_defs   := RelocElf.prog_defs ef;
+              AST.prog_public := RelocElf.prog_public ef;
+              AST.prog_main   := RelocElf.prog_main ef; |} in
+  (bs, p).

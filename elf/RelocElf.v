@@ -3,6 +3,7 @@
 (* Date Created  : Sep-22-2019 *)
 
 Require Import Coqlib Integers Maps.
+Require Import AST Asm.
 Require Import Errors.
 Require Import Encode.
 Require Import Memdata.
@@ -274,6 +275,12 @@ Definition section := list byte.
 
 Record elf_file :=
 {
+  (** The definitions are kept for defining the semantics
+      of external functions *)
+  prog_defs: list (ident * option (AST.globdef fundef unit));
+  prog_public: list ident;
+  prog_main: ident;  
+  
   elf_head         : elf_header;           (** ELF header *)
   elf_sections     : list section;        (** Sections *)
   elf_section_headers : list section_header  (** Section headers *)

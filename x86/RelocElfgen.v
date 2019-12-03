@@ -238,7 +238,10 @@ Definition gen_reloc_elf (p:program) : res elf_file :=
                       gen_reldata_sec_header p;
                       gen_reltext_sec_header p;
                       gen_shstrtab_sec_header p] in
-    OK {| elf_head      := gen_elf_header p;
+    OK {| prog_defs     := RelocProgram.prog_defs p;
+          prog_public   := RelocProgram.prog_public p;
+          prog_main     := RelocProgram.prog_main p;
+          elf_head      := gen_elf_header p;
           elf_sections  := secs;
           elf_section_headers := headers;
        |}
