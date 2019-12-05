@@ -29,3 +29,23 @@ Fixpoint string_to_bytes (s:string) : list byte :=
 
 Notation "CB[ c ]" := (ascii_to_byte c) (right associativity) : string_byte_scope.
 Notation "SB[ str ]" := (string_to_bytes str) (right associativity) : string_byte_scope.
+
+Definition decode_int32 (lb: list byte) : Z :=
+  decode_int lb.
+
+Definition decode_int16 (lb: list byte) : Z :=
+  decode_int lb.
+
+Lemma decode_encode_int32 z :
+  (decode_int32 (encode_int32 z) = z mod two_p (Z.of_nat 32))%Z.
+Proof.
+  unfold decode_int32, encode_int32.
+  rewrite decode_encode_int. reflexivity.
+Qed.
+
+Lemma decode_encode_int16 z :
+  (decode_int16 (encode_int16 z) = z mod two_p (Z.of_nat 16))%Z.
+Proof.
+  unfold decode_int16, encode_int16.
+  rewrite decode_encode_int. reflexivity.
+Qed.
