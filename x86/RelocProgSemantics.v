@@ -661,40 +661,52 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
         step ge (State rs m) t (State rs' m').
 
 (** Initialization of the global environment *)
-Definition add_external_global (ge:Genv.t) (idg: ident * option gdef) : Genv.t :=
-  let '(gid,gdef) := idg in
-  let gsymbs := 
-      if is_def_internal is_fundef_internal gdef then
-        Genv.genv_symb ge
-      else
-        PTree.set gid (Genv.genv_next ge, Ptrofs.zero)
-                  (Genv.genv_symb ge)
-  in
-  let gextfuns :=
-      match gdef with
-      | Some (Gfun (External f)) =>
-        PTree.set (Genv.genv_next ge) f (Genv.genv_ext_funs ge)
-      | _ => Genv.genv_ext_funs ge
-      end
-  in
-  let bnext := 
-      if is_def_internal is_fundef_internal gdef 
-      then Genv.genv_next ge 
-      else Psucc (Genv.genv_next ge)
-  in
-  Genv.mkgenv
-    gsymbs
-    gextfuns
-    (Genv.genv_instrs ge)
-    bnext
-    (Genv.genv_senv ge).
-  
-Fixpoint add_external_globals (ge:Genv.t) (gl: list (ident * option gdef)) : Genv.t :=
-  match gl with
+Definition add_external_global (extfuns: PTree.t external_function) 
+           (ge:Genv.t) (e: symbentry) : Genv.t :=
+  match symbentry_id e with
+  | None => ge
+  | Some id =>
+    let gsymbs := 
+        if is_symbol_internal e then
+          Genv.genv_symb ge
+        else
+          PTree.set id (Genv.genv_next ge, Ptrofs.zero)
+                    (Genv.genv_symb ge)
+    in
+    let gextfuns :=
+        match symbentry_type e with
+        | symb_func =>
+          if is_symbol_internal e then
+            Genv.genv_ext_funs ge
+          else
+            match PTree.get id extfuns with
+            | None => Genv.genv_ext_funs ge
+            | Some ef =>
+              PTree.set (Genv.genv_next ge) ef (Genv.genv_ext_funs ge)
+            end
+        | _ => Genv.genv_ext_funs ge
+        end
+    in
+    let bnext := 
+        if is_symbol_internal e 
+        then Genv.genv_next ge 
+        else Psucc (Genv.genv_next ge)
+    in
+    Genv.mkgenv
+      gsymbs
+      gextfuns
+      (Genv.genv_instrs ge)
+      bnext
+      (Genv.genv_senv ge)
+  end.
+
+Fixpoint add_external_globals (extfuns: PTree.t external_function)
+         (ge:Genv.t) (t: symbtable) : Genv.t :=
+  match t with
   | nil => ge
-  | (idg::gl') => 
-    let ge' := add_external_global ge idg in
-    add_external_globals ge' gl'
+  | (e::l) => 
+    let ge' := add_external_global extfuns ge e in
+    add_external_globals extfuns ge' l
   end. 
 
 Definition sec_index_to_block (i:N) : block :=
@@ -739,6 +751,16 @@ Definition gen_instr_map' (s:option section) :=
     end
   end.
 
+Definition acc_extfuns (idg: ident * option gdef) extfuns :=
+  let '(id, gdef) := idg in
+  match gdef with
+  | Some (Gfun (External ef)) => PTree.set id ef extfuns
+  | _ => extfuns
+  end.
+
+Definition gen_extfuns (idgs: list (ident * option gdef)) :=
+  fold_right acc_extfuns (PTree.empty external_function) idgs.
+
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in
   let imap := gen_instr_map' (SeqTable.get sec_code_id (prog_sectable p)) in
@@ -748,8 +770,8 @@ Definition globalenv (p: program) : Genv.t :=
                           imap 
                           nextblock 
                           (prog_senv p) in
-  add_external_globals genv p.(prog_defs).
-
+  let extfuns := gen_extfuns p.(prog_defs) in
+  add_external_globals extfuns genv p.(prog_symbtable).
 
 (** Initialization of memory *)
 Section WITHGE.
@@ -779,43 +801,48 @@ Fixpoint store_init_data_list (m: mem) (b: block) (p: Z) (idl: list init_data)
       end
   end.
 
-Definition alloc_external_global (m: mem) (idg: ident * option gdef): option mem :=
-  let '(id, gdef) := idg in
-  match gdef with
-  | None => 
-    let (m1, b) := Mem.alloc m 0 0 in
-    Some m1
-  | Some (Gfun f) =>
-    if is_fundef_internal f then
-      Some m
-    else
-      let (m1, b) := Mem.alloc m 0 1 in
-      Mem.drop_perm m1 b 0 1 Nonempty
-  | Some (Gvar v) =>
-    if is_var_internal v then
-      Some m
-    else
-      let init := v.(gvar_init) in
-      let sz := init_data_list_size init in
-      let (m1, b) := Mem.alloc m 0 sz in
-      match store_zeros m1 b 0 sz with
-      | None => None
-      | Some m2 =>
-        match store_init_data_list m2 b 0 init with
-        | None => None
-        | Some m3 => Mem.drop_perm m3 b 0 sz (Globalenvs.Genv.perm_globvar v)
-        end
+Definition alloc_external_symbol (m: mem) (e:symbentry): option mem :=
+  match symbentry_id e with
+  | None => Some m
+  | Some id =>
+    match symbentry_type e with
+    | symb_notype =>
+      let (m1, b) := Mem.alloc m 0 0 in
+      Some m1
+    | symb_func =>
+      match symbentry_secindex e with
+      | secindex_undef =>
+        let (m1, b) := Mem.alloc m 0 1 in
+        Mem.drop_perm m1 b 0 1 Nonempty        
+      | secindex_comm => 
+        None (**r Impossible *)
+      | secindex_normal _ => Some m
       end
+    | symb_data =>
+      match symbentry_secindex e with
+      | secindex_undef
+      | secindex_comm => 
+        let sz := symbentry_size e in
+        let (m1, b) := Mem.alloc m 0 sz in
+        match store_zeros m1 b 0 sz with
+        | None => None
+        | Some m2 =>
+          Mem.drop_perm m2 b 0 sz Nonempty
+        end        
+      | secindex_normal _ => Some m
+      end
+    end
   end.
+      
 
-Fixpoint alloc_external_globals (m: mem) (gl: list (ident * option gdef))
-                       {struct gl} : option mem :=
-  match gl with
+Fixpoint alloc_external_symbols (m: mem) (t: symbtable)
+                       {struct t} : option mem :=
+  match t with
   | nil => Some m
-  | g :: gl' =>
-      match alloc_external_global m g with
+  | h :: l =>
+      match alloc_external_symbol m h with
       | None => None
-      | Some m' => alloc_external_globals m' gl'
+      | Some m' => alloc_external_symbols m' l
       end
   end.
 
@@ -899,7 +926,7 @@ Definition init_mem (p: program) :=
     match alloc_code_section stbl m1 with
     | None => None
     | Some m2 =>
-      alloc_external_globals ge m2 (prog_defs p)
+      alloc_external_symbols m2 (prog_symbtable p)
     end
   end.
 

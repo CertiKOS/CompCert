@@ -108,6 +108,12 @@ Definition dummy_symbentry : symbentry :=
      symbentry_size := 0;
   |}.
 
+Definition is_symbol_internal e :=
+  match symbentry_secindex e with
+  | secindex_normal _ => true
+  | _ => false
+  end.
+
 (** Positive indexes to symbols are mapped by the identity function,
     the 0-th section is a pre-defined dummy symbol *)
 (* Module SymbIndex := IdIndex. *)
