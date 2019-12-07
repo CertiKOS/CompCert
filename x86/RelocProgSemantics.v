@@ -5,6 +5,11 @@
 
 (** * The semantics of relocatable program using only the symbol table *)
 
+(** The key feature of this semantics: it uses mappings from the ids
+    of global symbols to memory locations in deciding their memory
+    addresses. These mappings are caculated by using the symbol table.
+    *)
+
 Require Import Coqlib Maps AST Integers Values.
 Require Import Events Floats Memory Smallstep.
 Require Import Asm RelocProgram RawAsm Globalenvs.

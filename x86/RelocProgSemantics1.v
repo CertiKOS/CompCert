@@ -5,6 +5,12 @@
 
 (** * The semantics of relocatable program using both the symbol and the relocation tables *)
 
+(** The key feature of this semantics: it uses mappings from the
+    offsets of global symbols in their corresponding sections to
+    memory locations in deciding their memory addresses. These
+    mappings are calculated by using both the symobl and the
+    relocation tables *)
+
 Require Import Coqlib Maps AST Integers Values.
 Require Import Events Floats Memory Smallstep.
 Require Import Asm RelocProgram RawAsm Globalenvs.
@@ -696,5 +702,299 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
                   #RA <- Vundef
                   #RSP <- (Val.offset_ptr (rs RSP) (Ptrofs.repr (size_chunk Mptr))) ->
         step ge (State rs m) t (State rs' m').
+
+(** Initialization of the global environment *)
+
+Definition acc_reloc_ofs_symb (stbl:symbtable) (e:relocentry) (m:ZTree.t ident) :=
+  match SeqTable.get (reloc_symb e) stbl with
+  | None => m
+  | Some s => 
+    match symbentry_id s with
+    | None => m
+    | Some id => ZTree.set (reloc_offset e) id m
+    end
+  end.
+
+Definition gen_reloc_ofs_symb (stbl: symbtable) (rtbl: reloctable) : ZTree.t ident :=
+  fold_right (acc_reloc_ofs_symb stbl) (ZTree.empty ident) rtbl.
+
+Definition add_reloc_ofs_symb (stbl: symbtable) (i:N)  (rmap: reloctable_map)
+           (ofsmap: N -> option (ZTree.t ident)) :=
+  match get_reloctable i rmap with
+  | None => ofsmap
+  | Some rtbl => 
+    let m := gen_reloc_ofs_symb stbl rtbl in
+    fun i' => if N.eq_dec i i' then Some m else ofsmap i'
+  end.
+  
+Definition gen_reloc_ofs_symbs (p:program) :=
+  let stbl := p.(prog_symbtable) in
+  let rmap := p.(prog_reloctables) in
+  let ofsmap := fun i => None in
+  let ofsmap1 := add_reloc_ofs_symb stbl sec_data_id rmap ofsmap in
+  let ofsmap2 := add_reloc_ofs_symb stbl sec_code_id rmap ofsmap1 in
+  ofsmap2.
+
+Definition globalenv (p: program) : Genv.t :=
+  let ofsmap := gen_reloc_ofs_symbs p in
+  let genv1 := RelocProgSemantics.globalenv p in
+  Genv.mkgenv ofsmap genv1.
+
+
+(** Initialization of memory *)
+Section WITHGE.
+
+Variable ge:Genv.t.
+
+Definition store_init_data (m: mem) (b: block) (p: Z) (id: init_data) : option mem :=
+  match id with
+  | Init_int8 n => Mem.store Mint8unsigned m b p (Vint n)
+  | Init_int16 n => Mem.store Mint16unsigned m b p (Vint n)
+  | Init_int32 n => Mem.store Mint32 m b p (Vint n)
+  | Init_int64 n => Mem.store Mint64 m b p (Vlong n)
+  | Init_float32 n => Mem.store Mfloat32 m b p (Vsingle n)
+  | Init_float64 n => Mem.store Mfloat64 m b p (Vfloat n)
+  | Init_addrof gloc ofs => Mem.store Mptr m b p (Genv.symbol_address ge sec_data_id p ofs)
+  | Init_space n => Some m
+  end.
+
+Fixpoint store_init_data_list (m: mem) (b: block) (p: Z) (idl: list init_data)
+                              {struct idl}: option mem :=
+  match idl with
+  | nil => Some m
+  | id :: idl' =>
+      match store_init_data m b p id with
+      | None => None
+      | Some m' => store_init_data_list m' b (p + init_data_size id) idl'
+      end
+  end.
+
+Definition alloc_external_symbol (m: mem) (e:symbentry): option mem :=
+  match symbentry_id e with
+  | None => Some m
+  | Some id =>
+    match symbentry_type e with
+    | symb_notype =>
+      let (m1, b) := Mem.alloc m 0 0 in
+      Some m1
+    | symb_func =>
+      match symbentry_secindex e with
+      | secindex_undef =>
+        let (m1, b) := Mem.alloc m 0 1 in
+        Mem.drop_perm m1 b 0 1 Nonempty        
+      | secindex_comm => 
+        None (**r Impossible *)
+      | secindex_normal _ => Some m
+      end
+    | symb_data =>
+      match symbentry_secindex e with
+      | secindex_undef
+      | secindex_comm => 
+        let sz := symbentry_size e in
+        let (m1, b) := Mem.alloc m 0 sz in
+        match store_zeros m1 b 0 sz with
+        | None => None
+        | Some m2 =>
+          Mem.drop_perm m2 b 0 sz Nonempty
+        end        
+      | secindex_normal _ => Some m
+      end
+    end
+  end.
+      
+Fixpoint alloc_external_symbols (m: mem) (t: symbtable)
+                       {struct t} : option mem :=
+  match t with
+  | nil => Some m
+  | h :: l =>
+      match alloc_external_symbol m h with
+      | None => None
+      | Some m' => alloc_external_symbols m' l
+      end
+  end.
+
+(* Definition store_internal_global (b:block) (ofs:Z) (m: mem) (idg: ident * option gdef): option (mem * Z) := *)
+(*   let '(id, gdef) := idg in *)
+(*   match gdef with *)
+(*   | Some (Gvar v) => *)
+(*     if is_var_internal v then *)
+(*       let init := gvar_init v in *)
+(*       let isz := init_data_list_size init in *)
+(*       match Globalenvs.store_zeros m b ofs isz with *)
+(*       | None => None *)
+(*       | Some m1 => *)
+(*         match store_init_data_list m1 b ofs init with *)
+(*         | None => None *)
+(*         | Some m2 =>  *)
+(*           match Mem.drop_perm m2 b ofs (ofs+isz) (Globalenvs.Genv.perm_globvar v) with *)
+(*           | None => None *)
+(*           | Some m3 => Some (m3, ofs + isz) *)
+(*           end *)
+(*         end *)
+(*       end *)
+(*     else *)
+(*       Some (m, ofs) *)
+(*   | _ => Some (m, ofs) *)
+(*   end. *)
+
+(* Definition acc_store_internal_global b r (idg: ident * option gdef) := *)
+(*   match r with *)
+(*   | None => None *)
+(*   | Some (m, ofs) => *)
+(*     store_internal_global b ofs m idg *)
+(*   end. *)
+
+(* Definition store_internal_globals (b:block) (m: mem) (gl: list (ident * option gdef))  *)
+(*   : option mem := *)
+(*   match fold_left (acc_store_internal_global b) gl (Some (m, 0)) with *)
+(*   | None => None *)
+(*   | Some (m',_) => Some m' *)
+(*   end. *)
+
+
+Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
+  match SeqTable.get sec_data_id t with
+  | None => None
+  | Some sec =>
+    let sz := (sec_size sec) in
+    match sec with
+    | sec_data init =>
+      let '(m1, b) := Mem.alloc m 0 sz in
+      match store_zeros m1 b 0 sz with
+      | None => None
+      | Some m2 =>
+        match store_init_data_list m2 b 0 init with
+        | None => None
+        | Some m3 => Mem.drop_perm m3 b 0 sz Writable
+        end
+      end
+    | _ => None
+    end
+  end.
+
+Definition alloc_code_section (t:sectable) (m:mem) : option mem :=
+  match SeqTable.get sec_code_id t with
+  | None => None
+  | Some sec =>
+    let sz := sec_size sec in
+    let (m1, b) := Mem.alloc m 0 sz in
+    Mem.drop_perm m1 b 0 sz Nonempty
+  end.
+
+End WITHGE.
+
+
+Definition init_mem (p: program) :=
+  let ge := globalenv p in
+  let stbl := prog_sectable p in
+  match alloc_data_section ge stbl Mem.empty with
+  | None => None
+  | Some m1 =>
+    match alloc_code_section stbl m1 with
+    | None => None
+    | Some m2 =>
+      alloc_external_symbols m2 (prog_symbtable p)
+    end
+  end.
+
+(** Execution of whole programs. *)
+Inductive initial_state_gen (p: program) (rs: regset) m: state -> Prop :=
+  | initial_state_gen_intro:
+      forall m1 m2 m3 bstack m4
+      (MALLOC: Mem.alloc (Mem.push_new_stage m) 0 (Mem.stack_limit + align (size_chunk Mptr) 8) = (m1,bstack))
+      (MDROP: Mem.drop_perm m1 bstack 0 (Mem.stack_limit + align (size_chunk Mptr) 8) Writable = Some m2)
+      (MRSB: Mem.record_stack_blocks m2 (make_singleton_frame_adt' bstack frame_info_mono 0) = Some m3)
+      (MST: Mem.storev Mptr m3 (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr))) Vnullptr = Some m4),
+      let ge := (globalenv p) in
+      let rs0 :=
+        rs # PC <- (RelocProgSemantics.Genv.symbol_address (Genv.genv_genv ge) 
+                                                          p.(prog_main) Ptrofs.zero)
+           # RA <- Vnullptr
+           # RSP <- (Vptr bstack (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr)))) in
+      initial_state_gen p rs m (State rs0 m4).
+
+Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=
+| initial_state_intro: forall m,
+    init_mem prog = Some m ->
+    initial_state_gen prog rs m s ->
+    initial_state prog rs s.
+
+Inductive final_state: state -> int -> Prop :=
+  | final_state_intro: forall rs m r,
+      rs#PC = Vnullptr ->
+      rs#RAX = Vint r ->
+      final_state (State rs m) r.
+
+(* Local Existing Instance mem_accessors_default. *)
+
+Definition genv_senv (ge:Genv.t) :=
+  RelocProgSemantics.Genv.genv_senv (Genv.genv_genv ge).
+
+Definition semantics (p: program) (rs: regset) :=
+  Semantics_gen step (initial_state p rs) final_state (globalenv p) 
+                (genv_senv (globalenv p)).
+
+(** Determinacy of the [Asm] semantics. *)
+
+Lemma semantics_determinate: forall p rs, determinate (semantics p rs).
+Proof.
+Ltac Equalities :=
+  match goal with
+  | [ H1: ?a = ?b, H2: ?a = ?c |- _ ] =>
+      rewrite H1 in H2; inv H2; Equalities
+  | _ => idtac
+  end.
+  intros; constructor; simpl; intros.
+- (* determ *)
+  inv H; inv H0; Equalities.
++ split. constructor. auto.
++ unfold exec_instr in H4. destr_in H4; discriminate.
++ unfold exec_instr in H12. destr_in H12; discriminate.
++ assert (vargs0 = vargs) by (eapply eval_builtin_args_determ; eauto). subst vargs0.
+  exploit external_call_determ. eexact H6. eexact H12. intros [A B].
+  split. auto. intros. destruct B; auto. subst. auto.
++ assert (args0 = args) by (eapply Asm.extcall_arguments_determ; eauto). subst args0.
+  exploit external_call_determ. eexact H3. eexact H7. intros [A B].
+  split. auto. intros. destruct B; auto. subst. auto.
+- (* trace length *)
+  red; intros; inv H; simpl.
+  omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+- (* initial states *)
+  inv H; inv H0. assert (m = m0) by congruence. subst. inv H2; inv H3.
+  assert (m1 = m5 /\ bstack = bstack0) by intuition congruence. destruct H0; subst.
+  assert (m2 = m6) by congruence. subst.
+  f_equal. congruence.
+- (* final no step *)
+  assert (NOTNULL: forall b ofs, Vnullptr <> Vptr b ofs).
+  { intros; unfold Vnullptr; destruct Archi.ptr64; congruence. }
+  inv H. red; intros; red; intros. inv H; rewrite H0 in *; eelim NOTNULL; eauto.
+- (* final states *)
+  inv H; inv H0. congruence.
+Qed.
+
+Theorem reloc_prog_single_events p rs:
+  single_events (semantics p rs).
+Proof.
+  red. simpl. intros s t s' STEP.
+  inv STEP; simpl. omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+Qed.
+
+Theorem reloc_prog_receptive p rs:
+  receptive (semantics p rs).
+Proof.
+  split.
+  - simpl. intros s t1 s1 t2 STEP MT.
+    inv STEP.
+    inv MT. eexists. eapply exec_step_internal; eauto.
+    edestruct external_call_receptive as (vres2 & m2 & EC2); eauto.
+    eexists. eapply exec_step_builtin; eauto.
+    edestruct external_call_receptive as (vres2 & m2 & EC2); eauto.
+    eexists. eapply exec_step_external; eauto.
+  - eapply reloc_prog_single_events; eauto.
+Qed.
 
 End WITHEXTERNALCALLS.
