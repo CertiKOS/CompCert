@@ -661,7 +661,7 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
         step ge (State rs m) t (State rs' m').
 
 (** Initialization of the global environment *)
-Definition add_global (ge:Genv.t) (idg: ident * option gdef) : Genv.t :=
+Definition add_external_global (ge:Genv.t) (idg: ident * option gdef) : Genv.t :=
   let '(gid,gdef) := idg in
   let gsymbs := 
       if is_def_internal is_fundef_internal gdef then
@@ -689,12 +689,12 @@ Definition add_global (ge:Genv.t) (idg: ident * option gdef) : Genv.t :=
     bnext
     (Genv.genv_senv ge).
   
-Fixpoint add_globals (ge:Genv.t) (gl: list (ident * option gdef)) : Genv.t :=
+Fixpoint add_external_globals (ge:Genv.t) (gl: list (ident * option gdef)) : Genv.t :=
   match gl with
   | nil => ge
   | (idg::gl') => 
-    let ge' := add_global ge idg in
-    add_globals ge' gl'
+    let ge' := add_external_global ge idg in
+    add_external_globals ge' gl'
   end. 
 
 Definition sec_index_to_block (i:N) : block :=
@@ -748,7 +748,7 @@ Definition globalenv (p: program) : Genv.t :=
                           imap 
                           nextblock 
                           (prog_senv p) in
-  add_globals genv p.(prog_defs).
+  add_external_globals genv p.(prog_defs).
 
 
 (** Initialization of memory *)
