@@ -637,7 +637,7 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
       Genv.find_ext_funct ge (Vptr b ofs) = None ->
       Genv.find_instr ge (Vptr b ofs) = Some (Pbuiltin ef args res)  ->
       eval_builtin_args preg ge rs (rs RSP) m args vargs ->
-        external_call ef (Genv.genv_senv ge) vargs m t vres m' ->
+      external_call ef (Genv.genv_senv ge) vargs m t vres m' ->
       forall BUILTIN_ENABLED: builtin_enabled ef,
         rs' = nextinstr_nf
                 (set_res res vres

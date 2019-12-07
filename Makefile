@@ -125,7 +125,8 @@ BACKEND=\
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v SymbtablegenSep.v LinkingProp.v \
   RelocProgSyneq.v SymbtablegenSep.v PermuteRealAsmproof.v \
-  RelocProgSemantics.v
+  RelocProgSemantics.v RelocProgSemantics1.v
+
 
 # Encoding of data into bytes
 
