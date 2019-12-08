@@ -560,10 +560,10 @@ Admitted.
 
 Lemma reloc_symbentry_exists: forall e dsz csz,
   symbentry_index_in_range [sec_data_id; sec_code_id] e ->
-  exists e', reloc_symb (reloc_offset_fun dsz csz) e = Some e'.
+  exists e', reloc_symbol (reloc_offset_fun dsz csz) e = Some e'.
 Proof.
   intros e dsz csz IN.
-  red in IN. unfold reloc_symb.
+  red in IN. unfold reloc_symbol.
   destruct (symbentry_secindex e); eauto.
   cbn in IN.
   unfold reloc_offset_fun.
@@ -580,7 +580,7 @@ Lemma reloc_symbtable_exists_aux : forall stbl f dsz csz,
     symbtable_indexes_in_range [sec_data_id; sec_code_id] stbl ->
     f = (reloc_offset_fun dsz csz) ->
     exists stbl', reloc_symbtable f stbl = Some stbl' /\
-             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
+             Forall2 (fun e1 e2 => reloc_symbol f e1 = Some e2) stbl stbl'.
 Proof.
   induction stbl as [|e stbl].
   - intros f dsz csz INRNG eq. subst.
@@ -601,7 +601,7 @@ Lemma reloc_symbtable_exists: forall stbl f defs d c dsz csz,
     gen_symb_table sec_data_id sec_code_id defs = (stbl, d, c) ->
     f = (reloc_offset_fun dsz csz) ->
     exists stbl', reloc_symbtable f stbl = Some stbl' /\
-             Forall2 (fun e1 e2 => reloc_symb f e1 = Some e2) stbl stbl'.
+             Forall2 (fun e1 e2 => reloc_symbol f e1 = Some e2) stbl stbl'.
 Proof.
   intros. apply reloc_symbtable_exists_aux with dsz csz.
   eapply gen_symb_table_index_in_range; eauto.
@@ -1402,7 +1402,7 @@ Qed.
 (* Qed. *)
 
 Lemma partition_reloc_symbtable_comm : forall f l l1 l2 rf l',
-    (forall e e', reloc_symb rf e = Some e' -> f e = f e') 
+    (forall e e', reloc_symbol rf e = Some e' -> f e = f e') 
     -> partition f l = (l1, l2)
     -> reloc_symbtable rf l = Some l'
     -> exists l1' l2', partition f l' = (l1', l2') 
@@ -1448,11 +1448,11 @@ Qed.
 
 
 Lemma reloc_symb_pres_internal_prop : forall rf s1 s2,
-    reloc_symb rf s1 = Some s2 
+    reloc_symbol rf s1 = Some s2 
     -> is_symbentry_internal s1 = is_symbentry_internal s2.
 Proof.
   intros rf s1 s2 RELOC.
-  unfold reloc_symb in RELOC. 
+  unfold reloc_symbol in RELOC. 
   unfold is_symbentry_internal.
   destr_in RELOC.
   destr_in RELOC.
@@ -1463,18 +1463,18 @@ Qed.
 
 Lemma reloc_external_symb : forall rf s,
     is_symbentry_internal s = false
-    -> reloc_symb rf s = Some s. 
+    -> reloc_symbol rf s = Some s. 
 Proof.
   intros rf s RELOC.
   unfold is_symbentry_internal in RELOC.
-  unfold reloc_symb. destr_in RELOC.
+  unfold reloc_symbol. destr_in RELOC.
 Qed.  
 
 Lemma reloc_symb_pres_id: forall rf e e', 
-      reloc_symb rf e = Some e' -> symbentry_id e = symbentry_id e'.
+      reloc_symbol rf e = Some e' -> symbentry_id e = symbentry_id e'.
 Proof.
   intros rf e e' RELOC.
-  unfold reloc_symb in RELOC.
+  unfold reloc_symbol in RELOC.
   destruct e. cbn in *.
   destruct symbentry_secindex. destruct (rf idx).
   inv RELOC. cbn. auto.
@@ -1484,10 +1484,10 @@ Proof.
 Qed.
 
 Lemma reloc_symb_pres_type: forall rf e e', 
-      reloc_symb rf e = Some e' -> symbentry_type e = symbentry_type e'.
+      reloc_symbol rf e = Some e' -> symbentry_type e = symbentry_type e'.
 Proof.
   intros rf e e' RELOC.
-  unfold reloc_symb in RELOC.
+  unfold reloc_symbol in RELOC.
   destruct e. cbn in *.
   destruct symbentry_secindex. destruct (rf idx).
   inv RELOC. cbn. auto.
@@ -1497,10 +1497,10 @@ Proof.
 Qed.
 
 Lemma reloc_symb_pres_secindex: forall rf e e', 
-      reloc_symb rf e = Some e' -> symbentry_secindex e = symbentry_secindex e'.
+      reloc_symbol rf e = Some e' -> symbentry_secindex e = symbentry_secindex e'.
 Proof.
   intros rf e e' RELOC.
-  unfold reloc_symb in RELOC.
+  unfold reloc_symbol in RELOC.
   destruct e. cbn in *.
   destruct symbentry_secindex. destruct (rf idx).
   inv RELOC. cbn. auto.
@@ -1510,10 +1510,10 @@ Proof.
 Qed.
 
 Lemma reloc_symb_pres_size: forall rf e e', 
-      reloc_symb rf e = Some e' -> symbentry_size e = symbentry_size e'.
+      reloc_symbol rf e = Some e' -> symbentry_size e = symbentry_size e'.
 Proof.
   intros rf e e' RELOC.
-  unfold reloc_symb in RELOC.
+  unfold reloc_symbol in RELOC.
   destruct e. cbn in *.
   destruct symbentry_secindex. destruct (rf idx).
   inv RELOC. cbn. auto.
@@ -1523,11 +1523,11 @@ Proof.
 Qed.
 
 Lemma reloc_symb_pres_update_symbtype : forall rf e e' t,
-    reloc_symb rf e = Some e' ->
-    reloc_symb rf (update_symbtype e t) = Some (update_symbtype e' t).
+    reloc_symbol rf e = Some e' ->
+    reloc_symbol rf (update_symbtype e t) = Some (update_symbtype e' t).
 Proof.
   intros rf e e' t RELOC.
-  destruct e. unfold reloc_symb in *. cbn in *.
+  destruct e. unfold reloc_symbol in *. cbn in *.
   destr_in RELOC; try congruence; subst.
   destr_in RELOC; try congruence.
   inv RELOC. auto.
@@ -1536,7 +1536,7 @@ Qed.
 
 
 Lemma reloc_symb_id_eq: forall id rf e e', 
-      reloc_symb rf e = Some e' -> symbentry_id_eq id e = symbentry_id_eq id e'.
+      reloc_symbol rf e = Some e' -> symbentry_id_eq id e = symbentry_id_eq id e'.
 Proof.
   intros.
   unfold symbentry_id_eq.
@@ -1703,7 +1703,7 @@ Proof.
 Qed.
 
 Lemma reloc_get_symbentry : forall dofs cofs dsz csz id def e,
-    reloc_symb (reloc_offset_fun dofs cofs) (get_symbentry sec_data_id sec_code_id dsz csz id def) = Some e
+    reloc_symbol (reloc_offset_fun dofs cofs) (get_symbentry sec_data_id sec_code_id dsz csz id def) = Some e
     -> e = (get_symbentry sec_data_id sec_code_id (dsz + dofs) (csz + cofs) id def).
 Proof.
   intros until e. intro RELOC.

@@ -3,7 +3,7 @@
 (* Date:   Oct 2, 2019   *)
 (* ********************* *)
 
-(** * Linking of relocatable programs **)
+(** * Linking of relocatable programs without linking reloctation tables **)
 
 Require Import Coqlib Integers Values Maps AST.
 Require Import Asm RelocProgram.
@@ -108,7 +108,7 @@ Section WITH_RELOC_OFFSET.
     in the second compilation unit in linking *)
 Variable get_reloc_offset : N -> option Z.
 
-Definition reloc_symb (e:symbentry) : option symbentry :=
+Definition reloc_symbol (e:symbentry) : option symbentry :=
   match symbentry_secindex e with
   | secindex_normal i => 
     match get_reloc_offset i with
@@ -130,7 +130,7 @@ Definition reloc_iter e t :=
   match t with
   | None => None
   | Some t' => 
-    match reloc_symb e with
+    match reloc_symbol e with
     | None => None
     | Some e' => Some (e' :: t')
     end
@@ -206,7 +206,7 @@ Definition reloc_offset_fun (dsz csz: Z): N -> option Z :=
            Some csz
          else
            None).
-
+    
 Definition link_reloc_prog (p1 p2: program) : option program :=
   let ap1 : Asm.program := 
       {| AST.prog_defs   := prog_defs p1;
