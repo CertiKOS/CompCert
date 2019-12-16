@@ -135,11 +135,11 @@ Definition encode_testcond (c:testcond) : list byte :=
 (** Encode a single instruction *)
 Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   match i with
-  | Pjmp_l_rel ofs =>
-    OK (HB["E9"] :: encode_int32 ofs)
-  | Pjcc_rel c ofs =>
+  | Pjmp_l_rel jofs =>
+    OK (HB["E9"] :: encode_int32 jofs)
+  | Pjcc_rel c jofs =>
     let cbytes := encode_testcond c in
-    OK (cbytes ++ encode_int32 ofs)
+    OK (cbytes ++ encode_int32 jofs)
   | Pcall (inr id) _ =>
     do addend <- get_instr_reloc_addend ofs i;
     OK (HB["E8"] :: encode_int32 addend)

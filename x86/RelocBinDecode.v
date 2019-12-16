@@ -35,41 +35,44 @@ Local Open Scope bits_scope.
 Section PRESERVATION.
 
 
+  Variable rtbl_ofs_map: reloc_ofs_map_type.
 
-
-Variable prog: RelocProgram.program.
   
-Let relocTables := (prog_reloctables prog).
+  Variable relocTable : reloctable_map.
 
-Let symbolTable := (prog_symbtable prog).
+  Variable symtbl : symbtable.
 
-Variable textRelocTable: reloctable.
+  Definition find_ofs_in_rtbl (ofs:Z): option (relocentry)
+    := ZTree.get ofs rtbl_ofs_map.
 
-Variable allCode : list byte.
+  Definition get_nth_symbol (n:N)
+    := SeqTable.get n symtbl.
 
-Hypothesis RELOC_TABLE:
-  (PTree.get sec_code_id relocTables) = Some textRelocTable.
+  
+      
+  (* Variable allCode : list byte. *)
 
-
-
-Fixpoint find_ofs_in_reloct_aux (table :list relocentry) (ofs:Z): option (relocentry) :=
-  match table with
-  |nil => None
-  |h::tail => if Z.eq_dec (reloc_offset h)  ofs then
-                Some h
-              else
-                find_ofs_in_reloct_aux tail ofs
-  end.
+(* Hypothesis RELOC_TABLE: *)
+(*   (PTree.get sec_code_id relocTables) = Some textRelocTable. *)
 
 
-Definition find_ofs_in_RelocTable (ofs:Z) :=
-  find_ofs_in_reloct_aux textRelocTable ofs.
 
-Definition get_current_ofs (mc: list byte) :=
-  Z.of_nat (length (allCode) - length (mc)).
+(* Fixpoint find_ofs_in_reloct_aux (table :list relocentry) (ofs:Z): option (relocentry) := *)
+(*   match table with *)
+(*   |nil => None *)
+(*   |h::tail => if Z.eq_dec (reloc_offset h)  ofs then *)
+(*                 Some h *)
+(*               else *)
+(*                 find_ofs_in_reloct_aux tail ofs *)
+(*   end. *)
 
-Definition get_nth_symbol (n:N) :=
-  SeqTable.get n symbolTable.
+
+(* Definition find_ofs_in_RelocTable (ofs:Z) := *)
+(*   find_ofs_in_reloct_aux textRelocTable ofs. *)
+
+(* Definition get_current_ofs (mc: list byte) := *)
+(*   Z.of_nat (length (allCode) - length (mc)). *)
+
   
 (* utils *)
 
@@ -182,8 +185,8 @@ Definition addrmode_SIB_parse_base (mode_b: byte)(base: ireg)(bs : byte)(mc:list
       
 
 (* parse the sib *)
-
-Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmode * (list byte)) :=
+(* rofs is the offset of this sib byte *)
+Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): res(addrmode * (list byte)) :=
   let idx := ( Byte.shru (Byte.and sib (Byte.repr 56)) (Byte.repr 3)) in
   let ss :=  (Byte.shru sib (Byte.repr 6)) in
   let bs := (Byte.and sib (Byte.repr 7)) in  
@@ -192,7 +195,7 @@ Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmo
     do base <- addrmode_parse_reg bs;
     do base_offset <- addrmode_SIB_parse_base mod_b base bs mc;
     let index_s := addrmode_SIB_parse_index idx index scale in
-    let optionalRelEntry := find_ofs_in_RelocTable (get_current_ofs mc) in
+    let optionalRelEntry := find_ofs_in_rtbl (rofs + 1) in
     match optionalRelEntry with
     |None =>
      if Byte.eq_dec mod_b HB["0"]  then
@@ -223,21 +226,9 @@ Definition addrmode_parse_SIB (sib: byte)(mod_b: byte)(mc:list byte): res(addrmo
     end.
 
 
-(* test begins here *)
-
-(* ebp eax*1 2018915346 *)
-Compute (addrmode_parse_SIB HB["05"] HB["02"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
-(* esp eax*2 18 *)
-Compute (addrmode_parse_SIB HB["44"] HB["01"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
-(* edi None  0 *)
-Compute (addrmode_parse_SIB HB["E7"] HB["00"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
-(* None ebp*8 2018915346 *)
-Compute (addrmode_parse_SIB HB["ED"] HB["00"] [HB["12"]; HB["34"]; HB["56"]; HB["78"]]).
-
-(* test ends here *)
-
 (* decode addr mode *)
-Definition decode_addrmode(mc:list byte): res(ireg * addrmode * (list byte)):=
+(* rofs is the offset of the beginning of the addrmode byte(modrm)  *)
+Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list byte)):=
   match mc with
   |nil => Error(msg "Addr mode is null")
   |h::t=> let MOD := Byte.shru h (Byte.repr 6) in
@@ -248,11 +239,13 @@ Definition decode_addrmode(mc:list byte): res(ireg * addrmode * (list byte)):=
               do ea_reg <- addrmode_parse_reg RM;
                 if Byte.eq_dec RM HB["4"] then
                   do sib <- get_n t 0;
-                    do result <- addrmode_parse_SIB sib MOD (remove_first_n t 1);
+                    (* modrm + sib *)
+                    do result <- addrmode_parse_SIB (rofs+1) sib MOD (remove_first_n t 1);
                     OK(reg, fst result, snd result)
                 else if Byte.eq_dec RM HB["5"] then
                        let ofs:=decode_int_n t 4 in
-                       let optRelocEntry := find_ofs_in_RelocTable (get_current_ofs t) in
+                       (* modrm + disp32 *)
+                       let optRelocEntry := find_ofs_in_rtbl (rofs+1) in
                        match optRelocEntry with
                        |None =>
                         OK(reg, Addrmode None None (inl ofs), remove_first_n t 4)
@@ -274,7 +267,8 @@ Definition decode_addrmode(mc:list byte): res(ireg * addrmode * (list byte)):=
                    do ea_reg <- addrmode_parse_reg RM;
                      if Byte.eq_dec RM HB["4"] then
                        do sib <- get_n t 0;
-                         do result <- addrmode_parse_SIB sib MOD (remove_first_n t 1);
+                         (* modrm+sib *)
+                         do result <- addrmode_parse_SIB (rofs+1) sib MOD (remove_first_n t 1);
                          OK(reg, fst result, remove_first_n (snd result) 1)
                      else
                        let ofs:=decode_int_n t 1 in
@@ -283,12 +277,13 @@ Definition decode_addrmode(mc:list byte): res(ireg * addrmode * (list byte)):=
                  else if Byte.eq_dec MOD HB["2"] then
                         do ea_reg <- addrmode_parse_reg RM;
                           if Byte.eq_dec RM HB["4"] then
-                            do sib<- get_n t 0;                             
-                              do result <- addrmode_parse_SIB sib MOD (remove_first_n t 1);
+                            do sib<- get_n t 0;                                                 (* modrm + sib *)   
+                              do result <- addrmode_parse_SIB (rofs+1) sib MOD (remove_first_n t 1);
                               OK(reg, fst result, remove_first_n (snd result) 4)
                           else
+                            (* modrm + disp32 *)
                             let ofs:=decode_int_n t 4 in
-                            let optRelocEntry := find_ofs_in_RelocTable (get_current_ofs t) in
+                            let optRelocEntry := find_ofs_in_rtbl (rofs+1) in
                             match optRelocEntry with
                             |None =>
                              OK(reg, Addrmode (Some ea_reg) None (inl ofs), remove_first_n t 4)
@@ -307,28 +302,6 @@ Definition decode_addrmode(mc:list byte): res(ireg * addrmode * (list byte)):=
                       else
                         Error( msg "unknown address mode")
   end.
-
-(* test begins here *)
-
-(* eax <- edi 8ebp 1 *)
-Compute (decode_addrmode [HB["44"];HB["EF"];HB["01"];HB["AA"];HB["03"];HB["04"]]).
-
-(* ecx <- edi 1 *)
-Compute (decode_addrmode [HB["4F"];HB["01"];HB["AA"];HB["03"];HB["04"]]).
-
-(* ecx <- edi 2147483647 *)
-Compute (decode_addrmode [HB["8F"];HB["FF"];HB["FF"];HB["FF"];HB["7F"];HB["AA"]]).
-
-(* ecx <- edi*1 000000ff *)
-Compute (decode_addrmode [HB["0C"];HB["3D"];HB["FF"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
-
-(* ecx <- 00000002 *)
-Compute (decode_addrmode [HB["0D"];HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
-
-(* ecx <- 00000002 *)
-Compute (decode_addrmode [HB["0C"];HB["25"];HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
-
-(* test ends here *)
 
 
 (* parse instructions *)
@@ -387,9 +360,9 @@ Definition decode_0f (mc: list byte): res(instruction * list byte):=
   else
     decode_jcc_rel mc.
 
-Definition decode_call (mc: list byte): res(instruction * list byte):=
+Definition decode_call (rofs:Z) (mc: list byte): res(instruction * list byte):=
   let ofs := (decode_int_n mc 4) in
-  match find_ofs_in_RelocTable (get_current_ofs mc) with
+  match find_ofs_in_rtbl (rofs + 1) with
   |None => Error (msg"Call target not found")
   |Some relocEntry =>
    match get_nth_symbol (reloc_symb relocEntry) with
@@ -403,14 +376,10 @@ Definition decode_call (mc: list byte): res(instruction * list byte):=
    end     
   end.
 
-Definition decode_leal (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode mc;
+Definition decode_leal (rofs:Z) (mc: list byte): res(instruction * list byte):=
+  do addrs <- decode_addrmode (rofs+1) mc;
     OK(Pleal (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
 
-(* test begins here *)
-(* Fleal RCX 2 *)
-Compute (decode_leal  [HB["0C"];HB["25"];HB["02"];HB["00"];HB["00"];HB["00"];HB["AA"]]).
-(* test ends here *)
 
 Definition decode_xorl_r (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
@@ -470,20 +439,20 @@ Definition decode_mov_rr  (mc: list byte): res(instruction * list byte):=
     do rds <- decode_rr_operand modrm;
     OK(Pmov_rr (fst rds) (snd rds), remove_first_n mc 1).
 
-Definition decode_movl_rm (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode mc;
+Definition decode_movl_rm (rofs:Z) (mc: list byte): res(instruction * list byte):=
+  do addrs <- decode_addrmode (rofs+1) mc;
     OK(Pmovl_rm (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
 
-Definition decode_movl_mr (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode mc;
+Definition decode_movl_mr (rofs:Z) (mc: list byte): res(instruction * list byte):=
+  do addrs <- decode_addrmode (rofs+1) mc;
     OK(Pmovl_mr  (snd (fst addrs)) (fst (fst addrs)), (snd addrs)).
 
-Definition decode_movl_rm_a (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode mc;
+Definition decode_movl_rm_a (rofs:Z) (mc: list byte): res(instruction * list byte):=
+  do addrs <- decode_addrmode (rofs+1) mc;
     OK(Pmov_rm_a (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
 
-Definition decode_movl_mr_a (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode mc;
+Definition decode_movl_mr_a (rofs:Z) (mc: list byte): res(instruction * list byte):=
+  do addrs <- decode_addrmode (rofs+1) mc;
     OK(Pmov_mr_a  (snd (fst addrs)) (fst (fst addrs)), (snd addrs)).
 
 Definition decode_testl_rr  (mc: list byte): res(instruction * list byte):=
@@ -507,29 +476,29 @@ Definition decode_sall_ri (mc: list byte): res(instruction * list byte):=
       let n := decode_int_n (remove_first_n mc 1) 1 in
       OK(Psall_ri rd (Int.repr n), remove_first_n mc 2).
 
-Definition decode_8b (mc: list byte): res(instruction * list byte):=
+Definition decode_8b (rofs:Z) (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     if Byte.eq_dec (Byte.and modrm HB["C0"]) HB["C0"] then
       decode_mov_rr mc
     else
-      decode_movl_rm mc.
+      decode_movl_rm rofs mc.
 
 (*Parameter fmc_instr_decode: list byte -> res (FlatAsm.instruction * list byte).*)
 
-Definition fmc_instr_decode (mc: list byte) : res (instruction * list byte):=
+Definition fmc_instr_decode (rofs:Z) (mc: list byte) : res (instruction * list byte):=
     match mc with
     | nil => Error(msg "Nothing to decode")
     | h::t => if Byte.eq_dec h HB["90"] then OK(Pnop,t)
               else if Byte.eq_dec h HB["E9"] then decode_jmp_l_rel t
               else if Byte.eq_dec h HB["0F"] then decode_0f t
-              else if Byte.eq_dec h HB["E8"] then decode_call t
-              else if Byte.eq_dec h HB["8D"] then decode_leal t
+              else if Byte.eq_dec h HB["E8"] then decode_call rofs t
+              else if Byte.eq_dec h HB["8D"] then decode_leal rofs t
               else if Byte.eq_dec h HB["31"] then decode_xorl_r t
               else if Byte.eq_dec h HB["81"] then decode_81 t
               else if Byte.eq_dec h HB["2B"] then decode_subl_rr t
               else if Byte.eq_dec (Byte.and h HB["F0"]) HB["B0"] then decode_movl_ri mc
-              else if Byte.eq_dec h HB["8B"] then decode_8b t
-              else if Byte.eq_dec h HB["89"] then decode_movl_mr t
+              else if Byte.eq_dec h HB["8B"] then decode_8b rofs t
+              else if Byte.eq_dec h HB["89"] then decode_movl_mr rofs t
               else if Byte.eq_dec h HB["85"] then decode_testl_rr t
               else if Byte.eq_dec h HB["C3"] then OK(Pret,t)
               else if Byte.eq_dec h HB["69"] then decode_imull_ri t
@@ -540,18 +509,6 @@ Definition fmc_instr_decode (mc: list byte) : res (instruction * list byte):=
                    (* else decode_testl_rr mc *)
                    else Error(msg "Unknown opcode!")
     end.
-
-
-
-
-
-
-
-
-
-Compute (fmc_instr_decode [HB["C1"] ;HB["E2"] ;HB["05"] ;HB["00"] ;HB["01"];HB["AA"]]).
-
-
 
 
 
@@ -599,6 +556,7 @@ Definition instr_eq (ins1 ins2: instruction): Prop :=
            |Pnop => True
            |_ => False
            end
+  |Pmov_rs rd id => (Pmovl_rm rd (Addrmode None None (inr (id,Ptrofs.zero)))) = ins2                    
   |_ => ins1 = ins2
   end.
 
