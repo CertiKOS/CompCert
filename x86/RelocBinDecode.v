@@ -1950,7 +1950,7 @@ Proof.
 Qed.
 
 Lemma encode_decode_instr_refl: forall ofs i s l,
-    encode_instr rtbl_ofs_map ofs i = OK s
+    encode_instr rtbl_ofs_map symtbl ofs i = OK s
     -> exists i', fmc_instr_decode ofs (s++l) = OK(i',l) /\
                   instr_eq i i'.
 
@@ -2066,7 +2066,21 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
            destruct ( Byte.eq_dec bB[ x5] HB[ "5"]) eqn: EQI0.
            ++++ rewrite byte_eq_false. rewrite byte_eq_false.
                 rewrite byte_eq_true. simpl.
-           
+                destruct p eqn:EQP.
+                monadInv EQ.
+                unfold get_reloc_addend in EQ6.
+                
+                
+                unfold Reloctablesgen.instr_reloc_offset in EQ5.
+                simpl in EQ5.
+                inversion EQ5.
+                rewrite <- H11 in EQ6.
+                assert(ofs+1+1+1 = ofs +3 ) as Hofs3 by omega.
+                rewrite Hofs3.
+                unfold find_ofs_in_rtbl.
+                destruct ( ZTree.get (ofs + 3) rtbl_ofs_map) eqn:EQOFS;inversion EQ6.
+                
+                
            
            
            
