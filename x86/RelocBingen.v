@@ -44,29 +44,16 @@ Definition encode_scale (s: Z) : res bits :=
 Section WITH_RELOC_OFS_MAP.
 
 Variable rtbl_ofs_map: reloc_ofs_map_type.
-Variable symtbl: symbtable.
 
-Definition get_reloc_addend (symid:ident) (ofs:Z) : res Z :=
+Definition get_reloc_addend (ofs:Z) : res Z :=
   match ZTree.get ofs rtbl_ofs_map with
   | None => Error [MSG "Cannot find the relocation entry at the offset "; POS (Z.to_pos ofs)]
-  | Some e =>
-    match SeqTable.get (reloc_symb e) symtbl with
-    |None => Error (msg "symbol not found" )
-    |Some opt_id =>
-     match symbentry_id opt_id with
-     |None => Error (msg "symbol id not found" )
-     |Some id =>
-      if ident_eq id symid then
-        OK (reloc_addend e)
-      else
-        Error (msg "id not match")
-     end
-    end
+  | Some e => OK (reloc_addend e)
   end.
 
-Definition get_instr_reloc_addend (symid:ident) (ofs:Z) (i:instruction) : res Z :=
+Definition get_instr_reloc_addend (ofs:Z) (i:instruction) : res Z :=
   do iofs <- instr_reloc_offset i;
-  get_reloc_addend symid (ofs + iofs).
+  get_reloc_addend (ofs + iofs).
 
 (** ** Encoding of the address modes *)
 
@@ -124,7 +111,7 @@ Definition encode_addrmode (sofs: Z) (i:instruction) (a: addrmode) (rd: ireg) : 
   do abytes <- encode_addrmode_aux a rd;
   do ofs <- match disp with
            | inl ofs => OK ofs
-           | inr (id,_) => get_instr_reloc_addend id sofs i
+           | inr (id,_) => get_instr_reloc_addend sofs i
            end;
   OK (abytes ++ (encode_int32 ofs)).
 
@@ -154,7 +141,7 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
     let cbytes := encode_testcond c in
     OK (cbytes ++ encode_int32 jofs)
   | Pcall (inr id) _ =>
-    do addend <- get_instr_reloc_addend id ofs i;
+    do addend <- get_instr_reloc_addend ofs i;
     OK (HB["E8"] :: encode_int32 addend)
   | Pleal rd a =>
     do abytes <- encode_addrmode ofs i a rd;
@@ -273,9 +260,8 @@ Definition transl_init_data (dofs:Z) (d:init_data) : res (list byte) :=
   | Init_float32 f => OK (encode_int 4 (Int.unsigned (Float32.to_bits f)))
   | Init_float64 f => OK (encode_int 8 (Int64.unsigned (Float.to_bits f)))
   | Init_space n => OK (zero_bytes (nat_of_Z n))
-  | Init_addrof id ofs =>
-    (*** TBD dofs or ofs? *)
-    do addend <- get_reloc_addend id dofs;
+  | Init_addrof id ofs => 
+    do addend <- get_reloc_addend dofs;
     OK (encode_int32 addend)
   end.
 
@@ -294,43 +280,43 @@ End WITH_RELOC_OFS_MAP.
 
 (** ** Translation of a program *)
 
-Definition transl_section (sec:section) (rtbl:option reloctable) (symtbl:symbtable) : res section :=
+Definition transl_section (sec:section) (rtbl:option reloctable) : res section :=
   match sec with
   | sec_text code =>
     match rtbl with
     | None => Error [MSG "Encoding failed: No relocation table found for .text section"]
     | Some rtbl =>
       let rofs_map := gen_reloc_ofs_map rtbl in
-      do bytes <- transl_code rofs_map symtbl code;
-        OK (sec_bytes bytes)
+      do bytes <- transl_code rofs_map code;
+      OK (sec_bytes bytes)
     end
   | sec_data l =>
     match rtbl with
     | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
-    | Some rtbl =>
+    | Some rtbl => 
       let rofs_map := gen_reloc_ofs_map rtbl in
-      do bytes <- transl_init_data_list rofs_map symtbl l;
+      do bytes <- transl_init_data_list rofs_map l;
       OK (sec_bytes bytes)
-    end    
+    end
   | _ => OK sec
   end.
 
-Definition acc_sections symtbl rtbls r sec := 
+Definition acc_sections rtbls r sec := 
   do r' <- r;
-  let '(stbl, si) := r' in
-  do sec' <- transl_section sec (get_reloctable si rtbls) symtbl;
+  let '(stbl,si) := r' in
+  do sec' <- transl_section sec (get_reloctable si rtbls);
   OK (sec' :: stbl, N.succ si).
 
-Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) (symtbl:symbtable): res sectable :=
+Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) : res sectable :=
   do r <- 
-     fold_left (acc_sections symtbl rtbls)
+     fold_left (acc_sections rtbls)
      stbl
      (OK ([],0%N));
   let '(stbl', _) := r in
   OK (rev stbl').
 
 Definition transf_program (p:program) : res program := 
-  do stbl <- transl_sectable (prog_sectable p) (prog_reloctables p) (prog_symbtable p);
+  do stbl <- transl_sectable (prog_sectable p) (prog_reloctables p);
   OK {| prog_defs := prog_defs p;
         prog_public := prog_public p;
         prog_main := prog_main p;

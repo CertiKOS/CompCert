@@ -252,16 +252,52 @@ Definition transl_sectable (stbl: sectable) :=
   let '(rtbls, _) := r in
   OK rtbls.
 
+Definition id_eliminate (i:instruction):res (instruction):=
+  OK i.
+
+Definition acc_id_eliminate r i :=
+  do r' <- r;
+  do i' <- id_eliminate i;    
+    OK(i::r').
+
+Definition transl_code' (c:code): res (code) :=
+  do r <- fold_left acc_id_eliminate c (OK []); 
+    OK (rev r).
+
+Definition transl_section' (sec:section)  : res section :=
+  match sec with
+  | sec_text code =>
+    do code' <-  transl_code' code;
+      OK(sec_text code')
+  | _ => OK sec
+  end.
+
+Definition acc_sections'  r sec := 
+  do r' <- r;
+  let '(stbl, si) := r' in
+  do sec' <- transl_section' sec;
+  OK (sec' :: stbl, N.succ si).
+
+Definition transl_sectable' (stbl: sectable): res sectable :=
+  do r <- 
+     fold_left acc_sections'
+     stbl
+     (OK ([],0%N));
+  let '(stbl', _) := r in
+  OK (rev stbl').
+
+
 End WITH_SYMB_INDEX_MAP.
   
 
 Definition transf_program (p:program) : res program :=
   let map := gen_symb_index_map (p.(prog_symbtable)) in
   do rtbls <- transl_sectable map (prog_sectable p);
+    do sec' <- transl_sectable' (prog_sectable p);
   OK {| prog_defs := p.(prog_defs);
         prog_public := p.(prog_public);
         prog_main := p.(prog_main);
-        prog_sectable := p.(prog_sectable);
+        prog_sectable := sec';
         prog_strtable := prog_strtable p;
         prog_symbtable := p.(prog_symbtable);
         prog_reloctables := rtbls;
