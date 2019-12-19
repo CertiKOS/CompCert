@@ -22,7 +22,7 @@ Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.
 Require Import RelocBingen RelocProgram SeqTable Encode.
-
+Require Import Reloctablesgen.
 
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
@@ -1976,6 +1976,13 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     ++
       assert (Hasize:decode_addrmode_size ((x1 ++ encode_int32 x2) ++ l) = OK 2) by admit.
       rewrite Hasize. simpl.
+      Lemma encode_decode_addrmode_relf: forall sofs i a rd bytes iofs rofs l,
+        encode_addrmode rtbl_ofs_map sofs i a rd = OK bytes
+        -> instr_reloc_offset i = OK iofs
+        -> rofs = iofs+sofs
+        -> decode_addrmode rofs (bytes++l) = OK (rd, a, l).
+      Admitted.
+                        
       unfold encode_addrmode_aux in EQ0.
        monadInv EQ0.       
        destruct ofs0 eqn:EQAddrOfs.
