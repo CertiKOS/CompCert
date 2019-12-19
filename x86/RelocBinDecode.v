@@ -2079,8 +2079,20 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
                 rewrite Hofs3.
                 unfold find_ofs_in_rtbl.
                 destruct ( ZTree.get (ofs + 3) rtbl_ofs_map) eqn:EQOFS;inversion EQ6.
-                
-                
+                destruct (SeqTable.get (reloc_symb r) symtbl) eqn:EQSYM; inversion EQ6.
+                unfold get_nth_symbol. rewrite EQSYM.                
+                destruct ( symbentry_id s) eqn:EQSYMID;inversion H13.
+                rewrite byte_eq_false.
+                simpl.
+                repeat f_equal.
+                admit.
+                destruct (ident_eq i3 i1) eqn:EQI31;inversion EQ6.
+                auto.
+                admit.
+                (*** TBD *)
+                admit.
+                admit.
+                admit.
            
            
            
