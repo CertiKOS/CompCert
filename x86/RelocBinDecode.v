@@ -182,10 +182,25 @@ Definition addrmode_SIB_parse_base (mode_b: byte)(base: ireg)(bs : byte)(mc:list
           (* error *)
           Error(msg "error in parse sib base").
                          
-      
 
+(* parse the size of the addrmode from modrm, disp not inlcuded*)
+Definition decode_addrmode_size (mc: list byte): res (Z) :=
+   match mc with
+   |nil => Error(msg "Addr mode is null")
+   |h::t=> let MOD := Byte.shru h (Byte.repr 6) in
+           let REG := Byte.shru (Byte.and h (Byte.repr 56)) (Byte.repr 3) in
+           let RM := Byte.and h (Byte.repr 7) in
+
+           if Byte.eq_dec MOD (Byte.repr 3) then
+             OK 1
+           else
+             if Byte.eq_dec RM (Byte.repr 5) then
+               OK 2
+             else
+               OK 1
+   end.
 (* parse the sib *)
-(* rofs is the offset of this sib byte *)
+(* rofs is the offset of disp *)
 Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): res(addrmode * (list byte)) :=
   let idx := ( Byte.shru (Byte.and sib (Byte.repr 56)) (Byte.repr 3)) in
   let ss :=  (Byte.shru sib (Byte.repr 6)) in
@@ -195,7 +210,7 @@ Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): r
     do base <- addrmode_parse_reg bs;
     do base_offset <- addrmode_SIB_parse_base mod_b base bs mc;
     let index_s := addrmode_SIB_parse_index idx index scale in
-    let optionalRelEntry := find_ofs_in_rtbl (rofs + 1) in
+    let optionalRelEntry := find_ofs_in_rtbl (rofs) in
     match optionalRelEntry with
     |None =>
      if Byte.eq_dec mod_b HB["0"]  then
@@ -206,28 +221,18 @@ Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): r
      else
        OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.signed (snd base_offset))),mc)
     |Some relEntry =>
-     let optSymEntry := get_nth_symbol (reloc_symb relEntry) in
-     match optSymEntry with
-     |None => Error(msg "no such symbol entry!")
-     |Some symEntry =>
-      match (symbentry_id symEntry) with
-      |None =>
-       Error (msg "no id for such symbol!!")
-      |Some id =>
        if Byte.eq_dec mod_b HB["0"]  then
          if Byte.eq_dec bs HB["5"] then
-           OK(Addrmode (fst base_offset) (index_s) (inr (id, Ptrofs.repr 0)),(remove_first_n mc 4))
+           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.repr 0)),(remove_first_n mc 4))
          else
-           OK(Addrmode (fst base_offset) (index_s) (inr (id, Ptrofs.repr 0)),mc)
+           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.repr 0)),mc)
        else
-         OK(Addrmode (fst base_offset) (index_s) (inr (id, Ptrofs.repr 0)),mc)
-      end
-     end
+         OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.repr 0)),mc)
     end.
 
 
 (* decode addr mode *)
-(* rofs is the offset of the beginning of the addrmode byte(modrm)  *)
+(* rofs is the offset of the disp  *)
 Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list byte)):=
   match mc with
   |nil => Error(msg "Addr mode is null")
@@ -240,26 +245,17 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                 if Byte.eq_dec RM HB["4"] then
                   do sib <- get_n t 0;
                     (* modrm + sib *)
-                    do result <- addrmode_parse_SIB (rofs+1) sib MOD (remove_first_n t 1);
+                    do result <- addrmode_parse_SIB (rofs) sib MOD (remove_first_n t 1);
                     OK(reg, fst result, snd result)
                 else if Byte.eq_dec RM HB["5"] then
                        let ofs:=decode_int_n t 4 in
                        (* modrm + disp32 *)
-                       let optRelocEntry := find_ofs_in_rtbl (rofs+1) in
+                       let optRelocEntry := find_ofs_in_rtbl (rofs) in
                        match optRelocEntry with
                        |None =>
                         OK(reg, Addrmode None None (inl ofs), remove_first_n t 4)
                        |Some relocEntry =>
-                        match  get_nth_symbol (reloc_symb relocEntry) with
-                        |None => Error (msg "No such symbol entry!")
-                        |Some symEntry =>
-                         match (symbentry_id symEntry) with
-                         |None =>
-                          Error (msg "no id for such symbol!!")
-                         |Some id =>
-                          OK(reg, Addrmode None None (inr (id,Ptrofs.repr 0)), remove_first_n t 4)
-                         end
-                        end
+                        OK(reg, Addrmode None None (inr (xH ,Ptrofs.repr 0)), remove_first_n t 4)                         
                        end
                      else
                        OK(reg, Addrmode (Some ea_reg) None (inl 0), t)
@@ -268,7 +264,7 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                      if Byte.eq_dec RM HB["4"] then
                        do sib <- get_n t 0;
                          (* modrm+sib *)
-                         do result <- addrmode_parse_SIB (rofs+1) sib MOD (remove_first_n t 1);
+                         do result <- addrmode_parse_SIB (rofs) sib MOD (remove_first_n t 1);
                          OK(reg, fst result, remove_first_n (snd result) 1)
                      else
                        let ofs:=decode_int_n t 1 in
@@ -278,26 +274,17 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                         do ea_reg <- addrmode_parse_reg RM;
                           if Byte.eq_dec RM HB["4"] then
                             do sib<- get_n t 0;                                                 (* modrm + sib *)   
-                              do result <- addrmode_parse_SIB (rofs+1) sib MOD (remove_first_n t 1);
+                              do result <- addrmode_parse_SIB (rofs) sib MOD (remove_first_n t 1);
                               OK(reg, fst result, remove_first_n (snd result) 4)
                           else
                             (* modrm + disp32 *)
                             let ofs:=decode_int_n t 4 in
-                            let optRelocEntry := find_ofs_in_rtbl (rofs+1) in
+                            let optRelocEntry := find_ofs_in_rtbl (rofs) in
                             match optRelocEntry with
                             |None =>
                              OK(reg, Addrmode (Some ea_reg) None (inl ofs), remove_first_n t 4)
                             |Some relocEntry =>
-                             match  get_nth_symbol (reloc_symb relocEntry) with
-                             |None => Error (msg "No such symbol entry!")
-                             |Some symEntry =>
-                              match (symbentry_id symEntry) with
-                              |None =>
-                               Error (msg "no id for such symbol!!")
-                              |Some id =>
-                               OK(reg, Addrmode (Some ea_reg) None (inr (id, Ptrofs.repr 0)), remove_first_n t 4)
-                              end
-                             end
+                             OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.repr 0)), remove_first_n t 4)        
                             end                            
                       else
                         Error( msg "unknown address mode")
@@ -377,7 +364,8 @@ Definition decode_call (rofs:Z) (mc: list byte): res(instruction * list byte):=
   end.
 
 Definition decode_leal (rofs:Z) (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode (rofs+1) mc;
+  do a_size <- decode_addrmode_size mc;
+  do addrs <- decode_addrmode (rofs+a_size+1) mc;
     OK(Pleal (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
 
 
@@ -440,19 +428,23 @@ Definition decode_mov_rr  (mc: list byte): res(instruction * list byte):=
     OK(Pmov_rr (fst rds) (snd rds), remove_first_n mc 1).
 
 Definition decode_movl_rm (rofs:Z) (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode (rofs+1) mc;
+  do a_size <- decode_addrmode_size mc;
+  do addrs <- decode_addrmode (rofs+a_size+1) mc;
     OK(Pmovl_rm (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
 
 Definition decode_movl_mr (rofs:Z) (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode (rofs+1) mc;
+  do a_size <- decode_addrmode_size mc;
+  do addrs <- decode_addrmode (rofs+a_size+1) mc;
     OK(Pmovl_mr  (snd (fst addrs)) (fst (fst addrs)), (snd addrs)).
 
 Definition decode_movl_rm_a (rofs:Z) (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode (rofs+1) mc;
+  do a_size <- decode_addrmode_size mc;
+  do addrs <- decode_addrmode (rofs+a_size+1) mc;
     OK(Pmov_rm_a (fst (fst addrs)) (snd (fst addrs)), (snd addrs)).
 
 Definition decode_movl_mr_a (rofs:Z) (mc: list byte): res(instruction * list byte):=
-  do addrs <- decode_addrmode (rofs+1) mc;
+  do a_size <- decode_addrmode_size mc;
+  do addrs <- decode_addrmode (rofs+a_size+1) mc;
     OK(Pmov_mr_a  (snd (fst addrs)) (fst (fst addrs)), (snd addrs)).
 
 Definition decode_testl_rr  (mc: list byte): res(instruction * list byte):=
@@ -1950,7 +1942,7 @@ Proof.
 Qed.
 
 Lemma encode_decode_instr_refl: forall ofs i s l,
-    encode_instr rtbl_ofs_map symtbl ofs i = OK s
+    encode_instr rtbl_ofs_map ofs i = OK s
     -> exists i', fmc_instr_decode ofs (s++l) = OK(i',l) /\
                   instr_eq i i'.
 
@@ -1970,10 +1962,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     branch_byte_eq'.
     unfold decode_8b.
     unfold encode_instr in HEncode.    
-    unfold encode_addrmode in EQ.    
-    (* destruct a eqn:EQA. *)
-    (* monadInv EQ. *)
-    (* unfold encode_addrmode_aux in EQ0. *)
+    unfold encode_addrmode in EQ.
     assert (HmodrmExists: exists modrm, get_n (x ++ l) 0 = OK modrm) by admit.
     destruct HmodrmExists.
     rewrite H. simpl.
@@ -1984,7 +1973,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     monadInv EQ.
     destruct const eqn:EQConst.
     ++ admit.
-    ++ unfold encode_addrmode_aux in EQ0.
+    ++
+      assert (Hasize:decode_addrmode_size ((x1 ++ encode_int32 x2) ++ l) = OK 2) by admit.
+      rewrite Hasize. simpl.
+      unfold encode_addrmode_aux in EQ0.
        monadInv EQ0.       
        destruct ofs0 eqn:EQAddrOfs.
        +++ destruct p0.
@@ -2068,36 +2060,24 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
                 rewrite byte_eq_true. simpl.
                 destruct p eqn:EQP.
                 monadInv EQ.
-                unfold get_reloc_addend in EQ6.
-                
-                
+                unfold get_reloc_addend in EQ6.                
                 unfold Reloctablesgen.instr_reloc_offset in EQ5.
                 simpl in EQ5.
                 inversion EQ5.
                 rewrite <- H11 in EQ6.
-                assert(ofs+1+1+1 = ofs +3 ) as Hofs3 by omega.
+                assert(ofs+2+1 = ofs +3 ) as Hofs3 by omega.
                 rewrite Hofs3.
                 unfold find_ofs_in_rtbl.
                 destruct ( ZTree.get (ofs + 3) rtbl_ofs_map) eqn:EQOFS;inversion EQ6.
-                destruct (SeqTable.get (reloc_symb r) symtbl) eqn:EQSYM; inversion EQ6.
-                unfold get_nth_symbol. rewrite EQSYM.                
-                destruct ( symbentry_id s) eqn:EQSYMID;inversion H13.
                 rewrite byte_eq_false.
                 simpl.
                 repeat f_equal.
                 admit.
-                destruct (ident_eq i3 i1) eqn:EQI31;inversion EQ6.
-                auto.
-                admit.
-                (*** TBD *)
                 admit.
                 admit.
                 admit.
-           
-           
-           
-           
-       
+                admit.
+                admit.       
        
 
 Admitted.
