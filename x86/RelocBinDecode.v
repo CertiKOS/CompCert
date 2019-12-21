@@ -1974,117 +1974,137 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     destruct const eqn:EQConst.
     ++ admit.
     ++
-      assert (Hasize:decode_addrmode_size ((x1 ++ encode_int32 x2) ++ l) = OK 2) by admit.
-      rewrite Hasize. simpl.
-      Lemma encode_decode_addrmode_relf: forall sofs i a rd bytes iofs rofs l,
-        encode_addrmode rtbl_ofs_map sofs i a rd = OK bytes
-        -> instr_reloc_offset i = OK iofs
-        -> rofs = iofs+sofs
+      (* assert (Hasize:decode_addrmode_size ((x1 ++ encode_int32 x2) ++ l) = OK 2) by admit. *)
+      (* rewrite Hasize. simpl. *)
+      Lemma encode_decode_addrmode_relf: forall a rd bytes rofs l,
+        encode_addrmode' rtbl_ofs_map rofs  a rd = OK bytes
         -> decode_addrmode rofs (bytes++l) = OK (rd, a, l).
       Admitted.
-                        
-      unfold encode_addrmode_aux in EQ0.
-       monadInv EQ0.       
-       destruct ofs0 eqn:EQAddrOfs.
-       +++ destruct p0.
-           destruct base eqn:EQAddrBase.
-           destruct (ireg_eq i RSP) eqn:EQI;inversion EQ2.
-           monadInv H11. 
-           unfold decode_addrmode.
-           simpl.
-           assert(HReg:  (addrmode_parse_reg
-      (Byte.shru (Byte.and (Byte.repr (bits_to_Z(char_to_bool "1"
-                   :: char_to_bool "0"
-                      :: x ++
-                         char_to_bool "1"
-                         :: char_to_bool "0"
-                            :: char_to_bool "0" :: x3 ++ x4 ++ x5) /
-                                                256)) (Byte.repr 56)) (Byte.repr 3))) = OK rd) by admit.
-           rewrite HReg. simpl.
-           assert(HMod: (Byte.shru
-          (Byte.repr
-             (bits_to_Z
-                (char_to_bool "1"
-                 :: char_to_bool "0"
-                    :: x ++
-                       char_to_bool "1"
-                       :: char_to_bool "0"
-                          :: char_to_bool "0" :: x3 ++ x4 ++ x5) /
-                256)) (Byte.repr 6)) = Byte.repr 2) by admit.
-           repeat rewrite HMod.
-           rewrite byte_eq_false.
-           rewrite byte_eq_false.
-           rewrite byte_eq_true.
-           assert(HEaReg: 
-                    (addrmode_parse_reg
-                      (Byte.and
-                         (Byte.repr
-                            (bits_to_Z
-                               (char_to_bool "1"
-                                             :: char_to_bool "0"
-                                             :: x ++
-                                             char_to_bool "1"
-                                             :: char_to_bool "0"
-                                             :: char_to_bool "0" :: x3 ++ x4 ++ x5) /256)) (Byte.repr 7))) = OK RSP) by admit.
-           rewrite HEaReg. simpl.
-           assert(Hand7:
-                    (Byte.and
-                       (Byte.repr
-                          (bits_to_Z
-                             (char_to_bool "1"
-                                           :: char_to_bool "0"
-                                           :: x ++
-                                           char_to_bool "1"
-                                           :: char_to_bool "0"
-                                           :: char_to_bool "0" :: x3 ++ x4 ++ x5) /256)) (Byte.repr 7)) = Byte.repr 4) by admit.
-           rewrite Hand7.
-           rewrite byte_eq_true.
-           unfold addrmode_parse_SIB.
-           assert(HCut:  bB[ char_to_bool "1"
-                 :: char_to_bool "0"
-                    :: x ++
-                       char_to_bool "1"
-                       :: char_to_bool "0"
-                       :: char_to_bool "0" :: x3 ++ x4 ++ x5]
-                         = bB[x3++x4++x5]) by admit.
-           rewrite HCut.
-           assert(Hx4: (Byte.shru (Byte.and bB[ x3 ++ x4 ++ x5] (Byte.repr 56))(Byte.repr 3)) = bB[x4]) by admit.           
-           rewrite Hx4.
-           assert(Hregi:  addrmode_parse_reg bB[ x4] = OK i) by admit.
-           rewrite Hregi.
-           simpl.
-           assert(Hx3:  (Byte.shru bB[ x3 ++ x4 ++ x5] (Byte.repr 6)) = bB[x3]) by admit.
-           rewrite Hx3. simpl.
-           assert(HScale:  addrmode_SIB_parse_scale bB[ x3] = OK z) by admit.
-           rewrite HScale. simpl.
-           assert(Hx5: (Byte.and bB[ x3 ++ x4 ++ x5] (Byte.repr 7)) = bB[x5]) by admit.
-           rewrite Hx5. simpl.
-           assert(Hregi0:  addrmode_parse_reg bB[ x5] = OK i0) by admit.
-           rewrite Hregi0. simpl.
-           unfold addrmode_SIB_parse_base.
-           destruct ( Byte.eq_dec bB[ x5] HB[ "5"]) eqn: EQI0.
-           ++++ rewrite byte_eq_false. rewrite byte_eq_false.
-                rewrite byte_eq_true. simpl.
-                destruct p eqn:EQP.
-                monadInv EQ.
-                unfold get_reloc_addend in EQ6.                
-                unfold Reloctablesgen.instr_reloc_offset in EQ5.
-                simpl in EQ5.
-                inversion EQ5.
-                rewrite <- H11 in EQ6.
-                assert(ofs+2+1 = ofs +3 ) as Hofs3 by omega.
-                rewrite Hofs3.
-                unfold find_ofs_in_rtbl.
-                destruct ( ZTree.get (ofs + 3) rtbl_ofs_map) eqn:EQOFS;inversion EQ6.
-                rewrite byte_eq_false.
-                simpl.
-                repeat f_equal.
-                admit.
-                admit.
-                admit.
-                admit.
-                admit.
-                admit.       
+      unfold instr_reloc_offset in EQ0.
+      Lemma encode_decode_addr_size_relf: forall a rd size abytes,
+          addrmode_reloc_offset a = OK size
+          -> encode_addrmode_aux a rd = OK abytes
+          ->forall l, decode_addrmode_size (abytes++l) = OK size.
+      Admitted.
+      monadInv EQ0.
+      unfold encode_addrmode' in EQ1.
+      monadInv EQ1.
+      generalize (encode_decode_addr_size_relf _ rd _ _  EQ EQ0).
+      intros HAddrsize.
+
+      unfold decode_addrmode_size.
+      
+      (* generalize (encode_decode_addrmode_relf _ _ _ _ _ 3 (ofs+3) l EQ1). *)
+      (* intros Haddr. *)
+      (* replace (ofs + 2 + 1) with (ofs +3).       *)
+      (* rewrite Haddr. *)
+      (* simpl. auto. *)
+      (* simpl. *)
+      
+      (* destruct  *)
+      (* simpl. *)
+      (* unfold encode_addrmode_aux in EQ0. *)
+      (*  monadInv EQ0.        *)
+      (*  destruct ofs0 eqn:EQAddrOfs. *)
+      (*  +++ destruct p0. *)
+      (*      destruct base eqn:EQAddrBase. *)
+      (*      destruct (ireg_eq i RSP) eqn:EQI;inversion EQ2. *)
+      (*      monadInv H11.  *)
+      (*      unfold decode_addrmode. *)
+      (*      simpl. *)
+      (*      assert(HReg:  (addrmode_parse_reg *)
+      (* (Byte.shru (Byte.and (Byte.repr (bits_to_Z(char_to_bool "1" *)
+      (*              :: char_to_bool "0" *)
+      (*                 :: x ++ *)
+      (*                    char_to_bool "1" *)
+      (*                    :: char_to_bool "0" *)
+      (*                       :: char_to_bool "0" :: x3 ++ x4 ++ x5) / *)
+      (*                                           256)) (Byte.repr 56)) (Byte.repr 3))) = OK rd) by admit. *)
+      (*      rewrite HReg. simpl. *)
+      (*      assert(HMod: (Byte.shru *)
+      (*     (Byte.repr *)
+      (*        (bits_to_Z *)
+      (*           (char_to_bool "1" *)
+      (*            :: char_to_bool "0" *)
+      (*               :: x ++ *)
+      (*                  char_to_bool "1" *)
+      (*                  :: char_to_bool "0" *)
+      (*                     :: char_to_bool "0" :: x3 ++ x4 ++ x5) / *)
+      (*           256)) (Byte.repr 6)) = Byte.repr 2) by admit. *)
+      (*      repeat rewrite HMod. *)
+      (*      rewrite byte_eq_false. *)
+      (*      rewrite byte_eq_false. *)
+      (*      rewrite byte_eq_true. *)
+      (*      assert(HEaReg:  *)
+      (*               (addrmode_parse_reg *)
+      (*                 (Byte.and *)
+      (*                    (Byte.repr *)
+      (*                       (bits_to_Z *)
+      (*                          (char_to_bool "1" *)
+      (*                                        :: char_to_bool "0" *)
+      (*                                        :: x ++ *)
+      (*                                        char_to_bool "1" *)
+      (*                                        :: char_to_bool "0" *)
+      (*                                        :: char_to_bool "0" :: x3 ++ x4 ++ x5) /256)) (Byte.repr 7))) = OK RSP) by admit. *)
+      (*      rewrite HEaReg. simpl. *)
+      (*      assert(Hand7: *)
+      (*               (Byte.and *)
+      (*                  (Byte.repr *)
+      (*                     (bits_to_Z *)
+      (*                        (char_to_bool "1" *)
+      (*                                      :: char_to_bool "0" *)
+      (*                                      :: x ++ *)
+      (*                                      char_to_bool "1" *)
+      (*                                      :: char_to_bool "0" *)
+      (*                                      :: char_to_bool "0" :: x3 ++ x4 ++ x5) /256)) (Byte.repr 7)) = Byte.repr 4) by admit. *)
+      (*      rewrite Hand7. *)
+      (*      rewrite byte_eq_true. *)
+      (*      unfold addrmode_parse_SIB. *)
+      (*      assert(HCut:  bB[ char_to_bool "1" *)
+      (*            :: char_to_bool "0" *)
+      (*               :: x ++ *)
+      (*                  char_to_bool "1" *)
+      (*                  :: char_to_bool "0" *)
+      (*                  :: char_to_bool "0" :: x3 ++ x4 ++ x5] *)
+      (*                    = bB[x3++x4++x5]) by admit. *)
+      (*      rewrite HCut. *)
+      (*      assert(Hx4: (Byte.shru (Byte.and bB[ x3 ++ x4 ++ x5] (Byte.repr 56))(Byte.repr 3)) = bB[x4]) by admit.            *)
+      (*      rewrite Hx4. *)
+      (*      assert(Hregi:  addrmode_parse_reg bB[ x4] = OK i) by admit. *)
+      (*      rewrite Hregi. *)
+      (*      simpl. *)
+      (*      assert(Hx3:  (Byte.shru bB[ x3 ++ x4 ++ x5] (Byte.repr 6)) = bB[x3]) by admit. *)
+      (*      rewrite Hx3. simpl. *)
+      (*      assert(HScale:  addrmode_SIB_parse_scale bB[ x3] = OK z) by admit. *)
+      (*      rewrite HScale. simpl. *)
+      (*      assert(Hx5: (Byte.and bB[ x3 ++ x4 ++ x5] (Byte.repr 7)) = bB[x5]) by admit. *)
+      (*      rewrite Hx5. simpl. *)
+      (*      assert(Hregi0:  addrmode_parse_reg bB[ x5] = OK i0) by admit. *)
+      (*      rewrite Hregi0. simpl. *)
+      (*      unfold addrmode_SIB_parse_base. *)
+      (*      destruct ( Byte.eq_dec bB[ x5] HB[ "5"]) eqn: EQI0. *)
+      (*      ++++ rewrite byte_eq_false. rewrite byte_eq_false. *)
+      (*           rewrite byte_eq_true. simpl. *)
+      (*           destruct p eqn:EQP. *)
+      (*           monadInv EQ. *)
+      (*           unfold get_reloc_addend in EQ6.                 *)
+      (*           unfold Reloctablesgen.instr_reloc_offset in EQ5. *)
+      (*           simpl in EQ5. *)
+      (*           inversion EQ5. *)
+      (*           rewrite <- H11 in EQ6. *)
+      (*           assert(ofs+2+1 = ofs +3 ) as Hofs3 by omega. *)
+      (*           rewrite Hofs3. *)
+      (*           unfold find_ofs_in_rtbl. *)
+      (*           destruct ( ZTree.get (ofs + 3) rtbl_ofs_map) eqn:EQOFS;inversion EQ6. *)
+      (*           rewrite byte_eq_false. *)
+      (*           simpl. *)
+      (*           repeat f_equal. *)
+      (*           admit. *)
+      (*           admit. *)
+      (*           admit. *)
+      (*           admit. *)
+      (*           admit. *)
+      (*           admit.        *)
        
 
 Admitted.

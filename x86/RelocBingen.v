@@ -55,6 +55,10 @@ Definition get_instr_reloc_addend (ofs:Z) (i:instruction) : res Z :=
   do iofs <- instr_reloc_offset i;
   get_reloc_addend (ofs + iofs).
 
+
+Definition get_instr_reloc_addend' (ofs:Z): res Z :=
+  get_reloc_addend ofs.
+
 (** ** Encoding of the address modes *)
 
 (** Encode the address mode except the displacement *)
@@ -106,14 +110,20 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
   end.
     
 (** Encode the full address mode *)
-Definition encode_addrmode (sofs: Z) (i:instruction) (a: addrmode) (rd: ireg) : res (list byte) :=
+Definition encode_addrmode' (rofs: Z) (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
   do ofs <- match disp with
            | inl ofs => OK ofs
-           | inr (id,_) => get_instr_reloc_addend sofs i
+           | inr (id,_) => get_instr_reloc_addend' rofs
            end;
   OK (abytes ++ (encode_int32 ofs)).
+
+
+Definition encode_addrmode (sofs: Z) (i:instruction) (a: addrmode) (rd: ireg) : res (list byte) :=
+  do iofs <- instr_reloc_offset i;
+    encode_addrmode' (iofs+sofs) a rd
+.
 
 (** Encode the conditions *)
 Definition encode_testcond (c:testcond) : list byte :=
