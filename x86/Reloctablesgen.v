@@ -253,7 +253,33 @@ Definition transl_sectable (stbl: sectable) :=
   OK rtbls.
 
 Definition id_eliminate (i:instruction):res (instruction):=
-  OK i.
+    match i with
+  | Pjmp (inr id) sg =>
+    OK (Pjmp (inr xH) sg)
+  | Pcall (inr id) sg =>
+    OK (Pcall (inr xH) sg)
+  | Pmov_rs rd id =>
+    OK (Pmov_rs rd xH)
+  | Pmovl_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovl_rm rd (Addrmode rb ss (inr (xH,ptrofs))))
+  | Pmovl_mr (Addrmode rb ss (inr disp)) rs =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovl_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  (** Integer arithmetic *)
+  | Pleal rd (Addrmode rb ss (inr disp))  =>
+    let '(id, ptrofs) := disp in
+    OK (Pleal rd (Addrmode rb ss (inr (xH, ptrofs))))
+  (** Saving and restoring registers *)
+  | Pmov_rm_a rd (Addrmode rb ss (inr disp)) =>  (**r like [Pmov_rm], using [Many64] chunk *)
+    let '(id, ptrofs) := disp in
+    OK (Pmov_rm_a rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmov_mr_a (Addrmode rb ss (inr disp)) rs =>   (**r like [Pmov_mr], using [Many64] chunk *)
+    let '(id, ptrofs) := disp in
+    OK (Pmov_mr_a (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | _ =>
+    OK i
+    end.
 
 Definition acc_id_eliminate r i :=
   do r' <- r;
