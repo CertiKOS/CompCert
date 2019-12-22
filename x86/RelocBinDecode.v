@@ -1941,6 +1941,19 @@ Proof.
   rewrite (encode_reg_length r2); auto.
 Qed.
 
+Lemma encode_decode_addrmode_relf: forall a rd bytes rofs,
+    encode_addrmode' rtbl_ofs_map rofs  a rd = OK bytes
+    -> forall l, decode_addrmode rofs (bytes++l) = OK (rd, a, l).
+Admitted.
+
+Lemma encode_decode_addr_size_relf: forall a rd size abytes,
+    addrmode_reloc_offset a = OK size
+    -> encode_addrmode_aux a rd = OK abytes
+    ->forall l, decode_addrmode_size (abytes++l) = OK size.
+Admitted.
+
+
+
 Lemma encode_decode_instr_refl: forall ofs i s l,
     encode_instr rtbl_ofs_map ofs i = OK s
     -> exists i', fmc_instr_decode ofs (s++l) = OK(i',l) /\
@@ -1976,23 +1989,27 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     ++
       (* assert (Hasize:decode_addrmode_size ((x1 ++ encode_int32 x2) ++ l) = OK 2) by admit. *)
       (* rewrite Hasize. simpl. *)
-      Lemma encode_decode_addrmode_relf: forall a rd bytes rofs l,
-        encode_addrmode' rtbl_ofs_map rofs  a rd = OK bytes
-        -> decode_addrmode rofs (bytes++l) = OK (rd, a, l).
-      Admitted.
+
       unfold instr_reloc_offset in EQ0.
-      Lemma encode_decode_addr_size_relf: forall a rd size abytes,
-          addrmode_reloc_offset a = OK size
-          -> encode_addrmode_aux a rd = OK abytes
-          ->forall l, decode_addrmode_size (abytes++l) = OK size.
-      Admitted.
+
+
+      generalize (encode_decode_addrmode_relf _ _ _ _ EQ1).
+      intros HAddr.
       monadInv EQ0.
       unfold encode_addrmode' in EQ1.
       monadInv EQ1.
       generalize (encode_decode_addr_size_relf _ rd _ _  EQ EQ0).
       intros HAddrsize.
-
-      unfold decode_addrmode_size.
+      rewrite <- app_assoc.
+      rewrite (HAddrsize (encode_int32 x3 ++ l)).
+      simpl.
+      rewrite app_assoc.
+      replace (ofs+x2+1) with (1+x2+ofs).
+      setoid_rewrite(HAddr l).
+      
+      simpl.
+      auto.
+      omega.
       
       (* generalize (encode_decode_addrmode_relf _ _ _ _ _ 3 (ofs+3) l EQ1). *)
       (* intros Haddr. *)
