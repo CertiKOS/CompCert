@@ -115,7 +115,11 @@ Definition encode_addrmode' (rofs: Z) (a: addrmode) (rd: ireg) : res (list byte)
   do abytes <- encode_addrmode_aux a rd;
   do ofs <- match disp with
            | inl ofs => OK ofs
-           | inr (id,_) => get_instr_reloc_addend' rofs
+           | inr (id,_) =>
+             match id with
+             |xH => get_instr_reloc_addend' rofs
+             |_ => Error (msg "id error when encoding binary")
+             end
            end;
   OK (abytes ++ (encode_int32 ofs)).
 
