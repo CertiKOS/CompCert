@@ -223,11 +223,11 @@ Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): r
     |Some relEntry =>
        if Byte.eq_dec mod_b HB["0"]  then
          if Byte.eq_dec bs HB["5"] then
-           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.repr (reloc_addend relEntry))),(remove_first_n mc 4))
+           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),(remove_first_n mc 4))
          else
-           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.repr (reloc_addend relEntry))),mc)
+           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),mc)
        else
-         OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.repr (reloc_addend relEntry))),mc)
+         OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero )),mc)
     end.
 
 
@@ -255,7 +255,7 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                        |None =>
                         OK(reg, Addrmode None None (inl ofs), remove_first_n t 4)
                        |Some relocEntry =>
-                        OK(reg, Addrmode None None (inr (xH ,Ptrofs.repr (reloc_addend relocEntry))), remove_first_n t 4)                         
+                        OK(reg, Addrmode None None (inr (xH ,Ptrofs.zero )), remove_first_n t 4)                         
                        end
                      else
                        OK(reg, Addrmode (Some ea_reg) None (inl 0), t)
@@ -284,7 +284,7 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                             |None =>
                              OK(reg, Addrmode (Some ea_reg) None (inl ofs), remove_first_n t 4)
                             |Some relocEntry =>
-                             OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.repr (reloc_addend relocEntry))), remove_first_n t 4)        
+                             OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.zero)), remove_first_n t 4)        
                             end                            
                       else
                         Error( msg "unknown address mode")
@@ -1974,6 +1974,7 @@ Proof.
            ++++
              destruct (ireg_eq i RSP); monadInv EQ2.
              destruct p eqn:EQP.
+             destruct (Ptrofs.eq_dec i2 Ptrofs.zero);inversion EQ1.
              destruct i1; try monadInv EQ1.
              unfold decode_addrmode.
              simpl.
@@ -2025,8 +2026,8 @@ Proof.
              rewrite HEQX3.
              generalize (encode_decode_ireg_refl _ _  EQ2).
              intros HRi.
-             destruct HRi. destruct H11.
-             rewrite H11. rewrite H12. simpl.
+             destruct HRi. destruct H12.
+             rewrite H12. rewrite H13. simpl.
              assert(HEQx2: (Byte.shru bB[ x2 ++ x3 ++ x4] (Byte.repr 6)) = bB[x2]) by admit.
              rewrite HEQx2.
              rewrite (encode_parse_scale_refl _ _ EQ).
@@ -2034,8 +2035,8 @@ Proof.
              assert(HEQx4: (Byte.and bB[ x2 ++ x3 ++ x4] (Byte.repr 7)) = bB[x4]) by admit.
              rewrite HEQx4.
              generalize(encode_decode_ireg_refl _ _ EQ3).
-             intros HRi0. destruct HRi0. destruct H13.
-             rewrite H13. rewrite H14. simpl.
+             intros HRi0. destruct HRi0. destruct H14.
+             rewrite H14. rewrite H15. simpl.
              unfold addrmode_SIB_parse_base.
              destruct (Byte.eq_dec bB[ x4] HB[ "5"]) eqn:EQx4.
              +++++
@@ -2053,12 +2054,13 @@ Proof.
              auto.
              unfold addrmode_SIB_parse_index.
              destruct (Byte.eq_dec bB[x3] HB["4"]).
-             ++++++ admit.
+             ++++++ admit. (* RSP *)
              ++++++ auto.
-             ++++++ admit.
+             ++++++ auto.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
+
              +++++
                rewrite byte_eq_false. rewrite byte_eq_false. rewrite byte_eq_true.
              simpl.
@@ -2073,7 +2075,7 @@ Proof.
              destruct(Byte.eq_dec bB[x3] HB["4"]).
              ++++++ admit. (* RSP *)
              ++++++ auto.
-             ++++++ admit.
+             ++++++ auto.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
@@ -2159,7 +2161,9 @@ Proof.
              rewrite byte_eq_true; auto.
              rewrite byte_eq_true; auto.
              simpl.
-             destruct p. destruct i0; inversion EQ1.
+             destruct p.
+             destruct (Ptrofs.eq_dec i1 Ptrofs.zero); inversion EQ1.
+             destruct i0; inversion EQ1.
              unfold get_instr_reloc_addend' in EQ1.
              unfold find_ofs_in_rtbl.
              unfold get_reloc_addend in EQ1.
@@ -2169,8 +2173,8 @@ Proof.
              simpl. repeat f_equal.
              auto.
              +++++ admit.
-             +++++ admit.
-             +++++ admit.
+             +++++ auto.
+             +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
