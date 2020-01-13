@@ -342,6 +342,21 @@ Definition link_prog_ordered p1 p2 :=
   else
     None.
 
+Lemma link_prog_ordered_inv: forall(p1 p2 p:program F V),
+    link_prog_ordered p1 p2 = Some p ->
+    list_norepet (map fst (AST.prog_defs p1)) /\
+    list_norepet (map fst (AST.prog_defs p2)).
+Proof.
+  intros p1 p2 p LINK.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK; try congruence.
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as [[IDEQ NRPT1] NRPT2].
+  destruct list_norepet_dec; try discriminate.
+  destruct list_norepet_dec; try discriminate.
+  auto.
+Qed.
+
 End WITHFV.
 
 Instance Linker_prog_ordered (F V: Type) {LV: Linker V} : Linker (program (fundef F) V) := {
@@ -355,6 +370,7 @@ Proof.
 Defined.
 
 Global Opaque Linker_prog_ordered.
+
 
 
 (** matching modulo the permutation of definitions *)
@@ -644,7 +660,7 @@ Qed.
 
 
 (** Commutativity between permutation and linking *)
-Instance TransfPermuteLink {F V} {LV: Linker V}
+Instance TransfPermuteOrderedLink1 {F V} {LV: Linker V}
   : @TransfLink _ _ (Linker_prog (fundef F) V) (Linker_prog_ordered F V) match_prog.
 Proof.
   Local Transparent Linker_prog.
@@ -685,3 +701,8 @@ Proof.
   congruence.
   congruence.
 Qed.
+
+Instance TransfPermuteOrderedLink2 {F V} {LV: Linker V}
+  : @TransfLink _ _ (Linker_prog_ordered F V) (Linker_prog (fundef F) V) match_prog.
+Proof.
+Admitted.

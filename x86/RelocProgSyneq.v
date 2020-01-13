@@ -19,5 +19,15 @@ Definition reloc_prog_syneq (p tp: program) : Prop :=
   /\ prog_main p = prog_main tp
   /\ prog_public p = prog_public tp
   /\ prog_sectable p = prog_sectable tp
-  /\ symbtable_syneq (prog_symbtable p) (prog_symbtable tp).
+  /\ symbtable_syneq (prog_symbtable p) (prog_symbtable tp)
+  /\ prog_strtable p = prog_strtable tp
+  /\ prog_reloctables p = prog_reloctables tp.
   
+Lemma symbtable_syneq_symm: forall t1 t2,
+    symbtable_syneq t1 t2 -> symbtable_syneq t2 t1.
+Admitted.
+
+Lemma symbtable_syneq_trans: forall t1 t2 t3,
+    symbtable_syneq t1 t2 -> symbtable_syneq t2 t3 ->
+    symbtable_syneq t1 t3.
+Admitted.
