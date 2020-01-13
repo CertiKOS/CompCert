@@ -47,6 +47,26 @@ Inductive match_states : Asm.state -> Asm.state -> Prop :=
 
 (* Variable init_stk: stack. *)
 
+(* Lemma globalenv_eq: ge = tge. *)
+(* Proof. *)
+(*   unfold ge, tge. *)
+(*   unfold Genv.globalenv. *)
+(*   destruct TRANSF as (A & B & C). *)
+(*   setoid_rewrite C. *)
+(*   fold fundef. *)
+(*   generalize (Genv.empty_genv fundef unit (prog_public prog)). *)
+(*   revert A. *)
+(*   fold fundef. *)
+(*   generalize (prog_defs prog) (prog_defs tprog). *)
+(*   induction 1; simpl; intros; eauto. *)
+(*   inv H. destruct a1, b1; simpl in *. subst. inv H1. *)
+(*   apply IHA. *)
+(*   inv H. unfold transf_fundef, transf_partial_fundef in H1. *)
+(*   repeat destr_in H1. unfold bind in H2. destr_in H2. inv H2. *)
+(*   unfold trans_function in Heqr. repeat destr_in Heqr. *)
+(*   monadInv H1. cbn *)
+(*   inv H1. apply IHA. *)
+(* Qed. *)
 
 
 Fixpoint transl_code_spec ofs allcode code code' : Prop :=

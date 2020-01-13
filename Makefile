@@ -120,6 +120,7 @@ BACKEND=\
   FlatBinDecode.v \
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
+  PadNopsproof.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v RelocBinDecode.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
