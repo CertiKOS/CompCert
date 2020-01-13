@@ -329,41 +329,44 @@ Definition match_prog (p: Asm.program) (tp: program) :=
 Lemma match_prog_pres_prog_defs : forall p tp,
   match_prog p tp -> Permutation (AST.prog_defs p) (prog_defs tp).
 Proof.
-(*   intros p tp MATCH. red in MATCH. *)
-(*   destruct MATCH as (tp' & MATCH & SEQ). *)
-(*   unfold transf_program in MATCH. *)
-(*   destruct check_wellformedness; try monadInv MATCH. *)
-(*   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ. *)
-(*   destruct p0.  *)
-(*   destruct zle; try monadInv MATCH. simpl. auto. *)
-(* Qed. *)
-Admitted.
+  intros p tp MATCH. red in MATCH.
+  destruct MATCH as (tp' & MATCH & SEQ).
+  unfold transf_program in MATCH.
+  destruct check_wellformedness; try monadInv MATCH.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0.
+  destruct zle; try monadInv MATCH.
+  red in SEQ; cbn in SEQ. 
+  tauto.
+Qed.
 
 Lemma match_prog_pres_prog_main : forall p tp,
   match_prog p tp -> AST.prog_main p = prog_main tp.
 Proof.
-(*   intros p tp MATCH. red in MATCH. *)
-(*   destruct MATCH as (tp' & MATCH & SEQ). *)
-(*   unfold transf_program in MATCH. *)
-(*   destruct check_wellformedness; try monadInv MATCH. *)
-(*   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ. *)
-(*   destruct p0.  *)
-(*   destruct zle; try monadInv MATCH. simpl. auto. *)
-(* Qed. *)
-Admitted.
+  intros p tp MATCH. red in MATCH.
+  destruct MATCH as (tp' & MATCH & SEQ).
+  unfold transf_program in MATCH.
+  destruct check_wellformedness; try monadInv MATCH.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0.
+  destruct zle; try monadInv MATCH. 
+  red in SEQ; cbn in SEQ. 
+  tauto.
+Qed.
 
 Lemma match_prog_pres_prog_public : forall p tp,
   match_prog p tp -> AST.prog_public p = prog_public tp.
 Proof.
-(*   intros p tp MATCH. red in MATCH. *)
-(*   destruct MATCH as (tp' & MATCH & SEQ). *)
-(*   unfold transf_program in MATCH. *)
-(*   destruct check_wellformedness; try monadInv MATCH. *)
-(*   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ. *)
-(*   destruct p0.  *)
-(*   destruct zle; try monadInv MATCH. simpl. auto. *)
-(* Qed. *)
-Admitted.
+  intros p tp MATCH. red in MATCH.
+  destruct MATCH as (tp' & MATCH & SEQ).
+  unfold transf_program in MATCH.
+  destruct check_wellformedness; try monadInv MATCH.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0.
+  destruct zle; try monadInv MATCH. 
+  red in SEQ; cbn in SEQ.
+  tauto.
+Qed.
 
   
 Lemma eq_gvar_init_pres_aligned : forall v1 v2,

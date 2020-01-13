@@ -14,6 +14,24 @@ Definition symbtable_syneq (s1 s2: symbtable) : Prop :=
   Permutation (PTree.elements (symbtable_to_tree s1))
               (PTree.elements (symbtable_to_tree s2)).
 
+Lemma symbtable_syneq_symm: forall t1 t2,
+    symbtable_syneq t1 t2 -> symbtable_syneq t2 t1.
+Proof.
+  unfold symbtable_syneq.
+  intros. 
+  apply Permutation_sym; eauto.
+Qed.
+
+Lemma symbtable_syneq_trans: forall t1 t2 t3,
+    symbtable_syneq t1 t2 -> symbtable_syneq t2 t3 ->
+    symbtable_syneq t1 t3.
+Proof.
+  unfold symbtable_syneq.
+  intros. 
+  eapply Permutation_trans; eauto.
+Qed.
+
+
 Definition reloc_prog_syneq (p tp: program) : Prop :=
   Permutation (prog_defs p) (prog_defs tp) 
   /\ prog_main p = prog_main tp
@@ -23,11 +41,3 @@ Definition reloc_prog_syneq (p tp: program) : Prop :=
   /\ prog_strtable p = prog_strtable tp
   /\ prog_reloctables p = prog_reloctables tp.
   
-Lemma symbtable_syneq_symm: forall t1 t2,
-    symbtable_syneq t1 t2 -> symbtable_syneq t2 t1.
-Admitted.
-
-Lemma symbtable_syneq_trans: forall t1 t2 t3,
-    symbtable_syneq t1 t2 -> symbtable_syneq t2 t3 ->
-    symbtable_syneq t1 t3.
-Admitted.
