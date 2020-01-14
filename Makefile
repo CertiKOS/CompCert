@@ -125,7 +125,9 @@ BACKEND=\
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v SymbtablegenSep.v PermuteRealAsmproof.v \
+  RelocProgSyneq.v RelocProgSyneqproof.v \
+  SymbtablegenSep.v Symbtablegenproof.v \
+  PermuteProgproof.v PermuteProgSep.v \
   RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v \
   RelocBinDecode.v
 

@@ -64,6 +64,14 @@ Qed.
 Definition match_prog (p tp:Asm.program) :=
   tp = transf_program p.
 
+Lemma transf_program_match:
+  forall p tp, transf_program p = tp -> match_prog p tp.
+Proof.
+  intros. subst. red. 
+  auto.
+Qed.
+
+
 Section PRESERVATION.
   Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.

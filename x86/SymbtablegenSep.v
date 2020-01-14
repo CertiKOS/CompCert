@@ -10,6 +10,7 @@ Require Import Memtype.
 Require Import Asm RelocProgram.
 Require Import Symbtablegen.
 Require Import Linking LinkingProp OrderedLinking.
+Require Import PermuteProgproof PermuteProgSep.
 Require Import RelocLinking.
 Require Import SeqTable.
 Require Import RelationClasses.
@@ -2533,7 +2534,7 @@ Qed.
 
 Lemma match_prog_perm: forall p tp,
     match_prog p tp ->
-    OrderedLinking.match_prog p 
+    PermuteProgproof.match_prog p 
                               {| AST.prog_defs := prog_defs tp;
                                  AST.prog_public := prog_public tp;
                                  AST.prog_main := prog_main tp |}.
