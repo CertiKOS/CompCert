@@ -94,6 +94,8 @@ Require Asmlabelgenproof.
 Require PadNops.
 Require PadNopsproof.
 Require PadInitData.
+Require PadInitDataproof.
+Require PadInitDataSep.
 Require Symbtablegen.
 (* Require NormalizeSymb. *)
 Require Reloctablesgen.
@@ -236,7 +238,8 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
 Definition transf_c_program_bytes' (p: Csyntax.program) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
-  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program.
+  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
+  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program.
 
   
 Definition transf_c_elim_label p: res Asm.program :=
@@ -450,6 +453,7 @@ Definition match_prog_test_symbtablegen :=
 Definition bytes_passes :=
   mkpass Asmlabelgenproof.match_prog
   ::: mkpass PadNopsproof.match_prog
+  ::: mkpass PadInitDataproof.match_prog
   ::: pass_nil _.
 
 Definition match_prog_bytes :=
@@ -650,7 +654,8 @@ Proof.
   apply Asmlabelgenproof.transf_program_match. eauto.
   eexists. split.
   apply PadNopsproof.transf_program_match; eauto.
-  auto.
+  eexists; split; auto.
+  red. auto.
 Qed.
   
   
@@ -1242,6 +1247,20 @@ Proof.
     intros FNONE. setoid_rewrite FNONE. auto.
 Qed.
 
+Lemma PadInitData_fn_stack_requirements_match: 
+  forall p tp
+    (FM: PadInitDataproof.match_prog p tp),
+    fn_stack_requirements p = fn_stack_requirements tp.
+Proof.
+  intros p tp MATCH.
+  unfold fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  erewrite <- PadInitDataproof.find_symbol_transf; eauto.
+  destruct (Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv tp) i) eqn:EQ; auto.
+  erewrite <- PadInitDataproof.find_funct_ptr_transf; eauto.
+Qed.
+
+
 Theorem c_semantic_preservation_bytes:
   forall p tp,
     match_prog_bytes p tp ->
@@ -1254,7 +1273,7 @@ Proof.
   rewrite compose_passes_app in P.
   destruct P as (pi' & RP & FP). 
   simpl in FP.
-  destruct FP as (p2 & FP & p3 & PP & EQ). subst.
+  destruct FP as (p2 & FP & p3 & PP & p4 & PP1 & EQ). subst.
   assert (match_prog_real p pi'). red.
   apply compose_passes_app. eexists; split; eauto.
   eapply compose_backward_simulation.
@@ -1263,11 +1282,15 @@ Proof.
   apply c_semantic_preservation_real; auto.
   eapply eq_trans.
   apply Asmlabelgen_fn_stack_requirements_match; eauto.
-  apply PadNops_fn_stack_requirements_match; auto.
+  eapply eq_trans.
+  apply PadNops_fn_stack_requirements_match; eauto.
+  apply PadInitData_fn_stack_requirements_match; eauto.
   eapply forward_to_backward_simulation.
   eapply compose_forward_simulations.
   eapply Asmlabelgenproof.transf_program_correct; eauto.
+  eapply compose_forward_simulations.
   eapply PadNopsproof.transf_program_correct; eauto.
+  eapply PadInitDataproof.transf_program_correct; eauto.
   eapply RealAsm.real_asm_receptive.
   eapply RealAsm.real_asm_determinate.
 Qed.
