@@ -298,6 +298,15 @@ Proof.
     apply Permutation_middle.
 Qed.
 
+Lemma PTree_extract_elements_permutation' : forall {A:Type} (ids: list ident) (t t':PTree.t A) vals,
+  PTree_extract_elements ids t = Some (vals, t') ->
+  Permutation (PTree.elements t) ((PTree.elements t') ++ vals).
+Proof.
+  intros A ids t t' vals H.
+  eapply Permutation_trans.
+  eapply PTree_extract_elements_permutation; eauto.
+  apply Permutation_app_comm.
+Qed.
 
 
 (** The main proof begins *)
@@ -639,4 +648,25 @@ Proof.
   repeat (split; eauto).
   rewrite <- PUB1. auto.
   rewrite <- PUB2. auto.
+Qed.
+
+Lemma link_prog_ordered_inv': 
+  forall {F V} {LV: Linker V} 
+    (p1 p2 p: AST.program (AST.fundef F) V),
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    exists p', 
+      link_prog p1 p2 = Some p' /\
+      Permutation (AST.prog_defs p) (AST.prog_defs p').
+Proof.
+  intros F V LV p1 p2 p LINK.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK. 
+  destr_in LINK.
+  destruct p0 as (defs3 & t'). inv LINK. cbn.
+  eexists. split.
+  - unfold link_prog.
+    rewrite Heqb. reflexivity.
+  - cbn.
+    apply Permutation_sym.
+    eapply PTree_extract_elements_permutation'; eauto.
 Qed.
