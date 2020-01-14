@@ -1849,8 +1849,6 @@ Admitted.
 (* Qed. *)
 
 Lemma link_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
-    list_norepet (map fst (AST.prog_defs p1)) ->
-    list_norepet (map fst (AST.prog_defs p2)) ->
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
@@ -1861,7 +1859,51 @@ Lemma link_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
       gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) = (stbl', dsz1 + dsz2, csz1 + csz2) /\ 
       symbtable_syneq stbl stbl'.
 Proof.
-Admitted.
+(*   intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs LINK GS1 GS2 FOFS. *)
+
+(*   unfold link_prog_ordered in LINK. *)
+(*   destr_in LINK. *)
+(*   repeat rewrite andb_true_iff in Heqb. *)
+(*   destruct Heqb as [[MAINEQ NORPT1] NORPT2]. *)
+(*   destruct list_norepet_dec in NORPT1; try discriminate. *)
+(*   destruct list_norepet_dec in NORPT2; try discriminate. *)
+(*   destruct ident_eq in MAINEQ; try discriminate. *)
+(*   destr_in LINK. destruct p as (defs3 & t'). inv LINK. cbn. *)
+(*   generalize (PTree_extract_elements_permutation _ _ _ _ Heqo); eauto. *)
+(*   intros PERM. *)
+  
+
+(*   (* generalize (PTree_extract_elements_app _ _ _ t' _ Heqo). *) *)
+(*   (* intros (t1 & defs4 & defs5 & EXT1 & EXT2 & EQ). subst. *) *)
+  
+
+(*   destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINKDEFS1; *)
+(*     try congruence. *)
+(*   destruct r as (p & defs2_rest). destruct p as (defs1_linked, defs1_rest). *)
+(*   destruct (link_defs1 is_fundef_internal defs2_rest defs1_rest) as [r|] eqn:LINKDEFS2; *)
+(*     try congruence. *)
+(*   destruct r. destruct p as (defs2_linked & r). inv LINK. *)
+
+(* (*   generalize (link_defs1_gen_symbtbl_comm _ _ NORPT2 LINKDEFS1 GS1 GS2). *) *)
+(* (*   destruct 1 as (stbl1_linked & stlb1_rest & stbl2_rest & LINKSTBL1 & GSLINKED1 & GSREST1 & GSREST2). *) *)
+(* (*   generalize (reloc_symbtable_exists _ GS2 (@eq_refl _ (reloc_offset_fun dsz1 csz1))). *) *)
+(* (*   destruct 1 as (stbl2' & RELOC & RELOC_PROP). *) *)
+(* (*   generalize (reloc_link_symbtable_comm2 _ _ _ RELOC LINKSTBL1). *) *)
+(* (*   destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').   *) *)
+(* (*   generalize (link_defs_rest_norepet_pres1 _ _ _ _ NORPT1 LINKDEFS1). *) *)
+(* (*   intros NORPT1'. *) *)
+(* (*   generalize (link_defs1_gen_symbtbl_comm _ _ NORPT1' LINKDEFS2 GSREST2 GSREST1). *) *)
+(* (*   destruct 1 as (stbl_linked2 & sr1 & sr2 & LINKSTBL2 & GSLINKED2 & GS3 & GS4). *) *)
+(* (*   generalize (reloc_link_symbtable_comm1 _ _ _ RELOC2' LINKSTBL2). *) *)
+(* (*   destruct 1 as (stbl2_linked' & RELOC2 & LINKREST2). *) *)
+
+(* (*   unfold link_symbtable. *) *)
+(* (*   eexists. exists stbl2'. split; auto. *) *)
+(* (*   rewrite LINKSTBL1'. *) *)
+(* (*   rewrite LINKREST2. split; auto.   *) *)
+(* (*   eapply gen_symb_table_reloc_comm; eauto. *) *)
+(* (* Qed. *) *)
+Admitted.  
 
 
 (** ** Commutativity of linking and section generation *)
@@ -2629,7 +2671,7 @@ Proof.
   (* repeat rewrite andb_true_iff in Heqb. *)
   (* destruct Heqb as [[MAINIDEQ NRPT1] NRTP2]. *)
 
-  generalize (link_gen_symb_comm _ _ NRPT1 NRPT2 LINK GSEQ1 GSEQ2
+  generalize (link_gen_symb_comm _ _ LINK GSEQ1 GSEQ2
                                  (@eq_refl _ (reloc_offset_fun dsz1 csz1))); eauto.
   destruct 1 as (stbl & stbl2' & stbl' & RELOC & LINKS & GENS & STEQ).
   generalize (gen_symb_table_size _ _ _ GSEQ1).

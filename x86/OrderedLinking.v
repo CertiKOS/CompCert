@@ -74,33 +74,6 @@ Proof.
   apply Permutation_map; auto.
 Qed.
 
-Lemma Permutation_pres_ptree_get_some: forall A (l1 l2: list (ident * A)) a e,
-    list_norepet (map fst l2) ->
-    Permutation l1 l2 -> (PTree_Properties.of_list l1) ! a = Some e -> 
-    (PTree_Properties.of_list l2) ! a = Some e.
-Proof. 
-  intros A l1 l2 a e NORPT PERM GET.
-  apply PTree_Properties.of_list_norepet; auto.
-  eapply Permutation_in; eauto.
-  apply PTree_Properties.in_of_list; auto.
-Qed.
-
-Lemma Permutation_pres_ptree_get: forall A (l1 l2: list (ident * A)) a,
-    list_norepet (map fst l1) -> 
-    list_norepet (map fst l2) -> 
-    Permutation l1 l2 -> 
-    (PTree_Properties.of_list l1) ! a = (PTree_Properties.of_list l2) ! a.
-Proof. 
-  intros A l1 l2 a NORPT1 NORPT2 PERM.
-  destruct ((PTree_Properties.of_list l1) ! a) eqn:GET1.
-  - symmetry. 
-    eapply Permutation_pres_ptree_get_some; eauto.
-  - destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
-    apply Permutation_sym in PERM.
-    generalize (@Permutation_pres_ptree_get_some _ _ _ a a0 NORPT1 PERM GET2).
-    intros. congruence.
-Qed.
-
 Lemma Permutation_list_norepet_map: forall A B (f: A -> B) (l1 l2: list A),
     Permutation l1 l2 -> list_norepet (map f l1) -> list_norepet (map f l2).
 Proof.
@@ -108,6 +81,35 @@ Proof.
   rewrite <- NoDup_list_norepet_equiv in *.
   eapply Permutation_NoDup_map; eauto.
 Qed.
+
+Lemma Permutation_pres_ptree_get_some: forall A (l1 l2: list (ident * A)) a e,
+    list_norepet (map fst l1) ->
+    Permutation l1 l2 -> (PTree_Properties.of_list l1) ! a = Some e -> 
+    (PTree_Properties.of_list l2) ! a = Some e.
+Proof. 
+  intros A l1 l2 a e NORPT PERM GET.
+  apply PTree_Properties.of_list_norepet; auto.
+  eapply Permutation_list_norepet_map; eauto.
+  eapply Permutation_in; eauto.
+  apply PTree_Properties.in_of_list; auto.
+Qed.
+
+Lemma Permutation_pres_ptree_get: forall A (l1 l2: list (ident * A)) a,
+    list_norepet (map fst l1) -> 
+    Permutation l1 l2 -> 
+    (PTree_Properties.of_list l1) ! a = (PTree_Properties.of_list l2) ! a.
+Proof. 
+  intros A l1 l2 a NORPT1 PERM.
+  destruct ((PTree_Properties.of_list l1) ! a) eqn:GET1.
+  - symmetry. 
+    eapply Permutation_pres_ptree_get_some; eauto.
+  - destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
+    assert (list_norepet (map fst l2)) as NORPT2.
+    { eapply Permutation_list_norepet_map; eauto. }
+    apply Permutation_sym in PERM.
+    generalize (@Permutation_pres_ptree_get_some _ _ _ a a0 NORPT2 PERM GET2).    intros. congruence.
+Qed.
+
 
 Lemma PTree_combine_permutation: forall A B C (f: option A -> option B -> option C) l1 l1' l2 l2',
     f None None = None ->
@@ -135,15 +137,11 @@ Proof.
     rewrite PTree.gcombine in *; auto.
     rewrite <- (Permutation_pres_ptree_get _ l1 l1'); auto.
     rewrite <- (Permutation_pres_ptree_get _ l2 l2'); auto.
-    eapply Permutation_list_norepet_map; eauto.
-    eapply Permutation_list_norepet_map; eauto.
   - apply PTree.elements_complete in IN.
     apply PTree.elements_correct.
     rewrite PTree.gcombine in *; auto.
     rewrite (Permutation_pres_ptree_get _ l1 l1'); auto.
     rewrite (Permutation_pres_ptree_get _ l2 l2'); auto.
-    eapply Permutation_list_norepet_map; eauto.
-    eapply Permutation_list_norepet_map; eauto.
 Qed.
 
 Lemma PTree_remove_pres_in:
@@ -328,7 +326,8 @@ Definition link_prog_ordered p1 p2 :=
   let dm2 := prog_option_defmap p2 in
   if ident_eq p1.(prog_main) p2.(prog_main) 
      && list_norepet_dec ident_eq (map fst (prog_defs p1))
-     && list_norepet_dec ident_eq (map fst (prog_defs p2)) then
+     && list_norepet_dec ident_eq (map fst (prog_defs p2)) 
+     && PTree_Properties.for_all dm1 (link_prog_check p1 p2) then
     let t := PTree.combine link_prog_merge dm1 dm2 in
     let ids1 := collect_internal_def_ids is_fun_internal p1 in
     let ids2 := collect_internal_def_ids is_fun_internal p2 in
@@ -351,7 +350,7 @@ Proof.
   unfold link_prog_ordered in LINK.
   destr_in LINK; try congruence.
   repeat rewrite andb_true_iff in Heqb.
-  destruct Heqb as [[IDEQ NRPT1] NRPT2].
+  destruct Heqb as [[[IDEQ NRPT1] NRPT2] CHK].
   destruct list_norepet_dec; try discriminate.
   destruct list_norepet_dec; try discriminate.
   auto.
@@ -634,10 +633,8 @@ Proof.
   intros (MAINEQ & NORPT1 & NORPT2 & LINKABLE & P). clear P.
   intros id gd1 gd2 GET1 GET2.
   unfold prog_option_defmap in *.
-  generalize (Permutation_list_norepet_map _ _ _ _ _ PERM1 NORPT1). intros NORPT1'.
-  generalize (Permutation_list_norepet_map _ _ _ _ _ PERM2 NORPT2). intros NORPT2'.
-  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT1 NORPT1' PERM1) in GET1; eauto.
-  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT2 NORPT2' PERM2) in GET2; eauto.
+  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT1  PERM1) in GET1; eauto.
+  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT2  PERM2) in GET2; eauto.
   edestruct LINKABLE as (IN1 & IN2 & (gd & LINK')); eauto.
   repeat (split; eauto).
   rewrite <- PUB1. auto.
