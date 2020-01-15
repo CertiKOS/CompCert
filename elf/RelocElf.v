@@ -141,6 +141,7 @@ Inductive section_type :=
 | SHT_STRTAB    (* string table *)
 | SHT_SYMTAB    (* symbol table *)
 | SHT_REL       (* relocation table *)
+| SHT_RELA      (* relocation table with explicit addends *)
 | SHT_NOBITS    (* unintialized data *)
 .
 
@@ -151,6 +152,7 @@ Definition section_type_value sht :=
   | SHT_STRTAB => 3
   | SHT_SYMTAB => 2
   | SHT_REL    => 9
+  | SHT_RELA   => 4
   | SHT_NOBITS => 8
   end.
 
