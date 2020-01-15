@@ -332,7 +332,7 @@ driver/Version.ml: VERSION
 	>driver/Version.ml
 
 cparser/Parser.v: cparser/Parser.vy
-	$(MENHIR) --coq --coq-lib-path compcert.MenhirLib cparser/Parser.vy
+	$(MENHIR) --coq cparser/Parser.vy
 
 depend: $(GENERATED) depend1
 
