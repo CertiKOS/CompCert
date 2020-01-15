@@ -275,13 +275,30 @@ Definition transl_code' (c:code): res (code) :=
   do r <- fold_left acc_id_eliminate c (OK []);
     OK (rev r).
 
+Local Open Scope string_scope.
+Definition print_section (s: section) :=
+  match s with
+  | sec_null => "null"
+  | sec_text _ => "text"
+  | sec_data _ => "data"
+  | sec_bytes _ => "bytes"
+  end.
+
+Fixpoint print_sectable (stbl: sectable) :=
+  match stbl with
+  | [] => ""
+  | s::r => String.append (print_section s) (String.append ";" (print_sectable r))
+  end.
+
 Definition transl_sectable' (stbl: sectable): res sectable :=
   match stbl with
-    [sec_null; sec_text code; sec_data l] =>
+    [sec_null; sec_data l; sec_text code] =>
     do code' <- transl_code' code;
-    OK [sec_null; sec_text code'; sec_data l]
-  | _ => Error (msg "Expected section table to be [null; text; data]")
+    OK [sec_null; sec_data l; sec_text code']
+  | _ => Error (msg "Expected section table to be [null; text; data], got " ++ msg (print_sectable stbl))
   end.
+
+
 
 End WITH_SYMB_INDEX_MAP.
 

@@ -299,11 +299,11 @@ End WITH_RELOC_OFS_MAP.
 
 Definition transl_sectable (stbl: sectable) relocmap : res sectable :=
   match stbl with
-  | [sec_null; sec_text code; sec_data l] =>
+  | [sec_null; sec_data l; sec_text code] =>
     do codebytes <- transl_code (gen_reloc_ofs_map (reloctable_code relocmap)) code;
     do databytes <- transl_init_data_list (gen_reloc_ofs_map (reloctable_data relocmap)) l;
-      OK [sec_null; sec_bytes codebytes; sec_bytes databytes]
-  | _ => Error (msg "Expected the section table to be [sec_null; sec_text; sec_data]")
+      OK [sec_null; sec_bytes databytes; sec_bytes codebytes]
+  | _ => Error (msg "Expected the section table to be [sec_null; sec_data; sec_text]")
   end.
 
 Definition transf_program (p:program) : res program := 
