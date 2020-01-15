@@ -27,24 +27,21 @@ Module Genv.
 Section GENV.
 
 Record t: Type := mkgenv {
-   genv_reloc_ofs_symb: N -> option (ZTree.t ident);
-   genv_genv : RelocProgSemantics.Genv.t;
+  genv_reloc_ofs_symb: reloctable_id -> ZTree.t ident;
+  genv_genv : RelocProgSemantics.Genv.t;
 }.
 
 (** ** Lookup functions *)
 
-Definition find_symbol (ge: t) (sec_index: N) (idofs: Z) : option (block * ptrofs):=
+Definition find_symbol (ge: t) (sec_index: reloctable_id) (idofs: Z) : option (block * ptrofs):=
   let ge' := ge.(genv_genv) in
-  match ge.(genv_reloc_ofs_symb) sec_index with
+  let ofs_map :=  ge.(genv_reloc_ofs_symb) sec_index in
+  match ZTree.get idofs ofs_map with
   | None => None
-  | Some ofs_map =>
-    match ZTree.get idofs ofs_map with
-    | None => None
-    | Some id => RelocProgSemantics.Genv.find_symbol ge' id
-    end
+  | Some id => RelocProgSemantics.Genv.find_symbol ge' id
   end.
 
-Definition symbol_address (ge: t) (sec_index: N) (idofs: Z) (ofs: ptrofs) : val :=
+Definition symbol_address (ge: t) (sec_index: reloctable_id) (idofs: Z) (ofs: ptrofs) : val :=
   match find_symbol ge sec_index idofs with
   | Some (b, o) => Vptr b (Ptrofs.add ofs o)
   | None => Vundef
@@ -111,7 +108,7 @@ Definition eval_addrmode32 (idofs: option Z) (a: addrmode) (rs: regset) : val :=
               match idofs with
               | None => Vundef
               | Some idofs =>
-                Genv.symbol_address ge sec_code_id idofs ofs
+                Genv.symbol_address ge RELOC_CODE idofs ofs
               end
             end)).
 
@@ -134,7 +131,7 @@ Definition eval_addrmode64 (idofs:option Z) (a: addrmode) (rs: regset) : val :=
               match idofs with
               | None => Vundef
               | Some idofs =>
-                Genv.symbol_address ge sec_code_id idofs ofs
+                Genv.symbol_address ge RELOC_CODE idofs ofs
               end
             end)).
 
@@ -172,7 +169,7 @@ Definition eval_ros (ge : Genv.t) (idofs: option Z) (ros : ireg + ident) (rs : r
   | inr _ => 
     match idofs with
     | None => Vundef
-    | Some idofs => Genv.symbol_address ge sec_code_id idofs Ptrofs.zero
+    | Some idofs => Genv.symbol_address ge RELOC_CODE idofs Ptrofs.zero
     end
   end.
 
@@ -208,7 +205,7 @@ Definition exec_instr (ge: Genv.t) (i: instruction) (rs: regset) (m: mem) : outc
       match idofs with
       | None => Stuck
       | Some idofs => 
-        let symbaddr := (Genv.symbol_address ge sec_code_id idofs Ptrofs.zero) in
+        let symbaddr := (Genv.symbol_address ge RELOC_CODE idofs Ptrofs.zero) in
         Next (nextinstr_nf (rs#rd <- symbaddr) sz) m
       end
     | Pmovl_rm rd a =>
@@ -500,7 +497,7 @@ Definition exec_instr (ge: Genv.t) (i: instruction) (rs: regset) (m: mem) : outc
       match idofs with
       | None => Stuck
       | Some idofs =>
-        let symbaddr := (Genv.symbol_address ge sec_code_id idofs Ptrofs.zero) in
+        let symbaddr := (Genv.symbol_address ge RELOC_CODE idofs Ptrofs.zero) in
         Next (rs#PC <- symbaddr) m
       end
     | Pjmp (inl r) sg =>
@@ -635,11 +632,11 @@ Inductive eval_builtin_arg: builtin_arg A -> val -> Prop :=
       eval_builtin_arg (BA_addrstack ofs) (Val.offset_ptr sp ofs)
   | eval_BA_loadglobal: forall chunk id idofs' ofs v,
       idofs = Some idofs' ->
-      Mem.loadv chunk m  (Genv.symbol_address ge sec_code_id idofs' ofs) = Some v ->
+      Mem.loadv chunk m  (Genv.symbol_address ge RELOC_CODE idofs' ofs) = Some v ->
       eval_builtin_arg (BA_loadglobal chunk id ofs) v
   | eval_BA_addrglobal: forall id ofs idofs',
       idofs = Some idofs' ->
-      eval_builtin_arg (BA_addrglobal id ofs) (Genv.symbol_address ge sec_code_id idofs' ofs)
+      eval_builtin_arg (BA_addrglobal id ofs) (Genv.symbol_address ge RELOC_CODE idofs' ofs)
   | eval_BA_splitlong: forall hi lo vhi vlo,
       eval_builtin_arg hi vhi -> eval_builtin_arg lo vlo ->
       eval_builtin_arg (BA_splitlong hi lo) (Val.longofwords vhi vlo).
@@ -705,10 +702,12 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
 
 (** Initialization of the global environment *)
 
-Definition acc_reloc_ofs_symb (stbl:symbtable) (e:relocentry) (m:ZTree.t ident) :=
+(* Given relocentry [e] and symtable [stbl], updates the mapping [m] that
+associates relocation offsets with their identifiers. *)
+Definition acc_reloc_ofs_symb (stbl:symbtable) (e:relocentry) (m:ZTree.t ident) : ZTree.t ident :=
   match SeqTable.get (reloc_symb e) stbl with
   | None => m
-  | Some s => 
+  | Some s =>
     match symbentry_id s with
     | None => m
     | Some id => ZTree.set (reloc_offset e) id m
@@ -718,21 +717,18 @@ Definition acc_reloc_ofs_symb (stbl:symbtable) (e:relocentry) (m:ZTree.t ident) 
 Definition gen_reloc_ofs_symb (stbl: symbtable) (rtbl: reloctable) : ZTree.t ident :=
   fold_right (acc_reloc_ofs_symb stbl) (ZTree.empty ident) rtbl.
 
-Definition add_reloc_ofs_symb (stbl: symbtable) (i:N)  (rmap: reloctable_map)
-           (ofsmap: N -> option (ZTree.t ident)) :=
-  match get_reloctable i rmap with
-  | None => ofsmap
-  | Some rtbl => 
-    let m := gen_reloc_ofs_symb stbl rtbl in
-    fun i' => if N.eq_dec i i' then Some m else ofsmap i'
-  end.
-  
+Definition add_reloc_ofs_symb (stbl: symbtable) (i:reloctable_id)  (rmap: reloctable_map)
+           (ofsmap: reloctable_id -> ZTree.t ident) :=
+  let rtbl := get_reloctable i rmap in
+  let m := gen_reloc_ofs_symb stbl rtbl in
+  fun i' => if reloctable_id_eq i i' then m else ofsmap i'.
+
 Definition gen_reloc_ofs_symbs (p:program) :=
   let stbl := p.(prog_symbtable) in
   let rmap := p.(prog_reloctables) in
-  let ofsmap := fun i => None in
-  let ofsmap1 := add_reloc_ofs_symb stbl sec_data_id rmap ofsmap in
-  let ofsmap2 := add_reloc_ofs_symb stbl sec_code_id rmap ofsmap1 in
+  let ofsmap := fun i => ZTree.empty ident in
+  let ofsmap1 := add_reloc_ofs_symb stbl RELOC_DATA rmap ofsmap in
+  let ofsmap2 := add_reloc_ofs_symb stbl RELOC_CODE rmap ofsmap1 in
   ofsmap2.
 
 Definition globalenv (p: program) : Genv.t :=
@@ -754,7 +750,7 @@ Definition store_init_data (m: mem) (b: block) (p: Z) (id: init_data) : option m
   | Init_int64 n => Mem.store Mint64 m b p (Vlong n)
   | Init_float32 n => Mem.store Mfloat32 m b p (Vsingle n)
   | Init_float64 n => Mem.store Mfloat64 m b p (Vfloat n)
-  | Init_addrof gloc ofs => Mem.store Mptr m b p (Genv.symbol_address ge sec_data_id p ofs)
+  | Init_addrof gloc ofs => Mem.store Mptr m b p (Genv.symbol_address ge RELOC_DATA p ofs)
   | Init_space n => Some m
   end.
 

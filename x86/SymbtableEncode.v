@@ -112,7 +112,7 @@ Definition transf_program p : res program :=
         prog_sectable := (prog_sectable p) ++ [s];
         prog_strtable := strtab;
         prog_symbtable := prog_symbtable p;
-        prog_reloctables := (prog_reloctables p);
+        prog_reloctables := prog_reloctables p;
         prog_senv := prog_senv p;
      |} in
   let len := (length (prog_sectable p')) in

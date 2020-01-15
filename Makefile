@@ -123,12 +123,14 @@ BACKEND=\
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v RelocBinDecode.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
+	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
   RelocProgSyneq.v RelocProgSyneqproof.v \
   SymbtablegenSep.v Symbtablegenproof.v \
   PermuteProgproof.v PermuteProgSep.v \
-  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v \
+  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
+  TablesEncodeproof.v \
   RelocBinDecode.v
 
 
@@ -330,7 +332,7 @@ driver/Version.ml: VERSION
 	>driver/Version.ml
 
 cparser/Parser.v: cparser/Parser.vy
-	$(MENHIR) --coq cparser/Parser.vy
+	$(MENHIR) --coq --coq-lib-path compcert.MenhirLib cparser/Parser.vy
 
 depend: $(GENERATED) depend1
 

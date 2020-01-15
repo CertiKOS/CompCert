@@ -75,12 +75,7 @@ Lemma reloc_prog_syneq_trans: forall t1 t2 t3,
 Proof.
   unfold reloc_prog_syneq.
   intros. 
-  intuition.
+  intuition try congruence.
   eapply Permutation_trans; eauto.
-  eapply eq_trans; eauto.
-  eapply eq_trans; eauto.
-  eapply eq_trans; eauto.
   eapply symbtable_syneq_trans; eauto.
-  eapply eq_trans; eauto.
-  eapply eq_trans; eauto.
 Qed.

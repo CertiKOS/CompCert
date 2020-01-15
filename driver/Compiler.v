@@ -110,6 +110,7 @@ Require RelocElfgen.
 Require EncodeRelocElf.
 Require RelocElf.
 Require ShstrtableEncode.
+Require TablesEncodeproof.
 Require OrderedLinking.
 Require SymbtablegenSep.
 Require PermuteProgproof.
@@ -223,6 +224,13 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
+Definition encode_tables (p: RelocProgram.program) : res RelocProgram.program :=
+  OK p
+     @@@ time "Generation of the string table" StrtableEncode.transf_program
+     @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
+     @@@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
+     @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program.
+
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
@@ -233,10 +241,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@@ time "Generation of relocation table" Reloctablesgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
-  @@@ time "Generation of the string table" StrtableEncode.transf_program
-  @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
-  @@@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
-  @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program
+  @@@ encode_tables
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
 
@@ -247,7 +252,7 @@ Definition transf_c_program_bytes' (p: Csyntax.program) :=
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program.
 
-  
+
 Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program.

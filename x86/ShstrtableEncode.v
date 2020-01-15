@@ -22,23 +22,24 @@ Local Open Scope bits_scope.
 
 (** The default shstrtab is '.data .text .symtab .rela.data .rela.text .shstrtab .strtab ' *)
 Local Open Scope string_byte_scope.
-Definition data_str := HB["00"] :: SB[".data"].
-Definition text_str := HB["00"] :: SB[".text"].
-Definition symtab_str := HB["00"] :: SB[".symtab"].
-Definition reladata_str := HB["00"] :: SB[".rel.data"].
-Definition relatext_str := HB["00"] :: SB[".rel.text"].
-Definition shstrtab_str := HB["00"] :: SB[".shstrtab"].
-Definition strtab_str := HB["00"] :: SB[".strtab"].
+Definition data_str := SB[".data"] ++ [HB["00"]].
+Definition text_str := SB[".text"] ++ [HB["00"]].
+Definition symtab_str := SB[".symtab"] ++ [HB["00"]].
+Definition reladata_str := SB[".rel.data"] ++ [HB["00"]].
+Definition relatext_str := SB[".rel.text"] ++ [HB["00"]].
+Definition shstrtab_str := SB[".shstrtab"] ++ [HB["00"]].
+Definition strtab_str := SB[".strtab"] ++ [HB["00"]].
 
 
-Definition default_shstrtab := 
-  data_str ++ 
+Definition default_shstrtab :=
+  [HB["00"]] ++
+  data_str ++
   text_str ++
   symtab_str ++
   reladata_str ++
   relatext_str ++
   shstrtab_str ++
-  strtab_str ++ [HB["00"]].
+  strtab_str.
 
 Definition shstrtab_sec_size := Z.of_nat (length (default_shstrtab)).
 
@@ -50,18 +51,18 @@ Definition relatext_str_ofs := reladata_str_ofs + (Z.of_nat (length reladata_str
 Definition shstrtab_str_ofs := relatext_str_ofs + (Z.of_nat (length relatext_str)).
 Definition strtab_str_ofs := shstrtab_str_ofs + (Z.of_nat (length shstrtab_str)).
 
-
 Definition create_shstrtab_section :=
   sec_bytes default_shstrtab.
 
 Definition transf_program (p:program) : res program :=
   let sec := create_shstrtab_section in
+  if beq_nat (length (prog_sectable p)) 7%nat then
   OK {| prog_defs := p.(prog_defs);
         prog_public := p.(prog_public);
         prog_main := p.(prog_main);
         prog_sectable := p.(prog_sectable) ++ [sec];
         prog_strtable := p.(prog_strtable);
         prog_symbtable := p.(prog_symbtable);
-        prog_reloctables := p.(prog_reloctables);
+        prog_reloctables := prog_reloctables p;
         prog_senv := p.(prog_senv);
-     |}.
+     |} else Error (msg "Not enough sections before shstr table encoding").
