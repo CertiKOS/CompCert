@@ -23,7 +23,7 @@ Definition addrmode_reloc_offset (a:addrmode) : res Z :=
   match a with 
   | Addrmode _ _ (inr _) => OK (addrmode_size_aux a)
   | _ => Error (msg "Calculation of the relocation offset for addrmode fails: displacement is a constant")
-  end. 
+  end.
 
 (** Calculate the starting offset of the bytes
     that need to be relocated in an instruction *)
@@ -32,21 +32,16 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmov_rs _ _ => OK 2
   | Pcall (inr _) _ => OK 1
   | Pjmp (inr _) _ => OK 1
-  | Pleal rd a =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
-  | Pmovl_rm _ a =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
-  | Pmovl_mr a _ =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
-  | Pmov_rm_a _ a =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
+  | Pleal _ a
+  | Pmovl_rm _ a
+  | Pmovl_mr a _
+  | Pmov_rm_a _ a
   | Pmov_mr_a a _ =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
+    match addrmode_reloc_offset a with
+      OK aofs => OK (1 + aofs)
+    | Error e =>
+      Error ([MSG "instr_reloc_offset :"; MSG (instr_to_string i)] ++ e)
+    end
   | _ => Error (msg "Calculation of addenddum failed: Instruction not supported yet by relocation")
   end.
 
