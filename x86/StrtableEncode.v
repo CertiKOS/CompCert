@@ -93,6 +93,10 @@ Record valid_strtable_thr (bytes: list (ident * list byte)) (strtab: strtable) (
         Assoc.get_assoc _ _ peq bytes i = Some bytesx ->
         0 <= ox < Z.of_nat (length bytesx) ->
         x + ox < o;
+    real_string:
+      forall i x,
+        strtab ! i = Some x ->
+        exists bytesx, Assoc.get_assoc _ _ peq bytes i = Some bytesx;
     table_range: forall i x, strtab ! i = Some x -> 0 <= x < two_p 32;
     strtab_no_0:
       forall i : positive, strtab ! i = Some 0 -> False;
@@ -111,17 +115,63 @@ Qed.
 Definition valid_strtable x tab :=
   exists o, valid_strtable_thr x tab o /\ o < Int.max_unsigned.
 
+Lemma acc_symbols_in_in_symbols:
+  forall s x0 l,
+    fold_right acc_symbol_strings (OK l) (fold_right acc_symbols [] s) = OK x0 ->
+    forall i,
+      In i (map fst x0) ->
+      In i (map fst l) \/ exists a, In a s /\ symbentry_id a = Some i.
+Proof.
+  induction s; simpl; intros x0 l FOLD i IN.
+  - inv FOLD. auto.
+  - unfold acc_symbols at 1 in FOLD.
+    destr_in FOLD; eauto.
+    + simpl in FOLD.
+      unfold acc_symbol_strings at 1 in FOLD. monadInv FOLD.
+      repeat destr_in EQ0.
+      simpl in IN. destruct IN as [eq | IN]; subst.
+      right; eexists; split; eauto.
+      exploit IHs. eauto. eauto. intros [A | [a0 [INs EQs]]]; eauto.
+    + exploit IHs; eauto. intros [A | [a0 [INs EQs]]]; eauto.
+Qed.
+
 Lemma transf_program_valid_strtable:
   forall pi p (TF: transf_program pi = OK p)
          x (EQ0 : fold_right acc_symbol_strings (OK []) (fold_right acc_symbols [] (prog_symbtable pi)) = OK x)
-         (LNR: list_norepet (map fst x))
+         (LNR: list_norepet (filter (fun o => match o with None => false | _ => true end)
+                                    (map symbentry_id (prog_symbtable pi))))
 ,
     valid_strtable x (prog_strtable p).
 Proof.
-  intros pi p TF x EQ0.
+  intros pi p TF x EQ0 LNR.
   unfold valid_strtable.
   unfold transf_program in TF.
   monadInv TF.
+  (* assert (LNR': list_norepet (fold_right acc_symbols [] (prog_symbtable pi))). *)
+  (* { *)
+  (*   revert LNR. generalize (prog_symbtable pi). clear. *)
+  (*   induction s; simpl; intros; eauto. constructor. *)
+  (*   unfold acc_symbols at 1. destr; auto. *)
+
+
+
+  assert (LNR': list_norepet (map fst x)).
+  {
+    revert x EQ0 LNR.
+    generalize (prog_symbtable pi). clear.
+    induction s; simpl; intros; eauto.
+    - inv EQ0. constructor.
+    - unfold acc_symbols at 1 in EQ0.
+      destr_in EQ0; eauto. simpl in EQ0.
+      unfold acc_symbol_strings at 1 in EQ0. monadInv EQ0.
+      exploit IHs. apply EQ. inv LNR; auto.
+      repeat destr_in EQ1. simpl. intros; constructor; auto.
+      intro INi.
+      eapply acc_symbols_in_in_symbols in INi; eauto. simpl in INi. destruct INi as [[]|(aa & IN & EQa)].
+      inv LNR. apply H12.
+      apply filter_In. split; auto.
+      rewrite in_map_iff. eexists; split; eauto.
+  }
   repeat destr_in EQ1. simpl in *.
   apply beq_nat_true in Heqb.
   destruct (prog_sectable pi); simpl in *; try congruence.
@@ -143,7 +193,7 @@ Proof.
   destruct H as (VALID & POS).
   revert VALID POS.
   generalize (PTree.empty Z) 1.
-  clear -LNR.
+  clear -LNR'.
   assert (forall elt, In elt x -> In elt x) by auto. revert H.
   generalize x at 1 4.
   induction x0; simpl.
@@ -163,6 +213,9 @@ Proof.
         auto.
       * inv VALID.
         eapply thr0 in Bx; eauto. omega.
+    + intros i0 x1 EQ. destr_in EQ.
+      * inv EQ. erewrite Assoc.in_lnr_get_assoc; eauto.
+      * inv VALID; eauto.
     + intros i0 x1 EQ. destr_in EQ.
       * inv EQ.
         apply acc_strmap_fold_lt in FOLD. change (two_p 32) with (Int.max_unsigned + 1).

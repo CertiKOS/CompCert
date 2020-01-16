@@ -30,6 +30,23 @@ Hypothesis valid_symbentries_p:
 Hypothesis empty_strtable:
   prog_strtable prog = Maps.PTree.empty Z.
 
+Hypothesis symbentries_no_repet:
+  list_norepet
+    (filter
+       (fun o : option ident =>
+        match o with
+        | Some _ => true
+        | None => false
+        end) (map symbentry_id (prog_symbtable prog))).
+
+Parameter prog_strings : list (ident * list byte).
+Hypothesis prog_strings_eq:
+  fold_right acc_symbol_strings (OK [])
+             (fold_right acc_symbols [] (prog_symbtable prog)) =
+  OK prog_strings.
+
+Hypothesis prog_strings_not_empty:
+  Forall (fun '(_, lb) => lb <> []) prog_strings.
 
 Lemma strtable_encode_spec:
   forall prog prog1,
@@ -111,17 +128,14 @@ Proof.
   repeat split.
 Qed.
 
-Lemma valid_strtable_p: valid_strtable (RelocProgram.prog_strtable prog1).
+
+Lemma valid_strtable_p: valid_strtable prog_strings (RelocProgram.prog_strtable prog1).
 Proof.
   generalize transf_str_encode. unfold StrtableEncode.transf_program. intro H. monadInv H.
   repeat destr_in EQ0. simpl in *.
-  unfold get_strings_map_bytes in EQ. monadInv EQ. repeat destr_in EQ1.
-  exploit StrtableEncode.transf_program_valid_strtable. eauto. eauto.
-  admit. simpl. 
-  intros (o & VS & LT).
-  inv VS; constructor; eauto.
-  admit.
-Admitted.
+  unfold get_strings_map_bytes in EQ. rewrite prog_strings_eq in EQ. simpl in EQ. repeat destr_in EQ.
+  exploit StrtableEncode.transf_program_valid_strtable. eauto. eauto. eauto. simpl. auto.
+Qed.
 
 
 Lemma genv_senv_add_external_global:
@@ -253,7 +267,12 @@ Proof.
   trim reloc_decode. apply valid_reloctables with (id := RELOC_DATA).
   Focus 2.
   exploit strtable_encode_spec; eauto. exploit symbtable_encode_spec; eauto. intuition congruence.
-  generalize (SymbtableDecode.transf_program_inv_correct _ valid_strtable_p valid_symbentries_p transf_symb_encode).
+  exploit SymbtableDecode.transf_program_inv_correct. 3: apply valid_strtable_p.
+  all: eauto.
+  replace (prog_symbtable prog1) with (prog_symbtable prog). auto.
+  {
+    exploit strtable_encode_spec. eauto. intuition congruence.
+  }
   intro symb_decode.
   generalize (StrtableDecode.transf_program_inv_correct _ empty_strtable transf_str_encode). intro str_decode.
   eapply forward_simulation_step with (match_states := fun (e1 e2: Asm.state) => e1 = e2).

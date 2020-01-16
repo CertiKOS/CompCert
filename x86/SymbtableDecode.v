@@ -108,20 +108,22 @@ Record valid_symbentry strtab (e: symbentry) : Prop :=
     valid_symbentry_secindex: valid_secindex (symbentry_secindex e);
   }.
 
-Record valid_strtable (strtab: strtable) : Prop :=
-  {
-    nodupstr: forall i j x y,
-      strtab ! i = Some x -> strtab ! j = Some y -> i <> j -> x <> y;
-    strtab_no_0:
-      forall i : positive, strtab ! i = Some 0 -> False;
-  }.
+(* Record valid_strtable (strtab: strtable) : Prop := *)
+(*   { *)
+(*     nodupstr: forall i j x y, *)
+(*       strtab ! i = Some x -> strtab ! j = Some y -> i <> j -> x <> y; *)
+(*     strtab_no_0: *)
+(*       forall i : positive, strtab ! i = Some 0 -> False; *)
+(*   }. *)
 
 
 Section WITH_STRTAB.
 
-Variable (strtab: strtable).
+Variable (strtab: strtable) (strs: list (ident * list byte)).
 
-Hypothesis valid_strtab: valid_strtable strtab.
+Hypothesis valid_strtab: StrtableEncode.valid_strtable strs strtab.
+
+Hypothesis no_empty_string: Forall (fun '(_, lb) => lb <> []) strs.
 
 Definition strtab_inv si : option ident :=
   PTree.fold (fun acc id val =>
@@ -169,6 +171,17 @@ Proof.
   induction l; simpl; intros; eauto.
 Qed.
 
+Lemma length_str_pos:
+  forall xx bytesxx,
+    Assoc.get_assoc positive (list byte) peq strs xx = Some bytesxx ->
+    0 < Z.of_nat (length bytesxx).
+Proof.
+  intros xx bytesxx GA.
+  apply Assoc.get_assoc_in in GA. rewrite Forall_forall in no_empty_string.
+  apply no_empty_string in GA. destruct bytesxx. congruence. simpl. 
+  reflexivity.
+Qed.
+
 Lemma strtab_inv_ok
   : forall i x,
     strtab ! i = Some x ->
@@ -193,8 +206,14 @@ Proof.
       clear IHl.
       generalize (H10 _ _ (or_introl eq_refl)).
       generalize (H10 _ _ (or_intror IN)). intros A B.
-      apply (nodupstr valid_strtab A B); auto. intro; subst.
-      apply H13. eapply in_map_iff. eexists; split; eauto. reflexivity.
+      destruct valid_strtab as (o & v & olt).
+      edestruct real_string as (bytesxx & Bxx). eauto. apply A.
+      edestruct real_string as (bytesp & Bp). eauto. apply B.
+      exploit nodupstr. eauto. apply A. apply B. eauto. eauto.
+      intro; subst. apply H13. apply in_map_iff. eexists; split; eauto. reflexivity.
+      split. 2: eapply length_str_pos; eauto. omega.
+      split. 2: eapply length_str_pos; eauto. omega.
+      omega. auto.
     - apply IHl. inv H; auto. intros; eauto.
   } revert H.
   generalize (PTree.elements strtab).
@@ -237,8 +256,14 @@ Proof.
       clear IHl.
       generalize (H10 _ _ (or_introl eq_refl)).
       generalize (H10 _ _ (or_intror IN)). intros A B.
-      apply (nodupstr valid_strtab A B); auto. intro; subst.
-      apply H13. eapply in_map_iff. eexists; split; eauto. reflexivity.
+      destruct valid_strtab as (o & v & olt).
+      edestruct real_string as (bytesxx & Bxx). eauto. apply A.
+      edestruct real_string as (bytesp & Bp). eauto. apply B.
+      exploit nodupstr. eauto. apply A. apply B. eauto. eauto.
+      intro; subst. apply H13. apply in_map_iff. eexists; split; eauto. reflexivity.
+      split. 2: eapply length_str_pos; eauto. omega.
+      split. 2: eapply length_str_pos; eauto. omega.
+      omega. auto.
     - apply IHl. inv H; auto. intros; eauto.
   } revert H.
   generalize (PTree.elements strtab).
@@ -246,10 +271,6 @@ Proof.
   rewrite zeq_false. 2: intuition congruence.
   apply IHl. inv H; auto. intuition.
 Qed.
-
-
-
-
 
 Lemma encode_symbbind_range:
   forall sb,
@@ -323,7 +344,8 @@ Proof.
   f_equal. destruct e; f_equal.
   simpl in *. destr_in EQ. destr_in EQ. inv EQ.
   eapply strtab_inv_ok. auto.
-  apply strtab_inv_none. inv EQ. apply strtab_no_0. auto.
+  apply strtab_inv_none. inv EQ. destruct valid_strtab as (o & v & lt).
+  eapply strtab_no_0; eauto.
   eapply valid_symbentry_size; eauto.
   eapply valid_symbentry_value; eauto.
   destr_in EQ.
@@ -433,8 +455,10 @@ Definition correct_encoding_symtable_program p : Prop :=
     end
   end.
 
-Lemma transf_program_correct p
-      (V: valid_strtable (prog_strtable p))
+Lemma transf_program_correct p strs
+      (STRS : fold_right acc_symbol_strings (OK []) (fold_right acc_symbols [] (prog_symbtable p)) = OK strs)
+      (STRS_noempty:   Forall (fun '(_, lb) => lb <> []) strs)
+      (V: valid_strtable strs (prog_strtable p))
       (VE: Forall (valid_symbentry (prog_strtable p)) (prog_symbtable p))
       p' (TF: transf_program p = OK p'):
   correct_encoding_symtable_program p'.
@@ -472,8 +496,10 @@ Definition transf_program_inv (p: program) : res program :=
     end
   end.
 
-Theorem transf_program_inv_correct p p'
-        (V: valid_strtable (prog_strtable p))
+Theorem transf_program_inv_correct p p' strs
+        (STRS : fold_right acc_symbol_strings (OK []) (fold_right acc_symbols [] (prog_symbtable p)) = OK strs)
+        (STRS_noempty:   Forall (fun '(_, lb) => lb <> []) strs)
+        (V: valid_strtable strs (prog_strtable p))
         (VE: Forall (valid_symbentry (prog_strtable p)) (prog_symbtable p))
         (TP: transf_program p = OK p'):
   transf_program_inv p' = OK p.
