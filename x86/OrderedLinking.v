@@ -308,6 +308,61 @@ Proof.
   apply Permutation_app_comm.
 Qed.
 
+Lemma PTree_extract_elements_remain: 
+  forall {A:Type} ids defs (t t': PTree.t A),
+    PTree_extract_elements ids t = Some (defs, t') ->
+    t' = fold_right (@PTree.remove A) t ids.
+Proof.
+  induction ids as [|id ids].
+  - cbn. inversion 1. subst. auto.
+  - cbn. intros defs t t' EXTR.
+    destr_in EXTR. destruct p.
+    destr_in EXTR. inv EXTR.
+    f_equal. 
+    eapply IHids; eauto.
+Qed.
+
+Lemma PTree_get_remove_not_in: forall {A:Type} ids id (t:PTree.t A) a,
+    ~In id ids ->
+    (fold_right (@PTree.remove A) t ids) ! id = Some a ->
+    t ! id = Some a.
+Proof.
+  induction ids as [|id' ids].
+  - intros id t a IN RM.
+    cbn in RM. auto.
+  - intros id t a IN RM.
+    cbn in RM.
+    assert (id <> id').
+    { intros EQ. subst. apply IN. apply in_eq. }
+    erewrite PTree.gro in RM; auto.
+    eapply IHids; eauto.
+    intros IN'. apply IN. apply in_cons. auto.
+Qed.
+
+Lemma PTree_extract_elements_combine: 
+  forall {A:Type} ids defs f (t1 t2 t': PTree.t A),
+    f None None = None ->
+    list_norepet ids ->
+    PTree_extract_elements ids (PTree.combine f t1 t2) = Some (defs, t') ->
+    Forall2 (fun id '(id', def) => id = id' /\ f (t1!id) (t2!id) = Some def) ids defs.
+Proof.
+  induction ids as [|id ids]; cbn.
+  - inversion 3. subst.
+    constructor.
+  - intros defs f t1 t2 t' FN NORPT EXT.
+    destr_in EXT. destruct p as (vals & t'').
+    destr_in EXT. inv EXT. constructor.
+    + split; auto.
+      inv NORPT.
+      generalize (PTree_extract_elements_remain _ _ _ _ Heqo).
+      intros. subst.
+      assert ((PTree.combine f t1 t2)!id = Some a). 
+      { eapply PTree_get_remove_not_in; eauto. }
+      erewrite PTree.gcombine in H; eauto.
+    + inv NORPT.
+      eapply IHids; eauto.
+Qed.
+
 
 (** The main proof begins *)
 

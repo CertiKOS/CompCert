@@ -1119,7 +1119,7 @@ Proof.
       unfold update_symbtype. cbn. auto.
 Qed.
 
-Lemma link_get_symbentry_comm: forall def1 def2 def id dsz1 dsz2 csz1 csz2,
+Lemma link_get_symbentry_comm2: forall def1 def2 def id dsz1 dsz2 csz1 csz2,
     is_def_internal is_fundef_internal def2 = false ->
     link_option def1 def2 = Some def 
     -> link_symb (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1)
@@ -1135,6 +1135,29 @@ Proof.
   - apply link_get_symbentry_right_none_comm. auto.
 Qed.
 
+Lemma link_option_symm: forall (def1 def2: option (globdef fundef unit)),
+    link_option def1 def2 = link_option def2 def1.
+Proof.
+  Admitted.
+
+Lemma link_symb_symm: forall s1 s2,
+    link_symb s1 s2 = link_symb s2 s1.
+Proof.
+  Admitted.
+
+Lemma link_get_symbentry_comm1: forall def1 def2 def id dsz1 dsz2 csz1 csz2,
+    is_def_internal is_fundef_internal def1 = false ->
+    link_option def1 def2 = Some def 
+    -> link_symb (get_symbentry sec_data_id sec_code_id dsz1 csz1 id def1)
+                (get_symbentry sec_data_id sec_code_id dsz2 csz2 id def2) = 
+      Some (get_symbentry sec_data_id sec_code_id dsz2 csz2 id def).
+Proof.
+  intros until csz2.
+  intros DEFINT LINK.
+  rewrite link_option_symm in LINK.
+  rewrite link_symb_symm.
+  apply link_get_symbentry_comm2; auto.
+Qed.
 
 Lemma link_none_update_code_data_size: forall def1 def dsz1 csz1,
     link_option def1 None = Some def
@@ -1848,28 +1871,6 @@ Admitted.
 (*   eapply gen_symb_table_reloc_comm; eauto. *)
 (* Qed. *)
 
-Lemma link_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
-    link_prog p1 p2 = Some p ->
-    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
-    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
-    f_ofs = reloc_offset_fun dsz1 csz1 ->
-    exists stbl stbl2' stbl',
-      reloc_symbtable f_ofs stbl2 = Some stbl2' /\
-      link_symbtable stbl1 stbl2' = Some stbl /\ 
-      gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) = (stbl', dsz1 + dsz2, csz1 + csz2) /\ 
-      symbtable_syneq stbl stbl'.
-Proof.
-Admitted.
-
-Lemma gen_symb_table_perm: 
-  forall defs sid cid stbl dz cz defs',
-    gen_symb_table sid cid defs = (stbl, dz, cz) ->
-    Permutation defs defs' ->
-    exists stbl', 
-      gen_symb_table sid cid defs' = (stbl', dz, cz) /\
-      symbtable_syneq stbl stbl'.
-Admitted.
-
 Lemma link_ordered_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
@@ -1882,18 +1883,50 @@ Lemma link_ordered_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz
       symbtable_syneq stbl stbl'.
 Proof.
   intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs LINK GS1 GS2 FOFS.
-  generalize (link_prog_ordered_inv' _ _ _ LINK). 
-  intros (p' & LINK' & PERM).
-  exploit link_gen_symb_comm; eauto.
-  intros (stbl & stbl2' & stbl' & RELOC & LINKSTBL & GENSTBL & SYNEQ).  
-  apply Permutation_sym in PERM.
-  generalize (gen_symb_table_perm _ _ GENSTBL PERM).
-  intros (stbl'' & GENSTBL' & SYNEQ').
-  do 3 eexists. split; eauto.
-  split; eauto.
-  split; eauto.
-  eapply symbtable_syneq_trans; eauto.
-Qed.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK. 
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as [[[MAINIDEQ NORPT1] NORPT2] CHK].
+  apply proj_sumbool_true in MAINIDEQ.
+  apply proj_sumbool_true in NORPT1.
+  apply proj_sumbool_true in NORPT2.
+  destr_in LINK. destruct p as (defs3, t'). 
+  inv LINK.
+  assert (list_norepet 
+            (collect_internal_def_ids is_fundef_internal defs1 ++
+            collect_internal_def_ids is_fundef_internal defs2)) as NORPT3.
+  { admit. }
+
+  assert (Forall2 (fun (id : positive) '(id', def) =>
+                     id = id' /\
+                     link_prog_merge (prog_option_defmap defs1) ! id
+                                     (prog_option_defmap defs2) ! id = Some def)
+                  (collect_internal_def_ids is_fundef_internal defs1 ++
+                   collect_internal_def_ids is_fundef_internal defs2)
+                  defs3) as DEF_MATCH.
+  { apply PTree_extract_elements_combine with t'; auto. }
+  apply Forall2_app_inv_l in DEF_MATCH.
+  destruct DEF_MATCH as (defs4 & defs5 & DEF_MATCH1 & DEF_MATCH2 & EQ).
+  subst. cbn.
+  
+  generalize (PTree_extract_elements_remain _ _ _ _ Heqo).
+  intros.
+  
+  
+  
+(*   generalize (link_prog_ordered_inv' _ _ _ LINK).  *)
+(*   intros (p' & LINK' & PERM). *)
+(*   exploit link_gen_symb_comm; eauto. *)
+(*   intros (stbl & stbl2' & stbl' & RELOC & LINKSTBL & GENSTBL & SYNEQ).   *)
+(*   apply Permutation_sym in PERM. *)
+(*   generalize (gen_symb_table_perm _ _ GENSTBL PERM). *)
+(*   intros (stbl'' & GENSTBL' & SYNEQ'). *)
+(*   do 3 eexists. split; eauto. *)
+(*   split; eauto. *)
+(*   split; eauto. *)
+(*   eapply symbtable_syneq_trans; eauto. *)
+(* Qed. *)
+Admitted.
 
 
 (** ** Commutativity of linking and section generation *)
