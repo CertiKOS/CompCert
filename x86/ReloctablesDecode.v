@@ -84,17 +84,15 @@ Qed.
 Definition decode_relocentry (l: list byte) : res relocentry :=
   do (ofsbytes, l) <- take_drop 4 l;
     do (infobytes, l) <- take_drop 4 l;
-    do (addendbytes, l) <- take_drop 4 l;
     let ofs := decode_int32 ofsbytes in
-    let addend := decode_int32 addendbytes in
     do (rt, sym) <- decode_reloc_info infobytes;
-      OK ({| reloc_offset := ofs; reloc_type := rt; reloc_symb := sym; reloc_addend := addend |}).
+      OK ({| reloc_offset := ofs; reloc_type := rt; reloc_symb := sym; reloc_addend := 0 |}).
 
 Record valid_relocentry (e: relocentry) :=
   {
     reloc_offset_range: 0 <= reloc_offset e < 2 ^ 32;
     reloc_symb_range: Z.of_N (reloc_symb e) < two_p 24;
-    reloc_addend_range: 0 <= reloc_addend e < 2 ^ 32;
+    reloc_addend_range: 0 = reloc_addend e;
   }.
 
 (* Record eq_relocentry (e1 e2: relocentry) := *)
@@ -113,20 +111,16 @@ Proof.
   inv v.
   simpl.
   rewrite take_drop_encode_int. simpl.
-  rewrite take_drop_length_app. simpl.
   rewrite take_drop_length. simpl.
   rewrite decode_encode_reloc_info. simpl.
   rewrite decode_encode_int32. rewrite Z.mod_small; simpl in *; auto.
-  rewrite decode_encode_int32. rewrite Z.mod_small; simpl in *; auto.
-  auto.
-  setoid_rewrite encode_int_length. auto.
-  unfold encode_reloc_info. setoid_rewrite encode_int_length. auto.
+  subst. auto. simpl in *; auto. setoid_rewrite encode_int_length. auto.
 Qed.
 
 Program Fixpoint decode_reloctable l {measure (length l)} : res (list relocentry) :=
   match l with
     [] => OK []
-  | _ => match take_drop 12 l with
+  | _ => match take_drop 8 l with
          | OK (e, r) =>
            do e <- decode_relocentry e;
              do r <- decode_reloctable r;
@@ -142,7 +136,7 @@ Lemma decode_reloctable_eq l:
   decode_reloctable l =
   match l with
     [] => OK []
-  | _ => match take_drop 12 l with
+  | _ => match take_drop 8 l with
          | OK (e, r) =>
            do e <- decode_relocentry e;
              do r <- decode_reloctable r;
@@ -154,7 +148,7 @@ Proof.
 Admitted.
 
 Lemma length_encode_relocentry e:
-  length (encode_relocentry e) = 12%nat.
+  length (encode_relocentry e) = 8%nat.
 Proof.
   unfold encode_relocentry.
   rewrite app_length. setoid_rewrite encode_int_length.

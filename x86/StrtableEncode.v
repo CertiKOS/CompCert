@@ -56,7 +56,7 @@ Definition acc_symbols e ids :=
   end.
 
 Definition transf_program (p:program) : res program :=
-  let symbols := 
+  let symbols :=
       fold_right acc_symbols [] (prog_symbtable p) in
   do r <- get_strings_map_bytes symbols;
   let '(strmap, sbytes) := r in

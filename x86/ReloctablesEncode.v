@@ -44,8 +44,7 @@ Definition encode_reloc_info (t:reloctype) (symb:N) : list byte :=
 Definition encode_relocentry (e:relocentry) : list byte :=
   let r_offset_bytes := encode_int32 (reloc_offset e) in
   let r_info_bytes := encode_reloc_info (reloc_type e) (reloc_symb e) in
-  let r_addend_bytes := encode_int32 (reloc_addend e) in
-  (r_offset_bytes ++ r_info_bytes ++ r_addend_bytes).
+  (r_offset_bytes ++ r_info_bytes).
 
 Definition encode_reloctable (t:reloctable) : list byte :=
     fold_right (fun e bytes => (encode_relocentry e) ++ bytes)
