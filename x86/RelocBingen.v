@@ -110,7 +110,7 @@ Definition encode_addrmode_aux (a: addrmode) (rd:ireg) : res (list byte) :=
   end.
     
 (** Encode the full address mode *)
-Definition encode_addrmode' (rofs: Z) (a: addrmode) (rd: ireg) : res (list byte) :=
+Definition encode_addrmode (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
   do ofs <- match disp with
@@ -118,19 +118,16 @@ Definition encode_addrmode' (rofs: Z) (a: addrmode) (rd: ireg) : res (list byte)
            | inr (id, ofs) =>
              if Ptrofs.eq_dec ofs Ptrofs.zero then
               match id with
-              |xH => get_instr_reloc_addend' rofs
-              |_ => Error (msg "id error when encoding binary")
+              |xH => 
+               (do iofs <- instr_reloc_offset i;
+                get_instr_reloc_addend' (iofs + sofs))
+              |_ => Error [MSG (instr_to_string i); MSG ":id is "; POS id; MSG "(expected 1)"]
               end
              else
                Error (msg "ptrofs is not zero")             
             end;
   OK (abytes ++ (encode_int32 ofs)).
 
-
-Definition encode_addrmode (sofs: Z) (i:instruction) (a: addrmode) (rd: ireg) : res (list byte) :=
-  do iofs <- instr_reloc_offset i;
-    encode_addrmode' (iofs+sofs) a rd
-.
 
 (** Encode the conditions *)
 Definition encode_testcond (c:testcond) : list byte :=

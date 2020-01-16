@@ -263,8 +263,8 @@ Definition id_eliminate (i:instruction):res (instruction):=
 
 Definition acc_id_eliminate r i :=
   do r' <- r;
-  do i' <- id_eliminate i;
-    OK(i::r').
+  do i' <- id_eliminate i;    
+    OK(i'::r').
 
 Definition transl_code' (c:code): res (code) :=
   do r <- fold_left acc_id_eliminate c (OK []);
