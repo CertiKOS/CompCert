@@ -113,10 +113,15 @@ Qed.
 
 Lemma valid_strtable_p: valid_strtable (RelocProgram.prog_strtable prog1).
 Proof.
-  exploit StrtableEncode.transf_program_valid_strtable. eauto.
+  generalize transf_str_encode. unfold StrtableEncode.transf_program. intro H. monadInv H.
+  repeat destr_in EQ0. simpl in *.
+  unfold get_strings_map_bytes in EQ. monadInv EQ. repeat destr_in EQ1.
+  exploit StrtableEncode.transf_program_valid_strtable. eauto. eauto.
+  admit. simpl. 
   intros (o & VS & LT).
   inv VS; constructor; eauto.
-Qed.
+  admit.
+Admitted.
 
 
 Lemma genv_senv_add_external_global:

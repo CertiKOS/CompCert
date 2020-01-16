@@ -44,8 +44,14 @@ Definition byte_to_string elt acc :=
     end.
 
 Definition decode_string_map (l: list byte) : res (list ident) :=
-  let strings := split_bytes l [] [] in
-  fold_right byte_to_string (OK []) strings.
+  match l with
+    b :: l =>
+    if Byte.eq b (HB["00"])
+    then let strings := split_bytes l [] [] in
+         fold_right byte_to_string (OK []) strings
+    else Error (msg "Strtable should begin with a null byte")
+  | _ => Error (msg "Strtable should not be empty")
+  end.
 
 Lemma acc_symbol_strings_ok:
   forall symbols idbytes,
@@ -120,9 +126,9 @@ Qed.
 Lemma decode_string_map_correct: forall (symbols: list ident) idbytes,
     fold_right acc_symbol_strings (OK []) symbols = OK idbytes ->
     let strbytes := fold_right (fun '(_, bytes) (acc : list byte) => bytes ++ acc) [] idbytes in
-    decode_string_map strbytes = OK (symbols).
+    decode_string_map (HB["00"] :: strbytes) = OK (symbols).
 Proof.
-  unfold decode_string_map. intros.
+  unfold decode_string_map. intros. rewrite Byte.eq_true.
   apply acc_symbol_strings_ok in H.
   induction H; simpl; intros; eauto.
   destr_in H. subst. destruct H as (? & nums & FS & ?). subst.
@@ -219,7 +225,7 @@ Theorem transf_program_inv_correct p p'
 Proof.
   unfold transf_program in TP.
   monadInv TP. destr_in EQ0. destr_in EQ0. inv EQ0. simpl in *.
-  unfold transf_program_inv. simpl.
+  unfold transf_program_inv. simpl. 
   apply beq_nat_true in Heqb.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
   destruct s0; simpl in *; try congruence.

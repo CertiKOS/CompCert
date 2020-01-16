@@ -35,7 +35,7 @@ Definition acc_strmap r (idb: ident * list byte) :=
   let '(map,next) := r in
   let '(id, bytes) := idb in
   let map' := PTree.set id next map in
-  let next'  := next + Z.of_nat(length bytes) + 1 in
+  let next'  := next + Z.of_nat(length bytes) in
   (map', next').
 
 Definition get_strings_map_bytes (symbols: list ident) : res (PTree.t Z * list byte) :=
@@ -44,7 +44,7 @@ Definition get_strings_map_bytes (symbols: list ident) : res (PTree.t Z * list b
   let '(strmap, maxofs) := fold_left acc_strmap idbytes (PTree.empty Z, 1) in
   let sbytes := fold_right (fun '(id,bytes) acc => bytes ++ acc) [] idbytes in
   if zlt maxofs Int.max_unsigned then
-    OK (strmap, sbytes)
+    OK (strmap, HB["00"] :: sbytes)
   else Error (msg "Too many strings").
                              
 Definition create_strtab_section (strs: list byte) := sec_bytes strs.
@@ -77,12 +77,22 @@ Definition transf_program (p:program) : res program :=
   else
     Error [MSG "In Strtablegen: number of sections is incorrect (not 4): "; POS (Pos.of_nat len)].
 
-Record valid_strtable_thr (strtab: strtable) o: Prop :=
+Record valid_strtable_thr (bytes: list (ident * list byte)) (strtab: strtable) (o: Z): Prop :=
   {
-    nodupstr: forall i j x y,
-      strtab ! i = Some x -> strtab ! j = Some y -> i <> j ->
-      x <> y;
-    thr: forall i x, strtab ! i = Some x -> x < o;
+    nodupstr: forall i j x y bytesx bytesy ox oy,
+      strtab ! i = Some x ->
+      strtab ! j = Some y ->
+      Assoc.get_assoc _ _ peq bytes i = Some bytesx ->
+      Assoc.get_assoc _ _ peq bytes j = Some bytesy ->
+      i <> j ->
+      0 <= ox < Z.of_nat (length bytesx) ->
+      0 <= oy < Z.of_nat (length bytesy) ->
+      x + ox <> y + oy;
+    thr: forall i x bytesx ox,
+        strtab ! i = Some x ->
+        Assoc.get_assoc _ _ peq bytes i = Some bytesx ->
+        0 <= ox < Z.of_nat (length bytesx) ->
+        x + ox < o;
     table_range: forall i x, strtab ! i = Some x -> 0 <= x < two_p 32;
     strtab_no_0:
       forall i : positive, strtab ! i = Some 0 -> False;
@@ -98,18 +108,21 @@ Proof.
   apply IHx in H. omega.
 Qed.
 
-Definition valid_strtable tab :=
-  exists o, valid_strtable_thr tab o /\ o < Int.max_unsigned.
+Definition valid_strtable x tab :=
+  exists o, valid_strtable_thr x tab o /\ o < Int.max_unsigned.
 
 Lemma transf_program_valid_strtable:
-  forall pi p (TF: transf_program pi = OK p),
-    valid_strtable (prog_strtable p).
+  forall pi p (TF: transf_program pi = OK p)
+         x (EQ0 : fold_right acc_symbol_strings (OK []) (fold_right acc_symbols [] (prog_symbtable pi)) = OK x)
+         (LNR: list_norepet (map fst x))
+,
+    valid_strtable x (prog_strtable p).
 Proof.
-  intros pi p TF.
+  intros pi p TF x EQ0.
   unfold valid_strtable.
   unfold transf_program in TF.
   monadInv TF.
-  repeat destr_in EQ0. simpl in *.
+  repeat destr_in EQ1. simpl in *.
   apply beq_nat_true in Heqb.
   destruct (prog_sectable pi); simpl in *; try congruence.
   destruct s0; simpl in *; try congruence.
@@ -117,10 +130,10 @@ Proof.
   destruct s2; simpl in *; try congruence.
   2: destruct s3; simpl in *; try congruence.
   unfold get_strings_map_bytes in EQ.
-  monadInv EQ. repeat destr_in EQ1.
+  rewrite EQ0 in EQ. simpl in EQ. repeat destr_in EQ.
   exists z; split; auto.
   revert z Heqp l0.
-  assert (valid_strtable_thr (PTree.empty Z) 1 /\ 0 < 1).
+  assert (valid_strtable_thr x (PTree.empty Z) 1 /\ 0 < 1).
   {
     split.
     constructor; setoid_rewrite PTree.gempty; congruence.
@@ -130,22 +143,27 @@ Proof.
   destruct H as (VALID & POS).
   revert VALID POS.
   generalize (PTree.empty Z) 1.
-  clear.
-  induction x; simpl.
-  - intros; eauto. inv Heqp. eauto.
-  - intros t z VALID POS t0 z1 FOLD LT.
+  clear -LNR.
+  assert (forall elt, In elt x -> In elt x) by auto. revert H.
+  generalize x at 1 4.
+  induction x0; simpl.
+  - intros; eauto. inv Heqp. auto.
+  - intros IN t z VALID POS t0 z1 FOLD LT.
     destr_in FOLD.
-    eapply IHx in FOLD. auto.
+    eapply IHx0 in FOLD. auto. eauto.
     constructor; repeat setoid_rewrite PTree.gsspec.
-    + intros i0 j x0 y. repeat destr.
-      * intros A; inv A. inv VALID. intro B; apply thr0 in B. omega.
-      * subst. intro B. inv VALID. apply thr0 in B. intro A; inv A. omega.
+    + intros i0 j x1 y bytesx bytesy ox oy. repeat destr.
+      * intros Tx Ty Bx By Diff Ox Oy. inv Tx. inv VALID.
+        specialize (thr0 _ _ _ _ Ty By Oy). omega.
+      * intros Tx Ty Bx By Diff Ox Oy. inv Ty. inv VALID.
+        specialize (thr0 _ _ _ _ Tx Bx Ox). omega.
       * inv VALID; eauto.
-    + intros i0 x0. destr.
-      * intro A; inv A.
-        omega.
-      * inv VALID. intro A; apply thr0 in A. omega.
-    + intros i0 x0 EQ. destr_in EQ.
+    + intros i0 x1 bytesx ox Tx Bx Ox. destr_in Tx.
+      * inv Tx. erewrite Assoc.in_lnr_get_assoc in Bx. 3: apply IN; left; reflexivity. inv Bx; omega.
+        auto.
+      * inv VALID.
+        eapply thr0 in Bx; eauto. omega.
+    + intros i0 x1 EQ. destr_in EQ.
       * inv EQ.
         apply acc_strmap_fold_lt in FOLD. change (two_p 32) with (Int.max_unsigned + 1).
         omega.

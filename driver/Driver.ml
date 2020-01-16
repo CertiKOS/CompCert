@@ -20,6 +20,7 @@ open Driveraux
 open Frontend
 open Assembler
 open Linker
+open Encoding
 
 let dump_options = ref false
 
