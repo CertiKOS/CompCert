@@ -25,8 +25,8 @@ Local Open Scope string_byte_scope.
 Definition data_str := SB[".data"] ++ [HB["00"]].
 Definition text_str := SB[".text"] ++ [HB["00"]].
 Definition symtab_str := SB[".symtab"] ++ [HB["00"]].
-Definition reladata_str := SB[".rel.data"] ++ [HB["00"]].
-Definition relatext_str := SB[".rel.text"] ++ [HB["00"]].
+Definition reladata_str := SB[".rela.data"] ++ [HB["00"]].
+Definition relatext_str := SB[".rela.text"] ++ [HB["00"]].
 Definition shstrtab_str := SB[".shstrtab"] ++ [HB["00"]].
 Definition strtab_str := SB[".strtab"] ++ [HB["00"]].
 

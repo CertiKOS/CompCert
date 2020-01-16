@@ -22,7 +22,7 @@ Definition elf_header_size := 52.
 Definition prog_header_size := 32.
 Definition sec_header_size  := 40.
 Definition symb_entry_size := 16.
-Definition reloc_entry_size := 8.
+Definition reloc_entry_size := 12.
 
 
 (** ** ELF header *)
