@@ -44,7 +44,8 @@ Definition encode_reloc_info (t:reloctype) (symb:N) : list byte :=
 Definition encode_relocentry (e:relocentry) : list byte :=
   let r_offset_bytes := encode_int32 (reloc_offset e) in
   let r_info_bytes := encode_reloc_info (reloc_type e) (reloc_symb e) in
-  (r_offset_bytes ++ r_info_bytes).
+  let r_addend_bytes := encode_int32 (reloc_addend e) in
+  (r_offset_bytes ++ r_info_bytes ++ r_addend_bytes).
 
 Definition encode_reloctable (t:reloctable) : list byte :=
     fold_right (fun e bytes => (encode_relocentry e) ++ bytes)
@@ -55,29 +56,22 @@ Definition create_reloctable_section (t:reloctable) : section :=
   sec_bytes bytes.
   
 
-Definition create_reloctables_sections (ts:reloctable_map) : res (list section) :=
-  match get_reloctable sec_data_id ts with
-  | None => Error (msg "Relocation table for .data not found")
-  | Some sd =>
-    match get_reloctable sec_code_id ts with
-    | None => Error (msg "Relocation table for .text not found")
-    | Some sc =>
-      OK [create_reloctable_section sd; create_reloctable_section sc]
-    end
-  end.
-    
-
+Definition create_reloctables_sections p : list section :=
+  [create_reloctable_section (reloctable_data (prog_reloctables p));
+     create_reloctable_section (reloctable_code (prog_reloctables p))].
 
 (** Transforma the program *)
 Definition transf_program p : res program :=
-  let ts := prog_reloctables p in
-  do s <- create_reloctables_sections ts;
-  OK {| prog_defs := prog_defs p;
-        prog_public := prog_public p;
-        prog_main := prog_main p;
-        prog_sectable := (prog_sectable p) ++ s;
-        prog_strtable := (prog_strtable p);
-        prog_symbtable := prog_symbtable p;
-        prog_reloctables := (prog_reloctables p);
-        prog_senv := prog_senv p;
-     |}.
+  let s := create_reloctables_sections p in
+  let sect := prog_sectable p ++ s in
+  if beq_nat (length sect) 7 then
+    OK {| prog_defs := prog_defs p;
+          prog_public := prog_public p;
+          prog_main := prog_main p;
+          prog_sectable := (prog_sectable p) ++ s;
+          prog_strtable := (prog_strtable p);
+          prog_symbtable := prog_symbtable p;
+          prog_reloctables := prog_reloctables p;
+          prog_senv := prog_senv p;
+       |}
+  else Error [].

@@ -2445,20 +2445,21 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
 
       generalize (encode_decode_addrmode_relf _ _ _ _ EQ1).
       intros HAddr.
-      monadInv EQ0.
+      destr_in EQ0.
       unfold encode_addrmode' in EQ1.
       monadInv EQ1.
-      generalize (encode_decode_addr_size_relf _ rd _ _  EQ EQ0).
+      generalize (encode_decode_addr_size_relf _ rd _ _  Heqr EQ).
       intros HAddrsize.
       rewrite <- app_assoc.
       rewrite (HAddrsize (encode_int32 x3 ++ l)).
       simpl.
       rewrite app_assoc.
-      replace (ofs+x2+1) with (1+x2+ofs).
+      replace (ofs+z+1) with (x1+ofs).
       setoid_rewrite(HAddr l).
       
       simpl.
       auto.
+      clear - EQ0. Opaque Z.add. inv EQ0. 
       omega.
       
       (* generalize (encode_decode_addrmode_relf _ _ _ _ _ 3 (ofs+3) l EQ1). *)

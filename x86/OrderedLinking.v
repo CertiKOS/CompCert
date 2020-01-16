@@ -74,33 +74,6 @@ Proof.
   apply Permutation_map; auto.
 Qed.
 
-Lemma Permutation_pres_ptree_get_some: forall A (l1 l2: list (ident * A)) a e,
-    list_norepet (map fst l2) ->
-    Permutation l1 l2 -> (PTree_Properties.of_list l1) ! a = Some e -> 
-    (PTree_Properties.of_list l2) ! a = Some e.
-Proof. 
-  intros A l1 l2 a e NORPT PERM GET.
-  apply PTree_Properties.of_list_norepet; auto.
-  eapply Permutation_in; eauto.
-  apply PTree_Properties.in_of_list; auto.
-Qed.
-
-Lemma Permutation_pres_ptree_get: forall A (l1 l2: list (ident * A)) a,
-    list_norepet (map fst l1) -> 
-    list_norepet (map fst l2) -> 
-    Permutation l1 l2 -> 
-    (PTree_Properties.of_list l1) ! a = (PTree_Properties.of_list l2) ! a.
-Proof. 
-  intros A l1 l2 a NORPT1 NORPT2 PERM.
-  destruct ((PTree_Properties.of_list l1) ! a) eqn:GET1.
-  - symmetry. 
-    eapply Permutation_pres_ptree_get_some; eauto.
-  - destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
-    apply Permutation_sym in PERM.
-    generalize (@Permutation_pres_ptree_get_some _ _ _ a a0 NORPT1 PERM GET2).
-    intros. congruence.
-Qed.
-
 Lemma Permutation_list_norepet_map: forall A B (f: A -> B) (l1 l2: list A),
     Permutation l1 l2 -> list_norepet (map f l1) -> list_norepet (map f l2).
 Proof.
@@ -108,6 +81,35 @@ Proof.
   rewrite <- NoDup_list_norepet_equiv in *.
   eapply Permutation_NoDup_map; eauto.
 Qed.
+
+Lemma Permutation_pres_ptree_get_some: forall A (l1 l2: list (ident * A)) a e,
+    list_norepet (map fst l1) ->
+    Permutation l1 l2 -> (PTree_Properties.of_list l1) ! a = Some e -> 
+    (PTree_Properties.of_list l2) ! a = Some e.
+Proof. 
+  intros A l1 l2 a e NORPT PERM GET.
+  apply PTree_Properties.of_list_norepet; auto.
+  eapply Permutation_list_norepet_map; eauto.
+  eapply Permutation_in; eauto.
+  apply PTree_Properties.in_of_list; auto.
+Qed.
+
+Lemma Permutation_pres_ptree_get: forall A (l1 l2: list (ident * A)) a,
+    list_norepet (map fst l1) -> 
+    Permutation l1 l2 -> 
+    (PTree_Properties.of_list l1) ! a = (PTree_Properties.of_list l2) ! a.
+Proof. 
+  intros A l1 l2 a NORPT1 PERM.
+  destruct ((PTree_Properties.of_list l1) ! a) eqn:GET1.
+  - symmetry. 
+    eapply Permutation_pres_ptree_get_some; eauto.
+  - destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
+    assert (list_norepet (map fst l2)) as NORPT2.
+    { eapply Permutation_list_norepet_map; eauto. }
+    apply Permutation_sym in PERM.
+    generalize (@Permutation_pres_ptree_get_some _ _ _ a a0 NORPT2 PERM GET2).    intros. congruence.
+Qed.
+
 
 Lemma PTree_combine_permutation: forall A B C (f: option A -> option B -> option C) l1 l1' l2 l2',
     f None None = None ->
@@ -135,15 +137,11 @@ Proof.
     rewrite PTree.gcombine in *; auto.
     rewrite <- (Permutation_pres_ptree_get _ l1 l1'); auto.
     rewrite <- (Permutation_pres_ptree_get _ l2 l2'); auto.
-    eapply Permutation_list_norepet_map; eauto.
-    eapply Permutation_list_norepet_map; eauto.
   - apply PTree.elements_complete in IN.
     apply PTree.elements_correct.
     rewrite PTree.gcombine in *; auto.
     rewrite (Permutation_pres_ptree_get _ l1 l1'); auto.
     rewrite (Permutation_pres_ptree_get _ l2 l2'); auto.
-    eapply Permutation_list_norepet_map; eauto.
-    eapply Permutation_list_norepet_map; eauto.
 Qed.
 
 Lemma PTree_remove_pres_in:
@@ -300,6 +298,15 @@ Proof.
     apply Permutation_middle.
 Qed.
 
+Lemma PTree_extract_elements_permutation' : forall {A:Type} (ids: list ident) (t t':PTree.t A) vals,
+  PTree_extract_elements ids t = Some (vals, t') ->
+  Permutation (PTree.elements t) ((PTree.elements t') ++ vals).
+Proof.
+  intros A ids t t' vals H.
+  eapply Permutation_trans.
+  eapply PTree_extract_elements_permutation; eauto.
+  apply Permutation_app_comm.
+Qed.
 
 
 (** The main proof begins *)
@@ -328,7 +335,8 @@ Definition link_prog_ordered p1 p2 :=
   let dm2 := prog_option_defmap p2 in
   if ident_eq p1.(prog_main) p2.(prog_main) 
      && list_norepet_dec ident_eq (map fst (prog_defs p1))
-     && list_norepet_dec ident_eq (map fst (prog_defs p2)) then
+     && list_norepet_dec ident_eq (map fst (prog_defs p2)) 
+     && PTree_Properties.for_all dm1 (link_prog_check p1 p2) then
     let t := PTree.combine link_prog_merge dm1 dm2 in
     let ids1 := collect_internal_def_ids is_fun_internal p1 in
     let ids2 := collect_internal_def_ids is_fun_internal p2 in
@@ -341,6 +349,21 @@ Definition link_prog_ordered p1 p2 :=
     end
   else
     None.
+
+Lemma link_prog_ordered_inv: forall(p1 p2 p:program F V),
+    link_prog_ordered p1 p2 = Some p ->
+    list_norepet (map fst (AST.prog_defs p1)) /\
+    list_norepet (map fst (AST.prog_defs p2)).
+Proof.
+  intros p1 p2 p LINK.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK; try congruence.
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as [[[IDEQ NRPT1] NRPT2] CHK].
+  destruct list_norepet_dec; try discriminate.
+  destruct list_norepet_dec; try discriminate.
+  auto.
+Qed.
 
 End WITHFV.
 
@@ -357,19 +380,6 @@ Defined.
 Global Opaque Linker_prog_ordered.
 
 
-(** matching modulo the permutation of definitions *)
-
-Definition match_prog {F V} (p tp: program F V) :=
-  Permutation (prog_defs p) (prog_defs tp) 
-  /\ prog_main p = prog_main tp
-  /\ prog_public p = prog_public tp.
-
-Lemma transf_program_match:
-  forall F V (p: program F V), match_prog p p.
-Proof.
-  intros. red. 
-  repeat (split; auto).
-Qed.
 
 Lemma PTree_extract_elements_pres_get : forall A id ids defs (t t':PTree.t A),
     ~In id ids ->
@@ -632,56 +642,31 @@ Proof.
   intros (MAINEQ & NORPT1 & NORPT2 & LINKABLE & P). clear P.
   intros id gd1 gd2 GET1 GET2.
   unfold prog_option_defmap in *.
-  generalize (Permutation_list_norepet_map _ _ _ _ _ PERM1 NORPT1). intros NORPT1'.
-  generalize (Permutation_list_norepet_map _ _ _ _ _ PERM2 NORPT2). intros NORPT2'.
-  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT1 NORPT1' PERM1) in GET1; eauto.
-  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT2 NORPT2' PERM2) in GET2; eauto.
+  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT1  PERM1) in GET1; eauto.
+  rewrite <- (Permutation_pres_ptree_get _ _ _ _ NORPT2  PERM2) in GET2; eauto.
   edestruct LINKABLE as (IN1 & IN2 & (gd & LINK')); eauto.
   repeat (split; eauto).
   rewrite <- PUB1. auto.
   rewrite <- PUB2. auto.
 Qed.
 
-
-(** Commutativity between permutation and linking *)
-Instance TransfPermuteLink {F V} {LV: Linker V}
-  : @TransfLink _ _ (Linker_prog (fundef F) V) (Linker_prog_ordered F V) match_prog.
+Lemma link_prog_ordered_inv': 
+  forall {F V} {LV: Linker V} 
+    (p1 p2 p: AST.program (AST.fundef F) V),
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    exists p', 
+      link_prog p1 p2 = Some p' /\
+      Permutation (AST.prog_defs p) (AST.prog_defs p').
 Proof.
-  Local Transparent Linker_prog.
-  red. unfold match_prog. cbn. 
-  intros until p.
-  intros LINK (PERM1 & MAINEQ1 & PUBEQ1) (PERM2 & MAINEQ2 & PUBEQ2).
-  generalize LINK. intros LINK'.
-  unfold link_prog in LINK.
-  destr_in LINK. inv LINK. cbn.
-  repeat (rewrite andb_true_iff in Heqb). 
-  destruct Heqb as (((MAINEQ & NORPT1) & NORPT2) & CHECK).
-  destruct ident_eq; try discriminate.
-  destruct list_norepet_dec; try discriminate.
-  destruct list_norepet_dec; try discriminate.
-  unfold link_prog_ordered.
-  assert (prog_main tp1 = prog_main tp2) as MAINEQ3 by congruence.
-  rewrite MAINEQ3.
-  destruct ident_eq; try congruence. cbn.
-  assert (list_norepet (map fst (prog_defs tp1))) as NORPT3.
-  { eapply Permutation_list_norepet_map; eauto. }
-  destruct list_norepet_dec; try contradiction. cbn.
-  assert (list_norepet (map fst (prog_defs tp2))) as NORPT4.
-  { eapply Permutation_list_norepet_map; eauto. }
-  destruct list_norepet_dec; try contradiction. cbn.  
-  edestruct (@extract_defs_exists F V _ tp1 tp2) as (defs1 & t1 & EXTR); eauto.
-  eapply prog_linkable_permutation; eauto.
-  rewrite EXTR. 
-  eexists; split; eauto.
-  cbn.
-  repeat (split; auto).
-  generalize (PTree_extract_elements_permutation _ _ _ _ EXTR).
-  intros PERM3. 
-  apply Permutation_trans with (defs1 ++ PTree.elements t1).
-  eapply Permutation_trans; [| exact PERM3].
-  unfold prog_option_defmap.
-  eapply PTree_combine_permutation; eauto.
-  apply Permutation_app_comm.
-  congruence.
-  congruence.
+  intros F V LV p1 p2 p LINK.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK. 
+  destr_in LINK.
+  destruct p0 as (defs3 & t'). inv LINK. cbn.
+  eexists. split.
+  - unfold link_prog.
+    rewrite Heqb. reflexivity.
+  - cbn.
+    apply Permutation_sym.
+    eapply PTree_extract_elements_permutation'; eauto.
 Qed.

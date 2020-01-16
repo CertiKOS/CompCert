@@ -140,11 +140,30 @@ Definition strtable := PTree.t Z.
 (** ** Definition of program constructs *)
 Definition gdef := AST.globdef fundef unit.
 
-Definition reloctable_map := ZTree.t reloctable.
-Definition set_reloctable (i:N) (rtbl:reloctable) (rmap:reloctable_map) :=
-  ZTree.set (Z.of_N i) rtbl rmap.
-Definition get_reloctable (i:N) (rmap: reloctable_map) :=
-  ZTree.get (Z.of_N i) rmap.
+Inductive reloctable_id := RELOC_CODE | RELOC_DATA.
+
+Definition reloctable_id_eq: forall (x y: reloctable_id), {x = y} + { x <> y}.
+Proof.
+  decide equality.
+Defined.
+
+Record reloctable_map :=
+  {
+    reloctable_code: reloctable;
+    reloctable_data: reloctable;
+  }.
+
+Definition set_reloctable (i: reloctable_id) (rtbl:reloctable) (rmap:reloctable_map) :=
+  match i with
+  | RELOC_CODE => {| reloctable_code := rtbl; reloctable_data := reloctable_data rmap |}
+  | RELOC_DATA => {| reloctable_data := rtbl; reloctable_code := reloctable_code rmap |}
+  end.
+
+Definition get_reloctable (i:reloctable_id) (rmap: reloctable_map) :=
+  match i with
+  | RELOC_CODE => reloctable_code rmap
+  | RELOC_DATA => reloctable_data rmap
+  end.
 
 Record program : Type := {
   prog_defs: list (ident * option gdef);
@@ -153,7 +172,7 @@ Record program : Type := {
   prog_sectable: sectable;
   prog_symbtable: symbtable;
   prog_strtable: strtable;
-  prog_reloctables: reloctable_map; (** Given the index of a section, it returns its relocation table (if exists) *)
+  prog_reloctables: reloctable_map;
   prog_senv : Globalenvs.Senv.t;
 }.
 

@@ -106,28 +106,24 @@ Definition decode_prog_code_section (p:program) : res program :=
   match SeqTable.get sec_code_id t with
   | None => Error (msg "Cannot find a code section in the program")
   | Some sec =>
-    match get_reloctable sec_code_id (prog_reloctables p) with
-    | None => Error (msg "Cannot find a relocation table for code section in the program")
-    | Some rtbl =>
-      let rofsmap := gen_reloc_ofs_map rtbl in
-      let stbl := prog_symbtable p in
-      do sec' <- decode_code_section rofsmap stbl sec;
-        match SeqTable.set sec_code_id sec' t with
-        | None => Error (msg "Cannot find a code section in the program")
-        | Some t' =>
-          OK {| prog_defs      := prog_defs p;
-                prog_public    := prog_public p;
-                prog_main      := prog_main p;
-                prog_sectable  := t';
-                prog_symbtable := prog_symbtable p;
-                prog_strtable  := prog_strtable p;
-                prog_reloctables := prog_reloctables p;
-                prog_senv        := prog_senv p; 
-             |}
-        end
-    end
+    let rtbl :=  get_reloctable RELOC_CODE (prog_reloctables p) in
+    let rofsmap := gen_reloc_ofs_map rtbl in
+    let stbl := prog_symbtable p in
+    do sec' <- decode_code_section rofsmap stbl sec;
+      match SeqTable.set sec_code_id sec' t with
+      | None => Error (msg "Cannot find a code section in the program")
+      | Some t' =>
+        OK {| prog_defs      := prog_defs p;
+              prog_public    := prog_public p;
+              prog_main      := prog_main p;
+              prog_sectable  := t';
+              prog_symbtable := prog_symbtable p;
+              prog_strtable  := prog_strtable p;
+              prog_reloctables := prog_reloctables p;
+              prog_senv        := prog_senv p;
+           |}
+      end
   end.
-    
 
 Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=
 | initial_state_intro: forall m prog',

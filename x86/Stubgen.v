@@ -75,42 +75,35 @@ Definition expand_code_section (sec:section) (instrs: list byte) :=
 Definition append_reloc_entry (t: reloctable) (e:relocentry) :=
   (t ++ [e]).
 
-
 Definition transf_program (p:program) : res program :=
   do main_symb <- find_symb' (prog_main p) (prog_symbtable p);
-  match SeqTable.get sec_code_id (prog_sectable p) with
-  | None => Error (msg "No .text section found")
-  | Some txt_sec =>
-    do txt_sec' <- expand_code_section txt_sec create_start_stub;
-    let map := gen_symb_index_map p.(prog_symbtable) in
-    do e <- create_start_stub_relocentry map main_symb (sec_size txt_sec);
-    do rtbl' <- 
-       match get_reloctable sec_code_id (prog_reloctables p) with
-       | None => Error (msg "Cannot find the relocation table for .text")
-       | Some rtbl => 
-         OK (append_reloc_entry rtbl e)
-       end;
-    match SeqTable.set sec_code_id txt_sec' (prog_sectable p)
-    with
-    | Some stbl =>
-      let rtbls := set_reloctable sec_code_id rtbl' (prog_reloctables p) in
-      let p':=
-          {| prog_defs := prog_defs p;
-            prog_public := prog_public p;
-            prog_main := prog_main p;
-            prog_sectable := stbl;
-            prog_strtable := prog_strtable p;
-            prog_symbtable := prog_symbtable p;
-            prog_reloctables := rtbls;
-            prog_senv := prog_senv p;
-         |} in
-      let len := (length (prog_sectable p')) in
-      if beq_nat len 3 then
-        OK p'
-      else
-        Error [MSG "In SymtableEncode: Number of sections is incorrect (not 3): "; POS (Pos.of_nat len)]
-    | _ =>
-      Error (msg "Update of code section and its relocation table fails")
-    end
-  end.
-    
+    match SeqTable.get sec_code_id (prog_sectable p) with
+    | None => Error (msg "No .text section found")
+    | Some txt_sec =>
+      do txt_sec' <- expand_code_section txt_sec create_start_stub;
+        let map := gen_symb_index_map p.(prog_symbtable) in
+        do e <- create_start_stub_relocentry map main_symb (sec_size txt_sec);
+          let rtbl := reloctable_code (prog_reloctables p) in
+          let rtbl' := append_reloc_entry rtbl e in
+          match SeqTable.set sec_code_id txt_sec' (prog_sectable p)
+          with
+          | Some stbl =>
+            let p':=
+                {| prog_defs := prog_defs p;
+                   prog_public := prog_public p;
+                   prog_main := prog_main p;
+                   prog_sectable := stbl;
+                   prog_strtable := prog_strtable p;
+                   prog_symbtable := prog_symbtable p;
+                   prog_reloctables := set_reloctable RELOC_CODE rtbl' (prog_reloctables p);
+                   prog_senv := prog_senv p;
+                |} in
+            let len := (length (prog_sectable p')) in
+            if beq_nat len 3 then
+              OK p'
+            else
+              Error [MSG "In SymtableEncode: Number of sections is incorrect (not 3): "; POS (Pos.of_nat len)]
+          | _ =>
+            Error (msg "Update of code section and its relocation table fails")
+          end
+    end.

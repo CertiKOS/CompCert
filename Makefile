@@ -120,12 +120,17 @@ BACKEND=\
   FlatBinDecode.v \
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
+  PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v RelocBinDecode.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
+	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
   ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v SymbtablegenSep.v PermuteRealAsmproof.v \
-  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v \
+  RelocProgSyneq.v RelocProgSyneqproof.v \
+  SymbtablegenSep.v Symbtablegenproof.v \
+  PermuteProgproof.v PermuteProgSep.v \
+  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
+  TablesEncodeproof.v \
   RelocBinDecode.v
 
 

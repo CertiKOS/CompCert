@@ -10,10 +10,12 @@ Require Import Memtype.
 Require Import Asm RelocProgram.
 Require Import Symbtablegen.
 Require Import Linking LinkingProp OrderedLinking.
+Require Import PermuteProgproof PermuteProgSep.
 Require Import RelocLinking.
 Require Import SeqTable.
 Require Import RelationClasses.
 Require Import RelocProgSyneq.
+Require Import Permutation.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -22,6 +24,7 @@ Local Transparent Linker_def.
 Local Transparent Linker_fundef.
 Local Transparent Linker_vardef.
 Local Transparent Linker_varinit.
+Local Transparent Linker_prog_ordered.
 
 Lemma map_pres_subset_rel: forall A B (l1 l2:list A) (f: A -> B),
     (forall x, In x l1 -> In x l2)
@@ -321,19 +324,21 @@ Qed.
 (** * Commutativity of linking and Symbtablgen *)
 
 Definition match_prog (p: Asm.program) (tp: program) :=
-  exists tp', transf_program p = OK tp /\ reloc_prog_syneq tp tp'.
+  exists tp', transf_program p = OK tp' /\ reloc_prog_syneq tp' tp.
 
 
 Lemma match_prog_pres_prog_defs : forall p tp,
-  match_prog p tp -> AST.prog_defs p = prog_defs tp.
+  match_prog p tp -> Permutation (AST.prog_defs p) (prog_defs tp).
 Proof.
   intros p tp MATCH. red in MATCH.
   destruct MATCH as (tp' & MATCH & SEQ).
   unfold transf_program in MATCH.
   destruct check_wellformedness; try monadInv MATCH.
   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0. 
-  destruct zle; try monadInv MATCH. simpl. auto.
+  destruct p0.
+  destruct zle; try monadInv MATCH.
+  red in SEQ; cbn in SEQ. 
+  tauto.
 Qed.
 
 Lemma match_prog_pres_prog_main : forall p tp,
@@ -344,8 +349,10 @@ Proof.
   unfold transf_program in MATCH.
   destruct check_wellformedness; try monadInv MATCH.
   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0. 
-  destruct zle; try monadInv MATCH. simpl. auto.
+  destruct p0.
+  destruct zle; try monadInv MATCH. 
+  red in SEQ; cbn in SEQ. 
+  tauto.
 Qed.
 
 Lemma match_prog_pres_prog_public : forall p tp,
@@ -356,8 +363,10 @@ Proof.
   unfold transf_program in MATCH.
   destruct check_wellformedness; try monadInv MATCH.
   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0. 
-  destruct zle; try monadInv MATCH. simpl. auto.
+  destruct p0.
+  destruct zle; try monadInv MATCH. 
+  red in SEQ; cbn in SEQ.
+  tauto.
 Qed.
 
   
@@ -1839,6 +1848,53 @@ Admitted.
 (*   eapply gen_symb_table_reloc_comm; eauto. *)
 (* Qed. *)
 
+Lemma link_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
+    link_prog p1 p2 = Some p ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
+    f_ofs = reloc_offset_fun dsz1 csz1 ->
+    exists stbl stbl2' stbl',
+      reloc_symbtable f_ofs stbl2 = Some stbl2' /\
+      link_symbtable stbl1 stbl2' = Some stbl /\ 
+      gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) = (stbl', dsz1 + dsz2, csz1 + csz2) /\ 
+      symbtable_syneq stbl stbl'.
+Proof.
+Admitted.
+
+Lemma gen_symb_table_perm: 
+  forall defs sid cid stbl dz cz defs',
+    gen_symb_table sid cid defs = (stbl, dz, cz) ->
+    Permutation defs defs' ->
+    exists stbl', 
+      gen_symb_table sid cid defs' = (stbl', dz, cz) /\
+      symbtable_syneq stbl stbl'.
+Admitted.
+
+Lemma link_ordered_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
+    f_ofs = reloc_offset_fun dsz1 csz1 ->
+    exists stbl stbl2' stbl',
+      reloc_symbtable f_ofs stbl2 = Some stbl2' /\
+      link_symbtable stbl1 stbl2' = Some stbl /\ 
+      gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) = (stbl', dsz1 + dsz2, csz1 + csz2) /\ 
+      symbtable_syneq stbl stbl'.
+Proof.
+  intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs LINK GS1 GS2 FOFS.
+  generalize (link_prog_ordered_inv' _ _ _ LINK). 
+  intros (p' & LINK' & PERM).
+  exploit link_gen_symb_comm; eauto.
+  intros (stbl & stbl2' & stbl' & RELOC & LINKSTBL & GENSTBL & SYNEQ).  
+  apply Permutation_sym in PERM.
+  generalize (gen_symb_table_perm _ _ GENSTBL PERM).
+  intros (stbl'' & GENSTBL' & SYNEQ').
+  do 3 eexists. split; eauto.
+  split; eauto.
+  split; eauto.
+  eapply symbtable_syneq_trans; eauto.
+Qed.
+
 
 (** ** Commutativity of linking and section generation *)
 
@@ -2326,6 +2382,13 @@ Existing Instance IdAsmDefEq.
 (*   rewrite (acc_init_data_in_order_eq ORDER5). auto.   *)
 (* Qed. *)
 
+Lemma link_acc_init_data_comm : forall p1 p2 p,
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    fold_right acc_init_data [] (AST.prog_defs p) =
+    fold_right acc_init_data [] (AST.prog_defs p1) ++ fold_right acc_init_data [] (AST.prog_defs p2).
+Proof.
+Admitted.
+
 
 (** Code section generation and linking *)
 Lemma extern_fun_nil : forall def,
@@ -2411,6 +2474,14 @@ Qed.
 (*   rewrite (acc_instrs_in_order_eq ORDER5). auto.   *)
 (* Qed. *)
 
+Lemma link_acc_instrs_comm : forall p1 p2 p,
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    fold_right acc_instrs [] (AST.prog_defs p) =
+    (fold_right acc_instrs [] (AST.prog_defs p1)) ++ (fold_right acc_instrs [] (AST.prog_defs p2)).
+Proof.
+Admitted.
+
+
 (** Symbol table size *)
 Lemma init_data_list_size_app : forall l1 l2,
     init_data_list_size (l1 ++ l2) = (init_data_list_size l1) + (init_data_list_size l2).
@@ -2493,74 +2564,146 @@ Proof.
 Qed.
 
 
+Lemma match_prog_perm: forall p tp,
+    match_prog p tp ->
+    PermuteProgproof.match_prog p 
+                              {| AST.prog_defs := prog_defs tp;
+                                 AST.prog_public := prog_public tp;
+                                 AST.prog_main := prog_main tp |}.
+Admitted.
+
+
+Lemma link_ordered_pres_wf_prog: forall p1 p2 p,
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    wf_prog p1 ->
+    wf_prog p2 ->
+    wf_prog p.
+Admitted.
+
+Lemma reloc_symbtable_pres_syneq : forall f tbl1 tbl2 tbl1',
+    reloc_symbtable f tbl1 = Some tbl2 ->
+    symbtable_syneq tbl1 tbl1' ->
+    exists tbl2', reloc_symbtable f tbl1' = Some tbl2' /\
+             symbtable_syneq tbl2 tbl2'.
+Admitted.
+
+Lemma link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
+    link_symbtable stbl1 stbl2 = Some stbl ->
+    symbtable_syneq stbl1 stbl1' ->
+    symbtable_syneq stbl2 stbl2' ->
+    exists stbl', 
+      link_symbtable stbl1' stbl2' = Some stbl' /\
+      symbtable_syneq stbl stbl'.
+Admitted.
+
 (** ** Main linking theorem *)
-(* Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program), *)
-(*     link p1 p2 = Some p -> match_prog p1 tp1 -> match_prog p2 tp2 ->  *)
-(*     exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp. *)
-(* Proof. *)
-(*   intros p1 p2 tp1 tp2 p LINK MATCH1 MATCH2. *)
-(*   unfold link. unfold Linker_reloc_prog. unfold link_reloc_prog. *)
-(*   rewrite <- (match_prog_pres_prog_defs MATCH1). *)
-(*   rewrite <- (match_prog_pres_prog_defs MATCH2). *)
-(*   rewrite <- (match_prog_pres_prog_main MATCH1). *)
-(*   rewrite <- (match_prog_pres_prog_main MATCH2). *)
-(*   rewrite <- (match_prog_pres_prog_public MATCH1). *)
-(*   rewrite <- (match_prog_pres_prog_public MATCH2). *)
-(*   setoid_rewrite LINK. *)
-(*   apply link_prog_inv in LINK. *)
-(*   destruct LINK as (MAINEQ & NRPT1 & NRPT2 & defs & PEQ & LINKDEFS). subst. simpl. *)
-(*   unfold match_prog in *. *)
-
-(*   unfold transf_program in MATCH1. *)
-(*   destruct check_wellformedness; try monadInv MATCH1. *)
-(*   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1)) as (p & csz1) eqn:GSEQ1 . *)
-(*   destruct p as (stbl1 & dsz1). *)
-(*   destruct zle; try monadInv MATCH1; simpl. *)
-  
-(*   unfold transf_program in MATCH2. *)
-(*   destruct check_wellformedness; try monadInv MATCH2. *)
-(*   destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2)) as (p & csz2) eqn:GSEQ2 . *)
-(*   destruct p as (stbl2 & dsz2). *)
-(*   destruct zle; try monadInv MATCH2; simpl. *)
-  
-(*   generalize (link_gen_symb_comm _ _ NRPT1 NRPT2 LINKDEFS GSEQ1 GSEQ2  *)
-(*                                  (@eq_refl _ (reloc_offset_fun dsz1 csz1))); eauto. *)
-(*   destruct 1 as (stbl & stbl2' & RELOC & LINKS & GENS). *)
-(*   generalize (gen_symb_table_size _ _ _ GSEQ1). *)
-(*   destruct 1 as (DSZ & CSZ). *)
-(*   setoid_rewrite DSZ. *)
-(*   setoid_rewrite CSZ. *)
-(*   rewrite RELOC. *)
-(*   unfold reloc_iter. cbn. *)
-(*   rewrite LINKS. *)
-
-(*   eexists. split. reflexivity. *)
-(*   unfold transf_program. *)
-
-(*   exploit link_pres_wf_prog; eauto. *)
-(*   intros WF. *)
-(*   destruct check_wellformedness; try congruence. *)
-(*   simpl. rewrite GENS. *)
-  
-(*   destruct zle. *)
-(*   repeat f_equal. *)
-(*   unfold create_sec_table. repeat f_equal. *)
-(*   unfold create_data_section. f_equal. *)
-(*   apply link_acc_init_data_comm; auto. *)
-(*   unfold create_code_section. f_equal. *)
-(*   apply link_acc_instrs_comm; auto. *)
-(*   generalize (defs_size_inbound defs). *)
-(*   intros; omega. *)
-(* Qed. *)
-
-Existing Instance Linker_prog_ordered.
-
 Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
     link p1 p2 = Some p -> match_prog p1 tp1 -> match_prog p2 tp2 ->
     exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp.
 Proof.
-  cbn in *.
-  Admitted.
+  intros p1 p2 tp1 tp2 p LINK MATCH1 MATCH2.
+  unfold link. unfold Linker_reloc_prog. unfold link_reloc_prog.
+  generalize (match_prog_perm MATCH1). intros OMATCH1.
+  generalize (match_prog_perm MATCH2). intros OMATCH2.
+  generalize (@transf_link _ _ _ _ _ TransfPermuteOrderedLink2 
+                           _ _ _ _ _ LINK OMATCH1 OMATCH2).
+  intros (tp3 & LINK3 & OMATCH). clear OMATCH1 OMATCH2.
+  setoid_rewrite LINK3.
+  
+  (* generalize (match_prog_pres_prog_defs MATCH1). intros PERM1. *)
+  (* generalize (match_prog_pres_prog_defs MATCH2). intros PERM2. *)
+  (* rewrite <- (match_prog_pres_prog_main MATCH1). *)
+  (* rewrite <- (match_prog_pres_prog_main MATCH2). *)
+  (* rewrite <- (match_prog_pres_prog_public MATCH1). *)
+  (* rewrite <- (match_prog_pres_prog_public MATCH2). *)
+  (* setoid_rewrite LINK. *)
+  (* apply link_prog_inv in LINK. *)
+  (* destruct LINK as (MAINEQ & NRPT1 & NRPT2 & defs & PEQ & LINKDEFS). subst. simpl. *)
+  (* unfold match_prog in *. *)
+
+  red in MATCH1, MATCH2.
+  destruct MATCH1 as (tp1' & TRANSF1 & RPEQ1).
+  destruct MATCH2 as (tp2' & TRANSF2 & RPEQ2).
+  
+  unfold transf_program in TRANSF1.
+  destruct check_wellformedness; try monadInv TRANSF1.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1)) as (s & csz1) eqn:GSEQ1 .
+  destruct s as (stbl1 & dsz1).
+  destruct zle; try monadInv TRANSF1; simpl.
+
+  unfold transf_program in TRANSF2.
+  destruct check_wellformedness; try monadInv TRANSF2.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2)) as (s & csz2) eqn:GSEQ2 .
+  destruct s as (stbl2 & dsz2).
+  destruct zle; try monadInv TRANSF2; simpl.
+
+  red in RPEQ1. cbn in RPEQ1.
+  destruct RPEQ1 as (PERM1 & MAINEQ1 & PUBEQ1 & SECTBLEQ1 & 
+                     SYMTBLEQ1 & STRTBLEQ1 & RELOCTBLEQ1).
+  red in RPEQ2. cbn in RPEQ2.
+  destruct RPEQ2 as (PERM2 & MAINEQ2 & PUBEQ2 & SECTBLEQ2 & 
+                     SYMTBLEQ2 & STRTBLEQ2 & RELOCTBLEQ2).
+
+  rewrite <- SECTBLEQ1.
+  unfold create_sec_table; cbn. unfold Pos.to_nat; cbn. 
+  rewrite <- SECTBLEQ2.
+  unfold create_sec_table.
+  unfold link_sectable; cbn. unfold Pos.to_nat; cbn.
+  
+  simpl in LINK.
+  generalize (link_prog_ordered_inv is_fundef_internal _ _ _ LINK). 
+  intros (NRPT1 & NRPT2).
+
+  (* unfold link_prog_ordered in LINK. *)
+  (* destr_in LINK; try congruence. *)
+  (* destr_in LINK; try congruence. *)
+  (* destruct p0 as (defs & t'). inv LINK. *)
+  (* repeat rewrite andb_true_iff in Heqb. *)
+  (* destruct Heqb as [[MAINIDEQ NRPT1] NRTP2]. *)
+
+  generalize (link_ordered_gen_symb_comm _ _ LINK GSEQ1 GSEQ2
+                                 (@eq_refl _ (reloc_offset_fun dsz1 csz1))); eauto.
+  destruct 1 as (stbl & stbl2' & stbl' & RELOC & LINKS & GENS & STEQ).
+  generalize (gen_symb_table_size _ _ _ GSEQ1).
+  destruct 1 as (DSZ & CSZ).
+  setoid_rewrite DSZ.
+  setoid_rewrite CSZ.
+  edestruct reloc_symbtable_pres_syneq as (stbl3 & RELOC1 & STBLEQ); eauto.
+  rewrite RELOC1.
+  edestruct link_symbtable_pres_syneq as (stbl4 & LINKS' & STBLEQ1); eauto.
+  rewrite LINKS'.
+
+  eexists. split. reflexivity.
+  red.
+  unfold transf_program.
+  exploit link_ordered_pres_wf_prog; eauto.
+  intros WF.
+  destruct check_wellformedness; try congruence.
+  simpl. 
+  setoid_rewrite GENS.
+  
+  destruct zle.
+  eexists; split. reflexivity.
+  red; cbn.
+
+  split. red in OMATCH. tauto.
+  split. red in OMATCH. tauto.
+  split. red in OMATCH. tauto.
+  split. 
+  unfold create_sec_table. repeat f_equal.
+  unfold create_data_section. f_equal.
+  apply link_acc_init_data_comm; auto.
+  unfold create_code_section. f_equal.
+  apply link_acc_instrs_comm; auto.
+  split.
+  eapply symbtable_syneq_trans. 
+  apply symbtable_syneq_symm. eauto. eauto.
+  split. congruence.
+  congruence.
+  generalize (defs_size_inbound (AST.prog_defs p)).
+  intros; omega.
+Qed.
+
 
 Instance TransfLinkSymbtablegen : TransfLink match_prog :=
   link_transf_symbtablegen.

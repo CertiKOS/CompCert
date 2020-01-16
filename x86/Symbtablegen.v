@@ -304,14 +304,14 @@ Definition transf_program (p:Asm.program) : res program :=
   if check_wellformedness p then
     let '(symb_tbl, dsize, csize) := gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) in
     let sec_tbl := create_sec_table (AST.prog_defs p) in
-    if zle (sections_size sec_tbl) Ptrofs.max_unsigned then 
+    if zle (sections_size sec_tbl) Ptrofs.max_unsigned then
       OK {| prog_defs := AST.prog_defs p;
             prog_public := AST.prog_public p;
             prog_main := AST.prog_main p;
             prog_sectable := sec_tbl;
             prog_strtable := PTree.empty Z;
             prog_symbtable := symb_tbl;
-            prog_reloctables := PTree.empty reloctable;
+            prog_reloctables := Build_reloctable_map nil nil;
             prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)
          |}
     else 

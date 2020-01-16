@@ -13,6 +13,7 @@ Require Import SeqTable Memdata.
 Require Import Hex Bits.
 Import Hex Bits.
 Import ListNotations.
+Require Import StrtableEncode.
 Require Import SymbtableEncode.
 
 Set Implicit Arguments.
@@ -122,15 +123,6 @@ Variable (strtab: strtable).
 
 Hypothesis valid_strtab: valid_strtable strtab.
 
-Fixpoint take_drop {A} n (l: list A) : res (list A * list A) :=
-  match n, l with
-  | O, l => OK ([], l)
-  | S n, a::r =>
-    do (a1,b1) <- take_drop n r ;
-    OK (a::a1, b1)
-  | S n, [] => Error (msg "take_drop: list too short")
-  end.
-
 Definition strtab_inv si : option ident :=
   PTree.fold (fun acc id val =>
                 match acc with
@@ -164,60 +156,6 @@ Definition decode_symbentry (lb: list byte) : res symbentry :=
             symbentry_size := ssize
           |}
         ).
-
-Lemma take_drop_encode_int sz x l:
-  take_drop sz (encode_int sz x ++ l) = OK (encode_int sz x, l).
-Proof.
-  generalize (encode_int_length sz x).
-  generalize (encode_int sz x).
-  induction sz; simpl; intros; eauto.
-  - destruct l0; simpl in *; try congruence.
-  - destruct l0; simpl in *; try congruence.
-    rewrite IHsz. simpl. auto. congruence.
-Qed.
-
-Lemma take_drop_cons {A} x (l: list A):
-  take_drop 1 (x :: l) = OK ([x], l).
-Proof.
-  reflexivity.
-Qed.
-
-
-Lemma take_drop_length {A} sz (l: list A):
-  length l = sz ->
-  take_drop sz l = OK (l, []).
-Proof.
-  revert l.
-  induction sz; simpl; intros; eauto.
-  - destruct l; simpl in *; try congruence.
-  - destruct l; simpl in *; try congruence.
-    rewrite IHsz. simpl. auto. congruence.
-Qed.
-
-
-Lemma take_drop_length_app {A} sz (l1 l2: list A):
-  length l1 = sz ->
-  take_drop sz (l1 ++ l2) = OK (l1, l2).
-Proof.
-  revert l1 l2.
-  induction sz; simpl; intros; eauto.
-  - destruct l1; simpl in *; try congruence.
-  - destruct l1; simpl in *; try congruence.
-    rewrite IHsz. simpl. auto. congruence.
-Qed.
-
-
-Lemma take_drop_length_2 :
-  forall {A} z (l: list A) l1 l2,
-    (z > 0)%nat ->
-    take_drop z l = OK (l1, l2) ->
-    (length l2 < length l)%nat.
-Proof.
-  induction z; simpl; intros; eauto. omega.
-  destr_in H10. monadInv H10.
-  destruct z.  simpl in *. inv EQ.  omega.
-  apply IHz in EQ. simpl. omega. omega.
-Qed.
 
 Lemma fold_left_strtab_inv_stable:
   forall x l i,
@@ -513,3 +451,43 @@ Proof.
   apply beq_nat_true in Heqb.
   rewrite app_length in Heqb. simpl in Heqb. omega.
 Qed.
+
+Definition transf_program_inv (p: program) : res program :=
+  match nth_error (prog_sectable p) 4 with
+  | None => Error (msg "Found no section for symtable")
+  | Some s =>
+    match decode_symtable_section (prog_strtable p) s with
+    | OK s =>
+      do (sectable,_) <- take_drop 4 (prog_sectable p);
+      OK {|
+        prog_defs := prog_defs p;
+        prog_public := prog_public p;
+        prog_main := prog_main p;
+        prog_sectable := sectable;
+        prog_symbtable := prog_symbtable p;
+        prog_strtable := prog_strtable p;
+        prog_reloctables := prog_reloctables p;
+        prog_senv := prog_senv p |}
+    | _ => Error (msg "Unable to decode symtable")
+    end
+  end.
+
+Theorem transf_program_inv_correct p p'
+        (V: valid_strtable (prog_strtable p))
+        (VE: Forall (valid_symbentry (prog_strtable p)) (prog_symbtable p))
+        (TP: transf_program p = OK p'):
+  transf_program_inv p' = OK p.
+Proof.
+  unfold transf_program in TP.
+  monadInv TP. destr_in EQ0. inv EQ0. simpl in *.
+  unfold transf_program_inv. simpl.
+  destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
+  destruct s0; simpl in *; try congruence.
+  destruct s1; simpl in *; try congruence.
+  destruct s2; simpl in *; try congruence.
+  destruct s3; simpl in *; try congruence.
+  erewrite decode_create_symtable_section; eauto.
+  f_equal. destruct p; simpl. f_equal; simpl in *. auto.
+  apply beq_nat_true in Heqb. rewrite app_length in Heqb; simpl in Heqb. omega.
+Qed.
+

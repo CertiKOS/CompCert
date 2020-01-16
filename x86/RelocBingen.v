@@ -297,40 +297,14 @@ End WITH_RELOC_OFS_MAP.
 
 (** ** Translation of a program *)
 
-Definition transl_section (sec:section) (rtbl:option reloctable) : res section :=
-  match sec with
-  | sec_text code =>
-    match rtbl with
-    | None => Error [MSG "Encoding failed: No relocation table found for .text section"]
-    | Some rtbl =>
-      let rofs_map := gen_reloc_ofs_map rtbl in
-      do bytes <- transl_code rofs_map code;
-      OK (sec_bytes bytes)
-    end
-  | sec_data l =>
-    match rtbl with
-    | None => Error [MSG "Encoding failed: No relocation table found for .data section"]
-    | Some rtbl => 
-      let rofs_map := gen_reloc_ofs_map rtbl in
-      do bytes <- transl_init_data_list rofs_map l;
-      OK (sec_bytes bytes)
-    end
-  | _ => OK sec
+Definition transl_sectable (stbl: sectable) relocmap : res sectable :=
+  match stbl with
+  | [sec_null; sec_data l; sec_text code] =>
+    do codebytes <- transl_code (gen_reloc_ofs_map (reloctable_code relocmap)) code;
+    do databytes <- transl_init_data_list (gen_reloc_ofs_map (reloctable_data relocmap)) l;
+      OK [sec_null; sec_bytes databytes; sec_bytes codebytes]
+  | _ => Error (msg "Expected the section table to be [sec_null; sec_data; sec_text]")
   end.
-
-Definition acc_sections rtbls r sec := 
-  do r' <- r;
-  let '(stbl,si) := r' in
-  do sec' <- transl_section sec (get_reloctable si rtbls);
-  OK (sec' :: stbl, N.succ si).
-
-Definition transl_sectable (stbl: sectable) (rtbls: PTree.t reloctable) : res sectable :=
-  do r <- 
-     fold_left (acc_sections rtbls)
-     stbl
-     (OK ([],0%N));
-  let '(stbl', _) := r in
-  OK (rev stbl').
 
 Definition transf_program (p:program) : res program := 
   do stbl <- transl_sectable (prog_sectable p) (prog_reloctables p);

@@ -23,7 +23,7 @@ Definition addrmode_reloc_offset (a:addrmode) : res Z :=
   match a with 
   | Addrmode _ _ (inr _) => OK (addrmode_size_aux a)
   | _ => Error (msg "Calculation of the relocation offset for addrmode fails: displacement is a constant")
-  end. 
+  end.
 
 (** Calculate the starting offset of the bytes
     that need to be relocated in an instruction *)
@@ -32,21 +32,16 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmov_rs _ _ => OK 2
   | Pcall (inr _) _ => OK 1
   | Pjmp (inr _) _ => OK 1
-  | Pleal rd a =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
-  | Pmovl_rm _ a =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
-  | Pmovl_mr a _ =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
-  | Pmov_rm_a _ a =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
+  | Pleal _ a
+  | Pmovl_rm _ a
+  | Pmovl_mr a _
+  | Pmov_rm_a _ a
   | Pmov_mr_a a _ =>
-    do aofs <- addrmode_reloc_offset a;
-    OK (1 + aofs)
+    match addrmode_reloc_offset a with
+      OK aofs => OK (1 + aofs)
+    | Error e =>
+      Error ([MSG "instr_reloc_offset :"; MSG (instr_to_string i)] ++ e)
+    end
   | _ => Error (msg "Calculation of addenddum failed: Instruction not supported yet by relocation")
   end.
 
@@ -171,18 +166,14 @@ Definition transl_instr (sofs:Z) (i: instruction) : res (list relocentry) :=
   end.
 
 
-Definition acc_instrs r i := 
-  do r' <- r;
-  let '(sofs, rtbl) := r' in
+Definition acc_instrs r i :=
+  do (sofs, rtbl) <- r;
   do ri <- transl_instr sofs i;
   OK (sofs + instr_size i, ri ++ rtbl).
 
 Definition transl_code (c:code) : res reloctable :=
-  do rs <- 
-     fold_left acc_instrs c (OK (0, []));
-  let '(_, rtbl) := rs in
+  do (_, rtbl) <- fold_left acc_instrs c (OK (0, []));
   OK rtbl.
-
 
 (** ** Translation of global variables *)
 
@@ -190,7 +181,7 @@ Definition transl_init_data (dofs:Z) (d:init_data) : res reloctable :=
   match d with
   | Init_addrof id ofs =>
     match symb_index_map ! id with
-    | None => 
+    | None =>
       Error [MSG "Cannot find the index for symbol: "; POS id]
     | Some idx =>
       let e := {| reloc_offset := dofs;
@@ -200,14 +191,14 @@ Definition transl_init_data (dofs:Z) (d:init_data) : res reloctable :=
                |} in
       OK [e]
     end
-  | _ => 
+  | _ =>
     OK []
   end.
 
 (** Tranlsation of a list of initialization data and generate
     relocation entries *)
 
-Definition acc_init_data r d := 
+Definition acc_init_data r d :=
   do r' <- r;
   let '(dofs, rtbl) := r' in
   do ri <- transl_init_data dofs d;
@@ -222,35 +213,24 @@ Definition transl_init_data_list (l:list init_data) : res reloctable :=
 
 (** ** Translation of the program *)
 
-Definition transl_section (sec:section) : res (option reloctable) :=
-  match sec with
-  | sec_text code =>
-    do rtbl <- transl_code code;
-    OK (Some rtbl)
-  | sec_data l =>
-    do rtbl <- transl_init_data_list l;
-    OK (Some rtbl)
-  | _ => 
-    OK None
-  end.
- 
-Definition acc_sections r sec := 
-  do r' <- r;
-  let '(rtbls, si) := r' in
-  do rtbl <- transl_section sec;
-  let rtbls' := 
-      match rtbl with
-      | None => rtbls
-      | Some rtbl => set_reloctable si rtbl rtbls
-      end in
-  OK (rtbls', N.succ si).
-
 Definition transl_sectable (stbl: sectable) :=
-  do r <- 
-     fold_left acc_sections stbl
-     (OK (ZTree.empty reloctable, 0%N));
-  let '(rtbls, _) := r in
-  OK rtbls.
+  match SeqTable.get sec_code_id stbl with
+  | Some (sec_text code) =>
+    match transl_code code with
+    | Error e => Error e
+    | OK codereloctable =>
+      match SeqTable.get sec_data_id stbl with
+      | Some (sec_data l) =>
+        match transl_init_data_list l with
+        | Error e => Error e
+        | OK datareloctable =>
+          OK (codereloctable, datareloctable)
+        end
+      | _ => Error (msg "Expected data section to be a sec_data")
+      end
+    end
+  | _ => Error (msg "Expected code section to be a sec_text")
+  end.
 
 Definition id_eliminate (i:instruction):res (instruction):=
     match i with
@@ -283,49 +263,50 @@ Definition id_eliminate (i:instruction):res (instruction):=
 
 Definition acc_id_eliminate r i :=
   do r' <- r;
-  do i' <- id_eliminate i;    
+  do i' <- id_eliminate i;
     OK(i::r').
 
 Definition transl_code' (c:code): res (code) :=
-  do r <- fold_left acc_id_eliminate c (OK []); 
+  do r <- fold_left acc_id_eliminate c (OK []);
     OK (rev r).
 
-Definition transl_section' (sec:section)  : res section :=
-  match sec with
-  | sec_text code =>
-    do code' <-  transl_code' code;
-      OK(sec_text code')
-  | _ => OK sec
+Local Open Scope string_scope.
+Definition print_section (s: section) :=
+  match s with
+  | sec_null => "null"
+  | sec_text _ => "text"
+  | sec_data _ => "data"
+  | sec_bytes _ => "bytes"
   end.
 
-Definition acc_sections'  r sec := 
-  do r' <- r;
-  let '(stbl, si) := r' in
-  do sec' <- transl_section' sec;
-  OK (sec' :: stbl, N.succ si).
+Fixpoint print_sectable (stbl: sectable) :=
+  match stbl with
+  | [] => ""
+  | s::r => String.append (print_section s) (String.append ";" (print_sectable r))
+  end.
 
 Definition transl_sectable' (stbl: sectable): res sectable :=
-  do r <- 
-     fold_left acc_sections'
-     stbl
-     (OK ([],0%N));
-  let '(stbl', _) := r in
-  OK (rev stbl').
+  match stbl with
+    [sec_null; sec_data l; sec_text code] =>
+    do code' <- transl_code' code;
+    OK [sec_null; sec_data l; sec_text code']
+  | _ => Error (msg "Expected section table to be [null; text; data], got " ++ msg (print_sectable stbl))
+  end.
+
 
 
 End WITH_SYMB_INDEX_MAP.
-  
 
 Definition transf_program (p:program) : res program :=
   let map := gen_symb_index_map (p.(prog_symbtable)) in
-  do rtbls <- transl_sectable map (prog_sectable p);
+  do (codereloc, datareloc) <- transl_sectable map (prog_sectable p);
     do sec' <- transl_sectable' (prog_sectable p);
-  OK {| prog_defs := p.(prog_defs);
-        prog_public := p.(prog_public);
-        prog_main := p.(prog_main);
+  OK {| prog_defs := prog_defs p;
+        prog_public := prog_public p;
+        prog_main := prog_main p;
         prog_sectable := sec';
         prog_strtable := prog_strtable p;
-        prog_symbtable := p.(prog_symbtable);
-        prog_reloctables := rtbls;
-        prog_senv := p.(prog_senv);
+        prog_symbtable := prog_symbtable p;
+        prog_reloctables := Build_reloctable_map codereloc datareloc;
+        prog_senv := prog_senv p;
      |}.
