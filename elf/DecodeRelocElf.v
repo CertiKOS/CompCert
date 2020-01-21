@@ -331,7 +331,7 @@ Definition decode_section_headers (eh: elf_header) (whole_file: list byte) : res
   do (_,l) <- take_drop (Z.to_nat (e_shoff eh)) whole_file;
     decode_section_headers' (Z.to_nat (e_shnum eh)) l.
 
-Lemma decode_encode_section_headers (shs: list section_header) (V: Forall valid_section_header shs):
+Lemma decode_encode_section_headers' (shs: list section_header) (V: Forall valid_section_header shs):
   decode_section_headers' (length shs) (encode_section_headers shs) = OK shs.
 Proof.
   revert V. induction shs; simpl; intros; eauto.
@@ -342,18 +342,144 @@ Proof.
   reflexivity.
 Qed.
 
-Definition encode_sections (ss:list section) :=
-  fold_right (fun bytes r => bytes ++ r) [] ss.
+Lemma decode_encode_section_headers eh shs (V: Forall valid_section_header shs) ss l
+      (SHOFF: e_shoff eh = Z.of_nat (length l) +
+                           fold_right (fun s acc => acc + Z.of_nat (length s)) 0 ss)
+      (NUM: e_shnum eh = Z.of_nat (length shs)):
+  decode_section_headers eh (l ++ encode_sections ss ++ encode_section_headers shs) = OK shs.
+Proof.
+  unfold decode_section_headers.
+  rewrite NUM. rewrite Nat2Z.id.
+  rewrite app_assoc.
+  rewrite take_drop_length_app. simpl. apply decode_encode_section_headers'. auto.
+  rewrite SHOFF.
+  rewrite Z2Nat.inj_add; try omega. rewrite Nat2Z.id.
+  rewrite app_length. f_equal.
+  {
+    clear. induction ss; simpl; intros; eauto.
+    rewrite app_length.
+    rewrite Z2Nat.inj_add; try omega. rewrite Nat2Z.id. omega.
+    clear.
+    induction ss; simpl; intros; eauto. omega. omega.
+  }
+  clear. induction ss; simpl; intros; eauto. omega. omega.
+Qed.
 
-Definition encode_section_headers (shs: list section_header) :=
-  fold_right (fun sh r => (encode_section_header sh) ++ r) [] shs.
+Fixpoint check_sizes shs (ss: list section) preds :=
+  match shs, ss with
+  | [], [] => OK tt
+  | sh::shs, s::ss =>
+    check (Z.eqb (sh_size sh) (Z.of_nat (length s)));
+      check (Z.eqb (sh_offset sh) (fold_right (fun s acc => acc + Z.of_nat (length s)) 0 preds));
+      check_sizes shs ss (preds ++ [s])
+  | _, _ => Error (msg "Should be as much sections as section headers")
+  end.
 
-Definition encode_elf_file (ef: elf_file) : (list byte * program) :=
-  let bs := 
-      (encode_elf_header (elf_head ef)) ++
-      (encode_sections (elf_sections ef)) ++
-      (encode_section_headers (elf_section_headers ef)) in
-  let p := {| AST.prog_defs   := RelocElf.prog_defs ef;
-              AST.prog_public := RelocElf.prog_public ef;
-              AST.prog_main   := RelocElf.prog_main ef; |} in
-  (bs, p).
+Record valid_elf_file ef :=
+  {
+    vef_header: valid_elf_header (elf_head ef);
+    vef_shs: Forall valid_section_header (elf_section_headers ef);
+    vef_shoff: e_shoff (elf_head ef) = 52 + fold_right (fun s acc => acc + Z.of_nat (length s)) 0 (elf_sections ef);
+    vef_shnum: e_shnum (elf_head ef) = Z.of_nat (length (elf_section_headers ef));
+    vef_check_sizes:
+      check_sizes (elf_section_headers ef) (elf_sections ef) [encode_elf_header (elf_head ef)] = OK tt
+  }.
+
+Fixpoint decode_sections (shs: list section_header) (whole_prog: list byte) :=
+  match shs with
+  | [] => OK []
+  | sh::shs =>
+    do (_, bytes) <- take_drop (Z.to_nat (sh_offset sh)) whole_prog;
+      do (bytes,_) <- take_drop (Z.to_nat (sh_size sh)) bytes;
+      do ss <- decode_sections shs whole_prog;
+      OK (bytes::ss)
+  end.
+
+Lemma check_sizes_cons sh shs s ss y x:
+  check_sizes (sh::shs) (s::ss) y = OK x ->
+  check_sizes shs ss (y++[s]) = OK x /\
+  sh_size sh = Z.of_nat (length s) /\
+  sh_offset sh = fold_right (fun s acc => acc + Z.of_nat (length s)) 0 y.
+Proof.
+  simpl. intro A.
+  destruct (Z.eqb (sh_size sh) (Z.of_nat (length s))) eqn:?; simpl in A; try congruence.
+  destruct (Z.eqb (sh_offset sh) (fold_right (fun s acc => acc + Z.of_nat (length s)) 0 y)) eqn:?; simpl in A; try congruence.
+  apply Z.eqb_eq in Heqb0.
+  apply Z.eqb_eq in Heqb. auto.
+Qed.
+
+
+Lemma check_sizes_cons' sh shs ss y x:
+  check_sizes (sh::shs) ss y = OK x ->
+  exists s ss', ss = s::ss' /\
+  check_sizes shs ss' (y++[s]) = OK x /\
+  sh_size sh = Z.of_nat (length s) /\
+  sh_offset sh = fold_right (fun s acc => acc + Z.of_nat (length s)) 0 y.
+Proof.
+  intros. destruct ss. simpl in H. inv H.
+  eexists; eexists; split. eauto.
+  apply check_sizes_cons; auto.
+Qed.
+
+Lemma encode_sections_app a b:
+  encode_sections (a++b) = encode_sections a ++ encode_sections b.
+Proof.
+  induction a; simpl; intros; eauto. rewrite IHa. rewrite app_assoc. auto.
+Qed.
+
+Lemma decode_encode_sections shs ss l x
+      (EQ: check_sizes shs ss l = OK tt):
+  decode_sections shs (encode_sections l ++ encode_sections ss ++ x) = OK ss.
+Proof.
+  Opaque check_sizes.
+  revert ss l x EQ; induction shs; simpl; intros; eauto.
+  - Transparent check_sizes. simpl in *. destr_in EQ. Opaque check_sizes.
+  - exploit check_sizes_cons'. eauto.
+    intros (s & ss' & EQ' & CS & EQsz & EQofs). subst.
+    exploit IHshs. eauto. instantiate(1:=x). intro DEC. 
+    destr_in EQ.
+    rewrite take_drop_length_app. simpl.
+    rewrite <- app_assoc.
+    rewrite take_drop_length_app. simpl.
+    rewrite encode_sections_app in DEC. simpl in DEC.
+    rewrite app_nil_r in DEC.
+    rewrite <- app_assoc in DEC. rewrite DEC. reflexivity.
+    rewrite EQsz. rewrite Nat2Z.id. auto.
+    rewrite EQofs. clear.
+    induction l; simpl; intros; eauto.
+    rewrite app_length. rewrite Z2Nat.inj_add; try omega.
+    rewrite Nat2Z.id. rewrite IHl. omega.
+    clear.
+    induction l; simpl; intros; eauto; omega.
+Qed.
+
+Definition decode_elf_file (l: list byte) (p: program) : res elf_file :=
+  do (ehbytes, _) <- take_drop 52 l;
+  do eh <- decode_elf_header ehbytes;
+  do shs <- decode_section_headers eh l;
+  do ss <- decode_sections shs l;
+  OK {|
+      prog_defs := AST.prog_defs p;
+      prog_public := AST.prog_public p;
+      prog_main := AST.prog_main p;
+      elf_head := eh;
+      elf_sections := ss;
+      elf_section_headers := shs
+    |}.
+
+Lemma decode_encode_elf_file ef (V: valid_elf_file ef):
+  let '(l,p) := encode_elf_file ef in
+  decode_elf_file l p = OK ef.
+Proof.
+  unfold encode_elf_file, decode_elf_file.
+  rewrite take_drop_length_app. 2: reflexivity.
+  simpl.
+  inv V.
+  rewrite decode_encode_elf_header; auto. simpl.
+  rewrite decode_encode_section_headers; auto. simpl.
+  generalize (decode_encode_sections (elf_section_headers ef) (elf_sections ef) [encode_elf_header (elf_head ef)] (encode_section_headers (elf_section_headers ef))). intro DS. trim DS. auto.
+  simpl in DS.  rewrite app_nil_r in DS. rewrite DS.
+  simpl.
+  clear.
+  destruct ef. simpl in *. reflexivity.
+Qed.
