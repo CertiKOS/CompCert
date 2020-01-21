@@ -287,3 +287,61 @@ Record elf_file :=
   elf_sections     : list section;        (** Sections *)
   elf_section_headers : list section_header  (** Section headers *)
 }.
+
+
+Record valid_elf_header (eh: elf_header) :=
+  {
+    valid_entry: 0 <= e_entry eh < two_p 32;
+    valid_phoff: 0 <= e_phoff eh < two_p 32;
+    valid_shoff: 0 <= e_shoff eh < two_p 32;
+    valid_flags: 0 <= e_flags eh < two_p 32;
+    valid_ehsize: 0 <= e_ehsize eh < two_p 16;
+    valid_phentsize: 0 <= e_phentsize eh < two_p 16;
+    valid_phnum: 0 <= e_phnum eh < two_p 16;
+    valid_shentsize: 0 <= e_shentsize eh < two_p 16;
+    valid_shnum: 0 <= e_shnum eh < two_p 16;
+    valid_shstrndx: 0 <= e_shstrndx eh < two_p 16;
+  }.
+
+Notation " 'check' A ; B" := (if A then B else Error nil) (at level 100).
+
+
+Fixpoint check_sizes shs (ss: list section) ofs :=
+  match shs, ss with
+  | [], [] => OK tt
+  | sh::shs, s::ss =>
+    check (Z.eqb (sh_size sh) (Z.of_nat (length s)));
+      check (Z.eqb (sh_offset sh) ofs);
+      check_sizes shs ss (ofs + Z.of_nat (length s))
+  | _, _ => Error (msg "Should be as much sections as section headers")
+  end.
+
+Inductive valid_section_flags : list section_flag -> Prop :=
+| vsf_nil : valid_section_flags []
+| vsf_alloc_write : valid_section_flags [SHF_ALLOC; SHF_WRITE]
+| vsf_alloc_exec : valid_section_flags [SHF_ALLOC; SHF_EXECINSTR].
+
+Record valid_section_header sh :=
+  {
+    vsh_name: 0 <= sh_name sh < two_p 32;
+    vsh_addr: 0 <= sh_addr sh < two_p 32;
+    vsh_offset: 0 <= sh_offset sh < two_p 32;
+    vsh_size: 0 <= sh_size sh < two_p 32;
+    vsh_link: 0 <= sh_link sh < two_p 32;
+    vsh_info: 0 <= sh_info sh < two_p 32;
+    vsh_addralign: 0 <= sh_addralign sh < two_p 32;
+    vsh_entsize: 0 <= sh_entsize sh < two_p 32;
+    vsh_flags: valid_section_flags (sh_flags sh);
+  }.
+
+Record valid_elf_file ef :=
+  {
+    vef_header: valid_elf_header (elf_head ef);
+    vef_shs: Forall valid_section_header (elf_section_headers ef);
+    vef_shoff: e_shoff (elf_head ef) = 52 + fold_right (fun s acc => acc + Z.of_nat (length s)) 0 (elf_sections ef);
+    vef_shnum: e_shnum (elf_head ef) = Z.of_nat (length (elf_section_headers ef));
+    vef_check_sizes:
+      check_sizes (tl (elf_section_headers ef)) (elf_sections ef) 52 = OK tt;
+    vef_first_section_null:
+      nth_error (elf_section_headers ef) O = Some null_section_header;
+  }.

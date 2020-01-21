@@ -23,9 +23,6 @@ Local Open Scope string_byte_scope.
 
 (** * Encoding of the relocatble ELF files into bytes *)
 
-Notation " 'check' A ; B" := (if A then B else Error nil) (at level 100).
-
-
 Definition decode_elf_file_class (b: byte) : res elf_file_class :=
   match Byte.unsigned b with
   | 0 => OK ELFCLASSNONE
@@ -184,19 +181,6 @@ Definition decode_elf_header (l: list byte) : res elf_header :=
         e_shstrndx := shstrndx;
       |}.
 
-Record valid_elf_header (eh: elf_header) :=
-  {
-    valid_entry: 0 <= e_entry eh < two_p 32;
-    valid_phoff: 0 <= e_phoff eh < two_p 32;
-    valid_shoff: 0 <= e_shoff eh < two_p 32;
-    valid_flags: 0 <= e_flags eh < two_p 32;
-    valid_ehsize: 0 <= e_ehsize eh < two_p 16;
-    valid_phentsize: 0 <= e_phentsize eh < two_p 16;
-    valid_phnum: 0 <= e_phnum eh < two_p 16;
-    valid_shentsize: 0 <= e_shentsize eh < two_p 16;
-    valid_shnum: 0 <= e_shnum eh < two_p 16;
-    valid_shstrndx: 0 <= e_shstrndx eh < two_p 16;
-  }.
 
 Lemma decode_encode_int_small:
   forall n x,
@@ -247,10 +231,6 @@ Proof.
   destruct t; reflexivity.
 Qed.
 
-Inductive valid_section_flags : list section_flag -> Prop :=
-| vsf_nil : valid_section_flags []
-| vsf_alloc_write : valid_section_flags [SHF_ALLOC; SHF_WRITE]
-| vsf_alloc_exec : valid_section_flags [SHF_ALLOC; SHF_EXECINSTR].
 
 Definition decode_section_flags (l: list byte) : list section_flag :=
   let z := decode_int l in
@@ -290,18 +270,6 @@ Definition decode_section_header (l: list byte) : res section_header :=
         sh_entsize := decode_int entsize;
       |}.
 
-Record valid_section_header sh :=
-  {
-    vsh_name: 0 <= sh_name sh < two_p 32;
-    vsh_addr: 0 <= sh_addr sh < two_p 32;
-    vsh_offset: 0 <= sh_offset sh < two_p 32;
-    vsh_size: 0 <= sh_size sh < two_p 32;
-    vsh_link: 0 <= sh_link sh < two_p 32;
-    vsh_info: 0 <= sh_info sh < two_p 32;
-    vsh_addralign: 0 <= sh_addralign sh < two_p 32;
-    vsh_entsize: 0 <= sh_entsize sh < two_p 32;
-    vsh_flags: valid_section_flags (sh_flags sh);
-  }.
 
 Lemma decode_encode_section_header sh (V: valid_section_header sh) :
   decode_section_header (encode_section_header sh) = OK sh.
@@ -365,26 +333,6 @@ Proof.
   clear. induction ss; simpl; intros; eauto. omega. omega.
 Qed.
 
-Fixpoint check_sizes shs (ss: list section) preds :=
-  match shs, ss with
-  | [], [] => OK tt
-  | sh::shs, s::ss =>
-    check (Z.eqb (sh_size sh) (Z.of_nat (length s)));
-      check (Z.eqb (sh_offset sh) (fold_right (fun s acc => acc + Z.of_nat (length s)) 0 preds));
-      check_sizes shs ss (preds ++ [s])
-  | _, _ => Error (msg "Should be as much sections as section headers")
-  end.
-
-Record valid_elf_file ef :=
-  {
-    vef_header: valid_elf_header (elf_head ef);
-    vef_shs: Forall valid_section_header (elf_section_headers ef);
-    vef_shoff: e_shoff (elf_head ef) = 52 + fold_right (fun s acc => acc + Z.of_nat (length s)) 0 (elf_sections ef);
-    vef_shnum: e_shnum (elf_head ef) = Z.of_nat (length (elf_section_headers ef));
-    vef_check_sizes:
-      check_sizes (elf_section_headers ef) (elf_sections ef) [encode_elf_header (elf_head ef)] = OK tt
-  }.
-
 Fixpoint decode_sections (shs: list section_header) (whole_prog: list byte) :=
   match shs with
   | [] => OK []
@@ -397,13 +345,13 @@ Fixpoint decode_sections (shs: list section_header) (whole_prog: list byte) :=
 
 Lemma check_sizes_cons sh shs s ss y x:
   check_sizes (sh::shs) (s::ss) y = OK x ->
-  check_sizes shs ss (y++[s]) = OK x /\
+  check_sizes shs ss (y+Z.of_nat (length s)) = OK x /\
   sh_size sh = Z.of_nat (length s) /\
-  sh_offset sh = fold_right (fun s acc => acc + Z.of_nat (length s)) 0 y.
+  sh_offset sh = y.
 Proof.
   simpl. intro A.
   destruct (Z.eqb (sh_size sh) (Z.of_nat (length s))) eqn:?; simpl in A; try congruence.
-  destruct (Z.eqb (sh_offset sh) (fold_right (fun s acc => acc + Z.of_nat (length s)) 0 y)) eqn:?; simpl in A; try congruence.
+  destruct (Z.eqb (sh_offset sh) y) eqn:?; simpl in A; try congruence.
   apply Z.eqb_eq in Heqb0.
   apply Z.eqb_eq in Heqb. auto.
 Qed.
@@ -412,9 +360,9 @@ Qed.
 Lemma check_sizes_cons' sh shs ss y x:
   check_sizes (sh::shs) ss y = OK x ->
   exists s ss', ss = s::ss' /\
-  check_sizes shs ss' (y++[s]) = OK x /\
+  check_sizes shs ss' (y+Z.of_nat (length s)) = OK x /\
   sh_size sh = Z.of_nat (length s) /\
-  sh_offset sh = fold_right (fun s acc => acc + Z.of_nat (length s)) 0 y.
+  sh_offset sh = y.
 Proof.
   intros. destruct ss. simpl in H. inv H.
   eexists; eexists; split. eauto.
@@ -427,30 +375,25 @@ Proof.
   induction a; simpl; intros; eauto. rewrite IHa. rewrite app_assoc. auto.
 Qed.
 
-Lemma decode_encode_sections shs ss l x
-      (EQ: check_sizes shs ss l = OK tt):
-  decode_sections shs (encode_sections l ++ encode_sections ss ++ x) = OK ss.
+Lemma decode_encode_sections shs ss o l x
+      (EQ: check_sizes shs ss o = OK tt) (L: o = Z.of_nat (length l)):
+  decode_sections shs (l ++ encode_sections ss ++ x) = OK ss.
 Proof.
   Opaque check_sizes.
-  revert ss l x EQ; induction shs; simpl; intros; eauto.
+  revert ss o l x EQ L; induction shs; simpl; intros; eauto.
   - Transparent check_sizes. simpl in *. destr_in EQ. Opaque check_sizes.
   - exploit check_sizes_cons'. eauto.
     intros (s & ss' & EQ' & CS & EQsz & EQofs). subst.
-    exploit IHshs. eauto. instantiate(1:=x). intro DEC. 
-    destr_in EQ.
+    exploit IHshs. eauto. instantiate(1:=l ++ s).
+    rewrite app_length. rewrite Nat2Z.inj_add. auto.
+    instantiate (1:= x).
+    intro DEC.
     rewrite take_drop_length_app. simpl.
     rewrite <- app_assoc.
     rewrite take_drop_length_app. simpl.
-    rewrite encode_sections_app in DEC. simpl in DEC.
-    rewrite app_nil_r in DEC.
     rewrite <- app_assoc in DEC. rewrite DEC. reflexivity.
     rewrite EQsz. rewrite Nat2Z.id. auto.
-    rewrite EQofs. clear.
-    induction l; simpl; intros; eauto.
-    rewrite app_length. rewrite Z2Nat.inj_add; try omega.
-    rewrite Nat2Z.id. rewrite IHl. omega.
-    clear.
-    induction l; simpl; intros; eauto; omega.
+    rewrite EQofs. rewrite Nat2Z.id. auto.
 Qed.
 
 Definition decode_elf_file (l: list byte) (p: program) : res elf_file :=
@@ -463,9 +406,19 @@ Definition decode_elf_file (l: list byte) (p: program) : res elf_file :=
       prog_public := AST.prog_public p;
       prog_main := AST.prog_main p;
       elf_head := eh;
-      elf_sections := ss;
+      elf_sections := tl ss;
       elf_section_headers := shs
     |}.
+
+Lemma decode_sections_null shs l:
+  decode_sections (null_section_header :: shs) l =
+  (do ss <- decode_sections shs l; OK ([] :: ss)).
+Proof.
+  simpl.
+  Transparent take_drop. simpl.
+  reflexivity.
+  Opaque take_drop.
+Qed.
 
 Lemma decode_encode_elf_file ef (V: valid_elf_file ef):
   let '(l,p) := encode_elf_file ef in
@@ -477,8 +430,14 @@ Proof.
   inv V.
   rewrite decode_encode_elf_header; auto. simpl.
   rewrite decode_encode_section_headers; auto. simpl.
-  generalize (decode_encode_sections (elf_section_headers ef) (elf_sections ef) [encode_elf_header (elf_head ef)] (encode_section_headers (elf_section_headers ef))). intro DS. trim DS. auto.
-  simpl in DS.  rewrite app_nil_r in DS. rewrite DS.
+  destruct (elf_section_headers ef) eqn:?. simpl in vef_first_section_null. inv vef_first_section_null.
+  simpl in vef_first_section_null. inv vef_first_section_null.
+  rewrite decode_sections_null. simpl in vef_check_sizes.
+  exploit (fun o => @decode_encode_sections l (elf_sections ef)
+                                           o
+                                  (encode_elf_header (elf_head ef))
+                                  (encode_section_headers (elf_section_headers ef))).
+  eauto. reflexivity. intro DS. rewrite <- Heql. rewrite DS.
   simpl.
   clear.
   destruct ef. simpl in *. reflexivity.
