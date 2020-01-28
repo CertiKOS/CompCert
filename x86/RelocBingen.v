@@ -114,7 +114,15 @@ Definition encode_addrmode (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
   do ofs <- match disp with
-           | inl ofs => OK ofs
+            | inl ofs =>
+              match instr_reloc_offset i with
+              |OK iofs =>
+               match get_instr_reloc_addend' (iofs + sofs) with
+               |OK entry => Error[MSG (instr_to_string i); MSG "unexpected relocEntry"]
+               |Error _ => OK ofs
+               end
+              |Error _ => OK ofs
+              end
            | inr (id, ofs) =>
              if Ptrofs.eq_dec ofs Ptrofs.zero then
               match id with
