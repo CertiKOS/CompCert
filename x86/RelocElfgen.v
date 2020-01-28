@@ -13,6 +13,7 @@ Require Import SeqTable Memdata.
 Require Import RelocElf.
 Require Import ShstrtableEncode.
 Require Import Hex Bits.
+Require Import SymbtableEncode.
 Import Hex Bits.
 Import ListNotations.
 
@@ -229,21 +230,382 @@ Definition gen_sections (t:sectable) : res (list section) :=
 
 Definition gen_reloc_elf (p:program) : res elf_file :=
   do secs <- gen_sections (prog_sectable p);
-  if (beq_nat (length secs) 7) then
-    let headers := [null_section_header;
-                      gen_data_sec_header p;
-                      gen_text_sec_header p;
-                      gen_strtab_sec_header p;
-                      gen_symtab_sec_header p;
-                      gen_reldata_sec_header p;
-                      gen_reltext_sec_header p;
-                      gen_shstrtab_sec_header p] in
-    OK {| prog_defs     := RelocProgram.prog_defs p;
-          prog_public   := RelocProgram.prog_public p;
-          prog_main     := RelocProgram.prog_main p;
-          elf_head      := gen_elf_header p;
-          elf_sections  := secs;
-          elf_section_headers := headers;
-       |}
-  else
-    Error [MSG "Number of sections is incorrect (not 7): "; POS (Pos.of_nat (length secs))].
+    if (beq_nat (length secs) 7) then
+      if zlt (get_elf_shoff p) (two_p 32)
+      then 
+        let headers := [null_section_header;
+                          gen_data_sec_header p;
+                          gen_text_sec_header p;
+                          gen_strtab_sec_header p;
+                          gen_symtab_sec_header p;
+                          gen_reldata_sec_header p;
+                          gen_reltext_sec_header p;
+                          gen_shstrtab_sec_header p] in
+        OK {| prog_defs     := RelocProgram.prog_defs p;
+              prog_public   := RelocProgram.prog_public p;
+              prog_main     := RelocProgram.prog_main p;
+              elf_head      := gen_elf_header p;
+              elf_sections  := secs;
+              elf_section_headers := headers;
+           |}
+      else
+        Error (msg "Sections too big (get_elf_shoff above bounds)")
+    else
+      Error [MSG "Number of sections is incorrect (not 7): "; POS (Pos.of_nat (length secs))].
+
+Require Import Lia.
+
+Lemma gen_elf_header_valid p:
+  0 <= get_elf_shoff p < two_p 32 ->
+  length (prog_sectable p) = 8%nat ->
+  valid_elf_header (gen_elf_header p).
+Proof.
+  unfold gen_elf_header. intros.
+  constructor; simpl.
+  vm_compute; intuition try congruence.
+  vm_compute; intuition try congruence.
+  auto.
+  vm_compute; intuition try congruence.
+  vm_compute; intuition try congruence.
+  vm_compute; intuition try congruence.
+  vm_compute; intuition try congruence.
+  vm_compute; intuition try congruence.
+  setoid_rewrite H10.
+  vm_compute; intuition try congruence.
+  vm_compute; intuition try congruence.
+Qed.
+
+Lemma sec_size_pos a:
+  0 <= sec_size a.
+Proof.
+  destruct a; simpl. omega. generalize (code_size_non_neg code); omega.
+  generalize (init_data_list_size_pos init). omega.
+  omega.
+Qed.
+
+Lemma get_sections_size_pos t:
+  0 <= get_sections_size t.
+Proof.
+  unfold get_sections_size.
+  intros. rewrite <- fold_left_rev_right.
+  clear. generalize (rev t). clear.
+  induction l; simpl; intros; eauto. omega.
+  apply Z.add_nonneg_nonneg. apply sec_size_pos. auto.
+Qed.
+
+Lemma get_elf_shoff_pos p:
+  0 <= get_elf_shoff p.
+Proof.
+  unfold get_elf_shoff.
+  apply Z.add_nonneg_nonneg. vm_compute; intuition congruence.
+  apply get_sections_size_pos.
+Qed.
+
+Lemma gen_sections_length t x (G: gen_sections t = OK x):
+  S (length x) = length t.
+Proof.
+  unfold gen_sections in G. destr_in G. subst.
+  revert s0 x G. clear.
+  induction s0; simpl; intros; eauto.
+  inv G. reflexivity.
+  unfold acc_sections in G at 1. monadInv G. apply IHs0 in EQ. simpl in EQ. inv EQ.
+  reflexivity.
+Qed.
+
+Lemma list_first_n_prefix:
+  forall n {A} (l: list A),
+  exists l2, l = list_first_n n l ++ l2.
+Proof.
+  induction n; simpl; intros; eauto.
+  destruct l. simpl. eauto. simpl.
+  edestruct (IHn A0 l) as (l2 & EQ).
+  eexists. f_equal. eauto.
+Qed.
+
+Lemma fold_left_size_acc: forall b acc,
+    fold_left (fun (acc : Z) (sec : RelocProgram.section) => sec_size sec + acc) b acc =
+    acc + fold_left (fun (acc : Z) (sec : RelocProgram.section) => sec_size sec + acc) b 0.
+Proof.
+  induction b; simpl; intros; eauto.
+  omega.
+  rewrite (IHb (sec_size a + acc)).
+  rewrite (IHb (sec_size a + 0)). omega.
+Qed.
+
+Lemma fold_left_le: forall b acc,
+    acc <= fold_left (fun (acc : Z) (sec : RelocProgram.section) => sec_size sec + acc) b acc.
+Proof.
+  induction b; simpl; intros; eauto.
+  omega.
+  rewrite fold_left_size_acc. specialize (IHb 0).
+  generalize (sec_size_pos a). omega.
+Qed.
+
+
+Lemma get_sections_size_app a b:
+  get_sections_size (a ++ b) = get_sections_size a + get_sections_size b.
+Proof.
+  unfold get_sections_size. rewrite fold_left_app.
+  rewrite fold_left_size_acc. auto.
+Qed.
+
+Lemma get_sh_offset_range p id
+      (l : get_elf_shoff p < two_p 32):
+  0 <= get_sh_offset id (prog_sectable p) < two_power_pos 32.
+Proof.
+  unfold get_elf_shoff, get_sh_offset in *.
+  split.
+  apply Z.add_nonneg_nonneg. vm_compute; intuition congruence.
+  clear. induction id; simpl. vm_compute. congruence.
+  apply get_sections_size_pos.
+  eapply Z.le_lt_trans. 2: eauto.
+  apply Z.add_le_mono_l.
+  generalize (prog_sectable p). clear.
+  induction id; simpl; intros.
+  apply get_sections_size_pos.
+  destruct (list_first_n_prefix (Pos.to_nat p) s) as (l2 & EQ).
+  rewrite EQ at 2.
+  rewrite get_sections_size_app.
+  generalize (get_sections_size_pos l2); omega.
+Qed.
+
+Lemma get_section_size_range p id
+      (l : get_elf_shoff p < two_p 32):
+  0 <= get_section_size id (prog_sectable p) < two_power_pos 32.
+Proof.
+  unfold get_elf_shoff in *.
+  split.
+  unfold get_section_size. destr. apply sec_size_pos. omega.
+  eapply Z.le_lt_trans. 2: eauto.
+  cut (get_section_size id (prog_sectable p) <= get_sections_size (prog_sectable p)).
+  cut (0 <= elf_header_size). intros; omega. vm_compute; congruence.
+  generalize (prog_sectable p). clear. Opaque Z.add.
+  unfold get_section_size, SeqTable.get. generalize (N.to_nat id). clear.
+  unfold get_sections_size.
+  induction n; destruct s; simpl; intros; eauto. omega.
+  etransitivity. 2: apply fold_left_le. omega. omega.
+  etransitivity. apply IHn.
+  rewrite fold_left_size_acc with (acc:=sec_size s + 0) .
+  generalize (sec_size_pos s). omega.
+Qed.
+
+Lemma get_sections_size_in t x:
+  In x t ->
+  sec_size x <= get_sections_size t.
+Proof.
+  revert x.
+  unfold get_sections_size.
+  induction t; simpl; intros; eauto.
+  easy.
+  destruct H.
+  - subst; simpl.
+    etransitivity. 2: apply fold_left_le. omega.
+  - etransitivity. eapply IHt. auto.
+    rewrite (fold_left_size_acc t (sec_size a + 0)).
+    generalize (sec_size_pos a); omega.
+Qed.
+
+Lemma create_symbtable_section_length p symt
+      (EQ : create_symbtable_section (prog_strtable p) (prog_symbtable p) = OK symt):
+  sec_size symt = 16 * Z.of_nat (length (prog_symbtable p)).
+Proof.
+  Opaque Z.mul.
+  unfold create_symbtable_section in EQ. monadInv EQ. simpl.
+  unfold encode_symbtable in EQ0. revert x EQ0.
+  generalize (prog_strtable p).
+  generalize (prog_symbtable p).
+  induction s; intros; eauto. inv EQ0. reflexivity.
+  simpl in EQ0. unfold acc_bytes at 1 in EQ0. monadInv EQ0.
+  eapply IHs in EQ.
+  rewrite app_length.
+  assert (length x1 = 16%nat).
+  {
+    clear - EQ0.
+    unfold encode_symbentry in EQ0. monadInv EQ0.
+    repeat rewrite app_length.
+    repeat (setoid_rewrite encode_int_length; simpl).
+    auto.
+  }
+  rewrite H. simpl length.
+  rewrite Nat2Z.inj_add. rewrite EQ. lia.
+  Transparent Z.mul.
+Qed.
+
+Lemma length_filter {A} (l: list A) f:
+  (length (filter f l) <= length l)%nat.
+Proof.
+  induction l; simpl; intros; eauto.
+  destr; simpl; omega.
+Qed.
+
+Lemma one_greater_last_local_symb_range p symt
+      (EQ: create_symbtable_section (prog_strtable p) (prog_symbtable p) = OK symt)
+      (IN:  In symt (prog_sectable p))
+      (l : get_elf_shoff p < two_p 32):
+  0 <= one_greater_last_local_symb_index p < two_power_pos 32.
+Proof.
+  unfold one_greater_last_local_symb_index.
+  split. omega.
+  eapply Z.le_lt_trans. 2: apply l. clear l.
+  unfold get_elf_shoff.
+  transitivity (get_sections_size (prog_sectable p)).
+  2: change elf_header_size with 52; omega.
+  etransitivity. 2: apply get_sections_size_in; eauto.
+  erewrite create_symbtable_section_length; eauto.
+  change 16 with (Z.of_nat 16).
+  rewrite <- Nat2Z.inj_mul.
+  apply Nat2Z.inj_le.
+  transitivity (length (prog_symbtable p)).
+  apply length_filter.
+  lia.
+Qed.
+
+Lemma gen_reloc_elf_valid p ef (GRE: gen_reloc_elf p = OK ef)
+      symt
+      (SYMT: create_symbtable_section (prog_strtable p) (prog_symbtable p) = OK symt)
+      (HD: hd sec_null (prog_sectable p) = sec_null)
+      (INSYMT: In symt (prog_sectable p)):
+  valid_elf_file ef.
+Proof.
+  unfold gen_reloc_elf in GRE.
+  monadInv GRE.
+  repeat destr_in EQ0.
+  Opaque Z.add Z.eqb check_sizes.
+  constructor; simpl.
+  - apply gen_elf_header_valid. split; auto.
+    apply get_elf_shoff_pos.
+    apply Nat.eqb_eq in Heqb.
+    erewrite <- gen_sections_length; eauto.
+  - constructor.
+    constructor; simpl; vm_compute; try intuition congruence. constructor.
+    constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+    constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+        constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+        constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    eapply one_greater_last_local_symb_range; eauto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+        constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+        constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+        constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+    constructor.
+  - unfold get_elf_shoff.
+    f_equal.
+    clear -EQ HD. revert x EQ HD. generalize (prog_sectable p).
+    unfold gen_sections, get_sections_size.
+    intro s. destr. simpl. intros; subst. simpl. rewrite Z.add_0_r.
+    revert s1 x EQ. clear.
+    induction s1; simpl; intros; eauto.
+    + inv EQ. reflexivity.
+    + unfold acc_sections at 1 in EQ. monadInv EQ.
+      apply IHs1 in EQ0.
+      simpl.
+      rewrite <- EQ0.
+      rewrite fold_left_size_acc.
+      cut (Z.of_nat (length x1) = sec_size a). omega. clear - EQ.
+      unfold transl_section in EQ. destr_in EQ. inv EQ. simpl. auto.
+  - apply gen_sections_length in EQ. setoid_rewrite <- EQ.
+    apply Nat.eqb_eq in Heqb.
+    rewrite Heqb. reflexivity.
+  - Transparent check_sizes.
+    exploit gen_sections_length; eauto.
+    unfold gen_sections in EQ. destr_in EQ.
+    apply Nat.eqb_eq in Heqb.
+    rewrite Heqb. simpl length. intro A; inv A.
+    destruct s0; simpl in H10; try congruence.
+    destruct s1; simpl in H10; try congruence.
+    destruct s2; simpl in H10; try congruence.
+    destruct s3; simpl in H10; try congruence.
+    destruct s4; simpl in H10; try congruence.
+    destruct s5; simpl in H10; try congruence.
+    destruct s6; simpl in H10; try congruence.
+    destruct s7; simpl in H10; try congruence.
+    simpl in EQ. monadInv EQ.
+    monadInv EQ0.
+    monadInv EQ1.
+    monadInv EQ2.
+    monadInv EQ3.
+    monadInv EQ4.
+    monadInv EQ5.
+    cbn.
+    rewrite Heqs.
+    simpl in HD. subst.
+    unfold check_sizes.
+    unfold get_section_size, get_sh_offset, SeqTable.get. simpl.
+    repeat match goal with
+             H: transl_section ?s = OK ?x |- _ =>
+             unfold transl_section in H; repeat destr_in H
+           end. simpl.
+    rewrite ! Z.eqb_refl.
+    unfold get_sections_size. simpl.
+    change elf_header_size with 52.
+    rewrite !  (proj2 (Z.eqb_eq _ _)) by omega; auto.
+  - reflexivity.
+Qed.
