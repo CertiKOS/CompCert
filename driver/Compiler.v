@@ -117,6 +117,7 @@ Require PermuteProgproof.
 Require PermuteProgSep.
 Require RelocProgSyneq.
 Require RelocProgSyneqproof.
+Require RelocLinking RelocLinking1.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -223,14 +224,6 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
-
-Definition encode_tables (p: RelocProgram.program) : res RelocProgram.program :=
-  OK p
-     @@@ time "Generation of the string table" StrtableEncode.transf_program
-     @@@ time "Encoding of the symbol table" SymbtableEncode.transf_program
-     @@@ time "Encoding of the relocation tables" ReloctablesEncode.transf_program
-     @@@ time "Generation of the section header string table" ShstrtableEncode.transf_program.
-
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
@@ -241,7 +234,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@@ time "Generation of relocation table" Reloctablesgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
-  @@@ encode_tables
+  @@@ time "Encoding of tables" TablesEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
 

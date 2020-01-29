@@ -714,6 +714,25 @@ Fixpoint add_external_globals (extfuns: PTree.t external_function)
     add_external_globals extfuns ge' l
   end. 
 
+
+Lemma genv_senv_add_external_global:
+  forall exts ge a,
+    Genv.genv_senv (add_external_global exts ge a) =
+    Genv.genv_senv ge.
+Proof.
+  unfold add_external_global. intros. destr.
+Qed.
+
+Lemma genv_senv_add_external_globals:
+  forall st exts ge,
+    Genv.genv_senv (add_external_globals exts ge st) =
+    Genv.genv_senv ge.
+Proof.
+  induction st; simpl; intros; eauto.
+  rewrite IHst.
+  apply genv_senv_add_external_global.
+Qed.
+
 Definition sec_index_to_block (i:N) : block :=
   match i with
   | N0 => 1%positive

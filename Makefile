@@ -123,8 +123,10 @@ BACKEND=\
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
   Symbtablegen.v NormalizeSymb.v Reloctablesgen.v RelocBingen.v RelocBinDecode.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
+	TablesEncode.v \
 	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
-  ShstrtableEncode.v RelocElfgen.v SeqTable.v SymbolString.v \
+  ShstrtableEncode.v RelocElfgen.v RelocElfgenproof.v \
+	SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
   RelocProgSyneq.v RelocProgSyneqproof.v \
   SymbtablegenSep.v Symbtablegenproof.v \
@@ -139,7 +141,7 @@ BACKEND=\
 ENCODE=Encode.v Bits.v Hex.v
 
 # ELF files
-ELF=RelocElf.v EncodeRelocElf.v
+ELF=RelocElf.v EncodeRelocElf.v RelocElfSemantics.v
 
 # C front-end modules (in cfrontend/)
 

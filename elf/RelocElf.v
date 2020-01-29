@@ -281,7 +281,8 @@ Record elf_file :=
       of external functions *)
   prog_defs: list (ident * option (AST.globdef fundef unit));
   prog_public: list ident;
-  prog_main: ident;  
+  prog_main: ident;
+  prog_senv: Globalenvs.Senv.t;
   
   elf_head         : elf_header;           (** ELF header *)
   elf_sections     : list section;        (** Sections *)

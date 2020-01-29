@@ -244,6 +244,7 @@ Definition gen_reloc_elf (p:program) : res elf_file :=
         OK {| prog_defs     := RelocProgram.prog_defs p;
               prog_public   := RelocProgram.prog_public p;
               prog_main     := RelocProgram.prog_main p;
+              prog_senv     := RelocProgram.prog_senv p;
               elf_head      := gen_elf_header p;
               elf_sections  := secs;
               elf_section_headers := headers;

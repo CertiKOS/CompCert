@@ -16,16 +16,31 @@ Require Import SymbtableDecode StrtableDecode ShstrtableDecode ReloctablesDecode
 Require RelocProgSemantics2.
 
 Local Open Scope error_monad_scope.
+Import ListNotations.
 
 
 Section WITHEXTERNALCALLS.
 Context `{external_calls_prf: ExternalCalls}.
 
 Definition decode_tables (p:program) : res program :=
-  do p <- ShstrtableDecode.transf_program_inv p;
-    do p <- ReloctablesDecode.transf_program_inv p;
-    do p <- SymbtableDecode.transf_program_inv p;
-    do p <- StrtableDecode.transf_program_inv p; OK p.
+  match prog_sectable p with
+    snull :: sdata :: scode :: strsec :: symsec :: datarelocsec :: coderelocsec :: shstrsec :: nil =>
+    do ds <- decode_reloctable_section datarelocsec;
+      do cs <- decode_reloctable_section coderelocsec;
+      do (symbs, strmap) <- decode_strtable_section strsec;
+      do syms <- decode_symtable_section strmap symsec;
+      OK {|
+          prog_defs := prog_defs p;
+          prog_public := prog_public p;
+          prog_main := prog_main p;
+          prog_sectable := [snull; sdata; scode];
+          prog_symbtable := syms;
+          prog_strtable := PTree.empty Z;
+          prog_reloctables := {| reloctable_code := cs; reloctable_data := ds |};
+          prog_senv := prog_senv p;
+        |}
+  | _ => Error (msg "Expected 8 sections [null,data,code,str,symb,reldata,relcode,shstr]")
+  end.
 
 Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=
 | initial_state_intro: forall prog',
@@ -34,32 +49,24 @@ Inductive initial_state (prog: program) (rs: regset) (s: state): Prop :=
     initial_state prog rs s.
 
 Definition semantics (p: program) (rs: regset) :=
-  Semantics_gen RelocProgSemantics1.step
-                (initial_state p rs) RelocProgSemantics1.final_state
-                (RelocProgSemantics1.globalenv p)
-                (RelocProgSemantics1.genv_senv (RelocProgSemantics1.globalenv p)).
-
+  RelocProgSemantics2.semantics   match decode_tables p with
+                                  | OK p => p
+                                  | _ => p
+                                  end rs.
 
 (** Determinacy of the semantics. *)
 
 Lemma semantics_determinate: forall p rs, determinate (semantics p rs).
 Proof.
   intros.
-  constructor; simpl; auto.
-  - intros; eapply (sd_determ (RelocProgSemantics2.semantics_determinate p rs)); eauto.
-  - intros; eapply (sd_traces (RelocProgSemantics2.semantics_determinate p rs)); eauto.
-  - intros s1 s2 H H0. inv H; inv H0.
-    assert (prog' = prog'0) by congruence. subst.
-    intros; eapply (sd_initial_determ (RelocProgSemantics2.semantics_determinate prog'0 rs)); eauto.
-  - intros; eapply (sd_final_nostep (RelocProgSemantics2.semantics_determinate p rs)); eauto.
-  - intros; eapply (sd_final_determ (RelocProgSemantics2.semantics_determinate p rs)); eauto.
+  apply RelocProgSemantics2.semantics_determinate.
 Qed.
 
 Theorem reloc_prog_receptive p rs:
   receptive (semantics p rs).
 Proof.
-  destruct (RelocProgSemantics2.reloc_prog_receptive p rs).
-  split; auto.
+  unfold semantics.
+  apply RelocProgSemantics2.reloc_prog_receptive.
 Qed.
 
 End WITHEXTERNALCALLS.
