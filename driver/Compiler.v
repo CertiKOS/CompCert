@@ -117,7 +117,6 @@ Require PermuteProgproof.
 Require PermuteProgSep.
 Require RelocProgSyneq.
 Require RelocProgSyneqproof.
-Require RelocLinking RelocLinking1.
 (** Command-line flags. *)
 Require Import Compopts.
 
