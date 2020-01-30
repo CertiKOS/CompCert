@@ -288,3 +288,36 @@ Proof.
 Qed.
 
 End PRESERVATION.
+
+Require Import RelocLinking.
+Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option RelocProgram.program :=
+  match RelocProgSemantics3.decode_tables p1, RelocProgSemantics3.decode_tables p2 with
+    | OK pp1, OK pp2 =>
+      match link pp1 pp2 with
+        Some pp =>
+        match TablesEncode.transf_program pp with
+        | OK tp => Some tp
+        | _ => None
+        end
+      | _ => None
+      end
+    | _, _ => None
+  end.
+
+Instance linker2 : Linker RelocProgram.program.
+Proof.
+  eapply Build_Linker with (link := link_reloc_decode_tables) (linkorder := fun _ _ => True).
+  auto. auto. auto.
+Defined.
+
+Instance tl : @TransfLink _ _ RelocLinking.Linker_reloc_prog
+                          linker2
+                          match_prog.
+Proof.
+  red. simpl. unfold link_reloc_decode_tables.
+  unfold match_prog.
+  intros.
+  erewrite decode_tables_correct; eauto.
+  erewrite decode_tables_correct; eauto.
+  simpl. rewrite H.
+Admitted.
