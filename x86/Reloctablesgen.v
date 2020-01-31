@@ -19,11 +19,8 @@ Local Open Scope error_monad_scope.
 
 (** ** Translation of instructions *)
 
-Definition addrmode_reloc_offset (a:addrmode) : res Z :=
-  match a with 
-  | Addrmode _ _ (inr _) => OK (addrmode_size_aux a)
-  | _ => Error (msg "Calculation of the relocation offset for addrmode fails: displacement is a constant")
-  end.
+Definition addrmode_reloc_offset (a:addrmode) : Z :=
+  addrmode_size_aux a.
 
 (** Calculate the starting offset of the bytes
     that need to be relocated in an instruction *)
@@ -37,11 +34,8 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmovl_mr a _
   | Pmov_rm_a _ a
   | Pmov_mr_a a _ =>
-    match addrmode_reloc_offset a with
-      OK aofs => OK (1 + aofs)
-    | Error e =>
-      Error ([MSG "instr_reloc_offset :"; MSG (instr_to_string i)] ++ e)
-    end
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
   | _ => Error (msg "Calculation of addenddum failed: Instruction not supported yet by relocation")
   end.
 

@@ -2532,7 +2532,7 @@ Admitted.
 
 
 Lemma encode_decode_addr_size_relf: forall a rd size abytes,
-    addrmode_reloc_offset a = OK size
+    addrmode_reloc_offset a = size
     -> encode_addrmode_aux a rd = OK abytes
     ->forall l, decode_addrmode_size (abytes++l) = OK size.
 Proof.
@@ -2592,13 +2592,13 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       simpl.
       inversion EQ2.
       rewrite <- H14 in HAddrmode.
-      replace (ofs + z + 1) with ( 1 + z + ofs).
-      simpl.
-      rewrite app_assoc.
-      rewrite (HAddrmode l).      
-      simpl.
-      auto.
-      omega.
+      (* replace (ofs + z + 1) with ( 1 + z + ofs). *)
+      (* simpl. *)
+      (* rewrite app_assoc. *)
+      (* rewrite (HAddrmode l).       *)
+      (* simpl. *)
+      (* auto. *)
+      (* omega. *)
        
 
 Admitted.
