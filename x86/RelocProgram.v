@@ -220,14 +220,15 @@ Definition sec_rel_code_id := 6%N.
 Definition sec_shstrtbl_id := 7%N.
 
 (** Ultility function s*)
-Definition add_symb_to_tree (t: PTree.t symbentry) (s:symbentry) :=
+Definition add_symb_to_list (t: list (ident * symbentry)) (s:symbentry) :=
   match symbentry_id s with
   | None => t
-  | Some id => PTree.set id s t
+  | Some id => (id, s) :: t
   end.
 
 Definition symbtable_to_tree (t:symbtable) : PTree.t symbentry :=
-  fold_left add_symb_to_tree t (PTree.empty symbentry).
+  let l := fold_left add_symb_to_list t nil in
+  PTree_Properties.of_list l.
 
 Definition acc_symb_ids (ids: list ident) (s:symbentry) :=
   match symbentry_id s with

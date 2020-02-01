@@ -1899,7 +1899,56 @@ Lemma gen_symb_table_pres_link_check:
 Admitted.
 
 
-Lemma link_ordered_gen_symb_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
+Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
+    reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
+    PTree_extract_elements
+      (collect_internal_def_ids is_fundef_internal p1 ++
+       collect_internal_def_ids is_fundef_internal p2)
+      (PTree.combine link_prog_merge 
+                     (prog_option_defmap p1)
+                     (prog_option_defmap p2)) = Some (defs3, t1) ->
+    gen_symb_table sec_data_id sec_code_id (PTree.elements t1 ++ defs3) = (stbl3, dsz3, csz3) ->
+    dsz3 = dsz1 + dsz2 /\
+    csz3 = csz1 + csz2 /\ 
+    exists entries t2,
+      PTree_extract_elements
+        (collect_internal_def_ids is_fundef_internal p1 ++
+         collect_internal_def_ids is_fundef_internal p2)
+        (PTree.combine link_symb_merge 
+                       (symbtable_to_tree stbl1)
+                       (symbtable_to_tree stbl2')) = Some (entries, t2) /\
+      stbl3 = dummy_symbentry :: map snd (PTree.elements t2 ++ entries).
+Admitted.
+
+Lemma symbtable_to_tree_ignore_dummy: forall stbl, 
+    symbtable_to_tree (dummy_symbentry :: stbl) = symbtable_to_tree stbl.
+Proof.
+  intros. unfold symbtable_to_tree. cbn. auto.
+Qed.
+
+(* Lemma elements_of_symbtable_to_tree: forall idstbl, *)
+(*     list_norepet (map fst idstbl) -> *)
+(*     Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl -> *)
+(*     PTree.elements (fold_left add_symb_to_tree (map snd idstbl) (PTree.empty symbentry)) = idstbl. *)
+(* Proof. *)
+(*   induction idstbl as [|ide idstbl]. *)
+(*   - cbn. auto. *)
+(*   - intros NORPT IDEQ. *)
+(*     destruct ide as (id, e). inv IDEQ. inv NORPT. *)
+    
+
+(* Lemma elements_of_symbtable_to_tree: forall idstbl, *)
+(*     list_norepet (map fst idstbl) -> *)
+(*     Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl -> *)
+(*     PTree.elements (symbtable_to_tree (map snd idstbl)) = idstbl. *)
+(* Proof. *)
+(*   intros stbl NORPT IDEQ. *)
+(*   unfold symbtable_to_tree. *)
+
+
+Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
@@ -1919,7 +1968,20 @@ Lemma link_ordered_gen_symb_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl
                           (PTree.combine link_symb_merge 
                                          (symbtable_to_tree stbl1)
                                          (symbtable_to_tree stbl2')))) stbl3.
-  Admitted.
+Proof.
+  intros until defs3.
+  intros GS1 GS2 RELOC EXT GS3.
+  generalize (link_ordered_gen_symb_comm_eq_size _ _ GS1 GS2 RELOC EXT GS3). 
+  intros (DSZ & CSZ & (entries & t2 & EXT' & STBL)). subst.
+  split; auto.
+  split; auto.
+  red.
+  apply PTree_extract_elements_permutation' in EXT'.
+  repeat rewrite symbtable_to_tree_ignore_dummy.  
+  repeat rewrite elements_of_symbtable_to_tree.
+  auto.
+Admitted.
+
 
 Lemma reloc_symbtable_pres_ids : forall f stbl stbl',
     reloc_symbtable f stbl = Some stbl' ->
@@ -1960,7 +2022,7 @@ Proof.
     destruct (gen_symb_table a b c) as (p, csz3) eqn:GST
   end.
   destruct p as (stbl3 & dsz3). 
-  generalize (link_ordered_gen_symb_syneq_size _ _ GS1 GS2 RELOC Heqo GST); eauto.
+  generalize (link_ordered_gen_symb_comm_syneq_size _ _ GS1 GS2 RELOC Heqo GST); eauto.
   intros (DSZ & CSZ & SYNEQ). subst.
   do 3 eexists. 
   intuition; eauto.
