@@ -1928,25 +1928,78 @@ Proof.
   intros. unfold symbtable_to_tree. cbn. auto.
 Qed.
 
-(* Lemma elements_of_symbtable_to_tree: forall idstbl, *)
-(*     list_norepet (map fst idstbl) -> *)
-(*     Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl -> *)
-(*     PTree.elements (fold_left add_symb_to_tree (map snd idstbl) (PTree.empty symbentry)) = idstbl. *)
-(* Proof. *)
-(*   induction idstbl as [|ide idstbl]. *)
-(*   - cbn. auto. *)
-(*   - intros NORPT IDEQ. *)
-(*     destruct ide as (id, e). inv IDEQ. inv NORPT. *)
-    
+Lemma add_symb_to_list_id_eq: forall id e l,
+    symbentry_id_eq id e = true -> add_symb_to_list l e = (id,e)::l.
+Proof.
+  intros id e l EQ.
+  unfold symbentry_id_eq in EQ. 
+  destr_in EQ. destruct ident_eq; try congruence. subst.
+  unfold add_symb_to_list. rewrite Heqo. auto.
+Qed.
 
-(* Lemma elements_of_symbtable_to_tree: forall idstbl, *)
-(*     list_norepet (map fst idstbl) -> *)
-(*     Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl -> *)
-(*     PTree.elements (symbtable_to_tree (map snd idstbl)) = idstbl. *)
-(* Proof. *)
-(*   intros stbl NORPT IDEQ. *)
-(*   unfold symbtable_to_tree. *)
+Lemma acc_to_list_loop: forall idstbl1 idstbl2,
+    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl1 ->
+    (fold_left add_symb_to_list (map snd idstbl1) idstbl2) = (rev idstbl1) ++ idstbl2.
+Proof.
+  induction idstbl1 as [|ide idstbl1].
+  - cbn. auto.
+  - cbn. intros idstbl2 IDEQ.
+    destruct ide as (id,e). 
+    inv IDEQ.
+    cbn.
+    erewrite add_symb_to_list_id_eq; eauto.
+    rewrite <- app_assoc.
+    auto.
+Qed.
 
+Lemma elements_of_acc_symb_to_list_perm': forall idstbl,
+    list_norepet (map fst idstbl) ->
+    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl ->
+    Permutation (PTree.elements 
+                   (PTree_Properties.of_list
+                      (fold_left add_symb_to_list (map snd idstbl) nil)))
+                idstbl.
+Proof.
+  intros.
+  erewrite  acc_to_list_loop; eauto.
+  rewrite app_nil_r.
+  apply NoDup_Permutation.
+  apply NoDup_ptree_elements.
+  apply NoDup_map_inv with (f:=fst).
+  rewrite NoDup_list_norepet_equiv. auto.
+  intros (id,e). split.
+  - intros IN.
+    apply PTree.elements_complete in IN.
+    apply PTree_Properties.in_of_list in IN.
+    rewrite in_rev. auto.
+  - intros IN.
+    apply PTree.elements_correct.
+    apply PTree_Properties.of_list_norepet.
+    eapply Permutation_pres_list_norepet; eauto.
+    apply Permutation_map.
+    apply Permutation_rev.
+    rewrite <- in_rev. auto.
+Qed.
+
+Lemma elements_of_symbtable_to_tree_perm: forall idstbl,
+    list_norepet (map fst idstbl) ->
+    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl ->
+    Permutation (PTree.elements (symbtable_to_tree (map snd idstbl))) idstbl.
+Proof.
+  intros stbl NORPT IDEQ.
+  unfold symbtable_to_tree.
+  eapply elements_of_acc_symb_to_list_perm'; eauto.
+Qed.
+
+
+Lemma link_symb_elements_entry_id_eq: forall stbl1 stbl2 id e,
+    In (id, e)
+       (PTree.elements
+          (PTree.combine link_symb_merge
+                         (symbtable_to_tree stbl1)
+                         (symbtable_to_tree stbl2))) ->
+    symbentry_id_eq id e = true.
+Admitted.
 
 Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
@@ -1978,9 +2031,31 @@ Proof.
   red.
   apply PTree_extract_elements_permutation' in EXT'.
   repeat rewrite symbtable_to_tree_ignore_dummy.  
-  repeat rewrite elements_of_symbtable_to_tree.
-  auto.
-Admitted.
+  eapply Permutation_trans.
+  Focus 2.
+  apply Permutation_sym.
+  apply elements_of_symbtable_to_tree_perm.
+    (** No repeat *)
+    eapply Permutation_list_norepet_map; eauto.
+    apply PTree.elements_keys_norepet.
+    (** symbentry_id_eq *)
+    rewrite Forall_forall. 
+    intros (id,e) IN.
+    apply Permutation_sym in EXT'.
+    generalize (Permutation_in _ EXT' IN).
+    intros IN'.
+    eapply link_symb_elements_entry_id_eq; eauto.
+
+  eapply Permutation_trans. 
+  2: exact EXT'.
+  apply elements_of_symbtable_to_tree_perm.
+    (** No repeat *)
+    apply PTree.elements_keys_norepet.
+    (** symbentry_id_eq *)
+    rewrite Forall_forall.
+    intros (id, e) IN.
+    eapply link_symb_elements_entry_id_eq; eauto.
+Qed.
 
 
 Lemma reloc_symbtable_pres_ids : forall f stbl stbl',
