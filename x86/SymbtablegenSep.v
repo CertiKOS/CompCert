@@ -1937,6 +1937,65 @@ Lemma gen_symb_table_pres_link_check:
                              (link_symbtable_check (symbtable_to_tree stbl2')) = true.
 Admitted.
 
+(* Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3, *)
+(*     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) -> *)
+(*     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) -> *)
+(*     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' -> *)
+(*     PTree_extract_elements *)
+(*       (collect_internal_def_ids is_fundef_internal p1 ++ *)
+(*        collect_internal_def_ids is_fundef_internal p2) *)
+(*       (PTree.combine link_prog_merge  *)
+(*                      (prog_option_defmap p1) *)
+(*                      (prog_option_defmap p2)) = Some (defs3, t') -> *)
+(*     gen_symb_table sec_data_id sec_code_id (PTree.elements t' ++ defs3) = (stbl3, dsz3, csz3) -> *)
+(*     dsz3 = dsz1 + dsz2 /\ *)
+(*     csz3 = csz1 + csz2 /\  *)
+(*     symbtable_syneq  *)
+(*       (dummy_symbentry ::  *)
+(*                        map snd *)
+(*                        (PTree.elements *)
+(*                           (PTree.combine link_symb_merge  *)
+(*                                          (symbtable_to_tree stbl1) *)
+(*                                          (symbtable_to_tree stbl2')))) stbl3. *)
+(* Proof. *)
+(*   intros until defs3. *)
+(*   intros GS1 GS2 RELOC EXT GS3. *)
+(*   set (defs := (PTree.elements (PTree.combine link_prog_merge (prog_option_defmap p1) *)
+(*                                               (prog_option_defmap p2)))). *)
+(*   set (stbl := (PTree.elements *)
+(*                   (PTree.combine link_symb_merge (symbtable_to_tree stbl1) *)
+(*                                  (symbtable_to_tree stbl2')))) in *. *)
+(*   (* assert (PTree_combine_ids_defs_match (prog_option_defmap p1) *) *)
+(*   (*                                      (prog_option_defmap p2) *) *)
+(*   (*                                      link_prog_merge *) *)
+(*   (*                                      (map fst defs) *) *)
+(*   (*                                      defs) as DEFS_MATCH. *) *)
+(*   (* { apply PTree_elements_combine; auto. } *) *)
+(*   assert (PTree_combine_ids_defs_match (symbtable_to_tree stbl1) *)
+(*                                        (symbtable_to_tree stbl2') *)
+(*                                        link_symb_merge *)
+(*                                        (map fst stbl) *)
+(*                                        stbl) as SYMBS_MATCH. *)
+(*   { apply PTree_elements_combine; auto. } *)
+(*   assert (PTree_combine_ids_defs_match (prog_option_defmap p1) *)
+(*                                         (prog_option_defmap p2) *)
+(*                                         link_prog_merge  *)
+(*                                         (map fst (PTree.elements t')) *)
+(*                                         (PTree.elements t')) as RM_MATCH. *)
+(*   { eapply PTree_extract_elements_combine_remain; eauto. } *)
+(*   assert (PTree_combine_ids_defs_match (prog_option_defmap p1) *)
+(*                                         (prog_option_defmap p2) *)
+(*                                         link_prog_merge  *)
+(*                                         (collect_internal_def_ids is_fundef_internal p1 ++ *)
+(*                                          collect_internal_def_ids is_fundef_internal p2) *)
+(*                                         defs3) as EXT_MATCH. *)
+(*   { eapply PTree_extract_elements_combine; admit. } *)
+(*   generalize (Forall2_app RM_MATCH EXT_MATCH). *)
+(*   intros DEFS_MATCH. *)
+(* Admitted.   *)
+  
+  
+  
 
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
@@ -1962,9 +2021,58 @@ Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 st
 Proof.
   intros until defs3.
   intros GS1 GS2 RELOC EXT GS3.
-  apply PTree_extract_elements_app in EXT.
-  destruct EXT as (t2 & defs1 & defs2 & EXT2 & EXT1 & EQ). subst.
-  Admitted.
+  assert (list_norepet (collect_internal_def_ids is_fundef_internal p1 ++
+                        collect_internal_def_ids is_fundef_internal p2)) as INTIDS_NORPT.
+  { admit. }
+  assert (PTree_combine_ids_defs_match (prog_option_defmap p1)
+                                        (prog_option_defmap p2)
+                                        link_prog_merge 
+                                        (map fst (PTree.elements t1))
+                                        (PTree.elements t1)) as RM_MATCH.
+  { eapply PTree_extract_elements_combine_remain; eauto. }
+  assert (PTree_combine_ids_defs_match (prog_option_defmap p1)
+                                        (prog_option_defmap p2)
+                                        link_prog_merge 
+                                        (collect_internal_def_ids is_fundef_internal p1 ++
+                                         collect_internal_def_ids is_fundef_internal p2)
+                                        defs3) as EXT_MATCH.
+  { eapply PTree_extract_elements_combine; eauto. }
+  generalize (Forall2_app RM_MATCH EXT_MATCH).
+  intros DEFS_MATCH. clear RM_MATCH EXT_MATCH.
+  assert (exists (entries : list (ident * symbentry)) (t2 : PTree.t symbentry),
+             PTree_extract_elements
+               (collect_internal_def_ids is_fundef_internal p1 ++
+                collect_internal_def_ids is_fundef_internal p2)
+               (PTree.combine link_symb_merge
+                              (symbtable_to_tree stbl1)
+                              (symbtable_to_tree stbl2')) = Some (entries, t2)) as EXT'.
+  { apply PTree_extract_elements_exists; auto. admit. }
+  destruct EXT' as (entries & t2 & EXT').
+  assert (PTree_combine_ids_defs_match (symbtable_to_tree stbl1)
+                                       (symbtable_to_tree stbl2')
+                                       link_symb_merge 
+                                       (map fst (PTree.elements t2))
+                                       (PTree.elements t2)) as RM_MATCH'.
+  { eapply PTree_extract_elements_combine_remain; eauto. }
+  assert (PTree_combine_ids_defs_match (symbtable_to_tree stbl1)
+                                       (symbtable_to_tree stbl2')
+                                       link_symb_merge 
+                                       (collect_internal_def_ids is_fundef_internal p1 ++
+                                        collect_internal_def_ids is_fundef_internal p2)
+                                       entries) as EXT_MATCH'.
+  { eapply PTree_extract_elements_combine; eauto. }
+  generalize (Forall2_app RM_MATCH' EXT_MATCH').
+  intros SYMBS_MATCH. clear RM_MATCH' EXT_MATCH'.
+  repeat split.
+  (** dsz3 = dsz1 + dsz2 *)
+  admit.
+  (** csz3 = csz1 + csz2 *)
+  admit.
+  exists entries, t2. split; auto.
+  admit.
+
+  
+Admitted.
 
 
 
