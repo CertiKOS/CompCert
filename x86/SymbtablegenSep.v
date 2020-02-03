@@ -547,6 +547,14 @@ Proof.
     apply acc_symb_append_nil. auto.
 Qed.
 
+Lemma acc_symb_inv': forall d_id c_id defs stbl1 dsz1 csz1 stbl2 dsz2 csz2,
+    fold_left (acc_symb d_id c_id) defs (stbl1, dsz1, csz1) = (stbl2, dsz2, csz2) ->
+    exists stbl1', stbl2 = stbl1' ++ stbl1 /\
+              fold_left (acc_symb d_id c_id) defs ([], dsz1, csz1) = (stbl1', dsz2, csz2).
+Proof.
+  intros. eapply acc_symb_inv; eauto.
+Qed.
+
 Definition symbentry_index_in_range range e :=
   match symbentry_secindex e with
   | secindex_normal i => In i range
@@ -1995,7 +2003,22 @@ Admitted.
 (* Admitted.   *)
   
   
+  Lemma reloc_symbtable_cons: forall f e stbl1 stbl2,
+    reloc_symbtable f (e :: stbl1) = Some stbl2 ->
+    exists e' stbl3, reloc_symbtable f stbl1 = Some stbl3 /\
+                reloc_symbol f e = Some e' /\
+                stbl2 = e' :: stbl3.
+  Proof.
+    intros f e stbl1 stbl2 RELOC.
+    cbn in RELOC. unfold reloc_iter in RELOC.
+    destr_in RELOC. destr_in RELOC. inv RELOC.
+    eauto.
+  Qed.
   
+  Lemma reloc_symbtable_rev : forall f stbl1 stbl2,
+      reloc_symbtable f (rev stbl1) = Some stbl2 ->
+      exists stbl3, reloc_symbtable f stbl1 = Some stbl3 /\ stbl2 = rev stbl3.
+  Admitted.
 
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
@@ -2063,15 +2086,57 @@ Proof.
   { eapply PTree_extract_elements_combine; eauto. }
   generalize (Forall2_app RM_MATCH' EXT_MATCH').
   intros SYMBS_MATCH. clear RM_MATCH' EXT_MATCH'.
+  unfold gen_symb_table in *.
+  destr_in GS1. destruct p. inv GS1.
+  destr_in GS2. destruct p. inv GS2.
+  apply acc_symb_inv' in Heqp. 
+  destruct Heqp as (stbl1 & EQ1 & ACCSYM1). subst.
+  apply acc_symb_inv' in Heqp0. 
+  destruct Heqp0 as (stbl2 & EQ2 & ACCSYM2). subst.
+  rewrite rev_app_distr in RELOC. 
+  cbn [rev "++"] in RELOC. 
+  apply reloc_symbtable_cons in RELOC.
+  destruct RELOC as (e' & stbl4 & RELOC & RSYMB & EQ). subst.
+  cbn in RSYMB. inv RSYMB.
+  generalize (acc_symb_reloc _ _ _ _ _ eq_refl ACCSYM2 RELOC).
+  repeat rewrite Z.add_0_r. intros ACCSYM2'.
+  destr_in GS3. destruct p. inv GS3.
+  apply acc_symb_inv' in Heqp. 
+  destruct Heqp as (stbl3 & EQ3 & ACCSYM3). subst.
+  repeat rewrite rev_app_distr in *; cbn[rev "++"] in *.
+  repeat rewrite symbtable_to_tree_ignore_dummy in *.
+  apply reloc_symbtable_rev in RELOC.
+  destruct RELOC as (stbl2' & RELOC & EQ). subst.
+  rewrite rev_involutive in ACCSYM2'.  
+  
   repeat split.
   (** dsz3 = dsz1 + dsz2 *)
   admit.
   (** csz3 = csz1 + csz2 *)
   admit.
-  exists entries, t2. split; auto.
-  admit.
-
+  (** symbtable equiv *)
+  assert (map fst (PTree.elements t2) = map fst (PTree.elements t1)) as IDEQ.
+  { admit. }
   
+  exists entries, t2. split; auto.
+  assert (exists entries',
+          PTree_combine_ids_defs_match
+            (symbtable_to_tree (rev stbl1))
+            (symbtable_to_tree (rev stbl2'))
+            link_symb_merge
+            (map fst (PTree.elements t2) ++
+                   collect_internal_def_ids is_fundef_internal p1 ++
+                   collect_internal_def_ids is_fundef_internal p2)
+            entries' /\
+            map snd entries' = rev stbl3).
+  {
+    rewrite IDEQ.
+    admit.
+  }
+  destruct H as (entries' & SYMBS_MATCH' & EQ).
+  generalize (PTree_combine_ids_defs_match_det _ _ _ _ _ _ SYMBS_MATCH SYMBS_MATCH').
+  intros EQ1. rewrite EQ1. setoid_rewrite EQ. auto.
+
 Admitted.
 
 
