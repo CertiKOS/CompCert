@@ -2862,7 +2862,7 @@ Admitted.
 
 
 Lemma encode_decode_addr_size_relf: forall a rd size abytes,
-    addrmode_reloc_offset a = OK size
+    addrmode_reloc_offset a = size
     -> encode_addrmode_aux a rd = OK abytes
     ->forall l, decode_addrmode_size (abytes++l) = OK size.
 Proof.
