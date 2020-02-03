@@ -2062,7 +2062,7 @@ Definition defs_code_size (defs: list (option gdef)) :=
 Lemma acc_symb_tree_entry_some : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id def,
     fold_left (acc_symb did cid) defs ([], dsz1, csz1) = (stbl, dsz2, csz2) ->
     (PTree_Properties.of_list defs)!id = Some def ->
-    (symbtable_to_tree stbl)!id 
+    (symbtable_to_tree (rev stbl))!id 
       = Some (get_symbentry did cid 
                             (dsz1 + defs_data_size (defs_before id defs))
                             (csz1 + defs_code_size (defs_before id defs))
@@ -2073,7 +2073,7 @@ Admitted.
 Lemma acc_symb_tree_entry_none : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id,
     fold_left (acc_symb did cid) defs ([], dsz1, csz1) = (stbl, dsz2, csz2) ->
     (PTree_Properties.of_list defs)!id = None ->
-    (symbtable_to_tree stbl)!id = None.
+    (symbtable_to_tree (rev stbl))!id = None.
 Admitted.
 
 
@@ -2111,7 +2111,7 @@ Lemma link_prog_symb_comm_external:
     def_none_or_ext is_fundef_internal (t1!id) ->
     def_none_or_ext is_fundef_internal (t2!id) ->
     link_prog_merge (t1!id) (t2!id) = Some def ->
-    link_symb_merge (symbtable_to_tree stbl1) ! id (symbtable_to_tree stbl2) ! id =
+    link_symb_merge (symbtable_to_tree (rev stbl1)) ! id (symbtable_to_tree (rev stbl2)) ! id =
     Some (get_symbentry did cid dsz3 csz3 id def).
 Proof.
   intros until csz3.
@@ -2168,8 +2168,8 @@ Lemma PTree_combine_ids_defs_match_extdefs_comm:
     defs_none_or_ext t2 (map fst defs) ->
     PTree_combine_ids_defs_match t1 t2 link_prog_merge (map fst defs) defs ->
     fold_left (acc_symb did cid) defs ([], dsz3, csz3) = (stbl, dsz4, csz4) ->
-    exists entries, PTree_combine_ids_defs_match (symbtable_to_tree stbl1) 
-                                            (symbtable_to_tree stbl2)
+    exists entries, PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1)) 
+                                            (symbtable_to_tree (rev stbl2))
                                             link_symb_merge
                                             (map fst defs)
                                             entries /\
@@ -2186,8 +2186,8 @@ Proof.
     apply acc_symb_inv' in ACC3. 
     destruct ACC3 as (stbl' & EQ & ACC3). subst.
     assert (exists entries : list (ident * symbentry),
-               PTree_combine_ids_defs_match (symbtable_to_tree stbl1)
-                                            (symbtable_to_tree stbl2) 
+               PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1))
+                                            (symbtable_to_tree (rev stbl2)) 
                                             link_symb_merge 
                                             (map fst defs) entries /\
                map snd entries = rev stbl') as MATCH_RST.
@@ -2324,6 +2324,7 @@ Proof.
   destruct (fold_left (acc_symb sec_data_id sec_code_id) defs1 ([], z0, z)) eqn:ACCSYM3.
   destruct p.
   
+  (** Matching between ids a*)
   assert (defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
           defs_none_or_ext (prog_option_defmap p2) (map fst (PTree.elements t1)))
     as RM_DEFS.
@@ -2337,14 +2338,42 @@ Proof.
   { eapply PTree_extract_elements_combine_remain; eauto. }
                                  
   assert (exists entries, PTree_combine_ids_defs_match 
-                       (symbtable_to_tree stbl1) 
-                       (symbtable_to_tree stbl2)
+                       (symbtable_to_tree (rev stbl1)) 
+                       (symbtable_to_tree (rev stbl2))
                        link_symb_merge
                        (map fst (PTree.elements t1)) entries /\
                      map snd entries = rev s) as RM_MATCH'.
   { eapply PTree_combine_ids_defs_match_extdefs_comm; eauto. }
   destruct RM_MATCH' as (RM_MATCH' & RM_ENTRIES).
-    
+  
+Definition def_some_int {F V} (fi:F -> bool) (def: option (option (globdef F V))) :=
+  exists def', def = Some def' /\ is_def_internal fi def' = true.
+
+Definition defs_some_int {F V} {LV: Linker V} 
+           (t: PTree.t (option (globdef (AST.fundef F) V))) ids :=
+  forall id, In id ids ->
+        def_some_int is_fundef_internal (t ! id).
+
+
+  (* Lemma PTree_combine_ids_defs_match_extdefs_comm:  *)
+  (*   forall did cid defs defs1 defs2 stbl1 stbl2  *)
+  (*     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2' *)
+  (*     t1 t2 stbl dsz3 csz3 dsz4 csz4, *)
+  (*     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) -> *)
+  (*     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) -> *)
+  (*     t1 = PTree_Properties.of_list defs1 -> *)
+  (*     t2 = PTree_Properties.of_list defs2 -> *)
+  (*     defs_some_int t1 (map fst defs) -> *)
+  (*     defs_none_or_ext t2 (map fst defs) -> *)
+  (*     PTree_combine_ids_defs_match t1 t2 link_prog_merge (map fst defs) defs -> *)
+  (*     fold_left (acc_symb did cid) defs ([], dsz3, csz3) = (stbl, dsz4, csz4) -> *)
+  (*     exists entries, PTree_combine_ids_defs_match (symbtable_to_tree stbl1)  *)
+  (*                                             (symbtable_to_tree stbl2) *)
+  (*                                             link_symb_merge *)
+  (*                                             (map fst defs) *)
+  (*                                             entries /\ *)
+  (*                map snd entries = rev stbl. *)
+  
   (* generalize (acc_symb_inv' _ _ _ _ _ _ ACCSYM3). *)
   
   (* exists entries, t2. split; auto. *)
