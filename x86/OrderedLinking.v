@@ -168,6 +168,17 @@ Proof.
   erewrite <- PTree.gro; eauto.
 Qed.
 
+Lemma PTree_remove_list_pres_incl: forall {A:Type} ids (t:PTree.t A),
+    incl (PTree.elements (fold_right (@PTree.remove A) t ids)) (PTree.elements t).
+Proof.
+  induction ids as [|id ids].
+  - cbn [fold_right]. intros. apply incl_refl.
+  - cbn [fold_right]. intros.
+    eapply incl_tran. 2: eauto.
+    red. intros a IN.
+    destruct a. apply PTree_remove_pres_in' with id; auto.
+Qed.
+
 Lemma PTree_remove_permutation: forall A id (t: PTree.t A) a l,
     list_norepet (map fst ((id, a) :: l)) ->
     t ! id = Some a ->
@@ -339,12 +350,76 @@ Proof.
     intros IN'. apply IN. apply in_cons. auto.
 Qed.
 
+
+Definition PTree_combine_ids_defs_match {A B C} 
+           (t1:PTree.t A) (t2: PTree.t B) 
+           (f: option A -> option B -> option C)
+           (ids: list ident) (defs: list (ident * C)) :=
+  Forall2 (fun (id : positive) '(id', def) => id = id' /\ f t1 ! id t2 ! id = Some def)
+    ids defs.
+  
+
+Lemma PTree_combine_ids_defs_match_det: 
+  forall {A B C} (t1:PTree.t A) (t2:PTree.t B) 
+    (f:option A -> option B -> option C) ids l1 l2,
+    PTree_combine_ids_defs_match t1 t2 f ids l1 ->
+    PTree_combine_ids_defs_match t1 t2 f ids l2 ->
+    l1 = l2.
+Proof.
+  induction ids as [|id ids].
+  - intros l1 l2 MATCH1 MATCH2.
+    inv MATCH1. inv MATCH2. auto.
+  - intros l1 l2 MATCH1 MATCH2.
+    inv MATCH1. inv MATCH2.
+    destruct y, y0. inv H1. inv H2.
+    f_equal. congruence.
+    eauto.
+Qed.
+
+Lemma PTree_elements_combine_incl:
+  forall {A B C: Type} l
+    (f : option A -> option B -> option C)
+    (t1: PTree.t A)
+    (t2: PTree.t B),
+  f None None = None ->
+  incl l (PTree.elements (PTree.combine f t1 t2)) ->
+  PTree_combine_ids_defs_match t1 t2 f (map fst l) l.
+Proof.
+  induction l as [|d l].
+  - cbn. intros. red. auto.
+  - cbn. 
+    intros f t1 t2 FN EQ.
+    destruct d as [id def].
+    red. cbn. constructor.
+    + split; auto.
+      erewrite <- PTree.gcombine; eauto.
+      apply PTree.elements_complete. 
+      red in EQ. apply EQ. apply in_eq.
+    + apply IHl; auto.
+      eapply incl_cons_inv; eauto.
+Qed.
+
+Lemma PTree_elements_combine:
+  forall {A B C: Type} 
+    (f : option A -> option B -> option C)
+    (t1: PTree.t A)
+    (t2: PTree.t B),
+  f None None = None ->
+  PTree_combine_ids_defs_match t1 t2 f 
+     (map fst (PTree.elements (PTree.combine f t1 t2))) 
+     (PTree.elements (PTree.combine f t1 t2)).
+Proof.
+  intros. eapply PTree_elements_combine_incl; eauto.
+  apply incl_refl.
+Qed.
+
+
 Lemma PTree_extract_elements_combine: 
   forall {A:Type} ids defs f (t1 t2 t': PTree.t A),
     f None None = None ->
     list_norepet ids ->
     PTree_extract_elements ids (PTree.combine f t1 t2) = Some (defs, t') ->
-    Forall2 (fun id '(id', def) => id = id' /\ f (t1!id) (t2!id) = Some def) ids defs.
+    PTree_combine_ids_defs_match t1 t2 f ids defs.
 Proof.
   induction ids as [|id ids]; cbn.
   - inversion 3. subst.
@@ -361,6 +436,59 @@ Proof.
       erewrite PTree.gcombine in H; eauto.
     + inv NORPT.
       eapply IHids; eauto.
+Qed.
+
+
+Lemma Forall2_in_map: 
+  forall {A B} (l:list B) (a:B) (R: A -> B -> Prop) (f:B -> A),
+    In a l -> Forall2 R (map f l) l -> R (f a) a.
+Proof.
+  induction l as [|e l].
+  - intros a R f IN FA.
+    inv IN.
+  - intros a R f IN FA. cbn in *.
+    inv IN. subst.
+    + inv FA. auto.
+    + inv FA. apply IHl; auto.
+Qed.
+  
+Lemma PTree_combine_ids_defs_match_incl : 
+  forall {A B C} (t1:PTree.t A) (t2:PTree.t B) f (l1 l2: list (ident * C)),
+    PTree_combine_ids_defs_match t1 t2 f (map fst l1) l1 ->
+    incl l2 l1 ->
+    PTree_combine_ids_defs_match t1 t2 f (map fst l2) l2.
+Proof.
+  induction l2 as [|e l2].
+  - cbn. intros. red. auto.
+  - cbn. intros MATCH INCL.
+    generalize (incl_cons_inv INCL). intros INCL'.
+    apply Forall2_cons.
+    + destruct e. cbn. split; auto.
+      red in MATCH. 
+      red in INCL.
+      assert (In (i,c) l1) as IN.
+      { apply INCL. apply in_eq. }
+      generalize (Forall2_in_map l1 (i,c) _ fst IN MATCH).
+      cbn. intros (EQ & RS). auto.
+    + apply IHl2; auto.
+Qed.
+
+
+Lemma PTree_extract_elements_combine_remain: 
+  forall {A:Type} ids defs f (t1 t2 t': PTree.t A),
+    f None None = None ->
+    PTree_extract_elements ids (PTree.combine f t1 t2) = Some (defs, t') ->
+    PTree_combine_ids_defs_match t1 t2 f 
+                                 (map fst (PTree.elements t'))
+                                 (PTree.elements t').
+Proof.
+  intros A ids defs f t1 t2 t' FN EXT.
+  generalize (PTree_extract_elements_remain _ _ _ _ EXT); eauto.
+  intros EQ. subst.
+  generalize (PTree_elements_combine _ t1 t2 FN); eauto.
+  intros MATCH.
+  eapply PTree_combine_ids_defs_match_incl; eauto.
+  apply PTree_remove_list_pres_incl.
 Qed.
 
 

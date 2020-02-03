@@ -220,20 +220,72 @@ Definition sec_rel_code_id := 6%N.
 Definition sec_shstrtbl_id := 7%N.
 
 (** Ultility function s*)
-Definition add_symb_to_tree (s:symbentry) (t: PTree.t symbentry) :=
+Definition add_symb_to_list (t: list (ident * symbentry)) (s:symbentry) :=
   match symbentry_id s with
   | None => t
-  | Some id => PTree.set id s t
+  | Some id => (id, s) :: t
   end.
 
 Definition symbtable_to_tree (t:symbtable) : PTree.t symbentry :=
-  fold_right add_symb_to_tree (PTree.empty symbentry) t.
+  let l := fold_left add_symb_to_list t nil in
+  PTree_Properties.of_list l.
 
-Definition acc_symb_ids (s:symbentry) (ids: list ident) :=
+Definition acc_symb_ids (ids: list ident) (s:symbentry) :=
   match symbentry_id s with
   | None => ids
   | Some id => id :: ids
   end.
 
 Definition get_symbentry_ids (t:symbtable) : list ident :=
-  fold_right acc_symb_ids nil t.
+  fold_left acc_symb_ids t nil.
+
+
+Definition is_not_dummy_symbentry (e:symbentry) :=
+  match symbentry_id e with
+  | None => false
+  | Some _ => true
+  end.
+
+(* Definition symbentry_id_neq (id:ident) (e:symbentry) := *)
+(*   match symbentry_id e with *)
+(*   | None => true *)
+(*   | Some id' => if ident_eq id id' then false else true *)
+(*   end. *)
+
+Definition symbentry_id_eq (id:ident) (e:symbentry) :=
+  match symbentry_id e with
+  | None => false
+  | Some id' => if ident_eq id id' then true else false
+  end.
+
+
+Lemma symbtable_to_tree_ignore_dummy: forall stbl, 
+    symbtable_to_tree (dummy_symbentry :: stbl) = symbtable_to_tree stbl.
+Proof.
+  intros. unfold symbtable_to_tree. cbn. auto.
+Qed.
+
+Lemma add_symb_to_list_id_eq: forall id e l,
+    symbentry_id_eq id e = true -> add_symb_to_list l e = (id,e)::l.
+Proof.
+  intros id e l EQ.
+  unfold symbentry_id_eq in EQ. 
+  destr_in EQ. destruct ident_eq; try congruence. subst.
+  unfold add_symb_to_list. rewrite Heqo. auto.
+Qed.
+
+Lemma acc_to_list_loop: forall idstbl1 idstbl2,
+    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl1 ->
+    (fold_left add_symb_to_list (map snd idstbl1) idstbl2) = (rev idstbl1) ++ idstbl2.
+Proof.
+  induction idstbl1 as [|ide idstbl1].
+  - cbn. auto.
+  - cbn. intros idstbl2 IDEQ.
+    destruct ide as (id,e). 
+    inv IDEQ.
+    cbn.
+    erewrite add_symb_to_list_id_eq; eauto.
+    rewrite <- app_assoc.
+    auto.
+Qed.
+

@@ -12,24 +12,6 @@ Import ListNotations.
 
 Local Open Scope list_scope.
 
-Definition is_not_dummy_symbentry (e:symbentry) :=
-  match symbentry_id e with
-  | None => false
-  | Some _ => true
-  end.
-
-(* Definition symbentry_id_neq (id:ident) (e:symbentry) := *)
-(*   match symbentry_id e with *)
-(*   | None => true *)
-(*   | Some id' => if ident_eq id id' then false else true *)
-(*   end. *)
-
-Definition symbentry_id_eq (id:ident) (e:symbentry) :=
-  match symbentry_id e with
-  | None => false
-  | Some id' => if ident_eq id id' then true else false
-  end.
-
 
 Definition link_symbtype (t1 t2: symbtype) :=
   match t1, t2 with
