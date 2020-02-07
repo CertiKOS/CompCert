@@ -273,6 +273,7 @@ Fixpoint PTree_extract_elements {A:Type} (ids: list ident) (t: PTree.t A) :=
       end
     end
   end.
+    
 
 Lemma PTree_extract_elements_app : forall {A} (ids1 ids2: list ident) (t t': PTree.t A) defs,
     PTree_extract_elements (ids1 ++ ids2) t = Some (defs, t') ->
@@ -333,23 +334,62 @@ Proof.
     eapply IHids; eauto.
 Qed.
 
+Lemma PTree_remove_ids_not_in : forall {A} ids t id a,
+  (fold_right (@PTree.remove A) t ids) ! id = Some a -> ~In id ids.
+Proof.
+  induction ids as [| id' ids].
+  - cbn. auto.
+  - cbn. intros t id a RM.
+    assert (id <> id') as NEQ.
+    { intros EQ. subst. rewrite PTree.grs in RM. congruence. }
+    intros H. destruct H; subst.
+    congruence.
+    erewrite PTree.gro in RM; eauto.
+    eapply IHids; eauto.
+Qed.
+
+Lemma PTree_extract_elements_domain_norepet: forall {A:Type} ids (t:PTree.t A) r,
+  PTree_extract_elements ids t = Some r -> list_norepet ids.
+Proof.
+  induction ids as [|id ids].
+  - cbn. intros. inv H. constructor.
+  - cbn. intros t r EXT. destr_in EXT. destruct p.
+    destr_in EXT. inv EXT. constructor.
+    apply PTree_extract_elements_remain in Heqo. subst.
+    eapply PTree_remove_ids_not_in; eauto.
+    eauto.
+Qed.
+
 Lemma PTree_get_remove_not_in: forall {A:Type} ids id (t:PTree.t A) a,
-    ~In id ids ->
     (fold_right (@PTree.remove A) t ids) ! id = Some a ->
     t ! id = Some a.
 Proof.
   induction ids as [|id' ids].
-  - intros id t a IN RM.
+  - intros id t a RM.
     cbn in RM. auto.
-  - intros id t a IN RM.
+  - intros id t a RM.
+    generalize (PTree_remove_ids_not_in _ _ _ _ RM); eauto.
+    intros IN.
     cbn in RM.
     assert (id <> id').
     { intros EQ. subst. apply IN. apply in_eq. }
     erewrite PTree.gro in RM; auto.
+Qed.
+
+Lemma PTree_get_remove_not_in_eq: forall {A:Type} ids id (t:PTree.t A),
+    ~In id ids ->
+    (fold_right (@PTree.remove A) t ids) ! id = t !id.
+Proof.
+  induction ids as [|id' ids].
+  - intros id t IN.
+    cbn. auto.
+  - intros id t IN.
+    assert (id <> id').
+    { intros EQ. subst. apply IN. apply in_eq. }
+    cbn. erewrite PTree.gro; eauto.
     eapply IHids; eauto.
     intros IN'. apply IN. apply in_cons. auto.
 Qed.
-
 
 Definition PTree_combine_ids_defs_match {A B C} 
            (t1:PTree.t A) (t2: PTree.t B) 
@@ -414,17 +454,18 @@ Proof.
 Qed.
 
 
-Lemma PTree_extract_elements_combine: 
+Lemma PTree_extract_elements_combine_match: 
   forall {A:Type} ids defs f (t1 t2 t': PTree.t A),
     f None None = None ->
-    list_norepet ids ->
     PTree_extract_elements ids (PTree.combine f t1 t2) = Some (defs, t') ->
     PTree_combine_ids_defs_match t1 t2 f ids defs.
 Proof.
-  induction ids as [|id ids]; cbn.
-  - inversion 3. subst.
+  induction ids as [|id ids].
+  - inversion 2. subst.
     constructor.
-  - intros defs f t1 t2 t' FN NORPT EXT.
+  - intros defs f t1 t2 t' FN EXT.
+    generalize (PTree_extract_elements_domain_norepet _ _ _ EXT).
+    intros NORPT. cbn in *.
     destr_in EXT. destruct p as (vals & t'').
     destr_in EXT. inv EXT. constructor.
     + split; auto.
@@ -436,6 +477,68 @@ Proof.
       erewrite PTree.gcombine in H; eauto.
     + inv NORPT.
       eapply IHids; eauto.
+Qed.
+
+
+Lemma PTree_extract_elements_remove_not_in: forall {A} ids (t:PTree.t A) id r,
+  PTree_extract_elements ids (PTree.remove id t) = Some r ->
+  ~In id ids.
+Proof.
+  induction ids as [| id' ids].
+  - cbn. auto.
+  - cbn. intros t id r EXT.
+    destr_in EXT. destruct p. destr_in EXT. inv EXT.
+    generalize (IHids _ _ _ Heqo). intros NIN.
+    intros H. destruct H; auto.
+    subst.
+    apply PTree_extract_elements_remain in Heqo. subst.
+    erewrite PTree_get_remove_not_in_eq in Heqo0; eauto.
+    rewrite PTree.grs in Heqo0. congruence.
+Qed.
+  
+
+Lemma PTree_extract_elements_remove_pres: forall {A} id ids (t t':PTree.t A) defs,
+  PTree_extract_elements ids (PTree.remove id t) = Some (defs, t') ->
+  exists t'', PTree_extract_elements ids t = Some (defs, t'').
+Proof.
+  induction ids as [| id' ids].
+  - intros t t' defs EXT.
+    cbn in EXT. inv EXT. cbn. eauto.
+  - intros t t' defs EXT.
+    generalize (PTree_extract_elements_remove_not_in _ _ _ _ EXT).
+    intros NIN.
+    generalize (PTree_extract_elements_domain_norepet _ _ _ EXT).
+    intros NORPT.
+    assert (~In id ids) as NIN'.
+    { intros IN. apply NIN. apply in_cons. auto. }
+    cbn in EXT. destr_in EXT. destruct p.
+    destr_in EXT. inv EXT. inv NORPT.
+    generalize (IHids _ _ _  Heqo).
+    intros (t'' & EXT').
+    cbn. rewrite EXT'.
+    apply PTree_extract_elements_remain in EXT'.
+    subst.
+    erewrite PTree_get_remove_not_in_eq; eauto.
+    apply PTree_extract_elements_remain in Heqo.
+    subst. 
+    erewrite PTree_get_remove_not_in_eq in Heqo0; eauto.
+    assert (id <> id').
+    { intros EQ. subst. apply NIN. apply in_eq. }
+    erewrite <- PTree.gro; eauto.
+    rewrite Heqo0. eauto.
+Qed.
+
+
+Lemma PTree_extract_elements_remove_list_pres: forall {A} ids' ids (t t':PTree.t A) defs,
+  PTree_extract_elements ids (fold_right (@PTree.remove A) t ids') = Some (defs, t') ->
+  exists t'', PTree_extract_elements ids t = Some (defs, t'').
+Proof.
+  induction ids' as [|id' ids'].
+  - cbn. intros ids t t' defs EXT. eauto.
+  - cbn. intros ids t t' defs EXT.
+    apply PTree_extract_elements_remove_pres in EXT.
+    destruct EXT as (t'' & EXT).
+    eauto.
 Qed.
 
 
