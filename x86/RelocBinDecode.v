@@ -2878,7 +2878,24 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   intros ofs i s l HEncode.
   destruct i; inversion HEncode.
   + (* Pmov_rr rd r1 *)
-    admit.
+    exists(Pmov_rr rd r1).
+    split; try (unfold instr_eq; auto).
+    monadInv H10.
+    unfold fmc_instr_decode.
+    simpl.
+    branch_byte_eq'.
+    unfold decode_8b.
+    unfold get_n.
+    simpl.
+    cut((Byte.and bB[ char_to_bool "1" :: char_to_bool "1" :: x ++ x0] (Byte.repr 192)) = Byte.repr 192).
+    intros HC0.
+    rewrite HC0.
+    rewrite byte_eq_true;auto.
+    unfold decode_mov_rr. simpl.
+    setoid_rewrite (decode_encode_rr_operand_refl b["11"] rd r1 x x0);auto.
+    setoid_rewrite (byte_and_C0 b["11"] (x++x0) ).
+    auto. auto.
+    rewrite app_length. rewrite (encode_reg_length rd),(encode_reg_length r1);auto.
   + (* Pmovl_ri rd n *)
     admit.
   + (* Pmov_rs rd id *)
