@@ -215,11 +215,11 @@ Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): r
     |None =>
      if Byte.eq_dec mod_b HB["0"]  then
        if Byte.eq_dec bs HB["5"] then
-         OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.signed (snd base_offset))),(remove_first_n mc 4))
+         OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),(remove_first_n mc 4))
        else
-         OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.signed (snd base_offset))),mc)
+         OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),mc)
      else
-       OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.signed (snd base_offset))),mc)
+       OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),mc)
     |Some relEntry =>
        if Byte.eq_dec mod_b HB["0"]  then
          if Byte.eq_dec bs HB["5"] then
@@ -647,7 +647,7 @@ Check Int.unsigned.
 Check Int.repr.
 Print Z.
 
-Definition valid_int32 (i:Z) := 0 <= i < two_power_pos 31.
+Definition valid_int32 (i:Z) := 0 <= i < two_power_pos 32.
            
 Lemma encode_decode_int32_int2Z : forall x,
   valid_int32 x -> decode_int(encode_int 4 x) = x.
@@ -655,8 +655,7 @@ Proof.
   intros. rewrite decode_encode_int.
   simpl.
   apply Zmod_small; auto.
-  unfold valid_int32 in H. unfold two_power_pos. unfold two_power_pos in H.
-  simpl in H. simpl. omega.
+  
 Qed.
   
 Lemma encode_decode_int32_same: forall n,
@@ -2050,13 +2049,13 @@ Proof.
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
              rewrite Hint.
-             rewrite Ptrofs.signed_repr.
+             rewrite Ptrofs.unsigned_repr.
              auto.
              unfold valid_int32 in Hvalid.
              unfold two_power_pos in Hvalid.
              simpl in Hvalid.
-             unfold Ptrofs.min_signed. unfold Ptrofs.max_signed.
-             unfold Ptrofs.half_modulus. unfold Ptrofs.modulus.
+             unfold Ptrofs.max_unsigned.
+             unfold Ptrofs.modulus.
              unfold two_power_nat. unfold Ptrofs.wordsize.
              unfold Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:EQAR;inversion EQAR.
              simpl. omega.
@@ -2083,13 +2082,13 @@ Proof.
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
              rewrite Hint.
-             rewrite Ptrofs.signed_repr.
+             rewrite Ptrofs.unsigned_repr.
              auto.
              unfold valid_int32 in Hvalid.
              unfold two_power_pos in Hvalid.
              simpl in Hvalid.
-             unfold Ptrofs.min_signed. unfold Ptrofs.max_signed.
-             unfold Ptrofs.half_modulus. unfold Ptrofs.modulus.
+             unfold Ptrofs.max_unsigned.
+             unfold Ptrofs.modulus.
              unfold two_power_nat. unfold Ptrofs.wordsize.
              unfold Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:EQAR;inversion EQAR.
              simpl. omega.
@@ -2192,13 +2191,13 @@ Proof.
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
              rewrite Hint.
-             rewrite Ptrofs.signed_repr.
+             rewrite Ptrofs.unsigned_repr.
              auto.
              unfold valid_int32 in Hvalid.
              unfold two_power_pos in Hvalid.
              simpl in Hvalid.
-             unfold Ptrofs.min_signed. unfold Ptrofs.max_signed.
-             unfold Ptrofs.half_modulus. unfold Ptrofs.modulus.
+             unfold Ptrofs.max_unsigned.
+             unfold Ptrofs.modulus.
              unfold two_power_nat. unfold Ptrofs.wordsize.
              unfold Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:EQAR;inversion EQAR.
              simpl. omega.
@@ -2315,13 +2314,13 @@ Proof.
                generalize (encode_decode_int32_same_prefix _ l Hvalid).
                intros Hint.
                rewrite Hint.
-               rewrite Ptrofs.signed_repr.
+               rewrite Ptrofs.unsigned_repr.
                auto.
                unfold valid_int32 in Hvalid.
                unfold two_power_pos in Hvalid.
                simpl in Hvalid.
-               unfold Ptrofs.min_signed. unfold Ptrofs.max_signed.
-               unfold Ptrofs.half_modulus. unfold Ptrofs.modulus.
+               unfold Ptrofs.max_unsigned.
+               unfold Ptrofs.modulus.
                unfold two_power_nat. unfold Ptrofs.wordsize.
                unfold Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:EQAR;inversion EQAR.
                simpl. omega.
@@ -2928,13 +2927,14 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     unfold two_power_nat in H.
     simpl in H.
     unfold two_power_pos.
+    simpl. unfold Int.min_signed in H. unfold Int.max_signed in H.
+    simpl in H.
+    omega.
+    repeat rewrite app_length.
     simpl.
-    (* omega. *)
-    (* repeat rewrite app_length. *)
-    (* simpl. *)
-    (* rewrite (encode_reg_length rd). *)
-    (* auto. auto. *)
-    (* rewrite (encode_reg_length rd);auto. *)
+    rewrite (encode_reg_length rd).
+    auto. auto.
+    rewrite (encode_reg_length rd);auto.
     
     admit.
     admit.
