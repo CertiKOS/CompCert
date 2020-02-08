@@ -2133,7 +2133,7 @@ Proof.
 Qed.
 
 
-Lemma PTree_Properties_of_list_iter_inv': forall {A} n defs (t:PTree.t A) id def f,
+Lemma PTree_Properties_of_list_iter_inv_some': forall {A} n defs (t:PTree.t A) id def f,
     length defs = n ->
     f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->
     (fold_left f defs t) ! id = Some def ->
@@ -2157,17 +2157,17 @@ Proof.
 Qed.
 
 
-Lemma PTree_Properties_of_list_iter_inv: forall {A} defs (t:PTree.t A) id def f,
+Lemma PTree_Properties_of_list_iter_inv_some: forall {A} defs (t:PTree.t A) id def f,
     f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->
     (fold_left f defs t) ! id = Some def ->
     (fold_left f defs (PTree.empty A)) ! id = Some def \/
     t ! id = Some def.
 Proof.
-  intros. eapply PTree_Properties_of_list_iter_inv'; eauto.
+  intros. eapply PTree_Properties_of_list_iter_inv_some'; eauto.
 Qed.
 
 
-Lemma PTree_Properties_of_list_tail: 
+Lemma PTree_Properties_of_list_tail_some: 
   forall {A} (defs: list (ident * A)) id id' def' def,
     id <> id' ->
     (PTree_Properties.of_list ((id', def') :: defs)) ! id = Some def ->
@@ -2175,11 +2175,55 @@ Lemma PTree_Properties_of_list_tail:
 Proof.
   unfold PTree_Properties.of_list. cbn.
   intros.
-  generalize (PTree_Properties_of_list_iter_inv _ _ _ eq_refl H0).
+  generalize (PTree_Properties_of_list_iter_inv_some _ _ _ eq_refl H0).
   intros [FL | EQ]; auto.
   erewrite PTree.gso in EQ; eauto.
   rewrite PTree.gempty in EQ. congruence.
 Qed.
+
+Lemma PTree_Properties_of_list_iter_inv_none': forall {A} n defs (t:PTree.t A) id f,
+    length defs = n ->
+    f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->
+    (fold_left f defs t) ! id = None ->
+    (fold_left f defs (PTree.empty A)) ! id = None.
+Proof.
+  induction n as [|n'].
+  - intros defs t id f LEN EQ FL.
+    rewrite length_zero_iff_nil in LEN. subst.
+    cbn in *. rewrite PTree.gempty. auto.
+  - intros defs t id f LEN EQ FL.
+    apply length_S_inv in LEN.
+    destruct LEN as (defs' & a & EQ' & LEN).
+    subst defs n'.
+    destruct a as (id', def').
+    rewrite fold_left_app in *.
+    subst. cbn in *.
+    destruct (ident_eq id id').
+    + subst. rewrite PTree.gss in *. auto.
+    + rewrite PTree.gso in *; eauto.
+Qed.
+
+Lemma PTree_Properties_of_list_iter_inv_none: forall {A} defs (t:PTree.t A) id f,
+    f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->
+    (fold_left f defs t) ! id = None ->
+    (fold_left f defs (PTree.empty A)) ! id = None.
+Proof.
+  intros. eapply PTree_Properties_of_list_iter_inv_none'; eauto.
+Qed.
+
+
+Lemma PTree_Properties_of_list_tail_none: 
+  forall {A} (defs: list (ident * A)) id id' def',
+    (PTree_Properties.of_list ((id', def') :: defs)) ! id = None ->
+    (PTree_Properties.of_list defs) ! id = None.
+Proof.
+  unfold PTree_Properties.of_list. cbn.
+  intros.
+  generalize (PTree_Properties_of_list_iter_inv_none _ _ _ eq_refl H).
+  intros FL.
+  congruence.
+Qed.
+
 
 Lemma update_code_data_size_inv: forall dsz1 csz1 def dsz2 csz2,
           update_code_data_size dsz1 csz1 def = (dsz2, csz2) ->
@@ -2218,7 +2262,7 @@ Proof.
       repeat rewrite Z.add_0_r. auto.
       inv NORPT. auto.
     + assert ((PTree_Properties.of_list defs) ! id = Some def) as GET'.
-      { eapply PTree_Properties_of_list_tail; eauto. }
+      { eapply PTree_Properties_of_list_tail_some; eauto. }
       rewrite symbtable_to_tree_tail; eauto.
       inv NORPT.
       generalize (IHdefs _ _ _ _ _ _ _ H2 ACC GET').
@@ -2237,9 +2281,27 @@ Lemma acc_symb_tree_entry_none : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id
     fold_left (acc_symb did cid) defs ([], dsz1, csz1) = (stbl, dsz2, csz2) ->
     (PTree_Properties.of_list defs)!id = None ->
     (symbtable_to_tree (rev stbl))!id = None.
-Admitted.
-
-
+Proof.
+  induction defs as [|def defs].
+  - cbn. intros dsz1 csz1 dsz2 csz2 stbl id EQ GET.
+    inv EQ. cbn.
+    rewrite PTree.gempty. auto.
+  - intros dsz1 csz1 dsz2 csz2 stbl id FL GET.
+    destruct def as (id', def').
+    cbn in FL.
+    destr_in FL.
+    apply acc_symb_inv' in FL.
+    destruct FL as (stbl1' & EQ  & FL). subst.
+    rewrite rev_app_distr. cbn [rev "++"].
+    destruct (ident_eq id id').
+    + subst. 
+      assert (In id' (map fst ((id', def') :: defs))) as IN by apply in_eq.
+      exploit PTree_Properties.of_list_dom; eauto.
+      intros (v & GET'). congruence.
+    + erewrite symbtable_to_tree_tail; eauto.
+      eapply IHdefs; eauto.
+      eapply PTree_Properties_of_list_tail_none; eauto.
+Qed.
 
 Definition def_none_or_ext {F V} (fi:F -> bool) (def: option (option (globdef F V))) :=
   def = None \/ 
