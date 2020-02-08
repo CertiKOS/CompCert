@@ -2919,22 +2919,23 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     setoid_rewrite (encode_parse_reg_refl rd);auto.
     simpl.
     repeat f_equal.
-    rewrite (encode_decode_int32_same_prefix).
-    apply Int.repr_signed.
-    generalize (Int.signed_range n). intros H.
-    unfold valid_int32.
-    unfold Int.modulus in H.
-    unfold two_power_nat in H.
-    simpl in H.
-    unfold two_power_pos.
-    simpl. unfold Int.min_signed in H. unfold Int.max_signed in H.
-    simpl in H.
-    omega.
-    repeat rewrite app_length.
-    simpl.
-    rewrite (encode_reg_length rd).
-    auto. auto.
-    rewrite (encode_reg_length rd);auto.
+    
+    (* rewrite (encode_decode_int32_same_prefix). *)
+    (* apply Int.repr_signed. *)
+    (* generalize (Int.signed_range n). intros H. *)
+    (* unfold valid_int32. *)
+    (* unfold Int.modulus in H. *)
+    (* unfold two_power_nat in H. *)
+    (* simpl in H. *)
+    (* unfold two_power_pos. *)
+    (* simpl. unfold Int.min_signed in H. unfold Int.max_signed in H. *)
+    (* simpl in H. *)
+    (* omega. *)
+    (* repeat rewrite app_length. *)
+    (* simpl. *)
+    (* rewrite (encode_reg_length rd). *)
+    (* auto. auto. *)
+    (* rewrite (encode_reg_length rd);auto. *)
     
     admit.
     admit.
