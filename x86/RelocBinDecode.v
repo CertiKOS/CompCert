@@ -2897,6 +2897,47 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     auto. auto.
     rewrite app_length. rewrite (encode_reg_length rd),(encode_reg_length r1);auto.
   + (* Pmovl_ri rd n *)
+    exists (Pmovl_ri rd n).
+    split; try(unfold instr_eq;auto).
+    monadInv H10.
+    simpl.
+    branch_byte_eq'.
+    assert (Byte.and bB[ b[ "10111"] ++ x] HB["F0"] =  HB["B0"]) as opcode. {
+      
+      setoid_rewrite (andf0 b["1011"] (b["1"]++x)).
+      simpl. auto.
+      repeat rewrite app_length. simpl.
+      rewrite (encode_reg_length rd);auto.
+      rewrite app_length. simpl.
+      rewrite (encode_reg_length rd);auto.
+    }
+    simpl in opcode.
+    rewrite opcode.
+    rewrite byte_eq_true.
+    unfold decode_movl_ri.
+    simpl.
+    setoid_rewrite(and7 b["10111"] x).
+    setoid_rewrite (encode_parse_reg_refl rd);auto.
+    simpl.
+    repeat f_equal.
+    rewrite (encode_decode_int32_same_prefix).
+    apply Int.repr_unsigned.
+    generalize (Int.unsigned_range n). intros H.
+    unfold valid_int32.
+    unfold Int.modulus in H.
+    unfold two_power_nat in H.
+    simpl in H.
+    unfold two_power_pos.
+    simpl.
+    (* omega. *)
+    (* repeat rewrite app_length. *)
+    (* simpl. *)
+    (* rewrite (encode_reg_length rd). *)
+    (* auto. auto. *)
+    (* rewrite (encode_reg_length rd);auto. *)
+    
+    admit.
+    admit.
     admit.
   + (* Pmov_rs rd id *)
     admit.
