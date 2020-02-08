@@ -611,6 +611,20 @@ Proof.
     eapply IHids1; eauto.
 Qed.
 
+Lemma PTree_combine_ids_defs_match_symm: 
+  forall {A B} (t1 t2: PTree.t A) (f: option A -> option A -> option B) ids entries,
+    (forall a b, f a b = f b a) ->
+    PTree_combine_ids_defs_match t1 t2 f ids entries ->
+    PTree_combine_ids_defs_match t2 t1 f ids entries.
+Proof.
+  induction ids as [|id ids].
+  - intros. inv H0. red. auto.
+  - intros. inv H0. destruct y. destruct H3; subst.
+    red. constructor.
+    split; auto. rewrite H. auto.
+    eapply IHids; eauto.
+Qed.
+
 (** The main proof begins *)
 
 Section WITHFV.

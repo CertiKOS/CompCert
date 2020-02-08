@@ -2213,17 +2213,45 @@ Proof.
     eapply SRC2; apply in_eq.
 Qed.        
 
-Lemma PTree_combine_ids_defs_match_intdefs_comm1: 
-  forall did cid ids defs defs1 defs2 stbl1 stbl2 
+
+Lemma link_prog_symb_comm_internal1: 
+  forall did cid def id ids defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
-    t1 t2 stbl dsz3 csz3,
+    t1 t2,
+    fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
+    fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
+    t1 = PTree_Properties.of_list defs1 ->
+    t2 = PTree_Properties.of_list defs2 ->
+    defs_some_int t1 ids ->
+    link_prog_merge (t1!id) (t2!id) = Some def ->
+    link_symb_merge 
+      (symbtable_to_tree (rev stbl1)) ! id
+      (symbtable_to_tree (rev stbl2)) ! id = 
+    Some (get_symbentry did cid 
+                        (dsz1' + defs_data_size (defs_before id defs1))
+                        (csz1' + defs_code_size (defs_before id defs1))
+                        id def).
+Admitted.
+
+
+Definition symbtable_entry_sizes stbl dsz1 csz1 defs1 :=
+  forall did cid dsz3 csz3 id def,
+    In (get_symbentry did cid dsz3 csz3 id def) stbl ->
+    dsz3 = dsz1 + defs_data_size (defs_before id defs1) /\
+    csz3 = csz1 + defs_code_size (defs_before id defs1).
+  
+Lemma PTree_combine_ids_defs_match_intdefs_comm1: 
+  forall did cid defs ids defs1 defs2 stbl1 stbl2 
+    dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
+    t1 t2 stbl dsz3 csz3 dsz4 csz4,
     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
     t1 = PTree_Properties.of_list defs1 ->
     t2 = PTree_Properties.of_list defs2 ->
     defs_some_int t1 ids ->
     PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
-    fold_left (acc_symb did cid) defs ([], dsz1', csz1') = (stbl, dsz3, csz3) ->
+    fold_left (acc_symb did cid) defs ([], dsz3, csz3) = (stbl, dsz4, csz4) ->
+    symbtable_entry_sizes stbl dsz1' csz1' defs1 ->
     exists entries, PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1)) 
                                             (symbtable_to_tree (rev stbl2))
                                             link_symb_merge
@@ -2231,14 +2259,45 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm1:
                                             entries /\
                map snd entries = rev stbl.
 Proof.
-Admitted.
+  induction defs as [|def defs]; cbn;
+    intros until csz4;
+    intros ACC1 ACC2 EQ1 EQ2 SRC2 MATCH ACC3 SIZES; subst.
+  - inv ACC3. inv MATCH. cbn. exists nil.
+    split; auto. red. auto.
+  - destruct def as (id, def). cbn in *.
+    inv MATCH. destruct H2. subst.
+    destr_in ACC3.
+    apply acc_symb_inv' in ACC3. 
+    destruct ACC3 as (stbl' & EQ & ACC3). subst.
+    assert (exists entries : list (ident * symbentry),
+               PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1))
+                                            (symbtable_to_tree (rev stbl2)) 
+                                            link_symb_merge 
+                                            l entries /\
+               map snd entries = rev stbl') as MATCH_RST.
+    { eapply IHdefs; eauto.
+      red. intros. eapply SRC2. apply in_cons. auto. 
+      red. intros. red in SIZES.
+      eapply SIZES. rewrite in_app. left. eauto.
+    }
+    destruct MATCH_RST as (entries' & MATCH_RST & EQ).
+    rewrite rev_app_distr. cbn.
+    exists ((id, get_symbentry did cid dsz3 csz3 id def) :: entries').
+    split. 
+    2: (cbn; congruence).
+    red. constructor; auto. 
+    split; auto.
+    red in SRC2.
+    generalize (SRC2 _ (in_eq _ _)).
+    intros INT. 
 
-Lemma PTree_combine_ids_defs_match_symm: 
-  forall {A B} (t1 t2: PTree.t A) (f: option A -> option A -> option B) ids entries,
-    (forall a b, f a b = f b a) ->
-    PTree_combine_ids_defs_match t1 t2 f ids entries ->
-    PTree_combine_ids_defs_match t2 t1 f ids entries.
-Admitted.
+    erewrite link_prog_symb_comm_internal1; eauto.
+    red in SIZES.
+    edestruct SIZES; eauto.
+    rewrite in_app. right. apply in_eq. 
+    subst. auto.
+Qed.
+    
 
 Lemma PTree_combine_ids_defs_match_intdefs_comm2: 
   forall did cid ids defs defs1 defs2 stbl1 stbl2 
@@ -2251,6 +2310,7 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm2:
     defs_some_int t2 ids ->
     PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
     fold_left (acc_symb did cid) defs ([], dsz2', csz2') = (stbl, dsz3, csz3) ->
+    symbtable_entry_sizes stbl dsz2' csz2' defs2 ->
     exists entries, PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1)) 
                                             (symbtable_to_tree (rev stbl2))
                                             link_symb_merge
@@ -2259,7 +2319,7 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm2:
                map snd entries = rev stbl.
 Proof.
   intros until csz3.
-  intros ACC1 ACC2 T1 T2 SOME MATCH ACC3. subst.
+  intros ACC1 ACC2 T1 T2 SOME MATCH ACC3 SIZES. subst.
   assert (PTree_combine_ids_defs_match 
             (PTree_Properties.of_list defs2)
             (PTree_Properties.of_list defs1)
@@ -2392,6 +2452,12 @@ Proof.
   assert (z2 = dsz1). admit.
   assert (z1 = csz1). admit.
   subst.
+
+  assert (symbtable_entry_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
+  { admit. }
+  assert (symbtable_entry_sizes stbl3 dsz1 csz1 (AST.prog_defs p2)) as SIZES2.
+  { admit. }
+
 
   assert (exists entries, PTree_combine_ids_defs_match 
                        (symbtable_to_tree (rev stbl1)) 
