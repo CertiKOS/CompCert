@@ -10,8 +10,6 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-open RawBinToElf
-open Elf
 open Printf
 open Commandline
 open Clflags
@@ -20,7 +18,6 @@ open Driveraux
 open Frontend
 open Assembler
 open Linker
-open Encoding
 
 let dump_options = ref false
 
@@ -52,35 +49,7 @@ let compile_c_ast sourcename csyntax ofile =
   set_dest Regalloc.destination_alloctrace option_dalloctrace ".alloctrace";
   set_dest PrintLTL.destination option_dltl ".ltl";
   set_dest PrintMach.destination option_dmach ".mach";
-  if !option_machine_code then
-  begin
-    let asm =
-      match (Compiler.transf_c_program_bin csyntax) with
-      | Errors.OK asm ->
-          asm
-      | Errors.Error msg ->
-          eprintf "%s: %a" sourcename print_error msg;
-          exit 2 in
-    (* Create an ELF file from the Raw Binary program *)
-    let elf_file = gen_elf asm in
-    (* Write the ELF file *)
-    write_elf ofile elf_file
-  end
-  else if !option_re_machine_code then
-  begin
-    let asm =
-      match (Compiler.transf_c_program_decode_encode_bin csyntax) with
-      | Errors.OK asm ->
-          asm
-      | Errors.Error msg ->
-          eprintf "%s: %a" sourcename print_error msg;
-          exit 2 in
-    (* Create an ELF file from the Raw Binary program *)
-    let elf_file = gen_elf asm in
-    (* Write the ELF file *)
-    write_elf ofile elf_file
-  end
-  else if !option_reloc_elf then
+  if !option_reloc_elf then
   begin
     match Compiler.transf_c_program_bytes csyntax with
      | Errors.OK (bs, p) ->
@@ -148,31 +117,7 @@ let compile_cminor_file ifile ofile =
            eprintf "File %s, type-checking error:\n%s"
                    ifile msg;
            exit 2 in
-  if ! option_machine_code then
-  begin let asm =
-    match (Compiler.transf_cminor_program_bin cm) with
-    | Errors.OK asm ->
-        asm
-    | Errors.Error msg ->
-        eprintf "%s: %a" ifile print_error msg;
-        exit 2 in
-  (* Create an ELF file from the RockSalt Asm program *)
-  let elf_file = gen_elf asm in
-  (* Write the ELF file *)
-  write_elf ofile elf_file end
-  else if ! option_re_machine_code then
-  begin let asm =
-    match (Compiler.transf_cminor_program_decode_encode_bin cm) with
-    | Errors.OK asm ->
-        asm
-    | Errors.Error msg ->
-        eprintf "%s: %a" ifile print_error msg;
-        exit 2 in
-  (* Create an ELF file from the RockSalt Asm program *)
-  let elf_file = gen_elf asm in
-  (* Write the ELF file *)
-  write_elf ofile elf_file end
-  else begin
+  begin
  (* Convert to Asm *)
   let asm =
     match Compiler.apply_partial
@@ -222,7 +167,7 @@ let process_c_file sourcename =
           then output_filename sourcename ".c" ".s"
           else Filename.temp_file "compcert" ".s" in
         let objname = output_filename ~final: !option_c sourcename ".c" ".o" in
-        if ! option_machine_code || !option_re_machine_code || !option_reloc_elf then begin
+        if !option_reloc_elf then begin
           compile_c_file sourcename preproname objname;
         end else begin
            compile_c_file sourcename preproname asmname;
@@ -588,8 +533,6 @@ let cmdline_actions =
   (* GCC compatibility: .h files can be preprocessed with -E *)
   Suffix ".h", Self (fun s ->
       push_action process_h_file s; incr num_source_files; incr num_input_files);
-  Exact "-machinecode", Set option_machine_code;
-  Exact "-re_machinecode", Set option_re_machine_code;
   Exact "-relf", Set option_reloc_elf;
   ]
 
@@ -632,8 +575,7 @@ let _ =
         exit 2
       end;
     let linker_args = time "Total compilation time" perform_actions () in
-    if (not nolink) && linker_args <> [] && (not !option_machine_code) 
-       && (not !option_re_machine_code) then begin
+    if (not nolink) && linker_args <> [] then begin
       linker (output_filename_default "a.out") linker_args
     end;
    if  Cerrors.check_errors () then exit 2

@@ -14,7 +14,7 @@
 
 
 Require Import Coqlib Integers AST Maps.
-Require Import Asm Segment.
+Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
 (* Require Import FlatProgram FlatAsm FlatBinary. *)
