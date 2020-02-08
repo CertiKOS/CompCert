@@ -2921,8 +2921,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     simpl.
     repeat f_equal.
     rewrite (encode_decode_int32_same_prefix).
-    apply Int.repr_unsigned.
-    generalize (Int.unsigned_range n). intros H.
+    apply Int.repr_signed.
+    generalize (Int.signed_range n). intros H.
     unfold valid_int32.
     unfold Int.modulus in H.
     unfold two_power_nat in H.
