@@ -2033,6 +2033,46 @@ Definition defs_before {F V}
            (id:ident) (defs: list (ident * option (globdef F V))) :=
   elems_before ident_eq id defs.
 
+Lemma elems_before_cons: forall {A B} dec (id:A) (def:B) defs,
+          elems_before dec id ((id, def) :: defs) = nil.
+Proof.
+  intros. unfold elems_before. cbn.
+  rewrite dec_eq_true. cbn. auto.
+Qed.
+
+Lemma elems_before_aux_inv: forall {A B} dec (id:A) defs (l: list B),
+      elems_before_aux dec id defs l = elems_before_aux dec id defs [] ++ l.
+Proof.
+  induction defs as [|def defs].
+  - intros. cbn. auto.
+  - cbn. destruct def. destruct dec. auto.
+    intros. rewrite IHdefs. 
+    rewrite (IHdefs [b]).
+    rewrite <- app_assoc. cbn. auto.
+Qed.
+
+Lemma elems_before_tail:
+  forall (A B : Type) (dec : forall a b : A, {a = b} + {a <> b}) 
+    (id id': A) (def : B) (defs : list (A * B)),
+  id <> id' ->
+  elems_before dec id ((id', def) :: defs) = def :: elems_before dec id defs.
+Proof.
+  intros.
+  unfold elems_before. cbn.
+  rewrite dec_eq_false; auto.
+  rewrite elems_before_aux_inv.
+  rewrite rev_app_distr. cbn. auto.
+Qed.
+
+Lemma defs_before_tail:
+  forall {F V} id id' (def : option (globdef F V)) defs,
+  id <> id' ->
+  defs_before id ((id', def) :: defs) = def :: defs_before id defs.
+Proof.
+  intros.
+  eapply elems_before_tail; auto.
+Qed.
+
 
 Definition def_data_size (def: option gdef) :=
   let '(dz, cz) := update_code_data_size 0 0 def in
@@ -2048,8 +2088,108 @@ Definition defs_data_size (defs: list (option gdef)) :=
 Definition defs_code_size (defs: list (option gdef)) :=
   fold_right (fun def sz => def_code_size def + sz) 0 defs.
 
+Lemma defs_data_size_cons: forall def defs,
+      defs_data_size (def :: defs) = (def_data_size def) + defs_data_size defs.
+Proof.
+  intros. unfold defs_data_size.
+  cbn. auto.
+Qed.
+
+Lemma defs_code_size_cons: forall def defs,
+      defs_code_size (def :: defs) = (def_code_size def) + defs_code_size defs.
+Proof.
+  intros. unfold defs_code_size.
+  cbn. auto.
+Qed.
+
+Lemma symbtable_to_tree_cons: forall did cid tl dsz1 csz1 id def, 
+    (symbtable_to_tree (get_symbentry did cid dsz1 csz1 id def :: tl)) ! id = Some (get_symbentry did cid dsz1 csz1 id def).
+Proof.
+  intros. unfold symbtable_to_tree. 
+  cbn [fold_left].
+  rewrite add_symb_to_list_inv.
+  replace (add_symb_to_list [] (get_symbentry did cid dsz1 csz1 id def)) with
+      [(id, (get_symbentry did cid dsz1 csz1 id def))].
+  erewrite PTree_Properties.of_list_unique; eauto.
+  unfold add_symb_to_list.
+  rewrite get_symbentry_id. auto.
+Qed.
+
+Lemma symbtable_to_tree_tail: forall did cid tl dsz1 csz1 id id' def, 
+    id <> id' ->
+    (symbtable_to_tree (get_symbentry did cid dsz1 csz1 id def :: tl)) ! id' = 
+    (symbtable_to_tree tl) ! id'.
+Proof.
+  intros. unfold symbtable_to_tree. 
+  cbn [fold_left].
+  rewrite add_symb_to_list_inv.
+  replace (add_symb_to_list [] (get_symbentry did cid dsz1 csz1 id def)) with
+      [(id, (get_symbentry did cid dsz1 csz1 id def))].
+  unfold PTree_Properties.of_list.
+  rewrite fold_left_app. cbn.
+  erewrite PTree.gso; eauto.
+  unfold add_symb_to_list.
+  rewrite get_symbentry_id. auto.
+Qed.
+
+
+Lemma PTree_Properties_of_list_iter_inv': forall {A} n defs (t:PTree.t A) id def f,
+    length defs = n ->
+    f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->
+    (fold_left f defs t) ! id = Some def ->
+    (fold_left f defs (PTree.empty A)) ! id = Some def \/
+    t ! id = Some def.
+Proof.
+  induction n as [|n'].
+  - intros defs t id def f LEN EQ FL.
+    rewrite length_zero_iff_nil in LEN. subst.
+    cbn in *. auto.
+  - intros defs t id def f LEN EQ FL.
+    apply length_S_inv in LEN.
+    destruct LEN as (defs' & a & EQ' & LEN). 
+    subst defs n'.
+    destruct a as (id', def').
+    rewrite fold_left_app in *.
+    subst. cbn in *. 
+    destruct (ident_eq id id').
+    + subst. rewrite PTree.gss in *. auto.
+    + rewrite PTree.gso in *; eauto.
+Qed.
+
+
+Lemma PTree_Properties_of_list_iter_inv: forall {A} defs (t:PTree.t A) id def f,
+    f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->
+    (fold_left f defs t) ! id = Some def ->
+    (fold_left f defs (PTree.empty A)) ! id = Some def \/
+    t ! id = Some def.
+Proof.
+  intros. eapply PTree_Properties_of_list_iter_inv'; eauto.
+Qed.
+
+
+Lemma PTree_Properties_of_list_tail: 
+  forall {A} (defs: list (ident * A)) id id' def' def,
+    id <> id' ->
+    (PTree_Properties.of_list ((id', def') :: defs)) ! id = Some def ->
+    (PTree_Properties.of_list defs) ! id = Some def.
+Proof.
+  unfold PTree_Properties.of_list. cbn.
+  intros.
+  generalize (PTree_Properties_of_list_iter_inv _ _ _ eq_refl H0).
+  intros [FL | EQ]; auto.
+  erewrite PTree.gso in EQ; eauto.
+  rewrite PTree.gempty in EQ. congruence.
+Qed.
+
+Lemma update_code_data_size_inv: forall dsz1 csz1 def dsz2 csz2,
+          update_code_data_size dsz1 csz1 def = (dsz2, csz2) ->
+          dsz2 = dsz1 + def_data_size def /\
+          csz2 = csz1 + def_code_size def.
+Proof.
+Admitted.
 
 Lemma acc_symb_tree_entry_some : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id def,
+    list_norepet (map fst defs) ->
     fold_left (acc_symb did cid) defs ([], dsz1, csz1) = (stbl, dsz2, csz2) ->
     (PTree_Properties.of_list defs)!id = Some def ->
     (symbtable_to_tree (rev stbl))!id 
@@ -2058,7 +2198,40 @@ Lemma acc_symb_tree_entry_some : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id
                             (csz1 + defs_code_size (defs_before id defs))
                             id
                             def).
-Admitted.
+Proof.
+  induction defs as [|def' defs].
+  - cbn. inversion 1. subst. inv H. cbn. intros.
+    rewrite PTree.gempty in H0. congruence.
+  - intros dsz1 csz1 dsz2 csz2 stbl id def NORPT ACC GET.
+    cbn in ACC. destruct def' as (id', def').
+    destr_in ACC. apply acc_symb_inv' in ACC.
+    destruct ACC as (stbl' & EQ & ACC). subst.
+    rewrite rev_app_distr. 
+    cbn [rev "++"].
+    destruct (ident_eq id id').
+    + subst. 
+      setoid_rewrite elems_before_cons.
+      replace ((id', def') :: defs) with ([] ++ (id', def') :: defs) in GET by auto.
+      erewrite PTree_Properties.of_list_unique in GET; eauto.
+      inv GET. 
+      rewrite symbtable_to_tree_cons. cbn.
+      repeat rewrite Z.add_0_r. auto.
+      inv NORPT. auto.
+    + assert ((PTree_Properties.of_list defs) ! id = Some def) as GET'.
+      { eapply PTree_Properties_of_list_tail; eauto. }
+      rewrite symbtable_to_tree_tail; eauto.
+      inv NORPT.
+      generalize (IHdefs _ _ _ _ _ _ _ H2 ACC GET').
+      intros SEQ. rewrite SEQ.
+      setoid_rewrite defs_before_tail; auto.
+      cbn [defs_data_size defs_code_size].
+      rewrite defs_data_size_cons.
+      rewrite defs_code_size_cons.
+      generalize (update_code_data_size_inv _ _ _ Heqp).
+      intros (EQ1 & EQ2); subst.
+      f_equal. f_equal; omega.
+Qed.
+
 
 Lemma acc_symb_tree_entry_none : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id,
     fold_left (acc_symb did cid) defs ([], dsz1, csz1) = (stbl, dsz2, csz2) ->
@@ -2108,6 +2281,8 @@ Lemma link_prog_symb_comm_external:
   forall did cid id def defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
     t1 t2 dsz3 csz3,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
     t1 = PTree_Properties.of_list defs1 ->
@@ -2119,7 +2294,7 @@ Lemma link_prog_symb_comm_external:
     Some (get_symbentry did cid dsz3 csz3 id def).
 Proof.
   intros until csz3.
-  intros ACC1 ACC2 EQ1 EQ2 DEFNE1 DEFNE2 LINK; subst.
+  intros NORPT1 NORPT2 ACC1 ACC2 EQ1 EQ2 DEFNE1 DEFNE2 LINK; subst.
   red in DEFNE1. red in DEFNE2.
   destruct DEFNE1 as [DEFNE1 | DEFNE1];
     destruct DEFNE2 as [DEFNE2 | DEFNE2].
@@ -2164,6 +2339,8 @@ Lemma PTree_combine_ids_defs_match_extdefs_comm:
   forall did cid defs defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
     t1 t2 stbl dsz3 csz3 dsz4 csz4,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
     t1 = PTree_Properties.of_list defs1 ->
@@ -2181,11 +2358,11 @@ Lemma PTree_combine_ids_defs_match_extdefs_comm:
 Proof.
   induction defs as [|def defs]; cbn;
     intros until csz4;
-    intros ACC1 ACC2 EQ1 EQ2 SRC1 SRC2 MATCH ACC3; subst.
+    intros NORPT1 NORPT2 ACC1 ACC2 EQ1 EQ2 SRC1 SRC2 MATCH ACC3; subst.
   - inv ACC3. cbn. exists nil.
     split; auto. red. auto.
   - destruct def as (id, def). cbn in *.
-    inv MATCH. 
+    inv MATCH. destruct H2.
     destr_in ACC3.
     apply acc_symb_inv' in ACC3. 
     destruct ACC3 as (stbl' & EQ & ACC3). subst.
@@ -2195,7 +2372,7 @@ Proof.
                                             link_symb_merge 
                                             (map fst defs) entries /\
                map snd entries = rev stbl') as MATCH_RST.
-    { eapply IHdefs; eauto.
+    { eapply IHdefs with (defs1:= defs1) (stbl2:=stbl2); eauto.
       red. intros. apply SRC1. apply in_cons. auto.
       red. intros. apply SRC2. apply in_cons. auto. }
     destruct MATCH_RST as (entries' & MATCH_RST & EQ).
@@ -2206,8 +2383,7 @@ Proof.
     red. constructor; auto. 
     split; auto.
     
-    inv H2.
-    eapply link_prog_symb_comm_external; eauto.
+    eapply link_prog_symb_comm_external with (defs1:=defs1); eauto.
     unfold defs_none_or_ext in SRC1.
     eapply SRC1; apply in_eq.
     eapply SRC2; apply in_eq.
@@ -2341,6 +2517,8 @@ Qed.
 
 
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
@@ -2363,7 +2541,7 @@ Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 st
       stbl3 = dummy_symbentry :: map snd (PTree.elements t2 ++ entries).
 Proof.
   intros until defs3.
-  intros GS1 GS2 RELOC EXT GS3.
+  intros NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
   generalize (PTree_extract_elements_app _ _ _ _ _ EXT).
   intros (t1' & defs1 & defs2 & EXT2 & EXT1 & EQ). subst.
   
@@ -2432,7 +2610,8 @@ Proof.
                        link_symb_merge
                        (map fst (PTree.elements t1)) entries /\
                      map snd entries = rev s) as RM_MATCH'.
-  { eapply PTree_combine_ids_defs_match_extdefs_comm ; eauto. }
+  { eapply PTree_combine_ids_defs_match_extdefs_comm 
+      with (defs1 := AST.prog_defs p1); eauto. }
   destruct RM_MATCH' as (rm_stbl & RM'_MATCH & RM_ENTRIES).
 
   (** Matching between ids and internal symbols from program 2 *)    
@@ -2571,6 +2750,8 @@ Lemma link_symb_elements_entry_id_eq: forall stbl1 stbl2 id e,
 Admitted.
 
 Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
@@ -2592,8 +2773,8 @@ Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1
                                          (symbtable_to_tree stbl2')))) stbl3.
 Proof.
   intros until defs3.
-  intros GS1 GS2 RELOC EXT GS3.
-  generalize (link_ordered_gen_symb_comm_eq_size _ _ GS1 GS2 RELOC EXT GS3). 
+  intros NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
+  generalize (link_ordered_gen_symb_comm_eq_size _ _ NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3). 
   intros (DSZ & CSZ & (entries & t2 & EXT' & STBL)). subst.
   split; auto.
   split; auto.
@@ -2643,7 +2824,8 @@ Lemma link_ordered_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz
       gen_symb_table sec_data_id sec_code_id (AST.prog_defs p) = (stbl', dsz1 + dsz2, csz1 + csz2) /\ 
       symbtable_syneq stbl stbl'.
 Proof.
-  intros p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs LINK GS1 GS2 FOFS.
+  intros until f_ofs. 
+  intros LINK GS1 GS2 FOFS.
   unfold link_prog_ordered in LINK.
   destr_in LINK. 
   repeat rewrite andb_true_iff in Heqb.
@@ -2657,7 +2839,9 @@ Proof.
 
   generalize (reloc_symbtable_exists _ GS2 (eq_refl (reloc_offset_fun dsz1 csz1))).
   intros (stbl2' & RELOC & STBREL).
+  generalize NORPT1. intros NORPT1'.
   erewrite gen_symb_table_pres_ids in NORPT1; eauto.
+  generalize NORPT2. intros NORPT2'.
   erewrite gen_symb_table_pres_ids in NORPT2; eauto.
   exploit gen_symb_table_pres_link_check; eauto.
   intros SCHK.
@@ -2666,7 +2850,7 @@ Proof.
     destruct (gen_symb_table a b c) as (p, csz3) eqn:GST
   end.
   destruct p as (stbl3 & dsz3). 
-  generalize (link_ordered_gen_symb_comm_syneq_size _ _ GS1 GS2 RELOC Heqo GST); eauto.
+  generalize (link_ordered_gen_symb_comm_syneq_size _ _ NORPT1' NORPT2' GS1 GS2 RELOC Heqo GST); eauto.
   intros (DSZ & CSZ & SYNEQ). subst.
   do 3 eexists. 
   intuition; eauto.
@@ -3317,7 +3501,7 @@ Proof.
     rewrite IHl2'; omega.
 Qed.
 
-Lemma update_code_data_size_inv : forall def dsz csz dincr cincr,
+Lemma update_code_data_size_eq : forall def dsz csz dincr cincr,
     dincr = init_data_list_size (get_def_init_data def) ->
     cincr = code_size (get_def_instrs def) ->
     update_code_data_size dsz csz def = (dincr + dsz, cincr + csz).
@@ -3349,7 +3533,7 @@ Proof.
     simpl in *. destr_in SYMB.
     rewrite init_data_list_size_app.
     rewrite code_size_app.
-    erewrite update_code_data_size_inv in Heqp; eauto.
+    erewrite update_code_data_size_eq in Heqp; eauto.
     inv Heqp.
     rewrite <- init_data_list_size_app in SYMB.
     rewrite <- code_size_app in SYMB.

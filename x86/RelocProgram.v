@@ -289,3 +289,14 @@ Proof.
     auto.
 Qed.
 
+Lemma add_symb_to_list_inv: forall l1 l2,
+    fold_left add_symb_to_list l1 l2 = fold_left add_symb_to_list l1 nil ++ l2.
+Proof.
+  induction l1 as [|e l1].
+  - cbn. auto.
+  - cbn. intros. 
+    rewrite IHl1.
+    rewrite (IHl1 (add_symb_to_list nil e)).
+    rewrite <- app_assoc. f_equal.
+    unfold add_symb_to_list. destr.
+Qed.
