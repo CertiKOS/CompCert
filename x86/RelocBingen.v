@@ -175,12 +175,12 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   | Paddl_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["000"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.signed n) in
+    let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["81"] :: modrm :: nbytes)
   | Psubl_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["101"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.signed n) in
+    let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["81"] :: modrm :: nbytes)
   | Psubl_rr rd r1 =>
     do rdbits <- encode_ireg rd;
@@ -190,7 +190,7 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   | Pmovl_ri rd n =>
     do rdbits <- encode_ireg rd;
     let opcode := bB[b["10111"] ++ rdbits] in
-    let nbytes := encode_int32 (Int.signed n) in
+    let nbytes := encode_int32 (Int.unsigned n) in
     OK (opcode :: nbytes)
   | Pmov_rr rd r1 =>
     do rdbits <- encode_ireg rd;
@@ -227,7 +227,7 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   | Pimull_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
-    let nbytes := encode_int32 (Int.signed n) in
+    let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["69"] :: modrm :: nbytes)
   | Pcmpl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
@@ -237,7 +237,7 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   | Pcmpl_ri r1 n =>
     do r1bits <- encode_ireg r1;
     let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
-    let nbytes := encode_int32 (Int.signed n) in
+    let nbytes := encode_int32 (Int.unsigned n) in
     OK (HB["81"] :: modrm :: nbytes)
   | Pcltd =>
     OK (HB["99"] :: nil)
@@ -248,7 +248,7 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   | Psall_ri rd n =>
     do rdbits <- encode_ireg rd;
     let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
-    let nbytes := [Byte.repr (Int.signed n)] in
+    let nbytes := [Byte.repr (Int.unsigned n)] in
     OK (HB["C1"] :: modrm :: nbytes)
   | Plabel _
   | Pnop =>
