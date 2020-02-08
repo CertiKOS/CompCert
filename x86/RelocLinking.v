@@ -244,3 +244,35 @@ Proof.
   auto.
   auto.
 Defined.
+
+
+(** Properties *)
+Lemma link_option_symm: forall {F V} {LF: Linker F} {LV: Linker V} 
+                          (def1 def2: option (globdef F V)),
+    link_option def1 def2 = link_option def2 def1.
+Proof.
+  Admitted.
+
+
+Lemma link_prog_merge_symm: 
+  forall {F V} {LF: Linker F} {LV: Linker V} (a b:option (option (globdef F V))), 
+    link_prog_merge a b = link_prog_merge b a.
+Proof.
+  intros. unfold link_prog_merge.
+  destruct a, b; auto.
+  apply link_option_symm.
+Qed.
+
+Lemma link_symb_symm: forall s1 s2,
+    link_symb s1 s2 = link_symb s2 s1.
+Proof.
+  Admitted.
+
+Lemma link_symb_merge_symm: forall a b, link_symb_merge a b = link_symb_merge b a.
+Proof.
+  intros. unfold link_symb_merge.
+  destruct a; destruct b; auto.
+  apply link_symb_symm.
+Qed.
+
+

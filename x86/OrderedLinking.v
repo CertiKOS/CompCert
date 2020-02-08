@@ -577,7 +577,7 @@ Proof.
 Qed.
 
 
-Lemma PTree_extract_elements_combine_remain: 
+Lemma PTree_extract_elements_combine_remain_match: 
   forall {A:Type} ids defs f (t1 t2 t': PTree.t A),
     f None None = None ->
     PTree_extract_elements ids (PTree.combine f t1 t2) = Some (defs, t') ->
@@ -594,6 +594,22 @@ Proof.
   apply PTree_remove_list_pres_incl.
 Qed.
 
+Lemma PTree_combine_ids_defs_match_app: 
+  forall {A B C} (t1: PTree.t A) (t2: PTree.t B) 
+    (f:option A -> option B -> option C) ids1 defs1 ids2 defs2,
+    PTree_combine_ids_defs_match t1 t2 f ids1 defs1 ->
+    PTree_combine_ids_defs_match t1 t2 f ids2 defs2 ->
+    PTree_combine_ids_defs_match t1 t2 f (ids1 ++ ids2) (defs1 ++ defs2).
+Proof.
+  induction ids1 as [|id1 ids1].
+  - cbn. inversion 1. subst. cbn. auto.
+  - cbn. inversion 1. subst. destruct y. 
+    inv H2. inv H. inv H5. 
+    intros MATCH.
+    cbn. red. constructor.
+    split; auto.
+    eapply IHids1; eauto.
+Qed.
 
 (** The main proof begins *)
 
