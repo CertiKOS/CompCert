@@ -359,6 +359,144 @@ Proof.
   destruct l; cbn in INT; try congruence.
 Qed.
 
+(** * Commutativity of linking and Symbtablgen *)
+
+Definition match_prog (p: Asm.program) (tp: program) :=
+  exists tp', transf_program p = OK tp' /\ reloc_prog_syneq tp' tp.
+
+
+Lemma match_prog_pres_prog_defs : forall p tp,
+  match_prog p tp -> Permutation (AST.prog_defs p) (prog_defs tp).
+Proof.
+  intros p tp MATCH. red in MATCH.
+  destruct MATCH as (tp' & MATCH & SEQ).
+  unfold transf_program in MATCH.
+  destruct check_wellformedness; try monadInv MATCH.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0.
+  destruct zle; try monadInv MATCH.
+  red in SEQ; cbn in SEQ. 
+  tauto.
+Qed.
+
+Lemma match_prog_pres_prog_main : forall p tp,
+  match_prog p tp -> AST.prog_main p = prog_main tp.
+Proof.
+  intros p tp MATCH. red in MATCH.
+  destruct MATCH as (tp' & MATCH & SEQ).
+  unfold transf_program in MATCH.
+  destruct check_wellformedness; try monadInv MATCH.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0.
+  destruct zle; try monadInv MATCH. 
+  red in SEQ; cbn in SEQ. 
+  tauto.
+Qed.
+
+Lemma match_prog_pres_prog_public : forall p tp,
+  match_prog p tp -> AST.prog_public p = prog_public tp.
+Proof.
+  intros p tp MATCH. red in MATCH.
+  destruct MATCH as (tp' & MATCH & SEQ).
+  unfold transf_program in MATCH.
+  destruct check_wellformedness; try monadInv MATCH.
+  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0.
+  destruct zle; try monadInv MATCH. 
+  red in SEQ; cbn in SEQ.
+  tauto.
+Qed.
+
+  
+Lemma eq_gvar_init_pres_aligned : forall v1 v2,
+    gvar_init v1 = gvar_init v2 
+    -> def_aligned (Some (Gvar v1))
+    -> def_aligned (Some (Gvar v2)).
+Proof.
+  intros. cbn in *. rewrite <- H.
+  auto.
+Qed.
+
+Lemma link_varinit_internal_external_pres_aligned:
+  forall (v1 v2: globvar unit) l inf rd vl,
+    is_var_internal v2 = false
+    -> def_aligned (Some (Gvar v1))
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some l
+    -> def_aligned (Some (Gvar (mkglobvar inf l rd vl))).
+Proof.
+  intros v1 v2 l inf rd vl INT2 ALIGN LINK.
+  destruct (is_var_internal v1) eqn:INT1.
+  - generalize (link_internal_external_varinit _ _ _ INT1 INT2 LINK).
+    destruct 1 as (EQ & CLS). subst.   
+    apply eq_gvar_init_pres_aligned with v1; auto.
+  - generalize (link_external_varinit _ _ _ INT1 INT2 LINK).
+    intros CLS.
+    destruct l. cbn. auto.
+    cbn in *. destruct i; try congruence.
+    destruct l; try congruence. auto.
+Qed.
+
+
+Lemma link_vardef_internal_external_pres_aligned:
+  forall v1 v2 v,
+    is_var_internal v2 = false
+    -> def_aligned (Some (Gvar v1))
+    -> link_vardef v1 v2 = Some v
+    -> def_aligned (Some (Gvar v)).
+Proof.
+  intros v1 v2 v INT ALIGN LINK.
+  unfold link_vardef in LINK. 
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  inv LINK. unfold is_var_internal in INT.
+  eapply link_varinit_internal_external_pres_aligned; eauto.
+Qed.
+  
+
+Lemma external_var_aligned: forall v,
+    is_var_internal v = false -> def_aligned (Some (Gvar v)).
+Proof.
+  intros v INT.
+  unfold is_var_internal in INT.
+  cbn. destruct (gvar_init v); cbn in *; try congruence.
+  auto.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  auto.
+Qed.
+
+
+Lemma link_option_internal_external_pres_aligned: forall def1 def2 def,
+    is_def_internal is_fundef_internal def2 = false
+    -> def_aligned def1
+    -> link_option def1 def2 = Some def
+    -> def_aligned def.
+Proof.
+  intros def1 def2 def INT ALIGN LINK.
+  destruct def2. destruct g. destruct f; cbn in *; try congruence.
+  - destruct def1. destruct g. destruct f. 
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destruct e; try congruence. inv Heqo0. auto.
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destr_in Heqo0; try congruence. 
+    + cbn in LINK. congruence.
+    + cbn in LINK. inv LINK. auto.
+  - destruct def1. destruct g.
+    + cbn in *. congruence.
+    + cbn in LINK. destr_in LINK; try congruence.
+      destr_in Heqo; try congruence. inv Heqo. inv LINK.
+      cbn in INT.
+      eapply link_vardef_internal_external_pres_aligned; eauto.
+    + cbn in *. inv LINK.       
+      eapply external_var_aligned; eauto.
+  - destruct def1. cbn in LINK. inv LINK. auto.
+    cbn in *. inv LINK. auto.
+Qed.
+
+
 
 (** ** Commutativity of linking and section generation *)
 
@@ -1027,144 +1165,6 @@ Proof.
   eapply acc_symb_size; eauto.
 Qed.
 
-
-
-(** * Commutativity of linking and Symbtablgen *)
-
-Definition match_prog (p: Asm.program) (tp: program) :=
-  exists tp', transf_program p = OK tp' /\ reloc_prog_syneq tp' tp.
-
-
-Lemma match_prog_pres_prog_defs : forall p tp,
-  match_prog p tp -> Permutation (AST.prog_defs p) (prog_defs tp).
-Proof.
-  intros p tp MATCH. red in MATCH.
-  destruct MATCH as (tp' & MATCH & SEQ).
-  unfold transf_program in MATCH.
-  destruct check_wellformedness; try monadInv MATCH.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0.
-  destruct zle; try monadInv MATCH.
-  red in SEQ; cbn in SEQ. 
-  tauto.
-Qed.
-
-Lemma match_prog_pres_prog_main : forall p tp,
-  match_prog p tp -> AST.prog_main p = prog_main tp.
-Proof.
-  intros p tp MATCH. red in MATCH.
-  destruct MATCH as (tp' & MATCH & SEQ).
-  unfold transf_program in MATCH.
-  destruct check_wellformedness; try monadInv MATCH.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0.
-  destruct zle; try monadInv MATCH. 
-  red in SEQ; cbn in SEQ. 
-  tauto.
-Qed.
-
-Lemma match_prog_pres_prog_public : forall p tp,
-  match_prog p tp -> AST.prog_public p = prog_public tp.
-Proof.
-  intros p tp MATCH. red in MATCH.
-  destruct MATCH as (tp' & MATCH & SEQ).
-  unfold transf_program in MATCH.
-  destruct check_wellformedness; try monadInv MATCH.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0.
-  destruct zle; try monadInv MATCH. 
-  red in SEQ; cbn in SEQ.
-  tauto.
-Qed.
-
-  
-Lemma eq_gvar_init_pres_aligned : forall v1 v2,
-    gvar_init v1 = gvar_init v2 
-    -> def_aligned (Some (Gvar v1))
-    -> def_aligned (Some (Gvar v2)).
-Proof.
-  intros. cbn in *. rewrite <- H.
-  auto.
-Qed.
-
-Lemma link_varinit_internal_external_pres_aligned:
-  forall (v1 v2: globvar unit) l inf rd vl,
-    is_var_internal v2 = false
-    -> def_aligned (Some (Gvar v1))
-    -> link_varinit (gvar_init v1) (gvar_init v2) = Some l
-    -> def_aligned (Some (Gvar (mkglobvar inf l rd vl))).
-Proof.
-  intros v1 v2 l inf rd vl INT2 ALIGN LINK.
-  destruct (is_var_internal v1) eqn:INT1.
-  - generalize (link_internal_external_varinit _ _ _ INT1 INT2 LINK).
-    destruct 1 as (EQ & CLS). subst.   
-    apply eq_gvar_init_pres_aligned with v1; auto.
-  - generalize (link_external_varinit _ _ _ INT1 INT2 LINK).
-    intros CLS.
-    destruct l. cbn. auto.
-    cbn in *. destruct i; try congruence.
-    destruct l; try congruence. auto.
-Qed.
-
-
-Lemma link_vardef_internal_external_pres_aligned:
-  forall v1 v2 v,
-    is_var_internal v2 = false
-    -> def_aligned (Some (Gvar v1))
-    -> link_vardef v1 v2 = Some v
-    -> def_aligned (Some (Gvar v)).
-Proof.
-  intros v1 v2 v INT ALIGN LINK.
-  unfold link_vardef in LINK. 
-  destr_in LINK; try congruence.
-  destr_in LINK; try congruence.
-  destr_in LINK; try congruence.
-  inv LINK. unfold is_var_internal in INT.
-  eapply link_varinit_internal_external_pres_aligned; eauto.
-Qed.
-  
-
-Lemma external_var_aligned: forall v,
-    is_var_internal v = false -> def_aligned (Some (Gvar v)).
-Proof.
-  intros v INT.
-  unfold is_var_internal in INT.
-  cbn. destruct (gvar_init v); cbn in *; try congruence.
-  auto.
-  destruct i; cbn in *; try congruence.
-  destruct l; cbn in *; try congruence.
-  auto.
-Qed.
-
-
-Lemma link_option_internal_external_pres_aligned: forall def1 def2 def,
-    is_def_internal is_fundef_internal def2 = false
-    -> def_aligned def1
-    -> link_option def1 def2 = Some def
-    -> def_aligned def.
-Proof.
-  intros def1 def2 def INT ALIGN LINK.
-  destruct def2. destruct g. destruct f; cbn in *; try congruence.
-  - destruct def1. destruct g. destruct f. 
-    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
-      destr_in Heqo; try congruence; inv Heqo.
-      destruct e; try congruence. inv Heqo0. auto.
-    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
-      destr_in Heqo; try congruence; inv Heqo.
-      destr_in Heqo0; try congruence. 
-    + cbn in LINK. congruence.
-    + cbn in LINK. inv LINK. auto.
-  - destruct def1. destruct g.
-    + cbn in *. congruence.
-    + cbn in LINK. destr_in LINK; try congruence.
-      destr_in Heqo; try congruence. inv Heqo. inv LINK.
-      cbn in INT.
-      eapply link_vardef_internal_external_pres_aligned; eauto.
-    + cbn in *. inv LINK.       
-      eapply external_var_aligned; eauto.
-  - destruct def1. cbn in LINK. inv LINK. auto.
-    cbn in *. inv LINK. auto.
-Qed.
      
 
 (** ** Commutativity of linking and generation of the symbol table *)
@@ -2744,12 +2744,10 @@ Qed.
 
 
 Definition def_data_size (def: option gdef) :=
-  let '(dz, cz) := update_code_data_size 0 0 def in
-  dz.
+  init_data_list_size (get_def_init_data def).
 
 Definition def_code_size (def: option gdef) :=
-  let '(dz, cz) := update_code_data_size 0 0 def in
-  cz.
+  code_size (get_def_instrs def).
 
 Definition defs_data_size (defs: list (option gdef)) :=
   fold_right (fun def sz => def_data_size def + sz) 0 defs.
@@ -2899,7 +2897,20 @@ Lemma update_code_data_size_inv: forall dsz1 csz1 def dsz2 csz2,
           dsz2 = dsz1 + def_data_size def /\
           csz2 = csz1 + def_code_size def.
 Proof.
-Admitted.
+  intros dsz1 csz1 def dsz2 csz2 UPD.
+  unfold update_code_data_size in UPD. 
+  destruct def. destruct g. destruct f.
+  - unfold def_data_size, def_code_size.
+    simpl in *. inv UPD. f_equal; omega.
+  - unfold def_data_size, def_code_size.
+    inv UPD. cbn. split; omega.
+  - destruct (gvar_init v) eqn:V.
+    + inv UPD. cbn. rewrite V. cbn. split; omega.
+    + destruct i; try (inv UPD; cbn; rewrite V; cbn; split; omega).
+      destruct l; try (inv UPD; cbn; rewrite V; cbn; split; omega). 
+  - inv UPD. cbn. split; omega.
+Qed.
+
 
 Lemma acc_symb_tree_entry_some : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id def,
     list_norepet (map fst defs) ->
