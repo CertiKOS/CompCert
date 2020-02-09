@@ -479,6 +479,41 @@ Proof.
       eapply IHids; eauto.
 Qed.
 
+Lemma PTree_combine_ids_defs_match_ids_eq: 
+  forall {A B C:Type} ids defs (f:option A -> option B -> option C) t1 t2,
+    PTree_combine_ids_defs_match t1 t2 f ids defs ->
+    ids = map fst defs.
+Proof.
+  induction ids as [|id ids].
+  - intros. inv H. auto.
+  - intros. inv H. destruct y. inv H2.
+    cbn. f_equal. eauto.
+Qed.
+
+Lemma PTree_extract_elements_ids_eq: 
+  forall {A:Type} ids defs (t1 t2: PTree.t A),
+    PTree_extract_elements ids t1 = Some (defs, t2) ->
+    ids = map fst defs.
+Proof.
+  induction ids as [|id ids].
+  - inversion 1. subst.
+    auto.
+  - intros defs t1 t2 EXT.
+    inv EXT. destr_in H0. destruct p. destr_in H0.
+    inv H0. cbn. f_equal.
+    eauto.
+Qed.
+
+Lemma PTree_extract_elements_range_norepet: 
+  forall {A:Type} ids defs (t1 t2: PTree.t A),
+    PTree_extract_elements ids t1 = Some (defs, t2) ->
+    list_norepet (map fst defs).
+Proof.
+  intros.
+  erewrite <- PTree_extract_elements_ids_eq; eauto.
+  eapply PTree_extract_elements_domain_norepet; eauto.
+Qed.
+
 
 Lemma PTree_extract_elements_remove_not_in: forall {A} ids (t:PTree.t A) id r,
   PTree_extract_elements ids (PTree.remove id t) = Some r ->
@@ -891,6 +926,18 @@ Proof.
   - cbn. 
     erewrite link_internal_vardefs_none; eauto.
 Qed.
+
+Lemma link_int_defs_some_inv: forall {F V} {LV: Linker V} (def1 def2 def: option (globdef (fundef F) V)),
+    is_def_internal is_fundef_internal def1 = true ->
+    link def1 def2 = Some def ->
+    is_def_internal is_fundef_internal def2 = false.
+Proof.
+  intros F V LV def1 def2 def INT LINK.
+  destruct (is_def_internal is_fundef_internal def2) eqn:INT'.
+  erewrite link_int_defs_none in LINK; eauto. congruence.
+  auto.
+Qed.
+  
 
 Lemma extract_defs_exists: 
   forall {F V: Type} {LV:Linker V} 

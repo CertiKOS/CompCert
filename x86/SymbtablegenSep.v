@@ -2453,14 +2453,16 @@ Qed.
 
 
 Lemma link_prog_symb_comm_internal1: 
-  forall did cid def id ids defs1 defs2 stbl1 stbl2 
+  forall did cid def id defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
     t1 t2,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
     t1 = PTree_Properties.of_list defs1 ->
     t2 = PTree_Properties.of_list defs2 ->
-    defs_some_int t1 ids ->
+    def_some_int is_fundef_internal (t1!id) ->
     link_prog_merge (t1!id) (t2!id) = Some def ->
     link_symb_merge 
       (symbtable_to_tree (rev stbl1)) ! id
@@ -2469,7 +2471,24 @@ Lemma link_prog_symb_comm_internal1:
                         (dsz1' + defs_data_size (defs_before id defs1))
                         (csz1' + defs_code_size (defs_before id defs1))
                         id def).
-Admitted.
+Proof.
+  intros until t2.
+  intros NORPT1 NORPT2 ACC1 ACC2 EQ1 EQ2 INT1 LINK. subst.
+  red in INT1.
+  destruct INT1 as (def' & GET1 & INT1).
+  unfold link_prog_merge in LINK.
+  setoid_rewrite GET1 in LINK.
+  destruct ((PTree_Properties.of_list defs2) ! id) as [gd2|] eqn:DEFS2.
+  + generalize (link_int_defs_some_inv _ _ _ INT1 LINK).
+    intros INT2.
+    erewrite acc_symb_tree_entry_some with (defs:= defs1) (dsz1:= dsz1'); eauto.
+    erewrite acc_symb_tree_entry_some with (defs:= defs2) (dsz1:= dsz2'); eauto.
+    cbn.
+    eapply link_get_symbentry_comm2; eauto.
+  + rewrite LINK in GET1. inv GET1.
+    erewrite acc_symb_tree_entry_some with (defs:=defs1) (stbl:=stbl1); eauto.
+    erewrite acc_symb_tree_entry_none with (defs:=defs2) (stbl:=stbl2); eauto.
+Qed.
 
 
 Definition symbtable_entry_sizes stbl dsz1 csz1 defs1 :=
@@ -2482,6 +2501,8 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm1:
   forall did cid defs ids defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
     t1 t2 stbl dsz3 csz3 dsz4 csz4,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
     t1 = PTree_Properties.of_list defs1 ->
@@ -2499,7 +2520,7 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm1:
 Proof.
   induction defs as [|def defs]; cbn;
     intros until csz4;
-    intros ACC1 ACC2 EQ1 EQ2 SRC2 MATCH ACC3 SIZES; subst.
+    intros NORPT1 NORTP2 ACC1 ACC2 EQ1 EQ2 SRC2 MATCH ACC3 SIZES; subst.
   - inv ACC3. inv MATCH. cbn. exists nil.
     split; auto. red. auto.
   - destruct def as (id, def). cbn in *.
@@ -2513,7 +2534,7 @@ Proof.
                                             link_symb_merge 
                                             l entries /\
                map snd entries = rev stbl') as MATCH_RST.
-    { eapply IHdefs; eauto.
+    { eapply IHdefs with (defs1:= defs1) (stbl2:=stbl2); eauto.
       red. intros. eapply SRC2. apply in_cons. auto. 
       red. intros. red in SIZES.
       eapply SIZES. rewrite in_app. left. eauto.
@@ -2529,7 +2550,7 @@ Proof.
     generalize (SRC2 _ (in_eq _ _)).
     intros INT. 
 
-    erewrite link_prog_symb_comm_internal1; eauto.
+    erewrite link_prog_symb_comm_internal1 with (defs1:=defs1) (stbl1:=stbl1); eauto.
     red in SIZES.
     edestruct SIZES; eauto.
     rewrite in_app. right. apply in_eq. 
@@ -2541,6 +2562,8 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm2:
   forall did cid ids defs defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
     t1 t2 stbl dsz3 csz3,
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
     fold_left (acc_symb did cid) defs1 ([], dsz1', csz1') = (stbl1, dsz1, csz1) ->
     fold_left (acc_symb did cid) defs2 ([], dsz2', csz2') = (stbl2, dsz2, csz2) ->
     t1 = PTree_Properties.of_list defs1 ->
@@ -2557,7 +2580,7 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm2:
                map snd entries = rev stbl.
 Proof.
   intros until csz3.
-  intros ACC1 ACC2 T1 T2 SOME MATCH ACC3 SIZES. subst.
+  intros NORPT1 NORPT2 ACC1 ACC2 T1 T2 SOME MATCH ACC3 SIZES. subst.
   assert (PTree_combine_ids_defs_match 
             (PTree_Properties.of_list defs2)
             (PTree_Properties.of_list defs1)
@@ -2570,7 +2593,9 @@ Proof.
                                           (symbtable_to_tree (rev stbl1)) 
                                           link_symb_merge ids entries /\
              map snd entries = rev stbl) as RS.
-  { eapply PTree_combine_ids_defs_match_intdefs_comm1; eauto. }
+  { eapply PTree_combine_ids_defs_match_intdefs_comm1 
+      with (defs1:= defs2) (stbl1:=stbl2)
+           (defs2:= defs1) (stbl2:=stbl1); eauto. }
   destruct RS as (entries & MATCH'' & EQ).
   exists entries; split; eauto.
   eapply PTree_combine_ids_defs_match_symm; eauto.
@@ -2606,6 +2631,10 @@ Proof.
   intros NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
   generalize (PTree_extract_elements_app _ _ _ _ _ EXT).
   intros (t1' & defs1 & defs2 & EXT2 & EXT1 & EQ). subst.
+  generalize (PTree_extract_elements_range_norepet _ _ _ _ EXT1).
+  intros NORPT1'.
+  generalize (PTree_extract_elements_range_norepet _ _ _ _ EXT2).
+  intros NORPT2'.
   
   unfold gen_symb_table in *.
   destr_in GS1. destruct p. inv GS1.
@@ -2673,7 +2702,8 @@ Proof.
                        (map fst (PTree.elements t1)) entries /\
                      map snd entries = rev s) as RM_MATCH'.
   { eapply PTree_combine_ids_defs_match_extdefs_comm 
-      with (defs1 := AST.prog_defs p1); eauto. }
+      with (defs1 := AST.prog_defs p1) 
+           (defs2 := AST.prog_defs p2); eauto. }
   destruct RM_MATCH' as (rm_stbl & RM'_MATCH & RM_ENTRIES).
 
   (** Matching between ids and internal symbols from program 2 *)    
@@ -2707,7 +2737,9 @@ Proof.
                        (collect_internal_def_ids is_fundef_internal p2)
                        entries /\
                      map snd entries = rev stbl3) as MATCH2'.
-  { eapply PTree_combine_ids_defs_match_intdefs_comm2; eauto. }
+  { eapply PTree_combine_ids_defs_match_intdefs_comm2
+           with (defs1:= (AST.prog_defs p1))
+                (defs2:= (AST.prog_defs p2)); eauto. }
   destruct MATCH2' as (stbl4 & MATCH2' & ENTRIES2).
   
   (** Matching between ids and internal symbols from program 2 *)    
@@ -2735,7 +2767,9 @@ Proof.
                        (collect_internal_def_ids is_fundef_internal p1)
                        entries /\
                      map snd entries = rev s0) as MATCH1'.
-  { eapply PTree_combine_ids_defs_match_intdefs_comm1; eauto. }
+  { eapply PTree_combine_ids_defs_match_intdefs_comm1
+      with (defs1:= (AST.prog_defs p1))
+           (defs2:= (AST.prog_defs p2)); eauto. }
   destruct MATCH1' as (stbl5 & MATCH1' & ENTRIES1).
   
   (** Finish the proof using the determinacy of PTree_combine_ids_defs_match*)
