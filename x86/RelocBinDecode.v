@@ -3365,7 +3365,129 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc in HAddrmode.
       rewrite HAddrmode.
       simpl. auto.
-  +
+  + (* (Paddl_ri rd n) *)
+    exists (Paddl_ri rd n).
+    split; try(unfold instr_eq;auto).
+    monadInv HEncode.
+    unfold fmc_instr_decode.
+    simpl.
+    branch_byte_eq'.
+    unfold decode_81.
+    cbn.
+    rewrite <- Byte.and_shru.
+    rewrite shru563.
+    repeat fold (bits_to_Z  (b[ "11"] ++ b[ "000"])).
+    assert(Byte.shru bB[ b[ "11"] ++ b[ "000"] ++ x ] (Byte.repr 3) = Byte.repr 24) as shruValue. {
+      rewrite app_assoc.
+      setoid_rewrite (shru_bits 3 (b["11"]++b["000"]) x).
+      simpl. auto.
+      repeat rewrite app_length. simpl.
+      rewrite (encode_reg_length rd); auto.
+      rewrite (encode_reg_length rd); auto.
+    }
+    unfold bits_to_Z in shruValue.
+    cbn in shruValue.
+    rewrite shruValue.
+    assert(Byte.and (Byte.repr 24) (Byte.repr 7) = Byte.repr 0). {
+      unfold Byte.and. f_equal.
+    }
+    rewrite H.
+    branch_byte_eq.
+    unfold decode_addl_ri.
+    simpl.
+    assert(Byte.and  bB[ b[ "11"] ++ b[ "000"] ++ x ] (Byte.repr 7) = bB[x]) as regValue. {
+      setoid_rewrite (and7 (b[ "11"] ++ b[ "000"]) x).
+      auto.
+      repeat rewrite app_length. simpl.
+      rewrite (encode_reg_length rd); auto.
+      rewrite (encode_reg_length rd); auto.
+    }
+    setoid_rewrite regValue.
+    rewrite (encode_parse_reg_refl rd).
+    simpl.
+    generalize (encode_int32_size_Z (Int.unsigned n)).
+    intros Hintsize.
+    assert(exists e1 e2 e3 e4, (encode_int32 (Int.unsigned n))=[e1;e2;e3;e4]). {
+      generalize (list_len_gt1 _ (encode_int32 (Int.unsigned n)) 3 Hintsize).
+      intros (l' & t & H11).
+      unfold encode_int32. unfold encode_int. unfold bytes_of_int.
+      unfold rev_if_be. destruct Archi.big_endian eqn:EQED.
+      inversion EQED. eauto.
+    }
+    destruct H11 as (e1 & e2 & e3 & e4 & H12).
+    rewrite H12.
+    ++ repeat f_equal.
+       rewrite <- H12.         
+       rewrite (encode_decode_int32_same_prefix (Int.unsigned n) l).
+       rewrite Int.repr_unsigned.
+       auto.
+       generalize(Int.unsigned_range n).
+       intros H11.
+       unfold valid_int32.
+       unfold Int.modulus in H11.
+       unfold Int.wordsize in H11.
+       unfold Wordsize_32.wordsize in H11.
+       unfold two_power_nat in H11.
+       simpl in H11.
+       unfold two_power_pos.
+       simpl.
+       omega.
+    ++ auto.
+  + (* (Psubl_rr rd r1) *)
+    exists (Psubl_rr rd r1).
+    split;try(unfold instr_eq; auto).
+    unfold fmc_instr_decode.
+    monadInv HEncode.
+    simpl. 
+    branch_byte_eq.
+    unfold decode_subl_rr.
+    cbn.
+    rewrite <- Byte.and_shru.
+    rewrite shru563.
+    assert(Byte.shru  bB[ b[ "11"] ++ x ++ x0] (Byte.repr 3) =  bB[ b[ "11"] ++ x]) as shruValue. {
+      rewrite app_assoc.
+      setoid_rewrite(shru_bits 3 (b[ "11"] ++ x) x0).
+      auto.
+      repeat rewrite app_length.
+      simpl.
+      rewrite (encode_reg_length rd);auto.
+      rewrite (encode_reg_length r1);auto.
+      rewrite (encode_reg_length r1);auto.
+    }
+    unfold bits_to_Z in shruValue.
+    simpl in shruValue.
+    rewrite shruValue.
+    setoid_rewrite (and7 b["11"] x).
+    rewrite (encode_parse_reg_refl rd).
+    simpl.
+    setoid_rewrite (and7 (b["11"] ++ x) x0).
+    rewrite (encode_parse_reg_refl r1).
+    simpl. auto. auto.
+    repeat rewrite app_length.
+    simpl.
+    rewrite (encode_reg_length rd);auto.
+    1-2 :rewrite (encode_reg_length r1); auto.
+    auto.
+    repeat rewrite app_length.
+    simpl.
+    1-2 :rewrite (encode_reg_length rd); auto.
+  + (* (Pimull_rr rd r1) *)
+    exists (Pimull_rr rd r1).
+    split;try(unfold instr_eq; auto).
+    monadInv HEncode.
+    simpl. branch_byte_eq'.
+    unfold decode_0f.
+    simpl.
+    rewrite byte_eq_true.
+    unfold decode_imull_rr.
+    simpl.
+    assert((length b["11"] = 2)%nat) as len by auto.
+    generalize  (decode_encode_rr_operand_refl b["11"] rd r1 x x0 len EQ EQ1).
+    intros Hrr.
+    simpl in Hrr.
+    setoid_rewrite Hrr.
+    simpl.
+    auto.
 Admitted.
 
     
