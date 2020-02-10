@@ -3488,6 +3488,150 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     setoid_rewrite Hrr.
     simpl.
     auto.
+  + (* (Pimull_ri rd n) *)
+    exists (Pimull_ri rd n).
+    split;try(unfold instr_eq; auto).
+    monadInv HEncode.
+    simpl.
+    branch_byte_eq'.
+    unfold decode_imull_ri.
+    simpl.      
+    setoid_rewrite (and7 (b["11"]++x) x).
+    rewrite (encode_parse_reg_refl rd).
+    simpl.
+    repeat f_equal.
+    rewrite (encode_decode_int32_same_prefix (Int.unsigned n) l).
+    rewrite Int.repr_unsigned. auto.
+    generalize (Int.unsigned_range n). intros H.
+    unfold valid_int32.
+    unfold Int.modulus in H.
+    unfold two_power_nat in H.
+    simpl in H.
+    unfold two_power_pos.
+    simpl. omega.
+    auto.
+    repeat rewrite app_length.
+    simpl.
+    rewrite (encode_reg_length rd).
+    auto. auto.
+    rewrite (encode_reg_length rd);auto.
+  + (* Pcltd *)
+    exists Pcltd.
+    split; try(unfold instr_eq;auto).
+  + (* (Pidivl r1) *)
+    exists (Pidivl r1).
+    split;try(unfold instr_eq; auto).
+    monadInv HEncode.
+    simpl. branch_byte_eq'.
+    unfold decode_idivl.
+    simpl.
+    setoid_rewrite(and7 (b["11"]++b["110"]) x).
+    rewrite (encode_parse_reg_refl r1).
+    simpl.
+    1-4: auto.
+    repeat rewrite app_length.
+    simpl.
+    1-2: rewrite(encode_reg_length r1);auto.
+  + (* (Pxorl_r rd) *)
+    exists (Pxorl_r rd).
+    split; try(unfold instr_eq; auto).
+    monadInv HEncode.
+    simpl. branch_byte_eq. unfold decode_xorl_r.
+    simpl.
+    setoid_rewrite(and7 (b["11"] ++ x) x).
+    rewrite (encode_parse_reg_refl rd x EQ).
+    simpl.
+    auto.
+    repeat rewrite app_length.
+    simpl.
+    1-2:  repeat rewrite (encode_reg_length rd); auto.
+  + (* PSall_ri rd n *)
+    exists(Psall_ri rd (Int.repr (Int.unsigned n mod Byte.modulus))).
+    split;try (unfold instr_eq;auto).
+    monadInv HEncode.
+    simpl.
+    branch_byte_eq'.
+    unfold decode_sall_ri.
+    simpl.
+    setoid_rewrite(and7 ( b[ "11"] ++ b[ "100"]) x).
+    rewrite (encode_parse_reg_refl rd).
+    simpl.
+    repeat f_equal.
+    unfold decode_int_n.
+    setoid_rewrite (sublist_prefix [(Byte.repr (Int.unsigned n))] l).
+    
+    unfold decode_int.
+    unfold int_of_bytes.
+    assert (rev_if_be [Byte.repr (Int.unsigned n)] = [Byte.repr (Int.unsigned n)]) as rid. {
+      unfold rev_if_be.
+      destruct Archi.big_endian; simpl; auto.
+    }
+    rewrite rid.
+    rewrite Byte.unsigned_repr_eq.
+    simpl.
+    rewrite <- (Zplus_0_r_reverse (Int.unsigned n mod Byte.modulus)).
+    1-4: auto.
+    repeat rewrite length_app. simpl.
+    1-2: rewrite (encode_reg_length rd);auto.
+  + (* (Pcmpl_rr r1 r2) *)
+    exists (Pcmpl_rr r1 r2).
+    split;try(unfold instr_eq; auto).
+    monadInv HEncode.
+    simpl. branch_byte_eq'.
+    unfold decode_cmpl_rr.
+    simpl.
+    assert((length b["11"] = 2)%nat) as len by auto.
+    generalize  (decode_encode_rr_operand_refl b["11"] r2 r1 x0 x len EQ1 EQ).
+    intros Hrr.
+    simpl in Hrr.
+    setoid_rewrite Hrr.
+    simpl.
+    auto.
+  + (* (Pcmpl_ri r1 n) *)
+    exists (Pcmpl_ri r1 n).
+    split; try(unfold instr_eq; auto).
+    monadInv HEncode.
+    simpl. branch_byte_eq'.
+    unfold decode_81.      
+    simpl.
+    assert (Byte.shru (Byte.and  bB[ b[ "11"] ++ b[ "111"] ++ x] (Byte.repr 56)) (Byte.repr 3) = Byte.repr 7) as opcodeEQ. {
+      rewrite <- Byte.and_shru.
+      setoid_rewrite (shru_bits 3 (b["11"]++b["111"]) x).
+      unfold Byte.shru.
+      simpl. repeat rewrite Byte.unsigned_repr. unfold Z.shiftr.
+      simpl. unfold Byte.and. f_equal.
+      unfold Byte.max_unsigned. simpl. omega.
+      unfold Byte.max_unsigned. simpl. omega.
+      repeat rewrite app_length.
+      simpl.
+      rewrite (encode_reg_length r1).
+      omega.
+      apply EQ.
+      rewrite (encode_reg_length r1); auto.
+    }
+    simpl in opcodeEQ.
+    rewrite opcodeEQ.
+    rewrite byte_eq_true.
+    unfold decode_cmpl_ri.
+    simpl.
+    setoid_rewrite (and7 (b["11"]++b["111"]) x).
+    rewrite (encode_parse_reg_refl r1).
+    simpl. repeat f_equal.
+    rewrite (encode_decode_int32_same_prefix (Int.unsigned n) l).
+    rewrite Int.repr_unsigned. auto.
+    generalize (Int.unsigned_range n). intros H.
+    unfold valid_int32.
+    unfold Int.modulus in H.
+    unfold two_power_nat in H.
+    simpl in H.
+    unfold two_power_pos.
+    simpl. omega.
+    1-3: auto.
+    repeat rewrite app_length.
+    simpl.
+    1-2: rewrite (encode_reg_length r1).
+    1-4: auto.
+  
 Admitted.
 
     
