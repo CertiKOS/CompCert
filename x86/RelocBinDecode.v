@@ -3631,7 +3631,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     simpl.
     1-2: rewrite (encode_reg_length r1).
     1-4: auto.
-  
+   
 Admitted.
 
     
