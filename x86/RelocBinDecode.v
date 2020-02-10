@@ -3819,7 +3819,66 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
          admit.
     }
     rewrite -> H_de. auto.
-    
+  + (* (Pjcc_rel c ofs0) *)
+    exists (Pjcc_rel c ofs0).
+    split;try(unfold instr_eq; auto).
+    destruct c.
+    1-12: unfold fmc_instr_decode; simpl; branch_byte_eq'.
+    1-12: unfold decode_0f; simpl; rewrite byte_eq_false.
+    1-24: try(intros HNot; inversion HNot).
+    1-12: unfold decode_jcc_rel; simpl; branch_byte_eq'; repeat f_equal.
+    1-12: apply (encode_decode_int32_same_prefix (ofs0) l).
+    1-12: admit.
+  + (* Pnop *)
+    exists Pnop.
+    split; try(unfold instr_eq; auto).
+  + (* Psubl_ri rd n *)
+    exists (Psubl_ri rd n).
+    split; try(unfold instr_eq; auto).
+    monadInv HEncode.
+    unfold fmc_instr_decode. simpl.
+    branch_byte_eq.
+    unfold decode_81.
+    cbn.
+    rewrite <- Byte.and_shru.
+    rewrite shru563.
+    assert(Byte.shru (bB[b[ "11"] ++ b[ "101"] ++ x]) (Byte.repr 3) = (bB[b[ "11"] ++ b[ "101"]])) as shruValue. {
+      rewrite app_assoc.
+      setoid_rewrite(shru_bits 3 (b[ "11"] ++ b[ "101"]) x).
+      auto.
+      repeat rewrite app_length.
+      simpl.
+      rewrite (encode_reg_length rd);auto.
+      rewrite (encode_reg_length rd);auto.
+    }
+    unfold bits_to_Z in shruValue.
+    simpl in shruValue.
+    rewrite shruValue.
+    assert(Byte.and (Byte.repr 29) (Byte.repr 7) = Byte.repr 5) as and297. {
+      unfold Byte.and.
+      f_equal.
+    }
+    rewrite and297.
+    branch_byte_eq.
+    unfold decode_subl_ri. simpl.
+    setoid_rewrite (and7 ( b[ "11"] ++ b[ "101"]) x).
+    rewrite (encode_parse_reg_refl rd);auto.
+    simpl.
+    repeat f_equal.
+    rewrite encode_decode_int32_same_prefix.
+    rewrite Int.repr_unsigned. auto.
+    generalize (Int.unsigned_range n).
+    intros H.
+    unfold Int.modulus in H; unfold Int.wordsize in H; unfold Wordsize_32.wordsize in H.
+    unfold two_power_nat in H; simpl in H.
+    unfold valid_int32.
+    unfold two_power_pos. simpl. omega.
+    repeat rewrite app_length.
+    simpl.
+    rewrite (encode_reg_length rd).
+    auto.
+    auto.
+    rewrite (encode_reg_length rd); auto.
 Admitted.
 
     
