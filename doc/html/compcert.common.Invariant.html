@@ -1,0 +1,356 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Invariant</title>
+<meta name="description" content="Documentation of Coq module Invariant" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Invariant</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Events.html">Events</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<br/>
+<div class="doc">Simulation proofs sometimes rely on invariants of the source
+  and/or target languages, such as type preservation. The
+  constructions defined below can be used to decouple these
+  preservation and simulation proofs, and to introduce calling
+  conventions characterizing the invariant at module boundaries. </div>
+<br/>
+<br/>
+<h1> Invariants </h1>
+<br/>
+<h2> Interface </h2>
+<br/>
+<div class="doc">First, we need to define a sort of "invariant interface", which
+  will describe how a given invariant impacts the queries and replies
+  of the language under consideration. </div>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="invariant">invariant</a></span> {<span class="id">li</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#language_interface">language_interface</a></span>} :=<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="inv_world">inv_world</a></span> : <span class="kwd">Type</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="symtbl_inv">symtbl_inv</a></span> : <span class="id"><a href="compcert.common.Invariant.html#inv_world">inv_world</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="kwd">Prop</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="query_inv">query_inv</a></span> : <span class="id"><a href="compcert.common.Invariant.html#inv_world">inv_world</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#query">query</a></span> <span class="id"><a href="compcert.common.Invariant.html#li">li</a></span> -&gt; <span class="kwd">Prop</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="reply_inv">reply_inv</a></span> : <span class="id"><a href="compcert.common.Invariant.html#inv_world">inv_world</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#reply">reply</a></span> <span class="id"><a href="compcert.common.Invariant.html#li">li</a></span> -&gt; <span class="kwd">Prop</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="id">Arguments</span> <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> : <span class="tactic">clear</span> <span class="id">implicits</span>.<br/>
+<br/>
+<h2> Preservation </h2>
+<br/>
+<div class="doc">A small step semantics preserves an externally observable
+  invariant if the following properties hold. In addition to the
+  invariant interfaces for the incoming function call (<span class="bracket"><span class="id">IB</span></span>) and any
+  outgoing external calls (<span class="bracket"><span class="id">IA</span></span>), we specify a "state invariant" <span class="bracket"><span class="id">IS</span></span>
+  which will be estblished by the initial query and external call
+  returns, preserved by internal steps, and ensure the invariant
+  interface is respected at external calls and final states. </div>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="lts_preserves">lts_preserves</a></span> {<span class="id">liA</span> <span class="id">liB</span> <span class="id">S</span>} <span class="id">se</span> (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#lts">lts</a></span> <span class="id"><a href="compcert.common.Invariant.html#liA">liA</a></span> <span class="id"><a href="compcert.common.Invariant.html#liB">liB</a></span> <span class="id"><a href="compcert.common.Invariant.html#S">S</a></span>) <span class="id">IA</span> <span class="id">IB</span> (<span class="id">IS</span>: <span class="id">_</span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#S">S</a></span> -&gt; <span class="kwd">Prop</span>) <span class="id">w</span> :=<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="preserves_step">preserves_step</a></span> <span class="id">s</span> <span class="id">t</span> <span class="id">s</span>':<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Step</span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#t">t</a></span> <span class="id">s</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id">s</span>';<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="preserves_initial_state">preserves_initial_state</a></span> <span class="id">q</span> <span class="id">s</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="preserves_external">preserves_external</a></span> <span class="id">s</span> <span class="id">q</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#at_external">at_external</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">wA</span>, <span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> /\ <span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">s</span>', <span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#after_external">after_external</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> <span class="id">s</span>' -&gt; <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id">s</span>';<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="preserves_final_state">preserves_final_state</a></span> <span class="id">s</span> <span class="id">r</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#final_state">final_state</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="preserves">preserves</a></span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.Invariant.html#liA">liA</a></span> <span class="id"><a href="compcert.common.Invariant.html#liB">liB</a></span>) (<span class="id">IA</span> <span class="id">IB</span>: <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> <span class="id">_</span>) <span class="id">IS</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">se</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.valid_for">Genv.valid_for</a></span> (<span class="id"><a href="compcert.common.Smallstep.html#skel">skel</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span>) <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#lts_preserves">lts_preserves</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> (<span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span>.<br/>
+<br/>
+<h2> As calling conventions </h2>
+<br/>
+<div class="doc">Invariant interfaces are essentially a unary version of calling
+  conventions, and can in fact be lifted into actual, binary calling
+  conventions asserting that the source and target queries are
+  identical, and furthermore satisfy the given invariant. </div>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="rel_inv">rel_inv</a></span> {<span class="id">A</span>} (<span class="id">I</span>: <span class="id"><a href="compcert.common.Invariant.html#A">A</a></span> -&gt; <span class="kwd">Prop</span>) (<span class="id">x</span>: <span class="id"><a href="compcert.common.Invariant.html#A">A</a></span>): <span class="id">A</span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="rel_inv_intro">rel_inv_intro</a></span>: <span class="id"><a href="compcert.common.Invariant.html#I">I</a></span> <span class="id"><a href="compcert.common.Invariant.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#I">I</a></span> <span class="id"><a href="compcert.common.Invariant.html#x">x</a></span> <span class="id"><a href="compcert.common.Invariant.html#x">x</a></span>.<br/>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Coercion</span> <span class="id">cc_inv</span> {<span class="id">li</span>} (<span class="id">I</span>: <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> <span class="id"><a href="compcert.common.Invariant.html#li">li</a></span>): <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.Invariant.html#li">li</a></span> <span class="id"><a href="compcert.common.Invariant.html#li">li</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := <span class="id"><a href="compcert.common.Invariant.html#inv_world">inv_world</a></span> <span class="id"><a href="compcert.common.Invariant.html#I">I</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> <span class="id">w</span> := <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#I">I</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> <span class="id">w</span> := <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#I">I</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> <span class="id">w</span> := <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#I">I</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span>);<br/>
+&nbsp;&nbsp;|}.<br/>
+<span class="kwd">Solve</span> <span class="id">All</span> <span class="kwd">Obligations</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;<span class="id">cbn</span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
+<br/>
+<div class="doc">With this, an invariant preservation proof can itself be lifted
+  into a self-simulation by the invariant calling conventions. </div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="preserves_fsim">preserves_fsim</a></span> {<span class="id">li</span> <span class="id">res</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.Invariant.html#li">li</a></span> <span class="id"><a href="compcert.common.Invariant.html#res">res</a></span>) <span class="id">IA</span> <span class="id">IB</span> <span class="id">IS</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#preserves">preserves</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.Invariant.html#cc_inv">cc_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span>) (<span class="id"><a href="compcert.common.Invariant.html#cc_inv">cc_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span>) <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#L">L</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2195')">Proof.</div>
+<div class="proofscript" id="proof2195">
+&nbsp;&nbsp;<span class="id">fsim</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_step">forward_simulation_step</a></span> <span class="kwd">with</span> (<span class="id">match_states</span> := <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> (<span class="id">IS</span> <span class="id">w</span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse</span>; <span class="tactic">subst</span>).<br/>
+&nbsp;&nbsp;- <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> 1. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q</span> <span class="id">_</span> <span class="id">s</span> [<span class="id">Hq</span>] <span class="id">Hs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">s</span>. <span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_initial_state">preserves_initial_state</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">_</span> <span class="id">r</span> [<span class="id">Hs</span>] <span class="id">Hr</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">r</span>. <span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_final_state">preserves_final_state</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">_</span> <span class="id">q</span> [<span class="id">Hs</span>] <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Invariant.html#preserves_external">preserves_external</a></span> <span class="kwd">as</span> (<span class="id">wA</span> &amp; <span class="id">Hse</span> &amp; <span class="id">HqA</span> &amp; <span class="id">Hr</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">wA</span>, <span class="id">q</span>. <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="id">cbn</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">intros</span> <span class="id">r</span>' <span class="id">_</span> <span class="id">s</span>' [<span class="id">Hr</span>'] <span class="id">Hs</span>'.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">s</span>'. <span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">Hr</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">t</span> <span class="id">s</span>' <span class="id">Hstep</span> <span class="id">_</span> [<span class="id">Hs</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">s</span>'. <span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_step">preserves_step</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<h1> Invariant-based simulation proof methods </h1>
+<br/>
+<div class="doc">Once we have established that the source or target language
+  preserves an invariant of interest, we wish to use that fact to
+  help prove the forward simulation for the pass being considered.
+  The most basic way to do that is to add an assertion to the
+  simulation relation that the states satisfy the invariant. Then,
+  we rely on these assertions to prove a simulation step, and use the
+  relevant preservation lemmas to establish them again for the
+  successor states. This approach is workable and has been used in
+  CompCert for typing invariants, but it is somewhat ad-hoc and
+  becomes more involved when the interaction with the environment is
+  involved in the invariant's preservation.
+  Instead, we would like to formulate a weaker simulation diagram,
+  where the invariant can be assumed on the current states but does
+  not need to be established for the successor states, then show that
+  if the language involved <span class="bracket"><span class="id">preserves</span></span> the invariant (in the sense
+  defined above), then this weakened diagram is sufficient to
+  establish a forward simulation for the pass.
+  The most straightforward way to do this would be to define a
+  weakened version of <span class="bracket"><span class="id">forward_simulation</span></span> along these lines, however
+  this comes with its own pitfall: there already exists many lemmas
+  one can use to establish a <span class="bracket"><span class="id">forward_simulation</span></span> using simplified
+  diagrams rather than the more complex, general form, and we would
+  like to be able to use simplified diagrams for our weakened version
+  as well. Under this approach, we would have to duplicate such lemmas
+  for the weakened diagram. Instead, the method implemented below
+  reuses <span class="bracket"><span class="id">forward_simulation</span></span> and expresses the weakened diagram as a
+  special case, making it possible to reuse all existing techniques to
+  prove it.
+  Since by definition, <span class="bracket"><span class="id">forward_simulation</span></span> uses the same simulation
+  relation for the current and successor states, we accomplish this by
+  acting on the transition systems themselves:
+    - for the source language, we can build a strengthened version of
+      the transition system which restricts the transitions to states
+      which statisfy the invariant;
+    - for the target language, we can build a relaxed version of the
+      transition system which adds arbitrary transitions from states
+      which do not satisfy the invariant.
+  Proving a simulation from the strengthened source semantics, and/or
+  to the weakened target semantics, is easier because we have
+  hypotheses that the states involved satify the invariant. At the
+  same time, for an invariant-preserving language, we can easily show
+  a simulation from the original to the strengthened version, and from
+  the weakened to the original version, and these simulations can be
+  composed with that proved by the used to obtain the desired one. </div>
+<br/>
+<h2> Strengthening the source semantics </h2>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="RESTRICT">RESTRICT</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.Invariant.html#liA">liA</a></span> <span class="id"><a href="compcert.common.Invariant.html#liB">liB</a></span>).<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> (<span class="id">IA</span>: <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.liA">liA</a></span>) (<span class="id">IB</span>: <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.liB">liB</a></span>).<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> (<span class="id">IS</span>: <span class="id"><a href="compcert.common.Invariant.html#inv_world">inv_world</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#state">state</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> -&gt; <span class="kwd">Prop</span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="restrict_lts">restrict_lts</a></span> <span class="id">se</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Build_lts">step</a></span> <span class="id">ge</span> <span class="id">s</span> <span class="id">t</span> <span class="id">s</span>' :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#step">step</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#ge">ge</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#t">t</a></span> <span class="id">s</span>' /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id">s</span>';<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">valid_query</span> <span class="id">q</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#valid_query">valid_query</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">initial_state</span> <span class="id">q</span> <span class="id">s</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#initial_state">initial_state</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">final_state</span> <span class="id">s</span> <span class="id">r</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#final_state">final_state</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">at_external</span> <span class="id">s</span> <span class="id">q</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span> <span class="id">wA</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#at_external">at_external</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">after_external</span> <span class="id">s</span> <span class="id">r</span> <span class="id">s</span>' :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span> <span class="id">wA</span> <span class="id">q</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#at_external">at_external</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#after_external">after_external</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> <span class="id">s</span>' /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id">s</span>';<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">globalenv</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#globalenv">globalenv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>);<br/>
+&nbsp;&nbsp;|}.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="restrict">restrict</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Build_semantics">skel</a></span> := <span class="id"><a href="compcert.common.Smallstep.html#skel">skel</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">state</span> := <span class="id"><a href="compcert.common.Smallstep.html#state">state</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">activate</span> <span class="id">se</span> := <span class="id"><a href="compcert.common.Invariant.html#restrict_lts">restrict_lts</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="restrict_fsim">restrict_fsim</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#preserves">preserves</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.Invariant.html#cc_inv">cc_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IA">IA</a></span>) (<span class="id"><a href="compcert.common.Invariant.html#cc_inv">cc_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span>) <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#restrict">restrict</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2196')">Proof.</div>
+<div class="proofscript" id="proof2196">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">fsim</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_step">forward_simulation_step</a></span> <span class="kwd">with</span> (<span class="id">match_states</span> := <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id">w</span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse</span>; <span class="tactic">subst</span>); <span class="id">cbn</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">destruct</span> 1. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q</span> <span class="id">_</span> <span class="id">s</span> [<span class="id">Hq</span>] <span class="id">Hs</span>. <span class="id">exists</span> <span class="id">s</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id">w</span> <span class="id">s</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_initial_state">preserves_initial_state</a></span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> 10 <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">_</span> <span class="id">r</span> [<span class="id">Hs</span>] <span class="id">Hr</span>. <span class="id">exists</span> <span class="id">r</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IB">IB</a></span> <span class="id">w</span> <span class="id">r</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_final_state">preserves_final_state</a></span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> 10 <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">_</span> <span class="id">q</span> [<span class="id">Hs</span>] <span class="id">Hx</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Invariant.html#preserves_external">preserves_external</a></span> <span class="kwd">as</span> (<span class="id">wA</span> &amp; <span class="id">HseA</span> &amp; <span class="id">Hq</span> &amp; <span class="id">Hk</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span> <span class="id">wA</span>, <span class="id">q</span>. <span class="tactic">intuition</span> <span class="tactic">eauto</span> 10 <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>. <span class="id">exists</span> <span class="id">s1</span>'. <span class="tactic">intuition</span> <span class="tactic">eauto</span> 20 <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">t</span> <span class="id">s</span>' <span class="id">STEP</span> <span class="id">_</span> [<span class="id">Hs</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Invariant.html#RESTRICT.IS">IS</a></span> <span class="id">w</span> <span class="id">s</span>') <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_step">preserves_step</a></span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">s</span>'. <span class="tactic">eauto</span> 10 <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.common.Invariant.html#RESTRICT">RESTRICT</a></span>.<br/>
+<br/>
+<h2> Weakening the target semantics </h2>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="EXPAND">EXPAND</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.Invariant.html#liA">liA</a></span> <span class="id"><a href="compcert.common.Invariant.html#liB">liB</a></span>).<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> (<span class="id">IA</span>: <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.liA">liA</a></span>) (<span class="id">IB</span>: <span class="id"><a href="compcert.common.Invariant.html#invariant">invariant</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.liB">liB</a></span>).<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> (<span class="id">IS</span>: <span class="id"><a href="compcert.common.Invariant.html#inv_world">inv_world</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#state">state</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> -&gt; <span class="kwd">Prop</span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="expand_lts">expand_lts</a></span> <span class="id">se</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Build_lts">valid_query</a></span> <span class="id">q</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#valid_query">valid_query</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">step</span> <span class="id">ge</span> <span class="id">s</span> <span class="id">t</span> <span class="id">s</span>' :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span>, <span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#step">step</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#ge">ge</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#t">t</a></span> <span class="id">s</span>';<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">initial_state</span> <span class="id">q</span> <span class="id">s</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span>, <span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#initial_state">initial_state</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">final_state</span> <span class="id">s</span> <span class="id">r</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span>, <span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#final_state">final_state</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">at_external</span> <span class="id">s</span> <span class="id">q</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span>, <span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#at_external">at_external</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">after_external</span> <span class="id">s</span> <span class="id">r</span> <span class="id">s</span>' :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">wA</span> <span class="id">q</span>, <span class="id"><a href="compcert.common.Invariant.html#symtbl_inv">symtbl_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id"><a href="compcert.common.Invariant.html#w">w</a></span> <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#at_external">at_external</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#query_inv">query_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#q">q</a></span> -&gt; <span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#wA">wA</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#after_external">after_external</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>) <span class="id"><a href="compcert.common.Invariant.html#s">s</a></span> <span class="id"><a href="compcert.common.Invariant.html#r">r</a></span> <span class="id">s</span>';<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">globalenv</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#globalenv">globalenv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="expand">expand</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Build_semantics">skel</a></span> := <span class="id"><a href="compcert.common.Smallstep.html#skel">skel</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">state</span> := <span class="id"><a href="compcert.common.Smallstep.html#state">state</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">activate</span> <span class="id">se</span> := <span class="id"><a href="compcert.common.Invariant.html#expand_lts">expand_lts</a></span> <span class="id"><a href="compcert.common.Invariant.html#se">se</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="expand_fsim">expand_fsim</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#preserves">preserves</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.Invariant.html#cc_inv">cc_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IA">IA</a></span>) (<span class="id"><a href="compcert.common.Invariant.html#cc_inv">cc_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span>) <span class="id"><a href="compcert.common.Invariant.html#expand">expand</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.L">L</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2197')">Proof.</div>
+<div class="proofscript" id="proof2197">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">fsim</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_step">forward_simulation_step</a></span> <span class="kwd">with</span> (<span class="id">match_states</span> := <span class="id"><a href="compcert.common.Invariant.html#rel_inv">rel_inv</a></span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id">w</span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse</span>; <span class="tactic">subst</span>); <span class="id">cbn</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">destruct</span> 1; <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q</span> <span class="id">_</span> <span class="id">s</span> [<span class="id">Hq</span>] <span class="id">Hs</span>. <span class="id">exists</span> <span class="id">s</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id">w</span> <span class="id">s</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_initial_state">preserves_initial_state</a></span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">_</span> <span class="id">r</span> [<span class="id">Hs</span>] <span class="id">Hr</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Invariant.html#reply_inv">reply_inv</a></span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND.IB">IB</a></span> <span class="id">w</span> <span class="id">r</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_final_state">preserves_final_state</a></span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">_</span> <span class="id">q</span> [<span class="id">Hs</span>] <span class="id">Hk</span>. <span class="id">specialize</span> (<span class="id">Hk</span> <span class="id">w</span> <span class="id">H</span> <span class="id">Hs</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Invariant.html#preserves_external">preserves_external</a></span> <span class="kwd">as</span> (<span class="id">wA</span> &amp; <span class="id">HseA</span> &amp; <span class="id">Hq</span> &amp; <span class="id">Hr</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">wA</span>, <span class="id">q</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>. <span class="id">exists</span> <span class="id">s1</span>'. <span class="tactic">intuition</span> <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">t</span> <span class="id">s</span>' <span class="id">STEP</span> <span class="id">_</span> [<span class="id">Hs</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Invariant.html#EXPAND.IS">IS</a></span> <span class="id">w</span> <span class="id">s</span>') <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_step">preserves_step</a></span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">s</span>'. <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Invariant.html#rel_inv_intro">rel_inv_intro</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.common.Invariant.html#EXPAND">EXPAND</a></span>.<br/>
+<br/>
+<h2> Using invariants to prove simulations </h2>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="METHODS">METHODS</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">liA1</span> <span class="id">liA2</span>} {<span class="id">ccA</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.Invariant.html#liA1">liA1</a></span> <span class="id"><a href="compcert.common.Invariant.html#liA2">liA2</a></span>}.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">liB1</span> <span class="id">liB2</span>} {<span class="id">ccB</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.Invariant.html#liB1">liB1</a></span> <span class="id"><a href="compcert.common.Invariant.html#liB2">liB2</a></span>}.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> (<span class="id">L1</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.liA1">liA1</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.liB1">liB1</a></span>) (<span class="id">L2</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.liA2">liA2</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.liB2">liB2</a></span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="source_invariant_fsim">source_invariant_fsim</a></span> <span class="id">IA</span> <span class="id">IB</span> <span class="id">IS</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#preserves">preserves</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L1">L1</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.ccA">ccA</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.ccB">ccB</a></span> (<span class="id"><a href="compcert.common.Invariant.html#restrict">restrict</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L1">L1</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span>) <span class="id"><a href="compcert.common.Invariant.html#METHODS.L2">L2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> @ <span class="id"><a href="compcert.common.Invariant.html#METHODS.ccA">ccA</a></span>) (<span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> @ <span class="id"><a href="compcert.common.Invariant.html#METHODS.ccB">ccB</a></span>) <span class="id"><a href="compcert.common.Invariant.html#METHODS.L1">L1</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L2">L2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2198')">Proof.</div>
+<div class="proofscript" id="proof2198">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">HL1</span> <span class="id">HL</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Invariant.html#restrict_fsim">restrict_fsim</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="target_invariant_fsim">target_invariant_fsim</a></span> <span class="id">IA</span> <span class="id">IB</span> <span class="id">IS</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#preserves">preserves</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L2">L2</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.ccA">ccA</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.ccB">ccB</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L1">L1</a></span> (<span class="id"><a href="compcert.common.Invariant.html#expand">expand</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L2">L2</a></span> <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span> <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span> <span class="id"><a href="compcert.common.Invariant.html#IS">IS</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.Invariant.html#METHODS.ccA">ccA</a></span> @ <span class="id"><a href="compcert.common.Invariant.html#IA">IA</a></span>) (<span class="id"><a href="compcert.common.Invariant.html#METHODS.ccB">ccB</a></span> @ <span class="id"><a href="compcert.common.Invariant.html#IB">IB</a></span>) <span class="id"><a href="compcert.common.Invariant.html#METHODS.L1">L1</a></span> <span class="id"><a href="compcert.common.Invariant.html#METHODS.L2">L2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2199')">Proof.</div>
+<div class="proofscript" id="proof2199">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">HL2</span> <span class="id">HL</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Invariant.html#expand_fsim">expand_fsim</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.common.Invariant.html#METHODS">METHODS</a></span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

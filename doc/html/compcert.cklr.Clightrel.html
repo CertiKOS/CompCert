@@ -1,0 +1,874 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Clightrel</title>
+<meta name="description" content="Documentation of Coq module Clightrel" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Clightrel</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Errors.html">Errors</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Mapsrel.html">Mapsrel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Floats.html">Floats</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Valuesrel.html">Valuesrel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.CKLR.html">CKLR</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Eventsrel.html">Eventsrel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html">Ctypes</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Coprel.html">Coprel</a></span>.<br/>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">LogicalRelations</span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">OptionRel</span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">KLR</span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.cfrontend.Clight.html">Clight</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cfrontend.SimplLocalsproof.html">SimplLocalsproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Linking.html">Linking</a></span>.<br/>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="PROG">PROG</a></span>.<br/>
+<br/>
+<span class="kwd">Context</span> (<span class="id">p</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#program">program</a></span>).<br/>
+<br/>
+<div class="doc">Global environments </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="genv_match">genv_match</a></span> <span class="id">R</span> <span class="id">w</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Definitions.html#relation">relation</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#genv">genv</a></span> :=<br/>
+&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.CKLR.html#match_stbls">match_stbls</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) !! (<span class="kwd">fun</span> <span class="id">se</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>).<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="genv_genv_match">genv_genv_match</a></span> <span class="id">R</span> <span class="id">w</span>: <br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Clight.html#genv_genv">genv_genv</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_genvs">Genv.match_genvs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) (<span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>) <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2637')">Proof.</div>
+<div class="proofscript" id="proof2637">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span>. <span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">destruct</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.globalenvs_match">Genv.globalenvs_match</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> (@<span class="id"><a href="compcert.common.AST.html#prog_defs">AST.prog_defs</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#fundef">fundef</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#type">type</a></span> (@<span class="id"><a href="compcert.cfrontend.Ctypes.html#program_of_program">program_of_program</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#function">function</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">as</span> [ | [<span class="id">id</span> [<span class="id">f</span>|[ ]]] ? ?];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>).<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_proj">match_stbls_proj</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="genv_cenv_match">genv_cenv_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> <span class="id"><a href="compcert.cfrontend.Clight.html#genv_cenv">genv_cenv</a></span> (<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2638')">Proof.</div>
+<div class="proofscript" id="proof2638">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span>. <span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">destruct</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="match_prog">match_prog</a></span> {<span class="id">C</span>} `{!<span class="id"><a href="compcert.common.Linking.html#Linker">Linking.Linker</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#C">C</a></span>} (<span class="id">c</span>: <span class="id"><a href="compcert.cklr.Clightrel.html#C">C</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program_gen">Linking.match_program_gen</a></span> (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>) <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#c">c</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2639')">Proof.</div>
+<div class="proofscript" id="proof2639">
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> (<span class="id"><a href="compcert.common.AST.html#prog_defs">AST.prog_defs</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>) <span class="kwd">as</span> [ | [<span class="id">id</span> [<span class="id">f</span>|<span class="id">v</span>]] <span class="id">defs</span> <span class="id">IHdefs</span>];<br/>
+&nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">Linking.linkorder_refl</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">v</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">NB: we have to use <span class="bracket"><span class="id">option_rel</span></span> here not <span class="bracket"><span class="id">option_le</span></span>, because
+  otherwise it is difficult to state the monotonicity property of
+  <span class="bracket"><span class="id">blocks_of_env</span></span> (we would have to introduce some kind of "subset"
+  list relator) </div>
+<span class="kwd">Definition</span> <span class="id"><a name="env_match">env_match</a></span> <span class="id">R</span> <span class="id">w</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Mapsrel.html#PTreeRel.r">PTreeRel.r</a></span> (<span class="id">option_rel</span> (<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) * @<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#type">type</a></span>)).<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="env_match_acc">env_match_acc</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span>) (<span class="id">forallr</span> - @ <span class="id">R</span>, <span class="id">acc</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> ++&gt; <span class="id">subrel</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2640')">Proof.</div>
+<div class="proofscript" id="proof2640">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="empty_env_match">empty_env_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#empty_env">empty_env</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2641')">Proof.</div>
+<div class="proofscript" id="proof2641">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span>, <span class="id"><a href="compcert.cfrontend.Clight.html#empty_env">empty_env</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="temp_env_match">temp_env_match</a></span> <span class="id">R</span> <span class="id">w</span>: <span class="id">rel</span> <span class="id"><a href="compcert.cfrontend.Clight.html#temp_env">temp_env</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#temp_env">temp_env</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Mapsrel.html#PTreeRel.r">PTreeRel.r</a></span> (<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>))).<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="temp_env_match_acc">temp_env_match_acc</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span>) (<span class="id">forallr</span> - @ <span class="id">R</span>, <span class="id">acc</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> ++&gt; <span class="id">subrel</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2642')">Proof.</div>
+<div class="proofscript" id="proof2642">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="deref_loc_match">deref_loc_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#deref_loc">deref_loc</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; % <span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject">ptrbits_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">set_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>))).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2643')">Proof.</div>
+<div class="proofscript" id="proof2643">
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">a</span> <span class="id">H1</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id">R</span> <span class="id">w</span>) (<span class="id"><a href="compcert.common.Values.html#Vptr">Vptr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> <span class="id">x1</span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> <span class="id">x1</span>)) (<span class="id"><a href="compcert.common.Values.html#Vptr">Vptr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> <span class="id">y0</span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> <span class="id">y0</span>))) <span class="kwd">as</span> <span class="id">VAL</span>.<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x1</span>; <span class="tactic">destruct</span> <span class="id">y0</span>; <span class="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H0</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">red</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> * |- * .<br/>
+&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H1</span>; <span class="tactic">subst</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#deref_loc_reference">deref_loc_reference</a></span>, @<span class="id"><a href="compcert.cfrontend.Clight.html#deref_loc_copy">deref_loc_copy</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.cklr.CKLR.html#cklr_loadv">cklr_loadv</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">chunk</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span> <span class="id">_</span> <span class="id">_</span> <span class="id">VAL</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H4</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">inversion</span> 1; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">symmetry</span> <span class="kwd">in</span> <span class="id">H7</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#deref_loc_value">deref_loc_value</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#deref_loc">deref_loc</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<div class="doc"><span class="bracket"><span class="id">assign_loc</span></span> is somewhat involved. </div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="assign_loc_match_alignof_blockcopy">assign_loc_match_alignof_blockcopy</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">ofs2</span> <span class="id">env</span> <span class="id">ty</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject">ptrbits_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#b1">b1</a></span>, <span class="id"><a href="compcert.cklr.Clightrel.html#ofs1">ofs1</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#b2">b2</a></span>, <span class="id"><a href="compcert.cklr.Clightrel.html#ofs2">ofs2</a></span>) -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#env">env</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ty">ty</a></span> &gt; 0 -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.range_perm">Mem.range_perm</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#b1">b1</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ofs1">ofs1</a></span>) (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ofs1">ofs1</a></span> + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#env">env</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ty">ty</a></span>) <span class="id"><a href="compcert.common.Memtype.html#Cur">Cur</a></span> <span class="id"><a href="compcert.common.Memtype.html#Nonempty">Nonempty</a></span> -&gt;<br/>
+&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy">alignof_blockcopy</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#env">env</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ty">ty</a></span> | <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ofs1">ofs1</a></span>) -&gt;<br/>
+&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy">alignof_blockcopy</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#env">env</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ty">ty</a></span> | <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ofs2">ofs2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2644')">Proof.</div>
+<div class="proofscript" id="proof2644">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hm</span> <span class="id">Hptr</span> <span class="id">Hsz</span> <span class="id">Hperm</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hptr</span>.<br/>
+&nbsp;&nbsp;<span class="id">erewrite</span> (<span class="id"><a href="compcert.cklr.CKLR.html#cklr_address_inject">cklr_address_inject</a></span> <span class="id">R</span> <span class="id">w</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id"><a href="compcert.cklr.CKLR.html#cklr_aligned_area_inject">cklr_aligned_area_inject</a></span> <span class="id">R</span> <span class="id">w</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy_1248">alignof_blockcopy_1248</a></span>.<br/>
+&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_alignof_blockcopy_compat">sizeof_alignof_blockcopy_compat</a></span>.<br/>
+&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id">Hperm</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">omega</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="assign_loc_match">assign_loc_match</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#assign_loc">assign_loc</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= - ==&gt; - ==&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;% <span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject">ptrbits_inject</a></span> @@ [<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>] ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> @@ [<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>] ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2645')">Proof.</div>
+<div class="proofscript" id="proof2645">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ce</span> <span class="id">ty</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> [<span class="id">b1</span> <span class="id">ofs1</span>] [<span class="id">b2</span> <span class="id">ofs2</span>] <span class="id">Hptr</span> <span class="id">v1</span> <span class="id">v2</span> <span class="id">Hv</span> <span class="id">m1</span>' <span class="id">Hm1</span>'.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hm1</span>' <span class="kwd">as</span> [<span class="id">v1</span> <span class="id">chunk</span> <span class="id">m1</span>' | <span class="id">b1</span>' <span class="id">ofs1</span>' <span class="id">bytes1</span> <span class="id">m1</span>'].<br/>
+&nbsp;&nbsp;- <span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; [ | <span class="id">rauto</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Clight.html#assign_loc_value">assign_loc_value</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">assert</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span> &gt; 0 -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.range_perm">Mem.range_perm</a></span> <span class="id">m1</span> <span class="id">b1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id">ofs1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id">ofs1</span> + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memtype.html#Cur">Cur</a></span> <span class="id"><a href="compcert.common.Memtype.html#Nonempty">Nonempty</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.range_perm_implies">Mem.range_perm_implies</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">replace</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">_</span> <span class="id">_</span>) <span class="kwd">with</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id">bytes1</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.storebytes_range_perm">Mem.storebytes_range_perm</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id">erewrite</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.loadbytes_length">Mem.loadbytes_length</a></span> <span class="id">m1</span>) <span class="tactic">by</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#nat_of_Z_eq">nat_of_Z_eq</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">omega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span> &gt; 0 -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.range_perm">Mem.range_perm</a></span> <span class="id">m1</span> <span class="id">b1</span>'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id">ofs1</span>')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id">ofs1</span>' + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memtype.html#Cur">Cur</a></span> <span class="id"><a href="compcert.common.Memtype.html#Nonempty">Nonempty</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.range_perm_implies">Mem.range_perm_implies</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.loadbytes_range_perm">Mem.loadbytes_range_perm</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion</span> <span class="id">Hv</span>; <span class="tactic">clear</span> <span class="id">Hv</span>; <span class="id">inv</span> <span class="id">Hvl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; [<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Clight.html#assign_loc_copy">assign_loc_copy</a></span> | ]; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.cklr.Clightrel.html#assign_loc_match_alignof_blockcopy">assign_loc_match_alignof_blockcopy</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.cklr.Clightrel.html#assign_loc_match_alignof_blockcopy">assign_loc_match_alignof_blockcopy</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">assert</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span> = 0 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span> &lt;&gt; 0) <span class="kwd">as</span> [<span class="id">Hsz</span> | <span class="id">Hsz</span>] <span class="tactic">by</span> <span class="id">xomega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hsz</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">right</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">omega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hsz</span>' : <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ce</span> <span class="id">ty</span> &gt; 0).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_pos">sizeof_pos</a></span> <span class="id">ce</span> <span class="id">ty</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">omega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hptr</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H7</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> !(<span class="id"><a href="compcert.cklr.CKLR.html#cklr_address_inject">cklr_address_inject</a></span> <span class="id">R</span> <span class="id">w</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id"><a href="compcert.cklr.CKLR.html#cklr_disjoint_or_equal_inject">cklr_disjoint_or_equal_inject</a></span> <span class="id">R</span> <span class="id">w</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">intros</span> <span class="id">ofs</span> <span class="id">Hofs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_cur_max">Mem.perm_cur_max</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">H6</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">intros</span> <span class="id">ofs</span> <span class="id">Hofs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_cur_max">Mem.perm_cur_max</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">H5</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">eapply</span> <span class="id">H5</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">omega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">eapply</span> <span class="id">H6</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">omega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Related</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#assign_loc_match">assign_loc_match</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#assign_loc">assign_loc</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="genv_match_acc">genv_match_acc</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>) (<span class="id"><a href="compcert.cklr.CKLR.html#wacc">wacc</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <span class="id">subrel</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2646')">Proof.</div>
+<div class="proofscript" id="proof2646">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">w</span>' <span class="id">Hw</span>' <span class="id">_</span> <span class="id">_</span> [<span class="id">se1</span> <span class="id">se2</span> <span class="id">Hge</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_acc">match_stbls_acc</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">w</span>') <span class="kwd">in</span> <span class="id">Hge</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id">rel_push_rintro</span> (<span class="kwd">fun</span> <span class="id">se</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>) (<span class="kwd">fun</span> <span class="id">se</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="alloc_variables_match">alloc_variables_match</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#alloc_variables">alloc_variables</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;% <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; (<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>))).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2647')">Proof.</div>
+<div class="proofscript" id="proof2647">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">Henv</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">vars</span> [<span class="id">e1</span>' <span class="id">m1</span>'] <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span> <span class="id">w</span> <span class="id">e2</span> <span class="id">m2</span> <span class="id">Hge</span> <span class="id">Henv</span> <span class="id">Hm</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> 1 <span class="kwd">as</span> [<span class="id">e1</span> <span class="id">m1</span> | <span class="id">e1</span> <span class="id">m1</span> <span class="id">id</span> <span class="id">ty</span> <span class="id">vars</span> <span class="id">m1</span>' <span class="id">b1</span> <span class="id">m1</span>'' <span class="id">e1</span>'' <span class="id">Hm1</span>' <span class="id">Hm1</span>'' <span class="id">IH</span>].<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">e2</span>, <span class="id">m2</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id"><a href="compcert.cklr.CKLR.html#cklr_alloc">cklr_alloc</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> 0 (<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ge1</span> <span class="id">ty</span>)) <span class="kwd">as</span> (<span class="id">p</span>' &amp; <span class="id">Hp</span>' &amp; <span class="id">Hm</span>' &amp; <span class="id">Hb</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">m2</span> 0 (<span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">ge1</span> <span class="id">ty</span>)) <span class="kwd">as</span> [<span class="id">m2</span>' <span class="id">b2</span>] <span class="id">eqn</span>:<span class="id">Hm2</span>'.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hm1</span>' <span class="kwd">in</span> *. <span class="id">cbn</span> [<span class="id">fst</span> <span class="id">snd</span>] <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">specialize</span> (<span class="id">IH</span> <span class="id">p</span>' (<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id">id</span> (<span class="id">b2</span>, <span class="id">ty</span>) <span class="id">e2</span>) <span class="id">m2</span>').<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">IH</span> <span class="kwd">as</span> ((<span class="id">e2</span>'' &amp; <span class="id">m2</span>'') &amp; <span class="id">Hvars</span> &amp; <span class="id">p</span>'' &amp; <span class="id">He</span>'' &amp; <span class="id">Hm</span>''); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match_acc">genv_match_acc</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+<div class="doc">We only have <span class="bracket"><span class="id">ptree_set_le</span></span>, we would need support for
+        multiple instances to declare <span class="bracket"><span class="id">ptree_set_rel</span></span> as well. </div>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">j</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span> <span class="id">j</span> <span class="id">id</span>); <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">rewrite</span> !<span class="id"><a href="compcert.lib.Maps.html#PTree.gss">PTree.gss</a></span>. <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">rewrite</span> !<span class="id"><a href="compcert.lib.Maps.html#PTree.gso">PTree.gso</a></span> <span class="tactic">by</span> <span class="tactic">assumption</span>. <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span> (<span class="id">e2</span>'', <span class="id">m2</span>'').<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hge</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="bind_parameters_match">bind_parameters_match</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#bind_parameters">bind_parameters</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ==&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">k1</span> <span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> @@ [<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>]) ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2648')">Proof.</div>
+<div class="proofscript" id="proof2648">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">He</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">vars</span> <span class="id">vl1</span> <span class="id">vl2</span> <span class="id">Hvl</span> <span class="id">m1</span>' <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span> <span class="id">w</span> <span class="id">Hge</span> <span class="id">He</span> <span class="id">vl2</span> <span class="id">m2</span> <span class="id">Hvl</span> <span class="id">Hm</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> 1 <span class="kwd">as</span> [<span class="id">m1</span> | <span class="id">m1</span> <span class="id">id</span> <span class="id">ty</span> <span class="id">params</span> <span class="id">v1</span> <span class="id">vl1</span> <span class="id">b1</span> <span class="id">m1</span>' <span class="id">m1</span>'' <span class="id">Hb1</span> <span class="id">Hm1</span>' <span class="id">Hm1</span>'' <span class="id">IH</span>].<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">m2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">try</span> <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hvl</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id">He</span>. <span class="tactic">intro</span> <span class="id">He_</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">specialize</span> (<span class="id">He</span> <span class="id">id</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="kwd">fun</span> <span class="id">m</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#bind_parameters_cons">bind_parameters_cons</a></span> <span class="id">ge2</span> <span class="id">e2</span> <span class="id"><a href="compcert.cklr.Clightrel.html#m">m</a></span> <span class="id">id</span>) <span class="kwd">as</span> <span class="id">Hbp_cons</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">He</span> <span class="kwd">as</span> [[<span class="id">xb1</span> <span class="id">xty</span>] [<span class="id">b2</span> <span class="id">yty</span>] [<span class="id">Hb</span> <span class="id">Hty</span>] | ]; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hb1</span>; <span class="tactic">clear</span> <span class="id">Hb1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hvl</span> <span class="kwd">as</span> [ | <span class="id">xv1</span> <span class="id">v2</span> <span class="id">Hv</span> <span class="id">xvl1</span> <span class="id">vl2</span>' <span class="id">Hvl</span>']; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">PTR</span>: <span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject">ptrbits_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id">R</span> <span class="id">w</span>) (<span class="id">b1</span>, <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span>) (<span class="id">b2</span>, <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">by</span> <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> <span class="id">Hb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id">IH</span> <span class="id">w</span>') <span class="kwd">as</span> (<span class="id">m2</span>'' &amp; <span class="id">Hm2</span>'' &amp; <span class="id">Hm</span>''); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">red</span>. <span class="tactic">destruct</span> <span class="id">Hge</span> <span class="kwd">as</span> [<span class="id">se1</span> <span class="id">se2</span> <span class="id">Hge</span>]. <span class="tactic">eapply</span> (<span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_acc">match_stbls_acc</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">w</span>') <span class="kwd">in</span> <span class="id">Hge</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">rel_push_rintro</span> (<span class="kwd">fun</span> <span class="id">se</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>) (<span class="kwd">fun</span> <span class="id">se</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG.p">p</a></span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id">Hm</span>'' <span class="kwd">as</span> (<span class="id">w</span>'' &amp; <span class="id">Hw</span>'' &amp; <span class="id">Hm</span>'').<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#bind_parameters">bind_parameters</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="create_undef_temps_match">create_undef_temps_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#create_undef_temps">create_undef_temps</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2649')">Proof.</div>
+<div class="proofscript" id="proof2649">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">temps</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">temps</span> <span class="kwd">as</span> [ | [<span class="id">id</span> <span class="id">t</span>] <span class="id">temps</span> <span class="id">IHtemps</span>]; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="bind_parameter_temps_match">bind_parameter_temps_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#bind_parameter_temps">bind_parameter_temps</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)) ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_rel</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2650')">Proof.</div>
+<div class="proofscript" id="proof2650">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">formals</span> <span class="id">args1</span> <span class="id">args2</span> <span class="id">Hargs</span>.<br/>
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">formals</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">Hargs</span> <span class="kwd">as</span> [ | <span class="id">v1</span> <span class="id">v2</span> <span class="id">Hv</span> <span class="id">args1</span> <span class="id">args2</span> <span class="id">Hargs</span> <span class="id">IH</span>].<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> [|]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> [| [<span class="id">id</span> <span class="id">t</span>] <span class="id">formals</span>]; <span class="tactic">simpl</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="block_of_binding_match">block_of_binding_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#block_of_binding">block_of_binding</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> * (<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) * <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>) ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#ptrrange_inject">ptrrange_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2651')">Proof.</div>
+<div class="proofscript" id="proof2651">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> (<span class="id">id1</span> &amp; <span class="id">b1</span> &amp; <span class="id">ty1</span>) (<span class="id">id2</span> &amp; <span class="id">b2</span> &amp; <span class="id">ty2</span>) (<span class="id">Hid</span> &amp; <span class="id">Hb</span> &amp; <span class="id">Hty</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Valuesrel.html#block_sameofs_ptrrange_inject">block_sameofs_ptrrange_inject</a></span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">f_equal</span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="blocks_of_env_match">blocks_of_env_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#blocks_of_env">blocks_of_env</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id">list_rel</span> (<span class="id"><a href="compcert.cklr.Valuesrel.html#ptrrange_inject">ptrrange_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>))).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2652')">Proof.</div>
+<div class="proofscript" id="proof2652">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Clight.html#blocks_of_env">blocks_of_env</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="set_opttemp_match">set_opttemp_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#set_opttemp">set_opttemp</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2653')">Proof.</div>
+<div class="proofscript" id="proof2653">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Clight.html#set_opttemp">set_opttemp</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="transport_find_symbol_genv">transport_find_symbol_genv</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">id</span> <span class="id">b1</span>:<br/>
+&nbsp;&nbsp;<span class="id">Transport</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) <span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_symbol">Genv.find_symbol</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#b1">b1</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">exists</span> <span class="id">b2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_symbol">Genv.find_symbol</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#b2">b2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) <span class="id"><a href="compcert.cklr.Clightrel.html#b1">b1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#b2">b2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2654')">Proof.</div>
+<div class="proofscript" id="proof2654">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hge</span> <span class="id">Hb1</span>. <span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_symbol_match">Genv.find_symbol_match</a></span> <span class="kwd">as</span> (<span class="id">b2</span> &amp; ? &amp; ?); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hge</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_proj">match_stbls_proj</a></span>. <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="to_senv_match">to_senv_match</a></span> <span class="id">f</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.common.Globalenvs.html#Genv.to_senv">Genv.to_senv</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">forallr</span> -, <span class="id">forallr</span> -, <span class="id">rforall</span> <span class="id">Rf</span>, <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_genvs">Genv.match_genvs</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#Rf">Rf</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#f">f</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2655')">Proof.</div>
+<div class="proofscript" id="proof2655">
+&nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="subrel_refl_rstep">subrel_refl_rstep</a></span> {<span class="id">A</span> <span class="id">B</span>} (<span class="id">R</span> : <span class="id">rel</span> <span class="id"><a href="compcert.cklr.Clightrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#B">B</a></span>) :<br/>
+&nbsp;&nbsp;<span class="id">RStep</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span> (<span class="id">subrel</span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>) | 25.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2656')">Proof.</div>
+<div class="proofscript" id="proof2656">
+&nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="env_match_ptree_le">env_match_ptree_le</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Related</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Mapsrel.html#PTreeRel.r">PTreeRel.r</a></span> (<span class="id">option_le</span> (<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) * <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">subrel</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2657')">Proof.</div>
+<div class="proofscript" id="proof2657">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="env_match_ptree_ge">env_match_ptree_ge</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Related</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Mapsrel.html#PTreeRel.r">PTreeRel.r</a></span> (<span class="id">option_ge</span> (<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) * <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">subrel</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2658')">Proof.</div>
+<div class="proofscript" id="proof2658">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc"><span class="bracket"><span class="id">select_switch_default</span></span>, <span class="bracket"><span class="id">select_switch_case</span></span>, <span class="bracket"><span class="id">select_switch</span></span>
+  and <span class="bracket"><span class="id">seq_of_label_statement</span></span> are entierly about syntax. </div>
+<span class="kwd">Lemma</span> <span class="id"><a name="eval_expr_lvalue_match">eval_expr_lvalue_match</a></span> <span class="id">R</span> <span class="id">w</span> (<span class="id">ge1</span> <span class="id">ge2</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#genv">genv</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e1</span> <span class="id">e2</span>, <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#e1">e1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#e2">e2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le1</span> <span class="id">le2</span>, <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#le1">le1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#le2">le2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>, <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">expr</span> <span class="id">v1</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Clight.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#e1">e1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#le1">le1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#expr">expr</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#v1">v1</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">v2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Clight.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#e2">e2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#le2">le2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m2">m2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#expr">expr</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#v2">v2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) <span class="id"><a href="compcert.cklr.Clightrel.html#v1">v1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#v2">v2</a></span>) /\<br/>
+&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">expr</span> <span class="id">b1</span> <span class="id">ofs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Clight.html#eval_lvalue">eval_lvalue</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#e1">e1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#le1">le1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#expr">expr</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#b1">b1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ofs">ofs</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">b2</span> <span class="id">ofs2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Clight.html#eval_lvalue">eval_lvalue</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#e2">e2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#le2">le2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#m2">m2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#expr">expr</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#b2">b2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ofs2">ofs2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject">ptrbits_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#b1">b1</a></span>, <span class="id"><a href="compcert.cklr.Clightrel.html#ofs">ofs</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#b2">b2</a></span>, <span class="id"><a href="compcert.cklr.Clightrel.html#ofs2">ofs2</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2659')">Proof.</div>
+<div class="proofscript" id="proof2659">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hge</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">He</span> <span class="id">le1</span> <span class="id">le2</span> <span class="id">Hle</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Clight.html#eval_expr_lvalue_ind">eval_expr_lvalue_ind</a></span>;<br/>
+&nbsp;&nbsp;<span class="tactic">try</span> <span class="id">solve</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[ <span class="tactic">intros</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">split_hyps</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="tactic">repeat</span> (<span class="id">rstep</span> + <span class="tactic">f_equal</span>); <span class="id">econstructor</span>) ].<br/>
+<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">id</span> <span class="id">b1</span> <span class="id">ty</span> <span class="id">Hb1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span> <span class="kwd">as</span> [<span class="id">b2</span> <span class="id">ty</span>'], <span class="id">H0</span> <span class="kwd">as</span> (<span class="id">Hb</span> &amp; <span class="id">Hty</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="tactic">repeat</span> <span class="id">rstep</span>; <span class="id">econstructor</span>).<br/>
+<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">expr</span> <span class="id">ty</span> <span class="id">b1</span> <span class="id">ofs</span> <span class="id">H1</span> <span class="id">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">IH</span> <span class="kwd">as</span> (<span class="id">ptr2</span> &amp; <span class="id">H2</span> &amp; <span class="id">Hptr</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hptr</span>; <span class="tactic">clear</span> <span class="id">Hptr</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="id">eexists</span>; <span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">expr</span> <span class="id">fid</span> <span class="id">ty</span> <span class="id">b1</span> <span class="id">ofs1</span> <span class="id">sid</span> <span class="id">sflist</span> <span class="id">satt</span> <span class="id">delta</span> <span class="id">H1</span> <span class="id">IH</span> <span class="id">Hs</span> <span class="id">Hf</span> <span class="id">Hdelta</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">IH</span> <span class="kwd">as</span> (<span class="id">ptr2</span> &amp; <span class="id">H2</span> &amp; <span class="id">Hptr</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion</span> <span class="id">Hptr</span>; <span class="id">inv</span> <span class="id">Hptrl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="id">eexists</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">assert</span> (<span class="id">Hce</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#genv_cenv">genv_cenv</a></span> <span class="id">ge1</span> = <span class="id"><a href="compcert.cfrontend.Clight.html#genv_cenv">genv_cenv</a></span> <span class="id">ge2</span>) <span class="tactic">by</span> <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Clight.html#eval_Efield_struct">eval_Efield_struct</a></span>; <span class="tactic">eauto</span>; <span class="tactic">rewrite</span> &lt;- <span class="id">Hce</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject_shift">ptrbits_inject_shift</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">expr</span> <span class="id">fid</span> <span class="id">ty</span> <span class="id">b1</span> <span class="id">ofs1</span> <span class="id">uid</span> <span class="id">uflist</span> <span class="id">uatt</span> <span class="id">H1</span> <span class="id">IH</span> <span class="id">Hu</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hce</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#genv_cenv">genv_cenv</a></span> <span class="id">ge1</span> = <span class="id"><a href="compcert.cfrontend.Clight.html#genv_cenv">genv_cenv</a></span> <span class="id">ge2</span>) <span class="tactic">by</span> <span class="id">rauto</span>. <span class="tactic">rewrite</span> <span class="id">Hce</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">IH</span> <span class="kwd">as</span> (<span class="id">ptr2</span> &amp; <span class="id">H2</span> &amp; <span class="id">Hptr</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion</span> <span class="id">Hptr</span>; <span class="id">inv</span> <span class="id">Hptrl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#eval_Efield_union">eval_Efield_union</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="eval_expr_match">eval_expr_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#eval_expr">eval_expr</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">set_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>))).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2660')">Proof.</div>
+<div class="proofscript" id="proof2660">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">He</span> <span class="id">le1</span> <span class="id">le2</span> <span class="id">Hle</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">expr</span> <span class="id">v1</span> <span class="id">Hv1</span>.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.cklr.Clightrel.html#eval_expr_lvalue_match">eval_expr_lvalue_match</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#eval_expr">eval_expr</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="eval_lvalue_match">eval_lvalue_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#eval_lvalue">eval_lvalue</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;% <span class="id">set_le</span> (<span class="id"><a href="compcert.cklr.Valuesrel.html#ptrbits_inject">ptrbits_inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>))).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2661')">Proof.</div>
+<div class="proofscript" id="proof2661">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">He</span> <span class="id">le1</span> <span class="id">le2</span> <span class="id">Hle</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">expr</span> [<span class="id">b1</span> <span class="id">ofs</span>] <span class="id">Hp1</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.cklr.Clightrel.html#eval_expr_lvalue_match">eval_expr_lvalue_match</a></span> <span class="kwd">as</span> [<span class="id">_</span> <span class="id">H</span>]; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">b2</span> &amp; <span class="id">ofs2</span> &amp; <span class="id">H</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">b2</span>, <span class="id">ofs2</span>).<br/>
+&nbsp;&nbsp;<span class="id">split_hyps</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">rel_curry_set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#eval_lvalue">eval_lvalue</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="eval_exprlist_match">eval_exprlist_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#eval_exprlist">eval_exprlist</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; - ==&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">set_le</span> (<span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)))).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2662')">Proof.</div>
+<div class="proofscript" id="proof2662">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">He</span> <span class="id">le1</span> <span class="id">le2</span> <span class="id">Hle</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">exprlist</span> <span class="id">tys</span> <span class="id">vs1</span> <span class="id">Hvs1</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">Hvs1</span> <span class="kwd">as</span> [|<span class="id">expr</span> <span class="id">exprs</span> <span class="id">ty</span> <span class="id">tys</span> <span class="id">v1</span> <span class="id">v1</span>' <span class="id">v1s</span> <span class="id">Hv1</span> <span class="id">Hv1</span>' <span class="id">Hv1s</span> <span class="id">IHv1s</span>]; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;- <span class="id">exists</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="id">split_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#eval_exprlist">eval_exprlist</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cont_match">cont_match</a></span> <span class="id">R</span> (<span class="id">w</span>: <span class="id"><a href="compcert.cklr.CKLR.html#world">world</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>): <span class="id">rel</span> <span class="id"><a href="compcert.cfrontend.Clight.html#cont">cont</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#cont">cont</a></span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Kstop_match">Kstop_match</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#Kstop">Kstop</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Kseq_match">Kseq_match</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#Kseq">Kseq</a></span>) (- ==&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Kloop1_match">Kloop1_match</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#Kloop1">Kloop1</a></span>) (- ==&gt; - ==&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Kloop2_match">Kloop2_match</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#Kloop2">Kloop2</a></span>) (- ==&gt; - ==&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Kswitch_match">Kswitch_match</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#Kswitch">Kswitch</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Kcall_match">Kcall_match</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#Kcall">Kcall</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>).<br/>
+<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Kstop_match</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Kseq_match</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Kloop1_match</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Kloop2_match</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Kswitch_match</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Kcall_match</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cont_match_le">cont_match_le</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span>) (<span class="id">forallr</span> - @ <span class="id">R</span>, <span class="id">acc</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> ++&gt; <span class="id">subrel</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2663')">Proof.</div>
+<div class="proofscript" id="proof2663">
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">red</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">R</span> <span class="id">x</span> <span class="id">y</span> <span class="id">H</span> <span class="id">x0</span> <span class="id">y0</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">y</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">H0</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="call_cont_match">call_cont_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#call_cont">call_cont</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; (<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> /\ <span class="id">lsat</span> <span class="id"><a href="compcert.cfrontend.Clight.html#is_call_cont">is_call_cont</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2664')">Proof.</div>
+<div class="proofscript" id="proof2664">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">k1</span> <span class="id">k2</span> <span class="id">Hk</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">Hk</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;XXX&nbsp;prob&nbsp;is&nbsp;now&nbsp;we&nbsp;don't&nbsp;just&nbsp;try&nbsp;I&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">reexists</span>. <span class="id">rstep</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#I">I</a></span>. <span class="tactic">red</span>. <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">IHHk</span>. <span class="tactic">split</span>. <span class="id">constructor</span>; <span class="tactic">eauto</span>. <span class="id">constructor</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="is_call_cont_match_strong">is_call_cont_match_strong</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#is_call_cont">is_call_cont</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#iff">iff</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2665')">Proof.</div>
+<div class="proofscript" id="proof2665">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">k1</span> <span class="id">k2</span> <span class="id">Hk</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hk</span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 10 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> (<span class="id"><a href="compcert.cfrontend.Clight.html#is_call_cont">is_call_cont</a></span> <span class="id">_</span>) <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">impl_transport</span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="state_match">state_match</a></span> <span class="id">R</span> <span class="id">w</span>: <span class="id">rel</span> <span class="id"><a href="compcert.cfrontend.Clight.html#state">state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#state">state</a></span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="State_rel">State_rel</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#State">State</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; - ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Callstate_rel">Callstate_rel</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#Callstate">Callstate</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) ==&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)) ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Returnstate_rel">Returnstate_rel</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#Returnstate">Returnstate</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>) ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>).<br/>
+<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">State_rel</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Callstate_rel</span>.<br/>
+<span class="kwd">Global</span> <span class="id">Existing</span> <span class="kwd">Instance</span> <span class="id">Returnstate_rel</span>.<br/>
+<br/>
+<span class="kwd">Scheme</span> <span class="id"><a name="statement_ind_mutual">statement_ind_mutual</a></span> := <span class="kwd">Induction</span> <span class="kwd">for</span> <span class="id"><a href="compcert.cfrontend.Clight.html#statement">statement</a></span> <span class="kwd">Sort</span> <span class="kwd">Prop</span><br/>
+&nbsp;&nbsp;<span class="kwd">with</span> <span class="id"><a name="ls_ind_mutual">ls_ind_mutual</a></span> := <span class="kwd">Induction</span> <span class="kwd">for</span> <span class="id"><a href="compcert.cfrontend.Clight.html#labeled_statements">labeled_statements</a></span> <span class="kwd">Sort</span> <span class="kwd">Prop</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="find_label_match">find_label_match</a></span> <span class="id">R</span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#find_label">find_label</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; - ==&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> ++&gt; <span class="id">option_rel</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> * <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2666')">Proof.</div>
+<div class="proofscript" id="proof2666">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">lbl</span> <span class="id">s</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">pattern</span> <span class="id">s</span>.<br/>
+&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> <span class="id">Some_rel</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#statement_ind_mutual">statement_ind_mutual</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">P0</span> := <span class="kwd">fun</span> <span class="id">ls</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id">R</span> <span class="id">w</span> ++&gt; <span class="id">option_rel</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> * <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id">R</span> <span class="id">w</span>))%<span class="id">rel</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Clight.html#find_label_ls">find_label_ls</a></span> <span class="id">lbl</span> <span class="id"><a href="compcert.cklr.Clightrel.html#ls">ls</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Clight.html#find_label_ls">find_label_ls</a></span> <span class="id">lbl</span> <span class="id"><a href="compcert.cklr.Clightrel.html#ls">ls</a></span>));<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>;<br/>
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="function_entry1_match">function_entry1_match</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#function_entry1">function_entry1</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt; <span class="id">k1</span> <span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> @@ [<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>]) ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%% <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2667')">Proof.</div>
+<div class="proofscript" id="proof2667">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">f</span> <span class="id">vargs1</span> <span class="id">vargs2</span> <span class="id">Hvargs</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> [[<span class="id">e1</span> <span class="id">le</span>] <span class="id">m1</span>''] <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">m1</span>' <span class="id">Hfvnr</span> <span class="id">Hm1</span>' <span class="id">Hm1</span>'' <span class="id">Hle</span>].<br/>
+&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#empty_env_match">empty_env_match</a></span> <span class="id">R</span> <span class="id">w</span>) <span class="kwd">as</span> <span class="id">Hee</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#alloc_variables_match">alloc_variables_match</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hge</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hee</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hm</span> <span class="id">_</span> (<span class="id">e1</span>, <span class="id">m1</span>') <span class="id">Hm1</span>')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">as</span> ((<span class="id">e2</span> &amp; <span class="id">m2</span>') &amp; <span class="id">Hm2</span>' &amp; <span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">He</span> &amp; <span class="id">Hm</span>').<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match_acc">genv_match_acc</a></span> <span class="kwd">in</span> <span class="id">Hge</span>; [ | <span class="tactic">eauto</span>].<br/>
+&nbsp;&nbsp;<span class="id">transport</span> <span class="id">Hm1</span>''.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">e2</span>, <span class="id">le</span>, <span class="id">x</span>).<br/>
+&nbsp;&nbsp;<span class="id">cbn</span> [<span class="id">fst</span> <span class="id">snd</span>] <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">assert</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id">R</span> <span class="id">w</span>'' <span class="id">le</span> <span class="id">le</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="tactic">subst</span> <span class="id">le</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.cfrontend.Clight.html#fn_temps">fn_temps</a></span> <span class="id">f</span>). <span class="tactic">clear</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="id">cbn</span>; <span class="id">rauto</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>''. <span class="tactic">split</span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="function_entry2_match">function_entry2_match</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#function_entry2">function_entry2</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt; <span class="id">k1</span> <span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> @@ [<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>]) ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%% <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2668')">Proof.</div>
+<div class="proofscript" id="proof2668">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">f</span> <span class="id">vargs1</span> <span class="id">vargs2</span> <span class="id">Hvargs</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> [[<span class="id">e1</span> <span class="id">le1</span>] <span class="id">m1</span>'] <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">Hfvnr</span> <span class="id">Hfpnr</span> <span class="id">Hfvpd</span> <span class="id">Hm1</span>' <span class="id">Hle1</span>].<br/>
+&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#empty_env_match">empty_env_match</a></span> <span class="id">R</span> <span class="id">w</span>) <span class="kwd">as</span> <span class="id">Hee</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#alloc_variables_match">alloc_variables_match</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hge</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hee</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hm</span> <span class="id">_</span> (<span class="id">e1</span>, <span class="id">m1</span>') <span class="id">Hm1</span>')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">as</span> ((<span class="id">e2</span> &amp; <span class="id">m2</span>') &amp; <span class="id">Hm2</span>' &amp; <span class="id">p</span>' &amp; <span class="id">Hp</span>' &amp; <span class="id">He</span> &amp; <span class="id">Hm</span>').<br/>
+&nbsp;&nbsp;<span class="id">transport</span> <span class="id">Hle1</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">e2</span>, <span class="id">x</span>, <span class="id">m2</span>').<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">rel_curry2_set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#function_entry2">function_entry2</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="find_funct_inject">find_funct_inject</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">v1</span> <span class="id">ge2</span> <span class="id">v2</span> <span class="id">f</span>:<br/>
+&nbsp;&nbsp;<span class="id">Transport</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span> * <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#w">w</a></span>)) (<span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span>, <span class="id"><a href="compcert.cklr.Clightrel.html#v1">v1</a></span>) (<span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span>, <span class="id"><a href="compcert.cklr.Clightrel.html#v2">v2</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#v1">v1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#f">f</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#ge2">ge2</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#v2">v2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#f">f</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2669')">Proof.</div>
+<div class="proofscript" id="proof2669">
+&nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">Hge</span> <span class="id">Hv</span>] <span class="id">Hf</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hge</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_proj">match_stbls_proj</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="id">cbn</span> <span class="kwd">in</span> <span class="id">Hf</span>.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_match">Genv.find_funct_match</a></span> <span class="kwd">as</span> (?&amp;?&amp;?&amp;?&amp;?); <span class="tactic">eauto</span> <span class="kwd">using</span> (<span class="id"><a href="compcert.cklr.Clightrel.html#match_prog">match_prog</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>).<br/>
+&nbsp;&nbsp;<span class="id">cbn</span> <span class="kwd">in</span> *. <span class="tactic">subst</span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="step_rel">step_rel</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#step">step</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id">k1</span> <span class="id">list_rel</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> @@ [<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>]) ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%% <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#env_match">env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.Clightrel.html#temp_env_match">temp_env_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)) ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt; <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2670')">Proof.</div>
+<div class="proofscript" id="proof2670">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">fe1</span> <span class="id">fe2</span> <span class="id">Hfe</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">Hs</span> <span class="id">t</span> <span class="id">s1</span>' <span class="id">H1</span>.<br/>
+&nbsp;&nbsp;<span class="id">deconstruct</span> <span class="id">H1</span> <span class="id">ltac</span>:(<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id">pose</span> (<span class="id">c</span> := <span class="id">x</span>)); <span class="id">inv</span> <span class="id">Hs</span>;<br/>
+&nbsp;&nbsp;<span class="tactic">try</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">transport_hyps</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="kwd">match</span> <span class="id">goal</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">H</span>: <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id">_</span> <span class="id">_</span> (<span class="id">_</span> <span class="id">_</span>) <span class="id">_</span> |- <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">Hl</span> := <span class="tactic">fresh</span> <span class="id">H</span> "<span class="id">l</span>" <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">Hr</span> := <span class="tactic">fresh</span> <span class="id">H</span> "<span class="id">r</span>" <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion_tac</span> <span class="id">H</span> <span class="id">Hl</span> <span class="id">Hr</span>; <span class="tactic">clear</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">Hl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">H</span>: (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> * <span class="id"><a href="compcert.cklr.Clightrel.html#cont_match">cont_match</a></span> <span class="id">_</span> <span class="id">_</span>)%<span class="id">rel</span> (<span class="id">_</span>, <span class="id">_</span>) <span class="id">_</span> |- <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">Hl</span> := <span class="tactic">fresh</span> <span class="id">H</span> "<span class="id">l</span>" <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">Hr</span> := <span class="tactic">fresh</span> <span class="id">H</span> "<span class="id">r</span>" <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion_tac</span> <span class="id">H</span> <span class="id">Hl</span> <span class="id">Hr</span>; <span class="tactic">clear</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">Hl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ <span class="tactic">eapply</span> <span class="id">c</span>; <span class="tactic">eauto</span>; <span class="tactic">fail</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">eexists</span>; <span class="tactic">split</span>; <span class="id">rauto</span> ]).<br/>
+&nbsp;&nbsp;- <span class="tactic">eapply</span> @<span class="id">transport</span> <span class="kwd">in</span> <span class="id">f0</span>; [ | <span class="id">rel_curry2_set_le_transport</span> <span class="id">fe1</span> | <span class="id">rauto</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">f0</span> <span class="kwd">as</span> (? &amp; ? &amp; ? &amp; ? &amp; ? &amp; ? &amp; ?).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion</span> <span class="id">H2</span>. <span class="id">inv</span> <span class="id">H2l</span>. <span class="id">inv</span> <span class="id">H2r</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rinversion</span> <span class="id">H3</span>. <span class="id">inv</span> <span class="id">H3l</span>. <span class="id">inv</span> <span class="id">H3r</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport</span> <span class="id">FIND</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id">c</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">eexists</span>; <span class="tactic">split</span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="step1_rel">step1_rel</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#step1">step1</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt; <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2671')">Proof.</div>
+<div class="proofscript" id="proof2671">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Clight.html#step1">step1</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="step1_rel_params">step1_rel_params</a></span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Params">Params</a></span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#step1">step1</a></span>) 3.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="step2_rel">step2_rel</a></span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Clight.html#step2">step2</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span> ++&gt; - ==&gt; <span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2672')">Proof.</div>
+<div class="proofscript" id="proof2672">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Clight.html#step2">step2</a></span>. <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="step2_rel_params">step2_rel_params</a></span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Params">Params</a></span> (@<span class="id"><a href="compcert.cfrontend.Clight.html#step2">step2</a></span>) 3.<br/>
+<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.cklr.Clightrel.html#PROG">PROG</a></span>.<br/>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#step1">step1</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 1 (<span class="id">Transport</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.cfrontend.Clight.html#step2">step2</a></span> : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="semantics1_rel">semantics1_rel</a></span> <span class="id">p</span> <span class="id">R</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>) (<span class="id"><a href="compcert.cklr.CKLR.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#R">R</a></span>) (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#p">p</a></span>) (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#p">p</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2673')">Proof.</div>
+<div class="proofscript" id="proof2673">
+&nbsp;&nbsp;<span class="id">constructor</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="id">instantiate</span> (1 := <span class="kwd">fun</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> =&gt; <span class="id">_</span>). <span class="id">cbn</span> <span class="id">beta</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">w</span> <span class="id">Hse</span> <span class="id">Hse1</span>. <span class="id">cbn</span> -[<span class="id">semantics1</span>] <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="id">pose</span> (<span class="id">ms</span> := <span class="kwd">fun</span> <span class="id">s1</span> <span class="id">s2</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">klr_diam</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> (<span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id">p</span> <span class="id">R</span> * <span class="id"><a href="compcert.cklr.Clightrel.html#state_match">state_match</a></span> <span class="id">R</span>) <span class="id">w</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se1</span> <span class="id">p</span>, <span class="id"><a href="compcert.cklr.Clightrel.html#s1">s1</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se2</span> <span class="id">p</span>, <span class="id"><a href="compcert.cklr.Clightrel.html#s2">s2</a></span>)).<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_step">forward_simulation_step</a></span> <span class="kwd">with</span> (<span class="id">match_states</span> := <span class="id">ms</span>); <span class="id">cbn</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">vf1</span> <span class="id">vf2</span> <span class="id">sg</span> <span class="id">vargs1</span> <span class="id">vargs2</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hvf</span> <span class="id">Hvargs</span> <span class="id">Hm</span> <span class="id">Hvf1</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">cbn</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.is_internal_match">Genv.is_internal_match</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">instantiate</span> (1 := <span class="id">p</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> (<span class="id"><a href="compcert.common.AST.html#prog_defs">AST.prog_defs</a></span> (<span class="id">_</span> <span class="id">p</span>)) <span class="kwd">as</span> [ | [<span class="id">id</span> [<span class="id">f</span>|<span class="id">v</span>]] <span class="id">defs</span> <span class="id">IHdefs</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl_refl">incl_refl</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id">instantiate</span> (1 := <span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>). <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id">instantiate</span> (1 := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>). <span class="tactic">destruct</span> <span class="id">v</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_proj">match_stbls_proj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">s1</span> <span class="id">Hq</span> <span class="id">Hs1</span>. <span class="id">inv</span> <span class="id">Hs1</span>. <span class="id">inv</span> <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hge</span>: <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match">genv_match</a></span> <span class="id">p</span> <span class="id">R</span> <span class="id">w</span> (<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se1</span> <span class="id">p</span>) (<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se2</span> <span class="id">p</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">cut</span> (<span class="id"><a href="compcert.cklr.CKLR.html#match_stbls">match_stbls</a></span> <span class="id">R</span> <span class="id">w</span> (<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se1</span> <span class="id">p</span>) (<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se2</span> <span class="id">p</span>)); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id">rel_push_rintro</span> (<span class="kwd">fun</span> <span class="id">se</span>=&gt;<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id">p</span>) (<span class="kwd">fun</span> <span class="id">se</span>=&gt;<span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cklr.Clightrel.html#se">se</a></span> <span class="id">p</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cfrontend.Clight.html#Callstate">Callstate</a></span> <span class="id">vf2</span> <span class="id">vargs2</span> <span class="id"><a href="compcert.cfrontend.Clight.html#Kstop">Kstop</a></span> <span class="id">m2</span>). <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id">revert</span> <span class="id">vargs2</span> <span class="id">H9</span>. <span class="tactic">clear</span> - <span class="id">H1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">H1</span>; <span class="tactic">inversion</span> 1; <span class="tactic">subst</span>; <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.SimplLocalsproof.html#val_casted_inject">val_casted_inject</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_nextblock">match_stbls_nextblock</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">exists</span> <span class="id">w</span>; <span class="tactic">split</span>; <span class="tactic">try</span> <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">clear</span> -<span class="id">H9</span>. <span class="tactic">induction</span> <span class="id">H9</span>; <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">r1</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hge</span> &amp; <span class="id">Hs</span>) <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">v1</span>' <span class="id">m1</span>']. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hs</span>. <span class="id">inv</span> <span class="id">H4</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">exists</span> <span class="id">w</span>'. <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">qx1</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hge</span> &amp; <span class="id">Hs</span>) <span class="id">Hq1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hq1</span>. <span class="id">cbn</span> [<span class="id">fst</span> <span class="id">snd</span>] <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Hs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">vf</span> &lt;&gt; <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>) <span class="tactic">by</span> (<span class="tactic">destruct</span> <span class="id">vf</span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport_hyps</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span> <span class="id">w</span>', <span class="id">_</span>. <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">econstructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">econstructor</span>; <span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> -<span class="id">H6</span>. <span class="tactic">induction</span> <span class="id">H6</span>; <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r2</span> <span class="id">s1</span>' (<span class="id">w</span>'' &amp; <span class="id">Hw</span>'' &amp; <span class="id">Hr</span>) <span class="id">Hs1</span>'. <span class="tactic">destruct</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">Hs1</span>'.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id">exists</span> <span class="id">w</span>''. <span class="tactic">split</span>; [<span class="id">rauto</span> | ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match_acc">genv_match_acc</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s1</span> <span class="id">t</span> <span class="id">s1</span>' <span class="id">Hstep</span> <span class="id">s2</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hge</span> &amp; <span class="id">Hs</span>). <span class="id">cbn</span> [<span class="id">fst</span> <span class="id">snd</span>] <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">transport</span> <span class="id">Hstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; <span class="tactic">try</span> <span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>''. <span class="tactic">split</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#genv_match_acc">genv_match_acc</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Wf_nat.html#well_founded_ltof">well_founded_ltof</a></span>.<br/>
+Qed.</div>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

@@ -1,0 +1,672 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module CallconvAlgebra</title>
+<meta name="description" content="Documentation of Coq module CallconvAlgebra" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module CallconvAlgebra</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id">LogicalRelations</span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.common.Events.html">Events</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Axioms.html">Axioms</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Memory.html">Memory</a></span>.<br/>
+<br/>
+<div class="doc">Algebraic structures on calling conventions. </div>
+<br/>
+<h1> Refinement and equivalence </h1>
+<br/>
+<h2> Definition </h2>
+<br/>
+<div class="doc">The following relation asserts that the calling convention <span class="bracket"><span class="id">cc</span></span> is
+  refined by the calling convention <span class="bracket"><span class="id">cc</span>'</span>, meaning that any
+  <span class="bracket"><span class="id">cc</span>'</span>-simulation is also a <span class="bracket"><span class="id">cc</span></span>-simulation. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ccref">ccref</a></span> {<span class="id">li1</span> <span class="id">li2</span>} (<span class="id">cc</span> <span class="id">cc</span>': <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#q1">q1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#q2">q2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id">cc</span>' <span class="id">w</span>' <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id">cc</span>' <span class="id">w</span>' <span class="id"><a href="compcert.common.CallconvAlgebra.html#q1">q1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#q2">q2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">r2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id">cc</span>' <span class="id">w</span>' <span class="id"><a href="compcert.common.CallconvAlgebra.html#r1">r1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#r2">r2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#r1">r1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#r2">r2</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="cceqv">cceqv</a></span> {<span class="id">li1</span> <span class="id">li2</span>} (<span class="id">cc</span> <span class="id">cc</span>': <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id">cc</span>' /\ <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id">cc</span>' <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="ccref_preo">ccref_preo</a></span> <span class="id">li1</span> <span class="id">li2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#PreOrder">PreOrder</a></span> (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2200')">Proof.</div>
+<div class="proofscript" id="proof2200">
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">cc</span> <span class="id">w</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">cc</span> <span class="id">cc</span>' <span class="id">cc</span>'' <span class="id">H</span>' <span class="id">H</span>'' <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">H</span>' <span class="kwd">as</span> (<span class="id">w</span>' &amp; <span class="id">Hse</span>' &amp; <span class="id">Hq</span>' &amp; <span class="id">Hr</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">H</span>'' <span class="kwd">as</span> (<span class="id">w</span>'' &amp; <span class="id">Hse</span>'' &amp; <span class="id">Hq</span>'' &amp; <span class="id">Hr</span>''); <span class="tactic">eauto</span> 10.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cceqv_equiv">cceqv_equiv</a></span> <span class="id">li1</span> <span class="id">li2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Equivalence">Equivalence</a></span> (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2201')">Proof.</div>
+<div class="proofscript" id="proof2201">
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">cc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">cc1</span> <span class="id">cc2</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">cc1</span> <span class="id">cc2</span> <span class="id">cc3</span> [<span class="id">H12</span> <span class="id">H21</span>] [<span class="id">H23</span> <span class="id">H32</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="id">etransitivity</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="ccref_po">ccref_po</a></span> <span class="id">li1</span> <span class="id">li2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#PartialOrder">PartialOrder</a></span> (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>) (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2202')">Proof.</div>
+<div class="proofscript" id="proof2202">
+&nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
+Qed.</div>
+<br/>
+<h2> Relation to forward simulations </h2>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="open_fsim_ccref">open_fsim_ccref</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">forallr</span> - @ <span class="id">liA1</span>, <span class="id">forallr</span> - @ <span class="id">liA2</span>, <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">forallr</span> - @ <span class="id">liB1</span>, <span class="id">forallr</span> - @ <span class="id">liB2</span>, <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> --&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">subrel</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2203')">Proof.</div>
+<div class="proofscript" id="proof2203">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">liA1</span> <span class="id">liA2</span> <span class="id">ccA</span> <span class="id">ccA</span>' <span class="id">HA</span> <span class="id">liB1</span> <span class="id">liB2</span> <span class="id">ccB</span> <span class="id">ccB</span>' <span class="id">HB</span> <span class="id">sem1</span> <span class="id">sem2</span> [<span class="id">FS</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">FS</span> <span class="kwd">as</span> [<span class="id">index</span> <span class="id">order</span> <span class="id">match_states</span> <span class="id">SKEL</span> <span class="id">PROP</span> <span class="id">WF</span>].<br/>
+&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">ms</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">w</span>' <span class="id">idx</span> <span class="id">s1</span> <span class="id">s2</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span> : <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id">ccB</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_states</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#idx">idx</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#s1">s1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#s2">s2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id">ccB</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">r2</span>, <span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id">ccB</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#r1">r1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#r2">r2</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id">ccB</span>' <span class="id">w</span>' <span class="id"><a href="compcert.common.CallconvAlgebra.html#r1">r1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#r2">r2</a></span>).<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#Forward_simulation">Forward_simulation</a></span> <span class="kwd">with</span> <span class="id">order</span> <span class="id">ms</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">wB</span>' <span class="id">Hse</span>' <span class="id">Hse1</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hq</span>'.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">HB</span> <span class="id">wB</span>' <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span>) <span class="kwd">as</span> (<span class="id">wB</span> &amp; <span class="id">Hse</span> &amp; <span class="id">Hq</span> &amp; <span class="id">Hr</span>); <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#fsim_match_valid_query">fsim_match_valid_query</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">s1</span> <span class="id">Hq</span>' <span class="id">Hs1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">HB</span> <span class="id">wB</span>' <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span>) <span class="kwd">as</span> (<span class="id">wB</span> &amp; <span class="id">Hse</span> &amp; <span class="id">Hq</span> &amp; <span class="id">Hr</span>); <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_initial_states">fsim_match_initial_states</a></span> <span class="kwd">as</span> (<span class="id">i</span> &amp; <span class="id">s2</span> &amp; <span class="id">Hs2</span> &amp; <span class="id">Hs</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">i</span>, <span class="id">s2</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="id">exists</span> <span class="id">wB</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">i</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">r1</span> (<span class="id">wB</span> &amp; <span class="id">Hs</span> &amp; <span class="id">Hse</span> &amp; <span class="id">Hr</span>') <span class="id">Hr1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_final_states">fsim_match_final_states</a></span> <span class="kwd">as</span> (<span class="id">r2</span> &amp; <span class="id">Hr2</span> &amp; <span class="id">Hr</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">i</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">qA1</span> (<span class="id">wB</span> &amp; <span class="id">Hs</span> &amp; <span class="id">Hse</span> &amp; <span class="id">Hr</span>') <span class="id">HqA1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_external">fsim_match_external</a></span> <span class="kwd">as</span> (<span class="id">wA</span> &amp; <span class="id">qA2</span> &amp; <span class="id">HqA2</span> &amp; <span class="id">HqA</span> &amp; <span class="id">HseA</span> &amp; ?); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">HA</span> <span class="kwd">as</span> (<span class="id">wA</span>' &amp; <span class="id">HseA</span>' &amp; <span class="id">HqA</span>' &amp; <span class="id">Hr</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">wA</span>', <span class="id">qA2</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">i</span>' &amp; <span class="id">s2</span>' &amp; <span class="id">Hs2</span>' &amp; <span class="id">Hs</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">i</span>', <span class="id">s2</span>'. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="id">exists</span> <span class="id">wB</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s1</span> <span class="id">t</span> <span class="id">s1</span>' <span class="id">Hs1</span>' <span class="id">i</span> <span class="id">s2</span> (<span class="id">wB</span> &amp; <span class="id">Hs</span> &amp; <span class="id">Hse</span> &amp; <span class="id">Hr</span>').<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_simulation">fsim_simulation</a></span> <span class="kwd">as</span> (<span class="id">i</span>' &amp; <span class="id">s2</span>' &amp; <span class="id">Hs2</span>' &amp; <span class="id">Hs</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">i</span>', <span class="id">s2</span>'. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="id">exists</span> <span class="id">wB</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<h1> Properties of <span class="bracket"><span class="id">cc_compose</span></span> </h1>
+<br/>
+<div class="doc">Language interfaces and calling conventions form a category, with
+  <span class="bracket"><span class="id">cc_id</span></span> as the identity arrow and <span class="bracket"><span class="id">cc_compose</span></span> as the composition. </div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_compose_id_left">cc_compose_id_left</a></span> {<span class="id">li1</span> <span class="id">li2</span>} (<span class="id">cc</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2204')">Proof.</div>
+<div class="proofscript" id="proof2204">
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> [[<span class="id">se2</span> [ ]] <span class="id">w</span>] <span class="id">se1</span> <span class="id">se3</span> <span class="id">q1</span> <span class="id">q3</span> (<span class="id">Hse12</span> &amp; <span class="id">Hse23</span>) (<span class="id">q2</span> &amp; <span class="id">Hq12</span> &amp; <span class="id">Hq23</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>; <span class="tactic">intuition</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">se1</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>, <span class="id">w</span>); <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r3</span> (<span class="id">r2</span> &amp; <span class="id">Hr12</span> &amp; <span class="id">Hr23</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_compose_id_right">cc_compose_id_right</a></span> {<span class="id">li1</span> <span class="id">li2</span>} (<span class="id">cc</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2205')">Proof.</div>
+<div class="proofscript" id="proof2205">
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> [[<span class="id">se2</span> <span class="id">w</span>] [ ]] <span class="id">se1</span> <span class="id">se3</span> <span class="id">q1</span> <span class="id">q3</span> (<span class="id">Hse12</span> &amp; <span class="id">Hse23</span>) (<span class="id">q2</span> &amp; <span class="id">Hq12</span> &amp; <span class="id">Hq23</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>; <span class="tactic">intuition</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">se2</span>, <span class="id">w</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>); <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r3</span> (<span class="id">r2</span> &amp; <span class="id">Hr12</span> &amp; <span class="id">Hr23</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_compose_assoc">cc_compose_assoc</a></span> {<span class="id">A</span> <span class="id">B</span> <span class="id">C</span> <span class="id">D</span>} <span class="id">cc1</span> <span class="id">cc2</span> <span class="id">cc3</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#A">A</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#C">C</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#D">D</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc3">cc3</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#A">A</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#B">B</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#D">D</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc3">cc3</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2206')">Proof.</div>
+<div class="proofscript" id="proof2206">
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> [[<span class="id">sec</span> [[<span class="id">seb</span> <span class="id">w1</span>] <span class="id">w2</span>]] <span class="id">w3</span>] <span class="id">sea</span> <span class="id">sed</span> <span class="id">qa</span> <span class="id">qd</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> ((<span class="id">Hseab</span> &amp; <span class="id">Hsebc</span>) &amp; <span class="id">Hsecd</span>) (<span class="id">qc</span> &amp; (<span class="id">qb</span> &amp; <span class="id">Hqab</span> &amp; <span class="id">Hqbc</span>) &amp; <span class="id">Hqcd</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">seb</span>, <span class="id">w1</span>, (<span class="id">sec</span>, <span class="id">w2</span>, <span class="id">w3</span>)). <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ra</span> <span class="id">rd</span> (<span class="id">rb</span> &amp; <span class="id">Hrab</span> &amp; <span class="id">rc</span> &amp; <span class="id">Hrbc</span> &amp; <span class="id">Hrcd</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> [[<span class="id">seb</span> <span class="id">w1</span>] [[<span class="id">sec</span> <span class="id">w2</span>] <span class="id">w3</span>]] <span class="id">sea</span> <span class="id">sed</span> <span class="id">qa</span> <span class="id">qd</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> (<span class="id">Hseab</span> &amp; <span class="id">Hsebc</span> &amp; <span class="id">Hsecd</span>) (<span class="id">qb</span> &amp; <span class="id">Hqab</span> &amp; <span class="id">qc</span> &amp; <span class="id">Hqbc</span> &amp; <span class="id">Hqcd</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">sec</span>, (<span class="id">seb</span>, <span class="id">w1</span>, <span class="id">w2</span>), <span class="id">w3</span>). <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ra</span> <span class="id">rd</span> (<span class="id">rc</span> &amp; (<span class="id">rb</span> &amp; <span class="id">Hrab</span> &amp; <span class="id">Hrbc</span>) &amp; <span class="id">Hrcd</span>); <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">In addition, composition is monotonic under <span class="bracket"><span class="id">cc_ref</span></span>. </div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_compose_ref">cc_compose_ref</a></span> <span class="id">li1</span> <span class="id">li2</span> <span class="id">li3</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span>) (@<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li3">li3</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2207')">Proof.</div>
+<div class="proofscript" id="proof2207">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">cc12</span> <span class="id">cc12</span>' <span class="id">H12</span> <span class="id">cc23</span> <span class="id">cc23</span>' <span class="id">H23</span> [[<span class="id">se2</span> <span class="id">w12</span>] <span class="id">w23</span>] <span class="id">se1</span> <span class="id">se3</span> <span class="id">q1</span> <span class="id">q3</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> (<span class="id">Hse12</span> &amp; <span class="id">Hse23</span>) (<span class="id">q2</span> &amp; <span class="id">Hq12</span> &amp; <span class="id">Hq23</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id">H12</span> <span class="id">w12</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse12</span> <span class="id">Hq12</span>) <span class="kwd">as</span> (<span class="id">w12</span>' &amp; <span class="id">Hse12</span>' &amp; <span class="id">Hq12</span>' &amp; <span class="id">H12</span>').<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id">H23</span> <span class="id">w23</span> <span class="id">se2</span> <span class="id">se3</span> <span class="id">q2</span> <span class="id">q3</span> <span class="id">Hse23</span> <span class="id">Hq23</span>) <span class="kwd">as</span> (<span class="id">w23</span>' &amp; <span class="id">Hse23</span>' &amp; <span class="id">Hq23</span>' &amp; <span class="id">H23</span>').<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">se2</span>, <span class="id">w12</span>', <span class="id">w23</span>').<br/>
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r3</span> (<span class="id">r2</span> &amp; <span class="id">Hr12</span> &amp; <span class="id">Hr23</span>); <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_compose_eqv">cc_compose_eqv</a></span> <span class="id">li1</span> <span class="id">li2</span> <span class="id">li3</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> ==&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> ==&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span>) (@<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li1">li1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li2">li2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li3">li3</a></span>) | 10.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2208')">Proof.</div>
+<div class="proofscript" id="proof2208">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">cc12</span> <span class="id">cc12</span>' [<span class="id">H12</span> <span class="id">H21</span>] <span class="id">cc23</span> <span class="id">cc23</span>' [<span class="id">H23</span> <span class="id">H32</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_ref">cc_compose_ref</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_compose_ref_params">cc_compose_ref_params</a></span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Params">Params</a></span> (@<span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span>) 2.<br/>
+<br/>
+<br/>
+<h1> Kleene algebra </h1>
+<br/>
+<div class="doc">At each language interface <span class="bracket"><span class="id">li</span></span>, we can equip the type of calling
+  conventions <span class="bracket"><span class="id">callconv</span> <span class="id">li</span> <span class="id">li</span></span> with (most of) the structure of a
+  Kleene algebra. At the moment, the <span class="bracket"><span class="id">match_dummy_query_def</span></span>
+  requiement on calling conventions prevents us from defining a zero
+  element. Otherwise, we largely follow Kozen'94. </div>
+<br/>
+<h2> Union </h2>
+<br/>
+<div class="doc">The union of two calling conventions <span class="bracket"><span class="id">cc1</span></span> and <span class="bracket"><span class="id">cc2</span></span> is defined
+  in such a way that a <span class="bracket"><span class="id">ccplus</span> <span class="id">cc1</span> <span class="id">cc2</span></span>-simulation is both a
+  <span class="bracket"><span class="id">cc1</span></span>-simulation and a <span class="bracket"><span class="id">cc2</span></span>-simulation. </div>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="JOIN">JOIN</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">li</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#language_interface">language_interface</a></span>}.<br/>
+<br/>
+<h3> Definition </h3>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="copair">copair</a></span> {<span class="id">A</span> <span class="id">B</span> <span class="id">C</span>} (<span class="id">f</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#C">C</a></span>) (<span class="id">g</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#B">B</a></span> -&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#C">C</a></span>) (<span class="id">x</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#A">A</a></span> + <span class="id"><a href="compcert.common.CallconvAlgebra.html#B">B</a></span>): <span class="id"><a href="compcert.common.CallconvAlgebra.html#C">C</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id">a</span> =&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#f">f</a></span> <span class="id">a</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id">b</span> =&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#g">g</a></span> <span class="id">b</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_join">cc_join</a></span> (<span class="id">cc1</span> <span class="id">cc2</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN.li">li</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN.li">li</a></span>): <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN.li">li</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN.li">li</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> + <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> := <span class="id"><a href="compcert.common.CallconvAlgebra.html#copair">copair</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> := <span class="id"><a href="compcert.common.CallconvAlgebra.html#copair">copair</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> := <span class="id"><a href="compcert.common.CallconvAlgebra.html#copair">copair</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2209')">Next Obligation.</div>
+<div class="proofscript" id="proof2209">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">w</span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_public_preserved">match_senv_public_preserved</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof2210')">Next Obligation.</div>
+<div class="proofscript" id="proof2210">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">w</span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_valid_for">match_senv_valid_for</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+<h3> Properties </h3>
+<br/>
+<div class="doc"><span class="bracket"><span class="id">cc_join</span></span> is the least upper bound with respect to <span class="bracket"><span class="id">ccref</span></span>. </div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_ub_l">cc_join_ub_l</a></span> <span class="id">cc1</span> <span class="id">cc2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2211')">Proof.</div>
+<div class="proofscript" id="proof2211">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id">w</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_ub_r">cc_join_ub_r</a></span> <span class="id">cc1</span> <span class="id">cc2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2212')">Proof.</div>
+<div class="proofscript" id="proof2212">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id">w</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_lub">cc_join_lub</a></span> <span class="id">cc1</span> <span class="id">cc2</span> <span class="id">cc</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2213')">Proof.</div>
+<div class="proofscript" id="proof2213">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H1</span> <span class="id">H2</span> <span class="id">w</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">w</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+<div class="doc">The following lemmas are useful as <span class="bracket"><span class="tactic">auto</span></span> hints. </div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_l">cc_join_l</a></span> <span class="id">cc</span> <span class="id">cc1</span> <span class="id">cc2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> -&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2214')">Proof.</div>
+<div class="proofscript" id="proof2214">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">etransitivity</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_l">cc_join_ub_l</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_r">cc_join_r</a></span> <span class="id">cc</span> <span class="id">cc1</span> <span class="id">cc2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> -&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2215')">Proof.</div>
+<div class="proofscript" id="proof2215">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">etransitivity</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_r">cc_join_ub_r</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+<div class="doc">Trivial consequences of the least upper bound property. </div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">cc_join_lub</span> <span class="id">cc_join_l</span> <span class="id">cc_join_r</span> (<span class="tactic">reflexivity</span> (<span class="id">R</span>:=<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span>)).<br/>
+&nbsp;&nbsp;<span class="kwd">Hint</span> <span class="kwd">Unfold</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_join_ref">cc_join_ref</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2216')">Proof.</div>
+<div class="proofscript" id="proof2216">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">cc1</span> <span class="id">cc1</span>' <span class="id">H1</span> <span class="id">cc2</span> <span class="id">cc2</span>' <span class="id">H2</span>; <span class="tactic">eauto</span> 10.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_join_eqv">cc_join_eqv</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> ==&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> ==&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2217')">Proof.</div>
+<div class="proofscript" id="proof2217">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">cc12</span> <span class="id">cc12</span>' [<span class="id">H12</span> <span class="id">H21</span>] <span class="id">cc23</span> <span class="id">cc23</span>' [<span class="id">H23</span> <span class="id">H32</span>]; <span class="tactic">eauto</span> 10.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_assoc">cc_join_assoc</a></span> <span class="id">cc1</span> <span class="id">cc2</span> <span class="id">cc3</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc3">cc3</a></span>) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc3">cc3</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2218')">Proof.</div>
+<div class="proofscript" id="proof2218">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span> 10.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_comm">cc_join_comm</a></span> <span class="id">cc1</span> <span class="id">cc2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2219')">Proof.</div>
+<div class="proofscript" id="proof2219">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span> 10.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_idemp">cc_join_idemp</a></span> <span class="id">cc</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2220')">Proof.</div>
+<div class="proofscript" id="proof2220">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span> 10.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="ccref_join">ccref_join</a></span> <span class="id">cc1</span> <span class="id">cc2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> &lt;-&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2221')">Proof.</div>
+<div class="proofscript" id="proof2221">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span>; <span class="tactic">intuition</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">transitivity</span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id">cc1</span> <span class="id">cc2</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+<h3> Forward simulations </h3>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Inductive</span> <span class="id"><a name="cc_join_ms">cc_join_ms</a></span> {<span class="id">A</span> <span class="id">B</span> <span class="id">C</span> <span class="id">D</span> <span class="id">E</span> <span class="id">F</span>} <span class="id">R1</span> <span class="id">R2</span>: <span class="id">A</span> + <span class="id">B</span> -&gt; <span class="id">C</span> + <span class="id">D</span> -&gt; <span class="id">E</span> -&gt; <span class="id">F</span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a name="cc_join_ms_introl">cc_join_ms_introl</a></span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span> <span class="id">y</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#R1">R1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#a">a</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#b">b</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ms">cc_join_ms</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#R1">R1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#R2">R2</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#a">a</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#b">b</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#y">y</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a name="cc_join_ms_intror">cc_join_ms_intror</a></span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span> <span class="id">y</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#R2">R2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#a">a</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#b">b</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ms">cc_join_ms</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#R1">R1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#R2">R2</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#a">a</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#b">b</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#y">y</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Hint</span> <span class="id">Constructors</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ms">cc_join_ms</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Hint</span> <span class="id">Constructors</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#Relation_Operators.le_AsB">Relation_Operators.le_AsB</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_join_fsim">cc_join_fsim</a></span> (<span class="id">ccA</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN.li">li</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN.li">li</a></span>) <span class="id">ccB1</span> <span class="id">ccB2</span> <span class="id">L1</span> <span class="id">L2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB1">ccB1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L1">L1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L2">L2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB2">ccB2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L1">L1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L2">L2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB1">ccB1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB2">ccB2</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#L1">L1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L2">L2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2222')">Proof.</div>
+<div class="proofscript" id="proof2222">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> [[<span class="id">ind1</span> <span class="id">ord1</span> <span class="id">ms1</span> <span class="id">SK</span> <span class="id">LTS1</span> <span class="id">WF1</span>]] [[<span class="id">ind2</span> <span class="id">ord2</span> <span class="id">ms2</span> <span class="id">_</span> <span class="id">LTS2</span> <span class="id">WF2</span>]].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#Forward_simulation">Forward_simulation</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#le_AsB">Relation_Operators.le_AsB</a></span> <span class="id">ind1</span> <span class="id">ind2</span> <span class="id">ord1</span> <span class="id">ord2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">se1</span> <span class="id">se2</span> =&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ms">cc_join_ms</a></span> (<span class="id">ms1</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span>) (<span class="id">ms2</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Wellfounded.Disjoint_Union.html#wf_disjoint_sum">Disjoint_Union.wf_disjoint_sum</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">wB</span> <span class="id">Hse</span> <span class="id">Hse1</span>. <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">wB</span>; <span class="id">cbn</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#fsim_match_valid_query">fsim_match_valid_query</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">s1</span> <span class="id">H1</span> <span class="id">Hs1</span>. <span class="tactic">destruct</span> <span class="id">wB</span>; <span class="id">cbn</span> <span class="kwd">in</span> *;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_initial_states">fsim_match_initial_states</a></span> <span class="kwd">as</span> (<span class="id">i</span> &amp; <span class="id">s2</span> &amp; <span class="id">Hs2</span> &amp; <span class="id">Hs</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">i</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">r1</span> <span class="id">Hs</span> <span class="id">Hr1</span>. <span class="tactic">destruct</span> <span class="id">wB</span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="id">inv</span> <span class="id">Hs</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#fsim_match_final_states">fsim_match_final_states</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">i</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">q1</span> <span class="id">Hs</span> <span class="id">Hq1</span>. <span class="tactic">destruct</span> <span class="id">wB</span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="id">inv</span> <span class="id">Hs</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_external">fsim_match_external</a></span> <span class="kwd">as</span> (<span class="id">wA</span> &amp; <span class="id">q2</span> &amp; <span class="id">Hq2</span> &amp; <span class="id">Hq</span> &amp; <span class="id">Hse</span>' &amp; <span class="id">Hr</span>); <span class="tactic">eauto</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">wA</span>, <span class="id">q2</span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>; <span class="id">edestruct</span> <span class="id">Hr</span> <span class="kwd">as</span> (<span class="id">i</span>' &amp; <span class="id">s2</span>' &amp; <span class="id">Hs2</span>' &amp; <span class="id">Hs</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s1</span> <span class="id">t</span> <span class="id">s1</span>' <span class="id">Hs1</span>' <span class="id">i</span> <span class="id">s2</span> <span class="id">Hs</span>. <span class="tactic">destruct</span> <span class="id">wB</span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="id">inv</span> <span class="id">Hs</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Smallstep.html#fsim_simulation">fsim_simulation</a></span> <span class="kwd">as</span> (<span class="id">i</span>' &amp; <span class="id">s2</span>' &amp; <span class="id">Hs2</span>' &amp; <span class="id">Hs</span>'); <span class="tactic">eauto</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hs2</span>' <span class="kwd">as</span> [? | [? ?]]; <span class="tactic">eauto</span> 10.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#JOIN">JOIN</a></span>.<br/>
+<br/>
+<span class="kwd">Infix</span> "+" := <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join">cc_join</a></span> : <span class="id">cc_scope</span>.<br/>
+<br/>
+<h2> Superposition </h2>
+<br/>
+<div class="doc">In addition to the union, we can define a superposition operator
+  which requires that both calling conventions are satisfied. This is
+  particularly useful with <span class="bracket"><span class="id">cc_id</span></span> to enforce invariants. </div>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_both">cc_both</a></span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">cc1</span> <span class="id">cc2</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>): <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> * <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> := <span class="kwd">fun</span> '(<span class="id">w1</span>, <span class="id">w2</span>) =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w1">w1</a></span> /\ <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w2">w2</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> := <span class="kwd">fun</span> '(<span class="id">w1</span>, <span class="id">w2</span>) =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w1">w1</a></span> /\ <span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w2">w2</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> := <span class="kwd">fun</span> '(<span class="id">w1</span>, <span class="id">w2</span>) =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w1">w1</a></span> /\ <span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#w2">w2</a></span>;<br/>
+&nbsp;&nbsp;|}%<span class="id">rel</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2223')">Next Obligation.</div>
+<div class="proofscript" id="proof2223">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_public_preserved">match_senv_public_preserved</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof2224')">Next Obligation.</div>
+<div class="proofscript" id="proof2224">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_valid_for">match_senv_valid_for</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_both_ref">cc_both_ref</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span>) (<span class="id">forallr</span> -, <span class="id">forallr</span> -, <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2225')">Proof.</div>
+<div class="proofscript" id="proof2225">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">liA</span> <span class="id">liB</span> <span class="id">cc1</span> <span class="id">cc1</span>' <span class="id">H1</span> <span class="id">cc2</span> <span class="id">cc2</span>' <span class="id">H2</span> [<span class="id">w1</span> <span class="id">w2</span>] <span class="id">se</span> <span class="id">se</span>' <span class="id">q</span> <span class="id">q</span>' [<span class="id">Hse1</span> <span class="id">Hse2</span>] [<span class="id">Hq1</span> <span class="id">Hq2</span>].<br/>
+&nbsp;&nbsp;<span class="id">specialize</span> (<span class="id">H1</span> <span class="id">w1</span> <span class="id">se</span> <span class="id">se</span>' <span class="id">q</span> <span class="id">q</span>' <span class="id">Hse1</span> <span class="id">Hq1</span>) <span class="kwd">as</span> (<span class="id">w1</span>' &amp; <span class="id">Hse1</span>' &amp; <span class="id">Hq1</span>' &amp; <span class="id">H1</span>).<br/>
+&nbsp;&nbsp;<span class="id">specialize</span> (<span class="id">H2</span> <span class="id">w2</span> <span class="id">se</span> <span class="id">se</span>' <span class="id">q</span> <span class="id">q</span>' <span class="id">Hse2</span> <span class="id">Hq2</span>) <span class="kwd">as</span> (<span class="id">w2</span>' &amp; <span class="id">Hse2</span>' &amp; <span class="id">Hq2</span>' &amp; <span class="id">H2</span>).<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id">w1</span>', <span class="id">w2</span>'). <span class="id">cbn</span>. <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r</span> <span class="id">r</span>' [<span class="id">Hr1</span> <span class="id">Hr2</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_both_assoc">cc_both_assoc</a></span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">cc1</span> <span class="id">cc2</span> <span class="id">cc3</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc3">cc3</a></span>) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc3">cc3</a></span>)).<br/>
+Abort.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_both_comm">cc_both_comm</a></span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">cc1</span> <span class="id">cc2</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span>) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc2">cc2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc1">cc1</a></span>).<br/>
+Abort.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_both_idemp">cc_both_idemp</a></span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">cc</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc">cc</a></span>.<br/>
+Abort.</div>
+<br/>
+<span class="kwd">Infix</span> "&amp;&amp;" := <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_both">cc_both</a></span> : <span class="id">cc_scope</span>.<br/>
+<br/>
+<h2> Iteration </h2>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">KLR</span>.<br/>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="STAR">STAR</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">li</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#language_interface">language_interface</a></span>} (<span class="id">cc</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li">li</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li">li</a></span>).<br/>
+<br/>
+<h3> Definition </h3>
+<br/>
+<div class="doc">We define n-fold self-composition <span class="bracket"><span class="id">cc_pow</span> <span class="id">cc</span> <span class="id">n</span></span>, then use it as
+    a base to define <span class="bracket"><span class="id">cc_star</span> <span class="id">cc</span></span>. This makes it easier to prove that
+    self-simulation entails self-simulation by the starred calling
+    convention: we first show self-simulation by <span class="bracket"><span class="id">cc</span> ^ <span class="id">n</span></span> for an
+    arbitrary <span class="bracket"><span class="id">n</span></span>; then with that intermediate result we can reuse
+    <span class="bracket"><span class="id">compose_forward_simulations</span></span>, which deals with the complexity of
+    composing the general forward simulation diagram, in our proof of
+    the <span class="bracket"><span class="id">cc_star</span></span> simulation. </div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Fixpoint</span> <span class="id"><a name="cc_pow">cc_pow</a></span> (<span class="id">n</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>): <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.li">li</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.li">li</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span> =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id">m</span> =&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.cc">cc</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> <span class="id">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_star">cc_star</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.li">li</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.li">li</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := { <span class="id">n</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> &amp; <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) };<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> := <span class="kwd">fun</span> '(<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">n</span> <span class="id">w</span>) =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> := <span class="kwd">fun</span> '(<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">n</span> <span class="id">w</span>) =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> := <span class="kwd">fun</span> '(<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">n</span> <span class="id">w</span>) =&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#w">w</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2226')">Next Obligation.</div>
+<div class="proofscript" id="proof2226">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">w</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">X</span> <span class="kwd">as</span> [[<span class="id">sei</span> <span class="id">x1</span>] <span class="id">x2</span>], <span class="id">H</span> <span class="kwd">as</span> [? ?].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">etransitivity</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_public_preserved">match_senv_public_preserved</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof2227')">Next Obligation.</div>
+<div class="proofscript" id="proof2227">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">w</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">X</span> <span class="kwd">as</span> [[<span class="id">sei</span> <span class="id">x1</span>] <span class="id">x2</span>], <span class="id">H</span> <span class="kwd">as</span> [? ?].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_valid_for">match_senv_valid_for</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+<h3> Properties </h3>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_star_fold_l">cc_star_fold_l</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (1 + <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.cc">cc</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2228')">Proof.</div>
+<div class="proofscript" id="proof2228">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> [[ ] | [[<span class="id">se</span> <span class="id">w</span>] [<span class="id">n</span> <span class="id">ws</span>]]] <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hq</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id">n</span>) (<span class="id">se</span>, <span class="id">w</span>, <span class="id">ws</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_star_fold_r">cc_star_fold_r</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (1 + <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.cc">cc</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2229')">Proof.</div>
+<div class="proofscript" id="proof2229">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> [[ ] | [[<span class="id">se2</span> [<span class="id">n</span> <span class="id">ws</span>]] <span class="id">w</span>]] <span class="id">se1</span> <span class="id">se3</span> <span class="id">q1</span> <span class="id">q3</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> [ ] [ ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>). <span class="tactic">simpl</span>. <span class="tactic">tauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> (<span class="id">Hses</span> &amp; <span class="id">Hse</span>) (<span class="id">q2</span> &amp; <span class="id">Hqs</span> &amp; <span class="id">Hq</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">revert</span> <span class="id">se1</span> <span class="id">q1</span> <span class="id">Hses</span> <span class="id">Hqs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span> <span class="kwd">as</span> [ | <span class="id">n</span> <span class="id">IHn</span>]; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> 1%<span class="id">nat</span> (<span class="id">se3</span>, <span class="id">w</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>)). <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r3</span> (<span class="id">r2</span> &amp; <span class="id">Hr12</span> &amp; <span class="id">Hr23</span>). <span class="tactic">subst</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id">ws</span> <span class="kwd">as</span> [[<span class="id">seI</span> <span class="id">w0</span>] <span class="id">ws</span>], <span class="id">Hses</span> <span class="kwd">as</span> [<span class="id">Hse1I</span> <span class="id">HseI2</span>], <span class="id">Hqs</span> <span class="kwd">as</span> (<span class="id">qI</span> &amp; <span class="id">Hq1I</span> &amp; <span class="id">HqI2</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">specialize</span> (<span class="id">IHn</span> <span class="id">ws</span> <span class="id">seI</span> <span class="id">qI</span> <span class="id">HseI2</span> <span class="id">HqI2</span>) <span class="kwd">as</span> ([<span class="id">n</span>' <span class="id">ws</span>'] &amp; <span class="id">HseI3</span>' &amp; <span class="id">HqI3</span>' &amp; ?). <span class="tactic">clear</span> <span class="id">HseI2</span> <span class="id">HqI2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id">n</span>') (<span class="id">seI</span>, <span class="id">w0</span>, <span class="id">ws</span>')). <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r3</span> (<span class="id">r2</span> &amp; <span class="id">Hr12</span> &amp; <span class="id">Hr23</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">rI</span> &amp; <span class="id">Hr1I</span> &amp; <span class="id">HrI2</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_id_star">cc_id_star</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> 1 <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2230')">Proof.</div>
+<div class="proofscript" id="proof2230">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fold_r">cc_star_fold_r</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_l">cc_join_ub_l</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_one_star">cc_one_star</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.cc">cc</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2231')">Proof.</div>
+<div class="proofscript" id="proof2231">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fold_r">cc_star_fold_r</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_r">cc_join_ub_r</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fold_r">cc_star_fold_r</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_l">cc_join_ub_l</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_left">cc_compose_id_left</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_pow_star">cc_pow_star</a></span> <span class="id">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2232')">Proof.</div>
+<div class="proofscript" id="proof2232">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_id_star">cc_id_star</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fold_l">cc_star_fold_l</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_r">cc_join_ub_r</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_star_ind_l">cc_star_ind_l</a></span> {<span class="id">li</span>'} (<span class="id">x</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.li">li</a></span> <span class="id">li</span>'):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.cc">cc</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#x">x</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2233')">Proof.</div>
+<div class="proofscript" id="proof2233">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H</span> [[<span class="id">se2</span> [<span class="id">n</span> <span class="id">ws</span>]] <span class="id">w</span>] <span class="id">se1</span> <span class="id">se3</span> <span class="id">q1</span> <span class="id">q3</span> [<span class="id">Hse12</span> <span class="id">Hse23</span>] (<span class="id">q2</span> &amp; <span class="id">Hq12</span> &amp; <span class="id">Hq23</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">revert</span> <span class="id">se1</span> <span class="id">q1</span> <span class="id">Hse12</span> <span class="id">Hq12</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="tactic">subst</span>. <span class="id">exists</span> <span class="id">w</span>. <span class="tactic">intuition</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">ws</span> <span class="kwd">as</span> [[<span class="id">sei</span> <span class="id">wi</span>] <span class="id">ws</span>]. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse12</span> <span class="kwd">as</span> (<span class="id">Hse1i</span> &amp; <span class="id">Hsei2</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hq12</span> <span class="kwd">as</span> (<span class="id">qi</span> &amp; <span class="id">Hq1i</span> &amp; <span class="id">Hqi2</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">IHn</span> <span class="kwd">as</span> (<span class="id">wr</span> &amp; <span class="id">Hsei3</span> &amp; <span class="id">Hqi3</span> &amp; <span class="id">Hri3</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id">H</span> (<span class="id">sei</span>, <span class="id">wi</span>, <span class="id">wr</span>)) <span class="kwd">as</span> (<span class="id">wl</span> &amp; <span class="id">Hsexi</span> &amp; <span class="id">Hqxi</span> &amp; <span class="id">Hrxi</span>); <span class="id">cbn</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">wl</span>. <span class="tactic">intuition</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">Hrxi</span> <span class="kwd">as</span> (<span class="id">ri1</span> &amp; ? &amp; ?); <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">Hri3</span> <span class="kwd">as</span> (<span class="id">ri2</span> &amp; ? &amp; ?); <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="cc_star_idemp">cc_star_idemp</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2234')">Proof.</div>
+<div class="proofscript" id="proof2234">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_ind_l">cc_star_ind_l</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">transitivity</span> (1 + <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR.cc">cc</a></span> @ <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span>)%<span class="id">cc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_r">cc_join_ub_r</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fold_l">cc_star_fold_l</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">transitivity</span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span> @ 1)%<span class="id">cc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_right">cc_compose_id_right</a></span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_id_star">cc_id_star</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#STAR">STAR</a></span>.<br/>
+<br/>
+<span class="kwd">Infix</span> "^" := <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span> : <span class="id">cc_scope</span>.<br/>
+<span class="kwd">Notation</span> "<span class="id">cc</span> ^ {*}" := (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span> <span class="id">cc</span>) (<span class="tactic">at</span> <span class="id">level</span> 30) : <span class="id">cc_scope</span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_pow_ref">cc_pow_ref</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow">cc_pow</a></span>) (<span class="id">forallr</span> -, <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; - ==&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2235')">Proof.</div>
+<div class="proofscript" id="proof2235">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">li</span> <span class="id">cc1</span> <span class="id">cc2</span> <span class="id">Hcc</span> <span class="id">n</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span> <span class="id">cc_pow</span>; <span class="id">rauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="cc_star_ref">cc_star_ref</a></span> <span class="id">li</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> ++&gt; <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span>) (@<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star">cc_star</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#li">li</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2236')">Proof.</div>
+<div class="proofscript" id="proof2236">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">cc</span> <span class="id">cc</span>' <span class="id">Hcc</span> [<span class="id">n</span> <span class="id">ws</span>] <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow_ref">cc_pow_ref</a></span> <span class="id">li</span> <span class="id">cc</span> <span class="id">cc</span>' <span class="id">Hcc</span> <span class="id">n</span> <span class="id">ws</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>) <span class="kwd">as</span> (<span class="id">ws</span>' &amp; <span class="id">Hq</span>' &amp; <span class="id">Hse</span>' &amp; <span class="id">H</span>).<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id">n</span> <span class="id">ws</span>'); <span class="tactic">simpl</span>. <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<h3> Proving simulations </h3>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_pow_fsim_intro">cc_pow_fsim_intro</a></span> {<span class="id">liA</span> <span class="id">liB</span> <span class="id">ccA</span> <span class="id">ccB</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB">ccB</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#inhabited">inhabited</a></span> (<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Smallstep.html#fsim_components">fsim_components</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> ^ <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB">ccB</a></span> ^ <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2237')">Proof.</div>
+<div class="proofscript" id="proof2237">
+&nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">HL</span>]. <span class="id">constructor</span>. <span class="tactic">intros</span> <span class="id">n</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#identity_fsim_components">identity_fsim_components</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_fsim_components">compose_fsim_components</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="CC_STAR_FSIM">CC_STAR_FSIM</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">liA</span> <span class="id">liB</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>).<br/>
+&nbsp;&nbsp;<span class="kwd">Context</span> {<span class="id">ccA</span> <span class="id">ccB</span>} (<span class="id">FS</span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Smallstep.html#fsim_components">fsim_components</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span>^<span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB">ccB</a></span>^<span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.L">L</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.L">L</a></span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Inductive</span> <span class="id"><a name="cc_star_ms">cc_star_ms</a></span> <span class="id">se1</span> <span class="id">se2</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.ccB">ccB</a></span>^{*}) -&gt; {<span class="id">n</span> &amp; <span class="id"><a href="compcert.common.Smallstep.html#fsim_index">fsim_index</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.FS">FS</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>)} -&gt; <span class="id"><a href="compcert.common.Smallstep.html#state">state</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.L">L</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#state">state</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.L">L</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cc_star_ms_intro">cc_star_ms_intro</a></span> <span class="id">n</span> <span class="id">ws</span> <span class="id">idx</span> <span class="id">s1</span> <span class="id">s2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_states">fsim_match_states</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.FS">FS</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ws">ws</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#idx">idx</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#s1">s1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#s2">s2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_ms">cc_star_ms</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se1">se1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#se2">se2</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ws">ws</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#idx">idx</a></span>) <span class="id"><a href="compcert.common.CallconvAlgebra.html#s1">s1</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#s2">s2</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Hint</span> <span class="id">Constructors</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_ms">cc_star_ms</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Hint</span> <span class="id">Constructors</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#Relation_Operators.lexprod">Relation_Operators.lexprod</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="cc_star_fsim_components">cc_star_fsim_components</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#fsim_components">fsim_components</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.ccA">ccA</a></span>^{*}) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.ccB">ccB</a></span>^{*}) <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.L">L</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.L">L</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2238')">Proof.</div>
+<div class="proofscript" id="proof2238">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Logic.Eqdep_dec.html#inj_pair2_eq_dec">Eqdep_dec.inj_pair2_eq_dec</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.eq_dec">Nat.eq_dec</a></span>) <span class="kwd">as</span> <span class="id">inj_pair2</span>. <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#Forward_simulation">Forward_simulation</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">fsim_order</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#lexprod">Relation_Operators.lexprod</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Peano.html#lt">lt</a></span> (<span class="kwd">fun</span> <span class="id">n</span> =&gt; <span class="id"><a href="compcert.common.Smallstep.html#fsim_order">fsim_order</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.FS">FS</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#n">n</a></span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">fsim_match_states</span> := <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_ms">cc_star_ms</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">se1</span> <span class="id">se2</span> [<span class="id">n</span> <span class="id">ws</span>] <span class="id">Hse</span> <span class="id">Hse1</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.common.Smallstep.html#fsim_lts">fsim_lts</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM.FS">FS</a></span> <span class="id">n</span>) <span class="id">se2</span> <span class="id">ws</span> <span class="id">Hse</span> <span class="id">Hse1</span>) <span class="kwd">as</span> <span class="id">PROPS</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="id">cbn</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">apply</span> <span class="id">PROPS</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">edestruct</span> (<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_initial_states">fsim_match_initial_states</a></span> <span class="id">PROPS</span>) <span class="kwd">as</span> (<span class="id">idx</span> &amp; <span class="id">s2</span> &amp; <span class="id">Hs2</span> &amp; <span class="id">Hs</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id">inj_pair2</span> <span class="kwd">in</span> <span class="id">H3</span>. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_final_states">fsim_match_final_states</a></span> <span class="id">PROPS</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id">inj_pair2</span> <span class="kwd">in</span> <span class="id">H3</span>. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id"><a href="compcert.common.Smallstep.html#fsim_match_external">fsim_match_external</a></span> <span class="id">PROPS</span>) <span class="kwd">as</span> (<span class="id">wsA</span> &amp; <span class="id">q2</span> &amp; <span class="id">Hq2</span> &amp; <span class="id">Hq</span> &amp; <span class="id">Hse</span>' &amp; <span class="id">Hr</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id">n</span> <span class="id">wsA</span>), <span class="id">q2</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">Hr</span> <span class="kwd">as</span> (<span class="id">i</span>' &amp; <span class="id">s2</span>' &amp; <span class="id">Hs2</span>' &amp; <span class="id">Hs</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">apply</span> <span class="id">inj_pair2</span> <span class="kwd">in</span> <span class="id">H3</span>. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> (<span class="id"><a href="compcert.common.Smallstep.html#fsim_simulation">fsim_simulation</a></span> <span class="id">PROPS</span>) <span class="kwd">as</span> (<span class="id">idx</span>' &amp; <span class="id">s2</span>' &amp; <span class="id">Hs2</span>' &amp; <span class="id">Hs</span>'); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#existT">existT</a></span> <span class="id">_</span> <span class="id">n</span> <span class="id">idx</span>'), <span class="id">s2</span>'; <span class="tactic">intuition</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Wellfounded.Lexicographic_Product.html#wf_lexprod">Lexicographic_Product.wf_lexprod</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Wf_nat.html#lt_wf">lt_wf</a></span>, <span class="id"><a href="compcert.common.Smallstep.html#fsim_order_wf">fsim_order_wf</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#CC_STAR_FSIM">CC_STAR_FSIM</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_star_fsim">cc_star_fsim</a></span> {<span class="id">liA</span> <span class="id">liB</span> <span class="id">ccA</span> <span class="id">ccB</span>} (<span class="id">L</span>: <span class="id"><a href="compcert.common.Smallstep.html#semantics">semantics</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liA">liA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#liB">liB</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB">ccB</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccA">ccA</a></span> ^ {*}) (<span class="id"><a href="compcert.common.CallconvAlgebra.html#ccB">ccB</a></span>^ {*}) <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#L">L</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2239')">Proof.</div>
+<div class="proofscript" id="proof2239">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">HL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_pow_fsim_intro">cc_pow_fsim_intro</a></span> <span class="kwd">in</span> <span class="id">HL</span> <span class="kwd">as</span> [<span class="id">FS</span>]. <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fsim_components">cc_star_fsim_components</a></span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<h1> Invariants </h1>
+<br/>
+<br/>
+<br/>
+<h1> Composition theorems </h1>
+<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

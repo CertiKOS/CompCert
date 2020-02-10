@@ -1,0 +1,676 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Compiler</title>
+<meta name="description" content="Documentation of Coq module Compiler" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Compiler</h1>
+<div class="coq">
+<br/>
+<div class="doc">The whole compiler and its proof of semantic preservation </div>
+<br/>
+<div class="doc">Libraries. </div>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Strings.String.html">String</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="compcert.common.Errors.html">Errors</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.common.Linking.html">Linking</a></span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<br/>
+<div class="doc">Simulation convention algebra </div>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html">CallconvAlgebra</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.CKLR.html">CKLR</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.CKLRAlgebra.html">CKLRAlgebra</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Inject.html">Inject</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html">InjectFootprint</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Extends.html">Extends</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Clightrel.html">Clightrel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.RTLrel.html">RTLrel</a></span>.<br/>
+<br/>
+<div class="doc">Languages (syntax and semantics). </div>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html">Ctypes</a></span> <span class="id"><a href="compcert.cfrontend.Csyntax.html">Csyntax</a></span> .<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Clight.html">Clight</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Csharpminor.html">Csharpminor</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Cminor.html">Cminor</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.CminorSel.html">CminorSel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.RTL.html">RTL</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.LTL.html">LTL</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Linear.html">Linear</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Mach.html">Mach</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.x86.Asm.html">Asm</a></span>.<br/>
+<div class="doc">Translation passes. </div>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.SimplLocals.html">SimplLocals</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Cshmgen.html">Cshmgen</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Cminorgen.html">Cminorgen</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Selection.html">Selection</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.RTLgen.html">RTLgen</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Tailcall.html">Tailcall</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Inlining.html">Inlining</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Renumber.html">Renumber</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Constprop.html">Constprop</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.CSE.html">CSE</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Deadcode.html">Deadcode</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Allocation.html">Allocation</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Tunneling.html">Tunneling</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Linearize.html">Linearize</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.CleanupLabels.html">CleanupLabels</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Debugvar.html">Debugvar</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Stacking.html">Stacking</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.x86.Asmgen.html">Asmgen</a></span>.<br/>
+<div class="doc">Proofs of semantic preservation. </div>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.SimplLocalsproof.html">SimplLocalsproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Cshmgenproof.html">Cshmgenproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.cfrontend.Cminorgenproof.html">Cminorgenproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Selectionproof.html">Selectionproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.RTLgenproof.html">RTLgenproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Tailcallproof.html">Tailcallproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Inliningproof.html">Inliningproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Renumberproof.html">Renumberproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Constpropproof.html">Constpropproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.CSEproof.html">CSEproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Deadcodeproof.html">Deadcodeproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Allocproof.html">Allocproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Tunnelingproof.html">Tunnelingproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Linearizeproof.html">Linearizeproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html">CleanupLabelsproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Debugvarproof.html">Debugvarproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.backend.Stackingproof.html">Stackingproof</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.x86.Asmgenproof.html">Asmgenproof</a></span>.<br/>
+<div class="doc">Command-line flags. </div>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.driver.Compopts.html">Compopts</a></span>.<br/>
+<br/>
+<div class="doc">Pretty-printers (defined in Caml). </div>
+<span class="kwd">Parameter</span> <span class="id"><a name="print_Clight">print_Clight</a></span>: <span class="id"><a href="compcert.cfrontend.Clight.html#program">Clight.program</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>.<br/>
+<span class="kwd">Parameter</span> <span class="id"><a name="print_Cminor">print_Cminor</a></span>: <span class="id"><a href="compcert.backend.Cminor.html#program">Cminor.program</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>.<br/>
+<span class="kwd">Parameter</span> <span class="id"><a name="print_RTL">print_RTL</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span> -&gt; <span class="id"><a href="compcert.backend.RTL.html#program">RTL.program</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>.<br/>
+<span class="kwd">Parameter</span> <span class="id"><a name="print_LTL">print_LTL</a></span>: <span class="id"><a href="compcert.backend.LTL.html#program">LTL.program</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>.<br/>
+<span class="kwd">Parameter</span> <span class="id"><a name="print_Mach">print_Mach</a></span>: <span class="id"><a href="compcert.backend.Mach.html#program">Mach.program</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>.<br/>
+<br/>
+<span class="kwd">Local</span> <span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">string_scope</span>.<br/>
+<br/>
+<h1> Composing the translation passes </h1>
+<br/>
+<div class="doc">We first define useful monadic composition operators,
+    along with funny (but convenient) notations. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="apply_total">apply_total</a></span> (<span class="id">A</span> <span class="id">B</span>: <span class="kwd">Type</span>) (<span class="id">x</span>: <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#B">B</a></span>) : <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#B">B</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.driver.Compiler.html#x">x</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.common.Errors.html#Error">Error</a></span> <span class="id">msg</span> =&gt; <span class="id"><a href="compcert.common.Errors.html#Error">Error</a></span> <span class="id">msg</span> | <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">x1</span> =&gt; <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id">x1</span>) <span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="apply_partial">apply_partial</a></span> (<span class="id">A</span> <span class="id">B</span>: <span class="kwd">Type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">x</span>: <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#B">B</a></span>) : <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#B">B</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.driver.Compiler.html#x">x</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.common.Errors.html#Error">Error</a></span> <span class="id">msg</span> =&gt; <span class="id"><a href="compcert.common.Errors.html#Error">Error</a></span> <span class="id">msg</span> | <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">x1</span> =&gt; <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id">x1</span> <span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Notation</span> "<span class="id">a</span> @@@ <span class="id">b</span>" :=<br/>
+&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.driver.Compiler.html#apply_partial">apply_partial</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">a</span> <span class="id">b</span>) (<span class="tactic">at</span> <span class="id">level</span> 50, <span class="id">left</span> <span class="id">associativity</span>).<br/>
+<span class="kwd">Notation</span> "<span class="id">a</span> !@@ <span class="id">b</span>" :=<br/>
+&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.driver.Compiler.html#apply_total">apply_total</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">a</span> <span class="id">b</span>) (<span class="tactic">at</span> <span class="id">level</span> 50, <span class="id">left</span> <span class="id">associativity</span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="print">print</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>} (<span class="id">printer</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>) (<span class="id">prog</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) : <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">unused</span> := <span class="id"><a href="compcert.driver.Compiler.html#printer">printer</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> <span class="kwd">in</span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="time">time</a></span> {<span class="id">A</span> <span class="id">B</span>: <span class="kwd">Type</span>} (<span class="id">name</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Strings.String.html#string">string</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#B">B</a></span>) : <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#B">B</a></span> := <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="total_if">total_if</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">flag</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">prog</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) : <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="partial_if">partial_if</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">flag</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">prog</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) : <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>.<br/>
+<br/>
+<div class="doc">We define three translation functions for whole programs: one
+  starting with a C program, one with a Cminor program, one with an
+  RTL program.  The three translations produce Asm programs ready for
+  pretty-printing and assembling. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="transf_rtl_program">transf_rtl_program</a></span> (<span class="id">f</span>: <span class="id"><a href="compcert.backend.RTL.html#program">RTL.program</a></span>) : <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.x86.Asm.html#program">Asm.program</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 0)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_tailcalls">Compopts.optim_tailcalls</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Tail</span> <span class="id">calls</span>" <span class="id"><a href="compcert.backend.Tailcall.html#transf_program">Tailcall.transf_program</a></span>)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 1)<br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Inlining</span>" <span class="id"><a href="compcert.backend.Inlining.html#transf_program">Inlining.transf_program</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 2)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Renumbering</span>" <span class="id"><a href="compcert.backend.Renumber.html#transf_program">Renumber.transf_program</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 3)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">Compopts.optim_constprop</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Constant</span> <span class="id">propagation</span>" <span class="id"><a href="compcert.backend.Constprop.html#transf_program">Constprop.transf_program</a></span>)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 4)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">Compopts.optim_constprop</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Renumbering</span>" <span class="id"><a href="compcert.backend.Renumber.html#transf_program">Renumber.transf_program</a></span>)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 5)<br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_CSE">Compopts.optim_CSE</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">CSE</span>" <span class="id"><a href="compcert.backend.CSE.html#transf_program">CSE.transf_program</a></span>)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 6)<br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_redundancy">Compopts.optim_redundancy</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Redundancy</span> <span class="id">elimination</span>" <span class="id"><a href="compcert.backend.Deadcode.html#transf_program">Deadcode.transf_program</a></span>)<br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#print_RTL">print_RTL</a></span> 7)<br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Register</span> <span class="id">allocation</span>" <span class="id"><a href="compcert.backend.Allocation.html#transf_program">Allocation.transf_program</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> <span class="id"><a href="compcert.driver.Compiler.html#print_LTL">print_LTL</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Branch</span> <span class="id">tunneling</span>" <span class="id"><a href="compcert.backend.Tunneling.html#tunnel_program">Tunneling.tunnel_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">CFG</span> <span class="id">linearization</span>" <span class="id"><a href="compcert.backend.Linearize.html#transf_program">Linearize.transf_program</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Label</span> <span class="id">cleanup</span>" <span class="id"><a href="compcert.backend.CleanupLabels.html#transf_program">CleanupLabels.transf_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#debug">Compopts.debug</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Debugging</span> <span class="id">info</span> <span class="kwd">for</span> <span class="id">local</span> <span class="id">variables</span>" <span class="id"><a href="compcert.backend.Debugvar.html#transf_program">Debugvar.transf_program</a></span>)<br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Mach</span> <span class="id">generation</span>" <span class="id"><a href="compcert.backend.Stacking.html#transf_program">Stacking.transf_program</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> <span class="id"><a href="compcert.driver.Compiler.html#print_Mach">print_Mach</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Asm</span> <span class="id">generation</span>" <span class="id"><a href="compcert.x86.Asmgen.html#transf_program">Asmgen.transf_program</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="transf_cminor_program">transf_cminor_program</a></span> (<span class="id">p</span>: <span class="id"><a href="compcert.backend.Cminor.html#program">Cminor.program</a></span>) : <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.x86.Asm.html#program">Asm.program</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> <span class="id"><a href="compcert.driver.Compiler.html#print_Cminor">print_Cminor</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Instruction</span> <span class="id">selection</span>" <span class="id"><a href="compcert.backend.Selection.html#sel_program">Selection.sel_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">RTL</span> <span class="id">generation</span>" <span class="id"><a href="compcert.backend.RTLgen.html#transl_program">RTLgen.transl_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#transf_rtl_program">transf_rtl_program</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="transf_clight_program">transf_clight_program</a></span> (<span class="id">p</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#program">Clight.program</a></span>) : <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.x86.Asm.html#program">Asm.program</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span><br/>
+&nbsp;&nbsp;!@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> <span class="id"><a href="compcert.driver.Compiler.html#print_Clight">print_Clight</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Simplification</span> <span class="id">of</span> <span class="id">locals</span>" <span class="id"><a href="compcert.cfrontend.SimplLocals.html#transf_program">SimplLocals.transf_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">C</span>#<span class="id">minor</span> <span class="id">generation</span>" <span class="id"><a href="compcert.cfrontend.Cshmgen.html#transl_program">Cshmgen.transl_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> "<span class="id">Cminor</span> <span class="id">generation</span>" <span class="id"><a href="compcert.cfrontend.Cminorgen.html#transl_program">Cminorgen.transl_program</a></span><br/>
+&nbsp;&nbsp;@@@ <span class="id"><a href="compcert.driver.Compiler.html#transf_cminor_program">transf_cminor_program</a></span>.<br/>
+<br/>
+<br/>
+<div class="doc">Force <span class="bracket"><span class="id">Initializers</span></span> and <span class="bracket"><span class="id">Cexec</span></span> to be extracted as well. </div>
+<br/>
+<br/>
+<div class="doc">The following lemmas help reason over compositions of passes. </div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="print_identity">print_identity</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">printer</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>) (<span class="id">prog</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>),<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> <span class="id"><a href="compcert.driver.Compiler.html#printer">printer</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> = <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5286')">Proof.</div>
+<div class="proofscript" id="proof5286">
+&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span>. <span class="tactic">destruct</span> (<span class="id">printer</span> <span class="id">prog</span>); <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_print_identity">compose_print_identity</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">x</span>: <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>),<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#x">x</a></span> !@@ <span class="id"><a href="compcert.driver.Compiler.html#print">print</a></span> <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> = <span class="id"><a href="compcert.driver.Compiler.html#x">x</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5287')">Proof.</div>
+<div class="proofscript" id="proof5287">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.driver.Compiler.html#print_identity">print_identity</a></span>. <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<h1> Relational specification of compilation </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="match_if">match_if</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>} (<span class="id">flag</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) (<span class="id">R</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="kwd">Prop</span>): <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.driver.Compiler.html#R">R</a></span> <span class="kwd">else</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="total_if_match">total_if_match</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">flag</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">rel</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="kwd">Prop</span>) (<span class="id">prog</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>),<br/>
+&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">p</span>, <span class="id"><a href="compcert.driver.Compiler.html#rel">rel</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span>)) -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="compcert.driver.Compiler.html#rel">rel</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5288')">Proof.</div>
+<div class="proofscript" id="proof5288">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span>, <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span>. <span class="tactic">destruct</span> (<span class="id">flag</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>); <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="partial_if_match">partial_if_match</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">flag</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.common.Errors.html#res">res</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) (<span class="id">rel</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="kwd">Prop</span>) (<span class="id">prog</span> <span class="id">tprog</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>),<br/>
+&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>, <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#rel">rel</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>) -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="compcert.driver.Compiler.html#f">f</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tprog">tprog</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="compcert.driver.Compiler.html#rel">rel</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tprog">tprog</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5289')">Proof.</div>
+<div class="proofscript" id="proof5289">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span>, <span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="kwd">in</span> *. <span class="tactic">destruct</span> (<span class="id">flag</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>). <span class="tactic">auto</span>. <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="TransfIfLink">TransfIfLink</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>} {<span class="id">LA</span>: <span class="id"><a href="compcert.common.Linking.html#Linker">Linker</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">flag</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) (<span class="id">transf</span>: <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> -&gt; <span class="kwd">Prop</span>) (<span class="id">TL</span>: <span class="id"><a href="compcert.common.Linking.html#TransfLink">TransfLink</a></span> <span class="id"><a href="compcert.driver.Compiler.html#transf">transf</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id"><a href="compcert.common.Linking.html#TransfLink">TransfLink</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="compcert.driver.Compiler.html#transf">transf</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5290')">Proof.</div>
+<div class="proofscript" id="proof5290">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span>. <span class="tactic">destruct</span> (<span class="id">flag</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>).<br/>
+- <span class="tactic">auto</span>.<br/>
+- <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">tp1</span> <span class="id">tp2</span>. <span class="id">exists</span> <span class="id">p</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">This is the list of compilation passes of CompCert in relational style.
+  Each pass is characterized by a <span class="bracket"><span class="id">match_prog</span></span> relation between its
+  input code and its output code.  The <span class="bracket"><span class="id">mkpass</span></span> and <span class="bracket">:::</span> combinators,
+  defined in module <span class="bracket"><span class="id">Linking</span></span>, ensure that the passes are composable
+  (the output language of a pass is the input language of the next pass)
+  and that they commute with linking (property <span class="bracket"><span class="id">TransfLink</span></span>, inferred
+  by the type class mechanism of Coq). </div>
+<br/>
+<span class="kwd">Local</span> <span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">linking_scope</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">CompCert</span>'<span class="id">s_passes</span> :=<br/>
+ <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.cfrontend.SimplLocalsproof.html#match_prog">SimplLocalsproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.cfrontend.Cshmgenproof.html#match_prog">Cshmgenproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.cfrontend.Cminorgenproof.html#match_prog">Cminorgenproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Selectionproof.html#match_prog">Selectionproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.RTLgenproof.html#match_prog">RTLgenproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_tailcalls">Compopts.optim_tailcalls</a></span> <span class="id"><a href="compcert.backend.Tailcallproof.html#match_prog">Tailcallproof.match_prog</a></span>)<br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Inliningproof.html#match_prog">Inliningproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Renumberproof.html#match_prog">Renumberproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">Compopts.optim_constprop</a></span> <span class="id"><a href="compcert.backend.Constpropproof.html#match_prog">Constpropproof.match_prog</a></span>)<br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">Compopts.optim_constprop</a></span> <span class="id"><a href="compcert.backend.Renumberproof.html#match_prog">Renumberproof.match_prog</a></span>)<br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_CSE">Compopts.optim_CSE</a></span> <span class="id"><a href="compcert.backend.CSEproof.html#match_prog">CSEproof.match_prog</a></span>)<br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_redundancy">Compopts.optim_redundancy</a></span> <span class="id"><a href="compcert.backend.Deadcodeproof.html#match_prog">Deadcodeproof.match_prog</a></span>)<br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Allocproof.html#match_prog">Allocproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Tunnelingproof.html#match_prog">Tunnelingproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#match_prog">Linearizeproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_prog">CleanupLabelsproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#debug">Compopts.debug</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#match_prog">Debugvarproof.match_prog</a></span>)<br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.backend.Stackingproof.html#match_prog">Stackingproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#mkpass">mkpass</a></span> <span class="id"><a href="compcert.x86.Asmgenproof.html#match_prog">Asmgenproof.match_prog</a></span><br/>
+&nbsp;&nbsp;::: <span class="id"><a href="compcert.common.Linking.html#pass_nil">pass_nil</a></span> <span class="id">_</span>.<br/>
+<br/>
+<div class="doc">Composing the <span class="bracket"><span class="id">match_prog</span></span> relations above, we obtain the relation
+  between CompCert C sources and Asm code that characterize CompCert's
+  compilation. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="match_prog">match_prog</a></span>: <span class="id">_</span>  -&gt; <span class="id"><a href="compcert.x86.Asm.html#program">Asm.program</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#pass_match">pass_match</a></span> (<span class="id"><a href="compcert.common.Linking.html#compose_passes">compose_passes</a></span> <span class="id">CompCert</span>'<span class="id">s_passes</span>).<br/>
+<br/>
+<div class="doc">The <span class="bracket"><span class="id">transf_c_program</span></span> function, when successful, produces
+  assembly code that is in the <span class="bracket"><span class="id">match_prog</span></span> relation with the source C program. </div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="transf_clight_program_match">transf_clight_program_match</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program">transf_clight_program</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5291')">Proof.</div>
+<div class="proofscript" id="proof5291">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">p1</span> <span class="id">tp</span> <span class="id">T</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;unfold&nbsp;transf_c_program,&nbsp;time&nbsp;in&nbsp;T.&nbsp;simpl&nbsp;in&nbsp;T.<br/>
+&nbsp;&nbsp;destruct&nbsp;(SimplExpr.transl_program&nbsp;p)&nbsp;as&nbsp;[p1|e]&nbsp;eqn:P1;&nbsp;simpl&nbsp;in&nbsp;T;&nbsp;try&nbsp;discriminate.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program">transf_clight_program</a></span>, <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> <span class="kwd">in</span> <span class="id">T</span>. <span class="tactic">rewrite</span> ! <span class="id"><a href="compcert.driver.Compiler.html#compose_print_identity">compose_print_identity</a></span> <span class="kwd">in</span> <span class="id">T</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.SimplLocals.html#transf_program">SimplLocals.transf_program</a></span> <span class="id">p1</span>) <span class="kwd">as</span> [<span class="id">p2</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Cshmgen.html#transl_program">Cshmgen.transl_program</a></span> <span class="id">p2</span>) <span class="kwd">as</span> [<span class="id">p3</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P3</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Cminorgen.html#transl_program">Cminorgen.transl_program</a></span> <span class="id">p3</span>) <span class="kwd">as</span> [<span class="id">p4</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P4</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_cminor_program">transf_cminor_program</a></span>, <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> <span class="kwd">in</span> <span class="id">T</span>. <span class="tactic">rewrite</span> ! <span class="id"><a href="compcert.driver.Compiler.html#compose_print_identity">compose_print_identity</a></span> <span class="kwd">in</span> <span class="id">T</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Selection.html#sel_program">Selection.sel_program</a></span> <span class="id">p4</span>) <span class="kwd">as</span> [<span class="id">p5</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P5</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLgen.html#transl_program">RTLgen.transl_program</a></span> <span class="id">p5</span>) <span class="kwd">as</span> [<span class="id">p6</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P6</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_rtl_program">transf_rtl_program</a></span>, <span class="id"><a href="compcert.driver.Compiler.html#time">time</a></span> <span class="kwd">in</span> <span class="id">T</span>. <span class="tactic">rewrite</span> ! <span class="id"><a href="compcert.driver.Compiler.html#compose_print_identity">compose_print_identity</a></span> <span class="kwd">in</span> <span class="id">T</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">p7</span> := <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_tailcalls">optim_tailcalls</a></span> <span class="id"><a href="compcert.backend.Tailcall.html#transf_program">Tailcall.transf_program</a></span> <span class="id">p6</span>) <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Inlining.html#transf_program">Inlining.transf_program</a></span> <span class="id">p7</span>) <span class="kwd">as</span> [<span class="id">p8</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P8</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">p9</span> := <span class="id"><a href="compcert.backend.Renumber.html#transf_program">Renumber.transf_program</a></span> <span class="id">p8</span>) <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">p10</span> := <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">optim_constprop</a></span> <span class="id"><a href="compcert.backend.Constprop.html#transf_program">Constprop.transf_program</a></span> <span class="id">p9</span>) <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">p11</span> := <span class="id"><a href="compcert.driver.Compiler.html#total_if">total_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">optim_constprop</a></span> <span class="id"><a href="compcert.backend.Renumber.html#transf_program">Renumber.transf_program</a></span> <span class="id">p10</span>) <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_CSE">optim_CSE</a></span> <span class="id"><a href="compcert.backend.CSE.html#transf_program">CSE.transf_program</a></span> <span class="id">p11</span>) <span class="kwd">as</span> [<span class="id">p12</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P12</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#optim_redundancy">optim_redundancy</a></span> <span class="id"><a href="compcert.backend.Deadcode.html#transf_program">Deadcode.transf_program</a></span> <span class="id">p12</span>) <span class="kwd">as</span> [<span class="id">p13</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P13</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;destruct&nbsp;(Unusedglob.transform_program&nbsp;p13)&nbsp;as&nbsp;[p14|e]&nbsp;eqn:P14;&nbsp;simpl&nbsp;in&nbsp;T;&nbsp;try&nbsp;discriminate.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Allocation.html#transf_program">Allocation.transf_program</a></span> <span class="id">p13</span>) <span class="kwd">as</span> [<span class="id">p15</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P15</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">p16</span> := <span class="id"><a href="compcert.backend.Tunneling.html#tunnel_program">Tunneling.tunnel_program</a></span> <span class="id">p15</span>) <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linearize.html#transf_program">Linearize.transf_program</a></span> <span class="id">p16</span>) <span class="kwd">as</span> [<span class="id">p17</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P17</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">p18</span> := <span class="id"><a href="compcert.backend.CleanupLabels.html#transf_program">CleanupLabels.transf_program</a></span> <span class="id">p17</span>) <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.driver.Compiler.html#partial_if">partial_if</a></span> <span class="id"><a href="compcert.driver.Compopts.html#debug">debug</a></span> <span class="id"><a href="compcert.backend.Debugvar.html#transf_program">Debugvar.transf_program</a></span> <span class="id">p18</span>) <span class="kwd">as</span> [<span class="id">p19</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P19</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Stacking.html#transf_program">Stacking.transf_program</a></span> <span class="id">p19</span>) <span class="kwd">as</span> [<span class="id">p20</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">P20</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">T</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#match_prog">match_prog</a></span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;exists&nbsp;p1;&nbsp;split.&nbsp;apply&nbsp;SimplExprproof.transf_program_match;&nbsp;auto.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p2</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.SimplLocalsproof.html#match_transf_program">SimplLocalsproof.match_transf_program</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p3</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Cshmgenproof.html#transf_program_match">Cshmgenproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p4</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Cminorgenproof.html#transf_program_match">Cminorgenproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p5</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Selectionproof.html#transf_program_match">Selectionproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p6</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgenproof.html#transf_program_match">RTLgenproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p7</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#total_if_match">total_if_match</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Tailcallproof.html#transf_program_match">Tailcallproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p8</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Inliningproof.html#transf_program_match">Inliningproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p9</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Renumberproof.html#transf_program_match">Renumberproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p10</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#total_if_match">total_if_match</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Constpropproof.html#transf_program_match">Constpropproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p11</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#total_if_match">total_if_match</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Renumberproof.html#transf_program_match">Renumberproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p12</span>; <span class="tactic">split</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#partial_if_match">partial_if_match</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CSEproof.html#transf_program_match">CSEproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p13</span>; <span class="tactic">split</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#partial_if_match">partial_if_match</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Deadcodeproof.html#transf_program_match">Deadcodeproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;exists&nbsp;p14;&nbsp;split.&nbsp;apply&nbsp;Unusedglobproof.transf_program_match;&nbsp;auto.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p15</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Allocproof.html#transf_program_match">Allocproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p16</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Tunnelingproof.html#transf_program_match">Tunnelingproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p17</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#transf_program_match">Linearizeproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p18</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#transf_program_match">CleanupLabelsproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p19</span>; <span class="tactic">split</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#partial_if_match">partial_if_match</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#transf_program_match">Debugvarproof.transf_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">p20</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Stackingproof.html#transf_program_match">Stackingproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">tp</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.Asmgenproof.html#transf_program_match">Asmgenproof.transf_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<h1> Semantic preservation </h1>
+<br/>
+<div class="doc">We now prove that the whole CompCert compiler (as characterized by the
+  <span class="bracket"><span class="id">match_prog</span></span> relation) preserves semantics by constructing
+  the following simulations:
+<ul>
+<li>
+ Forward simulations from <span class="bracket"><span class="id">Cstrategy</span></span> to <span class="bracket"><span class="id">Asm</span></span>
+  (composition of the forward simulations for each pass).
+</li>
+<li>
+ Backward simulations for the same languages
+  (derived from the forward simulation, using receptiveness of the source
+  language and determinacy of <span class="bracket"><span class="id">Asm</span></span>).
+</li>
+<li>
+ Backward simulation from <span class="bracket"><span class="id">Csem</span></span> to <span class="bracket"><span class="id">Asm</span></span>
+  (composition of two backward simulations).
+</li>
+</ul>
+</div>
+<br/>
+<br/>
+<h2> Calling conventions </h2>
+<br/>
+<div class="doc">Preliminaries: this should be in Coqrel. Alternatively, we could
+  define it for <span class="bracket"><span class="id">ccref</span></span> alone. </div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="po_subrel">po_subrel</a></span> {<span class="id">A</span>} (<span class="id">eqv</span> <span class="id">R</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Definitions.html#relation">relation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span>) `{!<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Equivalence">Equivalence</a></span> <span class="id"><a href="compcert.driver.Compiler.html#eqv">eqv</a></span>} `{!<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#PreOrder">PreOrder</a></span> <span class="id"><a href="compcert.driver.Compiler.html#R">R</a></span>}:<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#PartialOrder">PartialOrder</a></span> <span class="id"><a href="compcert.driver.Compiler.html#eqv">eqv</a></span> <span class="id"><a href="compcert.driver.Compiler.html#R">R</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">Related</span> <span class="id"><a href="compcert.driver.Compiler.html#eqv">eqv</a></span> <span class="id"><a href="compcert.driver.Compiler.html#R">R</a></span> <span class="id">subrel</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5292')">Proof.</div>
+<div class="proofscript" id="proof5292">
+&nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<div class="doc">This is the simulation conventions for passes Alloc through Asmgen.
+  These passes have a symmetric interface, so there is no difficulty
+  in making them compositional. Although the Debugvar pass is
+  optional, since this it is as <span class="bracket"><span class="id">cc_id</span> -&gt; <span class="id">cc_id</span></span> pass this does not
+  introduce any difficulty. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="cc_backend">cc_backend</a></span> : <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li_c">li_c</a></span> <span class="id"><a href="compcert.x86.Asm.html#li_asm">Asm.li_asm</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span> @<br/>
+&nbsp;&nbsp;((<span class="id"><a href="compcert.common.Invariant.html#cc_inv">Invariant.cc_inv</a></span> <span class="id"><a href="compcert.backend.ValueAnalysis.html#vamatch">ValueAnalysis.vamatch</a></span> @ <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span>) @ <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span>) @<br/>
+&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Invariant.html#cc_inv">Invariant.cc_inv</a></span> <span class="id"><a href="compcert.backend.ValueAnalysis.html#vamatch">ValueAnalysis.vamatch</a></span> @ <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span>) @<br/>
+&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Invariant.html#cc_inv">Invariant.cc_inv</a></span> <span class="id"><a href="compcert.backend.ValueAnalysis.html#vamatch">ValueAnalysis.vamatch</a></span> @ <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span>) @<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Conventions.html#cc_alloc">Conventions.cc_alloc</a></span> @<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Conventions.html#cc_locset_ext">Conventions.cc_locset_ext</a></span> @<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Mach.html#cc_stacking">Mach.cc_stacking</a></span> @<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Asmgenproof0.html#cc_asmgen">Asmgenproof0.cc_asmgen</a></span>.<br/>
+<br/>
+<div class="doc">However for passes upstream of Alloc, we need a more subtle approach.
+  In particular, while the incoming convention of theses passes are
+  easily absorbed by the <span class="bracket"><span class="id">cc_inj</span></span> component of <span class="bracket"><span class="id">cc_backend</span></span>, their
+  outgoing conventions are more difficult to work with. However, using
+  the simulation convention algebra we can reduce them to the
+  following, self-composable convention. We can then type the backend as
+  <span class="bracket"><span class="id">cc_dom</span> @ <span class="id">cc_backend</span> -&gt; <span class="id">cc_backend</span></span> and pre-compose an arbitrary number
+  of extra frontend passes onto it. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="cc_dom">cc_dom</a></span> : <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li_c">li_c</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li_c">li_c</a></span> :=<br/>
+&nbsp;&nbsp;(<span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp">cc_injp</a></span> + <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span>)^{*}.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_dom_idemp">cc_dom_idemp</a></span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5293')">Proof.</div>
+<div class="proofscript" id="proof5293">
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_idemp">cc_star_idemp</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_injection_pass">compose_injection_pass</a></span> <span class="id">sem</span> <span class="id">bsem</span> <span class="id">tsem</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp">cc_injp</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span> <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5294')">Proof.</div>
+<div class="proofscript" id="proof5294">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">IB</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>)).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_assoc">cc_compose_assoc</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Inject.html#cc_c_inj">cc_c_inj</a></span>, &lt;- <span class="id"><a href="compcert.cklr.CKLRAlgebra.html#cc_c_compose">cc_c_compose</a></span>, &lt;- <span class="id"><a href="compcert.cklr.Inject.html#inj_inj">inj_inj</a></span>, <span class="id"><a href="compcert.cklr.Inject.html#cc_c_inj">cc_c_inj</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">ID</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp">cc_injp</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.driver.Compiler.html#cc_dom_idemp">cc_dom_idemp</a></span> <span class="tactic">at</span> 2. <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_one_star">cc_one_star</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_l">cc_join_ub_l</a></span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#open_fsim_ccref">open_fsim_ccref</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> &lt;- <span class="id">ID</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_assoc">cc_compose_assoc</a></span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id">IB</span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_extension_pass">compose_extension_pass</a></span> <span class="id">sem</span> <span class="id">bsem</span> <span class="id">tsem</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span> <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5295')">Proof.</div>
+<div class="proofscript" id="proof5295">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">IB</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>)).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_assoc">cc_compose_assoc</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Inject.html#cc_c_inj">cc_c_inj</a></span>, &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span>, &lt;- <span class="id"><a href="compcert.cklr.CKLRAlgebra.html#cc_c_compose">cc_c_compose</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#proj2">proj2</a></span> <span class="id"><a href="compcert.cklr.Extends.html#ext_inj">ext_inj</a></span>), <span class="id"><a href="compcert.cklr.Inject.html#cc_c_inj">cc_c_inj</a></span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">ID</span>: <span class="id"><a href="compcert.common.CallconvAlgebra.html#ccref">ccref</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext">cc_ext</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.driver.Compiler.html#cc_dom_idemp">cc_dom_idemp</a></span> <span class="tactic">at</span> 2. <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_one_star">cc_one_star</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_r">cc_join_ub_r</a></span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#open_fsim_ccref">open_fsim_ccref</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> &lt;- <span class="id">ID</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_assoc">cc_compose_assoc</a></span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id">IB</span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_identity_pass">compose_identity_pass</a></span> {<span class="id">liA1</span> <span class="id">liA2</span> <span class="id">liB1</span> <span class="id">liB2</span>} <span class="id">ccA</span> <span class="id">ccB</span> <span class="id">sem</span> <span class="id">bsem</span> <span class="id">tsem</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> 1 1 <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccA">ccA</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccB">ccB</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;@<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liA1">liA1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liA2">liA2</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccA">ccA</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liB1">liB1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liB2">liB2</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccB">ccB</a></span> <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5296')">Proof.</div>
+<div class="proofscript" id="proof5296">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#open_fsim_ccref">open_fsim_ccref</a></span>; [ .. | <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>; <span class="tactic">eauto</span>].<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_left">cc_compose_id_left</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_left">cc_compose_id_left</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_optional_pass">compose_optional_pass</a></span> {<span class="id">A</span> <span class="id">liA1</span> <span class="id">liA2</span> <span class="id">liB1</span> <span class="id">liB2</span> <span class="id">ccA</span> <span class="id">ccB</span> <span class="id">ccA</span>' <span class="id">ccB</span>'}:<br/>
+&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">sem</span> <span class="id">bsem</span> <span class="id">tsem</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccA">ccA</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccB">ccB</a></span> <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id">ccA</span>' <span class="id">ccB</span>' <span class="id"><a href="compcert.driver.Compiler.html#bsem">bsem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liA1">liA1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liA2">liA2</a></span> <span class="id">ccA</span>' <span class="id"><a href="compcert.driver.Compiler.html#liB1">liB1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#liB2">liB2</a></span> <span class="id">ccB</span>' <span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span>) -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sem</span> <span class="id">flag</span> <span class="id">transf</span> <span class="id">prog</span> <span class="id">tprog</span> <span class="id">tsem</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="id"><a href="compcert.driver.Compiler.html#A">A</a></span> <span class="id"><a href="compcert.driver.Compiler.html#flag">flag</a></span> <span class="id"><a href="compcert.driver.Compiler.html#transf">transf</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tprog">tprog</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>, <span class="id"><a href="compcert.driver.Compiler.html#transf">transf</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span> -&gt; <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccA">ccA</a></span> <span class="id"><a href="compcert.driver.Compiler.html#ccB">ccB</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span>) (<span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>)) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id">ccA</span>' <span class="id">ccB</span>' (<span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tprog">tprog</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id">ccA</span>' <span class="id">ccB</span>' (<span class="id"><a href="compcert.driver.Compiler.html#sem">sem</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5297')">Proof.</div>
+<div class="proofscript" id="proof5297">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#match_if">match_if</a></span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">flag</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>); <span class="tactic">subst</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">To make the whole compiler compositional, we can then introduce a
+  <span class="bracket"><span class="id">cc_dom</span> -&gt; <span class="id">cc_dom</span></span> identity pass for Clight, using the parametricity
+  property proved in the cklr/Clightrel.v library. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="cc_compcert">cc_compcert</a></span> : <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li_c">li_c</a></span> <span class="id"><a href="compcert.x86.Asm.html#li_asm">Asm.li_asm</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_clight_properties">compose_clight_properties</a></span> <span class="id">prog</span> <span class="id">tsem</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span> @ <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#prog">prog</a></span>) <span class="id"><a href="compcert.driver.Compiler.html#tsem">tsem</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5298')">Proof.</div>
+<div class="proofscript" id="proof5298">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.driver.Compiler.html#cc_dom_idemp">cc_dom_idemp</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_assoc">cc_compose_assoc</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_star_fsim">cc_star_fsim</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_fsim">cc_join_fsim</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_l">cc_join_ub_l</a></span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.InjectFootprint.html#cc_c_injp">cc_c_injp</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.InjectFootprint.html#cc_c_injp">cc_c_injp</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#semantics1_rel">Clightrel.semantics1_rel</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_join_ub_r">cc_join_ub_r</a></span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Clightrel.html#semantics1_rel">Clightrel.semantics1_rel</a></span>.<br/>
+Qed.</div>
+<br/>
+<h2> Composition of passes </h2>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="clight_semantic_preservation">clight_semantic_preservation</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span>) (<span class="id"><a href="compcert.x86.Asm.html#semantics">Asm.semantics</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>)<br/>
+&nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Smallstep.html#backward_simulation">backward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span>) (<span class="id"><a href="compcert.x86.Asm.html#semantics">Asm.semantics</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5299')">Proof.</div>
+<div class="proofscript" id="proof5299">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">p</span> <span class="id">tp</span> <span class="id">M</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#match_prog">match_prog</a></span>, <span class="id"><a href="compcert.common.Linking.html#pass_match">pass_match</a></span> <span class="kwd">in</span> <span class="id">M</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">M</span>.<br/>
+<span class="kwd">Ltac</span> <span class="id">DestructM</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">goal</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[ <span class="id">H</span>: <span class="id">exists</span> <span class="id">p</span>, <span class="id">_</span> /\ <span class="id">_</span> |- <span class="id">_</span> ] =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">p</span> := <span class="tactic">fresh</span> "<span class="id">p</span>" <span class="kwd">in</span> <span class="kwd">let</span> <span class="id">M</span> := <span class="tactic">fresh</span> "<span class="id">M</span>" <span class="kwd">in</span> <span class="kwd">let</span> <span class="id">MM</span> := <span class="tactic">fresh</span> "<span class="id">MM</span>" <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">p</span> &amp; <span class="id">M</span> &amp; <span class="id">MM</span>); <span class="tactic">clear</span> <span class="id">H</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">DestructM</span>. <span class="tactic">subst</span> <span class="id">tp</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">F</span>: <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id">p</span>) (<span class="id"><a href="compcert.x86.Asm.html#semantics">Asm.semantics</a></span> <span class="id">p19</span>)).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_clight_properties">compose_clight_properties</a></span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;eapply&nbsp;compose_forward_simulations.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;eapply&nbsp;SimplExprproof.transl_program_correct;&nbsp;eassumption.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_injection_pass">compose_injection_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.SimplLocalsproof.html#transf_program_correct">SimplLocalsproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_identity_pass">compose_identity_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Cshmgenproof.html#transl_program_correct">Cshmgenproof.transl_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_injection_pass">compose_injection_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Cminorgenproof.html#transl_program_correct">Cminorgenproof.transl_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_extension_pass">compose_extension_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Selectionproof.html#transf_program_correct">Selectionproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_extension_pass">compose_extension_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLgenproof.html#transf_program_correct">RTLgenproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_optional_pass">compose_optional_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_extension_pass">compose_extension_pass</a></span>. <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">exact</span> <span class="id"><a href="compcert.backend.Tailcallproof.html#transf_program_correct">Tailcallproof.transf_program_correct</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_injection_pass">compose_injection_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Inliningproof.html#transf_program_correct">Inliningproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_identity_pass">compose_identity_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Renumberproof.html#transf_program_correct">Renumberproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;To&nbsp;introduce&nbsp;the&nbsp;injection&nbsp;in&nbsp;the&nbsp;backend&nbsp;convention&nbsp;we&nbsp;use<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;parametricity&nbsp;of&nbsp;RTL.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.driver.Compiler.html#cc_dom">cc_dom</a></span>, <span class="id"><a href="compcert.driver.Compiler.html#cc_backend">cc_backend</a></span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_id_star">cc_id_star</a></span>, <span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_left">cc_compose_id_left</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Inject.html#cc_c_inj">cc_c_inj</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Inject.html#cc_c_inj">cc_c_inj</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.RTLrel.html#semantics_rel">RTLrel.semantics_rel</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">M7</span>, <span class="id">M8</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.driver.Compopts.html#optim_constprop">optim_constprop</a></span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Constpropproof.html#transf_program_correct">Constpropproof.transf_program_correct</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Renumberproof.html#transf_program_correct">Renumberproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_fsim">Invariant.preserves_fsim</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.ValueAnalysis.html#rtl_vamatch">ValueAnalysis.rtl_vamatch</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.RTLrel.html#semantics_rel">RTLrel.semantics_rel</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#identity_forward_simulation">identity_forward_simulation</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">M9</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.driver.Compopts.html#optim_CSE">optim_CSE</a></span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CSEproof.html#transf_program_correct">CSEproof.transf_program_correct</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_fsim">Invariant.preserves_fsim</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.ValueAnalysis.html#rtl_vamatch">ValueAnalysis.rtl_vamatch</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.RTLrel.html#semantics_rel">RTLrel.semantics_rel</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">M10</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.driver.Compopts.html#optim_redundancy">optim_redundancy</a></span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Deadcodeproof.html#transf_program_correct">Deadcodeproof.transf_program_correct</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Invariant.html#preserves_fsim">Invariant.preserves_fsim</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.ValueAnalysis.html#rtl_vamatch">ValueAnalysis.rtl_vamatch</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.cklr.Extends.html#cc_c_ext">cc_c_ext</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.RTLrel.html#semantics_rel">RTLrel.semantics_rel</a></span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;eapply&nbsp;compose_forward_simulations.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;eapply&nbsp;Unusedglobproof.transf_program_correct;&nbsp;eassumption.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Allocproof.html#transf_program_correct">Allocproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Tunnelingproof.html#transf_program_correct">Tunnelingproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_identity_pass">compose_identity_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#transf_program_correct">Linearizeproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_identity_pass">compose_identity_pass</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#transf_program_correct">CleanupLabelsproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_optional_pass">compose_optional_pass</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#compose_identity_pass">compose_identity_pass</a></span>. <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">exact</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#transf_program_correct">Debugvarproof.transf_program_correct</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Stackingproof.html#transf_program_correct">Stackingproof.transf_program_correct</a></span> <span class="kwd">with</span> (<span class="id">rao</span> := <span class="id"><a href="compcert.backend.Asmgenproof0.html#return_address_offset">Asmgenproof0.return_address_offset</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">exact</span> <span class="id"><a href="compcert.x86.Asmgenproof.html#return_address_exists">Asmgenproof.return_address_exists</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.Asmgenproof.html#transf_program_correct">Asmgenproof.transf_program_correct</a></span>; <span class="id">eassumption</span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_to_backward_simulation">forward_to_backward_simulation</a></span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Clight.html#semantics_receptive">Clight.semantics_receptive</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.x86.Asm.html#semantics_determinate">Asm.semantics_determinate</a></span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<h1> Correctness of the CompCert compiler </h1>
+<br/>
+<div class="doc">Combining the results above, we obtain semantic preservation for two
+  usage scenarios of CompCert: compilation of a single monolithic program,
+  and separate compilation of multiple source files followed by linking.
+  In the monolithic case, we have a whole C program <span class="bracket"><span class="id">p</span></span> that is
+  compiled in one run of CompCert to a whole Asm program <span class="bracket"><span class="id">tp</span></span>.
+  Then, <span class="bracket"><span class="id">tp</span></span> preserves the semantics of <span class="bracket"><span class="id">p</span></span>, in the sense that there
+  exists a backward simulation of the dynamic semantics of <span class="bracket"><span class="id">p</span></span>
+  by the dynamic semantics of <span class="bracket"><span class="id">tp</span></span>. </div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="transf_c_program_correct">transf_c_program_correct</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program">transf_clight_program</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#backward_simulation">backward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p">p</a></span>) (<span class="id"><a href="compcert.x86.Asm.html#semantics">Asm.semantics</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5300')">Proof.</div>
+<div class="proofscript" id="proof5300">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#clight_semantic_preservation">clight_semantic_preservation</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program_match">transf_clight_program_match</a></span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Here is the separate compilation case.  Consider a nonempty list <span class="bracket"><span class="id">c_units</span></span>
+  of C source files (compilation units), <span class="bracket"><span class="id">C1</span> ,,, <span class="id">Cn</span></span>.  Assume that every
+  C compilation unit <span class="bracket"><span class="id">Ci</span></span> is successfully compiled by CompCert, obtaining
+  an Asm compilation unit <span class="bracket"><span class="id">Ai</span></span>.  Let <span class="bracket"><span class="id">asm_unit</span></span> be the nonempty list
+  <span class="bracket"><span class="id">A1</span> ... <span class="id">An</span></span>.  Further assume that the C units <span class="bracket"><span class="id">C1</span> ... <span class="id">Cn</span></span> can be linked
+  together to produce a whole C program <span class="bracket"><span class="id">c_program</span></span>.  Then, the generated
+  Asm units can be linked together, producing a whole Asm program
+  <span class="bracket"><span class="id">asm_program</span></span>.  Moreover, <span class="bracket"><span class="id">asm_program</span></span> preserves the semantics of
+  <span class="bracket"><span class="id">c_program</span></span>, in the sense that there exists a backward simulation of
+  the dynamic semantics of <span class="bracket"><span class="id">asm_program</span></span> by the dynamic semantics of <span class="bracket"><span class="id">c_program</span></span>.
+</div>
+<br/>
+<br/>
+<div class="doc">An example of how the correctness theorem, horizontal composition,
+  and assembly linking proofs can be used together. </div>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.SmallstepLinking.html">SmallstepLinking</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.x86.AsmLinking.html">AsmLinking</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="compose_transf_c_program_correct">compose_transf_c_program_correct</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p1</span> <span class="id">p2</span> <span class="id">spec</span> <span class="id">tp1</span> <span class="id">tp2</span> <span class="id">tp</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.SmallstepLinking.html#compose">compose</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p1">p1</a></span>) (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">Clight.semantics1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p2">p2</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.driver.Compiler.html#spec">spec</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program">transf_clight_program</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p1">p1</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp1">tp1</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program">transf_clight_program</a></span> <span class="id"><a href="compcert.driver.Compiler.html#p2">p2</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp2">tp2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp1">tp1</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp2">tp2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span> <span class="id"><a href="compcert.driver.Compiler.html#spec">spec</a></span> (<span class="id"><a href="compcert.x86.Asm.html#semantics">Asm.semantics</a></span> <span class="id"><a href="compcert.driver.Compiler.html#tp">tp</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5301')">Proof.</div>
+<div class="proofscript" id="proof5301">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_right">cc_compose_id_right</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span>) <span class="tactic">at</span> 1.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.common.CallconvAlgebra.html#cc_compose_id_right">cc_compose_id_right</a></span> <span class="id"><a href="compcert.driver.Compiler.html#cc_compcert">cc_compcert</a></span>) <span class="tactic">at</span> 2.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#compose_forward_simulations">compose_forward_simulations</a></span>.<br/>
+&nbsp;&nbsp;2: { <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.SmallstepLinking.html#compose">compose</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (@<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> (<span class="id"><a href="compcert.common.AST.html#program">AST.program</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>)) <span class="kwd">as</span> [<span class="id">skel</span>|] <span class="id">eqn</span>:<span class="id">Hskel</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.AsmLinking.html#foo">AsmLinking.foo</a></span>; <span class="tactic">eauto</span>. }<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.SmallstepLinking.html#compose_simulation">compose_simulation</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#clight_semantic_preservation">clight_semantic_preservation</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program_match">transf_clight_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#clight_semantic_preservation">clight_semantic_preservation</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program_match">transf_clight_program_match</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.SmallstepLinking.html#compose">compose</a></span>. <span class="id">cbn</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#link_erase_program">link_erase_program</a></span> <span class="kwd">in</span> <span class="id">H2</span>. <span class="tactic">rewrite</span> <span class="id">H2</span>. <span class="id">cbn</span>. <span class="tactic">f_equal</span>. <span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Axioms.html#functional_extensionality">Axioms.functional_extensionality</a></span>. <span class="tactic">intros</span> [|]; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

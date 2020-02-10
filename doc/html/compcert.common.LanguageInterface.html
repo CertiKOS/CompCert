@@ -1,0 +1,308 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module LanguageInterface</title>
+<meta name="description" content="Documentation of Coq module LanguageInterface" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module LanguageInterface</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Memory.html">Memory</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Events.html">Events</a></span>.<br/>
+<br/>
+<h1> Semantic interface of languages </h1>
+<br/>
+<span class="kwd">Structure</span> <span class="id"><a name="language_interface">language_interface</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="mk_language_interface">mk_language_interface</a></span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="query">query</a></span>: <span class="kwd">Type</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="reply">reply</a></span>: <span class="kwd">Type</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="entry">entry</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#query">query</a></span> -&gt; <span class="id"><a href="compcert.common.Values.html#val">val</a></span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="id">Arguments</span> <span class="id"><a href="compcert.common.LanguageInterface.html#entry">entry</a></span> {<span class="id">_</span>}.<br/>
+<br/>
+<h2> Basic interfaces </h2>
+<br/>
+<div class="doc">The null language interface defined below is used as the outgoing
+  interface for closed semantics. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="li_null">li_null</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_language_interface">query</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Empty_set">Empty_set</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">reply</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Empty_set">Empty_set</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">entry</span> <span class="id">q</span> := <span class="kwd">match</span> <span class="id"><a href="compcert.common.LanguageInterface.html#q">q</a></span> <span class="kwd">with</span> <span class="kwd">end</span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<br/>
+<div class="doc">The whole-program interface is used as the incoming interface for
+  closed semantics and characterizes whole-program execution: the
+  query <span class="bracket"><span class="id">tt</span> : <span class="id">unit</span></span> invokes the <span class="bracket"><span class="id">main</span>()</span> function and the reply of
+  type <span class="bracket"><span class="id">int</span></span> gives the program's exit status. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="li_wp">li_wp</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_language_interface">query</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">reply</span> := <span class="id"><a href="compcert.lib.Integers.html#int">Integers.int</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">entry</span> <span class="id">q</span> := <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<br/>
+<h1> Calling conventions </h1>
+<br/>
+<h2> Definition </h2>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="callconv">callconv</a></span> {<span class="id">li1</span> <span class="id">li2</span>} :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="mk_callconv">mk_callconv</a></span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="ccworld">ccworld</a></span> : <span class="kwd">Type</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="match_senv">match_senv</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="kwd">Prop</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="match_query">match_query</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#query">query</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li1">li1</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#query">query</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li2">li2</a></span> -&gt; <span class="kwd">Prop</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="match_reply">match_reply</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#reply">reply</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li1">li1</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#reply">reply</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li2">li2</a></span> -&gt; <span class="kwd">Prop</span>;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="match_senv_public_preserved">match_senv_public_preserved</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">id</span>, <span class="id"><a href="compcert.common.Globalenvs.html#Genv.public_symbol">Genv.public_symbol</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#id">id</a></span> = <span class="id"><a href="compcert.common.Globalenvs.html#Genv.public_symbol">Genv.public_symbol</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#id">id</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="match_senv_valid_for">match_senv_valid_for</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">sk</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.valid_for">Genv.valid_for</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sk">sk</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.valid_for">Genv.valid_for</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sk">sk</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="id">Arguments</span> <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span>: <span class="tactic">clear</span> <span class="id">implicits</span>.<br/>
+<span class="kwd">Delimit</span> <span class="kwd">Scope</span> <span class="id">cc_scope</span> <span class="kwd">with</span> <span class="id">cc</span>.<br/>
+<span class="kwd">Bind</span> <span class="kwd">Scope</span> <span class="id">cc_scope</span> <span class="kwd">with</span> <span class="id">callconv</span>.<br/>
+<span class="kwd">Local</span> <span class="kwd">Obligation</span> <span class="kwd">Tactic</span> := <span class="id">cbn</span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+<h2> Identity </h2>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_id">cc_id</a></span> {<span class="id">li</span>}: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li">li</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li">li</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> <span class="id">w</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> <span class="id">w</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> <span class="id">w</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<span class="kwd">Solve</span> <span class="id">All</span> <span class="kwd">Obligations</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;<span class="id">cbn</span>; <span class="tactic">intros</span>; <span class="tactic">subst</span>; <span class="tactic">auto</span>.<br/>
+<br/>
+<span class="kwd">Notation</span> "1" := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> : <span class="id">cc_scope</span>.<br/>
+<br/>
+<h2> Composition </h2>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_compose">cc_compose</a></span> {<span class="id">li1</span> <span class="id">li2</span> <span class="id">li3</span>} (<span class="id">cc12</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li1">li1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li2">li2</a></span>) (<span class="id">cc23</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#callconv">callconv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li2">li2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#li3">li3</a></span>) :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> * <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc12">cc12</a></span> * <span class="id"><a href="compcert.common.LanguageInterface.html#ccworld">ccworld</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc23">cc23</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> '(<span class="id">se2</span>, <span class="id">w12</span>, <span class="id">w23</span>) <span class="id">se1</span> <span class="id">se3</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc12">cc12</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w12">w12</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_senv">match_senv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc23">cc23</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w23">w23</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se3">se3</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> '(<span class="id">se2</span>, <span class="id">w12</span>, <span class="id">w23</span>) <span class="id">q1</span> <span class="id">q3</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">q2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc12">cc12</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w12">w12</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#q1">q1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#q2">q2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_query">match_query</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc23">cc23</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w23">w23</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#q2">q2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#q3">q3</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> '(<span class="id">se2</span>, <span class="id">w12</span>, <span class="id">w23</span>) <span class="id">r1</span> <span class="id">r3</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">r2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc12">cc12</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w12">w12</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#r1">r1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#r2">r2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#match_reply">match_reply</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc23">cc23</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w23">w23</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#r2">r2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#r3">r3</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2177')">Next Obligation.</div>
+<div class="proofscript" id="proof2177">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">li1</span> <span class="id">li2</span> <span class="id">li3</span> <span class="id">cc12</span> <span class="id">cc23</span> [[<span class="id">se2</span> <span class="id">w12</span>] <span class="id">w23</span>] <span class="id">se1</span> <span class="id">se3</span> (<span class="id">H12</span> &amp; <span class="id">H23</span>) <span class="id">id</span>.<br/>
+&nbsp;&nbsp;<span class="id">etransitivity</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_public_preserved">match_senv_public_preserved</a></span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof2178')">Next Obligation.</div>
+<div class="proofscript" id="proof2178">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">li1</span> <span class="id">li2</span> <span class="id">li3</span> <span class="id">cc12</span> <span class="id">cc23</span> [[<span class="id">se2</span> <span class="id">w12</span>] <span class="id">w23</span>] <span class="id">se1</span> <span class="id">se3</span> <span class="id">sk</span> [<span class="id">Hse12</span> <span class="id">Hse23</span>] <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.LanguageInterface.html#match_senv_valid_for">match_senv_valid_for</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Infix</span> "@" := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_compose">cc_compose</a></span> (<span class="tactic">at</span> <span class="id">level</span> 30, <span class="id">right</span> <span class="id">associativity</span>) : <span class="id">cc_scope</span>.<br/>
+<br/>
+<h1> C-like languages </h1>
+<br/>
+<h2> Interface </h2>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="c_query">c_query</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cq">cq</a></span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cq_vf">cq_vf</a></span>: <span class="id"><a href="compcert.common.Values.html#val">val</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cq_sg">cq_sg</a></span>: <span class="id"><a href="compcert.common.AST.html#signature">signature</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cq_args">cq_args</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.common.Values.html#val">val</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cq_mem">cq_mem</a></span>: <span class="id"><a href="compcert.common.Memory.html#mem">mem</a></span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="c_reply">c_reply</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cr">cr</a></span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cr_retval">cr_retval</a></span>: <span class="id"><a href="compcert.common.Values.html#val">val</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="cr_mem">cr_mem</a></span>: <span class="id"><a href="compcert.common.Memory.html#mem">mem</a></span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="id">Canonical</span> <span class="kwd">Structure</span> <span class="id">li_c</span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_language_interface">query</a></span> := <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">reply</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">entry</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cq_vf">cq_vf</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<br/>
+<h2> Simulation conventions </h2>
+<br/>
+<h3> Memory extensions </h3>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_ext_query">cc_ext_query</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_ext_query_intro">cc_ext_query_intro</a></span> <span class="id">vf</span> <span class="id">sg</span> <span class="id">vargs1</span> <span class="id">vargs2</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.lessdef_list">Val.lessdef_list</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs1">vargs1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs2">vargs2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.extends">Mem.extends</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#vf">vf</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext_query">cc_ext_query</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cq">cq</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf">vf</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sg">sg</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs1">vargs1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cq">cq</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf">vf</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sg">sg</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs2">vargs2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>).<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_ext_reply">cc_ext_reply</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_ext_reply_intro">cc_ext_reply_intro</a></span> <span class="id">vres1</span> <span class="id">vres2</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres1">vres1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres2">vres2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.extends">Mem.extends</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext_reply">cc_ext_reply</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cr">cr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres1">vres1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cr">cr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres2">vres2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>).<br/>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_ext">cc_ext</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">ccworld</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_senv</span> <span class="id">w</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> <span class="id">w</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext_query">cc_ext_query</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> <span class="id">w</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_ext_reply">cc_ext_reply</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<span class="kwd">Solve</span> <span class="id">All</span> <span class="kwd">Obligations</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;<span class="id">cbn</span>; <span class="tactic">intros</span>; <span class="tactic">subst</span>; <span class="tactic">auto</span>.<br/>
+<br/>
+<h3> Memory injections </h3>
+<br/>
+<div class="doc">Memory injections with thresholds </div>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="meminj_thr">meminj_thr</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="mit">mit</a></span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="mit_meminj">mit_meminj</a></span> :&gt; <span class="id"><a href="compcert.common.Values.html#block">block</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> (<span class="id"><a href="compcert.common.Values.html#block">block</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="mit_l">mit_l</a></span>: <span class="id"><a href="compcert.common.Values.html#block">block</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="mit_r">mit_r</a></span>: <span class="id"><a href="compcert.common.Values.html#block">block</a></span>;<br/>
+&nbsp;&nbsp;}.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="mit_incr">mit_incr</a></span> (<span class="id">w</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#meminj_thr">meminj_thr</a></span>) (<span class="id">f</span>: <span class="id"><a href="compcert.common.Values.html#meminj">meminj</a></span>): <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> /\<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#b2">b2</a></span>, <span class="id"><a href="compcert.common.LanguageInterface.html#delta">delta</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit_l">mit_l</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#b1">b1</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit_r">mit_r</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#b2">b2</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_inj_senv">cc_inj_senv</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#meminj_thr">meminj_thr</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_inj_senv_intro">cc_inj_senv_intro</a></span> <span class="id">f</span> <span class="id">se1</span> <span class="id">se2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_senv">cc_inj_senv</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit">mit</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span>) (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span>)) <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_inj_query">cc_inj_query</a></span> (<span class="id">f</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#meminj_thr">meminj_thr</a></span>): <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_inj_query_intro">cc_inj_query_intro</a></span> <span class="id">vf1</span> <span class="id">vf2</span> <span class="id">sg</span> <span class="id">vargs1</span> <span class="id">vargs2</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf1">vf1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf2">vf2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs1">vargs1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs2">vargs2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit_l">mit_l</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit_r">mit_r</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#vf1">vf1</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_query">cc_inj_query</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cq">cq</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf1">vf1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sg">sg</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs1">vargs1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cq">cq</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf2">vf2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sg">sg</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs2">vargs2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>).<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_inj_reply">cc_inj_reply</a></span> (<span class="id">f</span>: <span class="id"><a href="compcert.common.LanguageInterface.html#meminj_thr">meminj_thr</a></span>): <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_inj_reply_intro">cc_inj_reply_intro</a></span> <span class="id">f</span>' <span class="id">vres1</span> <span class="id">vres2</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mit_incr">mit_incr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id">f</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.common.LanguageInterface.html#vres1">vres1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres2">vres2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit_l">mit_l</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit_r">mit_r</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_reply">cc_inj_reply</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cr">cr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres1">vres1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cr">cr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres2">vres2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>).<br/>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_inj">cc_inj</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">match_senv</a></span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_senv">cc_inj_senv</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_query">cc_inj_query</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_reply">cc_inj_reply</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2179')">Next Obligation.</div>
+<div class="proofscript" id="proof2179">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.mge_public">Genv.mge_public</a></span> <span class="id">H</span>); <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof2180')">Next Obligation.</div>
+<div class="proofscript" id="proof2180">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.valid_for_match">Genv.valid_for_match</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="mit_incr_refl">mit_incr_refl</a></span> <span class="id">w</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mit_incr">mit_incr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2181')">Proof.</div>
+<div class="proofscript" id="proof2181">
+&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Values.html#inject_incr_refl">inject_incr_refl</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="cc_inj_match_stbls">cc_inj_match_stbls</a></span> <span class="id">w</span> <span class="id">j</span> <span class="id">se1</span> <span class="id">se2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj_senv">cc_inj_senv</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mit_incr">mit_incr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#w">w</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#j">j</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#j">j</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2182')">Proof.</div>
+<div class="proofscript" id="proof2182">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hse</span> [<span class="id">Hj</span> <span class="id">SEP</span>]. <span class="tactic">destruct</span> <span class="id">Hse</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls_incr">Genv.match_stbls_incr</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<h3> Injections with footprint enforcement </h3>
+<br/>
+<span class="kwd">Record</span> <span class="id"><a name="cc_injp_world">cc_injp_world</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="injpw">injpw</a></span> { <span class="id"><a name="injp_inj">injp_inj</a></span> :&gt; <span class="id"><a href="compcert.common.Values.html#meminj">meminj</a></span>; <span class="id"><a name="injp_m1">injp_m1</a></span>: <span class="id"><a href="compcert.common.Memory.html#mem">mem</a></span>; <span class="id"><a name="injp_m2">injp_m2</a></span>: <span class="id"><a href="compcert.common.Memory.html#mem">mem</a></span> }.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_injp_stbls">cc_injp_stbls</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_world">cc_injp_world</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_injp_stbls_intro">cc_injp_stbls_intro</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">se1</span> <span class="id">se2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_stbls">cc_injp_stbls</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#injpw">injpw</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#se1">se1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#se2">se2</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_injp_query">cc_injp_query</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_world">cc_injp_world</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_query">c_query</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_injp_query_intro">cc_injp_query_intro</a></span> <span class="id">f</span> <span class="id">vf1</span> <span class="id">vf2</span> <span class="id">sg</span> <span class="id">vargs1</span> <span class="id">vargs2</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf1">vf1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf2">vf2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs1">vargs1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs2">vargs2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#vf1">vf1</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_query">cc_injp_query</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#injpw">injpw</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cq">cq</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf1">vf1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sg">sg</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs1">vargs1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cq">cq</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vf2">vf2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#sg">sg</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vargs2">vargs2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>).<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cc_injp_reply">cc_injp_reply</a></span>: <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_world">cc_injp_world</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span> -&gt; <span class="id"><a href="compcert.common.LanguageInterface.html#c_reply">c_reply</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="cc_injp_reply_intro">cc_injp_reply_intro</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">f</span>' <span class="id">vres1</span> <span class="id">vres2</span> <span class="id">m1</span>' <span class="id">m2</span>':<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.common.LanguageInterface.html#vres1">vres1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres2">vres2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id">f</span>' <span class="id">m1</span>' <span class="id">m2</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on">Mem.unchanged_on</a></span> (<span class="id"><a href="compcert.common.Events.html#loc_unmapped">loc_unmapped</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id">m1</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on">Mem.unchanged_on</a></span> (<span class="id"><a href="compcert.common.Events.html#loc_out_of_reach">loc_out_of_reach</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> <span class="id">m2</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id">f</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#inject_separated">inject_separated</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">b</span> <span class="id">ofs</span> <span class="id">p</span>, <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id">m1</span>' <span class="id"><a href="compcert.common.LanguageInterface.html#b">b</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#p">p</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#b">b</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#p">p</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">b</span> <span class="id">ofs</span> <span class="id">p</span>, <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id">m2</span>' <span class="id"><a href="compcert.common.LanguageInterface.html#b">b</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#p">p</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#b">b</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#p">p</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_reply">cc_injp_reply</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#injpw">injpw</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#f">f</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m1">m1</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#m2">m2</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cr">cr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres1">vres1</a></span> <span class="id">m1</span>') (<span class="id"><a href="compcert.common.LanguageInterface.html#cr">cr</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#vres2">vres2</a></span> <span class="id">m2</span>').<br/>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="cc_injp">cc_injp</a></span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.LanguageInterface.html#mk_callconv">match_senv</a></span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_stbls">cc_injp_stbls</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_query</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_query">cc_injp_query</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_reply</span> := <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp_reply">cc_injp_reply</a></span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2183')">Next Obligation.</div>
+<div class="proofscript" id="proof2183">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">erewrite</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.mge_public">Genv.mge_public</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof2184')">Next Obligation.</div>
+<div class="proofscript" id="proof2184">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.valid_for_match">Genv.valid_for_match</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

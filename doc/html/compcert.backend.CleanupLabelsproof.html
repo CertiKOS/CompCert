@@ -1,0 +1,370 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module CleanupLabelsproof</title>
+<meta name="description" content="Documentation of Coq module CleanupLabelsproof" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module CleanupLabelsproof</h1>
+<div class="coq">
+<br/>
+<div class="doc">Correctness proof for clean-up of labels </div>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.FSets.FSets.html">FSets</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="compcert.lib.Ordered.html">Ordered</a></span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.common.Linking.html">Linking</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span> <span class="id"><a href="compcert.common.Memory.html">Memory</a></span> <span class="id"><a href="compcert.common.Events.html">Events</a></span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.x86.Op.html">Op</a></span> <span class="id"><a href="compcert.backend.Locations.html">Locations</a></span> <span class="id"><a href="compcert.backend.Linear.html">Linear</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.CleanupLabels.html">CleanupLabels</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="LabelsetFacts">LabelsetFacts</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.FSets.FSetFacts.html#Facts">FSetFacts.Facts</a></span>(<span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset">Labelset</a></span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="match_prog">match_prog</a></span> (<span class="id">p</span> <span class="id">tp</span>: <span class="id"><a href="compcert.backend.Linear.html#program">Linear.program</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span> (<span class="kwd">fun</span> <span class="id">ctx</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#tf">tf</a></span> = <span class="id"><a href="compcert.backend.CleanupLabels.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>) <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#p">p</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#tp">tp</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="transf_program_match">transf_program_match</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span>, <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#p">p</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#transf_program">transf_program</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#p">p</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4216')">Proof.</div>
+<div class="proofscript" id="proof4216">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_program">match_transform_program</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="CLEANUP">CLEANUP</a></span>.<br/>
+<br/>
+<span class="kwd">Variables</span> <span class="id"><a name="CLEANUP.prog">prog</a></span> <span class="id"><a name="CLEANUP.tprog">tprog</a></span>: <span class="id"><a href="compcert.backend.Linear.html#program">program</a></span>.<br/>
+<span class="kwd">Hypothesis</span> <span class="id"><a name="CLEANUP.TRANSL">TRANSL</a></span>: <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.prog">prog</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.tprog">tprog</a></span>.<br/>
+<span class="kwd">Variable</span> <span class="id"><a name="CLEANUP.se">se</a></span>: <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span>.<br/>
+<span class="kwd">Let</span> <span class="id"><a name="CLEANUP.ge">ge</a></span> := <span class="id"><a href="compcert.common.Globalenvs.html#Genv.globalenv">Genv.globalenv</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.se">se</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.prog">prog</a></span>.<br/>
+<span class="kwd">Let</span> <span class="id"><a name="CLEANUP.tge">tge</a></span> := <span class="id"><a href="compcert.common.Globalenvs.html#Genv.globalenv">Genv.globalenv</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.se">se</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.tprog">tprog</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="functions_translated">functions_translated</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">f</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.ge">ge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.tge">tge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4217')">Proof.</div>
+<div class="proofscript" id="proof4217">
+&nbsp;&nbsp;<span class="tactic">exact</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_transf_id">Genv.find_funct_transf_id</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.TRANSL">TRANSL</a></span>).<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="sig_function_translated">sig_function_translated</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#funsig">funsig</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>) = <span class="id"><a href="compcert.backend.Linear.html#funsig">funsig</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4218')">Proof.</div>
+<div class="proofscript" id="proof4218">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">f</span>; <span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Correctness of <span class="bracket"><span class="id">labels_branched_to</span></span>. </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="instr_branches_to">instr_branches_to</a></span> (<span class="id">i</span>: <span class="id"><a href="compcert.backend.Linear.html#instruction">instruction</a></span>) (<span class="id">lbl</span>: <span class="id"><a href="compcert.backend.Linear.html#label">label</a></span>) : <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.backend.Linear.html#Lgoto">Lgoto</a></span> <span class="id">lbl</span>' =&gt; <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> = <span class="id">lbl</span>'<br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.backend.Linear.html#Lcond">Lcond</a></span> <span class="id">cond</span> <span class="id">args</span> <span class="id">lbl</span>' =&gt; <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> = <span class="id">lbl</span>'<br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.backend.Linear.html#Ljumptable">Ljumptable</a></span> <span class="id">arg</span> <span class="id">tbl</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> <span class="id">tbl</span><br/>
+&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Remark</span> <span class="id"><a name="add_label_branched_to_incr">add_label_branched_to_incr</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ls</span> <span class="id">i</span>, <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.Subset">Labelset.Subset</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#add_label_branched_to">add_label_branched_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4219')">Proof.</div>
+<div class="proofscript" id="proof4219">
+&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_2">Labelset.add_2</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_2">Labelset.add_2</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span>; <span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>. <span class="tactic">auto</span>. <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_2">Labelset.add_2</a></span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Remark</span> <span class="id"><a name="add_label_branched_to_contains">add_label_branched_to_contains</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ls</span> <span class="id">i</span> <span class="id">lbl</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#instr_branches_to">instr_branches_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.In">Labelset.In</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#add_label_branched_to">add_label_branched_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4220')">Proof.</div>
+<div class="proofscript" id="proof4220">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> <span class="id">contradiction</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_1">Labelset.add_1</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_1">Labelset.add_1</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span>. <span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_1">Labelset.add_1</a></span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.add_2">Labelset.add_2</a></span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="labels_branched_to_correct">labels_branched_to_correct</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span> <span class="id">i</span> <span class="id">lbl</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> -&gt; <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#instr_branches_to">instr_branches_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> -&gt; <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.In">Labelset.In</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#labels_branched_to">labels_branched_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4221')">Proof.</div>
+<div class="proofscript" id="proof4221">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">c</span>' <span class="id">bto</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.Subset">Labelset.Subset</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> <span class="id"><a href="compcert.backend.CleanupLabels.html#add_label_branched_to">add_label_branched_to</a></span> <span class="id">c</span>' <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span>)).<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c</span>'; <span class="tactic">intros</span>; <span class="tactic">simpl</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">IHc</span>'. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#add_label_branched_to_incr">add_label_branched_to_incr</a></span>; <span class="tactic">auto</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">c</span>' <span class="id">bto</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id">i</span> <span class="id">c</span>' -&gt; <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.In">Labelset.In</a></span> <span class="id">lbl</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> <span class="id"><a href="compcert.backend.CleanupLabels.html#add_label_branched_to">add_label_branched_to</a></span> <span class="id">c</span>' <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span>)).<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c</span>'; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H2</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">a</span>. <span class="tactic">apply</span> <span class="id">H1</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#add_label_branched_to_contains">add_label_branched_to_contains</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">IHc</span>'; <span class="tactic">auto</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#labels_branched_to">labels_branched_to</a></span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Commutation with <span class="bracket"><span class="id">find_label</span></span>. </div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="remove_unused_labels_cons">remove_unused_labels_cons</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bto</span> <span class="id">i</span> <span class="id">c</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> (<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> :: <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>) =<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id">lbl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.mem">Labelset.mem</a></span> <span class="id">lbl</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> :: <span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span><br/>
+&nbsp;&nbsp;| <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> :: <span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4222')">Proof.</div>
+<div class="proofscript" id="proof4222">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#list_fold_right_eq">list_fold_right_eq</a></span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="find_label_commut">find_label_commut</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">bto</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.In">Labelset.In</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span> <span class="id">c</span>',<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">c</span>' -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#bto">bto</a></span> <span class="id">c</span>').<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4223')">Proof.</div>
+<div class="proofscript" id="proof4223">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#remove_unused_labels_cons">remove_unused_labels_cons</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linear.html#is_label">is_label</a></span> <span class="kwd">in</span> <span class="id">H0</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span> <span class="id">lbl</span> <span class="id">l</span>). <span class="tactic">subst</span> <span class="id">l</span>. <span class="id">inv</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.mem_1">Labelset.mem_1</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#peq_true">peq_true</a></span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.mem">Labelset.mem</a></span> <span class="id">l</span> <span class="id">bto</span>); <span class="tactic">auto</span>. <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#peq_false">peq_false</a></span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Corollary</span> <span class="id"><a name="find_label_translated">find_label_translated</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">i</span> <span class="id">c</span>' <span class="id">lbl</span> <span class="id">c</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> (<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> :: <span class="id">c</span>') (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>) -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#instr_branches_to">instr_branches_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#transf_function">transf_function</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>)) =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#labels_branched_to">labels_branched_to</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>)) <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4224')">Proof.</div>
+<div class="proofscript" id="proof4224">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#transf_function">transf_function</a></span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.CleanupLabels.html#cleanup_labels">cleanup_labels</a></span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_commut">find_label_commut</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#labels_branched_to_correct">labels_branched_to_correct</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="find_label_incl">find_label_incl</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">c</span> <span class="id">c</span>', <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">c</span>' -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="id">c</span>' <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4225')">Proof.</div>
+<div class="proofscript" id="proof4225">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linear.html#is_label">is_label</a></span> <span class="id">lbl</span> <span class="id">a</span>). <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>. <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Correctness of clean-up </div>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="match_stackframes">match_stackframes</a></span>: <span class="id"><a href="compcert.backend.Linear.html#stackframe">stackframe</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#stackframe">stackframe</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="match_stackframe_intro">match_stackframe_intro</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">ls</span> <span class="id">c</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_stackframes">match_stackframes</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackframe">Stackframe</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackframe">Stackframe</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#transf_function">transf_function</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>) <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#labels_branched_to">labels_branched_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>)) <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>))<br/>
+&nbsp;&nbsp;| <span class="id"><a name="match_stackframe_top">match_stackframe_top</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sg</span> <span class="id">ls</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_stackframes">match_stackframes</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Stackbase</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sg">sg</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Stackbase</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sg">sg</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span>).<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="match_states">match_states</a></span>: <span class="id"><a href="compcert.backend.Linear.html#state">state</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#state">state</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="match_states_intro">match_states_intro</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">c</span> <span class="id">ls</span> <span class="id">m</span> <span class="id">ts</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">STACKS</span>: <span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_stackframes">match_stackframes</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">INCL</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#m">m</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#transf_function">transf_function</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>) <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sp">sp</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#remove_unused_labels">remove_unused_labels</a></span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#labels_branched_to">labels_branched_to</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>)) <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#c">c</a></span>) <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#m">m</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="match_states_call">match_states_call</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">vf</span> <span class="id">ls</span> <span class="id">m</span> <span class="id">ts</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_stackframes">match_stackframes</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Callstate">Callstate</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#vf">vf</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#m">m</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Callstate">Callstate</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#vf">vf</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#m">m</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="match_states_return">match_states_return</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">ls</span> <span class="id">m</span> <span class="id">ts</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_stackframes">match_stackframes</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Returnstate">Returnstate</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#m">m</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Returnstate">Returnstate</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#m">m</a></span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="kwd">measure</span> (<span class="id">st</span>: <span class="id"><a href="compcert.backend.Linear.html#state">state</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st">st</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id">s</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">c</span> <span class="id">ls</span> <span class="id">m</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span><br/>
+&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="match_parent_locset">match_parent_locset</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">ts</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_stackframes">match_stackframes</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#parent_locset">parent_locset</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#ts">ts</a></span> = <span class="id"><a href="compcert.backend.Linear.html#parent_locset">parent_locset</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s">s</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4226')">Proof.</div>
+<div class="proofscript" id="proof4226">
+&nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>. <span class="tactic">auto</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="transf_step_correct">transf_step_correct</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">t</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.ge">ge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#t">t</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s2">s2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span>' (<span class="id">MS</span>: <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s1">s1</a></span> <span class="id">s1</span>'),<br/>
+&nbsp;&nbsp;(<span class="id">exists</span> <span class="id">s2</span>', <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.tge">tge</a></span> <span class="id">s1</span>' <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#t">t</a></span> <span class="id">s2</span>' /\ <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s2">s2</a></span> <span class="id">s2</span>')<br/>
+&nbsp;&nbsp;\/ (<span class="kwd">measure</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s2">s2</a></span> &lt; <span class="kwd">measure</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s1">s1</a></span> /\ <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#t">t</a></span> = <span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> /\ <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#s2">s2</a></span> <span class="id">s1</span>')%<span class="id">nat</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4227')">Proof.</div>
+<div class="proofscript" id="proof4227">
+&nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">inv</span> <span class="id">MS</span>; <span class="tactic">try</span> <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#remove_unused_labels_cons">remove_unused_labels_cons</a></span>.<br/>
+<span class="comment">(*&nbsp;Lgetstack&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Lsetstack&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Lop&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Lload&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Lstore&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Lcall&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#functions_translated">functions_translated</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">symmetry</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sig_function_translated">sig_function_translated</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Ltailcall&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>. <span class="id">erewrite</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_parent_locset">match_parent_locset</a></span>; <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#functions_translated">functions_translated</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">symmetry</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sig_function_translated">sig_function_translated</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+<span class="comment">(*&nbsp;Lbuiltin&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Llabel&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">case_eq</span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#Labelset.mem">Labelset.mem</a></span> <span class="id">lbl</span> (<span class="id"><a href="compcert.backend.CleanupLabels.html#labels_branched_to">labels_branched_to</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id">f</span>))); <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;not&nbsp;eliminated&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;eliminated&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">right</span>. <span class="tactic">split</span>. <span class="tactic">simpl</span>. <span class="tactic">omega</span>. <span class="tactic">split</span>. <span class="tactic">auto</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Lgoto&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_translated">find_label_translated</a></span>; <span class="tactic">eauto</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_incl">find_label_incl</a></span>; <span class="tactic">eauto</span>.<br/>
+<span class="comment">(*&nbsp;Lcond&nbsp;taken&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>. <span class="tactic">auto</span>. <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_translated">find_label_translated</a></span>; <span class="tactic">eauto</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_incl">find_label_incl</a></span>; <span class="tactic">eauto</span>.<br/>
+<span class="comment">(*&nbsp;Lcond&nbsp;not&nbsp;taken&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Linear.html#exec_Lcond_false">exec_Lcond_false</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;Ljumptable&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>. <span class="tactic">eauto</span>. <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_translated">find_label_translated</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Coqlib.html#list_nth_z_in">list_nth_z_in</a></span>; <span class="tactic">eauto</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#find_label_incl">find_label_incl</a></span>; <span class="tactic">eauto</span>.<br/>
+<span class="comment">(*&nbsp;Lreturn&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">erewrite</span> &lt;- <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_parent_locset">match_parent_locset</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;internal&nbsp;function&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#functions_translated">functions_translated</a></span> <span class="kwd">in</span> <span class="id">FIND</span>.<br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;external&nbsp;function&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#functions_translated">functions_translated</a></span> <span class="kwd">in</span> <span class="id">FIND</span>.<br/>
+&nbsp;&nbsp;<span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
+<span class="comment">(*&nbsp;return&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H3</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">left</span>; <span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="transf_initial_states">transf_initial_states</a></span> <span class="id">q</span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span>, <span class="id"><a href="compcert.backend.Linear.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.ge">ge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#q">q</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st1">st1</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">st2</span>, <span class="id"><a href="compcert.backend.Linear.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.tge">tge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#q">q</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st2">st2</a></span> /\ <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st2">st2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4228')">Proof.</div>
+<div class="proofscript" id="proof4228">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#functions_translated">functions_translated</a></span> <span class="kwd">in</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">setoid_rewrite</span> &lt;- (<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#sig_function_translated">sig_function_translated</a></span> (<span class="id"><a href="compcert.common.AST.html#Internal">Internal</a></span> <span class="id">f</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">repeat</span> <span class="id">constructor</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="transf_external">transf_external</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">S</span> <span class="id">R</span> <span class="id">q</span>, <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#at_external">at_external</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.ge">ge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#q">q</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#at_external">at_external</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP.tge">tge</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#q">q</a></span> /\<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">S</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#r">r</a></span> <span class="id">S</span>' -&gt;<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">R</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#r">r</a></span> <span class="id">R</span>' /\ <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id">S</span>' <span class="id">R</span>'.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4229')">Proof.</div>
+<div class="proofscript" id="proof4229">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">S</span> <span class="id">R</span> <span class="id">q</span> <span class="id">HSR</span> <span class="id">Hq</span>. <span class="tactic">destruct</span> <span class="id">Hq</span>; <span class="id">inv</span> <span class="id">HSR</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#functions_translated">functions_translated</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">r</span> <span class="id">S</span>' <span class="id">HS</span>'. <span class="id">inv</span> <span class="id">HS</span>'.<br/>
+&nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">split</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="transf_final_states">transf_final_states</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span> <span class="id">st2</span> <span class="id">r</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st2">st2</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#final_state">final_state</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#final_state">final_state</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#st2">st2</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#r">r</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4230')">Proof.</div>
+<div class="proofscript" id="proof4230">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H4</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#CLEANUP">CLEANUP</a></span>.<br/>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="transf_program_correct">transf_program_correct</a></span> <span class="id">prog</span> <span class="id">tprog</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CleanupLabelsproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#prog">prog</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#tprog">tprog</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> (<span class="id"><a href="compcert.backend.Linear.html#semantics">Linear.semantics</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#prog">prog</a></span>) (<span class="id"><a href="compcert.backend.Linear.html#semantics">Linear.semantics</a></span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#tprog">tprog</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4231')">Proof.</div>
+<div class="proofscript" id="proof4231">
+&nbsp;&nbsp;<span class="id">fsim</span> <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_opt">forward_simulation_opt</a></span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">intros</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.is_internal_transf_id">Genv.is_internal_transf_id</a></span> <span class="id">MATCH</span>). <span class="tactic">intros</span> [|]; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#transf_initial_states">transf_initial_states</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#transf_final_states">transf_final_states</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>. <span class="id">edestruct</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#transf_external">transf_external</a></span>; <span class="tactic">eauto</span>. <span class="id">exists</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>, <span class="id">q1</span>. <span class="tactic">intuition</span> <span class="tactic">subst</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.CleanupLabelsproof.html#transf_step_correct">transf_step_correct</a></span>.<br/>
+Qed.</div>
+<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

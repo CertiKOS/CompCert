@@ -1,0 +1,105 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Globalenvsrel</title>
+<meta name="description" content="Documentation of Coq module Globalenvsrel" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Globalenvsrel</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Maps.html">Maps</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.Valuesrel.html">Valuesrel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.cklr.CKLR.html">CKLR</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
+<br/>
+<h1> Injections and global environements </h1>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="transport_find_symbol">transport_find_symbol</a></span> <span class="id">f</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">id</span> <span class="id">b1</span>:<br/>
+&nbsp;&nbsp;<span class="id">Transport</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Globalenvsrel.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#se2">se2</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_symbol">Genv.find_symbol</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b1">b1</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">exists</span> <span class="id">b2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_symbol">Genv.find_symbol</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#se2">se2</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b2">b2</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b1">b1</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b2">b2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2623')">Proof.</div>
+<div class="proofscript" id="proof2623">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hse</span> <span class="id">Hb1</span>. <span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_symbol_match">Genv.find_symbol_match</a></span> <span class="kwd">as</span> (<span class="id">b2</span> &amp; ? &amp; ?); <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="genv_valid_funct_ptr">genv_valid_funct_ptr</a></span> {<span class="id">F</span> <span class="id">V</span>} <span class="id">R</span> <span class="id">w</span> (<span class="id">ge</span>: <span class="id"><a href="compcert.common.Globalenvs.html#Genv.t">Genv.t</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#F">F</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#V">V</a></span>) <span class="id">b</span> <span class="id">f</span>:<br/>
+&nbsp;&nbsp;<span class="id">genv_valid</span> <span class="id">R</span> <span class="id">w</span> <span class="id">ge</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_ptr">Genv.find_funct_ptr</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#ge">ge</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b">b</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#f">f</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#w">w</a></span>) <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b">b</a></span> <span class="id"><a href="compcert.cklr.Globalenvsrel.html#b">b</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2624')">Proof.</div>
+<div class="proofscript" id="proof2624">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hge</span> <span class="id">Hf</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id">Genv.find_funct_ptr</span>, <span class="id">Genv.find_def</span> <span class="kwd">in</span> <span class="id">Hf</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Block.ident_of</span> <span class="id">eqn</span>:<span class="id">Hb</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">Block.ident_of_inv</span> <span class="kwd">in</span> <span class="id">Hb</span>. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">Hge</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id">Mem.flat_inj</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Block.lt_dec</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">elim</span> <span class="id">n</span>; <span class="tactic">eapply</span> <span class="id">Block.lt_glob_init</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id">genv_valid_block_inject_eq</span> {<span class="id">F</span> <span class="id">V</span>} <span class="id">R</span> <span class="id">w</span> (<span class="id">ge</span>: <span class="id">Genv.t</span> <span class="id">F</span> <span class="id">V</span>) <span class="id">b1</span> <span class="id">b2</span> <span class="id">f</span>:<br/>
+&nbsp;&nbsp;<span class="id">genv_valid</span> <span class="id">R</span> <span class="id">w</span> <span class="id">ge</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">block_inject</span> (<span class="id">mi</span> <span class="id">R</span> <span class="id">w</span>) <span class="id">b1</span> <span class="id">b2</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">Genv.find_funct_ptr</span> <span class="id">ge</span> <span class="id">b1</span> = <span class="id">Some</span> <span class="id">f</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">b2</span> = <span class="id">b1</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2625')">Proof.</div>
+<div class="proofscript" id="proof2625">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hge</span> <span class="id">Hb</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">genv_valid_funct_ptr</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">Hb</span>. <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id">find_funct_ptr_transport</span> {<span class="id">F</span> <span class="id">V</span>} <span class="id">R</span> <span class="id">w</span> (<span class="id">ge</span>: <span class="id">Genv.t</span> <span class="id">F</span> <span class="id">V</span>) <span class="id">b1</span> <span class="id">b2</span> <span class="id">f</span>:<br/>
+&nbsp;&nbsp;<span class="id">genv_valid</span> <span class="id">R</span> <span class="id">w</span> <span class="id">ge</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">block_inject</span> (<span class="id">mi</span> <span class="id">R</span> <span class="id">w</span>) <span class="id">b1</span> <span class="id">b2</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">Genv.find_funct_ptr</span> <span class="id">ge</span> <span class="id">b1</span> = <span class="id">Some</span> <span class="id">f</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">Genv.find_funct_ptr</span> <span class="id">ge</span> <span class="id">b2</span> = <span class="id">Some</span> <span class="id">f</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2626')">Proof.</div>
+<div class="proofscript" id="proof2626">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hge</span> <span class="id">Hb</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">cut</span> (<span class="id">b2</span> = <span class="id">b1</span>); <span class="tactic">try</span> <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">genv_valid_block_inject_eq</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id">find_funct_transfer</span> {<span class="id">F</span> <span class="id">V</span>} <span class="id">R</span> <span class="id">w</span> (<span class="id">ge1</span> <span class="id">ge2</span>: <span class="id">Genv.t</span> <span class="id">F</span> <span class="id">V</span>) <span class="id">v1</span> <span class="id">v2</span> <span class="id">f</span>:<br/>
+&nbsp;&nbsp;<span class="id">Transport</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">psat</span> (<span class="id">genv_valid</span> <span class="id">R</span> <span class="id">w</span>) * <span class="id">Val.inject</span> (<span class="id">mi</span> <span class="id">R</span> <span class="id">w</span>))%<span class="id">rel</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">ge1</span>, <span class="id">v1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">ge2</span>, <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Genv.find_funct</span> <span class="id">ge1</span> <span class="id">v1</span> = <span class="id">Some</span> <span class="id">f</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Genv.find_funct</span> <span class="id">ge2</span> <span class="id">v2</span> = <span class="id">Some</span> <span class="id">f</span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">b</span>, <span class="id">v1</span> = <span class="id">Vptr</span> <span class="id">b</span> <span class="id">Ptrofs.zero</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2627')">Proof.</div>
+<div class="proofscript" id="proof2627">
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">red</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">Hge</span> <span class="id">Hv</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hge</span>, <span class="id">Hv</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hge</span> <span class="kwd">as</span> [<span class="id">Hge</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hv</span>; <span class="tactic">subst</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">Ptrofs.eq_dec</span> <span class="id">_</span> <span class="id">_</span>); <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Ptrofs.add_zero_l</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">b2</span> = <span class="id">b1</span>) <span class="tactic">by</span> <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id">genv_valid_block_inject_eq</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id">genv_valid_funct_ptr</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hge</span> <span class="id">H</span>) <span class="kwd">as</span> <span class="id">Hb</span>. <span class="tactic">red</span> <span class="kwd">in</span> <span class="id">Hb</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">delta</span> = 0) <span class="tactic">by</span> <span class="tactic">congruence</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="id">change</span> (<span class="id">Ptrofs.repr</span> 0) <span class="kwd">with</span> <span class="id">Ptrofs.zero</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Ptrofs.eq_dec</span>; <span class="tactic">try</span> <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eauto</span>.<br/>
+Qed.</div>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>
