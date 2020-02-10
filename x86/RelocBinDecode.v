@@ -3236,7 +3236,73 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite app_assoc.
       rewrite HAddrmode.
       simpl. auto.       
-
+  + (* (Pmovl_mr a rs) *)
+    exists  (Pmovl_mr a rs).
+    split;try(unfold instr_eq; auto).
+    monadInv HEncode.
+    unfold fmc_instr_decode. simpl.
+    branch_byte_eq'.
+    unfold decode_movl_mr.
+    unfold encode_addrmode in EQ.
+    destruct a. monadInv EQ.
+    destruct const eqn:EQConst.
+    ++ (* not reloc *)
+      generalize (encode_decode_addr_size_relf _ _ _ EQ0).
+      intros HAddrsize.
+      rewrite <- app_assoc.
+      rewrite (HAddrsize (encode_int32 x1 ++ l)).      
+      remember (addrmode_reloc_offset (Addrmode base ofs0 (inl z))) as am.
+      assert (exists irofs, instr_reloc_offset (Pmovl_mr (Addrmode base ofs0 (inl z)) rs) = OK irofs)as HInstr_reloc . {
+        unfold instr_reloc_offset.
+        eauto.
+      }
+      destruct HInstr_reloc as [irofs HInstr_reloc].
+      simpl.
+      assert(HOfs: ofs + am + 1 = irofs + ofs). {
+        unfold instr_reloc_offset in HInstr_reloc.
+        replace (ofs+am+1)with (1 + am + ofs) by omega.
+        rewrite <- Heqam in HInstr_reloc.
+        inversion HInstr_reloc.
+        rewrite Heqam.
+        simpl. setoid_reflexivity. 
+      }
+      monadInv H10.
+      remember (addrmode_reloc_offset (Addrmode base ofs0 (inl z))) as am.
+      generalize (encode_decode_addrmode_relf _ _ _ (ofs + am + 1) _ _ _ HInstr_reloc EQ1 HOfs l).
+      intros HAddrmode.
+      rewrite <- app_assoc in HAddrmode.
+      rewrite HAddrmode.
+      simpl. auto.
+    ++ (* reloc *)
+      generalize (encode_decode_addr_size_relf _ _ _ EQ0).
+      intros HAddrsize.
+      rewrite <- app_assoc.
+      rewrite (HAddrsize (encode_int32 x1 ++ l)).      
+      remember (addrmode_reloc_offset (Addrmode base ofs0 (inr p))) as am.
+      assert (exists irofs, instr_reloc_offset (Pmovl_mr (Addrmode base ofs0 (inr p)) rs) = OK irofs)as HInstr_reloc . {
+        unfold instr_reloc_offset.
+        eauto.
+      }
+      destruct HInstr_reloc as [irofs HInstr_reloc].
+      simpl.
+      assert(HOfs: ofs + am + 1 = irofs + ofs). {
+        unfold instr_reloc_offset in HInstr_reloc.
+        replace (ofs+am+1)with (1 + am + ofs) by omega.
+        rewrite <- Heqam in HInstr_reloc.
+        inversion HInstr_reloc.
+        rewrite Heqam.
+        simpl. setoid_reflexivity. 
+      }
+      monadInv H10.
+      remember (addrmode_reloc_offset (Addrmode base ofs0 (inr p))) as am.
+      generalize (encode_decode_addrmode_relf _ _ _ (ofs + am + 1) _ _ _ HInstr_reloc EQ1 HOfs l).
+      intros HAddrmode.
+      rewrite <- app_assoc in HAddrmode.
+      rewrite HAddrmode.
+      simpl. auto.
+      
+      
+    
 Admitted.
 
     
