@@ -3431,6 +3431,28 @@ Lemma acc_symb_size':
     csz2 = csz1 + defs_code_size (map snd defs).
 Admitted.
 
+
+Lemma combine_defs_none_or_ext: 
+  forall {F V} {LV: Linker V} ids defs (t1 t2: PTree.t (option (globdef (AST.fundef F) V))),
+    defs_none_or_ext t1 ids ->
+    defs_none_or_ext t2 ids ->
+    PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
+    Forall (fun '(id, def) => is_def_internal is_fundef_internal def = false) defs.
+Admitted.
+
+Lemma ext_defs_code_size: forall (defs: list (ident * option gdef)),
+    Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) defs ->
+    defs_code_size (map snd defs) = 0.
+Proof.
+Admitted.
+
+Lemma ext_defs_data_size: forall (defs: list (ident * option gdef)),
+    Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) defs ->
+    defs_data_size (map snd defs) = 0.
+Proof.
+Admitted.
+
+
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
     list_norepet (map fst (AST.prog_defs p1)) ->
     list_norepet (map fst (AST.prog_defs p2)) ->
@@ -3499,7 +3521,8 @@ Proof.
   destruct p.
   apply acc_symb_inv' in ACCSYM4.
   destruct ACCSYM4 as (stbl3 & EQ & ACCSYM4). subst.
-  
+
+  (** Compute the sizes *)
   generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM1).
   intros (DSZ1 & CSZ1). cbn in DSZ1, CSZ1.
   generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM2).
@@ -3511,16 +3534,8 @@ Proof.
   generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM4).
   intros (DSZ3 & CSZ3). cbn in DSZ3, CSZ3.
 
-  repeat split.
 
-  (** dsz3 = dsz1 + dsz2 *)
-  subst. admit.
-  (** csz3 = csz1 + csz2 *)
-  subst. admit.
-  (** symbtable equiv *)
-  clear DSZ1 CSZ1 DSZ2 CSZ2 Z0 Z Z2 Z1 DSZ3 CSZ3.
-  
-  (** Matching between remaining ids and external symbols*)
+  (** Matching between remaining ids and external definitions*)
   assert (defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
           defs_none_or_ext (prog_option_defmap p2) (map fst (PTree.elements t1)))
     as RM_DEFS.
@@ -3532,7 +3547,15 @@ Proof.
                                        (map fst (PTree.elements t1))
                                        (PTree.elements t1)) as RM_MATCH.
   { eapply PTree_extract_elements_combine_remain_match; eauto. }
-                                 
+
+  (** Compute the sizes for external definitions *)
+  generalize (combine_defs_none_or_ext RM_DEFS1 RM_DEFS2 RM_MATCH).
+  intros RMEXT.
+  erewrite ext_defs_code_size in Z.
+  erewrite ext_defs_data_size in Z0. 
+  subst z0 z. cbn in Z1, Z2.
+                            
+  (** Matching between remaining ids and external symbols*)
   assert (exists entries, PTree_combine_ids_defs_match 
                        (symbtable_to_tree (rev stbl1)) 
                        (symbtable_to_tree (rev stbl2'))
@@ -3544,7 +3567,7 @@ Proof.
            (defs2 := AST.prog_defs p2); eauto. }
   destruct RM_MATCH' as (rm_stbl & RM'_MATCH & RM_ENTRIES).
 
-  (** Matching between ids and internal symbols from program 2 *)    
+  (** Matching between ids and internal definitions from program 2 *)    
   assert (defs_some_int (prog_option_defmap p2)
                         (collect_internal_def_ids is_fundef_internal p2)) as DEFS2.
   { eapply collect_defs_some_int; eauto. }
@@ -3555,32 +3578,8 @@ Proof.
                                        (collect_internal_def_ids is_fundef_internal p2)
                                        defs2) as MATCH2.
   { eapply PTree_extract_elements_combine_match; eauto. }
-  
-  assert (z0 = 0). admit.
-  assert (z = 0). admit.
-  assert (z2 = dsz1). admit.
-  assert (z1 = csz1). admit.
-  subst.
 
-  assert (symbtable_entry_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
-  { admit. }
-  assert (symbtable_entry_sizes stbl3 dsz1 csz1 (AST.prog_defs p2)) as SIZES2.
-  { admit. }
-
-
-  assert (exists entries, PTree_combine_ids_defs_match 
-                       (symbtable_to_tree (rev stbl1)) 
-                       (symbtable_to_tree (rev stbl2'))
-                       link_symb_merge
-                       (collect_internal_def_ids is_fundef_internal p2)
-                       entries /\
-                     map snd entries = rev stbl3) as MATCH2'.
-  { eapply PTree_combine_ids_defs_match_intdefs_comm2
-           with (defs1:= (AST.prog_defs p1))
-                (defs2:= (AST.prog_defs p2)); eauto. }
-  destruct MATCH2' as (stbl4 & MATCH2' & ENTRIES2).
-  
-  (** Matching between ids and internal symbols from program 2 *)    
+  (** Matching between ids and internal definitions from program 1 *)    
   assert (defs_some_int (prog_option_defmap p1)
                         (collect_internal_def_ids is_fundef_internal p1)) as DEFS1.
   { eapply collect_defs_some_int; eauto. }
@@ -3598,6 +3597,32 @@ Proof.
     eapply PTree_extract_elements_combine_match; eauto. 
   }
   
+  (** Compute the sizes for internal symbols *)
+  clear DSZ1 CSZ1 DSZ2 CSZ2 Z2 Z1 DSZ3 CSZ3.
+
+  assert (z2 = dsz1). admit.
+  assert (z1 = csz1). admit.
+  subst.
+
+  assert (symbtable_entry_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
+  { admit. }
+  assert (symbtable_entry_sizes stbl3 dsz1 csz1 (AST.prog_defs p2)) as SIZES2.
+  { admit. }
+
+  (** Matching between ids and internal symbols from program 2 *)    
+  assert (exists entries, PTree_combine_ids_defs_match 
+                       (symbtable_to_tree (rev stbl1)) 
+                       (symbtable_to_tree (rev stbl2'))
+                       link_symb_merge
+                       (collect_internal_def_ids is_fundef_internal p2)
+                       entries /\
+                     map snd entries = rev stbl3) as MATCH2'.
+  { eapply PTree_combine_ids_defs_match_intdefs_comm2
+           with (defs1:= (AST.prog_defs p1))
+                (defs2:= (AST.prog_defs p2)); eauto. }
+  destruct MATCH2' as (stbl4 & MATCH2' & ENTRIES2).
+  
+  (** Matching between ids and internal symbols from program 1 *)    
   assert (exists entries, PTree_combine_ids_defs_match 
                        (symbtable_to_tree (rev stbl1)) 
                        (symbtable_to_tree (rev stbl2'))
@@ -3609,6 +3634,15 @@ Proof.
       with (defs1:= (AST.prog_defs p1))
            (defs2:= (AST.prog_defs p2)); eauto. }
   destruct MATCH1' as (stbl5 & MATCH1' & ENTRIES1).
+  
+  repeat split.
+
+  (** dsz3 = dsz1 + dsz2 *)
+  subst. admit.
+  (** csz3 = csz1 + csz2 *)
+  subst. admit.
+  (** symbtable equiv *)  
+
   
   (** Finish the proof using the determinacy of PTree_combine_ids_defs_match*)
   repeat rewrite rev_app_distr.
@@ -3827,9 +3861,6 @@ Proof.
 (*   split; eauto. *)
 (*   eapply symbtable_syneq_trans; eauto. *)
 Qed.
-
-
-
 
 
 Lemma match_prog_perm: forall p tp,
