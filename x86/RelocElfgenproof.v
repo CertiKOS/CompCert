@@ -9,6 +9,7 @@ Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import RelocProgram RelocProgSemantics3.
 Require Import RelocElf RelocElfSemantics.
+Require Import TablesEncodeproof.
 Require Import RelocElfgen.
 Import ListNotations.
 
@@ -137,3 +138,30 @@ Proof.
 Qed.
 
 End PRESERVATION.
+
+
+Definition link_reloc_elf_gen (p1 p2: RelocElf.elf_file) : option RelocElf.elf_file :=
+  match link_reloc_decode_tables (reloc_program_of_elf_program p1) (reloc_program_of_elf_program p2) with
+    Some pp =>
+    match gen_reloc_elf pp with
+    | OK tp => Some tp
+    | _ => None
+    end
+  | _ => None
+  end.
+
+Instance linker2 : Linker RelocElf.elf_file.
+Proof.
+  eapply Build_Linker with (link := link_reloc_elf_gen) (linkorder := fun _ _ => True).
+  auto. auto. auto.
+Defined.
+
+Instance tl : @TransfLink _ _ TablesEncodeproof.linker2
+                          linker2
+                          match_prog.
+Proof.
+  red. simpl. unfold link_reloc_elf_gen.
+  unfold match_prog.
+  intros.
+  unfold link_reloc_decode_tables.
+Admitted.

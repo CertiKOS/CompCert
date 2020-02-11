@@ -7,6 +7,7 @@ Require Import SymbtableEncode SymbtableDecode.
 Require Import ShstrtableEncode ShstrtableDecode.
 Require Import ReloctablesEncode ReloctablesDecode.
 Require Import RelocProgSemantics2 RelocProgSemantics3.
+Require Import RelocBingenproof.
 Require Import TablesEncode.
 
 Import ListNotations.
@@ -289,11 +290,10 @@ Qed.
 
 End PRESERVATION.
 
-Require Import RelocLinking.
 Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option RelocProgram.program :=
   match RelocProgSemantics3.decode_tables p1, RelocProgSemantics3.decode_tables p2 with
     | OK pp1, OK pp2 =>
-      match link pp1 pp2 with
+      match RelocBingenproof.link_reloc_bingen pp1 pp2 with
         Some pp =>
         match TablesEncode.transf_program pp with
         | OK tp => Some tp
@@ -310,7 +310,7 @@ Proof.
   auto. auto. auto.
 Defined.
 
-Instance tl : @TransfLink _ _ RelocLinking.Linker_reloc_prog
+Instance tl : @TransfLink _ _ RelocBingenproof.linker2
                           linker2
                           match_prog.
 Proof.

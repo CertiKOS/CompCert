@@ -155,6 +155,15 @@ Proof.
   f_equal. congruence.
 Qed.
 
+Theorem reloc_prog_single_events p rs:
+  single_events (semantics p rs).
+Proof.
+  red. simpl. intros s t s' STEP.
+  inv STEP; simpl. omega.
+  eapply external_call_trace_length; eauto.
+  eapply external_call_trace_length; eauto.
+Qed.
+
 Theorem reloc_prog_receptive p rs:
   receptive (semantics p rs).
 Proof.

@@ -103,11 +103,13 @@ Require Symbtablegenproof.
 Require Reloctablesgen.
 Require Reloctablesgenproof.
 Require RelocBingen.
+Require RelocBingenproof.
 Require Stubgen.
 Require StrtableEncode.
 Require SymbtableEncode.
 Require ReloctablesEncode.
 Require RelocElfgen.
+Require RelocElfgenproof.
 Require EncodeRelocElf.
 Require RelocElf.
 Require ShstrtableEncode.
@@ -244,7 +246,11 @@ Definition transf_c_program_bytes' (p: Csyntax.program) :=
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  @@@ time "Generation of relocation table" Reloctablesgen.transf_program.
+  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
+  @@@ time "Encoding of tables" TablesEncode.transf_program
+  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
+.
 
 Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
@@ -461,8 +467,9 @@ Definition bytes_passes :=
   ::: mkpass PermuteProgproof.match_prog
   ::: mkpass SymbtablegenSep.match_prog
   ::: mkpass Reloctablesgenproof.match_prog
-  (* ::: mkpass RelocBinDecode.match_prog  (* I suppose this is what it will be ? *) *)
-  (* ::: mkpass TablesEncodeproof.match_prog *)
+  ::: mkpass RelocBingenproof.match_prog
+  ::: mkpass TablesEncodeproof.match_prog
+  ::: mkpass RelocElfgenproof.match_prog
   ::: pass_nil _.
 
 Definition match_prog_bytes :=
@@ -649,12 +656,15 @@ Proof.
   unfold time in T.
   destruct (Asmlabelgen.transf_program p1) eqn:RTP; simpl in T; try discriminate.
   destruct (Symbtablegen.transf_program (PadInitData.transf_program (PadNops.transf_program p0))) eqn:STG; simpl in T; try discriminate.
+  destruct (Reloctablesgen.transf_program p2) eqn: RTG; simpl in T; try discriminate.
+  destruct (RelocBingen.transf_program p3) eqn: RBG; simpl in T; try discriminate.
+  destruct (TablesEncode.transf_program p4) eqn: TE; simpl in T; try discriminate.
   red.
   repeat rewrite compose_passes_app.
   generalize (transf_c_program_real_match _ _ TP).
   intros MTH. red in MTH.
   rewrite compose_passes_app in MTH.
-  destruct MTH as (p3 & PSS1 & PSS2).
+  destruct MTH as (p6 & PSS1 & PSS2).
   eexists; split; eauto.
   rewrite compose_passes_app.
   eexists; split; eauto.
@@ -672,7 +682,13 @@ Proof.
   red.
   eexists; split; eauto.
   apply RelocProgSyneq.reloc_prog_syneq_refl.
-  eexists; split; eauto.
+  eexists; split.
+  apply Reloctablesgenproof.transf_program_match. eauto.
+  eexists; split.
+  apply RelocBingenproof.transf_program_match. eauto.
+  eexists; split.
+  apply TablesEncodeproof.transf_program_match. eauto.
+  eauto.
 Qed.
 
 
@@ -759,7 +775,9 @@ Definition reloc_fn_stack_requirements (tp: RelocProgram.program) (id:ident) : Z
     | _ => 0
     end
   end.
-  
+
+Definition elf_fn_stack_requirements (tp: RelocElf.elf_file) (id:ident) : Z :=
+  reloc_fn_stack_requirements (RelocElfSemantics.reloc_program_of_elf_program tp) id.
 
 Definition printable_oracle (tp: Asm.program) : list (ident * Z) :=
   fold_left (fun acc gd =>
@@ -1314,10 +1332,34 @@ Lemma Reloctablesgen_fn_stack_requirements_match:
 Proof.
 Admitted.
 
+
+Lemma RelocBingen_fn_stack_requirements_match: 
+  forall p tp
+    (FM: RelocBingenproof.match_prog p tp),
+    reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
+Proof.
+Admitted.
+
+
+Lemma TablesEncode_fn_stack_requirements_match: 
+  forall p tp
+    (FM: TablesEncodeproof.match_prog p tp),
+    reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
+Proof.
+Admitted.
+
+
+Lemma RelocElfGen_fn_stack_requirements_match: 
+  forall p tp
+    (FM: RelocElfgenproof.match_prog p tp),
+    reloc_fn_stack_requirements p = elf_fn_stack_requirements tp.
+Proof.
+Admitted.
+
 Theorem c_semantic_preservation_bytes:
   forall p tp,
     match_prog_bytes p tp ->
-    backward_simulation (Csem.semantics (reloc_fn_stack_requirements tp) p) (RelocProgSemantics1.semantics tp (Asm.Pregmap.init Values.Vundef)).
+    backward_simulation (Csem.semantics (elf_fn_stack_requirements tp) p) (RelocElfSemantics.semantics tp (Asm.Pregmap.init Values.Vundef)).
 Proof.
   intros.
   unfold match_prog_bytes in H.
@@ -1326,12 +1368,12 @@ Proof.
   rewrite compose_passes_app in P.
   destruct P as (pi' & RP & FP). 
   simpl in FP.
-  destruct FP as (p2 & FP & p3 & PP & p4 & PP1 & p5 & PM & p6 & SG & p7 & RTG & EQ). subst.
+  destruct FP as (p2 & FP & p3 & PP & p4 & PP1 & p5 & PM & p6 & SG & p7 & RTG & p8 & RBG & p9 & TE & p10 & REG & EQ). subst.
   assert (match_prog_real p pi'). red.
   apply compose_passes_app. eexists; split; eauto.
   eapply compose_backward_simulation.
-  apply RelocProgSemantics1.reloc_prog_single_events.
-  replace (reloc_fn_stack_requirements tp) with (fn_stack_requirements pi').
+  apply RelocProgSemantics2.reloc_prog_single_events.
+  replace (elf_fn_stack_requirements tp) with (fn_stack_requirements pi').
   apply c_semantic_preservation_real; auto.
   eapply eq_trans.
   apply Asmlabelgen_fn_stack_requirements_match; eauto.
@@ -1343,7 +1385,15 @@ Proof.
   apply Perm_fn_stack_requirements_match; eauto.
   eapply eq_trans.
   apply Symbtablegen_fn_stack_requirements_match; eauto.
+  eapply eq_trans.
   apply Reloctablesgen_fn_stack_requirements_match; eauto.
+  eapply eq_trans.
+  apply RelocBingen_fn_stack_requirements_match; eauto.
+  eapply eq_trans.
+  apply TablesEncode_fn_stack_requirements_match; eauto.
+  eapply eq_trans.
+  apply RelocElfGen_fn_stack_requirements_match; eauto.
+  auto.
   eapply forward_to_backward_simulation.
   eapply compose_forward_simulations.
   eapply Asmlabelgenproof.transf_program_correct; eauto.
@@ -1353,15 +1403,21 @@ Proof.
   eapply PadInitDataproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.
   eapply PermuteProgproof.transf_program_correct; eauto.
-  red in SG. destruct SG as (p7 & SG & SYNEQ).
+  red in SG. destruct SG as (p10 & SG & SYNEQ).
   eapply compose_forward_simulations.
   eapply Symbtablegenproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.
   apply RelocProgSyneqproof.transf_program_correct; eauto.
+  eapply compose_forward_simulations.
   eapply Reloctablesgenproof.transf_program_correct; eauto.
+  eapply compose_forward_simulations.
+  eapply RelocBingenproof.transf_program_correct; eauto.
+  eapply compose_forward_simulations.
+  eapply TablesEncodeproof.transf_program_correct; eauto; admit.
+  apply RelocElfgenproof.transf_program_correct; eauto. admit. admit.
   eapply RealAsm.real_asm_receptive.
-  eapply RelocProgSemantics1.semantics_determinate.
-Qed.
+  eapply RelocProgSemantics3.semantics_determinate.
+Admitted.
 
 
 
@@ -1430,7 +1486,7 @@ Qed.
 Theorem transf_c_program_correct_bytes:
   forall p tp,
     transf_c_program_bytes' p = OK tp ->
-    backward_simulation (Csem.semantics (reloc_fn_stack_requirements tp) p) (RelocProgSemantics1.semantics tp (Asm.Pregmap.init Values.Vundef)).
+    backward_simulation (Csem.semantics (elf_fn_stack_requirements tp) p) (RelocElfSemantics.semantics tp (Asm.Pregmap.init Values.Vundef)).
 Proof.
   intros. apply c_semantic_preservation_bytes. apply transf_c_program_bytes_match; auto.
 Qed.
@@ -1556,12 +1612,13 @@ Proof.
 Qed.
 
 
+(*
 Theorem separate_transf_c_program_correct_bytes:
   forall c_units reloc_units c_program,
   nlist_forall2 (fun cu tcu => transf_c_program_bytes' cu = OK tcu) c_units reloc_units ->
   link_list c_units = Some c_program ->
   exists reloc_program, 
-      link_list (LA:= Reloctablesgenproof.reloctablesgen_linker) reloc_units = Some reloc_program
+      link_list reloc_units = Some reloc_program
       /\
       let init_stk := mk_init_stk_reloc reloc_program in
       backward_simulation 
@@ -1576,6 +1633,7 @@ Proof.
   destruct H2 as (reloc_program & P & Q).
   exists reloc_program; split; auto. apply c_semantic_preservation_bytes; auto.
 Qed.
+*)
 
 (* Theorem separate_transf_c_program_correct_mc: *)
 (*   forall c_units asm_units c_program, *)
