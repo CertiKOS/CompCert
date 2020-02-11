@@ -1,7 +1,7 @@
 (* *******************  *)
 (* Author: Yuting Wang  *)
 (* Date:   Sep 18, 2019 *)
-(* *******************  *)
+(* **********   *********  *)
 
 Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.

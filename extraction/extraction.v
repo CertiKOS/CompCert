@@ -33,8 +33,6 @@ Require Cexecimpl.
 Require cparser.Parser.
 Require Initializers.
 Require Int31.
-Require RawBinary.
-Require RawBingen.
 
 (* Standard lib *)
 Require Import ExtrOcamlBasic.
@@ -180,9 +178,6 @@ Cd "extraction".
 
 Separate Extraction
    Compiler.transf_c_program Compiler.transf_cminor_program 
-   Compiler.transf_c_program_bin Compiler.transf_cminor_program_bin
-   Compiler.transf_c_program_decode_encode_bin
-   Compiler.transf_cminor_program_decode_encode_bin
    Compiler.transf_c_program_bytes
    Cexecimpl.do_initial_state Cexecimpl.do_step Cexecimpl.at_final_state
    Cexecimpl.step_expr Cexecimpl.init_mem Cexecimpl.state

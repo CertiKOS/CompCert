@@ -51,14 +51,6 @@ Require Stacking.
 Require Mach2Mach2.
 Require Asmgen.
 Require PseudoInstructions.
-Require SegAsmgen.
-Require TAsmlabelgen.
-Require TAsmcallgen.
-Require TAsmgidgen.
-Require TAsmFillNop.
-Require FlatAsmgen.
-Require FlatBingen.
-Require RawBingen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -84,11 +76,6 @@ Require RawAsmproof.
 Require RealAsmproof2.
 Require RealAsmgen.
 Require PseudoInstructionsproof.
-Require SegAsmgenproof.
-Require SegAsmGlobenv.
-Require SegAsmProgram.
-Require SegAsmgen.
-Require SegAsmSep.
 Require Asmlabelgen.
 Require Asmlabelgenproof.
 Require PadNops.
@@ -122,8 +109,6 @@ Require RelocProgSyneq.
 Require RelocProgSyneqproof.
 (** Command-line flags. *)
 Require Import Compopts.
-
-Require Import FlatBinDecode.
 
 
 (** Pretty-printers (defined in Caml). *)
@@ -256,65 +241,11 @@ Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program.
 
-  
-Definition transf_c_program_flatasm p : res SegAsm.program :=
-  transf_c_program_real p
-  @@@ time "Generation of SegAsm" SegAsmgen.transf_program.
-
-Definition transf_c_program_tasm p : res TransSegAsm.program :=
-  transf_c_program_flatasm p
-  @@@ time "Generation of relative jumps in SegAsm" TAsmlabelgen.transf_program
-  @@ time "Generation of short calls in SegAsm" TAsmcallgen.transf_program
-  @@ time "Generation of addresses of global ids in SegAsm" TAsmgidgen.transf_program
-  @@ time "Fill in nops in SegAsm" TAsmFillNop.transf_program.
-
-Definition transf_c_program_bin p : res RawBinary.program :=
-  transf_c_program_tasm p
-  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
-  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
-  @@@ time "Generation of raw binary code" RawBingen.transf_program.
-
-
-Definition transf_c_program_decode_encode_bin p : res RawBinary.program :=
-  transf_c_program_tasm p
-  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
-  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
-  @@@ time "Decode binary back into FlatAsm" FlatBinDecode.transf_program
-  @@@ time "Encode FlatAsm back into binary" FlatBingen.transf_program
-  @@@ time "Generation of raw binary code" RawBingen.transf_program.
-
-
 Definition transf_cminor_program_real (p:Cminor.program) : res Asm.program :=
   transf_cminor_program p
   @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
-
-Definition transf_cminor_program_flatasm (p:Cminor.program) : res SegAsm.program :=
-  transf_cminor_program_real p
-  @@@ time "Generation of SegAsm" SegAsmgen.transf_program.
-
-Definition transf_cminor_program_tasm (p:Cminor.program) : res TransSegAsm.program :=
-  transf_cminor_program_flatasm p
-  @@@ time "Generation of relative jumps in SegAsm" TAsmlabelgen.transf_program
-  @@ time "Generation of short calls in SegAsm" TAsmcallgen.transf_program
-  @@ time "Generation of addresses of global ids in SegAsm" TAsmgidgen.transf_program
-  @@ time "Fill in nops in SegAsm" TAsmFillNop.transf_program.
-
-Definition transf_cminor_program_bin (p:Cminor.program) : res RawBinary.program :=
-  transf_cminor_program_tasm p
-  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
-  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
-  @@@ time "Generation of raw binary code" RawBingen.transf_program.
-
-Definition transf_cminor_program_decode_encode_bin (p:Cminor.program) : res RawBinary.program :=
-  transf_cminor_program_tasm p
-  @@@ time "Generation of assembly with a flat memory" FlatAsmgen.transf_program
-  @@@ time "Generation of binary code with a flat memory" FlatBingen.transf_program
-  @@@ time "Decode binary back into FlatAsm" FlatBinDecode.transf_program
-  @@@ time "Encode FlatAsm back into binary" FlatBingen.transf_program
-  @@@ time "Generation of raw binary code" RawBingen.transf_program.
-
 
 Definition transf_c_program_test_symbtablegen (p: Csyntax.program) :=
   transf_c_program_real p
@@ -433,13 +364,6 @@ Definition real_asm_passes :=
 
 Definition match_prog_real :=
   pass_match (compose_passes (passes_app CompCert's_passes real_asm_passes)).
-
-Definition flat_asm_passes :=
-  passes_app real_asm_passes
-             (mkpass SegAsmgenproof.match_prog ::: pass_nil _).
-
-Definition match_prog_flat := 
-  pass_match (compose_passes (passes_app CompCert's_passes flat_asm_passes)).
 
 Definition reloc_asm_passes :=
              (mkpass Asmlabelgenproof.match_prog ::: pass_nil _).
@@ -580,52 +504,6 @@ Proof.
 Qed.
   
 
-Theorem transf_c_program_flat_match:
-  forall p tp,
-    transf_c_program_flatasm p = OK tp ->
-    match_prog_flat p tp.
-Proof.
-  intros p tp T.
-  unfold transf_c_program_flatasm in T.
-  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate.
-  unfold time in T.
-  unfold match_prog_flat.
-  rewrite compose_passes_app.
-  apply transf_c_program_real_match in TP.
-  unfold match_prog_real in TP.
-  rewrite compose_passes_app in TP.
-  destruct TP as (pi1 & CP & CPR).
-  exists pi1; split; auto.
-  unfold flat_asm_passes. simpl. 
-  unfold real_asm_passes in CPR. simpl in CPR.
-  destruct CPR as (p2 & RPM & p3 & PM & p4 & PIM & EQ). subst.
-  eexists; split; eauto.
-  eexists; split; eauto.
-Qed.
-
-(* Theorem transf_c_program_mc_match: *)
-(*   forall p tp, *)
-(*     transf_c_program_mc p = OK tp -> *)
-(*     match_prog_mc p tp. *)
-(* Proof. *)
-(*   intros p tp T. *)
-(*   unfold transf_c_program_mc in T. *)
-(*   destruct (transf_c_program_flatasm p) as [p1|e] eqn:TP; simpl in T; try discriminate. *)
-(*   unfold time in T. *)
-(*   unfold match_prog_mc. *)
-(*   rewrite compose_passes_app. *)
-(*   apply transf_c_program_flat_match in TP. *)
-(*   unfold match_prog_flat in TP. *)
-(*   rewrite compose_passes_app in TP. *)
-(*   destruct TP as (pi1 & CP & CPR). *)
-(*   exists pi1; split; auto. *)
-(*   unfold mc_passes. simpl.  *)
-(*   unfold flat_asm_passes, real_asm_passes in CPR. simpl in CPR. *)
-(*   destruct CPR as (p3 & PM & p4 & PIM & p5 & FAG & EQ). subst. *)
-(*   eexists; split; eauto. *)
-(*   eexists; split; eauto. *)
-(* Qed. *)
-
 Theorem transf_c_program_test_symbtablegen_match :
   forall p tp,
     transf_c_program_test_symbtablegen p = OK tp ->
@@ -746,26 +624,6 @@ Definition fn_stack_requirements (tp: Asm.program) (id: ident) : Z :=
   | None => 0
   end.
 
-Definition flat_fn_stack_requirements (tp: SegAsm.program) (id: ident) : Z :=
-  match List.find (fun '(id',_,_) => ident_eq id id') (SegAsmProgram.prog_defs tp) with
-  | None => 0
-  | Some (_, def, _) =>
-    match def with
-    | Some (Gfun (Internal f)) => SegAsmProgram.fn_stacksize f
-    | _ => 0
-    end
-  end.
-
-Definition mc_fn_stack_requirements (tp: TransSegAsm.program) (id: ident) : Z :=
-  match List.find (fun '(id',_,_) => ident_eq id id') (SegAsmProgram.prog_defs tp) with
-  | None => 0
-  | Some (_, def, _) =>
-    match def with
-    | Some (Gfun (Internal f)) => SegAsmProgram.fn_stacksize f
-    | _ => 0
-    end
-  end.
-
 Definition reloc_fn_stack_requirements (tp: RelocProgram.program) (id:ident) : Z :=
   match List.find (fun '(id',_) => ident_eq id id') (RelocProgram.prog_defs tp) with
   | None => 0
@@ -829,10 +687,6 @@ Qed.
 Definition mk_init_stk {F V} (p: AST.program F V) : StackADT.stack :=
   (Some (StackADT.make_singleton_frame_adt
            (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv p)) 0 0), nil) :: nil .
-
-Definition mk_init_stk_flat {I D} (p: @SegAsmProgram.program I D) : StackADT.stack :=
-  (Some (StackADT.make_singleton_frame_adt
-           (SegAsmGlobenv.Genv.genv_next (SegAsmProgram.globalenv p)) 0 0), nil) :: nil .
 
 Definition mk_init_stk_reloc (p: RelocProgram.program) : StackADT.stack :=
   (Some (StackADT.make_singleton_frame_adt
@@ -1126,159 +980,6 @@ Proof.
     exploit IHl; eauto. 
 Qed.
 
-Lemma flat_fn_stack_requirements_match: forall p tp
-    (FM: SegAsmgenproof.match_prog p tp),
-    fn_stack_requirements p = flat_fn_stack_requirements tp.
-Proof.
-  intros.
-  unfold fn_stack_requirements.
-  unfold flat_fn_stack_requirements.
-  apply Axioms.extensionality. intro i.
-  destr.
-  - unfold Globalenvs.Genv.find_funct_ptr.
-    generalize FM. intros FM'.
-    unfold SegAsmgenproof.match_prog, SegAsmgen.transf_program in FM'.
-    repeat destr_in FM'. destruct w.
-    exploit Globalenvs.Genv.find_symbol_def_inversion; eauto. intros IN.
-    exploit SegAsmgenproof.transl_prog_pres_def; eauto.
-    intros (def' & sb & IN' & TLDEF).
-    exploit SegAsmgenproof.transl_prog_list_norepet; eauto.
-    intros NPT.
-    erewrite find_unique; eauto.
-    destruct (Globalenvs.Genv.find_def (Globalenvs.Genv.globalenv p) b) eqn:FDEF.
-    destruct g0. destruct f. 
-    monadInv TLDEF. erewrite SegAsmgenproof.transl_fun_pres_stacksize; eauto.
-    monadInv TLDEF. auto.
-    SegAsmgenproof.monadInvX TLDEF. auto.
-    monadInv TLDEF. auto.
-  - assert (~ In i (prog_defs_names p)). 
-    eapply Globalenvs.Genv.find_symbol_inversion_none; eauto.
-    unfold SegAsmgenproof.match_prog, SegAsmgen.transf_program in FM.
-    repeat destr_in FM. 
-    assert (~ exists def sb, In (i, def, sb) (SegAsmProgram.prog_defs tp)).
-    eapply SegAsmgenproof.transl_prog_pres_non_def; eauto.
-    destr. apply find_some in Heqo0. destruct p0. destruct p0.
-    destruct Heqo0. exfalso. apply H0. destruct ident_eq. 
-    subst. do 2 eexists; eauto. inv H3.
-Qed.
-
-Theorem c_semantic_preservation_flat:
-  forall p tp,
-    match_prog_flat p tp ->
-    backward_simulation (Csem.semantics (flat_fn_stack_requirements tp) p) (SegAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros.
-  unfold match_prog_flat in H.
-  unfold flat_asm_passes in H.
-  rewrite compose_passes_app in H. 
-  destruct H as (pi & MP & P).
-  rewrite compose_passes_app in P.
-  destruct P as (pi' & RP & FP). simpl in FP.
-  destruct FP as (p2 & FP & EQ). subst p2.
-  assert (match_prog_real p pi'). red. 
-  apply compose_passes_app. eexists; split; eauto.
-  eapply compose_backward_simulation.
-  apply SegAsm.flat_asm_single_events.
-  replace (flat_fn_stack_requirements tp) with (fn_stack_requirements pi').
-  apply c_semantic_preservation_real; auto.
-  apply flat_fn_stack_requirements_match; auto.
-  eapply forward_to_backward_simulation.
-  eapply SegAsmgenproof.transf_program_correct; eauto.
-  eapply RealAsm.real_asm_receptive.
-  eapply SegAsm.semantics_determinate.
-Qed.
-
-(* Lemma mc_fn_stack_requirements_match: forall p tp *)
-(*     (FM: MClabelgenproof.match_prog p tp), *)
-(*     flat_fn_stack_requirements p = mc_fn_stack_requirements tp. *)
-(* Proof. *)
-(*   intros. *)
-(*   unfold flat_fn_stack_requirements, mc_fn_stack_requirements. *)
-(*   apply Axioms.extensionality. intro i. *)
-(*   unfold MClabelgenproof.match_prog, MClabelgen.transf_program in FM. *)
-(*   repeat destr_in FM. monadInv H0. revert EQ. simpl. *)
-(*   generalize (SegAsmProgram.prog_defs p) x. clear. *)
-(*   induction l; simpl; intros; eauto. inv EQ. simpl. auto. *)
-(*   monadInv EQ. specialize (IHl _ EQ). *)
-(*   destruct a. destruct p0. simpl. simpl in EQ0. *)
-(*   destruct x0. destruct p0. *)
-(*   assert (i0 = i1). repeat destr_in EQ0. monadInv H0. auto. subst. *)
-(*   destruct (ident_eq i i1). simpl. *)
-(*   repeat destr_in EQ0; auto. monadInv H0; auto. *)
-(*   unfold MClabelgen.transl_fun in EQ0. monadInv EQ0; simpl. auto. *)
-(*   simpl. auto. *)
-(* Qed. *)
-
-Lemma flatasmgen_update_maps_lmap_code:
-  forall defs g l d c g' l' d' c',
-    SegAsmgen.update_maps g l d c defs = (g', l', d', c') ->
-    (forall i lb sb o, l i lb = Some (sb, o) -> sb = SegAsmProgram.code_segid) ->
-    forall i lb sb o,
-      l' i lb = Some (sb, o) -> sb = SegAsmProgram.code_segid.
-Proof.
-  intros defs g l d c g' l' d' c' H H0.
-  change ((fun g l d c =>
-           forall (i lb : ident) (sb : Segment.segid_type) (o : Integers.Ptrofs.int),
-  l i lb = Some (sb, o) -> sb = SegAsmProgram.code_segid
-) g' l' d' c').
-  eapply SegAsmgenproof.umind. eauto. auto.
-  clear. intros.
-  unfold SegAsmgen.update_maps_def in H.
-  repeat destr_in H; eauto.
-  clear H1. revert l c i l' z Heqp H0 H2.
-  generalize (Asm.fn_code f0). clear.
-  induction c; simpl; intros; eauto. inv Heqp. eauto.
-  rewrite SegAsmgenproof.update_instrs_cons in Heqp. destr_in Heqp.
-  specialize (IHc _ _ _ _ _ Heqp).
-  eapply IHc; eauto.
-  clear - Heqp0 H0.
-  unfold SegAsmgen.update_instr in Heqp0. inv Heqp0. intros. destr_in H.
-  unfold SegAsmgen.update_label_map in H. repeat destr_in H; eauto.
-  eauto.
-Qed.
-
-Lemma flatasmgen_make_maps_code:
-  forall p g l d c,
-    SegAsmgen.make_maps p = (g, l, d, c) ->
-    forall i lb sb o,
-      l i lb = Some (sb, o) -> sb = SegAsmProgram.code_segid.
-Proof.
-  unfold SegAsmgen.make_maps.
-  intros. eapply flatasmgen_update_maps_lmap_code; eauto. unfold SegAsmgen.default_label_map.
-  congruence.
-Qed.
-
-(* Theorem c_semantic_preservation_mc: *)
-(*   forall p tp, *)
-(*     match_prog_mc p tp -> *)
-(*     backward_simulation (Csem.semantics (mc_fn_stack_requirements tp) p) (MC.semantics tp (Asm.Pregmap.init Values.Vundef)). *)
-(* Proof. *)
-(*   intros. *)
-(*   unfold match_prog_mc in H. *)
-(*   unfold mc_passes in H. *)
-(*   rewrite compose_passes_app in H.  *)
-(*   destruct H as (pi & MP & P). *)
-(*   rewrite compose_passes_app in P. *)
-(*   destruct P as (pi' & RP & FP). simpl in FP. *)
-(*   destruct FP as (p2 & FP & EQ). subst p2. *)
-(*   assert (match_prog_flat p pi'). red.  *)
-(*   apply compose_passes_app. eexists; split; eauto. *)
-(*   eapply compose_backward_simulation. *)
-(*   apply MC.single_events. *)
-(*   replace (mc_fn_stack_requirements tp) with (flat_fn_stack_requirements pi'). *)
-(*   apply c_semantic_preservation_flat; auto. *)
-(*   apply mc_fn_stack_requirements_match; auto. *)
-(*   eapply forward_to_backward_simulation. *)
-(*   eapply MClabelgenproof.transf_program_correct; eauto. *)
-(*   unfold flat_asm_passes in RP. simpl in RP. *)
-(*   destruct RP as (p2 & PI & p3 & PIP & p4 & FAP & EQ). subst. *)
-(*   unfold SegAsmgenproof.match_prog, SegAsmgen.transf_program in FAP. *)
-(*   repeat destr_in FAP. unfold SegAsmgen.transl_prog_with_map in H1. monadInv H1. simpl. *)
-(*   clear - Heqp0. eapply flatasmgen_make_maps_code; eauto. *)
-(*   eapply SegAsm.flat_asm_receptive. *)
-(*   eapply MC.semantics_determinate. *)
-(* Qed. *)
-
 Lemma PadNops_fn_stack_requirements_match: 
   forall p tp
     (FM: PadNopsproof.match_prog p tp),
@@ -1466,23 +1167,6 @@ Proof.
   intros. apply c_semantic_preservation_reloc. apply transf_c_elim_label_match; auto.
 Qed.
 
-
-Theorem transf_c_program_correct_flat:
-  forall p tp,
-    transf_c_program_flatasm p = OK tp ->
-    backward_simulation (Csem.semantics (flat_fn_stack_requirements tp) p) (SegAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. apply c_semantic_preservation_flat. apply transf_c_program_flat_match; auto.
-Qed.
-
-(* Theorem transf_c_program_correct_mc: *)
-(*   forall p tp, *)
-(*     transf_c_program_mc p = OK tp -> *)
-(*     backward_simulation (Csem.semantics (mc_fn_stack_requirements tp) p) (MC.semantics tp (Asm.Pregmap.init Values.Vundef)). *)
-(* Proof. *)
-(*   intros. apply c_semantic_preservation_mc. apply transf_c_program_mc_match; auto. *)
-(* Qed. *)
-
 Theorem transf_c_program_correct_bytes:
   forall p tp,
     transf_c_program_bytes' p = OK tp ->
@@ -1590,6 +1274,7 @@ Proof.
 Qed.
 
 
+(*
 Theorem separate_transf_c_program_correct_flat:
   forall c_units asm_units c_program,
   nlist_forall2 (fun cu tcu => transf_c_program_flatasm cu = OK tcu) c_units asm_units ->
@@ -1610,7 +1295,7 @@ Proof.
   destruct H2 as (asm_program & P & Q).
   exists asm_program; split; auto. apply c_semantic_preservation_flat; auto.
 Qed.
-
+*)
 
 (*
 Theorem separate_transf_c_program_correct_bytes:
@@ -1635,32 +1320,6 @@ Proof.
 Qed.
 *)
 
-(* Theorem separate_transf_c_program_correct_mc: *)
-(*   forall c_units asm_units c_program, *)
-(*   nlist_forall2 (fun cu tcu => transf_c_program_mc cu = OK tcu) c_units asm_units -> *)
-(*   link_list c_units = Some c_program -> *)
-(*   exists asm_program,  *)
-(*       link_list asm_units = Some asm_program *)
-(*       /\ *)
-(*       let init_stk := mk_init_stk_flat asm_program in *)
-(*       backward_simulation (Csem.semantics (mc_fn_stack_requirements asm_program) c_program) (MC.semantics asm_program *)
-(*                                                                                                            (Asm.Pregmap.init Values.Vundef) *)
-(*                                                                                          ). *)
-(* Proof. *)
-(*   intros.  *)
-(*   assert (nlist_forall2 match_prog_mc c_units asm_units). *)
-(*   { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_mc_match; auto. } *)
-(*   assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_mc c_program asm_program). *)
-(*   { eapply link_list_compose_passes; eauto. } *)
-(*   destruct H2 as (asm_program & P & Q). *)
-(*   exists asm_program; split; auto. apply c_semantic_preservation_mc; auto. *)
-(* Qed. *)
-
-(* Theorem transf_asm_eliminate_label_match: *)
-(*   forall p tp, *)
-(*   transf_asm_eliminate_label p = OK tp -> *)
-(*   match_prog p tp. *)
-(* Proof. *)
 
 End WITHEXTERNALCALLS.
 

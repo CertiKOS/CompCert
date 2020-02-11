@@ -109,19 +109,10 @@ BACKEND=\
   Tailcall.v Tailcallproof.v \
 	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
 	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
-  Segment.v \
-  SegMemAccessors.v SegAsm.v SegAsmGlobenv.v SegAsmBuiltin.v SegAsmProgram.v \
-  SegAsmgen.v SegAsmgenproof.v SegAsmSep.v \
-  TransSegAsm.v TAsmlabelgen.v TAsmcallgen.v TAsmgidgen.v TAsmFillNop.v \
-  FlatProgram.v FlatAsm.v FlatAsmgen.v \
-  FlatBinary.v FlatBingen.v ElfLayout.v \
-  ValidLabel.v \
-  RawBingen.v RawBinary.v \
-  FlatBinDecode.v \
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
-  Symbtablegen.v NormalizeSymb.v Reloctablesgen.v Reloctablesgenproof.v \
+  Symbtablegen.v  Reloctablesgen.v Reloctablesgenproof.v \
 	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
 	TablesEncode.v \
