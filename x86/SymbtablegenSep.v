@@ -26,6 +26,15 @@ Local Transparent Linker_vardef.
 Local Transparent Linker_varinit.
 Local Transparent Linker_prog_ordered.
 
+
+Lemma in_map_filter: forall {A B} x (f: A -> B) g (l:list A),
+    In x (map f (filter g l)) -> In x (map f l).
+Proof.
+  induction l as [|y l].
+  - cbn. auto.
+  - cbn. destr. cbn. tauto.
+Qed.
+
 Lemma elements_of_acc_symb_to_list_perm': forall idstbl,
     list_norepet (map fst idstbl) ->
     Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl ->
@@ -2891,6 +2900,23 @@ Proof.
   congruence.
 Qed.
 
+Lemma PTree_Properties_of_list_tail: 
+  forall {A} (defs: list (ident * A)) id id' def',
+    id <> id' ->
+    (PTree_Properties.of_list ((id', def') :: defs)) ! id = 
+    (PTree_Properties.of_list defs) ! id.
+Proof.
+  intros A defs id id' def' NEQ.
+  match goal with 
+  | [ |- ?a = _ ] =>
+    destruct a eqn:EQ
+  end.
+  - symmetry.
+    erewrite PTree_Properties_of_list_tail_some; eauto.
+  - symmetry.
+    erewrite PTree_Properties_of_list_tail_none; eauto.
+Qed.
+
 
 Lemma update_code_data_size_inv: forall dsz1 csz1 def dsz2 csz2,
           update_code_data_size dsz1 csz1 def = (dsz2, csz2) ->
@@ -3012,12 +3038,51 @@ Definition defs_some_int {F V} {LV: Linker V}
   forall id, In id ids ->
         def_some_int is_fundef_internal (t ! id).
 
+
+Lemma filter_internal_defs_some_int: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    In id (map fst
+               (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_some_int is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. tauto.
+  - intros id NORPT IN. cbn in IN.
+    destruct def as (id', def').
+    destr_in IN. 
+    + cbn in IN. destruct IN as [EQ | IN]. 
+      * subst.
+        replace ((id, def') :: defs) with (nil ++ (id, def') :: defs) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+        inv NORPT. eauto.
+      * inv NORPT.
+        assert (id <> id'). 
+        { intros H. subst. apply H1.
+          eapply in_map_filter; eauto. }
+        erewrite PTree_Properties_of_list_tail; eauto.
+    + inv NORPT.
+      assert (id <> id'). 
+      { intros H. subst. apply H1.
+        eapply in_map_filter; eauto. }
+      erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
 Lemma collect_defs_some_int: 
   forall {F V} {LV: Linker V} (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
     defs_some_int (prog_option_defmap p)
                   (collect_internal_def_ids is_fundef_internal p).
-Admitted.
-
+Proof.
+  intros. 
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_some_int; eauto.
+Qed.
 
 Lemma link_prog_symb_comm_external: 
   forall did cid id def defs1 defs2 stbl1 stbl2 
@@ -3282,6 +3347,13 @@ Proof.
   eapply link_symb_merge_symm.
 Qed.
 
+Lemma acc_symb_size':
+  forall (d_id c_id : N) (defs : list (ident * option (globdef fundef unit)))
+    (s1 s2 : symbtable) (dsz1 csz1 dsz2 csz2 : Z),
+    fold_left (acc_symb d_id c_id) defs (s1, dsz1, csz1) = (s2, dsz2, csz2) ->
+    dsz2 = dsz1 + defs_data_size (map snd defs) /\
+    csz2 = csz1 + defs_code_size (map snd defs).
+Admitted.
 
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
     list_norepet (map fst (AST.prog_defs p1)) ->
@@ -3338,14 +3410,7 @@ Proof.
   apply reloc_symbtable_rev in RELOC.
   destruct RELOC as (stbl2' & RELOC & EQ). subst.
   rewrite rev_involutive in ACCSYM2'.  
-  
-  repeat split.
-  (** dsz3 = dsz1 + dsz2 *)
-  
-  admit.
-  (** csz3 = csz1 + csz2 *)
-  admit.
-  (** symbtable equiv *)
+
   rewrite fold_left_app in ACCSYM3.
   destruct (fold_left (acc_symb sec_data_id sec_code_id) 
                       (PTree.elements t1) ([], 0, 0)) eqn:ACCSYMRST.
@@ -3358,6 +3423,26 @@ Proof.
   destruct p.
   apply acc_symb_inv' in ACCSYM4.
   destruct ACCSYM4 as (stbl3 & EQ & ACCSYM4). subst.
+  
+  generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM1).
+  intros (DSZ1 & CSZ1). cbn in DSZ1, CSZ1.
+  generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM2).
+  intros (DSZ2 & CSZ2). cbn in DSZ2, CSZ2.
+  generalize (acc_symb_size' _ _ _ _ _ _ ACCSYMRST).
+  intros (Z0 & Z). cbn in Z0, Z.
+  generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM3).
+  intros (Z2 & Z1). cbn in Z2, Z1.
+  generalize (acc_symb_size' _ _ _ _ _ _ ACCSYM4).
+  intros (DSZ3 & CSZ3). cbn in DSZ3, CSZ3.
+
+  repeat split.
+
+  (** dsz3 = dsz1 + dsz2 *)
+  subst. admit.
+  (** csz3 = csz1 + csz2 *)
+  subst. admit.
+  (** symbtable equiv *)
+  clear DSZ1 CSZ1 DSZ2 CSZ2 Z0 Z Z2 Z1 DSZ3 CSZ3.
   
   (** Matching between remaining ids and external symbols*)
   assert (defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
