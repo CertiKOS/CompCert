@@ -3018,18 +3018,6 @@ Definition defs_none_or_ext {F V} {LV: Linker V}
   forall id, In id ids ->
         def_none_or_ext is_fundef_internal (t ! id).
 
-Lemma PTree_extract_elements_remain_external: 
-  forall {F V} {LV: Linker V} (p1 p2: AST.program (AST.fundef F) V) defs3 t1,
-    PTree_extract_elements
-      (collect_internal_def_ids is_fundef_internal p1 ++
-                                collect_internal_def_ids is_fundef_internal p2)
-      (PTree.combine link_prog_merge 
-                     (prog_option_defmap p1)
-                     (prog_option_defmap p2)) = Some (defs3, t1) ->
-    defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
-    defs_none_or_ext (prog_option_defmap p2) (map fst (PTree.elements t1)).
-Admitted.
-
 Definition def_some_int {F V} (fi:F -> bool) (def: option (option (globdef F V))) :=
   exists def', def = Some def' /\ is_def_internal fi def' = true.
 
@@ -3037,7 +3025,7 @@ Definition defs_some_int {F V} {LV: Linker V}
            (t: PTree.t (option (globdef (AST.fundef F) V))) ids :=
   forall id, In id ids ->
         def_some_int is_fundef_internal (t ! id).
-
+  
 
 Lemma filter_internal_defs_some_int: 
   forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
@@ -3083,6 +3071,94 @@ Proof.
   intros.
   eapply filter_internal_defs_some_int; eauto.
 Qed.
+
+
+Lemma filter_internal_defs_none_ext: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    ~In id (map fst
+                (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_none_or_ext is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. 
+    intros. rewrite PTree.gempty. red. auto.
+  - intros id NORPT NIN. cbn in NIN. inv NORPT.
+    destruct def as (id', def').
+    destr_in NIN.
+    + cbn in NIN. 
+      apply Decidable.not_or in NIN.
+      destruct NIN as [NEQ NIN].
+      erewrite PTree_Properties_of_list_tail; eauto.
+    + cbn in H1.
+      destruct (ident_eq id id').
+      * subst.
+        replace ((id', def') :: defs) with (nil ++ ((id', def') :: defs)) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+      * erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_none_ext: 
+  forall {F V} {LV: Linker V} ids (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    Forall (fun id => ~In id (collect_internal_def_ids is_fundef_internal p)) ids ->
+    defs_none_or_ext (prog_option_defmap p) ids.
+Proof.
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_none_ext; eauto.
+  rewrite Forall_forall in H0.
+  eauto.
+Qed.
+
+
+Lemma PTree_extract_elements_remain_ids_not_in: 
+  forall {A:Type} ids defs (t t': PTree.t A),
+    PTree_extract_elements ids t = Some (defs, t') ->
+    Forall (fun id' => ~ In id' ids) (map fst (PTree.elements t')).
+Proof.
+  intros A ids defs t t' EXT. 
+  generalize (PTree_extract_elements_remain _ _ _ _ EXT).
+  intros subst.
+  rewrite Forall_forall. intros id IN.
+  apply list_in_map_inv in IN.
+  destruct IN as ((id', def') & EQ & IN). subst. cbn.
+  apply PTree.elements_complete in IN. cbn.
+  apply PTree_remove_ids_not_in in IN; auto.
+Qed.
+
+
+Lemma PTree_extract_elements_remain_external: 
+  forall {F V} {LV: Linker V} (p1 p2: AST.program (AST.fundef F) V) defs3 t1,
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
+    PTree_extract_elements
+      (collect_internal_def_ids is_fundef_internal p1 ++
+                                collect_internal_def_ids is_fundef_internal p2)
+      (PTree.combine link_prog_merge 
+                     (prog_option_defmap p1)
+                     (prog_option_defmap p2)) = Some (defs3, t1) ->
+    defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
+    defs_none_or_ext (prog_option_defmap p2) (map fst (PTree.elements t1)).
+Proof.
+  intros F V LV p1 p2 defs3 t1 NORPT1 NORPT2 EXT.
+  generalize (PTree_extract_elements_remain_ids_not_in _ _ EXT).
+  intros NIN.
+  split.
+  - eapply collect_defs_none_ext; eauto.
+    rewrite Forall_forall in *. intros. 
+    apply NIN in H. intros IN. apply H.
+    rewrite in_app. auto.
+  - eapply collect_defs_none_ext; eauto.
+    rewrite Forall_forall in *. intros. 
+    apply NIN in H. intros IN. apply H.
+    rewrite in_app. auto.
+Qed.
+
 
 Lemma link_prog_symb_comm_external: 
   forall did cid id def defs1 defs2 stbl1 stbl2 
