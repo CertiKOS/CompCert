@@ -324,15 +324,11 @@ Proof.
     intros s1 s2 r HState HFinal.
     eapply transf_final_states; eauto.
   + simpl. intros s1 t s1' HStep s2 HState.
-    exists s1'.
-    split;auto.
+    fold ge in HStep.
+    generalize(step_simulation _ _ _ HStep s2 HState).
+    auto.
+Qed.
     
-
-    
-
-
-    
-Admitted.
 
 End PRESERVATION.
 
