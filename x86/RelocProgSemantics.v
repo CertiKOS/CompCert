@@ -531,6 +531,8 @@ Definition exec_instr (ge: Genv.t) (i: instruction) (rs: regset) (m: mem) : outc
   | Pcfi_adjust n => Next rs m
   | Pbuiltin ef args res =>
       Stuck                             (**r treated specially below *)
+  |Pnop => Next (nextinstr rs sz) m
+
   (** The following instructions and directives are not generated
       directly by [Asmgen], so we do not model them. *)
   | Padcl_ri _ _
