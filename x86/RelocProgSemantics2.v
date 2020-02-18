@@ -58,7 +58,7 @@ End WITHGE.
 Definition init_mem (p: program) :=
   let ge := RelocProgSemantics1.globalenv p in
   let stbl := prog_sectable p in
-  match RelocProgSemantics1.alloc_data_section ge stbl Mem.empty with
+  match alloc_data_section stbl Mem.empty with
   | None => None
   | Some m1 =>
     match RelocProgSemantics1.alloc_code_section stbl m1 with
