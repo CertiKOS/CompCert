@@ -23,22 +23,107 @@ Proof.
   auto.
 Qed.
 
+Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
+  match code, bytes  with
+  |nil, nil => True 
+  |h::t, _ =>
+   exists h' t', RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes = OK (h',t')
+                 /\  RelocBinDecode.instr_eq h h'
+                 /\ transl_code_spec t t' (ofs+instr_size h) rtbl_ofs_map  symbt
+  |_, _ => False
+  end.
 
 
+(* This lemma means the transl_code could preserve the spec 
+ * Specifically, if there're two list, code code', having the relation `transl_code_spec` ,
+ * where code is list asm, code' is list byte.
+ * Then after translation code2 starting from code', we'll get the result 
+ * that has `transl_code_spce` relation with (code++code2) 
+ *)
+Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z,
+    transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
+    -> fold_left (acc_instrs rtbl_ofs_map) code2 (OK (ofs + Z.of_nat (length code), code')) = OK (z, l)
+    -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map symbt.
+Admitted.
 
-
-
-Lemma decode_encode_refl: forall prog z code l,
-        fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog)))) code (OK (0, [])) = OK (z, l)
-        -> (exists c', (decode_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog)))(prog_symbtable prog) (length (rev l)) 0 (rev l) []) = OK c' /\ forall i ins ins',
-            (i<length c')%nat
-            -> nth_error  c' i = Some ins'
-            /\ nth_error code i = Some ins                                       
-            /\ RelocBinDecode.instr_eq ins ins').
+Lemma list_has_tail: forall {A:Type} (l:list A) n,
+    (length l = 1 + n)%nat
+    ->exists tail prefix, l = prefix++[tail].
 Proof.
+  intros A l n.
+  revert l.
+  induction n.
+  intros l H.
+  destruct l; simpl in H; inversion H.
+  exists a. exists [].
+  simpl.
+  generalize (length_zero_iff_nil l).
+  intros H0. destruct H0.
+  rewrite(H0 H1). auto.
+  intros l H.
+  replace (1 + Datatypes.S n)%nat with (Datatypes.S (1+n)%nat)%nat in H by omega.
+  destruct l; simpl in H; inversion H.
+  generalize (IHn l H1).
+  intros [tail [prefix HHasTail]].
+  exists tail. exists (a::prefix).
+  rewrite HHasTail. simpl. auto.
+Qed.
+
+Lemma prefix_success: forall rtbl a b ofs r z l,
+    fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
+    ->exists z' l', fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l').
+Admitted.
+
+Lemma suffix_success: forall rtbl a b ofs r z l z' l',
+    fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
+    ->fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l')
+    ->fold_left (acc_instrs rtbl) [b]  (OK (ofs + Z.of_nat (length a), r++l')) = OK (z, l).
 Admitted.
 
 
+Lemma decode_encode_refl: forall n prog z code l,
+    length code = n ->
+    fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog)))) code (OK (0, [])) = OK (z, l)
+    -> transl_code_spec code (rev l) 0 (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) (prog_symbtable prog).
+Proof.
+  intros n.
+  induction n.
+  (* n is O *)
+  admit.
+  (* n is S n *)
+  intros prog z code l HLength HEncode.
+  generalize (list_has_tail code _ HLength).
+  intros [lastInstr [prefix HTail]].
+
+  rewrite HTail in HEncode.
+  generalize (prefix_success _ _ _ _ _ _ _ HEncode).
+  intros [z' [l' HEncodePrefix]].
+
+  cut(length prefix = n).
+  intros HLengthN.
+  generalize (IHn prog z' prefix l' HLengthN HEncodePrefix).
+  intros HPrefix.
+  generalize (suffix_success _ _ _ 0 [] z l z' l'  HEncode HEncodePrefix).
+  intros HEncodeSuffix.
+  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ HPrefix HEncodeSuffix).
+  rewrite HTail.
+  auto.
+  admit.
+Admitted.
+
+
+Fixpoint instr_eq_list code1 code2:=
+  match code1, code2 with
+  |nil, nil => True
+  |h::t, h'::t' => RelocBinDecode.instr_eq h h' /\ instr_eq_list t t'
+  |_, _ => False
+  end.
+
+Lemma spec_decode_ex: forall code l rtbl symtbl,
+    transl_code_spec code l 0 rtbl symtbl ->
+    exists code', decode_instrs' rtbl symtbl l = OK code'
+                  /\ instr_eq_list code code'.
+Admitted.
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
@@ -83,15 +168,14 @@ Proof.
     unfold transl_code in EQ0.
     monadInv  EQ0.
     destruct x. monadInv EQ2.    
-    generalize (decode_encode_refl prog _ _ _  EQ1).
+    generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
+    intros HTranslSpec.
+    generalize (spec_decode_ex code (rev l) _ _ HTranslSpec).
     intros [c' HEncodeDecode].
-    destruct HEncodeDecode as [HDecode HDecodeSpec].
+    destruct HEncodeDecode as [HDecode HDecodeEQ].
     econstructor.
-
-    (* decode_prog_code_section *)
     unfold decode_prog_code_section.
     simpl. unfold sec_code_id.
-    unfold decode_instrs'.
     rewrite HDecode. simpl. eauto.
 
     (* init_mem *)
