@@ -2684,10 +2684,50 @@ Proof.
   eauto.
 Qed.
 
+
+Lemma reloc_iter_some_inv: forall f t1 t2 t3,
+   fold_right (reloc_iter f) (Some t1) t2 = Some t3 ->
+   exists t4, fold_right (reloc_iter f) (Some []) t2 = Some t4 /\ t3 = t4 ++ t1.
+Proof.
+  induction t2 as [| e2 t2].
+  - cbn. inversion 1. subst. eauto.
+  - cbn. intros t3 H.
+    unfold reloc_iter in H. destr_in H.
+    destr_in H. inv H.
+    apply IHt2 in Heqo.
+    destruct Heqo as (t4' & FL & EQ). subst.
+    rewrite FL. 
+    unfold reloc_iter.
+    rewrite Heqo0. eauto.
+Qed.
+
+
+Lemma reloc_iter_none: forall f t,
+   fold_right (reloc_iter f) None t = None.
+Proof.
+  induction t as [| e t].
+  - cbn. auto.
+  - cbn. rewrite IHt. cbn. auto.
+Qed.
+
 Lemma reloc_symbtable_rev : forall f stbl1 stbl2,
     reloc_symbtable f (rev stbl1) = Some stbl2 ->
     exists stbl3, reloc_symbtable f stbl1 = Some stbl3 /\ stbl2 = rev stbl3.
-Admitted.
+Proof.
+  induction stbl1 as [|e stbl1].
+  - cbn. inversion 1. subst. eauto.
+  - cbn. 
+    rewrite fold_right_app. cbn.
+    intros stbl2 H.
+    destruct (reloc_symbol f e) eqn:RELOC. 
+    + apply reloc_iter_some_inv in H.
+      destruct H as (t4 & FL & EQ). subst.
+      apply IHstbl1 in FL.
+      destruct FL as (stbl3 & RELOC' & EQ). subst.
+      unfold reloc_iter.
+      setoid_rewrite RELOC'. rewrite RELOC. eauto.
+    + rewrite reloc_iter_none in H. congruence.
+Qed.
 
 
 Fixpoint elems_before_aux {A B} 
