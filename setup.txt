@@ -1,0 +1,92 @@
+Setup the Environment for Developing Stack-Aware CompCert
+====================================================================
+For this we shall use opam (version >= 2.0.0)
+
+1. Setup opam
+
+   * Install opam v2.x.x
+
+   * Initialize the root directory of opam. 
+
+     It is highly recommended to setup a non-default and separate directory 
+     solely for compiling SA-CompCert, so as to avoid messing up with
+     the default opam setup and so that you have total control
+     of the compilation environment.
+
+     For instance, you can open a terminal and run the following command
+
+        opam init --root=~/.opam_sacc
+
+     to initialize "~/.opam_sacc" as an opam root dir.
+
+     After that, you should run 
+
+        eval $(opam env --root=~/.opam_sacc --set-root)
+        
+     in your terminal to setup the environment variables necessary
+     for running opam with "~/.opam_sacc" as its root dir. This should
+     be done every time you want to work with opam using this root in the
+     future.
+
+   * Install ocaml using opam.
+
+     You should use a version of ocaml capable of compiling Coq v8.6.1.
+     I am currently using "ocaml-base-compiler.4.05.0". Run the following 
+     command to install this version:
+     
+        opam switch create ocaml-base-compiler.4.05.0
+
+     This will install ocaml v4.05.0 to the following directory
+
+        ~/.opam_sacc/ocaml-base-compiler.4.05.0
+
+     In the future, all the ocaml packages will be installed there.
+        
+   * Install Coq v8.6.1
+
+     Run the following command to install Coq v.8.6.1
+     
+        opam pin add coq 8.6.1
+
+     You may need to install some packages Coq depends on. You may
+     also need to install flocq package for Coq if it is not installed
+     by default. Search online to find out how to do that in opam.
+
+   * Install menhir v.20170712 or later
+     
+     Like the installation of Coq, you can do that by running 
+
+        opam pin add menhir 20170712
+
+     Now you should have everything ready for compiling SA-CompCert
+
+2. Configure and compile
+
+   Clone the SA-CompCert repo from github into a local dir. 
+   In that dir, run the following command to do the configuration:
+
+      ./configure x86_32-linux
+
+   If you setup the compilation environment right, the configuration
+   script should terminate successfully. Otherwise, go back to step 1
+   to redo the configuration.
+
+   Run the following command to compile SA-CompCert:
+
+      make (or make -j x if you want to run make concurrently
+            where x is the number of the concurrent threads)
+
+   Once this is finished. You will have a compiled version of SA-CompCert.
+
+3. To run the Coq code of SA-CompCert in Emacs, download and setup the 
+   latest version of Proof General. Simply open the Coq scripts using Emacs,
+   the proof general will read in the '_CoqProject' to configure the 
+   programming environment. After that you can navigate the script using
+   the standard proof general commands.
+   
+   
+   
+
+
+   
+   
