@@ -25,44 +25,6 @@ Definition option_prop2 {A} (P: A -> A -> Prop) (oa ob: option A): Prop :=
 
 (** This file holds definitions related to our stack abstract data type (ADT).   *)
 
-(** * Stack permissions *)
-
-Inductive stack_permission: Type :=
-  Public
-| Private.
-
-Definition stack_perm_eq: forall (p1 p2: stack_permission), {p1 = p2} + {p1 <> p2}.
-Proof.
-  decide equality.
-Qed.
-
-(** Order on permissions: [Public] is greater than [Private]. Moreover,
-    [stack_perm_le] is reflexive. *)
-
-Definition stack_perm_le (sp1 sp2: stack_permission) :=
-  match sp1, sp2 with
-  | Private, _ => True
-  | Public, Public => True
-  | Public, _ => False
-  end.
-
-Lemma stack_perm_le_refl:
-  forall p,
-    stack_perm_le p p.
-Proof.
-  destruct p; red; auto.
-Qed.
-
-Lemma stack_perm_le_trans:
-  forall p1 p2 p3,
-    stack_perm_le p1 p2 ->
-    stack_perm_le p2 p3 ->
-    stack_perm_le p1 p3.
-Proof.
-  destruct p1,p2,p3; unfold stack_perm_le; intros; congruence.
-Qed.
-
-
 (** * Block information  *)
 
 (** A block information records its size ([frame_size]) and the stack
@@ -71,54 +33,18 @@ Qed.
 Record frame_info :=
   {
     frame_size: Z;
-    frame_perm: Z -> stack_permission;
     frame_size_pos: (0 <= frame_size)%Z;
   }.
 
 Definition public_frame_info sz : frame_info :=
   {|
     frame_size := Z.max 0 sz;
-    frame_perm := fun _ => Public;
     frame_size_pos := Z.le_max_l _ _;
   |}.
-
-Program Definition frame_info_of_size_and_pubrange (size: Z) (pubrange: Z * Z) : option frame_info :=
-  if zlt 0 size
-  then
-    let '(lo,hi) := pubrange in
-    Some {| frame_size := size; frame_perm := fun o => if zle lo o && zlt o hi then Public else Private; |}
-  else None.
-Next Obligation.
-  omega.
-Qed.
-
-Definition frame_public f o := frame_perm f o = Public.
-
-Definition frame_private f o := frame_perm f o = Private.
-
-Definition frame_public_dec: forall f o, {frame_public f o} + {~ frame_public f o}.
-Proof.
-  unfold frame_public; intros; apply stack_perm_eq.
-Qed.
-
-Definition frame_private_dec: forall f o, {frame_private f o} + {~ frame_private f o}.
-Proof.
-  unfold frame_private; intros; apply stack_perm_eq.
-Qed.
-
-Definition public_stack_range (lo hi: Z) (fi: frame_info) : Prop :=
-  forall ofs, (lo <= ofs < hi)%Z -> frame_public fi ofs.
-
-Lemma public_stack_range_lo_ge_hi:
-  forall lo hi fi, (hi <= lo)%Z -> public_stack_range lo hi fi.
-Proof.
-  red; intros; omega.
-Qed.
 
 Program Definition empty_frame: frame_info :=
   {|
     frame_size := 0;
-    frame_perm o := Public;
   |}.
 
 (** * Frame ADT  *)
@@ -140,15 +66,6 @@ Record frame_adt : Type :=
     frame_adt_size_pos:
       (0 <= frame_adt_size)%Z;
   }.
-
-Lemma stack_perm_le_public:
-  forall fi p o,
-    (forall x, frame_perm fi x = Public) ->
-    stack_perm_le p (frame_perm fi o).
-Proof.
-  intros fi p o PUB; rewrite PUB.
-  destruct p; red; auto.
-Qed.
 
 (** * Tailcall frames *)
 
@@ -196,22 +113,22 @@ Definition in_stack (s: stack) (b: block) :=
 Definition in_frame' (f: frame_adt) bfi :=
   In bfi (frame_adt_blocks f).
 
-Definition in_frames' (tf: tframe_adt) b :=
+Definition in_frames' (tf: tframe_adt) bfi :=
   match fst tf with
-  | Some f => in_frame' f b
+  | Some f => in_frame' f bfi
   | None => False
   end.
 
-Fixpoint in_stack' (s: stack) b :=
+Fixpoint in_stack' (s: stack) bfi :=
   match s with
   | nil => False
-  | tf::s => in_frames' tf b \/ in_stack' s b
+  | tf::s => in_frames' tf bfi \/ in_stack' s bfi
   end.
 
 Lemma in_frames'_rew:
-  forall tf b,
-    in_frames' tf b <->
-    exists fr, in_frame' fr b /\ fst tf = Some fr.
+  forall tf bfi,
+    in_frames' tf bfi <->
+    exists fr, in_frame' fr bfi /\ fst tf = Some fr.
 Proof.
   unfold in_frames'. intros.
   destr; split; intros A; try decompose [ex and] A; try (intuition congruence);
@@ -219,10 +136,10 @@ Proof.
 Qed.
 
 Lemma in_stack'_rew:
-  forall s b,
-    in_stack' s b <->
+  forall s bfi,
+    in_stack' s bfi <->
     exists (tf: tframe_adt),
-      in_frames' tf b /\ In tf s.
+      in_frames' tf bfi /\ In tf s.
 Proof.
   induction s; simpl; split; intros; eauto.
   - easy.
@@ -342,20 +259,13 @@ Definition get_frame_info s : block -> option frame_info :=
 
 (** * Injection of frame information  *)
 
-Record inject_frame_info delta fi fi' :=
-  {
-    inject_perm: forall o, (0 <= o < frame_size fi)%Z -> stack_perm_le (frame_perm fi o) (frame_perm fi' (o + delta));
-    inject_size:
-      forall o, (0 <= o < frame_size fi -> 0 <= o + delta < frame_size fi')%Z;
-  }.
+Definition inject_frame_info delta fi fi' := forall o, (0 <= o < frame_size fi -> 0 <= o + delta < frame_size fi')%Z.
 
 Lemma inject_frame_info_id:
   forall f,
     inject_frame_info 0 f f.
 Proof.
-  constructor; auto.
-  intros; rewrite Z.add_0_r. eapply stack_perm_le_refl; auto.
-  intros; omega.
+  constructor; intros; omega.
 Qed.
 
 Hint Resolve inject_frame_info_id.
@@ -366,43 +276,11 @@ Lemma inject_frame_info_trans:
     inject_frame_info delta2 f2 f3 ->
     inject_frame_info (delta1 + delta2) f1 f3.
 Proof.
-  intros f1 f2 f3 delta1 delta2 A B; inv A; inv B; constructor; eauto.
-  - intros.
-    eapply stack_perm_le_trans; eauto.
-    rewrite Z.add_assoc. eauto.
-  - intros.
-    apply inject_size0 in H. apply inject_size1 in H. omega.
+  intros f1 f2 f3 delta1 delta2 A B; unfold inject_frame_info in A, B; constructor; apply A in H; apply B in H;
+    rewrite Z.add_assoc; destruct H; eauto.
 Qed.
 
 Hint Resolve inject_frame_info_trans.
-
-Lemma public_stack_shift:
-  forall f1 f2 delta,
-    inject_frame_info delta f1 f2 ->
-    forall o,
-      (0 <= o < frame_size f1)%Z ->
-      frame_public f1 o ->
-      frame_public f2 (o+delta).
-Proof.
-  unfold frame_public. intros.
-  generalize (inject_perm _ _ _ H _ H0); eauto.
-  rewrite H1.
-  destruct (frame_perm f2); simpl; intuition.
-Qed.
-
-Lemma public_stack_range_shift:
-  forall f1 f2 delta,
-    inject_frame_info delta f1 f2 ->
-    forall lo hi,
-      (0 <= lo)%Z -> (hi <= frame_size f1)%Z ->
-      public_stack_range lo hi f1 ->
-      public_stack_range (lo+delta) (hi+delta) f2.
-Proof.
-  unfold public_stack_range; intros.
-  replace ofs with (ofs-delta+delta)%Z by omega.
-  eapply public_stack_shift; eauto. omega.
-  apply H2; omega.
-Qed.
 
 (** * Injection of frame_adt  *)
 
@@ -806,7 +684,7 @@ Section INJ.
    Lemma tframe_inject_id P a:
      tframe_inject inject_id P a a.
    Proof.
-     apply self_tframe_inject. right; reflexivity.
+     apply self_tframe_inject. right. reflexivity.
    Qed.
 
    Lemma tframe_inject_incr:
