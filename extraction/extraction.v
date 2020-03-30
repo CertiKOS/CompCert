@@ -115,12 +115,6 @@ Extract Constant Compopts.thumb =>
 Extract Constant Compopts.debug =>
   "fun _ -> !Clflags.option_g".
 
-(* Strtablegen *)
-Extract Constant SymbolString.find_symbol_pos => "FindSymbolString.find_symbol_pos".
-
-(* CheckDef *)
-Extract Constant CheckDef.is_def_builtin => "CheckDefImpl.is_def_builtin".
-Extract Constant CheckDef.is_def_string_literal => "CheckDefImpl.is_def_string_literal".
 
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".
@@ -178,7 +172,6 @@ Cd "extraction".
 
 Separate Extraction
    Compiler.transf_c_program Compiler.transf_cminor_program 
-   Compiler.transf_c_program_bytes
    Cexecimpl.do_initial_state Cexecimpl.do_step Cexecimpl.at_final_state
    Cexecimpl.step_expr Cexecimpl.init_mem Cexecimpl.state
    Ctypes.merge_attributes Ctypes.remove_attributes Ctypes.build_composite_env

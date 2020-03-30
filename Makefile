@@ -98,35 +98,9 @@ BACKEND=\
   Mach.v Mach2Mach2.v \
   Bounds.v Stacklayout.v Stacking.v Stackingproof.v \
   Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v \
+  AsmFacts.v AsmRegs.v \
   Inlining.v Inliningspec.v Inliningproof.v \
-  Tailcall.v Tailcallproof.v \
-	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
-	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
-  RelocProgram.v \
-  Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
-  PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
-  Symbtablegen.v  Reloctablesgen.v Reloctablesgenproof.v \
-	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
-  Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
-	TablesEncode.v \
-	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
-  ShstrtableEncode.v RelocElfgen.v RelocElfgenproof.v \
-	SeqTable.v SymbolString.v \
-  CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v RelocProgSyneqproof.v \
-  SymbtablegenSep.v Symbtablegenproof.v \
-  PermuteProgproof.v PermuteProgSep.v \
-  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
-  TablesEncodeproof.v \
-  RelocBinDecode.v
-
-
-# Encoding of data into bytes
-
-ENCODE=Encode.v Bits.v Hex.v
-
-# ELF files
-ELF=RelocElf.v EncodeRelocElf.v RelocElfSemantics.v
+  Tailcall.v Tailcallproof.v
 
 # C front-end modules (in cfrontend/)
 
@@ -155,7 +129,7 @@ DRIVER=Compopts.v Compiler.v Complements.v Compilerimpl.v
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER) $(ENCODE) $(ELF)
+  $(PARSERVALIDATOR) $(PARSER) 
 
 # Generated source files
 

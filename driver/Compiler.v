@@ -27,7 +27,6 @@ Require LTL.
 Require Linear.
 Require Mach.
 Require Asm.
-Require RawAsm RealAsm.
 (** Translation passes. *)
 Require SimplExpr.
 Require SimplLocals.
@@ -50,7 +49,6 @@ Require Debugvar.
 Require Stacking.
 Require Mach2Mach2.
 Require Asmgen.
-Require PseudoInstructions.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -72,41 +70,7 @@ Require CleanupLabelsproof.
 Require Debugvarproof.
 Require Stackingproof.
 Require Asmgenproof.
-Require RawAsmproof.
-Require RealAsmproof2.
-Require RealAsmgen.
-Require PseudoInstructionsproof.
-Require Asmlabelgen.
-Require Asmlabelgenproof.
-Require PadNops.
-Require PadNopsproof.
-Require PadInitData.
-Require PadInitDataproof.
-Require PadInitDataSep.
-Require Symbtablegen.
-Require SymbtablegenSep.
-Require Symbtablegenproof.
-(* Require NormalizeSymb. *)
-Require Reloctablesgen.
-Require Reloctablesgenproof.
-Require RelocBingen.
-Require RelocBingenproof.
-Require Stubgen.
-Require StrtableEncode.
-Require SymbtableEncode.
-Require ReloctablesEncode.
-Require RelocElfgen.
-Require RelocElfgenproof.
-Require EncodeRelocElf.
-Require RelocElf.
-Require ShstrtableEncode.
-Require TablesEncodeproof.
-Require OrderedLinking.
-Require SymbtablegenSep.
-Require PermuteProgproof.
-Require PermuteProgSep.
-Require RelocProgSyneq.
-Require RelocProgSyneqproof.
+
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -205,51 +169,6 @@ Definition transf_c_program (p: Csyntax.program) : res Asm.program :=
   OK p
   @@@ time "Clight generation" SimplExpr.transl_program
   @@@ transf_clight_program.
-
-Definition transf_c_program_real p : res Asm.program :=
-  transf_c_program p
-  @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
-  @@@ PseudoInstructions.check_program
-  @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
-Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program) :=
-  transf_c_program_real p
-  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
-  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
-  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
-  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
-  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
-  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
-  (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
-  @@@ time "Encoding of tables" TablesEncode.transf_program
-  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
-  @@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
-
-Definition transf_c_program_bytes' (p: Csyntax.program) :=
-  transf_c_program_real p
-  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
-  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
-  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
-  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
-  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
-  @@@ time "Encoding of tables" TablesEncode.transf_program
-  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
-.
-
-Definition transf_c_elim_label p: res Asm.program :=
-  transf_c_program_real p
-  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program.
-
-Definition transf_cminor_program_real (p:Cminor.program) : res Asm.program :=
-  transf_cminor_program p
-  @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
-  @@@ PseudoInstructions.check_program
-  @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
-
-Definition transf_c_program_test_symbtablegen (p: Csyntax.program) :=
-  transf_c_program_real p
-  @@@ time "Generation of the symbol table" Symbtablegen.transf_program.
 
 
 (** The following lemmas help reason over compositions of passes. *)
@@ -356,48 +275,6 @@ Fixpoint passes_app {A B C} (l1: Passes A B) (l2: Passes B C) : Passes A C :=
 (*   eauto. eauto. *)
 (* Defined. *)
 
-Definition real_asm_passes :=
-      mkpass RealAsmproof2.match_prog
-  ::: mkpass PseudoInstructions.match_check_prog
-  ::: mkpass PseudoInstructionsproof.match_prog
-  ::: pass_nil _.
-
-Definition match_prog_real :=
-  pass_match (compose_passes (passes_app CompCert's_passes real_asm_passes)).
-
-Definition reloc_asm_passes :=
-             (mkpass Asmlabelgenproof.match_prog ::: pass_nil _).
-
-Definition match_prog_reloc :=
-  pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) reloc_asm_passes)).
-
-Definition test_symbtablegen_passes :=
-  (mkpass PermuteProgproof.match_prog ::: mkpass SymbtablegenSep.match_prog ::: pass_nil _).
-
-Definition match_prog_test_symbtablegen :=
-  pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) test_symbtablegen_passes)).
-
-(* Definition mc_passes := *)
-(*   passes_app flat_asm_passes *)
-(*              (mkpass MClabelgenproof.match_prog ::: pass_nil _). *)
-
-(* Definition match_prog_mc :=  *)
-(*   pass_match (compose_passes (passes_app CompCert's_passes mc_passes)). *)
-
-Definition bytes_passes :=
-  mkpass Asmlabelgenproof.match_prog
-  ::: mkpass PadNopsproof.match_prog
-  ::: mkpass PadInitDataproof.match_prog
-  ::: mkpass PermuteProgproof.match_prog
-  ::: mkpass SymbtablegenSep.match_prog
-  ::: mkpass Reloctablesgenproof.match_prog
-  ::: mkpass RelocBingenproof.match_prog
-  ::: mkpass TablesEncodeproof.match_prog
-  ::: mkpass RelocElfgenproof.match_prog
-  ::: pass_nil _.
-
-Definition match_prog_bytes :=
-  pass_match (compose_passes (passes_app CompCert's_passes (passes_app real_asm_passes bytes_passes))).
 
 (** The [transf_c_program] function, when successful, produces
   assembly code that is in the [match_prog] relation with the source C program. *)
@@ -467,108 +344,6 @@ Proof.
   setoid_rewrite IHA. split; intro H; decompose [ex and] H; eauto.
 Qed.
 
-Theorem transf_c_program_real_match:
-  forall p tp,
-    transf_c_program_real p = OK tp ->
-    match_prog_real p tp.
-Proof.
-  intros p tp T. unfold transf_c_program_real in T.
-  destruct (transf_c_program p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
-  destruct (RealAsmgen.transf_program p1) eqn:RTP; simpl in T; try discriminate.
-  destruct (PseudoInstructions.check_program p0) eqn:CHK; simpl in T; try discriminate. inv T.
-  unfold match_prog_real.
-  rewrite compose_passes_app.
-  fold match_prog. exists p1; split.
-  eapply transf_c_program_match; eauto.
-  simpl. eexists; split; eauto.
-  eapply RealAsmproof2.transf_program_match; eauto.
-  eexists; split; eauto.
-  eapply PseudoInstructions.check_program_match; eauto.
-  eexists; split; eauto.
-  apply PseudoInstructionsproof.transf_program_match; auto.
-Qed.
-
-Theorem transf_c_elim_label_match :
-  forall p tp,
-    transf_c_elim_label p = OK tp ->
-    match_prog_reloc p tp.
-Proof.
-  intros p tp T. unfold transf_c_elim_label in T.
-  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
-  unfold match_prog_reloc.
-  rewrite compose_passes_app.
-  exists p1. split.
-  apply transf_c_program_real_match; auto.
-  simpl. exists tp. split; auto.
-  apply Asmlabelgenproof.transf_program_match. auto.
-Qed.
-  
-
-Theorem transf_c_program_test_symbtablegen_match :
-  forall p tp,
-    transf_c_program_test_symbtablegen p = OK tp ->
-    match_prog_test_symbtablegen p tp.
-Proof.
-  intros p tp T. unfold transf_c_program_test_symbtablegen in T.
-  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
-  red.
-  rewrite compose_passes_app.
-  exists p1. split.
-  apply transf_c_program_real_match; auto.
-  simpl. 
-  exists p1. split. red. repeat (split; auto).
-  exists tp. split; auto.
-  red. 
-  exists tp. split; auto.
-  red. repeat (split; auto).
-  red. auto.
-Qed.
-
-Theorem transf_c_program_bytes_match :
-  forall p tp,
-    transf_c_program_bytes' p = OK tp ->
-    match_prog_bytes p tp.
-Proof.
-  intros p tp T. unfold transf_c_program_bytes' in T.
-  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. 
-  unfold time in T.
-  destruct (Asmlabelgen.transf_program p1) eqn:RTP; simpl in T; try discriminate.
-  destruct (Symbtablegen.transf_program (PadInitData.transf_program (PadNops.transf_program p0))) eqn:STG; simpl in T; try discriminate.
-  destruct (Reloctablesgen.transf_program p2) eqn: RTG; simpl in T; try discriminate.
-  destruct (RelocBingen.transf_program p3) eqn: RBG; simpl in T; try discriminate.
-  destruct (TablesEncode.transf_program p4) eqn: TE; simpl in T; try discriminate.
-  red.
-  repeat rewrite compose_passes_app.
-  generalize (transf_c_program_real_match _ _ TP).
-  intros MTH. red in MTH.
-  rewrite compose_passes_app in MTH.
-  destruct MTH as (p6 & PSS1 & PSS2).
-  eexists; split; eauto.
-  rewrite compose_passes_app.
-  eexists; split; eauto.
-  simpl.
-  eexists. split.
-  apply Asmlabelgenproof.transf_program_match. eauto.
-  eexists. split.
-  apply PadNopsproof.transf_program_match; eauto.
-  eexists; split.
-  apply PadInitDataproof.transf_program_match. eauto.
-  eexists; split.
-  red. split. apply Permutation.Permutation_refl.
-  split; auto.
-  eexists; split.
-  red.
-  eexists; split; eauto.
-  apply RelocProgSyneq.reloc_prog_syneq_refl.
-  eexists; split.
-  apply Reloctablesgenproof.transf_program_match. eauto.
-  eexists; split.
-  apply RelocBingenproof.transf_program_match. eauto.
-  eexists; split.
-  apply TablesEncodeproof.transf_program_match. eauto.
-  eauto.
-Qed.
-
 
 
 (** * Semantic preservation *)
@@ -624,18 +399,6 @@ Definition fn_stack_requirements (tp: Asm.program) (id: ident) : Z :=
   | None => 0
   end.
 
-Definition reloc_fn_stack_requirements (tp: RelocProgram.program) (id:ident) : Z :=
-  match List.find (fun '(id',_) => ident_eq id id') (RelocProgram.prog_defs tp) with
-  | None => 0
-  | Some (_, def) =>
-    match def with
-    | Some (Gfun (Internal f)) => Asm.fn_stacksize f
-    | _ => 0
-    end
-  end.
-
-Definition elf_fn_stack_requirements (tp: RelocElf.elf_file) (id:ident) : Z :=
-  reloc_fn_stack_requirements (RelocElfSemantics.reloc_program_of_elf_program tp) id.
 
 Definition printable_oracle (tp: Asm.program) : list (ident * Z) :=
   fold_left (fun acc gd =>
@@ -687,10 +450,6 @@ Qed.
 Definition mk_init_stk {F V} (p: AST.program F V) : StackADT.stack :=
   (Some (StackADT.make_singleton_frame_adt
            (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv p)) 0 0), nil) :: nil .
-
-Definition mk_init_stk_reloc (p: RelocProgram.program) : StackADT.stack :=
-  (Some (StackADT.make_singleton_frame_adt
-           (RelocProgSemantics.Genv.genv_next (RelocProgSemantics.globalenv p)) 0 0), nil) :: nil .
 
 
 Theorem cstrategy_semantic_preservation:
@@ -789,54 +548,6 @@ Ltac DestructM :=
   apply Asm.semantics_determinate.
 Qed.
 
-Theorem cstrategy_semantic_preservation_raw:
-  forall p tp,
-    match_prog p tp ->
-    forall (NORSP: RawAsmproof.asm_prog_no_rsp (Globalenvs.Genv.globalenv tp)),
-      forward_simulation (Cstrategy.semantics (fn_stack_requirements tp) p) (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef))
-  /\ backward_simulation (atomic (Cstrategy.semantics (fn_stack_requirements tp) p)) (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros p tp M NORSP.
-  set (init_stk := mk_init_stk tp).
-  assert (F: forward_simulation (Cstrategy.semantics (fn_stack_requirements tp) p) (Asm.semantics tp init_stk)).
-  {
-    eapply cstrategy_semantic_preservation; eauto.
-  }
-  assert (G: forward_simulation (Cstrategy.semantics (fn_stack_requirements tp) p)
-                                (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef))).
-  {
-    eapply compose_forward_simulations. apply F.
-    eapply RawAsmproof.transf_program_correct; auto.
-  }
-  split. auto.
-  apply forward_to_backward_simulation.
-  apply factor_forward_simulation. auto. eapply sd_traces. eapply RawAsm.semantics_determinate.
-  apply atomic_receptive. apply Cstrategy.semantics_strongly_receptive.
-  apply RawAsm.semantics_determinate.
-Qed.
-
-Theorem cstrategy_semantic_preservation_raw':
-  forall p tp,
-    match_prog p tp ->
-    forward_simulation (Cstrategy.semantics (fn_stack_requirements tp) p) (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef))
-    /\ backward_simulation (atomic (Cstrategy.semantics (fn_stack_requirements tp) p)) (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros p tp M.
-  eapply cstrategy_semantic_preservation_raw; eauto.
-  unfold match_prog, pass_match in M; simpl in M.
-  repeat DestructM.
-  red.
-  intros.
-  subst.
-  destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p20) b) eqn:?; auto.
-  eapply Asmgenproof.functions_translated in Heqo. 2: eauto.
-  destruct Heqo as (tf & FFP & TF); rewrite FFP in H. inv H.
-  destruct f0; simpl in TF; monadInv TF; try congruence.
-  eapply AsmFacts.check_asm_code_no_rsp_correct.
-  eapply AsmFacts.asmgen_no_change_rsp; eauto.
-  eapply match_program_no_more_functions in Heqo; eauto. congruence.
-Qed.
-
 Theorem c_semantic_preservation:
   forall p tp,
     match_prog p tp ->
@@ -852,273 +563,6 @@ Proof.
   eapply ssr_well_behaved; eapply Cstrategy.semantics_strongly_receptive.
   exact (proj2 (cstrategy_semantic_preservation _ _ H)).
 Qed.
-
-Theorem c_semantic_preservation_raw:
-  forall p tp,
-    match_prog p tp ->
-    backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros.
-  apply compose_backward_simulation with (atomic (Cstrategy.semantics (fn_stack_requirements tp) p)).
-  eapply sd_traces; eapply RawAsm.semantics_determinate.
-  apply factor_backward_simulation.
-  apply Cstrategy.strategy_simulation.
-  apply Csem.semantics_single_events.
-  eapply ssr_well_behaved; eapply Cstrategy.semantics_strongly_receptive.
-  exact (proj2 (cstrategy_semantic_preservation_raw' _ _ H)).
-Qed.
-
-(* Lemma single_events_real_asm p rs: *)
-(*   single_events (RealAsm.semantics p rs). *)
-(* Proof. *)
-(*   red; intros s t s' STEP. inv STEP; simpl; eauto using Events.external_call_trace_length.   *)
-(* Qed. *)
-
-Theorem c_semantic_preservation_real:
-  forall p tp,
-    match_prog_real p tp ->
-    backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros.
-  unfold match_prog_real in H.
-  rewrite compose_passes_app in H.
-  fold match_prog in H.
-  destruct H as (pi & MP & P).
-  simpl in P. destruct P as (p2 & P & p3 & P' & p4 & P'' & EQ); inv EQ.
-  exploit RealAsmproof2.match_prog_inv; eauto. intros (EQ & NJ). subst.
-  eapply compose_backward_simulation.
-  apply RealAsm.real_asm_single_events.
-  replace (fn_stack_requirements tp) with (fn_stack_requirements p2).
-  eapply compose_backward_simulation.
-  apply RealAsm.real_asm_single_events.  
-  apply c_semantic_preservation_raw. auto.
-  apply RealAsmproof2.real_asm_correct'; eauto.
-  eapply PseudoInstructions.check_wf; eauto.
-  red; intros.
-  eapply AsmFacts.check_asm_code_no_rsp_correct.
-  eapply PseudoInstructions.check_no_rsp; eauto.
-  {
-    unfold fn_stack_requirements.
-    apply Axioms.extensionality. intro i.
-    erewrite (PseudoInstructions.globalenv_eq _ _ P'); eauto.
-    rewrite (PseudoInstructionsproof.symbols_preserved _ _ P''). destr.
-    destr.
-    erewrite (PseudoInstructionsproof.functions_translated _ _ P''); eauto.
-    destr.
-    erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P''); eauto.
-  }
-  eapply forward_to_backward_simulation.
-  eapply compose_forward_simulations.
-  eapply PseudoInstructions.check_simulation. eauto.
-  eapply PseudoInstructionsproof.pseudo_instructions_correct. eauto.
-  erewrite <- PseudoInstructions.globalenv_eq; eauto.
-  eapply PseudoInstructions.check_wf; eauto.
-  erewrite <- PseudoInstructions.globalenv_eq; eauto.
-  red; intros.
-  eapply AsmFacts.check_asm_code_no_rsp_correct.
-  eapply PseudoInstructions.check_no_rsp; eauto.
-  eapply RealAsm.real_asm_receptive.
-  eapply RealAsm.real_asm_determinate.
-Qed.
-
-
-(** To be moved to Asmlabelgenproof *)
-
-
-Lemma Asmlabelgen_fn_stack_requirements_match : forall p tp,
-    Asmlabelgenproof.match_prog p tp ->
-    fn_stack_requirements p = fn_stack_requirements tp.
-Proof.
-  intros p tp MATCH.
-  unfold fn_stack_requirements.
-  apply Axioms.extensionality. intro i.
-  erewrite <- Globalenvs.Genv.find_symbol_transf_partial; eauto.
-  destruct (Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv tp) i) eqn:EQ; auto.
-  destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p) b) eqn: EQ1; auto.
-  - generalize (Globalenvs.Genv.find_funct_ptr_transf_partial MATCH _ EQ1).
-    destruct 1 as (tf & FPTR & TRANSF).
-    rewrite FPTR. destruct f. monadInv TRANSF.
-    apply Asmlabelgenproof.trans_fun_pres_stacksize; eauto.
-    monadInv TRANSF. auto.
-  - generalize (Globalenvs.Genv.find_funct_ptr_transf_none_partial MATCH _ EQ1).
-    intros FNONE. rewrite FNONE. auto.
-Qed.
-(** To be moved to Asmlabelgenproof *)
-
-Theorem c_semantic_preservation_reloc:
-  forall p tp,
-    match_prog_reloc p tp ->
-    backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros.
-  unfold match_prog_reloc in H.
-  rewrite compose_passes_app in H.
-  destruct H as (pi & MP & P).
-  simpl in P. destruct P as (p2 & P & EQ); inv EQ.
-  eapply compose_backward_simulation.
-  apply RealAsm.real_asm_single_events.
-  fold match_prog_real in MP.
-  replace (fn_stack_requirements tp) with (fn_stack_requirements pi).
-  apply c_semantic_preservation_real; auto.
-  apply Asmlabelgen_fn_stack_requirements_match; auto.
-  eapply forward_to_backward_simulation.
-  apply Asmlabelgenproof.transf_program_correct; auto.
-  eapply RealAsm.real_asm_receptive.
-  eapply RealAsm.real_asm_determinate.
-Qed.
-
-Lemma find_unique: forall {A B: Type} (l: list (ident * A * B)) i def sb
-                     (IN: In (i, def, sb) l)
-                     (NPT: list_norepet (map (fun '(i,_,_) => i) l)),
-    find (fun '(i',_,_) => ident_eq i i') l = Some (i, def, sb).
-Proof.
-  induction l; simpl; intros. contradiction. inv IN.
-  - destruct peq; try contradiction. simpl. auto.
-  - destruct a. destruct p. inv NPT.
-    destruct (ident_eq i i0). subst.
-    generalize (in_map (fun '(i,_,_) => i) l (i0,def,sb) H). congruence.
-    exploit IHl; eauto. 
-Qed.
-
-Lemma PadNops_fn_stack_requirements_match: 
-  forall p tp
-    (FM: PadNopsproof.match_prog p tp),
-    fn_stack_requirements p = fn_stack_requirements tp.
-Proof.
-  intros p tp MATCH.
-  unfold fn_stack_requirements.
-  apply Axioms.extensionality. intro i.
-  erewrite <- Globalenvs.Genv.find_symbol_transf; eauto.
-  destruct (Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv tp) i) eqn:EQ; setoid_rewrite EQ; auto.
-  destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p) b) eqn: EQ1; auto.
-  - generalize (Globalenvs.Genv.find_funct_ptr_transf MATCH _ EQ1).
-    intros FPTR.
-    setoid_rewrite FPTR. 
-    destruct f; cbn; try congruence.
-  - generalize (Globalenvs.Genv.find_funct_ptr_transf_none MATCH _ EQ1).
-    intros FNONE. setoid_rewrite FNONE. auto.
-Qed.
-
-Lemma PadInitData_fn_stack_requirements_match: 
-  forall p tp
-    (FM: PadInitDataproof.match_prog p tp),
-    fn_stack_requirements p = fn_stack_requirements tp.
-Proof.
-  intros p tp MATCH.
-  unfold fn_stack_requirements.
-  apply Axioms.extensionality. intro i.
-  erewrite <- PadInitDataproof.find_symbol_transf; eauto.
-  destruct (Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv tp) i) eqn:EQ; auto.
-  erewrite <- PadInitDataproof.find_funct_ptr_transf; eauto.
-Qed.
-
-Lemma Perm_fn_stack_requirements_match: 
-  forall p tp
-    (FM: PermuteProgproof.match_prog p tp),
-    fn_stack_requirements p = fn_stack_requirements tp.
-Proof.
-Admitted.
-
-Lemma Symbtablegen_fn_stack_requirements_match: 
-  forall p tp
-    (FM: SymbtablegenSep.match_prog p tp),
-    fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
-
-Lemma Reloctablesgen_fn_stack_requirements_match: 
-  forall p tp
-    (FM: Reloctablesgenproof.match_prog p tp),
-    reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
-
-
-Lemma RelocBingen_fn_stack_requirements_match: 
-  forall p tp
-    (FM: RelocBingenproof.match_prog p tp),
-    reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
-
-
-Lemma TablesEncode_fn_stack_requirements_match: 
-  forall p tp
-    (FM: TablesEncodeproof.match_prog p tp),
-    reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
-
-
-Lemma RelocElfGen_fn_stack_requirements_match: 
-  forall p tp
-    (FM: RelocElfgenproof.match_prog p tp),
-    reloc_fn_stack_requirements p = elf_fn_stack_requirements tp.
-Proof.
-Admitted.
-
-Theorem c_semantic_preservation_bytes:
-  forall p tp,
-    match_prog_bytes p tp ->
-    backward_simulation (Csem.semantics (elf_fn_stack_requirements tp) p) (RelocElfSemantics.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros.
-  unfold match_prog_bytes in H.
-  rewrite compose_passes_app in H.
-  destruct H as (pi & MP & P).
-  rewrite compose_passes_app in P.
-  destruct P as (pi' & RP & FP). 
-  simpl in FP.
-  destruct FP as (p2 & FP & p3 & PP & p4 & PP1 & p5 & PM & p6 & SG & p7 & RTG & p8 & RBG & p9 & TE & p10 & REG & EQ). subst.
-  assert (match_prog_real p pi'). red.
-  apply compose_passes_app. eexists; split; eauto.
-  eapply compose_backward_simulation.
-  apply RelocProgSemantics2.reloc_prog_single_events.
-  replace (elf_fn_stack_requirements tp) with (fn_stack_requirements pi').
-  apply c_semantic_preservation_real; auto.
-  eapply eq_trans.
-  apply Asmlabelgen_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply PadNops_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply PadInitData_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply Perm_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply Symbtablegen_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply Reloctablesgen_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply RelocBingen_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply TablesEncode_fn_stack_requirements_match; eauto.
-  eapply eq_trans.
-  apply RelocElfGen_fn_stack_requirements_match; eauto.
-  auto.
-  eapply forward_to_backward_simulation.
-  eapply compose_forward_simulations.
-  eapply Asmlabelgenproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  eapply PadNopsproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  eapply PadInitDataproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  eapply PermuteProgproof.transf_program_correct; eauto.
-  red in SG. destruct SG as (p10 & SG & SYNEQ).
-  eapply compose_forward_simulations.
-  eapply Symbtablegenproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  apply RelocProgSyneqproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  eapply Reloctablesgenproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  eapply RelocBingenproof.transf_program_correct; eauto.
-  eapply compose_forward_simulations.
-  eapply TablesEncodeproof.transf_program_correct; eauto; admit.
-  apply RelocElfgenproof.transf_program_correct; eauto. admit. admit.
-  eapply RealAsm.real_asm_receptive.
-  eapply RelocProgSemantics3.semantics_determinate.
-Admitted.
 
 
 
@@ -1143,37 +587,6 @@ Proof.
   intros. apply c_semantic_preservation. apply transf_c_program_match; auto.
 Qed.
 
-Theorem transf_c_program_correct_raw:
-  forall p tp,
-    transf_c_program p = OK tp ->
-    backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RawAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. apply c_semantic_preservation_raw. apply transf_c_program_match; auto.
-Qed.
-
-Theorem transf_c_program_correct_real:
-  forall p tp,
-    transf_c_program_real p = OK tp ->
-    backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. apply c_semantic_preservation_real. apply transf_c_program_real_match; auto.
-Qed.
-
-Theorem transf_c_elim_label_correct:
-  forall p tp,
-    transf_c_elim_label p = OK tp ->
-    backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. apply c_semantic_preservation_reloc. apply transf_c_elim_label_match; auto.
-Qed.
-
-Theorem transf_c_program_correct_bytes:
-  forall p tp,
-    transf_c_program_bytes' p = OK tp ->
-    backward_simulation (Csem.semantics (elf_fn_stack_requirements tp) p) (RelocElfSemantics.semantics tp (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. apply c_semantic_preservation_bytes. apply transf_c_program_bytes_match; auto.
-Qed.
 
 
 (** Here is the separate compilation case.  Consider a nonempty list [c_units]
@@ -1187,8 +600,6 @@ Qed.
   [c_program], in the sense that there exists a backward simulation of
   the dynamic semantics of [asm_program] by the dynamic semantics of [c_program].
 *)
-
-Remove Hints OrderedLinking.Linker_prog_ordered : typeclass_instances.
 
 Theorem separate_transf_c_program_correct:
   forall c_units asm_units c_program,
@@ -1209,116 +620,6 @@ Proof.
   exists asm_program; split; auto. apply c_semantic_preservation; auto.
 Qed.
 
-Theorem separate_transf_c_program_correct_raw:
-  forall c_units asm_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program cu = OK tcu) c_units asm_units ->
-  link_list c_units = Some c_program ->
-  exists asm_program, 
-      link_list asm_units = Some asm_program
-      /\
-      let init_stk := mk_init_stk asm_program in
-      backward_simulation (Csem.semantics (fn_stack_requirements asm_program) c_program) (RawAsm.semantics asm_program
-                                                                                                           (Asm.Pregmap.init Values.Vundef)
-                                                                                         ).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog c_units asm_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog c_program asm_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
-  exists asm_program; split; auto. apply c_semantic_preservation_raw; auto.
-Qed.
-
-Theorem separate_transf_c_program_correct_real:
-  forall c_units asm_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program_real cu = OK tcu) c_units asm_units ->
-  link_list c_units = Some c_program ->
-  exists asm_program, 
-      link_list asm_units = Some asm_program
-      /\
-      let init_stk := mk_init_stk asm_program in
-      backward_simulation (Csem.semantics (fn_stack_requirements asm_program) c_program) (RealAsm.semantics asm_program
-                                                                                                           (Asm.Pregmap.init Values.Vundef)
-                                                                                         ).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog_real c_units asm_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_real_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_real c_program asm_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
-  exists asm_program; split; auto. apply c_semantic_preservation_real; auto.
-Qed.
-
-
-Theorem separate_transf_c_program_correct_reloc:
-  forall c_units asm_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_elim_label cu = OK tcu) c_units asm_units ->
-  link_list c_units = Some c_program ->
-  exists asm_program, 
-      link_list asm_units = Some asm_program
-      /\
-      let init_stk := mk_init_stk asm_program in
-      backward_simulation (Csem.semantics (fn_stack_requirements asm_program) c_program) (RealAsm.semantics asm_program
-                                                                                                           (Asm.Pregmap.init Values.Vundef)
-                                                                                         ).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog_reloc c_units asm_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_elim_label_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_reloc c_program asm_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
-  exists asm_program; split; auto. apply c_semantic_preservation_reloc; auto.
-Qed.
-
-
-(*
-Theorem separate_transf_c_program_correct_flat:
-  forall c_units asm_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program_flatasm cu = OK tcu) c_units asm_units ->
-  link_list c_units = Some c_program ->
-  exists asm_program, 
-      link_list asm_units = Some asm_program
-      /\
-      let init_stk := mk_init_stk_flat asm_program in
-      backward_simulation (Csem.semantics (flat_fn_stack_requirements asm_program) c_program) (SegAsm.semantics asm_program
-                                                                                                           (Asm.Pregmap.init Values.Vundef)
-                                                                                         ).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog_flat c_units asm_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_flat_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_flat c_program asm_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
-  exists asm_program; split; auto. apply c_semantic_preservation_flat; auto.
-Qed.
-*)
-
-(*
-Theorem separate_transf_c_program_correct_bytes:
-  forall c_units reloc_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program_bytes' cu = OK tcu) c_units reloc_units ->
-  link_list c_units = Some c_program ->
-  exists reloc_program, 
-      link_list reloc_units = Some reloc_program
-      /\
-      let init_stk := mk_init_stk_reloc reloc_program in
-      backward_simulation 
-        (Csem.semantics (reloc_fn_stack_requirements reloc_program) c_program) 
-        (RelocProgSemantics1.semantics reloc_program (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog_bytes c_units reloc_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_bytes_match; auto. }
-  assert (exists reloc_program, link_list (LA:= Reloctablesgenproof.reloctablesgen_linker) reloc_units = Some reloc_program /\ match_prog_bytes c_program reloc_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (reloc_program & P & Q).
-  exists reloc_program; split; auto. apply c_semantic_preservation_bytes; auto.
-Qed.
-*)
 
 
 End WITHEXTERNALCALLS.
