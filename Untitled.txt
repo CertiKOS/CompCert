@@ -1,0 +1,5 @@
+CompCert 3.0.1 -> Stack-Aware CompCert (status) -- details
+
+common/X -> common/StackADT.v (done) -- awaiting for feedback from Pierre
+common/Memdata.v -> common/Memdata.v (same)
+common/X -> common/MemPerm.v (same) -- this is the same as the beginning of Memtype.v from  cc-3.0.1x
