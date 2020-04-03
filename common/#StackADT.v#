@@ -625,12 +625,8 @@ Qed.
 (* Definition frameinj_surjective (g: frameinj) n2 := *)
 (*   sum_list g = n2. *)
 
-Class InjectPerm :=
-  {
-    inject_perm_condition: permission -> Prop;
-    inject_perm_condition_writable: forall p, perm_order Writable p -> inject_perm_condition p;
-  }.
-
+Definition perm_type :=
+  block -> Z -> perm_kind -> permission -> Prop.
 (** * Specifying tailcalled frames.  *)
 (** A tframe is a non-empty list of frames (a::l). It must be the case that all
     blocks in l have no permission.
