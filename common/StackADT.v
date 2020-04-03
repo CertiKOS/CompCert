@@ -119,6 +119,38 @@ Definition in_frames' (tf: tframe_adt) bfi :=
   | None => False
   end.
 
+
+Lemma in_frames'_to_in_frames : 
+  forall tf b f, in_frames' tf (b, f) -> in_frames tf b.
+Proof.
+  intros tf b f IN.
+  red in IN. destr_in IN. 
+  destruct tf. cbn in Heqo. subst. cbn.
+  red in IN. 
+  unfold get_frame_blocks. 
+  set (a:= (frame_adt_blocks f0)) in *.
+  replace b with (fst (b, f)) by auto.
+  apply in_map. auto.
+Qed.
+
+Lemma in_frames_to_in_frames' : 
+  forall tf b, in_frames tf b -> exists f, in_frames' tf (b, f).
+Proof.
+  intros tf b IN.
+  red in IN. 
+  destruct tf. cbn in IN.
+  unfold in_frames'. cbn. 
+  destruct o.
+  - cbn in IN.
+    unfold get_frame_blocks in IN. 
+    unfold in_frame'.
+    set (a:= (frame_adt_blocks f)) in *.
+    apply list_in_map_inv in IN.
+    destruct IN as (bi & EQ & IN). subst.
+    destruct bi. cbn. eauto.
+  - cbn in IN. contradiction.
+Qed.
+
 Fixpoint in_stack' (s: stack) bfi :=
   match s with
   | nil => False
