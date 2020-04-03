@@ -93,7 +93,7 @@ Qed.
 Global Opaque stack_limit.
 
 Class MemoryModelOps
-      (** The abstract type of memory states. *)
+      (*X* The abstract type of memory states. *)
  (mem: Type)
 
 : Type
@@ -102,10 +102,10 @@ Class MemoryModelOps
 
 (** * Operations on memory states *)
 
-(** [empty] is the initial memory state. *)
+(*X* [empty] is the initial memory state. *)
   empty: mem;
 
-(** [alloc m lo hi] allocates a fresh block of size [hi - lo] bytes.
+(*X* [alloc m lo hi] allocates a fresh block of size [hi - lo] bytes.
   Valid offsets in this block are between [lo] included and [hi] excluded.
   These offsets are writable in the returned memory state.
   This block is not initialized: its contents are initially undefined.
@@ -114,35 +114,35 @@ Class MemoryModelOps
   Note that [alloc] never fails: we are modeling an infinite memory. *)
  alloc: forall (m: mem) (lo hi: Z), mem * block;
 
-(** [free m b lo hi] frees (deallocates) the range of offsets from [lo]
+(*X* [free m b lo hi] frees (deallocates) the range of offsets from [lo]
   included to [hi] excluded in block [b].  Returns the updated memory
   state, or [None] if the freed addresses are not writable. *)
  free: forall (m: mem) (b: block) (lo hi: Z), option mem;
 
-(** [load chunk m b ofs] reads a memory quantity [chunk] from
+(*X* [load chunk m b ofs] reads a memory quantity [chunk] from
   addresses [b, ofs] to [b, ofs + size_chunk chunk - 1] in memory state
   [m].  Returns the value read, or [None] if the accessed addresses
   are not readable. *)
  load: forall (chunk: memory_chunk) (m: mem) (b: block) (ofs: Z), option val;
 
-(** [store chunk m b ofs v] writes value [v] as memory quantity [chunk]
+(*X* [store chunk m b ofs v] writes value [v] as memory quantity [chunk]
   from addresses [b, ofs] to [b, ofs + size_chunk chunk - 1] in memory state
   [m].  Returns the updated memory state, or [None] if the accessed addresses
   are not writable. *)
  store: forall (chunk: memory_chunk) (m: mem) (b: block) (ofs: Z) (v: val), option mem;
 
-(** [loadbytes m b ofs n] reads and returns the byte-level representation of
+(*X* [loadbytes m b ofs n] reads and returns the byte-level representation of
   the values contained at offsets [ofs] to [ofs + n - 1] within block [b]
   in memory state [m].
   [None] is returned if the accessed addresses are not readable. *)
  loadbytes: forall (m: mem) (b: block) (ofs n: Z), option (list memval);
 
-(** [storebytes m b ofs bytes] stores the given list of bytes [bytes]
+(*X* [storebytes m b ofs bytes] stores the given list of bytes [bytes]
   starting at location [(b, ofs)].  Returns updated memory state
   or [None] if the accessed locations are not writable. *)
  storebytes: forall (m: mem) (b: block) (ofs: Z) (bytes: list memval), option mem;
 
-(** [drop_perm m b lo hi p] sets the permissions of the byte range
+(*X* [drop_perm m b lo hi p] sets the permissions of the byte range
     [(b, lo) ... (b, hi - 1)] to [p].  These bytes must have [Freeable] permissions
     in the initial memory state [m].
     Returns updated memory state, or [None] if insufficient permissions. *)
@@ -151,7 +151,7 @@ Class MemoryModelOps
 
 (** * Permissions, block validity, access validity, and bounds *)
 
-(** The next block of a memory state is the block identifier for the
+(*X* The next block of a memory state is the block identifier for the
   next allocation.  It increases by one at each allocation.
   Block identifiers below [nextblock] are said to be valid, meaning
   that they have been allocated previously.  Block identifiers above
@@ -161,19 +161,19 @@ Class MemoryModelOps
 
  nextblock: mem -> block;
 
-(** [perm m b ofs k p] holds if the address [b, ofs] in memory state [m]
+(*X* [perm m b ofs k p] holds if the address [b, ofs] in memory state [m]
   has permission [p]: one of freeable, writable, readable, and nonempty.
   If the address is empty, [perm m b ofs p] is false for all values of [p].
   [k] is the kind of permission we are interested in: either the current
   permissions or the maximal permissions. *)
  perm: forall (m: mem) (b: block) (ofs: Z) (k: perm_kind) (p: permission), Prop;
 
-(** [range_perm m b lo hi p] holds iff the addresses [b, lo] to [b, hi-1]
+(*X* [range_perm m b lo hi p] holds iff the addresses [b, lo] to [b, hi-1]
   all have permission [p] of kind [k]. *)
  range_perm (m: mem) (b: block) (lo hi: Z) (k: perm_kind) (p: permission) : Prop :=
   forall ofs, lo <= ofs < hi -> perm m b ofs k p;
 
-(** [valid_pointer m b ofs] returns [true] if the address [b, ofs]
+(*X* [valid_pointer m b ofs] returns [true] if the address [b, ofs]
   is nonempty in [m] and [false] if it is empty. *)
 
  valid_pointer: forall (m: mem) (b: block) (ofs: Z), bool;
