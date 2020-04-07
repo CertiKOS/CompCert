@@ -101,12 +101,14 @@ Local Notation "a # b" := (PMap.get b a) (at level 1).
 Module Mem.
 Export Memtype.Mem.
 
+(*X*)
 Definition perm_order' (po: option permission) (p: permission) :=
   match po with
   | Some p' => perm_order p' p
   | None => False
  end.
 
+(*X*)
 Definition perm_order'' (po1 po2: option permission) :=
   match po1, po2 with
   | Some p1, Some p2 => perm_order p1 p2
@@ -114,9 +116,11 @@ Definition perm_order'' (po1 po2: option permission) :=
   | None, Some _ => False
  end.
 
+(*X*)
 Definition in_bounds (o: Z) (bnds: Z*Z) :=
   fst bnds <= o < snd bnds.
 
+(*X*)
 Record stack_inv (s: StackADT.stack) (thr: block) (P: perm_type) : Prop :=
   {
     stack_inv_valid': forall b, in_stack_all s b -> Plt b thr;
@@ -126,36 +130,51 @@ Record stack_inv (s: StackADT.stack) (thr: block) (P: perm_type) : Prop :=
     stack_inv_wf: wf_stack P s;
   }.
 
+(*X*)
 Lemma stack_inv_valid s thr P (SI: stack_inv s thr P): forall b, in_stack s b -> Plt b thr.
 Proof.
   intros; eapply stack_inv_valid'; eauto using in_stack_in_stack_all.
 Qed.
 
+(*X*)
 Record mem' : Type := mkmem {
+  (*X*)
   mem_contents: PMap.t (ZMap.t memval);  (**r [block -> offset -> memval] *)
+  (*X*)
   mem_access: PMap.t (Z -> perm_kind -> option permission);
-                                         (**r [block -> offset -> kind -> option permission] *)
+
+  (*X*)                                         (**r [block -> offset -> kind -> option permission] *)
   nextblock: block;
+  (*X*)
   access_max:
     forall b ofs, perm_order'' (mem_access#b ofs Max) (mem_access#b ofs Cur);
+  (*X*)
   nextblock_noaccess:
     forall b ofs k, ~(Plt b nextblock) -> mem_access#b ofs k = None;
+  (*X*)
   contents_default:
     forall b, fst mem_contents#b = Undef;
+  (*X*)
   contents_default':
     fst mem_contents = ZMap.init Undef;
+  (*X*)
   stack:
     StackADT.stack;
+  (*X*)
   mem_stack_inv:
     stack_inv stack nextblock (fun b o k p => perm_order' ((mem_access#b) o k) p);
+  (*X*)
   mem_bounds: PMap.t (Z*Z);
+  (*X*)
   mem_bounds_perm: forall b o k p,
       perm_order' ((mem_access#b) o k) p ->
       in_bounds o (mem_bounds#b);
   }.
 
+(*X*)
 Definition mem := mem'.
 
+(*X*)
 Lemma mkmem_ext:
   forall cont1 cont2 acc1 acc2 next1 next2
     a1 a2 b1 b2 c1 c2 c1' c2' adt1 adt2 sinv1 sinv2 bnd1 bnd2 bndpf1 bndpf2,
@@ -171,8 +190,10 @@ Qed.
 (** A block address is valid if it was previously allocated. It remains valid
   even after being freed. *)
 
+(*X*)
 Definition valid_block (m: mem) (b: block) := Plt b (nextblock m).
 
+(*X*)
 Theorem valid_not_valid_diff:
   forall m b b', valid_block m b -> ~(valid_block m b') -> b <> b'.
 Proof.
@@ -183,9 +204,11 @@ Local Hint Resolve valid_not_valid_diff: mem.
 
 (** Permissions *)
 
+(*X*)
 Definition perm (m: mem) (b: block) (ofs: Z) (k: perm_kind) (p: permission) : Prop :=
    perm_order' (m.(mem_access)#b ofs k) p.
 
+(*X*)
 Theorem perm_implies:
   forall m b ofs k p1 p2, perm m b ofs k p1 -> perm_order p1 p2 -> perm m b ofs k p2.
 Proof.
@@ -196,6 +219,7 @@ Qed.
 
 Local Hint Resolve perm_implies: mem.
 
+(*X*)
 Theorem perm_cur_max:
   forall m b ofs p, perm m b ofs Cur p -> perm m b ofs Max p.
 Proof.
@@ -209,12 +233,14 @@ Proof.
   generalize (access_max m b ofs). eauto.
 Qed.
 
+(*X*)
 Theorem perm_cur:
   forall m b ofs k p, perm m b ofs Cur p -> perm m b ofs k p.
 Proof.
   intros. destruct k; auto. apply perm_cur_max. auto.
 Qed.
 
+(*X*)
 Theorem perm_max:
   forall m b ofs k p, perm m b ofs k p -> perm m b ofs Max p.
 Proof.
@@ -223,6 +249,7 @@ Qed.
 
 Local Hint Resolve perm_cur perm_max: mem.
 
+(*X*)
 Theorem perm_valid_block:
   forall m b ofs k p, perm m b ofs k p -> valid_block m b.
 Proof.
@@ -237,12 +264,14 @@ Qed.
 
 Local Hint Resolve perm_valid_block: mem.
 
+(*X*)
 Remark perm_order_dec:
   forall p1 p2, {perm_order p1 p2} + {~perm_order p1 p2}.
 Proof.
   intros. destruct p1; destruct p2; (left; constructor) || (right; intro PO; inversion PO).
 Defined.
 
+(*X*)
 Remark perm_order'_dec:
   forall op p, {perm_order' op p} + {~perm_order' op p}.
 Proof.
@@ -251,6 +280,7 @@ Proof.
   right; tauto.
 Defined.
 
+(*X*)
 Theorem perm_dec:
   forall m b ofs k p, {perm m b ofs k p} + {~ perm m b ofs k p}.
 Proof.
@@ -258,9 +288,11 @@ Proof.
   apply perm_order'_dec.
 Defined.
 
+(*X*)
 Definition range_perm (m: mem) (b: block) (lo hi: Z) (k: perm_kind) (p: permission) : Prop :=
   forall ofs, lo <= ofs < hi -> perm m b ofs k p.
 
+(*X*)
 Theorem range_perm_implies:
   forall m b lo hi k p1 p2,
   range_perm m b lo hi k p1 -> perm_order p1 p2 -> range_perm m b lo hi k p2.
@@ -268,6 +300,7 @@ Proof.
   unfold range_perm; intros; eauto with mem.
 Qed.
 
+(*X*)
 Theorem range_perm_cur:
   forall m b lo hi k p,
   range_perm m b lo hi Cur p -> range_perm m b lo hi k p.
@@ -275,6 +308,7 @@ Proof.
   unfold range_perm; intros; eauto with mem.
 Qed.
 
+(*X*)
 Theorem range_perm_max:
   forall m b lo hi k p,
   range_perm m b lo hi k p -> range_perm m b lo hi Max p.
@@ -284,6 +318,7 @@ Qed.
 
 Local Hint Resolve range_perm_implies range_perm_cur range_perm_max: mem.
 
+(*X*)
 Lemma range_perm_dec:
   forall m b lo hi k p, {range_perm m b lo hi k p} + {~ range_perm m b lo hi k p}.
 Proof.
@@ -306,11 +341,13 @@ Defined.
 - The offset [ofs] is aligned.
 *)
 
+(*X*)
 Definition valid_access (m: mem) (chunk: memory_chunk) (b: block) (ofs: Z) (p: permission): Prop :=
   range_perm m b ofs (ofs + size_chunk chunk) Cur p
   /\ (align_chunk chunk | ofs)
   /\ (perm_order p Writable -> stack_access (stack m) b ofs (ofs + size_chunk chunk)).
 
+(*X*)
 Theorem valid_access_implies:
   forall m chunk b ofs p1 p2,
   valid_access m chunk b ofs p1 -> perm_order p1 p2 ->
@@ -321,6 +358,7 @@ Proof.
   intros; apply C. eapply perm_order_trans; eauto.
 Qed.
 
+(*X*)
 Theorem valid_access_freeable_any:
   forall m chunk b ofs p,
   valid_access m chunk b ofs Freeable ->
@@ -332,6 +370,7 @@ Qed.
 
 Local Hint Resolve valid_access_implies: mem.
 
+(*X*)
 Theorem valid_access_valid_block:
   forall m chunk b ofs,
   valid_access m chunk b ofs Nonempty ->
@@ -345,6 +384,7 @@ Qed.
 
 Local Hint Resolve valid_access_valid_block: mem.
 
+(*X*)
 Lemma valid_access_perm:
   forall m chunk b ofs k p,
   valid_access m chunk b ofs p ->
@@ -353,6 +393,7 @@ Proof.
   intros. destruct H. apply perm_cur. apply H. generalize (size_chunk_pos chunk). omega.
 Qed.
 
+(*X*)
 Lemma valid_access_compat:
   forall m chunk1 chunk2 b ofs p,
   size_chunk chunk1 = size_chunk chunk2 ->
@@ -366,6 +407,7 @@ Proof.
   - rewrite <- H. auto.
 Qed.
 
+(*X*)
 Lemma non_writable_private_stack_access_dec : forall p m b ofs chunk,
   {(perm_order p Writable -> stack_access m b ofs (ofs + size_chunk chunk))}
   + {~ (perm_order p Writable -> stack_access m b ofs (ofs + size_chunk chunk))}.
@@ -376,6 +418,7 @@ Proof.
   left. intros. congruence.
 Qed.
 
+(*X*)
 Lemma valid_access_dec:
   forall m chunk b ofs p,
   {valid_access m chunk b ofs p} + {~ valid_access m chunk b ofs p}.
@@ -390,9 +433,11 @@ Qed.
 
 (** [valid_pointer m b ofs] returns [true] if the address [b, ofs]
   is nonempty in [m] and [false] if it is empty. *)
+(*X*)
 Definition valid_pointer (m: mem) (b: block) (ofs: Z): bool :=
   perm_dec m b ofs Cur Nonempty.
 
+(*X*)
 Theorem valid_pointer_nonempty_perm:
   forall m b ofs,
   valid_pointer m b ofs = true <-> perm m b ofs Cur Nonempty.
@@ -402,6 +447,7 @@ Proof.
   intuition congruence.
 Qed.
 
+(*X*)
 Theorem valid_pointer_valid_access:
   forall m b ofs,
   valid_pointer m b ofs = true <-> valid_access m Mint8unsigned b ofs Nonempty.
@@ -418,10 +464,11 @@ Qed.
   valid according to the previously defined [valid_pointer]. The property
   [weak_valid_pointer m b ofs] holds if address [b, ofs] is a valid pointer
   in [m], or a pointer one past a valid block in [m].  *)
-
+(*X*)
 Definition weak_valid_pointer (m: mem) (b: block) (ofs: Z) :=
   valid_pointer m b ofs || valid_pointer m b (ofs - 1).
 
+(*X*)
 Lemma weak_valid_pointer_spec:
   forall m b ofs,
   weak_valid_pointer m b ofs = true <->
@@ -429,6 +476,8 @@ Lemma weak_valid_pointer_spec:
 Proof.
   intros. unfold weak_valid_pointer. now rewrite orb_true_iff.
 Qed.
+
+(*X*)
 Lemma valid_pointer_implies:
   forall m b ofs,
   valid_pointer m b ofs = true -> weak_valid_pointer m b ofs = true.
@@ -438,7 +487,7 @@ Qed.
 
 (** * Operations over memory stores *)
 
-(** The initial store *)
+(*X* The initial store *)
 
 Lemma stack_perm m:
   stack_agree_perms (perm m) (stack m).
@@ -449,6 +498,7 @@ Qed.
 
 Hint Resolve stack_norepet stack_perm.
 
+(*X*)
 Program Definition empty: mem :=
   mkmem (PMap.init (ZMap.init Undef))
         (PMap.init (fun ofs k => None))
@@ -475,13 +525,14 @@ Qed.
   undefined cells.  Note that allocation never fails: we model an
   infinite memory. *)
 
-
+(*X*)
 Lemma stack_valid:
   forall m b, in_stack (stack m) b -> Plt b (nextblock m).
 Proof.
   intros; eapply stack_inv_valid; eauto using mem_stack_inv.
 Qed.
 
+(*X*)
 Lemma in_tframes_in_stack_all:
   forall s f a b,
     In f (snd a) ->
@@ -495,6 +546,7 @@ Proof.
   - right; eauto.
 Qed.
 
+(*X*)
 Lemma stack_inv_alloc:
   forall m lo hi,
     stack_inv (stack m) (Pos.succ (nextblock m))
@@ -526,6 +578,7 @@ Proof.
     eapply in_tframes_in_stack_all; eauto. xomega.
 Qed.
 
+(*X*)
 Program Definition alloc (m: mem) (lo hi: Z) : (mem * block) :=
   (mkmem (PMap.set m.(nextblock)
                    (ZMap.init Undef)
@@ -569,6 +622,7 @@ Qed.
   has been invalidated: future reads and writes to this
   range will fail.  Requires freeable permission on the given range. *)
 
+(*X*)
 Lemma stack_inv_free:
   forall m (P: perm_type),
     (forall b o k p, P b o k p -> perm m b o k p) ->
@@ -588,6 +642,7 @@ Proof.
     eapply PERMS; eauto.
 Qed.
 
+(*X*)
 Program Definition unchecked_free (m: mem) (b: block) (lo hi: Z): mem :=
   mkmem m.(mem_contents)
         (PMap.set b
@@ -623,11 +678,13 @@ Next Obligation.
   eapply mem_bounds_perm; eauto.
 Qed.
 
+(*X*)
 Definition free (m: mem) (b: block) (lo hi: Z): option mem :=
   if range_perm_dec m b lo hi Cur Freeable
   then Some(unchecked_free m b lo hi)
   else None.
 
+(*X*)
 Fixpoint free_list (m: mem) (l: list (block * Z * Z)) {struct l}: option mem :=
   match l with
   | nil => Some m
@@ -642,6 +699,7 @@ Fixpoint free_list (m: mem) (l: list (block * Z * Z)) {struct l}: option mem :=
 
 (** Reading N adjacent bytes in a block content. *)
 
+(*X*)
 Fixpoint getN (n: nat) (p: Z) (c: ZMap.t memval) {struct n}: list memval :=
   match n with
   | O => nil
@@ -653,6 +711,7 @@ Fixpoint getN (n: nat) (p: Z) (c: ZMap.t memval) {struct n}: list memval :=
   at that address.  [None] is returned if the accessed bytes
   are not readable. *)
 
+(*X*)
 Definition load (chunk: memory_chunk) (m: mem) (b: block) (ofs: Z): option val :=
   if valid_access_dec m chunk b ofs Readable
   then Some(decode_val chunk (getN (size_chunk_nat chunk) ofs (m.(mem_contents)#b)))
@@ -661,6 +720,7 @@ Definition load (chunk: memory_chunk) (m: mem) (b: block) (ofs: Z): option val :
 (** [loadv chunk m addr] is similar, but the address and offset are given
   as a single value [addr], which must be a pointer value. *)
 
+(*X*)
 Definition loadv (chunk: memory_chunk) (m: mem) (addr: val) : option val :=
   match addr with
   | Vptr b ofs => load chunk m b (Ptrofs.unsigned ofs)
@@ -671,6 +731,7 @@ Definition loadv (chunk: memory_chunk) (m: mem) (addr: val) : option val :=
   location [(b, ofs)].  Returns [None] if the accessed locations are
   not readable. *)
 
+(*X*)
 Definition loadbytes (m: mem) (b: block) (ofs n: Z): option (list memval) :=
   if range_perm_dec m b ofs (ofs + n) Cur Readable
   then Some (getN (nat_of_Z n) ofs (m.(mem_contents)#b))
@@ -680,18 +741,21 @@ Definition loadbytes (m: mem) (b: block) (ofs n: Z): option (list memval) :=
 
 (** Writing N adjacent bytes in a block content. *)
 
+(*removed*)
 Definition memval_eq (m1 m2: memval): { m1 = m2 } + { m1 <> m2 }.
 Proof.
   decide equality.
   apply Byte.eq_dec. apply Nat.eq_dec. apply quantity_eq. apply Val.eq.
 Qed.
 
+(*modified back to original*)
 Fixpoint setN (vl: list memval) (p: Z) (c: ZMap.t memval) {struct vl}: ZMap.t memval :=
   match vl with
   | nil => c
   | v :: vl' => setN vl' (p + 1) (if memval_eq (ZMap.get p c) v then c else ZMap.set p v c)
   end.
 
+(*X*)
 Remark setN_other:
   forall vl c p q,
   (forall r, p <= r < p + Z_of_nat (length vl) -> r <> q) ->
@@ -705,6 +769,7 @@ Proof.
   intros; apply H. omega.
 Qed.
 
+(*X*)
 Remark setN_outside:
   forall vl c p q,
   q < p \/ q >= p + Z_of_nat (length vl) ->
@@ -714,6 +779,7 @@ Proof.
   intros. omega.
 Qed.
 
+(*X*)
 Remark getN_setN_same:
   forall vl p c,
   getN (length vl) p (setN vl p c) = vl.
@@ -725,6 +791,7 @@ Proof.
   apply IHvl.
 Qed.
 
+(*X*)
 Remark getN_exten:
   forall c1 c2 n p,
   (forall i, p <= i < p + Z_of_nat n -> ZMap.get i c1 = ZMap.get i c2) ->
@@ -734,6 +801,7 @@ Proof.
   apply H. omega. apply IHn. intros. apply H. omega.
 Qed.
 
+(*X*)
 Remark getN_setN_disjoint:
   forall vl q c n p,
   Intv.disjoint (p, p + Z_of_nat n) (q, q + Z_of_nat (length vl)) ->
@@ -743,6 +811,7 @@ Proof.
   intros; red; intros; subst r. eelim H; eauto.
 Qed.
 
+(*X*)
 Remark getN_setN_outside:
   forall vl q c n p,
   p + Z_of_nat n <= q \/ q + Z_of_nat (length vl) <= p ->
@@ -751,6 +820,7 @@ Proof.
   intros. apply getN_setN_disjoint. apply Intv.disjoint_range. auto.
 Qed.
 
+(*X*)
 Remark setN_default:
   forall vl q c, fst (setN vl q c) = fst c.
 Proof.
@@ -762,6 +832,7 @@ Qed.
   Return the updated memory store, or [None] if the accessed bytes
   are not writable. *)
 
+(*X*)
 Program Definition store (chunk: memory_chunk) (m: mem) (b: block) (ofs: Z) (v: val): option mem :=
   if valid_access_dec m chunk b ofs Writable then
     Some (mkmem (PMap.set b
@@ -792,6 +863,7 @@ Qed.
 (** [storev chunk m addr v] is similar, but the address and offset are given
   as a single value [addr], which must be a pointer value. *)
 
+(*X*)
 Definition storev (chunk: memory_chunk) (m: mem) (addr v: val) : option mem :=
   match addr with
   | Vptr b ofs => store chunk m b (Ptrofs.unsigned ofs) v
@@ -802,6 +874,7 @@ Definition storev (chunk: memory_chunk) (m: mem) (addr v: val) : option mem :=
   starting at location [(b, ofs)].  Returns updated memory state
   or [None] if the accessed locations are not writable. *)
 
+(*X*)
 Program Definition storebytes (m: mem) (b: block) (ofs: Z) (bytes: list memval) : option mem :=
   if range_perm_dec m b ofs (ofs + Z_of_nat (length bytes)) Cur Writable then
     if stack_access_dec (stack m) b ofs (ofs + Z_of_nat (length bytes)) then
@@ -835,6 +908,7 @@ Qed.
     [Freeable] in the initial memory state [m].
     Returns updated memory state, or [None] if insufficient permissions. *)
 
+(*X*)
 Program Definition drop_perm (m: mem) (b: block) (lo hi: Z) (p: permission): option mem :=
   if range_perm_dec m b lo hi Cur Freeable then
     Some (mkmem m.(mem_contents)
@@ -878,6 +952,7 @@ Next Obligation.
   eapply mem_bounds_perm; eauto.
 Qed.
 
+(*X*)
 Record mem_inj {injperm: InjectPerm} (f: meminj) (g: frameinj) (m1 m2: mem) : Prop :=
   mk_mem_inj {
     mi_perm:
@@ -908,6 +983,7 @@ Record mem_inj {injperm: InjectPerm} (f: meminj) (g: frameinj) (m1 m2: mem) : Pr
   the [Vundef] values stored in [m1] by more defined values stored
   in [m2] at the same locations. *)
 
+(*X*)
 Record extends' {injperm: InjectPerm} (m1 m2: mem) : Prop :=
   mk_extends {
     mext_next: nextblock m1 = nextblock m2;
@@ -919,6 +995,7 @@ Record extends' {injperm: InjectPerm} (m1 m2: mem) : Prop :=
       length (stack m2) = length (stack m1);
   }.
 
+(*X*)
 Definition extends {injperm: InjectPerm} := extends'.
 
 (** * Memory injections *)
@@ -937,6 +1014,7 @@ Definition extends {injperm: InjectPerm} := extends'.
   representable after the injection.
 *)
 
+(*X*)
 Definition meminj_no_overlap (f: meminj) (m: mem) : Prop :=
   forall b1 b1' delta1 b2 b2' delta2 ofs1 ofs2,
   b1 <> b2 ->
@@ -1561,6 +1639,7 @@ Next Obligation.
     eapply H0. eapply in_frame_in_frames; eauto.
 Qed.
 
+(*X*)
 Lemma alloc_stack:
   forall m1 m2 lo hi b,
     alloc m1 lo hi = (m2,b) ->
@@ -1647,14 +1726,17 @@ Context {injperm: InjectPerm}.
 
 (** Properties of the empty store. *)
 
+(*X*)
 Theorem nextblock_empty: nextblock empty = 1%positive.
 Proof. reflexivity. Qed.
 
+(*X*)
 Theorem perm_empty: forall b ofs k p, ~perm empty b ofs k p.
 Proof.
   intros. unfold perm, empty; simpl. rewrite PMap.gi. simpl. tauto.
 Qed.
 
+(*X*)
 Theorem valid_access_empty: forall chunk b ofs p, ~valid_access empty chunk b ofs p.
 Proof.
   intros. red; intros. elim (perm_empty b ofs Cur p). apply H.
@@ -1711,6 +1793,7 @@ Qed.
 
 (** ** Properties related to [load] *)
 
+(*X*)
 Theorem valid_access_load:
   forall m chunk b ofs,
   valid_access m chunk b ofs Readable ->
@@ -1719,6 +1802,7 @@ Proof.
   intros. econstructor. unfold load. rewrite pred_dec_true; eauto.
 Qed.
 
+(*X*)
 Theorem load_valid_access:
   forall m chunk b ofs v,
   load chunk m b ofs = Some v ->
@@ -1730,6 +1814,7 @@ Proof.
   congruence.
 Qed.
 
+(*X*)
 Lemma load_result:
   forall chunk m b ofs v,
   load chunk m b ofs = Some v ->
@@ -1743,6 +1828,7 @@ Qed.
 
 Local Hint Resolve load_valid_access valid_access_load: mem.
 
+(*X*)
 Theorem load_type:
   forall m chunk b ofs v,
   load chunk m b ofs = Some v ->
@@ -1752,6 +1838,7 @@ Proof.
   apply decode_val_type.
 Qed.
 
+(*X*)
 Theorem load_cast:
   forall m chunk b ofs v,
   load chunk m b ofs = Some v ->
@@ -1768,6 +1855,7 @@ Proof.
   intros. subst v. apply decode_val_cast.
 Qed.
 
+(*X*)
 Theorem load_int8_signed_unsigned:
   forall m b ofs,
   load Mint8signed m b ofs = option_map (Val.sign_ext 8) (load Mint8unsigned m b ofs).
@@ -1782,6 +1870,7 @@ Proof.
   rewrite pred_dec_false; auto.
 Qed.
 
+(*X*)
 Theorem load_int16_signed_unsigned:
   forall m b ofs,
   load Mint16signed m b ofs = option_map (Val.sign_ext 16) (load Mint16unsigned m b ofs).
@@ -1798,6 +1887,7 @@ Qed.
 
 (** ** Properties related to [loadbytes] *)
 
+(*X*)
 Theorem range_perm_loadbytes:
   forall m b ofs len,
   range_perm m b ofs (ofs + len) Cur Readable ->
@@ -1806,6 +1896,7 @@ Proof.
   intros. econstructor. unfold loadbytes. rewrite pred_dec_true; eauto.
 Qed.
 
+(*X*)
 Theorem loadbytes_range_perm:
   forall m b ofs len bytes,
   loadbytes m b ofs len = Some bytes ->
@@ -1815,6 +1906,7 @@ Proof.
   destruct (range_perm_dec m b ofs (ofs + len) Cur Readable). auto. congruence.
 Qed.
 
+(*X*)
 Theorem loadbytes_load:
   forall chunk m b ofs bytes,
   loadbytes m b ofs (size_chunk chunk) = Some bytes ->
@@ -1829,6 +1921,7 @@ Proof.
   inversion 1.
 Qed.
 
+(*X*)
 Theorem load_loadbytes:
   forall chunk m b ofs v,
   load chunk m b ofs = Some v ->
@@ -1842,12 +1935,14 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Lemma getN_length:
   forall c n p, length (getN n p c) = n.
 Proof.
   induction n; simpl; intros. auto. decEq; auto.
 Qed.
 
+(*X*)
 Theorem loadbytes_length:
   forall m b ofs n bytes,
   loadbytes m b ofs n = Some bytes ->
@@ -1858,6 +1953,7 @@ Proof.
   inv H. apply getN_length.
 Qed.
 
+(*X*)
 Theorem loadbytes_empty:
   forall m b ofs n,
   n <= 0 -> loadbytes m b ofs n = Some nil.
@@ -1866,6 +1962,7 @@ Proof.
   red; intros. omegaContradiction.
 Qed.
 
+(*X*)
 Lemma getN_concat:
   forall c n1 n2 p,
   getN (n1 + n2)%nat p c = getN n1 p c ++ getN n2 (p + Z_of_nat n1) c.
@@ -1877,6 +1974,7 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Theorem loadbytes_concat:
   forall m b ofs n1 n2 bytes1 bytes2,
   loadbytes m b ofs n1 = Some bytes1 ->
@@ -1895,6 +1993,7 @@ Proof.
   destruct H4. apply r; omega. apply r0; omega.
 Qed.
 
+(*X*)
 Theorem loadbytes_split:
   forall m b ofs n1 n2 bytes,
   loadbytes m b ofs (n1 + n2) = Some bytes ->
@@ -1916,6 +2015,7 @@ Proof.
   red; intros; apply r; omega.
 Qed.
 
+(*X*)
 Theorem load_rep:
  forall ch m1 m2 b ofs v1 v2,
   (forall z, 0 <= z < size_chunk ch -> ZMap.get (ofs + z) m1.(mem_contents)#b = ZMap.get (ofs + z) m2.(mem_contents)#b) ->
@@ -1942,6 +2042,7 @@ Proof.
   rewrite inj_S. omega.
 Qed.
 
+(*X*)
 Theorem load_int64_split:
   forall m b ofs v,
   load Mint64 m b ofs = Some v -> Archi.ptr64 = false ->
@@ -1973,6 +2074,7 @@ Proof.
   erewrite loadbytes_length; eauto. reflexivity.
 Qed.
 
+(*X*)
 Lemma addressing_int64_split:
   forall i,
   Archi.ptr64 = false ->
@@ -1993,6 +2095,7 @@ Proof.
   unfold Ptrofs.max_unsigned. omega.
 Qed.
 
+(*X*)
 Theorem loadv_int64_split:
   forall m a v,
   loadv Mint64 m a = Some v -> Archi.ptr64 = false ->
@@ -2016,6 +2119,7 @@ Qed.
 
 (** ** Properties related to [store] *)
 
+(*X*)
 Theorem valid_access_store' :
   forall m1 chunk b ofs v,
   valid_access m1 chunk b ofs Writable ->
@@ -2029,6 +2133,7 @@ Qed.
 
 Local Hint Resolve valid_access_store': mem.
 
+(*X*)
 Theorem valid_access_store:
   forall m1 chunk b ofs v,
   valid_access m1 chunk b ofs Writable ->
@@ -2103,25 +2208,29 @@ Variable v: val.
 Variable m2: mem.
 Hypothesis STORE: store chunk m1 b ofs v = Some m2.
 
+(*X*)
 Lemma store_access: mem_access m2 = mem_access m1.
 Proof.
   unfold store in STORE. destruct ( valid_access_dec m1 chunk b ofs Writable); inv STORE.
   repeat destr_in H0. auto.
 Qed.
 
+(*X*)
 Lemma store_mem_contents:
   mem_contents m2 = PMap.set b (setN (encode_val chunk v) ofs m1.(mem_contents)#b) m1.(mem_contents).
 Proof.
   unfold store in STORE. destruct (valid_access_dec m1 chunk b ofs Writable); repeat destr_in STORE; simpl; auto.
 Qed.
 
+(*X*)
 Theorem perm_store_1:
   forall b' ofs' k p, perm m1 b' ofs' k p -> perm m2 b' ofs' k p.
 Proof.
   intros.
   unfold perm in *. rewrite store_access; auto.
 Qed.
- 
+
+(*X*) 
 Theorem perm_store_2:
   forall b' ofs' k p, perm m2 b' ofs' k p -> perm m1 b' ofs' k p.
 Proof.
@@ -2130,6 +2239,7 @@ Qed.
 
 Local Hint Resolve perm_store_1 perm_store_2: mem.
 
+(*X*)
 Theorem nextblock_store:
   nextblock m2 = nextblock m1.
 Proof.
@@ -2138,12 +2248,14 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Theorem store_valid_block_1:
   forall b', valid_block m1 b' -> valid_block m2 b'.
 Proof.
   unfold valid_block; intros. rewrite nextblock_store; auto.
 Qed.
 
+(*X*)
 Theorem store_valid_block_2:
   forall b', valid_block m2 b' -> valid_block m1 b'.
 Proof.
@@ -2152,6 +2264,7 @@ Qed.
 
 Local Hint Resolve store_valid_block_1 store_valid_block_2: mem.
 
+(*X removed*)
 Theorem store_stack_access_1: forall b lo hi,
   stack_access (stack m1) b lo hi -> stack_access (stack m2) b lo hi.
 Proof.
@@ -2160,6 +2273,7 @@ Proof.
   auto.
 Qed.
 
+(*X removed*)
 Theorem store_stack_access_2: forall b lo hi,
   stack_access (stack m2) b lo hi -> stack_access (stack m1) b lo hi.
 Proof.
@@ -2170,6 +2284,7 @@ Qed.
 
 Local Hint Resolve store_stack_access_1 store_stack_access_2 : mem.
 
+(*X*)
 Theorem store_valid_access_1:
   forall chunk' b' ofs' p,
   valid_access m1 chunk' b' ofs' p -> valid_access m2 chunk' b' ofs' p.
@@ -2179,6 +2294,7 @@ Proof.
   auto with mem.
 Qed.
 
+(*X*)
 Theorem store_valid_access_2:
   forall chunk' b' ofs' p,
   valid_access m2 chunk' b' ofs' p -> valid_access m1 chunk' b' ofs' p.
@@ -2188,6 +2304,7 @@ Proof.
   auto with mem.
 Qed.
 
+(*X*)
 Theorem store_valid_access_3:
   valid_access m1 chunk b ofs Writable.
 Proof.
@@ -2196,6 +2313,7 @@ Qed.
 
 Local Hint Resolve store_valid_access_1 store_valid_access_2 store_valid_access_3: mem.
 
+(*X*)
 Theorem load_store_similar:
   forall chunk',
   size_chunk chunk' = size_chunk chunk ->
@@ -2215,6 +2333,7 @@ Proof.
   apply inj_eq_rev; auto.
 Qed.
 
+(*X*)
 Theorem load_store_similar_2:
   forall chunk',
   size_chunk chunk' = size_chunk chunk ->
@@ -2226,12 +2345,14 @@ Proof.
   rewrite A. decEq. eapply decode_encode_val_similar with (chunk1 := chunk); eauto.
 Qed.
 
+(*X*)
 Theorem load_store_same:
   load chunk m2 b ofs = Some (Val.load_result chunk v).
 Proof.
   apply load_store_similar_2; auto. omega.
 Qed.
 
+(*X*)
 Theorem load_store_other:
   forall chunk' b' ofs',
   b' <> b
@@ -2252,6 +2373,7 @@ Proof.
   eauto with mem.
 Qed.
 
+(*X*)
 Theorem loadbytes_store_same:
   loadbytes m2 b ofs (size_chunk chunk) = Some(encode_val chunk v).
 Proof.
@@ -2265,6 +2387,7 @@ Proof.
   apply H.
 Qed.
 
+(*X*)
 Theorem loadbytes_store_other:
   forall b' ofs' n,
   b' <> b
@@ -2290,6 +2413,7 @@ Proof.
   red; intro; elim n0; red; intros; eauto with mem.
 Qed.
 
+(*X*)
 Lemma setN_in:
   forall vl p q c,
   p <= q < p + Z_of_nat (length vl) ->
@@ -2303,6 +2427,7 @@ Proof.
   right. apply IHvl. omega.
 Qed.
 
+(*X*)
 Lemma getN_in:
   forall c q n p,
   p <= q < p + Z_of_nat n ->
@@ -2322,6 +2447,7 @@ Local Hint Resolve store_valid_block_1 store_valid_block_2: mem.
 Local Hint Resolve store_valid_access_1 store_valid_access_2
              store_valid_access_3: mem.
 
+(*X*)
 Lemma load_store_overlap:
   forall chunk m1 b ofs v m2 chunk' ofs' v',
   store chunk m1 b ofs v = Some m2 ->
@@ -2373,6 +2499,7 @@ Proof.
   unfold c'. simpl. rewrite setN_outside by omega. destr; apply ZMap.gss.
 Qed.
 
+(*X*)
 Definition compat_pointer_chunks (chunk1 chunk2: memory_chunk) : Prop :=
   match chunk1, chunk2 with
   | (Mint32 | Many32), (Mint32 | Many32) => True
@@ -2380,6 +2507,7 @@ Definition compat_pointer_chunks (chunk1 chunk2: memory_chunk) : Prop :=
   | _, _ => False
   end.
 
+(*X*)
 Lemma compat_pointer_chunks_true:
   forall chunk1 chunk2,
   (chunk1 = Mint32 \/ chunk1 = Many32 \/ chunk1 = Mint64 \/ chunk1 = Many64) ->
@@ -2391,6 +2519,7 @@ Proof.
   subst; red; auto; discriminate.
 Qed.
 
+(*X*)
 Theorem load_pointer_store:
   forall chunk m1 b ofs v m2 chunk' b' ofs' v_b v_o,
   store chunk m1 b ofs v = Some m2 ->
@@ -2424,6 +2553,7 @@ Proof.
   exploit H7; eauto. intros (j & P & Q). subst mv1. inv ENC. congruence.
 Qed.
 
+(*X*)
 Theorem load_store_pointer_overlap:
   forall chunk m1 b ofs v_b v_o m2 chunk' ofs' v,
   store chunk m1 b ofs (Vptr v_b v_o) = Some m2 ->
@@ -2448,6 +2578,7 @@ Proof.
   + auto.
 Qed.
 
+(*X*)
 Theorem load_store_pointer_mismatch:
   forall chunk m1 b ofs v_b v_o m2 chunk' v,
   store chunk m1 b ofs (Vptr v_b v_o) = Some m2 ->
@@ -2466,6 +2597,7 @@ Proof.
 - contradiction.
 Qed.
 
+(*X*)
 Lemma store_similar_chunks:
   forall chunk1 chunk2 v1 v2 m b ofs,
   encode_val chunk1 v1 = encode_val chunk2 v2 ->
@@ -2485,34 +2617,40 @@ Proof.
   elim n. apply valid_access_compat with chunk2; auto. omega.
 Qed.
 
+(*X*)
 Theorem store_signed_unsigned_8:
   forall m b ofs v,
   store Mint8signed m b ofs v = store Mint8unsigned m b ofs v.
 Proof. intros. apply store_similar_chunks. apply encode_val_int8_signed_unsigned. auto. Qed.
 
+(*X*)
 Theorem store_signed_unsigned_16:
   forall m b ofs v,
   store Mint16signed m b ofs v = store Mint16unsigned m b ofs v.
 Proof. intros. apply store_similar_chunks. apply encode_val_int16_signed_unsigned. auto. Qed.
 
+(*X*)
 Theorem store_int8_zero_ext:
   forall m b ofs n,
   store Mint8unsigned m b ofs (Vint (Int.zero_ext 8 n)) =
   store Mint8unsigned m b ofs (Vint n).
 Proof. intros. apply store_similar_chunks. apply encode_val_int8_zero_ext. auto. Qed.
 
+(*X*)
 Theorem store_int8_sign_ext:
   forall m b ofs n,
   store Mint8signed m b ofs (Vint (Int.sign_ext 8 n)) =
   store Mint8signed m b ofs (Vint n).
 Proof. intros. apply store_similar_chunks. apply encode_val_int8_sign_ext. auto. Qed.
 
+(*X*)
 Theorem store_int16_zero_ext:
   forall m b ofs n,
   store Mint16unsigned m b ofs (Vint (Int.zero_ext 16 n)) =
   store Mint16unsigned m b ofs (Vint n).
 Proof. intros. apply store_similar_chunks. apply encode_val_int16_zero_ext. auto. Qed.
 
+(*X*)
 Theorem store_int16_sign_ext:
   forall m b ofs n,
   store Mint16signed m b ofs (Vint (Int.sign_ext 16 n)) =
@@ -2541,6 +2679,7 @@ Qed.
 
 (** ** Properties related to [storebytes]. *)
 
+(*X removed*)
 Theorem range_perm_storebytes':
   forall m1 b ofs bytes,
     range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable ->
@@ -2554,6 +2693,7 @@ Proof.
   contradiction. contradiction.
 Qed.
 
+(*X*)
 Theorem range_perm_storebytes:
   forall m1 b ofs bytes,
   range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable ->
@@ -2568,6 +2708,7 @@ Proof.
   congruence. congruence.
 Defined.
 
+(*X*)
 Theorem storebytes_store:
   forall m1 b ofs chunk v m2,
   storebytes m1 b ofs (encode_val chunk v) = Some m2 ->
@@ -2585,6 +2726,7 @@ Proof.
   - auto.
 Qed.
 
+(*X*)
 Theorem store_storebytes:
   forall m1 b ofs chunk v m2,
   store chunk m1 b ofs v = Some m2 ->
@@ -2622,6 +2764,7 @@ Variable bytes: list memval.
 Variable m2: mem.
 Hypothesis STORE: storebytes m1 b ofs bytes = Some m2.
 
+(*X*)
 Lemma storebytes_access: mem_access m2 = mem_access m1.
 Proof.
   unfold storebytes in STORE.
@@ -2631,6 +2774,7 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Lemma storebytes_mem_contents:
   mem_contents m2 = PMap.set b (setN bytes ofs m1.(mem_contents)#b) (m1.(mem_contents)).
 Proof.
@@ -2638,12 +2782,14 @@ Proof.
   repeat destr_in STORE. reflexivity.
 Qed.
 
+(*X*)
 Theorem perm_storebytes_1:
   forall b' ofs' k p, perm m1 b' ofs' k p -> perm m2 b' ofs' k p.
 Proof.
   intros. unfold perm in *. rewrite storebytes_access; auto.
 Qed.
 
+(*X*)
 Theorem perm_storebytes_2:
   forall b' ofs' k p, perm m2 b' ofs' k p -> perm m1 b' ofs' k p.
 Proof.
@@ -2687,6 +2833,7 @@ Local Hint Resolve storebytes_stack_access_1
       storebytes_stack_access_2
       storebytes_stack_access_3: mem.
 
+(*X*)
 Theorem storebytes_valid_access_1:
   forall chunk' b' ofs' p,
   valid_access m1 chunk' b' ofs' p -> valid_access m2 chunk' b' ofs' p.
@@ -2696,6 +2843,7 @@ Proof.
   intros. auto with mem.
 Qed.
 
+(*X*)
 Theorem storebytes_valid_access_2:
   forall chunk' b' ofs' p,
   valid_access m2 chunk' b' ofs' p -> valid_access m1 chunk' b' ofs' p.
@@ -2707,6 +2855,7 @@ Qed.
 
 Local Hint Resolve storebytes_valid_access_1 storebytes_valid_access_2: mem.
 
+(*X*)
 Theorem nextblock_storebytes:
   nextblock m2 = nextblock m1.
 Proof.
@@ -2716,12 +2865,14 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Theorem storebytes_valid_block_1:
   forall b', valid_block m1 b' -> valid_block m2 b'.
 Proof.
   unfold valid_block; intros. rewrite nextblock_storebytes; auto.
 Qed.
 
+(*X*)
 Theorem storebytes_valid_block_2:
   forall b', valid_block m2 b' -> valid_block m1 b'.
 Proof.
@@ -2730,6 +2881,7 @@ Qed.
 
 Local Hint Resolve storebytes_valid_block_1 storebytes_valid_block_2: mem.
 
+(*X*)
 Theorem storebytes_range_perm:
   range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable.
 Proof.
@@ -2738,6 +2890,7 @@ Proof.
   repeat destr_in STORE.
 Qed.
 
+(*X*)
 Theorem loadbytes_storebytes_same:
   loadbytes m2 b ofs (Z_of_nat (length bytes)) = Some bytes.
 Proof.
@@ -2751,6 +2904,7 @@ Proof.
   apply storebytes_range_perm. auto. constructor.
 Qed.
 
+(*X*)
 Theorem loadbytes_storebytes_disjoint:
   forall b' ofs' len,
   len >= 0 ->
@@ -2769,6 +2923,7 @@ Proof.
   red; intros; elim n. red; auto with mem.
 Qed.
 
+(*X*)
 Theorem loadbytes_storebytes_other:
   forall b' ofs' len,
   len >= 0 ->
@@ -2781,6 +2936,7 @@ Proof.
   destruct H0; auto. right. apply Intv.disjoint_range; auto.
 Qed.
 
+(*X*)
 Theorem load_storebytes_other:
   forall chunk b' ofs',
   b' <> b
@@ -2814,6 +2970,7 @@ Proof.
   apply mkmem_ext; auto.
 Qed.
 
+(*X*)
 Lemma setN_concat:
   forall bytes1 bytes2 ofs c,
   setN (bytes1 ++ bytes2) ofs c = setN bytes2 (ofs + Z_of_nat (length bytes1)) (setN bytes1 ofs c).
@@ -2847,6 +3004,7 @@ Proof.
   eapply public_stack_range_concat; eauto.
 Qed.
 
+(*X*)
 Theorem storebytes_concat:
   forall m b ofs bytes1 m1 bytes2 m2,
   storebytes m b ofs bytes1 = Some m1 ->
@@ -2891,11 +3049,12 @@ Lemma storebytes_is_stack_top:
 Proof.
   unfold storebytes.
   intros.
-  destruct (range_perm_dec m1 b o (o + Z.of_nat (length v)) Cur Writable),
+  destruct (range_perm_dec m1 b o (o + Z.of_nat (length v)) Cur Writable).
   (stack_access_dec (stack m1) b o (o + Z.of_nat (length v))); try discriminate. inv H.
   unfold is_stack_top, get_stack_top_blocks. simpl. tauto.
 Qed.
 
+(*X*)
 Lemma storebytes_stack:
   forall m1 b o v m2,
     storebytes m1 b o v = Some m2 ->
@@ -2908,6 +3067,7 @@ Proof.
   unfold is_stack_top, get_stack_top_blocks. simpl. tauto.
 Qed.
 
+(*X*)
 Theorem storebytes_split:
   forall m b ofs bytes1 bytes2 m2,
   storebytes m b ofs (bytes1 ++ bytes2) = Some m2 ->
@@ -2940,6 +3100,7 @@ Proof.
   exists m1; split; auto.
 Qed.
 
+(*X*)
 Theorem store_int64_split:
   forall m b ofs v m',
   store Mint64 m b ofs v = Some m' -> Archi.ptr64 = false ->
@@ -2960,6 +3121,7 @@ Proof.
   simpl. apply Zdivide_plus_r. apply Zdivides_trans with 8; auto. exists 2; auto. exists 1; auto.
 Qed.
 
+(*X*)
 Theorem storev_int64_split:
   forall m a v m',
   storev Mint64 m a v = Some m' -> Archi.ptr64 = false ->
@@ -2986,18 +3148,21 @@ Variable m2: mem.
 Variable b: block.
 Hypothesis ALLOC: alloc m1 lo hi = (m2, b).
 
+(*X*)
 Theorem nextblock_alloc:
   nextblock m2 = Psucc (nextblock m1).
 Proof.
   injection ALLOC; intros. rewrite <- H0; auto.
 Qed.
 
+(*X*)
 Theorem alloc_result:
   b = nextblock m1.
 Proof.
   injection ALLOC; auto.
 Qed.
 
+(*X*)
 Theorem valid_block_alloc:
   forall b', valid_block m1 b' -> valid_block m2 b'.
 Proof.
@@ -3005,12 +3170,14 @@ Proof.
   apply Plt_trans_succ; auto.
 Qed.
 
+(*X*)
 Theorem fresh_block_alloc:
   ~(valid_block m1 b).
 Proof.
   unfold valid_block. rewrite alloc_result. apply Plt_strict.
 Qed.
 
+(*X*)
 Theorem valid_new_block:
   valid_block m2 b.
 Proof.
@@ -3019,6 +3186,7 @@ Qed.
 
 Local Hint Resolve valid_block_alloc fresh_block_alloc valid_new_block: mem.
 
+(*X*)
 Theorem valid_block_alloc_inv:
   forall b', valid_block m2 b' -> b' = b \/ valid_block m1 b'.
 Proof.
@@ -3027,6 +3195,7 @@ Proof.
   exploit Plt_succ_inv; eauto. tauto.
 Qed.
 
+(*X*)
 Theorem perm_alloc_1:
   forall b' ofs k p, perm m1 b' ofs k p -> perm m2 b' ofs k p.
 Proof.
@@ -3035,6 +3204,7 @@ Proof.
   rewrite nextblock_noaccess in H. contradiction. subst b'. apply Plt_strict.
 Qed.
 
+(*X*)
 Theorem perm_alloc_2:
   forall ofs k, lo <= ofs < hi -> perm m2 b ofs k Freeable.
 Proof.
@@ -3043,6 +3213,7 @@ Proof.
   rewrite zlt_true. simpl. auto with mem. omega. omega.
 Qed.
 
+(*X*)
 Theorem perm_alloc_inv:
   forall b' ofs k p,
   perm m2 b' ofs k p ->
@@ -3055,12 +3226,14 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Theorem perm_alloc_3:
   forall ofs k p, perm m2 b ofs k p -> lo <= ofs < hi.
 Proof.
   intros. exploit perm_alloc_inv; eauto. rewrite dec_eq_true; auto.
 Qed.
 
+(*X*)
 Theorem perm_alloc_4:
   forall b' ofs k p, perm m2 b' ofs k p -> b' <> b -> perm m1 b' ofs k p.
 Proof.
@@ -3084,7 +3257,7 @@ Proof.
 Qed.
 
 
-
+(*X*)
 Theorem valid_access_alloc_other:
   forall chunk b' ofs p,
   valid_access m1 chunk b' ofs p ->
@@ -3127,6 +3300,7 @@ Proof.
   eapply stack_valid. auto.
 Qed.
 
+(*X*)
 Theorem valid_access_alloc_same:
   forall chunk ofs,
   lo <= ofs -> ofs + size_chunk chunk <= hi -> (align_chunk chunk | ofs) ->
@@ -3141,6 +3315,7 @@ Qed.
 
 Local Hint Resolve valid_access_alloc_other valid_access_alloc_same: mem.
 
+(*X*)
 Theorem valid_access_alloc_inv:
   forall chunk b' ofs p,
   valid_access m2 chunk b' ofs p ->
@@ -3166,6 +3341,7 @@ Proof.
   auto. 
 Qed.
 
+(*X*)
 Theorem load_alloc_unchanged:
   forall chunk b' ofs,
   valid_block m1 b' ->
@@ -3182,6 +3358,7 @@ Proof.
   eauto with mem.
 Qed.
 
+(*X*)
 Theorem load_alloc_other:
   forall chunk b' ofs v,
   load chunk m1 b' ofs = Some v ->
@@ -3190,6 +3367,7 @@ Proof.
   intros. rewrite <- H. apply load_alloc_unchanged. eauto with mem.
 Qed.
 
+(*X*)
 Theorem load_alloc_same:
   forall chunk ofs v,
   load chunk m2 b ofs = Some v ->
@@ -3201,6 +3379,7 @@ Proof.
   rewrite ZMap.gi. apply decode_val_undef.
 Qed.
 
+(*X*)
 Theorem load_alloc_same':
   forall chunk ofs,
   lo <= ofs -> ofs + size_chunk chunk <= hi -> (align_chunk chunk | ofs) ->
@@ -3214,6 +3393,7 @@ Proof.
   eapply load_alloc_same; eauto.
 Qed.
 
+(*X*)
 Theorem loadbytes_alloc_unchanged:
   forall b' ofs n,
   valid_block m1 b' ->
@@ -3229,6 +3409,7 @@ Proof.
   red; intros; elim n0. red; intros. eapply perm_alloc_4; eauto. eauto with mem.
 Qed.
 
+(*X*)
 Theorem loadbytes_alloc_same:
   forall n ofs bytes byte,
   loadbytes m2 b ofs n = Some bytes ->
@@ -3249,6 +3430,7 @@ Local Hint Resolve valid_access_alloc_other valid_access_alloc_same: mem.
 
 (** ** Properties related to [free]. *)
 
+(*X removed*)
 Theorem range_perm_free':
   forall m1 b lo hi,
   range_perm m1 b lo hi Cur Freeable ->
@@ -3257,6 +3439,7 @@ Proof.
   intros; unfold free. rewrite pred_dec_true; auto. econstructor; eauto.
 Qed.
 
+(*X*)
 Theorem range_perm_free:
   forall m1 b lo hi,
   range_perm m1 b lo hi Cur Freeable ->
@@ -3278,6 +3461,7 @@ Variables lo hi: Z.
 Variable m2: mem.
 Hypothesis FREE: free m1 bf lo hi = Some m2.
 
+(*X*)
 Theorem free_range_perm:
   range_perm m1 bf lo hi Cur Freeable.
 Proof.
@@ -3285,6 +3469,7 @@ Proof.
   congruence.
 Qed.
 
+(*X*)
 Lemma free_result:
   m2 = unchecked_free m1 bf lo hi.
 Proof.
@@ -3292,18 +3477,21 @@ Proof.
   congruence. congruence.
 Qed.
 
+(*X*)
 Theorem nextblock_free:
   nextblock m2 = nextblock m1.
 Proof.
   rewrite free_result; reflexivity.
 Qed.
 
+(*X*)
 Theorem valid_block_free_1:
   forall b, valid_block m1 b -> valid_block m2 b.
 Proof.
   intros. rewrite free_result. assumption.
 Qed.
 
+(*X*)
 Theorem valid_block_free_2:
   forall b, valid_block m2 b -> valid_block m1 b.
 Proof.
@@ -3312,6 +3500,7 @@ Qed.
 
 Local Hint Resolve valid_block_free_1 valid_block_free_2: mem.
 
+(*X*)
 Theorem perm_free_1:
   forall b ofs k p,
   b <> bf \/ ofs < lo \/ hi <= ofs ->
@@ -3327,6 +3516,7 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Theorem perm_free_2:
   forall ofs k p, lo <= ofs < hi -> ~ perm m2 bf ofs k p.
 Proof.
@@ -3335,6 +3525,7 @@ Proof.
   simpl. tauto. omega. omega.
 Qed.
 
+(*X*)
 Theorem perm_free_3:
   forall b ofs k p,
   perm m2 b ofs k p -> perm m1 b ofs k p.
@@ -3346,6 +3537,7 @@ Proof.
   auto. auto. auto.
 Qed.
 
+(*X*)
 Theorem perm_free_inv:
   forall b ofs k p,
   perm m1 b ofs k p ->
@@ -3409,6 +3601,7 @@ Proof.
   tauto.
 Qed.
 
+(*X*)
 Theorem valid_access_free_1:
   forall chunk b ofs p,
   valid_access m1 chunk b ofs p ->
@@ -3423,6 +3616,7 @@ Proof.
   apply free_stack_access. auto.
 Qed.
 
+(*X*)
 Theorem valid_access_free_2:
   forall chunk ofs p,
   lo < hi -> ofs + size_chunk chunk > lo -> ofs < hi ->
@@ -3437,6 +3631,7 @@ Proof.
   omega. apply H3. omega.
 Qed.
 
+(*X*)
 Theorem valid_access_free_inv_1:
   forall chunk b ofs p,
   valid_access m2 chunk b ofs p ->
@@ -3453,6 +3648,7 @@ Proof.
   intros. apply free_stack_access. auto.
 Qed.
 
+(*X*)
 Theorem valid_access_free_inv_2:
   forall chunk ofs p,
   valid_access m2 chunk bf ofs p ->
@@ -3465,6 +3661,7 @@ Proof.
   elim (valid_access_free_2 chunk ofs p); auto. omega.
 Qed.
 
+(*X*)
 Theorem load_free:
   forall chunk b ofs,
   b <> bf \/ lo >= hi \/ ofs + size_chunk chunk <= lo \/ hi <= ofs ->
@@ -3479,6 +3676,7 @@ Proof.
   red; intro; elim n. eapply valid_access_free_1; eauto.
 Qed.
 
+(*X*)
 Theorem load_free_2:
   forall chunk b ofs v,
   load chunk m2 b ofs = Some v -> load chunk m1 b ofs = Some v.
@@ -3488,6 +3686,7 @@ Proof.
   apply valid_access_free_inv_1. eauto with mem.
 Qed.
 
+(*X*)
 Theorem loadbytes_free:
   forall b ofs n,
   b <> bf \/ lo >= hi \/ ofs + n <= lo \/ hi <= ofs ->
@@ -3503,6 +3702,7 @@ Proof.
   eapply perm_free_1; eauto. destruct H; auto. right; omega.
 Qed.
 
+(*X*)
 Theorem loadbytes_free_2:
   forall b ofs n bytes,
   loadbytes m2 b ofs n = Some bytes -> loadbytes m1 b ofs n = Some bytes.
@@ -3521,6 +3721,7 @@ Local Hint Resolve valid_block_free_1 valid_block_free_2
 
 (** ** Properties related to [drop_perm] *)
 
+(*X*)
 Theorem range_perm_drop_1:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' -> range_perm m b lo hi Cur Freeable.
 Proof.
@@ -3536,6 +3737,7 @@ Proof.
   destruct (range_perm_dec m b lo hi Cur Freeable). econstructor. eauto. contradiction.
 Qed.
 
+(*X*)
 Theorem range_perm_drop_2:
   forall m b lo hi p,
   range_perm m b lo hi Cur Freeable -> { m' | drop_perm m b lo hi p = Some m' }.
@@ -3558,24 +3760,28 @@ Variable p: permission.
 Variable m': mem.
 Hypothesis DROP: drop_perm m b lo hi p = Some m'.
 
+(*X*)
 Theorem nextblock_drop:
   nextblock m' = nextblock m.
 Proof.
   unfold drop_perm in DROP. destruct (range_perm_dec m b lo hi Cur Freeable); inv DROP; auto.
 Qed.
 
+(*X*)
 Theorem drop_perm_valid_block_1:
   forall b', valid_block m b' -> valid_block m' b'.
 Proof.
   unfold valid_block; rewrite nextblock_drop; auto.
 Qed.
 
+(*X*)
 Theorem drop_perm_valid_block_2:
   forall b', valid_block m' b' -> valid_block m b'.
 Proof.
   unfold valid_block; rewrite nextblock_drop; auto.
 Qed.
 
+(*X*)
 Theorem perm_drop_1:
   forall ofs k, lo <= ofs < hi -> perm m' b ofs k p.
 Proof.
@@ -3586,6 +3792,7 @@ Proof.
   omega. omega.
 Qed.
 
+(*X*)
 Theorem perm_drop_2:
   forall ofs k p', lo <= ofs < hi -> perm m' b ofs k p' -> perm_order p p'.
 Proof.
@@ -3596,6 +3803,7 @@ Proof.
   omega. omega.
 Qed.
 
+(*X*)
 Theorem perm_drop_3:
   forall b' ofs k p', b' <> b \/ ofs < lo \/ hi <= ofs -> perm m b' ofs k p' -> perm m' b' ofs k p'.
 Proof.
@@ -3607,6 +3815,7 @@ Proof.
   auto. auto. auto.
 Qed.
 
+(*X*)
 Theorem perm_drop_4:
   forall b' ofs k p', perm m' b' ofs k p' -> perm m b' ofs k p'.
 Proof.
@@ -3668,6 +3877,7 @@ Proof.
   drop_perm_public_stack_access; tauto.
 Qed.
 
+(*X*)
 Lemma valid_access_drop_1:
   forall chunk b' ofs p',
   b' <> b \/ ofs + size_chunk chunk <= lo \/ hi <= ofs \/ perm_order p p' ->
@@ -3685,6 +3895,7 @@ Proof.
   intros. apply drop_perm_stack_access. auto.
 Qed.
 
+(*X*)
 Lemma valid_access_drop_2:
   forall chunk b' ofs p',
   valid_access m' chunk b' ofs p' -> valid_access m chunk b' ofs p'.
@@ -3695,6 +3906,7 @@ Proof.
   intros. apply drop_perm_stack_access. auto.
 Qed.
 
+(*X*)
 Theorem load_drop:
   forall chunk b' ofs,
   b' <> b \/ ofs + size_chunk chunk <= lo \/ hi <= ofs \/ perm_order p Readable ->
@@ -3710,6 +3922,7 @@ Proof.
   red; intros; elim n. eapply valid_access_drop_2; eauto.
 Qed.
 
+(*X*)
 Theorem loadbytes_drop:
   forall b' ofs n,
   b' <> b \/ ofs + n <= lo \/ hi <= ofs \/ perm_order p Readable ->
@@ -3751,6 +3964,7 @@ Local Hint Resolve valid_access_drop_1 valid_access_drop_2 : mem.
 
 (** Preservation of permissions *)
 
+(*X*)
 Lemma perm_inj:
   forall f g m1 m2 b1 ofs k p b2 delta,
   mem_inj f g m1 m2 ->
@@ -3762,6 +3976,7 @@ Proof.
   intros. eapply mi_perm; eauto.
 Qed.
 
+(*X*)
 Lemma range_perm_inj:
   forall f g m1 m2 b1 lo hi k p b2 delta,
   mem_inj f g m1 m2 ->
@@ -3847,6 +4062,7 @@ Proof.
   eapply stack_inv_norepet, mem_stack_inv; eauto.
 Qed.
 
+(*X removed because not needed*)
 Lemma valid_access_inj_gen:
   forall f g m1 m2 b1 b2 delta chunk ofs p
          (MINJ : stack_inject f g (perm m1) (stack m1) (stack m2))
@@ -3882,6 +4098,7 @@ Proof.
     eapply stack_inv_norepet, mem_stack_inv; eauto.
 Qed.
 
+(*X*)
 Lemma valid_access_inj:
   forall f g m1 m2 b1 b2 delta chunk ofs p,
   mem_inj f g m1 m2 ->
@@ -3896,6 +4113,7 @@ Qed.
 
 (** Preservation of loads. *)
 
+(*X*)
 Lemma getN_inj:
   forall f g m1 m2 b1 b2 delta,
   mem_inj f g m1 m2 ->
@@ -3916,6 +4134,7 @@ Proof.
   apply IHn. red; intros; apply H1; omega.
 Qed.
 
+(*X*)
 Lemma load_inj:
   forall f g m1 m2 chunk b1 ofs b2 delta v1,
   mem_inj f g m1 m2 ->
@@ -3933,6 +4152,7 @@ Proof.
   rewrite <- size_chunk_conv. exploit load_valid_access; eauto. intros [A B]. auto.
 Qed.
 
+(*X*)
 Lemma loadbytes_inj:
   forall f g m1 m2 len b1 ofs b2 delta bytes1,
   mem_inj f g m1 m2 ->
@@ -4094,6 +4314,7 @@ Proof.
   intuition subst; eauto.
 Qed.
 
+(*X*)
 Lemma setN_inj:
   forall (access: Z -> Prop) delta f vl1 vl2,
   list_forall2 (memval_inject f) vl1 vl2 ->
@@ -4129,6 +4350,7 @@ Proof.
   inv H; auto.
 Qed.
 
+(*X*)
 Lemma store_mapped_inj:
   forall f g chunk m1 b1 ofs v1 n1 m2 b2 delta v2,
     mem_inj f g m1 m2 ->
@@ -4182,10 +4404,12 @@ Proof.
   - rewrite (store_stack _ _ _ _ _ _ STORE).
     rewrite (store_stack _ _ _ _ _ _ H0).
     eapply stack_inject_invariant_strong.
-    2: apply mi_stack_blocks; auto.
+    2: apply mi_stack_blocks.
     intros; eapply perm_store_2; eauto.
+    auto.
 Qed.
 
+(*X*)
 Lemma store_unmapped_inj:
   forall f g chunk m1 b1 ofs v1 n1 m2,
     mem_inj f g m1 m2 ->
@@ -4210,6 +4434,7 @@ Proof.
     intros; eapply perm_store_2; eauto.
 Qed.
 
+(*X*)
 Lemma store_outside_inj:
   forall f g m1 m2 chunk b ofs v m2',
     mem_inj f g m1 m2 ->
@@ -4322,7 +4547,7 @@ Proof.
     2: eauto. tauto.
 Qed.
 
-
+(*X*)
 Lemma storebytes_mapped_inj:
   forall f g m1 b1 ofs bytes1 n1 m2 b2 delta bytes2,
     mem_inj f g m1 m2 ->
@@ -4398,6 +4623,7 @@ Proof.
     intros; eapply perm_storebytes_2; eauto.
 Qed.
 
+(*X*)
 Lemma storebytes_unmapped_inj:
   forall f g m1 b1 ofs bytes1 n1 m2,
     mem_inj f g m1 m2 ->
@@ -4423,6 +4649,7 @@ Proof.
     intros; eapply perm_storebytes_2; eauto.
 Qed.
 
+(*X*)
 Lemma storebytes_outside_inj:
   forall f g m1 m2 b ofs bytes2 m2',
     mem_inj f g m1 m2 ->
@@ -4452,6 +4679,7 @@ Proof.
     2: apply mi_stack_blocks; eauto. tauto.
 Qed.
 
+(*X*)
 Lemma storebytes_empty_inj:
   forall f g m1 b1 ofs1 m1' m2 b2 ofs2 m2',
     mem_inj f g m1 m2 ->
@@ -4484,6 +4712,7 @@ Qed.
 
 (** Preservation of allocations *)
 
+(*X*)
 Lemma alloc_right_inj:
   forall f g m1 m2 lo hi b2 m2',
     mem_inj f g m1 m2 ->
@@ -4509,6 +4738,7 @@ Proof.
   - subst. simpl; auto.
 Qed.
 
+(*X*)
 Lemma alloc_left_unmapped_inj:
   forall f g m1 m2 lo hi m1' b1,
     mem_inj f g m1 m2 ->
@@ -4535,9 +4765,11 @@ Proof.
     intros; eapply perm_alloc_4; eauto. congruence.
 Qed.
 
+(*X*)
 Definition inj_offset_aligned (delta: Z) (size: Z) : Prop :=
   forall chunk, size_chunk chunk <= size -> (align_chunk chunk | delta).
 
+(*X*)
 Lemma alloc_left_mapped_inj:
   forall f g m1 m2 lo hi m1' b1 b2 delta,
     mem_inj f g m1 m2 ->
@@ -4592,6 +4824,7 @@ Proof.
       inv mi_stack_blocks0. intros; eapply stack_inject_not_in_source; eauto.
 Qed.
 
+(*X*)
 Lemma free_left_inj:
   forall f g m1 m2 b lo hi m1',
   mem_inj f g m1 m2 ->
@@ -4612,6 +4845,7 @@ Proof.
   intros. eapply perm_free_3; eauto.
 Qed.
 
+(*X*)
 Lemma free_right_inj:
   forall f g m1 m2 b lo hi m2',
   mem_inj f g m1 m2 ->
@@ -4646,6 +4880,7 @@ Qed.
 
 (** Preservation of [drop_perm] operations. *)
 
+(*X*)
 Lemma drop_perm_stack:
   forall m1 b lo hi p m1',
     drop_perm m1 b lo hi p = Some m1' ->
@@ -4655,6 +4890,7 @@ Proof.
   destruct (range_perm_dec m1 b lo hi Cur Freeable); try discriminate. inv H; reflexivity.
 Qed.
 
+(*X*)
 Lemma drop_unmapped_inj:
   forall f g m1 m2 b lo hi p m1',
   mem_inj f g m1 m2 ->
@@ -4679,6 +4915,7 @@ Proof.
   intros. eapply perm_drop_4; eauto.
 Qed.
 
+(*X*)
 Lemma drop_mapped_inj:
   forall f g m1 m2 b1 b2 delta lo hi p m1',
   mem_inj f g m1 m2 ->
@@ -4824,7 +5061,7 @@ Proof.
   intros. eapply perm_drop_4; eauto.
 Qed.
 
-
+(*X*)
 Lemma drop_outside_inj: forall f g m1 m2 b lo hi p m2',
   mem_inj f g m1 m2 ->
   drop_perm m2 b lo hi p = Some m2' ->
@@ -4881,6 +5118,7 @@ Proof.
   rewrite (drop_perm_stack _ _ _ _ _ _ H0). auto.
 Qed.
 
+(*X*)
 Theorem extends_refl:
   forall m, extends m m.
 Proof.
@@ -4894,6 +5132,7 @@ Proof.
   auto. auto.
 Qed.
 
+(*X*)
 Theorem load_extends:
   forall chunk m1 m2 b ofs v1,
   extends m1 m2 ->
@@ -4906,6 +5145,7 @@ Proof.
   rewrite val_inject_id in B. auto.
 Qed.
 
+(*X*)
 Theorem loadv_extends:
   forall chunk m1 m2 addr1 addr2 v1,
   extends m1 m2 ->
@@ -4918,6 +5158,7 @@ Proof.
   congruence.
 Qed.
 
+(*X*)
 Theorem loadbytes_extends:
   forall m1 m2 b ofs len bytes1,
   extends m1 m2 ->
@@ -4980,6 +5221,7 @@ Proof.
   rewrite_stack_backwards; auto.
 Qed.
 
+(*X*)
 Theorem store_outside_extends:
   forall chunk m1 m2 b ofs v m2',
   extends m1 m2 ->
@@ -4995,6 +5237,7 @@ Proof.
   rewrite_stack_backwards; auto.
 Qed.
 
+(*X*)
 Theorem storev_extends:
   forall chunk m1 m2 addr1 v1 m1' addr2 v2,
   extends m1 m2 ->
@@ -5097,6 +5340,7 @@ Proof.
   - rewrite_stack_backwards; auto.
 Qed.
 
+(*X*)
 Theorem free_left_extends:
   forall m1 m2 b lo hi m1',
   extends m1 m2 ->
@@ -5114,6 +5358,7 @@ Proof.
   rewrite_stack_backwards; auto.
 Qed.
 
+(*X*)
 Theorem free_right_extends:
   forall m1 m2 b lo hi m2',
   extends m1 m2 ->

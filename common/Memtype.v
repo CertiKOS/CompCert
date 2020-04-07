@@ -35,11 +35,15 @@ Require Import StackADT.
 
 Module Mem.
 
+(* *)
+
 Definition locset := block -> Z -> Prop.
 
 Close Scope nat_scope.
 
+(*X*)
 Parameter stack_limit': Z.
+(*X* moved to stack_limit*)
 Definition stack_limit: Z := Z.max 8 ((align stack_limit' 8) mod (Ptrofs.modulus - align (size_chunk Mptr) 8)).
 
 Lemma stack_limit_range: 0 <= stack_limit <= Ptrofs.max_unsigned.
@@ -182,14 +186,14 @@ Class MemoryModelOps
 
 (** ** Memory extensions *)
 
-(**  A store [m2] extends a store [m1] if [m2] can be obtained from [m1]
+(*X*  A store [m2] extends a store [m1] if [m2] can be obtained from [m1]
   by relaxing the permissions of [m1] (for instance, allocating larger
   blocks) and replacing some of the [Vundef] values stored in [m1] by
   more defined values stored in [m2] at the same addresses. *)
 
  extends: forall {injperm: InjectPerm}, mem -> mem -> Prop;
 
-(** The [magree] predicate is a variant of [extends] where we
+(*X* The [magree] predicate is a variant of [extends] where we
   allow the contents of the two memory states to differ arbitrarily
   on some locations.  The predicate [P] is true on the locations whose
   contents must be in the [lessdef] relation.
@@ -199,7 +203,7 @@ Class MemoryModelOps
 
 (** ** Memory injections *)
 
-(** A memory injection [f] is a function from addresses to either [None]
+(*X* A memory injection [f] is a function from addresses to either [None]
   or [Some] of an address and an offset.  It defines a correspondence
   between the blocks of two memory states [m1] and [m2]:
 - if [f b = None], the block [b] of [m1] has no equivalent in [m2];
@@ -215,36 +219,36 @@ that we now axiomatize. *)
 
  inject: forall {injperm: InjectPerm}, meminj -> frameinj -> mem -> mem -> Prop;
 
-(** ** Weak Memory injections *)
+(*X* ** Weak Memory injections *)
 
  weak_inject: forall {injperm: InjectPerm}, meminj -> frameinj -> mem -> mem -> Prop;
 
 
-(** Memory states that inject into themselves. *)
+(*X* Memory states that inject into themselves. *)
 
  inject_neutral: forall {injperm: InjectPerm} (thr: block) (m: mem), Prop;
 
-(** ** Invariance properties between two memory states *)
+(*X* ** Invariance properties between two memory states *)
 
  unchanged_on: forall (P: block -> Z -> Prop) (m_before m_after: mem), Prop
  ;
 
- (** Necessary to distinguish from [unchanged_on], used as
+ (*X* Necessary to distinguish from [unchanged_on], used as
  postconditions to external function calls, whereas
  [strong_unchanged_on] will be used for ordinary memory operations. *)
 
  strong_unchanged_on: forall (P: block -> Z -> Prop) (m_before m_after: mem), Prop
  ;
 
- (* Stack ADT and methods *)
+ (*X* Stack ADT and methods *)
  stack: mem -> StackADT.stack;
- (* Pushes a new stage on the stack, with no frames in it. *)
+ (*X* Pushes a new stage on the stack, with no frames in it. *)
  push_new_stage: mem -> mem;
- (* Marks the current active frame in the top stage as tailcalled. *)
+ (*X* Marks the current active frame in the top stage as tailcalled. *)
  tailcall_stage: mem -> option mem;
- (* Records a [frame_adt] on the current top stage. *)
+ (*X* Records a [frame_adt] on the current top stage. *)
  record_stack_blocks: mem -> frame_adt -> option mem;
- (* Pops the topmost stage of the stack, if any. *)
+ (*X* Pops the topmost stage of the stack, if any. *)
  unrecord_stack_block: mem -> option mem;
 }.
 
@@ -253,7 +257,7 @@ Section WITHMEMORYMODELOPS.
 Context `{memory_model_ops: MemoryModelOps}.
 Context {injperm: InjectPerm}.
 
-(** [loadv] and [storev] are variants of [load] and [store] where
+(*X* [loadv] and [storev] are variants of [load] and [store] where
   the address being accessed is passed as a value (of the [Vptr] kind). *)
 
 Definition loadv (chunk: memory_chunk) (m: mem) (addr: val) : option val :=
@@ -268,7 +272,7 @@ Definition storev (chunk: memory_chunk) (m: mem) (addr v: val) : option mem :=
   | _ => None
   end.
 
-(** [free_list] frees all the given (block, lo, hi) triples. *)
+(*X* [free_list] frees all the given (block, lo, hi) triples. *)
 Fixpoint free_list (m: mem) (l: list (block * Z * Z)) {struct l}: option mem :=
   match l with
   | nil => Some m
@@ -279,12 +283,16 @@ Fixpoint free_list (m: mem) (l: list (block * Z * Z)) {struct l}: option mem :=
       end
   end.
 
+
+(*X*)
 Definition valid_block (m: mem) (b: block) := Plt b (nextblock m).
 
+
+(*X*)
 Definition valid_frame f m :=
   forall b, in_frame f b -> valid_block m b.
 
-(** An access to a memory quantity [chunk] at address [b, ofs] with
+(*X* An access to a memory quantity [chunk] at address [b, ofs] with
   permission [p] is valid in [m] if the accessed addresses all have
   current permission [p] and moreover the offset is properly aligned. *)
 Definition valid_access (m: mem) (chunk: memory_chunk) (b: block) (ofs: Z) (p: permission): Prop :=
@@ -292,7 +300,7 @@ Definition valid_access (m: mem) (chunk: memory_chunk) (b: block) (ofs: Z) (p: p
   /\ (align_chunk chunk | ofs)
   /\ (perm_order p Writable -> stack_access (stack m) b ofs (ofs + size_chunk chunk)).
 
-(** C allows pointers one past the last element of an array.  These are not
+(*X* C allows pointers one past the last element of an array.  These are not
   valid according to the previously defined [valid_pointer]. The property
   [weak_valid_pointer m b ofs] holds if address [b, ofs] is a valid pointer
   in [m], or a pointer one past a valid block in [m].  *)
@@ -300,7 +308,7 @@ Definition valid_access (m: mem) (chunk: memory_chunk) (b: block) (ofs: Z) (p: p
 Definition weak_valid_pointer (m: mem) (b: block) (ofs: Z) :=
   valid_pointer m b ofs || valid_pointer m b (ofs - 1).
 
-(** Integrity of pointer values. *)
+(*X* Integrity of pointer values. *)
 
 Definition compat_pointer_chunks (chunk1 chunk2: memory_chunk) : Prop :=
   match chunk1, chunk2 with
@@ -309,12 +317,15 @@ Definition compat_pointer_chunks (chunk1 chunk2: memory_chunk) : Prop :=
   | _, _ => False
   end.
 
+(*X*)
 Definition inj_offset_aligned (delta: Z) (size: Z) : Prop :=
   forall chunk, size_chunk chunk <= size -> (align_chunk chunk | delta).
 
+(*X*)
 Definition flat_inj (thr: block) : meminj :=
   fun (b: block) => if plt b thr then Some(b, 0) else None.
 
+(*X removed because only used in mi_no_overlap*)
 Definition meminj_no_overlap (f: meminj) (m: mem) : Prop :=
   forall b1 b1' delta1 b2 b2' delta2 ofs1 ofs2,
   b1 <> b2 ->
@@ -324,9 +335,11 @@ Definition meminj_no_overlap (f: meminj) (m: mem) : Prop :=
   perm m b2 ofs2 Max Nonempty ->
   b1' <> b2' \/ ofs1 + delta1 <> ofs2 + delta2.
 
+(*X*)
 Definition stack_unchanged (T: mem -> mem -> Prop) :=
   forall m1 m2, T m1 m2 -> stack m2 = stack m1.
 
+(*X*)
 Definition mem_unchanged (T: mem -> mem -> Prop) :=
   forall m1 m2, T m1 m2 ->
            nextblock m2 = nextblock m1
@@ -337,6 +350,7 @@ Definition mem_unchanged (T: mem -> mem -> Prop) :=
 (* Definition top_is_new (m:mem) := *)
 (*   top_tframe_prop (fun tf => tf = (None,nil)) (stack m). *)
 
+(*X*: moved to Stack.ADT *)
 Lemma check_top_tc m : { top_tframe_tc (stack m) } + { ~ top_tframe_tc (stack m) }.
 Proof.
   unfold top_tframe_tc.
@@ -347,13 +361,14 @@ Proof.
   left; constructor. auto.
 Defined.
 
+(*X*)
 Definition top_frame_no_perm m :=
   top_tframe_prop
     (fun tf : tframe_adt =>
      forall b : block,
      in_frames tf b -> forall (o : Z) (k : perm_kind) (p : permission), ~ Mem.perm m b o k p)
     (Mem.stack m).
-
+(*X*)
 Definition record_init_sp m :=
   let (m1, b1) := Mem.alloc (Mem.push_new_stage m) 0 0 in
   Mem.record_stack_blocks m1 (make_singleton_frame_adt b1 0 0).
@@ -365,15 +380,17 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   : Prop :=
 {
 
+ (*X*)
+
  valid_not_valid_diff:
   forall m b b', valid_block m b -> ~(valid_block m b') -> b <> b';
 
-(** Logical implications between permissions *)
+(*X* Logical implications between permissions *)
 
  perm_implies:
   forall m b ofs k p1 p2, perm m b ofs k p1 -> perm_order p1 p2 -> perm m b ofs k p2;
 
-(** The current permission is always less than or equal to the maximal permission. *)
+(*X* The current permission is always less than or equal to the maximal permission. *)
 
  perm_cur_max:
   forall m b ofs p, perm m b ofs Cur p -> perm m b ofs Max p;
@@ -382,56 +399,66 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
  perm_max:
   forall m b ofs k p, perm m b ofs k p -> perm m b ofs Max p;
 
-(** Having a (nonempty) permission implies that the block is valid.
+(*X* Having a (nonempty) permission implies that the block is valid.
   In other words, invalid blocks, not yet allocated, are all empty. *)
  perm_valid_block:
   forall m b ofs k p, perm m b ofs k p -> valid_block m b;
 
+(*X*)
  range_perm_implies:
   forall m b lo hi k p1 p2,
   range_perm m b lo hi k p1 -> perm_order p1 p2 -> range_perm m b lo hi k p2;
 
+(*X*)
  range_perm_cur:
   forall m b lo hi k p,
   range_perm m b lo hi Cur p -> range_perm m b lo hi k p;
 
+(*X*)
  range_perm_max:
   forall m b lo hi k p,
   range_perm m b lo hi k p -> range_perm m b lo hi Max p;
 
+(*X*)
  valid_access_implies:
   forall m chunk b ofs p1 p2,
   valid_access m chunk b ofs p1 -> perm_order p1 p2 ->
   valid_access m chunk b ofs p2;
 
+(*X*)
  valid_access_valid_block:
   forall m chunk b ofs,
   valid_access m chunk b ofs Nonempty ->
   valid_block m b;
 
+(*X*)
  valid_access_perm:
   forall m chunk b ofs k p,
   valid_access m chunk b ofs p ->
   perm m b ofs k p;
 
+(*X*)
  valid_pointer_nonempty_perm:
   forall m b ofs,
   valid_pointer m b ofs = true <-> perm m b ofs Cur Nonempty;
+(*X*)
  valid_pointer_valid_access:
   forall m b ofs,
   valid_pointer m b ofs = true <-> valid_access m Mint8unsigned b ofs Nonempty;
 
+(*X*)
  weak_valid_pointer_spec:
   forall m b ofs,
   weak_valid_pointer m b ofs = true <->
     valid_pointer m b ofs = true \/ valid_pointer m b (ofs - 1) = true;
+(*X*)
  valid_pointer_implies:
   forall m b ofs,
   valid_pointer m b ofs = true -> weak_valid_pointer m b ofs = true;
 
 (** * Properties of the memory operations *)
 
-(** ** Properties of the initial memory state. *)
+(*X* ** Properties of the initial memory state. *)
 
  nextblock_empty: nextblock empty = 1%positive;
  perm_empty: forall b ofs k p, ~perm empty b ofs k p;
@@ -440,7 +467,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** ** Properties of [load]. *)
 
-(** A load succeeds if and only if the access is valid for reading *)
+(*X* A load succeeds if and only if the access is valid for reading *)
  valid_access_load:
   forall m chunk b ofs,
   valid_access m chunk b ofs Readable ->
@@ -450,7 +477,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   load chunk m b ofs = Some v ->
   valid_access m chunk b ofs Readable;
 
-(** The value returned by [load] belongs to the type of the memory quantity
+(*X* The value returned by [load] belongs to the type of the memory quantity
   accessed: [Vundef], [Vint] or [Vptr] for an integer quantity,
   [Vundef] or [Vfloat] for a float quantity. *)
  load_type:
@@ -458,7 +485,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   load chunk m b ofs = Some v ->
   Val.has_type v (type_of_chunk chunk);
 
-(** For a small integer or float type, the value returned by [load]
+(*X* For a small integer or float type, the value returned by [load]
   is invariant under the corresponding cast. *)
  load_cast:
   forall m chunk b ofs v,
@@ -471,14 +498,17 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   | _ => True
   end;
 
+(*X*)
  load_int8_signed_unsigned:
   forall m b ofs,
   load Mint8signed m b ofs = option_map (Val.sign_ext 8) (load Mint8unsigned m b ofs);
 
+(*X*)
  load_int16_signed_unsigned:
   forall m b ofs,
   load Mint16signed m b ofs = option_map (Val.sign_ext 16) (load Mint16unsigned m b ofs);
 
+(*X*)
  loadv_int64_split:
   forall m a v,
   loadv Mint64 m a = Some v -> Archi.ptr64 = false ->
@@ -489,19 +519,20 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** ** Properties of [loadbytes]. *)
 
-(** [loadbytes] succeeds if and only if we have read permissions on the accessed
+(*X* [loadbytes] succeeds if and only if we have read permissions on the accessed
     memory area. *)
 
  range_perm_loadbytes:
   forall m b ofs len,
   range_perm m b ofs (ofs + len) Cur Readable ->
   exists bytes, loadbytes m b ofs len = Some bytes;
+(*X*)
  loadbytes_range_perm:
   forall m b ofs len bytes,
   loadbytes m b ofs len = Some bytes ->
   range_perm m b ofs (ofs + len) Cur Readable;
 
-(** If [loadbytes] succeeds, the corresponding [load] succeeds and
+(*X* If [loadbytes] succeeds, the corresponding [load] succeeds and
   returns a value that is determined by the
   bytes read by [loadbytes]. *)
  loadbytes_load:
@@ -510,7 +541,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (align_chunk chunk | ofs) ->
   load chunk m b ofs = Some(decode_val chunk bytes);
 
-(** Conversely, if [load] returns a value, the corresponding
+(*X* Conversely, if [load] returns a value, the corresponding
   [loadbytes] succeeds and returns a list of bytes which decodes into the
   result of [load]. *)
  load_loadbytes:
@@ -519,12 +550,13 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   exists bytes, loadbytes m b ofs (size_chunk chunk) = Some bytes
              /\ v = decode_val chunk bytes;
 
-(** [loadbytes] returns a list of length [n] (the number of bytes read). *)
+(*X* [loadbytes] returns a list of length [n] (the number of bytes read). *)
  loadbytes_length:
   forall m b ofs n bytes,
   loadbytes m b ofs n = Some bytes ->
   length bytes = nat_of_Z n;
 
+(*X*)
  loadbytes_empty:
   forall m b ofs n,
   n <= 0 -> loadbytes m b ofs n = Some nil;
@@ -536,6 +568,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   loadbytes m b (ofs + n1) n2 = Some bytes2 ->
   n1 >= 0 -> n2 >= 0 ->
   loadbytes m b ofs (n1 + n2) = Some(bytes1 ++ bytes2);
+(*X*)
  loadbytes_split:
   forall m b ofs n1 n2 bytes,
   loadbytes m b ofs (n1 + n2) = Some bytes ->
@@ -551,47 +584,58 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Moreover, a [store] succeeds if and only if the corresponding access
   is valid for writing. *)
 
+(*X*)
  nextblock_store:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   nextblock m2 = nextblock m1;
+(*X*)
  store_valid_block_1:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall b', valid_block m1 b' -> valid_block m2 b';
+(*X*)
  store_valid_block_2:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall b', valid_block m2 b' -> valid_block m1 b';
 
+(*X*)
  perm_store_1:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall b' ofs' k p, perm m1 b' ofs' k p -> perm m2 b' ofs' k p;
+(*X*)
  perm_store_2:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall b' ofs' k p, perm m2 b' ofs' k p -> perm m1 b' ofs' k p;
 
+(*X: reverted to compcert style*)
  valid_access_store':
   forall m1 chunk b ofs v,
   valid_access m1 chunk b ofs Writable ->
   exists m2: mem, store chunk m1 b ofs v = Some m2;
+(*X*)
  store_valid_access_1:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall chunk' b' ofs' p,
   valid_access m1 chunk' b' ofs' p -> valid_access m2 chunk' b' ofs' p;
+(*X*)
  store_valid_access_2:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall chunk' b' ofs' p,
   valid_access m2 chunk' b' ofs' p -> valid_access m1 chunk' b' ofs' p;
+(*X*)
  store_valid_access_3:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   valid_access m1 chunk b ofs Writable;
 
 (** Load-store properties. *)
 
+(*X*)
  load_store_similar:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall chunk',
   size_chunk chunk' = size_chunk chunk ->
   align_chunk chunk' <= align_chunk chunk ->
   exists v', load chunk' m2 b ofs = Some v' /\ decode_encode_val v chunk chunk' v';
+(*X*)
  load_store_similar_2:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall chunk',
@@ -600,10 +644,12 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   type_of_chunk chunk' = type_of_chunk chunk ->
   load chunk' m2 b ofs = Some (Val.load_result chunk' v);
 
+(*X*)
  load_store_same:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   load chunk m2 b ofs = Some (Val.load_result chunk v);
 
+(*X*)
  load_store_other:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall chunk' b' ofs',
@@ -612,6 +658,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   \/ ofs + size_chunk chunk <= ofs' ->
   load chunk' m2 b' ofs' = load chunk' m1 b' ofs';
 
+(*X*)
  load_store_pointer_overlap:
   forall chunk m1 b ofs v_b v_o m2 chunk' ofs' v,
   store chunk m1 b ofs (Vptr v_b v_o) = Some m2 ->
@@ -620,12 +667,14 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   ofs' + size_chunk chunk' > ofs ->
   ofs + size_chunk chunk > ofs' ->
   v = Vundef;
+(*X*)
  load_store_pointer_mismatch:
   forall chunk m1 b ofs v_b v_o m2 chunk' v,
   store chunk m1 b ofs (Vptr v_b v_o) = Some m2 ->
   load chunk' m2 b ofs = Some v ->
   ~compat_pointer_chunks chunk chunk' ->
   v = Vundef;
+(*X*)
  load_pointer_store:
   forall chunk m1 b ofs v m2 chunk' b' ofs' v_b v_o,
   store chunk m1 b ofs v = Some m2 ->
@@ -641,11 +690,12 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
      store Mptr m1 b o v = Some m2 -> m1 = m2;
 
  
-(** Load-store properties for [loadbytes]. *)
+(*X* Load-store properties for [loadbytes]. *)
 
  loadbytes_store_same:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   loadbytes m2 b ofs (size_chunk chunk) = Some(encode_val chunk v);
+(*X*)
  loadbytes_store_other:
   forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
   forall b' ofs' n,
@@ -655,28 +705,35 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 (** [store] is insensitive to the signedness or the high bits of
   small integer quantities. *)
 
+(*X*)
  store_signed_unsigned_8:
   forall m b ofs v,
   store Mint8signed m b ofs v = store Mint8unsigned m b ofs v;
+(*X*)
  store_signed_unsigned_16:
   forall m b ofs v,
   store Mint16signed m b ofs v = store Mint16unsigned m b ofs v;
+(*X*)
  store_int8_zero_ext:
   forall m b ofs n,
   store Mint8unsigned m b ofs (Vint (Int.zero_ext 8 n)) =
   store Mint8unsigned m b ofs (Vint n);
+(*X*)
  store_int8_sign_ext:
   forall m b ofs n,
   store Mint8signed m b ofs (Vint (Int.sign_ext 8 n)) =
   store Mint8signed m b ofs (Vint n);
+(*X*)
  store_int16_zero_ext:
   forall m b ofs n,
   store Mint16unsigned m b ofs (Vint (Int.zero_ext 16 n)) =
   store Mint16unsigned m b ofs (Vint n);
+(*X*)
  store_int16_sign_ext:
   forall m b ofs n,
   store Mint16signed m b ofs (Vint (Int.sign_ext 16 n)) =
   store Mint16signed m b ofs (Vint n);
+(*X*)
  storev_int64_split:
   forall m a v m',
   storev Mint64 m a v = Some m' -> Archi.ptr64 = false ->
@@ -690,49 +747,61 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Moreover, a [storebytes] succeeds if and only if we have write permissions
   on the addressed memory area. *)
 
+(*X* SACC: reverted to original *)
  range_perm_storebytes' :
   forall m1 b ofs bytes,
     range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable ->
     stack_access ( (stack m1)) b ofs (ofs + Z_of_nat (length bytes)) ->
   exists m2 : mem, storebytes m1 b ofs bytes = Some m2;
+(*X*)
  storebytes_range_perm:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
                        range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable;
+(*X* removed *)
  storebytes_stack_access:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
      stack_access ( (stack m1)) b ofs (ofs + Z_of_nat (length bytes)) ;
+(*X*)
  perm_storebytes_1:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall b' ofs' k p, perm m1 b' ofs' k p -> perm m2 b' ofs' k p;
+(*X*)
  perm_storebytes_2:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall b' ofs' k p, perm m2 b' ofs' k p -> perm m1 b' ofs' k p;
+(*X*)
  storebytes_valid_access_1:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall chunk' b' ofs' p,
   valid_access m1 chunk' b' ofs' p -> valid_access m2 chunk' b' ofs' p;
+(*X*)
  storebytes_valid_access_2:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall chunk' b' ofs' p,
   valid_access m2 chunk' b' ofs' p -> valid_access m1 chunk' b' ofs' p;
+(*X*)
  nextblock_storebytes:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   nextblock m2 = nextblock m1;
+(*X*)
  storebytes_valid_block_1:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall b', valid_block m1 b' -> valid_block m2 b';
+(*X*)
  storebytes_valid_block_2:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall b', valid_block m2 b' -> valid_block m1 b';
 
 (** Connections between [store] and [storebytes]. *)
 
+(*X*)
  storebytes_store:
   forall m1 b ofs chunk v m2,
   storebytes m1 b ofs (encode_val chunk v) = Some m2 ->
   (align_chunk chunk | ofs) ->
   store chunk m1 b ofs v = Some m2;
 
+(*X*)
  store_storebytes:
   forall m1 b ofs chunk v m2,
   store chunk m1 b ofs v = Some m2 ->
@@ -740,15 +809,18 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** Load-store properties. *)
 
+(*X*)
  loadbytes_storebytes_same:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   loadbytes m2 b ofs (Z_of_nat (length bytes)) = Some bytes;
+(*X*)
  loadbytes_storebytes_disjoint:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall b' ofs' len,
   len >= 0 ->
   b' <> b \/ Intv.disjoint (ofs', ofs' + len) (ofs, ofs + Z_of_nat (length bytes)) ->
   loadbytes m2 b' ofs' len = loadbytes m1 b' ofs' len;
+(*X*)
  loadbytes_storebytes_other:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall b' ofs' len,
@@ -757,6 +829,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   \/ ofs' + len <= ofs
   \/ ofs + Z_of_nat (length bytes) <= ofs' ->
   loadbytes m2 b' ofs' len = loadbytes m1 b' ofs' len;
+(*X*)
  load_storebytes_other:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
   forall chunk b' ofs',
@@ -767,12 +840,14 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** Composing or decomposing [storebytes] operations at adjacent addresses. *)
 
+(*X*)
  storebytes_concat:
   forall m b ofs bytes1 m1 bytes2 m2,
   storebytes m b ofs bytes1 = Some m1 ->
   storebytes m1 b (ofs + Z_of_nat(length bytes1)) bytes2 = Some m2 ->
   storebytes m b ofs (bytes1 ++ bytes2) = Some m2;
  storebytes_split:
+(*X*)
   forall m b ofs bytes1 bytes2 m2,
   storebytes m b ofs (bytes1 ++ bytes2) = Some m2 ->
   exists m1,
@@ -781,7 +856,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** ** Properties of [alloc]. *)
 
-(** The identifier of the freshly allocated block is the next block
+(*X* The identifier of the freshly allocated block is the next block
   of the initial memory state. *)
 
  alloc_result:
@@ -790,37 +865,46 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** Effect of [alloc] on block validity. *)
 
+(*X*)
  nextblock_alloc:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   nextblock m2 = Psucc (nextblock m1);
-
+(*X*)
  valid_block_alloc:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall b', valid_block m1 b' -> valid_block m2 b';
+(*X*)
  fresh_block_alloc:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   ~(valid_block m1 b);
+(*X*)
  valid_new_block:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   valid_block m2 b;
+(*X*)
  valid_block_alloc_inv:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall b', valid_block m2 b' -> b' = b \/ valid_block m1 b';
 
 (** Effect of [alloc] on permissions. *)
 
+(*X*)
  perm_alloc_1:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall b' ofs k p, perm m1 b' ofs k p -> perm m2 b' ofs k p;
+(*X*)
  perm_alloc_2:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall ofs k, lo <= ofs < hi -> perm m2 b ofs k Freeable;
+(*X*)
  perm_alloc_3:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall ofs k p, perm m2 b ofs k p -> lo <= ofs < hi;
+(*X*)
  perm_alloc_4:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall b' ofs k p, perm m2 b' ofs k p -> b' <> b -> perm m1 b' ofs k p;
+(*X*)
  perm_alloc_inv:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall b' ofs k p,
@@ -829,16 +913,19 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** Effect of [alloc] on access validity. *)
 
+(*X*)
  valid_access_alloc_other:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall chunk b' ofs p,
   valid_access m1 chunk b' ofs p ->
   valid_access m2 chunk b' ofs p;
+(*X*)
  valid_access_alloc_same:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall chunk ofs,
   lo <= ofs -> ofs + size_chunk chunk <= hi -> (align_chunk chunk | ofs) ->
   valid_access m2 chunk b ofs Freeable;
+(*X*)
  valid_access_alloc_inv:
   forall m1 lo hi m2 b, alloc m1 lo hi = (m2, b) ->
   forall chunk b' ofs p,
@@ -885,37 +972,45 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 (** [free] succeeds if and only if the correspond range of addresses
   has [Freeable] current permission. *)
 
+(*X* reverted to original *)
  range_perm_free' :
   forall m1 b lo hi,
   range_perm m1 b lo hi Cur Freeable ->
   exists m2: mem, free m1 b lo hi = Some m2;
+(*X*)
  free_range_perm:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
                     range_perm m1 bf lo hi Cur Freeable;
 
 (** Block validity is preserved by [free]. *)
 
+(*X*)
  nextblock_free:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   nextblock m2 = nextblock m1;
+(*X*)
  valid_block_free_1:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall b, valid_block m1 b -> valid_block m2 b;
+(*X*)
  valid_block_free_2:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall b, valid_block m2 b -> valid_block m1 b;
 
 (** Effect of [free] on permissions. *)
 
+(*X*)
  perm_free_1:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall b ofs k p,
   b <> bf \/ ofs < lo \/ hi <= ofs ->
   perm m1 b ofs k p ->
   perm m2 b ofs k p;
+(*X*)
  perm_free_2:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall ofs k p, lo <= ofs < hi -> ~ perm m2 bf ofs k p;
+(*X*)
  perm_free_3:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall b ofs k p,
@@ -923,22 +1018,26 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** Effect of [free] on access validity. *)
 
+(*X*)
  valid_access_free_1:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall chunk b ofs p,
   valid_access m1 chunk b ofs p ->
   b <> bf \/ lo >= hi \/ ofs + size_chunk chunk <= lo \/ hi <= ofs ->
   valid_access m2 chunk b ofs p;
+(*X*)
  valid_access_free_2:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall chunk ofs p,
   lo < hi -> ofs + size_chunk chunk > lo -> ofs < hi ->
   ~(valid_access m2 chunk bf ofs p);
+(*X*)
  valid_access_free_inv_1:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall chunk b ofs p,
   valid_access m2 chunk b ofs p ->
   valid_access m1 chunk b ofs p;
+(*X*)
  valid_access_free_inv_2:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall chunk ofs p,
@@ -947,11 +1046,13 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** Load-free properties *)
 
+(*X*)
  load_free:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall chunk b ofs,
   b <> bf \/ lo >= hi \/ ofs + size_chunk chunk <= lo \/ hi <= ofs ->
   load chunk m2 b ofs = load chunk m1 b ofs;
+(*X changed name*)
  loadbytes_free_2:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall b ofs n bytes,
@@ -959,41 +1060,52 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** ** Properties of [drop_perm]. *)
 
+(*X*)
  nextblock_drop:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   nextblock m' = nextblock m;
+(*X*)
  drop_perm_valid_block_1:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall b', valid_block m b' -> valid_block m' b';
+(*X*)
  drop_perm_valid_block_2:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall b', valid_block m' b' -> valid_block m b';
 
+(*X*)
  range_perm_drop_1:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   range_perm m b lo hi Cur Freeable;
+(*X* reverted back to original*)
  range_perm_drop_2' :
   forall m b lo hi p,
   range_perm m b lo hi Cur Freeable -> exists m', drop_perm m b lo hi p = Some m';
 
+(*X*)
  perm_drop_1:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall ofs k, lo <= ofs < hi -> perm m' b ofs k p;
+(*X*)
  perm_drop_2:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall ofs k p', lo <= ofs < hi -> perm m' b ofs k p' -> perm_order p p';
+(*X*)
  perm_drop_3:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall b' ofs k p', b' <> b \/ ofs < lo \/ hi <= ofs -> perm m b' ofs k p' -> perm m' b' ofs k p';
+(*X*)
  perm_drop_4:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall b' ofs k p', perm m' b' ofs k p' -> perm m b' ofs k p';
 
+(*X*)
  loadbytes_drop:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall b' ofs n,
   b' <> b \/ ofs + n <= lo \/ hi <= ofs \/ perm_order p Readable ->
   loadbytes m' b' ofs n = loadbytes m b' ofs n;
+(*X*)
  load_drop:
   forall m b lo hi p m', drop_perm m b lo hi p = Some m' ->
   forall chunk b' ofs,
@@ -1001,17 +1113,21 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   load chunk m' b' ofs = load chunk m b' ofs;
 
 (** ** Properties of [weak_inject]. *)
+
+(*X*)
  empty_weak_inject {injperm: InjectPerm}: forall f m, 
   stack m = nil ->
   (forall b b' delta, f b = Some(b', delta) -> delta >= 0) ->
   (forall b b' delta, f b = Some(b', delta) -> valid_block m b') ->
   weak_inject f nil Mem.empty m;
 
+(*X*)
  weak_inject_to_inject {injperm: InjectPerm}: forall f g m1 m2,
   weak_inject f g m1 m2 -> 
   (forall b p, f b = Some p -> valid_block m1 b) ->
   inject f g m1 m2;
 
+(*X*)
  store_mapped_weak_inject {injperm: InjectPerm}:
   forall f g chunk m1 b1 ofs v1 n1 m2 b2 delta v2,
   weak_inject f g m1 m2 ->
@@ -1022,6 +1138,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     store chunk m2 b2 (ofs + delta) v2 = Some n2
     /\ weak_inject f g n1 n2;
 
+(*X*)
  alloc_left_mapped_weak_inject {injperm: InjectPerm}:
   forall f g m1 m2 lo hi m1' b1 b2 delta,
   f b1 = Some(b2, delta) ->
@@ -1044,6 +1161,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
         frame_public fi (o + delta)) ->
   weak_inject f g m1' m2;
 
+(*X*)
  alloc_left_unmapped_weak_inject {injperm: InjectPerm}:
   forall f g m1 m2 lo hi m1' b1,
   f b1 = None ->
@@ -1051,6 +1169,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   alloc m1 lo hi = (m1', b1) ->
   weak_inject f g m1' m2;
 
+(*X*)
  drop_parallel_weak_inject {InjectPerm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta lo hi p m1',
   weak_inject f g m1 m2 ->
@@ -1061,6 +1180,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
       drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2'
    /\ weak_inject f g m1' m2';
 
+(*X*)
  drop_extended_parallel_weak_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta lo1 hi1 lo2 hi2 p m1',
   weak_inject f g m1 m2 ->
@@ -1086,15 +1206,18 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** ** Properties of [extends]. *)
 
+(*X*)
  extends_refl {injperm: InjectPerm}:
   forall m, extends m m;
 
+(*X*)
  load_extends {injperm: InjectPerm}:
   forall chunk m1 m2 b ofs v1,
   extends m1 m2 ->
   load chunk m1 b ofs = Some v1 ->
   exists v2, load chunk m2 b ofs = Some v2 /\ Val.lessdef v1 v2;
 
+(*X*)
  loadv_extends {injperm: InjectPerm}:
   forall chunk m1 m2 addr1 addr2 v1,
   extends m1 m2 ->
@@ -1102,6 +1225,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Val.lessdef addr1 addr2 ->
   exists v2, loadv chunk m2 addr2 = Some v2 /\ Val.lessdef v1 v2;
 
+(*X*)
  loadbytes_extends {injperm: InjectPerm}:
   forall m1 m2 b ofs len bytes1,
   extends m1 m2 ->
@@ -1109,6 +1233,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   exists bytes2, loadbytes m2 b ofs len = Some bytes2
               /\ list_forall2 memval_lessdef bytes1 bytes2;
 
+(*X*)
  store_within_extends {injperm: InjectPerm}:
   forall chunk m1 m2 b ofs v1 m1' v2,
   extends m1 m2 ->
@@ -1118,6 +1243,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
      store chunk m2 b ofs v2 = Some m2'
   /\ extends m1' m2';
 
+(*X*)
  store_outside_extends {injperm: InjectPerm}:
   forall chunk m1 m2 b ofs v m2',
   extends m1 m2 ->
@@ -1125,6 +1251,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
   extends m1 m2';
 
+(*X*)
  storev_extends {injperm: InjectPerm}:
   forall chunk m1 m2 addr1 v1 m1' addr2 v2,
   extends m1 m2 ->
@@ -1135,6 +1262,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
      storev chunk m2 addr2 v2 = Some m2'
   /\ extends m1' m2';
 
+(*X*)
  storebytes_within_extends {injperm: InjectPerm}:
   forall m1 m2 b ofs bytes1 m1' bytes2,
   extends m1 m2 ->
@@ -1144,6 +1272,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
      storebytes m2 b ofs bytes2 = Some m2'
   /\ extends m1' m2';
 
+(*X*)
  storebytes_outside_extends {injperm: InjectPerm}:
   forall m1 m2 b ofs bytes2 m2',
   extends m1 m2 ->
@@ -1151,6 +1280,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + Z_of_nat (length bytes2) -> False) ->
   extends m1 m2';
 
+(*X*)
  alloc_extends {injperm: InjectPerm}:
   forall m1 m2 lo1 hi1 b m1' lo2 hi2,
   extends m1 m2 ->
@@ -1160,12 +1290,14 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
      alloc m2 lo2 hi2 = (m2', b)
   /\ extends m1' m2';
 
+(*X*)
  free_left_extends {injperm: InjectPerm}:
   forall m1 m2 b lo hi m1',
   extends m1 m2 ->
   free m1 b lo hi = Some m1' ->
   extends m1' m2;
 
+(*X*)
  free_right_extends {injperm: InjectPerm}:
   forall m1 m2 b lo hi m2',
   extends m1 m2 ->
@@ -1173,6 +1305,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall ofs k p, perm m1 b ofs k p -> lo <= ofs < hi -> False) ->
   extends m1 m2';
 
+(*X inject_perm_condition*)
  free_parallel_extends {injperm: InjectPerm}:
   forall m1 m2 b lo hi m1',
     extends m1 m2 ->
@@ -1186,16 +1319,20 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   forall m1 m2 b,
   extends m1 m2 ->
   (valid_block m1 b <-> valid_block m2 b);
+(*X inject_perm_condition*)
  perm_extends {injperm: InjectPerm}:
   forall m1 m2 b ofs k p,
   extends m1 m2 -> perm m1 b ofs k p -> inject_perm_condition p -> perm m2 b ofs k p;
+(*X inject_perm_condition*)
  valid_access_extends {injperm: InjectPerm}:
   forall m1 m2 chunk b ofs p,
     extends m1 m2 -> valid_access m1 chunk b ofs p -> inject_perm_condition p ->
     valid_access m2 chunk b ofs p;
+(*X*)
  valid_pointer_extends {injperm: InjectPerm}:
   forall m1 m2 b ofs,
   extends m1 m2 -> valid_pointer m1 b ofs = true -> valid_pointer m2 b ofs = true;
+(*X*)
  weak_valid_pointer_extends {injperm: InjectPerm}:
   forall m1 m2 b ofs,
   extends m1 m2 ->
@@ -1203,6 +1340,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
   
 (** ** Properties of [magree]. *)
+(*X*)
  ma_perm {injperm: InjectPerm}:
    forall m1 m2 (P: locset),
      magree m1 m2 P ->
@@ -1211,20 +1349,24 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
        inject_perm_condition p ->
        perm m2 b ofs k p;
 
+(*X*)
  magree_monotone {injperm: InjectPerm}:
   forall m1 m2 (P Q: locset),
   magree m1 m2 P ->
   (forall b ofs, Q b ofs -> P b ofs) ->
   magree m1 m2 Q;
 
+(*X*)
  mextends_agree {injperm: InjectPerm}:
   forall m1 m2 P, extends m1 m2 -> magree m1 m2 P;
 
+(*X*)
  magree_extends {injperm: InjectPerm}:
   forall m1 m2 (P: locset),
   (forall b ofs, P b ofs) ->
   magree m1 m2 P -> extends m1 m2;
 
+(*X*)
  magree_loadbytes {injperm: InjectPerm}:
   forall m1 m2 P b ofs n bytes,
   magree m1 m2 P ->
@@ -1232,6 +1374,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall i, ofs <= i < ofs + n -> P b i) ->
   exists bytes', loadbytes m2 b ofs n = Some bytes' /\ list_forall2 memval_lessdef bytes bytes';
 
+(*X*)
  magree_load {injperm: InjectPerm}:
   forall m1 m2 P chunk b ofs v,
   magree m1 m2 P ->
@@ -1239,6 +1382,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall i, ofs <= i < ofs + size_chunk chunk -> P b i) ->
   exists v', load chunk m2 b ofs = Some v' /\ Val.lessdef v v';
 
+(*X*)
  magree_storebytes_parallel {injperm: InjectPerm}:
   forall m1 m2 (P Q: locset) b ofs bytes1 m1' bytes2,
   magree m1 m2 P ->
@@ -1249,6 +1393,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   list_forall2 memval_lessdef bytes1 bytes2 ->
   exists m2', storebytes m2 b ofs bytes2 = Some m2' /\ magree m1' m2' Q;
 
+(*X*)
  magree_storebytes_left {injperm: InjectPerm}:
   forall m1 m2 P b ofs bytes1 m1',
   magree m1 m2 P ->
@@ -1256,6 +1401,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall i, ofs <= i < ofs + Z_of_nat (length bytes1) -> ~(P b i)) ->
   magree m1' m2 P;
 
+(*X*)
  magree_store_left {injperm: InjectPerm}:
   forall m1 m2 P chunk b ofs v1 m1',
   magree m1 m2 P ->
@@ -1263,6 +1409,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (forall i, ofs <= i < ofs + size_chunk chunk -> ~(P b i)) ->
   magree m1' m2 P;
 
+(*X*)
  magree_free {injperm: InjectPerm}:
   forall m1 m2 (P Q: locset) b lo hi m1',
     magree m1 m2 P ->
@@ -1273,6 +1420,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
              P b' i) ->
     exists m2', free m2 b lo hi = Some m2' /\ magree m1' m2' Q;
 
+(*X*)
  magree_valid_access {injperm: InjectPerm}:
   forall m1 m2 (P: locset) chunk b ofs p,
   magree m1 m2 P ->
@@ -1281,29 +1429,34 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   valid_access m2 chunk b ofs p;
 
 (** ** Properties of [inject]. *)
+(*X removed because redundant with inject_no_overlap*)
  mi_no_overlap {injperm: InjectPerm}:
    forall f g m1 m2,
    inject f g m1 m2 ->
    meminj_no_overlap f m1;
 
+(*X changed name to make more sense with compcert*)
  mi_delta_pos {injperm: InjectPerm}:
    forall f g m1 m2 b1 b2 delta,
      inject f g m1 m2 ->
      f b1 = Some (b2, delta) ->
      delta >= 0;
 
+(*X*)
  valid_block_inject_1 {injperm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta,
   f b1 = Some(b2, delta) ->
   inject f g m1 m2 ->
   valid_block m1 b1;
 
+(*X*)
  valid_block_inject_2 {injperm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta,
   f b1 = Some(b2, delta) ->
   inject f g m1 m2 ->
   valid_block m2 b2;
 
+(*X*)
  perm_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta ofs k p,
   f b1 = Some(b2, delta) ->
@@ -1312,6 +1465,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   inject_perm_condition p ->
   perm m2 b2 (ofs + delta) k p;
 
+(*X*)
  range_perm_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta lo hi k p,
   f b1 = Some(b2, delta) ->
@@ -1320,6 +1474,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   inject_perm_condition p ->
   range_perm m2 b2 (lo + delta) (hi + delta) k p;
 
+(*X*)
  valid_access_inject {injperm: InjectPerm}:
   forall f g m1 m2 chunk b1 ofs b2 delta p,
   f b1 = Some(b2, delta) ->
@@ -1328,6 +1483,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   inject_perm_condition p ->
   valid_access m2 chunk b2 (ofs + delta) p;
 
+(*X*)
  valid_pointer_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 ofs b2 delta,
   f b1 = Some(b2, delta) ->
@@ -1335,6 +1491,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   valid_pointer m1 b1 ofs = true ->
   valid_pointer m2 b2 (ofs + delta) = true;
 
+(*X*)
  valid_pointer_inject' {injperm: InjectPerm}: 
   forall f g m1 m2 b1 ofs b2 delta,
     f b1 = Some(b2, delta) ->
@@ -1342,6 +1499,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
     valid_pointer m2 b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true;
 
+(*X*)
  weak_valid_pointer_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 ofs b2 delta,
   f b1 = Some(b2, delta) ->
@@ -1349,6 +1507,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   weak_valid_pointer m1 b1 ofs = true ->
   weak_valid_pointer m2 b2 (ofs + delta) = true;
 
+(*X*)
  weak_valid_pointer_inject' {injperm: InjectPerm}: 
   forall f g m1 m2 b1 ofs b2 delta,
   f b1 = Some(b2, delta) ->
@@ -1356,6 +1515,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
   weak_valid_pointer m2 b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true;
 
+(*X*)
  address_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 ofs1 b2 delta p,
   inject f g m1 m2 ->
@@ -1363,7 +1523,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b1 = Some (b2, delta) ->
   Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta)) = Ptrofs.unsigned ofs1 + delta;
 
- (** The following is needed by Separation, to prove storev_parallel_rule *)
+ (*X* The following is needed by Separation, to prove storev_parallel_rule *)
  address_inject' {injperm: InjectPerm}:
   forall f g m1 m2 chunk b1 ofs1 b2 delta,
   inject f g m1 m2 ->
@@ -1371,6 +1531,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b1 = Some (b2, delta) ->
   Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta)) = Ptrofs.unsigned ofs1 + delta;
 
+(*X*)
  valid_pointer_inject_no_overflow {injperm: InjectPerm}:
   forall f g m1 m2 b ofs b' delta,
   inject f g m1 m2 ->
@@ -1378,6 +1539,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b = Some(b', delta) ->
   0 <= Ptrofs.unsigned ofs + Ptrofs.unsigned (Ptrofs.repr delta) <= Ptrofs.max_unsigned;
 
+(*X*)
  weak_valid_pointer_inject_no_overflow {injperm: InjectPerm}:
   forall f g m1 m2 b ofs b' delta,
   inject f g m1 m2 ->
@@ -1385,6 +1547,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b = Some(b', delta) ->
   0 <= Ptrofs.unsigned ofs + Ptrofs.unsigned (Ptrofs.repr delta) <= Ptrofs.max_unsigned;
 
+(*X*)
  valid_pointer_inject_val {injperm: InjectPerm}:
   forall f g m1 m2 b ofs b' ofs',
   inject f g m1 m2 ->
@@ -1392,6 +1555,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Val.inject f (Vptr b ofs) (Vptr b' ofs') ->
   valid_pointer m2 b' (Ptrofs.unsigned ofs') = true;
 
+(*X*)
  weak_valid_pointer_inject_val {injperm: InjectPerm}:
   forall f g m1 m2 b ofs b' ofs',
   inject f g m1 m2 ->
@@ -1399,6 +1563,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Val.inject f (Vptr b ofs) (Vptr b' ofs') ->
   weak_valid_pointer m2 b' (Ptrofs.unsigned ofs') = true;
 
+(*X*)
  inject_no_overlap {injperm: InjectPerm}:
   forall f g m1 m2 b1 b2 b1' b2' delta1 delta2 ofs1 ofs2,
   inject f g m1 m2 ->
@@ -1409,6 +1574,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   perm m1 b2 ofs2 Max Nonempty ->
   b1' <> b2' \/ ofs1 + delta1 <> ofs2 + delta2;
 
+(*X*)
  different_pointers_inject {injperm: InjectPerm}:
   forall f g m m' b1 ofs1 b2 ofs2 b1' delta1 b2' delta2,
   inject f g m m' ->
@@ -1434,6 +1600,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
              \/ ofs1 + delta1 + sz <= ofs2 + delta2
              \/ ofs2 + delta2 + sz <= ofs1 + delta1;
 
+(*X*)
  aligned_area_inject {injperm: InjectPerm}:
   forall f g m m' b ofs al sz b' delta,
   inject f g m m' ->
@@ -1444,6 +1611,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b = Some(b', delta) ->
   (al | ofs + delta);
 
+(*X*)
  load_inject {injperm: InjectPerm}:
   forall f g m1 m2 chunk b1 ofs b2 delta v1,
   inject f g m1 m2 ->
@@ -1451,6 +1619,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b1 = Some (b2, delta) ->
   exists v2, load chunk m2 b2 (ofs + delta) = Some v2 /\ Val.inject f v1 v2;
 
+(*X*)
  loadv_inject {injperm: InjectPerm}:
   forall f g m1 m2 chunk a1 a2 v1,
   inject f g m1 m2 ->
@@ -1458,6 +1627,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Val.inject f a1 a2 ->
   exists v2, loadv chunk m2 a2 = Some v2 /\ Val.inject f v1 v2;
 
+(*X*)
  loadbytes_inject {injperm: InjectPerm}:
   forall f g m1 m2 b1 ofs len b2 delta bytes1,
   inject f g m1 m2 ->
@@ -1466,6 +1636,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   exists bytes2, loadbytes m2 b2 (ofs + delta) len = Some bytes2
               /\ list_forall2 (memval_inject f) bytes1 bytes2;
 
+(*X*)
  store_mapped_inject {injperm: InjectPerm}:
   forall f g chunk m1 b1 ofs v1 n1 m2 b2 delta v2,
   inject f g m1 m2 ->
@@ -1476,6 +1647,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     store chunk m2 b2 (ofs + delta) v2 = Some n2
     /\ inject f g n1 n2;
 
+(*X*)
  store_unmapped_inject {injperm: InjectPerm}:
   forall f g chunk m1 b1 ofs v1 n1 m2,
   inject f g m1 m2 ->
@@ -1483,6 +1655,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b1 = None ->
   inject f g n1 m2;
 
+(*X*)
  store_outside_inject {injperm: InjectPerm}:
   forall f g m1 m2 chunk b ofs v m2',
   inject f g m1 m2 ->
@@ -1493,6 +1666,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   store chunk m2 b ofs v = Some m2' ->
   inject f g m1 m2';
 
+(*X*)
  store_right_inject {injperm: InjectPerm}:
   forall f g m1 m2 chunk b ofs v m2',
     inject f g m1 m2 ->
@@ -1514,6 +1688,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
  (*    store chunk m2 b ofs v = Some m2' -> *)
  (*    inject f g m1 m2'; *)
 
+(*X*)
  storev_mapped_inject {injperm: InjectPerm}:
   forall f g chunk m1 a1 v1 n1 m2 a2 v2,
   inject f g m1 m2 ->
@@ -1523,6 +1698,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   exists n2,
     storev chunk m2 a2 v2 = Some n2 /\ inject f g n1 n2;
 
+(*X*)
  storebytes_mapped_inject {injperm: InjectPerm}:
   forall f g m1 b1 ofs bytes1 n1 m2 b2 delta bytes2,
   inject f g m1 m2 ->
@@ -1533,6 +1709,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     storebytes m2 b2 (ofs + delta) bytes2 = Some n2
     /\ inject f g n1 n2;
 
+(*X*)
  storebytes_unmapped_inject {injperm: InjectPerm}:
   forall f g m1 b1 ofs bytes1 n1 m2,
   inject f g m1 m2 ->
@@ -1540,6 +1717,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   f b1 = None ->
   inject f g n1 m2;
 
+(*X*)
  storebytes_outside_inject {injperm: InjectPerm}:
   forall f g m1 m2 b ofs bytes2 m2',
   inject f g m1 m2 ->
@@ -1550,6 +1728,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   storebytes m2 b ofs bytes2 = Some m2' ->
   inject f g m1 m2';
 
+(*X*)
  storebytes_empty_inject {injperm: InjectPerm}:
   forall f g m1 b1 ofs1 m1' m2 b2 ofs2 m2',
   inject f g m1 m2 ->
@@ -1557,12 +1736,14 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   storebytes m2 b2 ofs2 nil = Some m2' ->
   inject f g m1' m2';
 
+(*X*)
  alloc_right_inject {injperm: InjectPerm}:
   forall f g m1 m2 lo hi b2 m2',
   inject f g m1 m2 ->
   alloc m2 lo hi = (m2', b2) ->
   inject f g m1 m2';
 
+(*X*)
  alloc_left_unmapped_inject {injperm: InjectPerm}:
   forall f g m1 m2 lo hi m1' b1,
   inject f g m1 m2 ->
@@ -1573,6 +1754,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   /\ f' b1 = None
   /\ (forall b, b <> b1 -> f' b = f b);
 
+(*X*)
  alloc_left_mapped_inject {injperm: InjectPerm}:
   forall f g m1 m2 lo hi m1' b1 b2 delta,
   inject f g m1 m2 ->
@@ -1595,6 +1777,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   /\ f' b1 = Some(b2, delta)
   /\ (forall b, b <> b1 -> f' b = f b);
 
+(*X*)
  alloc_parallel_inject {injperm: InjectPerm}:
   forall f g m1 m2 lo1 hi1 m1' b1 lo2 hi2,
   inject f g m1 m2 ->
@@ -1607,6 +1790,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   /\ f' b1 = Some(b2, 0)
   /\ (forall b, b <> b1 -> f' b = f b);
 
+(*X*)
  free_inject {injperm: InjectPerm}:
   forall f g m1 l m1' m2 b lo hi m2',
   inject f g m1 m2 ->
@@ -1617,17 +1801,21 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     exists lo1, exists hi1, In (b1, lo1, hi1) l /\ lo1 <= ofs < hi1) ->
   inject f g m1' m2';
 
+(*X*)
  free_left_inject {injperm: InjectPerm}:
   forall f g m1 m2 b lo hi m1',
   inject f g m1 m2 ->
   free m1 b lo hi = Some m1' ->
   inject f g m1' m2;
+
+(*X*)
  free_list_left_inject {injperm: InjectPerm}:
   forall f g m2 l m1 m1',
   inject f g m1 m2 ->
   free_list m1 l = Some m1' ->
   inject f g m1' m2;
 
+(*X*)
  free_right_inject {injperm: InjectPerm}:
   forall f g m1 m2 b lo hi m2',
   inject f g m1 m2 ->
@@ -1637,6 +1825,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     lo <= ofs + delta < hi -> False) ->
   inject f g m1 m2';
 
+(*X*)
  free_parallel_inject {injperm: InjectPerm}:
   forall f g m1 m2 b lo hi m1' b' delta,
   inject f g m1 m2 ->
@@ -1647,6 +1836,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
      free m2 b' (lo + delta) (hi + delta) = Some m2'
   /\ inject f g m1' m2';
 
+(*X*)
  drop_parallel_inject {InjectPerm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta lo hi p m1',
   inject f g m1 m2 ->
@@ -1657,7 +1847,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
       drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2'
    /\ inject f g m1' m2';
 
-
+(*X*)
  drop_extended_parallel_inject {InjectPerm: InjectPerm}:
   forall f g m1 m2 b1 b2 delta lo1 hi1 lo2 hi2 p m1',
   inject f g m1 m2 ->
@@ -1681,6 +1871,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
       drop_perm m2 b2 (lo2 + delta) (hi2 + delta) p = Some m2'
    /\ inject f g m1' m2';
 
+(*X*)
  drop_outside_inject {injperm: InjectPerm}:
   forall f g m1 m2 b lo hi p m2',
     inject f g m1 m2 ->
@@ -1690,6 +1881,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
     perm m1 b' ofs k p -> lo <= ofs + delta < hi -> False) ->
   inject f g m1 m2';
 
+(*X*)
  drop_right_inject {injperm: InjectPerm}: 
    forall f g m1 m2 b lo hi p m2',
      inject f g m1 m2 ->
@@ -1703,6 +1895,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** The following property is needed by ValueDomain, to prove mmatch_inj. *)
 
+(*X*)
  self_inject f m {injperm: InjectPerm}:
   (forall b, f b = None \/ f b = Some (b, 0)) ->
   (forall b, f b <> None -> valid_block m b) ->
@@ -1713,6 +1906,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
        f b' <> None) ->
   inject f (flat_frameinj (length (stack m))) m m;
 
+(*X*)
  inject_stack_inj_wf {injperm: InjectPerm}:
    forall f g m1 m2,
      inject f g m1 m2 ->
@@ -1720,10 +1914,12 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
  (* Needed by Stackingproof, with Linear2 to Mach,
    to compose extends (in Linear2) and inject. *)
+(*X*)
  extends_inject_compose {injperm: InjectPerm}:
    forall f g m1 m2 m3,
      extends m1 m2 -> inject f g m2 m3 -> inject f g m1 m3;
 
+(*X*)
  extends_extends_compose {injperm: InjectPerm}:
    forall m1 m2 m3,
      extends m1 m2 -> extends m2 m3 -> extends m1 m3;
@@ -1731,16 +1927,20 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
 
 (** ** Properties of [inject_neutral] *)
 
+(*X*)
  neutral_inject {injperm: InjectPerm}:
   forall m, inject_neutral (nextblock m) m ->
   inject (flat_inj (nextblock m)) (flat_frameinj (length (stack m))) m m;
 
+(*X*)
  empty_inject_neutral {injperm: InjectPerm}:
   forall thr, inject_neutral thr empty;
 
+(*X*)
  empty_stack {injperm: InjectPerm}:
    stack empty = nil;
 
+(*X*)
  alloc_inject_neutral {injperm: InjectPerm}:
   forall thr m lo hi b m',
   alloc m lo hi = (m', b) ->
@@ -1748,6 +1948,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Plt (nextblock m) thr ->
   inject_neutral thr m';
 
+(*X*)
  store_inject_neutral {injperm: InjectPerm}:
   forall chunk m b ofs v m' thr,
   store chunk m b ofs v = Some m' ->
@@ -1756,18 +1957,21 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   Val.inject (flat_inj thr) v v ->
   inject_neutral thr m';
 
+(*X*)
  drop_inject_neutral {injperm: InjectPerm}:
   forall m b lo hi p m' thr,
   drop_perm m b lo hi p = Some m' ->
   inject_neutral thr m ->
   Plt b thr ->
   inject_neutral thr m';
+
+(*X*)
 drop_perm_stack {injperm: InjectPerm}:
   forall m1 b lo hi p m1',
     drop_perm m1 b lo hi p = Some m1' ->
     stack m1' = stack m1;
 
-(** ** Properties of [unchanged_on] and [strong_unchanged_on] *)
+(*X* ** Properties of [unchanged_on] and [strong_unchanged_on] *)
 
  strong_unchanged_on_weak P m1 m2:
   strong_unchanged_on P m1 m2 ->
@@ -1850,7 +2054,7 @@ drop_perm_stack {injperm: InjectPerm}:
      strong_unchanged_on Q m m'
  ;
 
-(** The following property is needed by Separation, to prove
+(*X* The following property is needed by Separation, to prove
 minjection. HINT: it can be used only for [strong_unchanged_on], not
 for [unchanged_on]. *)
 
@@ -1864,7 +2068,7 @@ for [unchanged_on]. *)
    stack m' = stack m ->
    inject j g m0 m';
 
- (* Original operations don't modify the stack. *)
+ (*X* Original operations don't modify the stack. *)
  store_no_abstract:
    forall chunk b o v, stack_unchanged (fun m1 m2 => store chunk m1 b o v = Some m2);
 
@@ -1883,7 +2087,7 @@ for [unchanged_on]. *)
  drop_perm_no_abstract:
    forall b lo hi p, stack_unchanged (fun m1 m2 => drop_perm m1 b lo hi p = Some m2);
 
- (* Properties of [record_stack_block] *)
+ (*X* Properties of [record_stack_block] *)
 
  record_stack_blocks_inject_left' {injperm: InjectPerm}:
    forall m1 m1' m2 j g f1 f2
@@ -1938,7 +2142,7 @@ for [unchanged_on]. *)
      Forall (fun b => Plt b thr) (map fst (frame_adt_blocks fi)) ->
      inject_neutral thr m';
 
- (* Properties of unrecord_stack_block *)
+ (*X* Properties of unrecord_stack_block *)
 
  unrecord_stack_block_inject_parallel {injperm: InjectPerm}:
    forall (m1 m1' m2 : mem) (j : meminj) g,
@@ -1988,7 +2192,7 @@ for [unchanged_on]. *)
 
  (* Other properties *)
 
- public_stack_access_extends {injperm: InjectPerm}:
+(*removed* public_stack_access_extends {injperm: InjectPerm}:
    forall m1 m2 b lo hi p,
      extends m1 m2 ->
      range_perm m1 b lo hi Cur p ->
@@ -2010,12 +2214,14 @@ for [unchanged_on]. *)
      range_perm m1 b lo hi Cur p ->
      inject_perm_condition p ->
      public_stack_access ( (stack m1)) b lo hi ->
-     public_stack_access ( (stack m2)) b lo hi;
+     public_stack_access ( (stack m2)) b lo hi; *)
 
+(*X*)
  in_frames_valid:
    forall m b,
      in_stack ( (stack m)) b -> valid_block m b;
 
+(*X*)
  is_stack_top_extends {injperm: InjectPerm}:
    forall m1 m2 b
      (MINJ: extends m1 m2)
@@ -2024,6 +2230,7 @@ for [unchanged_on]. *)
      (IST: is_stack_top ( (stack m1)) b),
      is_stack_top ( (stack m2)) b ;
 
+(*X*)
  is_stack_top_inject {injperm: InjectPerm}:
    forall f g m1 m2 b1 b2 delta
      (MINJ: inject f g m1 m2)
@@ -2033,9 +2240,11 @@ for [unchanged_on]. *)
      (IST: is_stack_top ( (stack m1)) b1),
      is_stack_top ( (stack m2)) b2 ;
 
+(*X*)
  size_stack_below:
    forall m, size_stack (stack m) < stack_limit;
- 
+
+(*X*)
  record_stack_block_inject_left_zero {injperm: InjectPerm}:
     forall m1 m1' m2 j g f1 f2
       (INJ: inject j g m1 m2)
@@ -2044,6 +2253,7 @@ for [unchanged_on]. *)
       (RSB: record_stack_blocks m1 f1 = Some m1'),
       inject j g m1' m2;
 
+(*X*)
  unrecord_stack_block_inject_left_zero {injperm: InjectPerm}:
     forall (m1 m1' m2 : mem) (j : meminj) n g,
       inject j (S n :: g) m1 m2 ->
@@ -2052,15 +2262,18 @@ for [unchanged_on]. *)
       (1 <= n)%nat ->
       inject j (n :: g) m1' m2;
 
+(*X*)
  stack_norepet:
    forall m, nodup (stack m);
- 
+
+(*X*)
  inject_ext {injperm: InjectPerm}:
     forall j1 j2 g m1 m2,
       inject j1 g m1 m2 ->
       (forall x, j1 x = j2 x) ->
       inject j2 g m1 m2;
 
+(*X*)
 record_stack_block_inject_flat {injperm: InjectPerm}:
    forall m1 m1' m2 j  f1 f2
      (INJ: inject j (flat_frameinj (length (stack m1))) m1 m2)
@@ -2077,6 +2290,7 @@ record_stack_block_inject_flat {injperm: InjectPerm}:
        record_stack_blocks m2 f2 = Some m2' /\
        inject j (flat_frameinj (length (stack m1'))) m1' m2';
 
+(*X*)
 unrecord_stack_block_inject_parallel_flat {injperm: InjectPerm}:
   forall (m1 m1' m2 : mem) (j : meminj),
     inject j (flat_frameinj (length (stack m1))) m1 m2 ->
@@ -2085,25 +2299,31 @@ unrecord_stack_block_inject_parallel_flat {injperm: InjectPerm}:
       unrecord_stack_block m2 = Some m2' /\
       inject j (flat_frameinj (length (stack m1'))) m1' m2';
 
+(*X*)
 record_stack_blocks_tailcall_original_stack:
   forall m1 f1 m2,
     record_stack_blocks m1 f1 = Some m2 ->
     exists f r,
       stack m1 = (None,f)::r;
-
+(*X*)
 push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
+
+(*X*)
  push_new_stage_load: forall chunk m b o, load chunk (push_new_stage m) b o = load chunk m b o;
 
+(*X*)
  push_new_stage_inject  {injperm: InjectPerm}:
    forall j g m1 m2,
         inject j g m1 m2 ->
         inject j (1%nat :: g) (push_new_stage m1) (push_new_stage m2);
 
+(*X*)
  inject_push_new_stage_left {injperm: InjectPerm}:
    forall j n g m1 m2,
      inject j (n::g) m1 m2 ->
      inject j (S n :: g) (push_new_stage m1) m2;
 
+(*X*)
  inject_push_new_stage_right {injperm: InjectPerm}:
    forall j n g m1 m2,
      inject j (S n :: g) m1 m2 ->
@@ -2111,64 +2331,78 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
      (O < n)%nat ->
      inject j (1%nat :: n :: g) m1 (push_new_stage m2);
 
+(*X*)
  push_new_stage_length_stack:
       forall m,
         length (stack (push_new_stage m)) = S (length (stack m));
 
+(*X*)
  push_new_stage_stack:
       forall m,
         stack (push_new_stage m) = (None, nil) :: stack m;
 
+(*X*)
  push_new_stage_perm:
       forall m b o k p,
         perm (push_new_stage m) b o k p <-> perm m b o k p;
 
+(*X*)
  wf_stack_mem:
    forall m,
      wf_stack (Mem.perm m) (Mem.stack m);
 
+(*X*)
  agree_perms_mem:
   forall m,
     stack_agree_perms (Mem.perm m) (Mem.stack m);
 
+(*X*)
  record_stack_blocks_top_tframe_no_perm:
    forall m1 f m2,
      Mem.record_stack_blocks m1 f = Some m2 ->
     top_tframe_tc (Mem.stack m1);
 
+(*X*)
  extends_push {injperm: InjectPerm}:
    forall m1 m2,
      Mem.extends m1 m2 ->
      Mem.extends (Mem.push_new_stage m1) (Mem.push_new_stage m2);
- 
+(*X*)
  push_new_stage_unchanged_on:
    forall P m,
      Mem.strong_unchanged_on P m (Mem.push_new_stage m);
 
+(*X*)
  tailcall_stage_unchanged_on:
    forall P m1 m2,
      Mem.tailcall_stage m1 = Some m2 ->
      Mem.strong_unchanged_on P m1 m2;
- 
+
+(*X*)
  unrecord_push:
    forall m, Mem.unrecord_stack_block (Mem.push_new_stage m) = Some m;
 
+(*X*)
  push_storebytes_unrecord:
    forall m b o bytes m1 m2,
      storebytes m b o bytes = Some m1 ->
      storebytes (push_new_stage m) b o bytes = Some m2 ->
      unrecord_stack_block m2 = Some m1;
 
+(*X*)
  push_store_unrecord:
    forall m b o chunk v m1 m2,
      store chunk m b o v = Some m1 ->
      store chunk (push_new_stage m) b o v = Some m2 ->
      unrecord_stack_block m2 = Some m1;
- 
+
+(*X*)
  magree_push {injperm:InjectPerm}:
       forall P m1 m2,
         magree m1 m2 P ->
         magree (Mem.push_new_stage m1) (Mem.push_new_stage m2) P;
+
+(*X*)
  magree_unrecord {injperm:InjectPerm}:
     forall m1 m2 P,
       magree m1 m2 P ->
@@ -2177,6 +2411,7 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
         exists m2',
           Mem.unrecord_stack_block m2 = Some m2' /\ magree m1' m2' P;
 
+(*X*)
  magree_tailcall_stage {injperm:InjectPerm}:
       forall P m1 m2 m1',
         magree m1 m2 P ->
@@ -2184,7 +2419,7 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
         top_frame_no_perm m2 ->
         exists m2', tailcall_stage m2 = Some m2' /\ magree m1' m2' P;
 
- 
+(*X*)
  loadbytes_push:
    forall m b o n,
      Mem.loadbytes (Mem.push_new_stage m) b o n = Mem.loadbytes m b o n;
@@ -2268,22 +2503,26 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
  (*       Mem.nextblock m2 = Mem.nextblock m3 -> *)
  (*       same_head (Mem.perm m2) (Mem.stack m2) (Mem.stack m3) -> Mem.extends m1 m3; *)
 
+(*X*)
  tailcall_stage_tc:
   forall m1 m2,
     Mem.tailcall_stage m1 = Some m2 ->
     top_tframe_tc (Mem.stack m2);
 
+(*X*)
  tailcall_stage_perm:
    forall m1 m2,
      Mem.tailcall_stage m1 = Some m2 ->
      forall b o k p,
        Mem.perm m2 b o k p <-> Mem.perm m1 b o k p;
- 
+
+(*X*)
  tailcall_stage_tl_stack:
   forall m1 m2,
     Mem.tailcall_stage m1 = Some m2 ->
     tl (Mem.stack m2) = tl (Mem.stack m1);
 
+(*X*)
  tailcall_stage_extends {injperm: InjectPerm}:
    forall m1 m2 m1',
      Mem.extends m1 m2 ->
@@ -2293,6 +2532,7 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
        Mem.tailcall_stage m2 = Some m2' /\ Mem.extends m1' m2';
 
 
+(*X*)
  tailcall_stage_inject {injperm: InjectPerm}:
   forall j g m1 m2 m1',
     Mem.inject j g m1 m2 ->
@@ -2301,6 +2541,7 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
     exists m2',
       Mem.tailcall_stage m2 = Some m2' /\ Mem.inject j g m1' m2';
 
+(*X*)
  tailcall_stage_stack_equiv:
   forall m1 m2 m1' m2',
     Mem.tailcall_stage m1 = Some m1' ->
@@ -2308,18 +2549,19 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
     stack_equiv (Mem.stack m1) (Mem.stack m2) ->
     stack_equiv (Mem.stack m1') (Mem.stack m2');
 
+(*X*)
  tailcall_stage_same_length_pos:
     forall m1 m2,
       Mem.tailcall_stage m1 = Some m2 ->
       length (Mem.stack m2) = length (Mem.stack m1) /\ lt O (length (Mem.stack m1));
 
-
+(*X*)
  tailcall_stage_nextblock:
     forall m1 m2,
       Mem.tailcall_stage m1 = Some m2 ->
       Mem.nextblock m2 = Mem.nextblock m1;
 
-
+(*X*)
  inject_new_stage_left_tailcall_right {injperm: InjectPerm}:
     forall j n g m1 m2,
       Mem.inject j (n :: g) m1 m2 ->
@@ -2330,6 +2572,7 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
         Mem.tailcall_stage m2 = Some m2' /\
         Mem.inject j (S n :: g) (Mem.push_new_stage m1) m2';
 
+(*X*)
  inject_tailcall_left_new_stage_right {injperm:InjectPerm}:
    forall (j : meminj) (n : nat) (g : list nat) (m1 m2 m1' : mem),
      Mem.inject j (S n :: g) m1 m2 ->
@@ -2337,19 +2580,21 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
      tailcall_stage m1 = Some m1' ->
      Mem.inject j (1%nat:: n :: g) m1' (Mem.push_new_stage m2);
 
+(*X*)
  tailcall_stage_inject_left {injperm: InjectPerm}:
   forall j n g m1 m2 m1',
     Mem.inject j (n :: g) m1 m2 ->
     Mem.tailcall_stage m1 = Some m1' ->
     Mem.inject j (n::g) m1' m2;
 
+(*X*)
  tailcall_stage_right_extends {injperm: InjectPerm}:
         forall m1 m2 (EXT: Mem.extends m1 m2)
           (TFNP1: Mem.top_frame_no_perm m1)
           (TFNP2: Mem.top_frame_no_perm m2),
         exists m2', Mem.tailcall_stage m2 = Some m2' /\ Mem.extends m1 m2';
-      
- 
+
+(*X*)
  tailcall_stage_stack:
     forall m1 m2,
       Mem.tailcall_stage m1 = Some m2 ->
