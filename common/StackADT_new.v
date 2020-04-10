@@ -2497,4 +2497,417 @@ Qed.
 (* (** SACC: The following property is needed by ValueDomain, to prove mmatch_inj. *)
 Definition record_init_sp m :=
   let (m1, b1) := alloc (push_new_stage m) 0 0 in
-  record_stack_blocks m1 (make_singleton_frame_adt b1 0 0). *)
+  record_stack_blocks m1 (make_singleton_frame_adt b1 0 0). 
+
+  Lemma record_init_sp_inject:
+    forall j g m1 m1' m2,
+      Mem.inject j g m1 m1' ->
+      size_stack (stack m1') <= size_stack (stack m1) ->
+      record_init_sp m1 = Some m2 ->
+      exists m2', record_init_sp m1' = Some m2' /\ inject (fun b => if peq b (nextblock (push_new_stage m1))
+                                                           then Some (nextblock (push_new_stage m1'), 0)
+                                                           else j b) (1%nat::g) m2 m2'.
+  Proof.
+    intros j g m1 m1' m2 INJ SZ RIS.
+    unfold record_init_sp in *; destr_in RIS.
+    exploit Mem.push_new_stage_inject. apply INJ. intro INJ0.
+    edestruct Mem.alloc_parallel_inject as (f' & m2' & b2 & ALLOC & INJ1 & INCR & JNEW & JOLD).
+    apply INJ0. eauto. reflexivity. reflexivity.
+    rewrite ALLOC.
+    edestruct record_push_inject_alloc as (m2'' & RSB & INJ'). 7: apply RIS.
+    2: apply Heqp. 2: apply ALLOC. all: eauto.
+    rewrite push_new_stage_stack. constructor; reflexivity.
+    rewrite ! push_new_stage_stack. simpl. auto.
+    eexists; split. eauto.
+    eapply inject_ext. eauto.
+    intros. erewrite <- ! alloc_result by eauto.
+    destr. eauto.
+  Qed.
+
+  Lemma record_init_sp_extends:
+    forall m1 m1' m2,
+      Mem.extends m1 m1' ->
+      size_stack (stack m1') <= size_stack (stack m1) ->
+      record_init_sp m1 = Some m2 ->
+      exists m2', record_init_sp m1' = Some m2' /\ extends m2 m2'.
+  Proof.
+    intros m1 m1' m2 INJ SZ RIS.
+    unfold record_init_sp in *; destr_in RIS.
+    apply extends_push in INJ.
+    edestruct alloc_extends as (m2' & ALLOC & INJ1).
+    apply INJ. eauto. reflexivity. reflexivity.
+    rewrite ALLOC.
+    edestruct record_push_extends_flat_alloc as (m2'' & RSB & INJ'). 4: apply RIS.
+    apply Heqp. apply ALLOC. all: eauto.
+    rewrite push_new_stage_stack. constructor; reflexivity.
+    rewrite ! push_new_stage_stack. simpl. auto.
+  Qed.
+
+  Lemma record_init_sp_flat_inject
+    : forall (m1 m1' m2 : mem),
+      Mem.inject (Mem.flat_inj (Mem.nextblock m1)) (flat_frameinj (length (Mem.stack m1))) m1 m1' ->
+      size_stack (Mem.stack m1') <= size_stack (Mem.stack m1) ->
+      Mem.record_init_sp m1 = Some m2 ->
+      Mem.nextblock m1 = Mem.nextblock m1' ->
+      exists m2' : mem,
+        Mem.record_init_sp m1' = Some m2' /\
+        Mem.inject
+          (Mem.flat_inj (Mem.nextblock m2))
+          (flat_frameinj (length (Mem.stack m2))) m2 m2'.
+  Proof.
+    intros m1 m1' m2 INJ SZ RIS EQNB.
+    edestruct record_init_sp_inject as (m2' & RIS' & INJ'); eauto.
+    eexists; split; eauto.
+    unfold record_init_sp in RIS; destr_in RIS.
+    erewrite (record_stack_block_nextblock _ _ _ RIS).
+    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
+    rewrite push_new_stage_nextblock.
+    destruct (record_stack_blocks_stack_eq _ _ _ RIS) as (tf & r & EQ1 & EQ2).
+    rewrite EQ2. 
+    erewrite (alloc_stack_blocks _ _ _ _ _ Heqp) in EQ1.
+    rewrite push_new_stage_stack in EQ1. inv EQ1.
+    simpl. rewrite frameinj_push_flat.
+    eapply inject_ext; eauto.
+    simpl; intros. unfold flat_inj.
+    rewrite ! push_new_stage_nextblock. rewrite EQNB.
+    repeat (destr; subst); xomega.
+  Qed.
+
+  Lemma record_init_sp_nextblock:
+    forall m1 m2,
+      record_init_sp m1 = Some m2 ->
+      Ple (nextblock m1) (nextblock m2).
+  Proof.
+    intros m1 m2 RIS.
+    unfold record_init_sp in RIS. destr_in RIS.
+    erewrite (record_stack_block_nextblock _ _ _ RIS).
+    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
+    rewrite push_new_stage_nextblock. xomega.
+  Qed.
+
+  Lemma record_init_sp_nextblock_eq:
+    forall m1 m2,
+      record_init_sp m1 = Some m2 ->
+      (nextblock m2) = Pos.succ (nextblock m1).
+  Proof.
+    intros m1 m2 RIS.
+    unfold record_init_sp in RIS. destr_in RIS.
+    erewrite (record_stack_block_nextblock _ _ _ RIS).
+    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
+    rewrite push_new_stage_nextblock. reflexivity.
+  Qed.
+  
+  Lemma record_init_sp_stack:
+    forall m1 m2,
+      Mem.record_init_sp m1 = Some m2 ->
+      Mem.stack m2 = (Some (make_singleton_frame_adt (Mem.nextblock (Mem.push_new_stage m1)) 0 0),nil)::Mem.stack m1.
+  Proof.
+    unfold Mem.record_init_sp. intros m1 m2 RIS; destr_in RIS.
+    destruct (record_stack_blocks_stack_eq _ _ _ RIS) as (tf & r & EQ1 & EQ2).
+    rewrite EQ2. 
+    erewrite (alloc_stack_blocks _ _ _ _ _ Heqp) in EQ1.
+    rewrite push_new_stage_stack in EQ1. inv EQ1.
+    exploit Mem.alloc_result; eauto. intros; subst. reflexivity.
+  Qed.
+  
+  Lemma record_init_sp_perm:
+    forall m1 m2,
+      Mem.record_init_sp m1 = Some m2 ->
+      forall b o k p,
+        perm m2 b o k p <-> perm m1 b o k p.
+  Proof.
+    unfold Mem.record_init_sp. intros m1 m2 RIS; destr_in RIS.
+    intros.
+    split; intro P.
+    - eapply push_new_stage_perm.
+      eapply record_stack_block_perm in P. 2: eauto.
+      eapply perm_alloc_inv in P; eauto.
+      destr_in P. omega.
+    - eapply record_stack_block_perm'. eauto.
+      eapply perm_alloc_1. eauto.
+      eapply push_new_stage_perm. auto.
+  Qed.
+*)
+
+(*   Definition is_ptr (v: val) :=
+    match v with Vptr _ _ => Some v | _ => None end.
+  
+  Definition encoded_ra (l: list memval) : option val :=
+    match proj_bytes l with
+    | Some bl => Some (Vptrofs (Ptrofs.repr (decode_int bl)))
+    | None => is_ptr (Val.load_result Mptr (proj_value (quantity_chunk Mptr) l))
+    end.
+
+  Definition loadbytesv chunk m addr :=
+    match addr with
+      Vptr b o =>
+      match Mem.loadbytes m b (Ptrofs.unsigned o) (size_chunk chunk) with
+      | Some bytes => encoded_ra bytes
+      | None => None
+      end
+    | _ => None
+    end.
+
+  Lemma loadbytesv_inject:
+    forall j g chunk m m' v v' ra,
+      Mem.inject j g m m' ->
+      Val.inject j v v' ->
+      loadbytesv chunk m v = Some ra ->
+      exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.inject j ra ra'.
+  Proof.
+    intros j g chunk m m' v v' ra MINJ VINJ L.
+    unfold loadbytesv in *.
+    destr_in L. inv VINJ.
+    destr_in L.
+    edestruct Mem.loadbytes_inject as (l' & L' & INJ); eauto.
+    erewrite Mem.address_inject; eauto.
+    rewrite L'.
+    - unfold encoded_ra in L |- *.
+      repeat destr_in L.
+      erewrite proj_bytes_inject; eauto.
+      destr. eapply proj_bytes_not_inject in Heqo0; eauto. 2: congruence.
+      erewrite proj_value_undef in H0; eauto.
+      contradict H0. unfold Mptr. destr; simpl; congruence.
+      generalize (proj_value_inject _ (quantity_chunk Mptr) _ _ INJ). intro VINJ.
+      generalize (Val.load_result_inject _ Mptr _ _ VINJ). intro VINJ'.
+      unfold is_ptr in H0. destr_in H0. inv H0. inv VINJ'.
+      eexists; split. simpl. eauto.
+      econstructor; eauto.
+    - eapply Mem.loadbytes_range_perm; eauto. generalize (size_chunk_pos chunk); omega.
+  Qed.
+
+  Lemma loadbytesv_extends:
+    forall chunk m m' v v' ra,
+      Mem.extends m m' ->
+      Val.lessdef v v' ->
+      loadbytesv chunk m v = Some ra ->
+      exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.lessdef ra ra'.
+  Proof.
+    intros chunk m m' v v' ra MEXT VLD L.
+    unfold loadbytesv in *.
+    destr_in L. inv VLD.
+    destr_in L.
+    edestruct Mem.loadbytes_extends as (l' & L' & EXT); eauto.
+    rewrite L'.
+    - unfold encoded_ra in L |- *.
+      repeat destr_in L.
+      erewrite proj_bytes_inject; eauto.
+      destr. eapply proj_bytes_not_inject in Heqo0; eauto. 2: congruence.
+      erewrite proj_value_undef in H0; eauto.
+      contradict H0. unfold Mptr. destr; simpl; congruence.
+      generalize (proj_value_inject _ (quantity_chunk Mptr) _ _ EXT). intro VEXT.
+      generalize (Val.load_result_inject _ Mptr _ _ VEXT). intro VEXT'.
+      unfold is_ptr in H0. destr_in H0. inv H0. inv VEXT'. inv H2.
+      eexists; split. simpl. eauto.
+      rewrite Ptrofs.add_zero. econstructor; eauto.
+  Qed.
+
+  
+  Lemma proj_value_inj_value:
+    forall q v l,
+      proj_value q l = v ->
+      v <> Vundef ->
+      inj_value q v = l.
+  Proof.
+    unfold proj_value.
+    intros q v l PROJ NU.
+    subst. destr. destr. destr.
+    destruct q; simpl in Heqb;
+      repeat match goal with
+             | H: andb _ _ = true |- _ => rewrite andb_true_iff in H; destruct H
+             | H: proj_sumbool (quantity_eq ?q1 ?q2) = true |- _ =>
+               destruct (quantity_eq q1 q2); simpl in H; try congruence; subst
+             | H: proj_sumbool (Val.eq ?q1 ?q2) = true |- _ =>
+               destruct (Val.eq q1 q2); simpl in H; try congruence; subst
+             | H: context [match ?a with _ => _ end] |- _ => destruct a eqn:?; simpl in *; intuition try congruence
+             end.
+  Qed.
+
+  Lemma long_unsigned_ptrofs_repr_eq:
+    Archi.ptr64 = true -> forall a, Int64.unsigned (Ptrofs.to_int64 (Ptrofs.repr a)) = Ptrofs.unsigned (Ptrofs.repr a).
+  Proof.
+    intros.
+    unfold Ptrofs.to_int64.
+    rewrite <- Ptrofs.agree64_repr; auto.
+    rewrite Ptrofs.repr_unsigned. auto.
+  Qed.
+
+  Lemma int_unsigned_ptrofs_repr_eq:
+    Archi.ptr64 = false -> forall a, Int.unsigned (Ptrofs.to_int (Ptrofs.repr a)) = Ptrofs.unsigned (Ptrofs.repr a).
+  Proof.
+    intros.
+    unfold Ptrofs.to_int.
+    rewrite <- Ptrofs.agree32_repr; auto.
+    rewrite Ptrofs.repr_unsigned. auto.
+  Qed.
+
+  Lemma byte_decompose: forall i x, (Byte.unsigned i + x * 256) / 256 = x.
+  Proof.
+    intros.
+    rewrite Z_div_plus_full.
+    rewrite Zdiv_small. omega. apply Byte.unsigned_range. omega.
+  Qed.
+
+  Lemma ptrofs_wordsize: Ptrofs.zwordsize = 8 * size_chunk Mptr.
+  Proof.
+    unfold Ptrofs.zwordsize, Ptrofs.wordsize.
+    unfold Wordsize_Ptrofs.wordsize. unfold Mptr.
+    destr; omega.
+  Qed.
+  
+  Lemma ptrofs_byte_modulus_ptr64:
+    Archi.ptr64 = true ->
+    Byte.modulus ^ 8 - 1 = Ptrofs.max_unsigned.
+  Proof.
+    unfold Ptrofs.max_unsigned. rewrite Ptrofs.modulus_power.
+    rewrite ptrofs_wordsize.
+    intros. unfold Mptr; rewrite H. simpl. reflexivity.
+  Qed.
+
+  Lemma ptrofs_byte_modulus_ptr32:
+    Archi.ptr64 = false ->
+    Byte.modulus ^ 4 - 1 = Ptrofs.max_unsigned.
+  Proof.
+    unfold Ptrofs.max_unsigned. rewrite Ptrofs.modulus_power.
+    rewrite ptrofs_wordsize.
+    intros. unfold Mptr; rewrite H. simpl. reflexivity.
+  Qed.
+
+  Lemma byte_compose_range:
+    forall i x n,
+      0 < n ->
+      0 <= x < Byte.modulus ^ (n - 1) ->
+      0 <= Byte.unsigned i + x * 256 < Byte.modulus ^ n.
+  Proof.
+    intros i x n POS RNG.
+    split.
+    generalize (Byte.unsigned_range i). omega.
+    generalize (Byte.unsigned_range i). 
+    change Byte.modulus with 256 in *. 
+    replace n with ((n-1)+1) by omega. rewrite Zpower_exp by omega.
+    change (256 ^ 1) with 256.
+    assert (0 <= x * 256 < 256 ^ (n - 1) * 256).
+    split. omega.
+    apply Z.mul_lt_mono_pos_r. omega. omega.
+    omega.
+  Qed.
+
+  Lemma le_m1_lt:
+    forall a b,
+      0 <= a < b ->
+      0 <= a <= b - 1.
+  Proof.
+    intros; omega.
+  Qed.
+
+  Lemma byte_repr_plus i0 i:
+    Byte.repr (Byte.unsigned i0 + i * 256) = i0.
+  Proof.
+    apply Byte.eqm_repr_eq.
+    red. red. exists i.
+    change Byte.modulus with 256 in *. omega.
+  Qed.
+  
+  Lemma encode_decode_long:
+    forall l,
+      length l = 8%nat ->
+      Archi.ptr64 = true ->
+      encode_int 8 (Int64.unsigned (Ptrofs.to_int64 (Ptrofs.repr (decode_int l)))) = l.
+  Proof.
+    intros.
+    repeat match goal with
+           | H : length ?l = _ |- _ =>
+             destruct l; simpl in H; inv H
+           end. simpl.
+    unfold encode_int, decode_int.
+    unfold rev_if_be. destr.
+    - simpl.
+      rewrite Z.add_0_r.
+      rewrite ! long_unsigned_ptrofs_repr_eq; auto.
+      f_equal; rewrite ! Ptrofs.unsigned_repr.
+      rewrite ! byte_decompose; apply Byte.repr_unsigned.
+      rewrite <- ptrofs_byte_modulus_ptr64; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. apply byte_repr_plus.
+      rewrite <- ptrofs_byte_modulus_ptr64; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+    - simpl.
+      rewrite Z.add_0_r.
+      rewrite ! long_unsigned_ptrofs_repr_eq; auto.
+      f_equal; rewrite ! Ptrofs.unsigned_repr.
+      apply byte_repr_plus.
+      rewrite <- ptrofs_byte_modulus_ptr64; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply Byte.repr_unsigned.
+      rewrite <- ptrofs_byte_modulus_ptr64; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+  Qed.
+
+  Lemma encode_decode_int:
+    forall l,
+      length l = 4%nat ->
+      Archi.ptr64 = false ->
+      encode_int 4 (Int.unsigned (Ptrofs.to_int (Ptrofs.repr (decode_int l)))) = l.
+  Proof.
+    intros.
+    repeat match goal with
+           | H : length ?l = _ |- _ =>
+             destruct l; simpl in H; inv H
+           end. simpl.
+    unfold encode_int, decode_int.
+    unfold rev_if_be. destr.
+    - simpl.
+      rewrite Z.add_0_r.
+      rewrite ! int_unsigned_ptrofs_repr_eq; auto.
+      f_equal; rewrite ! Ptrofs.unsigned_repr.
+      rewrite ! byte_decompose; apply Byte.repr_unsigned.
+      rewrite <- ptrofs_byte_modulus_ptr32; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. apply byte_repr_plus.
+      rewrite <- ptrofs_byte_modulus_ptr32; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+    - simpl.
+      rewrite Z.add_0_r.
+      rewrite ! int_unsigned_ptrofs_repr_eq; auto.
+      f_equal; rewrite ! Ptrofs.unsigned_repr.
+      apply byte_repr_plus.
+      rewrite <- ptrofs_byte_modulus_ptr32; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
+      f_equal. rewrite ! byte_decompose. apply Byte.repr_unsigned.
+      rewrite <- ptrofs_byte_modulus_ptr32; auto.
+      apply le_m1_lt.
+      repeat (apply byte_compose_range; [omega |]).
+      simpl Z.sub. apply Byte.unsigned_range.
+  Qed.
+
+*)

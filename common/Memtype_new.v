@@ -1374,6 +1374,13 @@ Parameter unrecord_stack_block: mem -> option mem.
 
 (** Basic Stack Properties*)
 
+Definition top_frame_no_perm m :=
+  top_tframe_prop
+    (fun tf : tframe_adt =>
+     forall b : block,
+     in_frames tf b -> forall (o : Z) (k : perm_kind) (p : permission), ~ perm m b o k p)
+    (stack m).
+
 Axiom empty_stack:
   stack empty = nil.
 
@@ -1382,6 +1389,12 @@ Axiom size_stack_below:
 
 Axiom stack_norepet:
   forall m, nodup (stack m).
+
+Axiom get_frame_info_valid:
+  forall m b f, get_frame_info (stack m) b = Some f -> valid_block m b.
+
+Axiom stack_top_valid:
+  forall m b, is_stack_top (stack m) b -> valid_block m b.
 
 Axiom in_stack_valid:
   forall m b,
@@ -1417,22 +1430,90 @@ Axiom loadv_int64_split:
   /\ loadv  Mint32 m (Val.add a (Vint (Int.repr 4))) = Some (if Archi.big_endian then v2 else v1)
   /\ Val.lessdef v (Val.longofwords v1 v2).
 
-(* Load-store properties *)
+(* Properties of [loadbytes] *)
 
-Axiom  load_store_similar_2:
-  forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
-  forall chunk',
-  size_chunk chunk' = size_chunk chunk ->
-  align_chunk chunk' <= align_chunk chunk ->
-  type_of_chunk chunk' = type_of_chunk chunk ->
-  load chunk' m2 b ofs = Some (Val.load_result chunk' v).
+Axiom storebytes_get_frame_info:
+   forall m1 b o v m2, 
+   storebytes m1 b o v = Some m2 ->
+   forall b', get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
 
-Axiom loadbytes_storebytes_disjoint:
-  forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
-  forall b' ofs' len,
-  len >= 0 ->
-  b' <> b \/ Intv.disjoint (ofs', ofs' + len) (ofs, ofs + Z_of_nat (length bytes)) ->
-  loadbytes m2 b' ofs' len = loadbytes m1 b' ofs' len.
+Axiom storebytes_is_stack_top:
+  forall m1 b o v m2 (STOREBYTES: storebytes m1 b o v = Some m2),
+  forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
+
+(* Properties of [alloc] *)
+
+Axiom alloc_get_frame_info:
+  forall m1 lo hi m2 b, 
+  alloc m1 lo hi = (m2, b) ->
+  forall b', get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
+
+Axiom alloc_is_stack_top:
+  forall m1 lo hi m2 b,
+  alloc m1 lo hi = (m2, b) ->
+  forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
+
+Axiom alloc_get_frame_info_fresh:
+  forall m1 lo hi m2 b, 
+  alloc m1 lo hi = (m2, b) ->
+  get_frame_info (stack m2) b = None.
+
+(* Properties of [free] *)
+
+Axiom free_get_frame_info:
+  forall m1 b lo hi m2 b',
+    free m1 b lo hi = Some m2 ->
+    get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
+
+Axiom perm_free:
+  forall m b lo hi m',
+  free m b lo hi = Some m' ->
+  forall b' o' k p,
+  perm m' b' o' k p <-> ((~ (b' = b /\ lo <= o' < hi)) /\ perm m b' o' k p).
+
+Axiom free_no_perm_stack:
+  forall m b sz m',
+  free m b 0 sz = Some m' ->
+  forall bi,
+  in_stack' (stack m) (b, bi) ->
+  frame_size bi = Z.max 0 sz ->
+  forall o k p,
+    ~ perm m' b o k p.
+
+(* Properties of [free_list] *)
+
+Axiom perm_free_list:
+  forall l m m' b ofs k p,
+  free_list m l = Some m' ->
+  perm m' b ofs k p ->
+  perm m b ofs k p /\
+  (forall lo hi, In (b, lo, hi) l -> lo <= ofs < hi -> False).
+
+Axiom free_no_perm_stack':
+  forall m b sz m',
+  free m b 0 sz = Some m' ->
+  forall bi f0 r s0 l,
+  stack m = (Some f0, r) :: s0 ->
+  frame_adt_blocks f0 = (b, bi) :: l ->
+  frame_size bi = Z.max 0 sz ->
+  forall o k p,
+  ~ perm m' b o k p.
+
+Axiom free_top_tframe_no_perm:
+  forall m b sz m' bi f0 r s0,
+  free m b 0 sz = Some m' ->
+  stack m = (Some f0, r) :: s0 ->
+  frame_adt_blocks f0 = (b, bi) :: nil ->
+  frame_size bi = Z.max 0 sz ->
+  top_frame_no_perm m'.
+
+Axiom free_top_tframe_no_perm':
+  forall m b sz m' bi f0 r s0,
+  free m b 0 sz = Some m' ->
+  stack m = (Some f0, r) :: s0 ->
+  frame_adt_blocks f0 = (b, bi) :: nil ->
+  frame_size bi = sz ->
+  top_frame_no_perm m'.
 
 (** Pointer integrity properties *)
 
@@ -1453,10 +1534,55 @@ Axiom storev_int64_split:
      storev Mint32 m a (if Archi.big_endian then Val.hiword v else Val.loword v) = Some m1
   /\ storev Mint32 m1 (Val.add a (Vint (Int.repr 4))) (if Archi.big_endian then Val.loword v else Val.hiword v) = Some m'.
 
+(* Properties of [store] *)
+
 Axiom store_stack:
   forall chunk m1 b1 ofs v1 n1,
     store chunk m1 b1 ofs v1 = Some n1 ->
     stack n1 = stack m1.
+
+Axiom store_get_frame_info:
+  forall chunk m1 b o v m2,
+  (store chunk m1 b o v = Some m2) ->
+  forall b', get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
+
+Axiom store_is_stack_top:
+   forall chunk m1 b o v m2, 
+   store chunk m1 b o v = Some m2 ->
+   forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
+
+(* Properties of [storev] *)
+
+Axiom storev_nextblock :
+  forall m chunk addr v m',
+  storev chunk m addr v = Some m' ->
+  nextblock m' = nextblock m.
+
+Axiom storev_perm_inv:
+  forall m chunk addr v m',
+  storev chunk m addr v = Some m' ->
+  forall b o k p,
+  perm m' b o k p ->
+  perm m b o k p.
+
+(* Properties of [storebytes] *)
+
+(* Load-store properties *)
+
+Axiom  load_store_similar_2:
+  forall chunk m1 b ofs v m2, store chunk m1 b ofs v = Some m2 ->
+  forall chunk',
+  size_chunk chunk' = size_chunk chunk ->
+  align_chunk chunk' <= align_chunk chunk ->
+  type_of_chunk chunk' = type_of_chunk chunk ->
+  load chunk' m2 b ofs = Some (Val.load_result chunk' v).
+
+Axiom loadbytes_storebytes_disjoint:
+  forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
+  forall b' ofs' len,
+  len >= 0 ->
+  b' <> b \/ Intv.disjoint (ofs', ofs' + len) (ofs, ofs + Z_of_nat (length bytes)) ->
+  loadbytes m2 b' ofs' len = loadbytes m1 b' ofs' len.
 
 (** Load-alloc properties *)
 
@@ -1799,6 +1925,11 @@ Axiom self_inject:
        f b' <> None) ->
   inject f (flat_frameinj (length (stack m))) m m.
 
+Axiom frame_inject_flat:
+  forall thr f,
+  Forall (fun bfi => Plt (fst bfi) thr) (frame_adt_blocks f) ->
+  frame_inject (flat_inj thr) f f.
+
 (** ** Properties of [weak_inject]. *)
 
 (*X* SACC:*)
@@ -1902,6 +2033,8 @@ Parameter strong_unchanged_on: forall (P: block -> Z -> Prop) (m_before m_after:
 
 (** ** Properties of [unchanged_on] and [strong_unchanged_on] *)
 
+Axiom unchanged_on_refl:
+  forall P m, unchanged_on P m m.
 Axiom unchanged_on_nextblock:
   forall P m1 m2,
   unchanged_on P m1 m2 ->
@@ -1949,6 +2082,32 @@ Axiom unchanged_on_implies:
   unchanged_on P m m' ->
   (forall b ofs, Q b ofs -> valid_block m b -> P b ofs) ->
   unchanged_on Q m m'.
+Axiom store_unchanged_on:
+  forall P chunk m b ofs v m',
+  store chunk m b ofs v = Some m' ->
+  (forall i, ofs <= i < ofs + size_chunk chunk -> ~ P b i) ->
+  unchanged_on P m m'.
+Axiom storebytes_unchanged_on:
+  forall P m b ofs bytes m',
+  storebytes m b ofs bytes = Some m' ->
+  (forall i, ofs <= i < ofs + Z_of_nat (length bytes) -> ~ P b i) ->
+  unchanged_on P m m'.
+Axiom alloc_unchanged_on:
+  forall P m lo hi m' b,
+  alloc m lo hi = (m', b) ->
+  unchanged_on P m m'.
+Axiom free_unchanged_on:
+  forall P m b lo hi m',
+  free m b lo hi = Some m' ->
+  (forall i, lo <= i < hi -> ~ P b i) ->
+  unchanged_on P m m'.
+Axiom drop_perm_unchanged_on:
+  forall P m b lo hi p m',
+  drop_perm m b lo hi p = Some m' ->
+  (forall i, lo <= i < hi -> ~ P b i) ->
+  unchanged_on P m m'.
+
+
 
 Axiom strong_unchanged_on_weak:
   forall P m1 m2,
@@ -2007,28 +2166,41 @@ Axiom inject_strong_unchanged_on:
    stack m' = stack m ->
    inject j g m0 m'.
 
-(*X* SACC: *)
-Definition stack_unchanged (T: mem -> mem -> Prop) :=
-  forall m1 m2, T m1 m2 -> stack m2 = stack m1.
-
 (* Original operations don't modify the stack. *)
-Axiom store_no_abstract:
-   forall chunk b o v, stack_unchanged (fun m1 m2 => store chunk m1 b o v = Some m2).
+Axiom store_stack_unchanged:
+  forall m1 sp chunk o v m2,
+  store chunk m1 sp o v = Some m2 ->
+  stack m2 = stack m1.
 
-Axiom storebytes_no_abstract:
-   forall b o bytes, stack_unchanged (fun m1 m2 => storebytes m1 b o bytes = Some m2).
+Axiom storev_stack :
+  forall m chunk addr v m',
+    storev chunk m addr v = Some m' ->
+    stack m' = stack m.
 
-Axiom alloc_no_abstract:
-   forall lo hi b, stack_unchanged (fun m1 m2 => alloc m1 lo hi = (m2, b)).
+Axiom storebytes_stack_unchanged:
+  forall m1 b o bytes m2,
+  storebytes m1 b o bytes = Some m2 ->
+  stack m2 = stack m1.
 
-Axiom free_no_abstract:
-   forall lo hi b, stack_unchanged (fun m1 m2 => free m1 b lo hi = Some m2).
+Axiom alloc_stack_unchanged:
+  forall m1 lo hi m2 b,
+  alloc m1 lo hi = (m2, b) ->
+  stack m2 = stack m1.
 
-Axiom freelist_no_abstract:
-   forall bl, stack_unchanged (fun m1 m2 => free_list m1 bl = Some m2).
+Axiom free_stack_unchanged:
+  forall m1 b lo hi m2,
+  free m1 b lo hi = Some m2 ->
+  stack m2 = stack m1.
 
-Axiom drop_perm_no_abstract:
-   forall b lo hi p, stack_unchanged (fun m1 m2 => drop_perm m1 b lo hi p = Some m2).
+Axiom freelist_stack_unchanged:
+  forall m bl m',
+  free_list m bl = Some m' ->
+  stack m' = stack m.
+
+Axiom drop_perm_stack_unchanged:
+   forall m1 b lo hi p m2,
+   drop_perm m1 b lo hi p = Some m2 ->
+    stack m2 = stack m1.
 
 (*X* SACC: *)
 Definition valid_frame f m :=
@@ -2041,13 +2213,6 @@ Definition mem_unchanged (T: mem -> mem -> Prop) :=
            /\ (forall b o k p, perm m2 b o k p <-> perm m1 b o k p)
            /\ (forall P, strong_unchanged_on P m1 m2)
            /\ (forall b o chunk, load chunk m2 b o = load chunk m1 b o).
-
-Definition top_frame_no_perm m :=
-  top_tframe_prop
-    (fun tf : tframe_adt =>
-     forall b : block,
-     in_frames tf b -> forall (o : Z) (k : perm_kind) (p : permission), ~ perm m b o k p)
-    (stack m).
 
 (* Properties of [push_new_stage] *)
 
@@ -2102,10 +2267,26 @@ Axiom push_new_stage_unchanged_on:
   forall P m,
   strong_unchanged_on P m (push_new_stage m).
 
+Axiom push_new_stage_loadv:
+  forall chunk m v,
+  loadv chunk (push_new_stage m) v = loadv chunk m v.
+
+Axiom storebytes_push:
+  forall m b o bytes m',
+  storebytes (push_new_stage m) b o bytes = Some m' ->
+  exists m2,
+    storebytes m b o bytes = Some m2.
+
 Axiom magree_push:
   forall P m1 m2,
   magree m1 m2 P ->
   magree (push_new_stage m1) (push_new_stage m2) P.
+
+Axiom push_new_stage_inject_flat:
+   forall j m1 m2,
+   inject j (flat_frameinj (length (stack m1))) m1 m2 ->
+   inject j (flat_frameinj (length (stack (push_new_stage m1))))
+            (push_new_stage m1) (push_new_stage m2).
 
 (* Properties of [tailcall_stage] *)
 
@@ -2187,6 +2368,19 @@ Axiom tailcall_stage_stack:
   exists f r,
   stack m1 = f :: r /\ stack m2 = (None, opt_cons (fst f) (snd f))::r.
 
+Axiom stack_inject_tailcall_stage:
+  forall j g m f1 l1 s1 f2 l2 s2,
+  stack_inject j m (1%nat::g) ((Some f1,l1)::s1) ((Some f2, l2)::s2) ->
+  stack_inject j m (1%nat::g) ((None, f1::l1)::s1) ((None, f2::l2)::s2).
+
+Axiom tailcall_stage_inject_flat:
+  forall j m1 m2 m1',
+  inject j (flat_frameinj (length (stack m1))) m1 m2 ->
+  tailcall_stage m1 = Some m1' ->
+  top_frame_no_perm m2 ->
+  exists m2',
+    tailcall_stage m2 = Some m2' /\ inject j (flat_frameinj (length (stack m1'))) m1' m2'.
+
 (* Properties of [record_stack_block] *)
 
 Axiom record_stack_blocks_tailcall_original_stack:
@@ -2194,6 +2388,17 @@ Axiom record_stack_blocks_tailcall_original_stack:
     record_stack_blocks m1 f1 = Some m2 ->
     exists f r,
       stack m1 = (None,f)::r.
+
+Axiom record_stack_blocks_stack_eq:
+  forall m1 f m2,
+  record_stack_blocks m1 f = Some m2 ->
+  exists tf r,
+    stack m1 = (None,tf)::r /\ stack m2 = (Some f,tf)::r.
+
+Axiom record_stack_blocks_length_stack:
+  forall m1 f m2,
+  record_stack_blocks m1 f = Some m2 ->
+  length (stack m2) = length (stack m1).
 
 Axiom record_stack_blocks_inject_left:
   forall m1 m1' m2 j g f1 f2,
@@ -2268,6 +2473,140 @@ Axiom record_stack_blocks_top_tframe_no_perm:
   record_stack_blocks m1 f = Some m2 ->
   top_tframe_tc (stack m1).
 
+Axiom record_stack_block_unchanged_on:
+  forall m bfi m' (P: block -> Z -> Prop),
+  record_stack_blocks m bfi = Some m' ->
+  strong_unchanged_on P m m'.
+
+Axiom record_stack_block_perm:
+  forall m bfi m',
+  record_stack_blocks m bfi = Some m' ->
+  forall b' o k p,
+    perm m' b' o k p ->
+    perm m b' o k p.
+
+Axiom record_stack_block_perm': 
+  forall m m' bofi,
+  record_stack_blocks m bofi = Some m' ->
+  forall (b' : block) (o : Z) (k : perm_kind) (p : permission),
+  perm m b' o k p -> perm m' b' o k p.
+
+Axiom record_stack_block_valid:
+  forall m bf m',
+  record_stack_blocks m bf = Some m' ->
+  forall b', valid_block m b' -> valid_block m' b'.
+
+Axiom record_stack_block_nextblock:
+  forall m bf m',
+  record_stack_blocks m bf = Some m' ->
+  nextblock m' = nextblock m.
+
+Axiom record_stack_block_is_stack_top:
+  forall m b fi m',
+  record_stack_blocks m fi = Some m' ->
+  in_frame fi b ->
+  is_stack_top (stack m') b.
+
+Axiom record_push_inject:
+  forall j n g m1 m2 fi1 fi2 m1',
+  inject j (n :: g) m1 m2 ->
+  frame_inject j fi1 fi2 ->
+  (forall b, 
+    in_stack (stack m2) b -> 
+    in_frame fi2 b -> 
+    False) ->
+  valid_frame fi2 m2 ->
+  frame_agree_perms (perm m2) fi2 ->
+  (forall b1 b2 delta, 
+    j b1 = Some (b2, delta) -> 
+    in_frame fi1 b1 <-> in_frame fi2 b2) ->
+  frame_adt_size fi1 = frame_adt_size fi2 ->
+  record_stack_blocks m1 fi1 = Some m1' ->
+  top_tframe_tc (stack m2) ->
+  size_stack (tl (stack m2)) <= size_stack (tl (stack m1)) ->
+  exists m2', 
+       record_stack_blocks m2 fi2 = Some m2'
+    /\ inject j (n::g) m1' m2'.
+
+Axiom record_push_inject_flat:
+  forall j m1 m2 fi1 fi2 m1', 
+  inject j (flat_frameinj (length (stack m1))) m1 m2 ->
+  frame_inject j fi1 fi2 ->
+  (forall b, 
+    in_stack (stack m2) b -> 
+    in_frame fi2 b -> 
+    False) ->
+  valid_frame fi2 m2 ->
+  frame_agree_perms (perm m2) fi2 ->
+  (forall b1 b2 delta, 
+    j b1 = Some (b2, delta) -> 
+    in_frame fi1 b1 <-> in_frame fi2 b2) ->
+  (frame_adt_size fi1 = frame_adt_size fi2) ->
+  record_stack_blocks m1 fi1 = Some m1' ->
+  top_tframe_tc (stack m2) ->
+  size_stack (tl (stack m2)) <= size_stack (tl (stack m1)) ->
+  exists m2', 
+       record_stack_blocks m2 fi2 = Some m2' 
+    /\ inject j (flat_frameinj (length (stack m1'))) m1' m2'.
+
+Axiom record_stack_blocks_inject_parallel_flat:
+   forall m1 m1' m2 j fi1 fi2,
+   inject j (flat_frameinj (length (stack m1))) m1 m2 ->
+   frame_inject j fi1 fi2 ->
+   (forall b : block, in_stack (stack m2) b -> ~ in_frame fi2 b) ->
+   (valid_frame fi2 m2) ->
+   frame_agree_perms (perm m2) fi2 ->
+   (forall (b1 b2 : block) (delta : Z), j b1 = Some (b2, delta) -> in_frame fi1 b1 <-> in_frame fi2 b2) ->
+   frame_adt_size fi1 = frame_adt_size fi2 ->
+   record_stack_blocks m1 fi1 = Some m1' ->
+   top_tframe_tc (stack m2) ->
+   size_stack (tl (stack m2)) <= size_stack (tl (stack m1)) ->
+   exists m2',
+     record_stack_blocks m2 fi2 = Some m2' /\
+     inject j (flat_frameinj (length (stack m1'))) m1' m2'.
+
+Axiom record_push_inject_alloc: 
+  forall m01 m02 m1 m2 j0 j g fsz b1 b2 sz m1',
+  inject j0 g m01 m02 ->
+  alloc m01 0 fsz = (m1, b1) ->
+  alloc m02 0 fsz = (m2, b2) ->
+  inject j g m1 m2 ->
+  (forall b : block, b <> b1 -> j b = j0 b) ->
+  j b1 = Some (b2, 0) ->
+  record_stack_blocks m1 (make_singleton_frame_adt b1 fsz sz) = Some m1' ->
+  top_tframe_tc (stack m02) ->
+  size_stack (tl (stack m02)) <= size_stack (tl (stack m01)) ->
+  exists m2' : mem,
+    record_stack_blocks m2 (make_singleton_frame_adt b2 fsz sz) = Some m2' /\
+    inject j g m1' m2'.
+
+Axiom record_push_inject_flat_alloc:
+  forall m01 m02 m1 m2 j0 j fsz b1 b2 sz m1',
+  inject j0 (flat_frameinj (length (stack m01))) m01 m02 ->
+  alloc m01 0 fsz = (m1, b1) ->
+  alloc m02 0 fsz = (m2, b2) ->
+  inject j (flat_frameinj (length (stack m01))) m1 m2 ->
+  (forall b : block, b <> b1 -> j b = j0 b) ->
+  j b1 = Some (b2, 0) ->
+  record_stack_blocks m1 (make_singleton_frame_adt b1 fsz sz) = Some m1' -> 
+  top_tframe_tc (stack m02) ->
+  size_stack (tl (stack m02)) <= size_stack (tl (stack m01)) ->
+  exists m2' : mem,
+    record_stack_blocks m2 (make_singleton_frame_adt b2 fsz sz) = Some m2' /\
+    inject j (flat_frameinj (length (stack m1'))) m1' m2'.
+
+Axiom record_push_extends_flat_alloc: 
+  forall m01 m02 m1 m2 fsz b sz m1',
+  alloc m01 0 fsz = (m1, b) ->
+  alloc m02 0 fsz = (m2, b) ->
+  extends m1 m2 ->
+  record_stack_blocks m1 (make_singleton_frame_adt b fsz sz) = Some m1' ->
+  top_tframe_tc (stack m02) ->
+  size_stack (tl (stack m02)) <= size_stack (tl (stack m01)) ->
+  exists m2' : mem,
+    record_stack_blocks m2 (make_singleton_frame_adt b fsz sz) = Some m2' /\
+    extends m1' m2'.
+
 (* Properties of [unrecord_stack_block] *)
 
 Axiom unrecord_stack_block_inject_parallel:
@@ -2318,6 +2657,35 @@ Axiom unrecord_stack_block_inject_parallel_flat:
   exists m2',
     unrecord_stack_block m2 = Some m2' /\
     inject j (flat_frameinj (length (stack m1'))) m1' m2'.
+
+Axiom unrecord_stack_block_unchanged_on:
+  forall m m' P,
+  unrecord_stack_block m = Some m' ->
+  strong_unchanged_on P m m'.
+
+Axiom unrecord_stack_block_perm:
+  forall m m',
+  unrecord_stack_block m = Some m' ->
+  forall b' o k p,
+  perm m' b' o k p ->
+  perm m b' o k p.
+
+Axiom unrecord_stack_block_perm': 
+  forall m m' : mem,
+  unrecord_stack_block m = Some m' ->
+  forall (b' : block) (o : Z) (k : perm_kind) (p : permission),
+  perm m b' o k p -> perm m' b' o k p.
+
+Axiom unrecord_stack_block_nextblock:
+  forall m m',
+  unrecord_stack_block m = Some m' ->
+  nextblock m' = nextblock m.
+
+Axiom unrecord_stack_block_get_frame_info:
+  forall m m' b,
+  unrecord_stack_block m = Some m' ->
+  ~ is_stack_top (stack m) b ->
+  get_frame_info (stack m') b = get_frame_info (stack m) b.
 
 Axiom magree_unrecord:
   forall m1 m2 P,

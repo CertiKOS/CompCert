@@ -368,6 +368,7 @@ Definition top_frame_no_perm m :=
      forall b : block,
      in_frames tf b -> forall (o : Z) (k : perm_kind) (p : permission), ~ Mem.perm m b o k p)
     (Mem.stack m).
+
 (*X*)
 Definition record_init_sp m :=
   let (m1, b1) := Mem.alloc (Mem.push_new_stage m) 0 0 in
@@ -2607,6 +2608,7 @@ Section WITHMEMORYMODEL.
 
 Context `{memory_model_prf: MemoryModel}.
 
+(*X*)
 Lemma stack_top_valid:
   forall m b, is_stack_top (stack m) b -> valid_block m b.
 Proof.
@@ -2615,12 +2617,14 @@ Proof.
   eapply in_frames_valid. rewrite H2, in_stack_cons; auto.
 Qed.
 
+(*X*)
 Lemma get_frame_info_valid:
   forall m b f, get_frame_info (stack m) b = Some f -> valid_block m b.
 Proof.
   intros. eapply in_frames_valid. eapply get_frame_info_in_stack; eauto.
 Qed.
 
+(*X Removed *)
 Lemma invalid_block_stack_access:
   forall m b lo hi,
     ~ valid_block m b ->
@@ -2632,6 +2636,7 @@ Proof.
   intro IN; apply in_frames_valid in IN; congruence.
 Qed.
 
+(*X*)
 Lemma store_get_frame_info:
   forall chunk m1 b o v m2 (STORE: store chunk m1 b o v = Some m2),
   forall b', get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
@@ -2640,6 +2645,7 @@ Proof.
   erewrite store_no_abstract; eauto.
 Qed.
 
+(*X removed redundant*)
 Lemma store_stack_blocks:
   forall m1 sp chunk o v m2,
     store chunk m1 sp o v = Some m2 ->
@@ -2649,6 +2655,7 @@ Proof.
   eapply store_no_abstract; eauto.
 Qed.
 
+(*X*)
 Lemma store_is_stack_top:
    forall chunk m1 b o v m2 (STORE: store chunk m1 b o v = Some m2),
    forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
@@ -2656,6 +2663,7 @@ Proof.
   intros; erewrite store_no_abstract; eauto. tauto.
 Qed.
 
+(*X*)
 Lemma storebytes_get_frame_info:
    forall m1 b o v m2 (STOREBYTES: storebytes m1 b o v = Some m2),
    forall b', get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
@@ -2663,6 +2671,7 @@ Proof.
   intros; erewrite storebytes_no_abstract; eauto.
 Qed.
 
+(*X*)
 Lemma storebytes_is_stack_top:
   forall m1 b o v m2 (STOREBYTES: storebytes m1 b o v = Some m2),
   forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
@@ -2670,6 +2679,7 @@ Proof.
   intros; erewrite storebytes_no_abstract; eauto. tauto.
 Qed.
 
+(*X*)
 Lemma alloc_get_frame_info:
   forall m1 lo hi m2 b (ALLOC: alloc m1 lo hi = (m2, b)),
   forall b', get_frame_info (stack m2) b' = get_frame_info (stack m1) b'.
@@ -2677,6 +2687,7 @@ Proof.
   intros; erewrite alloc_no_abstract; eauto.
 Qed.
 
+(*X*)
 Lemma alloc_is_stack_top:
   forall m1 lo hi m2 b (ALLOC: alloc m1 lo hi = (m2, b)),
   forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
@@ -2684,6 +2695,7 @@ Proof.
   intros; erewrite alloc_no_abstract; eauto. tauto.
 Qed.
 
+(*X*)
 Lemma alloc_get_frame_info_fresh:
   forall m1 lo hi m2 b (ALLOC: alloc m1 lo hi = (m2, b)),
     get_frame_info (stack m2) b = None.
@@ -2694,18 +2706,21 @@ Proof.
   eapply fresh_block_alloc in IN; eauto.
 Qed.
 
+(*X removed redundant*)
 Lemma alloc_stack_blocks:
   forall m1 lo hi m2 b,
     alloc m1 lo hi = (m2, b) ->
     stack m2 = stack m1.
 Proof. intros; eapply alloc_no_abstract; eauto. Qed.
 
+(*X*)
 Lemma free_stack_blocks:
   forall m1 b lo hi m2,
     free m1 b lo hi = Some m2 ->
     stack m2 = stack m1.
 Proof. intros; eapply free_no_abstract; eauto. Qed.
 
+(*X*)
 Lemma free_get_frame_info:
   forall m1 b lo hi m2 b',
     free m1 b lo hi = Some m2 ->
@@ -2714,6 +2729,7 @@ Proof.
   intros; erewrite free_no_abstract; eauto.
 Qed.
 
+(*X removed redundant*)
 Lemma storebytes_stack_blocks:
   forall m1 b o bytes m2,
     storebytes m1 b o bytes = Some m2 ->
@@ -2722,6 +2738,7 @@ Proof.
   intros; eapply storebytes_no_abstract; eauto.
 Qed.
 
+(*X removed redundant*)
 Lemma free_list_stack_blocks:
   forall m bl m',
     free_list m bl = Some m' ->
@@ -2730,6 +2747,7 @@ Proof.
   intros; eapply freelist_no_abstract; eauto.
 Qed.
 
+(*X*)
 Lemma record_stack_block_unchanged_on:
   forall m bfi m' (P: block -> Z -> Prop),
     record_stack_blocks m bfi = Some m' ->
@@ -2738,6 +2756,7 @@ Proof.
   intros; eapply record_stack_blocks_mem_unchanged; eauto.
 Qed.
 
+(*X*)
 Lemma record_stack_block_perm:
   forall m bfi m',
     record_stack_blocks m bfi = Some m' ->
@@ -2749,6 +2768,7 @@ Proof.
   apply H; eauto.
 Qed.
 
+(*X*)
 Lemma record_stack_block_perm'
   : forall m m' bofi,
     record_stack_blocks m bofi = Some m' ->
@@ -2759,6 +2779,7 @@ Proof.
   apply H; eauto.
 Qed.
 
+(*X*)
 Lemma record_stack_block_valid:
   forall m bf m',
     record_stack_blocks m bf = Some m' ->
@@ -2769,6 +2790,7 @@ Proof.
   destruct H. rewrite H. auto.
 Qed.
 
+(*X*)
 Lemma record_stack_block_nextblock:
   forall m bf m',
     record_stack_blocks m bf = Some m' ->
@@ -2779,6 +2801,7 @@ Proof.
   intuition.
 Qed.
 
+(*X*)
 Lemma record_stack_block_is_stack_top:
   forall m b fi m',
     record_stack_blocks m fi = Some m' ->
@@ -2792,6 +2815,7 @@ Proof.
   unfold get_frames_blocks. simpl. auto.
 Qed.
 
+(*X*)
 Lemma unrecord_stack_block_unchanged_on:
   forall m m' P,
     unrecord_stack_block m = Some m' ->
@@ -2801,6 +2825,7 @@ Proof.
   intuition.
 Qed.
 
+(*X*)
 Lemma unrecord_stack_block_perm:
    forall m m',
      unrecord_stack_block m = Some m' ->
@@ -2812,6 +2837,7 @@ Proof.
   intuition. apply H; auto.
 Qed.
 
+(*X*)
 Lemma unrecord_stack_block_perm'
      : forall m m' : mem,
        unrecord_stack_block m = Some m' ->
@@ -2822,6 +2848,7 @@ Proof.
   intuition. apply H; auto.
 Qed.
 
+(*X*)
 Lemma unrecord_stack_block_nextblock:
   forall m m',
     unrecord_stack_block m = Some m' ->
@@ -2831,6 +2858,7 @@ Proof.
   intuition.
 Qed.
 
+(*X*)
 Lemma unrecord_stack_block_get_frame_info:
    forall m m' b,
      unrecord_stack_block m = Some m' ->
@@ -2843,6 +2871,7 @@ Proof.
   destr.
 Qed.
 
+(*X*)
 Lemma valid_access_store:
   forall m1 chunk b ofs v,
   valid_access m1 chunk b ofs Writable ->
@@ -2856,6 +2885,7 @@ Proof.
   congruence.
 Defined.
 
+(*X*)
 Lemma range_perm_storebytes:
   forall m1 b ofs bytes,
     range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable ->
@@ -2871,6 +2901,7 @@ Proof.
   apply NPSA.
 Defined.
 
+(*X*)
 Lemma range_perm_free:
   forall m1 b lo hi,
   range_perm m1 b lo hi Cur Freeable ->
@@ -2884,6 +2915,7 @@ Proof.
   congruence.
 Defined.
 
+(*X*)
 Lemma range_perm_drop_2:
   forall m b lo hi p,
   range_perm m b lo hi Cur Freeable -> { m' | drop_perm m b lo hi p = Some m' }.
@@ -2896,6 +2928,7 @@ Proof.
   congruence.
 Defined.
 
+(*X*)
 Lemma perm_free_list:
   forall l m m' b ofs k p,
   free_list m l = Some m' ->
@@ -2914,12 +2947,14 @@ Proof.
   eauto.
 Qed.
 
+(*X*)
 Lemma unchanged_on_refl:
   forall P m, unchanged_on P m m.
 Proof.
   intros. apply strong_unchanged_on_weak. apply strong_unchanged_on_refl.
 Qed.
 
+(*X*)
 Lemma store_unchanged_on:
   forall P chunk m b ofs v m',
     store chunk m b ofs v = Some m' ->
@@ -2929,6 +2964,7 @@ Proof.
   intros. apply strong_unchanged_on_weak. eapply store_strong_unchanged_on; eauto.
 Qed.
 
+(*X*)
 Lemma storebytes_unchanged_on:
   forall P m b ofs bytes m',
   storebytes m b ofs bytes = Some m' ->
@@ -2938,6 +2974,7 @@ Proof.
   intros. apply strong_unchanged_on_weak. eapply storebytes_strong_unchanged_on; eauto.
 Qed.
 
+(*X*)
 Lemma alloc_unchanged_on:
    forall P m lo hi m' b,
      alloc m lo hi = (m', b) ->
@@ -2946,6 +2983,7 @@ Proof.
   intros. apply strong_unchanged_on_weak. eapply alloc_strong_unchanged_on; eauto.
 Qed.
 
+(*X*)
 Lemma free_unchanged_on:
   forall P m b lo hi m',
   free m b lo hi = Some m' ->
@@ -2955,6 +2993,7 @@ Proof.
   intros. apply strong_unchanged_on_weak. eapply free_strong_unchanged_on; eauto.
 Qed.
 
+(*X*)
 Lemma drop_perm_unchanged_on:
    forall P m b lo hi p m',
      drop_perm m b lo hi p = Some m' ->
@@ -2964,6 +3003,7 @@ Proof.
   intros. apply strong_unchanged_on_weak. eapply drop_perm_strong_unchanged_on; eauto.
 Qed.
 
+(*X*)
 Lemma perm_free m b lo hi m':
   free m b lo hi = Some m' ->
   forall b' o' k p,
@@ -2985,6 +3025,7 @@ Proof.
   tauto.
 Qed.
 
+(*X removed*)
 Lemma store_stack_access:
   forall chunk m b o v m1 ,
     store chunk m b o v = Some m1 ->
@@ -2997,6 +3038,7 @@ Qed.
 
 Context {injperm: InjectPerm}.
 
+(*X*)
 Lemma storev_nextblock :
   forall m chunk addr v m',
     storev chunk m addr v = Some m' ->
@@ -3006,6 +3048,7 @@ Proof.
   eapply nextblock_store; eauto.
 Qed.
 
+(*X*)
 Lemma storev_stack :
   forall m chunk addr v m',
     storev chunk m addr v = Some m' ->
@@ -3015,6 +3058,7 @@ Proof.
   eapply store_stack_blocks; eauto.
 Qed.
 
+(*X*)
 Lemma storev_perm_inv:
   forall m chunk addr v m',
     storev chunk m addr v = Some m' ->
@@ -3026,6 +3070,7 @@ Proof.
   eapply perm_store_2; eauto.
 Qed.
 
+(*X*)
 Lemma frame_inject_flat:
   forall thr f,
     Forall (fun bfi => Plt (fst bfi) thr) (frame_adt_blocks f) ->
@@ -3038,6 +3083,7 @@ Proof.
   rewrite <- surjective_pairing. auto.
 Qed.
 
+(*X*)
 Lemma record_push_inject:
   forall j n g m1 m2 (MINJ: Mem.inject j (n :: g) m1 m2)
     fi1 fi2 (FI: frame_inject j fi1 fi2)
@@ -3056,6 +3102,7 @@ Proof.
   eapply Mem.record_stack_blocks_inject_parallel; eauto.
 Qed.
 
+(*X*)
 Lemma record_stack_blocks_length_stack:
   forall m1 f m2,
     Mem.record_stack_blocks m1 f = Some m2 ->
@@ -3066,6 +3113,7 @@ Proof.
   eapply Mem.record_stack_blocks_stack in eq; eauto. rewrite eq. reflexivity.
 Qed.
 
+(*X*)
 Lemma record_stack_blocks_stack_eq:
   forall m1 f m2,
     Mem.record_stack_blocks m1 f = Some m2 ->
@@ -3077,6 +3125,7 @@ Proof.
   eapply Mem.record_stack_blocks_stack in eq; eauto.
 Qed.
 
+(*X*)
 Lemma record_push_inject_flat:
   forall j m1 m2 (MINJ: Mem.inject j (flat_frameinj (length (Mem.stack m1))) m1 m2)
     fi1 fi2 (FI: frame_inject j fi1 fi2)
@@ -3099,13 +3148,15 @@ Proof.
   eapply record_push_inject; eauto.
 Qed.
 
+(*X*)
 Lemma push_new_stage_loadv:
   forall chunk m v,
     Mem.loadv chunk (Mem.push_new_stage m) v = Mem.loadv chunk m v.
 Proof.
   intros; destruct v; simpl; auto. apply Mem.push_new_stage_load.
 Qed.
-    
+
+(*X*)
 Lemma storebytes_push:
   forall m b o bytes m'
     (SB: Mem.storebytes (Mem.push_new_stage m) b o bytes = Some m'),
@@ -3162,6 +3213,7 @@ Qed.
 (*   edestruct unrecord_stack; eauto. rewrite H. simpl. auto. *)
 (* Qed. *)
 
+(*X*)
 Lemma push_new_stage_inject_flat:
    forall j m1 m2,
         inject j (flat_frameinj (length (stack m1))) m1 m2 ->
@@ -3174,6 +3226,7 @@ Proof.
   unfold flat_frameinj in *. simpl in *; auto.
 Qed.
 
+(*X*)
 Lemma record_stack_blocks_inject_parallel_flat:
    forall m1 m1' m2 j fi1 fi2,
      inject j (flat_frameinj (length (stack m1))) m1 m2 ->
@@ -3196,7 +3249,7 @@ Proof.
   erewrite record_stack_blocks_length_stack; eauto.
 Qed.
 
-
+(*X*)
 Lemma stack_inject_aux_tailcall_stage:
   forall j g m f1 l1 s1 f2 l2 s2,
     stack_inject_aux j m (1%nat::g) ((Some f1,l1)::s1) ((Some f2, l2)::s2) ->
@@ -3209,6 +3262,7 @@ Proof.
   red. simpl. congruence.
 Qed.
 
+(*X* removed, unecessary?*)
 Lemma stack_inject_tailcall_stage:
   forall j g m f1 l1 s1 f2 l2 s2,
     top_tframe_prop (fun tf => forall b, in_frames tf b -> forall o k p, ~ m b o k p) ((Some f1,l1)::s1) ->
@@ -3227,6 +3281,7 @@ Proof.
   apply H0; right. auto.
 Qed.
 
+(*X*)
   Lemma tailcall_stage_inject_flat:
   forall j m1 m2 m1',
     Mem.inject j (flat_frameinj (length (Mem.stack m1))) m1 m2 ->
@@ -3243,6 +3298,7 @@ Qed.
     eapply tailcall_stage_inject; eauto.
   Qed.
 
+(*X*)
   Lemma free_no_perm_stack:
     forall m b sz m',
       Mem.free m b 0 sz = Some m' ->
@@ -3261,6 +3317,7 @@ Qed.
     rewrite Zmax_spec. destr. omega.
   Qed.
 
+(*X*)
   Lemma free_no_perm_stack':
     forall m b sz m',
       Mem.free m b 0 sz = Some m' ->
@@ -3275,6 +3332,7 @@ Qed.
     rewrite H0; left. red; simpl; red. rewrite H1. left; reflexivity.
   Qed.
 
+(*X*)
   Lemma free_top_tframe_no_perm:
     forall m b sz m'
       (FREE: Mem.free m b 0 sz = Some m')
@@ -3295,6 +3353,7 @@ Qed.
     intros; eapply free_no_perm_stack'; eauto.
   Qed.
 
+(*X*)
   Lemma free_top_tframe_no_perm':
     forall m b sz m'
       (FREE: Mem.free m b 0 sz = Some m')
@@ -3309,7 +3368,8 @@ Qed.
     rewrite Z.max_r. auto. subst; apply frame_size_pos.
   Qed.
 
-  
+
+(*X*)
   Lemma record_push_inject_alloc
     : forall m01 m02 m1 m2 j0 j g fsz b1 b2 sz
         (MINJ0: Mem.inject j0 g m01 m02)
@@ -3352,6 +3412,7 @@ Qed.
     - erewrite (alloc_stack_blocks _ _ _ _ _ ALLOC1), (alloc_stack_blocks _ _ _ _ _ ALLOC2); auto.
   Qed.
 
+(*X*)
     Lemma record_push_inject_flat_alloc
     : forall m01 m02 m1 m2 j0 j fsz b1 b2 sz
         (MINJ0: Mem.inject j0 (flat_frameinj (length (Mem.stack m01))) m01 m02)
@@ -3374,6 +3435,7 @@ Qed.
     erewrite record_stack_blocks_length_stack, alloc_stack_blocks; eauto.
   Qed.
 
+(*X*)
   Lemma record_push_extends_flat_alloc
     : forall m01 m02 m1 m2 fsz b sz
         (ALLOC1: Mem.alloc m01 0 fsz = (m1, b))
@@ -3399,6 +3461,7 @@ Qed.
     + erewrite (alloc_stack_blocks _ _ _ _ _ ALLOC1), (alloc_stack_blocks _ _ _ _ _ ALLOC2); auto.
   Qed.
 
+(*begin moved to stackADT *)
   Lemma record_init_sp_inject:
     forall j g m1 m1' m2,
       Mem.inject j g m1 m1' ->
@@ -3527,7 +3590,9 @@ Qed.
       eapply perm_alloc_1. eauto.
       eapply push_new_stage_perm. auto.
   Qed.
-  
+(*end*)
+
+(* moved to stack adt *)
   Definition is_ptr (v: val) :=
     match v with Vptr _ _ => Some v | _ => None end.
   
