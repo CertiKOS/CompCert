@@ -525,7 +525,7 @@ Qed.
   undefined cells.  Note that allocation never fails: we model an
   infinite memory. *)
 
-(*X*)
+(*X became in_stack_valid*)
 Lemma stack_valid:
   forall m b, in_stack (stack m) b -> Plt b (nextblock m).
 Proof.
@@ -1024,6 +1024,7 @@ Definition meminj_no_overlap (f: meminj) (m: mem) : Prop :=
   perm m b2 ofs2 Max Nonempty ->
   b1' <> b2' \/ ofs1 + delta1 <> ofs2 + delta2.
 
+(*X*)
 Record inject' {injperm: InjectPerm} (f: meminj) (g: frameinj) (m1 m2: mem) : Prop :=
   mk_inject {
     mi_inj:
@@ -1049,6 +1050,7 @@ Record inject' {injperm: InjectPerm} (f: meminj) (g: frameinj) (m1 m2: mem) : Pr
       perm m2 b2 (ofs + delta) k p ->
       perm m1 b1 ofs k p \/ ~perm m1 b1 ofs Max Nonempty
   }.
+(*X*)
 Definition inject {injperm: InjectPerm} := inject'.
 
 Local Hint Resolve mi_mappedblocks: mem.
@@ -5405,6 +5407,7 @@ Proof.
   rewrite_stack_backwards; auto.
 Qed.
 
+(*X*)
 Theorem valid_block_extends:
   forall m1 m2 b,
   extends m1 m2 ->
@@ -5413,6 +5416,7 @@ Proof.
   intros. inv H. unfold valid_block. rewrite mext_next0. tauto.
 Qed.
 
+(*X*)
 Theorem perm_extends:
   forall m1 m2 b ofs k p,
   extends m1 m2 -> perm m1 b ofs k p -> inject_perm_condition p -> perm m2 b ofs k p.
@@ -5421,6 +5425,7 @@ Proof.
   eapply perm_inj; eauto.
 Qed.
 
+(*X*)
 Theorem perm_extends_inv:
   forall m1 m2 b ofs k p,
   extends m1 m2 -> perm m2 b ofs k p -> perm m1 b ofs k p \/ ~perm m1 b ofs Max Nonempty.
@@ -5437,6 +5442,7 @@ Proof.
   eapply valid_access_inj; eauto. auto.
 Qed.
 
+(*X*)
 Theorem valid_pointer_extends:
   forall m1 m2 b ofs,
   extends m1 m2 -> valid_pointer m1 b ofs = true -> valid_pointer m2 b ofs = true.
@@ -5447,6 +5453,7 @@ Proof.
   eapply inject_perm_condition_writable; constructor.
 Qed.
 
+(*X*)
 Theorem weak_valid_pointer_extends:
   forall m1 m2 b ofs,
   extends m1 m2 ->
@@ -5753,6 +5760,7 @@ Qed.
 
 (** Preservation of access validity and pointer validity *)
 
+(*X*)
 Theorem valid_block_inject_1:
   forall f g m1 m2 b1 b2 delta,
   f b1 = Some(b2, delta) ->
@@ -5763,6 +5771,7 @@ Proof.
   assert (f b1 = None). eapply mi_freeblocks; eauto. congruence.
 Qed.
 
+(*X*)
 Theorem valid_block_inject_2:
   forall f g m1 m2 b1 b2 delta,
   f b1 = Some(b2, delta) ->
@@ -5774,6 +5783,7 @@ Qed.
 
 Local Hint Resolve valid_block_inject_1 valid_block_inject_2: mem.
 
+(*X*)
 Theorem perm_inject:
   forall f g m1 m2 b1 b2 delta ofs k p,
   f b1 = Some(b2, delta) ->
@@ -5785,6 +5795,7 @@ Proof.
   intros. inv H0. eapply perm_inj; eauto.
 Qed.
 
+(*X*)
 Theorem perm_inject_inv:
   forall f g m1 m2 b1 ofs b2 delta k p,
   inject f g m1 m2 ->
@@ -5795,6 +5806,7 @@ Proof.
   intros. eapply mi_perm_inv; eauto.
 Qed.
 
+(*X*)
 Theorem range_perm_inject:
   forall f g m1 m2 b1 b2 delta lo hi k p,
   f b1 = Some(b2, delta) ->
@@ -5806,6 +5818,7 @@ Proof.
   intros. inv H0. eapply range_perm_inj; eauto.
 Qed.
 
+(*X*)
 Theorem valid_access_inject:
   forall f g m1 m2 chunk b1 ofs b2 delta p,
   f b1 = Some(b2, delta) ->
@@ -5841,6 +5854,7 @@ Proof.
   generalize (Ptrofs.unsigned_range ofs). omega.
 Qed.
 
+(*X*)
 Theorem valid_pointer_inject:
   forall f g m1 m2 b1 ofs b2 delta,
   f b1 = Some(b2, delta) ->
@@ -5870,6 +5884,7 @@ Proof.
   repeat rewrite Ptrofs.unsigned_repr; auto.
 Qed.
 
+(*X*)
 Theorem weak_valid_pointer_inject:
   forall f g m1 m2 b1 ofs b2 delta,
   f b1 = Some(b2, delta) ->
@@ -5909,6 +5924,7 @@ Proof.
   exploit mi_representable; eauto. intuition. 
 Qed.
 
+(*X*)
 Lemma address_inject:
   forall f g m1 m2 b1 ofs1 b2 delta p,
   inject f g m1 m2 ->
@@ -5925,6 +5941,7 @@ Proof.
   unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr; omega.
 Qed.
 
+(*X*)
 Lemma address_inject':
   forall f g m1 m2 chunk b1 ofs1 b2 delta,
   inject f g m1 m2 ->
@@ -5936,6 +5953,7 @@ Proof.
   apply H0. generalize (size_chunk_pos chunk). omega.
 Qed.
 
+(*X*)
 Theorem weak_valid_pointer_inject_no_overflow:
   forall f g m1 m2 b ofs b' delta,
   inject f g m1 m2 ->
@@ -5953,6 +5971,7 @@ Proof.
   omega.
 Qed.
 
+(*X*)
 Theorem valid_pointer_inject_no_overflow:
   forall f g m1 m2 b ofs b' delta,
   inject f g m1 m2 ->
@@ -5963,6 +5982,7 @@ Proof.
   eauto using weak_valid_pointer_inject_no_overflow, valid_pointer_implies.
 Qed.
 
+(*X*)
 Theorem valid_pointer_inject_val:
   forall f g m1 m2 b ofs b' ofs',
   inject f g m1 m2 ->
@@ -5976,6 +5996,7 @@ Proof.
   rewrite valid_pointer_valid_access in H0. eauto.
 Qed.
 
+(*X*)
 Theorem weak_valid_pointer_inject_val:
   forall f g m1 m2 b ofs b' ofs',
   inject f g m1 m2 ->
@@ -5994,6 +6015,7 @@ Proof.
   unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr; auto; omega.
 Qed.
 
+(*X*)
 Theorem inject_no_overlap:
   forall f g m1 m2 b1 b2 b1' b2' delta1 delta2 ofs1 ofs2,
   inject f g m1 m2 ->
@@ -6007,6 +6029,7 @@ Proof.
   intros. inv H. eapply mi_no_overlap0; eauto.
 Qed.
 
+(*X*)
 Theorem different_pointers_inject:
   forall f g m m' b1 ofs1 b2 ofs2 b1' delta1 b2' delta2,
   inject f g m m' ->
@@ -6030,6 +6053,7 @@ Proof.
   apply perm_cur_max. apply (H1 (Ptrofs.unsigned ofs2)). omega.
 Qed.
 
+(*X*)
 Theorem disjoint_or_equal_inject:
   forall f g m m' b1 b1' delta1 b2 b2' delta2 ofs1 ofs2 sz,
   inject f g m m' ->
@@ -6059,6 +6083,7 @@ Proof.
   intuition.
 Qed.
 
+(*X*)
 Theorem aligned_area_inject:
   forall f g m m' b ofs al sz b' delta,
   inject f g m m' ->
@@ -6090,6 +6115,7 @@ Qed.
 
 (** Preservation of loads *)
 
+(*X*)
 Theorem load_inject:
   forall f g m1 m2 chunk b1 ofs b2 delta v1,
   inject f g m1 m2 ->
@@ -6100,6 +6126,7 @@ Proof.
   intros. inv H. eapply load_inj; eauto.
 Qed.
 
+(*X*)
 Theorem loadv_inject:
   forall f g m1 m2 chunk a1 a2 v1,
   inject f g m1 m2 ->
@@ -6115,6 +6142,7 @@ Proof.
   auto. symmetry. eapply address_inject'; eauto with mem.
 Qed.
 
+(*X*)
 Theorem loadbytes_inject:
   forall f g m1 m2 b1 ofs len b2 delta bytes1,
   inject f g m1 m2 ->
@@ -6128,6 +6156,7 @@ Qed.
 
 (** Preservation of stores *)
 
+(*X*)
 Theorem store_mapped_inject:
   forall f g chunk m1 b1 ofs v1 n1 m2 b2 delta v2,
   inject f g m1 m2 ->
@@ -6186,6 +6215,7 @@ Proof.
   intuition eauto using perm_store_1, perm_store_2.
 Qed.
 
+(*X*)
 Theorem store_unmapped_inject:
   forall f g chunk m1 b1 ofs v1 n1 m2,
   inject f g m1 m2 ->
@@ -6213,6 +6243,7 @@ Proof.
   intuition eauto using perm_store_1, perm_store_2.
 Qed.
 
+(*X*)
 Theorem store_outside_inject:
   forall f g m1 m2 chunk b ofs v m2',
   inject f g m1 m2 ->
@@ -6238,6 +6269,7 @@ Proof.
   intros. eauto using perm_store_2.
 Qed.
 
+(*X*)
 Theorem store_right_inject:
   forall f g m1 m2 chunk b ofs v m2',
     inject f g m1 m2 ->
@@ -6264,6 +6296,7 @@ Proof.
   intros. eauto using perm_store_2.
 Qed.
 
+(*X*)
 Theorem storev_mapped_inject:
   forall f g chunk m1 a1 v1 n1 m2 a2 v2,
   inject f g m1 m2 ->
@@ -6281,6 +6314,7 @@ Proof.
   symmetry. eapply address_inject'; eauto with mem.
 Qed.
 
+(*X*)
 Theorem storebytes_mapped_inject:
   forall f g m1 b1 ofs bytes1 n1 m2 b2 delta bytes2,
   inject f g m1 m2 ->
@@ -6312,6 +6346,7 @@ Proof.
   intuition eauto using perm_storebytes_1, perm_storebytes_2.
 Qed.
 
+(*X*)
 Theorem storebytes_unmapped_inject:
   forall f g m1 b1 ofs bytes1 n1 m2,
   inject f g m1 m2 ->
@@ -6339,6 +6374,7 @@ Proof.
   intuition eauto using perm_storebytes_1, perm_storebytes_2.
 Qed.
 
+(*X*)
 Theorem storebytes_outside_inject:
   forall f g m1 m2 b ofs bytes2 m2',
   inject f g m1 m2 ->
@@ -6364,6 +6400,7 @@ Proof.
   intros. eapply mi_perm_inv0; eauto using perm_storebytes_2.
 Qed.
 
+(*X*)
 Theorem storebytes_empty_inject:
   forall f g m1 b1 ofs1 m1' m2 b2 ofs2 m2',
   inject f g m1 m2 ->
@@ -6392,6 +6429,7 @@ Qed.
 
 (* Preservation of allocations *)
 
+(*X*)
 Theorem alloc_right_inject:
   forall f g m1 m2 lo hi b2 m2',
   inject f g m1 m2 ->
@@ -6427,6 +6465,7 @@ Qed.
 (*   destruct a; eauto. *)
 (* Qed. *)
 
+(*X*)
 Theorem alloc_left_unmapped_inject:
   forall f g m1 m2 lo hi m1' b1,
   inject f g m1 m2 ->
@@ -6490,6 +6529,7 @@ Proof.
     intros; unfold f'; apply dec_eq_false; auto.
 Qed.
 
+(*X*)
 Theorem alloc_left_unmapped_weak_inject:
   forall f g m1 m2 lo hi m1' b1,
   f b1 = None ->
@@ -6522,6 +6562,7 @@ Proof.
       intuition eauto using perm_alloc_1, perm_alloc_4.
 Qed.
 
+(*X*)
 Theorem alloc_left_mapped_inject:
   forall f g m1 m2 lo hi m1' b1 b2 delta,
   inject f g m1 m2 ->
@@ -6645,6 +6686,7 @@ Proof.
     intros. unfold f'; apply dec_eq_false; auto.
 Qed.
 
+(*X*)
 Theorem alloc_parallel_inject:
   forall f g m1 m2 lo1 hi1 m1' b1 lo2 hi2,
   inject f g m1 m2 ->
@@ -6756,6 +6798,7 @@ Qed.
 
 (** Preservation of [free] operations *)
 
+(*X*)
 Lemma free_left_inject:
   forall f g m1 m2 b lo hi m1',
   inject f g m1 m2 ->
@@ -6782,6 +6825,7 @@ Proof.
   subst b1. right; eapply perm_free_2; eauto. 
 Qed.
 
+(*X*)
 Lemma free_list_left_inject:
   forall f g m2 l m1 m1',
   inject f g m1 m2 ->
@@ -6795,6 +6839,7 @@ Proof.
   apply IHl with m11; auto. eapply free_left_inject; eauto.
 Qed.
 
+(*X*)
 Lemma free_right_inject:
   forall f g m1 m2 b lo hi m2',
   inject f g m1 m2 ->
@@ -6819,6 +6864,7 @@ Proof.
   intros. eauto using perm_free_3.
 Qed.
 
+(*X*)
 Lemma perm_free_list:
   forall l m m' b ofs k p,
   free_list m l = Some m' ->
@@ -6837,6 +6883,7 @@ Proof.
   eauto.
 Qed.
 
+(*X*)
 Theorem free_inject:
   forall f g m1 l m1' m2 b lo hi m2',
   inject f g m1 m2 ->
@@ -6855,6 +6902,7 @@ Proof.
   exploit H2; eauto. intros [lo1 [hi1 [C D]]]. eauto.
 Qed.
 
+(*X*)
 Theorem free_parallel_inject:
   forall f g m1 m2 b lo hi m1' b' delta,
   inject f g m1 m2 ->
@@ -6883,6 +6931,7 @@ Proof.
   intros [A|A]. congruence. omega.
 Qed.
 
+(*X*)
 Lemma drop_parallel_inject:
   forall f g m1 m2 b1 b2 delta lo hi p m1',
   inject f g m1 m2 ->
@@ -7366,6 +7415,7 @@ Proof.
   eapply inject_perm_condition_writable; constructor.
 Qed.
 
+(*X*)
 Lemma val_lessdef_inject_compose:
   forall f v1 v2 v3,
   Val.lessdef v1 v2 -> Val.inject f v2 v3 -> Val.inject f v1 v3.
@@ -7373,6 +7423,7 @@ Proof.
   intros. inv H. auto. auto.
 Qed.
 
+(*X*)
 Lemma val_inject_lessdef_compose:
   forall f v1 v2 v3,
   Val.inject f v1 v2 -> Val.lessdef v2 v3 -> Val.inject f v1 v3.
@@ -7391,6 +7442,7 @@ Proof.
   omega.
 Qed.
 
+(*X*)
 Lemma take_flat_frameinj:
   forall a b,
     take a (flat_frameinj (a + b)) = Some (flat_frameinj a).
@@ -7399,6 +7451,7 @@ Proof.
   setoid_rewrite IHa. reflexivity.
 Qed.
 
+(*X*)
 Lemma drop_flat_frameinj:
   forall a b,
     drop a (flat_frameinj (a + b)) = flat_frameinj b.
@@ -7406,6 +7459,7 @@ Proof.
   induction a; simpl; intros; eauto.
 Qed.
 
+(*X*)
 Lemma sum_list_flat:
   forall a,
     sum_list (flat_frameinj a) = a.
@@ -7413,6 +7467,7 @@ Proof.
   induction a; simpl; intros; eauto.
 Qed.
 
+(*X*)
 Lemma compose_frameinj_flat:
   forall g,
     compose_frameinj (flat_frameinj (sum_list g)) g = Some g.
@@ -7439,6 +7494,7 @@ Proof.
   setoid_rewrite IHg. reflexivity.
 Qed.
 
+(*X*)
 Lemma extends_inject_compose:
   forall f g m1 m2 m3,
   extends m1 m2 -> inject f g m2 m3 -> inject f g m1 m3.
@@ -7474,6 +7530,7 @@ Proof.
   eapply inject_perm_condition_writable; constructor.
 Qed.
 
+(*X*)
 Lemma inject_extends_compose:
   forall f g m1 m2 m3,
     inject f g m1 m2 -> extends m2 m3 -> inject f g m1 m3.
@@ -7523,6 +7580,7 @@ Proof.
   congruence.
 Qed.
 
+(*X*)
 Remark flat_inj_no_overlap:
   forall thr m, meminj_no_overlap (flat_inj thr) m.
 Proof.
@@ -7532,6 +7590,7 @@ Proof.
   auto.
 Qed.
 
+(*X*)
 Theorem neutral_inject:
   forall m, inject_neutral (nextblock m) m -> inject (flat_inj (nextblock m)) (flat_frameinj (length (stack m))) m m.
 Proof.
@@ -7555,6 +7614,7 @@ Proof.
   rewrite Zplus_0_r in H1; auto.
 Qed.
 
+(*X*)
 Theorem empty_inject_neutral:
   forall thr, inject_neutral thr empty.
 Proof.
@@ -7570,6 +7630,7 @@ Proof.
   apply stack_inject_nil.
 Qed.
 
+(*X*)
 Theorem alloc_inject_neutral:
   forall thr m lo hi b m',
   alloc m lo hi = (m', b) ->
@@ -7592,6 +7653,7 @@ Proof.
   eapply in_stack'_in_stack; eauto. 
 Qed.
 
+(*X*)
 Theorem store_inject_neutral:
   forall chunk m b ofs v m' thr,
   store chunk m b ofs v = Some m' ->
@@ -7608,6 +7670,7 @@ Proof.
   erewrite store_stack; eauto. congruence.
 Qed.
 
+(*X*)
 Theorem drop_inject_neutral:
   forall m b lo hi p m' thr,
   drop_perm m b lo hi p = Some m' ->
@@ -7629,14 +7692,16 @@ Qed.
 (** * Invariance properties between two memory states *)
 
 Section UNCHANGED_ON.
-
+(*X*)
 Variable P: block -> Z -> Prop.
 
+(*X*)
 Lemma unchanged_on_refl:
   forall m, unchanged_on P m m.
 Proof.
   intros; constructor. apply Ple_refl. tauto. tauto. 
-Qed.
+
+(*X*)Qed.
 
 Lemma valid_block_unchanged_on:
   forall m m' b,
@@ -7645,6 +7710,7 @@ Proof.
   unfold valid_block; intros. apply unchanged_on_nextblock in H. xomega.
 Qed.
 
+(*X*)
 Lemma perm_unchanged_on:
   forall m m' b ofs k p,
   unchanged_on P m m' -> P b ofs ->
@@ -7653,6 +7719,7 @@ Proof.
   intros. destruct H. apply unchanged_on_perm0; auto. eapply perm_valid_block; eauto. 
 Qed.
 
+(*X*)
 Lemma perm_unchanged_on_2:
   forall m m' b ofs k p,
   unchanged_on P m m' -> P b ofs -> valid_block m b ->
@@ -7661,6 +7728,7 @@ Proof.
   intros. destruct H. apply unchanged_on_perm0; auto.
 Qed.
 
+(*X*)
 Lemma unchanged_on_trans:
   forall m1 m2 m3, unchanged_on P m1 m2 -> unchanged_on P m2 m3 -> unchanged_on P m1 m3.
 Proof.
@@ -7672,6 +7740,7 @@ Proof.
   eapply perm_unchanged_on; eauto.
 Qed.
 
+(*X*)
 Lemma loadbytes_unchanged_on_1:
   forall m m' b ofs n,
   unchanged_on P m m' ->
@@ -7692,6 +7761,7 @@ Proof.
   red; intros; elim n0; red; intros. apply <- unchanged_on_perm0; auto.
 Qed.
 
+(*X*)
 Lemma loadbytes_unchanged_on:
   forall m m' b ofs n bytes,
   unchanged_on P m m' ->
@@ -7707,6 +7777,7 @@ Proof.
   intros. eauto with mem.
 Qed.
 
+(*X*)
 Lemma load_unchanged_on_1:
   forall m m' chunk b ofs,
   unchanged_on P m m' ->
@@ -7724,6 +7795,7 @@ Proof.
   split; auto. inversion 1.
 Qed.
 
+(*X*)
 Lemma load_unchanged_on:
   forall m m' chunk b ofs v,
   unchanged_on P m m' ->
@@ -7734,6 +7806,7 @@ Proof.
   intros. rewrite <- H1. eapply load_unchanged_on_1; eauto with mem.
 Qed.
 
+(*X*)
 Lemma store_unchanged_on:
   forall chunk m b ofs v m',
   store chunk m b ofs v = Some m' ->
@@ -7751,6 +7824,7 @@ Proof.
   elim (H0 ofs0). omega. auto.
 Qed.
 
+(*X*)
 Lemma storebytes_unchanged_on:
   forall m b ofs bytes m',
   storebytes m b ofs bytes = Some m' ->
@@ -7767,6 +7841,7 @@ Proof.
   elim (H0 ofs0). omega. auto.
 Qed.
 
+(*X*)
 Lemma alloc_unchanged_on:
   forall m lo hi m' b,
   alloc m lo hi = (m', b) ->
@@ -7782,6 +7857,7 @@ Proof.
   rewrite PMap.gso; auto. rewrite A.  eapply valid_not_valid_diff; eauto with mem.
 Qed.
 
+(*X*)
 Lemma free_unchanged_on:
   forall m b lo hi m',
   free m b lo hi = Some m' ->
@@ -7799,6 +7875,7 @@ Proof.
   simpl. auto.
 Qed.
 
+(*X*)
 Lemma drop_perm_unchanged_on:
   forall m b lo hi p m',
   drop_perm m b lo hi p = Some m' ->
@@ -7820,6 +7897,7 @@ Qed.
 
 End UNCHANGED_ON.
 
+(*X*)
 Lemma unchanged_on_implies:
   forall (P Q: block -> Z -> Prop) m m',
   unchanged_on P m m' ->
