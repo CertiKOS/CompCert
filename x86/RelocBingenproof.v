@@ -34,18 +34,6 @@ Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
   end.
 
 
-(* This lemma means the transl_code could preserve the spec 
- * Specifically, if there're two list, code code', having the relation `transl_code_spec` ,
- * where code is list asm, code' is list byte.
- * Then after translation code2 starting from code', we'll get the result 
- * that has `transl_code_spce` relation with (code++code2) 
- *)
-Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z,
-    transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
-    -> fold_left (acc_instrs rtbl_ofs_map) code2 (OK (ofs + Z.of_nat (length code), code')) = OK (z, l)
-    -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map symbt.
-Admitted.
-
 Lemma list_has_tail: forall {A:Type} (l:list A) n,
     (length l = 1 + n)%nat
     ->exists tail prefix, l = prefix++[tail].
@@ -69,6 +57,7 @@ Proof.
   rewrite HHasTail. simpl. auto.
 Qed.
 
+
 Lemma prefix_success: forall rtbl a b ofs r z l,
     fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
     ->exists z' l', fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l').
@@ -77,7 +66,72 @@ Admitted.
 Lemma suffix_success: forall rtbl a b ofs r z l z' l',
     fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
     ->fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l')
-    ->fold_left (acc_instrs rtbl) [b]  (OK (ofs + Z.of_nat (length a), r++l')) = OK (z, l).
+    ->fold_left (acc_instrs rtbl) [b]  (OK (z', l')) = OK (z, l)
+/\ z' = ofs+ (Z.of_nat (length a)).
+Admitted.
+
+
+(* This lemma means the transl_code could preserve the spec 
+ * Specifically, if there're two list, code code', having the relation `transl_code_spec` ,
+ * where code is list asm, code' is list byte.
+ * Then after translation code2 starting from code', we'll get the result 
+ * that has `transl_code_spce` relation with (code++code2) 
+ *)
+
+
+Lemma transl_code_spec_inc: forall ofs rtbl_ofs_map symbt code bytes instr x,
+    transl_code_spec code bytes ofs rtbl_ofs_map symbt
+    -> encode_instr rtbl_ofs_map (ofs+(Z.of_nat (length code))) instr = OK x
+    -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map symbt.
+Admitted.
+
+
+Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z n,
+    transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
+    -> length code2 = n
+    -> fold_left (acc_instrs rtbl_ofs_map) code2 (OK (ofs + Z.of_nat (length code), code')) = OK (z, l)
+    -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map symbt.
+Proof.
+  intros code code' code2 l ofs rtbl_ofs_map symbt z n HTransCode.
+  revert dependent l.
+  revert dependent z.
+  revert dependent code2.
+  revert dependent n.
+  induction n.
+  (* base case *)
+  admit.
+  intros code2 z l HLength.
+  generalize (list_has_tail code2 n HLength).
+  intros [tail [prefix HCode2]].
+  rewrite HCode2.
+  intro HTransCode2.
+  generalize (prefix_success _ _ _ _ _ _ _ HTransCode2).
+  intros [z' [l' HTransPrefix]].
+  generalize (suffix_success _ _ _ _ _ _ _ _ _ HTransCode2 HTransPrefix).
+  intros [HTransTail Hz'].
+  simpl in HTransTail.
+  monadInv HTransTail.
+  
+  assert (HPrefixLength: length prefix = n) by admit.
+  generalize (IHn _ _ _ HPrefixLength HTransPrefix).
+  rewrite rev_app_distr.
+  rewrite rev_involutive.
+  intros HPrefixSpec.
+
+
+  assert(HLengthApp: Z.of_nat (length (code++prefix)) = Z.of_nat (length code) + Z.of_nat (length prefix)). {
+    rewrite app_length.
+    rewrite Nat2Z.inj_add.
+    auto.
+  }
+  rewrite <-Zplus_assoc in EQ.
+  
+  rewrite <- HLengthApp in EQ.
+  generalize(transl_code_spec_inc _ _ _ _ _ _ _ HPrefixSpec EQ).
+  intros HResult.
+  rewrite app_assoc. auto.
+  
+  
 Admitted.
 
 
@@ -104,8 +158,10 @@ Proof.
   generalize (IHn prog z' prefix l' HLengthN HEncodePrefix).
   intros HPrefix.
   generalize (suffix_success _ _ _ 0 [] z l z' l'  HEncode HEncodePrefix).
-  intros HEncodeSuffix.
-  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ HPrefix HEncodeSuffix).
+  intros [HEncodeSuffix Hz'].
+  simpl in Hz'.
+  rewrite Hz' in HEncodeSuffix.
+  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ 1 HPrefix eq_refl HEncodeSuffix).
   rewrite HTail.
   auto.
   admit.
