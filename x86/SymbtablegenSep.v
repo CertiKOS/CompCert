@@ -819,7 +819,15 @@ Proof.
   - simpl in *. congruence.
 Qed.  
 
-
+Lemma link_internal_external_defs' : forall {LV: Linker V} (def1 def2 def: option (globdef (AST.fundef F) V)),
+    def_internal def1 = true ->
+    link_option def1 def2 = Some def ->
+    def_eq def def1.
+Proof.
+  intros LV def1 def2 def INT1 LINK.
+  eapply link_internal_external_defs; eauto.
+  eapply link_int_defs_some_inv; eauto.
+Qed.
   
 (* Lemma link_defs1_in_order : forall {LV: Linker V} defs1 defs2 defs1_linked defs1_rest defs2_rest, *)
 (*     list_norepet (map fst defs2) -> *)
@@ -3586,6 +3594,77 @@ Proof.
 Qed.
 
 
+Lemma link_merge_internal_external_defs:
+  forall (F V : Type) (LV : Linker V)
+    def2 (def1 def : option (globdef (AST.fundef F) V)),
+    def_internal def1 = true -> 
+    link_prog_merge (Some def1) def2 = Some def -> 
+    def_eq def def1.
+Proof.
+  intros F V LV def2 def1 def INT LINK.
+  cbn in LINK. destr_in LINK.
+  - subst. eapply link_internal_external_defs'; eauto.
+  - inv LINK. eapply def_internal_imply_eq; eauto.
+Qed.
+
+Lemma def_eq_data_size_eq: forall d1 d2,
+    def_eq d1 d2 -> def_data_size d1 = def_data_size d2.
+Proof.
+  intros. unfold def_data_size.
+  erewrite get_def_init_data_eq; eauto.
+Qed.
+
+Lemma def_eq_code_size_eq: forall d1 d2,
+    def_eq d1 d2 -> def_code_size d1 = def_code_size d2.
+Proof.
+  intros. unfold def_code_size.
+  erewrite get_def_instrs_eq; eauto.
+Qed.
+
+Lemma PTree_combine_ids_defs_match_size_eq: 
+  forall defs1 defs2 t1 t2,
+    (forall id def, In (id, def) defs1 -> t1 ! id = Some def) ->
+    PTree_combine_ids_defs_match 
+      t1 t2 link_prog_merge
+      (map fst (filter_internal_defs is_fundef_internal defs1))
+      defs2 ->
+    defs_data_size (map snd defs1) = defs_data_size (map snd defs2) /\
+    defs_code_size (map snd defs1) = defs_code_size (map snd defs2).
+Proof.
+  induction defs1 as [|def1 defs1].
+  - cbn. intros defs2 t1 t2 IN MATCH.
+    inv MATCH. cbn. auto.
+  - intros defs2 t1 t2 IN MATCH.
+    destruct def1 as (id, def1). cbn in MATCH.
+    destr_in MATCH; cbn in MATCH.
+    + inv MATCH.
+      destruct y. destruct H1; subst.
+      cbn [map snd].
+      repeat rewrite defs_code_size_cons.
+      repeat rewrite defs_data_size_cons.
+      assert (t1 ! p = Some def1). 
+      { eapply IN; eauto. apply in_eq. }
+      rewrite H in H0. 
+      generalize (link_merge_internal_external_defs _ _ _ Heqb H0).
+      intros DEFEQ.
+      erewrite <- def_eq_data_size_eq; eauto.
+      erewrite <- def_eq_code_size_eq; eauto.
+      assert (forall id def, In (id, def) defs1 -> t1 ! id = Some def) as IN'.
+      { intros. eapply IN; eauto. apply in_cons. auto. }
+      generalize (IHdefs1 _ _ _ IN' H3).
+      intros (DEQ & CEQ). rewrite DEQ, CEQ. auto.
+    + cbn [map snd].
+      rewrite defs_data_size_cons.
+      rewrite defs_code_size_cons.
+      unfold def_data_size.
+      rewrite extern_init_data_nil; auto. cbn.
+      unfold def_code_size.
+      rewrite extern_fun_nil; auto. cbn.
+      eapply IHdefs1; eauto.
+      intros. eapply IN; eauto. apply in_cons. auto.
+Qed.
+
+
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
     list_norepet (map fst (AST.prog_defs p1)) ->
     list_norepet (map fst (AST.prog_defs p2)) ->
@@ -3731,10 +3810,22 @@ Proof.
   }
   
   (** Compute the sizes for internal symbols *)
-  clear DSZ1 CSZ1 DSZ2 CSZ2 Z2 Z1 DSZ3 CSZ3.
 
-  assert (z2 = dsz1). admit.
-  assert (z1 = csz1). admit.
+  assert (z2 = dsz1).
+  { 
+    subst. unfold collect_internal_def_ids in MATCH1.              
+    apply PTree_combine_ids_defs_match_size_eq in MATCH1.
+    destruct MATCH1. auto.
+    intros. eapply prog_option_defmap_norepet; eauto.
+  }
+  assert (z1 = csz1). 
+  {
+    subst. unfold collect_internal_def_ids in MATCH1.              
+    apply PTree_combine_ids_defs_match_size_eq in MATCH1.
+    destruct MATCH1. auto.
+    intros. eapply prog_option_defmap_norepet; eauto.
+  }
+  clear DSZ1 CSZ1 DSZ2 CSZ2 Z2 Z1 DSZ3 CSZ3.
   subst.
 
   assert (symbtable_entry_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
