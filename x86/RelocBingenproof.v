@@ -61,8 +61,17 @@ Qed.
 Lemma prefix_success: forall rtbl a b ofs r z l,
     fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
     ->exists z' l', fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l').
-Admitted.
-
+Proof.
+  intros rtbl a b ofs r z l HFoldPrefix.
+  rewrite fold_left_app in HFoldPrefix.
+  inversion HFoldPrefix.
+  monadInv H0.
+  destruct x.
+  exists z0. exists l0.
+  unfold acc_instrs.
+  auto.
+Qed.  
+  
 Lemma suffix_success: forall rtbl a b ofs r z l z' l',
     fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
     ->fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l')
@@ -70,13 +79,6 @@ Lemma suffix_success: forall rtbl a b ofs r z l z' l',
 /\ z' = ofs+ (Z.of_nat (length a)).
 Admitted.
 
-
-(* This lemma means the transl_code could preserve the spec 
- * Specifically, if there're two list, code code', having the relation `transl_code_spec` ,
- * where code is list asm, code' is list byte.
- * Then after translation code2 starting from code', we'll get the result 
- * that has `transl_code_spce` relation with (code++code2) 
- *)
 
 
 Lemma transl_code_spec_inc: forall ofs rtbl_ofs_map symbt code bytes instr x,
@@ -86,6 +88,12 @@ Lemma transl_code_spec_inc: forall ofs rtbl_ofs_map symbt code bytes instr x,
 Admitted.
 
 
+(* This lemma means the transl_code could preserve the spec 
+ * Specifically, if there're two list, code code', having the relation `transl_code_spec` ,
+ * where code is list asm, code' is list byte.
+ * Then after translation code2 starting from code', we'll get the result 
+ * that has `transl_code_spce` relation with (code++code2) 
+ *)
 Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z n,
     transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
     -> length code2 = n
