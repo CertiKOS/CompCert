@@ -3825,7 +3825,30 @@ Proof.
     destruct MATCH1. auto.
     intros. eapply prog_option_defmap_norepet; eauto.
   }
-  clear DSZ1 CSZ1 DSZ2 CSZ2 Z2 Z1 DSZ3 CSZ3.
+  clear Z1 Z2. subst z1 z2.
+  assert (defs_data_size (map snd (AST.prog_defs p2)) = defs_data_size (map snd defs2)).
+  {
+    subst. 
+    apply PTree_combine_ids_defs_match_symm in MATCH2; eauto.
+    unfold collect_internal_def_ids in MATCH2.              
+    apply PTree_combine_ids_defs_match_size_eq in MATCH2.
+    destruct MATCH2. auto.
+    intros. eapply prog_option_defmap_norepet; eauto.
+    eapply link_prog_merge_symm.
+  }
+  rewrite H in DSZ2. rewrite <- DSZ2 in DSZ3. clear H DSZ2.
+  assert (defs_code_size (map snd (AST.prog_defs p2)) = defs_code_size (map snd defs2)).
+  {
+    subst. 
+    apply PTree_combine_ids_defs_match_symm in MATCH2; eauto.
+    unfold collect_internal_def_ids in MATCH2.              
+    apply PTree_combine_ids_defs_match_size_eq in MATCH2.
+    destruct MATCH2. auto.
+    intros. eapply prog_option_defmap_norepet; eauto.
+    eapply link_prog_merge_symm.
+  }
+  rewrite H in CSZ2. rewrite <- CSZ2 in CSZ3. clear H CSZ2.
+  clear DSZ1 CSZ1.
   subst.
 
   assert (symbtable_entry_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
@@ -3861,10 +3884,6 @@ Proof.
   
   repeat split.
 
-  (** dsz3 = dsz1 + dsz2 *)
-  subst. admit.
-  (** csz3 = csz1 + csz2 *)
-  subst. admit.
   (** symbtable equiv *)  
 
   
