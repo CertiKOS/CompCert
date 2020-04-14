@@ -276,3 +276,140 @@ Proof.
   destruct 1.
   split; auto. rewrite H0; auto.
 Qed.
+
+Existing Instance Linker_option.
+Existing Instance Linker_fundef.
+
+Lemma link_internal_fundefs_none: forall F (f1 f2:fundef F),
+    is_fundef_internal f1 = true ->
+    is_fundef_internal f2 = true ->
+    link_fundef f1 f2 = None.
+Proof.
+  intros F f1 f2 INT1 INT2.
+  destruct f1, f2.
+  - cbn. auto.
+  - cbn in *. congruence.
+  - cbn in *. congruence.
+  - cbn in *. congruence.
+Qed.
+
+Lemma link_internal_varinit_none: forall {V} {LV: Linker V} (v1 v2:globvar V),
+    is_var_internal v1 = true ->
+    is_var_internal v2 = true ->
+    link_varinit (gvar_init v1) (gvar_init v2) = None.
+Proof.
+  intros V LV v1 v2 INT1 INT2.
+  unfold link_varinit.
+  unfold is_var_internal in *.
+  destr_in INT1.
+  destr_in INT2.
+Qed.
+
+
+Lemma link_internal_vardefs_none: forall {V} {LV: Linker V} (v1 v2:globvar V),
+    is_var_internal v1 = true ->
+    is_var_internal v2 = true ->
+    link_vardef v1 v2 = None.
+Proof.
+  Local Transparent Linker_varinit.
+  intros V LV v1 v2 INT1 INT2.
+  unfold link_vardef.
+  destr. destr. destr.
+  generalize (link_internal_varinit_none _ _ INT1 INT2).
+  cbn in *.
+  intros. congruence.
+Qed.
+
+Lemma link_int_defs_none: forall {F V} {LV: Linker V} (def1 def2: option (globdef (fundef F) V)),
+    is_def_internal is_fundef_internal def1 = true ->
+    is_def_internal is_fundef_internal def2 = true ->
+    link def1 def2 = None.
+Proof.
+  Local Transparent Linker_option Linker_def Linker_fundef Linker_vardef.
+  intros F V LV def1 def2 INT1 INT2.
+  cbn. unfold link_option.
+  unfold is_def_internal in *.
+  destr_in INT1. destr_in INT2.
+  destr_in INT1; destr_in INT2; subst.
+  - unfold link. cbn.   
+    erewrite link_internal_fundefs_none; eauto.
+  - cbn. 
+    erewrite link_internal_vardefs_none; eauto.
+Qed.
+
+Lemma link_int_defs_some_inv: forall {F V} {LV: Linker V} (def1 def2 def: option (globdef (fundef F) V)),
+    is_def_internal is_fundef_internal def1 = true ->
+    link def1 def2 = Some def ->
+    is_def_internal is_fundef_internal def2 = false.
+Proof.
+  intros F V LV def1 def2 def INT LINK.
+  destruct (is_def_internal is_fundef_internal def2) eqn:INT'.
+  erewrite link_int_defs_none in LINK; eauto. congruence.
+  auto.
+Qed.
+
+Lemma link_fundef_pres_int_def:
+  forall (F : Type) (f1 f2 f : fundef F),
+  is_fundef_internal f1 = true ->
+  link_fundef f1 f2 = Some f -> is_fundef_internal f = true.
+Proof.
+  intros F f1 f2 f INT LINK.
+  unfold link_fundef in LINK.
+  destruct f1. destruct f2; try congruence.
+  destruct e; try congruence.
+  destruct f2. destruct e; try congruence.
+  inv LINK. auto.
+  destruct external_function_eq. try congruence.
+  congruence.
+Qed.
+
+Lemma link_vardef_pres_int_def: forall {V} {LV: Linker V} (v1 v2 v: globvar V),
+    is_var_internal v1 = true ->
+    link_vardef v1 v2 = Some v ->
+    is_var_internal v = true.
+Proof.
+  intros V LV v1 v2 v INT LINK.
+  unfold link_vardef in LINK.
+  destr_in LINK. destr_in LINK. destr_in LINK.
+  inv LINK. cbn in Heqo0.
+  destruct (is_var_internal v2) eqn:INT'.
+  - generalize (link_internal_varinit_none _ _ INT INT').
+    intros LINK'. congruence.
+  - apply link_internal_external_varinit in Heqo0; auto.
+    destruct Heqo0. subst.
+    unfold is_var_internal. cbn. rewrite H0. auto.
+Qed.
+
+
+Lemma link_def_pres_int_def: forall {F V} {LV: Linker V} (def1 def2 def: globdef (fundef F) V),
+    is_def_internal is_fundef_internal (Some def1) = true ->
+    link_def def1 def2 = Some def ->
+    is_def_internal is_fundef_internal (Some def) = true.
+Proof.
+  intros F V LV def1 def2 def INT LINK.
+  cbn in *. destruct def1. cbn in *.
+  destruct def2. destr_in LINK. inv LINK.
+  eapply link_fundef_pres_int_def; eauto.
+  congruence.
+  cbn in LINK. destruct def2; try congruence.
+  destr_in LINK. inv LINK.
+  eapply link_vardef_pres_int_def; eauto.
+Qed.
+
+Lemma link_option_pres_int_def: forall {F V} {LV: Linker V} (def1 def2 def: option (globdef (fundef F) V)),
+    is_def_internal is_fundef_internal def1 = true ->
+    link_option def1 def2 = Some def ->
+    is_def_internal is_fundef_internal def = true.
+Proof.
+  intros F V LV def1 def2 def INT LINK.
+  cbn in LINK.
+  unfold link_option in LINK.
+  destruct def. destruct def1. destruct def2. destr_in LINK.
+  - inv LINK. 
+    eapply link_def_pres_int_def; eauto. eapply Heqo.
+  - inv LINK. auto.
+  - inv LINK. cbn in INT. congruence.
+  - destruct def1. destruct def2. destr_in LINK.
+    congruence.
+    inv LINK. cbn in INT. congruence.
+Qed.

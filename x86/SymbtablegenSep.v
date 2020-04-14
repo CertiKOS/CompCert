@@ -296,6 +296,21 @@ Proof.
   simpl; auto.
 Qed.
 
+
+Lemma get_symbentry_eq_id_inv: 
+  forall did1 cid1 dsz1 csz1 id1 def1 did2 cid2 dsz2 csz2 id2 def2,
+    get_symbentry did1 cid1 dsz1 csz1 id1 def1 = get_symbentry did2 cid2 dsz2 csz2 id2 def2 -> id1 = id2.
+Proof.
+  intros. 
+  generalize (get_symbentry_id did1 cid1 dsz1 csz1 id1 def1).
+  intros ID1.
+  generalize (get_symbentry_id did2 cid2 dsz2 csz2 id2 def2).
+  intros ID2.
+  rewrite H in ID1.
+  rewrite ID1 in ID2.
+  inv ID2. auto.
+Qed.
+
 Lemma get_var_entry_size : forall did cid dsz csz id v, 
     symbentry_size (get_symbentry did cid dsz csz id (Some (Gvar v))) = AST.init_data_list_size (gvar_init v).
 Proof.
@@ -2799,6 +2814,13 @@ Proof.
   eapply elems_before_tail; auto.
 Qed.
 
+Lemma defs_before_head:
+  forall {F V} id  (def : option (globdef F V)) defs,
+  defs_before id ((id, def) :: defs) = nil.
+Proof.
+  intros.
+  cbn. rewrite peq_true. cbn. auto.
+Qed.
 
 Definition def_data_size (def: option gdef) :=
   init_data_list_size (get_def_init_data def).
@@ -3370,7 +3392,7 @@ Proof.
   unfold link_prog_merge in LINK.
   setoid_rewrite GET1 in LINK.
   destruct ((PTree_Properties.of_list defs2) ! id) as [gd2|] eqn:DEFS2.
-  + generalize (link_int_defs_some_inv _ _ _ INT1 LINK).
+  + generalize (link_int_defs_some_inv _ _ INT1 LINK).
     intros INT2.
     erewrite acc_symb_tree_entry_some with (defs:= defs1) (dsz1:= dsz1'); eauto.
     erewrite acc_symb_tree_entry_some with (defs:= defs2) (dsz1:= dsz2'); eauto.
@@ -3382,12 +3404,40 @@ Proof.
 Qed.
 
 
-Definition symbtable_entry_sizes stbl dsz1 csz1 defs1 :=
+Definition symbtable_entry_equiv_sizes stbl dsz1 csz1 defs1 :=
   forall did cid dsz3 csz3 id def,
     In (get_symbentry did cid dsz3 csz3 id def) stbl ->
-    dsz3 = dsz1 + defs_data_size (defs_before id defs1) /\
-    csz3 = csz1 + defs_code_size (defs_before id defs1).
-  
+    get_symbentry did cid dsz3 csz3 id def =
+    get_symbentry did cid 
+                  (dsz1 + defs_data_size (defs_before id defs1))
+                  (csz1 + defs_code_size (defs_before id defs1))
+                  id def.
+
+Lemma symbtable_entry_equiv_sizes_app_comm: forall l1 l2 dsz csz defs,
+    symbtable_entry_equiv_sizes (l1 ++ l2) dsz csz defs ->
+    symbtable_entry_equiv_sizes (l2 ++ l1) dsz csz defs.
+Proof.
+  intros l1 l2 dsz csz defs SE.
+  red. intros; eapply SE; eauto.
+  rewrite in_app in *. inv H. 
+  right; eauto.
+  left; eauto.
+Qed.
+
+Lemma symbtable_entry_equiv_sizes_app: forall l1 l2 dsz csz defs,
+    symbtable_entry_equiv_sizes l1 dsz csz defs ->
+    symbtable_entry_equiv_sizes l2 dsz csz defs ->
+    symbtable_entry_equiv_sizes (l1 ++ l2) dsz csz defs.
+Proof.
+  intros l1 l2 dsz csz defs SE1 SE2.
+  red. intros did cid dsz3 csz3 id def IN.
+  rewrite in_app in IN. 
+  destruct IN as [IN | IN].
+  - eapply SE1; eauto.
+  - eapply SE2; eauto.
+Qed.
+
+
 Lemma PTree_combine_ids_defs_match_intdefs_comm1: 
   forall did cid defs ids defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
@@ -3401,7 +3451,7 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm1:
     defs_some_int t1 ids ->
     PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
     fold_left (acc_symb did cid) defs ([], dsz3, csz3) = (stbl, dsz4, csz4) ->
-    symbtable_entry_sizes stbl dsz1' csz1' defs1 ->
+    symbtable_entry_equiv_sizes stbl dsz1' csz1' defs1 ->
     exists entries, PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1)) 
                                             (symbtable_to_tree (rev stbl2))
                                             link_symb_merge
@@ -3443,9 +3493,8 @@ Proof.
 
     erewrite link_prog_symb_comm_internal1 with (defs1:=defs1) (stbl1:=stbl1); eauto.
     red in SIZES.
-    edestruct SIZES; eauto.
+    erewrite <- SIZES; eauto.
     rewrite in_app. right. apply in_eq. 
-    subst. auto.
 Qed.
     
 
@@ -3462,7 +3511,7 @@ Lemma PTree_combine_ids_defs_match_intdefs_comm2:
     defs_some_int t2 ids ->
     PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
     fold_left (acc_symb did cid) defs ([], dsz2', csz2') = (stbl, dsz3, csz3) ->
-    symbtable_entry_sizes stbl dsz2' csz2' defs2 ->
+    symbtable_entry_equiv_sizes stbl dsz2' csz2' defs2 ->
     exists entries, PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl1)) 
                                             (symbtable_to_tree (rev stbl2))
                                             link_symb_merge
@@ -3537,6 +3586,18 @@ Proof.
   - red in DE2. destruct DE2; try congruence.
     destruct H as (def2' & EQ & DE2'). inv EQ.
     auto.
+Qed.
+
+Lemma link_prog_merge_def_internal:
+  forall {F V} {LV: Linker V} d1 d2 (d: option (globdef (AST.fundef F) V)),
+    def_internal d1 = true ->
+    link_prog_merge (Some d1) d2 = Some d ->
+    def_internal d = true.
+Proof.
+  intros F V LV d1 d2 d DI1 LINK.
+  cbn in LINK. destruct d2.
+  - eapply link_option_pres_int_def; eauto.
+  - inv LINK. auto.
 Qed.
 
 Lemma combine_defs_none_or_ext: 
@@ -3663,6 +3724,92 @@ Proof.
       eapply IHdefs1; eauto.
       intros. eapply IN; eauto. apply in_cons. auto.
 Qed.
+
+(* Lemma get_symbentry_sizes_inv:  *)
+(*   forall did1 cid1 dsz1 csz1 id1 def1  *)
+(*     did2 cid2 dsz2 csz2 id2 def2,  *)
+(*     def_internal def1 = true -> *)
+(*     get_symbentry did1 cid1 dsz1 csz1 id1 def1 =  *)
+(*     get_symbentry did2 cid2 dsz2 csz2 id2 def2 -> *)
+(*     dsz1 = dsz2 /\ csz1 = csz2. *)
+(* Proof. *)
+(*   intros until def2. *)
+(*   intros IN EQ. *)
+(*   unfold def_internal in IN. *)
+(*   unfold is_def_internal in IN. *)
+(*   destr_in IN. destruct g; subst. *)
+(*   destruct f. cbn in *. *)
+
+(* Definition symbtable_entry_sizes_ stbl dsz1 csz1 defs1 := *)
+(*   forall did cid dsz3 csz3 id def, *)
+(*     In (get_symbentry did cid dsz3 csz3 id def) stbl -> *)
+(*     get_symbentry did cid dsz3 csz3 id def = *)
+(*     get_symbentry did cid  *)
+(*                   (dsz1 + defs_data_size (defs_before id defs1)) *)
+(*                   (csz1 + defs_code_size (defs_before id defs1))  *)
+(*                   id def. *)
+
+
+
+Lemma PTree_combine_ids_defs_match_symbtable_entry_sizes:
+  forall did cid defs1 defs2 t1 t2 dsz1 csz1 dsz2 csz2 stbl,
+    (forall id def, In (id, def) defs1 -> t1 ! id = Some def) ->
+    PTree_combine_ids_defs_match 
+      t1 t2 link_prog_merge
+      (map fst (filter_internal_defs is_fundef_internal defs1))
+      defs2 ->
+    fold_left (acc_symb did cid) defs2 ([], dsz1, csz1) =
+            (stbl, dsz2, csz2) ->
+    symbtable_entry_equiv_sizes stbl dsz1 csz1 defs1.
+Proof.
+  induction defs1 as [|def1 defs1]; intros until stbl.
+  - intros IN MATCH ACC.
+    cbn in *. inv MATCH. cbn in *. inv ACC.
+    red. intros. inv H.
+  - intros IN MATCH ACC.
+    cbn in *. destruct def1 as (id1, def1).
+    destr_in MATCH.
+    + cbn in *. inv MATCH.
+      destruct y. destruct H1. subst.
+      cbn in *. destr_in ACC.
+      apply acc_symb_inv' in ACC.
+      destruct ACC as (stbl' & EQ & ACC). subst.
+      eapply symbtable_entry_equiv_sizes_app_comm.
+      eapply symbtable_entry_equiv_sizes_app.
+      * red. intros. inv H.
+        assert (p = id).
+        { eapply get_symbentry_eq_id_inv; eauto. }
+        subst.
+        rewrite defs_before_head. cbn.
+        repeat rewrite Z.add_0_r.
+        admit.
+        (* apply get_symbentry_sizes_inv in H1; auto. *)
+        (* destruct H1. split; omega. *)
+        (* generalize (IN id def1 (or_introl eq_refl)). *)
+        (* intros DEFEQ. rewrite DEFEQ in H0. *)
+        (* eapply link_prog_merge_def_internal; eauto. *)
+        inv H1.
+      * assert (symbtable_entry_equiv_sizes stbl'
+                                      (def_data_size def1 + dsz1)
+                                      (def_code_size def1 + csz1)
+                                      defs1) as SE.
+        { eapply (IHdefs1 l' t1 t2 _ _ dsz2 csz2); eauto.
+          generalize (IN p def1 (or_introl eq_refl)).
+          intros EQ. rewrite EQ in H0.
+          generalize (link_merge_internal_external_defs _ _ _ Heqb H0).
+          intros DEFEQ.
+          erewrite <- def_eq_code_size_eq; eauto.
+          erewrite <- def_eq_data_size_eq; eauto.
+          apply update_code_data_size_inv in Heqp0. destruct Heqp0. subst.
+          rewrite Z.add_comm.
+          rewrite (Z.add_comm (def_code_size o) csz1). auto.
+        }
+        admit.
+    + assert (symbtable_entry_equiv_sizes stbl dsz1 csz1 defs1) as SE.
+      { eapply (IHdefs1 defs2 t1 t2 dsz1 csz1 dsz2 csz2 stbl); eauto. }
+      admit.
+Admitted.
+
 
 
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
@@ -3851,10 +3998,20 @@ Proof.
   clear DSZ1 CSZ1.
   subst.
 
-  assert (symbtable_entry_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
-  { admit. }
-  assert (symbtable_entry_sizes stbl3 dsz1 csz1 (AST.prog_defs p2)) as SIZES2.
-  { admit. }
+  assert (symbtable_entry_equiv_sizes s0 0 0 (AST.prog_defs p1)) as SIZES1.
+  { 
+    unfold collect_internal_def_ids in MATCH1.
+    eapply PTree_combine_ids_defs_match_symbtable_entry_sizes; eauto.
+    intros. eapply prog_option_defmap_norepet; eauto.
+  }
+  assert (symbtable_entry_equiv_sizes stbl3 dsz1 csz1 (AST.prog_defs p2)) as SIZES2.
+  { 
+    unfold collect_internal_def_ids in MATCH2. 
+    apply PTree_combine_ids_defs_match_symm in MATCH2.
+    eapply PTree_combine_ids_defs_match_symbtable_entry_sizes; eauto.
+    intros. eapply prog_option_defmap_norepet; eauto.
+    eapply link_prog_merge_symm.
+  }
 
   (** Matching between ids and internal symbols from program 2 *)    
   assert (exists entries, PTree_combine_ids_defs_match 
