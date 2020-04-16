@@ -3765,6 +3765,27 @@ Qed.
 (*                   (csz1 + defs_code_size (defs_before id defs1))  *)
 (*                   id def. *)
 
+Lemma def_eq_pres_internal: forall {F V} (def1 def2: option (globdef (AST.fundef F) V)),
+  def_eq def1 def2 -> def_internal def1 = def_internal def2.
+Proof.
+  inversion 1; cbn; subst.
+  rewrite H0. auto.
+  rewrite H0. auto.
+Qed.
+
+Lemma link_merge_pres_internal:
+  forall (F V : Type) (LV : Linker V)
+    (def2 : option (option (globdef (AST.fundef F) V)))
+    (def1 def : option (globdef (AST.fundef F) V)),
+  def_internal def1 = true ->
+  link_prog_merge (Some def1) def2 = Some def -> 
+  def_internal def = true.
+Proof.
+  intros.
+  assert (def_eq def def1).
+  { eapply link_merge_internal_external_defs; eauto. }
+  erewrite def_eq_pres_internal; eauto.
+Qed.
 
 
 Lemma PTree_combine_ids_defs_match_symbtable_entry_sizes:
@@ -3800,6 +3821,8 @@ Proof.
         repeat rewrite Z.add_0_r.
         generalize (IN _ _ (or_introl eq_refl)).
         intros GET1. rewrite GET1 in H0.
+        assert (def_internal o = true) as INT.
+        { eapply link_merge_pres_internal; eauto. }
         
         admit.
         (* apply get_symbentry_sizes_inv in H1; auto. *)
@@ -4130,6 +4153,43 @@ Proof.
 Admitted.
 
 
+Lemma add_symb_to_list_id_eq: forall stbl id s,
+    In (id, s) (fold_left add_symb_to_list stbl []) ->
+    symbentry_id s = Some id.
+Proof.
+  induction stbl as [| e stbl].
+  - cbn. tauto.
+  - cbn. intros id s IN.
+    rewrite add_symb_to_list_inv in IN.
+    rewrite in_app in IN. destruct IN.
+    eauto.
+    unfold add_symb_to_list in H. destr_in H.
+    inv H; try congruence. inv H0. inv H.
+Qed.
+
+
+Lemma link_symb_pres_id: forall s1 s2 s id,
+    symbentry_id s1 = Some id ->
+    symbentry_id s2 = Some id ->
+    link_symb s1 s2 = Some s ->
+    symbentry_id s = Some id.
+Proof.
+  intros s1 s2 s id ID1 ID2 LINK.
+  unfold link_symb in LINK.
+  rewrite ID1, ID2 in LINK.
+  rewrite peq_true in LINK.
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  destruct zeq; try congruence.
+  destr_in LINK; try congruence.
+  destruct zeq; try congruence.
+  destruct zeq; try congruence.
+  inv LINK. cbn. congruence.
+  destr_in LINK; try congruence. 
+  inv LINK. cbn. congruence.
+Qed.  
+
 Lemma link_symb_elements_entry_id_eq: forall stbl1 stbl2 id e,
     In (id, e)
        (PTree.elements
@@ -4137,7 +4197,31 @@ Lemma link_symb_elements_entry_id_eq: forall stbl1 stbl2 id e,
                          (symbtable_to_tree stbl1)
                          (symbtable_to_tree stbl2))) ->
     symbentry_id_eq id e = true.
-Admitted.
+Proof.
+  intros stbl1 stbl2 id e IN.
+  apply PTree.elements_complete in IN.
+  rewrite PTree.gcombine in IN; cbn; auto.
+  unfold link_symb_merge in IN.
+  destr_in IN. destr_in IN.
+  - apply PTree_Properties.in_of_list in Heqo.
+    apply PTree_Properties.in_of_list in Heqo0.
+    apply add_symb_to_list_id_eq in Heqo.
+    apply add_symb_to_list_id_eq in Heqo0.
+    unfold symbentry_id_eq.
+    erewrite (link_symb_pres_id s s0); eauto.
+    rewrite peq_true. auto.
+  - inv IN.
+    apply PTree_Properties.in_of_list in Heqo.
+    apply add_symb_to_list_id_eq in Heqo.
+    unfold symbentry_id_eq.
+    rewrite Heqo. 
+    rewrite peq_true. auto.
+  - apply PTree_Properties.in_of_list in IN.
+    apply add_symb_to_list_id_eq in IN.
+    unfold symbentry_id_eq.
+    rewrite IN. 
+    rewrite peq_true. auto.
+Qed.
 
 Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
     list_norepet (map fst (AST.prog_defs p1)) ->
