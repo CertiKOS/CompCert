@@ -1659,18 +1659,19 @@ Lemma link_get_symbentry_left_some_right_none_comm: forall did cid def id dsz1 d
 Proof.
   intros until csz2.
   destruct def. destruct f.
-  - cbn. auto.
-  - cbn. auto.
+  - cbn. rewrite peq_true. auto.
+  - cbn. rewrite peq_true. auto.
   - unfold link_symb.
+    repeat rewrite get_symbentry_id.
+    rewrite peq_true.
     rewrite get_var_entry_type.
     rewrite get_none_entry_type.
     replace (link_symbtype symb_data symb_notype) with (Some symb_data) by auto.
     rewrite get_none_entry_secindex.
-    destruct (symbentry_secindex
-                (get_symbentry did cid dsz1 csz1 id
-                               (Some (Gvar v)))); auto.
-    f_equal. apply update_symbtype_unchanged.
-    apply get_var_entry_type.
+    cbn. 
+    destruct (gvar_init v); cbn; try congruence.
+    destruct i; cbn; try congruence.
+    destruct l; cbn; try congruence.
 Qed.      
 
 
@@ -1687,6 +1688,7 @@ Proof.
   - inv LINK.    
     eapply link_get_symbentry_left_some_right_none_comm; eauto.
   - inv LINK. cbn. auto.
+    rewrite peq_true. auto.
 Qed.
 
 Lemma link_get_symbentry_right_extfundef_comm: forall did cid id f1 f2 f dsz1 csz1 dsz2 csz2,
@@ -1703,16 +1705,12 @@ Proof.
   intros until csz2.
   intros INT LINK.
   unfold link_symb.
-  rewrite get_fun_entry_type.
-  rewrite get_fun_entry_type.
-  cbn -[get_symbentry].
-  rewrite (get_extfun_entry_secindex _ _ _ _ _ f2); auto.
-
-  destruct f2; try (cbn in INT; congruence).
-  apply link_fundef_inv1 in LINK. subst.
-  destr; auto.
-  f_equal. apply update_symbtype_unchanged.
-  apply get_fun_entry_type.
+  repeat rewrite get_symbentry_id. cbn.
+  rewrite peq_true.
+  destruct f1, f2, f; cbn in *; try congruence.
+  destruct e; inv LINK; try congruence.
+  destruct e; inv LINK; try congruence.
+  destruct external_function_eq; subst; cbn; inv LINK.
 Qed.
 
 Lemma link_getsymbentry_right_extfun : forall did cid id def1 def f dsz1 csz1 dsz2 csz2,
@@ -1741,6 +1739,7 @@ Proof.
     rewrite get_extfun_entry_secindex; auto.
     unfold update_symbtype. cbn. 
     destruct f. cbn in *; congruence. auto.
+    cbn. rewrite peq_true. auto.
 Qed.
 
 
@@ -1765,26 +1764,38 @@ Proof.
   - generalize (link_comm_vars_init _ _ INT1 INT2 LINK).
     destruct 1 as (EQ & INIT). subst.
     repeat (rewrite get_comm_var_entry; auto).
-    cbn.
+    cbn. rewrite peq_true.
     rewrite EQ.
     destruct zeq; try congruence.
+    erewrite Zmax_left; auto.
+    apply Z.le_ge. apply Z.le_max_r.
   - generalize (link_comm_extern_var_init _ _ INT1 INT2 LINK).
     intros. subst.
     rewrite (get_comm_var_entry _ _ _ _ _ _ INT1).
     rewrite (get_external_var_entry _ _ _ _ _ _ INT2).
-    rewrite get_comm_var_entry; auto.
+    rewrite get_comm_var_entry; cbn; auto.
+    rewrite peq_true. auto.
   - generalize (link_extern_comm_var_init _ _ INT1 INT2 LINK).
     intros. subst.
     rewrite (get_comm_var_entry _ _ _ _ _ _ INT2).
     rewrite (get_external_var_entry _ _ _ _ _ _ INT1).
     rewrite get_comm_var_entry; auto.
+    cbn. rewrite peq_true. auto.
   - generalize (link_extern_vars_init _ _ INT1 INT2 LINK).
     intros. subst.
     rewrite (get_external_var_entry _ _ _ _ _ _ INT2).
     rewrite (get_external_var_entry _ _ _ _ _ _ INT1).
     rewrite get_external_var_entry; auto.
+    cbn. rewrite peq_true. auto.
 Qed.    
     
+Lemma get_symbentry_eq_gvar_init: forall did cid dsz1 csz1 id v1 v2,
+    gvar_init v1 = gvar_init v2 ->
+    get_symbentry did cid dsz1 csz1 id (Some (Gvar v1)) = 
+    get_symbentry did cid dsz1 csz1 id (Some (Gvar v2)).
+Proof.
+  intros. cbn. rewrite H. auto.
+Qed.
 
 Lemma link_get_symbentry_right_extvar_init_comm :
   forall did cid v1 v2 id dsz1 csz1 dsz2 csz2 (inf:unit) init rd vl,
@@ -1815,6 +1826,7 @@ Proof.
     rewrite get_var_entry_size.
     rewrite get_var_entry_size.
     rewrite SEQ.
+    repeat rewrite get_symbentry_id. rewrite peq_true.
     apply dec_eq_true. 
   - unfold link_symb.
     repeat rewrite get_var_entry_type.
@@ -1823,7 +1835,9 @@ Proof.
     rewrite get_extern_var_entry_secindex; auto.
     generalize (link_internal_external_varinit _ _ _ INT1 INT' LINK).
     destruct 1 as (INITEQ & CLS).
-    f_equal. cbn. rewrite INITEQ. auto.
+    f_equal.
+    repeat rewrite get_symbentry_id. rewrite peq_true.
+    erewrite get_symbentry_eq_gvar_init; eauto.
   - apply link_get_symbentry_extvars_init_comm; auto.
 Qed.
     
@@ -1857,10 +1871,11 @@ Proof.
     rewrite var_not_internal_iff in INT. 
     destruct INT as [INT|INT].
     + rewrite get_comm_var_entry_secindex; auto.
-      f_equal.
-      apply get_extern_symbentry_ignore_size.
+      repeat rewrite get_symbentry_id. rewrite peq_true.
+      f_equal. apply get_extern_symbentry_ignore_size.
       cbn. rewrite var_not_internal_iff. auto.
     + rewrite get_extern_var_entry_secindex; auto.
+      repeat rewrite get_symbentry_id. rewrite peq_true.
       f_equal.
       generalize (extern_var_init_nil v INT).
       intros IL. 
@@ -1896,6 +1911,7 @@ Proof.
   rewrite link_option_symm in LINK.
   rewrite link_symb_symm.
   apply link_get_symbentry_comm2; auto.
+  intros. apply link_unit_symm.
 Qed.
 
 Lemma link_none_update_code_data_size: forall def1 def dsz1 csz1,
@@ -3526,7 +3542,7 @@ Proof.
             (PTree_Properties.of_list defs1)
             link_prog_merge ids defs) as MATCH'.
   { eapply PTree_combine_ids_defs_match_symm; eauto.
-    intros. apply link_prog_merge_symm. }
+    intros. apply link_prog_merge_symm. apply link_unit_symm. }
 
   assert (exists entries : list (ident * symbentry),
              PTree_combine_ids_defs_match (symbtable_to_tree (rev stbl2))
@@ -3782,6 +3798,9 @@ Proof.
         subst.
         rewrite defs_before_head. cbn.
         repeat rewrite Z.add_0_r.
+        generalize (IN _ _ (or_introl eq_refl)).
+        intros GET1. rewrite GET1 in H0.
+        
         admit.
         (* apply get_symbentry_sizes_inv in H1; auto. *)
         (* destruct H1. split; omega. *)
@@ -3981,7 +4000,8 @@ Proof.
     apply PTree_combine_ids_defs_match_size_eq in MATCH2.
     destruct MATCH2. auto.
     intros. eapply prog_option_defmap_norepet; eauto.
-    eapply link_prog_merge_symm.
+    eapply link_prog_merge_symm. 
+    apply link_unit_symm.
   }
   rewrite H in DSZ2. rewrite <- DSZ2 in DSZ3. clear H DSZ2.
   assert (defs_code_size (map snd (AST.prog_defs p2)) = defs_code_size (map snd defs2)).
@@ -3993,6 +4013,7 @@ Proof.
     destruct MATCH2. auto.
     intros. eapply prog_option_defmap_norepet; eauto.
     eapply link_prog_merge_symm.
+    apply link_unit_symm.
   }
   rewrite H in CSZ2. rewrite <- CSZ2 in CSZ3. clear H CSZ2.
   clear DSZ1 CSZ1.
@@ -4011,6 +4032,7 @@ Proof.
     eapply PTree_combine_ids_defs_match_symbtable_entry_sizes; eauto.
     intros. eapply prog_option_defmap_norepet; eauto.
     eapply link_prog_merge_symm.
+    apply link_unit_symm.
   }
 
   (** Matching between ids and internal symbols from program 2 *)    

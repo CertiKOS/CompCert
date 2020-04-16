@@ -206,8 +206,6 @@ Proof.
   inv LINK.
   repeat (rewrite Z.add_comm; cbn).
   split; auto.
-  apply Z_max_0.
-  apply Z.le_ge. apply Z.le_max_r.
 Qed.
 
 Lemma link_comm_extern_var_init : forall V (v1 v2: globvar V) init,

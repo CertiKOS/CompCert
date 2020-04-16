@@ -1638,7 +1638,7 @@ Local Transparent Linker_def Linker_fundef Linker_varinit Linker_vardef Linker_u
   assert (EITHER: init = init1 \/ init = init2).
   { revert LI. unfold link_varinit. 
     destruct (classify_init init1), (classify_init init2); intro EQ; inv EQ; auto.
-    destruct (zeq sz (Z.max sz0 0 + 0)); inv H0; auto.
+    destruct zeq; inv H0; auto.
     destruct (zeq sz (init_data_list_size il)); inv H0; auto.
     destruct (zeq sz (init_data_list_size il)); inv H0; auto. }
   apply eqb_prop in RO. apply eqb_prop in VO. 

@@ -97,6 +97,8 @@ Definition link_varinit (i1 i2: list init_data) :=
   match classify_init i1, classify_init i2 with
   | Init_extern, _ => Some i2
   | _, Init_extern => Some i1
+  | Init_common sz1, Init_common sz2 => 
+    if zeq sz1 sz2 then Some (Init_space sz1 :: nil) else None
   | Init_common sz1, _ => if zeq sz1 (init_data_list_size i2) then Some i2 else None
   | _, Init_common sz2 => if zeq sz2 (init_data_list_size i1) then Some i1 else None
   | _, _ => None
@@ -120,8 +122,8 @@ Proof.
   simpl. generalize (init_data_list_size_pos z). xomega. 
 - unfold link_varinit; intros until z.
   destruct (classify_init x) eqn:Cx, (classify_init y) eqn:Cy; intros E; inv E; try (split; constructor; fail).
-+ destruct (zeq sz (Z.max sz0 0 + 0)); inv H0.
-  split; constructor. congruence. auto.
++ destruct zeq. subst. inv H0. split; constructor; congruence. 
+  congruence.
 + destruct (zeq sz (init_data_list_size il)); inv H0.
   split; constructor. red; intros; subst z; discriminate. auto.
 + destruct (zeq sz (init_data_list_size il)); inv H0.
