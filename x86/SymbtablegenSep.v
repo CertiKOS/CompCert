@@ -284,7 +284,49 @@ Proof.
       rewrite ELEM. auto.
 Qed.
 
-        
+Lemma init_data_eq_dec: forall (i1 i2: init_data),
+    {i1 = i2} + {i1 <> i2}.
+Proof.
+  decide equality; try apply Int.eq_dec.
+  apply Int64.eq_dec.
+  apply Floats.Float32.eq_dec.
+  apply Floats.Float.eq_dec.
+  apply Z.eq_dec.
+  apply Ptrofs.eq_dec.
+  apply ident_eq.
+Qed.
+
+(* Definition list_init_data_external (il: list init_data) := *)
+(*   il = nil. *)
+
+(* Definition list_init_data_common (il: list init_data) := *)
+(*   exists sz, il = [Init_space sz]. *)
+
+(* Definition list_init_data_internal (il: list init_data) := *)
+(*   il <> nil /\ (forall sz, il <> [Init_space sz]). *)
+
+(* Lemma init_data_list_cases: forall (il:list init_data), *)
+(*     list_init_data_external il \/ *)
+(*     list_init_data_common il \/ *)
+(*     list_init_data_internal il. *)
+(* Proof. *)
+(*   intros. *)
+(*   edestruct (list_eq_dec init_data_eq_dec il nil); auto. *)
+(*   destruct il; try congruence. *)
+(*   destruct i; cbn; auto. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   destruct il. *)
+(*     right. left. red. eauto. *)
+(*     right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(* Qed.   *)
+
+
 Lemma get_symbentry_id : forall d_id c_id dsz csz id def,
     symbentry_id (get_symbentry d_id c_id dsz csz id def) = Some id.
 Proof.
@@ -3787,6 +3829,71 @@ Proof.
   erewrite def_eq_pres_internal; eauto.
 Qed.
 
+Lemma get_symbentry_eq_internal_fun_inv: 
+  forall did1 cid1 dsz1 csz1 did2 cid2 dsz2 csz2 id1 id2 f def,
+    get_symbentry did1 cid1 dsz1 csz1 id1 (Some (Gfun f)) =
+    get_symbentry did2 cid2 dsz2 csz2 id2 def ->
+    is_fundef_internal f = true ->
+    exists f', def = (Some (Gfun f')) /\ is_fundef_internal f' = true /\
+          csz1 = csz2.
+Proof.
+  intros until def.
+  intros EQ INT.
+  cbn in EQ. destruct f; cbn in INT; try congruence.
+  destruct def; cbn in EQ; try congruence.
+  destruct g; cbn in EQ; try congruence.
+  destruct f0; cbn in EQ; try congruence.
+  inv EQ. cbn; eauto.
+  destr_in EQ; try congruence.
+  destruct i; try congruence.
+  destruct l; try congruence.
+Qed.
+
+Lemma get_symbentry_internal_fun_eq: 
+  forall did cid dsz1 dsz2 csz id f, 
+    is_fundef_internal f = true ->
+    get_symbentry did cid dsz1 csz id (Some (Gfun f)) =
+    get_symbentry did cid dsz2 csz id (Some (Gfun f)).
+Proof.
+  intros. 
+  destruct f; cbn in H; try congruence.
+  cbn. auto.
+Qed.
+
+Lemma get_symbentry_eq_internal_var_inv: 
+  forall did1 cid1 dsz1 csz1 did2 cid2 dsz2 csz2 id1 id2 v def,
+    get_symbentry did1 cid1 dsz1 csz1 id1 (Some (Gvar v)) =
+    get_symbentry did2 cid2 dsz2 csz2 id2 def ->
+    is_var_internal v = true ->
+    exists v', def = (Some (Gvar v')) /\ is_var_internal v' = true /\
+          dsz1 = dsz2.
+Proof.
+  intros until def.
+  intros EQ INT.
+  erewrite get_internal_var_entry in EQ; eauto.
+  destruct def. destruct g.
+  cbn in EQ. destruct f; inv EQ.
+  destruct (is_var_internal v0) eqn:INT0.
+  rewrite get_internal_var_entry in EQ; eauto.
+  inv EQ. eauto.
+  rewrite var_not_internal_iff in INT0.
+  destruct INT0.
+  erewrite get_comm_var_entry in EQ; eauto. inv EQ.
+  erewrite get_external_var_entry in EQ; eauto. inv EQ.
+  cbn in EQ. inv EQ.
+Qed.
+
+Lemma get_symbentry_internal_var_eq: 
+  forall did cid dsz csz1 csz2 id v, 
+    is_var_internal v = true ->
+    get_symbentry did cid dsz csz1 id (Some (Gvar v)) =
+    get_symbentry did cid dsz csz2 id (Some (Gvar v)).
+Proof.
+  intros. 
+  erewrite get_internal_var_entry; eauto.
+  erewrite get_internal_var_entry; eauto.
+Qed.
+
 
 Lemma PTree_combine_ids_defs_match_symbtable_entry_sizes:
   forall did cid defs1 defs2 t1 t2 dsz1 csz1 dsz2 csz2 stbl,
@@ -3823,14 +3930,17 @@ Proof.
         intros GET1. rewrite GET1 in H0.
         assert (def_internal o = true) as INT.
         { eapply link_merge_pres_internal; eauto. }
-        
-        admit.
-        (* apply get_symbentry_sizes_inv in H1; auto. *)
-        (* destruct H1. split; omega. *)
-        (* generalize (IN id def1 (or_introl eq_refl)). *)
-        (* intros DEFEQ. rewrite DEFEQ in H0. *)
-        (* eapply link_prog_merge_def_internal; eauto. *)
-        inv H1.
+        destruct o; cbn in INT; try congruence.
+        destruct g.
+        ** eapply (get_symbentry_eq_internal_fun_inv 
+                     did cid dsz1 csz1 did0 cid0) in INT; eauto.
+           destruct INT as (f' & EQ & INT' & CEQ). subst.
+           erewrite get_symbentry_internal_fun_eq; eauto.
+        ** eapply (get_symbentry_eq_internal_var_inv
+                     did cid dsz1 csz1 did0 cid0) in INT; eauto.
+           destruct INT as (v' & EQ & INT' & CEQ). subst.
+           erewrite get_symbentry_internal_var_eq; eauto.
+        ** inv H1.
       * assert (symbtable_entry_equiv_sizes stbl'
                                       (def_data_size def1 + dsz1)
                                       (def_code_size def1 + csz1)
