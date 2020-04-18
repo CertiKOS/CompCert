@@ -237,7 +237,7 @@ Definition acc_symb_ids (ids: list ident) (s:symbentry) :=
   end.
 
 Definition get_symbentry_ids (t:symbtable) : list ident :=
-  fold_left acc_symb_ids t nil.
+  rev (fold_left acc_symb_ids t nil).
 
 
 Definition is_not_dummy_symbentry (e:symbentry) :=
