@@ -913,71 +913,6 @@ Proof.
   eapply link_int_defs_some_inv; eauto.
 Qed.
   
-(* Lemma link_defs1_in_order : forall {LV: Linker V} defs1 defs2 defs1_linked defs1_rest defs2_rest, *)
-(*     list_norepet (map fst defs2) -> *)
-(*     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) -> *)
-(*     list_in_order id_def_eq id_def_internal defs1 defs1_linked /\ *)
-(*     list_in_order id_def_eq id_def_internal defs2 defs2_rest. *)
-(* Proof. *)
-(*   induction defs1 as [|def1 defs1']. *)
-(*   - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK. *)
-(*     simpl in *. inv LINK. split. *)
-(*     constructor. *)
-(*     apply list_in_order_refl. *)
-
-(*   - intros defs2 defs1_linked defs1_rest defs2_rest NORPT LINK. *)
-(*     simpl in LINK. destruct def1 as (id1, def1). *)
-(*     destruct (link_defs1 is_fundef_internal defs1' defs2) eqn:LINK1; try congruence. *)
-(*     destruct p as (p, defs2_rest'). *)
-(*     destruct p as (defs1_linked', defs1_rest'). *)
-(*     destruct (partition (fun '(id', _) => ident_eq id' id1) defs2_rest') as (defs2' & defs2_rest'') eqn:PART. *)
-(*     destruct defs2' as [| iddef2 defs2'']. *)
-(*     + (** No definition with the same id found in defs2 *) *)
-(*       inv LINK. *)
-(*       generalize (IHdefs1' _ _ _ _ NORPT LINK1). *)
-(*       destruct 1 as (LORDER1 & LORDER2). *)
-(*       split; auto.       *)
-(*       apply list_in_order_cons; eauto. *)
-
-(*     + (** Some definition with the same id found in defs2 *) *)
-(*       destruct iddef2 as (id2 & def2).      *)
-(*       destruct (is_def_internal_dec is_fundef_internal def2) as [DEFINT2 | DEFINT2]; *)
-(*         rewrite DEFINT2 in LINK. *)
-(*       destruct (is_def_internal_dec is_fundef_internal def1) as [DEFINT1 | DEFINT1]; *)
-(*         rewrite DEFINT1 in LINK. *)
-(*       congruence. *)
-(*       inv LINK. *)
-(*       * (** The left definition is external and the right definition is internal. *)
-(*             The linking is delayed *) *)
-(*         generalize (IHdefs1' _ _ _ _ NORPT LINK1). *)
-(*         destruct 1 as (LORDER1 & LORDER2). split; auto. *)
-(*         apply lorder_left_false; auto. *)
-
-(*       * destruct (link_option def1 def2) as [def|] eqn:LINK_SYMB; inv LINK. *)
-(*         (** The right definition is external. *)
-(*             The linking proceeds normally *) *)
-(*         generalize (IHdefs1' _ _ _ _ NORPT LINK1). *)
-(*         destruct 1 as (LORDER1 & LORDER2). *)
-(*         generalize (link_defs_rest_norepet_pres2 _ is_fundef_internal _ _ NORPT LINK1). *)
-(*         intros NORPT1. *)
-(*         generalize (lst_norepet_partition_inv _ _ NORPT1 PART). *)
-(*         destruct 1. congruence. destruct H. inv H. *)
-(*         subst. split. *)
-(*         ** destruct (def_internal def1) eqn:DEFINT1. *)
-(*            *** generalize (link_internal_external_defs _ def2 DEFINT1 DEFINT2 LINK_SYMB). *)
-(*                intros DEQ.  *)
-(*                apply lorder_true. simpl. split; auto. *)
-(*                apply PER_Symmetric; auto. *)
-(*                auto. *)
-(*            *** simpl in LINK_SYMB. inv LINK_SYMB. *)
-(*                apply lorder_left_false; auto. *)
-(*                apply lorder_right_false; auto. *)
-(*                simpl.  *)
-(*                apply link_external_defs with def1 def2; eauto. *)
-(*         ** generalize (partition_pres_list_in_order _ _ PART). *)
-(*            intros LORDER3. *)
-(*            apply list_in_order_trans with defs2_rest'; auto. *)
-(* Qed. *)
 
 End WithFunVar.
 (** *)
@@ -1380,9 +1315,15 @@ Proof.
   intros until csz.
   intros GS.
   unfold gen_symb_table in GS. destr_in GS. destruct p. inv GS.
-(*   eapply acc_symb_index_in_range; eauto. *)
-(* Qed. *)
-Admitted.
+  apply acc_symb_inv' in Heqp.
+  destruct Heqp as (stbl1' & EQ & FL). subst.
+  rewrite rev_app_distr. cbn.
+  apply acc_symb_index_in_range in FL.
+  red. red in FL.
+  constructor; auto.
+  cbn. auto.
+Qed.
+
 
 Lemma reloc_symbentry_exists: forall e dsz csz,
   symbentry_index_in_range [sec_data_id; sec_code_id] e ->
@@ -1705,14 +1646,6 @@ Proof.
   destruct l; cbn in *; try congruence.
 Qed.
 
-
-(* Lemma symbentry_secindex_dec : forall e, *)
-(*     {symbentry_secindex e = secindex_undef} + *)
-(*     {symbentry_secindex e <> secindex_undef}. *)
-(* Proof. *)
-(*   decide equality. *)
-(*   apply N.eq_dec. *)
-(* Qed. *)
 
 Lemma update_symbtype_unchanged: forall e t,
     symbentry_type e = t -> update_symbtype e t = e.
@@ -2113,150 +2046,6 @@ Proof.
 Qed.
 
 
-(* Lemma link_defs1_acc_symb_comm : forall asf defs1 defs2 defs1_linked defs1_rest defs2_rest rstbl1 rstbl2 dsz1 dsz2 csz1 csz2 dsz1' csz1', *)
-(*     asf = acc_symb sec_data_id sec_code_id -> *)
-(*     list_norepet (map fst defs2) -> *)
-(*     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) -> *)
-(*     fold_left asf defs1 ([], dsz1', csz1') = (rstbl1, dsz1, csz1) -> *)
-(*     fold_left asf defs2 ([], 0, 0) = (rstbl2, dsz2, csz2) -> *)
-(*     exists rstbl1_linked rstbl1_rest rstbl2_rest, *)
-(*       link_symbtable1 (rev rstbl1) (rev rstbl2) = Some (rev rstbl1_linked, rev rstbl1_rest, rev rstbl2_rest) /\ *)
-(*       fold_left asf defs1_linked ([], dsz1', csz1') = (rstbl1_linked, dsz1, csz1) /\ *)
-(*       fold_left asf defs1_rest ([], 0, 0) = (rstbl1_rest, 0, 0) /\ *)
-(*       fold_left asf defs2_rest ([], 0, 0) = (rstbl2_rest, dsz2, csz2). *)
-(* Proof. *)
-(*   induction defs1 as [|def1 defs1]. *)
-(*   - intros until csz1'. *)
-(*     intros ASF NORPT LINK ACC1 ACC2. *)
-(*     simpl in *. inv ACC1. inv LINK. simpl. *)
-(*     repeat eexists; auto. *)
-(*   - intros until csz1'. *)
-(*     intros ASF NORPT LINK ACC1 ACC2.  *)
-(*     simpl in *. destruct def1 as (id1 & def1). *)
-(*     destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINK_TAIL; *)
-(*       try congruence. *)
-(*     destruct r as (p & defs2_rest').  *)
-(*     destruct p as (defs1_linked' & defs1_rest'). *)
-(*     rewrite ASF in ACC1. simpl in ACC1. *)
-(*     destruct (update_code_data_size dsz1' csz1' def1) as (dsz1'' & csz1'') eqn:UPDATE. *)
-    
-(*     rewrite <- ASF in ACC1. *)
-(*     generalize (acc_symb_inv _ _ _ _ ASF ACC1). *)
-(*     destruct 1 as (stbl1' & STEQ & ACC1'). *)
-(*     generalize (IHdefs1 _ _ _ _ _ _ _ _ _ _ _ _ ASF NORPT LINK_TAIL ACC1' ACC2). *)
-(*     destruct 1 as (stbl1_linked & stbl1_rest & stbl2_rest & LINK_SYMB_TAIL & ACC_LINK1 & ACC_REST1 & ACC_REST2). *)
-    
-(*     destruct (partition (fun '(id', _) => ident_eq id' id1) defs2_rest') as (defs2' & defs2_rest'') eqn:PART. *)
-(*     subst rstbl1. rewrite rev_unit. *)
-(*     simpl. rewrite LINK_SYMB_TAIL. *)
-(*     rewrite get_symbentry_id. *)
-
-(*     destruct defs2' as [|defs2']. *)
-(*     + (* No definition with id1 was found in the second module *) *)
-(*       generalize (partition_inv_nil1 _ _ PART). intros. subst defs2_rest''. *)
-(*       inversion LINK.  *)
-(*       subst defs1_linked. subst defs1_rest. subst defs2_rest. *)
-(*       generalize (acc_symb_pres_partition _ _ _ _ ASF PART ACC_REST2). *)
-(*       destruct 1 as (stbl1 & stbl2 & PART' & MATCH1 & MATCH2). *)
-(*       inversion MATCH1; clear MATCH1. subst stbl1. *)
-(*       generalize (partition_inv_nil1 _ _ PART'). intros. subst stbl2. *)
-(*       rewrite PART'. *)
-(*       rewrite <- rev_unit.  *)
-(*       do 3 eexists. split. auto. *)
-(*       split; auto. subst asf. simpl. rewrite UPDATE. *)
-(*       apply acc_symb_append_nil. auto. *)
-      
-(*     + (* Some definition with id1 was found in the second module *) *)
-(*       destruct defs2' as (id, def2). *)
-(*       destruct (is_def_internal is_fundef_internal def2) eqn:DEF2_INT. *)
-(*       * (* The found definition is internal *) *)
-(*         destruct (is_def_internal is_fundef_internal def1) eqn:DEF1_INT; try congruence. *)
-(*         inversion LINK; clear LINK. *)
-(*         subst defs1_linked'. subst defs1_rest. subst defs2_rest'. *)
-(*         generalize (acc_symb_pres_partition _ _ _ _ ASF PART ACC_REST2). *)
-(*         destruct 1 as (stbl1 & stbl2 & PART' & MATCH1 & MATCH2). *)
-(*         rewrite PART'. inv MATCH1.                 *)
-(*         erewrite <- match_def_symbentry_pres_internal_prop; eauto. *)
-(*         rewrite DEF2_INT. *)
-(*         erewrite <- get_symbentry_pres_internal_prop; eauto. *)
-(*         rewrite DEF1_INT. *)
-(*         rewrite <- rev_unit. *)
-(*         do 3 eexists. split; auto. *)
-(*         split; auto. *)
-(*         generalize (update_code_data_size_external_size_inv _ _ _ DEF1_INT UPDATE). *)
-(*         destruct 1. subst. auto. *)
-(*         split; auto. *)
-(*         simpl. destr. *)
-(*         generalize (update_code_data_size_external_size_inv _ _ _ DEF1_INT Heqp). *)
-(*         destruct 1. subst. *)
-(*         rewrite (get_extern_symbentry_ignore_size id1 def1 0 0 dsz1' csz1'); auto. *)
-(*         apply acc_symb_append_nil. auto. *)
-
-(*       * (* The found definition is external *) *)
-(*         destruct (link_option def1 def2) as [def|] eqn:LINKDEF; try congruence. *)
-(*         assert (defs2'0 = nil). *)
-(*         {  *)
-(*           generalize (link_defs_rest_norepet_pres2 _ _ _ _ NORPT LINK_TAIL). *)
-(*           intros NORPT'. *)
-(*           generalize (lst_norepet_partition_inv _ _ NORPT' PART). *)
-(*           destruct 1 as [ DEQ | DEQ ]; try congruence. *)
-(*           destruct DEQ as (def2' & DEQ). *)
-(*           inv DEQ. auto. *)
-(*         }   *)
-(*         subst defs2'0. *)
-(*         assert (Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) [(id, def2)]) as DEF2INT'. *)
-(*         { constructor. auto. apply Forall_nil. } *)
-(*         generalize (acc_symb_partition_extern_intern _ _ _ _ ASF PART ACC_REST2 DEF2INT'). *)
-(*         destruct 1 as (stbl2' & stbl2_rest' & PART' & ACC2_REST' & ACC2_REST''). *)
-(*         inversion LINK. subst defs1_linked. subst defs1_rest'. subst defs2_rest''. *)
-(*         rewrite PART'.  *)
-(*         rewrite ASF in ACC2_REST'; simpl in ACC2_REST'. *)
-(*         rewrite (update_code_data_size_external_ignore_size def2 0 0) in ACC2_REST'; auto. *)
-(*         inversion ACC2_REST'.            *)
-(*         symmetry in H0. apply rev_single in H0. subst stbl2'. *)
-(*         rewrite <- get_symbentry_pres_internal_prop. rewrite DEF2_INT. *)
-(*         (* rewrite DEF2_INT. red in H1. destruct H1 as (dsz & csz & EQ). *) *)
-(*         (* subst y.         *) *)
-(*         generalize (elements_in_partition_prop _ _ PART'). *)
-(*         destruct 1 as (ELEM1 & ELEM2). *)
-(*         generalize (ELEM1 _ (in_eq _ _)). *)
-(*         unfold symbentry_id_eq. rewrite get_symbentry_id. *)
-(*         intros IDEQ. destruct ident_eq; try congruence. subst id1. *)
-(*         generalize (link_get_symbentry_comm _ _ id dsz1' 0 csz1' 0 DEF2_INT LINKDEF). *)
-(*         intros LINKSYMB. *)
-(*         rewrite LINKSYMB. *)
-(*         rewrite <- rev_unit. rewrite <- (rev_involutive stbl2_rest'). *)
-(*         do 3 eexists; split; auto. *)
-(*         split; auto. *)
-(*         rewrite ASF. simpl. *)
-(*         erewrite <- link_extern_def_update_code_data_size; eauto. *)
-(*         rewrite UPDATE. *)
-(*         apply acc_symb_append_nil. rewrite ASF in ACC_LINK1. auto. *)
-(* Qed. *)
-        
-
-(* Lemma link_defs1_gen_symbtbl_comm : forall defs1 defs2 defs1_linked defs1_rest defs2_rest stbl1 stbl2 dsz1 dsz2 csz1 csz2, *)
-(*     list_norepet (map fst defs2) -> *)
-(*     link_defs1 is_fundef_internal defs1 defs2 = Some (defs1_linked, defs1_rest, defs2_rest) -> *)
-(*     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) -> *)
-(*     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) -> *)
-(*     exists stbl1_linked stbl1_rest stbl2_rest, *)
-(*       link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) /\ *)
-(*       gen_symb_table sec_data_id sec_code_id defs1_linked = (stbl1_linked, dsz1, csz1) /\ *)
-(*       gen_symb_table sec_data_id sec_code_id defs1_rest = (stbl1_rest, 0, 0) /\ *)
-(*       gen_symb_table sec_data_id sec_code_id defs2_rest = (stbl2_rest, dsz2, csz2). *)
-(* Proof. *)
-(*   intros until csz2.  *)
-(*   intros NORPT LINK GS1 GS2. unfold gen_symb_table in GS1, GS2. *)
-(*   destr_in GS1. destruct p. inv GS1. *)
-(*   destr_in GS2. destruct p. inv GS2. *)
-(*   generalize (link_defs1_acc_symb_comm _ _ _ _ (@eq_refl _ (acc_symb sec_data_id sec_code_id)) NORPT LINK Heqp Heqp0). *)
-(*   destruct 1 as (t1 & t1' & t2 & LINKS & GS1 & GS2 & GS3). *)
-(*   unfold gen_symb_table. *)
-(*   rewrite LINKS, GS1, GS2, GS3.  *)
-(*   repeat eexists; eauto. *)
-(* Qed. *)
-
 Lemma partition_reloc_symbtable_comm : forall f l l1 l2 rf l',
     (forall e e', reloc_symbol rf e = Some e' -> f e = f e') 
     -> partition f l = (l1, l2)
@@ -2399,150 +2188,6 @@ Proof.
   erewrite reloc_symb_pres_id; eauto.
 Qed.
 
-(* Lemma reloc_link_symbtable_comm2: forall rf stbl1 stbl2 stbl2' stbl1_linked stbl1_rest stbl2_rest, *)
-(*     reloc_symbtable rf stbl2 = Some stbl2' -> *)
-(*     link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) -> *)
-(*     exists stbl2_rest', reloc_symbtable rf stbl2_rest = Some stbl2_rest' /\ *)
-(*                    link_symbtable1 stbl1 stbl2' = Some (stbl1_linked, stbl1_rest, stbl2_rest'). *)
-(* Proof. *)
-(*   induction stbl1 as [|e stbl1]. *)
-(*   - intros until stbl2_rest. *)
-(*     intros RELOC LINK. cbn in *. inv LINK. *)
-(*     eauto. *)
-(*   - intros until stbl2_rest. *)
-(*     intros RELOC LINK. cbn in *. *)
-(*     destr_in LINK; try congruence. destruct p. destruct p. *)
-(*     destr_in LINK; try congruence. destr_in LINK.  *)
-(*     generalize (IHstbl1 _ _ _ _ _ RELOC Heqo). *)
-(*     destruct 1 as (stbl2_rest' & RELOC' & LINK'). *)
-(*     destruct l. *)
-(*     + inv LINK. generalize (partition_inv_nil1 _ _ Heqp). intros. subst l0. *)
-(*       exists stbl2_rest'; split; auto. *)
-(*       rewrite LINK'.       *)
-(*       generalize (partition_reloc_symbtable_comm _ _ _ (reloc_symb_id_eq i rf) Heqp RELOC'). *)
-(*       destruct 1 as (l1' & l2' & PART & RELOC1 & RELOC2). *)
-(*       cbn in RELOC1. inv RELOC1. *)
-(*       generalize (partition_inv_nil1 _ _ PART). intros. subst l2'. *)
-(*       rewrite PART. auto. *)
-(*     + destr_in LINK. *)
-(*       * destr_in LINK; try congruence. *)
-(*         inv LINK. *)
-(*         exists stbl2_rest'. split; auto. *)
-(*         rewrite LINK'.  *)
-(*         generalize (partition_reloc_symbtable_comm _ _ _ (reloc_symb_id_eq i rf) Heqp RELOC'). *)
-(*         destruct 1 as (l1' & l2' & PART & RELOC1 & RELOC2). *)
-(*         rewrite PART. cbn in RELOC1. *)
-(*         unfold reloc_iter in RELOC1. *)
-(*         destr_in RELOC1; try congruence. *)
-(*         destr_in RELOC1; try congruence. *)
-(*         inv RELOC1. *)
-(*         erewrite <- reloc_symb_pres_internal_prop; eauto. *)
-(*         rewrite Heqb. auto. *)
-(*       * destr_in LINK; try congruence. *)
-(*         inv LINK. *)
-(*         rewrite LINK'. *)
-(*         generalize (partition_reloc_symbtable_comm _ _ _ (reloc_symb_id_eq i rf) Heqp RELOC'). *)
-(*         destruct 1 as (l1' & l2' & PART & RELOC1 & RELOC2). *)
-(*         rewrite RELOC2. eexists; split; eauto. *)
-(*         rewrite PART. *)
-(*         cbn in RELOC1. unfold reloc_iter in RELOC1. *)
-(*         destr_in RELOC1; try congruence. *)
-(*         destr_in RELOC1; try congruence. inv RELOC1. *)
-(*         erewrite <- reloc_symb_pres_internal_prop; eauto. *)
-(*         rewrite Heqb.          *)
-(*         erewrite reloc_external_symb in Heqo3; eauto. inv Heqo3. *)
-(*         rewrite Heqo1. auto. *)
-(* Qed. *)
-  
-
-(* Lemma reloc_link_symb_comm : forall e1 e2 e e1' rf, *)
-(*     is_symbentry_internal e2 = false  *)
-(*     -> reloc_symb rf e1 = Some e1' *)
-(*     -> link_symb e1 e2 = Some e *)
-(*     -> exists e', reloc_symb rf e = Some e' /\ link_symb e1' e2 = Some e'. *)
-(* Proof. *)
-(*   intros e1 e2 e e1' rf INT RELOC LINK. *)
-(*   unfold link_symb in *. *)
-(*   erewrite <- reloc_symb_pres_type; eauto. *)
-(*   erewrite <- reloc_symb_pres_secindex; eauto. *)
-(*   erewrite <- reloc_symb_pres_size; eauto. *)
-(*   destr_in LINK; try congruence. *)
-(*   destr_in LINK. *)
-(*   - destr_in LINK; try congruence. *)
-(*     + destruct zeq; try congruence. inv LINK. *)
-(*       rewrite RELOC. eexists; split; eauto. *)
-(*     + inv LINK. eauto. *)
-(*   - destr_in LINK; try congruence. *)
-(*     + destruct zeq; try congruence. inv LINK. *)
-(*       exists e; split; auto. *)
-(*       apply reloc_external_symb; auto. *)
-(*     + destruct zeq; try congruence. inv LINK. *)
-(*       rewrite RELOC. eexists; split; eauto.  *)
-(*     + inv LINK. rewrite RELOC. eexists; split; eauto.  *)
-(*   - destr_in LINK; try congruence. *)
-(*     + inv LINK. *)
-(*       exists e; split; auto. *)
-(*       apply reloc_external_symb; auto. *)
-(*     + inv LINK. exists e; split; auto. *)
-(*       apply reloc_external_symb; auto. *)
-(*     + inv LINK.  *)
-(*       eexists; split; eauto.      *)
-(*       apply reloc_symb_pres_update_symbtype; auto. *)
-(* Qed. *)
-
-
-(* Lemma reloc_link_symbtable_comm1: forall rf stbl1 stbl2 stbl1' stbl1_linked stbl1_rest stbl2_rest, *)
-(*     reloc_symbtable rf stbl1 = Some stbl1' -> *)
-(*     link_symbtable1 stbl1 stbl2 = Some (stbl1_linked, stbl1_rest, stbl2_rest) -> *)
-(*     exists stbl1_linked', reloc_symbtable rf stbl1_linked = Some stbl1_linked' /\ *)
-(*                      link_symbtable1 stbl1' stbl2 = Some (stbl1_linked', stbl1_rest, stbl2_rest). *)
-(* Proof. *)
-(*     induction stbl1 as [|e stbl1]. *)
-(*   - intros until stbl2_rest. *)
-(*     intros RELOC LINK. cbn in *. inv RELOC. inv LINK. *)
-(*     exists nil. split; auto. *)
-(*   - intros until stbl2_rest. *)
-(*     intros RELOC LINK. cbn in *. *)
-(*     unfold reloc_iter in RELOC. *)
-(*     destr_in RELOC; try congruence. *)
-(*     destr_in RELOC; try congruence. inv RELOC. *)
-(*     destr_in LINK; try congruence. destruct p. destruct p. *)
-(*     destr_in LINK; try congruence. destr_in LINK.  *)
-(*     generalize (IHstbl1 _ _ _ _ _ Heqo Heqo1). *)
-(*     destruct 1 as (stbl1_rest' & RELOC' & LINK'). *)
-(*     destruct l0. *)
-(*     + inv LINK. generalize (partition_inv_nil1 _ _ Heqp). intros. subst l1. *)
-(*       exists (s :: stbl1_rest'); split; auto. *)
-(*       cbn. unfold reloc_iter. *)
-(*       setoid_rewrite RELOC'. rewrite Heqo0. auto. *)
-(*       cbn. rewrite LINK'.  *)
-(*       erewrite <- reloc_symb_pres_id; eauto. rewrite Heqo2. *)
-(*       rewrite Heqp. auto. *)
-(*     + destr_in LINK. *)
-(*       * destr_in LINK; try congruence. *)
-(*         inv LINK. *)
-(*         exists stbl1_rest'. split; auto. *)
-(*         cbn. *)
-(*         rewrite LINK'.  *)
-(*         erewrite <- reloc_symb_pres_id; eauto. rewrite Heqo2. *)
-(*         rewrite Heqp. rewrite Heqb.  *)
-(*         erewrite <- reloc_symb_pres_internal_prop; eauto. rewrite Heqb0. *)
-(*         erewrite reloc_external_symb in Heqo0; eauto. inv Heqo0. *)
-(*         auto. *)
-(*       * destr_in LINK; try congruence. *)
-(*         inv LINK. *)
-(*         generalize (reloc_link_symb_comm _ _ _ Heqb Heqo0 Heqo3). *)
-(*         destruct 1 as (e' & RELOCS & LINKS). *)
-(*         exists (e' :: stbl1_rest'). split. *)
-(*         ** cbn. unfold reloc_iter. *)
-(*            setoid_rewrite RELOC'. rewrite RELOCS. auto. *)
-(*         ** cbn. *)
-(*            rewrite LINK'.  *)
-(*            erewrite <- reloc_symb_pres_id; eauto. rewrite Heqo2. *)
-(*            rewrite Heqp. rewrite Heqb. rewrite LINKS. *)
-(*            auto. *)
-(* Qed. *)
-
 Lemma update_size_offset : forall def dsz csz dsz1 csz1 dofs cofs,
     update_code_data_size dsz csz def = (dsz1, csz1) ->
     update_code_data_size (dofs + dsz) (cofs + csz) def = (dofs + dsz1, cofs + csz1).
@@ -2645,54 +2290,13 @@ Qed.
 (*   destr_in GS1; inv GS1. *)
 (*   destr_in GS2; inv GS2. *)
 (*   destruct p, p0. inv H0. inv H1. *)
-(*   unfold gen_symb_table.   *)
+(*   unfold gen_symb_table. *)
 (*   erewrite acc_symb_reloc_comm; eauto. *)
 (*   rewrite rev_app_distr. rewrite rev_involutive. *)
 (*   auto. *)
 (* Qed. *)
 
 
-(* Lemma link_gen_symb_comm : forall defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs, *)
-(*     list_norepet (map fst defs1) -> *)
-(*     list_norepet (map fst defs2) -> *)
-(*     link_defs is_fundef_internal defs1 defs2 = Some defs -> *)
-(*     gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dsz1, csz1) -> *)
-(*     gen_symb_table sec_data_id sec_code_id defs2 = (stbl2, dsz2, csz2) -> *)
-(*     f_ofs = reloc_offset_fun dsz1 csz1 -> *)
-(*     exists stbl stbl2', *)
-(*       reloc_symbtable f_ofs stbl2 = Some stbl2' /\ *)
-(*       link_symbtable stbl1 stbl2' = Some stbl *)
-(*       /\ gen_symb_table sec_data_id sec_code_id defs = (stbl, dsz1 + dsz2, csz1 + csz2). *)
-(* Proof. *)
-(*   intros defs1 defs2 defs stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs NORPT1 NORPT2 LINK GS1 GS2 FOFS. *)
-
-(*   unfold link_defs in LINK. *)
-(*   destruct (link_defs1 is_fundef_internal defs1 defs2) as [r|] eqn:LINKDEFS1;  *)
-(*     try congruence. *)
-(*   destruct r as (p & defs2_rest). destruct p as (defs1_linked, defs1_rest). *)
-(*   destruct (link_defs1 is_fundef_internal defs2_rest defs1_rest) as [r|] eqn:LINKDEFS2;  *)
-(*     try congruence. *)
-(*   destruct r. destruct p as (defs2_linked & r). inv LINK. *)
-
-(*   generalize (link_defs1_gen_symbtbl_comm _ _ NORPT2 LINKDEFS1 GS1 GS2). *)
-(*   destruct 1 as (stbl1_linked & stlb1_rest & stbl2_rest & LINKSTBL1 & GSLINKED1 & GSREST1 & GSREST2). *)
-(*   generalize (reloc_symbtable_exists _ GS2 (@eq_refl _ (reloc_offset_fun dsz1 csz1))). *)
-(*   destruct 1 as (stbl2' & RELOC & RELOC_PROP). *)
-(*   generalize (reloc_link_symbtable_comm2 _ _ _ RELOC LINKSTBL1). *)
-(*   destruct 1 as (stbl2_rest' & RELOC2' & LINKSTBL1').   *)
-(*   generalize (link_defs_rest_norepet_pres1 _ _ _ _ NORPT1 LINKDEFS1). *)
-(*   intros NORPT1'. *)
-(*   generalize (link_defs1_gen_symbtbl_comm _ _ NORPT1' LINKDEFS2 GSREST2 GSREST1). *)
-(*   destruct 1 as (stbl_linked2 & sr1 & sr2 & LINKSTBL2 & GSLINKED2 & GS3 & GS4). *)
-(*   generalize (reloc_link_symbtable_comm1 _ _ _ RELOC2' LINKSTBL2). *)
-(*   destruct 1 as (stbl2_linked' & RELOC2 & LINKREST2). *)
-
-(*   unfold link_symbtable. *)
-(*   eexists. exists stbl2'. split; auto. *)
-(*   rewrite LINKSTBL1'. *)
-(*   rewrite LINKREST2. split; auto.   *)
-(*   eapply gen_symb_table_reloc_comm; eauto. *)
-(* Qed. *)
 
 Lemma acc_symb_ids_eq: forall ids s, 
     acc_symb_ids ids s = acc_symb_ids [] s ++ ids.
@@ -2759,62 +2363,6 @@ Lemma gen_symb_table_pres_link_check:
                              (link_symbtable_check (symbtable_to_tree stbl2')) = true.
 Admitted.
 
-(* Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3, *)
-(*     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) -> *)
-(*     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) -> *)
-(*     reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' -> *)
-(*     PTree_extract_elements *)
-(*       (collect_internal_def_ids is_fundef_internal p1 ++ *)
-(*        collect_internal_def_ids is_fundef_internal p2) *)
-(*       (PTree.combine link_prog_merge  *)
-(*                      (prog_option_defmap p1) *)
-(*                      (prog_option_defmap p2)) = Some (defs3, t') -> *)
-(*     gen_symb_table sec_data_id sec_code_id (PTree.elements t' ++ defs3) = (stbl3, dsz3, csz3) -> *)
-(*     dsz3 = dsz1 + dsz2 /\ *)
-(*     csz3 = csz1 + csz2 /\  *)
-(*     symbtable_syneq  *)
-(*       (dummy_symbentry ::  *)
-(*                        map snd *)
-(*                        (PTree.elements *)
-(*                           (PTree.combine link_symb_merge  *)
-(*                                          (symbtable_to_tree stbl1) *)
-(*                                          (symbtable_to_tree stbl2')))) stbl3. *)
-(* Proof. *)
-(*   intros until defs3. *)
-(*   intros GS1 GS2 RELOC EXT GS3. *)
-(*   set (defs := (PTree.elements (PTree.combine link_prog_merge (prog_option_defmap p1) *)
-(*                                               (prog_option_defmap p2)))). *)
-(*   set (stbl := (PTree.elements *)
-(*                   (PTree.combine link_symb_merge (symbtable_to_tree stbl1) *)
-(*                                  (symbtable_to_tree stbl2')))) in *. *)
-(*   (* assert (PTree_combine_ids_defs_match (prog_option_defmap p1) *) *)
-(*   (*                                      (prog_option_defmap p2) *) *)
-(*   (*                                      link_prog_merge *) *)
-(*   (*                                      (map fst defs) *) *)
-(*   (*                                      defs) as DEFS_MATCH. *) *)
-(*   (* { apply PTree_elements_combine; auto. } *) *)
-(*   assert (PTree_combine_ids_defs_match (symbtable_to_tree stbl1) *)
-(*                                        (symbtable_to_tree stbl2') *)
-(*                                        link_symb_merge *)
-(*                                        (map fst stbl) *)
-(*                                        stbl) as SYMBS_MATCH. *)
-(*   { apply PTree_elements_combine; auto. } *)
-(*   assert (PTree_combine_ids_defs_match (prog_option_defmap p1) *)
-(*                                         (prog_option_defmap p2) *)
-(*                                         link_prog_merge  *)
-(*                                         (map fst (PTree.elements t')) *)
-(*                                         (PTree.elements t')) as RM_MATCH. *)
-(*   { eapply PTree_extract_elements_combine_remain; eauto. } *)
-(*   assert (PTree_combine_ids_defs_match (prog_option_defmap p1) *)
-(*                                         (prog_option_defmap p2) *)
-(*                                         link_prog_merge  *)
-(*                                         (collect_internal_def_ids is_fundef_internal p1 ++ *)
-(*                                          collect_internal_def_ids is_fundef_internal p2) *)
-(*                                         defs3) as EXT_MATCH. *)
-(*   { eapply PTree_extract_elements_combine; admit. } *)
-(*   generalize (Forall2_app RM_MATCH EXT_MATCH). *)
-(*   intros DEFS_MATCH. *)
-(* Admitted.   *)
   
   
 Lemma reloc_symbtable_cons: forall f e stbl1 stbl2,
@@ -3997,19 +3545,24 @@ Proof.
   f_equal; omega.
 Qed.
 
-Lemma symbtable_entry_equiv_sizes_cons' :
-  forall stbl dsz1 csz1 p def1 defs1,
-    def_internal def1 = false ->
-    symbtable_entry_equiv_sizes stbl dsz1 csz1 defs1 ->
-    symbtable_entry_equiv_sizes stbl dsz1 csz1 ((p, def1) :: defs1).
-Proof.
-Admitted.
-
-
 Lemma get_symbentry_ids_in: forall e stbl i,
     In e stbl -> symbentry_id e = Some i ->
     In i (get_symbentry_ids (rev stbl)).
-Admitted.
+Proof.
+  induction stbl as [|e' stbl].
+  inversion 1.
+  intros i IN SE.
+  cbn.
+  rewrite fold_left_app.
+  rewrite acc_symb_ids_inv.
+  rewrite rev_app_distr.
+  rewrite in_app_iff.
+  inv IN.
+  - right. cbn. 
+    unfold acc_symb_ids. rewrite SE.
+    cbn. auto.
+  - left. eapply IHstbl; eauto.
+Qed.
 
 
 Lemma PTree_combine_ids_defs_match_symbtable_entry_sizes:
@@ -4652,7 +4205,25 @@ Qed.
 Lemma reloc_symbtable_pres_ids : forall f stbl stbl',
     reloc_symbtable f stbl = Some stbl' ->
     get_symbentry_ids stbl = get_symbentry_ids stbl'.
-Admitted.
+Proof.
+  induction stbl as [|e stbl].
+  - intros stbl' RELOC.
+    cbn in RELOC. inv RELOC. cbn. auto.
+  - intros stbl' RELOC.
+    apply reloc_symbtable_cons in RELOC.
+    destruct RELOC as (e' & stbl'' & RELOC & RS & EQ).
+    subst.
+    cbn.
+    rewrite acc_symb_ids_inv. rewrite rev_app_distr.
+    rewrite (acc_symb_ids_inv stbl''). rewrite rev_app_distr.
+    assert (acc_symb_ids [] e = acc_symb_ids [] e') as EQ.
+    { unfold acc_symb_ids.
+      erewrite reloc_symb_pres_id; eauto. 
+    }
+    rewrite EQ. f_equal.
+    eapply IHstbl; eauto.
+Qed.
+
 
 Lemma link_ordered_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
@@ -4702,37 +4273,6 @@ Proof.
   rewrite SCHK. eauto.
   erewrite <- reloc_symbtable_pres_ids; eauto. 
 
-  (* assert (list_norepet  *)
-  (*           (collect_internal_def_ids is_fundef_internal p1 ++ *)
-  (*           collect_internal_def_ids is_fundef_internal p2)) as NORPT3. *)
-  (* { admit. } *)
-  (* assert (Forall2 (fun (id : positive) '(id', def) => *)
-  (*                    id = id' /\ *)
-  (*                    link_prog_merge (prog_option_defmap p1) ! id *)
-  (*                                    (prog_option_defmap p2) ! id = Some def) *)
-  (*                 (collect_internal_def_ids is_fundef_internal p1 ++ *)
-  (*                  collect_internal_def_ids is_fundef_internal p2) *)
-  (*                 defs3) as DEF_MATCH. *)
-  (* { apply PTree_extract_elements_combine with t'; auto. } *)
-  (* apply Forall2_app_inv_l in DEF_MATCH. *)
-  (* destruct DEF_MATCH as (defs4 & defs5 & DEF_MATCH1 & DEF_MATCH2 & EQ). *)
-  (* subst. cbn.   *)
-  (* generalize (PTree_extract_elements_remain _ _ _ _ Heqo). *)
-  (* intros.  *)
-  
-  
-  
-(*   generalize (link_prog_ordered_inv' _ _ _ LINK).  *)
-(*   intros (p' & LINK' & PERM). *)
-(*   exploit link_gen_symb_comm; eauto. *)
-(*   intros (stbl & stbl2' & stbl' & RELOC & LINKSTBL & GENSTBL & SYNEQ).   *)
-(*   apply Permutation_sym in PERM. *)
-(*   generalize (gen_symb_table_perm _ _ GENSTBL PERM). *)
-(*   intros (stbl'' & GENSTBL' & SYNEQ'). *)
-(*   do 3 eexists. split; eauto. *)
-(*   split; eauto. *)
-(*   split; eauto. *)
-(*   eapply symbtable_syneq_trans; eauto. *)
 Qed.
 
 
@@ -4752,12 +4292,26 @@ Lemma link_ordered_pres_wf_prog: forall p1 p2 p,
     wf_prog p.
 Admitted.
 
-Lemma reloc_symbtable_pres_syneq : forall f tbl1 tbl2 tbl1',
+Lemma reloc_symbtable_pres_syneq : forall f tbl1' tbl1 tbl2 ,
     reloc_symbtable f tbl1 = Some tbl2 ->
     symbtable_syneq tbl1 tbl1' ->
     exists tbl2', reloc_symbtable f tbl1' = Some tbl2' /\
              symbtable_syneq tbl2 tbl2'.
+Proof.
+  induction tbl1' as [|e' tbl1'].
+  - cbn. intros tbl1 tbl2 RS SEQ.
+    unfold symbtable_syneq in SEQ.
+    cbn in SEQ. 
+    apply Permutation_sym in SEQ.
+    apply Permutation_nil in SEQ.
+    exists nil; split; auto.
+    admit.
+  - intros tbl1 tbl2 RS SEQ.
+    red in SEQ. 
 Admitted.
+    
+
+    
 
 Lemma link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
     link_symbtable stbl1 stbl2 = Some stbl ->
@@ -4782,17 +4336,6 @@ Proof.
   intros (tp3 & LINK3 & OMATCH). clear OMATCH1 OMATCH2.
   setoid_rewrite LINK3.
   
-  (* generalize (match_prog_pres_prog_defs MATCH1). intros PERM1. *)
-  (* generalize (match_prog_pres_prog_defs MATCH2). intros PERM2. *)
-  (* rewrite <- (match_prog_pres_prog_main MATCH1). *)
-  (* rewrite <- (match_prog_pres_prog_main MATCH2). *)
-  (* rewrite <- (match_prog_pres_prog_public MATCH1). *)
-  (* rewrite <- (match_prog_pres_prog_public MATCH2). *)
-  (* setoid_rewrite LINK. *)
-  (* apply link_prog_inv in LINK. *)
-  (* destruct LINK as (MAINEQ & NRPT1 & NRPT2 & defs & PEQ & LINKDEFS). subst. simpl. *)
-  (* unfold match_prog in *. *)
-
   red in MATCH1, MATCH2.
   destruct MATCH1 as (tp1' & TRANSF1 & RPEQ1).
   destruct MATCH2 as (tp2' & TRANSF2 & RPEQ2).
@@ -4825,13 +4368,6 @@ Proof.
   simpl in LINK.
   generalize (link_prog_ordered_inv is_fundef_internal _ _ _ LINK). 
   intros (NRPT1 & NRPT2).
-
-  (* unfold link_prog_ordered in LINK. *)
-  (* destr_in LINK; try congruence. *)
-  (* destr_in LINK; try congruence. *)
-  (* destruct p0 as (defs & t'). inv LINK. *)
-  (* repeat rewrite andb_true_iff in Heqb. *)
-  (* destruct Heqb as [[MAINIDEQ NRPT1] NRTP2]. *)
 
   generalize (link_ordered_gen_symb_comm _ _ LINK GSEQ1 GSEQ2
                                  (@eq_refl _ (reloc_offset_fun dsz1 csz1))); eauto.
