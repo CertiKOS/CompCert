@@ -4340,7 +4340,10 @@ Proof.
                  (symbtable_to_tree (rev stbl2'))) = Some (entries, t2)) as EXT'.
   { eapply PTree_extract_elements_exists; eauto.
     eapply PTree_extract_elements_domain_norepet; eauto.
-    admit. }
+    apply incl_app.
+    eapply PTree_combine_ids_defs_match_incl_ids; eauto.
+    eapply PTree_combine_ids_defs_match_incl_ids; eauto.
+  }
   destruct EXT' as (entries & t2 & EXT').
   do 2 eexists. split; eauto.
   f_equal. f_equal.

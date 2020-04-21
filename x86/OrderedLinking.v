@@ -10,6 +10,33 @@ Require Import Permutation.
 
 (** * Linking of Asm program such that the order of internal definitions is preserved **)
 
+Lemma Forall2_in_map: 
+  forall {A B} (l:list B) (a:B) (R: A -> B -> Prop) (f:B -> A),
+    In a l -> Forall2 R (map f l) l -> R (f a) a.
+Proof.
+  induction l as [|e l].
+  - intros a R f IN FA.
+    inv IN.
+  - intros a R f IN FA. cbn in *.
+    inv IN. subst.
+    + inv FA. auto.
+    + inv FA. apply IHl; auto.
+Qed.
+
+Lemma Forall2_invl:
+  forall {A B : Type} (R : A -> B -> Prop) a1 (l1: list A) (l2 : list B),
+  In a1 l1 -> Forall2 R l1 l2 -> exists a2, In a2 l2 /\ R a1 a2.
+Proof.
+  induction l1 as [| e1 l1].
+  - cbn. intros. contradiction.
+  - cbn. intros l2 [EQ|IN] ALL.
+    + subst. inv ALL. exists y. split. constructor; auto. auto.
+    + inv ALL.
+      eapply IHl1 in H3; eauto.
+      destruct H3 as (a2 & IN' & R').
+      exists a2. split. apply in_cons. auto. auto.
+Qed.
+
 Lemma in_map_incl: forall A B a (l l': list A) (f: A -> B),
     In a (map f l) -> incl l l' -> In a (map f l').
 Proof.
@@ -398,6 +425,18 @@ Definition PTree_combine_ids_defs_match {A B C}
   Forall2 (fun (id : positive) '(id', def) => id = id' /\ f t1 ! id t2 ! id = Some def)
     ids defs.
   
+Lemma PTree_combine_ids_defs_match_inv1: 
+  forall {A B C} t1 t2 (f:option A -> option B -> option C) id ids l,
+      In id ids ->
+      PTree_combine_ids_defs_match t1 t2 f ids l ->
+      exists e, In e l /\ id = fst e /\ f t1!id t2!id = Some (snd e).
+Proof.
+  intros A B C t1 t2 f id ids l IN MATCH.
+  red in MATCH.
+  eapply Forall2_invl in MATCH; eauto.
+  destruct MATCH as ((id', def) & IN' & EQ & MG).
+  subst. rewrite MG. eauto.
+Qed.
 
 Lemma PTree_combine_ids_defs_match_det: 
   forall {A B C} (t1:PTree.t A) (t2:PTree.t B) 
@@ -451,6 +490,26 @@ Lemma PTree_elements_combine:
 Proof.
   intros. eapply PTree_elements_combine_incl; eauto.
   apply incl_refl.
+Qed.
+
+Lemma PTree_combine_ids_defs_match_incl_ids: 
+  forall {A B C} t1 t2 (f:option A -> option B -> option C) ids l,
+    f None None = None ->
+    PTree_combine_ids_defs_match t1 t2 f ids l ->
+    incl ids (map fst (PTree.elements (PTree.combine f t1 t2))).
+Proof.
+  intros A B C t1 t2 f ids l FN MATCH.
+  red. intros a IN.
+  apply in_map_iff.
+  assert (exists e, (PTree.combine f t1 t2)! a = Some e) as CE.
+  { rewrite PTree.gcombine.
+    eapply PTree_combine_ids_defs_match_inv1 in MATCH; eauto.
+    destruct MATCH as (e & IN' & EQ & LINK). eauto. 
+    auto. 
+  }
+  destruct CE as (e, CE).
+  apply PTree.elements_correct in CE.
+  exists (a,e). split; eauto.
 Qed.
 
 
@@ -577,18 +636,6 @@ Proof.
 Qed.
 
 
-Lemma Forall2_in_map: 
-  forall {A B} (l:list B) (a:B) (R: A -> B -> Prop) (f:B -> A),
-    In a l -> Forall2 R (map f l) l -> R (f a) a.
-Proof.
-  induction l as [|e l].
-  - intros a R f IN FA.
-    inv IN.
-  - intros a R f IN FA. cbn in *.
-    inv IN. subst.
-    + inv FA. auto.
-    + inv FA. apply IHl; auto.
-Qed.
   
 Lemma PTree_combine_ids_defs_match_incl : 
   forall {A B C} (t1:PTree.t A) (t2:PTree.t B) f (l1 l2: list (ident * C)),
