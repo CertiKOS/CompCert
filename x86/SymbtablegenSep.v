@@ -2353,15 +2353,6 @@ Proof.
   eapply acc_symb_pres_ids; eauto. 
 Qed.
 
-Lemma gen_symb_table_pres_link_check: 
-  forall did cid p1 p2 stbl1 dsz1 csz1 stbl2 dsz2 csz2 stbl2',
-    PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
-    gen_symb_table did cid (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
-    gen_symb_table did cid (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
-    reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
-    PTree_Properties.for_all (symbtable_to_tree stbl1) 
-                             (link_symbtable_check (symbtable_to_tree stbl2')) = true.
-Admitted.
 
   
 Lemma reloc_symbtable_cons: forall f e e' stbl1 stbl2,
@@ -2450,7 +2441,7 @@ Proof.
   - cbn. rewrite IHt. cbn. auto.
 Qed.
 
-Lemma reloc_symbtable_rev : forall f stbl1 stbl2,
+Lemma reloc_symbtable_rev_inv : forall f stbl1 stbl2,
     reloc_symbtable f (rev stbl1) = Some stbl2 ->
     exists stbl3, reloc_symbtable f stbl1 = Some stbl3 /\ stbl2 = rev stbl3.
 Proof.
@@ -2811,6 +2802,97 @@ Proof.
       eapply IHdefs; eauto.
       eapply PTree_Properties_of_list_tail_none; eauto.
 Qed.
+
+
+Lemma acc_symb_tree_entry_some_inv:
+  forall (did cid : N) (defs : list (ident * option (globdef fundef unit)))
+    (dsz1 csz1 dsz2 csz2 : Z) (stbl : symbtable) (id : positive) e,
+  list_norepet (map fst defs) ->
+  fold_left (acc_symb did cid) defs ([], dsz1, csz1) = (stbl, dsz2, csz2) ->
+  (symbtable_to_tree (rev stbl)) ! id = Some e ->
+  exists def, (PTree_Properties.of_list defs) ! id = Some def.
+Proof.
+  induction defs as [|def defs].
+  - cbn. intros until e.
+    intros NORPT EQ ST. inv EQ. cbn in ST.
+    rewrite PTree.gempty in ST. congruence.
+  - intros until e.
+    intros NORPT ACC ST. inv NORPT.
+    cbn in ACC. destruct def as (id', def).
+    destr_in ACC.
+    apply acc_symb_inv' in ACC.
+    destruct ACC as (stbl1 & EQ & ACC). subst.
+    rewrite rev_app_distr in ST. cbn [rev "++"] in ST.
+    destruct (ident_eq id id').
+    + subst.
+      eapply PTree_Properties.of_list_dom; eauto.
+      cbn. auto.
+    + erewrite symbtable_to_tree_tail in ST; eauto.
+      generalize (IHdefs _ _ _ _ _ _ _ H2 ACC ST).
+      intros (def1 & GET1).
+      rewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+
+Lemma gen_symb_table_pres_link_check: 
+  forall p1 p2 stbl1 dsz1 csz1 stbl2 dsz2 csz2 stbl2',
+    PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
+    gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2) = (stbl2, dsz2, csz2) ->
+    reloc_symbtable (reloc_offset_fun dsz1 csz1) stbl2 = Some stbl2' ->
+    PTree_Properties.for_all (symbtable_to_tree stbl1) 
+                             (link_symbtable_check (symbtable_to_tree stbl2')) = true.
+Proof.
+  intros until stbl2'.
+  intros FALL NORPT1 NORPT2 GST1 GST2 RS.
+  rewrite PTree_Properties.for_all_correct.
+  rewrite PTree_Properties.for_all_correct in FALL.
+  intros x a GET.
+  unfold gen_symb_table in GST1.
+  destr_in GST1. destruct p.
+  apply acc_symb_inv' in Heqp.
+  destruct Heqp as (s1 & EQ & ACC1). subst.
+  rewrite rev_app_distr in GST1. cbn in GST1. inv GST1.
+  unfold gen_symb_table in GST2.
+  destr_in GST2. destruct p.
+  apply acc_symb_inv' in Heqp.
+  destruct Heqp as (s2 & EQ & ACC2). subst.
+  rewrite rev_app_distr in GST2. cbn in GST2. inv GST2.
+  rewrite symbtable_to_tree_ignore_dummy in GET.
+  apply reloc_symbtable_cons_inv in RS.
+  destruct RS as (e & s3 & RS & RE & EQ). subst.
+  cbn in RE. inv RE. 
+  rewrite symbtable_to_tree_ignore_dummy.
+  generalize (acc_symb_reloc (AST.prog_defs p2) _ _ _ _ eq_refl ACC2 RS).
+  rewrite Z.add_0_r.  rewrite Z.add_0_r.
+  intros ACC2'.
+  unfold link_symbtable_check.
+  destr; auto.
+  generalize (acc_symb_tree_entry_some_inv _ _ _ _ _ _ NORPT1 ACC1 GET).
+  intros (def1 & GET1).
+  rewrite <- (rev_involutive s3) in Heqo.
+  generalize (acc_symb_tree_entry_some_inv _ _ _ _ _ _ NORPT2 ACC2' Heqo).
+  intros (def2 & GET2).
+
+  erewrite (acc_symb_tree_entry_some _ _ (AST.prog_defs p1)) in GET; eauto.
+  cbn in GET. inv GET.
+  erewrite (acc_symb_tree_entry_some _ _ (AST.prog_defs p2)) in Heqo; eauto.
+  inv Heqo.
+
+  generalize (FALL _ _ GET1). intros CHK.
+  unfold link_prog_check in CHK. 
+  setoid_rewrite GET2 in CHK.
+  rewrite andb_true_iff in CHK. destruct CHK as [_ CHK].
+  destr_in CHK.
+  destruct (is_def_internal is_fundef_internal def1) eqn:INT1.
+  destruct (is_def_internal is_fundef_internal def2) eqn:INT2.
+  - setoid_rewrite link_int_defs_none in Heqo; auto. congruence.
+  - erewrite link_get_symbentry_comm2; eauto.
+  - erewrite link_get_symbentry_comm1; eauto.
+Qed.
+
 
 Definition def_none_or_ext {F V} (fi:F -> bool) (def: option (option (globdef F V))) :=
   def = None \/ 
@@ -3849,7 +3931,7 @@ Proof.
   destruct Heqp as (stbl3 & EQ3 & ACCSYM3). subst.
   repeat rewrite rev_app_distr in *; cbn[rev "++"] in *.
   repeat rewrite symbtable_to_tree_ignore_dummy in *.
-  apply reloc_symbtable_rev in RELOC.
+  apply reloc_symbtable_rev_inv in RELOC.
   destruct RELOC as (stbl2' & RELOC & EQ). subst.
   rewrite rev_involutive in ACCSYM2'.  
 
