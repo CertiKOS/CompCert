@@ -26,6 +26,11 @@ Local Transparent Linker_vardef.
 Local Transparent Linker_varinit.
 Local Transparent Linker_prog_ordered.
 
+Lemma not_in_app: forall {A} a (l1 l2: list A),
+    ~In a (l1 ++ l2) <-> ~In a l1 /\ ~ In a l2.
+Proof.
+  intros. rewrite in_app_iff. split; tauto.
+Qed.
 
 Lemma in_map_filter: forall {A B} x (f: A -> B) g (l:list A),
     In x (map f (filter g l)) -> In x (map f l).
@@ -34,6 +39,28 @@ Proof.
   - cbn. auto.
   - cbn. destr. cbn. tauto.
 Qed.
+
+
+Lemma PTree_elements_eq: forall {A B} (t1: PTree.t A) (t2: PTree.t B),
+    (forall i x, t1!i = Some x -> exists y, t2!i = Some y) ->
+    (forall i x, t2!i = Some x -> exists y, t1!i = Some y) ->
+    map fst (PTree.elements t1) = map fst (PTree.elements t2).
+Proof.
+  intros A B t1 t2 GE1 GE2.
+  assert (forall i x, t1 ! i = Some x -> exists y, t2 ! i = Some y /\ True) as GE1'.
+  { intuition. apply GE1 in H. destruct H; eauto. }
+  assert (forall i x, t2 ! i = Some x -> exists y, t1 ! i = Some y /\ True) as GE2'.
+  { intuition. apply GE2 in H. destruct H; eauto. }
+  generalize (PTree.elements_canonical_order _ _ _ GE1' GE2').
+  intros ALL.
+  apply list_forall2_ind with 
+      (l:= PTree.elements t1) (l0:= PTree.elements t2)
+      (P:=fun e1 e2 => fst e1 = fst e2 /\ True); auto.
+  intros a1 al b1 bl (FL & T) ALL' EQ.
+  cbn. rewrite FL. f_equal.
+  eauto.
+Qed.
+
 
 Lemma elements_of_acc_symb_to_list_perm': forall idstbl,
     list_norepet (map fst idstbl) ->
@@ -4090,7 +4117,103 @@ Proof.
 Qed.
 
 
+Lemma PTree_extract_elements_remain_keys_eq_link: 
+  forall did cid defs1 defs2 dsz1 csz1 dsz1' csz1'
+    dsz2 csz2 dsz2' csz2' stbl1 stbl2 t1 t2 entries1 entries2 ids,
+    (forall x d1 d2, (PTree_Properties.of_list defs1)!x = Some d1 ->
+                (PTree_Properties.of_list defs2)!x = Some d2 ->
+                exists d, link d1 d2 = Some d) ->
+    list_norepet (map fst defs1) ->
+    list_norepet (map fst defs2) ->
+    fold_left (acc_symb did cid) defs1 ([], dsz1, csz1) = (stbl1, dsz1', csz1') ->
+    fold_left (acc_symb did cid) defs2 ([], dsz2, csz2) = (stbl2, dsz2', csz2') ->
+    ids = map fst (filter_internal_defs is_fundef_internal defs1) ++
+              map fst (filter_internal_defs is_fundef_internal defs2) ->
+    PTree_extract_elements ids
+                           (PTree.combine link_prog_merge 
+                                          (PTree_Properties.of_list defs1)
+                                          (PTree_Properties.of_list defs2)) = Some (entries1, t1) ->
+    PTree_extract_elements ids
+                           (PTree.combine link_symb_merge 
+                                          (symbtable_to_tree (rev stbl1))
+                                          (symbtable_to_tree (rev stbl2))) = Some (entries2, t2) ->
+    map fst (PTree.elements t1) = map fst (PTree.elements t2).
+Proof.
+  intros until ids.
+  intros CHECK NORPT1 NORPT2 ACC1 ACC2 IDS EXT1 EXT2. subst.
+  eapply PTree_extract_elements_remain in EXT1.
+  eapply PTree_extract_elements_remain in EXT2.
+  subst.
+  apply PTree_elements_eq.
+  - intros i x FL.
+    generalize (PTree_remove_ids_not_in _ _ _ _ FL).
+    intros NIN.
+    rewrite PTree_get_remove_not_in_eq; eauto.
+    apply PTree_get_remove_not_in in FL.
+    rewrite PTree.gcombine in FL; auto.
+    rewrite PTree.gcombine; auto.
+    rewrite not_in_app in NIN.
+    unfold collect_internal_def_ids in NIN.
+    destruct NIN as (NIN1 & NIN2).
+    generalize (filter_internal_defs_none_ext _ _ NORPT1 NIN1). 
+    intros DN1.
+    generalize (filter_internal_defs_none_ext _ _ NORPT2 NIN2). 
+    intros DN2.
+    erewrite link_prog_symb_comm_external with
+        (t1:=PTree_Properties.of_list defs1)
+        (t2:=PTree_Properties.of_list defs2)
+        (defs1:= defs1)
+        (defs2:= defs2) 
+        (dsz3:= 0) (csz3:=0); eauto.
+  - intros i x FL.
+    generalize (PTree_remove_ids_not_in _ _ _ _ FL).
+    intros NIN.
+    rewrite PTree_get_remove_not_in_eq; eauto.
+    apply PTree_get_remove_not_in in FL.
+    rewrite PTree.gcombine in FL; auto.
+    rewrite PTree.gcombine; auto.
+    rewrite not_in_app in NIN.
+    unfold collect_internal_def_ids in NIN.
+    destruct NIN as (NIN1 & NIN2).
+    generalize (filter_internal_defs_none_ext _ _ NORPT1 NIN1). 
+    intros DN1.
+    generalize (filter_internal_defs_none_ext _ _ NORPT2 NIN2). 
+    intros DN2.
+    red in DN1.
+    destruct DN1 as [DNN1 | (def1 & DNS1 & EX1)];
+    destruct DN2 as [DNN2 | (def2 & DNS2 & EX2)].
+    + erewrite acc_symb_tree_entry_none in FL; eauto.
+      erewrite acc_symb_tree_entry_none in FL; eauto.
+      cbn in FL. congruence.
+    + setoid_rewrite DNN1.
+      setoid_rewrite DNS2. eauto.
+    + setoid_rewrite DNS1.
+      setoid_rewrite DNN2.
+      setoid_rewrite link_prog_merge_symm; auto. cbn. eauto.
+    + setoid_rewrite DNS1.
+      setoid_rewrite DNS2. cbn.
+      eapply CHECK; eauto.
+Qed.
+
+
+Lemma link_prog_check_link_exists: 
+  forall {F V} {LF: Linker F} {LV: Linker V} (p1 p2: AST.program F V),
+  PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
+  (forall x d1 d2, (prog_option_defmap p1)!x = Some d1 ->
+              (prog_option_defmap p2)!x = Some d2 ->
+              exists d, link d1 d2 = Some d).
+Proof.
+  intros F V LF LV p1 p2 CHECK x d1 d2 GE1 GE2.
+  rewrite PTree_Properties.for_all_correct in CHECK.
+  apply CHECK in GE1.
+  unfold link_prog_check in GE1. 
+  rewrite GE2 in GE1. destr_in GE1; eauto.
+  rewrite andb_true_iff in GE1. destruct GE1; congruence.
+Qed.
+
+
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
+    PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
     list_norepet (map fst (AST.prog_defs p1)) ->
     list_norepet (map fst (AST.prog_defs p2)) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
@@ -4115,7 +4238,7 @@ Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 st
       stbl3 = dummy_symbentry :: map snd (PTree.elements t2 ++ entries).
 Proof.
   intros until defs3.
-  intros NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
+  intros CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
   generalize (PTree_extract_elements_app _ _ _ _ _ EXT).
   intros (t1' & defs1 & defs2 & EXT2 & EXT1 & EQ). subst.
   generalize (PTree_extract_elements_range_norepet _ _ _ _ EXT1).
@@ -4188,8 +4311,8 @@ Proof.
   (** Compute the sizes for external definitions *)
   generalize (combine_defs_none_or_ext RM_DEFS1 RM_DEFS2 RM_MATCH).
   intros RMEXT.
-  erewrite ext_defs_code_size in Z.
-  erewrite ext_defs_data_size in Z0. 
+  erewrite ext_defs_code_size in Z; auto.
+  erewrite ext_defs_data_size in Z0; auto.
   subst z0 z. cbn in Z1, Z2.
                             
   (** Matching between remaining ids and external symbols*)
@@ -4385,11 +4508,15 @@ Proof.
   { eapply PTree_combine_ids_defs_match_app; eauto. }
   
   assert (map fst (PTree.elements t1) = map fst (PTree.elements t2)) as IDEQ.
-  { admit. }
+  { eapply PTree_extract_elements_remain_keys_eq_link
+      with (defs1 := AST.prog_defs p1)
+           (defs2 := AST.prog_defs p2); eauto.
+    generalize (link_prog_check_link_exists _ _ CHECK).
+    intros CH. exact CH.
+  }
   rewrite <- IDEQ in MATCH6.
   eapply PTree_combine_ids_defs_match_det; eauto.
-  
-Admitted.
+Qed.
 
 
 Lemma add_symb_to_list_id_eq: forall stbl id s,
@@ -4463,6 +4590,7 @@ Proof.
 Qed.
 
 Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
+    PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
     list_norepet (map fst (AST.prog_defs p1)) ->
     list_norepet (map fst (AST.prog_defs p2)) ->
     gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1) = (stbl1, dsz1, csz1) ->
@@ -4486,8 +4614,8 @@ Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1
                                          (symbtable_to_tree stbl2')))) stbl3.
 Proof.
   intros until defs3.
-  intros NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
-  generalize (link_ordered_gen_symb_comm_eq_size _ _ NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3). 
+  intros CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
+  generalize (link_ordered_gen_symb_comm_eq_size _ _ CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3). 
   intros (DSZ & CSZ & (entries & t2 & EXT' & STBL)). subst.
   split; auto.
   split; auto.
@@ -4563,7 +4691,7 @@ Proof.
     destruct (gen_symb_table a b c) as (p, csz3) eqn:GST
   end.
   destruct p as (stbl3 & dsz3). 
-  generalize (link_ordered_gen_symb_comm_syneq_size _ _ NORPT1' NORPT2' GS1 GS2 RELOC Heqo GST); eauto.
+  generalize (link_ordered_gen_symb_comm_syneq_size _ _ CHK NORPT1' NORPT2' GS1 GS2 RELOC Heqo GST); eauto.
   intros (DSZ & CSZ & SYNEQ). subst.
   do 3 eexists. 
   intuition; eauto.
