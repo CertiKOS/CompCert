@@ -1117,6 +1117,28 @@ Lemma link_acc_instrs_comm : forall p1 p2 p,
     fold_right acc_instrs [] (AST.prog_defs p) =
     (fold_right acc_instrs [] (AST.prog_defs p1)) ++ (fold_right acc_instrs [] (AST.prog_defs p2)).
 Proof.
+  intros p1 p2 p LINK.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK. destr_in LINK. destruct p0. inv LINK.
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as [[[MAINIDEQ NORPT1] NORPT2] CHK].
+  apply proj_sumbool_true in MAINIDEQ.
+  apply proj_sumbool_true in NORPT1.
+  apply proj_sumbool_true in NORPT2.
+  cbn.
+  generalize (PTree_extract_elements_combine_match 
+                _ _ _ _ _ _ 
+                link_prog_merge_none
+                Heqo).
+  intros MATCH.
+  apply PTree_combine_ids_defs_match_app_inv in MATCH.
+  destruct MATCH as (defs1 & defs2 & EQ & MATCH1 & MATCH2). subst.
+  generalize (PTree_extract_elements_combine_remain_match
+                _ _ _ _ _ _
+                link_prog_merge_none
+                Heqo).
+  intros MATCH3.
+  
 Admitted.
 
 

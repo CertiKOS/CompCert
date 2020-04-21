@@ -507,3 +507,9 @@ Proof.
   rewrite GE2 in GE1. destr_in GE1; eauto.
   rewrite andb_true_iff in GE1. destruct GE1; congruence.
 Qed.
+
+Lemma link_prog_merge_none: forall {F V} {LF: Linker F} {LV: Linker V},
+  @link_prog_merge F V LF LV None None = None.
+Proof.
+  intros. cbn. auto.
+Qed.

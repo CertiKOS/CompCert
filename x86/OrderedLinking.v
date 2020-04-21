@@ -693,6 +693,29 @@ Proof.
     eapply IHids1; eauto.
 Qed.
 
+Lemma PTree_combine_ids_defs_match_app_inv: 
+  forall {A B C} (t1: PTree.t A) (t2: PTree.t B) 
+    (f:option A -> option B -> option C) ids1 ids2 defs,
+    PTree_combine_ids_defs_match t1 t2 f (ids1 ++ ids2) defs ->
+    exists defs1 defs2,
+      defs = defs1 ++ defs2 /\ 
+      PTree_combine_ids_defs_match t1 t2 f ids1 defs1 /\
+      PTree_combine_ids_defs_match t1 t2 f ids2 defs2.
+Proof.
+  induction ids1 as [|id1 ids1].
+  - cbn. intros ids2 defs MATCH.
+    exists nil, defs. split; auto. split; auto.
+    red. apply Forall2_nil.
+  - cbn. intros ids2 defs MATCH.
+    inv MATCH. destruct y. destruct H1; subst.
+    apply IHids1 in H3. 
+    destruct H3 as (defs1 & defs2 & EQ & MATCH1 & MATCH2). subst.
+    eexists ((p, c) :: defs1), defs2.
+    split; auto. split; auto.
+    apply Forall2_cons; auto.
+Qed.
+
+
 Lemma PTree_combine_ids_defs_match_symm: 
   forall {A B} (t1 t2: PTree.t A) (f: option A -> option A -> option B) ids entries,
     (forall a b, f a b = f b a) ->
