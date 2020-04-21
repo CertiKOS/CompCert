@@ -2364,8 +2364,17 @@ Lemma gen_symb_table_pres_link_check:
 Admitted.
 
   
+Lemma reloc_symbtable_cons: forall f e e' stbl1 stbl2,
+    reloc_symbtable f stbl1 = Some stbl2 ->
+    reloc_symbol f e = Some e' ->
+    reloc_symbtable f (e :: stbl1) = Some (e' :: stbl2).
+Proof.
+  intros. cbn.
+  unfold reloc_iter. 
+  setoid_rewrite H. rewrite H0. auto.
+Qed.
   
-Lemma reloc_symbtable_cons: forall f e stbl1 stbl2,
+Lemma reloc_symbtable_cons_inv: forall f e stbl1 stbl2,
     reloc_symbtable f (e :: stbl1) = Some stbl2 ->
     exists e' stbl3, reloc_symbtable f stbl1 = Some stbl3 /\
                 reloc_symbol f e = Some e' /\
@@ -2376,6 +2385,44 @@ Proof.
   destr_in RELOC. destr_in RELOC. inv RELOC.
   eauto.
 Qed.
+
+Lemma reloc_symbtable_app: forall l1 l2 l1' l2' f, 
+    reloc_symbtable f l1 = Some l1' ->
+    reloc_symbtable f l2 = Some l2' ->
+    reloc_symbtable f (l1 ++ l2) = Some (l1' ++ l2').
+Proof.
+  induction l1 as [|e1 l1].
+  - cbn. intros l2 l1' l2' f RELOC1 RELOC2.
+    inv RELOC1. cbn.
+    setoid_rewrite RELOC2. auto.
+  - intros l2 l1' l2' f RELOC1 RELOC2.
+    apply reloc_symbtable_cons_inv in RELOC1.
+    destruct RELOC1 as (e' & l3 & RELOC1 &  RE & EQ). subst.
+    cbn ["++"].
+    apply reloc_symbtable_cons; auto.
+Qed.
+
+Lemma reloc_symbtable_app_inv: forall l1 l2 l3 f, 
+    reloc_symbtable f (l1 ++ l2) = Some l3 ->
+    exists l1' l2', l3 = l1' ++ l2' /\
+               reloc_symbtable f l1 = Some l1' /\
+               reloc_symbtable f l2 = Some l2'.
+Proof.
+  induction l1 as [|e1 l1].
+  - cbn. intros l2 l3 f FR.
+    exists nil, l3. split; auto.
+  - cbn. intros l2 l3 f FR.
+    unfold reloc_iter in FR.
+    destr_in FR. destr_in FR. inv FR.
+    apply IHl1 in Heqo.
+    destruct Heqo as (l1' & l2' & EQ & RELOC1 & RELOC2). subst.
+    exists (s::l1'), l2'. split; cbn; auto.
+    split; auto.
+    unfold reloc_iter. 
+    setoid_rewrite RELOC1. rewrite Heqo0.
+    auto.
+Qed.
+
 
 
 Lemma reloc_iter_some_inv: forall f t1 t2 t3,
@@ -3749,22 +3796,6 @@ Proof.
 Qed.
 
 
-Lemma link_prog_check_link_exists: 
-  forall {F V} {LF: Linker F} {LV: Linker V} (p1 p2: AST.program F V),
-  PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
-  (forall x d1 d2, (prog_option_defmap p1)!x = Some d1 ->
-              (prog_option_defmap p2)!x = Some d2 ->
-              exists d, link d1 d2 = Some d).
-Proof.
-  intros F V LF LV p1 p2 CHECK x d1 d2 GE1 GE2.
-  rewrite PTree_Properties.for_all_correct in CHECK.
-  apply CHECK in GE1.
-  unfold link_prog_check in GE1. 
-  rewrite GE2 in GE1. destr_in GE1; eauto.
-  rewrite andb_true_iff in GE1. destruct GE1; congruence.
-Qed.
-
-
 Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t1 defs3,
     PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
     list_norepet (map fst (AST.prog_defs p1)) ->
@@ -3808,7 +3839,7 @@ Proof.
   destruct Heqp0 as (stbl2 & EQ2 & ACCSYM2). subst.
   rewrite rev_app_distr in RELOC. 
   cbn [rev "++"] in RELOC. 
-  apply reloc_symbtable_cons in RELOC.
+  apply reloc_symbtable_cons_inv in RELOC.
   destruct RELOC as (e' & stbl4 & RELOC & RSYMB & EQ). subst.
   cbn in RSYMB. inv RSYMB.
   generalize (acc_symb_reloc _ _ _ _ _ eq_refl ACCSYM2 RELOC).
@@ -4187,7 +4218,7 @@ Proof.
   - intros stbl' RELOC.
     cbn in RELOC. inv RELOC. cbn. auto.
   - intros stbl' RELOC.
-    apply reloc_symbtable_cons in RELOC.
+    apply reloc_symbtable_cons_inv in RELOC.
     destruct RELOC as (e' & stbl'' & RELOC & RS & EQ).
     subst.
     cbn.
@@ -4269,26 +4300,38 @@ Lemma link_ordered_pres_wf_prog: forall p1 p2 p,
     wf_prog p.
 Admitted.
 
-Lemma reloc_symbtable_pres_syneq : forall f tbl1' tbl1 tbl2 ,
+Lemma reloc_symbtable_pres_syneq : forall f tbl1 tbl1' tbl2 ,
     reloc_symbtable f tbl1 = Some tbl2 ->
     symbtable_syneq tbl1 tbl1' ->
     exists tbl2', reloc_symbtable f tbl1' = Some tbl2' /\
              symbtable_syneq tbl2 tbl2'.
 Proof.
-  induction tbl1' as [|e' tbl1'].
-  - cbn. intros tbl1 tbl2 RS SEQ.
-    unfold symbtable_syneq in SEQ.
-    cbn in SEQ. 
-    apply Permutation_sym in SEQ.
-    apply Permutation_nil in SEQ.
-    exists nil; split; auto.
-    admit.
-  - intros tbl1 tbl2 RS SEQ.
-    red in SEQ. 
-Admitted.
-    
+  induction tbl1 as [|e tbl1].
+  - cbn. intros tbl' tbl2 RELOC SEQ.
+    inv RELOC.
+    red in SEQ.
+    apply Permutation_nil in SEQ. subst.
+    exists nil. split; eauto.
+    apply perm_nil.
+  - intros tbl1' tbl2 RELOC SEQ.
+    apply reloc_symbtable_cons_inv in RELOC.
+    destruct RELOC as (e' & stbl3 & RELOC & RE & EQ). subst.
+    red in SEQ.
+    generalize (Permutation_in _ SEQ (in_eq e tbl1)).
+    intros IN.
+    apply in_split in IN.
+    destruct IN as (l1 & l2 & EQ). subst.
+    apply Permutation_cons_app_inv in SEQ.
+    generalize (IHtbl1 _ _ RELOC SEQ).
+    intros (tbl2' & RELOC' & SEQ').
+    apply reloc_symbtable_app_inv in RELOC'.
+    destruct RELOC' as (l1' & l2' & EQ & RELOC1 & RELOC2). subst.
+    exists (l1' ++ e' :: l2'). split.
+    apply reloc_symbtable_app; auto.
+    apply reloc_symbtable_cons; auto.
+    red. apply Permutation_cons_app; auto.
+Qed.
 
-    
 
 Lemma link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
     link_symbtable stbl1 stbl2 = Some stbl ->
@@ -4297,7 +4340,9 @@ Lemma link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
     exists stbl', 
       link_symbtable stbl1' stbl2' = Some stbl' /\
       symbtable_syneq stbl stbl'.
+Proof.
 Admitted.
+
 
 (** ** Main linking theorem *)
 Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),

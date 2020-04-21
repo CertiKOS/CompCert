@@ -274,87 +274,6 @@ Proof.
 Defined.
 
 
-(** Properties *)
-Local Transparent Linker_def.
-Local Transparent Linker_fundef.
-Local Transparent Linker_vardef.
-Local Transparent Linker_unit.
-Local Transparent Linker_varinit.
-
-Lemma link_unit_symm: forall (i1 i2:unit) , link i1 i2 = link i2 i1.
-Proof.
-  intros. cbn. auto.
-Qed.
-
-Lemma link_fundef_symm: forall {F} (def1 def2: (AST.fundef F)),
-    link_fundef def1 def2 = link_fundef def2 def1.
-Proof.
-  intros. destruct def1, def2; auto.
-  cbn. 
-  destruct external_function_eq; destruct external_function_eq; subst; congruence.
-Qed.
-
-Lemma link_varinit_symm: forall i1 i2,
-    link_varinit i1 i2 = link_varinit i2 i1.
-Proof.
-  intros. unfold link_varinit.
-  destruct (classify_init i1), (classify_init i2); cbn; try congruence.
-  destruct zeq; destruct zeq; subst; cbn in *; try congruence.
-Qed.
-
-Lemma link_vardef_symm: 
-  forall {V} {LV: Linker V}
-    (LinkVSymm: forall (i1 i2: V), link i1 i2 = link i2 i1)
-    (v1 v2: globvar V),
-    link_vardef v1 v2 = link_vardef v2 v1.
-Proof.
-  intros. destruct v1,v2; cbn.
-  unfold link_vardef; cbn.
-  rewrite LinkVSymm.
-  destruct (link gvar_info0 gvar_info); try congruence.
-  rewrite link_varinit_symm. 
-  destruct (link_varinit gvar_init0 gvar_init); try congruence.
-  destruct gvar_readonly, gvar_readonly0, gvar_volatile, gvar_volatile0; 
-    cbn; try congruence.
-Qed.
-
-Lemma link_def_symm: forall {F V} {LV: Linker V}
-                       (LinkVSymm: forall (i1 i2: V), link i1 i2 = link i2 i1)
-                          (def1 def2: (globdef (AST.fundef F) V)),
-    link_def def1 def2 = link_def def2 def1.
-Proof.
-  intros.
-  destruct def1, def2; auto.
-  - cbn. 
-    rewrite link_fundef_symm. auto.
-  - cbn.
-    rewrite link_vardef_symm. auto. auto.
-Qed.
-
-Lemma link_option_symm: forall {F V} {LV: Linker V} 
-                          (LinkVSymm: forall (i1 i2: V), link i1 i2 = link i2 i1)
-                          (def1 def2: option (globdef (AST.fundef F) V)),
-    link_option def1 def2 = link_option def2 def1.
-Proof.
-  intros.
-  unfold link_option. destruct def1, def2; auto.
-  cbn.
-  erewrite link_def_symm; eauto.
-Qed.
-
-
-Lemma link_prog_merge_symm: 
-  forall {F V} {LV: Linker V} 
-    (LinkVSymm: forall (i1 i2: V), link i1 i2 = link i2 i1)
-    (a b:option (option (globdef (AST.fundef F) V))), 
-    link_prog_merge a b = link_prog_merge b a.
-Proof.
-  intros. unfold link_prog_merge.
-  destruct a, b; auto.
-  apply link_option_symm. auto.
-Qed.
-
-
 Lemma link_symbtype_symm: forall t1 t2,
     link_symbtype t1 t2 = link_symbtype t2 t1.
 Proof.
@@ -386,5 +305,3 @@ Proof.
   destruct a; destruct b; auto.
   apply link_symb_symm.
 Qed.
-
-
