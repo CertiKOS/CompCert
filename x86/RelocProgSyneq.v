@@ -11,8 +11,8 @@ Require Import RelocProgram.
 Require Import Permutation.
 
 Definition symbtable_syneq (s1 s2: symbtable) : Prop :=
-  Permutation (PTree.elements (symbtable_to_tree s1))
-              (PTree.elements (symbtable_to_tree s2)).
+  Permutation s1 s2.
+               
 
 Lemma symbtable_syneq_refl: forall t,
     symbtable_syneq t t.
@@ -57,7 +57,6 @@ Proof.
   intros. 
   split. apply Permutation_refl.
   intuition.
-  apply symbtable_syneq_refl.
 Qed.
 
 Lemma reloc_prog_syneq_symm: forall t1 t2,
@@ -66,7 +65,6 @@ Proof.
   unfold reloc_prog_syneq.
   intros. 
   intuition.
-  apply symbtable_syneq_symm; auto.
 Qed.
 
 Lemma reloc_prog_syneq_trans: forall t1 t2 t3,

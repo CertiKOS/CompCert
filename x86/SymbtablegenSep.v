@@ -4168,37 +4168,14 @@ Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1
 Proof.
   intros until defs3.
   intros CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
-  generalize (link_ordered_gen_symb_comm_eq_size _ _ CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3). 
+  generalize (link_ordered_gen_symb_comm_eq_size _ _ CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3).
   intros (DSZ & CSZ & (entries & t2 & EXT' & STBL)). subst.
   split; auto.
   split; auto.
   red.
+  apply perm_skip.
   apply PTree_extract_elements_permutation' in EXT'.
-  repeat rewrite symbtable_to_tree_ignore_dummy.  
-  eapply Permutation_trans.
-  Focus 2.
-  apply Permutation_sym.
-  apply elements_of_symbtable_to_tree_perm.
-    (** No repeat *)
-    eapply Permutation_list_norepet_map; eauto.
-    apply PTree.elements_keys_norepet.
-    (** symbentry_id_eq *)
-    rewrite Forall_forall. 
-    intros (id,e) IN.
-    apply Permutation_sym in EXT'.
-    generalize (Permutation_in _ EXT' IN).
-    intros IN'.
-    eapply link_symb_elements_entry_id_eq; eauto.
-
-  eapply Permutation_trans. 
-  2: exact EXT'.
-  apply elements_of_symbtable_to_tree_perm.
-    (** No repeat *)
-    apply PTree.elements_keys_norepet.
-    (** symbentry_id_eq *)
-    rewrite Forall_forall.
-    intros (id, e) IN.
-    eapply link_symb_elements_entry_id_eq; eauto.
+  apply Permutation_map; auto.
 Qed.
 
 
