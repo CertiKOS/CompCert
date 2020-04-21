@@ -1430,7 +1430,7 @@ Axiom loadv_int64_split:
   /\ loadv  Mint32 m (Val.add a (Vint (Int.repr 4))) = Some (if Archi.big_endian then v2 else v1)
   /\ Val.lessdef v (Val.longofwords v1 v2).
 
-(* Properties of [loadbytes] *)
+(* Properties of [storebytes] *)
 
 Axiom storebytes_get_frame_info:
    forall m1 b o v m2, 
@@ -1517,12 +1517,12 @@ Axiom free_top_tframe_no_perm':
 
 (** Pointer integrity properties *)
 
-Axiom store_same_ptr:
+(* Axiom store_same_ptr:
   forall m1 b o v m2,
   v <> Vundef ->
   Val.has_type v Tptr ->
   loadbytes m1 b o (size_chunk Mptr) = Some (encode_val Mptr v) ->
-  store Mptr m1 b o v = Some m2 -> m1 = m2.
+  store Mptr m1 b o v = Some m2 -> m1 = m2. *)
 
 (** [store] is insensitive to the signedness or the high bits of
   small integer quantities. *)
@@ -1535,11 +1535,6 @@ Axiom storev_int64_split:
   /\ storev Mint32 m1 (Val.add a (Vint (Int.repr 4))) (if Archi.big_endian then Val.loword v else Val.hiword v) = Some m'.
 
 (* Properties of [store] *)
-
-Axiom store_stack:
-  forall chunk m1 b1 ofs v1 n1,
-    store chunk m1 b1 ofs v1 = Some n1 ->
-    stack n1 = stack m1.
 
 Axiom store_get_frame_info:
   forall chunk m1 b o v m2,
@@ -1597,9 +1592,15 @@ Axiom loadbytes_alloc_same:
   loadbytes m2 b ofs n = Some bytes ->
   In byte bytes -> byte = Undef.
 
-(** Load-free properties *)
+(* Load-free properties *)
 
 Axiom loadbytes_free:
+  forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
+  forall b ofs n,
+  b <> bf \/ lo >= hi \/ ofs + n <= lo \/ hi <= ofs ->
+  loadbytes m2 b ofs n = loadbytes m1 b ofs n.
+
+Axiom loadbytes_free_2:
   forall m1 bf lo hi m2, free m1 bf lo hi = Some m2 ->
   forall b ofs n bytes,
   loadbytes m2 b ofs n = Some bytes -> loadbytes m1 b ofs n = Some bytes.
@@ -1612,14 +1613,10 @@ Axiom loadbytes_drop:
   b' <> b \/ ofs + n <= lo \/ hi <= ofs \/ perm_order p Readable ->
   loadbytes m' b' ofs n = loadbytes m b' ofs n.
 
-Axiom drop_perm_stack:
-  forall m1 b lo hi p m1',
-  drop_perm m1 b lo hi p = Some m1' ->
-  stack m1' = stack m1.
 
 (** Properties of [extends] *)
 
-Axiom extends_extends_compose:
+Axiom extends_extends_compos:
   forall m1 m2 m3,
   extends m1 m2 -> extends m2 m3 -> extends m1 m3.
 
@@ -2168,11 +2165,11 @@ Axiom inject_strong_unchanged_on:
 
 (* Original operations don't modify the stack. *)
 Axiom store_stack_unchanged:
-  forall m1 sp chunk o v m2,
-  store chunk m1 sp o v = Some m2 ->
-  stack m2 = stack m1.
+  forall chunk m1 b1 ofs v1 n1,
+    store chunk m1 b1 ofs v1 = Some n1 ->
+    stack n1 = stack m1.
 
-Axiom storev_stack :
+Axiom storev_stack_unchanged:
   forall m chunk addr v m',
     storev chunk m addr v = Some m' ->
     stack m' = stack m.
@@ -2193,7 +2190,7 @@ Axiom free_stack_unchanged:
   stack m2 = stack m1.
 
 Axiom freelist_stack_unchanged:
-  forall m bl m',
+  forall bl m m',
   free_list m bl = Some m' ->
   stack m' = stack m.
 

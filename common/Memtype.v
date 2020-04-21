@@ -683,6 +683,7 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   (v = Vptr v_b v_o /\ compat_pointer_chunks chunk chunk' /\ b' = b /\ ofs' = ofs)
   \/ (b' <> b \/ ofs' + size_chunk chunk' <= ofs \/ ofs + size_chunk chunk <= ofs');
 
+(*X*)
  store_same_ptr:
    forall m1 b o v m2,
      v <> Vundef ->
@@ -2217,7 +2218,7 @@ for [unchanged_on]. *)
      public_stack_access ( (stack m1)) b lo hi ->
      public_stack_access ( (stack m2)) b lo hi; *)
 
-(*X*)
+(*X is now in_stack_valid *)
  in_frames_valid:
    forall m b,
      in_stack ( (stack m)) b -> valid_block m b;
@@ -2352,7 +2353,7 @@ push_new_stage_nextblock: forall m, nextblock (push_new_stage m) = nextblock m;
    forall m,
      wf_stack (Mem.perm m) (Mem.stack m);
 
-(*X*)
+(*X stack perm*)
  agree_perms_mem:
   forall m,
     stack_agree_perms (Mem.perm m) (Mem.stack m);
@@ -2616,7 +2617,7 @@ Proof.
   decompose [ex and] H.
   eapply in_frames_valid. rewrite H2, in_stack_cons; auto.
 Qed.
-
+ 
 (*X*)
 Lemma get_frame_info_valid:
   forall m b f, get_frame_info (stack m) b = Some f -> valid_block m b.

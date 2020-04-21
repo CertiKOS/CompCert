@@ -55,6 +55,7 @@ Proof.
   destruct (zle lo o), (zlt o hi); intuition; try congruence; try omega.
 Qed.
 
+(*X*)
 Section FORALL.
 
   Variables P: Z -> Prop.
@@ -525,7 +526,7 @@ Qed.
   undefined cells.  Note that allocation never fails: we model an
   infinite memory. *)
 
-(*X became in_stack_valid*)
+(*X*)
 Lemma stack_valid:
   forall m b, in_stack (stack m) b -> Plt b (nextblock m).
 Proof.
@@ -1139,9 +1140,11 @@ Record unchanged_on' (P: block -> Z -> Prop) (m_before m_after: mem) : Prop := m
 
 Definition unchanged_on := unchanged_on'.
 
+(*X*)
 Definition valid_frame f m :=
   forall b, in_frame f b -> valid_block m b.
 
+(*X*)
 Definition valid_block_dec m b: { valid_block m b } + { ~ valid_block m b }.
 Proof.
   apply plt.
@@ -1154,6 +1157,7 @@ Proof.
   intro X; apply n. apply X; auto.
 Qed.
 
+(*X*)
 Definition valid_block_list_dec m l:  { forall b, In b l -> valid_block m b } + { ~ (forall b, In b l -> valid_block m b) }.
 Proof.
   induction l; simpl; intros.
@@ -1162,12 +1166,14 @@ Proof.
   left; intros; intuition subst; auto.
 Qed.
 
+(*X*)
 Definition valid_frame_dec f m: { valid_frame f m } + { ~ valid_frame f m }.
 Proof.
   unfold valid_frame; simpl; auto.
   apply valid_block_list_dec.
 Qed.
 
+(*X*)
 Definition sumbool_not {A} (x: {A} + {~A}): {~A} + {~ (~A)}.
 Proof.
   destruct x. right; intro NA. apply NA. apply a.
@@ -1208,6 +1214,7 @@ Proof.
   destruct (zeq z2 z); [left; omega |right; intros (A & B); omega].
 Qed.
 
+(*X*)
 Definition prepend_to_current_stage a (l: StackADT.stack) : option StackADT.stack :=
   match l with
   | (None,b)::r => Some ((Some a,b)::r)
@@ -1286,6 +1293,7 @@ Proof.
   intros; intro IS; eapply F; eauto.
 Qed.
 
+(*X*)
 Definition mem_stack_wf_plus f m s':
   prepend_to_current_stage f (stack m) = Some s' ->
   wf_stack (perm m) s' .
@@ -1296,6 +1304,7 @@ Proof.
   constructor; eauto.
 Qed.
 
+(*X*)
 Lemma mem_stack_inv_plus f m s':
   valid_frame f m ->
   (* (forall b, in_frame f b -> Plt b (nextblock m)) -> *)
@@ -1329,6 +1338,7 @@ Proof.
     right; eauto.
 Qed.
 
+(*X*)
 Definition frame_agree_perms_forall (P: block -> Z -> perm_kind -> permission -> Prop) f :=
   Forall (fun bfi =>
             let '(b,fi) := bfi in
@@ -1336,6 +1346,7 @@ Definition frame_agree_perms_forall (P: block -> Z -> perm_kind -> permission ->
               P b o k p -> 0 <= o < frame_size fi
          )(frame_adt_blocks f).
 
+(*X*)
 Lemma frame_agree_perms_rew:
   forall P f,
     frame_agree_perms P f <-> frame_agree_perms_forall P f.
@@ -1345,9 +1356,10 @@ Proof.
   - eapply H in H0; eapply H0; eauto.
 Qed.
 
-
+(*X*)
 Definition dec (P: Prop) := {P} + {~ P}.
 
+(*X*)
 Lemma dec_eq:
   forall (P Q: Prop) (EQ: P <-> Q), dec P -> dec Q.
 Proof.
@@ -1355,6 +1367,7 @@ Proof.
   destruct D; [left|right]; tauto.
 Qed.
 
+(*X*)
 Lemma dec_impl:
   forall (A: Type) (P Q R: A -> Prop)
     (IMPL: forall x, P x -> Q x)
@@ -1366,12 +1379,14 @@ Proof.
   split; intros; eauto.
 Qed.
 
+(*X*)
 Definition zle_zlt_dec:
   forall (a b c: Z), {a <= b < c} + { ~ a <= b < c }.
 Proof.
   intros a b c; destruct (zle a b), (zlt b c);[left; omega|right; omega..].
 Qed.
 
+(*X*)
 Lemma perm_impl_prop_dec m b (P: Z -> Prop) (Pdec: forall o, dec (P o)):
   dec (forall o k p, perm m b o k p -> P o).
 Proof.
@@ -1403,6 +1418,7 @@ Proof.
       left; intuition.
 Defined.
 
+(*X*)
 Definition frame_agree_perms_forall_dec m f:
   {frame_agree_perms_forall (perm m) f} + { ~ frame_agree_perms_forall (perm m) f}.
 Proof.
@@ -1417,6 +1433,7 @@ Proof.
   destruct (frame_agree_perms_forall_dec m f); rewrite <- frame_agree_perms_rew in *; eauto.
 Defined.
 
+(*X*)
 Definition top_tframe_prop_dec (P: tframe_adt -> Prop) (Pdec: forall t, {P t} + { ~ P t}):
   forall s, { top_tframe_prop P s } + { ~ top_tframe_prop P s }.
 Proof.
@@ -1434,6 +1451,7 @@ Proof.
   intros. destruct H0; [left|right]; auto.
 Qed.
 
+(*X*)
 Program Definition record_stack_blocks (m: mem) (f: frame_adt) : option mem :=
   if valid_frame_dec f m
   then if (Forall_dec _ (fun x => sumbool_not (in_stack_dec (stack m) (fst x))) (frame_adt_blocks f))
@@ -1568,6 +1586,7 @@ Proof.
   intro. apply perm_impl_prop_dec. right. inversion 1.
 Defined.
 
+(*X*)
 Definition top_frame_no_perm m := 
   top_tframe_prop
     (fun tf =>
@@ -1576,6 +1595,7 @@ Definition top_frame_no_perm m :=
          forall o k p,
            ~ perm m b o k p) (stack m).
 
+(*X*)
 Definition top_frame_no_perm_dec m2: { top_frame_no_perm m2 } + { ~ top_frame_no_perm m2}.
 Proof.
   apply top_tframe_prop_dec. intros.
@@ -1587,6 +1607,7 @@ Proof.
   left; inversion 1.
 Defined.
 
+(*X*)
 Definition tailcall_stage_stack (m: mem) : option StackADT.stack :=
   if top_frame_no_perm_dec m
   then Some ((None, opt_cons (fst (hd (None,nil) (stack m))) (snd (hd (None,nil) (stack m))))::tl (stack m))
@@ -1605,6 +1626,7 @@ Proof.
   apply In_opt_cons in H3. destruct H3; eauto. rewrite H2. simpl. eauto.
 Qed.
 
+(*X*)
 Program Definition tailcall_stage (m: mem) : option mem :=
   match tailcall_stage_stack m with
   | None => None
@@ -4240,7 +4262,7 @@ Proof.
   simpl. rewrite ZMap.gi. rewrite decode_val_undef. inversion 1.
 Qed.
 
-
+(*X*)
 Lemma getN_undef_not_inj_bytes:
   forall n o l,
     (n > 0)%nat ->
@@ -9180,7 +9202,7 @@ Lemma free_list_stack_blocks:
       stack m' = stack m.
 Proof.
   induction bl; simpl; intros; autospe. auto.
-  eapply free_stack in Heqo; congruence.
+  eapply free_stack in Heqo. congruence.
 Qed.
 
 Lemma in_frames_valid:
