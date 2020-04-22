@@ -625,6 +625,14 @@ Inductive def_eq :
     is_var_internal v1 = true -> is_var_internal v2 = true ->
     gvar_init v1 = gvar_init v2 -> def_eq (Some (Gvar v1)) (Some (Gvar v2)).
   
+Lemma def_eq_pres_internal: forall (def1 def2: option (globdef (AST.fundef F) V)),
+  def_eq def1 def2 -> def_internal def1 = def_internal def2.
+Proof.
+  inversion 1; cbn; subst.
+  rewrite H0. auto.
+  rewrite H0. auto.
+Qed.
+
 Lemma def_eq_symm : forall f1 f2, def_eq f1 f2 -> def_eq f2 f1.
 Proof.
   intros. inv H.
@@ -770,7 +778,190 @@ End WithFunVar.
 
 Axiom defs_size_inbound: forall defs, sections_size (create_sec_table defs) <= Ptrofs.max_unsigned.
 
-(** Data section generation and linking *)
+(** Preparation for proofs of linking code and data sections *)
+
+Lemma PTree_extract_elements_remain_ids_not_in: 
+  forall {A:Type} ids defs (t t': PTree.t A),
+    PTree_extract_elements ids t = Some (defs, t') ->
+    Forall (fun id' => ~ In id' ids) (map fst (PTree.elements t')).
+Proof.
+  intros A ids defs t t' EXT. 
+  generalize (PTree_extract_elements_remain _ _ _ _ EXT).
+  intros subst.
+  rewrite Forall_forall. intros id IN.
+  apply list_in_map_inv in IN.
+  destruct IN as ((id', def') & EQ & IN). subst. cbn.
+  apply PTree.elements_complete in IN. cbn.
+  apply PTree_remove_ids_not_in in IN; auto.
+Qed.
+
+
+Lemma filter_internal_defs_some_int: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    In id (map fst
+               (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_some_int is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. tauto.
+  - intros id NORPT IN. cbn in IN.
+    destruct def as (id', def').
+    destr_in IN. 
+    + cbn in IN. destruct IN as [EQ | IN]. 
+      * subst.
+        replace ((id, def') :: defs) with (nil ++ (id, def') :: defs) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+        inv NORPT. eauto.
+      * inv NORPT.
+        assert (id <> id'). 
+        { intros H. subst. apply H1.
+          eapply in_map_filter; eauto. }
+        erewrite PTree_Properties_of_list_tail; eauto.
+    + inv NORPT.
+      assert (id <> id'). 
+      { intros H. subst. apply H1.
+        eapply in_map_filter; eauto. }
+      erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_some_int: 
+  forall {F V} {LV: Linker V} (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    defs_some_int (prog_option_defmap p)
+                  (collect_internal_def_ids is_fundef_internal p).
+Proof.
+  intros. 
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_some_int; eauto.
+Qed.
+
+
+Lemma filter_internal_defs_none_ext: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    ~In id (map fst
+                (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_none_or_ext is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. 
+    intros. rewrite PTree.gempty. red. auto.
+  - intros id NORPT NIN. cbn in NIN. inv NORPT.
+    destruct def as (id', def').
+    destr_in NIN.
+    + cbn in NIN. 
+      apply Decidable.not_or in NIN.
+      destruct NIN as [NEQ NIN].
+      erewrite PTree_Properties_of_list_tail; eauto.
+    + cbn in H1.
+      destruct (ident_eq id id').
+      * subst.
+        replace ((id', def') :: defs) with (nil ++ ((id', def') :: defs)) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+      * erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_none_ext: 
+  forall {F V} {LV: Linker V} ids (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    Forall (fun id => ~In id (collect_internal_def_ids is_fundef_internal p)) ids ->
+    defs_none_or_ext (prog_option_defmap p) ids.
+Proof.
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_none_ext; eauto.
+  rewrite Forall_forall in H0.
+  eauto.
+Qed.
+
+
+Lemma PTree_extract_elements_remain_external: 
+  forall {F V} {LV: Linker V} (p1 p2: AST.program (AST.fundef F) V) defs3 t1,
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
+    PTree_extract_elements
+      (collect_internal_def_ids is_fundef_internal p1 ++
+                                collect_internal_def_ids is_fundef_internal p2)
+      (PTree.combine link_prog_merge 
+                     (prog_option_defmap p1)
+                     (prog_option_defmap p2)) = Some (defs3, t1) ->
+    defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
+    defs_none_or_ext (prog_option_defmap p2) (map fst (PTree.elements t1)).
+Proof.
+  intros F V LV p1 p2 defs3 t1 NORPT1 NORPT2 EXT.
+  generalize (PTree_extract_elements_remain_ids_not_in _ _ EXT).
+  intros NIN.
+  split.
+  - eapply collect_defs_none_ext; eauto.
+    rewrite Forall_forall in *. intros. 
+    apply NIN in H. intros IN. apply H.
+    rewrite in_app. auto.
+  - eapply collect_defs_none_ext; eauto.
+    rewrite Forall_forall in *. intros. 
+    apply NIN in H. intros IN. apply H.
+    rewrite in_app. auto.
+Qed.
+
+Lemma combine_defs_none_or_ext: 
+  forall {F V} {LV: Linker V} ids defs (t1 t2: PTree.t (option (globdef (AST.fundef F) V))),
+    defs_none_or_ext t1 ids ->
+    defs_none_or_ext t2 ids ->
+    PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
+    Forall (fun '(id, def) => is_def_internal is_fundef_internal def = false) defs.
+Proof.
+  induction ids as [|id ids].
+  - intros defs t1 t2 DEXT1 DEXT2 MATCH.
+    inv MATCH. auto.
+  - intros defs t1 t2 DEXT1 DEXT2 MATCH.
+    generalize (defs_none_or_ext_head DEXT1).
+    generalize (defs_none_or_ext_head DEXT2).
+    intros DE1 DE2.
+    inv MATCH. destruct y. destruct H1; subst.    
+    apply Forall_cons.
+    eapply (link_prog_merge_defs_none_or_ext DE2 DE1); eauto.
+    eapply IHids; eauto.
+    eapply defs_none_or_ext_tail; eauto.
+    eapply defs_none_or_ext_tail; eauto.
+Qed.        
+
+Lemma link_merge_internal_external_defs:
+  forall (F V : Type) (LV : Linker V)
+    def2 (def1 def : option (globdef (AST.fundef F) V)),
+    def_internal def1 = true -> 
+    link_prog_merge (Some def1) def2 = Some def -> 
+    def_eq def def1.
+Proof.
+  intros F V LV def2 def1 def INT LINK.
+  cbn in LINK. destr_in LINK.
+  - subst. eapply link_internal_external_defs'; eauto.
+  - inv LINK. eapply def_internal_imply_eq; eauto.
+Qed.
+
+Lemma get_def_init_data_eq : forall d1 d2,
+      def_eq d1 d2 -> get_def_init_data d1 = get_def_init_data d2.
+Proof.
+  intros d1 d2 EQ. inv EQ.
+  - simpl. auto.
+  - simpl in *. rewrite H1. auto.
+Qed.
+
+Lemma get_def_instrs_eq : forall d1 d2,
+      def_eq d1 d2 -> get_def_instrs d1 = get_def_instrs d2.
+Proof.
+  intros d1 d2 EQ. inv EQ.
+  - auto.
+  - simpl in *. auto.
+Qed.
 
 Lemma extern_var_init_data_nil : forall v,
     is_var_internal v = false ->
@@ -793,6 +984,57 @@ Proof.
   - simpl in *. auto.
 Qed.
 
+Lemma extern_fun_nil : forall def,
+    def_internal def = false -> get_def_instrs def = nil.
+Proof.
+  intros def H.
+  destruct def. destruct g; simpl in *.
+  - unfold is_fundef_internal in H.
+    destruct f; try congruence.
+  - auto.
+  - simpl in *. auto.
+Qed.
+
+Lemma PTree_combine_ids_defs_match_instrs_data_eq: 
+  forall defs1 defs2 t1 t2,
+    (forall id def, In (id, def) defs1 -> t1 ! id = Some def) ->
+    PTree_combine_ids_defs_match 
+      t1 t2 link_prog_merge
+      (map fst (filter_internal_defs is_fundef_internal defs1))
+      defs2 ->
+    fold_right acc_instrs [] defs1 = fold_right acc_instrs [] defs2 /\
+    fold_right acc_init_data [] defs1 = fold_right acc_init_data [] defs2.
+Proof.
+  induction defs1 as [|def1 defs1].
+  - cbn. intros defs2 t1 t2 IN MATCH.
+    inv MATCH. cbn. auto.
+  - intros defs2 t1 t2 IN MATCH.
+    destruct def1 as (id, def1). cbn in MATCH.
+    destr_in MATCH; cbn in MATCH.
+    + inv MATCH.
+      destruct y. destruct H1; subst.
+      cbn.
+      assert (t1 ! p = Some def1). 
+      { eapply IN; eauto. apply in_eq. }
+      rewrite H in H0. 
+      generalize (link_merge_internal_external_defs _ _ _ Heqb H0).
+      intros DEFEQ.
+      assert (forall id def, In (id, def) defs1 -> t1 ! id = Some def) as IN'.
+      { intros. eapply IN; eauto. apply in_cons. auto. }
+      generalize (IHdefs1 _ _ _ IN' H3).
+      intros (DEQ & CEQ). rewrite DEQ, CEQ. 
+      rewrite (get_def_init_data_eq DEFEQ).
+      rewrite (get_def_instrs_eq DEFEQ).
+      auto.
+    + cbn.
+      rewrite extern_init_data_nil; auto. cbn.
+      rewrite extern_fun_nil; auto. cbn.
+      eapply IHdefs1; eauto.
+      intros. eapply IN; eauto. apply in_cons. auto.
+Qed.
+
+
+(** Data section generation and linking *)
 
 Lemma acc_init_data_app : forall def l1 l2,
     (acc_init_data def l1) ++ l2 = acc_init_data def (l1 ++ l2).
@@ -810,13 +1052,6 @@ Proof.
     rewrite acc_init_data_app. rewrite IHdefs. auto.
 Qed.
 
-Lemma get_def_init_data_eq : forall d1 d2,
-      def_eq d1 d2 -> get_def_init_data d1 = get_def_init_data d2.
-Proof.
-  intros d1 d2 EQ. inv EQ.
-  - simpl. auto.
-  - simpl in *. rewrite H1. auto.
-Qed.
 
 Lemma acc_init_data_eq: forall d1 d2 l,
     id_def_eq d1 d2 -> acc_init_data d1 l = acc_init_data d2 l.
@@ -840,6 +1075,19 @@ Proof.
     rewrite IHlist_in_order. auto.
     apply acc_init_data_eq; auto.
 Qed.          
+
+Lemma ext_defs_data_nil: forall (defs: list (ident * option gdef)),
+    Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) defs ->
+    fold_right acc_init_data [] defs = nil.
+Proof.
+  induction defs as [| def defs].
+  - cbn. auto.
+  - intros H. 
+    cbn. unfold acc_init_data. destruct def.
+    inv H.
+    erewrite extern_init_data_nil; eauto. 
+Qed.
+
 
 (** Hint for Asm definitions *)                
 Definition PERIdAsmDefEq := (@PERIdDefEq Asm.function unit).
@@ -880,16 +1128,6 @@ Admitted.
 
 
 (** Code section generation and linking *)
-Lemma extern_fun_nil : forall def,
-    def_internal def = false -> get_def_instrs def = nil.
-Proof.
-  intros def H.
-  destruct def. destruct g; simpl in *.
-  - unfold is_fundef_internal in H.
-    destruct f; try congruence.
-  - auto.
-  - simpl in *. auto.
-Qed.
 
 Lemma acc_instrs_app : forall def l1 l2,
     (acc_instrs def l1) ++ l2 = acc_instrs def (l1 ++ l2).
@@ -905,14 +1143,6 @@ Proof.
   - intros l. simpl. auto.
   - intros l. simpl. 
     rewrite acc_instrs_app. rewrite IHdefs. auto.
-Qed.
-
-Lemma get_def_instrs_eq : forall d1 d2,
-      def_eq d1 d2 -> get_def_instrs d1 = get_def_instrs d2.
-Proof.
-  intros d1 d2 EQ. inv EQ.
-  - auto.
-  - simpl in *. auto.
 Qed.
 
 Lemma acc_instrs_eq: forall d1 d2 l,
@@ -937,6 +1167,19 @@ Proof.
     rewrite IHlist_in_order.
     apply acc_instrs_eq; auto.
 Qed.
+
+Lemma ext_defs_code_nil: forall (defs: list (ident * option gdef)),
+    Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) defs ->
+    fold_right acc_instrs [] defs = nil.
+Proof.
+  induction defs as [| def defs].
+  - cbn. auto.
+  - intros H.
+    cbn. unfold acc_instrs. destruct def.
+    inv H.
+    erewrite extern_fun_nil; eauto. 
+Qed.
+
 
 
 (* Lemma link_acc_instrs_comm : forall defs1 defs2 defs, *)
@@ -2658,139 +2901,6 @@ Proof.
 Qed.
 
 
-Lemma PTree_extract_elements_remain_ids_not_in: 
-  forall {A:Type} ids defs (t t': PTree.t A),
-    PTree_extract_elements ids t = Some (defs, t') ->
-    Forall (fun id' => ~ In id' ids) (map fst (PTree.elements t')).
-Proof.
-  intros A ids defs t t' EXT. 
-  generalize (PTree_extract_elements_remain _ _ _ _ EXT).
-  intros subst.
-  rewrite Forall_forall. intros id IN.
-  apply list_in_map_inv in IN.
-  destruct IN as ((id', def') & EQ & IN). subst. cbn.
-  apply PTree.elements_complete in IN. cbn.
-  apply PTree_remove_ids_not_in in IN; auto.
-Qed.
-
-
-Lemma filter_internal_defs_some_int: 
-  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
-    list_norepet (map fst defs) ->
-    In id (map fst
-               (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
-    def_some_int is_fundef_internal (PTree_Properties.of_list defs) ! id.
-Proof.
-  induction defs as [|def defs].
-  - cbn. tauto.
-  - intros id NORPT IN. cbn in IN.
-    destruct def as (id', def').
-    destr_in IN. 
-    + cbn in IN. destruct IN as [EQ | IN]. 
-      * subst.
-        replace ((id, def') :: defs) with (nil ++ (id, def') :: defs) by auto.
-        erewrite PTree_Properties.of_list_unique; eauto.
-        red. eauto.
-        inv NORPT. eauto.
-      * inv NORPT.
-        assert (id <> id'). 
-        { intros H. subst. apply H1.
-          eapply in_map_filter; eauto. }
-        erewrite PTree_Properties_of_list_tail; eauto.
-    + inv NORPT.
-      assert (id <> id'). 
-      { intros H. subst. apply H1.
-        eapply in_map_filter; eauto. }
-      erewrite PTree_Properties_of_list_tail; eauto.
-Qed.
-
-Lemma collect_defs_some_int: 
-  forall {F V} {LV: Linker V} (p: AST.program (AST.fundef F) V),
-    list_norepet (map fst (AST.prog_defs p)) ->
-    defs_some_int (prog_option_defmap p)
-                  (collect_internal_def_ids is_fundef_internal p).
-Proof.
-  intros. 
-  unfold collect_internal_def_ids.
-  unfold filter_internal_defs.
-  unfold prog_option_defmap.
-  red.
-  intros.
-  eapply filter_internal_defs_some_int; eauto.
-Qed.
-
-
-Lemma filter_internal_defs_none_ext: 
-  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
-    list_norepet (map fst defs) ->
-    ~In id (map fst
-                (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
-    def_none_or_ext is_fundef_internal (PTree_Properties.of_list defs) ! id.
-Proof.
-  induction defs as [|def defs].
-  - cbn. 
-    intros. rewrite PTree.gempty. red. auto.
-  - intros id NORPT NIN. cbn in NIN. inv NORPT.
-    destruct def as (id', def').
-    destr_in NIN.
-    + cbn in NIN. 
-      apply Decidable.not_or in NIN.
-      destruct NIN as [NEQ NIN].
-      erewrite PTree_Properties_of_list_tail; eauto.
-    + cbn in H1.
-      destruct (ident_eq id id').
-      * subst.
-        replace ((id', def') :: defs) with (nil ++ ((id', def') :: defs)) by auto.
-        erewrite PTree_Properties.of_list_unique; eauto.
-        red. eauto.
-      * erewrite PTree_Properties_of_list_tail; eauto.
-Qed.
-
-Lemma collect_defs_none_ext: 
-  forall {F V} {LV: Linker V} ids (p: AST.program (AST.fundef F) V),
-    list_norepet (map fst (AST.prog_defs p)) ->
-    Forall (fun id => ~In id (collect_internal_def_ids is_fundef_internal p)) ids ->
-    defs_none_or_ext (prog_option_defmap p) ids.
-Proof.
-  unfold collect_internal_def_ids.
-  unfold filter_internal_defs.
-  unfold prog_option_defmap.
-  red.
-  intros.
-  eapply filter_internal_defs_none_ext; eauto.
-  rewrite Forall_forall in H0.
-  eauto.
-Qed.
-
-
-Lemma PTree_extract_elements_remain_external: 
-  forall {F V} {LV: Linker V} (p1 p2: AST.program (AST.fundef F) V) defs3 t1,
-    list_norepet (map fst (AST.prog_defs p1)) ->
-    list_norepet (map fst (AST.prog_defs p2)) ->
-    PTree_extract_elements
-      (collect_internal_def_ids is_fundef_internal p1 ++
-                                collect_internal_def_ids is_fundef_internal p2)
-      (PTree.combine link_prog_merge 
-                     (prog_option_defmap p1)
-                     (prog_option_defmap p2)) = Some (defs3, t1) ->
-    defs_none_or_ext (prog_option_defmap p1) (map fst (PTree.elements t1)) /\
-    defs_none_or_ext (prog_option_defmap p2) (map fst (PTree.elements t1)).
-Proof.
-  intros F V LV p1 p2 defs3 t1 NORPT1 NORPT2 EXT.
-  generalize (PTree_extract_elements_remain_ids_not_in _ _ EXT).
-  intros NIN.
-  split.
-  - eapply collect_defs_none_ext; eauto.
-    rewrite Forall_forall in *. intros. 
-    apply NIN in H. intros IN. apply H.
-    rewrite in_app. auto.
-  - eapply collect_defs_none_ext; eauto.
-    rewrite Forall_forall in *. intros. 
-    apply NIN in H. intros IN. apply H.
-    rewrite in_app. auto.
-Qed.
-
-
 Lemma link_prog_symb_comm_external: 
   forall did cid id def defs1 defs2 stbl1 stbl2 
     dsz1 dsz1' csz1 csz1' dsz2 dsz2' csz2 csz2'
@@ -3102,28 +3212,6 @@ Proof.
     destruct ACC. subst; omega.
 Qed.
 
-Lemma combine_defs_none_or_ext: 
-  forall {F V} {LV: Linker V} ids defs (t1 t2: PTree.t (option (globdef (AST.fundef F) V))),
-    defs_none_or_ext t1 ids ->
-    defs_none_or_ext t2 ids ->
-    PTree_combine_ids_defs_match t1 t2 link_prog_merge ids defs ->
-    Forall (fun '(id, def) => is_def_internal is_fundef_internal def = false) defs.
-Proof.
-  induction ids as [|id ids].
-  - intros defs t1 t2 DEXT1 DEXT2 MATCH.
-    inv MATCH. auto.
-  - intros defs t1 t2 DEXT1 DEXT2 MATCH.
-    generalize (defs_none_or_ext_head DEXT1).
-    generalize (defs_none_or_ext_head DEXT2).
-    intros DE1 DE2.
-    inv MATCH. destruct y. destruct H1; subst.    
-    apply Forall_cons.
-    eapply (link_prog_merge_defs_none_or_ext DE2 DE1); eauto.
-    eapply IHids; eauto.
-    eapply defs_none_or_ext_tail; eauto.
-    eapply defs_none_or_ext_tail; eauto.
-Qed.        
-
 Lemma ext_defs_code_size: forall (defs: list (ident * option gdef)),
     Forall (fun '(_, def) => is_def_internal is_fundef_internal def = false) defs ->
     defs_code_size (map snd defs) = 0.
@@ -3157,19 +3245,6 @@ Proof.
 Qed.
 
 
-Lemma link_merge_internal_external_defs:
-  forall (F V : Type) (LV : Linker V)
-    def2 (def1 def : option (globdef (AST.fundef F) V)),
-    def_internal def1 = true -> 
-    link_prog_merge (Some def1) def2 = Some def -> 
-    def_eq def def1.
-Proof.
-  intros F V LV def2 def1 def INT LINK.
-  cbn in LINK. destr_in LINK.
-  - subst. eapply link_internal_external_defs'; eauto.
-  - inv LINK. eapply def_internal_imply_eq; eauto.
-Qed.
-
 Lemma def_eq_data_size_eq: forall d1 d2,
     def_eq d1 d2 -> def_data_size d1 = def_data_size d2.
 Proof.
@@ -3184,6 +3259,27 @@ Proof.
   erewrite get_def_instrs_eq; eauto.
 Qed.
 
+Lemma acc_instrs_size: forall defs,
+      defs_code_size (map snd defs) = code_size (fold_right acc_instrs [] defs).
+Proof.
+  induction defs as [|def defs].
+  - cbn. auto.
+  - cbn. setoid_rewrite IHdefs.
+    destruct def. cbn.
+    rewrite code_size_app. auto.
+Qed.
+
+Lemma acc_init_data_size: forall defs,
+      defs_data_size (map snd defs) = 
+      init_data_list_size (fold_right acc_init_data [] defs).
+Proof.
+  induction defs as [|def defs].
+  - cbn. auto.
+  - cbn. setoid_rewrite IHdefs.
+    destruct def. cbn.
+    rewrite init_data_list_size_app. auto.
+Qed.
+
 Lemma PTree_combine_ids_defs_match_size_eq: 
   forall defs1 defs2 t1 t2,
     (forall id def, In (id, def) defs1 -> t1 ! id = Some def) ->
@@ -3194,37 +3290,14 @@ Lemma PTree_combine_ids_defs_match_size_eq:
     defs_data_size (map snd defs1) = defs_data_size (map snd defs2) /\
     defs_code_size (map snd defs1) = defs_code_size (map snd defs2).
 Proof.
-  induction defs1 as [|def1 defs1].
-  - cbn. intros defs2 t1 t2 IN MATCH.
-    inv MATCH. cbn. auto.
-  - intros defs2 t1 t2 IN MATCH.
-    destruct def1 as (id, def1). cbn in MATCH.
-    destr_in MATCH; cbn in MATCH.
-    + inv MATCH.
-      destruct y. destruct H1; subst.
-      cbn [map snd].
-      repeat rewrite defs_code_size_cons.
-      repeat rewrite defs_data_size_cons.
-      assert (t1 ! p = Some def1). 
-      { eapply IN; eauto. apply in_eq. }
-      rewrite H in H0. 
-      generalize (link_merge_internal_external_defs _ _ _ Heqb H0).
-      intros DEFEQ.
-      erewrite <- def_eq_data_size_eq; eauto.
-      erewrite <- def_eq_code_size_eq; eauto.
-      assert (forall id def, In (id, def) defs1 -> t1 ! id = Some def) as IN'.
-      { intros. eapply IN; eauto. apply in_cons. auto. }
-      generalize (IHdefs1 _ _ _ IN' H3).
-      intros (DEQ & CEQ). rewrite DEQ, CEQ. auto.
-    + cbn [map snd].
-      rewrite defs_data_size_cons.
-      rewrite defs_code_size_cons.
-      unfold def_data_size.
-      rewrite extern_init_data_nil; auto. cbn.
-      unfold def_code_size.
-      rewrite extern_fun_nil; auto. cbn.
-      eapply IHdefs1; eauto.
-      intros. eapply IN; eauto. apply in_cons. auto.
+  intros defs1 defs2 t1 t2 NIN MATCH.
+  eapply PTree_combine_ids_defs_match_instrs_data_eq in MATCH; auto.
+  destruct MATCH as (IEQ & DEQ).
+  rewrite acc_instrs_size.
+  rewrite acc_instrs_size.
+  rewrite acc_init_data_size.
+  rewrite acc_init_data_size.
+  rewrite IEQ, DEQ. auto.
 Qed.
 
 (* Lemma get_symbentry_sizes_inv:  *)
@@ -3251,13 +3324,6 @@ Qed.
 (*                   (csz1 + defs_code_size (defs_before id defs1))  *)
 (*                   id def. *)
 
-Lemma def_eq_pres_internal: forall {F V} (def1 def2: option (globdef (AST.fundef F) V)),
-  def_eq def1 def2 -> def_internal def1 = def_internal def2.
-Proof.
-  inversion 1; cbn; subst.
-  rewrite H0. auto.
-  rewrite H0. auto.
-Qed.
 
 Lemma get_symbentry_eq_internal_fun_inv: 
   forall did1 cid1 dsz1 csz1 did2 cid2 dsz2 csz2 id1 id2 f def,
