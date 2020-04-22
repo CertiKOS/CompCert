@@ -125,7 +125,9 @@ BACKEND=\
   PermuteProgproof.v PermuteProgSep.v \
   RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
   TablesEncodeproof.v \
-  RelocBinDecode.v
+  RelocBinDecode.v \
+  LocalLib.v
+
 
 
 # Encoding of data into bytes
