@@ -13,25 +13,6 @@ Require Import RelocProgram RelocProgSemantics1 RelocProgSemantics2.
 Import ListNotations.
 Require AsmFacts.
 
-Definition match_prog p tp :=
-  transf_program p = OK tp.
-
-Lemma transf_program_match:
-  forall p tp, transf_program p = OK tp -> match_prog p tp.
-Proof.
-  intros. subst. red.
-  auto.
-Qed.
-
-Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
-  match code, bytes  with
-  |nil, nil => True 
-  |h::t, _ =>
-   exists h' t', RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes = OK (h',t')
-                 /\  RelocBinDecode.instr_eq h h'
-                 /\ transl_code_spec t t' (ofs+instr_size h) rtbl_ofs_map  symbt
-  |_, _ => False
-  end.
 
 
 Lemma list_has_tail: forall {A:Type} (l:list A) n,
@@ -58,6 +39,61 @@ Proof.
 Qed.
 
 
+Definition match_prog p tp :=
+  transf_program p = OK tp.
+
+Lemma transf_program_match:
+  forall p tp, transf_program p = OK tp -> match_prog p tp.
+Proof.
+  intros. subst. red.
+  auto.
+Qed.
+
+Fixpoint instr_size_acc code: Z :=
+  match code with
+  |nil => 0
+  |i::tail => instr_size i + instr_size_acc tail
+  end.
+
+Lemma instr_size_app: forall n a b,
+    length a = n
+    -> instr_size_acc (a++b) = instr_size_acc a + instr_size_acc b.
+Proof.
+  induction n.
+  (* base case *)
+  admit.
+  intros a b HLa.
+  generalize (list_has_tail _ _ HLa).
+  intros [tail [prefix Ha]].
+  rewrite Ha.
+  cut(length prefix = n).
+  intros HLPrefix.
+  generalize(IHn prefix ([tail]++b) HLPrefix).
+  intros HApp.
+  rewrite <- app_assoc.
+  rewrite HApp.
+  generalize(IHn prefix [tail] HLPrefix).
+  intros HPrefixTail.
+  rewrite HPrefixTail.
+  assert(HTailB: instr_size_acc ([tail]++b) = instr_size_acc [tail] + instr_size_acc b). {
+    unfold instr_size_acc.
+    simpl. omega.
+  }
+  rewrite HTailB. omega.
+  admit.    
+Admitted.
+
+Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
+  match code, bytes  with
+  |nil, nil => True 
+  |h::t, _ =>
+   exists h' t', RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes = OK (h',t')
+                 /\  RelocBinDecode.instr_eq h h'
+                 /\ transl_code_spec t t' (ofs+instr_size h) rtbl_ofs_map  symbt
+  |_, _ => False
+  end.
+
+
 Lemma prefix_success: forall rtbl a b ofs r z l,
     fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
     ->exists z' l', fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l').
@@ -71,19 +107,38 @@ Proof.
   unfold acc_instrs.
   auto.
 Qed.  
-  
-Lemma suffix_success: forall rtbl a b ofs r z l z' l',
-    fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
-    ->fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l')
-    ->fold_left (acc_instrs rtbl) [b]  (OK (z', l')) = OK (z, l)
-/\ z' = ofs+ (Z.of_nat (length a)).
-Admitted.
 
+Lemma fold_spec_length: forall n rtbl code ofs r z l,
+    length code = n ->
+    fold_left (acc_instrs rtbl) (code) (OK (ofs, r)) = OK (z, l)
+    -> z = ofs + instr_size_acc code.
+Proof.
+  induction n.
+  (* base case *)
+  admit.
+  intros rtbl code ofs r z l HLCode HFoldAll.
+  generalize (list_has_tail code n HLCode).
+  intros [tail [prefix HCode]].
+  rewrite HCode in HFoldAll.
+  generalize (prefix_success _ _ _ _ _ _ _ HFoldAll).
+  intros [z' [l' HFoldPrefix]].
+  assert(HLPrefix: length prefix = n) by admit. 
+  generalize(IHn rtbl prefix _ _ _ _ HLPrefix HFoldPrefix).
+  intros Hz'.
+  rewrite fold_left_app in HFoldAll.
+  rewrite HFoldPrefix in HFoldAll.
+  simpl in HFoldAll.
+  monadInv HFoldAll.
+  rewrite (instr_size_app (length prefix)).
+  simpl.
+  omega.
+  auto.
+Admitted.
 
 
 Lemma transl_code_spec_inc: forall ofs rtbl_ofs_map symbt code bytes instr x,
     transl_code_spec code bytes ofs rtbl_ofs_map symbt
-    -> encode_instr rtbl_ofs_map (ofs+(Z.of_nat (length code))) instr = OK x
+    -> encode_instr rtbl_ofs_map (ofs+(instr_size_acc code)) instr = OK x
     -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map symbt.
 Admitted.
 
@@ -97,7 +152,7 @@ Admitted.
 Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z n,
     transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
     -> length code2 = n
-    -> fold_left (acc_instrs rtbl_ofs_map) code2 (OK (ofs + Z.of_nat (length code), code')) = OK (z, l)
+    -> fold_left (acc_instrs rtbl_ofs_map) code2 (OK (ofs + (instr_size_acc code), code')) = OK (z, l)
     -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map symbt.
 Proof.
   intros code code' code2 l ofs rtbl_ofs_map symbt z n HTransCode.
@@ -108,38 +163,33 @@ Proof.
   induction n.
   (* base case *)
   admit.
-  intros code2 z l HLength.
-  generalize (list_has_tail code2 n HLength).
+  intros code2 z l HLCode2 HFoldCode2.
+  generalize (list_has_tail code2 n HLCode2).
   intros [tail [prefix HCode2]].
   rewrite HCode2.
-  intro HTransCode2.
-  generalize (prefix_success _ _ _ _ _ _ _ HTransCode2).
-  intros [z' [l' HTransPrefix]].
-  generalize (suffix_success _ _ _ _ _ _ _ _ _ HTransCode2 HTransPrefix).
-  intros [HTransTail Hz'].
-  simpl in HTransTail.
-  monadInv HTransTail.
+  assert(HLPrefix: length prefix = n) by admit.
+  rewrite HCode2 in HFoldCode2.
+  generalize (prefix_success _ _ _ _ _ _ _ HFoldCode2).
+  intros [z' [l' HFoldPrefix]].
   
-  assert (HPrefixLength: length prefix = n) by admit.
-  generalize (IHn _ _ _ HPrefixLength HTransPrefix).
+  generalize (IHn prefix _ _ HLPrefix HFoldPrefix).
+  rewrite fold_left_app in HFoldCode2.
+  rewrite HFoldPrefix in HFoldCode2.
+  generalize (fold_spec_length (length prefix) _ _ _ _ _ _ eq_refl HFoldPrefix).
+  intros Hz'.
+  rewrite Hz' in HFoldCode2.
+  simpl in HFoldCode2.
+  monadInv HFoldCode2.
+  intros HSpecPrefix.
+  assert(HInstrSize: instr_size_acc (code ++ prefix) = instr_size_acc code + instr_size_acc prefix) by admit.
+  rewrite <- Zplus_assoc in EQ.
+  rewrite <- HInstrSize in EQ.
+  generalize (transl_code_spec_inc _ _ _ _ _ _ _ HSpecPrefix EQ).
+  rewrite app_assoc.
+  intros HResult.
   rewrite rev_app_distr.
   rewrite rev_involutive.
-  intros HPrefixSpec.
-
-
-  assert(HLengthApp: Z.of_nat (length (code++prefix)) = Z.of_nat (length code) + Z.of_nat (length prefix)). {
-    rewrite app_length.
-    rewrite Nat2Z.inj_add.
-    auto.
-  }
-  rewrite <-Zplus_assoc in EQ.
-  
-  rewrite <- HLengthApp in EQ.
-  generalize(transl_code_spec_inc _ _ _ _ _ _ _ HPrefixSpec EQ).
-  intros HResult.
-  rewrite app_assoc. auto.
-  
-  
+  auto.  
 Admitted.
 
 
@@ -165,11 +215,16 @@ Proof.
   intros HLengthN.
   generalize (IHn prog z' prefix l' HLengthN HEncodePrefix).
   intros HPrefix.
-  generalize (suffix_success _ _ _ 0 [] z l z' l'  HEncode HEncodePrefix).
-  intros [HEncodeSuffix Hz'].
-  simpl in Hz'.
-  rewrite Hz' in HEncodeSuffix.
-  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ 1 HPrefix eq_refl HEncodeSuffix).
+  rewrite fold_left_app in HEncode.
+  rewrite HEncodePrefix in HEncode.
+  (* generalize (suffix_success _ _ _ 0 [] z l z' l'  HEncode HEncodePrefix). *)
+  (* intros HEncodeSuffix. *)
+  (* simpl in Hz'. *)
+  (* rewrite Hz' in HEncodeSuffix. *)
+  generalize (fold_spec_length (length prefix) _ _ _ _ _ _ eq_refl HEncodePrefix).
+  intros Hz'.
+  rewrite Hz' in HEncode.
+  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ 1 HPrefix eq_refl HEncode).
   rewrite HTail.
   auto.
   admit.
