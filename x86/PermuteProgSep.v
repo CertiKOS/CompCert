@@ -9,6 +9,7 @@ Require Import Integers Floats AST.
 Require Import Values Memory Events Linking OrderedLinking.
 Require Import Permutation.
 Require Import PermuteProgproof.
+Require Import LocalLib.
 
 Local Transparent Linker_prog_ordered.
 

@@ -1,13 +1,9 @@
 Require Import Coqlib Integers AST Maps.
 Require Import Linking.
+Require Import LocalLib.
 Import ListNotations.
 
 Set Implicit Arguments.
-
-Lemma Z_max_0 : forall z, z >= 0 -> Z.max z 0 = z.
-Proof.
-  intros. apply Zmax_left. auto.
-Qed.
 
 Lemma is_def_internal_dec' : forall (F V:Type) (f:F -> bool) (def: option (globdef F V)),
     {is_def_internal f def = true} + {is_def_internal f def <> true}.
@@ -412,6 +408,41 @@ Proof.
     inv LINK. cbn in INT. congruence.
 Qed.
 
+Lemma link_external_defs : 
+  forall {F V} {LV: Linker V}
+    (def1 def2 def: option (globdef (AST.fundef F) V)),
+    is_def_internal is_fundef_internal def1 = false ->
+    is_def_internal is_fundef_internal def2 = false ->
+    link_option def1 def2 = Some def ->
+    is_def_internal is_fundef_internal def = false.
+Proof.
+  intros F V LV def1 def2 def INT1 INT2 LINK.
+  unfold link_option in LINK.
+  destruct def1, def2.
+  - 
+    destruct (link g g0) eqn:LINKG; try congruence. inv LINK.
+    unfold link in LINKG.
+    Transparent Linker_def.
+    unfold Linker_def in LINKG.
+    unfold link_def in LINKG.
+    destruct g, g0.
+    + destruct (link f f0) eqn:LINKF; try congruence. inv LINKG.
+      unfold link in LINKF.
+      Transparent Linker_fundef.
+      unfold Linker_fundef in LINKF.
+      simpl in *.
+      apply link_external_fundefs with f f0; eauto.
+    + congruence.
+    + congruence.
+    + destruct (link v v0) eqn:LINKV; try congruence. inv LINKG.
+      simpl in *.     
+      apply link_external_vars with _ v v0; eauto.
+  - inv LINK. auto.
+  - inv LINK. auto.
+  - inv LINK. auto.
+Qed.    
+
+
 (** Properties *)
 Local Transparent Linker_def.
 Local Transparent Linker_fundef.
@@ -512,4 +543,134 @@ Lemma link_prog_merge_none: forall {F V} {LF: Linker F} {LV: Linker V},
   @link_prog_merge F V LF LV None None = None.
 Proof.
   intros. cbn. auto.
+Qed.
+
+
+
+Definition def_none_or_ext {F V} (fi:F -> bool) (def: option (option (globdef F V))) :=
+  def = None \/ 
+  exists def', def = Some def' /\ is_def_internal fi def' = false.
+
+Definition defs_none_or_ext {F V} {LV: Linker V} 
+           (t: PTree.t (option (globdef (AST.fundef F) V))) ids :=
+  forall id, In id ids ->
+        def_none_or_ext is_fundef_internal (t ! id).
+
+Lemma defs_none_or_ext_head: 
+  forall {F V} {LV: Linker V} (t: PTree.t (option (globdef (AST.fundef F) V))) id ids,
+  defs_none_or_ext t (id :: ids) ->
+  def_none_or_ext is_fundef_internal (t!id).
+Proof.
+  intros. red in H.
+  generalize (H _ (in_eq _ _)).
+  auto.
+Qed.
+
+Lemma defs_none_or_ext_tail: 
+  forall {F V} {LV: Linker V} (t: PTree.t (option (globdef (AST.fundef F) V))) id ids,
+  defs_none_or_ext t (id :: ids) ->
+  defs_none_or_ext t ids.
+Proof.
+  intros. red in H.
+  red. intros.
+  eapply H; eauto. 
+  apply in_cons. auto.
+Qed.
+
+
+Definition def_some_int {F V} (fi:F -> bool) (def: option (option (globdef F V))) :=
+  exists def', def = Some def' /\ is_def_internal fi def' = true.
+
+Definition defs_some_int {F V} {LV: Linker V} 
+           (t: PTree.t (option (globdef (AST.fundef F) V))) ids :=
+  forall id, In id ids ->
+        def_some_int is_fundef_internal (t ! id).
+  
+
+Lemma filter_internal_defs_some_int: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    In id (map fst
+               (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_some_int is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. tauto.
+  - intros id NORPT IN. cbn in IN.
+    destruct def as (id', def').
+    destr_in IN. 
+    + cbn in IN. destruct IN as [EQ | IN]. 
+      * subst.
+        replace ((id, def') :: defs) with (nil ++ (id, def') :: defs) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+        inv NORPT. eauto.
+      * inv NORPT.
+        assert (id <> id'). 
+        { intros H. subst. apply H1.
+          eapply in_map_filter; eauto. }
+        erewrite PTree_Properties_of_list_tail; eauto.
+    + inv NORPT.
+      assert (id <> id'). 
+      { intros H. subst. apply H1.
+        eapply in_map_filter; eauto. }
+      erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_some_int: 
+  forall {F V} {LV: Linker V} (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    defs_some_int (prog_option_defmap p)
+                  (collect_internal_def_ids is_fundef_internal p).
+Proof.
+  intros. 
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_some_int; eauto.
+Qed.
+
+
+Lemma filter_internal_defs_none_ext: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    ~In id (map fst
+                (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_none_or_ext is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. 
+    intros. rewrite PTree.gempty. red. auto.
+  - intros id NORPT NIN. cbn in NIN. inv NORPT.
+    destruct def as (id', def').
+    destr_in NIN.
+    + cbn in NIN. 
+      apply Decidable.not_or in NIN.
+      destruct NIN as [NEQ NIN].
+      erewrite PTree_Properties_of_list_tail; eauto.
+    + cbn in H1.
+      destruct (ident_eq id id').
+      * subst.
+        replace ((id', def') :: defs) with (nil ++ ((id', def') :: defs)) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+      * erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_none_ext: 
+  forall {F V} {LV: Linker V} ids (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    Forall (fun id => ~In id (collect_internal_def_ids is_fundef_internal p)) ids ->
+    defs_none_or_ext (prog_option_defmap p) ids.
+Proof.
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_none_ext; eauto.
+  rewrite Forall_forall in H0.
+  eauto.
 Qed.
