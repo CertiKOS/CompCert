@@ -2674,6 +2674,95 @@ Proof.
 Qed.
 
 
+Lemma filter_internal_defs_some_int: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    In id (map fst
+               (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_some_int is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. tauto.
+  - intros id NORPT IN. cbn in IN.
+    destruct def as (id', def').
+    destr_in IN. 
+    + cbn in IN. destruct IN as [EQ | IN]. 
+      * subst.
+        replace ((id, def') :: defs) with (nil ++ (id, def') :: defs) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+        inv NORPT. eauto.
+      * inv NORPT.
+        assert (id <> id'). 
+        { intros H. subst. apply H1.
+          eapply in_map_filter; eauto. }
+        erewrite PTree_Properties_of_list_tail; eauto.
+    + inv NORPT.
+      assert (id <> id'). 
+      { intros H. subst. apply H1.
+        eapply in_map_filter; eauto. }
+      erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_some_int: 
+  forall {F V} {LV: Linker V} (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    defs_some_int (prog_option_defmap p)
+                  (collect_internal_def_ids is_fundef_internal p).
+Proof.
+  intros. 
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_some_int; eauto.
+Qed.
+
+
+Lemma filter_internal_defs_none_ext: 
+  forall {F V} {LV: Linker V} (defs: list(ident * option (globdef (AST.fundef F) V))) id,
+    list_norepet (map fst defs) ->
+    ~In id (map fst
+                (filter (fun '(_, def) => is_def_internal is_fundef_internal def) defs)) ->
+    def_none_or_ext is_fundef_internal (PTree_Properties.of_list defs) ! id.
+Proof.
+  induction defs as [|def defs].
+  - cbn. 
+    intros. rewrite PTree.gempty. red. auto.
+  - intros id NORPT NIN. cbn in NIN. inv NORPT.
+    destruct def as (id', def').
+    destr_in NIN.
+    + cbn in NIN. 
+      apply Decidable.not_or in NIN.
+      destruct NIN as [NEQ NIN].
+      erewrite PTree_Properties_of_list_tail; eauto.
+    + cbn in H1.
+      destruct (ident_eq id id').
+      * subst.
+        replace ((id', def') :: defs) with (nil ++ ((id', def') :: defs)) by auto.
+        erewrite PTree_Properties.of_list_unique; eauto.
+        red. eauto.
+      * erewrite PTree_Properties_of_list_tail; eauto.
+Qed.
+
+Lemma collect_defs_none_ext: 
+  forall {F V} {LV: Linker V} ids (p: AST.program (AST.fundef F) V),
+    list_norepet (map fst (AST.prog_defs p)) ->
+    Forall (fun id => ~In id (collect_internal_def_ids is_fundef_internal p)) ids ->
+    defs_none_or_ext (prog_option_defmap p) ids.
+Proof.
+  unfold collect_internal_def_ids.
+  unfold filter_internal_defs.
+  unfold prog_option_defmap.
+  red.
+  intros.
+  eapply filter_internal_defs_none_ext; eauto.
+  rewrite Forall_forall in H0.
+  eauto.
+Qed.
+
+
 Lemma PTree_extract_elements_remain_external: 
   forall {F V} {LV: Linker V} (p1 p2: AST.program (AST.fundef F) V) defs3 t1,
     list_norepet (map fst (AST.prog_defs p1)) ->
@@ -3013,43 +3102,6 @@ Proof.
     destruct ACC. subst; omega.
 Qed.
 
-Lemma link_prog_merge_defs_none_or_ext: 
-  forall {F V} {LV: Linker V} d1 d2 (d: option (globdef (AST.fundef F) V)),
-    def_none_or_ext is_fundef_internal d1 ->
-    def_none_or_ext is_fundef_internal d2 ->
-    link_prog_merge d1 d2 = Some d ->
-    def_internal d = false.
-Proof.
-  intros F V LV d1 d2 d DE1 DE2 LINK.
-  unfold link_prog_merge in LINK. 
-  destr_in LINK; destr_in LINK; subst.
-  - red in DE1. destruct DE1; try congruence.
-    destruct H as (def1' & EQ & DE1'). inv EQ.
-    red in DE2. destruct DE2; try congruence.
-    destruct H as (def2' & EQ & DE2'). inv EQ.
-    cbn in LINK.
-    eapply (link_external_defs def1' def2'); eauto.
-  - inv LINK. 
-    red in DE1. destruct DE1; try congruence.
-    destruct H as (def1' & EQ & DE1'). inv EQ.
-    auto.
-  - red in DE2. destruct DE2; try congruence.
-    destruct H as (def2' & EQ & DE2'). inv EQ.
-    auto.
-Qed.
-
-Lemma link_prog_merge_def_internal:
-  forall {F V} {LV: Linker V} d1 d2 (d: option (globdef (AST.fundef F) V)),
-    def_internal d1 = true ->
-    link_prog_merge (Some d1) d2 = Some d ->
-    def_internal d = true.
-Proof.
-  intros F V LV d1 d2 d DI1 LINK.
-  cbn in LINK. destruct d2.
-  - eapply link_option_pres_int_def; eauto.
-  - inv LINK. auto.
-Qed.
-
 Lemma combine_defs_none_or_ext: 
   forall {F V} {LV: Linker V} ids defs (t1 t2: PTree.t (option (globdef (AST.fundef F) V))),
     defs_none_or_ext t1 ids ->
@@ -3207,20 +3259,6 @@ Proof.
   rewrite H0. auto.
 Qed.
 
-Lemma link_merge_pres_internal:
-  forall (F V : Type) (LV : Linker V)
-    (def2 : option (option (globdef (AST.fundef F) V)))
-    (def1 def : option (globdef (AST.fundef F) V)),
-  def_internal def1 = true ->
-  link_prog_merge (Some def1) def2 = Some def -> 
-  def_internal def = true.
-Proof.
-  intros.
-  assert (def_eq def def1).
-  { eapply link_merge_internal_external_defs; eauto. }
-  erewrite def_eq_pres_internal; eauto.
-Qed.
-
 Lemma get_symbentry_eq_internal_fun_inv: 
   forall did1 cid1 dsz1 csz1 did2 cid2 dsz2 csz2 id1 id2 f def,
     get_symbentry did1 cid1 dsz1 csz1 id1 (Some (Gfun f)) =
@@ -3364,7 +3402,7 @@ Proof.
         generalize (IN _ _ (or_introl eq_refl)).
         intros GET1. rewrite GET1 in H0.
         assert (def_internal o = true) as INT.
-        { eapply link_merge_pres_internal; eauto. }
+        { eapply link_prog_merge_def_internal; eauto. }
         destruct o; cbn in INT; try congruence.
         destruct g.
         ** eapply (get_symbentry_eq_internal_fun_inv 
