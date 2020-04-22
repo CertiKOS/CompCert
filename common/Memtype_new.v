@@ -811,7 +811,8 @@ Axiom range_perm_drop_1:
 (*X*)
 Axiom range_perm_drop_2:
   forall m b lo hi p,
-  range_perm m b lo hi Cur Freeable -> { m' | drop_perm m b lo hi p = Some m' }.
+  range_perm m b lo hi Cur Freeable -> 
+  exists m', drop_perm m b lo hi p = Some m'.
 
 (*X*)
 Axiom perm_drop_1:
@@ -2022,12 +2023,6 @@ Axiom neutral_inject:
 
 Parameter unchanged_on: forall (P: block -> Z -> Prop) (m_before m_after: mem), Prop.
 
-(*X* SACC: Necessary to distinguish from [unchanged_on], used as
- postconditions to external function calls, whereas
- [strong_unchanged_on] will be used for ordinary memory operations. *)
-
-Parameter strong_unchanged_on: forall (P: block -> Z -> Prop) (m_before m_after: mem), Prop.
-
 (** ** Properties of [unchanged_on] and [strong_unchanged_on] *)
 
 Axiom unchanged_on_refl:
@@ -2104,50 +2099,6 @@ Axiom drop_perm_unchanged_on:
   (forall i, lo <= i < hi -> ~ P b i) ->
   unchanged_on P m m'.
 
-
-
-Axiom strong_unchanged_on_weak:
-  forall P m1 m2,
-  strong_unchanged_on P m1 m2 ->
-  unchanged_on P m1 m2.
-Axiom strong_unchanged_on_refl:
-  forall P m, 
-  strong_unchanged_on P m m.
-Axiom strong_unchanged_on_trans:
-  forall P m1 m2 m3, 
-  strong_unchanged_on P m1 m2 -> 
-  strong_unchanged_on P m2 m3 -> 
-  strong_unchanged_on P m1 m3.
-Axiom strong_unchanged_on_implies:
-   forall (P Q: block -> Z -> Prop) m m',
-   strong_unchanged_on P m m' ->
-   (forall b ofs, Q b ofs -> valid_block m b -> P b ofs) ->
-   strong_unchanged_on Q m m'.
-Axiom alloc_strong_unchanged_on:
-  forall P m lo hi m' b,
-  alloc m lo hi = (m', b) ->
-  strong_unchanged_on P m m'.
-Axiom store_strong_unchanged_on:
-  forall P chunk m b ofs v m',
-  store chunk m b ofs v = Some m' ->
-  (forall i, ofs <= i < ofs + size_chunk chunk -> ~ P b i) ->
-  strong_unchanged_on P m m'.
-Axiom storebytes_strong_unchanged_on:
-  forall P m b ofs bytes m',
-  storebytes m b ofs bytes = Some m' ->
-  (forall i, ofs <= i < ofs + Z_of_nat (length bytes) -> ~ P b i) ->
-  strong_unchanged_on P m m'.
-Axiom free_strong_unchanged_on:
-  forall P m b lo hi m',
-  free m b lo hi = Some m' ->
-  (forall i, lo <= i < hi -> ~ P b i) ->
-  strong_unchanged_on P m m'.
-Axiom drop_perm_strong_unchanged_on:
-  forall P m b lo hi p m',
-  drop_perm m b lo hi p = Some m' ->
-  (forall i, lo <= i < hi -> ~ P b i) ->
-  strong_unchanged_on P m m'.
-
 (** The following property is needed by Separation, to prove
 minjection. HINT: it can be used only for [strong_unchanged_on], not
 for [unchanged_on]. *)
@@ -2155,7 +2106,7 @@ for [unchanged_on]. *)
 Axiom inject_strong_unchanged_on:
    forall j g m0 m m',
    inject j g m0 m ->
-   strong_unchanged_on
+   unchanged_on
      (fun (b : block) (ofs : Z) =>
         exists (b0 : block) (delta : Z),
           j b0 = Some (b, delta) /\
@@ -2208,7 +2159,7 @@ Definition mem_unchanged (T: mem -> mem -> Prop) :=
   forall m1 m2, T m1 m2 ->
            nextblock m2 = nextblock m1
            /\ (forall b o k p, perm m2 b o k p <-> perm m1 b o k p)
-           /\ (forall P, strong_unchanged_on P m1 m2)
+           /\ (forall P, unchanged_on P m1 m2)
            /\ (forall b o chunk, load chunk m2 b o = load chunk m1 b o).
 
 (* Properties of [push_new_stage] *)
@@ -2262,7 +2213,7 @@ Axiom extends_push:
 
 Axiom push_new_stage_unchanged_on:
   forall P m,
-  strong_unchanged_on P m (push_new_stage m).
+  unchanged_on P m (push_new_stage m).
 
 Axiom push_new_stage_loadv:
   forall chunk m v,
@@ -2290,7 +2241,7 @@ Axiom push_new_stage_inject_flat:
 Axiom tailcall_stage_unchanged_on:
   forall P m1 m2,
   tailcall_stage m1 = Some m2 ->
-  strong_unchanged_on P m1 m2.
+  unchanged_on P m1 m2.
 
 Axiom magree_tailcall_stage:
   forall P m1 m2 m1',
@@ -2473,7 +2424,7 @@ Axiom record_stack_blocks_top_tframe_no_perm:
 Axiom record_stack_block_unchanged_on:
   forall m bfi m' (P: block -> Z -> Prop),
   record_stack_blocks m bfi = Some m' ->
-  strong_unchanged_on P m m'.
+  unchanged_on P m m'.
 
 Axiom record_stack_block_perm:
   forall m bfi m',
@@ -2658,7 +2609,7 @@ Axiom unrecord_stack_block_inject_parallel_flat:
 Axiom unrecord_stack_block_unchanged_on:
   forall m m' P,
   unrecord_stack_block m = Some m' ->
-  strong_unchanged_on P m m'.
+  unchanged_on P m m'.
 
 Axiom unrecord_stack_block_perm:
   forall m m',

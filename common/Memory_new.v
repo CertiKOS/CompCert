@@ -2520,7 +2520,8 @@ Qed.
 (*X*)
 Theorem range_perm_drop_2:
   forall m b lo hi p,
-  range_perm m b lo hi Cur Freeable -> {m' | drop_perm m b lo hi p = Some m' }.
+  range_perm m b lo hi Cur Freeable -> 
+  exists m', drop_perm m b lo hi p = Some m'.
 Proof.
   unfold drop_perm; intros.
   destruct (range_perm_dec m b lo hi Cur Freeable). econstructor. eauto. contradiction.
@@ -3350,7 +3351,7 @@ Lemma drop_mapped_inj:
    /\ mem_inj f g m1' m2'.
 Proof.
   intros.
-  assert ({ m2' | drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2' }).
+  assert (exists m2', drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2') as X.
   apply range_perm_drop_2. red; intros.
   replace ofs with ((ofs - delta) + delta) by omega.
   eapply perm_inj; eauto. eapply range_perm_drop_1; eauto. omega.
@@ -3367,7 +3368,7 @@ Proof.
   destruct (zlt (ofs + delta0) (lo + delta0)). eapply perm_drop_3; eauto.
   destruct (zle (hi + delta0) (ofs + delta0)). eapply perm_drop_3; eauto.
   assert (perm_order p p0).
-    eapply perm_drop_2.  eexact H0. instantiate (1 := ofs). omega. eauto.
+    eapply perm_drop_2. eexact H0. instantiate (1 := ofs). omega. eauto.
   apply perm_implies with p; auto.
   eapply perm_drop_1. eauto. omega.
   (* b1 <> b0 *)
@@ -3827,11 +3828,16 @@ Record inject' (f: meminj) (g : frameinj) (m1 m2: mem) : Prop :=
       forall b b' delta, f b = Some(b', delta) -> valid_block m2 b';
     mi_no_overlap:
       meminj_no_overlap f m1;
+    (*SACC:*)
     mi_representable:
-      forall b b' delta ofs,
+      forall b b' delta,
       f b = Some(b', delta) ->
-      perm m1 b (Ptrofs.unsigned ofs) Max Nonempty \/ perm m1 b (Ptrofs.unsigned ofs - 1) Max Nonempty ->
-      delta >= 0 /\ 0 <= Ptrofs.unsigned ofs + delta <= Ptrofs.max_unsigned;
+      delta >= 0
+      /\
+      forall ofs,
+        perm m1 b (Ptrofs.unsigned ofs) Max Nonempty
+        \/ perm m1 b (Ptrofs.unsigned ofs - 1) Max Nonempty ->
+        0 <= Ptrofs.unsigned ofs + delta <= Ptrofs.max_unsigned;
     mi_perm_inv:
       forall b1 ofs b2 delta k p,
       f b1 = Some(b2, delta) ->
@@ -3950,6 +3956,7 @@ Proof.
   intros.
   assert (perm m1 b1 (Ptrofs.unsigned ofs1) Max Nonempty) by eauto with mem.
   exploit mi_representable; eauto. intros [A B].
+  exploit B; eauto. clear B; intro B.
   assert (0 <= delta <= Ptrofs.max_unsigned).
     generalize (Ptrofs.unsigned_range ofs1). omega.
   unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr; omega.
@@ -3977,10 +3984,12 @@ Theorem weak_valid_pointer_inject_no_overflow:
 Proof.
   intros. rewrite weak_valid_pointer_spec in H0.
   rewrite ! valid_pointer_nonempty_perm in H0.
-  exploit mi_representable; eauto. destruct H0; eauto with mem.
-  intros [A B].
-  pose proof (Ptrofs.unsigned_range ofs).
-  rewrite Ptrofs.unsigned_repr; omega.
+  exploit mi_representable; eauto. 
+  intros [A B]. exploit B; eauto.
+  destruct H0; eauto with mem.
+  pose proof (Ptrofs.unsigned_range ofs). intro.
+  rewrite Ptrofs.unsigned_repr. auto.
+  omega.
 Qed.
 
 (*X*)
@@ -4020,8 +4029,9 @@ Proof.
   exploit weak_valid_pointer_inject; eauto. intros W.
   rewrite weak_valid_pointer_spec in H0.
   rewrite ! valid_pointer_nonempty_perm in H0.
-  exploit mi_representable; eauto. destruct H0; eauto with mem.
-  intros [A B].
+  exploit mi_representable; eauto. 
+  intros [A B]. exploit B; eauto.
+  destruct H0; eauto with mem. intros.
   pose proof (Ptrofs.unsigned_range ofs).
   unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr; auto; omega.
 Qed.
@@ -4187,8 +4197,9 @@ Proof.
 (* no overlap *)
   red; intros. eauto with mem.
 (* representable *)
-  intros. eapply mi_representable; try eassumption.
-  destruct H4; eauto with mem.
+  intros. exploit mi_representable; try eassumption.
+  intros [A B]; split; eauto. intros ofs0 P. eapply B.
+  destruct P; eauto with mem.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_store_2. 
   intuition eauto using perm_store_1, perm_store_2.
@@ -4213,7 +4224,9 @@ Proof.
 (* no overlap *)
   red; intros. eauto with mem.
 (* representable *)
-  intros. eapply mi_representable; try eassumption.
+  intros. exploit mi_representable; try eassumption.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
   destruct H3; eauto with mem.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_store_2. 
@@ -4286,7 +4299,9 @@ Proof.
 (* no overlap *)
   red; intros. eapply mi_no_overlap0; eauto; eapply perm_storebytes_2; eauto.
 (* representable *)
-  intros. eapply mi_representable0; eauto.
+  intros. exploit mi_representable0; eauto.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
   destruct H4; eauto using perm_storebytes_2.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_storebytes_2. 
@@ -4312,7 +4327,9 @@ Proof.
 (* no overlap *)
   red; intros. eapply mi_no_overlap0; eauto; eapply perm_storebytes_2; eauto.
 (* representable *)
-  intros. eapply mi_representable0; eauto.
+  intros. exploit mi_representable0; eauto.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
   destruct H3; eauto using perm_storebytes_2.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto.
@@ -4363,7 +4380,9 @@ Proof.
 (* no overlap *)
   red; intros. eapply mi_no_overlap0; eauto; eapply perm_storebytes_2; eauto.
 (* representable *)
-  intros. eapply mi_representable0; eauto.
+  intros. exploit mi_representable0; eauto.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
   destruct H3; eauto using perm_storebytes_2.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_storebytes_2. 
@@ -4440,7 +4459,9 @@ Proof.
 (* representable *)
   unfold f'; intros.
   destruct (eq_block b b1); try discriminate.
-  eapply mi_representable0; try eassumption.
+  exploit mi_representable0; try eassumption.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
   destruct H4; eauto using perm_alloc_4.
 (* perm inv *)
   intros. unfold f' in H3; destruct (eq_block b0 b1); try discriminate.
@@ -4522,17 +4543,24 @@ Proof.
     eapply H6; eauto. omega.
   eauto.
 (* representable *)
-  unfold f'; intros.
-  destruct (eq_block b b1).
-   subst. injection H9; intros; subst b' delta0. destruct H10.
-    exploit perm_alloc_inv; eauto; rewrite dec_eq_true; intro.
-    exploit H3. apply H4 with (k := Max) (p := Nonempty); eauto.
-    generalize (Ptrofs.unsigned_range_2 ofs). omega.
-   exploit perm_alloc_inv; eauto; rewrite dec_eq_true; intro.
-   exploit H3. apply H4 with (k := Max) (p := Nonempty); eauto.
-   generalize (Ptrofs.unsigned_range_2 ofs). omega.
-  eapply mi_representable0; try eassumption.
-  destruct H10; eauto using perm_alloc_4.
+  {
+    unfold f'; intros b b' delta0 FB.
+    destruct (eq_block b b1).
+    - subst. injection FB; intros; subst b' delta0.
+      split. omega.
+      intros.
+      destruct H9.
+      exploit perm_alloc_inv; eauto; rewrite dec_eq_true; intro.
+      exploit H3. apply H4 with (k := Max) (p := Nonempty); eauto.
+      generalize (Ptrofs.unsigned_range_2 ofs). omega.
+      exploit perm_alloc_inv; eauto; rewrite dec_eq_true; intro.
+      exploit H3. apply H4 with (k := Max) (p := Nonempty); eauto.
+      generalize (Ptrofs.unsigned_range_2 ofs). omega.
+    - exploit mi_representable0; try eassumption.
+      intros [A B]; split; auto.
+      intros; eapply B; eauto.
+      destruct H9; eauto using perm_alloc_4.
+  }
 (* perm inv *)
   intros. unfold f' in H9; destruct (eq_block b0 b1).
   inversion H9; clear H9; subst b0 b3 delta0.
@@ -4597,7 +4625,9 @@ Proof.
 (* no overlap *)
   red; intros. eauto with mem.
 (* representable *)
-  intros. eapply mi_representable0; try eassumption.
+  intros.   exploit mi_representable0; try eassumption.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
   destruct H2; eauto with mem.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto. intuition eauto using perm_free_3.
@@ -4793,15 +4823,18 @@ Proof.
   destruct (f b) as [[b1 delta1] |] eqn:?; try discriminate.
   destruct (f' b1) as [[b2 delta2] |] eqn:?; inv H.
   exploit mi_representable0; eauto. intros [A B].
+  exploit mi_representable1. eauto. intros [C D]. 
+  split; auto. omega.
+  intros.
   set (ofs' := Ptrofs.repr (Ptrofs.unsigned ofs + delta1)).
   assert (Ptrofs.unsigned ofs' = Ptrofs.unsigned ofs + delta1).
     unfold ofs'; apply Ptrofs.unsigned_repr. auto.
-  exploit mi_representable1. eauto. instantiate (1 := ofs').
-  rewrite H.
+    exploit D. instantiate (1 := ofs').
+  rewrite H0.
   replace (Ptrofs.unsigned ofs + delta1 - 1) with
     ((Ptrofs.unsigned ofs - 1) + delta1) by omega.
-  destruct H0; eauto using perm_inj.
-  rewrite H. omega.
+  destruct H; eauto using perm_inj.
+  rewrite H0. omega.
 (* perm inv *)
   intros. 
   destruct (f b1) as [[b' delta'] |] eqn:?; try discriminate.
@@ -4883,7 +4916,8 @@ Proof.
   setoid_rewrite IHg. reflexivity.
 Qed.
 
-(*X*)
+(*X* SACC: Needed by Stackingproof, with Linear2 to Mach,
+   to compose extends (in Linear2) and inject. *)
 Lemma extends_inject_compose:
   forall f g m1 m2 m3,
   extends m1 m2 -> inject f g m2 m3 -> inject f g m1 m3.
@@ -4903,8 +4937,10 @@ Proof.
 (* no overlap *)
   red; intros. eapply mi_no_overlap0; eauto; eapply perm_extends; eauto.
 (* representable *)
-  eapply mi_representable0; eauto.
-  destruct H1; eauto using perm_extends.
+  exploit mi_representable0; try eassumption.
+  intros [A B]; split; auto.
+  intros; eapply B; eauto.
+  destruct H1; [left|right]; eapply perm_extends; eauto.
 (* perm inv *)
   exploit mi_perm_inv0; eauto. intros [A|A].
   eapply mext_perm_inv0; eauto.
@@ -4995,7 +5031,7 @@ Proof.
   apply flat_inj_no_overlap.
 (* range *)
   unfold flat_inj; intros.
-  destruct (plt b (nextblock m)); inv H0. generalize (Ptrofs.unsigned_range_2 ofs); omega.
+  destruct (plt b (nextblock m)); inv H0. split; auto. omega. intros. generalize (Ptrofs.unsigned_range_2 ofs); omega.
 (* perm inv *)
   unfold flat_inj; intros.
   destruct (plt b1 (nextblock m)); inv H0.
@@ -5780,7 +5816,6 @@ Lemma alloc_get_frame_info_fresh:
   get_frame_info (stack m2) b = None.
 Proof.
   intros; eapply not_in_stack_get_assoc; auto.
-  Check alloc_stack_unchanged.
   rewrite (alloc_stack_unchanged _ _ _ _ _ H); eauto.
   intro IN; apply in_stack_valid in IN.
   eapply fresh_block_alloc in IN; eauto.
@@ -5968,6 +6003,13 @@ Proof.
   eapply is_stack_top_inj; eauto. inv mext_inj0; eauto. reflexivity.
 Qed.
 
+Definition mem_unchanged (T: mem -> mem -> Prop) :=
+  forall m1 m2, T m1 m2 ->
+           nextblock m2 = nextblock m1
+           /\ (forall b o k p, perm m2 b o k p <-> perm m1 b o k p)
+           /\ (forall P, unchanged_on P m1 m2)
+           /\ (forall b o chunk, load chunk m2 b o = load chunk m1 b o).
+
 (** SACC: The [magree] predicate is a variant of [extends] where we
   allow the contents of the two memory states to differ arbitrarily
   on some locations.  The predicate [P] is true on the locations whose
@@ -6135,6 +6177,748 @@ Proof.
   eapply perm_storebytes_2; eauto.
 - rewrite_stack_backwards; inv H; auto.
 Qed.
+
+Theorem magree_storebytes_left:
+  forall m1 m2 P b ofs bytes1 m1',
+  magree m1 m2 P ->
+  storebytes m1 b ofs bytes1 = Some m1' ->
+  (forall i, ofs <= i < ofs + Z_of_nat (length bytes1) -> ~(P b i)) ->
+  magree m1' m2 P.
+Proof.
+  intros. constructor; intros.
+- eapply ma_perm; eauto. eapply perm_storebytes_2; eauto.
+- exploit ma_perm_inv; eauto.
+  intuition eauto using perm_storebytes_1, perm_storebytes_2.
+- rewrite (storebytes_mem_contents _ _ _ _ _ H0).
+  rewrite PMap.gsspec. destruct (peq b0 b).
++ subst b0. rewrite setN_outside. eapply ma_memval; eauto. eapply perm_storebytes_2; eauto.
+  destruct (zlt ofs0 ofs); auto. destruct (zle (ofs + Z.of_nat (length bytes1)) ofs0); try omega.
+  elim (H1 ofs0). omega. auto.
++ eapply ma_memval; eauto. eapply perm_storebytes_2; eauto.
+- rewrite (nextblock_storebytes _ _ _ _ _ H0).
+  eapply ma_nextblock; eauto.
+- rewrite (storebytes_stack_unchanged _ _ _ _ _ H0).
+  eapply stack_inject_invariant_strong.
+  2: eapply ma_stack; eauto.
+  unfold inject_id. intros b0 ofs0 k p b' delta H3 H4. inv H3.
+  eapply perm_storebytes_2; eauto.
+- rewrite_stack_backwards; inv H; auto.
+Qed.
+
+Theorem magree_store_left:
+  forall m1 m2 P chunk b ofs v1 m1',
+  magree m1 m2 P ->
+  store chunk m1 b ofs v1 = Some m1' ->
+  (forall i, ofs <= i < ofs + size_chunk chunk -> ~(P b i)) ->
+  magree m1' m2 P.
+Proof.
+  intros. eapply magree_storebytes_left; eauto.
+  eapply store_storebytes; eauto.
+  intros. rewrite encode_val_length in H2.
+  rewrite <- size_chunk_conv in H2. apply H1; auto.
+Qed.
+
+(*X* SACC:*)
+Theorem magree_free:
+  forall m1 m2 (P Q: locset) b lo hi m1',
+  magree m1 m2 P ->
+  free m1 b lo hi = Some m1' ->
+  (forall b' i, Q b' i ->
+   b' <> b \/ ~(lo <= i < hi) ->
+   P b' i) ->
+  exists m2', free m2 b lo hi = Some m2' /\ magree m1' m2' Q.
+Proof.
+  intros m1 m2 P Q b lo hi m1' MAGREE FREE COND.
+  destruct (range_perm_free m2 b lo hi) as [m2' FREE'].
+  red; intros. eapply ma_perm; eauto. eapply free_range_perm; eauto.
+  exists m2'; split; auto.
+  constructor; intros.
+- (* permissions *)
+  assert (perm m2 b0 ofs k p). { eapply ma_perm; eauto. eapply perm_free_3; eauto. }
+  exploit perm_free_inv; eauto. intros [[A B] | A]; auto.
+  subst b0. eelim perm_free_2. eexact FREE. eauto. eauto.
+- (* inverse permissions *)
+  exploit ma_perm_inv; eauto using perm_free_3. intros [A|A].
+  eapply perm_free_inv in A; eauto. destruct A as [[A B] | A]; auto.
+  subst b0; right; eapply perm_free_2; eauto.
+  right; intuition eauto using perm_free_3.
+- (* contents *)
+  rewrite (free_result _ _ _ _ _ FREE).
+  rewrite (free_result _ _ _ _ _ FREE').
+  simpl. eapply ma_memval; eauto. eapply perm_free_3; eauto.
+  apply COND; auto. destruct (eq_block b0 b); auto.
+  subst b0. right. red; intros. eelim perm_free_2. eexact FREE. eauto. eauto.
+- (* nextblock *)
+  rewrite (free_result _ _ _ _ _ FREE).
+  rewrite (free_result _ _ _ _ _ FREE').
+  simpl. eapply ma_nextblock; eauto.
+- rewrite (free_stack_unchanged _ _ _ _ _ FREE').
+  rewrite (free_stack_unchanged _ _ _ _ _ FREE).
+  eapply stack_inject_invariant_strong.
+  2: eapply ma_stack; eauto.
+  unfold inject_id. intros b0 ofs0 k p b' delta H3 H4. inv H3.
+  eapply perm_free_3; eauto.
+- rewrite_stack_backwards; inv MAGREE; auto.
+Qed.
+
+Theorem magree_valid_access:
+  forall m1 m2 (P: locset) chunk b ofs p,
+  magree m1 m2 P ->
+  valid_access m1 chunk b ofs p ->
+  valid_access m2 chunk b ofs p.
+Proof.
+  intros. destruct H0 as (A & B); split; auto.
+  red; intros. eapply ma_perm; eauto.
+Qed.
+
+(** Weak Memory injections *)
+
+Record weak_inject' (f: meminj) (g: frameinj) (m1 m2: mem) : Prop :=
+  mk_weak_inject {
+    mwi_inj:
+      mem_inj f g m1 m2;
+    mwi_mappedblocks:
+      forall b b' delta, f b = Some(b', delta) -> valid_block m2 b';
+    mwi_no_overlap:
+      meminj_no_overlap f m1;
+    mwi_representable:
+      forall b b' delta,
+      f b = Some(b', delta) ->
+      delta >= 0
+      /\
+      forall ofs,
+        perm m1 b (Ptrofs.unsigned ofs) Max Nonempty
+        \/ perm m1 b (Ptrofs.unsigned ofs - 1) Max Nonempty ->
+        0 <= Ptrofs.unsigned ofs + delta <= Ptrofs.max_unsigned;
+    mwi_perm_inv:
+      forall b1 ofs b2 delta k p,
+      f b1 = Some(b2, delta) ->
+      perm m2 b2 (ofs + delta) k p ->
+      perm m1 b1 ofs k p \/ ~perm m1 b1 ofs Max Nonempty
+  }.
+
+Definition weak_inject := weak_inject'.
+
+(** Properties of [inject]*)
+
+(** The following lemmas establish the absence of g machine integer overflow
+  during address computations. *)
+
+Local Hint Resolve valid_block_alloc fresh_block_alloc valid_new_block: mem.
+
+Theorem inject_delta_pos:
+  forall f g m1 m2 b1 b2 delta,
+  inject f g m1 m2 ->
+  f b1 = Some (b2, delta) ->
+  delta >= 0.
+Proof.
+  intros.
+  exploit mi_representable; eauto. intuition.
+Qed.
+
+Lemma mem_inj_ext:
+  forall j1 j2 g m1 m2,
+  mem_inj j1 g m1 m2 ->
+  (forall x, j1 x = j2 x) ->
+  mem_inj j2 g m1 m2.
+Proof.
+  intros j1 j2 g m1 m2 INJ EXT.
+  inv INJ; constructor; auto; intros; rewrite <- ? EXT in *; eauto.
+  eapply memval_inject_ext; eauto.
+  eapply stack_inject_ext'; eauto.
+Qed.
+
+Theorem inject_ext:
+  forall f f' g m1 m2,
+  inject f g m1 m2 ->
+  (forall b, f b = f' b) ->
+  inject f' g m1 m2.
+Proof.
+  intros.
+  inv H; constructor; auto; intros; rewrite <- ? H0 in *; eauto.
+  eapply mem_inj_ext; eauto.
+  red; intros. eapply mi_no_overlap0; rewrite ? H0; eauto.
+Qed.
+
+Lemma weak_valid_pointer_nonempty_perm:
+  forall m b ofs,
+  weak_valid_pointer m b ofs = true <-> 
+  (perm m b ofs Cur Nonempty) \/ (perm m b (ofs-1) Cur Nonempty).
+Proof.
+  intros. unfold weak_valid_pointer. unfold valid_pointer.
+  destruct (perm_dec m b ofs Cur Nonempty); destruct (perm_dec m b (ofs-1) Cur Nonempty); simpl;
+  intuition congruence.
+Qed.
+
+Lemma weak_valid_pointer_size_bounds : forall f g b1 b2 m1 m2 ofs delta,
+  f b1 = Some (b2, delta) ->
+  inject f g m1 m2 ->
+  weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
+  0 <= delta <= Ptrofs.max_unsigned /\
+  0 <= Ptrofs.unsigned ofs + delta <= Ptrofs.max_unsigned.
+Proof.
+  intros. exploit Mem.mi_representable; eauto. intros [A B].
+  rewrite weak_valid_pointer_nonempty_perm in H1.
+  exploit B; eauto. 
+  destruct H1; eauto with mem. intros.
+  generalize (Ptrofs.unsigned_range ofs). omega.
+Qed.
+
+(*X* SACC:*)
+Theorem valid_pointer_inject': 
+  forall f g m1 m2 b1 ofs b2 delta,
+  f b1 = Some(b2, delta) ->
+  inject f g m1 m2 ->
+  valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
+  valid_pointer m2 b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true.
+Proof.
+  intros. exploit valid_pointer_inject; eauto. intros.
+  intros. unfold Ptrofs.add.
+  exploit weak_valid_pointer_size_bounds; eauto. 
+  erewrite weak_valid_pointer_spec; eauto.
+  intros [A B].
+  repeat rewrite Ptrofs.unsigned_repr; auto.
+Qed.
+
+Theorem weak_valid_pointer_inject': 
+  forall f g m1 m2 b1 ofs b2 delta,
+  f b1 = Some(b2, delta) ->
+  inject f g m1 m2 ->
+  weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
+  weak_valid_pointer m2 b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true.
+Proof.
+  intros. exploit weak_valid_pointer_inject; eauto.
+  intros. unfold Ptrofs.add.
+  exploit weak_valid_pointer_size_bounds; eauto. intros [A B].
+  repeat rewrite Ptrofs.unsigned_repr; auto.
+Qed.
+
+Lemma nth_getN_refl : forall n ofs ofs' mcontents,
+        ofs' >= ofs -> ofs' < ofs + Z.of_nat n ->
+        nth (nat_of_Z (ofs' - ofs)) (getN n ofs mcontents) Undef = ZMap.get ofs' mcontents.
+Proof.
+  induction n; intros; simpl in *.
+  - omega.
+  - rewrite Zpos_P_of_succ_nat in H0.
+    assert (ofs' - ofs = 0 \/ ofs' - ofs > 0) by omega.
+    destruct H1. 
+    + rewrite H1. simpl. assert (ofs' = ofs) by omega. subst ofs. auto.
+    + rewrite nat_of_Z_succ; auto.
+      replace (ofs' - ofs - 1) with (ofs' - (ofs+1)) by omega.
+      apply IHn; omega.
+Qed.
+
+Lemma nth_setN_refl : forall lv ofs' ofs mcontents,
+  ofs' >= ofs -> ofs' < ofs + Zlength lv ->
+  nth (nat_of_Z (ofs' - ofs)) lv Undef = ZMap.get ofs' (setN lv ofs mcontents).
+Proof.
+  induction lv; simpl in *; intros.
+  - rewrite Zlength_correct in H0. simpl in *. omega.
+  - rewrite Zlength_correct in H0. simpl in *. 
+    rewrite Zpos_P_of_succ_nat in *. 
+    assert (ofs' = ofs \/ ofs' > ofs) by omega. destruct H1.
+    + subst ofs'. replace (ofs - ofs) with 0 by omega. simpl.
+      erewrite setN_outside; eauto. rewrite ZMap.gss. auto. omega.
+    + rewrite nat_of_Z_succ; auto.
+      replace (ofs' - ofs - 1) with (ofs' - (ofs+1)) by omega.
+      apply IHlv. omega. 
+      rewrite Zlength_correct. omega.
+      omega.
+Qed.
+
+Lemma store_right_inj:
+  forall f g m1 m2 chunk b ofs v m2',
+    mem_inj f g m1 m2 ->
+    (forall b' delta ofs',
+        f b' = Some(b, delta) ->
+        ofs' + delta = ofs ->
+        exists vl, loadbytes m1 b' ofs' (size_chunk chunk) = Some vl /\
+        list_forall2 (memval_inject f) vl (encode_val chunk v)) ->
+    store chunk m2 b ofs v = Some m2' ->
+    mem_inj f g m1 m2'.
+Proof.
+  intros. inv H. constructor.
+  - (* perm *)
+    eauto with mem.
+  - (* access *)
+    intros; eapply mi_align0; eauto.
+  - (* mem_contents *)
+    intros.
+    rewrite (store_mem_contents _ _ _ _ _ _ H1).
+    rewrite PMap.gsspec. destruct (peq b2 b). subst b2.
+    destruct (zlt (ofs0 + delta) ofs).
+    rewrite setN_outside. auto. omega.
+    destruct (zle (ofs + size_chunk chunk) (ofs0 + delta)).
+    rewrite setN_outside. auto. rewrite encode_val_length.
+    rewrite <- size_chunk_conv. omega.
+    exploit (H0 b1 delta (ofs-delta) H); eauto. omega.
+    intros (vl & LBYTES& MVALSINJ). unfold loadbytes in LBYTES.
+    destruct (range_perm_dec m1 b1 (ofs - delta) (ofs - delta + size_chunk chunk) Cur Readable); inv LBYTES.
+    set (ofs'' := ofs0 + delta - ofs).
+    set (l1 := (getN (size_chunk_nat chunk) (ofs - delta) (mem_contents m1) # b1)) in *.
+    set (l2 := (encode_val chunk v)) in *.
+    assert (memval_inject f (nth (nat_of_Z ofs'') l1 Undef) (nth (nat_of_Z ofs'') l2 Undef)).
+    eapply list_forall2_in; eauto. constructor.
+    subst ofs''. omega. subst ofs''. 
+    rewrite Zlength_correct. 
+    subst l1. rewrite getN_length. rewrite <- size_chunk_conv. omega.
+    subst ofs'' l1 l2.    
+    erewrite <- (nth_getN_refl (size_chunk_nat chunk) (ofs-delta) ofs0).
+    replace (ofs0 - (ofs - delta)) with (ofs0 + delta - ofs). 
+    erewrite <- nth_setN_refl; try omega. auto. 
+    rewrite Zlength_correct. rewrite encode_val_length.
+    rewrite <- size_chunk_conv. omega.
+    omega. omega. rewrite <- size_chunk_conv. omega.
+    auto.
+  - rewrite (store_stack_unchanged _ _ _ _ _ _ H1).
+    eapply stack_inject_invariant_strong.
+    2: eauto. tauto.
+Qed.
+
+
+Theorem store_right_inject:
+  forall f g m1 m2 chunk b ofs v m2',
+  inject f g m1 m2 ->
+  (forall b' delta ofs',
+   f b' = Some(b, delta) ->
+   ofs' + delta = ofs ->
+   exists vl, loadbytes m1 b' ofs' (size_chunk chunk) = Some vl /\
+              list_forall2 (memval_inject f) vl (encode_val chunk v)) ->
+  store chunk m2 b ofs v = Some m2' ->
+  inject f g m1 m2'.
+Proof.
+  intros. inversion H. constructor.
+(* inj *)
+  eapply store_right_inj; eauto.
+(* freeblocks *)
+  auto.
+(* mappedblocks *)
+  eauto with mem.
+(* no overlap *)
+  auto.
+(* representable *)
+  eauto with mem.
+(* perm inv *)
+  intros. eauto using perm_store_2.
+Qed.
+
+Theorem drop_parallel_inject:
+  forall f g m1 m2 b1 b2 delta lo hi p m1',
+  inject f g m1 m2 ->
+  drop_perm m1 b1 lo hi p = Some m1' ->
+  f b1 = Some(b2, delta) ->
+  exists m2',
+      drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2'
+   /\ inject f g m1' m2'.
+Proof.
+  intros. inversion H. 
+  exploit drop_mapped_inj; eauto.
+
+  intros (m2' & DPERM & MEMINJ).
+  exists m2'. split. auto. constructor.
+(* inj *)
+  auto.
+(* freeblocks *)
+  eauto with mem.
+(* mappedblocks *)
+  eauto with mem.
+(* no overlap *)
+  red; intros. eauto with mem.
+(* representable *)
+  intros. exploit mi_representable; try eassumption.
+  intros [A B]; split; eauto. intros ofs0 P. eapply B.
+  destruct P; eauto with mem.
+(* perm inv *)
+  intros. exploit mi_perm_inv0; eauto using perm_drop_4. 
+  intuition eauto using perm_drop_4.
+  destruct (eq_block b0 b1). subst b0.
+  destruct (zle lo ofs). destruct (zlt ofs hi). 
+  rewrite H1 in H2. inv H2.
+  assert (perm_order p p0). eapply perm_drop_2; eauto. omega.
+  assert (perm m1' b1 ofs k p). eapply perm_drop_1; eauto.
+  left. eauto with mem.
+  left. eapply perm_drop_3; eauto. right. right. omega.
+  left. eapply perm_drop_3; eauto. right. left. omega.
+  left. eapply perm_drop_3; eauto. 
+Qed.
+
+Lemma drop_right_inj: forall f g m1 m2 b lo hi p m2',
+  mem_inj f g m1 m2 ->
+  drop_perm m2 b lo hi p = Some m2' ->
+  (forall b' delta ofs' k p',
+    f b' = Some(b, delta) ->
+    perm m1 b' ofs' k p' ->
+    lo <= ofs' + delta < hi -> p' = p) ->
+  mem_inj f g m1 m2'.
+Proof.
+  intros. inv H. constructor.
+  (* perm *)
+  intros.  
+  destruct (eq_block b2 b); auto. subst b2. 
+  destruct (zlt (ofs + delta) lo). eapply perm_drop_3; eauto.
+  destruct (zle hi (ofs + delta)). eapply perm_drop_3; eauto.
+  exploit H1; eauto. omega. intros. subst p0.
+  eapply perm_drop_1; eauto. omega.
+  eapply perm_drop_3; eauto.
+  (* align *)
+  eapply mi_align0; eauto.
+  (* contents *)
+  intros.
+  replace (m2'.(mem_contents)#b2) with (m2.(mem_contents)#b2).
+  apply mi_memval0; auto.
+  unfold drop_perm in H0; destruct (range_perm_dec m2 b lo hi Cur Freeable); inv H0; auto.
+  (* stack *)
+  rewrite (drop_perm_stack_unchanged _ _ _ _ _ _ H0). auto.
+Qed.
+
+Theorem drop_right_inject: 
+  forall f g m1 m2 b lo hi p m2',
+  inject f g m1 m2 ->
+  drop_perm m2 b lo hi p = Some m2' ->
+  (forall b' delta ofs' k p',
+   f b' = Some(b, delta) ->
+   perm m1 b' ofs' k p' ->
+   lo <= ofs' + delta < hi -> p' = p) ->
+   inject f g m1 m2'.
+Proof.
+  intros. destruct H. constructor; eauto.
+  eapply drop_right_inj; eauto.
+  intros. unfold valid_block in *. erewrite nextblock_drop; eauto.
+  intros. eapply mi_perm_inv0; eauto using perm_drop_4.
+Qed.
+
+Lemma drop_partial_mapped_inj:
+  forall f g m1 m2 b1 b2 delta lo1 hi1 lo2 hi2 p m1',
+  mem_inj f g m1 m2 ->
+  drop_perm m1 b1 lo1 hi1 p = Some m1' ->
+  f b1 = Some(b2, delta) ->
+  lo2 <= lo1 -> hi1 <= hi2 ->
+  range_perm m2 b2 (lo2 + delta) (hi2 + delta) Cur Freeable ->
+  meminj_no_overlap f m1 ->
+  (* no source memory location with non-empty permision 
+     injects into the following region in b2 in the target memory: 
+     [lo2, lo1)
+     and
+     [hi1, hi2)
+  *)
+  (forall b' delta' ofs' k p,
+    f b' = Some(b2, delta') ->
+    perm m1 b' ofs' k p ->
+    ((lo2 + delta <= ofs' + delta' < lo1 + delta )
+     \/ (hi1 + delta <= ofs' + delta' < hi2 + delta)) -> False) ->
+  exists m2',
+      drop_perm m2 b2 (lo2 + delta) (hi2 + delta) p = Some m2'
+   /\ mem_inj f g m1' m2'.
+Proof.
+  intros. 
+  assert (exists m2', drop_perm m2 b2 (lo2 + delta) (hi2 + delta) p = Some m2' ) as X.
+  apply range_perm_drop_2. apply H4.
+  destruct X as [m2' DROP]. exists m2'; split; auto.
+  inv H.
+  constructor.
+(* perm *)
+  intros.
+  assert (perm m2 b3 (ofs + delta0) k p0).
+    eapply mi_perm0; eauto. eapply perm_drop_4; eauto.
+  destruct (eq_block b1 b0).
+  (* b1 = b0 *)
+  subst b0. rewrite H1 in H; inv H.
+  destruct (zlt (ofs + delta0) (lo1 + delta0)). 
+  destruct (zlt (ofs + delta0) (lo2 + delta0)).
+  eapply perm_drop_3; eauto.
+  exfalso. apply H6 with b1 delta0 ofs k p0; auto.
+  eapply perm_drop_4; eauto.
+  left. omega.
+  destruct (zle (hi1 + delta0) (ofs + delta0)). 
+  destruct (zle (hi2 + delta0) (ofs + delta0)).
+  eapply perm_drop_3; eauto.
+  exfalso. apply H6 with b1 delta0 ofs k p0; auto.
+  eapply perm_drop_4; eauto.
+  right. omega.
+  assert (perm_order p p0).
+    eapply perm_drop_2.  eexact H0. instantiate (1 := ofs). omega. eauto.
+  apply perm_implies with p; auto.
+  eapply perm_drop_1. eauto. omega.
+  (* b1 <> b0 *)
+  eapply perm_drop_3; eauto.
+  destruct (eq_block b3 b2); auto. subst.
+  destruct (zlt (ofs + delta0) (lo2 + delta)); auto.
+  destruct (zle (hi2 + delta) (ofs + delta0)); auto.
+  destruct (zlt (ofs + delta0) (lo1 + delta)).
+  exfalso. apply H6 with b0 delta0 ofs k p0; auto. eapply perm_drop_4; eauto. left. omega.
+  destruct (zle (hi1 + delta) (ofs + delta0)).
+  exfalso. apply H6 with b0 delta0 ofs k p0; auto. eapply perm_drop_4; eauto. right. omega.
+  exploit H5; eauto.
+  instantiate (1 := ofs + delta0 - delta).
+  apply perm_cur_max. apply perm_implies with Freeable.
+  eapply range_perm_drop_1; eauto. omega. auto with mem.
+  eapply perm_drop_4; eauto. eapply perm_max. apply perm_implies with p0. eauto.
+  eauto with mem.
+  intuition.
+
+(* align *)
+  intros. eapply mi_align0 with (ofs := ofs) (p := p0); eauto.
+  red; intros; eapply perm_drop_4; eauto.
+(* memval *)
+  intros.
+  replace (m1'.(mem_contents)#b0) with (m1.(mem_contents)#b0).
+  replace (m2'.(mem_contents)#b3) with (m2.(mem_contents)#b3).
+  apply mi_memval0; auto. eapply perm_drop_4; eauto.
+  unfold drop_perm in DROP; destruct (range_perm_dec m2 b2 (lo2 + delta) (hi2 + delta) Cur Freeable); inv DROP; auto.
+  unfold drop_perm in H0; destruct (range_perm_dec m1 b1 lo1 hi1 Cur Freeable); inv H0; auto.
+(* stack *)
+  rewrite (drop_perm_stack_unchanged _ _ _ _ _ _ H0).
+  rewrite (drop_perm_stack_unchanged _ _ _ _ _ _ DROP).
+  eapply stack_inject_invariant_strong. 2: eauto.
+  intros. eapply perm_drop_4; eauto.
+Qed.
+
+Theorem drop_extended_parallel_inject:
+  forall f g m1 m2 b1 b2 delta lo1 hi1 lo2 hi2 p m1',
+  inject f g m1 m2 ->
+  drop_perm m1 b1 lo1 hi1 p = Some m1' ->
+  f b1 = Some(b2, delta) ->
+  lo2 <= lo1 -> hi1 <= hi2 ->
+  range_perm m2 b2 (lo2 + delta) (hi2 + delta) Cur Freeable ->
+  (* no source memory location with non-empty permision 
+     injects into the following region in b2 in the target memory: 
+     [lo2, lo1)
+     and
+     [hi1, hi2)
+  *)
+  (forall b' delta' ofs' k p,
+    f b' = Some(b2, delta') ->
+    perm m1 b' ofs' k p ->
+    ((lo2 + delta <= ofs' + delta' < lo1 + delta )
+     \/ (hi1 + delta <= ofs' + delta' < hi2 + delta)) -> False) ->
+  exists m2',
+      drop_perm m2 b2 (lo2 + delta) (hi2 + delta) p = Some m2'
+   /\ inject f g m1' m2'.
+Proof.
+  intros. inversion H. 
+  exploit drop_partial_mapped_inj; eauto.
+  intros (m2' & DPERM & MEMINJ).
+  exists m2'. split. auto. constructor.
+(* inj *)
+  auto.
+(* freeblocks *)
+  eauto with mem.
+(* mappedblocks *)
+  eauto with mem.
+(* no overlap *)
+  red; intros. eauto with mem.
+(* representable *)
+  intros. exploit mi_representable; try eassumption.
+  intros [A B]; split; eauto. intros ofs0 P. eapply B.
+  destruct P; eauto with mem.
+(* perm inv *)
+  intros. exploit mi_perm_inv0; eauto using perm_drop_4. 
+  intuition eauto using perm_drop_4.
+  destruct (eq_block b0 b1). subst b0.
+  destruct (zle lo1 ofs). destruct (zlt ofs hi1). 
+  rewrite H1 in H6. inv H6.
+  assert (perm_order p p0). eapply perm_drop_2; eauto. omega.
+  assert (perm m1' b1 ofs k p). eapply perm_drop_1; eauto.
+  left. eauto with mem.
+  left. eapply perm_drop_3; eauto. right. right. omega.
+  left. eapply perm_drop_3; eauto. right. left. omega.
+  left. eapply perm_drop_3; eauto.
+Qed.
+
+Theorem inject_stack_inj_wf:
+  forall f g m1 m2,
+  inject f g m1 m2 ->
+  sum_list g = length (stack m1) /\ length g = length (stack m2).
+Proof.
+    inversion 1. inv mi_inj0. eauto.
+    split.
+    eapply stack_inject_length_l; eauto.
+    eapply stack_inject_length_r; eauto.
+Qed.
+
+Theorem is_stack_top_inject:
+  forall f g m1 m2 b1 b2 delta,
+  inject f g m1 m2 ->
+  f b1 = Some (b2, delta) ->
+  (exists (o : Z) (k : perm_kind) (p : permission), perm m1 b1 o k p) ->
+  is_stack_top ( (stack m1)) b1 -> is_stack_top ( (stack m2)) b2.
+Proof.
+  intros.
+  eapply is_stack_top_inj; eauto. inv H; eauto.
+Qed.
+
+Lemma record_stack_inject_left_zero:
+  forall j g m1 s1 s2 f1 f2 l
+    (FAP: frame_at_pos s2 0 f2)
+    (FI: tframe_inject j m1 f1 f2)
+    (SI: stack_inject j m1 g ((None,l) :: s1) s2),
+    stack_inject j m1 g (f1 :: s1) s2.
+Proof.
+  intros j g m1 s1 s2 f1 f2 l FAP FI SI.
+  inv SI.
+  - simpl in TAKE; repeat destr_in TAKE.
+    apply frame_at_pos_last in FAP; subst.
+    econstructor. simpl. rewrite Heqo. eauto. all: eauto.
+    inv FI0; constructor; auto.
+Qed.
+
+Lemma destr_dep_match:
+  forall {A B: Type} (a: option A) (x: B)
+    (T: forall x (pf: Some x = a), B)
+    (MATCH: match a as ano return (ano = a -> option B) with
+            | Some m1 => fun Heq: Some m1 = a => Some (T _ Heq)
+            | None => fun Heq => None
+            end eq_refl = Some x) ,
+  forall P: B -> Prop,
+    (forall m (pf: Some m = a) x, T m pf = x -> P x) ->
+    P x.
+Proof.
+  intros. destr_in MATCH. subst. inv MATCH. eapply H. eauto.
+Qed.
+
+Lemma record_stack_blocks_mem_inj_left_zero:
+  forall j g m1 m2 f1 f2 m1',
+    mem_inj j g m1 m2 ->
+    (* top_is_new m1 -> *)
+    record_stack_blocks m1 f1 = Some m1' ->
+    frame_at_pos (stack m2) O f2 ->
+    tframe_inject j (perm m1) (Some f1,nil) f2 ->
+    mem_inj j g m1' m2.
+Proof.
+  intros j g m1 m2 f1 f2 m1' INJ ADT FAP FI; autospe.
+  unfold record_stack_blocks in ADT; repeat destr_in ADT.
+  pattern m1'.
+  eapply destr_dep_match. apply H0. clear H0. simpl; intros. inv H.
+  inversion INJ; subst; constructor; simpl; intros; eauto.
+  eapply stack_inject_invariant_strong.
+  intros. change (perm m1 b ofs k p) in H0. apply H0.
+  unfold prepend_to_current_stage in pf. repeat destr_in pf.
+  eapply record_stack_inject_left_zero; eauto.
+Qed.
+
+Theorem record_stack_blocks_mem_unchanged:
+  forall bfi,
+  mem_unchanged (fun m1 m2 => record_stack_blocks m1 bfi = Some m2).
+Proof.
+  red; intros. unfold record_stack_blocks in H.
+  repeat destr_in H.
+  pattern m2; eapply destr_dep_match. apply H1. clear H1.
+  simpl; intros. subst. simpl.
+  repeat split; simpl; auto. xomega.
+Qed.
+
+Theorem record_stack_block_inject_left_zero:
+  forall m1 m1' m2 j g f1 f2,
+  inject j g m1 m2 ->
+  frame_at_pos (stack m2) O f2 ->
+  tframe_inject j (perm m1) (Some f1,nil) f2 ->
+  record_stack_blocks m1 f1 = Some m1' ->
+  inject j g m1' m2.
+Proof.
+  intros.
+  inversion H; eauto.
+  exploit record_stack_blocks_mem_inj_left_zero; eauto.
+  intro MINJ.
+  edestruct (record_stack_blocks_mem_unchanged _ _ _ H2) as (NB1 & PERM1 & U1 & C1) ; simpl in *.
+  inversion H; econstructor; simpl; intros; eauto.
+  + eapply mi_freeblocks0; eauto.
+    unfold valid_block in H3; rewrite NB1 in H3; eauto.
+  + red; intros.
+    rewrite PERM1 in H7, H6.
+    eapply mi_no_overlap0; eauto.
+  + exploit mi_representable0; eauto.
+    intros (A & B); split; auto. intro ofs; rewrite ! PERM1. eauto.
+  + rewrite ! PERM1. eapply mi_perm_inv0 in H4; eauto.
+Qed.
+
+Ltac unfold_unrecord' H m :=
+  unfold unrecord_stack_block in H;
+  let A := fresh in
+  case_eq (stack m); [
+    intro A
+  | intros ? ? A
+  ]; setoid_rewrite A in H; inv H.
+Ltac unfold_unrecord :=
+  match goal with
+    H: unrecord_stack_block ?m = _ |- _ => unfold_unrecord' H m
+  end.
+
+Lemma unrecord_stack_block_mem_unchanged:
+  mem_unchanged (fun m1 m2 => unrecord_stack_block m1 = Some m2).
+Proof.
+  red; intros.
+  unfold_unrecord; simpl; repeat split; eauto.
+  simpl. xomega.
+Qed.
+
+Open Scope nat_scope.
+
+Lemma unrecord_stack_inject_left_zero:
+  forall j n g m1 f s1 s2
+    (SI: stack_inject j m1 (S n :: g) (f :: s1) s2)
+    (LE: 1 <= n)
+(*    (TOPNOPERM: top_tframe_prop (fun tf => forall b, in_frames tf b -> forall o k p, ~ m1 b o k p) (f::s1)) *),
+    stack_inject j m1 (n :: g) s1 s2.
+Proof.
+  intros j n g m1 f s1 s2 SI LE (*TOPNOPERM*).
+  inv SI.
+  simpl in TAKE; repeat destr_in TAKE.
+  destruct n. omega.
+  econstructor; eauto. inv FI; auto.
+Qed.
+
+Lemma unrecord_stack_block_mem_inj_left_zero:
+  forall (m1 m1' m2 : mem) (j : meminj) n g,
+    mem_inj j (S n :: g) m1 m2 ->
+    unrecord_stack_block m1 = Some m1' ->
+(*    top_frame_no_perm m1 -> *)
+    1 <= n ->
+    mem_inj j (n :: g) m1' m2.
+Proof.
+  intros m1 m1' m2 j n g MI USB LE.
+  unfold_unrecord.
+  inv MI; constructor; simpl; intros; eauto.
+  eapply stack_inject_invariant_strong.
+  - intros b ofs k p b' delta JB PERM. change (perm m1 b ofs k p) in PERM. eauto.
+  - rewrite H in *. simpl in *.
+    eapply unrecord_stack_inject_left_zero; eauto.
+Qed.
+
+Theorem unrecord_stack_block_inject_left_zero:
+  forall (m1 m1' m2 : mem) (j : meminj) n g,
+  inject j (S n :: g) m1 m2 ->
+  unrecord_stack_block m1 = Some m1' ->
+  (1 <= n)%nat ->
+  inject j (n :: g) m1' m2.
+Proof.
+  intros m1 m1' m2 j n g INJ USB LE.
+  generalize (unrecord_stack_block_mem_unchanged _ _ USB). simpl. intros (NB & PERM & UNCH & LOAD).
+  inv INJ; constructor; eauto.
+  - eapply unrecord_stack_block_mem_inj_left_zero; eauto. 
+  - unfold valid_block; rewrite NB; eauto.
+  - red; intros. rewrite PERM in H2, H3. eauto.
+  - intros. exploit mi_representable0.  eauto. intros (A & B).
+    split; auto. intros ofs. rewrite ! PERM. eauto.
+  - intros. rewrite ! PERM; eauto.
+Qed.
+
+(*
+Axiom self_inject:
+  forall f m,
+  (forall b, f b = None \/ f b = Some (b, 0)) ->
+  (forall b, f b <> None -> valid_block m b) ->
+  (forall b,
+     f b <> None ->
+     forall o b' o' q n,
+       loadbytes m b o 1 = Some (Fragment (Vptr b' o') q n :: nil) ->
+       f b' <> None) ->
+  inject f (flat_frameinj (length (stack m))) m m.
+
+Axiom frame_inject_flat:
+  forall thr f,
+  Forall (fun bfi => Plt (fst bfi) thr) (frame_adt_blocks f) ->
+  frame_inject (flat_inj thr) f f.
+*)
 
 End Mem.
 

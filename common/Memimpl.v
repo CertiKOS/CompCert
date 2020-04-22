@@ -9486,7 +9486,7 @@ Proof.
   inversion INJ; econstructor; simpl; intros; eauto.
   + eapply mi_freeblocks0; eauto.
     unfold valid_block in H; rewrite NB1 in H; eauto.
-  + red; intros.
+  + red; intros.  
     rewrite PERM1 in H3, H2.
     eapply mi_no_overlap0; eauto.
   + exploit mi_representable0; eauto.
@@ -9543,7 +9543,7 @@ Proof.
   intros m1 m1' m2 j n g INJ USB NOPERM LE.
   generalize (unrecord_stack_block_mem_unchanged _ _ USB). simpl. intros (NB & PERM & UNCH & LOAD).
   inv INJ; constructor; eauto.
-  - eapply unrecord_stack_block_mem_inj_left_zero; eauto. 
+  - eapply unrecord_stack_block_mem_inj_left_zero. eauto. 
   - unfold valid_block; rewrite NB; eauto.
   - red; intros. rewrite PERM in H2, H3. eauto.
   - intros. exploit mi_representable0.  eauto. intros (A & B).
@@ -10219,7 +10219,7 @@ Proof.
   {
     inversion 1. inv mi_inj0; inv mi_stack_blocks0; eauto.
     split.
-    eapply stack_inject_aux_length_l; eauto.
+    eapply stack_inject_aux_length_l. eauto.
     eapply stack_inject_aux_length_r; eauto.
   }
   intros; eapply extends_inject_compose; eauto.
