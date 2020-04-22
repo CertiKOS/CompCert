@@ -27,6 +27,7 @@ Local Transparent Linker_vardef.
 Local Transparent Linker_varinit.
 Local Transparent Linker_prog_ordered.
 
+Hint Resolve link_prog_merge_symm.
 
 Lemma elements_of_acc_symb_to_list_perm': forall idstbl,
     list_norepet (map fst idstbl) ->
@@ -932,7 +933,29 @@ Proof.
     eapply IHids; eauto.
     eapply defs_none_or_ext_tail; eauto.
     eapply defs_none_or_ext_tail; eauto.
-Qed.        
+Qed.
+
+Lemma PTree_extract_elements_remain_external': 
+  forall (F V : Type) (LV : Linker V) (p1 p2 : AST.program (AST.fundef F) V)
+    (defs3 : list (ident * option (globdef (AST.fundef F) V)))
+    (t1 : PTree.t (option (globdef (AST.fundef F) V))),
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
+    PTree_extract_elements
+      (collect_internal_def_ids is_fundef_internal p1 ++
+                                collect_internal_def_ids is_fundef_internal p2)
+      (PTree.combine link_prog_merge (prog_option_defmap p1) (prog_option_defmap p2)) =
+    Some (defs3, t1) ->
+    Forall (fun '(id, def) => is_def_internal is_fundef_internal def = false) (PTree.elements t1).
+Proof.
+  intros F V LV p1 p2 defs3 t1 NORPT1 NORPT2 EXTR.
+  generalize (PTree_extract_elements_remain_external _ _ NORPT1 NORPT2 EXTR).
+  intros (DNE1 & DNE2).
+  eapply @combine_defs_none_or_ext with 
+      (t1:=prog_option_defmap p1) (t2:=prog_option_defmap p2); eauto.
+  eapply PTree_extract_elements_combine_remain_match; eauto.
+Qed.
+
 
 Lemma link_merge_internal_external_defs:
   forall (F V : Type) (LV : Linker V)
@@ -1043,7 +1066,7 @@ Proof.
   simpl. rewrite app_assoc. auto.
 Qed.
 
-Lemma fold_right_acc_init_data_app : forall defs l,
+Lemma fold_right_acc_init_data_app' : forall defs l,
     fold_right acc_init_data [] defs ++ l = fold_right acc_init_data l defs.
 Proof.
   induction defs. 
@@ -1052,6 +1075,14 @@ Proof.
     rewrite acc_init_data_app. rewrite IHdefs. auto.
 Qed.
 
+Lemma fold_right_acc_init_data_app : forall defs1 defs2,
+    fold_right acc_init_data [] (defs1 ++ defs2) = 
+    fold_right acc_init_data [] defs1 ++ fold_right acc_init_data [] defs2.
+Proof.
+  intros.
+  rewrite fold_right_app.
+  rewrite <- fold_right_acc_init_data_app'. auto.
+Qed.
 
 Lemma acc_init_data_eq: forall d1 d2 l,
     id_def_eq d1 d2 -> acc_init_data d1 l = acc_init_data d2 l.
@@ -1095,36 +1126,6 @@ Existing Instance PERIdAsmDefEq.
 Definition IdAsmDefEq := (@IdDefEq Asm.function unit).
 Existing Instance IdAsmDefEq.
 
-(* Lemma link_acc_init_data_comm : forall defs1 defs2 defs, *)
-(*     list_norepet (map fst defs1) -> *)
-(*     list_norepet (map fst defs2) -> *)
-(*     link_defs is_fundef_internal defs1 defs2 = Some defs -> *)
-(*     fold_right acc_init_data [] defs =  *)
-(*     fold_right acc_init_data [] defs1 ++ fold_right acc_init_data [] defs2. *)
-(* Proof. *)
-(*   intros defs1 defs2 defs NORPT1 NORPT2 LINK. *)
-(*   unfold link_defs in LINK. *)
-(*   destruct (link_defs1 is_fundef_internal defs1 defs2) eqn:LINK1; try inv LINK. *)
-(*   destruct p as (r & defs2_rest). destruct r as (defs1_linked & defs1_rest). *)
-(*   destruct (link_defs1 is_fundef_internal defs2_rest defs1_rest) eqn:LINK2; try inv H0. *)
-(*   destruct p. destruct p as (defs2_linked & p). inv H1. *)
-(*   rewrite fold_right_app. rewrite <- fold_right_acc_init_data_app. *)
-(*   generalize (link_defs_rest_norepet_pres1 _ is_fundef_internal defs1 defs2 NORPT1 LINK1). *)
-(*   intros NORPT3. *)
-(*   apply link_defs1_in_order in LINK1; auto. destruct LINK1 as (ORDER1 & ORDER2). *)
-(*   apply link_defs1_in_order in LINK2; auto. destruct LINK2 as (ORDER3 & ORDER4). *)
-(*   generalize (list_in_order_trans ORDER2 ORDER3). *)
-(*   intros ORDER5. *)
-(*   rewrite (acc_init_data_in_order_eq ORDER1). *)
-(*   rewrite (acc_init_data_in_order_eq ORDER5). auto.   *)
-(* Qed. *)
-
-Lemma link_acc_init_data_comm : forall p1 p2 p,
-    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
-    fold_right acc_init_data [] (AST.prog_defs p) =
-    fold_right acc_init_data [] (AST.prog_defs p1) ++ fold_right acc_init_data [] (AST.prog_defs p2).
-Proof.
-Admitted.
 
 
 (** Code section generation and linking *)
@@ -1136,7 +1137,7 @@ Proof.
   simpl. rewrite app_assoc. auto.
 Qed.
 
-Lemma fold_right_acc_instrs_app : forall defs l,
+Lemma fold_right_acc_instrs_app' : forall defs l,
     fold_right acc_instrs [] defs ++ l = fold_right acc_instrs l defs.
 Proof.
   induction defs. 
@@ -1144,6 +1145,15 @@ Proof.
   - intros l. simpl. 
     rewrite acc_instrs_app. rewrite IHdefs. auto.
 Qed.
+
+Lemma fold_right_acc_instrs_app : forall defs1 defs2,
+    fold_right acc_instrs [] (defs1 ++ defs2) = 
+    fold_right acc_instrs [] defs1 ++ fold_right acc_instrs [] defs2.
+Proof.
+  intros. rewrite fold_right_app.
+  rewrite <- fold_right_acc_instrs_app'. auto.
+Qed.
+
 
 Lemma acc_instrs_eq: forall d1 d2 l,
     id_def_eq d1 d2 -> acc_instrs d1 l = acc_instrs d2 l.
@@ -1181,35 +1191,13 @@ Proof.
 Qed.
 
 
-
-(* Lemma link_acc_instrs_comm : forall defs1 defs2 defs, *)
-(*     list_norepet (map fst defs1) -> *)
-(*     list_norepet (map fst defs2) -> *)
-(*     link_defs is_fundef_internal defs1 defs2 = Some defs -> *)
-(*     fold_right acc_instrs [] defs =  *)
-(*     (fold_right acc_instrs [] defs1) ++ (fold_right acc_instrs [] defs2). *)
-(* Proof. *)
-(*   intros defs1 defs2 defs NORPT1 NORPT2 LINK. *)
-(*   unfold link_defs in LINK. *)
-(*   destruct (link_defs1 is_fundef_internal defs1 defs2) eqn:LINK1; try inv LINK. *)
-(*   destruct p as (r & defs2_rest). destruct r as (defs1_linked & defs1_rest). *)
-(*   destruct (link_defs1 is_fundef_internal defs2_rest defs1_rest) eqn:LINK2; try inv H0. *)
-(*   destruct p. destruct p as (defs2_linked & p). inv H1. *)
-(*   rewrite fold_right_app. rewrite <- fold_right_acc_instrs_app. *)
-(*   generalize (link_defs_rest_norepet_pres1 _ is_fundef_internal defs1 defs2 NORPT1 LINK1). *)
-(*   intros NORPT3. *)
-(*   apply link_defs1_in_order in LINK1; auto. destruct LINK1 as (ORDER1 & ORDER2). *)
-(*   apply link_defs1_in_order in LINK2; auto. destruct LINK2 as (ORDER3 & ORDER4). *)
-(*   generalize (list_in_order_trans ORDER2 ORDER3). *)
-(*   intros ORDER5. *)
-(*   rewrite (acc_instrs_in_order_eq ORDER1). *)
-(*   rewrite (acc_instrs_in_order_eq ORDER5). auto.   *)
-(* Qed. *)
-
-Lemma link_acc_instrs_comm : forall p1 p2 p,
+Lemma link_acc_instrs_data_comm : forall p1 p2 p,
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
     fold_right acc_instrs [] (AST.prog_defs p) =
-    (fold_right acc_instrs [] (AST.prog_defs p1)) ++ (fold_right acc_instrs [] (AST.prog_defs p2)).
+    fold_right acc_instrs [] (AST.prog_defs p1) ++ fold_right acc_instrs [] (AST.prog_defs p2) 
+    /\
+    fold_right acc_init_data [] (AST.prog_defs p) =
+    fold_right acc_init_data [] (AST.prog_defs p1) ++ fold_right acc_init_data [] (AST.prog_defs p2).
 Proof.
   intros p1 p2 p LINK.
   unfold link_prog_ordered in LINK.
@@ -1225,15 +1213,66 @@ Proof.
                 link_prog_merge_none
                 Heqo).
   intros MATCH.
-  apply PTree_combine_ids_defs_match_app_inv in MATCH.
+  eapply PTree_combine_ids_defs_match_app_inv in MATCH; eauto.
   destruct MATCH as (defs1 & defs2 & EQ & MATCH1 & MATCH2). subst.
-  generalize (PTree_extract_elements_combine_remain_match
-                _ _ _ _ _ _
+  generalize (PTree_extract_elements_combine_match 
+                _ _ _ _ _ _ 
                 link_prog_merge_none
                 Heqo).
-  intros MATCH3.
-  
-Admitted.
+  intros MATCH.
+  generalize (PTree_extract_elements_remain_external' _ _ _ NORPT1 NORPT2 Heqo).
+  intros EXTNS.
+  generalize (ext_defs_code_nil EXTNS). intros CN.
+  generalize (ext_defs_data_nil EXTNS). intros DN.
+  rewrite fold_right_acc_instrs_app.
+  rewrite fold_right_acc_instrs_app.
+  rewrite fold_right_acc_init_data_app.
+  rewrite fold_right_acc_init_data_app.
+  rewrite CN, DN. cbn.
+
+  assert (fold_right acc_instrs [] (AST.prog_defs p1) = 
+          fold_right acc_instrs [] defs1 /\
+          fold_right acc_init_data [] (AST.prog_defs p1) = 
+          fold_right acc_init_data [] defs1) as EQ1.
+  {
+    eapply PTree_combine_ids_defs_match_instrs_data_eq; eauto.
+    intros id def IN.
+    eapply prog_option_defmap_norepet; eauto.
+  }
+  destruct EQ1 as (IEQ1 & DEQ1).
+  rewrite IEQ1, DEQ1.
+
+  apply PTree_combine_ids_defs_match_symm in MATCH2; auto.
+  assert (fold_right acc_instrs [] (AST.prog_defs p2) = 
+          fold_right acc_instrs [] defs2 /\
+          fold_right acc_init_data [] (AST.prog_defs p2) = 
+          fold_right acc_init_data [] defs2) as EQ2.
+  { eapply PTree_combine_ids_defs_match_instrs_data_eq; eauto.
+    intros id def IN.
+    eapply prog_option_defmap_norepet; eauto.
+  }
+  destruct EQ2 as (IEQ2 & DEQ2).
+  rewrite IEQ2, DEQ2.
+  split; auto.
+Qed.
+
+Lemma link_acc_init_data_comm : forall p1 p2 p,
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    fold_right acc_init_data [] (AST.prog_defs p) =
+    fold_right acc_init_data [] (AST.prog_defs p1) ++ fold_right acc_init_data [] (AST.prog_defs p2).
+Proof.
+  intros.
+  apply link_acc_instrs_data_comm in H. tauto.
+Qed.
+
+Lemma link_acc_instrs_comm : forall p1 p2 p,
+    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
+    fold_right acc_instrs [] (AST.prog_defs p) =
+    (fold_right acc_instrs [] (AST.prog_defs p1)) ++ (fold_right acc_instrs [] (AST.prog_defs p2)).
+Proof.
+  intros.
+  apply link_acc_instrs_data_comm in H. tauto.
+Qed.
 
 
 (** Symbol table size *)
@@ -1295,12 +1334,12 @@ Proof.
                        (@eq_refl _ (init_data_list_size (get_def_init_data def ++ data)))
                        (@eq_refl _ (code_size (get_def_instrs def ++ code)))).
     destruct 1. subst. split.
-    + rewrite <- (fold_right_acc_init_data_app defs data).
-      rewrite <- (fold_right_acc_init_data_app defs (get_def_init_data def ++ data)).
+    + rewrite <- (fold_right_acc_init_data_app' defs data).
+      rewrite <- (fold_right_acc_init_data_app' defs (get_def_init_data def ++ data)).
       repeat rewrite init_data_list_size_app.
       omega.
-    + rewrite <- (fold_right_acc_instrs_app defs code).
-      rewrite <- (fold_right_acc_instrs_app defs (get_def_instrs def ++ code)).
+    + rewrite <- (fold_right_acc_instrs_app' defs code).
+      rewrite <- (fold_right_acc_instrs_app' defs (get_def_instrs def ++ code)).
       repeat rewrite code_size_app.
       omega.
 Qed.
