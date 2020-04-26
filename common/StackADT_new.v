@@ -743,6 +743,21 @@ Section INJ.
      induction 1; simpl; intros; eauto.
    Qed.
 
+  Close Scope nat_scope.
+
+  Lemma stack_inject_flat:
+    forall s P f (F: forall b, f b = None \/ f b = Some (b, 0)),
+     stack_inject f P (flat_frameinj (length s)) s s.
+  Proof.
+    induction s; simpl; intros.
+    constructor.
+    simpl. econstructor. reflexivity. reflexivity. simpl. eauto.
+    repeat constructor.
+    apply self_tframe_inject; auto.
+  Qed.
+
+  Open Scope nat_scope.
+
   Lemma concat_In:
     forall {A} (l: list (list A)) b,
       In b (concat l) <->

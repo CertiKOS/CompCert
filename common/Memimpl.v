@@ -8476,7 +8476,7 @@ Lemma magree_push_new_stage:
     magree m1 m2 P ->
     magree (push_new_stage m1) (push_new_stage m2) P.
 Proof.
-  intros m1 m2 P MI; inv MI; constructor; eauto.
+  intros m1 m2 P MI. inv MI. constructor; eauto.
   simpl. 
   apply stack_inject_push_new_stage.
   eapply stack_inject_invariant_strong; eauto.

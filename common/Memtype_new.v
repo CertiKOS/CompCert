@@ -503,7 +503,7 @@ Axiom store_int16_sign_ext:
 Axiom range_perm_storebytes:
   forall m1 b ofs bytes,
   range_perm m1 b ofs (ofs + Z_of_nat (length bytes)) Cur Writable ->
-  { m2 : mem | storebytes m1 b ofs bytes = Some m2 }.
+  exists m2, storebytes m1 b ofs bytes = Some m2.
 (*X*)
 Axiom storebytes_range_perm:
   forall m1 b ofs bytes m2, storebytes m1 b ofs bytes = Some m2 ->
@@ -2103,7 +2103,7 @@ Axiom drop_perm_unchanged_on:
 minjection. HINT: it can be used only for [strong_unchanged_on], not
 for [unchanged_on]. *)
 
-Axiom inject_strong_unchanged_on:
+Axiom inject_unchanged_on:
    forall j g m0 m m',
    inject j g m0 m ->
    unchanged_on
@@ -2310,7 +2310,7 @@ Axiom tailcall_stage_right_extends:
   top_frame_no_perm m2 ->
   exists m2', tailcall_stage m2 = Some m2' /\ extends m1 m2'.
 
-Axiom tailcall_stage_stack:
+Axiom tailcall_stage_stack_eq:
   forall m1 m2,
   tailcall_stage m1 = Some m2 ->
   exists f r,
@@ -2331,7 +2331,7 @@ Axiom tailcall_stage_inject_flat:
 
 (* Properties of [record_stack_block] *)
 
-Axiom record_stack_blocks_tailcall_original_stack:
+Axiom record_stack_blocks_original_stack:
   forall m1 f1 m2,
     record_stack_blocks m1 f1 = Some m2 ->
     exists f r,
@@ -2582,7 +2582,7 @@ Axiom unrecord_stack_block_extends:
 Axiom unrecord_stack_block_mem_unchanged:
   mem_unchanged (fun m1 m2 => unrecord_stack_block m1 = Some m2).
 
-Axiom unrecord_stack:
+Axiom unrecord_stack_eq:
   forall m m',
   unrecord_stack_block m = Some m' ->
   exists b, stack m = b :: stack m'.
