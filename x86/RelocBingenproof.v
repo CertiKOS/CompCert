@@ -137,9 +137,15 @@ Admitted.
 
 
 Lemma transl_code_spec_inc: forall ofs rtbl_ofs_map symbt code bytes instr x,
+    (* length code = n -> *)
     transl_code_spec code bytes ofs rtbl_ofs_map symbt
     -> encode_instr rtbl_ofs_map (ofs+(instr_size_acc code)) instr = OK x
     -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map symbt.
+Proof.
+  
+  (** *TODO: Help1 *)
+  
+  
 Admitted.
 
 
@@ -238,10 +244,20 @@ Fixpoint instr_eq_list code1 code2:=
   |_, _ => False
   end.
 
-Lemma spec_decode_ex: forall code l rtbl symtbl,
+Lemma spec_decode_ex: forall n code l rtbl symtbl,
+    length code = n ->
     transl_code_spec code l 0 rtbl symtbl ->
     exists code', decode_instrs' rtbl symtbl l = OK code'
                   /\ instr_eq_list code code'.
+Proof.
+  induction n.
+  (* base case *)
+  admit.
+  intros code l rtbl symtbl HLCode HTransCode.
+  generalize (list_has_tail _ _ HLCode).
+  intros [tail [prefix HCode]].
+  (** *TODO: Help2 *)
+  
 Admitted.
 
 Section PRESERVATION.
@@ -289,7 +305,7 @@ Proof.
     destruct x. monadInv EQ2.    
     generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
     intros HTranslSpec.
-    generalize (spec_decode_ex code (rev l) _ _ HTranslSpec).
+    generalize (spec_decode_ex (length code) code (rev l) _ _  eq_refl HTranslSpec).
     intros [c' HEncodeDecode].
     destruct HEncodeDecode as [HDecode HDecodeEQ].
     econstructor.
@@ -317,6 +333,20 @@ Qed.
 Lemma not_find_ext_funct_refl: forall b ofs,
     Genv.find_ext_funct ge (Vptr b ofs) = None
     -> Genv.find_ext_funct (globalenv tprog) (Vptr b ofs) = None.
+Proof.
+  inversion TRANSF.
+  unfold transf_program in H0.
+  monadInv H0. simpl.
+  intros b ofs Hge.
+
+  (** *TODO Help3 *)
+  (* unfold RelocProgSemantics.Genv.genv_ext_funs. *)
+  (* unfold RelocProgSemantics.globalenv. simpl. *)
+  (* unfold RelocProgSemantics.Genv.genv_ext_funs in Hge. *)
+  (* unfold RelocProgSemantics.globalenv in Hge. simpl in Hge. *)
+  (* unfold RelocProgSemantics.gen_extfuns. *)
+  (* unfold RelocProgSemantics.add_external_globals. *)
+  (* inversion Hge. *)  
 Admitted.
 
 Lemma find_instr_refl: forall b ofs i,
