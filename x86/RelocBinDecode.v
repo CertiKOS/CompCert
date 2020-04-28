@@ -38,7 +38,7 @@ Section PRESERVATION.
   Variable rtbl_ofs_map: reloc_ofs_map_type.
 
   
-  Variable relocTable : reloctable_map.
+  (* Variable relocTable : reloctable_map. *)
 
   Variable symtbl : symbtable.
 

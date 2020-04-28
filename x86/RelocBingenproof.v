@@ -136,12 +136,30 @@ Proof.
 Admitted.
 
 
-Lemma transl_code_spec_inc: forall ofs rtbl_ofs_map symbt code bytes instr x,
+Lemma transl_code_spec_inc: forall code ofs rtbl_ofs_map symbt bytes instr x,
     (* length code = n -> *)
     transl_code_spec code bytes ofs rtbl_ofs_map symbt
     -> encode_instr rtbl_ofs_map (ofs+(instr_size_acc code)) instr = OK x
     -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map symbt.
 Proof.
+  induction code as [|i code].
+  - intros ofs rtbl_ofs_map symbt bytes instr x TL EN.
+    cbn.
+    unfold instr_size_acc in EN. rewrite Z.add_0_r in EN.
+    cbn in TL. destruct bytes; try contradiction. cbn.
+    generalize (RelocBinDecode.encode_decode_instr_refl _ symbt _ _ _ nil EN).
+    rewrite app_nil_r.
+    intros (i' & DE & EQ).
+    exists i', nil. split; auto.
+  - intros ofs rtbl_ofs_map symbt bytes instr x TL EN.
+    cbn in TL.
+    destruct TL as (h' & t' & DE & EQ & TL).
+    cbn in EN. rewrite Z.add_assoc in EN.
+    cbn.
+    generalize (IHcode _ _ _ _ _ _ TL EN).
+    intros TL'.
+    exists h', (t' ++ x).
+    split; auto.
   
   (** *TODO: Help1 *)
   
@@ -244,21 +262,41 @@ Fixpoint instr_eq_list code1 code2:=
   |_, _ => False
   end.
 
-Lemma spec_decode_ex: forall n code l rtbl symtbl,
-    length code = n ->
-    transl_code_spec code l 0 rtbl symtbl ->
-    exists code', decode_instrs' rtbl symtbl l = OK code'
-                  /\ instr_eq_list code code'.
+Lemma spec_decode_ex: forall code ofs l rtbl symtbl,
+    transl_code_spec code l ofs rtbl symtbl ->
+    exists fuel code', decode_instrs rtbl symtbl fuel ofs l nil = OK code'
+             /\ instr_eq_list code (rev code').
 Proof.
-  induction n.
-  (* base case *)
-  admit.
-  intros code l rtbl symtbl HLCode HTransCode.
-  generalize (list_has_tail _ _ HLCode).
-  intros [tail [prefix HCode]].
+  induction code as [|i code].
+  - (* base case *)
+    intros ofs l rtbl symtbl TL.
+    cbn in TL. destruct l; try contradiction.
+    cbn. exists O, nil. split; auto.
+  - intros ofs l rtbl symtbl TL.
+    cbn in TL.
+    destruct TL as (h' & t' & DE & EQ & TL).
+    generalize (IHcode _ _ _ _ TL).
+    intros (fuel & code' & DE' & EQ').
+    exists (Datatypes.S fuel), (code' ++ [h']).
+    split.
+    cbn. destruct l. cbn in DE. congruence.
+    rewrite DE. cbn.
+    assert (instr_size i = instr_size h') as IEQ. admit.
+    rewrite <- IEQ.
+
+    Lemma decode_instrs_append: forall rtbl symtbl fuel ofs t l code,
+        decode_instrs rtbl symtbl fuel ofs t [] = OK code ->
+        decode_instrs rtbl symtbl fuel ofs t l = OK (code ++ l).
+    Admitted.
+
+    eapply decode_instrs_append; eauto.
+    rewrite rev_app_distr. cbn. auto.
+
   (** *TODO: Help2 *)
   
+  
 Admitted.
+
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
@@ -305,19 +343,19 @@ Proof.
     destruct x. monadInv EQ2.    
     generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
     intros HTranslSpec.
-    generalize (spec_decode_ex (length code) code (rev l) _ _  eq_refl HTranslSpec).
-    intros [c' HEncodeDecode].
+    generalize (spec_decode_ex code 0 (rev l) _ _  HTranslSpec).
+    intros (fuel & c' & HEncodeDecode).
     destruct HEncodeDecode as [HDecode HDecodeEQ].
     econstructor.
     unfold decode_prog_code_section.
     simpl. unfold sec_code_id.
-    rewrite HDecode. simpl. eauto.
+    (* rewrite HDecode. simpl. eauto. *)
 
     (* init_mem *)
     admit.
     (* initial_state_gen *)
     admit.
-  + reflexivity.
+  (* + reflexivity. *)
 Admitted.
 
 
@@ -334,7 +372,7 @@ Lemma not_find_ext_funct_refl: forall b ofs,
     Genv.find_ext_funct ge (Vptr b ofs) = None
     -> Genv.find_ext_funct (globalenv tprog) (Vptr b ofs) = None.
 Proof.
-  inversion TRANSF.
+  inversion TRANSF. unfold ge.
   unfold transf_program in H0.
   monadInv H0. simpl.
   intros b ofs Hge.
@@ -347,6 +385,23 @@ Proof.
   (* unfold RelocProgSemantics.gen_extfuns. *)
   (* unfold RelocProgSemantics.add_external_globals. *)
   (* inversion Hge. *)  
+Admitted.
+
+Definition ge_eq (ge1 ge2: RelocProgSemantics.Genv.t) : Prop :=
+  ge1.(RelocProgSemantics.Genv.genv_symb) = ge2.(RelocProgSemantics.Genv.genv_symb) /\
+  ge1.(RelocProgSemantics.Genv.genv_ext_funs) = ge2.(RelocProgSemantics.Genv.genv_ext_funs) /\
+  ge1.(RelocProgSemantics.Genv.genv_next) = ge2.(RelocProgSemantics.Genv.genv_next) /\ 
+  ge1.(RelocProgSemantics.Genv.genv_senv) = ge2.(RelocProgSemantics.Genv.genv_senv) /\
+  forall ofs i, ge1.(RelocProgSemantics.Genv.genv_instrs) ofs = Some i -> 
+           exists i', ge2.(RelocProgSemantics.Genv.genv_instrs) ofs = Some i' /\ RelocBinDecode.instr_eq i i'.
+
+Definition ge_eq1 (ge1 ge2: RelocProgSemantics1.Genv.t) : Prop :=
+  ge1.(Genv.genv_reloc_ofs_symb) = ge2.(Genv.genv_reloc_ofs_symb) /\
+  ge_eq (ge1.(Genv.genv_genv)) (ge2.(Genv.genv_genv)).
+
+Lemma transf_program_pres_genv: forall p1 p2,
+    transf_program p1 = OK p2 ->
+    ge_eq1 (globalenv p1) (globalenv p2).
 Admitted.
 
 Lemma find_instr_refl: forall b ofs i,
@@ -374,7 +429,7 @@ Proof.
   unfold RelocProgSemantics.globalenv.
   unfold RelocProgSemantics.Genv.genv_symb.
   simpl.
-  unfold  RelocProgSemantics.add_external_globals.
+  unfold RelocProgSemantics.add_external_globals.
   simpl.
   induction  (prog_symbtable prog).
   auto.
