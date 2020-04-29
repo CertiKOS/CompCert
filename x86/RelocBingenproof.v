@@ -136,6 +136,32 @@ Proof.
 Admitted.
 
 
+Lemma decode_app:forall x rtbl_ofs_map symbt ofs bytes h t,
+    RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes =OK (h, t)                 
+    -> RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs (bytes++x) = OK (h, t++x).
+Proof.
+  intros x rtbl_ofs_map symbt ofs bytes h t HDecode.
+  unfold RelocBinDecode.fmc_instr_decode in HDecode.
+  inversion HDecode.
+  destruct bytes;inversion H0.
+  unfold RelocBinDecode.fmc_instr_decode.
+  simpl.
+  (* nop *)
+  destruct Byte.eq_dec; inversion HDecode; auto.
+  (* jmp *)
+  destruct Byte.eq_dec.
+  unfold  RelocBinDecode.decode_jmp_l_rel.
+  unfold  RelocBinDecode.decode_jmp_l_rel in H2.
+  destruct bytes. simpl in H2. inversion H2.
+  unfold RelocBinDecode.decode_int_n in H2.
+  unfold RelocBinDecode.sublist in H2.
+  unfold decode_int in H2.
+  unfold int_of_bytes in H2. simpl.
+  (** *Something is wrong *)
+Admitted.
+
+
+
 Lemma transl_code_spec_inc: forall code ofs rtbl_ofs_map symbt bytes instr x,
     (* length code = n -> *)
     transl_code_spec code bytes ofs rtbl_ofs_map symbt
@@ -160,11 +186,10 @@ Proof.
     intros TL'.
     exists h', (t' ++ x).
     split; auto.
-  
-  (** *TODO: Help1 *)
-  
-  
-Admitted.
+    generalize(decode_app x _ _ _ _ _ _ DE).
+    auto.
+Qed.
+
 
 
 (* This lemma means the transl_code could preserve the spec 
