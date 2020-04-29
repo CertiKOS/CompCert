@@ -287,10 +287,29 @@ Fixpoint instr_eq_list code1 code2:=
   |_, _ => False
   end.
 
+Lemma decode_instrs_append: forall rtbl symtbl fuel ofs t l code,
+    decode_instrs rtbl symtbl fuel ofs t [] = OK code ->
+    decode_instrs rtbl symtbl fuel ofs t l = OK (rev l ++ code).
+Proof.
+  induction fuel.
+  (* base case *)
+  admit.
+  intros ofs t l code HDecode.
+  simpl. simpl in HDecode.
+  destruct t
+  . inversion HDecode. simpl.
+  rewrite app_nil_r. auto.
+  monadInv HDecode.
+  rewrite EQ.
+  simpl.
+  (** *TODO 2 *)
+Admitted.
+
+
 Lemma spec_decode_ex: forall code ofs l rtbl symtbl,
     transl_code_spec code l ofs rtbl symtbl ->
     exists fuel code', decode_instrs rtbl symtbl fuel ofs l nil = OK code'
-             /\ instr_eq_list code (rev code').
+             /\ instr_eq_list code code'.
 Proof.
   induction code as [|i code].
   - (* base case *)
@@ -302,26 +321,28 @@ Proof.
     destruct TL as (h' & t' & DE & EQ & TL).
     generalize (IHcode _ _ _ _ TL).
     intros (fuel & code' & DE' & EQ').
-    exists (Datatypes.S fuel), (code' ++ [h']).
+    exists (Datatypes.S fuel), (h'::code').
     split.
     cbn. destruct l. cbn in DE. congruence.
     rewrite DE. cbn.
-    assert (instr_size i = instr_size h') as IEQ. admit.
+    assert (instr_size i = instr_size h') as IEQ. {
+      destruct i;
+        simpl in EQ;
+        try(rewrite EQ;
+            auto);
+        try(destruct h';inversion EQ; auto).
+
+      1-2: rewrite H; rewrite H0; auto.
+    }
+      
+      
     rewrite <- IEQ.
-
-    Lemma decode_instrs_append: forall rtbl symtbl fuel ofs t l code,
-        decode_instrs rtbl symtbl fuel ofs t [] = OK code ->
-        decode_instrs rtbl symtbl fuel ofs t l = OK (code ++ l).
-    Admitted.
-
-    eapply decode_instrs_append; eauto.
-    rewrite rev_app_distr. cbn. auto.
-
-  (** *TODO: Help2 *)
-  
-  
-Admitted.
-
+    generalize (decode_instrs_append _ _ _ _ _ [h'] _ DE').
+    intros HAppend.
+    simpl in HAppend.
+    auto.
+    simpl. auto.
+Qed.
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
