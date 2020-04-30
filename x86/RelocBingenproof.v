@@ -287,23 +287,34 @@ Fixpoint instr_eq_list code1 code2:=
   |_, _ => False
   end.
 
+Lemma decode_instrs_append': forall rtbl symtbl fuel ofs t l1 l2 code,
+    decode_instrs rtbl symtbl fuel ofs t l1 = OK code ->
+    decode_instrs rtbl symtbl fuel ofs t (l1 ++ l2) = OK (rev l2 ++ code).
+Proof.
+  induction fuel as [|fuel].
+  - (* base case *)
+    intros ofs t l1 l2 code DI.
+    cbn in DI. destruct t; try congruence. inv DI.
+    cbn. rewrite rev_app_distr. auto.
+  - 
+    intros ofs t l1 l2 code DI.
+    cbn in DI. destruct t.
+    + inv DI. cbn. rewrite rev_app_distr. auto.
+    + monadInv DI. destruct x as (instr, bytes').
+      apply (IHfuel _ _ _ l2) in EQ0.
+      cbn ["++"] in EQ0.
+      unfold decode_instrs. rewrite EQ. cbn.
+      exact EQ0.
+Qed.
+
 Lemma decode_instrs_append: forall rtbl symtbl fuel ofs t l code,
     decode_instrs rtbl symtbl fuel ofs t [] = OK code ->
     decode_instrs rtbl symtbl fuel ofs t l = OK (rev l ++ code).
 Proof.
-  induction fuel.
-  (* base case *)
-  admit.
-  intros ofs t l code HDecode.
-  simpl. simpl in HDecode.
-  destruct t
-  . inversion HDecode. simpl.
-  rewrite app_nil_r. auto.
-  monadInv HDecode.
-  rewrite EQ.
-  simpl.
-  (** *TODO 2 *)
-Admitted.
+  intros rtbl symtbl fuel ofs t l code DI.
+  apply (decode_instrs_append' _ _ _ _ _ _ l) in DI.
+  cbn in DI. auto.
+Qed.
 
 
 Lemma spec_decode_ex: forall code ofs l rtbl symtbl,

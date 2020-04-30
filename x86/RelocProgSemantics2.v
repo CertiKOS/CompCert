@@ -89,7 +89,7 @@ Fixpoint decode_instrs (fuel:nat) (ofs: Z) (bytes: list byte) (instrs: list inst
 
 Definition decode_instrs' (bytes: list byte) :=
   do instrs <- decode_instrs (length bytes) 0 bytes nil;
-  OK (rev instrs).
+  OK instrs.
   
 Definition decode_code_section (s:section) : res section :=
   match s with
