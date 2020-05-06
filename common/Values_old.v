@@ -18,7 +18,7 @@
 
 Require Archi.
 Require Import Coqlib.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
 Require Import Floats.
 
@@ -1022,7 +1022,6 @@ Proof.
   rewrite add_permut. symmetry. apply add_assoc.
 Qed.
 
-(*SACC:
 Lemma add_undef : forall v,
   Val.add v Vundef = Vundef.
 Proof.
@@ -1034,7 +1033,6 @@ Lemma addl_undef : forall v,
 Proof.
   intros; destruct v; simpl; auto.
 Qed.
-*)
 
 Theorem neg_zero: neg Vzero = Vzero.
 Proof.
@@ -1942,7 +1940,6 @@ Proof.
   intros. inv H; auto.
 Qed.
 
-(*SACC:*)
 Lemma offset_ptr_lessdef:
   forall v v' o, lessdef v v' -> lessdef (offset_ptr v o) (offset_ptr v' o).
 Proof.
@@ -2006,12 +2003,11 @@ Inductive inject_list (mi: meminj): list val -> list val-> Prop:=
 
 Hint Resolve inject_list_nil inject_list_cons.
 
-(*SACC:
 Inductive opt_val_inject (j:meminj) : option val -> option val -> Prop :=
 | opt_val_inject_none v : opt_val_inject j None v
 | opt_val_inject_some v1 v2 : Val.inject j v1 v2 -> 
                                 opt_val_inject j (Some v1) (Some v2).
-*)
+
 
 Lemma inject_ptrofs:
   forall mi i, inject mi (Vptrofs i) (Vptrofs i).
@@ -2252,7 +2248,6 @@ Proof.
   intros. unfold Val.hiword; inv H; auto.
 Qed.
 
-(*SACC:
 Lemma maketotal_inject : forall v1 v2 j,
     opt_val_inject j v1 v2 -> Val.inject j (Val.maketotal v1) (Val.maketotal v2).
 Proof.
@@ -2289,14 +2284,6 @@ Proof.
   - apply vfalse_inject.
 Qed.
   
-Lemma neg_inject : forall v1 v2,
-    inject f v1 v2 -> inject f (Val.neg v1) (Val.neg v2).
-Proof.
-  intros. unfold Val.neg. 
-  destruct v1; auto. inv H. auto.
-Qed.
-
-
 Lemma neg_inject : forall v1 v2,
     inject f v1 v2 -> inject f (Val.neg v1) (Val.neg v2).
 Proof.
@@ -2691,7 +2678,7 @@ Proof.
   intros. unfold Val.singleofint. destruct v1; try constructor.
   inv H. constructor; auto.
 Qed.
-*)
+
 
 End VAL_INJ_OPS.
 
@@ -2789,7 +2776,6 @@ Proof.
   rewrite Ptrofs.add_assoc. decEq. unfold Ptrofs.add. apply Ptrofs.eqm_samerepr. auto with ints.
 Qed.
 
-(*SACC:
 Lemma val_list_lessdef_inject_compose j l1 l2:
 	Val.lessdef_list l1 l2 ->
 	forall l3,
@@ -2800,4 +2786,3 @@ Proof.
 	constructor; auto.
 	inversion H; subst; auto.
 Qed.
-*)

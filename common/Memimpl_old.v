@@ -32,14 +32,14 @@ Require Import Coqlib.
 Require Intv.
 Require Import Maps.
 Require Archi.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Export Memdata.
-Require Export Memtype.
+Require Import Values_old.
+Require Export Memdata_old.
+Require Export Memtype_old.
 Require Export MemPerm.
-Require Export StackADT.
+Require Export StackADT_old.
 
 (* To avoid useless definitions of inductors in extracted code. *)
 Local Unset Elimination Schemes.
@@ -100,7 +100,7 @@ End FORALL.
 Local Notation "a # b" := (PMap.get b a) (at level 1).
 
 Module Mem.
-Export Memtype.Mem.
+Export Memtype_old.Mem.
 
 (*X*)
 Definition perm_order' (po: option permission) (p: permission) :=
@@ -122,7 +122,7 @@ Definition in_bounds (o: Z) (bnds: Z*Z) :=
   fst bnds <= o < snd bnds.
 
 (*X*)
-Record stack_inv (s: StackADT.stack) (thr: block) (P: perm_type) : Prop :=
+Record stack_inv (s: StackADT_old.stack) (thr: block) (P: perm_type) : Prop :=
   {
     stack_inv_valid': forall b, in_stack_all s b -> Plt b thr;
     stack_inv_norepet: nodup s;
@@ -160,7 +160,7 @@ Record mem' : Type := mkmem {
     fst mem_contents = ZMap.init Undef;
   (*X*)
   stack:
-    StackADT.stack;
+    StackADT_old.stack;
   (*X*)
   mem_stack_inv:
     stack_inv stack nextblock (fun b o k p => perm_order' ((mem_access#b) o k) p);
@@ -1215,7 +1215,7 @@ Proof.
 Qed.
 
 (*X*)
-Definition prepend_to_current_stage a (l: StackADT.stack) : option StackADT.stack :=
+Definition prepend_to_current_stage a (l: StackADT_old.stack) : option StackADT_old.stack :=
   match l with
   | (None,b)::r => Some ((Some a,b)::r)
   | _ => None
@@ -1247,7 +1247,7 @@ Proof.
 Qed.
 
 Lemma frame_agree_perms_add:
-  forall (f: frame_adt) (s: StackADT.stack) s' m,
+  forall (f: frame_adt) (s: StackADT_old.stack) s' m,
     stack_agree_perms
       (fun (b : block) (o : Z) (k : perm_kind) (p : permission) => perm_order' ((mem_access m) # b o k) p)
       s ->
@@ -1608,7 +1608,7 @@ Proof.
 Defined.
 
 (*X*)
-Definition tailcall_stage_stack (m: mem) : option StackADT.stack :=
+Definition tailcall_stage_stack (m: mem) : option StackADT_old.stack :=
   if top_frame_no_perm_dec m
   then Some ((None, opt_cons (fst (hd (None,nil) (stack m))) (snd (hd (None,nil) (stack m))))::tl (stack m))
   else None.
@@ -3066,6 +3066,7 @@ Proof.
   unfold get_frame_info. reflexivity. 
 Qed.
 
+(*
 Lemma storebytes_is_stack_top:
   forall m1 b o v m2,
     storebytes m1 b o v = Some m2 ->
@@ -3076,7 +3077,7 @@ Proof.
   destruct (range_perm_dec m1 b o (o + Z.of_nat (length v)) Cur Writable).
   (stack_access_dec (stack m1) b o (o + Z.of_nat (length v))); try discriminate. inv H.
   unfold is_stack_top, get_stack_top_blocks. simpl. tauto.
-Qed.
+Qed.*)
 
 (*X*)
 Lemma storebytes_stack:
@@ -9543,7 +9544,7 @@ Proof.
   intros m1 m1' m2 j n g INJ USB NOPERM LE.
   generalize (unrecord_stack_block_mem_unchanged _ _ USB). simpl. intros (NB & PERM & UNCH & LOAD).
   inv INJ; constructor; eauto.
-  - eapply unrecord_stack_block_mem_inj_left_zero. eauto. 
+  - eapply unrecord_stack_block_mem_inj_left_zero; eauto.
   - unfold valid_block; rewrite NB; eauto.
   - red; intros. rewrite PERM in H2, H3. eauto.
   - intros. exploit mi_representable0.  eauto. intros (A & B).
@@ -10269,9 +10270,6 @@ Proof.
   intros; eapply unrecord_stack; eauto.
   intros; eapply unrecord_stack_block_succeeds; eauto.
   intros; eapply unrecord_stack_block_inject_neutral; eauto.
-  intros; eapply public_stack_access_extends; eauto.
-  intros; eapply public_stack_access_inject; eauto.
-  intros; eapply public_stack_access_magree; eauto.
   intros; eapply in_frames_valid; eauto.
   intros; eapply is_stack_top_extends; eauto.
   intros; eapply is_stack_top_inject; eauto.
@@ -10279,11 +10277,9 @@ Proof.
   intros; eapply record_stack_block_inject_left_zero'; eauto.
   intros; eapply unrecord_stack_block_inject_left_zero; eauto.
   simpl; intros; eapply stack_inv_norepet, mem_stack_inv.
-
   intros; eapply mem_inject_ext'; eauto.
   intros; eapply record_stack_block_inject_flat; eauto.
   intros; eapply unrecord_stack_block_inject_parallel_flat; eauto.
-
   eapply record_stack_blocks_stack_original.
 
   reflexivity. 
@@ -10300,7 +10296,6 @@ Proof.
   apply stack_perm.
   apply record_stack_blocks_top_noperm.
 
-  
   simpl; intros; eapply extends_push_new_stage; eauto.
   simpl; intros; eapply push_new_stage_mem_unchanged; eauto.
   simpl; intros; eapply tailcall_stage_mem_unchanged; eauto.
@@ -10327,6 +10322,23 @@ Proof.
   intro; eapply tailcall_stage_inject_left.
   intro; eapply tailcall_stage_right_extends.
   apply tailcall_stage_stack_eq.
+
+(*  intros; eapply public_stack_access_extends; eauto.
+  intros; eapply public_stack_access_inject; eauto.
+  intros; eapply public_stack_access_magree; eauto.
+*)
+
+
+
+
+
+
+
+
+  
+
+
+
 
 
 Qed.

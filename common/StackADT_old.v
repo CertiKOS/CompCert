@@ -1,8 +1,8 @@
 Require Import Coqlib.
 Require Import MemPerm.
-Require Import Memdata.
-Require Import AST.
-Require Import Values.
+Require Import Memdata_old.
+Require Import AST_old.
+Require Import Values_old.
 Require Export Assoc.
 Require Intv.
 

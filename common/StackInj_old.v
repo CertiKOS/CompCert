@@ -31,7 +31,7 @@ Require Import Coqlib Tactics StackADT.
 (*   eapply IHl in GABOVE. 2: apply Gi. omega. omega. *)
 (* Qed. *)
 
-Local Open Scope Z_scope.
+Open Scope Z_scope.
 
 Inductive sizes : frameinj -> stack -> stack -> Prop :=
 | sizes_nil: sizes nil nil nil
