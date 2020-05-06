@@ -77,21 +77,26 @@ Section PRESERVATION.
 (* utils *)
 
 
-Fixpoint sublist {X:Type} (lst: list X) (n: nat){struct n}: list X :=
+Fixpoint sublist {X:Type} (lst: list X) (n: nat){struct n}: res (list X) :=
   match lst with
-  |nil => nil 
+  |nil => match n with
+          |O => OK nil
+          |S n' => Error(msg"Sublist error")
+          end
   |h::t => match n with
-           |O => nil
-           |S n' => h::sublist t n'
+           |O => OK nil
+           |S n' =>
+            do tail <- sublist t n';
+            OK (h::tail)
            end
   end.
 
-Fixpoint remove_first_n  {X:Type} (lst: list X) (n: nat) {struct n} : list X :=
+Fixpoint remove_first_n  {X:Type} (lst: list X) (n: nat) {struct n} : res(list X) :=
   match n with
-  | O => lst
+  | O => OK lst
   | S n' =>
     match lst with
-    | nil => nil
+    | nil => Error(msg"remove first error") 
     | h :: t => remove_first_n t n'
     end
   end.
@@ -105,7 +110,9 @@ Fixpoint get_n {X:Type} (lst: list X) (n: nat): res X :=
            end
   end.
 
-Definition decode_int_n (lst: list byte)(n: nat): Z := decode_int (sublist lst n).
+Definition decode_int_n (lst: list byte)(n: nat): res Z :=
+  do int_bytes <- (sublist lst n);
+    OK(decode_int int_bytes).
 
 Compute (decode_int_n [HB["00"];HB["00"];HB["00"];HB["80"]] 2).
 
@@ -148,19 +155,19 @@ Definition addrmode_SIB_parse_index (idx: byte)(index: ireg) (s: Z): option (ire
 Definition addrmode_SIB_parse_base (mode_b: byte)(base: ireg)(bs : byte)(mc:list byte) : res ((option ireg) * ptrofs) :=
   if Byte.eq_dec bs HB["5"] then
     if Byte.eq_dec mode_b HB["0"] then
-      let ofs := decode_int_n mc 4 in
-      (* no base, offset 32 *)
-      OK(None, Ptrofs.repr ofs)
+      do ofs <- decode_int_n mc 4;
+        (* no base, offset 32 *)
+        OK(None, Ptrofs.repr ofs)
     else
       if Byte.eq_dec mode_b HB["1"] then
-        let ofs := decode_int_n mc 1 in
-        (* offset 8 *)
-        OK(Some base, Ptrofs.repr ofs)
+        do ofs <- decode_int_n mc 1;
+          (* offset 8 *)
+          OK(Some base, Ptrofs.repr ofs)
       else
         if Byte.eq_dec mode_b HB["2"] then
-          let ofs := decode_int_n mc 4 in
-          (* offset 32 *)
-          OK(Some base, Ptrofs.repr ofs)
+          do ofs <- decode_int_n mc 4;
+            (* offset 32 *)
+            OK(Some base, Ptrofs.repr ofs)
         else
           (* error *)
           Error(msg "error in parse sib base")
@@ -170,14 +177,14 @@ Definition addrmode_SIB_parse_base (mode_b: byte)(base: ireg)(bs : byte)(mc:list
       OK(Some base, Ptrofs.repr 0)
     else
       if Byte.eq_dec mode_b HB["1"] then
-        let ofs := decode_int_n mc 1 in
-        (* offset 8 *)
-        OK(Some base, Ptrofs.repr ofs)
+        do ofs <- decode_int_n mc 1;
+          (* offset 8 *)
+          OK(Some base, Ptrofs.repr ofs)
       else
         if Byte.eq_dec mode_b HB["2"] then
-          let ofs := decode_int_n mc 4 in
-          (* offset 32 *)
-          OK(Some base, Ptrofs.repr ofs)
+          do ofs <- decode_int_n mc 4;
+            (* offset 32 *)
+            OK(Some base, Ptrofs.repr ofs)
         else
           (* error *)
           Error(msg "error in parse sib base").
@@ -215,19 +222,21 @@ Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): r
     |None =>
      if Byte.eq_dec mod_b HB["0"]  then
        if Byte.eq_dec bs HB["5"] then
-         OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),(remove_first_n mc 4))
+         do remains <- (remove_first_n mc 4);
+         OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),remains)
        else
          OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),mc)
      else
        OK(Addrmode (fst base_offset) (index_s) (inl (Ptrofs.unsigned (snd base_offset))),mc)
     |Some relEntry =>
-       if Byte.eq_dec mod_b HB["0"]  then
-         if Byte.eq_dec bs HB["5"] then
-           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),(remove_first_n mc 4))
-         else
-           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),mc)
+     if Byte.eq_dec mod_b HB["0"]  then
+       if Byte.eq_dec bs HB["5"] then
+         do remains <- (remove_first_n mc 4);
+           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),remains)
        else
-         OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero )),mc)
+         OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),mc)
+     else
+       OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero )),mc)
     end.
 
 
@@ -245,17 +254,20 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                 if Byte.eq_dec RM HB["4"] then
                   do sib <- get_n t 0;
                     (* modrm + sib *)
-                    do result <- addrmode_parse_SIB (rofs) sib MOD (remove_first_n t 1);
+                    do rm_modrm <- (remove_first_n t 1);
+                    do result <- addrmode_parse_SIB (rofs) sib MOD rm_modrm;
                     OK(reg, fst result, snd result)
                 else if Byte.eq_dec RM HB["5"] then
-                       let ofs:=decode_int_n t 4 in
+                       do ofs <- decode_int_n t 4;
                        (* modrm + disp32 *)
                        let optRelocEntry := find_ofs_in_rtbl (rofs) in
                        match optRelocEntry with
                        |None =>
-                        OK(reg, Addrmode None None (inl ofs), remove_first_n t 4)
+                        do remains <- remove_first_n t 4;
+                        OK(reg, Addrmode None None (inl ofs),remains)
                        |Some relocEntry =>
-                        OK(reg, Addrmode None None (inr (xH ,Ptrofs.zero )), remove_first_n t 4)                         
+                        do remains <- remove_first_n t 4;
+                          OK(reg, Addrmode None None (inr (xH ,Ptrofs.zero )), remains)                         
                        end
                      else
                        OK(reg, Addrmode (Some ea_reg) None (inl 0), t)
@@ -264,27 +276,34 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                      if Byte.eq_dec RM HB["4"] then
                        do sib <- get_n t 0;
                          (* modrm+sib *)
-                         do result <- addrmode_parse_SIB (rofs) sib MOD (remove_first_n t 1);
-                         OK(reg, fst result, remove_first_n (snd result) 1)
+                         do rm_modrm <- (remove_first_n t 1);
+                         do result <- addrmode_parse_SIB (rofs) sib MOD rm_modrm;
+                         do remains <- remove_first_n (snd result) 1;
+                            OK(reg, fst result, remains)
                      else
-                       let ofs:=decode_int_n t 1 in
-                       (* only one byte of offset, could not be addend for relocation *)
-                       OK(reg, Addrmode (Some ea_reg) None (inl ofs), remove_first_n t 1)
+                       do ofs <- decode_int_n t 1;
+                     (* only one byte of offset, could not be addend for relocation *)
+                     do remains <- remove_first_n t 1;
+                       OK(reg, Addrmode (Some ea_reg) None (inl ofs), remains )
                  else if Byte.eq_dec MOD HB["2"] then
                         do ea_reg <- addrmode_parse_reg RM;
                           if Byte.eq_dec RM HB["4"] then
-                            do sib<- get_n t 0;                                                 (* modrm + sib *)   
-                              do result <- addrmode_parse_SIB (rofs) sib MOD (remove_first_n t 1);
-                              OK(reg, fst result, remove_first_n (snd result) 4)
+                            do sib<- get_n t 0;                                                 (* modrm + sib *)
+                              do rm_modrm <- (remove_first_n t 1);
+                              do result <- addrmode_parse_SIB (rofs) sib MOD rm_modrm;
+                              do remains <- remove_first_n (snd result) 4;
+                                 OK(reg, fst result, remains)
                           else
                             (* modrm + disp32 *)
-                            let ofs:=decode_int_n t 4 in
+                            do ofs <- decode_int_n t 4;
                             let optRelocEntry := find_ofs_in_rtbl (rofs) in
                             match optRelocEntry with
                             |None =>
-                             OK(reg, Addrmode (Some ea_reg) None (inl ofs), remove_first_n t 4)
+                             do remains <- remove_first_n t 4;
+                               OK(reg, Addrmode (Some ea_reg) None (inl ofs), remains)
                             |Some relocEntry =>
-                             OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.zero)), remove_first_n t 4)        
+                             do remains <- remove_first_n t 4;
+                               OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.zero)), remains)        
                             end                            
                       else
                         Error( msg "unknown address mode")
@@ -304,26 +323,29 @@ Definition decode_rr_operand (modrm: byte): res(ireg * ireg) :=
 (* decode instructions *)
 
 Definition decode_jmp_l_rel (mc: list byte) : res (instruction * list byte):=
-  let ofs := decode_int_n mc 4 in
-  OK(Pjmp_l_rel ofs, remove_first_n mc 4).
+  do ofs <- decode_int_n mc 4;
+    do remains <- remove_first_n mc 4;
+    OK(Pjmp_l_rel ofs, remains).
 
 
 
 Definition decode_jcc_rel (mc: list byte) : res (instruction * list byte):=
-  let ofs := (decode_int_n (remove_first_n mc 1) 4) in
-  do cond <- get_n mc 0;
-  if Byte.eq_dec cond HB["84"] then OK(Pjcc_rel Cond_e ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["85"] then OK(Pjcc_rel Cond_ne ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["82"] then OK(Pjcc_rel Cond_b ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["86"] then OK(Pjcc_rel Cond_be ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["83"] then OK(Pjcc_rel Cond_ae ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["87"] then OK(Pjcc_rel Cond_a ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["8C"] then OK(Pjcc_rel Cond_l ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["8E"] then OK(Pjcc_rel Cond_le ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["8D"] then OK(Pjcc_rel Cond_ge ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["8F"] then OK(Pjcc_rel Cond_g ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["8A"] then OK(Pjcc_rel Cond_p ofs, remove_first_n mc 5)
-  else if Byte.eq_dec cond HB["8B"] then OK(Pjcc_rel Cond_np ofs, remove_first_n mc 5)
+  do rm_opcode <- (remove_first_n mc 1);
+    do ofs <- (decode_int_n rm_opcode 4);
+    do cond <- get_n mc 0;
+    do remains <- remove_first_n mc 5;
+  if Byte.eq_dec cond HB["84"] then OK(Pjcc_rel Cond_e ofs, remains)
+  else if Byte.eq_dec cond HB["85"] then OK(Pjcc_rel Cond_ne ofs, remains)
+  else if Byte.eq_dec cond HB["82"] then OK(Pjcc_rel Cond_b ofs, remains)
+  else if Byte.eq_dec cond HB["86"] then OK(Pjcc_rel Cond_be ofs, remains)
+  else if Byte.eq_dec cond HB["83"] then OK(Pjcc_rel Cond_ae ofs, remains)
+  else if Byte.eq_dec cond HB["87"] then OK(Pjcc_rel Cond_a ofs, remains)
+  else if Byte.eq_dec cond HB["8C"] then OK(Pjcc_rel Cond_l ofs, remains)
+  else if Byte.eq_dec cond HB["8E"] then OK(Pjcc_rel Cond_le ofs, remains)
+  else if Byte.eq_dec cond HB["8D"] then OK(Pjcc_rel Cond_ge ofs, remains)
+  else if Byte.eq_dec cond HB["8F"] then OK(Pjcc_rel Cond_g ofs, remains)
+  else if Byte.eq_dec cond HB["8A"] then OK(Pjcc_rel Cond_p ofs, remains)
+  else if Byte.eq_dec cond HB["8B"] then OK(Pjcc_rel Cond_np ofs, remains)
        else Error (msg "Unknown jcc condition").
 
 Compute (decode_rr_operand HB["D8"]).
@@ -331,24 +353,28 @@ Compute (decode_rr_operand HB["D8"]).
 Definition decode_imull_rr (mc: list byte) : res (instruction * list byte):=
   do modrm <- get_n mc 0;
     do rds <- decode_rr_operand modrm;
-    OK(Pimull_rr (fst rds) (snd rds), remove_first_n mc 1).
+    do remains <- remove_first_n mc 1;
+    OK(Pimull_rr (fst rds) (snd rds), remains).
 
 Definition decode_imull_ri (mc: list byte) : res (instruction * list byte):=
   do modrm <- get_n mc 0;
-     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-      let n := decode_int_n (remove_first_n mc 1) 4 in
-      OK(Pimull_ri rd (Int.repr n), remove_first_n mc 5).
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    do rm_modrm <- (remove_first_n mc 1);
+    do n <- decode_int_n rm_modrm 4;
+    do remains <- remove_first_n mc 5;
+      OK(Pimull_ri rd (Int.repr n), remains).
     
 
 Definition decode_0f (mc: list byte): res(instruction * list byte):=
   do code <- get_n mc 0;
-  if Byte.eq_dec  code HB["AF"] then
-    decode_imull_rr (remove_first_n mc 1)
+    if Byte.eq_dec  code HB["AF"] then
+      do remains <- (remove_first_n mc 1);
+    decode_imull_rr remains
   else
     decode_jcc_rel mc.
 
 Definition decode_call (rofs:Z) (mc: list byte): res(instruction * list byte):=
-  let ofs := (decode_int_n mc 4) in
+  do ofs <- (decode_int_n mc 4);
   match find_ofs_in_rtbl (rofs + 1) with
   |None => Error (msg"Call target not found")
   |Some relocEntry =>
@@ -358,7 +384,8 @@ Definition decode_call (rofs:Z) (mc: list byte): res(instruction * list byte):=
     match symbentry_id symb with
     |None => Error (msg"Call target has no id")
     |Some id =>
-     OK(Pcall (inr id) (mksignature [] None (mkcallconv false false false)), remove_first_n mc 4)
+     do remains <- remove_first_n mc 4;
+     OK(Pcall (inr id) (mksignature [] None (mkcallconv false false false)),remains )
     end
    end     
   end.
@@ -372,16 +399,19 @@ Definition decode_leal (rofs:Z) (mc: list byte): res(instruction * list byte):=
 Definition decode_xorl_r (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-       OK(Pxorl_r rd, remove_first_n mc 1).
+    do remains <- remove_first_n mc 1;
+       OK(Pxorl_r rd, remains).
 
 (* test_xor begins here *)
 (* test_xor ends here *)
 
 Definition decode_addl_ri  (mc: list byte): res(instruction * list byte):=
-    do modrm <- get_n mc 0;
-      do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-      let n := decode_int_n (remove_first_n mc 1) 4 in
-      OK(Paddl_ri rd (Int.repr n), remove_first_n mc 5).
+  do modrm <- get_n mc 0;
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    do rm_modrm <- (remove_first_n mc 1);
+    do n <- decode_int_n rm_modrm 4;
+    do remains <- remove_first_n mc 5;
+      OK(Paddl_ri rd (Int.repr n), remains).
 
 (* test add ri begins here *)
 (* add eax, 0 *)
@@ -392,14 +422,18 @@ Compute (decode_addl_ri  [HB["C0"];HB["00"];HB["00"];HB["00"];HB["00"];HB["AA"];
 Definition decode_subl_ri (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-    let n := decode_int_n (remove_first_n mc 1) 4 in
-    OK(Psubl_ri rd (Int.repr n), remove_first_n mc 5).
+    do rm_modrm <- (remove_first_n mc 1);
+    do n <- decode_int_n rm_modrm 4;
+    do remains <- remove_first_n mc 5;
+    OK(Psubl_ri rd (Int.repr n), remains).
 
 Definition decode_cmpl_ri (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
-     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-      let n := decode_int_n (remove_first_n mc 1) 4 in
-      OK(Pcmpl_ri rd (Int.repr n), remove_first_n mc 5).
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    do rm_modrm <- (remove_first_n mc 1);
+    do n <- decode_int_n rm_modrm 4;
+    do remains <- remove_first_n mc 5;
+    OK(Pcmpl_ri rd (Int.repr n), remains).
   
 Definition decode_81  (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
@@ -413,19 +447,23 @@ Definition decode_subl_rr (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     do rd <- addrmode_parse_reg (Byte.shru (Byte.and modrm HB["38"]) HB["3"]);
     do rs <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-    OK(Psubl_rr rd rs, remove_first_n mc 1).
+    do remains <- remove_first_n mc 1;
+    OK(Psubl_rr rd rs, remains).
 
 (* note that the opcode of movl begins with 0xB, so we can use this info to dispatch this instruction*)
 Definition decode_movl_ri  (mc: list byte): res(instruction * list byte):=
   do opcode <- get_n mc 0;
     do rd <- addrmode_parse_reg (Byte.and opcode HB["7"]);
-    let n := decode_int_n (remove_first_n mc 1) 4 in
-    OK(Pmovl_ri rd (Int.repr n), remove_first_n mc 5).
+    do rm_opcode <- (remove_first_n mc 1);
+    do n <- decode_int_n rm_opcode 4;
+    do remains <- remove_first_n mc 5;
+    OK(Pmovl_ri rd (Int.repr n), remains).
 
 Definition decode_mov_rr  (mc: list byte): res(instruction * list byte):=
    do modrm <- get_n mc 0;
-    do rds <- decode_rr_operand modrm;
-    OK(Pmov_rr (fst rds) (snd rds), remove_first_n mc 1).
+     do rds <- decode_rr_operand modrm;
+     do remains <- remove_first_n mc 1;
+    OK(Pmov_rr (fst rds) (snd rds), remains).
 
 Definition decode_movl_rm (rofs:Z) (mc: list byte): res(instruction * list byte):=
   do a_size <- decode_addrmode_size mc;
@@ -450,23 +488,28 @@ Definition decode_movl_mr_a (rofs:Z) (mc: list byte): res(instruction * list byt
 Definition decode_testl_rr  (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     do rds <- decode_rr_operand modrm;
-     OK(Ptestl_rr (fst rds) (snd rds), remove_first_n mc 1).
+    do remains <- remove_first_n mc 1;
+    OK(Ptestl_rr (fst rds) (snd rds), remains).
 
 Definition decode_cmpl_rr   (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     do rds <- decode_rr_operand modrm;
-     OK(Pcmpl_rr (snd rds) (fst rds), remove_first_n mc 1).
+    do remains <- remove_first_n mc 1;
+    OK(Pcmpl_rr (snd rds) (fst rds), remains).
 
 Definition decode_idivl  (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-    OK(Pidivl rd, remove_first_n mc 1).
+    do remains <- remove_first_n mc 1;
+    OK(Pidivl rd, remains).
 
 Definition decode_sall_ri (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
-     do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
-      let n := decode_int_n (remove_first_n mc 1) 1 in
-      OK(Psall_ri rd (Int.repr n), remove_first_n mc 2).
+    do rd <- addrmode_parse_reg (Byte.and modrm HB["7"]);
+    do rm_modrm <- (remove_first_n mc 1);
+    do n <- decode_int_n rm_modrm 1;
+    do remains <- remove_first_n mc 2;
+    OK(Psall_ri rd (Int.repr n), remains).
 
 Definition decode_8b (rofs:Z) (mc: list byte): res(instruction * list byte):=
   do modrm <- get_n mc 0;
@@ -555,7 +598,7 @@ Definition instr_eq (ins1 ins2: instruction): Prop :=
 
 
 Lemma remove_first_prefix: forall {A} (l1:list A) l2 n,
-    List.length l1 = n -> remove_first_n (l1 ++ l2) n = l2.
+    List.length l1 = n -> remove_first_n (l1 ++ l2) n = OK l2.
 Proof.
   induction l1; simpl; subst.
   - intros. subst. simpl. auto.
@@ -576,7 +619,7 @@ Qed.
 
 
 Lemma remove_prefix_byte: forall l ofs,
-    remove_first_n (encode_int32 (Ptrofs.unsigned ofs) ++l) 4 = l.
+    remove_first_n (encode_int32 (Ptrofs.unsigned ofs) ++l) 4 = OK l.
 Proof.
   intros.
   generalize (encode_int32_size ofs). intro ECSize.
@@ -603,11 +646,13 @@ Qed.
 
 
 Lemma sublist_prefix: forall {X} (l1:list X) l2,
-    sublist (l1++l2) (length l1) = l1.
+    sublist (l1++l2) (length l1) = OK l1.
 Proof.
   induction l1; intros.
   - simpl in *. subst. simpl. destruct l2; auto. 
-  - simpl in *. subst. simpl. f_equal. auto.
+  - simpl in *.
+    unfold bind.
+    rewrite (IHl1 l2). auto.
 Qed.
 
 (* Lemma sublist_prefix: forall {X} (l1:list X) n l2, *)
@@ -619,7 +664,7 @@ Qed.
 (* Qed. *)
 
 Lemma sublist_id: forall {X} (l: list X),
-    sublist l (length l) = l.
+    sublist l (length l) = OK l.
 Proof.
   induction l.
   - simpl. auto.
@@ -659,14 +704,17 @@ Proof.
 Qed.
   
 Lemma encode_decode_int32_same: forall n,
-    valid_int32 n -> decode_int_n (encode_int32 n) 4 = n.
+    valid_int32 n -> decode_int_n (encode_int32 n) 4 = OK n.
 Proof.
   intros. subst. unfold decode_int_n. rewrite sublist_id.
-  unfold encode_int32. apply encode_decode_int32_int2Z. apply H.
+  unfold encode_int32.
+  simpl.
+  f_equal.
+  apply encode_decode_int32_int2Z. apply H.
 Qed.
 
 Lemma encode_decode_int32_same_prefix : forall n l,
-    valid_int32 n -> (decode_int_n ((encode_int32 n) ++ l) 4) = n.
+    valid_int32 n -> (decode_int_n ((encode_int32 n) ++ l) 4) = OK n.
 Proof.
   intros. rewrite <- (encode_int32_size_Z n).
   rewrite decode_prefix.
@@ -834,7 +882,7 @@ Proof.
 Qed.
 
 Lemma encode_decode_int_little_refl: forall i l,
-    valid_int32 i -> decode_int_n ((encode_int_little 4 i)++l) 4 = i.
+    valid_int32 i -> decode_int_n ((encode_int_little 4 i)++l) 4 = OK i.
 Proof.
   intros i l HV.
   unfold encode_int_little.
@@ -847,6 +895,7 @@ Proof.
   unfold decode_int.
   unfold rev_if_be.
   destruct Archi.big_endian eqn:EQ. inversion EQ.
+  cbn [bind]. f_equal.
   rewrite (int_of_bytes_of_int).
   rewrite Z.mod_small. auto.
   unfold valid_int32 in  HV. simpl.
@@ -1641,7 +1690,8 @@ Qed.
 Lemma remove_first_S_n: forall n i {A:Type} (l:list A),
     (length l = n)%nat ->
     (S i <= n)%nat ->
-    remove_first_n l (S i) = remove_first_n (remove_first_n l 1) i.
+    exists remove_one_step, ((remove_first_n l 1) = OK remove_one_step /\
+    (remove_first_n l (S i)) = (remove_first_n remove_one_step i)).
 Proof.
   induction n.
   + intros i A0 l H H10.
@@ -1649,6 +1699,7 @@ Proof.
   + intros i A0 l H H10.
     destruct l. inversion H.
     unfold remove_first_n.
+    exists l.
     auto.
 Qed.
 
@@ -1656,34 +1707,40 @@ Qed.
 Lemma remove_first_length: forall n i {A:Type} (l:list A),
     (length l = n )%nat ->
     (i<=n)%nat ->
-    (length (remove_first_n l i) = n-i)%nat.
+    exists remains,  ((remove_first_n l i) = OK remains /\
+    (length remains = n-i)%nat).
 Proof.
   induction n.
   + intros i A0 l H H10.
     inversion H10.
-    simpl. auto.
+    simpl. eauto.
 
   + induction i.
     ++ intros A0 l H H10.
        inversion H10. inversion H12.
        simpl. rewrite <- H13 in H. auto.
-       simpl.
+       eauto. 
        rewrite <- H14 in H.
-       auto.
+       simpl.
+       eauto.
 
     ++ intros A0 l H H10.
        
-       rewrite (remove_first_S_n (S n) i l);auto.
-       rewrite (IHn i _ (remove_first_n l 1)).
-       auto.
-       destruct l.
-       simpl in H. inversion H.
-       unfold remove_first_n.
-       replace (a::l) with ([a]++l) in H.
-       rewrite app_length in H.
-       auto.
+       generalize (remove_first_S_n (S n) i l H H10).
+       intros (one_step & HRemove_one & HRemoveFirst).
+       rewrite HRemoveFirst.
+       simpl.
+       destruct l; simpl in HRemove_one; inversion HRemove_one.
+       rewrite <- H12.
+       cut (length l = n).
+       intros HLengthL.
+       cut ((i <= n)%nat).
+       intros HILTN.
+       generalize (IHn i _ l HLengthL HILTN).
        auto.
        omega.
+       simpl in H.
+       inversion H. auto.
 Qed.
 
 
@@ -1692,130 +1749,181 @@ Lemma sublist_Sn: forall n i {A:Type} (l l':list A) (a:A),
     (length l = n )%nat ->
     (S i<=n)%nat ->
     (l = a::l') ->
-    sublist l (S i) = a::(sublist l' i).
+    exists subl', (sublist l' i = OK subl' /\
+                  sublist l (S i) = OK (a::subl')).
 Proof.
   induction n.
   + intros i A0 l l' a H H10 H11. inversion H10.
   + intros i A0 l l' a H H10 H11.
-    rewrite H11.
-    simpl. auto.
+    destruct i.
+    ++ simpl. exists [].
+       destruct l'. rewrite H11. simpl. auto.
+       rewrite H11. simpl. auto.
+    ++ cut((S i <= n)%nat). intros HILTN.
+       cut(length l' = n). intros HL'.
+       destruct l'. simpl in HL'.
+       rewrite <- HL' in HILTN.
+       inversion HILTN.
+       generalize (IHn i _ (a0::l') l' a0 HL' HILTN eq_refl).
+       intros(subl' & HSubl' & HSSubl').
+       simpl.
+       rewrite HSubl'.
+       simpl. exists(a0::subl').
+       split. auto.
+       rewrite H11.
+       rewrite HSubl'. simpl. auto.
+       rewrite H11 in H.
+       simpl in H.
+       omega.
+       omega.       
 Qed.
 
 
 Lemma sublist_length: forall n i {A:Type} (l:list A),
     (length l = n )%nat ->
     (i<=n)%nat ->
-    (length (sublist l i) = i).
+    exists sub, ((sublist l i) = OK sub /\(length sub = i)).
 Proof.
   induction n.
   + intros i A0 l H H10.
     inversion H10.
-    simpl. rewrite (zero_length_list l). auto. auto.
+    simpl. rewrite (zero_length_list l). exists []. auto. auto.
   + intros i A0 l H H10.
-
     destruct l. inversion H.
     induction i.
-    ++  simpl. auto.
-    ++ rewrite (sublist_Sn (S n) i (a::l) l a).
-       replace (a::sublist l i) with ([a]++(sublist l i)).
-       replace (a::l) with ([a]++l) in H.
-       rewrite app_length in *.
+    ++  simpl. exists []. auto.
+    ++ generalize (sublist_Sn (S n) i (a::l) l a H H10 eq_refl).
+       intros (subl' & HSubl & HSSubl).
+       cut(length l = n). intros HL.
+       cut((i <= n)%nat). intros HILTN.
+       generalize(IHn i _ l HL HILTN).
+       intros(sub & HSub & HLSub).
+       rewrite HSub in HSubl.
+       inversion HSubl.
+       rewrite <- H12 in HSSubl.
+       simpl. rewrite HSub.
+       simpl. exists(a::sub).
+       split. auto.
        simpl.
-       f_equal.
-       rewrite (IHn i _ l). auto.
-       auto. omega. auto. auto. auto. auto. auto.
+       f_equal. auto.
+       omega.
+       simpl in H.
+       omega.
 Qed.
 
 
 Lemma sublist_remove_first_cat: forall n i {A: Type} (l:list A),
     length l = n ->
     (i <= n)%nat ->
-    l = (sublist l i) ++ (remove_first_n l i).
+    exists prefix suffix,(
+        sublist l i = OK prefix
+        /\ remove_first_n l i = OK suffix
+        /\ l = prefix ++ suffix).
 Proof.
   induction n.
   + intros i A0 l H H10.
     inversion H10.
     simpl.
     destruct l.
-    auto. auto.
+    exists [], [].
+    auto.
+    exists [], (a::l).
+    auto.
   + induction i.
     ++ intros A0 l H H10.
        simpl.
-       destruct l. auto. auto.
+       destruct l.
+       exists [],[]. auto.
+       exists [], (a::l).
+       auto.
     ++ intros A0 l H H10.
        destruct l. inversion H.
-       rewrite (sublist_Sn (S n) i (a::l) l a);auto.
-       rewrite (remove_first_S_n (S n) i (a::l)).
        simpl.
-       rewrite <- (IHn i _ l). auto.
-       auto. omega. auto. auto.
-
+       (* generalize (sublist_Sn (S n) i (a::l) l a H H10 eq_refl). *)
+       (* intros (subl & HSubl & HSSubl). *)
+       (* simpl. rewrite HSubl. simpl. *)
+       (* exists (a::subl). *)
+       cut(length l = n). intros HL.
+       cut((i<=n)%nat). intros HILTN.
+       generalize(IHn i _ l HL HILTN).
+       intros (prefix & suffix & HPre & HSuf & HAll).
+       rewrite HPre.
+       rewrite HSuf.
+       exists(a::prefix), suffix.
+       simpl.
+       split. auto.
+       split.
+       auto.
+       rewrite HAll. auto.
+       omega.
+       simpl in H.
+       omega.       
 Qed.
 
-Lemma encode_decode_reg_refl: forall r x bits1 bits2,
-    encode_ireg r = OK x
-    -> List.length bits1 = 2%nat
-    -> List.length bits2 = 11%nat
-    -> exists b1 b2,
-           b2 = Byte.repr (bits_to_Z (remove_first_n bits2 3))
-        /\ b1 = Byte.repr (bits_to_Z (bits1 ++ x ++ (sublist bits2 3)))
-        /\ [b1;b2] = encode_int_big 2 (bits_to_Z (bits1++x++bits2))
-        /\ (addrmode_parse_reg (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3))) = OK r.
-Proof.
-  intros r x bits1 bits2 H H10 H11.
-  exists ( bB[ bits1 ++ x ++ sublist bits2 3]).
-  exists(  bB[ remove_first_n bits2 3]).
-  repeat split.
-  + unfold encode_int_big.
-    unfold bytes_of_int.
-    unfold rev.
-    replace 256 with (2^8).
-    rewrite <- (Z.shiftr_div_pow2 (bits_to_Z (bits1 ++ x ++ bits2)) 8).
+(* Lemma encode_decode_reg_refl: forall r x bits1 bits2, *)
+(*     encode_ireg r = OK x *)
+(*     -> List.length bits1 = 2%nat *)
+(*     -> List.length bits2 = 11%nat *)
+(*     -> exists b1 b2, *)
+(*            b2 = Byte.repr (bits_to_Z (remove_first_n bits2 3)) *)
+(*         /\ b1 = Byte.repr (bits_to_Z (bits1 ++ x ++ (sublist bits2 3))) *)
+(*         /\ [b1;b2] = encode_int_big 2 (bits_to_Z (bits1++x++bits2)) *)
+(*         /\ (addrmode_parse_reg (Byte.shru (Byte.and b1 (Byte.repr 56)) (Byte.repr 3))) = OK r. *)
+(* Proof. *)
+(*   intros r x bits1 bits2 H H10 H11. *)
+(*   exists ( bB[ bits1 ++ x ++ sublist bits2 3]). *)
+(*   exists(  bB[ remove_first_n bits2 3]). *)
+(*   repeat split. *)
+(*   + unfold encode_int_big. *)
+(*     unfold bytes_of_int. *)
+(*     unfold rev. *)
+(*     replace 256 with (2^8). *)
+(*     rewrite <- (Z.shiftr_div_pow2 (bits_to_Z (bits1 ++ x ++ bits2)) 8). *)
     
-    replace (x++bits2) with (x++ sublist bits2 3++ remove_first_n bits2 3).
-    replace (bits1 ++ x ++ sublist bits2 3 ++ remove_first_n bits2 3) with ((bits1 ++ x ++ sublist bits2 3) ++ remove_first_n bits2 3).
-    setoid_rewrite (Z_shru_bits 8 (bits1++x++ sublist bits2 3) (remove_first_n bits2 3)).
-    rewrite app_nil_l.
-    assert ( bB[ remove_first_n bits2 3] = bB[ (bits1 ++ x ++ sublist bits2 3) ++ remove_first_n bits2 3]). {
-      rewrite (bits_to_Z_cat (bits1 ++ x ++ sublist bits2 3) (remove_first_n bits2 3)).
-      assert(Byte.eqm (Z.shiftl (bits_to_Z (bits1 ++ x ++ sublist bits2 3)) (Z.of_nat (length (remove_first_n bits2 3))) + bits_to_Z (remove_first_n bits2 3)) (bits_to_Z ( remove_first_n bits2 3))). {
-        unfold Byte.eqm.
-        unfold Byte.eqmod.
-        rewrite (remove_first_length 11 3 bits2); try omega; auto.
-        rewrite (Z.shiftl_mul_pow2).
-        exists(bits_to_Z (bits1 ++ x ++ sublist bits2 3)).
-        simpl. auto. simpl. omega.                
-      }
-      generalize (Byte.eqm_samerepr _ _ H12).
-      auto.     
-    }
-    rewrite H12.
-    auto.
+(*     replace (x++bits2) with (x++ sublist bits2 3++ remove_first_n bits2 3). *)
+(*     replace (bits1 ++ x ++ sublist bits2 3 ++ remove_first_n bits2 3) with ((bits1 ++ x ++ sublist bits2 3) ++ remove_first_n bits2 3). *)
+(*     setoid_rewrite (Z_shru_bits 8 (bits1++x++ sublist bits2 3) (remove_first_n bits2 3)). *)
+(*     rewrite app_nil_l. *)
+(*     assert ( bB[ remove_first_n bits2 3] = bB[ (bits1 ++ x ++ sublist bits2 3) ++ remove_first_n bits2 3]). { *)
+(*       rewrite (bits_to_Z_cat (bits1 ++ x ++ sublist bits2 3) (remove_first_n bits2 3)). *)
+(*       assert(Byte.eqm (Z.shiftl (bits_to_Z (bits1 ++ x ++ sublist bits2 3)) (Z.of_nat (length (remove_first_n bits2 3))) + bits_to_Z (remove_first_n bits2 3)) (bits_to_Z ( remove_first_n bits2 3))). { *)
+(*         unfold Byte.eqm. *)
+(*         unfold Byte.eqmod. *)
+(*         rewrite (remove_first_length 11 3 bits2); try omega; auto. *)
+(*         rewrite (Z.shiftl_mul_pow2). *)
+(*         exists(bits_to_Z (bits1 ++ x ++ sublist bits2 3)). *)
+(*         simpl. auto. simpl. omega.                 *)
+(*       } *)
+(*       generalize (Byte.eqm_samerepr _ _ H12). *)
+(*       auto.      *)
+(*     } *)
+(*     rewrite H12. *)
+(*     auto. *)
   
-    apply (remove_first_length 11 3 bits2).
-    auto. omega. repeat rewrite <- app_assoc. auto.
-    rewrite <- (sublist_remove_first_cat 11 3 bits2). auto. auto. omega. omega.
-    unfold Z.pow. unfold Z.pow_pos. simpl. auto.
-  + rewrite <- Byte.and_shru.
-    rewrite app_assoc.
-    setoid_rewrite (shru_bits 3 (bits1++x) (sublist bits2 3)).
-    assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as shru563. {
-      unfold Byte.shru. f_equal.
-    }
-    rewrite shru563.
-    rewrite and7.
-    rewrite (encode_parse_reg_refl r);auto.
-    rewrite app_length.
-    rewrite H10.
-    rewrite (encode_reg_length r);auto.
-    rewrite (encode_reg_length r);auto.
-    auto.
-    repeat rewrite app_length. rewrite H10. rewrite ( sublist_length 11 3).
-    rewrite (encode_reg_length r);auto.
-    auto.
-    omega.
-    rewrite(sublist_length 11 3);auto. omega.
-Qed.
+(*     apply (remove_first_length 11 3 bits2). *)
+(*     auto. omega. repeat rewrite <- app_assoc. auto. *)
+(*     rewrite <- (sublist_remove_first_cat 11 3 bits2). auto. auto. omega. omega. *)
+(*     unfold Z.pow. unfold Z.pow_pos. simpl. auto. *)
+(*   + rewrite <- Byte.and_shru. *)
+(*     rewrite app_assoc. *)
+(*     setoid_rewrite (shru_bits 3 (bits1++x) (sublist bits2 3)). *)
+(*     assert(Byte.shru (Byte.repr 56) (Byte.repr 3) = Byte.repr 7) as shru563. { *)
+(*       unfold Byte.shru. f_equal. *)
+(*     } *)
+(*     rewrite shru563. *)
+(*     rewrite and7. *)
+(*     rewrite (encode_parse_reg_refl r);auto. *)
+(*     rewrite app_length. *)
+(*     rewrite H10. *)
+(*     rewrite (encode_reg_length r);auto. *)
+(*     rewrite (encode_reg_length r);auto. *)
+(*     auto. *)
+(*     repeat rewrite app_length. rewrite H10. rewrite ( sublist_length 11 3). *)
+(*     rewrite (encode_reg_length r);auto. *)
+(*     auto. *)
+(*     omega. *)
+(*     rewrite(sublist_length 11 3);auto. omega. *)
+(* Qed. *)
     
 
 Lemma shru563:
@@ -1942,6 +2050,22 @@ Proof.
   rewrite (encode_reg_length r2); auto.
 Qed.
 
+(* encode_int32 = 4bytes *)
+Lemma encode_int32_4_exists: forall x l bytes,
+    encode_int32 x++l = bytes
+    ->exists b1 b2 b3 b4,
+      bytes = b1::b2::b3::b4::l.
+Proof.
+  intros x l bytes H.
+  unfold encode_int32 in H.
+  unfold encode_int in H.
+  unfold rev_if_be in H.
+  destruct Archi.big_endian eqn:EQArch; inversion EQArch.
+  simpl in H.
+  exists  (Byte.repr x), (Byte.repr (x / 256)) ,(Byte.repr (x / 256 / 256)), (Byte.repr (x / 256 / 256 / 256)).
+  auto.
+Qed.
+
 Lemma encode_decode_addrmode_relf: forall a rd bytes rofs i iofs sofs,
     instr_reloc_offset i = OK iofs
     -> encode_addrmode rtbl_ofs_map sofs i a rd = OK bytes
@@ -2026,6 +2150,7 @@ Proof.
              unfold addrmode_SIB_parse_base.
              destruct (Byte.eq_dec bB[ x4] HB[ "5"]) eqn:EQx4.
              +++++
+               assert (Hvalid: valid_int32 x0) by admit.
                rewrite byte_eq_false.
              rewrite byte_eq_false.
              rewrite byte_eq_true.
@@ -2035,7 +2160,9 @@ Proof.
              unfold get_reloc_addend in EQ1.
              unfold find_ofs_in_rtbl.
              destruct ( ZTree.get (iofs + sofs) rtbl_ofs_map); inversion EQ1.
-
+             rewrite (encode_decode_int32_same_prefix).
+             simpl.
+             2: auto.
              
              rewrite byte_eq_false.
              simpl.
@@ -2045,12 +2172,19 @@ Proof.
              destruct (Byte.eq_dec bB[x3] HB["4"]).
              admit. (* RSP *)
              auto.
-             assert (Hvalid: valid_int32 x0) by admit.
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
-             rewrite Hint.
+
+
+             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
              rewrite Ptrofs.unsigned_repr.
+             simpl.
              auto.
+             generalize (encode_parse_reg_refl _ _ EQ0).
+             rewrite H.
+             intros HRdEQ. inversion HRdEQ. auto.
              unfold valid_int32 in Hvalid.
              unfold two_power_pos in Hvalid.
              simpl in Hvalid.
@@ -2063,6 +2197,7 @@ Proof.
              1-3:inversion HNot.
              
              +++++
+               assert (Hvalid: valid_int32 x0) by admit.
                rewrite byte_eq_false. rewrite byte_eq_false. rewrite byte_eq_true.
              simpl.
              rewrite HRelocOfs in EQ1.
@@ -2070,7 +2205,9 @@ Proof.
              unfold get_reloc_addend in EQ1.
              unfold find_ofs_in_rtbl.
              destruct ( ZTree.get (iofs + sofs) rtbl_ofs_map); inversion EQ1.
-             
+             rewrite encode_decode_int32_same_prefix.
+             2: auto.
+             simpl.
              rewrite byte_eq_false.
              simpl. repeat f_equal.
              auto.
@@ -2078,12 +2215,18 @@ Proof.
              destruct(Byte.eq_dec bB[x3] HB["4"]).
              admit.
              auto.
-             assert (Hvalid: valid_int32 x0) by admit.
+
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
-             rewrite Hint.
+             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
              rewrite Ptrofs.unsigned_repr.
              auto.
+             simpl.
+             generalize (encode_parse_reg_refl _ _ EQ0).
+             rewrite H.
+             intros HRdEQ. inversion HRdEQ. auto.
              unfold valid_int32 in Hvalid.
              unfold two_power_pos in Hvalid.
              simpl in Hvalid.
@@ -2175,22 +2318,30 @@ Proof.
              unfold addrmode_SIB_parse_base.
              rewrite byte_eq_true; auto.
              rewrite byte_eq_true; auto.
+             assert (Hvalid: valid_int32 x0) by admit.
+             rewrite encode_decode_int32_same_prefix.
+             2: auto.
              simpl.
              rewrite HRelocOfs in EQ1.
              unfold get_instr_reloc_addend' in EQ1.
              unfold get_reloc_addend in EQ1.
              unfold find_ofs_in_rtbl.
              destruct ( ZTree.get (iofs + sofs) rtbl_ofs_map); inversion EQ1.
-             
+           
+             simpl.
              rewrite byte_eq_true; auto.
              rewrite byte_eq_true; auto.
+             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
+             simpl.
+
              simpl. repeat f_equal.
              auto.
+             unfold addrmode_SIB_parse_index.
+             rewrite H12.
+             rewrite byte_eq_false. auto.
              admit. (* RSP *)
-             assert (Hvalid: valid_int32 x0) by admit.
-             generalize (encode_decode_int32_same_prefix _ l Hvalid).
-             intros Hint.
-             rewrite Hint.
              rewrite Ptrofs.unsigned_repr.
              auto.
              unfold valid_int32 in Hvalid.
@@ -2200,6 +2351,9 @@ Proof.
              unfold Ptrofs.modulus.
              unfold two_power_nat. unfold Ptrofs.wordsize.
              unfold Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:EQAR;inversion EQAR.
+             generalize (encode_parse_reg_refl _ _ EQ0).
+             rewrite H.
+             intros HRdEQ. inversion HRdEQ. auto.
              simpl. omega.
              1-9: intros HNot; inversion HNot.             
     ++
@@ -2306,14 +2460,20 @@ Proof.
                unfold get_reloc_addend in EQ1.
                unfold find_ofs_in_rtbl.
                destruct ( ZTree.get (iofs + sofs) rtbl_ofs_map); inversion EQ1.
-
-               
-               rewrite byte_eq_false. simpl.
-               repeat f_equal.
                assert (Hvalid: valid_int32 x0) by admit.
                generalize (encode_decode_int32_same_prefix _ l Hvalid).
                intros Hint.
                rewrite Hint.
+               simpl.
+
+               
+               rewrite byte_eq_false. simpl.
+               repeat f_equal.
+               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+               intros (b1 & b2 & b3 & b4 & HEncInt).
+               rewrite HEncInt.
+               simpl.
+               
                rewrite Ptrofs.unsigned_repr.
                auto.
                unfold valid_int32 in Hvalid.
@@ -2508,15 +2668,33 @@ Proof.
              unfold find_ofs_in_rtbl.
              unfold get_reloc_addend in H10.
              destruct (ZTree.get (iofs+sofs) rtbl_ofs_map) ; inversion H10.
+             assert (Hvalid: valid_int32 x0) by admit.
+             rewrite H17.
+             generalize (encode_decode_int32_same_prefix _ l Hvalid).
+             intros Hint.
+             rewrite Hint.
+             simpl.
+
+
              rewrite byte_eq_false.
              simpl.
              repeat f_equal.
              auto.
              unfold addrmode_SIB_parse_index.
              destruct (Byte.eq_dec bB[x3] HB["4"]).
+             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
+             simpl.
              ++++++ admit. (* RSP *)
-             ++++++ auto.
-             ++++++ auto.
+             ++++++
+               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
+             simpl. rewrite e.
+             rewrite H11.
+             auto.
+             (* ++++++ auto. *)
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
@@ -2530,14 +2708,33 @@ Proof.
              unfold find_ofs_in_rtbl.
              unfold get_reloc_addend in H10.
              destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion H10.
+             assert (Hvalid: valid_int32 x0) by admit.
+             rewrite H17.
+             generalize (encode_decode_int32_same_prefix _ l Hvalid).
+             intros Hint.
+             rewrite Hint.
+             simpl.
+             
              rewrite byte_eq_false.
              simpl. repeat f_equal.
              auto.
              unfold addrmode_SIB_parse_index.
              destruct(Byte.eq_dec bB[x3] HB["4"]).
+             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
+             simpl.             
+             
              ++++++ admit. (* RSP *)
-             ++++++ auto.
-             ++++++ auto.
+             ++++++
+               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
+             simpl.
+             rewrite e.
+             rewrite H11.
+             auto.
+             (* ++++++ auto. *)
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
@@ -2632,10 +2829,21 @@ Proof.
              unfold find_ofs_in_rtbl.
              unfold get_reloc_addend in EQ1.
              destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion EQ1.
+             assert (Hvalid: valid_int32 x0) by admit.
+             rewrite H16.
+             generalize (encode_decode_int32_same_prefix _ l Hvalid).
+             intros Hint.
+             rewrite Hint.
+             simpl.
              rewrite byte_eq_true; auto.
              rewrite byte_eq_true; auto.
              simpl. repeat f_equal.
-             auto.
+             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             intros (b1 & b2 & b3 & b4 & HEncInt).
+             rewrite HEncInt.
+             simpl.
+             rewrite H10.
+             repeat f_equal.
              +++++ admit.
              +++++ auto.
              +++++ intros HNot; inversion HNot.
@@ -2757,8 +2965,23 @@ Proof.
                unfold find_ofs_in_rtbl.
                unfold get_reloc_addend in H11.
                destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion H11.
+               assert (Hvalid: valid_int32 x0) by admit.
+               rewrite H16.
+               generalize (encode_decode_int32_same_prefix _ l Hvalid).
+               intros Hint.
+               rewrite H17.
+               rewrite Hint.
+               simpl.
+
+               
                rewrite byte_eq_false. simpl.
+               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+               intros (b1 & b2 & b3 & b4 & HEncInt).
+               rewrite HEncInt.
+               simpl.
                repeat f_equal.
+
+               
                intros HNot. inversion HNot.
                intros HNot. inversion HNot.
                intros HNot. inversion HNot.
@@ -2812,6 +3035,18 @@ Proof.
             unfold get_reloc_addend in EQ1.
             unfold find_ofs_in_rtbl.
             destruct(ZTree.get (iofs+sofs) rtbl_ofs_map);inversion EQ1.
+            assert (Hvalid: valid_int32 x0) by admit.
+            rewrite H17.
+            generalize (encode_decode_int32_same_prefix _ l Hvalid).
+            intros Hint.
+            rewrite Hint.
+            simpl.
+            generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+            intros (b1 & b2 & b3 & b4 & HEncInt).
+            rewrite HEncInt.
+            simpl.
+
+            
             repeat f_equal.
             auto.
             auto.
@@ -2853,6 +3088,17 @@ Proof.
           unfold get_reloc_addend in H11.
           unfold find_ofs_in_rtbl.
           destruct(ZTree.get (iofs+sofs) rtbl_ofs_map); inversion H11.
+          assert (Hvalid: valid_int32 x0) by admit.
+          rewrite H15.
+          generalize (encode_decode_int32_same_prefix _ l Hvalid).
+          intros Hint.
+          rewrite Hint.
+          simpl.
+          generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+          intros (b1 & b2 & b3 & b4 & HEncInt).
+          rewrite HEncInt.
+          simpl.
+
           repeat f_equal.
           auto.
           1-6:
@@ -3092,6 +3338,12 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     repeat f_equal.
     
     rewrite (encode_decode_int32_same_prefix).
+    simpl.
+    generalize (encode_int32_4_exists _ l (encode_int32 (Int.unsigned n) ++ l) eq_refl).
+    intros (b1 & b2 & b3 & b4 & HEncInt).
+    rewrite HEncInt.
+    simpl.
+    repeat f_equal.
     apply Int.repr_unsigned.
     generalize (Int.unsigned_range n). intros H.
     unfold valid_int32.
@@ -3419,6 +3671,12 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     ++ repeat f_equal.
        rewrite <- H12.         
        rewrite (encode_decode_int32_same_prefix (Int.unsigned n) l).
+       simpl.
+       generalize (encode_int32_4_exists _ l (encode_int32 (Int.unsigned n) ++ l) eq_refl).
+       intros (b1 & b2 & b3 & b4 & HEncInt).
+       rewrite HEncInt.
+       simpl.
+       repeat f_equal.
        rewrite Int.repr_unsigned.
        auto.
        generalize(Int.unsigned_range n).
@@ -3501,6 +3759,12 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     simpl.
     repeat f_equal.
     rewrite (encode_decode_int32_same_prefix (Int.unsigned n) l).
+    simpl.
+    generalize (encode_int32_4_exists _ l (encode_int32 (Int.unsigned n) ++ l) eq_refl).
+    intros (b1 & b2 & b3 & b4 & HEncInt).
+    rewrite HEncInt.
+    simpl.
+    repeat f_equal.
     rewrite Int.repr_unsigned. auto.
     generalize (Int.unsigned_range n). intros H.
     unfold valid_int32.
@@ -3566,6 +3830,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       unfold rev_if_be.
       destruct Archi.big_endian; simpl; auto.
     }
+    simpl.
     rewrite rid.
     rewrite Byte.unsigned_repr_eq.
     simpl.
@@ -3618,6 +3883,12 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite (encode_parse_reg_refl r1).
     simpl. repeat f_equal.
     rewrite (encode_decode_int32_same_prefix (Int.unsigned n) l).
+    simpl.
+    generalize (encode_int32_4_exists _ l (encode_int32 (Int.unsigned n) ++ l) eq_refl).
+    intros (b1 & b2 & b3 & b4 & HEncInt).
+    rewrite HEncInt.
+    simpl.
+    
     rewrite Int.repr_unsigned. auto.
     generalize (Int.unsigned_range n). intros H.
     unfold valid_int32.
@@ -3661,6 +3932,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     unfold get_reloc_addend in EQ1.
     unfold find_ofs_in_rtbl.
     destruct (ZTree.get (ofs + 1) rtbl_ofs_map); inversion EQ1.
+    rewrite H12.
+    assert(Hvalid: valid_int32 x) by admit.
+    rewrite (encode_decode_int32_same_prefix _ _ Hvalid).
+    simpl.
     (* there should be assumptions like id = 1 *)
     (* f_equal. f_equal. *)
     (* rewrite(encode_decode_int32_same_prefix). *)
@@ -3814,7 +4089,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     unfold fmc_instr_decode.
     simpl. branch_byte_eq'.
     unfold decode_jmp_l_rel. repeat f_equal.
-    assert(H_de: (decode_int_n (encode_int32 ofs0 ++ l) 4)=ofs0). {
+    assert(H_de: (decode_int_n (encode_int32 ofs0 ++ l) 4)= OK ofs0). {
          apply (encode_decode_int32_same_prefix (ofs0) l).
          admit.
     }
@@ -3827,7 +4102,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     1-12: unfold decode_0f; simpl; rewrite byte_eq_false.
     1-24: try(intros HNot; inversion HNot).
     1-12: unfold decode_jcc_rel; simpl; branch_byte_eq'; repeat f_equal.
-    1-12: apply (encode_decode_int32_same_prefix (ofs0) l).
+    1-12: rewrite (encode_decode_int32_same_prefix (ofs0) l); simpl.
+    1-24: try(generalize (encode_int32_4_exists _ l (encode_int32 ofs0 ++ l) eq_refl); intros (b1 & b2 & b3 & b4 & HEncInt); rewrite HEncInt; simpl).
+    1-24: try(branch_byte_eq'; auto).
     1-12: admit.
   + (* Pnop *)
     exists Pnop.
@@ -3866,6 +4143,11 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     simpl.
     repeat f_equal.
     rewrite encode_decode_int32_same_prefix.
+    simpl.
+    generalize (encode_int32_4_exists _ l (encode_int32 (Int.unsigned n) ++ l) eq_refl).
+    intros (b1 & b2 & b3 & b4 & HEncInt); rewrite HEncInt.
+    simpl.
+    repeat f_equal.
     rewrite Int.repr_unsigned. auto.
     generalize (Int.unsigned_range n).
     intros H.
