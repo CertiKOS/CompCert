@@ -17,9 +17,9 @@
 
 Require Import String.
 Require Import Coqlib Maps Integers Floats Errors.
-Require Import AST Linking.
-Require Import Values Memory Globalenvs Events.
-Require Import Ctypes Cop Csyntax Csem.
+Require Import AST_old Linking_old.
+Require Import Values_old Memory_old Globalenvs_old Events_old.
+Require Import Ctypes_old Cop_old Csyntax_old Csem_old.
 
 Local Open Scope error_monad_scope.
 
@@ -510,17 +510,18 @@ Inductive wt_function (ce: composite_env) (e: typenv) : function -> Prop :=
       wt_stmt ce (bind_vars (bind_vars e f.(fn_params)) f.(fn_vars)) f.(fn_return) f.(fn_body) ->
       wt_function ce e f.
 
-Fixpoint bind_globdef (e: typenv) (l: list (ident * globdef fundef type)) : typenv :=
+Fixpoint bind_globdef (e: typenv) (l: list (ident * option (globdef fundef type))) : typenv :=
   match l with
   | nil => e
-  | (id, Gfun fd) :: l => bind_globdef (PTree.set id (type_of_fundef fd) e) l
-  | (id, Gvar v) :: l => bind_globdef (PTree.set id v.(gvar_info) e) l
+  | (id, None) :: l => bind_globdef e l
+  | (id, Some (Gfun fd)) :: l => bind_globdef (PTree.set id (type_of_fundef fd) e) l
+  | (id, Some (Gvar v)) :: l => bind_globdef (PTree.set id v.(gvar_info) e) l
   end.
 
 Inductive wt_program : program -> Prop :=
   | wt_program_intro: forall p,
       let e := bind_globdef (PTree.empty _) p.(prog_defs) in
-      (forall id f, In (id, Gfun (Internal f)) p.(prog_defs) ->
+      (forall id f, In (id, Some (Gfun (Internal f))) p.(prog_defs) ->
          wt_function p.(prog_comp_env) e f) ->
       wt_program p.
 
@@ -1359,16 +1360,19 @@ Proof.
     induction l as [ | [id gd] l ]; intros l' t M; inv M.
     auto.
     destruct b1 as [id' gd']; destruct H1; simpl in *. inv H0; simpl.
+    auto.
+    inv H1; simpl.
     replace (type_of_fundef f2) with (type_of_fundef f1); auto.
-    unfold retype_fundef in H2. destruct f1; monadInv H2; auto. monadInv EQ0; auto.
-    inv H1. simpl. auto.
+    unfold retype_fundef in H0. destruct f1; monadInv H0; auto. monadInv EQ0; auto.
+    inv H. simpl. auto.
   }
   rewrite ENVS.
   intros id f. revert MATCH; generalize (prog_defs p) (AST.prog_defs tp).
   induction 1; simpl; intros.
   contradiction.
   destruct H0; auto. subst b1; inv H. simpl in H1. inv H1. 
-  destruct f1; monadInv H4. eapply retype_function_sound; eauto.
+  inv H3.
+  destruct f1; monadInv H5. eapply retype_function_sound; eauto.
 Qed.
 
 (** * Subject reduction *)
@@ -1385,7 +1389,10 @@ Proof.
 - destruct (Int.eq n Int.zero); auto.
 Qed.
 
-(*SACC:*)Hint Resolve pres_cast_int_int : ty.
+Hint Resolve pres_cast_int_int: ty.
+
+Section WITHEXTERNALCALLS.
+Context `{external_calls_prf: ExternalCalls}.
 
 Lemma wt_val_casted:
   forall v ty, val_casted v ty -> wt_val v ty.
@@ -1615,14 +1622,14 @@ Lemma wt_deref_loc:
 Proof.
   induction 1.
 - (* by value, non volatile *)
-  simpl in H1. exploit Mem.load_result; eauto. intros EQ; rewrite EQ.
+  simpl in H1. exploit Mem.load_loadbytes; eauto. intros (? & _ & EQ); rewrite EQ.
   apply wt_decode_val; auto.
 - (* by value, volatile *)
   inv H1.
   + (* truly volatile *)
     eapply wt_load_result; eauto.
   + (* not really volatile *)
-    exploit Mem.load_result; eauto. intros EQ; rewrite EQ.
+    exploit Mem.load_loadbytes; eauto. intros (? & _ & EQ); rewrite EQ.
     apply wt_decode_val; auto.
 - (* by reference *)
   destruct ty; simpl in H; try discriminate; auto with ty.
@@ -1858,7 +1865,7 @@ Let gtenv := bind_globdef (PTree.empty _) prog.(prog_defs).
 
 Hypothesis WT_EXTERNAL:
   forall id ef args res cc vargs m t vres m',
-  In (id, Gfun (External ef args res cc)) prog.(prog_defs) ->
+  In (id, Some (Gfun (External ef args res cc))) prog.(prog_defs) ->
   external_call ef ge vargs m t vres m' ->
   wt_val vres res.
 
@@ -1990,11 +1997,11 @@ Inductive wt_state: state -> Prop :=
         (WTB: wt_stmt ge te f.(fn_return) f.(fn_body))
         (WTE: wt_rvalue ge te r),
       wt_state (ExprState f r k e m)
-  | wt_call_state: forall b fd vargs k m (*SACC:*sz*)
+  | wt_call_state: forall b fd vargs k m sz
         (WTK: wt_call_cont k (fundef_return fd))
         (WTFD: wt_fundef fd)
         (FIND: Genv.find_funct ge b = Some fd),
-      wt_state (Callstate fd vargs k m (*SACC:*sz*))
+      wt_state (Callstate fd vargs k m sz)
   | wt_return_state: forall v k m ty
         (WTK: wt_call_cont k ty)
         (VAL: wt_val v ty),
@@ -2049,10 +2056,13 @@ Qed.
 
 End WT_FIND_LABEL.
 
-(*SACC:*)(*Variable fn_stack_requirements: ident -> Z.*)
+
+
+Variable fn_stack_requirements: ident -> Z.
+
 
 Lemma preservation_estep:
-  forall S t S', estep (*SACC:fn_stack_requirements*) ge S t S' -> wt_state S -> wt_state S'.
+  forall S t S', estep fn_stack_requirements ge S t S' -> wt_state S -> wt_state S'.
 Proof.
   induction 1; intros WT; inv WT.
 - (* lred *)
@@ -2132,13 +2142,13 @@ Proof.
 Qed.
 
 Theorem preservation:
-  forall S t S', step (*SACC:fn_stack_requirements*) ge S t S' -> wt_state S -> wt_state S'.
+  forall S t S', step fn_stack_requirements ge S t S' -> wt_state S -> wt_state S'.
 Proof.
   intros. destruct H. eapply preservation_estep; eauto. eapply preservation_sstep; eauto.
 Qed.
 
 Theorem wt_initial_state:
-  forall S, initial_state (*SACC:fn_stack_requirements*) prog S -> wt_state S.
+  forall S, initial_state fn_stack_requirements prog S -> wt_state S.
 Proof.
   intros. inv H. econstructor. constructor.
   apply Genv.find_funct_ptr_prop with (p := prog) (b := b); auto.
@@ -2147,3 +2157,7 @@ Proof.
 Qed.
 
 End PRESERVATION.
+
+End WITHEXTERNALCALLS.
+
+Hint Constructors wt_expr_cont wt_stmt_cont wt_stmt wt_state: ty.

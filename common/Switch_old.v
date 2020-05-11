@@ -20,7 +20,7 @@ Require Import EqNat.
 Require Import Coqlib.
 Require Import Maps.
 Require Import Integers.
-Require Import Values.
+Require Import Values_old.
 
 (** A multi-way branch is composed of a list of (key, action) pairs,
   plus a default action.  *)

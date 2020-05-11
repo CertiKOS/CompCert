@@ -16,7 +16,7 @@
 (** Type expressions for the Compcert C and Clight languages *)
 
 Require Import Axioms Coqlib Maps Errors.
-Require Import AST Linking.
+Require Import AST_old Linking_old.
 Require Archi.
 
 (** * Syntax of types *)
@@ -722,20 +722,20 @@ Fixpoint type_of_params (params: list (ident * type)) : typelist :=
 
 (** Translating C types to Cminor types and function signatures. *)
 
-Definition typ_of_type (t: type) : AST.typ :=
+Definition typ_of_type (t: type) : AST_old.typ :=
   match t with
-  | Tvoid => AST.Tint
-  | Tint _ _ _ => AST.Tint
-  | Tlong _ _ => AST.Tlong
-  | Tfloat F32 _ => AST.Tsingle
-  | Tfloat F64 _ => AST.Tfloat
-  | Tpointer _ _ | Tarray _ _ _ | Tfunction _ _ _ | Tstruct _ _ | Tunion _ _ => AST.Tptr
+  | Tvoid => AST_old.Tint
+  | Tint _ _ _ => AST_old.Tint
+  | Tlong _ _ => AST_old.Tlong
+  | Tfloat F32 _ => AST_old.Tsingle
+  | Tfloat F64 _ => AST_old.Tfloat
+  | Tpointer _ _ | Tarray _ _ _ | Tfunction _ _ _ | Tstruct _ _ | Tunion _ _ => AST_old.Tptr
   end.
 
-Definition opttyp_of_type (t: type) : option AST.typ :=
+Definition opttyp_of_type (t: type) : option AST_old.typ :=
   if type_eq t Tvoid then None else Some (typ_of_type t).
 
-Fixpoint typlist_of_typelist (tl: typelist) : list AST.typ :=
+Fixpoint typlist_of_typelist (tl: typelist) : list AST_old.typ :=
   match tl with
   | Tnil => nil
   | Tcons hd tl => typ_of_type hd :: typlist_of_typelist tl
@@ -1133,7 +1133,7 @@ Inductive fundef : Type :=
 - a proof that this environment is consistent with the definitions. *)
 
 Record program : Type := {
-  prog_defs: list (ident * globdef fundef type);
+  prog_defs: list (ident * option (globdef fundef type));
   prog_public: list ident;
   prog_main: ident;
   prog_types: list composite_definition;
@@ -1141,15 +1141,15 @@ Record program : Type := {
   prog_comp_env_eq: build_composite_env prog_types = OK prog_comp_env
 }.
 
-Definition program_of_program (p: program) : AST.program fundef type :=
-  {| AST.prog_defs := p.(prog_defs);
-     AST.prog_public := p.(prog_public);
-     AST.prog_main := p.(prog_main) |}.
+Definition program_of_program (p: program) : AST_old.program fundef type :=
+  {| AST_old.prog_defs := p.(prog_defs);
+     AST_old.prog_public := p.(prog_public);
+     AST_old.prog_main := p.(prog_main) |}.
 
-Coercion program_of_program: program >-> AST.program.
+Coercion program_of_program: program >-> AST_old.program.
 
 Program Definition make_program (types: list composite_definition)
-                                (defs: list (ident * globdef fundef type))
+                                (defs: list (ident * option (globdef fundef type)))
                                 (public: list ident)
                                 (main: ident) : res program :=
   match build_composite_env types with
@@ -1451,9 +1451,9 @@ Definition link_program {F:Type} (p1 p2: program F): option (program F) :=
                    p1.(prog_comp_env) p2.(prog_comp_env)
                    p1.(prog_comp_env_eq) p2.(prog_comp_env_eq) EQ with
           | exist env (conj P Q) =>
-              Some {| prog_defs := p.(AST.prog_defs);
-                      prog_public := p.(AST.prog_public);
-                      prog_main := p.(AST.prog_main);
+              Some {| prog_defs := p.(AST_old.prog_defs);
+                      prog_public := p.(AST_old.prog_public);
+                      prog_main := p.(AST_old.prog_main);
                       prog_types := typs;
                       prog_comp_env := env;
                       prog_comp_env_eq := P |}
@@ -1500,7 +1500,7 @@ Hypothesis link_match_fundef:
   exists tf, link tf1 tf2 = Some tf /\ match_fundef f tf.
 
 Let match_program (p: program F) (tp: program G) : Prop :=
-    Linking.match_program (fun ctx f tf => match_fundef f tf) eq p tp
+    Linking_old.match_program (fun ctx f tf => match_fundef f tf) eq p tp
  /\ prog_types tp = prog_types p.
 
 Theorem link_match_program:
@@ -1514,8 +1514,8 @@ Local Transparent Linker_program.
   destruct (link (program_of_program p1) (program_of_program p2)) as [pp|] eqn:LP; try discriminate.
   assert (A: exists tpp,
                link (program_of_program tp1) (program_of_program tp2) = Some tpp
-             /\ Linking.match_program (fun ctx f tf => match_fundef f tf) eq pp tpp).
-  { eapply Linking.link_match_program. 
+             /\ Linking_old.match_program (fun ctx f tf => match_fundef f tf) eq pp tpp).
+  { eapply Linking_old.link_match_program. 
   - intros. exploit link_match_fundef; eauto. intros (tf & A & B). exists tf; auto.
   - intros.
     Local Transparent Linker_types.

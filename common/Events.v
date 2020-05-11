@@ -1554,6 +1554,17 @@ Axiom inline_assembly_properties:
 
 (*SACC:
 Parameter cc_enable_external_as_builtin: bool
+
+Global Arguments EnableBuiltins _ { _ _ }.
+
+Definition builtin_enabled `{enable_builtin_instance: EnableBuiltins} (ec: external_function): Prop :=
+  match ec with
+ | EF_external _ _ => if cc_enable_external_as_builtin then True else False
+ | _ => True
+ end.
+
+Hint Unfold builtin_enabled.
+
 *)
 
 (** ** Combined semantics of external calls *)

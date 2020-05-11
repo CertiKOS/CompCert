@@ -21,18 +21,21 @@ Require Import Errors.
 Require Import Maps.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import AST.
-Require Import Memory.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Smallstep.
-Require Import Ctypes.
-Require Import Cop.
-Require Import Csyntax.
-Require Import Csem.
+Require Import Values_old.
+Require Import AST_old.
+Require Import Memory_old.
+Require Import Events_old.
+Require Import Globalenvs_old.
+Require Import Smallstep_old.
+Require Import Ctypes_old.  
+Require Import Cop_old.
+Require Import Csyntax_old.
+Require Import Csem_old.
 
-(*SACC:*)(*Variable fn_stack_requirements: ident -> Z.*)
+Section WITHEXTERNALCALLS.
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable fn_stack_requirements: ident -> Z.
 
 Section STRATEGY.
 
@@ -363,8 +366,7 @@ Inductive estep: state -> trace -> state -> Prop :=
       estep (ExprState f (C (Eparen r tycast ty)) k e m)
          E0 (ExprState f (C (Eval v ty)) k e m)
 
-  | step_call: forall f C rf rargs ty k e m targs tres cconv vf vargs fd (*SACC:id*),
-  (*SACC:*)(*is_function_ident ge vf id ->*)
+  | step_call: forall f C rf rargs ty k e m targs tres cconv vf vargs fd id (IFI: is_function_ident ge vf id),
       leftcontext RV RV C ->
       classify_fun (typeof rf) = fun_case_f targs tres cconv ->
       eval_simple_rvalue e m rf vf ->
@@ -372,15 +374,14 @@ Inductive estep: state -> trace -> state -> Prop :=
       Genv.find_funct ge vf = Some fd ->
       type_of_fundef fd = Tfunction targs tres cconv ->
       estep (ExprState f (C (Ecall rf rargs ty)) k e m)
-         E0 (Callstate fd vargs (Kcall f e C ty k) ((*SACC:*)Mem.push_new_stage m)
-         (*SACC:*)(*(fn_stack_requirements id)*))
+         E0 (Callstate fd vargs (Kcall f e C ty k) (Mem.push_new_stage m) (fn_stack_requirements id))
 
   | step_builtin: forall f C ef tyargs rargs ty k e m vargs t vres m' m'',
       leftcontext RV RV C ->
       eval_simple_list e m rargs tyargs vargs ->
-      external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
-      (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
-      (*SACC:*)(*builtin_enabled ef ->*)
+      external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
+      forall BUILTIN_ENABLED: builtin_enabled ef,
       estep (ExprState f (C (Ebuiltin ef tyargs rargs ty)) k e m)
           t (ExprState f (C (Eval vres ty)) k e m'').
 
@@ -412,12 +413,12 @@ Hint Resolve context_compose contextlist_compose.
   if it cannot get stuck by doing silent transitions only. *)
 
 Definition safe (s: Csem.state) : Prop :=
-  forall s', star Csem.step (*SACC:*fn_stack_requirements*) ge s E0 s' ->
-  (exists r, final_state s' r) \/ (exists t, exists s'', Csem.step (*SACC:*fn_stack_requirements*) ge s' t s'').
+  forall s', star (Csem.step fn_stack_requirements) ge s E0 s' ->
+  (exists r, final_state s' r) \/ (exists t, exists s'', Csem.step fn_stack_requirements ge s' t s'').
 
 Lemma safe_steps:
   forall s s',
-  safe s -> star Csem.step (*SACC:*fn_stack_requirements*) ge s E0 s' -> safe s'.
+  safe s -> star (Csem.step fn_stack_requirements) ge s E0 s' -> safe s'.
 Proof.
   intros; red; intros.
   eapply H. eapply star_trans; eauto.
@@ -425,16 +426,17 @@ Qed.
 
 Lemma star_safe:
   forall s1 s2 t s3,
-  safe s1 -> star Csem.step (*SACC:*fn_stack_requirements*) ge s1 E0 s2 -> (safe s2 -> star Csem.step (*SACC:*fn_stack_requirements*) ge s2 t s3) ->
-  star Csem.step (*SACC:*fn_stack_requirements*) ge s1 t s3.
+    safe s1 -> star (Csem.step fn_stack_requirements) ge s1 E0 s2 ->
+    (safe s2 -> star (Csem.step fn_stack_requirements) ge s2 t s3) ->
+  star (Csem.step fn_stack_requirements) ge s1 t s3.
 Proof.
   intros. eapply star_trans; eauto. apply H1. eapply safe_steps; eauto. auto.
 Qed.
 
 Lemma plus_safe:
   forall s1 s2 t s3,
-  safe s1 -> star Csem.step ge s1 E0 s2 -> (safe s2 -> plus Csem.step ge s2 t s3) ->
-  plus Csem.step ge s1 t s3.
+  safe s1 -> star (Csem.step fn_stack_requirements) ge s1 E0 s2 -> (safe s2 -> plus (Csem.step fn_stack_requirements) ge s2 t s3) ->
+  plus (Csem.step fn_stack_requirements) ge s1 t s3.
 Proof.
   intros. eapply star_plus_trans; eauto. apply H1. eapply safe_steps; eauto. auto.
 Qed.
@@ -478,7 +480,7 @@ Proof.
 Qed.
 
 Lemma callred_kind:
-  forall a m fd args ty (*SACC:sz*), callred ge a m fd args ty (*SACC:sz*) -> expr_kind a = RV.
+  forall a m fd args ty sz, callred ge a m fd args ty sz -> expr_kind a = RV.
 Proof.
   induction 1; auto.
 Qed.
@@ -568,21 +570,21 @@ Definition invert_expr_prop (a: expr) (m: mem) : Prop :=
       typeof r2 = ty
   | Eparen (Eval v1 ty1) ty2 ty =>
       exists v, sem_cast v1 ty1 ty2 m = Some v
-  | Ecall (Eval vf tyf) rargs ty (*SACC:id*) =>
+  | Ecall (Eval vf tyf) rargs ty =>
       exprlist_all_values rargs ->
-      exists tyargs tyres cconv fd vl,
-      (*SACC:*)(*is_function_ident ge vf id /\*)
-         classify_fun tyf = fun_case_f tyargs tyres cconv
+      exists tyargs tyres cconv fd vl id,
+        is_function_ident ge vf id
+        /\ classify_fun tyf = fun_case_f tyargs tyres cconv
       /\ Genv.find_funct ge vf = Some fd
       /\ cast_arguments m rargs tyargs vl
       /\ type_of_fundef fd = Tfunction tyargs tyres cconv
   | Ebuiltin ef tyargs rargs ty =>
       exprlist_all_values rargs ->
-  (*SACC:*)(*builtin_enabled ef /\*)
+      builtin_enabled ef /\
       exists vargs, exists t, exists vres, exists m' m'',
          cast_arguments m rargs tyargs vargs
-      /\ external_call ef ge vargs (Mem.push_new_stage m) t vres m'
-  (*SACC:*)/\ Mem.unrecord_stack_block m' = Some m''
+         /\ external_call ef ge vargs (Mem.push_new_stage m) t vres m'
+         /\ Mem.unrecord_stack_block m' = Some m''
   | _ => True
   end.
 
@@ -612,18 +614,18 @@ Proof.
   exists t; exists v1; auto.
   exists t; exists v1; auto.
   exists v; auto.
-  intros. exists vargs; exists t; exists vres; exists m', m''; auto.
+  intros. split; auto. exists vargs; exists t; exists vres; exists m', m''; auto.
 Qed.
 
 Lemma callred_invert:
-  forall r fd args ty m,
-  callred ge r m fd args ty ->
+  forall r fd args ty m sz,
+  callred ge r m fd args ty sz ->
   invert_expr_prop r m.
 Proof.
   intros. inv H. simpl.
-  intros. exists tyargs, tyres, cconv, fd, args; auto.
+  intros. exists tyargs, tyres, cconv, fd, args, sz; auto.
 Qed.
-  
+
 Scheme context_ind2 := Minimality for context Sort Prop
   with contextlist_ind2 := Minimality for contextlist Sort Prop.
 Combined Scheme context_contextlist_ind from context_ind2, contextlist_ind2.
@@ -716,11 +718,11 @@ Variable m: mem.
 Lemma eval_simple_steps:
    (forall a v, eval_simple_rvalue e m a v ->
     forall C, context RV RV C ->
-    star Csem.step (*SACC:fn_stack_requirements*) ge (ExprState f (C a) k e m)
+    star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                    E0 (ExprState f (C (Eval v (typeof a))) k e m))
 /\ (forall a b ofs, eval_simple_lvalue e m a b ofs ->
     forall C, context LV RV C ->
-    star Csem.step (*SACC:fn_stack_requirements*)  ge (ExprState f (C a) k e m)
+    star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                    E0 (ExprState f (C (Eloc b ofs (typeof a))) k e m)).
 Proof.
 
@@ -764,14 +766,14 @@ Qed.
 Lemma eval_simple_rvalue_steps:
   forall a v, eval_simple_rvalue e m a v ->
   forall C, context RV RV C ->
-  star Csem.step (*SACC:fn_stack_requirements*) ge (ExprState f (C a) k e m)
+  star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                 E0 (ExprState f (C (Eval v (typeof a))) k e m).
 Proof (proj1 eval_simple_steps).
 
 Lemma eval_simple_lvalue_steps:
   forall a b ofs, eval_simple_lvalue e m a b ofs ->
   forall C, context LV RV C ->
-  star Csem.step ge (*SACC:fn_stack_requirements*) (ExprState f (C a) k e m)
+  star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                 E0 (ExprState f (C (Eloc b ofs (typeof a))) k e m).
 Proof (proj2 eval_simple_steps).
 
@@ -990,7 +992,7 @@ Hint Resolve contextlist'_head contextlist'_tail.
 Lemma eval_simple_list_steps:
   forall rl vl, eval_simple_list' rl vl ->
   forall C, contextlist' C ->
-  star Csem.step (*SACC:fn_stack_requirements*) ge (ExprState f (C rl) k e m)
+  star (Csem.step fn_stack_requirements) ge (ExprState f (C rl) k e m)
                 E0 (ExprState f (C (rval_list vl rl)) k e m).
 Proof.
   induction 1; intros.
@@ -1152,7 +1154,7 @@ End DECOMPOSITION.
 
 Lemma estep_simulation:
   forall S t S',
-  estep S t S' -> plus Csem.step (*SACC:fn_stack_requirements*) ge S t S'.
+  estep S t S' -> plus (Csem.step fn_stack_requirements) ge S t S'.
 Proof.
   intros. inv H.
 (* simple *)
@@ -1198,7 +1200,7 @@ Proof.
   eapply plus_left.
   left; apply step_rred; auto. econstructor; eauto.
   eapply star_left.
-  left; apply step_rred with (C := fun x => C(Eassign (Eloc b ofs (typeof l)) x (typeof l))); eauto. econstructor; eauto.
+  left; apply step_rred with (C0 := fun x => C(Eassign (Eloc b ofs (typeof l)) x (typeof l))); eauto. econstructor; eauto.
   apply star_one.
   left; apply step_rred; auto. econstructor; eauto.
   reflexivity. reflexivity. reflexivity. traceEq.
@@ -1211,14 +1213,14 @@ Proof.
   left; apply step_rred; auto. econstructor; eauto.
   destruct (sem_binary_operation ge op v1 (typeof l) v2 (typeof r) m) as [v3|] eqn:?.
   eapply star_left.
-  left; apply step_rred with (C := fun x => C(Eassign (Eloc b ofs (typeof l)) x (typeof l))); eauto. econstructor; eauto.
+  left; apply step_rred with (C0 := fun x => C(Eassign (Eloc b ofs (typeof l)) x (typeof l))); eauto. econstructor; eauto.
   apply star_one.
   left; eapply step_stuck; eauto.
   red; intros. exploit imm_safe_inv; eauto. simpl. intros [v4' [m' [t' [A [B D]]]]].
   rewrite B in H4. eelim H4; eauto.
   reflexivity.
   apply star_one.
-  left; eapply step_stuck with (C := fun x => C(Eassign (Eloc b ofs (typeof l)) x (typeof l))); eauto.
+  left; eapply step_stuck with (C0 := fun x => C(Eassign (Eloc b ofs (typeof l)) x (typeof l))); eauto.
   red; intros. exploit imm_safe_inv; eauto. simpl. intros [v3 A]. congruence.
   reflexivity.
   reflexivity. traceEq.
@@ -1228,10 +1230,10 @@ Proof.
   eapply plus_left.
   left; apply step_rred; auto. econstructor; eauto.
   eapply star_left.
-  left; apply step_rred with (C := fun x => C (Ecomma (Eassign (Eloc b ofs (typeof l)) x (typeof l)) (Eval v1 (typeof l)) (typeof l))); eauto.
+  left; apply step_rred with (C0 := fun x => C (Ecomma (Eassign (Eloc b ofs (typeof l)) x (typeof l)) (Eval v1 (typeof l)) (typeof l))); eauto.
   econstructor. instantiate (1 := v2). destruct id; assumption.
   eapply star_left.
-  left; apply step_rred with (C := fun x => C (Ecomma x (Eval v1 (typeof l)) (typeof l))); eauto.
+  left; apply step_rred with (C0 := fun x => C (Ecomma x (Eval v1 (typeof l)) (typeof l))); eauto.
   econstructor; eauto.
   apply star_one.
   left; apply step_rred; auto. econstructor; eauto.
@@ -1247,15 +1249,15 @@ Proof.
     destruct id; auto.
   destruct (sem_incrdecr ge id v1 (typeof l) m) as [v2|].
   eapply star_left.
-  left; apply step_rred with (C := fun x => C (Ecomma (Eassign (Eloc b ofs (typeof l)) x (typeof l)) (Eval v1 (typeof l)) (typeof l))); eauto.
+  left; apply step_rred with (C0 := fun x => C (Ecomma (Eassign (Eloc b ofs (typeof l)) x (typeof l)) (Eval v1 (typeof l)) (typeof l))); eauto.
   econstructor; eauto.
   apply star_one.
-  left; eapply step_stuck with (C := fun x => C (Ecomma x (Eval v1 (typeof l)) (typeof l))); eauto.
+  left; eapply step_stuck with (C0 := fun x => C (Ecomma x (Eval v1 (typeof l)) (typeof l))); eauto.
   red; intros. exploit imm_safe_inv; eauto. simpl. intros [v3 [m' [t' [A [B D]]]]].
   rewrite B in H3. eelim H3; eauto.
   reflexivity.
   apply star_one.
-  left; eapply step_stuck with (C := fun x => C (Ecomma (Eassign (Eloc b ofs (typeof l)) x (typeof l)) (Eval v1 (typeof l)) (typeof l))); eauto.
+  left; eapply step_stuck with (C0 := fun x => C (Ecomma (Eassign (Eloc b ofs (typeof l)) x (typeof l)) (Eval v1 (typeof l)) (typeof l))); eauto.
   red; intros. exploit imm_safe_inv; eauto. simpl. intros [v2 A]. congruence.
   reflexivity.
   traceEq.
@@ -1369,7 +1371,7 @@ Proof.
   exploit safe_inv. eexact S1. eauto. simpl. intros EQ.
   econstructor; econstructor; eapply step_comma; eauto.
 (* call *)
-  destruct Q.
+  destruct Q. 
   exploit (simple_can_eval_rval f k e m b (fun x => C(Ecall x rargs ty))); eauto.
   intros [vf [E1 S1]].
   pose (C' := fun x => C(Ecall (Eval vf (typeof b)) x ty)).
@@ -1380,7 +1382,7 @@ Proof.
   eapply safe_steps. eexact S1.
   apply (eval_simple_list_steps f k e m rargs vl E2 C'); auto.
   simpl. intros X. exploit X. eapply rval_list_all_values.
-  intros [tyargs [tyres [cconv [fd [vargs [P [Q [U V]]]]]]]].
+  intros [tyargs [tyres [cconv [fd [vargs [id [IFI [P [Q [U V]]]]]]]]]].
   econstructor; econstructor; eapply step_call; eauto. eapply can_eval_simple_list; eauto.
 (* builtin *)
   pose (C' := fun x => C(Ebuiltin ef tyargs x ty)).
@@ -1391,7 +1393,7 @@ Proof.
   eapply safe_steps. eexact H.
   apply (eval_simple_list_steps f k e m rargs vl E C'); auto.
   simpl. intros X. exploit X. eapply rval_list_all_values.
-  intros  [vargs [t [vres [m' [m'' [U [V W]]]]]]].
+  intros [BUITIN_ENABLED [vargs [t [vres [m' [m'' [U [V W]]]]]]]].
   econstructor; econstructor; eapply step_builtin; eauto.
   eapply can_eval_simple_list; eauto.
 (* paren *)
@@ -1405,7 +1407,7 @@ Qed.
 
 Theorem step_simulation:
   forall S1 t S2,
-  step S1 t S2 -> plus Csem.step (*SACC:fn_stack_requirements*) ge S1 t S2.
+  step S1 t S2 -> plus (Csem.step fn_stack_requirements) ge S1 t S2.
 Proof.
   intros. inv H.
   apply estep_simulation; auto.
@@ -1444,7 +1446,7 @@ End STRATEGY.
 
 Definition semantics (p: program) :=
   let ge := globalenv p in
-  Semantics_gen step (initial_state (*SACC:fn_stack_requirements*) p) final_state ge ge.
+  Semantics_gen step (initial_state fn_stack_requirements p) final_state ge ge.
 
 (** This semantics is receptive to changes in events. *)
 
@@ -1604,7 +1606,7 @@ Qed.
 (** The main simulation result. *)
 
 Theorem strategy_simulation:
-  forall p, backward_simulation (Csem.semantics (*SACC:fn_stack_requirements*) p) (semantics p).
+  forall p, backward_simulation (Csem.semantics fn_stack_requirements p) (semantics p).
 Proof.
   intros.
   apply backward_simulation_plus with (match_states := fun (S1 S2: state) => S1 = S2); simpl.
@@ -1770,17 +1772,16 @@ with eval_expr: env -> mem -> kind -> expr -> trace -> mem -> expr -> Prop :=
       ty = typeof r2 ->
       eval_expr e m RV (Ecomma r1 r2 ty) (t1**t2) m2 r2'
   | eval_call: forall e m rf rargs ty t1 m1 rf' t2 m2 rargs' vf vargs
-                      targs tres cconv fd t3 m3 vres (*SACC:*) m4 (*SACC: id*),
-  (*SACC:*)(*is_function_ident ge vf id ->*)
+                      targs tres cconv fd t3 m3 vres m4 id (IFI: is_function_ident ge vf id),
       eval_expr e m RV rf t1 m1 rf' -> eval_exprlist e m1 rargs t2 m2 rargs' ->
       eval_simple_rvalue ge e m2 rf' vf ->
       eval_simple_list ge e m2 rargs' targs vargs ->
       classify_fun (typeof rf) = fun_case_f targs tres cconv ->
       Genv.find_funct ge vf = Some fd ->
       type_of_fundef fd = Tfunction targs tres cconv ->
-      eval_funcall ((*SACC:*)Mem.push_new_stage m2) fd vargs t3 m3 vres (*SACC: (fn_stack_requirements id)*) ->
-  (*SACC:*)Mem.unrecord_stack_block m3 = Some m4 ->
-      eval_expr e m RV (Ecall rf rargs ty) (t1**t2**t3) (*SACC:*)m4 (Eval vres ty)
+      eval_funcall (Mem.push_new_stage m2) fd vargs t3 m3 vres (fn_stack_requirements id) ->
+      Mem.unrecord_stack_block m3 = Some m4 ->
+      eval_expr e m RV (Ecall rf rargs ty) (t1**t2**t3) m4 (Eval vres ty)
 
 with eval_exprlist: env -> mem -> exprlist -> trace -> mem -> exprlist -> Prop :=
   | eval_nil: forall e m,
@@ -1909,11 +1910,10 @@ with exec_stmt: env -> mem -> statement -> trace -> mem -> outcome -> Prop :=
   function [fd] with arguments [args].  [res] is the value returned
   by the call.  *)
 
-with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> (*SACC:Z ->*) Prop :=
-  | eval_funcall_internal: forall m f vargs t e m1 (*SACC:*)m1' m2 m3 out vres m4 (*SACC:*) sz fa,
+with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> Z -> Prop :=
+  | eval_funcall_internal: forall m f vargs t e m1 m1' m2 m3 out vres m4 sz fa,
       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
       alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
-      (*SACC:*)
       frame_adt_blocks fa = blocks_with_info ge e ->
       frame_adt_size fa = Z.max 0 sz ->
       Mem.record_stack_blocks m1 fa = Some m1' ->
@@ -1921,10 +1921,10 @@ with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> (*SACC:Z 
       exec_stmt e m2 f.(fn_body) t m3 out ->
       outcome_result_value out f.(fn_return) vres m3 ->
       Mem.free_list m3 (blocks_of_env ge e) = Some m4 ->
-      eval_funcall m (Internal f) vargs t m4 vres (*SACC: sz*)
+      eval_funcall m (Internal f) vargs t m4 vres sz
   | eval_funcall_external: forall m ef targs tres cconv vargs t vres m',
       external_call ef ge vargs m t vres m' ->
-      eval_funcall m (External ef targs tres cconv) vargs t m' vres (*SACC: 0*).
+      eval_funcall m (External ef targs tres cconv) vargs t m' vres 0.
 
 Scheme eval_expression_ind5 := Minimality for eval_expression Sort Prop
   with eval_expr_ind5 := Minimality for eval_expr Sort Prop
@@ -2020,15 +2020,14 @@ CoInductive evalinf_expr: env -> mem -> kind -> expr -> traceinf -> Prop :=
       evalinf_exprlist e m1 a2 t2 ->
       evalinf_expr e m RV (Ecall a1 a2 ty) (t1 *** t2)
   | evalinf_call: forall e m rf rargs ty t1 m1 rf' t2 m2 rargs' vf vargs
-                      targs tres cconv fd t3 (*SACC: id*),
-  (*SACC:*)(*is_function_ident ge vf id ->*)
+                      targs tres cconv fd t3 id (IFI: is_function_ident ge vf id),
       eval_expr e m RV rf t1 m1 rf' -> eval_exprlist e m1 rargs t2 m2 rargs' ->
       eval_simple_rvalue ge e m2 rf' vf ->
       eval_simple_list ge e m2 rargs' targs vargs ->
       classify_fun (typeof rf) = fun_case_f targs tres cconv ->
       Genv.find_funct ge vf = Some fd ->
       type_of_fundef fd = Tfunction targs tres cconv ->
-      evalinf_funcall ((*SACC:*)Mem.push_new_stage m2) fd vargs t3 (*SACC:*)(*(fn_stack_requirements id)*) ->
+      evalinf_funcall (Mem.push_new_stage m2) fd vargs t3 (fn_stack_requirements id) ->
       evalinf_expr e m RV (Ecall rf rargs ty) (t1***t2***t3)
 
 with evalinf_exprlist: env -> mem -> exprlist -> traceinf -> Prop :=
@@ -2136,16 +2135,16 @@ with execinf_stmt: env -> mem -> statement -> traceinf -> Prop :=
 (** [evalinf_funcall m1 fd args t m2 res] describes a diverging
   invocation of function [fd] with arguments [args].  *)
 
-with evalinf_funcall: mem -> fundef -> list val -> traceinf -> (*SACC:Z ->*) Prop :=
-  | evalinf_funcall_internal: forall m f vargs t e m1 m1' m2 (*SACC:*) sz fa,
+with evalinf_funcall: mem -> fundef -> list val -> traceinf -> Z -> Prop :=
+  | evalinf_funcall_internal: forall m f vargs t e m1 m1' m2 sz fa,
       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
       alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
-(*SACC:*)frame_adt_blocks fa = blocks_with_info ge e ->
-(*SACC:*)frame_adt_size fa = Z.max 0 sz ->
-(*SACC:*)Mem.record_stack_blocks m1 fa = Some m1' ->
+      frame_adt_blocks fa = blocks_with_info ge e ->
+      frame_adt_size fa = Z.max 0 sz ->
+      Mem.record_stack_blocks m1 fa = Some m1' ->
       bind_parameters ge e m1' f.(fn_params) vargs m2 ->
       execinf_stmt e m2 f.(fn_body) t ->
-      evalinf_funcall m (Internal f) vargs t (*SACC: sz*).
+      evalinf_funcall m (Internal f) vargs t sz.
 
 (** ** Implication from big-step semantics to transition semantics *)
 
@@ -2223,11 +2222,11 @@ Lemma bigstep_to_steps:
    forall f k,
    exists S,
    star step ge (State f s k e m) t S /\ outcome_state_match e m' f k out S)
-/\(forall m fd args t m' res (*SACC: sz*),
-   eval_funcall m fd args t m' res ->
+/\(forall m fd args t m' res sz,
+   eval_funcall m fd args t m' res sz ->
    forall k,
    is_call_cont k ->
-   star step ge (Callstate fd args k m (*sz*)) t (Returnstate res k m')).
+   star step ge (Callstate fd args k m sz) t (Returnstate res k m')).
 Proof.
   apply bigstep_induction; intros.
 (* expression, general *)
@@ -2669,11 +2668,11 @@ Lemma exec_stmt_to_steps:
 Proof (proj1 (proj2 (proj2 (proj2 bigstep_to_steps)))).
 
 Lemma eval_funcall_to_steps:
-  forall m fd args t m' res (*SACC: sz*),
-  eval_funcall m fd args t m' res (*SACC: sz*)->
+  forall m fd args t m' res sz,
+  eval_funcall m fd args t m' res sz ->
   forall k,
   is_call_cont k ->
-  star step ge (Callstate fd args k m (*SACC: sz*)) t (Returnstate res k m').
+  star step ge (Callstate fd args k m sz) t (Returnstate res k m').
 Proof (proj2 (proj2 (proj2 (proj2 bigstep_to_steps)))).
 
 Fixpoint esize (a: expr) : nat :=
@@ -2729,9 +2728,9 @@ Proof.
 Qed.
 
 Lemma evalinf_funcall_steps:
-  forall m fd args t k (*SACC: sz*),
-  evalinf_funcall m fd args t (*SACC: sz*)->
-  forever_N step lt ge O (Callstate fd args k m (*SACC: sz*)) t.
+  forall m fd args t k sz,
+  evalinf_funcall m fd args t sz ->
+  forever_N step lt ge O (Callstate fd args k m sz) t.
 Proof.
   cofix COF.
 
@@ -2930,7 +2929,7 @@ Proof.
   eapply forever_N_plus.
   eapply plus_left. right; constructor.
   eapply star_right. eapply eval_expression_to_steps; eauto.
-  right. eapply step_ifthenelse_2 with (b := b). auto.
+  right. eapply step_ifthenelse_2 with (b0 := b). auto.
   reflexivity. reflexivity.
   eapply COS; eauto. traceEq.
 (* return some *)
@@ -3045,26 +3044,26 @@ End BIGSTEP.
 (** ** Whole-program behaviors, big-step style. *)
 
 Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
-  | bigstep_program_terminates_intro: forall b f m0 m1 t r (*SACC:*) m3 m1',
+  | bigstep_program_terminates_intro: forall b f m0 m1 t r m3 m1',
       let ge := globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m3 ->
-      eval_funcall ge ((*SACC:*)Mem.push_new_stage m3) f nil t m1 (Vint r) (*SACC:*(fn_stack_requirements (prog_main p)*) ->
-  (*SACC:*)Mem.unrecord_stack_block m1 = Some m1' ->
+      Mem.record_init_sp m0 = Some m3 ->
+      eval_funcall ge (Mem.push_new_stage m3) f nil t m1 (Vint r) (fn_stack_requirements (prog_main p)) ->
+      Mem.unrecord_stack_block m1 = Some m1' ->
       bigstep_program_terminates p t r.
 
 Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
-  | bigstep_program_diverges_intro: forall b f m0 t (*SACC:*)m3,
+  | bigstep_program_diverges_intro: forall b f m0 t m3,
       let ge := globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m3 ->
-      evalinf_funcall ge ((*SACC:*)Mem.push_new_stage m3) f nil t (*SACC:*(fn_stack_requirements (prog_main p))*)->
+      Mem.record_init_sp m0 = Some m3 ->
+      evalinf_funcall ge (Mem.push_new_stage m3) f nil t (fn_stack_requirements (prog_main p)) ->
       bigstep_program_diverges p t.
 
 Definition bigstep_semantics (p: program) :=
@@ -3086,3 +3085,5 @@ Proof.
   apply lt_wf.
   eapply evalinf_funcall_steps; eauto.
 Qed.
+
+End WITHEXTERNALCALLS.

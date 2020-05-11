@@ -20,15 +20,15 @@ Require Import Errors.
 Require Import Maps.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import AST.
-Require Import Memory.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Ctypes.
-Require Import Cop.
-Require Import Csyntax.
-Require Import Smallstep.
+Require Import Values_old.
+Require Import AST_old.
+Require Import Memory_old.
+Require Import Events_Old.
+Require Import Globalenvs_old.
+Require Import Ctypes_old.
+Require Import Cop_old.
+Require Import Csyntax_old.
+Require Import Smallstep_old.
 
 (** * Operational semantics *)
 
@@ -50,12 +50,12 @@ Definition env := PTree.t (block * type). (* map variable -> location & type *)
 
 Definition empty_env: env := (PTree.empty (block * type)).
 
+Section WITHEXTERNALCALLS.
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable fn_stack_requirements: ident -> Z.
 
 Section SEMANTICS.
-
-(*SACC:
-Variable fn_stack_requirements: ident -> Z.
-*)
 
 Variable ge: genv.
 
@@ -158,9 +158,8 @@ Definition block_of_binding (id_b_ty: ident * (block * type)) :=
 Definition blocks_of_env (e: env) : list (block * Z * Z) :=
   List.map block_of_binding (PTree.elements e).
 
-(*SACC:*)
 Definition blocks_with_info (e: env) : list (block * frame_info) :=
-  map (fun x => let '(b, lo, hi) := x in (b, default_frame_info hi)) (blocks_of_env e).
+  map (fun x => let '(b, lo, hi) := x in (b, public_frame_info hi)) (blocks_of_env e).
 
 (** Selection of the appropriate case of a [switch], given the value [n]
   of the selector expression. *)
@@ -215,7 +214,8 @@ Variable e: env.
 
 (** Head reduction for l-values. *)
 
-Inductive lred: expr -> mem -> expr -> mem -> Prop :=
+Inductive lred {memory_model_ops: Mem.MemoryModelOps mem}
+: expr -> mem -> expr -> mem -> Prop :=
   | red_var_local: forall x ty m b,
       e!x = Some(b, ty) ->
       lred (Evar x ty) m
@@ -314,11 +314,11 @@ Inductive rred: expr -> mem -> trace -> expr -> mem -> Prop :=
       sem_cast v1 ty1 ty2 m = Some v ->
       rred (Eparen (Eval v1 ty1) ty2 ty) m
         E0 (Eval v ty) m
-  | red_builtin: forall ef tyargs el ty m vargs t vres m' (*SACC:*)m'',
+  | red_builtin: forall ef tyargs el ty m vargs t vres m' m'',
       cast_arguments m el tyargs vargs ->
-      external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
-      (*SACC:*) Mem.unrecord_stack_block m' = Some m'' ->
-      (*SACC:*)(*builtin_enabled ef ->*)
+      external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
+      forall BUILTIN_ENABLED: builtin_enabled ef,
       rred (Ebuiltin ef tyargs el ty) m
          t (Eval vres ty) m''.
 
@@ -326,15 +326,15 @@ Inductive rred: expr -> mem -> trace -> expr -> mem -> Prop :=
 (** Head reduction for function calls.
     (More exactly, identification of function calls that can reduce.) *)
 
-Inductive callred: expr -> mem -> fundef -> list val -> type (*SACC: ident*) -> Prop :=
-  | red_call: forall vf tyf m tyargs tyres cconv el ty fd vargs (*SACC:i*),
-      (*SACC:*)(*is_function_ident_ge vf i*)
-      Genv.find_funct ge vf = Some fd ->
-      cast_arguments m el tyargs vargs ->
-      type_of_fundef fd = Tfunction tyargs tyres cconv ->
-      classify_fun tyf = fun_case_f tyargs tyres cconv ->
-      callred (Ecall (Eval vf tyf) el ty) m
-              fd vargs ty (*SACC:i*).
+Inductive callred: expr -> mem -> fundef -> list val -> type -> ident -> Prop :=
+| red_call: forall vf tyf m tyargs tyres cconv el ty fd vargs i
+              (IFI: is_function_ident ge vf i),
+    Genv.find_funct ge vf = Some fd ->
+    cast_arguments m el tyargs vargs ->
+    type_of_fundef fd = Tfunction tyargs tyres cconv ->
+    classify_fun tyf = fun_case_f tyargs tyres cconv ->
+    callred (Ecall (Eval vf tyf) el ty) m
+            fd vargs ty i.
 
 (** Reduction contexts.  In accordance with C's nondeterministic semantics,
   we allow reduction both to the left and to the right of a binary operator.
@@ -439,8 +439,8 @@ Inductive imm_safe: kind -> expr -> mem -> Prop :=
       rred e m t e' m' ->
       context RV to C ->
       imm_safe to (C e) m
-  | imm_safe_callred: forall to C e m fd args ty,
-      callred e m fd args ty (*SACC:i*) ->
+  | imm_safe_callred: forall to C e m fd args ty i,
+      callred e m fd args ty i ->
       context RV to C ->
       imm_safe to (C e) m.
 
@@ -512,7 +512,7 @@ Definition is_call_cont (k: cont) : Prop :=
   the symmetrical transition from a function back to its caller
   ([Returnstate]). *)
 
-Inductive state: Type :=
+Inductive state {memory_model_ops: Mem.MemoryModelOps mem}: Type :=
   | State                               (**r execution of a statement *)
       (f: function)
       (s: statement)
@@ -529,8 +529,8 @@ Inductive state: Type :=
       (fd: fundef)
       (args: list val)
       (k: cont)
-      (m: mem) 
-      (*SACC:*)(*(sz : Z)*): state
+      (m: mem)
+      (sz: Z): state
   | Returnstate                         (**r returning from a function *)
       (res: val)
       (k: cont)
@@ -605,13 +605,11 @@ Inductive estep: state -> trace -> state -> Prop :=
       estep (ExprState f (C a) k e m)
           t (ExprState f (C a') k e m')
 
-  | step_call: forall C f a k e m fd vargs ty (*SACC:* i*),
-      callred a m fd vargs ty (*SACC:* i*) ->
+  | step_call: forall C f a k e m fd vargs ty i,
+      callred a m fd vargs ty i ->
       context RV RV C ->
       estep (ExprState f (C a) k e m)
-         E0 (Callstate fd vargs (Kcall f e C ty k) 
-      (*SACC:*)(Mem.push_new_stage m) 
-      (*SACC:*)(*(fn_stack_requirements i)*))
+         E0 (Callstate fd vargs (Kcall f e C ty k) (Mem.push_new_stage m) (fn_stack_requirements i))
 
   | step_stuck: forall C f a k e m K,
       context K RV C -> ~(imm_safe e K a m) ->
@@ -757,22 +755,22 @@ Inductive sstep: state -> trace -> state -> Prop :=
   | step_internal_function: forall f vargs k m e m1 m1' m2 sz fa,
       list_norepet (var_names (fn_params f) ++ var_names (fn_vars f)) ->
       alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
-   (*SACC:*)frame_adt_blocks fa = blocks_with_info e ->
-   (*SACC:*)frame_adt_size fa = Z.max 0 sz ->
-   (*SACC:*)Mem.record_stack_blocks m1 fa = Some m1' ->
+      frame_adt_blocks fa = blocks_with_info e ->
+      frame_adt_size fa = Z.max 0 sz ->
+      Mem.record_stack_blocks m1 fa = Some m1' ->
       bind_parameters e m1' f.(fn_params) vargs m2 ->
-      sstep (Callstate (Internal f) vargs k m (*SACC: sz*))
+      sstep (Callstate (Internal f) vargs k m sz)
          E0 (State f f.(fn_body) k e m2)
 
-  | step_external_function: forall ef targs tres cc vargs k m vres t m' (*SACC: sz*),
-      external_call ef  ge vargs m t vres m' ->
-      sstep (Callstate (External ef targs tres cc) vargs k m (*SACC: sz*))
+  | step_external_function: forall ef targs tres cc vargs k m vres t m' sz,
+      external_call ef ge vargs m t vres m' ->
+      sstep (Callstate (External ef targs tres cc) vargs k m sz)
           t (Returnstate vres k m')
 
-  | step_returnstate: forall v f e C ty k m (*SACC:*)m',
-   (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
+  | step_returnstate: forall v f e C ty k m m',
+      Mem.unrecord_stack_block m = Some m' ->
       sstep (Returnstate v (Kcall f e C ty k) m)
-         E0 (ExprState f (C (Eval v ty)) k e (*SACC:*)m').
+         E0 (ExprState f (C (Eval v ty)) k e m').
 
 Definition step (S: state) (t: trace) (S': state) : Prop :=
   estep S t S' \/ sstep S t S'.
@@ -787,15 +785,14 @@ End SEMANTICS.
   without arguments and with an empty continuation. *)
 
 Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0 (*SACC:*)m2,
+  | initial_state_intro: forall b f m0 m2,
       let ge := globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-(*SACC*)Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate f nil Kstop (Mem.push_new_stage m2) 
-      (*SACC:*)(*(fn_stack_requirements (prog_main p))*)).
+      Mem.record_init_sp m0 = Some m2 ->
+      initial_state p (Callstate f nil Kstop (Mem.push_new_stage m2) (fn_stack_requirements (prog_main p))).
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 
@@ -824,3 +821,5 @@ Proof.
   eapply external_call_trace_length; eauto.
   inv H; simpl; try omega. eapply external_call_trace_length; eauto.
 Qed.
+
+End WITHEXTERNALCALLS.

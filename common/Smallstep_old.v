@@ -22,8 +22,8 @@
 Require Import Relations.
 Require Import Wellfounded.
 Require Import Coqlib.
-Require Import Events.
-Require Import Globalenvs.
+Require Import Events_old.
+Require Import Globalenvs_old.
 Require Import Integers.
 
 Set Implicit Arguments.

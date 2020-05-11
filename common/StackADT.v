@@ -36,7 +36,7 @@ Record frame_info :=
     frame_size_pos: (0 <= frame_size)%Z;
   }.
 
-Definition public_frame_info sz : frame_info :=
+Definition default_frame_info sz : frame_info :=
   {|
     frame_size := Z.max 0 sz;
     frame_size_pos := Z.le_max_l _ _;
@@ -2038,7 +2038,7 @@ Qed.
 
 Definition make_singleton_frame_adt (b: block) (sz: Z) (machsz: Z) :=
   {|
-    frame_adt_blocks := (b, public_frame_info sz)::nil;
+    frame_adt_blocks := (b, default_frame_info sz)::nil;
     frame_adt_size := Z.max 0 machsz;
     frame_adt_blocks_norepet := norepet_1 _;
     frame_adt_size_pos := Z.le_max_l _ _
