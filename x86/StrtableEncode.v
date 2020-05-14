@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 23, 2019 *)
+
+
 (* *******************  *)
 
 (** * Generation of the string table *)

@@ -1,6 +1,6 @@
 (* Decoding of Relocatable Elf Files *)
-(* Author        : Author C *)
-(* Date Created  : Jan 20, 2020 *)
+
+
 
 Require Import Coqlib Integers Maps.
 Require Import Errors.

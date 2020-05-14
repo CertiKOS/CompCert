@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 19, 2019 *)
+
+
 (* *******************  *)
 
 (** * Generation of the stub code *)

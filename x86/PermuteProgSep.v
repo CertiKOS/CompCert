@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Dec 12th, 2019 *)
+
+
 (* *******************  *)
 
 (** * Separate compilation for permutation of definitions *)

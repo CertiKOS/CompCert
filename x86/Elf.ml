@@ -1,6 +1,5 @@
 (* A generator of ELF files from machine code *)
-(* Author        : Yuting Wang *)
-(* Date Created  : 10-23-2017 *)
+
 
 (**** Generate the ELF file *****)
 

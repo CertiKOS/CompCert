@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Oct 30, 2019 *)
+
+
 (* *******************  *)
 
 (** * Preservation of semantics under the permutation of definitions for RealAsm *)

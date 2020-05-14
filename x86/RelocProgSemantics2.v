@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Dec 6, 2019  *)
+
+
 (* *******************  *)
 
 (** * The semantics of relocatable program after instruction and data encoding *)

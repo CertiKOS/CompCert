@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 20, 2019 *)
+
+
 (* *******************  *)
 
 (** * The semantics of relocatable program using only the symbol table *)

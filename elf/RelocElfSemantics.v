@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author C  *)
-(* Date:  Jan 28, 2020  *)
+
+
 (* *******************  *)
 
 (** * The semantics of relocatable ELF program *)

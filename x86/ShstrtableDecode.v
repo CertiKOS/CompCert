@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author C  *)
-(* Date:   Jan 14, 2020 *)
+
+
 (* *******************  *)
 
 (** * Decoding of the section header string table *)

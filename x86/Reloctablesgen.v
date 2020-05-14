@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 16, 2019 *)
+
+
 (* *******************  *)
 
 (** * Generation of the relocation table and references to it *)
