@@ -1,5 +1,5 @@
 (* *******************  *)
-(* Author: Pierre Wilke  *)
+(* Author: Author C  *)
 (* Date:  Jan 28, 2020  *)
 (* *******************  *)
 

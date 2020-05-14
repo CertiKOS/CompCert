@@ -1,5 +1,5 @@
 (* *******************  *)
-(* Author: Yuting Wang  *)
+(* Author: Author A  *)
 (* Date:   Sep 22, 2019 *)
 (* *******************  *)
 

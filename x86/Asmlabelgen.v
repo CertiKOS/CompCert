@@ -1,5 +1,5 @@
 (* *******************  *)
-(* Author: Xiangzhe Xu  *)
+(* Author: Author B  *)
 (* Date:   Sep 16, 2019 *)
 (* *******************  *)
 

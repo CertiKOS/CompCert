@@ -1,5 +1,5 @@
 (* *******************  *)
-(* Author: Pierre Wilke  *)
+(* Author: Author C  *)
 (* Date:   Sep 23, 2019 *)
 (* *******************  *)
 

@@ -4,7 +4,7 @@
 
 
 (* *******************  *)
-(* Author: Xiangzhe Xu  *)
+(* Author: Author B  *)
 (* Date:    Oct 1, 2019 *)
 (* *******************  *)
 

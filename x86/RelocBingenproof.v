@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Pierre Wilke *)
-(* Author: Xiangzhe Xu  *)
+(* Author: Author C *)
+(* Author: Author B  *)
 (* Date:   Feb 4, 2020  *)
 (* *******************  *)
 

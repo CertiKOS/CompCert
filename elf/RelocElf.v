@@ -1,5 +1,5 @@
 (* Relocatable Elf Files *)
-(* Author        : Yuting Wang *)
+(* Author        : Author A *)
 (* Date Created  : Sep-22-2019 *)
 
 Require Import Coqlib Integers Maps.
