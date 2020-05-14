@@ -136,4 +136,41 @@ Qed.
 Instance TransfPermuteOrderedLink2 {F V} {LV: Linker V}
   : @TransfLink _ _ (Linker_prog_ordered F V) (Linker_prog (fundef F) V) match_prog.
 Proof.
-Admitted.
+  Local Transparent Linker_prog.
+  red. unfold match_prog. cbn. 
+  intros until p.
+  intros LINK (PERM1 & MAINEQ1 & PUBEQ1) (PERM2 & MAINEQ2 & PUBEQ2).
+  generalize LINK. intros LINK'.
+  unfold link_prog_ordered in LINK.
+  destr_in LINK. destr_in LINK. destruct p0. inv LINK. cbn.
+  repeat (rewrite andb_true_iff in Heqb). 
+  destruct Heqb as (((MAINEQ & NORPT1) & NORPT2) & CHECK).
+  destruct ident_eq; try discriminate.
+  destruct list_norepet_dec; try discriminate.
+  destruct list_norepet_dec; try discriminate.
+  unfold link_prog.
+  assert (prog_main tp1 = prog_main tp2) as MAINEQ3 by congruence.
+  rewrite MAINEQ3.
+  destruct ident_eq; try congruence. cbn.
+  assert (list_norepet (map fst (prog_defs tp1))) as NORPT3.
+  { eapply Permutation_list_norepet_map; eauto. }
+  destruct list_norepet_dec; try contradiction. cbn.
+  assert (list_norepet (map fst (prog_defs tp2))) as NORPT4.
+  { eapply Permutation_list_norepet_map; eauto. }
+  destruct list_norepet_dec; try contradiction. cbn.  
+  eexists; split; eauto.
+  rewrite (link_prog_check_all_perm p1 p2 tp1 tp2); eauto. cbn.
+  repeat (split; auto).
+  apply Permutation_sym.
+  generalize (PTree_extract_elements_permutation _ _ _ _ Heqo).
+  intros PERM3. 
+  apply Permutation_trans with (l ++ PTree.elements t).
+  eapply Permutation_trans; [| exact PERM3].
+  unfold prog_option_defmap.
+  eapply PTree_combine_permutation; eauto.
+  apply Permutation_sym; auto.
+  apply Permutation_sym; auto.
+  apply Permutation_app_comm.
+  congruence.
+  congruence.
+Qed.
