@@ -412,13 +412,13 @@ Hint Resolve context_compose contextlist_compose.
 (** A state is safe according to the nondeterministic semantics
   if it cannot get stuck by doing silent transitions only. *)
 
-Definition safe (s: Csem.state) : Prop :=
-  forall s', star (Csem.step fn_stack_requirements) ge s E0 s' ->
-  (exists r, final_state s' r) \/ (exists t, exists s'', Csem.step fn_stack_requirements ge s' t s'').
+Definition safe (s: Csem_old.state) : Prop :=
+  forall s', star (Csem_old.step fn_stack_requirements) ge s E0 s' ->
+  (exists r, final_state s' r) \/ (exists t, exists s'', Csem_old.step fn_stack_requirements ge s' t s'').
 
 Lemma safe_steps:
   forall s s',
-  safe s -> star (Csem.step fn_stack_requirements) ge s E0 s' -> safe s'.
+  safe s -> star (Csem_old.step fn_stack_requirements) ge s E0 s' -> safe s'.
 Proof.
   intros; red; intros.
   eapply H. eapply star_trans; eauto.
@@ -426,17 +426,17 @@ Qed.
 
 Lemma star_safe:
   forall s1 s2 t s3,
-    safe s1 -> star (Csem.step fn_stack_requirements) ge s1 E0 s2 ->
-    (safe s2 -> star (Csem.step fn_stack_requirements) ge s2 t s3) ->
-  star (Csem.step fn_stack_requirements) ge s1 t s3.
+    safe s1 -> star (Csem_old.step fn_stack_requirements) ge s1 E0 s2 ->
+    (safe s2 -> star (Csem_old.step fn_stack_requirements) ge s2 t s3) ->
+  star (Csem_old.step fn_stack_requirements) ge s1 t s3.
 Proof.
   intros. eapply star_trans; eauto. apply H1. eapply safe_steps; eauto. auto.
 Qed.
 
 Lemma plus_safe:
   forall s1 s2 t s3,
-  safe s1 -> star (Csem.step fn_stack_requirements) ge s1 E0 s2 -> (safe s2 -> plus (Csem.step fn_stack_requirements) ge s2 t s3) ->
-  plus (Csem.step fn_stack_requirements) ge s1 t s3.
+  safe s1 -> star (Csem_old.step fn_stack_requirements) ge s1 E0 s2 -> (safe s2 -> plus (Csem.step fn_stack_requirements) ge s2 t s3) ->
+  plus (Csem_old.step fn_stack_requirements) ge s1 t s3.
 Proof.
   intros. eapply star_plus_trans; eauto. apply H1. eapply safe_steps; eauto. auto.
 Qed.
@@ -1407,7 +1407,7 @@ Qed.
 
 Theorem step_simulation:
   forall S1 t S2,
-  step S1 t S2 -> plus (Csem.step fn_stack_requirements) ge S1 t S2.
+  step S1 t S2 -> plus (Csem_old.step fn_stack_requirements) ge S1 t S2.
 Proof.
   intros. inv H.
   apply estep_simulation; auto.

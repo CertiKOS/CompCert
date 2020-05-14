@@ -1,14 +1,24 @@
+18,20c18,20
+< Require Import AST_old Values_old Memory_old Events_old Globalenvs_old Determinism_old.
+< Require Import Ctypes_old Cop_old Csyntax_old Csem_old.
+< Require Cstrategy_old.
+---
+> Require Import AST Values Memory Events Globalenvs Determinism.
+> Require Import Ctypes Cop Csyntax Csem.
+> Require Cstrategy.
+=========================================================================================================
 88,90d87
 < Section WITHEXTERNALCALLS.
 < Context `{external_calls_prf: ExternalCalls}.
 < 
-====================================================================================
+=========================================================================================================
 201,202c198
 <   match Genv.block_is_volatile ge b with
 <   | Some true =>
 ---
 >   if Genv.block_is_volatile ge b then
-====================================================================================204,206c200,202
+=========================================================================================================
+204,206c200,202
 <       match nextworld_vload w chunk id ofs with
 <       | None => None
 <       | Some(res, w') =>
@@ -16,7 +26,8 @@
 >     match nextworld_vload w chunk id ofs with
 >     | None => None
 >     | Some(res, w') =>
-====================================================================================208,210c204,206
+=========================================================================================================
+208,210c204,206
 <           Some(w', Event_vload chunk id ofs res :: nil, Val.load_result chunk vres)
 <       end
 <   | Some false =>
@@ -24,18 +35,21 @@
 >         Some(w', Event_vload chunk id ofs res :: nil, Val.load_result chunk vres)
 >     end
 >   else
-====================================================================================208,21212,214c208
+=========================================================================================================
+212,214c208
 <       Some(w, E0, v)
 <   | None => None
 <   end.
 ---
 >     Some(w, E0, v).
-====================================================================================208,21218,219c212
+=========================================================================================================
+218,219c212
 <   match Genv.block_is_volatile ge b with
 <     Some true =>
 ---
 >   if Genv.block_is_volatile ge b then
-====================================================================================208,21221,224c214,217
+=========================================================================================================
+221,224c214,217
 <       do ev <- eventval_of_val (Val.load_result chunk v) (type_of_chunk chunk);
 <       do w' <- nextworld_vstore w chunk id ofs ev;
 <       Some(w', Event_vstore chunk id ofs ev :: nil, m)
@@ -45,13 +59,15 @@
 >     do w' <- nextworld_vstore w chunk id ofs ev;
 >     Some(w', Event_vstore chunk id ofs ev :: nil, m)
 >   else
-====================================================================================208,21226,228c219
+=========================================================================================================
+226,228c219
 <       Some(w, E0, m')
 <   | None => None
 <   end.
 ---
 >     Some(w, E0, m').
-====================================================================================208,21409,436d399
+=========================================================================================================
+409,436d399
 < Variable do_builtin_function:
 <   string -> signature -> Senv.t -> world -> list val -> mem -> option (world * trace * val * mem).
 < 
@@ -80,38 +96,46 @@
 <   possible_trace w t w' ->
 <   do_runtime_function id sg ge w vargs m = Some(w', t, vres, m').
 < 
+=========================================================================================================
 491,495d453
 < Definition dec_not {A B}: {A}+{B} -> {B}+{A}.
 < Proof.
 <   intros [a|a];[right|left]; auto.
 < Defined.
 < 
+=========================================================================================================
 503d460
 <       check (dec_not (in_stack_dec (Mem.stack m) b));
+=========================================================================================================
 523,524c480,481
 <           do m' <- Mem.storebytes m bdst (Ptrofs.unsigned odst) bytes;
 <           Some(w, E0, Vundef, m')
 ---
 >         do m' <- Mem.storebytes m bdst (Ptrofs.unsigned odst) bytes;
 >         Some(w, E0, Vundef, m')
+=========================================================================================================
 551,552c508,509
 <   | EF_builtin name sg => do_builtin_function name sg ge
 <   | EF_runtime name sg => do_runtime_function name sg ge
 ---
 >   | EF_builtin name sg => do_external_function name sg ge
 >   | EF_runtime name sg => do_external_function name sg ge
+=========================================================================================================
 556c513
 <   (* | EF_free => do_ef_free *)
 ---
 >   | EF_free => do_ef_free
+=========================================================================================================
 577c534
 <   eapply do_builtin_function_sound; eauto.
 ---
 >   eapply do_external_function_sound; eauto.
+=========================================================================================================
 579c536
 <   eapply do_runtime_function_sound; eauto.
 ---
 >   eapply do_external_function_sound; eauto.
+=========================================================================================================
 594,596c551,553
 < (* (* EF_free *) *)
 < (*   unfold do_ef_free. destruct vargs... destruct v... destruct vargs... *)
@@ -120,18 +144,22 @@
 > (* EF_free *)
 >   unfold do_ef_free. destruct vargs... destruct v... destruct vargs...
 >   mydestr. split. apply SIZE in Heqo0. econstructor; eauto. congruence. omega. constructor.
+=========================================================================================================
 601c558
 <   split. econstructor; eauto; try tauto. constructor.
 ---
 >   split. econstructor; eauto; tauto. constructor.
+=========================================================================================================
 629c586
 <   eapply do_builtin_function_complete; eauto.
 ---
 >   eapply do_external_function_complete; eauto.
+=========================================================================================================
 631c588
 <   eapply do_runtime_function_complete; eauto.
 ---
 >   eapply do_external_function_complete; eauto.
+=========================================================================================================
 641,645c598,600
 < (* (* EF_free *) *)
 < (*   inv H; unfold do_ef_free. *)
@@ -142,10 +170,12 @@
 > (* EF_free *)
 >   inv H; unfold do_ef_free.
 >   inv H0. rewrite H1. erewrite SIZE by eauto. rewrite zlt_true. rewrite H3. auto. omega.
+=========================================================================================================
 667c622
 <   | Callred (rule: string) (fd: fundef) (args: list val) (tyres: type) (m': mem) (i: ident)
 ---
 >   | Callred (rule: string) (fd: fundef) (args: list val) (tyres: type) (m': mem)
+=========================================================================================================
 724,739d678
 < Definition builtin_is_enabled (ef: external_function) :
 <   {builtin_enabled ef} + {~ builtin_enabled ef}.
@@ -163,12 +193,15 @@
 <   | _ => None
 <   end.
 < 
+=========================================================================================================
 912d850
 <             do i <- invert_pointer vf;
+=========================================================================================================
 916c854
 <               topred (Callred "red_call" fd vargs ty (Mem.push_new_stage m) i)
 ---
 >               topred (Callred "red_call" fd vargs ty m)
+=========================================================================================================
 926,934c864,868
 <         do vargs <- sem_cast_arguments vtl tyargs m;
 <           if builtin_is_enabled ef then
@@ -185,12 +218,14 @@
 >           | None => stuck
 >           | Some(w',t,v,m') => topred (Rred "red_builtin" (Eval v ty) m' t)
 >           end
+=========================================================================================================
 965,966c899,900
 <   | imm_safe_t_callred: forall to C r m fd args ty i,
 <       callred ge r m fd args ty i ->
 ---
 >   | imm_safe_t_callred: forall to C r m fd args ty,
 >       callred ge r m fd args ty ->
+=========================================================================================================
 1034,1036c968,969
 <       exists tyargs tyres cconv fd vl id,
 <         is_function_ident ge vf id
@@ -198,6 +233,7 @@
 ---
 >       exists tyargs tyres cconv fd vl,
 >          classify_fun tyf = fun_case_f tyargs tyres cconv
+=========================================================================================================
 1041,1046c974,977
 <     exprlist_all_values rargs ->
 <     builtin_enabled ef /\
@@ -210,55 +246,68 @@
 >       exists vargs t vres m' w',
 >          cast_arguments m rargs tyargs vargs
 >       /\ external_call ef ge vargs m t vres m'
+=========================================================================================================
 1077c1008
 <   intros; split. apply BUILTIN_ENABLED. exists vargs; exists t; exists vres; exists m', m''; exists w'; auto.
 ---
 >   intros; exists vargs; exists t; exists vres; exists m'; exists w'; auto.
+=========================================================================================================
 1081,1082c1012,1013
 <   forall r fd args ty i m,
 <   callred ge r m fd args ty i ->
 ---
 >   forall r fd args ty m,
 >   callred ge r m fd args ty ->
+=========================================================================================================
 1086c1017
 <   intros. exists tyargs, tyres, cconv, fd, args, i; eauto.
 ---
 >   intros. exists tyargs, tyres, cconv, fd, args; auto.
+=========================================================================================================
 1178c1109
 <   | RV, Callred _ fd args tyres m' i => callred ge a m fd args tyres i /\ m' = Mem.push_new_stage m
 ---
 >   | RV, Callred _ fd args tyres m' => callred ge a m fd args tyres /\ m' = m
+=========================================================================================================
 1531d1461
 <   destruct (invert_pointer vf) eqn:?...
+=========================================================================================================
 1536,1540d1465
 <   {
 <     destruct vf; simpl in *; try congruence.
 <     eexists; eexists; split; eauto.
 <     apply Genv.invert_find_symbol; auto.
 <   } 
+=========================================================================================================
 1546,1549d1470
 <   apply not_invert_ok; simpl; intros; myinv. specialize (H ALLVAL). myinv.
 <   destruct vf; simpl in *; try congruence.
 <   destruct H as (bb & oo & ? & ?). inv H.
 <   apply Genv.find_invert_symbol in H4; congruence.
+=========================================================================================================
 1559c1480
 <   destruct (do_external ef w vargs (Mem.push_new_stage m)) as [[[[? ?] v] m'] | ] eqn:?...
 ---
 >   destruct (do_external ef w vargs m) as [[[[? ?] v] m'] | ] eqn:?...
+=========================================================================================================
 1561,1562d1481
 <   destruct (builtin_is_enabled ef) eqn:?...
 <   destruct (Mem.unrecord_stack_block m') eqn:?...
+=========================================================================================================
 1566,1568d1484
 <   edestruct (Mem.unrecord_stack_block_succeeds) as (m2' & USB & EQSTK); [|rewrite USB in Heqo2; congruence].
 <   repeat rewrite_stack_blocks. reflexivity.
 <   destruct (builtin_is_enabled ef) eqn:?...
+=========================================================================================================
 1670d1585
 <   destruct (builtin_is_enabled ef); try contradiction.
+=========================================================================================================
 1672,1673c1587
 <   rewrite A. rewrite B. rewrite C, H1. 
 <   econstructor; eauto.
 ---
 >   rewrite A. rewrite B. rewrite C. econstructor; eauto.
+=========================================================================================================
 1677,1679c1591,1593
 <   forall a fd args ty i m,
 <   callred ge a m fd args ty i ->
@@ -267,6 +316,7 @@
 >   forall a fd args ty m,
 >   callred ge a m fd args ty ->
 >   exists rule, step_expr RV a m = topred (Callred rule fd args ty m).
+=========================================================================================================
 1683,1686c1597
 <   destruct IFI as (bb & oo & IFI & IFI'). subst. simpl in *.
 <   rewrite A; rewrite H; rewrite B; rewrite H1.
@@ -274,21 +324,26 @@
 <   rewrite dec_eq_true. econstructor; eauto. 
 ---
 >   rewrite A; rewrite H; rewrite B; rewrite H1; rewrite dec_eq_true. econstructor; eauto.
+=========================================================================================================
 1911,1912d1821
 < Variable fn_stack_requirements: ident -> Z.
 < 
+=========================================================================================================
 1914c1823
 <   exists t, exists S', Csem.step fn_stack_requirements ge S t S' /\ forall w', ~possible_trace w t w'.
 ---
 >   exists t, exists S', Csem.step ge S t S' /\ forall w', ~possible_trace w t w'.
+=========================================================================================================
 1920c1829
 <   Csem.step fn_stack_requirements ge (ExprState f (C a) k e m) E0 Stuckstate \/ can_crash_world w (ExprState f (C a) k e m).
 ---
 >   Csem.step ge (ExprState f (C a) k e m) E0 Stuckstate \/ can_crash_world w (ExprState f (C a) k e m).
+=========================================================================================================
 1926c1835
 <   left. rewrite B. eapply step_rred with (C0 := fun x => C(C1 x)). eauto. eauto.
 ---
 >   left. rewrite B. eapply step_rred with (C := fun x => C(C1 x)). eauto. eauto.
+?????====================================================================================================
 1960,2192d1868
 < Lemma alloc_variables_perm_1:
 <   forall (ge: genv) e1 m1 vars e2 m2,
@@ -523,25 +578,31 @@
 <   eexists b, _; repeat split; eauto.
 < Qed.
 < 
+=========================================================================================================
 2230,2231d1905
 < Variable fn_stack_requirements: ident -> Z.
 < 
+=========================================================================================================
 2236c1910
 <   | Callred rule fd vargs ty m i => TR rule E0 (Callstate fd vargs (Kcall f e (fst C_rd) ty k) m (fn_stack_requirements i))
 ---
 >   | Callred rule fd vargs ty m => TR rule E0 (Callstate fd vargs (Kcall f e (fst C_rd) ty k) m)
+=========================================================================================================
 2273c1947
 <               do m' <- Mem.free_list m (blocks_of_env ge e);
 ---
 >             do m' <- Mem.free_list m (blocks_of_env ge e);
+=========================================================================================================
 2325c1999
 <     do m' <- Mem.free_list m (blocks_of_env ge e);
 ---
 >       do m' <- Mem.free_list m (blocks_of_env ge e);
+=========================================================================================================
 2330c2004
 <     do m' <- Mem.free_list m (blocks_of_env ge e);
 ---
 >       do m' <- Mem.free_list m (blocks_of_env ge e);
+=========================================================================================================
 2348,2350c2022,2024
 <   | Callstate (Internal f) vargs k m sz =>
 <     match alloc_variables_record f m (Z.max 0 sz) with
@@ -550,6 +611,7 @@
 >   | Callstate (Internal f) vargs k m =>
 >       check (list_norepet_dec ident_eq (var_names (fn_params f) ++ var_names (fn_vars f)));
 >       let (e,m1) := do_alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) in
+=========================================================================================================
 2352,2355c2026,2027
 <         ret "step_internal_function" (State f f.(fn_body) k e m2)
 <     | None => nil
@@ -558,16 +620,20 @@
 ---
 >       ret "step_internal_function" (State f f.(fn_body) k e m2)
 >   | Callstate (External ef _ _ _) vargs k m =>
+=========================================================================================================
 2362d2033
 <     do m <- Mem.unrecord_stack_block m ;
+=========================================================================================================
 2389c2060
 <   Csem.step fn_stack_requirements ge S t S' \/ (t = E0 /\ S' = Stuckstate /\ can_crash_world fn_stack_requirements w S).
 ---
 >   Csem.step ge S t S' \/ (t = E0 /\ S' = Stuckstate /\ can_crash_world w S).
+=========================================================================================================
 2420c2091
 <   destruct RD; subst m'. left; left; eapply step_call; eauto.
 ---
 >   destruct RD; subst m'. left; left; apply step_call; eauto.
+=========================================================================================================
 2426,2432c2097,2100
 <   destruct p.
 <   (* destruct (do_alloc_variables empty_env m (fn_params f ++ fn_vars f)) as [e m1] eqn:?. *)
@@ -581,10 +647,12 @@
 >   myinv. left; right; apply step_internal_function with m1. auto.
 >   change e with (fst (e,m1)). change m1 with (snd (e,m1)) at 2. rewrite <- Heqp.
 >   apply do_alloc_variables_sound. eapply sem_bind_parameters_sound; eauto.
+=========================================================================================================
 2443c2111
 <   forall f a k e m t S, estep fn_stack_requirements ge (ExprState f a k e m) t S -> is_val a = None.
 ---
 >   forall f a k e m t S, estep ge (ExprState f a k e m) t S -> is_val a = None.
+?????====================================================================================================
 2455,2483d2122
 < Lemma frame_adt_eq:
 <   forall fa1 fa2,
@@ -615,36 +683,44 @@
 <   eapply do_alloc_variables_complete. eauto.
 < Qed.
 < 
+=========================================================================================================
 2486,2487c2125
 <     possible_trace w t w' -> Csem.step fn_stack_requirements ge S t S' ->
 <     exists rule, In (TR rule t S') (do_step w S).
 ---
 >   possible_trace w t w' -> Csem.step ge S t S' -> exists rule, In (TR rule t S') (do_step w S).
+=========================================================================================================
 2516,2517c2154
 <   change (TR rule E0 (Callstate fd vargs (Kcall f e C ty k) (Mem.push_new_stage m) (fn_stack_requirements i)))
 <     with (expr_final_state f k e (C, Callred rule fd vargs ty (Mem.push_new_stage m) i)).
 ---
 >   change (TR rule E0 (Callstate fd vargs (Kcall f e C ty k) m)) with (expr_final_state f k e (C, Callred rule fd vargs ty m)).
+=========================================================================================================
 2545c2182
 <   rewrite H0... rewrite H1...
 ---
 >   rewrite H0; rewrite H1...
+=========================================================================================================
 2552,2553c2189,2190
 <   rewrite <- H3. erewrite alloc_variables_record_complete; eauto.
 <   rewrite (sem_bind_parameters_complete _ _ _ _ _ _ H5)...
 ---
 >   rewrite pred_dec_true; auto. rewrite (do_alloc_variables_complete _ _ _ _ _ H1).
 >   rewrite (sem_bind_parameters_complete _ _ _ _ _ _ H2)...
+=========================================================================================================
 2555,2556d2191
 < 
 <   rewrite H0...
+=========================================================================================================
 2563,2564d2197
 < Variable fn_stack_requirements: ident -> Z.
 < 
+=========================================================================================================
 2571c2204
 <   Some (ge, Callstate f nil Kstop (Mem.push_new_stage m0) (fn_stack_requirements (prog_main p))).
 ---
 >   Some (ge, Callstate f nil Kstop m0).
+=========================================================================================================
 2578,2579d2210
 < 
 < End WITHEXTERNALCALLS.

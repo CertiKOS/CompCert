@@ -76,7 +76,7 @@ Record t: Type := mksenv {
   find_symbol: ident -> option block;
   public_symbol: ident -> bool;
   invert_symbol: block -> option ident;
-  block_is_volatile: block -> (* SACC: option *) bool;
+  block_is_volatile: block -> bool;
   nextblock: block;
   (** Properties *)
   find_symbol_injective:
@@ -90,7 +90,7 @@ Record t: Type := mksenv {
   find_symbol_below:
     forall id b, find_symbol id = Some b -> Plt b nextblock;
   block_is_volatile_below:
-    forall b, block_is_volatile b = (* SACC: Some *) true -> Plt b nextblock
+    forall b, block_is_volatile b = true -> Plt b nextblock
 }.
 
 Definition symbol_address (ge: t) (id: ident) (ofs: ptrofs) : val :=
@@ -218,19 +218,19 @@ Definition find_var_info (ge: t) (b: block) : option (globvar V) :=
 (** [block_is_volatile ge b] returns [true] if [b] points to a global variable
   of volatile type, [false] otherwise. *)
 
-Definition block_is_volatile (ge: t) (b: block) : (*SACC: option*) bool :=
+Definition block_is_volatile (ge: t) (b: block) : bool :=
   match find_var_info ge b with
-  | None => false (* SACC: None *)
-  | Some gv => (* SACC: Some *) gv.(gvar_volatile)
+  | None => false
+  | Some gv => gv.(gvar_volatile)
   end.
 
 (** ** Constructing the global environment *)
 
-Program Definition add_global (ge: t) (idg: ident * (* SACC: option *) globdef F V) : t :=
+Program Definition add_global (ge: t) (idg: ident * globdef F V) : t :=
   @mkgenv
     ge.(genv_public)
     (PTree.set idg#1 ge.(genv_next) ge.(genv_symb))
-    (PTree.set ge.(genv_next) idg#2 ge.(genv_defs)) (* SACC: (match idg#2 with Some g => PTree.set ge.(genv_next) g ge.(genv_defs) | _ => ge.(genv_defs) end) *)
+    (PTree.set ge.(genv_next) idg#2 ge.(genv_defs))
     (Psucc ge.(genv_next))
     _ _ _.
 Next Obligation.
@@ -254,7 +254,7 @@ Next Obligation.
   eauto.
 Qed.
 
-Definition add_globals (ge: t) (gl: list (ident * (*SACC: option*) globdef F V)) : t :=
+Definition add_globals (ge: t) (gl: list (ident * globdef F V)) : t :=
   List.fold_left add_global gl ge.
 
 Lemma add_globals_app:
@@ -764,7 +764,7 @@ Qed.
 Theorem find_def_inversion:
   forall p b g,
   find_def (globalenv p) b = Some g ->
-  exists id, In (id, (*SACC: Some*) g) (prog_defs p).
+  exists id, In (id, g) (prog_defs p).
 Proof.
   intros until g. unfold globalenv. apply add_globals_preserves.
 (* preserves *)
@@ -779,7 +779,7 @@ Qed.
 Corollary find_funct_ptr_inversion:
   forall p b f,
   find_funct_ptr (globalenv p) b = Some f ->
-  exists id, In (id, (*SACC: Some*) Gfun f) (prog_defs p).
+  exists id, In (id, Gfun f) (prog_defs p).
 Proof.
   intros. apply find_def_inversion with b. apply find_funct_ptr_iff; auto.
 Qed.
@@ -787,7 +787,7 @@ Qed.
 Corollary find_funct_inversion:
   forall p v f,
   find_funct (globalenv p) v = Some f ->
-  exists id, In (id, (*SACC: Some*) Gfun f) (prog_defs p).
+  exists id, In (id, Gfun f) (prog_defs p).
 Proof.
   intros. exploit find_funct_inv; eauto. intros [b EQ]. subst v.
   rewrite find_funct_find_funct_ptr in H.
@@ -796,7 +796,7 @@ Qed.
 
 Theorem find_funct_ptr_prop:
   forall (P: F -> Prop) p b f,
-  (forall id f, In (id, (*SACC: Some*) Gfun f) (prog_defs p) -> P f) ->
+  (forall id f, In (id, Gfun f) (prog_defs p) -> P f) ->
   find_funct_ptr (globalenv p) b = Some f ->
   P f.
 Proof.
@@ -805,7 +805,7 @@ Qed.
 
 Theorem find_funct_prop:
   forall (P: F -> Prop) p v f,
-  (forall id f, In (id, (*SACC: Some*) Gfun f) (prog_defs p) -> P f) ->
+  (forall id f, In (id, Gfun f) (prog_defs p) -> P f) ->
   find_funct (globalenv p) v = Some f ->
   P f.
 Proof.
@@ -955,17 +955,12 @@ Definition perm_globvar (gv: globvar V) : permission :=
   else if gv.(gvar_readonly) then Readable
   else Writable.
 
-Definition alloc_global (m: mem) (idg: ident * (*SACC: option*) globdef F V): option mem :=
+Definition alloc_global (m: mem) (idg: ident * globdef F V): option mem :=
   match idg with
-(*SACC:
-  | (id, None) =>
-      let (m1, b) := Mem.alloc m 0 0 in
-      Some m1
-*)
-  | (id, (*SACC: Some*) Gfun f) =>
+  | (id, Gfun f) =>
       let (m1, b) := Mem.alloc m 0 1 in
       Mem.drop_perm m1 b 0 1 Nonempty
-  | (id, (*SACC: Some*) Gvar v) =>
+  | (id, Gvar v) =>
       let init := v.(gvar_init) in
       let sz := init_data_list_size init in
       let (m1, b) := Mem.alloc m 0 sz in
@@ -979,7 +974,7 @@ Definition alloc_global (m: mem) (idg: ident * (*SACC: option*) globdef F V): op
       end
   end.
 
-Fixpoint alloc_globals (m: mem) (gl: list (ident * (*SACC: option*) globdef F V))
+Fixpoint alloc_globals (m: mem) (gl: list (ident * globdef F V))
                        {struct gl} : option mem :=
   match gl with
   | nil => Some m
@@ -2007,7 +2002,7 @@ End INITMEM_INVERSION.
 Theorem init_mem_inversion:
   forall p m id v,
   init_mem p = Some m ->
-  In (id, (*SACC: Some*) Gvar v) p.(prog_defs) ->
+  In (id, Gvar v) p.(prog_defs) ->
   init_data_list_aligned 0 v.(gvar_init)
   /\ forall i o, In (Init_addrof i o) v.(gvar_init) -> exists b, find_symbol (globalenv p) i = Some b.
 Proof.
@@ -2484,7 +2479,31 @@ End Genv.
 
 Coercion Genv.to_senv: Genv.t >-> Senv.t.
 
-(*SACC:*)
+(*SACC: Legacy approach to semantics of calls*)
 Definition is_function_ident {F V} (ge: Genv.t F V) (vf: val) (i: ident) : Prop :=
   exists b o,
     vf = Vptr b o /\ Genv.find_symbol ge i = Some b.
+
+(*SACC:*)
+Definition invert_pointer {F V} (ge: Genv.t F V) vf :=
+  match vf with
+    Vptr b _ => Genv.invert_symbol ge b
+  | _ => None
+  end.
+
+(*SACC:*)
+Remark is_function_ident_invert_pointer_equiv : 
+  forall F V (ge : Genv.t F V) vf i,
+  is_function_ident ge vf i <->
+  invert_pointer ge vf = Some i.
+Proof.
+  intros. split.
+  - intros. inversion H. destruct H0.
+    destruct H0. rewrite H0. simpl.
+    eapply Genv.find_invert_symbol.
+    auto.
+  - intros. destruct vf; simpl in H; inversion H.
+    eexists; eexists; split. 
+    + reflexivity.
+    + apply Genv.invert_find_symbol; assumption.
+Qed.

@@ -23,7 +23,7 @@ Require Import Floats.
 Require Import Values_old.
 Require Import AST_old.
 Require Import Memory_old.
-Require Import Events_Old.
+Require Import Events_old.
 Require Import Globalenvs_old.
 Require Import Ctypes_old.
 Require Import Cop_old.

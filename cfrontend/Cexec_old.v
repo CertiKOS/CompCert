@@ -15,9 +15,9 @@
 Require Import Axioms Classical.
 Require Import String Coqlib Decidableplus.
 Require Import Errors Maps Integers Floats.
-Require Import AST Values Memory Events Globalenvs Determinism.
-Require Import Ctypes Cop Csyntax Csem.
-Require Cstrategy.
+Require Import AST_old Values_old Memory_old Events_old Globalenvs_old Determinism_old.
+Require Import Ctypes_old Cop_old Csyntax_old Csem_old.
+Require Cstrategy_old.
 
 Local Open Scope string_scope.
 Local Open Scope list_scope.

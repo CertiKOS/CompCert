@@ -264,7 +264,7 @@ Arguments Gfun [F V].
 Arguments Gvar [F V].
 
 Record program (F V: Type) : Type := mkprogram {
-  prog_defs: list (ident * (*SACC: option *) globdef F V);
+  prog_defs: list (ident * globdef F V);
   prog_public: list ident;
   prog_main: ident
 }.
@@ -276,12 +276,7 @@ Definition prog_defs_names (F V: Type) (p: program F V) : list ident :=
   If several definitions have the same name, the one appearing last in [p.(prog_defs)] wins. *)
 
 Definition prog_defmap (F V: Type) (p: program F V) : PTree.t (globdef F V) :=
-  PTree_Properties.of_list(*SACC:_option*) p.(prog_defs).
-
-(*SACC:
-Definition prog_option_defmap (F V: Type) (p: program F V) : PTree.t (option (globdef F V)) :=
   PTree_Properties.of_list p.(prog_defs).
-*)
 
 Section DEFMAP.
 
@@ -331,7 +326,7 @@ Section TRANSF_PROGRAM.
 Variable A B V: Type.
 Variable transf: A -> B.
 
-Definition transform_program_globdef (idg: ident * (*SACC: option*) globdef A V) : ident * globdef B V :=
+Definition transform_program_globdef (idg: ident * globdef A V) : ident * globdef B V :=
   match idg with
   | (id, Gfun f) => (id, Gfun (transf f))
   | (id, Gvar v) => (id, Gvar v)
@@ -367,15 +362,9 @@ Definition transf_globvar (i: ident) (g: globvar V) : res (globvar W) :=
   do info' <- transf_var i g.(gvar_info);
   OK (mkglobvar info' g.(gvar_init) g.(gvar_readonly) g.(gvar_volatile)).
 
-Fixpoint transf_globdefs (l: list (ident * (*SACC: option*) globdef A V)) : res (list (ident *(*SACC: option*) globdef B W)) :=
+Fixpoint transf_globdefs (l: list (ident * globdef A V)) : res (list (ident * globdef B W)) :=
   match l with
   | nil => OK nil
-  (* SACC *)
- (* 
-  | (id, None) :: l' =>
-    do tl' <- transf_globdefs l';
-    OK ((id, None) :: tl') 
-  *)
   | (id, Gfun f) :: l' =>
     match transf_fun id f with
       | Error msg => Error (MSG "In function " :: CTX id :: MSG ": " :: msg)
@@ -716,3 +705,7 @@ Definition builtin_arg_ok
   | _, OK_all => true
   | _, _ => false
   end.
+
+(*SACC: stack requirements for internal functions *)
+
+Variable fn_stack_requirement : ident -> Z.
