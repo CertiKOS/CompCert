@@ -375,7 +375,7 @@ Next Obligation.
   eapply take_drop_length_2. 2: eauto. omega.
 Defined.
 
-Lemma decode_symbentries_eq l:
+Axiom decode_symbentries_eq: forall l,
   decode_symbentries l =
   match l with
     [] => OK []
@@ -387,8 +387,6 @@ Lemma decode_symbentries_eq l:
          | Error m => Error m
          end
   end.
-Proof.
-Admitted.
 
 Lemma encode_secindex_length i:
   length (encode_secindex i) = 2%nat.

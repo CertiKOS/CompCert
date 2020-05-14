@@ -38,9 +38,8 @@ Let tge := globalenv tp.
 
 Hypothesis TRANSF: match_prog p tp.
 
-Lemma transf_program_correct:
+Axiom transf_program_correct:
   forall rs, forward_simulation (semantics p rs) (semantics tp rs).
-Proof.
-Admitted.
+
 
 End PRESERVATION.

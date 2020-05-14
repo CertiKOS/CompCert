@@ -38,9 +38,8 @@ Let tge := globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-Lemma transf_program_correct:
+Axiom transf_program_correct:
   forall rs, forward_simulation (RealAsm.semantics prog rs) (semantics tprog rs).
-Proof.
-Admitted.
+
 
 End PRESERVATION.

@@ -132,7 +132,7 @@ Next Obligation.
   eapply take_drop_length_2. 2: eauto. omega.
 Defined.
 
-Lemma decode_reloctable_eq l:
+Axiom decode_reloctable_eq: forall l,
   decode_reloctable l =
   match l with
     [] => OK []
@@ -144,8 +144,6 @@ Lemma decode_reloctable_eq l:
          | Error m => Error m
          end
   end.
-Proof.
-Admitted.
 
 Lemma length_encode_relocentry e:
   length (encode_relocentry e) = 8%nat.

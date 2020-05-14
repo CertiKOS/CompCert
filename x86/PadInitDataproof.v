@@ -36,13 +36,10 @@ Proof.
 Qed.
 
 
-Lemma genv_find_funct_ptr_add_global_pres: forall def ge1 ge2 b,
+Axiom genv_find_funct_ptr_add_global_pres: forall def ge1 ge2 b,
   Genv.find_funct_ptr ge1 b = Genv.find_funct_ptr ge2 b ->
   Genv.find_funct_ptr (Genv.add_global ge1 (transf_globdef def)) b =
   Genv.find_funct_ptr (Genv.add_global ge2 def) b.
-Proof.
-  intros def ge1 ge2 b FPTR.
-  Admitted.
 
 
 Lemma genv_find_funct_ptr_pres: forall defs (ge1 ge2: Genv.t fundef unit) b,
@@ -114,9 +111,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma transf_program_correct:
+Axiom transf_program_correct:
   forall rs, forward_simulation (semantics p rs) (semantics tp rs).
-Proof.
-Admitted.
 
 End PRESERVATION.

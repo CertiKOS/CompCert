@@ -36,9 +36,9 @@ Hypothesis TRANSF: match_prog prog tprog.
 Let ge := Genv.globalenv prog.
 Let tge := Genv.globalenv tprog.
 
-Theorem transf_program_correct:
+Axiom transf_program_correct:
   forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef))
                      (RealAsm.semantics tprog (Pregmap.init Vundef)).
-Admitted.
+
 
 End PRESERVATION.

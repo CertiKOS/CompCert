@@ -10,8 +10,6 @@ Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import PadInitData PadInitDataproof.
 Import ListNotations.
 
-Instance TransfPermuteOrderedLink2 
+Axiom TransfPermuteOrderedLink2 
   : TransfLink PadInitDataproof.match_prog.
-Proof.
-  red. unfold match_prog.
-Admitted.
+

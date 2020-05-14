@@ -310,14 +310,7 @@ Proof.
   auto. auto. auto.
 Defined.
 
-Instance tl : @TransfLink _ _ RelocBingenproof.linker2
+Axiom tl : @TransfLink _ _ RelocBingenproof.linker2
                           linker2
                           match_prog.
-Proof.
-  red. simpl. unfold link_reloc_decode_tables.
-  unfold match_prog.
-  intros.
-  erewrite decode_tables_correct; eauto.
-  erewrite decode_tables_correct; eauto.
-  simpl. rewrite H.
-Admitted.
+

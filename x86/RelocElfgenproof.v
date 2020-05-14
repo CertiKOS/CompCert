@@ -156,12 +156,7 @@ Proof.
   auto. auto. auto.
 Defined.
 
-Instance tl : @TransfLink _ _ TablesEncodeproof.linker2
+Axiom tl : @TransfLink _ _ TablesEncodeproof.linker2
                           linker2
                           match_prog.
-Proof.
-  red. simpl. unfold link_reloc_elf_gen.
-  unfold match_prog.
-  intros.
-  unfold link_reloc_decode_tables.
-Admitted.
+

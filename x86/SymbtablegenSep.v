@@ -4144,21 +4144,21 @@ Proof.
 Qed.
 
 
-Lemma match_prog_perm: forall p tp,
+Axiom match_prog_perm: forall p tp,
     match_prog p tp ->
     PermuteProgproof.match_prog p 
                               {| AST.prog_defs := prog_defs tp;
                                  AST.prog_public := prog_public tp;
                                  AST.prog_main := prog_main tp |}.
-Admitted.
 
 
-Lemma link_ordered_pres_wf_prog: forall p1 p2 p,
+
+Axiom link_ordered_pres_wf_prog: forall p1 p2 p,
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
     wf_prog p1 ->
     wf_prog p2 ->
     wf_prog p.
-Admitted.
+
 
 Lemma reloc_symbtable_pres_syneq : forall f tbl1 tbl1' tbl2 ,
     reloc_symbtable f tbl1 = Some tbl2 ->
@@ -4193,15 +4193,14 @@ Proof.
 Qed.
 
 
-Lemma link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
+Axiom link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
     link_symbtable stbl1 stbl2 = Some stbl ->
     symbtable_syneq stbl1 stbl1' ->
     symbtable_syneq stbl2 stbl2' ->
     exists stbl', 
       link_symbtable stbl1' stbl2' = Some stbl' /\
       symbtable_syneq stbl stbl'.
-Proof.
-Admitted.
+
 
 
 (** ** Main linking theorem *)
