@@ -1,6 +1,6 @@
 (* ********************* *)
-(* Author: Author A   *)
-(* Date:   Feb 31, 2020   *)
+
+
 (* ********************* *)
 Require Import Coqlib Integers AST Maps.
 Require Import Permutation.

@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author C *)
-(* Date:   Jan 30, 2020 *)
+
+
 (* *******************  *)
 
 Require Import Coqlib Errors.

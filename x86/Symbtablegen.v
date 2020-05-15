@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 13, 2019 *)
+
+
 (* *******************  *)
 
 Require Import Coqlib Integers AST Maps.

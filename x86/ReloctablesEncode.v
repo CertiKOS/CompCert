@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 21, 2019 *)
+
+
 (* *******************  *)
 
 (** * Encoding of the relocation tables into sections *)

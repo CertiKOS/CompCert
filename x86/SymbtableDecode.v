@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author C *)
-(* Date:   Dec 04, 2019 *)
+
+
 (* *******************  *)
 
 (** * Decoding of the symbol table from a section *)

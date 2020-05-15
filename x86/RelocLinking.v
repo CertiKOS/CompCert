@@ -1,6 +1,6 @@
 (* ********************* *)
-(* Author: Author A   *)
-(* Date:   Oct 2, 2019   *)
+
+
 (* ********************* *)
 
 (** * Linking of relocatable programs without linking reloctation tables **)

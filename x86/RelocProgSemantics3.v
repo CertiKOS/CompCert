@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author C  *)
-(* Date:  Jan 7, 2020  *)
+
+
 (* *******************  *)
 
 (** * The semantics of relocatable program after string table, section header string

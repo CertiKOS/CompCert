@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 22, 2019 *)
+
+
 (* *******************  *)
 
 (** * Generation of the relocatable Elf file *)

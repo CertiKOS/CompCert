@@ -1,7 +1,4 @@
-(* *******************  *)
-(* Author: Yuting Wang  *)
-(* Date:   Sep 23, 2019 *)
-(* *******************  *)
+
 
 (* Finding the string assciated with a symbol *)
 

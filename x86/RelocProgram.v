@@ -1,6 +1,6 @@
 (* *******************  *)
-(* Author: Author A  *)
-(* Date:   Sep 13, 2019 *)
+
+
 (* *******************  *)
 
 (** * Template of languages with information about symbols and relocation *)
