@@ -1,8 +1,3 @@
-(* ******************* *)
-(* Author: Yuting Wang *)
-(* Date:   Feb 7, 2018 *)
-(* ******************* *)
-
 (** Correctness proof for the SegAsm generation **)
 
 Require Import Coqlib Integers Values Maps AST.
