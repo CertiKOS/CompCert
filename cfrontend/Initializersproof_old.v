@@ -19,8 +19,8 @@ Require Import Initializers.
 
 Open Scope error_monad_scope.
 
-(*SACC:*)
-Section STACK_WRAPPER.
+Section WITHEXTERNALCALLS.
+Context `{external_calls_prf: ExternalCalls}.
 
 Variable fn_stack_requirements: ident -> Z.
 
@@ -259,8 +259,8 @@ Qed.
 
 Lemma compat_eval_steps_aux f r e m r' m' s2 :
   simple r ->
-  star ((*SACC:*)step fn_stack_requirements) ge s2 nil (ExprState f r' Kstop e m') ->
-  estep ((*SACC:*)fn_stack_requirements) ge (ExprState f r Kstop e m) nil s2 ->
+  star (step fn_stack_requirements) ge s2 nil (ExprState f r' Kstop e m') ->
+  estep fn_stack_requirements ge (ExprState f r Kstop e m) nil s2 ->
   exists r1,
     s2 = ExprState f r1 Kstop e m /\
     compat_eval RV e r r1 m /\ simple r1.
@@ -288,7 +288,7 @@ Qed.
 
 Lemma compat_eval_steps:
   forall f r e m  r' m',
-  star ((*SACC:*)step fn_stack_requirements) ge (ExprState f r Kstop e m) E0 (ExprState f r' Kstop e m') ->
+  star (step fn_stack_requirements) ge (ExprState f r Kstop e m) E0 (ExprState f r' Kstop e m') ->
   simple r ->
   m' = m /\ compat_eval RV e r r' m.
 Proof.
@@ -313,7 +313,7 @@ Qed.
 
 Theorem eval_simple_steps:
   forall f r e m v ty m',
-  star ((*SACC:*)step fn_stack_requirements) ge (ExprState f r Kstop e m) E0 (ExprState f (Eval v ty) Kstop e m') ->
+  star (step fn_stack_requirements) ge (ExprState f r Kstop e m) E0 (ExprState f (Eval v ty) Kstop e m') ->
   simple r ->
   m' = m /\ ty = typeof r /\ eval_simple_rvalue e m r v.
 Proof.
@@ -336,7 +336,10 @@ Definition inj (b: block) :=
 Lemma mem_empty_not_valid_pointer:
   forall b ofs, Mem.valid_pointer Mem.empty b ofs = false.
 Proof.
-  intros. unfold Mem.valid_pointer. destruct (Mem.perm_dec Mem.empty b ofs Cur Nonempty); auto.
+  intros.
+  destruct (Mem.valid_pointer Mem.empty b ofs) eqn:VALID; auto.
+  exfalso.
+  apply Mem.valid_pointer_nonempty_perm in VALID.
   eelim Mem.perm_empty; eauto.
 Qed.
 
@@ -354,7 +357,8 @@ Lemma sem_cast_match:
   Val.inject inj v1' v1 ->
   Val.inject inj v2' v2.
 Proof.
-  intros. unfold do_cast in H0. destruct (sem_cast v1' ty1 ty2 Mem.empty) as [v2''|] eqn:E; inv H0.
+  intros. unfold do_cast in H0. destruct (sem_cast v1' ty1 ty2 tt) as [v2''|] eqn:E; inv H0.
+  apply (sem_cast_unit_to_mem Mem.empty) in E.
   exploit (sem_cast_inj inj Mem.empty m).
   intros. rewrite mem_empty_not_weak_valid_pointer in H2. discriminate.
   eexact E. eauto.
@@ -363,11 +367,13 @@ Qed.
 
 Lemma bool_val_match:
   forall v ty b v' m,
-  bool_val v ty Mem.empty = Some b ->
+  bool_val v ty tt = Some b ->
   Val.inject inj v v' ->
   bool_val v' ty m = Some b.
 Proof.
-  intros. eapply bool_val_inj; eauto. intros. rewrite mem_empty_not_weak_valid_pointer in H2; discriminate.
+  intros.
+  apply (bool_val_unit_to_mem Mem.empty) in H.
+  eapply bool_val_inj; eauto. intros. rewrite mem_empty_not_weak_valid_pointer in H2; discriminate.
 Qed.
 
 (** Soundness of [constval] with respect to the big-step semantics *)
@@ -394,13 +400,15 @@ Proof.
   (* addrof *)
   eauto.
   (* unop *)
-  destruct (sem_unary_operation op x (typeof r1) Mem.empty) as [v1'|] eqn:E; inv EQ0.
+  destruct (sem_unary_operation op x (typeof r1) tt) as [v1'|] eqn:E; inv EQ0.
+  apply (sem_unary_operation_unit_to_mem Mem.empty) in E.
   exploit (sem_unary_operation_inj inj Mem.empty m).
   intros. rewrite mem_empty_not_weak_valid_pointer in H2; discriminate.
   eexact E. eauto.
   intros [v' [A B]]. congruence.
   (* binop *)
-  destruct (sem_binary_operation ge op x (typeof r1) x0 (typeof r2) Mem.empty) as [v1'|] eqn:E; inv EQ2.
+  destruct (sem_binary_operation ge op x (typeof r1) x0 (typeof r2) tt) as [v1'|] eqn:E; inv EQ2.
+  apply (sem_binary_operation_unit_to_mem Mem.empty) in E.
   exploit (sem_binary_operation_inj inj Mem.empty m).
   intros. rewrite mem_empty_not_valid_pointer in H3; discriminate.
   intros. rewrite mem_empty_not_weak_valid_pointer in H3; discriminate.
@@ -415,23 +423,23 @@ Proof.
   (* alignof *)
   auto.
   (* seqand *)
-  destruct (bool_val x (typeof r1) Mem.empty) as [b|] eqn:E; inv EQ2.
+  destruct (bool_val x (typeof r1) tt) as [b|] eqn:E; inv EQ2.
   exploit bool_val_match. eexact E. eauto. instantiate (1 := m). intros E'.
   assert (b = true) by congruence. subst b.
   eapply sem_cast_match; eauto.
-  destruct (bool_val x (typeof r1) Mem.empty) as [b|] eqn:E; inv EQ2.
+  destruct (bool_val x (typeof r1) tt) as [b|] eqn:E; inv EQ2.
   exploit bool_val_match. eexact E. eauto. instantiate (1 := m). intros E'.
   assert (b = false) by congruence. subst b. inv H2. auto.
   (* seqor *)
-  destruct (bool_val x (typeof r1) Mem.empty) as [b|] eqn:E; inv EQ2.
+  destruct (bool_val x (typeof r1) tt) as [b|] eqn:E; inv EQ2.
   exploit bool_val_match. eexact E. eauto. instantiate (1 := m). intros E'.
   assert (b = false) by congruence. subst b.
   eapply sem_cast_match; eauto.
-  destruct (bool_val x (typeof r1) Mem.empty) as [b|] eqn:E; inv EQ2.
+  destruct (bool_val x (typeof r1) tt) as [b|] eqn:E; inv EQ2.
   exploit bool_val_match. eexact E. eauto. instantiate (1 := m). intros E'.
   assert (b = true) by congruence. subst b. inv H2. auto.
   (* conditional *)
-  destruct (bool_val x (typeof r1) Mem.empty) as [b'|] eqn:E; inv EQ3.
+  destruct (bool_val x (typeof r1) tt) as [b'|] eqn:E; inv EQ3.
   exploit bool_val_match. eexact E. eauto. instantiate (1 := m). intros E'.
   assert (b' = b) by congruence. subst b'.
   destruct b; eapply sem_cast_match; eauto.
@@ -473,7 +481,7 @@ Qed.
 
 Theorem constval_steps:
   forall f r m v v' ty m',
-  star ((*SACC:*)step fn_stack_requirements) ge (ExprState f r Kstop empty_env m) E0 (ExprState f (Eval v' ty) Kstop empty_env m') ->
+  star (step fn_stack_requirements) ge (ExprState f r Kstop empty_env m) E0 (ExprState f (Eval v' ty) Kstop empty_env m') ->
   constval ge r = OK v ->
   m' = m /\ ty = typeof r /\ Val.inject inj v v'.
 Proof.
@@ -600,7 +608,7 @@ Qed.
 Theorem transl_init_single_steps:
   forall ty a data f m v1 ty1 m' v chunk b ofs m'',
   transl_init_single ge ty a = OK data ->
-  star ((*SACC:*)step fn_stack_requirements) ge (ExprState f a Kstop empty_env m) E0 (ExprState f (Eval v1 ty1) Kstop empty_env m') ->
+  star (step fn_stack_requirements) ge (ExprState f a Kstop empty_env m) E0 (ExprState f (Eval v1 ty1) Kstop empty_env m') ->
   sem_cast v1 ty1 ty m' = Some v ->
   access_mode ty = By_value chunk ->
   Mem.store chunk m' b ofs v = Some m'' ->
@@ -766,7 +774,7 @@ Fixpoint fields_of_struct (fl: members) (pos: Z) : list (Z * type) :=
 
 Inductive exec_init: mem -> block -> Z -> type -> initializer -> mem -> Prop :=
   | exec_init_single: forall m b ofs ty a v1 ty1 chunk m' v m'',
-      star ((*SACC:*)step fn_stack_requirements)  ge (ExprState dummy_function a Kstop empty_env m)
+      star (step fn_stack_requirements) ge (ExprState dummy_function a Kstop empty_env m)
                 E0 (ExprState dummy_function (Eval v1 ty1) Kstop empty_env m') ->
       sem_cast v1 ty1 ty m' = Some v ->
       access_mode ty = By_value chunk ->
@@ -899,4 +907,4 @@ Proof.
   eapply A; eauto. apply transl_init_spec; auto.
 Qed.
 
-End STACK_WRAPPER.
+End WITHEXTERNALCALLS.

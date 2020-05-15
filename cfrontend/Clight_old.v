@@ -22,14 +22,14 @@ Require Import Errors.
 Require Import Maps.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import AST.
-Require Import Memory.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Smallstep.
-Require Import Ctypes.
-Require Import Cop.
+Require Import Values_old.
+Require Import AST_old.
+Require Import Memory_old.
+Require Import Events_old.
+Require Import Globalenvs_old.
+Require Import Smallstep_old.
+Require Import Ctypes_old.
+Require Import Cop_old.
 
 (** * Abstract syntax *)
 
@@ -196,6 +196,9 @@ Definition empty_env: env := (PTree.empty (block * type)).
 
 Definition temp_env := PTree.t val.
 
+Section WITHEXTCALLS.
+Context `{external_calls: ExternalCalls}.
+
 (** [deref_loc ty m b ofs v] computes the value of a datum
   of type [ty] residing in memory [m] at block [b], offset [ofs].
   If the type [ty] indicates an access by value, the corresponding
@@ -220,12 +223,19 @@ Inductive deref_loc (ty: type) (m: mem) (b: block) (ofs: ptrofs) : val -> Prop :
   This is allowed only if [ty] indicates an access by value or by copy.
   [m'] is the updated memory state. *)
 
-Inductive assign_loc (ce: composite_env) (ty: type) (m: mem) (b: block) (ofs: ptrofs):
+(** [CompCertX:test-compcert-protect-stack-arg] As we now need to protect some locations against writing, this protection may need the global environment. *)
+
+Section SEMANTICS.
+
+Variable fn_stack_requirements : ident -> Z.
+Variable ge: genv.
+
+Inductive assign_loc (ce: composite_env := ge) (ty: type) (m: mem) (b: block) (ofs: ptrofs):
                                             val -> mem -> Prop :=
   | assign_loc_value: forall v chunk m',
       access_mode ty = By_value chunk ->
       Mem.storev chunk m (Vptr b ofs) v = Some m' ->
-      assign_loc ce ty m b ofs v m'
+      assign_loc ty m b ofs v m'
   | assign_loc_copy: forall b' ofs' bytes m',
       access_mode ty = By_copy ->
       (sizeof ce ty > 0 -> (alignof_blockcopy ce ty | Ptrofs.unsigned ofs')) ->
@@ -235,13 +245,7 @@ Inductive assign_loc (ce: composite_env) (ty: type) (m: mem) (b: block) (ofs: pt
               \/ Ptrofs.unsigned ofs + sizeof ce ty <= Ptrofs.unsigned ofs' ->
       Mem.loadbytes m b' (Ptrofs.unsigned ofs') (sizeof ce ty) = Some bytes ->
       Mem.storebytes m b (Ptrofs.unsigned ofs) bytes = Some m' ->
-      assign_loc ce ty m b ofs (Vptr b' ofs') m'.
-
-Section SEMANTICS.
-
-(*SACC:*)Variable fn_stack_requirements : ident -> Z.
-
-Variable ge: genv.
+      assign_loc ty m b ofs (Vptr b' ofs') m'.
 
 (** Allocation of function-local variables.
   [alloc_variables e1 m1 vars e2 m2] allocates one memory block
@@ -276,7 +280,7 @@ Inductive bind_parameters (e: env):
   | bind_parameters_cons:
       forall m id ty params v1 vl b m1 m2,
       PTree.get id e = Some(b, ty) ->
-      assign_loc ge ty m b Ptrofs.zero v1 m1 ->
+      assign_loc ty m b Ptrofs.zero v1 m1 ->
       bind_parameters e m1 params vl m2 ->
       bind_parameters e m ((id, ty) :: params) (v1 :: vl) m2.
 
@@ -477,7 +481,7 @@ Definition is_call_cont (k: cont) : Prop :=
 
 (** States *)
 
-Inductive state: Type :=
+Inductive state {memory_model_ops: Mem.MemoryModelOps mem}: Type :=
   | State
       (f: function)
       (s: statement)
@@ -489,7 +493,7 @@ Inductive state: Type :=
       (fd: fundef)
       (args: list val)
       (k: cont)
-      (m: mem) (*SACC:*)(sz : Z) : state
+      (m: mem) (sz: Z) : state
   | Returnstate
       (res: val)
       (k: cont)
@@ -542,7 +546,7 @@ with find_label_ls (lbl: label) (sl: labeled_statements) (k: cont)
   parameter binding semantics, then instantiate it later to give the two
   semantics described above. *)
 
-Variable function_entry: function -> list val -> mem -> env -> temp_env -> mem -> (*SACC:*)Z -> Prop.
+Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
 
 (** Transition relation *)
 
@@ -552,7 +556,7 @@ Inductive step: state -> trace -> state -> Prop :=
       eval_lvalue e le m a1 loc ofs ->
       eval_expr e le m a2 v2 ->
       sem_cast v2 (typeof a2) (typeof a1) m = Some v ->
-      assign_loc ge (typeof a1) m loc ofs v m' ->
+      assign_loc (typeof a1) m loc ofs v m' ->
       step (State f (Sassign a1 a2) k e le m)
         E0 (State f Sskip k e le m')
 
@@ -561,20 +565,21 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sset id a) k e le m)
         E0 (State f Sskip k e (PTree.set id v le) m)
 
-  | step_call:   forall f optid a al k e le m tyargs tyres cconv vf vargs fd (*SACC:*)fid,
-      (*SACC:*)is_function_ident ge vf fid ->
+  | step_call:   forall f optid a al k e le m tyargs tyres cconv vf vargs fd id
+                   (IFI: is_function_ident ge vf id),
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr e le m a vf ->
       eval_exprlist e le m al tyargs vargs ->
       Genv.find_funct ge vf = Some fd ->
       type_of_fundef fd = Tfunction tyargs tyres cconv ->
       step (State f (Scall optid a al) k e le m)
-        E0 (Callstate fd vargs (Kcall optid f e le k) ((*SACC:*)Mem.push_new_stage m) ((*SACC:*) fn_stack_requirements fid))
+        E0 (Callstate fd vargs (Kcall optid f e le k) (Mem.push_new_stage m) (fn_stack_requirements id))
 
-  | step_builtin:   forall f optid ef tyargs al k e le m vargs t vres m' (*SACC:*)m'',
+  | step_builtin:   forall f optid ef tyargs al k e le m vargs t vres m' m'',
       eval_exprlist e le m al tyargs vargs ->
-      external_call ef ge vargs ((*SACC:*) Mem.push_new_stage m) t vres m' ->
-  (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
+      external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
+      forall BUILTIN_ENABLED: builtin_enabled ef,
       step (State f (Sbuiltin optid ef tyargs al) k e le m)
          t (State f Sskip k e (set_opttemp optid vres le) m'')
 
@@ -652,18 +657,18 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sgoto lbl) k e le m)
         E0 (State f s' k' e le m)
 
-  | step_internal_function: forall f vargs k m e le m1 (*SACC:*)sz,
-      function_entry f vargs m e le m1 (*SACC:*)sz ->
-      step (Callstate (Internal f) vargs k m (*SACC:*)sz)
+  | step_internal_function: forall f vargs k m e le m1 sz,
+      function_entry ge f vargs m e le m1 sz ->
+      step (Callstate (Internal f) vargs k m sz)
         E0 (State f f.(fn_body) k e le m1)
 
-  | step_external_function: forall ef targs tres cconv vargs k m vres t m' (*SACC:*)sz,
+  | step_external_function: forall ef targs tres cconv vargs k m vres t m' sz,
       external_call ef ge vargs m t vres m' ->
-      step (Callstate (External ef targs tres cconv) vargs k m (*SACC:*)sz)
+      step (Callstate (External ef targs tres cconv) vargs k m sz)
          t (Returnstate vres k m')
 
-  | step_returnstate: forall v optid f e le k m (*SACC:*)m',
-  (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
+  | step_returnstate: forall v optid f e le k m m',
+      Mem.unrecord_stack_block m = Some m' ->
       step (Returnstate v (Kcall optid f e le k) m)
         E0 (State f Sskip k e (set_opttemp optid v le) m').
 
@@ -675,14 +680,14 @@ Inductive step: state -> trace -> state -> Prop :=
   without arguments and with an empty continuation. *)
 
 Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0 (*SACC:*)m2,
+  | initial_state_intro: forall b f m0 m2,
       let ge := Genv.globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate f nil Kstop ((*SACC:*)Mem.push_new_stage m2) ((*SACC:*)fn_stack_requirements (prog_main p))).
+      Mem.record_init_sp m0 = Some m2 ->
+      initial_state p (Callstate f nil Kstop (Mem.push_new_stage m2) (fn_stack_requirements (prog_main p))).
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 
@@ -694,60 +699,57 @@ End SEMANTICS.
 
 (** The two semantics for function parameters.  First, parameters as local variables. *)
 
-(*SACC:*)
 Definition blocks_with_info (ge:genv) (e: env) : list (block * frame_info) :=
-  map (fun x => let '(b, lo, hi) := x in (b, default_frame_info hi)) (blocks_of_env ge e).
+  map (fun x => let '(b, lo, hi) := x in (b, public_frame_info hi)) (blocks_of_env ge e).
 
-Inductive function_entry1 (ge: genv) (f: function) (vargs: list val) (m: mem) (e: env) (le: temp_env) (m': mem) ((*SACC:*)sz : Z) : Prop :=
-  | function_entry1_intro: forall m1 (*SACC:*)m1' fa,
+Inductive function_entry1 (ge: genv) (f: function) (vargs: list val) (m: mem) (e: env) (le: temp_env) (m': mem) (sz: Z) : Prop :=
+  | function_entry1_intro: forall m1 m1' fa,
       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
       alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
-  (*SACC:*)frame_adt_blocks fa = blocks_with_info ge e ->
-  (*SACC:*)frame_adt_size fa = sz ->
-  (*SACC:*)Mem.record_stack_blocks m1 fa = Some m1' ->
+      frame_adt_blocks fa = blocks_with_info ge e ->
+      frame_adt_size fa = sz ->
+      Mem.record_stack_blocks m1 fa = Some m1' ->
       bind_parameters ge e m1' f.(fn_params) vargs m' ->
       le = create_undef_temps f.(fn_temps) ->
-      function_entry1 ge f vargs m e le m' (*SACC:*)sz.
+      function_entry1 ge f vargs m e le m' sz.
 
-Definition step1 ((*SACC:*)fn_stack_requirements : ident -> Z) (ge: genv) := 
-  step (*SACC:*)fn_stack_requirements ge (function_entry1 ge).
+Definition step1 fsr (ge: genv) := step fsr ge (function_entry1).
 
 (** Second, parameters as temporaries. *)
 
-Inductive function_entry2 (ge: genv)  (f: function) (vargs: list val) (m: mem) (e: env) (le: temp_env) (m'': mem) ((*SACC:*)sz: Z) : Prop :=
-  | function_entry2_intro:
-      (*SACC:*)forall fa m',
+Inductive function_entry2 (ge: genv)  (f: function) (vargs: list val) (m: mem) (e: env) (le: temp_env) (m1': mem) (sz: Z) : Prop :=
+  | function_entry2_intro fa m': 
       list_norepet (var_names f.(fn_vars)) ->
       list_norepet (var_names f.(fn_params)) ->
       list_disjoint (var_names f.(fn_params)) (var_names f.(fn_temps)) ->
       alloc_variables ge empty_env m f.(fn_vars) e m' ->
-  (*SACC:*)frame_adt_blocks fa = blocks_with_info ge e ->
-  (*SACC:*)frame_adt_size fa = sz ->
-  (*SACC:*)Mem.record_stack_blocks m' fa = Some m'' ->
+      frame_adt_blocks fa = blocks_with_info ge e ->
+      frame_adt_size fa = sz ->
+      Mem.record_stack_blocks m' fa = Some m1' ->
       bind_parameter_temps f.(fn_params) vargs (create_undef_temps f.(fn_temps)) = Some le ->
-      function_entry2 ge f vargs m e le (*SACC:*)m'' (*SACC:*)sz.
+      function_entry2 ge f vargs m e le m1' sz.
 
-Definition step2 ((*SACC:*)fn_stack_requirements : ident -> Z) (ge: genv) := step fn_stack_requirements ge (function_entry2 ge).
+Definition step2 fsr (ge: genv) := step fsr ge (function_entry2).
 
 (** Wrapping up these definitions in two small-step semantics. *)
 
-Definition semantics1 (*SACC:*)fn_stack_requirements (p: program) :=
+Definition semantics1 fsr (p: program) :=
   let ge := globalenv p in
-  Semantics_gen ((*SACC:*)step1 fn_stack_requirements) (initial_state fn_stack_requirements p) final_state ge ge.
+  Semantics_gen (step1 fsr) (initial_state fsr p) final_state ge ge.
 
-Definition semantics2 (*SACC:*)fn_stack_requirements (p: program) :=
+Definition semantics2 fsr (p: program) :=
   let ge := globalenv p in
-  Semantics_gen ((*SACC:*)step2 fn_stack_requirements) (initial_state fn_stack_requirements p) final_state ge ge.
+  Semantics_gen (step2 fsr) (initial_state fsr p) final_state ge ge.
 
 (** This semantics is receptive to changes in events. *)
 
 Lemma semantics_receptive:
-  forall (*SACC:*)fn_stack_requirements (p: program), receptive (semantics1 (*SACC:*)fn_stack_requirements p).
+  forall fsr (p: program), receptive (semantics1 fsr p).
 Proof.
   intros. unfold semantics1.
   set (ge := globalenv p). constructor; simpl; intros.
 (* receptiveness *)
-  assert (t1 = E0 -> exists s2, step1 (*SACC:*)fn_stack_requirements ge s t2 s2).
+  assert (t1 = E0 -> exists s2, step1 fsr ge s t2 s2).
     intros. subst. inv H0. exists s1; auto.
   inversion H; subst; auto.
   (* builtin *)
@@ -763,3 +765,5 @@ Proof.
   eapply external_call_trace_length; eauto.
   eapply external_call_trace_length; eauto.
 Qed.
+
+End WITHEXTCALLS.
