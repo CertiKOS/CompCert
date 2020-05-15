@@ -1,5 +1,3 @@
-
-
 (** Correctness proof for the FlatAsm generation **)
 
 Require Import Coqlib Integers Values Maps AST.

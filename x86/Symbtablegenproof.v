@@ -1,5 +1,3 @@
-
-
 (** Correctness proof for the SegAsm generation **)
 
 Require Import Coqlib Integers Values Maps AST.
