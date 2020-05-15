@@ -549,9 +549,6 @@ Proof.
 Qed.
 
 
-Axiom asm_instruction_dec:
-  forall i1 i2: Asm.instruction, {i1 = i2} + {i1 <> i2}.
-
 Lemma testcond_dec:
   forall t1 t2: testcond, {t1 = t2} + {t1 <> t2}.
 Proof.

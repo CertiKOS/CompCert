@@ -171,10 +171,6 @@ Let tge := RelocProgSemantics1.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-Axiom transf_initial_states:
-  forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
-         exists st2, initial_state tprog rs st2 /\  st1 = st2.
-
 
 Lemma transf_final_states:
   forall st1 st2 r,
@@ -186,41 +182,7 @@ Proof.
 Qed.
 
 
-Axiom step_simulation:
-  forall s1 t s2, step ge s1 t s2 ->
-                  forall s1' (MS: s1=s1'),
-                    (exists s2', step tge s1' t s2' /\ s2 = s2').
 
-    
-    
-
-  
-  
-
-
-Lemma transf_program_correct:
-  forall rs, forward_simulation (RelocProgSemantics1.semantics prog rs) (RelocProgSemantics2.semantics tprog rs).
-Proof.
-  intro rs.
-  apply forward_simulation_step with (match_states := fun x y : Asm.state => x = y).
-  + simpl.
-    unfold match_prog, transf_program in TRANSF. monadInv TRANSF.
-    unfold globalenv, genv_senv. simpl.
-    unfold RelocProgSemantics.globalenv. simpl. intro id.
-    rewrite ! RelocProgSemantics.genv_senv_add_external_globals. simpl. auto.
-  + simpl. intros s1 IS.
-    inversion IS.
-    generalize (transf_initial_states _ _ IS).
-    auto.
-  +  (* final state *)
-    intros s1 s2 r HState HFinal.
-    eapply transf_final_states; eauto.
-  + simpl. intros s1 t s1' HStep s2 HState.
-    fold ge in HStep.
-    generalize(step_simulation _ _ _ HStep s2 HState).
-    auto.
-Qed.
-    
 
 End PRESERVATION.
 
@@ -245,6 +207,3 @@ Proof.
   auto. auto. auto.
 Defined.
 
-Axiom tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
-                          linker2
-                          match_prog.

@@ -156,7 +156,4 @@ Proof.
   auto. auto. auto.
 Defined.
 
-Axiom tl : @TransfLink _ _ TablesEncodeproof.linker2
-                          linker2
-                          match_prog.
 

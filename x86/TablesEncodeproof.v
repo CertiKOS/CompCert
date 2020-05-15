@@ -310,7 +310,4 @@ Proof.
   auto. auto. auto.
 Defined.
 
-Axiom tl : @TransfLink _ _ RelocBingenproof.linker2
-                          linker2
-                          match_prog.
 

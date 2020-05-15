@@ -36,4 +36,3 @@ End PRESERVATION.
 
 Require Import RelocLinking RelocLinking1.
 
-Axiom reloctablesgen_transflink : @TransfLink _ _ RelocLinking.Linker_reloc_prog RelocLinking1.Linker_reloc_prog match_prog.

@@ -36,25 +36,6 @@ Proof.
 Qed.
 
 
-Axiom genv_find_funct_ptr_add_global_pres: forall def ge1 ge2 b,
-  Genv.find_funct_ptr ge1 b = Genv.find_funct_ptr ge2 b ->
-  Genv.find_funct_ptr (Genv.add_global ge1 (transf_globdef def)) b =
-  Genv.find_funct_ptr (Genv.add_global ge2 def) b.
-
-
-Lemma genv_find_funct_ptr_pres: forall defs (ge1 ge2: Genv.t fundef unit) b,
-    Genv.find_funct_ptr ge1 b = Genv.find_funct_ptr ge2 b ->
-    Genv.find_funct_ptr (fold_left (Genv.add_global (V:=unit)) (map transf_globdef defs) ge1) b =
-    Genv.find_funct_ptr (fold_left (Genv.add_global (V:=unit)) defs ge2) b.
-Proof.
-  induction defs as [| def defs].
-  - intros ge1 ge2 b FPTR.
-    cbn. congruence.
-  - intros ge1 ge2 b FPTR.
-    cbn. apply IHdefs.
-    apply genv_find_funct_ptr_add_global_pres; auto.
-Qed.
-
 
 
 
@@ -99,19 +80,5 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma find_funct_ptr_transf: forall b,
-    Genv.find_funct_ptr tge b =
-    Genv.find_funct_ptr ge b.
-Proof.
-  red in TRANSF. unfold transf_program in TRANSF.
-  subst. cbn.
-  intros. unfold ge. unfold Genv.globalenv.
-  unfold Genv.add_globals.
-  apply genv_find_funct_ptr_pres.
-  reflexivity.
-Qed.
-
-Axiom transf_program_correct:
-  forall rs, forward_simulation (semantics p rs) (semantics tp rs).
 
 End PRESERVATION.

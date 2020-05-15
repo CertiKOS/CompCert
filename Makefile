@@ -111,7 +111,7 @@ BACKEND=\
 	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
-  PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
+  PadInitDataproof.v \
   Symbtablegen.v  Reloctablesgen.v Reloctablesgenproof.v \
 	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
@@ -120,9 +120,7 @@ BACKEND=\
   ShstrtableEncode.v RelocElfgen.v RelocElfgenproof.v \
 	SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v RelocProgSyneqproof.v \
-  SymbtablegenSep.v Symbtablegenproof.v \
-  PermuteProgproof.v PermuteProgSep.v \
+  RelocProgSyneq.v SymbtablegenSep.v PermuteProgSep.v \
   RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
   TablesEncodeproof.v \
   RelocBinDecode.v \

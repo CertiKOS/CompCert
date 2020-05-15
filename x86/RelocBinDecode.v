@@ -2236,13 +2236,5 @@ Qed.
 
 
 
-
-
-Axiom encode_decode_instr_refl: forall ofs i s l,
-    encode_instr rtbl_ofs_map ofs i = OK s
-    -> exists i', fmc_instr_decode ofs (s++l) = OK(i',l) /\
-                  instr_eq i i'.
-
-
   
 End  PRESERVATION.
