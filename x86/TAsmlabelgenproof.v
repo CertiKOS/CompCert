@@ -1,7 +1,4 @@
-(* ******************* *)
-(* Author: Pierre Wilke *)
-(* Date:   Jul 5, 2018 *)
-(* ******************* *)
+
 
 (** Correctness proof for the FlatAsm generation **)
 
