@@ -79,11 +79,9 @@ Require PseudoInstructionsproof.
 Require Asmlabelgen.
 Require Asmlabelgenproof.
 Require PadNops.
-Require PadNopsproof.
 Require PadInitData.
 Require Symbtablegen.
 Require SymbtablegenSep.
-Require Symbtablegenproof.
 (* Require NormalizeSymb. *)
 Require Reloctablesgen.
 Require Reloctablesgenproof.
@@ -101,10 +99,8 @@ Require ShstrtableEncode.
 Require TablesEncodeproof.
 Require OrderedLinking.
 Require SymbtablegenSep.
-Require PermuteProgproof.
 Require PermuteProgSep.
 Require RelocProgSyneq.
-Require RelocProgSyneqproof.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -369,12 +365,6 @@ Definition reloc_asm_passes :=
 Definition match_prog_reloc :=
   pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) reloc_asm_passes)).
 
-Definition test_symbtablegen_passes :=
-  (mkpass PermuteProgproof.match_prog ::: mkpass SymbtablegenSep.match_prog ::: pass_nil _).
-
-Definition match_prog_test_symbtablegen :=
-  pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) test_symbtablegen_passes)).
-
 (* Definition mc_passes := *)
 (*   passes_app flat_asm_passes *)
 (*              (mkpass MClabelgenproof.match_prog ::: pass_nil _). *)
@@ -487,25 +477,6 @@ Proof.
 Qed.
   
 
-Theorem transf_c_program_test_symbtablegen_match :
-  forall p tp,
-    transf_c_program_test_symbtablegen p = OK tp ->
-    match_prog_test_symbtablegen p tp.
-Proof.
-  intros p tp T. unfold transf_c_program_test_symbtablegen in T.
-  destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. unfold time in T.
-  red.
-  rewrite compose_passes_app.
-  exists p1. split.
-  apply transf_c_program_real_match; auto.
-  simpl. 
-  exists p1. split. red. repeat (split; auto).
-  exists tp. split; auto.
-  red. 
-  exists tp. split; auto.
-  red. repeat (split; auto).
-  red. auto.
-Qed.
 
 
 
@@ -894,25 +865,6 @@ Proof.
     destruct (ident_eq i i0). subst.
     generalize (in_map (fun '(i,_,_) => i) l (i0,def,sb) H). congruence.
     exploit IHl; eauto. 
-Qed.
-
-Lemma PadNops_fn_stack_requirements_match: 
-  forall p tp
-    (FM: PadNopsproof.match_prog p tp),
-    fn_stack_requirements p = fn_stack_requirements tp.
-Proof.
-  intros p tp MATCH.
-  unfold fn_stack_requirements.
-  apply Axioms.extensionality. intro i.
-  erewrite <- Globalenvs.Genv.find_symbol_transf; eauto.
-  destruct (Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv tp) i) eqn:EQ; setoid_rewrite EQ; auto.
-  destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p) b) eqn: EQ1; auto.
-  - generalize (Globalenvs.Genv.find_funct_ptr_transf MATCH _ EQ1).
-    intros FPTR.
-    setoid_rewrite FPTR. 
-    destruct f; cbn; try congruence.
-  - generalize (Globalenvs.Genv.find_funct_ptr_transf_none MATCH _ EQ1).
-    intros FNONE. setoid_rewrite FNONE. auto.
 Qed.
 
 

@@ -10,7 +10,7 @@ Require Import Memtype.
 Require Import Asm RelocProgram.
 Require Import Symbtablegen.
 Require Import Linking LinkingProp OrderedLinking.
-Require Import PermuteProgproof PermuteProgSep.
+Require Import PermuteProgSep.
 Require Import RelocLinking.
 Require Import SeqTable.
 Require Import RelationClasses.
@@ -4144,22 +4144,6 @@ Proof.
 Qed.
 
 
-Axiom match_prog_perm: forall p tp,
-    match_prog p tp ->
-    PermuteProgproof.match_prog p 
-                              {| AST.prog_defs := prog_defs tp;
-                                 AST.prog_public := prog_public tp;
-                                 AST.prog_main := prog_main tp |}.
-
-
-
-Axiom link_ordered_pres_wf_prog: forall p1 p2 p,
-    link_prog_ordered is_fundef_internal p1 p2 = Some p ->
-    wf_prog p1 ->
-    wf_prog p2 ->
-    wf_prog p.
-
-
 Lemma reloc_symbtable_pres_syneq : forall f tbl1 tbl1' tbl2 ,
     reloc_symbtable f tbl1 = Some tbl2 ->
     symbtable_syneq tbl1 tbl1' ->
@@ -4193,106 +4177,3 @@ Proof.
 Qed.
 
 
-Axiom link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',
-    link_symbtable stbl1 stbl2 = Some stbl ->
-    symbtable_syneq stbl1 stbl1' ->
-    symbtable_syneq stbl2 stbl2' ->
-    exists stbl', 
-      link_symbtable stbl1' stbl2' = Some stbl' /\
-      symbtable_syneq stbl stbl'.
-
-
-
-(** ** Main linking theorem *)
-Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
-    link p1 p2 = Some p -> match_prog p1 tp1 -> match_prog p2 tp2 ->
-    exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp.
-Proof.
-  intros p1 p2 tp1 tp2 p LINK MATCH1 MATCH2.
-  unfold link. unfold Linker_reloc_prog. unfold link_reloc_prog.
-  generalize (match_prog_perm MATCH1). intros OMATCH1.
-  generalize (match_prog_perm MATCH2). intros OMATCH2.
-  generalize (@transf_link _ _ _ _ _ TransfPermuteOrderedLink2 
-                           _ _ _ _ _ LINK OMATCH1 OMATCH2).
-  intros (tp3 & LINK3 & OMATCH). clear OMATCH1 OMATCH2.
-  setoid_rewrite LINK3.
-  
-  red in MATCH1, MATCH2.
-  destruct MATCH1 as (tp1' & TRANSF1 & RPEQ1).
-  destruct MATCH2 as (tp2' & TRANSF2 & RPEQ2).
-  
-  unfold transf_program in TRANSF1.
-  destruct check_wellformedness; try monadInv TRANSF1.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p1)) as (s & csz1) eqn:GSEQ1 .
-  destruct s as (stbl1 & dsz1).
-  destruct zle; try monadInv TRANSF1; simpl.
-
-  unfold transf_program in TRANSF2.
-  destruct check_wellformedness; try monadInv TRANSF2.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p2)) as (s & csz2) eqn:GSEQ2 .
-  destruct s as (stbl2 & dsz2).
-  destruct zle; try monadInv TRANSF2; simpl.
-
-  red in RPEQ1. cbn in RPEQ1.
-  destruct RPEQ1 as (PERM1 & MAINEQ1 & PUBEQ1 & SECTBLEQ1 & 
-                     SYMTBLEQ1 & STRTBLEQ1 & RELOCTBLEQ1).
-  red in RPEQ2. cbn in RPEQ2.
-  destruct RPEQ2 as (PERM2 & MAINEQ2 & PUBEQ2 & SECTBLEQ2 & 
-                     SYMTBLEQ2 & STRTBLEQ2 & RELOCTBLEQ2).
-
-  rewrite <- SECTBLEQ1.
-  unfold create_sec_table; cbn. unfold Pos.to_nat; cbn. 
-  rewrite <- SECTBLEQ2.
-  unfold create_sec_table.
-  unfold link_sectable; cbn. unfold Pos.to_nat; cbn.
-  
-  simpl in LINK.
-  generalize (link_prog_ordered_inv is_fundef_internal _ _ _ LINK). 
-  intros (NRPT1 & NRPT2).
-
-  generalize (link_ordered_gen_symb_comm _ _ LINK GSEQ1 GSEQ2
-                                 (@eq_refl _ (reloc_offset_fun dsz1 csz1))); eauto.
-  destruct 1 as (stbl & stbl2' & stbl' & RELOC & LINKS & GENS & STEQ).
-  generalize (gen_symb_table_size _ _ _ GSEQ1).
-  destruct 1 as (DSZ & CSZ).
-  setoid_rewrite DSZ.
-  setoid_rewrite CSZ.
-  edestruct reloc_symbtable_pres_syneq as (stbl3 & RELOC1 & STBLEQ); eauto.
-  rewrite RELOC1.
-  edestruct link_symbtable_pres_syneq as (stbl4 & LINKS' & STBLEQ1); eauto.
-  rewrite LINKS'.
-
-  eexists. split. reflexivity.
-  red.
-  unfold transf_program.
-  exploit link_ordered_pres_wf_prog; eauto.
-  intros WF.
-  destruct check_wellformedness; try congruence.
-  simpl. 
-  setoid_rewrite GENS.
-  
-  destruct zle.
-  eexists; split. reflexivity.
-  red; cbn.
-
-  split. red in OMATCH. tauto.
-  split. red in OMATCH. tauto.
-  split. red in OMATCH. tauto.
-  split. 
-  unfold create_sec_table. repeat f_equal.
-  unfold create_data_section. f_equal.
-  apply link_acc_init_data_comm; auto.
-  unfold create_code_section. f_equal.
-  apply link_acc_instrs_comm; auto.
-  split.
-  eapply symbtable_syneq_trans. 
-  apply symbtable_syneq_symm. eauto. eauto.
-  split. congruence.
-  congruence.
-  generalize (defs_size_inbound (AST.prog_defs p)).
-  intros; omega.
-Qed.
-
-
-Instance TransfLinkSymbtablegen : TransfLink match_prog :=
-  link_transf_symbtablegen.
