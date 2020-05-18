@@ -1,544 +1,229 @@
-39d38
+32,36d31
+< Section WITHEXTCALLS.
 < Context `{external_calls_prf: ExternalCalls}.
-==========================================================================================
-41,42d39
+< 
 < Variable fn_stack_requirements: ident -> Z.
-< Hypothesis fn_stack_requirements_pos: forall i, 0 <= fn_stack_requirements i.
+< 
 ==========================================================================================
-177,201d173
-< Lemma volatile_store_push:
-<   forall ge chunk m b o v t m',
-<       forall (STACK_TOP_NO_INFO: forall b,
-<              is_stack_top (Mem.stack m) b ->
-<              forall fi,
-<                get_frame_info (Mem.stack m) b = Some fi ->
-<                forall o, frame_perm fi o = Public),
-<     volatile_store ge chunk m b o v t m' ->
-<     exists m1,
-<       volatile_store ge chunk (Mem.push_new_stage m) b o v t m1 /\ Mem.unrecord_stack_block m1 = Some m'.
-< Proof.
-<   intros ge0 chunk m b o v t m' STACK_TOP_NO_INFO VS; inv VS.
-<   eexists; split. econstructor; eauto. apply Mem.unrecord_push.
-<   edestruct (Mem.valid_access_store' (Mem.push_new_stage m) chunk b (Ptrofs.unsigned o) v).
-<   exploit Mem.store_valid_access_3. eauto. intros (V1 & V2 & V3).
-<   split. red; intros. rewrite Mem.push_new_stage_perm. auto. split; auto.
-<   rewrite_stack_blocks. intros. trim V3. auto. red. right.
-<   red; simpl. red in V3. destruct V3; simpl in *; eauto.
-<   destr. red; intros. eapply STACK_TOP_NO_INFO; eauto.
-<   eexists; split.
-<   econstructor. auto.
+82,83d76
+< Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
+< 
+==========================================================================================99c92
+<   | exec_Scall:   forall e le m optid a al tyargs tyres cconv vf vargs f t m' m'' vres id (IFI: is_function_ident ge vf id),
+---
+>   | exec_Scall:   forall e le m optid a al tyargs tyres cconv vf vargs f t m' vres,
+==========================================================================================105,106c98
+<       eval_funcall (Mem.push_new_stage m) f vargs t m' vres (fn_stack_requirements id) ->
+<       Mem.unrecord_stack_block m' = Some m'' ->
+---
+>       eval_funcall m f vargs t m' vres ->
+==========================================================================================108,109c100,101
+<                 t (set_opttemp optid vres le) m'' Out_normal
+<   | exec_Sbuiltin:   forall e le m optid ef al tyargs vargs t m' vres m'',
+---
+>                 t (set_opttemp optid vres le) m' Out_normal
+>   | exec_Sbuiltin:   forall e le m optid ef al tyargs vargs t m' vres,
+==========================================================================================111,113c103
+<       external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+<       Mem.unrecord_stack_block m' = Some m'' ->
+<       forall BUILTIN_ENABLED: builtin_enabled ef,
+---
+>       external_call ef ge vargs m t vres m' ->
+==========================================================================================115c105
+<                 t (set_opttemp optid vres le) m'' Out_normal
+---
+>                 t (set_opttemp optid vres le) m' Out_normal
+==========================================================================================175,178c165,170
+< with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> Z -> Prop :=
+<   | eval_funcall_internal: forall le m f vargs t e le' m2 m3 out vres m4 sz,
+<       function_entry ge f vargs m e le m2 sz ->
+<       exec_stmt e le m2 f.(fn_body) t le' m3 out ->
+---
+> with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> Prop :=
+>   | eval_funcall_internal: forall le m f vargs t e m1 m2 m3 out vres m4,
+>       alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
+>       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
+>       bind_parameters ge e m1 f.(fn_params) vargs m2 ->
+>       exec_stmt e (create_undef_temps f.(fn_temps)) m2 f.(fn_body) t le m3 out ->
+==========================================================================================181c173
+<       eval_funcall m (Internal f) vargs t m4 vres sz
+---
+>       eval_funcall m (Internal f) vargs t m4 vres
+==========================================================================================184c176
+<       eval_funcall m (External ef targs tres cconv) vargs t m' vres 0.
+---
+>       eval_funcall m (External ef targs tres cconv) vargs t m' vres.
+==========================================================================================198c190
+<   | execinf_Scall:   forall e le m optid a al vf tyargs tyres cconv vargs f t id (IFI: is_function_ident ge vf id),
+---
+>   | execinf_Scall:   forall e le m optid a al vf tyargs tyres cconv vargs f t,
+==========================================================================================204c196
+<       evalinf_funcall (Mem.push_new_stage m) f vargs t (fn_stack_requirements id) ->
+---
+>       evalinf_funcall m f vargs t ->
+==========================================================================================241,245c233,239
+< with evalinf_funcall: mem -> fundef -> list val -> traceinf -> Z -> Prop :=
+<   | evalinf_funcall_internal: forall m f vargs t e le m2 sz,
+<       function_entry ge f vargs m e le m2 sz ->
+<       execinf_stmt e le m2 f.(fn_body) t ->
+<       evalinf_funcall m (Internal f) vargs t sz.
+---
+> with evalinf_funcall: mem -> fundef -> list val -> traceinf -> Prop :=
+>   | evalinf_funcall_internal: forall m f vargs t e m1 m2,
+>       alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
+>       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
+>       bind_parameters ge e m1 f.(fn_params) vargs m2 ->
+>       execinf_stmt e (create_undef_temps f.(fn_temps)) m2 f.(fn_body) t ->
+>       evalinf_funcall m (Internal f) vargs t.
+==========================================================================================251,254d244
+< Section WHOLE_PROGRAM.
+< 
+< Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
+< 
+==========================================================================================256c246
+<   | bigstep_program_terminates_intro: forall b f m0 m02 m1 t r,
+---
+>   | bigstep_program_terminates_intro: forall b f m0 m1 t r,
+==========================================================================================262,263c252
+<       Mem.record_init_sp m0 = Some m02 ->
+<       eval_funcall ge function_entry (Mem.push_new_stage m02) f nil t m1 (Vint r) (fn_stack_requirements (prog_main p))->
+---
+>       eval_funcall ge m0 f nil t m1 (Vint r) ->
+==========================================================================================267c256
+<   | bigstep_program_diverges_intro: forall b f m0 t m02,
+---
+>   | bigstep_program_diverges_intro: forall b f m0 t,
+==========================================================================================273,274c262
+<       Mem.record_init_sp m0 = Some m02 ->
+<       evalinf_funcall ge function_entry (Mem.push_new_stage m02) f nil t (fn_stack_requirements (prog_main p)) ->
+---
+>       evalinf_funcall ge m0 f nil t ->
+==========================================================================================280,281d267
+< End WHOLE_PROGRAM.
+< 
+==========================================================================================313,316d298
+< Section WITHFUNCTIONENTRY.
+< 
+< Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
+< 
+==========================================================================================319c301
+<    exec_stmt ge function_entry e le m s t le' m' out ->
+---
+>    exec_stmt ge e le m s t le' m' out ->
+==========================================================================================321c303
+<    star (fun ge' => step fn_stack_requirements ge' function_entry) ge (State f s k e le m) t S
+---
+>    star step1 ge (State f s k e le m) t S
+==========================================================================================324,325c306,307
+<   (forall m fd args t m' res sz,
+<    eval_funcall ge function_entry m fd args t m' res sz ->
+---
+>   (forall m fd args t m' res,
+>    eval_funcall ge m fd args t m' res ->
+==========================================================================================328c310
+<    star (fun ge' => step fn_stack_requirements ge' function_entry) ge (Callstate fd args k m sz) t (Returnstate res k m')).
+---
+>    star step1 ge (Callstate fd args k m) t (Returnstate res k m')).
+==========================================================================================344c326
+<   eapply star_right. apply H5. constructor. constructor. eauto. reflexivity. traceEq.
+---
+>   eapply star_right. apply H5. simpl; auto. econstructor. reflexivity. traceEq.
+==========================================================================================471,472c453,454
+<   destruct (H1 f k) as [S1 [A1 B1]].
+<   eapply star_left. eapply step_internal_function; eauto.
+---
+>   destruct (H3 f k) as [S1 [A1 B1]].
+>   eapply star_left. eapply step_internal_function; eauto. econstructor; eauto.
+==========================================================================================474c456
+<   inv B1; simpl in H4; try contradiction.
+---
+>    inv B1; simpl in H4; try contradiction.
+==========================================================================================476c458
+<   assert (fn_return f = Tvoid /\ vres = Vundef) as EQ.
+---
+>   assert (fn_return f = Tvoid /\ vres = Vundef).
+==========================================================================================478c460
+<   destruct EQ. subst vres. eapply step_skip_call; eauto.
+---
+>   destruct H7. subst vres. apply step_skip_call; auto.
+==========================================================================================480c462
+<   assert (fn_return f = Tvoid /\ vres = Vundef) as EQ.
+---
+>   assert (fn_return f = Tvoid /\ vres = Vundef).
+==========================================================================================482,484c464,466
+<   destruct EQ. subst vres.
+<   rewrite <- (is_call_cont_call_cont k H4). rewrite <- H5.
+<   eapply step_return_0; eauto.
+---
+>   destruct H8. subst vres.
+>   rewrite <- (is_call_cont_call_cont k H6). rewrite <- H7.
+>   apply step_return_0; auto.
+==========================================================================================486,487c468,469
+<   destruct H2.
+<   rewrite <- (is_call_cont_call_cont k H4). rewrite <- H5.
+---
+>   destruct H4.
+>   rewrite <- (is_call_cont_call_cont k H6). rewrite <- H7.
+==========================================================================================490,491c472
 <   eauto.
-<   eapply Mem.push_store_unrecord; eauto.
-< Qed.
+<   
+---
+> 
+==========================================================================================498c479
+<    exec_stmt ge function_entry e le m s t le' m' out ->
+---
+>    exec_stmt ge e le m s t le' m' out ->
+==========================================================================================500c481
+<    star (fun ge' => step fn_stack_requirements ge' function_entry) ge (State f s k e le m) t S
+---
+>    star step1 ge (State f s k e le m) t S
+==========================================================================================502,503c483
+< Proof. intros; apply (proj1 exec_stmt_eval_funcall_steps); auto. Qed.
 < 
-==========================================================================================
-761,763c733
-<   forall {T1 valid_pointer1} {sem_cast_prf1: SemCast (T := T1) valid_pointer1},
-<   forall {T2 valid_pointer2} {sem_cast_prf2: SemCast (T := T2) valid_pointer2},
-<   forall v ty ty' (m1: T1) v1 (m2: T2) v2,
 ---
->   forall v ty ty' m1 v1 m2 v2,
-==========================================================================================
-771,772c741,742
-<   destruct (weak_valid_pointer m1 b (Ptrofs.unsigned i)); inv H.
-<   destruct (weak_valid_pointer m2 b (Ptrofs.unsigned i)); inv H0.
+> Proof (proj1 exec_stmt_eval_funcall_steps).
+==========================================================================================506,507c486,487
+<    forall m fd args t m' res sz,
+<    eval_funcall ge function_entry m fd args t m' res sz ->
 ---
->   destruct (Mem.weak_valid_pointer m1 b (Ptrofs.unsigned i)); inv H.
->   destruct (Mem.weak_valid_pointer m2 b (Ptrofs.unsigned i)); inv H0.
-==========================================================================================
-776,777c746,747
-<   destruct (weak_valid_pointer m1 b (Ptrofs.unsigned i)); inv H.
-<   destruct (weak_valid_pointer m2 b (Ptrofs.unsigned i)); inv H0.
+>    forall m fd args t m' res,
+>    eval_funcall ge m fd args t m' res ->
+==========================================================================================510,511c490,491
+<    star (fun ge' => step fn_stack_requirements ge' function_entry) ge (Callstate fd args k m sz) t (Returnstate res k m').
+< Proof. intros; apply (proj2 exec_stmt_eval_funcall_steps); auto. Qed.
 ---
->   destruct (Mem.weak_valid_pointer m1 b (Ptrofs.unsigned i)); inv H.
->   destruct (Mem.weak_valid_pointer m2 b (Ptrofs.unsigned i)); inv H0.
-==========================================================================================
-787,788c757,758
-<   destruct (sem_cast v1 (typeof a) ty tt) as [v'|] eqn:C; auto.
-<   eapply sem_cast_deterministic with (m1 := tt); eauto.
+>    star step1 ge (Callstate fd args k m) t (Returnstate res k m').
+> Proof (proj2 exec_stmt_eval_funcall_steps).
+==========================================================================================516,518c496,498
+<   forall m fd args T k sz,
+<   evalinf_funcall ge function_entry m fd args T sz ->
+<   forever_N (fun ge' => step fn_stack_requirements ge' function_entry) order ge tt (Callstate fd args k m sz) T.
 ---
->   destruct (sem_cast v1 (typeof a) ty Mem.empty) as [v'|] eqn:C; auto.
->   eapply sem_cast_deterministic; eauto.
-==========================================================================================
-793c763
-<   forall v t m b, bool_val v t tt = Some b -> bool_val v t m = Some b.
+>   forall m fd args T k,
+>   evalinf_funcall ge m fd args T ->
+>   forever_N step1 order ge tt (Callstate fd args k m) T.
+==========================================================================================522,523c502,503
+<           execinf_stmt ge function_entry e le m s T ->
+<           forever_N (fun ge' => step fn_stack_requirements ge' function_entry) order ge tt (State f s k e le m) T).
 ---
->   forall v t m b, bool_val v t Mem.empty = Some b -> bool_val v t m = Some b.
-==========================================================================================
-795c765,771
-<   intros; eapply bool_val_unit_to_mem; eauto.
+>           execinf_stmt ge e le m s T ->
+>           forever_N step1 order ge tt (State f s k e le m) T).
+==========================================================================================546c526
+<   apply plus_one. eapply step_ifthenelse with (b0 := b); eauto.
 ---
->   assert (A: forall b ofs, Mem.weak_valid_pointer Mem.empty b ofs = false).
->   { unfold Mem.weak_valid_pointer, Mem.valid_pointer, proj_sumbool; intros.
->     rewrite ! pred_dec_false by (apply Mem.perm_empty). auto. }  
->   intros until b; unfold bool_val.
->   destruct (classify_bool t); destruct v; destruct Archi.ptr64 eqn:SF; auto.
-> - rewrite A; congruence.
-> - simpl; rewrite A; congruence.
-==========================================================================================
-802c778
-<   star (step1 fn_stack_requirements) tge (State f (makeif a s1 s2) k e le m)
+>   apply plus_one. eapply step_ifthenelse with (b := b); eauto.
+582c562
+<   eapply plus_one. econstructor; eauto.
 ---
->   star step1 tge (State f (makeif a s1 s2) k e le m)
-==========================================================================================
-821c797
-<   (step1 fn_stack_requirements) tge (State f (make_set id a) k e le m)
----
->   step1 tge (State f (make_set id a) k e le m)
-==========================================================================================
-830,832c806
-<   simpl. econstructor; eauto. inv H2; constructor; auto.
-<   rewrite Mem.push_new_stage_load. auto. apply Mem.unrecord_push.
-<   auto.
----
->   simpl. econstructor; eauto.
-==========================================================================================
-839,843d812
-<       forall (STACK_TOP_NO_INFO: forall b,
-<              is_stack_top (Mem.stack m) b ->
-<              forall fi,
-<                get_frame_info (Mem.stack m) b = Some fi ->
-<                forall o, frame_perm fi o = Public),
-==========================================================================================
-849c818
-<   (step1 fn_stack_requirements) tge (State f (make_assign a1 a2) k e le m)
----
->   step1 tge (State f (make_assign a1 a2) k e le m)
-==========================================================================================
-855,857c824
-<   intros. change le with (set_opttemp None Vundef le) at 2.
-<   edestruct volatile_store_push as (m1 & VS & USB). eauto. eauto.
-<   econstructor.
----
->   intros. change le with (set_opttemp None Vundef le) at 2. econstructor.
-==========================================================================================
-861c828
-<   simpl. econstructor; eauto. eauto. auto.
----
->   simpl. econstructor; eauto.
-==========================================================================================
-881c848
-<   star (step1 fn_stack_requirements) tge (State f (makeseq sl) k e le m)
----
->   star step1 tge (State f (makeseq sl) k e le m)
-==========================================================================================
-897c864
-<     star (step1 fn_stack_requirements) tge (State f Sskip (Kseqlist sl k) e le m)
----
->     star step1 tge (State f Sskip (Kseqlist sl k) e le m)
-==========================================================================================
-s1023,1038d989
-< Fixpoint nostackinfo (adt: stack) (k: cont) : Prop :=
-<   match k with
-<     Kstop => True
-<   | Kseq _ k
-<   | Kloop1 _ _ k | Kloop2 _ _ k
-<   | Kswitch k => nostackinfo adt k
-<   | Kcall oi f e te k =>
-<     match adt with
-<     | (f,_)::r => nostackinfo r k /\
-<                  forall a,
-<                    f = Some a ->
-<                    Forall (fun bfi => forall o, frame_perm (snd bfi) o = Public) (frame_adt_blocks a)
-<     | _ => False
-<     end
-<   end.
-< 
-==========================================================================================
-1044d994
-<       nostackinfo (Mem.stack m) (Kcall None tf e le tk) ->
-==========================================================================================
-1051d1000
-<       nostackinfo (Mem.stack m) (Kcall None tf e le tk) ->
-==========================================================================================
-1054c1003
-<   | match_callstates: forall fd args k m tfd tk sz (SZpos: 0 <= sz),
----
->   | match_callstates: forall fd args k m tfd tk,
-==========================================================================================
-1057,1060c1006,1007
-<       top_tframe_tc (Mem.stack m) ->
-<       nostackinfo (tl (Mem.stack m)) tk ->
-<       match_states (Csem.Callstate fd args k m sz)
-<                    (Callstate tfd args tk m sz)
----
->       match_states (Csem.Callstate fd args k m)
->                    (Callstate tfd args tk m)
-==========================================================================================
-1063d1009
-<       nostackinfo (tl (Mem.stack m)) tk ->
-==========================================================================================
-1429,1434c1375,1379
-<     typeof a = ty ->
-<     (forall `{memory_model_ops: Mem.MemoryModelOps},
-<         forall tge e le' m,
-<           (forall id, In id tmp -> le'!id = le!id) ->
-<           eval_expr tge e le' m a v) ->
-<     tr_expr le dst (Csyntax.Eval v ty) (final dst a) a tmp.
----
->   typeof a = ty ->
->   (forall tge e le' m,
->       (forall id, In id tmp -> le'!id = le!id) ->
->       eval_expr tge e le' m a v) ->
->   tr_expr le dst (Csyntax.Eval v ty) (final dst a) a tmp.
-==========================================================================================
-1439,1490d1383
-< Lemma nostackinfo_public:
-<   forall m oi tf e le tk,
-<     nostackinfo (Mem.stack m) (Kcall oi tf e le tk) ->
-<     forall b,
-<       is_stack_top (Mem.stack m) b ->
-<       forall fi : frame_info, get_frame_info (Mem.stack m) b = Some fi -> forall o : Z, frame_perm fi o = Public.
-< Proof.
-<   intros m oi tf e le tk NSI b IST fi GFI o.
-<   simpl in NSI. destr_in NSI. unfold is_stack_top, get_frames_blocks in IST.
-<   simpl in *. intros.
-<   destruct t; simpl in *.
-<   destruct NSI as [_ F].
-<   unfold get_frames_blocks in IST. simpl in IST.
-<   destruct o0; try easy. simpl in *.
-<   specialize (F _ eq_refl).
-<   destr_in GFI. edestruct get_assoc_tframes_in as (ff & INFl & INblocks); eauto.
-<   rewrite Forall_forall in F. simpl in INFl. inv INFl.
-<   specialize (F _ INblocks).
-<   eapply F; eauto.
-<   exfalso; apply n. apply IST.
-< Qed.
-< 
-< Lemma assign_loc_nostackinfo:
-<   forall ge t m b o v t' m',
-<     Csem.assign_loc ge t m b o v t' m' ->
-<     forall tk oi tf e le oi' tf' e' le',
-<       nostackinfo (Mem.stack m) (Kcall oi tf e le tk) ->
-<       nostackinfo (Mem.stack m' ) (Kcall oi' tf' e' le' tk).
-< Proof.
-<   intros ge0 t m b o v t' m' AL tk oi tf e le oi' tf' e' le' NSI.
-<   inv AL. rewrite_stack_blocks. simpl in *; auto.
-<   inv H1. simpl in *; auto.
-<   rewrite_stack_blocks; auto.
-<   rewrite_stack_blocks; auto.
-< Qed.
-< 
-< Lemma nostackinfo_kseqlist:
-<   forall s ts tk,
-<     nostackinfo s tk ->
-<     nostackinfo s (Kseqlist ts tk).
-< Proof.
-<   induction ts; simpl; intros; eauto.
-< Qed.
-< 
-< Lemma nostackinfo_kseqlist' :
-<   forall s ts tk,
-<     nostackinfo s (Kseqlist ts tk) ->
-<     nostackinfo s tk.
-< Proof.
-<   induction ts; simpl; intros; eauto.
-< Qed.
-< 
-==========================================================================================
-1492c1385
-<   forall S1 t S2, Cstrategy.estep fn_stack_requirements ge S1 t S2 ->
----
->   forall S1 t S2, Cstrategy.estep ge S1 t S2 ->
-==========================================================================================
-1495,1496c1388,1389
-<      (plus (step1 fn_stack_requirements) tge S1' t S2' \/
-<        (star (step1 fn_stack_requirements) tge S1' t S2' /\ measure S2 < measure S1)%nat)
----
->      (plus step1 tge S1' t S2' \/
->        (star step1 tge S1' t S2' /\ measure S2 < measure S1)%nat)
-==========================================================================================
-1710c1603
-<   auto. auto. auto.
----
->   auto. auto.
-==========================================================================================
-1720c1613
-<   auto. auto. auto.
----
->   auto. auto.
-==========================================================================================
-1733c1626
-<   auto. auto. auto.
----
->   auto. auto.
-==========================================================================================
-1743c1636
-<   auto. auto. auto.
----
->   auto. auto.
-==========================================================================================
-1755d1647
-<   eapply nostackinfo_public; eauto.
-==========================================================================================
-1759d1650
-<   eapply assign_loc_nostackinfo; eauto.
-==========================================================================================
-1772d1662
-<   eapply nostackinfo_public; eauto.
-==========================================================================================
-1780d1669
-<   eapply assign_loc_nostackinfo; eauto.
-==========================================================================================
-1796d1684
-<   eapply nostackinfo_public; eauto.
-==========================================================================================
-1802d1689
-<   eapply assign_loc_nostackinfo; eauto.
-==========================================================================================
-1822c1709
-<   econstructor. eapply step_make_assign; eauto using nostackinfo_public.
----
->   econstructor. eapply step_make_assign; eauto.
-==========================================================================================
-1831c1718
-<   auto. auto. eapply assign_loc_nostackinfo; eauto.
----
->   auto. auto.
-==========================================================================================
-1868c1755
-<   eapply step_make_assign; eauto using nostackinfo_public.
----
->   eapply step_make_assign; eauto.
-==========================================================================================
-1875c1762
-<   constructor. auto. auto. auto. eapply assign_loc_nostackinfo; eauto.
----
->   constructor. auto. auto. auto.
-==========================================================================================
-1887c1774
-<   eapply step_make_assign; eauto using nostackinfo_public.
----
->   eapply step_make_assign; eauto.
-==========================================================================================
-1899c1786
-<   auto. auto. eapply assign_loc_nostackinfo; eauto.
----
->   auto. auto.
-==========================================================================================
-1976,1982c1863
-<   econstructor; eauto.
-<   {
-<     destruct IFI as (bb & oo & IFI & IFI'); subst.
-<     eexists; eexists; split; eauto.
-<     rewrite symbols_preserved; eauto.
-<   }
-<   rewrite <- TY1; eauto.
----
->   econstructor; eauto. rewrite <- TY1; eauto.
-==========================================================================================
-1987,1989c1868
-<   constructor. auto. auto. rewrite_stack_blocks. constructor; reflexivity.
-<   rewrite_stack_blocks. simpl tl. simpl in *; auto. destr_in H14. destruct t; simpl in *. destruct H14; split; auto.
-<   apply nostackinfo_kseqlist; auto.
----
->   constructor. auto. auto.
-==========================================================================================
-1997,2003c1876
-<   econstructor; eauto.
-<   {
-<     destruct IFI as (bb & oo & IFI & IFI'); subst.
-<     eexists; eexists; split; eauto.
-<     rewrite symbols_preserved; eauto.
-<   }
-<   rewrite <- TY1; eauto.
----
->   econstructor; eauto. rewrite <- TY1; eauto.
-==========================================================================================
-2013,2015d1885
-<   rewrite_stack_blocks; auto. constructor; reflexivity.
-<   rewrite_stack_blocks; simpl in *; auto. repeat destr_in H14. split; auto.
-<   apply nostackinfo_kseqlist. auto.
-==========================================================================================
-2018c1888
-<   exploit tr_top_leftcontext; eauto. clear H10.
----
->   exploit tr_top_leftcontext; eauto. clear H9.
-==========================================================================================
-2020c1890
-<   inv P. inv H3.
----
->   inv P. inv H2.
-==========================================================================================
-2031d1900
-<   repeat rewrite_stack_blocks. simpl tl. simpl in *; auto.
-==========================================================================================
-2042c1911
-<   apply tr_val_gen. auto. intros. constructor. rewrite H3; auto. simpl. apply PTree.gss.
----
->   apply tr_val_gen. auto. intros. constructor. rewrite H2; auto. simpl. apply PTree.gss.
-==========================================================================================
-2044c1913
-<   auto. repeat rewrite_stack_blocks. simpl in *; auto.
----
->   auto.
-==========================================================================================
-2084,2138d1952
-< Lemma nostackinfo_callcont:
-<   forall s k,
-<     nostackinfo s k ->
-<     nostackinfo s (call_cont k).
-< Proof.
-<   induction k; simpl; intros; auto.
-< Qed.
+>   eapply plus_one. econstructor; eauto. econstructor; eauto.
+587,589d566
+< End WITHFUNCTIONENTRY.
 < 
 < 
-< Lemma nostackinfo_find_label:
-<   forall lbl ss s tk ts' tk'
-<     (FL: find_label lbl ss tk = Some (ts', tk'))
-<     (NSI : nostackinfo s tk),
-<     nostackinfo s tk'
-< with nostackinfo_find_label_ls:
-<        forall lbl ss s tk ts' tk'
-<          (FL: find_label_ls lbl ss tk = Some (ts', tk'))
-<          (NSI : nostackinfo s tk),
-<          nostackinfo s tk'
-< .
-< Proof.
-<   - destruct ss; simpl; intros; eauto; try congruence;
-<       repeat destr_in FL; eauto.
-<   - destruct ss; simpl; intros; eauto; try congruence;
-<       repeat destr_in FL; eauto.
-< Qed.
+591c568
+<   bigstep_sound (bigstep_semantics function_entry1 prog) (semantics1 fn_stack_requirements prog).
+---
+>   bigstep_sound (bigstep_semantics prog) (semantics1 prog).
+608,609d584
 < 
-< Lemma assign_loc_stack:
-<   forall ge t m b o v t' m',
-<     Csem.assign_loc ge t m b o v t' m' ->
-<     Mem.stack m' = Mem.stack m.
-< Proof.
-<   intros ge0 t m b o v t' m' AL.
-<   inv AL; repeat rewrite_stack_blocks; auto.
-<   inv H1; repeat rewrite_stack_blocks; auto.
-< Qed.
-< 
-< Lemma bind_parameters_stack:
-<   forall ge e m1 pars vargs m2,
-<     Csem.bind_parameters ge e m1 pars vargs m2 ->
-<     Mem.stack m2 = Mem.stack m1.
-< Proof.
-<   induction 1; simpl; intros; eauto.
-<   eapply assign_loc_stack in H0; eauto. congruence.
-< Qed.
-< 
-< Lemma alloc_variables_stack:
-<   forall ge e m1 vars e2 m2,
-<     Csem.alloc_variables ge e m1 vars e2 m2 ->
-<     Mem.stack m2 = Mem.stack m1.
-< Proof.
-<   induction 1; simpl; intros; eauto.
-<   rewrite IHalloc_variables. rewrite_stack_blocks. auto.
-< Qed.
-< 
-==========================================================================================
-2143,2144c1957,1958
-<      (plus (step1 fn_stack_requirements) tge S1' t S2' \/
-<        (star (step1 fn_stack_requirements) tge S1' t S2' /\ measure S2 < measure S1)%nat)
----
->      (plus step1 tge S1' t S2' \/
->        (star step1 tge S1' t S2' /\ measure S2 < measure S1)%nat)
-==========================================================================================
-2187c2001
-<   apply step_ifthenelse with (v1 := v) (b0 := b); auto. traceEq.
----
->   apply step_ifthenelse with (v1 := v) (b := b); auto. traceEq.
-==========================================================================================
-2316d2129
-<   rewrite_stack_blocks. simpl in H9; repeat destr_in H9. simpl. eauto using nostackinfo_callcont.
-==========================================================================================
-2328d2140
-<   rewrite_stack_blocks. simpl in H10; repeat destr_in H10. simpl. eauto using nostackinfo_callcont.
-==========================================================================================
-2333c2145
-<   left. apply plus_one. eapply step_skip_call; eauto. rewrite blocks_of_env_preserved; eauto.
----
->   left. apply plus_one. apply step_skip_call; eauto. rewrite blocks_of_env_preserved; eauto.
-==========================================================================================
-2335d2146
-<   rewrite_stack_blocks. simpl in H10; repeat destr_in H10. simpl. eauto using nostackinfo_callcont.
-==========================================================================================
-2377,2379d2187
-<   simpl in *. repeat destr_in H9. split; auto.
-<   eapply nostackinfo_find_label; eauto using nostackinfo_callcont.
-< 
-==========================================================================================
-2382c2190
-<   inv H11. inversion H6; subst.
----
->   inv H7. inversion H3; subst.
-==========================================================================================
-2385,2390c2193,2195
-<   rewrite H9, H10; auto.
-<   rewrite H9, H10. eapply alloc_variables_preserved; eauto.
-<   unfold blocks_with_info. rewrite blocks_of_env_preserved. eauto.
-<   rewrite H2. apply Z.max_r. auto.
-<   eauto.
-<   rewrite H9. eapply bind_parameters_preserved; eauto.
----
->   rewrite H6; rewrite H7; auto.
->   rewrite H6; rewrite H7. eapply alloc_variables_preserved; eauto.
->   rewrite H6. eapply bind_parameters_preserved; eauto.
-==========================================================================================
-2393,2399d2197
-<   erewrite bind_parameters_stack; eauto. rewrite_stack_blocks.
-<   erewrite alloc_variables_stack; eauto. intro EQ1.
-<   rewrite EQ1 in H14. simpl in H14.
-<   simpl. split; auto.
-<   rewrite EQ1 in H13; inv H13. intros a A; inv A. rewrite H1.
-<   rewrite Forall_forall; setoid_rewrite in_map_iff.
-<   intros (b & fi) (blohi & EQ & IN). repeat destr_in EQ. reflexivity.
-==========================================================================================
-2402c2200
-<   inv H6.
----
->   inv H5.
-==========================================================================================
-2407d2204
-<   rewrite_stack_blocks. auto.
-==========================================================================================
-2410c2207
-<   inv H4.
----
->   inv H3.
-==========================================================================================
-2412c2209
-<   left; apply plus_one. constructor. eauto.
----
->   left; apply plus_one. constructor.
-==========================================================================================
-2414,2416d2210
-<   rewrite_stack_blocks. simpl in *; auto.
-<   destr_in H5; auto. destr. destruct H5; split; auto.
-<   eapply nostackinfo_kseqlist'; eauto.
-==========================================================================================
-2422c2216
-<   forall S1 t S2, Cstrategy.step fn_stack_requirements ge S1 t S2 ->
----
->   forall S1 t S2, Cstrategy.step ge S1 t S2 ->
-==========================================================================================
-2425,2426c2219,2220
-<      (plus (step1 fn_stack_requirements) tge S1' t S2' \/
-<        (star (step1 fn_stack_requirements) tge S1' t S2' /\ measure S2 < measure S1)%nat)
----
->      (plus step1 tge S1' t S2' \/
->        (star step1 tge S1' t S2' /\ measure S2 < measure S1)%nat)
-==========================================================================================
-2436,2437c2230,2231
-<   Csem.initial_state fn_stack_requirements prog S ->
-<   exists S', Clight.initial_state fn_stack_requirements tprog S' /\ match_states S S'.
----
->   Csem.initial_state prog S ->
->   exists S', Clight.initial_state tprog S' /\ match_states S S'.
-==========================================================================================
-2449,2453c2243
-<   eauto. eauto.
-<   destruct TRANSL as ((_ & MAIN & _) & _).
-<   setoid_rewrite MAIN. constructor. auto. auto. constructor.
-<   rewrite_stack_blocks. constructor; reflexivity.
-<   constructor.
----
->   constructor. auto. constructor.
-==========================================================================================
-2464c2254
-<   forward_simulation (Cstrategy.semantics fn_stack_requirements prog) (Clight.semantics1 fn_stack_requirements tprog).
----
->   forward_simulation (Cstrategy.semantics prog) (Clight.semantics1 tprog).
+< End WITHEXTCALLS.

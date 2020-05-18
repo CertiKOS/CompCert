@@ -19,17 +19,18 @@ Require Import Coqlib.
 Require Import Maps.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import AST.
-Require Import Memory.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Smallstep.
-Require Import Ctypes.
-Require Import Cop.
-Require Import Clight.
+Require Import Values_old.
+Require Import AST_old.
+Require Import Memory_old.
+Require Import Events_old.
+Require Import Globalenvs_old.
+Require Import Smallstep_old.
+Require Import Ctypes_old.
+Require Import Cop_old.
+Require Import Clight_old.
 
-Section STACK_WRAPPER.
+Section WITHEXTCALLS.
+Context `{external_calls_prf: ExternalCalls}.
 
 Variable fn_stack_requirements: ident -> Z.
 
@@ -78,9 +79,7 @@ Definition outcome_result_value (out: outcome) (t: type) (v: val) (m: mem): Prop
   [t] is the trace of input/output events performed during this
   evaluation. *)
 
-(*SACC:*)
 Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
-(*=====*)
 
 Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env -> mem -> outcome -> Prop :=
   | exec_Sskip:   forall e le m,
@@ -97,21 +96,21 @@ Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env ->
       eval_expr ge e le m a v ->
       exec_stmt e le m (Sset id a)
                E0 (PTree.set id v le) m Out_normal
-  | exec_Scall:   forall e le m optid a al tyargs tyres cconv vf vargs f t m' (*SACC:*)m'' vres (*SACC:*)fid,
-  (*SACC:*)is_function_ident ge vf fid ->
+  | exec_Scall:   forall e le m optid a al tyargs tyres cconv vf vargs f t m' m'' vres id (IFI: is_function_ident ge vf id),
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr ge e le m a vf ->
       eval_exprlist ge e le m al tyargs vargs ->
       Genv.find_funct ge vf = Some f ->
       type_of_fundef f = Tfunction tyargs tyres cconv ->
-      eval_funcall ((*SACC:*)Mem.push_new_stage m) f vargs t m' vres ((*SACC:*)fn_stack_requirements fid) ->
-  (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
+      eval_funcall (Mem.push_new_stage m) f vargs t m' vres (fn_stack_requirements id) ->
+      Mem.unrecord_stack_block m' = Some m'' ->
       exec_stmt e le m (Scall optid a al)
-                t (set_opttemp optid vres le) (*SACC:*)m'' Out_normal
+                t (set_opttemp optid vres le) m'' Out_normal
   | exec_Sbuiltin:   forall e le m optid ef al tyargs vargs t m' vres m'',
       eval_exprlist ge e le m al tyargs vargs ->
-      external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
-  (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
+      external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
+      forall BUILTIN_ENABLED: builtin_enabled ef,
       exec_stmt e le m (Sbuiltin optid ef tyargs al)
                 t (set_opttemp optid vres le) m'' Out_normal
   | exec_Sseq_1:   forall e le m s1 s2 t1 le1 m1 t2 le2 m2 out,
@@ -173,22 +172,16 @@ Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env ->
   function [fd] with arguments [args].  [res] is the value returned
   by the call.  *)
 
-with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> (*SACC:*)Z -> Prop :=
-  | eval_funcall_internal: forall le m f vargs t e (*SACC:*)le' 
-      (*SACC:commented*)(*m1*) m2 m3 out vres m4 (*SACC:*)sz,
-      (*SACC:commented*)(*
-      alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
-      list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
-      bind_parameters ge e m1 f.(fn_params) vargs m2 ->
-      exec_stmt e (create_undef_temps f.(fn_temps)) m2 f.(fn_body) t le m3 out ->*)
-  (*SACC:*)function_entry ge f vargs m e le m2 sz ->
-  (*SACC:*)exec_stmt e le m2 f.(fn_body) t le' m3 out ->
+with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> Z -> Prop :=
+  | eval_funcall_internal: forall le m f vargs t e le' m2 m3 out vres m4 sz,
+      function_entry ge f vargs m e le m2 sz ->
+      exec_stmt e le m2 f.(fn_body) t le' m3 out ->
       outcome_result_value out f.(fn_return) vres m3 ->
       Mem.free_list m3 (blocks_of_env ge e) = Some m4 ->
-      eval_funcall m (Internal f) vargs t m4 vres (*SACC:*)sz
+      eval_funcall m (Internal f) vargs t m4 vres sz
   | eval_funcall_external: forall m ef targs tres cconv vargs t vres m',
       external_call ef ge vargs m t vres m' ->
-      eval_funcall m (External ef targs tres cconv) vargs t m' vres (*SACC:*)0.
+      eval_funcall m (External ef targs tres cconv) vargs t m' vres 0.
 
 Scheme exec_stmt_ind2 := Minimality for exec_stmt Sort Prop
   with eval_funcall_ind2 := Minimality for eval_funcall Sort Prop.
@@ -202,14 +195,13 @@ Combined Scheme exec_stmt_funcall_ind from exec_stmt_ind2, eval_funcall_ind2.
   trace of observable events performed during the execution. *)
 
 CoInductive execinf_stmt: env -> temp_env -> mem -> statement -> traceinf -> Prop :=
-  | execinf_Scall:   forall e le m optid a al vf tyargs tyres cconv vargs f t (*SACC:*)fid,
-  (*SACC:*)is_function_ident ge vf fid ->
+  | execinf_Scall:   forall e le m optid a al vf tyargs tyres cconv vargs f t id (IFI: is_function_ident ge vf id),
       classify_fun (typeof a) = fun_case_f tyargs tyres cconv ->
       eval_expr ge e le m a vf ->
       eval_exprlist ge e le m al tyargs vargs ->
       Genv.find_funct ge vf = Some f ->
       type_of_fundef f = Tfunction tyargs tyres cconv ->
-      evalinf_funcall ((*SACC:*)Mem.push_new_stage m) f vargs t ((*SACC:*)fn_stack_requirements fid) ->
+      evalinf_funcall (Mem.push_new_stage m) f vargs t (fn_stack_requirements id) ->
       execinf_stmt e le m (Scall optid a al) t
   | execinf_Sseq_1:   forall e le m s1 s2 t,
       execinf_stmt e le m s1 t ->
@@ -246,53 +238,46 @@ CoInductive execinf_stmt: env -> temp_env -> mem -> statement -> traceinf -> Pro
 (** [evalinf_funcall ge m fd args t] holds if the invocation of function
     [fd] on arguments [args] diverges, with observable trace [t]. *)
 
-with evalinf_funcall: mem -> fundef -> list val -> traceinf -> (*SACC:*)Z -> Prop :=
-  | evalinf_funcall_internal: forall m f vargs t e (*SACC:*)le (*SACC:commented*)(*m1*) m2 (*SACC:*)sz,
-      (*SACC:commented*)(*
-      alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
-      list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
-      bind_parameters ge e m1 f.(fn_params) vargs m2 ->
-      execinf_stmt e (create_undef_temps f.(fn_temps)) m2 f.(fn_body) t ->*)
-  (*SACC:*)function_entry ge f vargs m e le m2 sz ->
-  (*SACC:*)execinf_stmt e le m2 f.(fn_body) t ->
-      evalinf_funcall m (Internal f) vargs t (*SACC:*)sz.
+with evalinf_funcall: mem -> fundef -> list val -> traceinf -> Z -> Prop :=
+  | evalinf_funcall_internal: forall m f vargs t e le m2 sz,
+      function_entry ge f vargs m e le m2 sz ->
+      execinf_stmt e le m2 f.(fn_body) t ->
+      evalinf_funcall m (Internal f) vargs t sz.
 
 End BIGSTEP.
 
 (** Big-step execution of a whole program.  *)
 
-Section STACK_WRAPPER.
+Section WHOLE_PROGRAM.
 
-(*SACC:*)
 Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
-(*=====*)
 
 Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
-  | bigstep_program_terminates_intro: forall b f m0 (*SACC:*)m02 m1 t r,
+  | bigstep_program_terminates_intro: forall b f m0 m02 m1 t r,
       let ge := globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m02 ->
-      eval_funcall ge (*SACC:*)function_entry ((*SACC:*)Mem.push_new_stage m02) f nil t m1 (Vint r) ((*SACC:*)fn_stack_requirements (prog_main p)) ->
+      Mem.record_init_sp m0 = Some m02 ->
+      eval_funcall ge function_entry (Mem.push_new_stage m02) f nil t m1 (Vint r) (fn_stack_requirements (prog_main p))->
       bigstep_program_terminates p t r.
 
 Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
-  | bigstep_program_diverges_intro: forall b f m0 t (*SACC:*)m02,
+  | bigstep_program_diverges_intro: forall b f m0 t m02,
       let ge := globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m02 ->
-      evalinf_funcall ge (*SACC:*)function_entry ((*SACC:*)Mem.push_new_stage m02) f nil t ((*SACC:*)fn_stack_requirements (prog_main p)) ->
+      Mem.record_init_sp m0 = Some m02 ->
+      evalinf_funcall ge function_entry (Mem.push_new_stage m02) f nil t (fn_stack_requirements (prog_main p)) ->
       bigstep_program_diverges p t.
 
 Definition bigstep_semantics (p: program) :=
   Bigstep_semantics (bigstep_program_terminates p) (bigstep_program_diverges p).
 
-End STACK_WRAPPER.
+End WHOLE_PROGRAM.
 
 (** * Implication from big-step semantics to transition semantics *)
 
@@ -325,24 +310,22 @@ Proof.
   destruct k; simpl; intros; contradiction || auto.
 Qed.
 
-Section STACK_WRAPPER.
+Section WITHFUNCTIONENTRY.
 
-(*SACC:*)
 Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
-(*=====*)
 
 Lemma exec_stmt_eval_funcall_steps:
   (forall e le m s t le' m' out,
-   exec_stmt ge (*SACC:*)function_entry e le m s t le' m' out ->
+   exec_stmt ge function_entry e le m s t le' m' out ->
    forall f k, exists S,
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (State f s k e le m) t S
+   star (fun ge' => step fn_stack_requirements ge' function_entry) ge (State f s k e le m) t S
    /\ outcome_state_match e le' m' f k out S)
 /\
-  (forall m fd args t m' res (*SACC:*)sz,
-   eval_funcall ge (*SACC:*)function_entry m fd args t m' res (*SACC:*)sz->
+  (forall m fd args t m' res sz,
+   eval_funcall ge function_entry m fd args t m' res sz ->
    forall k,
    is_call_cont k ->
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (Callstate fd args k m (*SACC:*)sz) t (Returnstate res k m')).
+   star (fun ge' => step fn_stack_requirements ge' function_entry) ge (Callstate fd args k m sz) t (Returnstate res k m')).
 Proof.
   apply exec_stmt_funcall_ind; intros.
 
@@ -358,7 +341,7 @@ Proof.
 (* call *)
   econstructor; split.
   eapply star_left. econstructor; eauto.
-  eapply star_right. apply H6. simpl; auto. econstructor. eauto. reflexivity. traceEq.
+  eapply star_right. apply H5. constructor. constructor. eauto. reflexivity. traceEq.
   constructor.
 
 (* builtin *)
@@ -486,56 +469,58 @@ Proof.
 
 (* call internal *)
   destruct (H1 f k) as [S1 [A1 B1]].
-  eapply star_left. eapply step_internal_function; eauto. (*econstructor; eauto.*)
+  eapply star_left. eapply step_internal_function; eauto.
   eapply star_right. eexact A1.
-   inv B1; simpl in H4; try contradiction.
+  inv B1; simpl in H4; try contradiction.
   (* Out_normal *)
-  assert (fn_return f = Tvoid /\ vres = Vundef).
+  assert (fn_return f = Tvoid /\ vres = Vundef) as EQ.
     destruct (fn_return f); auto || contradiction.
-  destruct H5. subst vres. apply step_skip_call; auto.
+  destruct EQ. subst vres. eapply step_skip_call; eauto.
   (* Out_return None *)
-  assert (fn_return f = Tvoid /\ vres = Vundef).
+  assert (fn_return f = Tvoid /\ vres = Vundef) as EQ.
     destruct (fn_return f); auto || contradiction.
-  destruct H6. subst vres.
+  destruct EQ. subst vres.
   rewrite <- (is_call_cont_call_cont k H4). rewrite <- H5.
-  apply step_return_0; auto.
+  eapply step_return_0; eauto.
   (* Out_return Some *)
   destruct H2.
   rewrite <- (is_call_cont_call_cont k H4). rewrite <- H5.
   eapply step_return_1; eauto.
   reflexivity. traceEq.
-
+  eauto.
+  
 (* call external *)
   apply star_one. apply step_external_function; auto.
 Qed.
 
 Lemma exec_stmt_steps:
    forall e le m s t le' m' out,
-   exec_stmt ge (*SACC:*)function_entry e le m s t le' m' out ->
+   exec_stmt ge function_entry e le m s t le' m' out ->
    forall f k, exists S,
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (State f s k e le m) t S
+   star (fun ge' => step fn_stack_requirements ge' function_entry) ge (State f s k e le m) t S
    /\ outcome_state_match e le' m' f k out S.
-Proof (proj1 exec_stmt_eval_funcall_steps).
+Proof. intros; apply (proj1 exec_stmt_eval_funcall_steps); auto. Qed.
+
 
 Lemma eval_funcall_steps:
-   forall m fd args t m' res (*SACC:*)sz,
-   eval_funcall ge (*SACC:*)function_entry m fd args t m' res (*SACC:*)sz ->
+   forall m fd args t m' res sz,
+   eval_funcall ge function_entry m fd args t m' res sz ->
    forall k,
    is_call_cont k ->
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (Callstate fd args k m (*SACC:*)sz) t (Returnstate res k m').
-Proof (proj2 exec_stmt_eval_funcall_steps).
+   star (fun ge' => step fn_stack_requirements ge' function_entry) ge (Callstate fd args k m sz) t (Returnstate res k m').
+Proof. intros; apply (proj2 exec_stmt_eval_funcall_steps); auto. Qed.
 
 Definition order (x y: unit) := False.
 
 Lemma evalinf_funcall_forever:
-  forall m fd args T k (*SACC:*)sz,
-  evalinf_funcall ge (*SACC:*)function_entry m fd args T (*SACC:*)sz ->
-  forever_N ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) order ge tt (Callstate fd args k m (*SACC:*)sz) T.
+  forall m fd args T k sz,
+  evalinf_funcall ge function_entry m fd args T sz ->
+  forever_N (fun ge' => step fn_stack_requirements ge' function_entry) order ge tt (Callstate fd args k m sz) T.
 Proof.
   cofix CIH_FUN.
   assert (forall e le m s T f k,
           execinf_stmt ge function_entry e le m s T ->
-          forever_N ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) order ge tt (State f s k e le m) T).
+          forever_N (fun ge' => step fn_stack_requirements ge' function_entry) order ge tt (State f s k e le m) T).
   cofix CIH_STMT.
   intros. inv H.
 
@@ -558,7 +543,7 @@ Proof.
 
 (* ifthenelse *)
   eapply forever_N_plus.
-  apply plus_one. eapply step_ifthenelse with (b := b); eauto.
+  apply plus_one. eapply step_ifthenelse with (b0 := b); eauto.
   apply CIH_STMT; eauto. traceEq.
 
 (* loop body 1 *)
@@ -594,13 +579,13 @@ Proof.
 (* call internal *)
   intros. inv H0.
   eapply forever_N_plus.
-  eapply plus_one. econstructor; eauto. 
+  eapply plus_one. econstructor; eauto.
   apply H; eauto.
   traceEq.
 Qed.
 
-Check step1.
-Check ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')).
+End WITHFUNCTIONENTRY.
+
 
 Theorem bigstep_semantics_sound:
   bigstep_sound (bigstep_semantics function_entry1 prog) (semantics1 fn_stack_requirements prog).
@@ -620,3 +605,5 @@ Proof.
 Qed.
 
 End BIGSTEP_TO_TRANSITIONS.
+
+End WITHEXTCALLS.
