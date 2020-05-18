@@ -4144,13 +4144,58 @@ Proof.
 Qed.
 
 
+
+Lemma transf_program_pres_main: forall p tp,
+    transf_program p = OK tp ->
+    AST.prog_main p = prog_main tp.
+Proof.
+  intros p tp TF.
+  unfold transf_program in TF.
+  destr_in TF. destr_in TF.
+  destruct p0. destr_in TF. inv TF. cbn. auto.
+Qed.
+
+Lemma transf_program_pres_public: forall p tp,
+    transf_program p = OK tp ->
+    AST.prog_public p = prog_public tp.
+Proof.
+  intros p tp TF.
+  unfold transf_program in TF.
+  destr_in TF. destr_in TF.
+  destruct p0. destr_in TF. inv TF. cbn. auto.
+Qed.
+
+Lemma transf_program_pres_defs: forall p tp,
+    transf_program p = OK tp ->
+    AST.prog_defs p = prog_defs tp.
+Proof.
+  intros p tp TF.
+  unfold transf_program in TF.
+  destr_in TF. destr_in TF.
+  destruct p0. destr_in TF. inv TF. cbn. auto.
+Qed.
+
+
 Lemma match_prog_perm: forall p tp,
     match_prog p tp ->
     PermuteProgproof.match_prog p 
                               {| AST.prog_defs := prog_defs tp;
                                  AST.prog_public := prog_public tp;
                                  AST.prog_main := prog_main tp |}.
-Admitted.
+Proof.
+  intros p tp MATCH.
+  red in MATCH.
+  destruct MATCH as (tp' & TF & SEQ).
+  red in SEQ.
+  destruct SEQ as (PERM & MAIN & PUB & STBL & SEQ & STR & RELOC).
+  red. cbn.
+  split.
+  eapply Permutation_trans; [|exact PERM].
+  erewrite transf_program_pres_defs; eauto.
+  split.
+  erewrite transf_program_pres_main; eauto.
+  erewrite transf_program_pres_public; eauto.
+Qed.
 
 
 Lemma link_ordered_pres_wf_prog: forall p1 p2 p,
