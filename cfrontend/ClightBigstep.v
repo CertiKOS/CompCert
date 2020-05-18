@@ -599,8 +599,7 @@ Proof.
   traceEq.
 Qed.
 
-Check step1.
-Check ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')).
+End STACK_WRAPPER.
 
 Theorem bigstep_semantics_sound:
   bigstep_sound (bigstep_semantics function_entry1 prog) (semantics1 fn_stack_requirements prog).
@@ -609,7 +608,8 @@ Proof.
 (* termination *)
   inv H. econstructor; econstructor.
   split. econstructor; eauto.
-  split. eapply eval_funcall_steps. eauto. red; auto.
+  split. eapply eval_funcall_steps; eauto.
+  red; auto.
   econstructor.
 (* divergence *)
   inv H. econstructor.
