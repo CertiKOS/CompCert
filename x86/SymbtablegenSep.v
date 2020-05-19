@@ -29,6 +29,8 @@ Local Transparent Linker_prog_ordered.
 
 Hint Resolve link_prog_merge_symm.
 
+  
+
 Lemma acc_symb_ids_eq: forall ids s, 
     acc_symb_ids ids s = acc_symb_ids [] s ++ ids.
 Proof.
@@ -91,6 +93,40 @@ Proof.
   unfold get_symbentry_ids.
   intros.
   f_equal. apply acc_symb_ids_add_symb_eq.
+Qed.
+
+Lemma acc_symb_ids_permutation: forall stbl stbl',
+    Permutation stbl stbl' ->
+    Permutation (fold_left acc_symb_ids stbl [])
+                (fold_left acc_symb_ids stbl' []).
+Proof.
+  induction 1.
+  - cbn. auto.
+  - cbn. 
+    rewrite (acc_symb_ids_inv l).
+    rewrite (acc_symb_ids_inv l').
+    apply Permutation_app; auto.
+  - cbn.
+    rewrite (acc_symb_ids_inv l).
+    rewrite (acc_symb_ids_inv l (acc_symb_ids (acc_symb_ids [] x) y)).
+    apply Permutation_app; auto.
+    unfold acc_symb_ids. 
+    destr. destr. constructor; auto. constructor; auto.
+    auto.
+  - eapply Permutation_trans; eauto.
+Qed.
+
+
+Lemma get_symbentry_ids_permutation: forall stbl stbl',
+    Permutation stbl stbl' ->
+    Permutation (get_symbentry_ids stbl) (get_symbentry_ids stbl').
+Proof.
+  intros stbl stbl' PERM.
+  unfold get_symbentry_ids.
+  eapply Permutation_trans.
+  apply Permutation_sym. apply Permutation_rev.
+  eapply Permutation_trans; [|apply Permutation_rev].
+  apply acc_symb_ids_permutation; eauto.
 Qed.
 
 
@@ -4467,6 +4503,72 @@ Proof.
     red. apply Permutation_cons_app; auto.
 Qed.
 
+Lemma symbtable_to_tree_permutation_some: forall stbl stbl' id a,
+    list_norepet (get_symbentry_ids stbl) ->
+    Permutation stbl stbl' ->
+    (symbtable_to_tree stbl) ! id = Some a ->
+    (symbtable_to_tree stbl') ! id = Some a.
+Proof.
+  unfold symbtable_to_tree.
+  intros stbl stbl' id a NORPT PERM ALL.
+  apply Permutation_pres_ptree_get_some with
+      (fold_left add_symb_to_list stbl []); eauto.
+  rewrite list_norepet_rev.
+  rewrite <- get_symbentry_ids_add_symb_eq. auto.
+  apply add_symb_to_list_permutation; auto.
+Qed.
+
+Lemma symbtable_to_tree_permutation_none: forall stbl stbl' id,
+    Permutation stbl stbl' ->
+    (symbtable_to_tree stbl) ! id = None ->
+    (symbtable_to_tree stbl') ! id = None.
+Proof.
+  unfold symbtable_to_tree.
+  intros stbl stbl' id PERM ALL.
+  apply Permutation_pres_ptree_get_none with
+      (fold_left add_symb_to_list stbl []); eauto.
+  apply add_symb_to_list_permutation; eauto.
+Qed.
+
+Lemma link_symbtable_check_permutation: forall stbl stbl' id a,
+    list_norepet (get_symbentry_ids stbl) ->
+    Permutation stbl stbl' ->
+    link_symbtable_check (symbtable_to_tree stbl) id a = true ->
+    link_symbtable_check (symbtable_to_tree stbl') id a = true.
+Proof.
+  unfold link_symbtable_check.
+  intros stbl stbl' id a NORPT PERM CHK.
+  destr_in CHK.
+  erewrite symbtable_to_tree_permutation_some; eauto.
+  erewrite symbtable_to_tree_permutation_none; eauto.
+Qed.
+
+
+Lemma link_symbtable_check_all_perm: forall stbl1 stbl2 stbl1' stbl2',
+    list_norepet (get_symbentry_ids stbl1) ->
+    list_norepet (get_symbentry_ids stbl2) ->
+    PTree_Properties.for_all (symbtable_to_tree stbl1)
+                             (link_symbtable_check (symbtable_to_tree stbl2)) = true ->
+    Permutation stbl1 stbl1' ->
+    Permutation stbl2 stbl2' ->
+    PTree_Properties.for_all (symbtable_to_tree stbl1')
+                             (link_symbtable_check (symbtable_to_tree stbl2')) = true.
+Proof.
+  intros stbl1 stbl2 stbl1' stbl2' NORPT1 NORPT2 ALL PERM1 PERM2.
+  rewrite PTree_Properties.for_all_correct in ALL.
+  rewrite PTree_Properties.for_all_correct.
+  intros id a GET.
+  generalize (get_symbentry_ids_permutation PERM1).
+  intros PERM3.
+  apply Permutation_sym in PERM1.
+  generalize (Permutation_pres_list_norepet _ _ _ NORPT1 PERM3).
+  intros NORPT1'.
+  generalize (symbtable_to_tree_permutation_some id NORPT1' PERM1 GET).
+  intros GET'.
+  apply ALL in GET'.
+  apply link_symbtable_check_permutation with stbl2; eauto.
+Qed.
+    
 
 Lemma link_symbtable_permutation: forall stbl1 stbl2 stbl stbl1' stbl2',
     link_symbtable stbl1 stbl2 = Some stbl ->
@@ -4487,7 +4589,19 @@ Proof.
   assert (list_norepet_dec ident_eq (get_symbentry_ids stbl1') &&
                            list_norepet_dec ident_eq (get_symbentry_ids stbl2') &&
                            PTree_Properties.for_all (symbtable_to_tree stbl1')
-                           (link_symbtable_check (symbtable_to_tree stbl2')) = true) as COND.  admit.
+                           (link_symbtable_check (symbtable_to_tree stbl2')) = true) as COND.  
+  {
+    repeat rewrite andb_true_iff. split. split.
+    - apply proj_sumbool_is_true.
+      apply Permutation_pres_list_norepet with 
+          (get_symbentry_ids stbl1); eauto.
+      eapply get_symbentry_ids_permutation; eauto.
+    - apply proj_sumbool_is_true.
+      apply Permutation_pres_list_norepet with 
+          (get_symbentry_ids stbl2); eauto.
+      eapply get_symbentry_ids_permutation; eauto.
+    - apply link_symbtable_check_all_perm with stbl1 stbl2; eauto.
+  }
   rewrite COND.
   repeat rewrite andb_true_iff in COND.
   destruct COND as ((NORPT1' & NORPT2') & ALL').
@@ -4502,7 +4616,6 @@ Proof.
   - apply add_symb_to_list_permutation; auto.
   - rewrite get_symbentry_ids_add_symb_eq in l1.
     apply list_norepet_rev in l1.
-    rewrite rev_involutive in l1.
     apply Permutation_pres_list_norepet with 
         (map fst (fold_left add_symb_to_list stbl1' [])); auto.
     apply Permutation_map. 
@@ -4510,13 +4623,12 @@ Proof.
     apply Permutation_sym. auto.
   - rewrite get_symbentry_ids_add_symb_eq in l2.
     apply list_norepet_rev in l2.
-    rewrite rev_involutive in l2.
     apply Permutation_pres_list_norepet with 
         (map fst (fold_left add_symb_to_list stbl2' [])); auto.
     apply Permutation_map. 
     eapply add_symb_to_list_permutation; eauto.
     apply Permutation_sym. auto.
-Admitted.
+Qed.
   
 
 Lemma link_symbtable_pres_syneq: forall stbl1 stbl2 stbl stbl1' stbl2',

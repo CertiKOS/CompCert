@@ -213,12 +213,14 @@ Qed.
 
 
 Lemma list_norepet_rev: forall A (l:list A),
-    list_norepet l ->
+    list_norepet l <->
     list_norepet (rev l).
 Proof.
-  intros. 
-  apply Permutation_pres_list_norepet with l; auto.
-  apply Permutation_rev.
+  intros. split.
+  - intros H. apply Permutation_pres_list_norepet with l; auto.
+    apply Permutation_rev.
+  - intros H. apply Permutation_pres_list_norepet with (rev l); auto.
+    apply Permutation_sym. apply Permutation_rev.
 Qed.
 
 (** PTree Properties *)
@@ -363,6 +365,22 @@ Proof.
   apply PTree_Properties.in_of_list; auto.
 Qed.
 
+Lemma Permutation_pres_ptree_get_none: forall A (l1 l2: list (ident * A)) a,
+    Permutation l1 l2 -> (PTree_Properties.of_list l1) ! a = None -> 
+    (PTree_Properties.of_list l2) ! a = None.
+Proof. 
+  intros A l1 l2 a PERM GET1.
+  destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
+  apply PTree_Properties.in_of_list in GET2.
+  apply Permutation_sym in PERM.
+  generalize (Permutation_in _ PERM GET2). intros IN.
+  generalize (in_map fst _ _ IN).
+  intros IN'. cbn in IN'.
+  apply PTree_Properties.of_list_dom in IN'.
+  destruct IN' as (v & GET'). congruence.
+Qed.
+
+
 Lemma Permutation_pres_ptree_get: forall A (l1 l2: list (ident * A)) a,
     list_norepet (map fst l1) -> 
     Permutation l1 l2 -> 
@@ -372,11 +390,8 @@ Proof.
   destruct ((PTree_Properties.of_list l1) ! a) eqn:GET1.
   - symmetry. 
     eapply Permutation_pres_ptree_get_some; eauto.
-  - destruct ((PTree_Properties.of_list l2) ! a) eqn:GET2; auto.
-    assert (list_norepet (map fst l2)) as NORPT2.
-    { eapply Permutation_list_norepet_map; eauto. }
-    apply Permutation_sym in PERM.
-    generalize (@Permutation_pres_ptree_get_some _ _ _ a a0 NORPT2 PERM GET2).    intros. congruence.
+  - symmetry.
+    eapply Permutation_pres_ptree_get_none; eauto.
 Qed.
 
 
