@@ -700,6 +700,7 @@ Lemma link_prog_ordered_inv':
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
     exists p', 
       link_prog p1 p2 = Some p' /\
+      AST.prog_main p = AST.prog_main p' /\ 
       Permutation (AST.prog_defs p) (AST.prog_defs p').
 Proof.
   intros F V LV p1 p2 p LINK.
@@ -710,7 +711,9 @@ Proof.
   eexists. split.
   - unfold link_prog.
     rewrite Heqb. reflexivity.
-  - cbn.
-    apply Permutation_sym.
-    eapply PTree_extract_elements_permutation'; eauto.
+  - split. 
+    + cbn. auto.
+    + cbn.
+      apply Permutation_sym.
+      eapply PTree_extract_elements_permutation'; eauto.
 Qed.

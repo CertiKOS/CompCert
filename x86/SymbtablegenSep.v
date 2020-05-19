@@ -475,6 +475,25 @@ Proof.
     cbn in *. inv LINK. auto.
 Qed.
 
+Hint Resolve link_unit_symm.
+
+Lemma link_pres_aligned: forall def1 def2 def,
+    def_aligned def1 ->
+    def_aligned def2 ->
+    link def1 def2 = Some def -> 
+    def_aligned def.
+Proof.
+  intros def1 def2 def AL1 AL2 LINK.
+  cbn in LINK.
+  destruct (is_def_internal is_fundef_internal def1) eqn:INT1.
+  - generalize (link_int_defs_some_inv _ _ INT1 LINK).
+    intros INT2.
+    apply link_option_internal_external_pres_aligned 
+      with (def1 := def1) (def2 := def2); eauto.
+  - setoid_rewrite link_option_symm in LINK; eauto.
+    apply link_option_internal_external_pres_aligned 
+      with (def1 := def2) (def2 := def1); eauto.
+Qed.
 
 
 (** ** Commutativity of linking and section generation *)
@@ -4197,13 +4216,176 @@ Proof.
   erewrite transf_program_pres_public; eauto.
 Qed.
 
+Lemma Exists_Permutation:
+  forall A (l1 l2: list A) P, 
+    Permutation l1 l2 ->
+    Exists P l1 -> Exists P l2.
+Proof.
+  intros A l1 l2 P PERM EXT.
+  rewrite Exists_exists in *.
+  destruct EXT as (x & IN & PR).
+  assert (In x l2) as IN'.
+  { eapply Permutation_in; eauto. }
+  eauto.
+Qed.
 
-Lemma link_ordered_pres_wf_prog: forall p1 p2 p,
+Lemma main_exists_perm: forall p p',
+    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
+    main_exists (AST.prog_main p) (AST.prog_defs p) ->
+    main_exists (AST.prog_main p) (AST.prog_defs p').
+Proof.
+  intros p p' PERM EXT.
+  red in EXT.
+  red. eapply Exists_Permutation; eauto.
+Qed.
+
+Lemma def_aligned_perm: forall p p',
+    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
+    Forall def_aligned (map snd (AST.prog_defs p)) ->
+    Forall def_aligned (map snd (AST.prog_defs p')).
+Proof.
+  intros p p' PERM ALIGN.
+  rewrite Forall_forall in *.
+  intros x IN.
+  eapply ALIGN; eauto.
+  apply list_in_map_inv in IN.
+  destruct IN as (x' & EQ & IN').
+  subst.
+  apply in_map.
+  apply Permutation_sym in PERM. 
+  eapply Permutation_in; eauto.
+Qed.
+
+Lemma wf_prog_perm: forall p p',
+    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
+    AST.prog_main p = AST.prog_main p' ->
+    wf_prog p ->
+    wf_prog p'.
+Proof.
+  intros p p' PERM EQ WF.
+  inv WF. constructor.
+  - eapply Permutation_list_norepet_map; eauto.
+  - rewrite <- EQ.
+    eapply main_exists_perm; eauto.
+  - eapply def_aligned_perm; eauto.
+Qed.
+
+Lemma main_exists_combine: 
+  forall id p1 p2,
+    prog_linkable p1 p2 ->
+    list_norepet (map fst (AST.prog_defs p1)) ->
+    list_norepet (map fst (AST.prog_defs p2)) ->
+    main_exists id (AST.prog_defs p1) ->
+    main_exists id (AST.prog_defs p2) ->
+    main_exists id (PTree.elements
+                      (PTree.combine link_prog_merge
+                                     (PTree_Properties.of_list (AST.prog_defs p1))
+                                     (PTree_Properties.of_list (AST.prog_defs p2)))).
+Proof.
+  intros id p1 p2 LA NORPT1 NORPT2 E1 E2.
+  red in E1, E2.
+  red.
+  rewrite Exists_exists in *.
+  destruct E1 as ((id1, def1) & IN1 & EQ1 & DE1).
+  destruct def1 as [def1 |]; try contradiction.
+  destruct E2 as ((id2, def2) & IN2 & EQ2 & DE2).
+  destruct def2 as [def2 |]; try contradiction.
+  subst.
+  generalize (PTree.gcombine _ link_prog_merge_none 
+                             (PTree_Properties.of_list (AST.prog_defs p1))
+                             (PTree_Properties.of_list (AST.prog_defs p2)) id2).
+  intros GET.
+  generalize (PTree_Properties.of_list_norepet _ _ _ NORPT1 IN1).
+  intros GET1.
+  generalize (PTree_Properties.of_list_norepet _ _ _ NORPT2 IN2).
+  intros GET2.
+  rewrite GET1, GET2 in GET.
+  red in LA.
+  generalize (LA id2 _ _ GET1 GET2).
+  intros (INP1 & INP2 & gd & LINK').
+  cbn in GET, LINK'. rewrite LINK' in GET.
+  apply PTree.elements_correct in GET.
+  exists (id2, gd). split; auto. split; auto.
+  destr_in LINK'; try congruence. inv LINK'. auto.
+Qed.
+
+Hint Resolve link_prog_linkable.
+
+
+Lemma def_aligned_combine: 
+  forall defs1 defs2,
+    Forall def_aligned (map snd defs1) ->
+    Forall def_aligned (map snd defs2) ->
+    Forall def_aligned 
+           (map snd (PTree.elements
+                       (PTree.combine link_prog_merge
+                                      (PTree_Properties.of_list defs1)
+                                      (PTree_Properties.of_list defs2)))).
+Proof.
+  intros defs1 defs2 AL1 AL2.
+  rewrite Forall_forall in *.
+  intros def IN.
+  rewrite in_map_iff in IN.
+  destruct IN as ((id, def') & EQ & IN). cbn in EQ. subst def'.
+  apply PTree.elements_complete in IN.
+  erewrite PTree.gcombine in IN; eauto.
+  unfold link_prog_merge in IN.
+  destr_in IN. destr_in IN.
+  - apply PTree_Properties.in_of_list in Heqo.
+    apply PTree_Properties.in_of_list in Heqo0.
+    apply (in_map snd) in Heqo. cbn in Heqo.
+    apply (in_map snd) in Heqo0. cbn in Heqo0.
+    apply AL1 in Heqo.
+    apply AL2 in Heqo0.
+    apply link_pres_aligned with (def1:= o) (def2 := o0); eauto.
+  - inv IN.
+    apply PTree_Properties.in_of_list in Heqo.
+    apply (in_map snd) in Heqo. cbn in Heqo.
+    eauto.
+  - apply PTree_Properties.in_of_list in IN.
+    apply (in_map snd) in IN. cbn in IN.
+    eauto.
+Qed.
+
+
+Lemma link_prog_pres_wf_prog: forall p1 p2 p,
+    link_prog p1 p2 = Some p ->
+    wf_prog p1 ->
+    wf_prog p2 ->
+    wf_prog p.
+Proof.
+  intros p1 p2 p LINK WF1 WF2.
+  generalize (link_prog_linkable _ _ _ LINK).
+  intros LA.
+  unfold link_prog in LINK.
+  destr_in LINK. inv LINK. 
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as (((MAINEQ & NORPT1) & NORPT2) & PALL).
+  destruct ident_eq; try inv MAINEQ.
+  destruct list_norepet_dec; try inv NORPT1.
+  destruct list_norepet_dec; try inv NORPT2.
+  inv WF1. inv WF2.
+  constructor; cbn.
+  - apply PTree.elements_keys_norepet.
+  - rewrite e in *.
+    eapply main_exists_combine; eauto.
+  - eapply def_aligned_combine; eauto.
+Qed.
+
+Lemma link_ordered_prog_pres_wf_prog: forall p1 p2 p,
     link_prog_ordered is_fundef_internal p1 p2 = Some p ->
     wf_prog p1 ->
     wf_prog p2 ->
     wf_prog p.
-Admitted.
+Proof.
+  intros p1 p2 p LINK WF1 WF2.
+  edestruct (link_prog_ordered_inv' p1 p2 p) as (p' & LINK' & MAIN & PERM); eauto.
+  apply Permutation_sym in PERM.
+  eapply wf_prog_perm; eauto.
+  eapply link_prog_pres_wf_prog; eauto.
+Qed.  
+  
+
 
 Lemma reloc_symbtable_pres_syneq : forall f tbl1 tbl1' tbl2 ,
     reloc_symbtable f tbl1 = Some tbl2 ->
