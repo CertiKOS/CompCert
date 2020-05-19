@@ -176,6 +176,7 @@ Proof.
       inv H. auto.
 Qed.
 
+
 (** Bunch of properties about Permutation and PTree *)
 Lemma NoDup_list_norepet_equiv : forall A (l: list A),
     NoDup l <-> list_norepet l.
@@ -210,6 +211,15 @@ Proof.
   eapply Permutation_NoDup_map; eauto.
 Qed.
 
+
+Lemma list_norepet_rev: forall A (l:list A),
+    list_norepet l ->
+    list_norepet (rev l).
+Proof.
+  intros. 
+  apply Permutation_pres_list_norepet with l; auto.
+  apply Permutation_rev.
+Qed.
 
 (** PTree Properties *)
 
