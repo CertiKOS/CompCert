@@ -479,6 +479,7 @@ Qed.
 (** * Correctness of the smart constructors for division and modulus *)
 
 Section CMCONSTRS.
+Context mem `{external_calls: ExternalCalls mem} `{!I64HelpersCorrect mem}.
 
 Variable prog: program.
 Variable hf: helper_functions.
@@ -712,7 +713,7 @@ Lemma eval_modl_from_divl:
   eval_expr ge sp e m le (modl_from_divl a n) (Vlong (Int64.sub x (Int64.mul y n))).
 Proof.
   unfold modl_from_divl; intros.
-  exploit eval_mullimm; eauto. instantiate (1 := n). intros (v1 & A1 & B1).
+  exploit eval_mullimm; eauto. eauto. instantiate (1 := n). intros (v1 & A1 & B1).
   assert (A0: eval_expr ge sp e m le (Eletvar O) (Vlong x)) by (constructor; auto).
   exploit eval_subl; auto. eexact A0. eexact A1.
   intros (v2 & A2 & B2).

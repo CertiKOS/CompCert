@@ -14,16 +14,16 @@
 
 Require Import Coqlib.
 Require Import Maps.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import Memory.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Switch.
-Require Cminor.
-Require Import Smallstep.
+Require Import Values_old.
+Require Import Memory_old.
+Require Import Events_old.
+Require Import Globalenvs_old.
+Require Import Switch_old.
+Require Cminor_old.
+Require Import Smallstep_old.
 
 (** Abstract syntax *)
 
@@ -38,8 +38,8 @@ Inductive constant : Type :=
   | Osingleconst: float32 -> constant   (**r single-precision floating-point constant *)
   | Olongconst: int64 -> constant.      (**r long integer constant *)
 
-Definition unary_operation : Type := Cminor.unary_operation.
-Definition binary_operation : Type := Cminor.binary_operation.
+Definition unary_operation : Type := Cminor_old.unary_operation.
+Definition binary_operation : Type := Cminor_old.binary_operation.
 
 Inductive expr : Type :=
   | Evar : ident -> expr                (**r reading a temporary variable  *)
@@ -89,9 +89,9 @@ Record function : Type := mkfunction {
   fn_body: stmt
 }.
 
-Definition fundef := AST.fundef function.
+Definition fundef := AST_old.fundef function.
 
-Definition program : Type := AST.program fundef unit.
+Definition program : Type := AST_old.program fundef unit.
 
 Definition funsig (fd: fundef) :=
   match fd with
@@ -146,7 +146,7 @@ Inductive cont: Type :=
 
 (** States *)
 
-Inductive state: Type :=
+Inductive state `{memory_model_ops: Mem.MemoryModelOps}: Type :=
   | State:                      (**r Execution within a function *)
       forall (f: function)              (**r currently executing function  *)
              (s: stmt)                  (**r statement under consideration *)
@@ -159,8 +159,7 @@ Inductive state: Type :=
       forall (f: fundef)                (**r function to invoke *)
              (args: list val)           (**r arguments provided by caller *)
              (k: cont)                  (**r what to do next  *)
-             (m: mem)                   (**r memory state *)
-(*SACC:*)    (sz: Z),                   (**r stack size requirement for callee*)
+             (m: mem) (sz: Z),                  (**r memory state *)
       state
   | Returnstate:                (**r Return from a function *)
       forall (v: val)                   (**r Return value *)
@@ -260,9 +259,14 @@ Definition eval_constant (cst: constant) : option val :=
   | Olongconst n => Some (Vlong n)
   end.
 
-Definition eval_unop := Cminor.eval_unop.
+Definition eval_unop := Cminor_old.eval_unop.
 
-Definition eval_binop := Cminor.eval_binop.
+Section WITHEXTERNALCALLSOPS.
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable fn_stack_requirements: ident -> Z.
+
+Definition eval_binop := Cminor_old.eval_binop.
 
 (** Allocation of local variables at function entry.  Each variable is
   bound to the reference to a fresh block of the appropriate size. *)
@@ -287,15 +291,8 @@ Definition block_of_binding (id_b_sz: ident * (block * Z)) :=
 Definition blocks_of_env (e: env) : list (block * Z * Z) :=
   List.map block_of_binding (PTree.elements e).
 
-(*SACC:*)
 Definition blocks_with_info (e: env) : list (block * frame_info) :=
-  map (fun x => let '(b, lo, hi) := x in (b, default_frame_info hi)) (blocks_of_env e).
-
-(*SACC:*)
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable fn_stack_requirements : ident -> Z.
+  map (fun x => let '(b, lo, hi) := x in (b, public_frame_info hi)) (blocks_of_env e).
 
 Section RELSEM.
 
@@ -393,21 +390,21 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sstore chunk addr a) k e le m)
         E0 (State f Sskip k e le m')
 
-  | step_call: forall f optid sig a bl k e le m vf vargs fd (*SACC:*)fid,
-  (*SACC:*)is_function_ident ge vf fid ->
+  | step_call: forall f optid sig a bl k e le m vf vargs fd id (IFI: is_function_ident ge vf id),
       eval_expr e le m a vf ->
       eval_exprlist e le m bl vargs ->
       Genv.find_funct ge vf = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k e le m)
-        E0 (Callstate fd vargs (Kcall optid f e le k) ((*SACC:*)Mem.push_new_stage m) ((*SACC:*)fn_stack_requirements fid))
+        E0 (Callstate fd vargs (Kcall optid f e le k) (Mem.push_new_stage m) (fn_stack_requirements id))
 
-  | step_builtin: forall f optid ef bl k e le m vargs t vres m' (*SACC:*)m'',
+  | step_builtin: forall f optid ef bl k e le m vargs t vres m' m'',
       eval_exprlist e le m bl vargs ->
-      external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
-  (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
+      external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
+      forall BUILTIN_ENABLED: builtin_enabled ef,
       step (State f (Sbuiltin optid ef bl) k e le m)
-         t (State f Sskip k e (Cminor.set_optvar optid vres le) (*SACC:*)m'')
+         t (State f Sskip k e (Cminor_old.set_optvar optid vres le) m'')
 
   | step_seq: forall f s1 s2 k e le m,
       step (State f (Sseq s1 s2) k e le m)
@@ -461,27 +458,27 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sgoto lbl) k e le m)
         E0 (State f s' k' e le m)
 
-  | step_internal_function: forall f vargs k m m1 e le (*SACC:*)m1' (*SACC:*)sz (*SACC:*)fa,
+  | step_internal_function: forall f vargs k m m1 e le m1' sz fa,
       list_norepet (map fst f.(fn_vars)) ->
       list_norepet f.(fn_params) ->
       list_disjoint f.(fn_params) f.(fn_temps) ->
       alloc_variables empty_env m (fn_vars f) e m1 ->
-  (*SACC:*)frame_adt_blocks fa = blocks_with_info e ->
-  (*SACC:*)frame_adt_size fa = sz ->
-  (*SACC:*)Mem.record_stack_blocks m1 fa = Some m1' ->
+      frame_adt_blocks fa = blocks_with_info e ->
+      frame_adt_size fa = sz ->
+      Mem.record_stack_blocks m1 fa = Some m1' ->
       bind_parameters f.(fn_params) vargs (create_undef_temps f.(fn_temps)) = Some le ->
-      step (Callstate (Internal f) vargs k m (*SACC:*)sz)
-        E0 (State f f.(fn_body) k e le (*SACC:*)m1')
+      step (Callstate (Internal f) vargs k m sz)
+        E0 (State f f.(fn_body) k e le m1')
 
-  | step_external_function: forall ef vargs k m t vres m' (*SACC:*)sz,
+  | step_external_function: forall ef vargs k m t vres m' sz,
       external_call ef ge vargs m t vres m' ->
-      step (Callstate (External ef) vargs k m (*SACC:*)sz)
+      step (Callstate (External ef) vargs k m sz)
          t (Returnstate vres k m')
 
-  | step_return: forall v optid f e le k m (*SACC:*)m',
-  (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
+  | step_return: forall v optid f e le k m m',
+      Mem.unrecord_stack_block m = Some m' ->
       step (Returnstate v (Kcall optid f e le k) m)
-        E0 (State f Sskip k e (Cminor.set_optvar optid v le) (*SACC:*)m').
+        E0 (State f Sskip k e (Cminor_old.set_optvar optid v le) m').
 
 End RELSEM.
 
@@ -491,14 +488,14 @@ End RELSEM.
   without arguments and with an empty continuation. *)
 
 Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0 (*SACC:*)m2,
+  | initial_state_intro: forall b f m0 m2,
       let ge := Genv.globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       funsig f = signature_main ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate f nil Kstop ((*SACC:*)Mem.push_new_stage m2) ((*SACC:*)fn_stack_requirements (prog_main p))).
+      Mem.record_init_sp m0 = Some m2 ->
+      initial_state p (Callstate f nil Kstop (Mem.push_new_stage m2) (fn_stack_requirements (prog_main p))).
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 
@@ -511,4 +508,4 @@ Inductive final_state: state -> int -> Prop :=
 Definition semantics (p: program) :=
   Semantics step (initial_state p) final_state (Genv.globalenv p).
 
-End STACK_WRAPPER.
+End WITHEXTERNALCALLSOPS.

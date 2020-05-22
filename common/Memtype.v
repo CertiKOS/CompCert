@@ -1420,6 +1420,11 @@ Axiom record_init_sp_stack:
   record_init_sp m1 = Some m2 ->
   stack m2 = (Some (make_singleton_frame_adt (nextblock (push_new_stage m1)) 0 0),nil)::stack m1.
 
+Axiom record_init_sp_nextblock:
+  forall m1 m2,
+    record_init_sp m1 = Some m2 ->
+    Ple (nextblock m1) (nextblock m2).
+
 Axiom record_init_sp_nextblock_eq:
   forall m1 m2,
   record_init_sp m1 = Some m2 ->
@@ -1430,6 +1435,28 @@ Axiom record_init_sp_perm:
   record_init_sp m1 = Some m2 ->
   forall b o k p,
   perm m2 b o k p <-> perm m1 b o k p.
+
+Axiom record_init_sp_inject:
+  forall j g m1 m1' m2,
+    inject j g m1 m1' ->
+    size_stack (stack m1') <= size_stack (stack m1) ->
+    record_init_sp m1 = Some m2 ->
+    exists m2', record_init_sp m1' = Some m2' 
+              /\ inject (fun b => if peq b (nextblock (push_new_stage m1))
+                                  then Some (nextblock (push_new_stage m1'), 0)
+                                  else j b) (1%nat::g) m2 m2'.
+
+Axiom record_init_sp_flat_inject: 
+  forall (m1 m1' m2 : mem),
+    inject (flat_inj (nextblock m1)) (flat_frameinj (length (stack m1))) m1 m1' ->
+    size_stack (stack m1') <= size_stack (stack m1) ->
+    record_init_sp m1 = Some m2 ->
+    nextblock m1 = nextblock m1' ->
+    exists m2' : mem,
+      record_init_sp m1' = Some m2' /\
+      inject
+        (flat_inj (nextblock m2))
+        (flat_frameinj (length (stack m2))) m2 m2'.
 
 (* [range_perm] Properties *)
 

@@ -8939,6 +8939,18 @@ Proof.
   exploit alloc_result; eauto. intros; subst. reflexivity.
 Qed.
 
+Theorem record_init_sp_nextblock:
+  forall m1 m2,
+    record_init_sp m1 = Some m2 ->
+    Ple (nextblock m1) (nextblock m2).
+Proof.
+    intros m1 m2 RIS.
+    unfold record_init_sp in RIS. destr_in RIS.
+    erewrite (record_stack_block_nextblock _ _ _ RIS).
+    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
+    rewrite push_new_stage_nextblock. xomega.
+  Qed.
+
 Theorem record_init_sp_nextblock_eq:
   forall m1 m2,
   record_init_sp m1 = Some m2 ->
@@ -8968,6 +8980,63 @@ Proof.
   eapply perm_alloc_1. eauto.
   eapply push_new_stage_perm. auto.
 Qed.
+
+Theorem record_init_sp_inject:
+  forall j g m1 m1' m2,
+    inject j g m1 m1' ->
+    size_stack (stack m1') <= size_stack (stack m1) ->
+    record_init_sp m1 = Some m2 ->
+    exists m2', record_init_sp m1' = Some m2' 
+              /\ inject (fun b => if peq b (nextblock (push_new_stage m1))
+                                  then Some (nextblock (push_new_stage m1'), 0)
+                                  else j b) (1%nat::g) m2 m2'.
+Proof.
+    intros j g m1 m1' m2 INJ SZ RIS.
+    unfold record_init_sp in *; destr_in RIS.
+    exploit Mem.push_new_stage_inject. apply INJ. intro INJ0.
+    edestruct Mem.alloc_parallel_inject as (f' & m2' & b2 & ALLOC & INJ1 & INCR & JNEW & JOLD).
+    apply INJ0. eauto. reflexivity. reflexivity.
+    rewrite ALLOC.
+    edestruct record_push_inject_alloc as (m2'' & RSB & INJ'). 7: apply RIS.
+    2: apply Heqp. 2: apply ALLOC. all: eauto.
+    rewrite push_new_stage_stack. constructor; reflexivity.
+
+    eexists; split. eauto.
+    eapply inject_ext. eauto.
+    intros. erewrite <- ! alloc_result by eauto.
+    destr. eauto.
+Qed.
+
+
+Theorem record_init_sp_flat_inject: 
+  forall (m1 m1' m2 : mem),
+    inject (flat_inj (nextblock m1)) (flat_frameinj (length (stack m1))) m1 m1' ->
+    size_stack (stack m1') <= size_stack (stack m1) ->
+    record_init_sp m1 = Some m2 ->
+    nextblock m1 = nextblock m1' ->
+    exists m2' : mem,
+      record_init_sp m1' = Some m2' /\
+      inject
+        (flat_inj (nextblock m2))
+        (flat_frameinj (length (stack m2))) m2 m2'.
+Proof.
+  intros m1 m1' m2 INJ SZ RIS EQNB.
+  edestruct record_init_sp_inject as (m2' & RIS' & INJ'); eauto.
+  eexists; split; eauto.
+  unfold record_init_sp in RIS; destr_in RIS.
+  erewrite (record_stack_block_nextblock _ _ _ RIS).
+  erewrite (nextblock_alloc _ _ _ _ _ Heqp).
+  rewrite push_new_stage_nextblock.
+  destruct (record_stack_blocks_stack_eq _ _ _ RIS) as (tf & r & EQ1 & EQ2).
+  rewrite EQ2. 
+  erewrite (alloc_stack_unchanged _ _ _ _ _ Heqp) in EQ1.
+  rewrite push_new_stage_stack in EQ1. inv EQ1.
+  simpl. rewrite frameinj_push_flat.
+  eapply inject_ext; eauto.
+  simpl; intros. unfold flat_inj.
+  repeat (destr; subst); xomega.
+Qed.
+
 
 (* Perm equivalences *)
 

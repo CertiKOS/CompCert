@@ -127,7 +127,7 @@ Proof.
   eauto.
 Qed.
 
-(*SACC:
+(*SACC:*)
 Lemma inv_star:
   forall ge (P: _ -> Prop),
     (forall s1 t s2, step ge s1 t s2 -> P s1 -> P s2) ->
@@ -136,7 +136,6 @@ Proof.
   intros ge P INV.
   induction 1; simpl; intros; eauto.
 Qed.
-*)
 
 (** One or several transitions.  Also known as the transitive closure. *)
 
@@ -283,7 +282,7 @@ Proof.
   intros. inv H0. exploit Eapp_E0_inv; eauto. intros [A B]; subst. eauto.
 Qed.
 
-(*SACC:
+(*SACC:*)
 Lemma inv_plus:
   forall ge (P: _ -> Prop),
     (forall s1 t s2, step ge s1 t s2 -> P s1 -> P s2) ->
@@ -293,7 +292,7 @@ Proof.
   inv PLUS.
   eapply inv_star; eauto.
 Qed.
-*)
+
 
 (** Counted sequences of transitions *)
 

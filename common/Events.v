@@ -2091,7 +2091,7 @@ Ltac rewrite_stack_blocks :=
     let r := fresh "r" in
     let EQ1 := fresh "EQ1" in
     let EQ2 := fresh "EQ2" in
-    destruct (Mem.tailcall_stage_stack _ _ H) as (f & r & EQ1 & EQ2); rewrite EQ2;
+    destruct (Mem.tailcall_stage_stack_eq _ _ H) as (f & r & EQ1 & EQ2); rewrite EQ2;
     revert EQ1
   | H: Mem.record_init_sp ?m1 = Some ?m2 |- context [ Mem.stack ?m2 ] =>
     rewrite (Mem.record_init_sp_stack _ _ H)

@@ -146,7 +146,7 @@ Definition var_names (vars: list(ident * type)) : list ident :=
 (** Functions can either be defined ([Internal]) or declared as
   external functions ([External]). *)
 
-Definition fundef := Ctypes.fundef function.
+Definition fundef := Ctypes_old.fundef function.
 
 (** The type of a function definition. *)
 
@@ -170,7 +170,7 @@ Definition type_of_fundef (f: fundef) : type :=
 - the corresponding composite environment
 - a proof that this environment is consistent with the definitions. *)
 
-Definition program := Ctypes.program function.
+Definition program := Ctypes_old.program function.
 
 (** * Operational semantics *)
 

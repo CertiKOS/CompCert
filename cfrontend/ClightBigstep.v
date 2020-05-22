@@ -78,10 +78,6 @@ Definition outcome_result_value (out: outcome) (t: type) (v: val) (m: mem): Prop
   [t] is the trace of input/output events performed during this
   evaluation. *)
 
-(*SACC:*)
-Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
-(*=====*)
-
 Inductive exec_stmt: env -> temp_env -> mem -> statement -> trace -> temp_env -> mem -> outcome -> Prop :=
   | exec_Sskip:   forall e le m,
       exec_stmt e le m Sskip
@@ -181,7 +177,7 @@ with eval_funcall: mem -> fundef -> list val -> trace -> mem -> val -> (*SACC:*)
       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
       bind_parameters ge e m1 f.(fn_params) vargs m2 ->
       exec_stmt e (create_undef_temps f.(fn_temps)) m2 f.(fn_body) t le m3 out ->*)
-  (*SACC:*)function_entry ge f vargs m e le m2 sz ->
+  (*SACC:*)function_entry1 ge f vargs m e le m2 sz ->
   (*SACC:*)exec_stmt e le m2 f.(fn_body) t le' m3 out ->
       outcome_result_value out f.(fn_return) vres m3 ->
       Mem.free_list m3 (blocks_of_env ge e) = Some m4 ->
@@ -253,19 +249,13 @@ with evalinf_funcall: mem -> fundef -> list val -> traceinf -> (*SACC:*)Z -> Pro
       list_norepet (var_names f.(fn_params) ++ var_names f.(fn_vars)) ->
       bind_parameters ge e m1 f.(fn_params) vargs m2 ->
       execinf_stmt e (create_undef_temps f.(fn_temps)) m2 f.(fn_body) t ->*)
-  (*SACC:*)function_entry ge f vargs m e le m2 sz ->
+  (*SACC:*)function_entry1 ge f vargs m e le m2 sz ->
   (*SACC:*)execinf_stmt e le m2 f.(fn_body) t ->
       evalinf_funcall m (Internal f) vargs t (*SACC:*)sz.
 
 End BIGSTEP.
 
 (** Big-step execution of a whole program.  *)
-
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
-(*=====*)
 
 Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
   | bigstep_program_terminates_intro: forall b f m0 (*SACC:*)m02 m1 t r,
@@ -275,7 +265,7 @@ Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
   (*SACC:*)Mem.record_init_sp m0 = Some m02 ->
-      eval_funcall ge (*SACC:*)function_entry ((*SACC:*)Mem.push_new_stage m02) f nil t m1 (Vint r) ((*SACC:*)fn_stack_requirements (prog_main p)) ->
+      eval_funcall ge ((*SACC:*)Mem.push_new_stage m02) f nil t m1 (Vint r) ((*SACC:*)fn_stack_requirements (prog_main p)) ->
       bigstep_program_terminates p t r.
 
 Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
@@ -286,13 +276,11 @@ Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
       Genv.find_funct_ptr ge b = Some f ->
       type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
   (*SACC:*)Mem.record_init_sp m0 = Some m02 ->
-      evalinf_funcall ge (*SACC:*)function_entry ((*SACC:*)Mem.push_new_stage m02) f nil t ((*SACC:*)fn_stack_requirements (prog_main p)) ->
+      evalinf_funcall ge ((*SACC:*)Mem.push_new_stage m02) f nil t ((*SACC:*)fn_stack_requirements (prog_main p)) ->
       bigstep_program_diverges p t.
 
 Definition bigstep_semantics (p: program) :=
   Bigstep_semantics (bigstep_program_terminates p) (bigstep_program_diverges p).
-
-End STACK_WRAPPER.
 
 (** * Implication from big-step semantics to transition semantics *)
 
@@ -325,24 +313,18 @@ Proof.
   destruct k; simpl; intros; contradiction || auto.
 Qed.
 
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable function_entry: genv -> function -> list val -> mem -> env -> temp_env -> mem -> Z -> Prop.
-(*=====*)
-
 Lemma exec_stmt_eval_funcall_steps:
   (forall e le m s t le' m' out,
-   exec_stmt ge (*SACC:*)function_entry e le m s t le' m' out ->
+   exec_stmt ge e le m s t le' m' out ->
    forall f k, exists S,
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (State f s k e le m) t S
+   star (step1 (*SACC:*)fn_stack_requirements) ge (State f s k e le m) t S
    /\ outcome_state_match e le' m' f k out S)
 /\
   (forall m fd args t m' res (*SACC:*)sz,
-   eval_funcall ge (*SACC:*)function_entry m fd args t m' res (*SACC:*)sz->
+   eval_funcall ge m fd args t m' res (*SACC:*)sz->
    forall k,
    is_call_cont k ->
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (Callstate fd args k m (*SACC:*)sz) t (Returnstate res k m')).
+   star (step1 (*SACC:*)fn_stack_requirements) ge (Callstate fd args k m (*SACC:*)sz) t (Returnstate res k m')).
 Proof.
   apply exec_stmt_funcall_ind; intros.
 
@@ -511,31 +493,31 @@ Qed.
 
 Lemma exec_stmt_steps:
    forall e le m s t le' m' out,
-   exec_stmt ge (*SACC:*)function_entry e le m s t le' m' out ->
+   exec_stmt ge e le m s t le' m' out ->
    forall f k, exists S,
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (State f s k e le m) t S
+   star (step1 (*SACC:*)fn_stack_requirements) ge (State f s k e le m) t S
    /\ outcome_state_match e le' m' f k out S.
 Proof (proj1 exec_stmt_eval_funcall_steps).
 
 Lemma eval_funcall_steps:
    forall m fd args t m' res (*SACC:*)sz,
-   eval_funcall ge (*SACC:*)function_entry m fd args t m' res (*SACC:*)sz ->
+   eval_funcall ge m fd args t m' res (*SACC:*)sz ->
    forall k,
    is_call_cont k ->
-   star ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) ge (Callstate fd args k m (*SACC:*)sz) t (Returnstate res k m').
+   star (step1 (*SACC:*)fn_stack_requirements) ge (Callstate fd args k m (*SACC:*)sz) t (Returnstate res k m').
 Proof (proj2 exec_stmt_eval_funcall_steps).
 
 Definition order (x y: unit) := False.
 
 Lemma evalinf_funcall_forever:
   forall m fd args T k (*SACC:*)sz,
-  evalinf_funcall ge (*SACC:*)function_entry m fd args T (*SACC:*)sz ->
-  forever_N ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) order ge tt (Callstate fd args k m (*SACC:*)sz) T.
+  evalinf_funcall ge m fd args T (*SACC:*)sz ->
+  forever_N (step1 (*SACC:*)fn_stack_requirements) order ge tt (Callstate fd args k m (*SACC:*)sz) T.
 Proof.
   cofix CIH_FUN.
   assert (forall e le m s T f k,
-          execinf_stmt ge function_entry e le m s T ->
-          forever_N ((*SACC:*)fun ge' => step fn_stack_requirements ge' (function_entry ge')) order ge tt (State f s k e le m) T).
+          execinf_stmt ge e le m s T ->
+          forever_N (step1 fn_stack_requirements) order ge tt (State f s k e le m) T).
   cofix CIH_STMT.
   intros. inv H.
 
@@ -599,10 +581,8 @@ Proof.
   traceEq.
 Qed.
 
-End STACK_WRAPPER.
-
 Theorem bigstep_semantics_sound:
-  bigstep_sound (bigstep_semantics function_entry1 prog) (semantics1 fn_stack_requirements prog).
+  bigstep_sound (bigstep_semantics prog) (semantics1 fn_stack_requirements prog).
 Proof.
   constructor; simpl; intros.
 (* termination *)
@@ -620,3 +600,5 @@ Proof.
 Qed.
 
 End BIGSTEP_TO_TRANSITIONS.
+
+End STACK_WRAPPER.

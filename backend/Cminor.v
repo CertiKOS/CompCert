@@ -234,8 +234,8 @@ Inductive state: Type :=
       forall (f: fundef)                (**r function to invoke *)
              (args: list val)           (**r arguments provided by caller *)
              (k: cont)                  (**r what to do next  *)
-             (m: mem)
-    (*SACC:* (sz : Z))*),                  (**r memory state *)
+             (m: mem)                  (**r memory state *)
+    (*SACC:*)(sz : Z),           (**r stack size requirement for callee*)
       state
   | Returnstate:                (**r Return from a function *)
       forall (v: val)                   (**r Return value *)
@@ -243,10 +243,13 @@ Inductive state: Type :=
              (m: mem),                  (**r memory state *)
       state.
 
-Section RELSEM.
+(*SACC:*)
+Section STACK_WRAPPER.
 
 (*SACC:*)
-(*Variable fn_stack_requirements : ident -> Z.*)
+Variable fn_stack_requirements : ident -> Z.
+
+Section RELSEM.
 
 Variable ge: genv.
 
@@ -460,36 +463,32 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sstore chunk addr a) k sp e m)
         E0 (State f Sskip k sp e m')
 
-  | step_call: forall f optid sig a bl k sp e m vf vargs fd (*SACC:id*),
-      (*SACC:*)(*is_function_ident ge vf id ->*)
+  | step_call: forall f optid sig a bl k sp e m vf vargs fd (*SACC:*)fid,
+  (*SACC:*)is_function_ident ge vf fid ->
       eval_expr sp e m a vf ->
       eval_exprlist sp e m bl vargs ->
       Genv.find_funct ge vf = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k sp e m)
-        E0 (Callstate fd vargs (Kcall optid f sp e k) 
-        (*SACC:*) (Mem.push_new_stage m)
-        (*SACC:*) (*(fn_stack_requirements id)*))
+        E0 (Callstate fd vargs (Kcall optid f sp e k) ((*SACC:*)Mem.push_new_stage m) ((*SACC:*) fn_stack_requirements fid))
 
-  | step_tailcall: forall f sig a bl k sp e m vf vargs fd m' m'' (*SACC:id*),
-      (*SACC:*)(*is_function_ident ge vf id ->*)
+  | step_tailcall: forall f sig a bl k sp e m vf vargs fd m' (*SACC:*)m'' (*SACC:*)fid,
+  (*SACC:*)is_function_ident ge vf fid ->
       eval_expr (Vptr sp Ptrofs.zero) e m a vf ->
       eval_exprlist (Vptr sp Ptrofs.zero) e m bl vargs ->
       Genv.find_funct ge vf = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stackspace) = Some m' ->
-      (*SACC:*) Mem.tailcall_stage m' = Some m'' ->
+  (*SACC:*)Mem.tailcall_stage m' = Some m'' ->
       step (State f (Stailcall sig a bl) k (Vptr sp Ptrofs.zero) e m)
-        E0 (Callstate fd vargs (call_cont k) m''
-      (*SACC:*)(*(fn_stack_requirements id)*))
+        E0 (Callstate fd vargs (call_cont k) (*SACC:*)m'' ((*SACC:*)fn_stack_requirements fid))
 
   | step_builtin: forall f optid ef bl k sp e m vargs t vres m' (*SACC:*)m'',
       eval_exprlist sp e m bl vargs ->
       external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
-      (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
-      (*SACC:*)(*builtin_enabled ef ->*)
+   (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
       step (State f (Sbuiltin optid ef bl) k sp e m)
-         t (State f Sskip k sp (set_optvar optid vres e) m'')
+         t (State f Sskip k sp (set_optvar optid vres e) (*SACC:*)m'')
 
   | step_seq: forall f s1 s2 k sp e m,
       step (State f (Sseq s1 s2) k sp e m)
@@ -544,23 +543,24 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sgoto lbl) k sp e m)
         E0 (State f s' k' sp e m)
 
-  | step_internal_function: forall f vargs k m m' sp e (*SACC:*) m'' sz,
+  | step_internal_function: forall f vargs k m m' sp e (*SACC:*)m'' (*SACC:*)sz,
       Mem.alloc m 0 f.(fn_stackspace) = (m', sp) ->
-      (*SACC:*)Mem.record_stack_blocks m' (make_singleton_frame_adt sp (fn_stackspace f) sz)  = Some m'' ->
+  (*SACC:*)Mem.record_stack_blocks m' (make_singleton_frame_adt sp (fn_stackspace f) sz)  = Some m'' ->
       set_locals f.(fn_vars) (set_params vargs f.(fn_params)) = e ->
-      step (Callstate (Internal f) vargs k m (*sz*))
-        E0 (State f f.(fn_body) k (Vptr sp Ptrofs.zero) e m'')
-  | step_external_function: forall ef vargs k m t vres m' (*SACC:*)(*sz*),
+      step (Callstate (Internal f) vargs k m (*SACC:*)sz)
+        E0 (State f f.(fn_body) k (Vptr sp Ptrofs.zero) e (*SACC:*)m'')
+  | step_external_function: forall ef vargs k m t vres m' (*SACC:*)sz,
       external_call ef ge vargs m t vres m' ->
-      step (Callstate (External ef) vargs k m)
+      step (Callstate (External ef) vargs k m (*SACC:*)sz)
          t (Returnstate vres k m')
 
   | step_return: forall v optid f sp e k m (*SACC:*)m',
-      (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
+  (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
       step (Returnstate v (Kcall optid f sp e k) m)
-        E0 (State f Sskip k sp (set_optvar optid v e) m').
+        E0 (State f Sskip k sp (set_optvar optid v e) (*SACC:*)m').
 
-(*
+(*====================================SACC:====================================*)
+
 Fixpoint funs_of_cont k : list (option (block * Z)) :=
   match k with
   | Kstop => nil
@@ -570,58 +570,59 @@ Fixpoint funs_of_cont k : list (option (block * Z)) :=
   | Kcall oi f _ e k => None :: funs_of_cont k
   end.
 
-  Inductive stack_inv : state -> Prop :=
-  | stack_inv_regular: forall k f s sp m o e
-                         (MSA1: match_stack (Some (sp, fn_stackspace f)::funs_of_cont k) (Mem.stack m)),
-      stack_inv (State f s k (Vptr sp o) e m)
-  | stack_inv_call: forall k fd args m sz
-                      (TOPNOPERM: top_tframe_tc (Mem.stack m))
-                      (MSA1: match_stack (funs_of_cont k) (tl (Mem.stack m))),
-      stack_inv (Callstate fd args k m sz)
-  | stack_inv_return: forall k res m 
-                        (MSA1: match_stack (funs_of_cont k) (tl (Mem.stack m))),
-      stack_inv (Returnstate res k m).
+Inductive stack_inv : state -> Prop :=
+| stack_inv_regular: forall k f s sp m o e
+    (MSA1: match_stack (Some (sp, fn_stackspace f)::funs_of_cont k) (Mem.stack m)),
+    stack_inv (State f s k (Vptr sp o) e m)
+| stack_inv_call: forall k fd args m sz
+    (TOPNOPERM: top_tframe_tc (Mem.stack m))
+    (MSA1: match_stack (funs_of_cont k) (tl (Mem.stack m))),
+    stack_inv (Callstate fd args k m sz)
+| stack_inv_return: forall k res m 
+    (MSA1: match_stack (funs_of_cont k) (tl (Mem.stack m))),
+    stack_inv (Returnstate res k m).
 
-  Lemma funs_of_call_cont:
-    forall k,
-      funs_of_cont (call_cont k) = funs_of_cont k.
-  Proof.
-    induction k; simpl; intros; eauto.
-  Qed.
+Lemma funs_of_call_cont:
+forall k,
+  funs_of_cont (call_cont k) = funs_of_cont k.
+Proof.
+  induction k; simpl; intros; eauto.
+Qed.
 
-  Lemma find_label_funs_of_cont:
-    forall lbl s k s' k',
-      find_label lbl s k = Some (s', k') ->
-      funs_of_cont k' = funs_of_cont k.
-  Proof.
-    induction s; simpl; intros; try congruence.
-    - destr_in H; eauto. inv H. apply IHs1 in Heqo. simpl in Heqo. auto.
-    - destr_in H; inv H; eauto.
-    - apply IHs in H. simpl in H; auto.
-    - apply IHs in H. simpl in H; auto.
-    - destr_in H; eauto.
-  Qed.
+Lemma find_label_funs_of_cont:
+forall lbl s k s' k',
+  find_label lbl s k = Some (s', k') ->
+  funs_of_cont k' = funs_of_cont k.
+Proof.
+  induction s; simpl; intros; try congruence.
+  - destr_in H; eauto. inv H. apply IHs1 in Heqo. simpl in Heqo. auto.
+  - destr_in H; inv H; eauto.
+  - apply IHs in H. simpl in H; auto.
+  - apply IHs in H. simpl in H; auto.
+  - destr_in H; eauto.
+Qed.
 
-  Lemma stack_inv_inv:
-    forall S1 t S2,
-      step S1 t S2 ->
-      stack_inv S1 -> stack_inv S2.
-  Proof.
-    destruct 1; simpl; intros SI;
-      inv SI; try econstructor; repeat rewrite_stack_blocks; eauto;
-        try solve [inv MSA1; simpl; rewrite ?funs_of_call_cont; eauto].
-    - constructor. reflexivity.
-    - intros; constructor. reflexivity.
-    - simpl. inv MSA1. inversion 1; subst.
-      rewrite funs_of_call_cont. auto.
-    - erewrite find_label_funs_of_cont by eauto.
-      rewrite funs_of_call_cont. auto.
-    - intros EQ; rewrite EQ in *. simpl in *.
-      econstructor; eauto; reflexivity.
-    - simpl in MSA1. repeat destr_in MSA1. econstructor. rewrite_stack_blocks.
-      rewrite <- H4. econstructor; eauto.
-  Qed.
-*)
+Lemma stack_inv_inv:
+forall S1 t S2,
+  step S1 t S2 ->
+  stack_inv S1 -> stack_inv S2.
+Proof.
+destruct 1; simpl; intros SI;
+inv SI; try econstructor; repeat rewrite_stack_blocks; eauto;
+try solve [inv MSA1; simpl; rewrite ?funs_of_call_cont; eauto].
+  - constructor. reflexivity.
+  - intros; constructor. reflexivity.
+  - simpl. inv MSA1. inversion 1; subst.
+    rewrite funs_of_call_cont. auto.
+  - erewrite find_label_funs_of_cont by eauto.
+    rewrite funs_of_call_cont. auto.
+  - intros EQ; rewrite EQ in *. simpl in *.
+    econstructor; eauto; reflexivity.
+  - simpl in MSA1. repeat destr_in MSA1. econstructor. rewrite_stack_blocks.
+    rewrite <- H4. econstructor; eauto.
+Qed.
+
+(*=============================================================================*)
 
 End RELSEM.
 
@@ -631,17 +632,16 @@ End RELSEM.
   without arguments and with an empty continuation. *)
 
 Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0 m2,
+  | initial_state_intro: forall b f m0 (*SACC:*)m2,
       let ge := Genv.globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       funsig f = signature_main ->
-      (*SACC:*) Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate f nil Kstop (Mem.push_new_stage m2)
-     (*SACC:*)(*(fn_stack_requirements (prog_main p))*)).
+  (*SACC:*)Mem.record_init_sp m0 = Some m2 ->
+      initial_state p (Callstate f nil Kstop ((*SACC:*)Mem.push_new_stage m2) ((*SACC:*)fn_stack_requirements (prog_main p))).
 
-(*
+(*SACC:*)
 Lemma stack_inv_initial:
   forall p S
     (INIT: initial_state p S),
@@ -651,7 +651,6 @@ Proof.
   rewrite_stack_blocks; constructor. reflexivity.
   constructor.
 Qed.
-*)
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 
@@ -687,7 +686,8 @@ Proof.
   red; intros; inv H; simpl; try omega; eapply external_call_trace_length; eauto.
 Qed.
 
-(*SACC: commented this*)
+(*SACC:commented big-step semantics; some modifications were made in original SACC.
+       what you see below is vanilla CC*)
 (*
 (** * Alternate operational semantics (big-step) *)
 
@@ -1267,3 +1267,5 @@ Qed.
 
 End BIGSTEP_TO_TRANSITION.
 *)
+
+End STACK_WRAPPER.

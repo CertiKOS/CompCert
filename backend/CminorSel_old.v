@@ -14,15 +14,15 @@
 
 Require Import Coqlib.
 Require Import Maps.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
-Require Import Events.
-Require Import Values.
-Require Import Memory.
-Require Import Cminor.
-Require Import Op.
-Require Import Globalenvs.
-Require Import Smallstep.
+Require Import Events_old.
+Require Import Values_old.
+Require Import Memory_old.
+Require Import Cminor_old.
+Require Import Op_old.
+Require Import Globalenvs_old.
+Require Import Smallstep_old.
 
 (** * Abstract syntax *)
 
@@ -128,7 +128,7 @@ Inductive cont: Type :=
 
 (** States *)
 
-Inductive state: Type :=
+Inductive state `{memory_model_ops: Mem.MemoryModelOps}: Type :=
   | State:                              (**r execution within a function *)
       forall (f: function)              (**r currently executing function  *)
              (s: stmt)                  (**r statement under consideration *)
@@ -141,8 +141,7 @@ Inductive state: Type :=
       forall (f: fundef)                (**r fundef to invoke *)
              (args: list val)           (**r arguments provided by caller *)
              (k: cont)                  (**r what to do next  *)
-             (m: mem)                   (**r memory state *)
-    (*SACC:*)(sz: Z),                   (**r callee stack size requirement *)
+             (m: mem) (sz: Z),                  (**r memory state *)
       state
   | Returnstate:
       forall (v: val)                   (**r return value *)
@@ -150,10 +149,9 @@ Inductive state: Type :=
              (m: mem),                  (**r memory state *)
       state.
 
-(*SACC:*)
-Section STACK_WRAPPER.
+Section WITHEXTCALLSOPS.
+Context `{external_calls_prf: ExternalCalls}.
 
-(*SACC:*)
 Variable fn_stack_requirements: ident -> Z.
 
 Section RELSEM.
@@ -197,7 +195,8 @@ Inductive eval_expr: letenv -> expr -> val -> Prop :=
   | eval_Ebuiltin: forall le ef al vl v,
       eval_exprlist le al vl ->
       external_call ef ge vl (Mem.push_new_stage m) E0 v (Mem.push_new_stage m) ->
-      eval_expr le (Ebuiltin ef al) v
+      forall BUILTIN_ENABLED : builtin_enabled ef,
+        eval_expr le (Ebuiltin ef al) v
   | eval_Eexternal: forall le id sg al b ef vl v,
       Genv.find_symbol ge id = Some b ->
       Genv.find_funct_ptr ge b = Some (External ef) ->
@@ -361,32 +360,31 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sstore chunk addr al b) k sp e m)
         E0 (State f Sskip k sp e m')
 
-  | step_call: forall f optid sig a bl k sp e m vf vargs fd (*SACC:*)fid,
-  (*SACC:*)is_function_ident ge vf fid ->
+  | step_call: forall f optid sig a bl k sp e m vf vargs fd id (IFI: is_function_ident ge vf id),
       eval_expr_or_symbol sp e m nil a vf ->
       eval_exprlist sp e m nil bl vargs ->
       Genv.find_funct ge vf = Some fd ->
       funsig fd = sig ->
       step (State f (Scall optid sig a bl) k sp e m)
-        E0 (Callstate fd vargs (Kcall optid f sp e k) ((*SACC:*)Mem.push_new_stage m) ((*SACC:*)fn_stack_requirements fid))
+        E0 (Callstate fd vargs (Kcall optid f sp e k) (Mem.push_new_stage m) (fn_stack_requirements id))
 
-  | step_tailcall: forall f sig a bl k sp e m vf vargs fd m' (*SACC:*)m'' (*SACC:*)fid,
-  (*SACC:*)is_function_ident ge vf fid ->
+  | step_tailcall: forall f sig a bl k sp e m vf vargs fd m' m'' id (IFI: is_function_ident ge vf id),
       eval_expr_or_symbol (Vptr sp Ptrofs.zero) e m nil a vf ->
       eval_exprlist (Vptr sp Ptrofs.zero) e m nil bl vargs ->
       Genv.find_funct ge vf = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stackspace) = Some m' ->
-  (*SACC:*)Mem.tailcall_stage m' = Some m'' ->
+      Mem.tailcall_stage m' = Some m'' ->
       step (State f (Stailcall sig a bl) k (Vptr sp Ptrofs.zero) e m)
-        E0 (Callstate fd vargs (call_cont k) (*SACC:*)m'' ((*SACC:*)fn_stack_requirements fid))
+        E0 (Callstate fd vargs (call_cont k) m'' (fn_stack_requirements id))
 
-  | step_builtin: forall f res ef al k sp e m vl t v m' (*SACC:*)m'',
+  | step_builtin: forall f res ef al k sp e m vl t v m' m'',
       list_forall2 (eval_builtin_arg sp e m) al vl ->
-      external_call ef ge vl ((*SACC:*)Mem.push_new_stage m) t v m' ->
-  (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
+      external_call ef ge vl (Mem.push_new_stage m) t v m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
+      forall BUILTIN_ENABLED : builtin_enabled ef,
       step (State f (Sbuiltin res ef al) k sp e m)
-         t (State f Sskip k sp (set_builtin_res res v e) (*SACC:*)m'')
+         t (State f Sskip k sp (set_builtin_res res v e) m'')
 
   | step_seq: forall f s1 s2 k sp e m,
       step (State f (Sseq s1 s2) k sp e m)
@@ -439,33 +437,33 @@ Inductive step: state -> trace -> state -> Prop :=
       step (State f (Sgoto lbl) k sp e m)
         E0 (State f s' k' sp e m)
 
-  | step_internal_function: forall f vargs k m m' sp e (*SACC:*)m'' (*SACC:*)sz,
+  | step_internal_function: forall f vargs k m m' sp e m'' sz,
       Mem.alloc m 0 f.(fn_stackspace) = (m', sp) ->
+      Mem.record_stack_blocks m' (make_singleton_frame_adt sp (fn_stackspace f) sz) = Some m'' ->
       set_locals f.(fn_vars) (set_params vargs f.(fn_params)) = e ->
-  (*SACC:*)Mem.record_stack_blocks m' (make_singleton_frame_adt sp (fn_stackspace f) sz) = Some m'' ->
-      step (Callstate (Internal f) vargs k m (*SACC:*)sz)
-        E0 (State f f.(fn_body) k (Vptr sp Ptrofs.zero) e (*SACC:*)m'')
-  | step_external_function: forall ef vargs k m t vres m' (*SACC:*)sz,
+      step (Callstate (Internal f) vargs k m sz)
+        E0 (State f f.(fn_body) k (Vptr sp Ptrofs.zero) e m'')
+  | step_external_function: forall ef vargs k m t vres m' sz,
       external_call ef ge vargs m t vres m' ->
-      step (Callstate (External ef) vargs k m (*SACC:*)sz)
+      step (Callstate (External ef) vargs k m sz)
          t (Returnstate vres k m')
 
-  | step_return: forall v optid f sp e k m (*SACC:*)m',
-  (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
+  | step_return: forall v optid f sp e k m m',
+      Mem.unrecord_stack_block m = Some m' ->
       step (Returnstate v (Kcall optid f sp e k) m)
-        E0 (State f Sskip k sp (set_optvar optid v e) (*SACC:*)m').
+        E0 (State f Sskip k sp (set_optvar optid v e) m').
 
 End RELSEM.
 
 Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0 (*SACC:*)m2,
+  | initial_state_intro: forall b f m0 m2,
       let ge := Genv.globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       funsig f = signature_main ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate f nil Kstop ((*SACC:*)Mem.push_new_stage m2) ((*SACC:*)fn_stack_requirements (prog_main p))).
+      Mem.record_init_sp m0 = Some m2 ->
+      initial_state p (Callstate f nil Kstop (Mem.push_new_stage m2) (fn_stack_requirements (prog_main p))).
 
 Inductive final_state: state -> int -> Prop :=
   | final_state_intro: forall r m,
@@ -590,7 +588,6 @@ Proof.
   eexact H. apply insert_lenv_0.
 Qed.
 
-(*SACC:*)
 Section STACKINV.
 
 
@@ -666,8 +663,8 @@ Fixpoint funs_of_cont k : list (option (block * Z)) :=
 
 End STACKINV.
 
-End STACK_WRAPPER.
+End WITHEXTCALLSOPS.
 
-(*SACC:*)Hint Constructors eval_expr eval_exprlist eval_condexpr: evalexpr.
+Hint Constructors eval_expr eval_exprlist eval_condexpr: evalexpr.
 
 Hint Resolve eval_lift: evalexpr.
