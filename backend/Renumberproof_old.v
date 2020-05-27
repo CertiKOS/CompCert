@@ -26,13 +26,10 @@ Proof.
   intros. eapply match_transform_program; eauto.
 Qed.
 
-(*SACC:*)
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable fn_stack_requirements : ident -> Z.
-
 Section PRESERVATION.
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable fn_stack_requirements: ident -> Z.
 
 Variables prog tprog: program.
 Hypothesis TRANSL: match_prog prog tprog.
@@ -56,7 +53,6 @@ Lemma symbols_preserved:
   Genv.find_symbol tge id = Genv.find_symbol ge id.
 Proof (Genv.find_symbol_transf TRANSL).
 
-(*SACC:*)
 Lemma ros_is_function_translated:
   forall ros rs i,
     ros_is_function ge ros rs i ->
@@ -70,6 +66,12 @@ Qed.
 Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf TRANSL).
+
+Lemma genv_next_preserved:
+  Genv.genv_next tge = Genv.genv_next ge.
+Proof.
+  apply senv_preserved.
+Qed.
 
 Lemma sig_preserved:
   forall f, funsig (transf_fundef f) = funsig f.
@@ -163,19 +165,19 @@ Inductive match_states: RTL.state -> RTL.state -> Prop :=
         (REACH: reach f pc),
       match_states (State stk f sp pc rs m)
                    (State stk' (transf_function f) sp (renum_pc (pnum f) pc) rs m)
-  | match_callstates: forall stk f args m stk' (*SACC:*)sz
+  | match_callstates: forall stk f args m stk' sz
         (STACKS: list_forall2 match_frames stk stk'),
-      match_states (Callstate stk f args m (*SACC:*)sz)
-                   (Callstate stk' (transf_fundef f) args m (*SACC:*)sz)
+      match_states (Callstate stk f args m sz)
+                   (Callstate stk' (transf_fundef f) args m sz)
   | match_returnstates: forall stk v m stk'
         (STACKS: list_forall2 match_frames stk stk'),
       match_states (Returnstate stk v m)
                    (Returnstate stk' v m).
 
 Lemma step_simulation:
-  forall S1 t S2, RTL.step (*SACC:*)fn_stack_requirements ge S1 t S2 ->
+  forall S1 t S2, RTL.step fn_stack_requirements ge S1 t S2 ->
   forall S1', match_states S1 S1' ->
-  exists S2', RTL.step (*SACC:*)fn_stack_requirements tge S1' t S2' /\ match_states S2 S2'.
+  exists S2', RTL.step fn_stack_requirements tge S1' t S2' /\ match_states S2 S2'.
 Proof.
   induction 1; intros S1' MS; inv MS; try TR_AT.
 (* nop *)
@@ -200,14 +202,14 @@ Proof.
   constructor; auto. eapply reach_succ; eauto. simpl; auto.
 (* call *)
   econstructor; split.
-  eapply exec_Icall with (fd := transf_fundef fd); eauto.
+  eapply exec_Icall with (fd0 := transf_fundef fd); eauto.
     eapply ros_is_function_translated; eauto.
     eapply find_function_translated; eauto.
     apply sig_preserved.
   constructor. constructor; auto. constructor. eapply reach_succ; eauto. simpl; auto.
 (* tailcall *)
   econstructor; split.
-  eapply exec_Itailcall with (fd := transf_fundef fd); eauto.
+  eapply exec_Itailcall with (fd0 := transf_fundef fd); eauto.
     eapply ros_is_function_translated; eauto.
     eapply find_function_translated; eauto.
     apply sig_preserved.
@@ -250,16 +252,16 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall S1, RTL.initial_state (*SACC:*)fn_stack_requirements prog S1 ->
-  exists S2, RTL.initial_state (*SACC:*)fn_stack_requirements tprog S2 /\ match_states S1 S2.
+  forall S1, RTL.initial_state fn_stack_requirements prog S1 ->
+  exists S2, RTL.initial_state fn_stack_requirements tprog S2 /\ match_states S1 S2.
 Proof.
   intros. inv H. econstructor; split.
   econstructor.
-    eapply (Genv.init_mem_transf TRANSL); eauto.
-    rewrite symbols_preserved. rewrite (match_program_main TRANSL). eauto.
-    eapply function_ptr_translated; eauto.
-    rewrite <- H3; apply sig_preserved.
-  eauto.
+  eapply (Genv.init_mem_transf TRANSL); eauto.
+  rewrite symbols_preserved. rewrite (match_program_main TRANSL). eauto.
+  eapply function_ptr_translated; eauto.
+  rewrite <- H3; apply sig_preserved.
+  eauto. eauto.
   destruct TRANSL as (_ & A & _); rewrite A. constructor. constructor.
 Qed.
 
@@ -270,7 +272,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (RTL.semantics (*SACC:*)fn_stack_requirements prog) (RTL.semantics (*SACC:*)fn_stack_requirements tprog).
+  forward_simulation (RTL.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_step.
   apply senv_preserved.

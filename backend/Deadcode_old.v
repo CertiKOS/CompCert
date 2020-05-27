@@ -12,10 +12,10 @@
 
 (** Elimination of unneeded computations over RTL. *)
 
-Require Import Coqlib Maps Errors Integers Floats Lattice Kildall.
-Require Import AST Linking.
-Require Import Memory Registers Op RTL.
-Require Import ValueDomain ValueAnalysis NeedDomain NeedOp.
+Require Import Coqlib Maps Errors Integers Floats Lattice Kildall_old.
+Require Import AST_old Linking_old.
+Require Import Memory_old Registers_old Op_old RTL_old.
+Require Import ValueDomain_old ValueAnalysis_old NeedDomain_old NeedOp_old.
 
 (** * Part 1: the static analysis *)
 
@@ -194,7 +194,7 @@ Definition transf_instr (approx: PMap.t VA.t) (an: PMap.t NA.t)
   end.
 
 Definition transf_function (rm: romem) (f: function) : res function :=
-  let approx := ValueAnalysis.analyze rm f in
+  let approx := ValueAnalysis_old.analyze rm f in
   match analyze approx f with
   | Some an =>
       OK {| fn_sig := f.(fn_sig);
@@ -207,8 +207,12 @@ Definition transf_function (rm: romem) (f: function) : res function :=
   end.
 
 Definition transf_fundef (rm: romem) (fd: fundef) : res fundef :=
-  AST.transf_partial_fundef (transf_function rm) fd.
+  AST_old.transf_partial_fundef (transf_function rm) fd.
+
+Section WITHROMEMFOR.
+Context `{romem_for_instance: ROMemFor}.
 
 Definition transf_program (p: program) : res program :=
   transform_partial_program (transf_fundef (romem_for p)) p.
 
+End WITHROMEMFOR.

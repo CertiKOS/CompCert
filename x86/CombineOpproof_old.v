@@ -14,11 +14,12 @@
   during the [CSE] phase. *)
 
 Require Import Coqlib.
-Require Import Integers Values Memory.
-Require Import Op RTL CSEdomain.
-Require Import CombineOp.
+Require Import Integers Values_old Memory_old.
+Require Import Op_old RTL_old CSEdomain_old.
+Require Import CombineOp_old.
 
 Section COMBINE.
+Context `{memory_model_ops: Mem.MemoryModelOps}.
 
 Variable ge: genv.
 Variable sp: val.

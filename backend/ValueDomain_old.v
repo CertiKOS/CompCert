@@ -11,9 +11,9 @@
 (* *********************************************************************)
 
 Require Import Zwf Coqlib Maps Integers Floats Lattice.
-Require Import Compopts AST.
-Require Import Values Memory Globalenvs Events.
-Require Import Registers RTL.
+Require Import Compopts_old AST_old.
+Require Import Values_old Memory_old Globalenvs_old Events_old.
+Require Import Registers_old RTL_old.
 
 (** The abstract domains for value analysis *)
 
@@ -48,6 +48,10 @@ Hint Extern 2 (_ < _) => xomega : va.
 Hint Extern 2 (_ <= _) => xomega : va.
 Hint Extern 2 (_ > _) => xomega : va.
 Hint Extern 2 (_ >= _) => xomega : va.
+
+Section WITHMEMORYMODEL.
+  Existing Instance inject_perm_all.
+Context `{memory_model_prf: Mem.MemoryModel}.
 
 Section MATCH.
 
@@ -3048,7 +3052,7 @@ Remark loadbytes_load_ext:
   forall chunk ofs v, Mem.load chunk m' b ofs = Some v -> Mem.load chunk m b ofs = Some v.
 Proof.
   intros. exploit Mem.load_loadbytes; eauto. intros [bytes [A B]].
-  exploit Mem.load_valid_access; eauto. intros [C D].
+  exploit Mem.load_valid_access; eauto. intros [C [D E]].
   subst v. apply Mem.loadbytes_load; auto. apply H; auto. generalize (size_chunk_pos chunk); omega.
 Qed.
 
@@ -3645,6 +3649,77 @@ Proof.
   intros. eauto with mem.
 Qed.
 
+Lemma romatch_tailcall:
+  forall m m' rm,
+  Mem.tailcall_stage m  = Some m' ->
+  romatch m rm ->
+  romatch m' rm.
+Proof.
+  intros. apply romatch_ext with m; auto.
+  intros.   destruct (zlt 0 n).
+  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.tailcall_stage_unchanged_on; eauto.
+  red. erewrite <- Mem.tailcall_stage_nextblock; eauto.
+  eapply Mem.loadbytes_range_perm in H2.
+  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
+  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
+  rewrite Mem.loadbytes_empty; auto. omega.
+  intros. erewrite <- Mem.tailcall_stage_perm; eauto.
+Qed.
+
+Lemma romatch_unrecord:
+  forall m m' rm,
+  Mem.unrecord_stack_block m  = Some m' ->
+  romatch m rm ->
+  romatch m' rm.
+Proof.
+  intros. apply romatch_ext with m; auto.
+  intros.   destruct (zlt 0 n).
+  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.unrecord_stack_block_unchanged_on; eauto.
+  red. erewrite <- Mem.unrecord_stack_block_nextblock; eauto.
+  eapply Mem.loadbytes_range_perm in H2.
+  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
+  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
+  rewrite Mem.loadbytes_empty; auto. omega.
+  intros. eapply Mem.unrecord_stack_block_perm; eauto.
+Qed.
+
+Lemma romatch_record:
+  forall m m' fi rm,
+  Mem.record_stack_blocks m fi = Some m' ->
+  romatch m rm ->
+  romatch m' rm.
+Proof.
+  intros. apply romatch_ext with m; auto.
+  intros.   destruct (zlt 0 n).
+  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.record_stack_block_unchanged_on; eauto.
+  red. erewrite <- Mem.record_stack_block_nextblock; eauto.
+  eapply Mem.loadbytes_range_perm in H2.
+  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
+  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
+  rewrite Mem.loadbytes_empty; auto. omega.
+  intros. eapply Mem.record_stack_block_perm; eauto.
+Qed.
+
+Lemma romatch_push:
+  forall m rm,
+  romatch m rm ->
+  romatch (Mem.push_new_stage m) rm.
+Proof.
+  intros. apply romatch_ext with m; auto.
+  intros.   destruct (zlt 0 n).
+  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.push_new_stage_unchanged_on; eauto.
+  red. rewrite <- Mem.push_new_stage_nextblock.
+  eapply Mem.loadbytes_range_perm in H1.
+  specialize (H1 ofs). eapply Mem.perm_valid_block. apply H1. omega. auto.
+  rewrite Mem.loadbytes_empty in H1 by omega. inv H1.
+  rewrite Mem.loadbytes_empty; auto. omega.
+  intros. eapply Mem.push_new_stage_perm; eauto.
+Qed.
+
 Lemma romatch_alloc:
   forall m b lo hi m' rm,
   Mem.alloc m lo hi = (m', b) ->
@@ -3657,73 +3732,6 @@ Proof.
   apply H0. congruence.
   intros. eapply Mem.perm_alloc_4; eauto. apply Mem.valid_not_valid_diff with m; eauto with mem.
   apply H0. congruence.
-Qed.
-
-(*SACC: Stack Operations*)
-(*SACC:*)
-Lemma romatch_tailcall:
-  forall m m' rm,
-  Mem.tailcall_stage m  = Some m' ->
-  romatch m rm ->
-  romatch m' rm.
-Proof.
-  intros. apply romatch_ext with m; auto.
-  intros.   destruct (zlt 0 n).
-  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
-  eapply Mem.tailcall_stage_unchanged_on; eauto.
-  red. erewrite <- Mem.tailcall_stage_nextblock; eauto.
-  eapply Mem.loadbytes_range_perm in H2.
-  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
-  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
-  rewrite Mem.loadbytes_empty; auto. omega.
-  intros. erewrite <- Mem.tailcall_stage_perm; eauto.
-Qed.
-
-(*SACC:*)
-Lemma romatch_unrecord:
-  forall m m' rm,
-  Mem.unrecord_stack_block m  = Some m' ->
-  romatch m rm ->
-  romatch m' rm.
-Proof.
-  intros. apply romatch_ext with m; auto.
-  intros.   destruct (zlt 0 n).
-  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
-  eapply Mem.unrecord_stack_block_unchanged_on; eauto.
-  red. erewrite <- Mem.unrecord_stack_block_nextblock; eauto.
-  eapply Mem.loadbytes_range_perm in H2.
-  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
-  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
-  rewrite Mem.loadbytes_empty; auto. omega.
-  intros. eapply Mem.unrecord_stack_block_perm; eauto.
-Qed.
-
-(*SACC:*)
-Lemma romatch_record:
-  forall m m' fi rm,
-  Mem.record_stack_blocks m fi = Some m' ->
-  romatch m rm ->
-  romatch m' rm.
-Proof.
-  intros. apply romatch_ext with m; auto.
-  intros.   destruct (zlt 0 n).
-  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
-  eapply Mem.record_stack_block_unchanged_on; eauto.
-  red. erewrite <- Mem.record_stack_block_nextblock; eauto.
-  eapply Mem.loadbytes_range_perm in H2.
-  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
-  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
-  rewrite Mem.loadbytes_empty; auto. omega.
-  intros. eapply Mem.record_stack_block_perm; eauto.
-Qed.
-
-(*SACC:*)
-Lemma romatch_push:
-  forall m rm,
-  romatch m rm ->
-  romatch (Mem.push_new_stage m) rm.
-Proof.
-  intros. apply romatch_ext with m; auto.
 Qed.
 
 (** * Abstracting memory states *)
@@ -4113,9 +4121,7 @@ Proof.
   erewrite <- Mem.nextblock_free by eauto. xomega.
 Qed.
 
-(*SACC: Stack operations*)
 
-(*SACC:*)
 Lemma mmatch_tailcall:
   forall m m' rm,
   Mem.tailcall_stage m  = Some m' ->
@@ -4125,7 +4131,7 @@ Proof.
   intros. apply mmatch_ext with m; auto.
   intros.   destruct (zlt 0 n).
   erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
-  eapply Mem.tailcall_stage_unchanged_on; eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.tailcall_stage_unchanged_on; eauto.
   red. erewrite <- Mem.tailcall_stage_nextblock; eauto.
   eapply Mem.loadbytes_range_perm in H3.
   specialize (H3 ofs). eapply Mem.perm_valid_block. apply H3. omega. auto.
@@ -4134,7 +4140,6 @@ Proof.
   rewrite (Mem.tailcall_stage_nextblock _ _ H); xomega.
 Qed.
 
-(*SACC:*)
 Lemma mmatch_unrecord:
   forall m m' rm,
   Mem.unrecord_stack_block m  = Some m' ->
@@ -4144,7 +4149,7 @@ Proof.
   intros. apply mmatch_ext with m; auto.
   intros.   destruct (zlt 0 n).
   erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
-  eapply Mem.unrecord_stack_block_unchanged_on; eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.unrecord_stack_block_unchanged_on; eauto.
   red. erewrite <- Mem.unrecord_stack_block_nextblock; eauto.
   eapply Mem.loadbytes_range_perm in H3.
   specialize (H3 ofs). eapply Mem.perm_valid_block. apply H3. omega. auto.
@@ -4153,7 +4158,6 @@ Proof.
   rewrite (Mem.unrecord_stack_block_nextblock _ _ H); xomega.
 Qed.
 
-(*SACC:*)
 Lemma mmatch_record:
   forall m m' fi rm,
   Mem.record_stack_blocks m fi = Some m' ->
@@ -4163,7 +4167,7 @@ Proof.
   intros. apply mmatch_ext with m; auto.
   intros.   destruct (zlt 0 n).
   erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
-  eapply Mem.record_stack_block_unchanged_on; eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.record_stack_block_unchanged_on; eauto.
   red. erewrite <- Mem.record_stack_block_nextblock; eauto.
   eapply Mem.loadbytes_range_perm in H3.
   specialize (H3 ofs). eapply Mem.perm_valid_block. apply H3. omega. auto.
@@ -4172,13 +4176,20 @@ Proof.
   rewrite (Mem.record_stack_block_nextblock _ _ _ H); xomega.
 Qed.
 
-(*SACC:*)
 Lemma mmatch_push:
   forall m rm,
   mmatch m rm ->
   mmatch (Mem.push_new_stage m) rm.
 Proof.
   intros. apply mmatch_ext with m; auto.
+  intros.   destruct (zlt 0 n).
+  erewrite <- Mem.loadbytes_unchanged_on_1 with (P:=fun _ _ => True). eauto.
+  eapply Mem.strong_unchanged_on_weak, Mem.push_new_stage_unchanged_on; eauto.
+  red. erewrite <- Mem.push_new_stage_nextblock; eauto.
+  eapply Mem.loadbytes_range_perm in H2.
+  specialize (H2 ofs). eapply Mem.perm_valid_block. apply H2. omega. auto.
+  rewrite Mem.loadbytes_empty in H2 by omega. inv H2.
+  rewrite Mem.loadbytes_empty; auto. omega.
   rewrite Mem.push_new_stage_nextblock; xomega.
 Qed.
 
@@ -4452,6 +4463,8 @@ Proof.
   - red; intros. eapply Mem.valid_block_inject_1. eapply inj_of_bc_valid; eauto. eauto.
 Qed.
 
+End WITHMEMORYMODEL.
+
 (** * Abstracting RTL register environments *)
 
 Module AVal <: SEMILATTICE_WITH_TOP.
@@ -4585,7 +4598,7 @@ Module VA <: SEMILATTICE.
     match x, y with
     | Bot, Bot => True
     | State ae1 am1, State ae2 am2 =>
-        AE.eq ae1 ae2 /\ forall bc m, mmatch bc m am1 <-> mmatch bc m am2
+        AE.eq ae1 ae2 /\ forall `{memory_model_prf: Mem.MemoryModel} bc (m: mem), mmatch bc m am1 <-> mmatch bc m am2
     | _, _ => False
     end.
 
@@ -4596,7 +4609,7 @@ Module VA <: SEMILATTICE.
   Lemma eq_sym: forall x y, eq x y -> eq y x.
   Proof.
     destruct x, y; simpl; auto. intros [A B].
-    split. apply AE.eq_sym; auto. intros. rewrite B. tauto.
+    split. apply AE.eq_sym; auto. intros. rewrite B; auto. tauto.
   Qed.
   Lemma eq_trans: forall x y z, eq x y -> eq y z -> eq x z.
   Proof.
@@ -4627,14 +4640,14 @@ Module VA <: SEMILATTICE.
     match x, y with
     | _, Bot => True
     | Bot, _ => False
-    | State ae1 am1, State ae2 am2 => AE.ge ae1 ae2 /\ forall bc m, mmatch bc m am2 -> mmatch bc m am1
+    | State ae1 am1, State ae2 am2 => AE.ge ae1 ae2 /\ forall `{memory_model_prf: Mem.MemoryModel} bc (m: mem), mmatch bc m am2 -> mmatch bc m am1
     end.
 
   Lemma ge_refl: forall x y, eq x y -> ge x y.
   Proof.
     destruct x, y; simpl; try tauto. intros [A B]; split.
     apply AE.ge_refl; auto.
-    intros. rewrite B; auto.
+    intros. rewrite B; eauto.
   Qed.
   Lemma ge_trans: forall x y z, ge x y -> ge y z -> ge x z.
   Proof.

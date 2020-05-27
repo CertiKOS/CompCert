@@ -98,9 +98,9 @@ Record function: Type := mkfunction {
     [fn_entrypoint] is the node of the first instruction of the function
     in the CFG. *)
 
-Definition fundef := AST.fundef function.
+Definition fundef := AST_old.fundef function.
 
-Definition program := AST.program fundef unit.
+Definition program := AST_old.program fundef unit.
 
 Definition funsig (fd: fundef) :=
   match fd with

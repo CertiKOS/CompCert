@@ -14,12 +14,12 @@
   performed at RTL level.  It proceeds by a standard dataflow analysis
   and the corresponding code rewriting. *)
 
-Require Import Coqlib Maps Integers Floats Lattice Kildall.
-Require Import AST Linking.
-Require Compopts Machregs.
-Require Import Op Registers RTL.
-Require Import Liveness ValueDomain ValueAOp ValueAnalysis.
-Require Import ConstpropOp.
+Require Import Coqlib Maps Integers Floats Lattice Kildall_old.
+Require Import AST_old Linking_old.
+Require Compopts_old Machregs_old.
+Require Import Op_old Registers_old RTL_old.
+Require Import Liveness_old ValueDomain_old ValueAOp_old ValueAnalysis_old.
+Require Import ConstpropOp_old.
 
 (** The code transformation builds on the results of the static analysis
   of values from module [ValueAnalysis].  It proceeds instruction by
@@ -89,8 +89,8 @@ Fixpoint builtin_arg_reduction (ae: AE.t) (a: builtin_arg reg) :=
       match areg ae r with
       | I n => BA_int n
       | L n => BA_long n
-      | F n => if Compopts.generate_float_constants tt then BA_float n else a
-      | FS n => if Compopts.generate_float_constants tt then BA_single n else a
+      | F n => if Compopts_old.generate_float_constants tt then BA_float n else a
+      | FS n => if Compopts_old.generate_float_constants tt then BA_single n else a
       | _ => a
       end
   | BA_splitlong hi lo =>
@@ -134,7 +134,7 @@ Definition builtin_strength_reduction
              (ae: AE.t) (ef: external_function) (al: list (builtin_arg reg)) :=
   match ef with
   | EF_debug _ _ _ => debug_strength_reduction ae al
-  | _ => builtin_args_strength_reduction ae al (Machregs.builtin_constraints ef)
+  | _ => builtin_args_strength_reduction ae al (Machregs_old.builtin_constraints ef)
   end.
 
 Definition transf_instr (f: function) (an: PMap.t VA.t) (rm: romem)
@@ -157,7 +157,7 @@ Definition transf_instr (f: function) (an: PMap.t VA.t) (rm: romem)
           end
       | Iload chunk addr args dst s =>
           let aargs := aregs ae args in
-          let a := ValueDomain.loadv chunk rm am (eval_static_addressing addr aargs) in
+          let a := ValueDomain_old.loadv chunk rm am (eval_static_addressing addr aargs) in
           match const_for_result a with
           | Some cop =>
               Iop cop nil dst s
@@ -199,7 +199,7 @@ Definition transf_instr (f: function) (an: PMap.t VA.t) (rm: romem)
   end.
 
 Definition transf_function (rm: romem) (f: function) : function :=
-  let an := ValueAnalysis.analyze rm f in
+  let an := ValueAnalysis_old.analyze rm f in
   mkfunction
     f.(fn_sig)
     f.(fn_params)
@@ -208,8 +208,13 @@ Definition transf_function (rm: romem) (f: function) : function :=
     f.(fn_entrypoint).
 
 Definition transf_fundef (rm: romem) (fd: fundef) : fundef :=
-  AST.transf_fundef (transf_function rm) fd.
+  AST_old.transf_fundef (transf_function rm) fd.
+
+Section WITHROMEMFOR.
+Context `{romem_for_instance: ROMemFor}.
 
 Definition transf_program (p: program) : program :=
   let rm := romem_for p in
   transform_program (transf_fundef rm) p.
+
+End WITHROMEMFOR.

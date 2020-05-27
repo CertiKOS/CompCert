@@ -10,9 +10,9 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-Require Import Coqlib Compopts.
-Require Import AST Integers Floats Values Memory Globalenvs.
-Require Import Op RTL ValueDomain.
+Require Import Coqlib Compopts_old.
+Require Import AST_old Integers Floats Values_old Memory_old Globalenvs_old.
+Require Import Op_old RTL_old ValueDomain_old.
 
 (** Value analysis for x86_64 operators *)
 
@@ -164,6 +164,7 @@ Definition eval_static_operation (op: operation) (vl: list aval): aval :=
   end.
 
 Section SOUNDNESS.
+Context `{memory_model_prf: Mem.MemoryModel}.
 
 Variable bc: block_classification.
 Variable ge: genv.

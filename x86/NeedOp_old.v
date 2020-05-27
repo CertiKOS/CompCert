@@ -13,8 +13,8 @@
 (** Neededness analysis for x86_64 operators *)
 
 Require Import Coqlib.
-Require Import AST Integers Floats Values Memory Globalenvs.
-Require Import Op NeedDomain RTL.
+Require Import AST_old Integers Floats Values_old Memory_old Globalenvs_old.
+Require Import Op_old NeedDomain_old RTL_old.
 
 Definition op1 (nv: nval) := nv :: nil.
 Definition op2 (nv: nval) := nv :: nv :: nil.
@@ -147,6 +147,7 @@ Ltac TrivialExists :=
   end.
 
 Section SOUNDNESS.
+Context `{memory_model_prf: Mem.MemoryModel}.
 
 Variable ge: genv.
 Variable sp: block.

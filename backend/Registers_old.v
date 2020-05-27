@@ -18,11 +18,11 @@
   over pseudo-registers. *)
 
 Require Import Coqlib.
-Require Import AST.
+Require Import AST_old.
 Require Import Maps.
 Require Import Ordered.
 Require FSetAVL.
-Require Import Values.
+Require Import Values_old.
 
 Definition reg: Type := positive.
 

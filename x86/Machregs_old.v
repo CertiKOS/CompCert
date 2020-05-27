@@ -14,9 +14,9 @@ Require Import String.
 Require Import Coqlib.
 Require Import Decidableplus.
 Require Import Maps.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
-Require Import Op.
+Require Import Op_old.
 
 (** ** Machine registers *)
 

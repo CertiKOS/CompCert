@@ -12,12 +12,13 @@
 
 (** Correctness proof for operator strength reduction. *)
 
-Require Import Coqlib Compopts.
-Require Import Integers Floats Values Memory Globalenvs Events.
-Require Import Op Registers RTL ValueDomain.
-Require Import ConstpropOp.
+Require Import Coqlib Compopts_old.
+Require Import Integers Floats Values_old Memory_old Globalenvs_old Events_old.
+Require Import Op_old Registers_old RTL_old ValueDomain_old.
+Require Import ConstpropOp_old.
 
 Section STRENGTH_REDUCTION.
+Context `{memory_model_prf: Mem.MemoryModel}.
 
 Variable bc: block_classification.
 Variable ge: genv.
@@ -101,9 +102,9 @@ Proof.
 - (* long *)
   destruct ptr64; inv H2. exists (Vlong n); auto.
 - (* float *)
-  destruct (Compopts.generate_float_constants tt); inv H2. exists (Vfloat f); auto.
+  destruct (Compopts_old.generate_float_constants tt); inv H2. exists (Vfloat f); auto.
 - (* single *)
-  destruct (Compopts.generate_float_constants tt); inv H2. exists (Vsingle f); auto.
+  destruct (Compopts_old.generate_float_constants tt); inv H2. exists (Vsingle f); auto.
 - (* pointer *)
   destruct p; try discriminate; SimplVM.
   + (* global *)

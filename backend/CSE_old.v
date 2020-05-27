@@ -13,11 +13,12 @@
 (** Common subexpression elimination over RTL.  This optimization
   proceeds by value numbering over extended basic blocks. *)
 
-Require Import Coqlib Maps Errors Integers Floats Lattice Kildall.
-Require Import AST Linking.
-Require Import Values Memory.
-Require Import Op Registers RTL.
-Require Import ValueDomain ValueAnalysis CSEdomain CombineOp.
+Require Import Coqlib Maps Errors Integers Floats Lattice Kildall_old.
+Require Import AST_old Linking_old.
+Require Import Values_old Memory_old.
+Require Import Op_old Registers_old RTL_old.
+Require Import ValueDomain_old ValueAnalysis_old CSEdomain_old CombineOp_old.
+
 
 (** The idea behind value numbering algorithms is to associate
   abstract identifiers (``value numbers'') to the contents of registers
@@ -404,7 +405,8 @@ End REDUCE.
 Module Numbering.
   Definition t := numbering.
   Definition ge (n1 n2: numbering) : Prop :=
-    forall valu ge sp rs m,
+    forall `{memory_model_prf: Mem.MemoryModel},
+    forall valu ge sp rs (m: mem),
     numbering_holds valu ge sp rs m n2 ->
     numbering_holds valu ge sp rs m n1.
   Definition top := empty_numbering.
@@ -471,7 +473,7 @@ Definition transfer (f: function) (approx: PMap.t VA.t) (pc: node) (before: numb
           empty_numbering
       | Ibuiltin ef args res s =>
           match ef with
-          | EF_external _ _ | EF_runtime _ _ | EF_malloc (*| EF_free*) | EF_inline_asm _ _ _ =>
+          | EF_external _ _ | EF_runtime _ _ | EF_malloc | EF_inline_asm _ _ _ =>
               empty_numbering
           | EF_builtin _ _ | EF_vstore _ =>
               set_res_unknown (kill_all_loads before) res
@@ -503,7 +505,7 @@ Definition transfer (f: function) (approx: PMap.t VA.t) (pc: node) (before: numb
   which produces sub-optimal solutions quickly.  The result is
   a mapping from program points to numberings. *)
 
-Definition analyze (f: RTL.function) (approx: PMap.t VA.t): option (PMap.t numbering) :=
+Definition analyze (f: RTL_old.function) (approx: PMap.t VA.t): option (PMap.t numbering) :=
   Solver.fixpoint (fn_code f) successors_instr (transfer f approx) f.(fn_entrypoint).
 
 (** * Code transformation *)
@@ -553,7 +555,7 @@ Definition transf_instr (n: numbering) (instr: instruction) :=
 Definition transf_code (approxs: PMap.t numbering) (instrs: code) : code :=
   PTree.map (fun pc instr => transf_instr approxs!!pc instr) instrs.
 
-Definition vanalyze := ValueAnalysis.analyze.
+Definition vanalyze := ValueAnalysis_old.analyze.
 
 Definition transf_function (rm: romem) (f: function) : res function :=
   let approx := vanalyze rm f in
@@ -569,8 +571,12 @@ Definition transf_function (rm: romem) (f: function) : res function :=
   end.
 
 Definition transf_fundef (rm: romem) (f: fundef) : res fundef :=
-  AST.transf_partial_fundef (transf_function rm) f.
+  AST_old.transf_partial_fundef (transf_function rm) f.
+
+Section WITHROMEMFOR.
+Context `{romem_for_instance: ROMemFor}.
 
 Definition transf_program (p: program) : res program :=
   transform_partial_program (transf_fundef (romem_for p)) p.
 
+End WITHROMEMFOR.

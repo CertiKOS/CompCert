@@ -15,12 +15,12 @@
 
 Require Import Coqlib.
 Require Import Maps.
-Require Import AST.
-Require Import Values.
-Require Import Memory.
-Require Import Op.
-Require Import Registers.
-Require Import RTL.
+Require Import AST_old.
+Require Import Values_old.
+Require Import Memory_old.
+Require Import Op_old.
+Require Import Registers_old.
+Require Import RTL_old.
 
 (** Value numbers are represented by positive integers.  Equations are
   of the form [valnum = rhs] or [valnum >= rhs], where the right-hand
@@ -101,6 +101,9 @@ Hint Resolve wf_num_eqs wf_num_reg wf_num_val: cse.
 
 Definition valuation := valnum -> val.
 
+Section WITHMEMORYMODELOPS.
+Context `{memory_model_ops: Mem.MemoryModelOps}.
+
 Inductive rhs_eval_to (valu: valuation) (ge: genv) (sp: val) (m: mem):
                                                      rhs -> val -> Prop :=
   | op_eval_to: forall op vl v,
@@ -130,9 +133,12 @@ Record numbering_holds (valu: valuation) (ge: genv) (sp: val)
      n.(num_reg)!r = Some v -> rs#r = valu v
 }.
 
+End WITHMEMORYMODELOPS.
+
 Hint Resolve num_holds_wf num_holds_eq num_holds_reg: cse.
 
 Lemma empty_numbering_holds:
+  forall `{memory_model_ops: Mem.MemoryModelOps},
   forall valu ge sp rs m,
   numbering_holds valu ge sp rs m empty_numbering.
 Proof.

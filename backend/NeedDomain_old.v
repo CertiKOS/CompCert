@@ -15,18 +15,18 @@
 Require Import Coqlib.
 Require Import Maps.
 Require Import IntvSets.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import Memory.
-Require Import Globalenvs.
-Require Import Events.
+Require Import Values_old.
+Require Import Memory_old.
+Require Import Globalenvs_old.
+Require Import Events_old.
 Require Import Lattice.
-Require Import Registers.
-Require Import ValueDomain.
-Require Import Op.
-Require Import RTL.
+Require Import Registers_old.
+Require Import ValueDomain_old.
+Require Import Op_old.
+Require Import RTL_old.
 
 (** * Neededness for values *)
 
@@ -795,6 +795,7 @@ Definition default (x: nval) :=
   end.
 
 Section DEFAULT.
+Context `{memory_model_prf: Mem.MemoryModel}.
 
 Variable ge: genv.
 Variable sp: block.
@@ -809,6 +810,8 @@ Let valid_pointer_inj:
 Proof.
   unfold inject_id; intros. inv H. rewrite Ptrofs.add_zero.
   rewrite Mem.valid_pointer_nonempty_perm in *. eauto.
+  rewrite Mem.valid_pointer_nonempty_perm in H0.
+  eauto.
 Qed.
 
 Let weak_valid_pointer_inj:
@@ -819,7 +822,9 @@ Let weak_valid_pointer_inj:
 Proof.
   unfold inject_id; intros. inv H. rewrite Ptrofs.add_zero.
   rewrite Mem.weak_valid_pointer_spec in *.
+  repeat rewrite Mem.weak_valid_pointer_spec in H0.
   rewrite ! Mem.valid_pointer_nonempty_perm in *.
+  repeat rewrite Mem.valid_pointer_nonempty_perm in H0.
   destruct H0; [left|right]; eauto.
 Qed.
 
@@ -851,7 +856,7 @@ Lemma default_needs_of_condition_sound:
   vagree_list args1 args2 nil ->
   eval_condition cond args2 m2 = Some b.
 Proof.
-  intros. apply eval_condition_inj with (f := inject_id) (m1 := m1) (vl1 := args1); auto.
+  intros. apply eval_condition_inj with (f := inject_id) (m3 := m1) (vl1 := args1); auto.
   apply val_inject_list_lessdef. apply lessdef_vagree_list. auto.
 Qed.
 
@@ -874,7 +879,8 @@ Proof.
     destruct H0. inv H0; constructor; auto with na.
     inv H0; constructor; auto with na. inv H8; constructor; auto with na.
   }
-  exploit (@eval_operation_inj _ _ _ _ ge ge inject_id).
+  idtac.
+  exploit (eval_operation_inj ge ge (f := inject_id)).
   eassumption. auto. auto. auto.
   instantiate (1 := op). intros. apply val_inject_lessdef; auto.
   apply val_inject_lessdef. instantiate (1 := Vptr sp Ptrofs.zero). instantiate (1 := Vptr sp Ptrofs.zero). auto.
