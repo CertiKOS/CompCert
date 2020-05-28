@@ -238,11 +238,55 @@ Proof.
   - simpl. auto.
 Qed.
     
+Definition is_local_jmp (i: instruction) := 
+  match i with
+  | Pjmp_l _ 
+  | Pjcc _ _ 
+  | Pjcc2 _ _ _ 
+  | Pjmptbl _ _ => True
+  | _ => False
+  end.
+
+Definition is_not_local_jmp i := ~is_local_jmp i.
+
+Lemma is_local_jmp_dec: forall i, {is_local_jmp i} + {~is_local_jmp i}.
+Proof.
+  destruct i; cbn; auto.
+Qed.
+
+Lemma is_not_local_jmp_dec: forall i, {is_not_local_jmp i} + {~is_not_local_jmp i}.
+Proof.
+  unfold is_not_local_jmp.
+  destruct i; cbn; auto.
+Qed.
+
+Definition def_no_local_jmp (def: option (globdef fundef unit)) :=
+  match def with
+  | None => True
+  | Some (Gvar v) => True
+  | Some (Gfun f) =>
+    match f with
+    | External _ => True
+    | Internal f =>    Forall is_not_local_jmp (fn_code f)
+    end
+  end.
+
+Lemma def_no_local_jmp_dec: forall def, {def_no_local_jmp def} + {~def_no_local_jmp def}.
+Proof.
+  destruct def. destruct g.
+  - destruct f. 
+    + simpl. apply Forall_dec. apply is_not_local_jmp_dec.
+    + simpl. auto.
+  - simpl. auto.
+  - simpl. auto.
+Qed.
+
 Record wf_prog (p:Asm.program) : Prop :=
   {
     wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
     wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
     wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
+    wf_prog_no_local_jmps: Forall def_no_local_jmp (map snd (AST.prog_defs p));
   }.
 
 Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
@@ -250,7 +294,9 @@ Proof.
   destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
   destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
   destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
+  destruct (Forall_dec _ def_no_local_jmp_dec (map snd (AST.prog_defs p))).
   left; constructor; auto.
+  right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
