@@ -4449,6 +4449,54 @@ Proof.
     eauto.
 Qed.
 
+
+Lemma link_option_internal_external_pres_instrs_validity :
+  forall def1 def2 def,
+    is_def_internal is_fundef_internal def2 = false ->
+    def_instrs_valid def1 -> link_option def1 def2 = Some def -> 
+    def_instrs_valid def.
+Proof.
+  intros def1 def2 def INT ALIGN LINK.
+  destruct def2. destruct g. destruct f; cbn in *; try congruence.
+  - destruct def1. destruct g. destruct f. 
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destruct e; try congruence. 
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destr_in Heqo0; try congruence. 
+    + cbn in LINK. congruence.
+    + cbn in LINK. inv LINK. auto.
+  - destruct def1. destruct g.
+    + cbn in *. congruence.
+    + cbn in LINK. destr_in LINK; try congruence.
+      destr_in Heqo; try congruence. inv Heqo. inv LINK.
+      cbn in INT.
+      red. auto.
+    + cbn in *. inv LINK. auto.
+  - destruct def1. cbn in LINK. inv LINK. auto.
+    cbn in *. inv LINK. auto.
+Qed.
+  
+
+Lemma link_pres_instrs_validity :
+  forall def1 def2 def : option (globdef fundef unit),
+    def_instrs_valid def1 -> def_instrs_valid def2 -> 
+    link def1 def2 = Some def -> def_instrs_valid def.
+Proof.
+  intros def1 def2 def AL1 AL2 LINK.
+  cbn in LINK.
+  destruct (is_def_internal is_fundef_internal def1) eqn:INT1.
+  - generalize (link_int_defs_some_inv _ _ INT1 LINK).
+    intros INT2.
+    apply link_option_internal_external_pres_instrs_validity
+      with (def1 := def1) (def2 := def2); eauto.
+  - setoid_rewrite link_option_symm in LINK; eauto.
+    apply link_option_internal_external_pres_instrs_validity
+      with (def1 := def2) (def2 := def1); eauto.
+Qed.
+  
+
 Lemma def_instrs_valid_combine: 
   forall defs1 defs2,
     Forall def_instrs_valid (map snd defs1) ->
@@ -4459,7 +4507,31 @@ Lemma def_instrs_valid_combine:
                                       (PTree_Properties.of_list defs1)
                                       (PTree_Properties.of_list defs2)))).
 Proof.
-Admitted.
+  intros defs1 defs2 AL1 AL2.
+  rewrite Forall_forall in *.
+  intros def IN.
+  rewrite in_map_iff in IN.
+  destruct IN as ((id, def') & EQ & IN). cbn in EQ. subst def'.
+  apply PTree.elements_complete in IN.
+  erewrite PTree.gcombine in IN; eauto.
+  unfold link_prog_merge in IN.
+  destr_in IN. destr_in IN.
+  - apply PTree_Properties.in_of_list in Heqo.
+    apply PTree_Properties.in_of_list in Heqo0.
+    apply (in_map snd) in Heqo. cbn in Heqo.
+    apply (in_map snd) in Heqo0. cbn in Heqo0.
+    apply AL1 in Heqo.
+    apply AL2 in Heqo0.    
+    apply link_pres_instrs_validity with (def1:= o) (def2 := o0); eauto.
+  - inv IN.
+    apply PTree_Properties.in_of_list in Heqo.
+    apply (in_map snd) in Heqo. cbn in Heqo.
+    eauto.
+  - apply PTree_Properties.in_of_list in IN.
+    apply (in_map snd) in IN. cbn in IN.
+    eauto.
+Qed.
+
 
 Lemma link_prog_pres_wf_prog: forall p1 p2 p,
     link_prog p1 p2 = Some p ->
