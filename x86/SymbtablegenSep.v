@@ -4340,6 +4340,23 @@ Proof.
   eapply Permutation_in; eauto.
 Qed.
 
+Lemma def_instrs_valid_perm: forall p p',
+    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
+    Forall def_instrs_valid (map snd (AST.prog_defs p)) ->
+    Forall def_instrs_valid (map snd (AST.prog_defs p')).
+Proof.
+  intros p p' PERM ALIGN.
+  rewrite Forall_forall in *.
+  intros x IN.
+  eapply ALIGN; eauto.
+  apply list_in_map_inv in IN.
+  destruct IN as (x' & EQ & IN').
+  subst.
+  apply in_map.
+  apply Permutation_sym in PERM. 
+  eapply Permutation_in; eauto.
+Qed.
+
 Lemma wf_prog_perm: forall p p',
     Permutation (AST.prog_defs p) (AST.prog_defs p') ->
     AST.prog_main p = AST.prog_main p' ->
@@ -4352,6 +4369,7 @@ Proof.
   - rewrite <- EQ.
     eapply main_exists_perm; eauto.
   - eapply def_aligned_perm; eauto.
+  - eapply def_instrs_valid_perm; eauto.
 Qed.
 
 Lemma main_exists_combine: 
@@ -4431,6 +4449,17 @@ Proof.
     eauto.
 Qed.
 
+Lemma def_instrs_valid_combine: 
+  forall defs1 defs2,
+    Forall def_instrs_valid (map snd defs1) ->
+    Forall def_instrs_valid (map snd defs2) ->
+    Forall def_instrs_valid 
+           (map snd (PTree.elements
+                       (PTree.combine link_prog_merge
+                                      (PTree_Properties.of_list defs1)
+                                      (PTree_Properties.of_list defs2)))).
+Proof.
+Admitted.
 
 Lemma link_prog_pres_wf_prog: forall p1 p2 p,
     link_prog p1 p2 = Some p ->
@@ -4454,6 +4483,7 @@ Proof.
   - rewrite e in *.
     eapply main_exists_combine; eauto.
   - eapply def_aligned_combine; eauto.
+  - eapply def_instrs_valid_combine; eauto.
 Qed.
 
 Lemma link_ordered_prog_pres_wf_prog: forall p1 p2 p,

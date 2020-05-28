@@ -492,7 +492,7 @@ Definition exec_instr (ge: Genv.t) (i: instruction) (rs: regset) (m: mem) : outc
       Next (nextinstr_nf (rs#rd <- (Vsingle Float32.zero)) sz) m
     (** Branches and calls *)
     | Pjmp_l_rel ofs =>
-      RelocProgSemantics.goto_ofs (Genv.genv_genv ge) sz ofs rs m
+      RelocProgSemantics.goto_ofs sz ofs rs m
     | Pjmp (inr id) sg =>
       match idofs with
       | None => Stuck
@@ -504,13 +504,13 @@ Definition exec_instr (ge: Genv.t) (i: instruction) (rs: regset) (m: mem) : outc
       Next (rs#PC <- (rs r)) m
     | Pjcc_rel cond ofs =>
       match eval_testcond cond rs with
-      | Some true => RelocProgSemantics.goto_ofs (Genv.genv_genv ge) sz ofs rs m
+      | Some true => RelocProgSemantics.goto_ofs sz ofs rs m
       | Some false => Next (nextinstr rs sz) m
       | None => Stuck
       end
     | Pjcc2_rel cond1 cond2 ofs =>
       match eval_testcond cond1 rs, eval_testcond cond2 rs with
-      | Some true, Some true => RelocProgSemantics.goto_ofs (Genv.genv_genv ge) sz ofs rs m
+      | Some true, Some true => RelocProgSemantics.goto_ofs sz ofs rs m
       | Some _, Some _ => Next (nextinstr rs sz) m
       | _, _ => Stuck
       end
@@ -519,7 +519,7 @@ Definition exec_instr (ge: Genv.t) (i: instruction) (rs: regset) (m: mem) : outc
       | Vint n =>
         match list_nth_z tbl (Int.unsigned n) with
         | None => Stuck
-        | Some ofs => RelocProgSemantics.goto_ofs (Genv.genv_genv ge) sz ofs (rs #RAX <- Vundef #RDX <- Vundef) m
+        | Some ofs => RelocProgSemantics.goto_ofs sz ofs (rs #RAX <- Vundef #RDX <- Vundef) m
         end
       | _ => Stuck
       end
