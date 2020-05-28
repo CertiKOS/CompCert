@@ -4,10 +4,11 @@
 (* ********************* *)
 Require Import Coqlib Integers AST Maps.
 Require Import Permutation.
+Require Import Values Events Memtype Memory.
 Import ListNotations.
 
 
-(** Properties about basic data structures *)
+(** ** Properties about basic data structures *)
 
 Lemma Z_max_0 : forall z, z >= 0 -> Z.max z 0 = z.
 Proof.
@@ -177,7 +178,7 @@ Proof.
 Qed.
 
 
-(** Bunch of properties about Permutation and PTree *)
+(** ** Bunch of properties about Permutation and PTree *)
 Lemma NoDup_list_norepet_equiv : forall A (l: list A),
     NoDup l <-> list_norepet l.
 Proof.
@@ -585,3 +586,249 @@ Proof.
     eapply IHids; eauto.
     intros IN'. apply IN. apply in_cons. auto.
 Qed.
+
+
+(** ** Properties about injections of values *)
+
+Lemma vinject_pres_not_vundef : forall j v1 v2,
+  Val.inject j v1 v2 -> v1 <> Vundef -> v2 <> Vundef.
+Proof.
+  intros. destruct v1; inversion H; subst; auto.
+  congruence.
+Qed.
+
+Lemma vinject_pres_has_type : forall j v1 v2 t,
+    Val.inject j v1 v2 -> v1 <> Vundef ->
+    Val.has_type v1 t -> Val.has_type v2 t.
+Proof.
+  intros. destruct v1; inversion H; subst; simpl in H; auto. 
+  congruence.
+Qed.
+
+Lemma val_of_optbool_lessdef : forall j v1 v2,
+    Val.opt_lessdef v1 v2 -> Val.inject j (Val.of_optbool v1) (Val.of_optbool v2).
+Proof.
+  intros. destruct v1; auto.
+  simpl. inv H. destruct b; constructor.
+Qed.
+
+Lemma val_negative_inject: forall j v1 v2,
+  Val.inject j v1 v2 -> Val.inject j (Val.negative v1) (Val.negative v2).
+Proof.
+  intros. unfold Val.negative. destruct v1; auto.
+  inv H. auto.
+Qed.
+
+Lemma val_negativel_inject: forall j v1 v2,
+  Val.inject j v1 v2 -> Val.inject j (Val.negativel v1) (Val.negativel v2).
+Proof.
+  intros. unfold Val.negativel. destruct v1; auto.
+  inv H. auto.
+Qed.
+
+Lemma sub_overflow_inject : forall v1 v2 v1' v2' j,
+    Val.inject j v1 v2 -> Val.inject j v1' v2' -> 
+    Val.inject j (Val.sub_overflow v1 v1') (Val.sub_overflow v2 v2').
+Proof.
+  intros. unfold Val.sub_overflow. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma subl_overflow_inject : forall v1 v2 v1' v2' j,
+    Val.inject j v1 v2 -> Val.inject j v1' v2' -> 
+    Val.inject j (Val.subl_overflow v1 v1') (Val.subl_overflow v2 v2').
+Proof.
+  intros. unfold Val.subl_overflow. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+
+
+(** ** Propreties about injection of memories *)
+
+Section WITHMEMORYMODEL.
+  
+Context `{memory_model: Mem.MemoryModel }.
+Existing Instance inject_perm_all.
+
+(** Default frame injection *)
+Definition def_frame_inj m := (flat_frameinj (length (Mem.stack m))).
+
+Lemma store_pres_def_frame_inj : forall chunk m1 b ofs v m1',
+    Mem.store chunk m1 b ofs v = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  unfold def_frame_inj. intros.
+  repeat erewrite Mem.push_new_stage_stack. simpl.
+  exploit Mem.store_stack_blocks; eauto. intros. rewrite H0.
+  auto.
+Qed.
+
+Lemma storev_pres_def_frame_inj : forall chunk m1 v1 v2 m1',
+    Mem.storev chunk m1 v1 v2 = Some m1' ->
+    def_frame_inj m1= def_frame_inj m1'.
+Proof.
+  intros until m1'. unfold Mem.storev.
+  destruct v1; try congruence.
+  intros STORE.
+  eapply store_pres_def_frame_inj; eauto.
+Qed.
+
+
+Lemma store_mapped_inject' : 
+  forall (f : meminj) (chunk : memory_chunk) 
+    (m1 : mem) (b1 : block) (ofs : Z) (v1 : val) 
+    (n1 m2 : mem) (b2 : block) (delta : Z) (v2 : val),
+    Mem.inject f (def_frame_inj m1) m1 m2 ->
+    Mem.store chunk m1 b1 ofs v1 = Some n1 ->
+    f b1 = Some (b2, delta) ->
+    Val.inject f v1 v2 ->
+    exists n2 : mem,
+      Mem.store chunk m2 b2 (ofs + delta) v2 = Some n2 /\
+      Mem.inject f (def_frame_inj n1) n1 n2.
+Proof.
+  intros. exploit Mem.store_mapped_inject; eauto. 
+  intros (n2 & STORE & MINJ).
+  eexists. split. eauto.
+  erewrite <- store_pres_def_frame_inj; eauto.
+Qed.
+
+Theorem storev_mapped_inject':
+  forall f chunk m1 a1 v1 n1 m2 a2 v2,
+  Mem.inject f (def_frame_inj m1) m1 m2 ->
+  Mem.storev chunk m1 a1 v1 = Some n1 ->
+  Val.inject f a1 a2 ->
+  Val.inject f v1 v2 ->
+  exists n2,
+    Mem.storev chunk m2 a2 v2 = Some n2 /\ Mem.inject f (def_frame_inj n1) n1 n2.
+Proof.
+  intros. exploit Mem.storev_mapped_inject; eauto. 
+  intros (n2 & STORE & MINJ).
+  eexists. split. eauto.
+  erewrite <- storev_pres_def_frame_inj; eauto.
+Qed.
+
+Lemma inject_decr : forall b j j' m1 m2 b' ofs,
+  Mem.valid_block m1 b -> inject_incr j j' -> inject_separated j j' m1 m2 ->
+  j' b = Some (b', ofs) -> j b = Some (b', ofs).
+Proof.
+  intros. destruct (j b) eqn:JB.
+  - unfold inject_incr in *. destruct p. exploit H0; eauto.
+    intros. congruence.
+  - unfold inject_separated in *. exploit H1; eauto.
+    intros (NVALID1 & NVALID2). congruence.
+Qed.
+
+
+(** Injection for cmpu_bool and cmplu_bool *)
+Lemma valid_ptr_inj : forall j m m',
+    Mem.inject j (def_frame_inj m) m m' ->
+    forall b i b' delta,                                  
+      j b = Some (b', delta) ->
+      Mem.valid_pointer m b (Ptrofs.unsigned i) = true ->
+      Mem.valid_pointer m' b' (Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta))) = true.
+Proof.
+  intros. eapply Mem.valid_pointer_inject'; eauto.
+Qed.
+
+
+Lemma weak_valid_ptr_inj: forall j m m',
+  Mem.inject j (def_frame_inj m) m m' ->
+  forall b1 ofs b2 delta,
+  j b1 = Some(b2, delta) ->
+  Mem.weak_valid_pointer m b1 (Ptrofs.unsigned ofs) = true ->
+  Mem.weak_valid_pointer m' b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true.
+Proof.
+  intros. eapply Mem.weak_valid_pointer_inject'; eauto.
+Qed.
+
+Lemma weak_valid_ptr_no_overflow: forall j m m',
+  Mem.inject j (def_frame_inj m) m m' ->
+  forall b1 ofs b2 delta,
+  j b1 = Some(b2, delta) ->
+  Mem.weak_valid_pointer m b1 (Ptrofs.unsigned ofs) = true ->
+  0 <= Ptrofs.unsigned ofs + Ptrofs.unsigned (Ptrofs.repr delta) <= Ptrofs.max_unsigned.
+Proof.
+  intros. eapply Mem.weak_valid_pointer_inject_no_overflow; eauto.
+Qed.
+
+Lemma valid_different_ptrs_inj: forall j m m',
+  Mem.inject j (def_frame_inj m) m m' ->
+  forall b1 ofs1 b2 ofs2 b1' delta1 b2' delta2,
+  b1 <> b2 ->
+  Mem.valid_pointer m b1 (Ptrofs.unsigned ofs1) = true ->
+  Mem.valid_pointer m b2 (Ptrofs.unsigned ofs2) = true ->
+  j b1 = Some (b1', delta1) ->
+  j b2 = Some (b2', delta2) ->
+  b1' <> b2' \/
+  Ptrofs.unsigned (Ptrofs.add ofs1 (Ptrofs.repr delta1)) <> Ptrofs.unsigned (Ptrofs.add ofs2 (Ptrofs.repr delta2)).
+Proof.
+  intros. eapply Mem.different_pointers_inject; eauto.
+Qed.
+
+Definition cmpu_bool_inject := fun j m m' (MINJ: Mem.inject j (def_frame_inj m) m m') =>
+                     Val.cmpu_bool_inject j (Mem.valid_pointer m) (Mem.valid_pointer m')
+                                          (valid_ptr_inj j m m' MINJ)
+                                          (weak_valid_ptr_inj j m m' MINJ)
+                                          (weak_valid_ptr_no_overflow j m m' MINJ)
+                                          (valid_different_ptrs_inj j m m' MINJ).
+
+Lemma cmpu_bool_lessdef : forall j v1 v2 v1' v2' m m' c,
+    Val.inject j v1 v1' -> Val.inject j v2 v2' ->
+    Mem.inject j (def_frame_inj m) m m' ->
+    Val.opt_lessdef (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)
+                (Val.cmpu_bool (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) eqn:EQ.
+  - exploit (cmpu_bool_inject j m m' H1 c v1 v2); eauto.
+    intros. rewrite H2. constructor.
+  - constructor.
+Qed.
+
+Definition cmplu_bool_inject := fun j m m' (MINJ: Mem.inject j (def_frame_inj m) m m') =>
+                     Val.cmplu_bool_inject j (Mem.valid_pointer m) (Mem.valid_pointer m')
+                                           (valid_ptr_inj j m m' MINJ)
+                                           (weak_valid_ptr_inj j m m' MINJ)
+                                           (weak_valid_ptr_no_overflow j m m' MINJ)
+                                           (valid_different_ptrs_inj j m m' MINJ).
+
+
+Lemma cmplu_bool_lessdef : forall j v1 v2 v1' v2' m m' c,
+    Val.inject j v1 v1' -> Val.inject j v2 v2' ->
+    Mem.inject j (def_frame_inj m) m m' ->
+    Val.opt_lessdef (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2)
+                (Val.cmplu_bool (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. destruct (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2) eqn:EQ.
+  - exploit (cmplu_bool_inject j m m' H1 c v1 v2); eauto.
+    intros. rewrite H2. constructor.
+  - constructor.
+Qed.
+
+Lemma cmpu_inject : forall j v1 v2 v1' v2' m m' c,
+    Val.inject j v1 v1' -> Val.inject j v2 v2' ->
+    Mem.inject j (def_frame_inj m) m m' ->
+    Val.inject j (Val.cmpu (Mem.valid_pointer m) c v1 v2)
+               (Val.cmpu (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. unfold Val.cmpu.
+  exploit (cmpu_bool_lessdef j v1 v2); eauto. intros. 
+  exploit val_of_optbool_lessdef; eauto.
+Qed.
+
+Lemma cmplu_lessdef : forall j v1 v2 v1' v2' m m' c,
+    Val.inject j v1 v1' -> Val.inject j v2 v2' ->
+    Mem.inject j (def_frame_inj m) m m' ->
+    Val.opt_val_inject j (Val.cmplu (Mem.valid_pointer m) c v1 v2)
+                     (Val.cmplu (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. unfold Val.cmplu.
+  exploit (cmplu_bool_lessdef j v1 v2 v1' v2' m m' c); eauto. intros.
+  inversion H2; subst; simpl; constructor.
+  apply Val.vofbool_inject.
+Qed.
+
+
+End WITHMEMORYMODEL.

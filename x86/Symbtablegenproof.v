@@ -9,6 +9,7 @@ Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import Symbtablegen.
 Require Import RelocProgram RelocProgSemantics.
+Require Import LocalLib AsmInject.
 Import ListNotations.
 Require AsmFacts.
 
@@ -172,63 +173,6 @@ Existing Instance inject_perm_all.
 
 Local Existing Instance mem_accessors_default.
 
-(** Default frame injection *)
-Definition def_frame_inj m := (flat_frameinj (length (Mem.stack m))).
-
-Lemma store_pres_def_frame_inj : forall chunk m1 b ofs v m1',
-    Mem.store chunk m1 b ofs v = Some m1' ->
-    def_frame_inj m1 = def_frame_inj m1'.
-Proof.
-  unfold def_frame_inj. intros.
-  repeat erewrite Mem.push_new_stage_stack. simpl.
-  exploit Mem.store_stack_blocks; eauto. intros. rewrite H0.
-  auto.
-Qed.
-
-Lemma storev_pres_def_frame_inj : forall chunk m1 v1 v2 m1',
-    Mem.storev chunk m1 v1 v2 = Some m1' ->
-    def_frame_inj m1= def_frame_inj m1'.
-Proof.
-  intros until m1'. unfold Mem.storev.
-  destruct v1; try congruence.
-  intros STORE.
-  eapply store_pres_def_frame_inj; eauto.
-Qed.
-
-
-Lemma store_mapped_inject' : 
-  forall (f : meminj) (chunk : memory_chunk) 
-    (m1 : mem) (b1 : block) (ofs : Z) (v1 : val) 
-    (n1 m2 : mem) (b2 : block) (delta : Z) (v2 : val),
-    Mem.inject f (def_frame_inj m1) m1 m2 ->
-    Mem.store chunk m1 b1 ofs v1 = Some n1 ->
-    f b1 = Some (b2, delta) ->
-    Val.inject f v1 v2 ->
-    exists n2 : mem,
-      Mem.store chunk m2 b2 (ofs + delta) v2 = Some n2 /\
-      Mem.inject f (def_frame_inj n1) n1 n2.
-Proof.
-  intros. exploit Mem.store_mapped_inject; eauto. 
-  intros (n2 & STORE & MINJ).
-  eexists. split. eauto.
-  erewrite <- store_pres_def_frame_inj; eauto.
-Qed.
-
-Theorem storev_mapped_inject':
-  forall f chunk m1 a1 v1 n1 m2 a2 v2,
-  Mem.inject f (def_frame_inj m1) m1 m2 ->
-  Mem.storev chunk m1 a1 v1 = Some n1 ->
-  Val.inject f a1 a2 ->
-  Val.inject f v1 v2 ->
-  exists n2,
-    Mem.storev chunk m2 a2 v2 = Some n2 /\ Mem.inject f (def_frame_inj n1) n1 n2.
-Proof.
-  intros. exploit Mem.storev_mapped_inject; eauto. 
-  intros (n2 & STORE & MINJ).
-  eexists. split. eauto.
-  erewrite <- storev_pres_def_frame_inj; eauto.
-Qed.
-
 
 (** Assumption about external calls.
     These should be merged into common properties about external calls later. *)
@@ -264,9 +208,6 @@ Hypothesis TRANSF: match_prog prog tprog.
 
 Definition glob_block_valid (m:mem) := 
   forall b g, Globalenvs.Genv.find_def ge b = Some g -> Mem.valid_block m b.
-
-Definition regset_inject (j:meminj) (rs rs' : regset) : Prop :=
-  forall r, Val.inject j (rs r) (rs' r).
 
 (** Properties about the memory injection from RealAsm to Relocatable Programs *)   Record match_inj (j: meminj) : Type :=
   {
