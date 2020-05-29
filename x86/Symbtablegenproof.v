@@ -127,6 +127,78 @@ Proof.
   intros. apply align_divides. unfold alignw; omega.
 Qed.
 
+Lemma fold_left_acc_symb_acc:
+  forall defs stbl dofs cofs stbl' dofs' cofs',
+    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl, dofs, cofs) = (stbl', dofs', cofs') ->
+    forall se,
+      In se stbl -> In se stbl'.
+Proof.
+  induction defs; simpl; intros; eauto. inv H; auto.
+  repeat destr_in H.
+  eapply IHdefs. eauto. right. auto.
+Qed.
+
+Lemma gen_symb_table_ok:
+  forall id d defs defs1 defs2 stbl dofs cofs stbl' dofs' cofs',
+    defs = defs1 ++ (id, d) :: defs2 ->
+    list_norepet (map fst defs) ->
+    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl, dofs, cofs) = (stbl', dofs', cofs') ->
+    exists dofs1 cofs1 stbl1,
+      fold_left (acc_symb sec_data_id sec_code_id) defs1 (stbl, dofs, cofs) = (stbl1, dofs1, cofs1) /\
+      In (get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) stbl'.
+Proof.
+  induction defs; simpl; intros defs1 defs2 stbl dofs cofs stbl' dofs' cofs' SPLIT NR FL; eauto.
+  - apply (f_equal (@length _)) in SPLIT.
+    rewrite app_length in SPLIT. simpl in SPLIT. omega.
+  - repeat destr_in FL.
+    destruct (ident_eq i id).
+    + subst.
+      assert (defs1 = []). destruct defs1. auto. simpl in SPLIT. inv SPLIT.
+      simpl in NR.
+      inv NR.
+      exfalso; apply H2. rewrite map_app. rewrite in_app. right. simpl. auto. subst.
+      simpl in *. inv SPLIT.
+      (do 3 eexists); split; eauto.
+      eapply fold_left_acc_symb_acc. eauto. left; auto.
+    + destruct defs1. simpl in SPLIT. inv SPLIT. congruence.
+      simpl in SPLIT. inv SPLIT.
+      edestruct IHdefs as (dofs1 & cofs1 & stbl1 & FL1 & IN1). eauto.
+      inv NR. auto. eauto.
+      simpl. rewrite Heqp0.
+      setoid_rewrite FL1.
+      (do 3 eexists); split; eauto.
+Qed.
+
+Lemma symb_table_ok:
+  forall id d defs dofs cofs stbl defs1 defs2,
+    defs = defs1 ++ (id, d) :: defs2 ->
+    list_norepet (map fst defs) ->
+    gen_symb_table sec_data_id sec_code_id defs = (stbl, dofs, cofs) ->
+    exists stbl1 dofs1 cofs1,
+      gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dofs1, cofs1) /\
+      In (get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) stbl.
+Proof.
+  intros.
+  unfold gen_symb_table in H1. repeat destr_in H1.
+  setoid_rewrite <- in_rev.
+  eapply gen_symb_table_ok in Heqp; eauto.
+  destruct Heqp as (dofs1 & cofs1 & stbl1 & FL1 & IN1).
+  unfold gen_symb_table. setoid_rewrite FL1.
+  (do 3 eexists); split; eauto.
+Qed.
+
+Lemma symb_table_ok':
+  forall id d defs dofs cofs stbl,
+    list_norepet (map fst defs) ->
+    In (id, d) defs ->
+    gen_symb_table sec_data_id sec_code_id defs = (stbl, dofs, cofs) ->
+    exists dofs1 cofs1,
+      In (get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) stbl.
+Proof.
+  intros.
+  edestruct in_split as (defs1 & defs2 & SPLIT); eauto.
+  edestruct symb_table_ok as (stbl1 & cofs1 & dofs1 & DST & IN); eauto.
+Qed.
 
 Section PRESERVATION.
 
@@ -146,6 +218,7 @@ Definition match_prog (p: Asm.program) (tp: program) :=
   transf_program p = OK tp.
 
 Hypothesis TRANSF: match_prog prog tprog.
+
 
 (** ** Definitions for matching  states *)
 
