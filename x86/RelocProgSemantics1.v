@@ -706,13 +706,9 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
 (* Given relocentry [e] and symtable [stbl], updates the mapping [m] that
 associates relocation offsets with their identifiers. *)
 Definition acc_reloc_ofs_symb (stbl:symbtable) (e:relocentry) (m:ZTree.t ident) : ZTree.t ident :=
-  match SeqTable.get (reloc_symb e) stbl with
+  match SymbTable.get (reloc_symb e) stbl with
   | None => m
-  | Some s =>
-    match symbentry_id s with
-    | None => m
-    | Some id => ZTree.set (reloc_offset e) id m
-    end
+  | Some s => ZTree.set (reloc_offset e) (symbentry_id s) m
   end.
 
 Definition gen_reloc_ofs_symb (stbl: symbtable) (rtbl: reloctable) : ZTree.t ident :=
@@ -767,35 +763,32 @@ Fixpoint store_init_data_list (m: mem) (b: block) (p: Z) (idl: list init_data)
   end.
 
 Definition alloc_external_symbol (m: mem) (e:symbentry): option mem :=
-  match symbentry_id e with
-  | None => Some m
-  | Some id =>
-    match symbentry_type e with
-    | symb_notype =>
-      let (m1, b) := Mem.alloc m 0 0 in
-      Some m1
-    | symb_func =>
-      match symbentry_secindex e with
-      | secindex_undef =>
-        let (m1, b) := Mem.alloc m 0 1 in
-        Mem.drop_perm m1 b 0 1 Nonempty        
-      | secindex_comm => 
-        None (**r Impossible *)
-      | secindex_normal _ => Some m
-      end
-    | symb_data =>
-      match symbentry_secindex e with
-      | secindex_undef
-      | secindex_comm => 
-        let sz := symbentry_size e in
-        let (m1, b) := Mem.alloc m 0 sz in
-        match store_zeros m1 b 0 sz with
-        | None => None
-        | Some m2 =>
-          Mem.drop_perm m2 b 0 sz Nonempty
-        end        
-      | secindex_normal _ => Some m
-      end
+  let id := symbentry_id e in
+  match symbentry_type e with
+  | symb_notype =>
+    let (m1, b) := Mem.alloc m 0 0 in
+    Some m1
+  | symb_func =>
+    match symbentry_secindex e with
+    | secindex_undef =>
+      let (m1, b) := Mem.alloc m 0 1 in
+      Mem.drop_perm m1 b 0 1 Nonempty        
+    | secindex_comm => 
+      None (**r Impossible *)
+    | secindex_normal _ => Some m
+    end
+  | symb_data =>
+    match symbentry_secindex e with
+    | secindex_undef
+    | secindex_comm => 
+      let sz := symbentry_size e in
+      let (m1, b) := Mem.alloc m 0 sz in
+      match store_zeros m1 b 0 sz with
+      | None => None
+      | Some m2 =>
+        Mem.drop_perm m2 b 0 sz Nonempty
+      end        
+    | secindex_normal _ => Some m
     end
   end.
       
@@ -850,7 +843,7 @@ Fixpoint alloc_external_symbols (m: mem) (t: symbtable)
 
 
 Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
-  match SeqTable.get sec_data_id t with
+  match SecTable.get sec_data_id t with
   | None => None
   | Some sec =>
     let sz := (sec_size sec) in
@@ -870,7 +863,7 @@ Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
   end.
 
 Definition alloc_code_section (t:sectable) (m:mem) : option mem :=
-  match SeqTable.get sec_code_id t with
+  match SecTable.get sec_code_id t with
   | None => None
   | Some sec =>
     let sz := sec_size sec in

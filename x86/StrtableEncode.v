@@ -49,11 +49,7 @@ Definition get_strings_map_bytes (symbols: list ident) : res (PTree.t Z * list b
                              
 Definition create_strtab_section (strs: list byte) := sec_bytes strs.
 
-Definition acc_symbols e ids := 
-  match symbentry_id e with
-  | None => ids
-  | Some id => id :: ids
-  end.
+Definition acc_symbols e ids := symbentry_id e :: ids.
 
 Definition transf_program (p:program) : res program :=
   let symbols :=
@@ -120,26 +116,23 @@ Lemma acc_symbols_in_in_symbols:
     fold_right acc_symbol_strings (OK l) (fold_right acc_symbols [] s) = OK x0 ->
     forall i,
       In i (map fst x0) ->
-      In i (map fst l) \/ exists a, In a s /\ symbentry_id a = Some i.
+      In i (map fst l) \/ exists a, In a s /\ symbentry_id a = i.
 Proof.
-  induction s; simpl; intros x0 l FOLD i IN.
+  induction s; simpl; intros x0 l FOLD i IN. 
   - inv FOLD. auto.
   - unfold acc_symbols at 1 in FOLD.
     destr_in FOLD; eauto.
-    + simpl in FOLD.
-      unfold acc_symbol_strings at 1 in FOLD. monadInv FOLD.
-      repeat destr_in EQ0.
-      simpl in IN. destruct IN as [eq | IN]; subst.
-      right; eexists; split; eauto.
-      exploit IHs. eauto. eauto. intros [A | [a0 [INs EQs]]]; eauto.
-    + exploit IHs; eauto. intros [A | [a0 [INs EQs]]]; eauto.
+    unfold acc_symbol_strings at 1 in H10. monadInv H10.
+    repeat destr_in EQ0.
+    simpl in IN. destruct IN as [eq | IN]; subst.
+    right; eexists; split; eauto.
+    exploit IHs. eauto. eauto. intros [A | [a0 [INs EQs]]]; eauto.
 Qed.
 
 Lemma transf_program_valid_strtable:
   forall pi p (TF: transf_program pi = OK p)
          x (EQ0 : fold_right acc_symbol_strings (OK []) (fold_right acc_symbols [] (prog_symbtable pi)) = OK x)
-         (LNR: list_norepet (filter (fun o => match o with None => false | _ => true end)
-                                    (map symbentry_id (prog_symbtable pi))))
+         (LNR: list_norepet (map symbentry_id (prog_symbtable pi)))
 ,
     valid_strtable x (prog_strtable p).
 Proof.
@@ -147,13 +140,6 @@ Proof.
   unfold valid_strtable.
   unfold transf_program in TF.
   monadInv TF.
-  (* assert (LNR': list_norepet (fold_right acc_symbols [] (prog_symbtable pi))). *)
-  (* { *)
-  (*   revert LNR. generalize (prog_symbtable pi). clear. *)
-  (*   induction s; simpl; intros; eauto. constructor. *)
-  (*   unfold acc_symbols at 1. destr; auto. *)
-
-
 
   assert (LNR': list_norepet (map fst x)).
   {
@@ -162,23 +148,21 @@ Proof.
     induction s; simpl; intros; eauto.
     - inv EQ0. constructor.
     - unfold acc_symbols at 1 in EQ0.
-      destr_in EQ0; eauto. simpl in EQ0.
       unfold acc_symbol_strings at 1 in EQ0. monadInv EQ0.
       exploit IHs. apply EQ. inv LNR; auto.
       repeat destr_in EQ1. simpl. intros; constructor; auto.
       intro INi.
       eapply acc_symbols_in_in_symbols in INi; eauto. simpl in INi. destruct INi as [[]|(aa & IN & EQa)].
       inv LNR. apply H12.
-      apply filter_In. split; auto.
       rewrite in_map_iff. eexists; split; eauto.
   }
   repeat destr_in EQ1. simpl in *.
   apply beq_nat_true in Heqb.
   destruct (prog_sectable pi); simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence.
-  2: destruct s3; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  2: destruct s; simpl in *; try congruence.
   unfold get_strings_map_bytes in EQ.
   rewrite EQ0 in EQ. simpl in EQ. repeat destr_in EQ.
   exists z; split; auto.

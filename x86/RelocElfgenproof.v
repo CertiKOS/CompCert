@@ -34,8 +34,8 @@ Variable tprog: elf_file.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-Hypothesis first_section_is_null:
-  hd_error (prog_sectable prog) = Some sec_null.
+(* Hypothesis first_section_is_null: *)
+(*   hd_error (prog_sectable prog) = Some sec_null. *)
 
 Hypothesis decodable:
   exists pp, decode_tables prog = OK pp.

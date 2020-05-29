@@ -146,7 +146,6 @@ Proof.
   induction stbl; intros.
   - simpl. auto.
   - simpl. erewrite IHstbl; eauto.
-    rewrite add_external_global_pres_senv. auto.
 Qed.
 
 Lemma transf_prog_pres_senv: forall p tp,

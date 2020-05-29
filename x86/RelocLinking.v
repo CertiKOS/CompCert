@@ -67,50 +67,46 @@ Definition update_symbtype (e: symbentry) t :=
 Definition link_symb (e1 e2: symbentry) : option symbentry :=
   let id1 := symbentry_id e1 in
   let id2 := symbentry_id e2 in
-  match id1, id2 with
-  | Some id1, Some id2 =>
-    if peq id1 id2 then
-      let bindty := get_bind_ty id1 in
-      match link_symbtype (symbentry_type e1) (symbentry_type e2) with
-      | None => None
-      | Some t =>
-        let sz1 := symbentry_size e1 in
-        let sz2 := symbentry_size e2 in
-        let i1 := symbentry_secindex e1 in
-        let i2 := symbentry_secindex e2 in
-        match i1, i2 with
-        | secindex_undef, secindex_undef =>
-          Some {|symbentry_id := Some id1;
+  if peq id1 id2 then
+    let bindty := get_bind_ty id1 in
+    match link_symbtype (symbentry_type e1) (symbentry_type e2) with
+    | None => None
+    | Some t =>
+      let sz1 := symbentry_size e1 in
+      let sz2 := symbentry_size e2 in
+      let i1 := symbentry_secindex e1 in
+      let i2 := symbentry_secindex e2 in
+      match i1, i2 with
+      | secindex_undef, secindex_undef =>
+        Some {|symbentry_id := id1;
+               symbentry_bind := bindty;
+               symbentry_type := t;
+               symbentry_value := 0;
+               symbentry_secindex := secindex_undef;
+               symbentry_size := 0;
+             |}
+      | _, secindex_undef => Some e1
+      | secindex_undef, _ => Some e2
+      | secindex_comm, secindex_comm =>
+        if zeq sz1 sz2 then
+          Some {|symbentry_id := id1;
                  symbentry_bind := bindty;
                  symbentry_type := t;
-                 symbentry_value := 0;
-                 symbentry_secindex := secindex_undef;
-                 symbentry_size := 0;
+                 symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
+                 symbentry_secindex := secindex_comm;
+                 symbentry_size := Z.max sz1 0;
                |}
-        | _, secindex_undef => Some e1
-        | secindex_undef, _ => Some e2
-        | secindex_comm, secindex_comm =>
-          if zeq sz1 sz2 then
-            Some {|symbentry_id := Some id1;
-                   symbentry_bind := bindty;
-                   symbentry_type := t;
-                   symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
-                   symbentry_secindex := secindex_comm;
-                   symbentry_size := Z.max sz1 0;
-                 |}
-          else 
-            None
-        | _, secindex_comm =>
-          if zeq sz1 sz2 then Some e1 else None
-        | secindex_comm, _ =>
-          if zeq sz1 sz2 then Some e2 else None
-        | secindex_normal _ , secindex_normal _ => None
-        end
+        else 
+          None
+      | _, secindex_comm =>
+        if zeq sz1 sz2 then Some e1 else None
+      | secindex_comm, _ =>
+        if zeq sz1 sz2 then Some e2 else None
+      | secindex_normal _ , secindex_normal _ => None
       end
-    else
-      None
-  | _, _ => None
-  end.
+    end
+  else
+    None.
  
 Section WITH_RELOC_OFFSET.
 
@@ -173,14 +169,12 @@ Definition link_symbtable (t1 t2: symbtable) : option symbtable :=
   && list_norepet_dec ident_eq (get_symbentry_ids t2)
   && PTree_Properties.for_all tree1 (link_symbtable_check tree2) then
     let t := PTree.elements (PTree.combine link_symb_merge tree1 tree2) in
-    Some (dummy_symbentry :: map snd t)
+    Some (map snd t)
   else
     None.  
 
 Definition link_section (s1 s2: section) : option section :=
   match s1, s2 with
-  | sec_null, sec_null => 
-    Some sec_null
   | sec_data d1, sec_data d2 => 
     Some (sec_data (d1 ++ d2))
   | sec_text c1, sec_text c2 =>
@@ -191,17 +185,17 @@ Definition link_section (s1 s2: section) : option section :=
   end.
 
 Definition link_sectable (s1 s2: sectable) : option sectable :=
-  let sec_data1 := SeqTable.get sec_data_id s1 in
-  let sec_text1 := SeqTable.get sec_code_id s1 in
-  let sec_data2 := SeqTable.get sec_data_id s2 in
-  let sec_text2 := SeqTable.get sec_code_id s2 in
+  let sec_data1 := SecTable.get sec_data_id s1 in
+  let sec_text1 := SecTable.get sec_code_id s1 in
+  let sec_data2 := SecTable.get sec_data_id s2 in
+  let sec_text2 := SecTable.get sec_code_id s2 in
   match sec_data1, sec_text1, sec_data2, sec_text2 with
   | Some sec_data1', Some sec_text1', Some sec_data2', Some sec_text2' =>
     let res_sec_text := link_section sec_text1' sec_text2' in
     let res_sec_data := link_section sec_data1' sec_data2' in
     match res_sec_text, res_sec_data with
     | Some sec_text3, Some sec_data3 =>
-      Some [sec_null; sec_data3; sec_text3]
+      Some [sec_data3; sec_text3]
     | _, _ => 
       None
     end
@@ -231,8 +225,8 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
   | Some ap =>
     let stbl1 := prog_sectable p1 in
     let stbl2 := prog_sectable p2 in
-    let data_sec1 := SeqTable.get sec_data_id stbl1 in
-    let code_sec1 := SeqTable.get sec_code_id stbl1 in
+    let data_sec1 := SecTable.get sec_data_id stbl1 in
+    let code_sec1 := SecTable.get sec_code_id stbl1 in
     match data_sec1, code_sec1 with
     | Some data_sec1', Some code_sec1' =>
       match link_sectable stbl1 stbl2 with
@@ -285,7 +279,6 @@ Lemma link_symb_symm: forall s1 s2,
 Proof.
   intros.
   unfold link_symb.
-  destruct (symbentry_id s1), (symbentry_id s2); try congruence.
   destruct peq, peq; try congruence. 
   subst.
   erewrite link_symbtype_symm.

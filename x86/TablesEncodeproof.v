@@ -42,13 +42,7 @@ Hypothesis empty_strtable:
   prog_strtable prog = Maps.PTree.empty Z.
 
 Hypothesis symbentries_no_repet:
-  list_norepet
-    (filter
-       (fun o : option ident =>
-        match o with
-        | Some _ => true
-        | None => false
-        end) (map symbentry_id (prog_symbtable prog))).
+  list_norepet (map symbentry_id (prog_symbtable prog)).
 
 Parameter prog_strings : list (ident * list byte).
 Hypothesis prog_strings_eq:
@@ -65,19 +59,17 @@ Lemma acc_symbols_in_in_symbols:
     fold_right acc_symbol_strings (OK l) (fold_right acc_symbols [] s) = OK x0 ->
     forall i,
       In i (map fst x0) ->
-      In i (map fst l) \/ exists a, In a s /\ symbentry_id a = Some i.
+      In i (map fst l) \/ exists a, In a s /\ symbentry_id a = i.
 Proof.
   induction s; simpl; intros x0 l FOLD i IN.
   - inv FOLD. auto.
   - unfold acc_symbols at 1 in FOLD.
-    destr_in FOLD; eauto.
     + simpl in FOLD.
       unfold acc_symbol_strings at 1 in FOLD. monadInv FOLD.
       repeat destr_in EQ0.
       simpl in IN. destruct IN as [eq | IN]; subst.
       right; eexists; split; eauto.
       exploit IHs. eauto. eauto. intros [A | [a0 [INs EQs]]]; eauto.
-    + exploit IHs; eauto. intros [A | [a0 [INs EQs]]]; eauto.
 Qed.
 
 Lemma gsmb_valid_strtable:
@@ -86,8 +78,7 @@ Lemma gsmb_valid_strtable:
          get_strings_map_bytes symbols = OK (strmap, sbytes) ->
          forall
          x (EQ0 : fold_right acc_symbol_strings (OK []) (fold_right acc_symbols [] (prog_symbtable pi)) = OK x)
-         (LNR: list_norepet (filter (fun o => match o with None => false | _ => true end)
-                                    (map symbentry_id (prog_symbtable pi))))
+         (LNR: list_norepet (map symbentry_id (prog_symbtable pi)))
 ,
     valid_strtable x strmap.
 Proof.
@@ -101,14 +92,13 @@ Proof.
     induction s; simpl; intros; eauto.
     - inv EQ0. constructor.
     - unfold acc_symbols at 1 in EQ0.
-      destr_in EQ0; eauto. simpl in EQ0.
+      simpl in EQ0.
       unfold acc_symbol_strings at 1 in EQ0. monadInv EQ0.
       exploit IHs. apply EQ. inv LNR; auto.
       repeat destr_in EQ1. simpl. intros; constructor; auto.
       intro INi.
       eapply acc_symbols_in_in_symbols in INi; eauto. simpl in INi. destruct INi as [[]|(aa & IN & EQa)].
       inv LNR. apply H2.
-      apply filter_In. split; auto.
       rewrite in_map_iff. eexists; split; eauto.
   }
   unfold get_strings_map_bytes in GSMB.
@@ -227,9 +217,9 @@ Proof.
   f_equal; try intuition congruence.
   f_equal; try intuition congruence.
   rewrite EQsect.
-  f_equal. unfold SeqTable.SeqTable.get. unfold sec_code_id.
+  f_equal. unfold SecTable.get. unfold sec_code_id.
   destruct (prog_sectable prog) eqn:?; simpl in LEN; try congruence.
-  destruct s0 eqn:?; simpl in LEN; try congruence.
+  destruct s eqn:?; simpl in LEN; try congruence.
   destruct l eqn:?; simpl in LEN; try congruence. simpl.
   destruct l0 eqn:?; simpl in LEN; try congruence.
 Qed.
@@ -264,7 +254,7 @@ Proof.
   unfold decode_tables.
   rewrite EQsect.
   destruct (prog_sectable prog) eqn:?; simpl in LEN; try omega.
-  destruct s0 eqn:?; simpl in LEN; try omega.
+  destruct s eqn:?; simpl in LEN; try omega.
   destruct l eqn:?; simpl in LEN; try omega.
   destruct l0 eqn:?; simpl in LEN; try omega. simpl.
   rewrite decode_encode_reloctable. simpl.

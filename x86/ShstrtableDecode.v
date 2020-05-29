@@ -42,12 +42,12 @@ Proof.
   unfold transf_program_inv. simpl.
   apply beq_nat_true in Heqb.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence.
-  destruct s3; simpl in *; try congruence.
-  destruct s4; simpl in *; try congruence.
-  destruct s5; simpl in *; try congruence.
-  destruct s6; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
   f_equal. destruct p; simpl in *. f_equal; simpl in *; auto.
 Qed.

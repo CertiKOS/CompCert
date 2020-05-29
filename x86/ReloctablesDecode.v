@@ -244,12 +244,12 @@ Proof.
   apply beq_nat_true in Heqb.
   rewrite app_length in Heqb. erewrite (length_create_reloctables_sections eq_refl) in Heqb; eauto.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence.
-  destruct s3; simpl in *; try congruence.
-  destruct s4; simpl in *; try congruence.
-  2: destruct s5; simpl in *; omega.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  2: destruct s; simpl in *; omega.
   rewrite decode_encode_reloctable; auto.
   rewrite decode_encode_reloctable; auto. simpl.
   Transparent take_drop. simpl. f_equal. destruct p; f_equal; simpl in *; auto.

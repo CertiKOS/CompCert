@@ -49,7 +49,7 @@ Local Open Scope bits_scope.
 
 (** ** Generation of ELF header *)
 
-Definition get_sections_size (t: SeqTable.t RelocProgram.section) :=
+Definition get_sections_size (t: SecTable.t) :=
   fold_left (fun acc sec => sec_size sec + acc) t 0.
 
 Definition get_elf_shoff (p:program) :=
@@ -58,7 +58,7 @@ Definition get_elf_shoff (p:program) :=
 
   
 Definition gen_elf_header (p:program) : elf_header :=
-  let sectbl_size := Z.of_nat (SeqTable.size (prog_sectable p)) in
+  let sectbl_size := Z.of_nat (SecTable.size (prog_sectable p)) in
   {| e_class        := ELFCLASS32;
      e_encoding     := if Archi.big_endian then ELFDATA2MSB else ELFDATA2LSB;
      e_version      := EV_CURRENT;
@@ -72,7 +72,7 @@ Definition gen_elf_header (p:program) : elf_header :=
      e_phentsize    := prog_header_size;
      e_phnum        := 0;
      e_shentsize    := sec_header_size;
-     e_shnum        := sectbl_size;      
+     e_shnum        := 1 + sectbl_size;      
      e_shstrndx     := Z.of_N sec_shstrtbl_id;
   |}.
 
@@ -87,12 +87,22 @@ Fixpoint list_first_n {A:Type} (n:nat) (l:list A) :=
 Fixpoint sectable_prefix_size (id:N) t :=
   let l := list_first_n (N.to_nat id) t in
   get_sections_size l.
+
+Lemma unfold_sectable_prefix_size : forall id t,
+    sectable_prefix_size id t =   
+    get_sections_size (list_first_n (N.to_nat id) t).
+Proof.
+  induction id. 
+  - cbn. auto.
+  - cbn. auto.
+Qed.
+
                       
 Definition get_sh_offset id (t:sectable) :=
-  elf_header_size + (sectable_prefix_size id t).
+  elf_header_size + (sectable_prefix_size (SecTable.idx id) t).
 
 Definition get_section_size id (t:sectable) :=
-  match SeqTable.get id t with
+  match SecTable.get id t with
   | None => 0
   | Some s => sec_size s
   end.
@@ -131,7 +141,7 @@ Definition gen_text_sec_header p :=
  the size of local symbols*)
 Definition one_greater_last_local_symb_index p :=
   let t := (prog_symbtable p) in
-  let locals := SeqTable.filter (fun s => match symbentry_bind s with
+  let locals := SymbTable.filter (fun s => match symbentry_bind s with
                                     | bind_local => true
                                     | _ => false
                                     end) t in
@@ -222,11 +232,7 @@ Definition acc_sections sec r :=
   OK (sec' :: r').
 
 Definition gen_sections (t:sectable) : res (list section) :=
-  match t with
-  | nil => Error (msg "No section found")
-  | null :: t' =>
-    fold_right acc_sections (OK []) t'
-  end.
+  fold_right acc_sections (OK []) t.
 
 Definition gen_reloc_elf (p:program) : res elf_file :=
   do secs <- gen_sections (prog_sectable p);
@@ -258,7 +264,7 @@ Require Import Lia.
 
 Lemma gen_elf_header_valid p:
   0 <= get_elf_shoff p < two_p 32 ->
-  length (prog_sectable p) = 8%nat ->
+  length (prog_sectable p) = 7%nat ->
   valid_elf_header (gen_elf_header p).
 Proof.
   unfold gen_elf_header. intros.
@@ -279,9 +285,16 @@ Qed.
 Lemma sec_size_pos a:
   0 <= sec_size a.
 Proof.
-  destruct a; simpl. omega. generalize (code_size_non_neg code); omega.
+  destruct a; simpl. generalize (code_size_non_neg code); omega.
   generalize (init_data_list_size_pos init). omega.
   omega.
+Qed.
+
+Lemma fold_sec_size_range: forall l,
+    0 <= fold_right (fun (y : RelocProgram.section) (x : Z) => sec_size y + x) 0 l.
+Proof.
+  induction l; simpl; intros; eauto. omega.
+  apply Z.add_nonneg_nonneg. apply sec_size_pos. auto.
 Qed.
 
 Lemma get_sections_size_pos t:
@@ -289,9 +302,14 @@ Lemma get_sections_size_pos t:
 Proof.
   unfold get_sections_size.
   intros. rewrite <- fold_left_rev_right.
-  clear. generalize (rev t). clear.
-  induction l; simpl; intros; eauto. omega.
-  apply Z.add_nonneg_nonneg. apply sec_size_pos. auto.
+  apply fold_sec_size_range.
+Qed.
+
+Lemma sectable_prefix_size_pos: forall id stbl, 
+    0 <= sectable_prefix_size id stbl.
+Proof.
+  intros. rewrite unfold_sectable_prefix_size.
+  apply get_sections_size_pos.
 Qed.
 
 Lemma get_elf_shoff_pos p:
@@ -303,13 +321,13 @@ Proof.
 Qed.
 
 Lemma gen_sections_length t x (G: gen_sections t = OK x):
-  S (length x) = length t.
+  (length x) = length t.
 Proof.
-  unfold gen_sections in G. destr_in G. subst.
-  revert s0 x G. clear.
-  induction s0; simpl; intros; eauto.
+  unfold gen_sections in G. 
+  revert t x G. clear.
+  induction t; simpl; intros; eauto.
   inv G. reflexivity.
-  unfold acc_sections in G at 1. monadInv G. apply IHs0 in EQ. simpl in EQ. inv EQ.
+  unfold acc_sections in G at 1. monadInv G. apply IHt in EQ. simpl in EQ. inv EQ.
   reflexivity.
 Qed.
 
@@ -342,7 +360,6 @@ Proof.
   generalize (sec_size_pos a). omega.
 Qed.
 
-
 Lemma get_sections_size_app a b:
   get_sections_size (a ++ b) = get_sections_size a + get_sections_size b.
 Proof.
@@ -355,16 +372,18 @@ Lemma get_sh_offset_range p id
   0 <= get_sh_offset id (prog_sectable p) < two_power_pos 32.
 Proof.
   unfold get_elf_shoff, get_sh_offset in *.
+  set (id' := SecTable.idx id).
   split.
   apply Z.add_nonneg_nonneg. vm_compute; intuition congruence.
   clear. induction id; simpl. vm_compute. congruence.
-  apply get_sections_size_pos.
+  apply sectable_prefix_size_pos.
   eapply Z.le_lt_trans. 2: eauto.
   apply Z.add_le_mono_l.
   generalize (prog_sectable p). clear.
-  induction id; simpl; intros.
+  induction id; intros.
   apply get_sections_size_pos.
-  destruct (list_first_n_prefix (Pos.to_nat p) s) as (l2 & EQ).
+  rewrite unfold_sectable_prefix_size. 
+  destruct (list_first_n_prefix (N.to_nat id') s) as (l2 & EQ).
   rewrite EQ at 2.
   rewrite get_sections_size_app.
   generalize (get_sections_size_pos l2); omega.
@@ -381,13 +400,13 @@ Proof.
   cut (get_section_size id (prog_sectable p) <= get_sections_size (prog_sectable p)).
   cut (0 <= elf_header_size). intros; omega. vm_compute; congruence.
   generalize (prog_sectable p). clear. Opaque Z.add.
-  unfold get_section_size, SeqTable.get. generalize (N.to_nat id). clear.
+  unfold get_section_size, SecTable.get. generalize (N.to_nat (SecTable.idx id)). clear.
   unfold get_sections_size.
   induction n; destruct s; simpl; intros; eauto. omega.
   etransitivity. 2: apply fold_left_le. omega. omega.
   etransitivity. apply IHn.
-  rewrite fold_left_size_acc with (acc:=sec_size s + 0) .
-  generalize (sec_size_pos s). omega.
+  rewrite fold_left_size_acc with (acc:=sec_size v + 0) .
+  generalize (sec_size_pos v). omega.
 Qed.
 
 Lemma get_sections_size_in t x:
@@ -406,19 +425,29 @@ Proof.
     generalize (sec_size_pos a); omega.
 Qed.
 
+Lemma dummy_symbentry_length: length encode_dummy_symbentry = 16%nat.
+Proof.
+  unfold encode_dummy_symbentry. cbn.
+  repeat rewrite app_length.
+  repeat (setoid_rewrite encode_int_length; simpl).
+  auto.
+Qed.
+  
 Lemma create_symbtable_section_length p symt
       (EQ : create_symbtable_section (prog_strtable p) (prog_symbtable p) = OK symt):
-  sec_size symt = 16 * Z.of_nat (length (prog_symbtable p)).
+  sec_size symt = 16 * Z.of_nat (1 + length (prog_symbtable p)).
 Proof.
   Opaque Z.mul.
   unfold create_symbtable_section in EQ. monadInv EQ. simpl.
-  unfold encode_symbtable in EQ0. revert x EQ0.
+  unfold encode_symbtable in EQ0. 
+  rewrite app_length. rewrite dummy_symbentry_length.
+  revert x EQ0.
   generalize (prog_strtable p).
   generalize (prog_symbtable p).
   induction s; intros; eauto. inv EQ0. reflexivity.
   simpl in EQ0. unfold acc_bytes at 1 in EQ0. monadInv EQ0.
   eapply IHs in EQ.
-  rewrite app_length.
+  repeat rewrite app_length.
   assert (length x1 = 16%nat).
   {
     clear - EQ0.
@@ -427,9 +456,9 @@ Proof.
     repeat (setoid_rewrite encode_int_length; simpl).
     auto.
   }
-  rewrite H. simpl length.
+  rewrite H.
+  simpl length.
   rewrite Nat2Z.inj_add. rewrite EQ. lia.
-  Transparent Z.mul.
 Qed.
 
 Lemma length_filter {A} (l: list A) f:
@@ -464,7 +493,7 @@ Qed.
 Lemma gen_reloc_elf_valid p ef (GRE: gen_reloc_elf p = OK ef)
       symt
       (SYMT: create_symbtable_section (prog_strtable p) (prog_symbtable p) = OK symt)
-      (HD: hd sec_null (prog_sectable p) = sec_null)
+      (* (HD: hd sec_null (prog_sectable p) = sec_null) *)
       (INSYMT: In symt (prog_sectable p)):
   valid_elf_file ef.
 Proof.
@@ -559,14 +588,14 @@ Proof.
     constructor.
   - unfold get_elf_shoff.
     f_equal.
-    clear -EQ HD. revert x EQ HD. generalize (prog_sectable p).
+    clear -EQ. revert x EQ. generalize (prog_sectable p).
     unfold gen_sections, get_sections_size.
-    intro s. destr. simpl. intros; subst. simpl. rewrite Z.add_0_r.
-    revert s1 x EQ. clear.
-    induction s1; simpl; intros; eauto.
+    intro s. intros; subst. simpl. 
+    revert s x EQ. clear.
+    induction s; simpl; intros; eauto.
     + inv EQ. reflexivity.
     + unfold acc_sections at 1 in EQ. monadInv EQ.
-      apply IHs1 in EQ0.
+      apply IHs in EQ0.
       simpl.
       rewrite <- EQ0.
       rewrite fold_left_size_acc.
@@ -580,26 +609,25 @@ Proof.
     unfold gen_sections in EQ. destr_in EQ.
     apply Nat.eqb_eq in Heqb.
     rewrite Heqb. simpl length. intro A; inv A.
-    destruct s0; simpl in H10; try congruence.
-    destruct s1; simpl in H10; try congruence.
-    destruct s2; simpl in H10; try congruence.
-    destruct s3; simpl in H10; try congruence.
-    destruct s4; simpl in H10; try congruence.
-    destruct s5; simpl in H10; try congruence.
-    destruct s6; simpl in H10; try congruence.
-    destruct s7; simpl in H10; try congruence.
-    simpl in EQ. monadInv EQ.
+    destruct (prog_sectable p) eqn:Heqs; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    simpl in H10. monadInv H10.
+    monadInv EQ.
     monadInv EQ0.
-    monadInv EQ1.
     monadInv EQ2.
     monadInv EQ3.
     monadInv EQ4.
     monadInv EQ5.
     cbn.
     rewrite Heqs.
-    simpl in HD. subst.
     unfold check_sizes.
-    unfold get_section_size, get_sh_offset, SeqTable.get. simpl.
+    unfold get_section_size, get_sh_offset, SecTable.get. simpl. 
     repeat match goal with
              H: transl_section ?s = OK ?x |- _ =>
              unfold transl_section in H; repeat destr_in H

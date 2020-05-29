@@ -22,20 +22,16 @@ Definition shift_relocentry_offset (ofs:Z) (e:relocentry) : relocentry :=
 
 Definition update_reloc_symb (stbl: symbtable) (sidxmap: symb_index_map_type)
            (e:relocentry) : option relocentry :=
-  match SeqTable.get (reloc_symb e) stbl with
+  match SymbTable.get (reloc_symb e) stbl with
   | None => None
   | Some se => 
-    match symbentry_id se with
+    match sidxmap ! (symbentry_id se) with
     | None => None
-    | Some id =>
-      match sidxmap ! id with
-      | None => None
-      | Some i => 
-        Some {| reloc_offset := reloc_offset e;
-                reloc_type   := reloc_type e;
-                reloc_symb   := i;
-                reloc_addend := reloc_addend e |}
-      end
+    | Some i => 
+      Some {| reloc_offset := reloc_offset e;
+              reloc_type   := reloc_type e;
+              reloc_symb   := i;
+              reloc_addend := reloc_addend e |}
     end
   end.
 
@@ -68,7 +64,7 @@ Definition link_data_reloctable (p1 p2 p: program) : option reloctable :=
   let sidxmap := gen_symb_index_map (prog_symbtable p) in
   let stbl1   := prog_symbtable p1 in
   let stbl2   := prog_symbtable p2 in
-  match SeqTable.get sec_data_id (prog_sectable p1)
+  match SecTable.get sec_data_id (prog_sectable p1)
   with
   | Some data_sec1=>
     let t1 := reloctable_data (prog_reloctables p1) in
@@ -82,7 +78,7 @@ Definition link_code_reloctable (p1 p2 p: program) : option reloctable :=
   let sidxmap := gen_symb_index_map (prog_symbtable p) in
   let stbl1   := prog_symbtable p1 in
   let stbl2   := prog_symbtable p2 in
-  match SeqTable.get sec_code_id (prog_sectable p1)
+  match SecTable.get sec_code_id (prog_sectable p1)
   with
   | Some code_sec1 =>
     let t1 := reloctable_code (prog_reloctables p1) in

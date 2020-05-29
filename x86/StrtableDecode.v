@@ -182,9 +182,9 @@ Proof.
   unfold correct_encoding_strtable_program. simpl.
   rewrite app_length in Heqb. rewrite Nat.eqb_eq in Heqb.
   destruct (prog_sectable p); simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence; try lia.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence; try lia.
   erewrite decode_string_map_correct'; eauto. simpl.
   rewrite EQ. simpl. auto.
 Qed.
@@ -228,10 +228,10 @@ Proof.
   unfold transf_program_inv. simpl. 
   apply beq_nat_true in Heqb.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence.
-  2: destruct s3; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  2: destruct s; simpl in *; try congruence.
   erewrite decode_string_map_correct'. 2: eauto. simpl.
   rewrite EQ. simpl.
   f_equal. destruct p; simpl in *. f_equal; simpl in *; auto.

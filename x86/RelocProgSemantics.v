@@ -671,42 +671,39 @@ Inductive step (ge: Genv.t) : state -> trace -> state -> Prop :=
 (** Initialization of the global environment *)
 Definition add_external_global (extfuns: PTree.t external_function) 
            (ge:Genv.t) (e: symbentry) : Genv.t :=
-  match symbentry_id e with
-  | None => ge
-  | Some id =>
-    let gsymbs := 
+  let id := symbentry_id e in
+  let gsymbs := 
+      if is_symbol_internal e then
+        Genv.genv_symb ge
+      else
+        PTree.set id (Genv.genv_next ge, Ptrofs.zero)
+                  (Genv.genv_symb ge)
+  in
+  let gextfuns :=
+      match symbentry_type e with
+      | symb_func =>
         if is_symbol_internal e then
-          Genv.genv_symb ge
+          Genv.genv_ext_funs ge
         else
-          PTree.set id (Genv.genv_next ge, Ptrofs.zero)
-                    (Genv.genv_symb ge)
-    in
-    let gextfuns :=
-        match symbentry_type e with
-        | symb_func =>
-          if is_symbol_internal e then
-            Genv.genv_ext_funs ge
-          else
-            match PTree.get id extfuns with
-            | None => Genv.genv_ext_funs ge
-            | Some ef =>
-              PTree.set (Genv.genv_next ge) ef (Genv.genv_ext_funs ge)
-            end
-        | _ => Genv.genv_ext_funs ge
-        end
-    in
-    let bnext := 
-        if is_symbol_internal e 
-        then Genv.genv_next ge 
-        else Psucc (Genv.genv_next ge)
-    in
-    Genv.mkgenv
-      gsymbs
-      gextfuns
-      (Genv.genv_instrs ge)
-      bnext
-      (Genv.genv_senv ge)
-  end.
+          match PTree.get id extfuns with
+          | None => Genv.genv_ext_funs ge
+          | Some ef =>
+            PTree.set (Genv.genv_next ge) ef (Genv.genv_ext_funs ge)
+          end
+      | _ => Genv.genv_ext_funs ge
+      end
+  in
+  let bnext := 
+      if is_symbol_internal e 
+      then Genv.genv_next ge 
+      else Psucc (Genv.genv_next ge)
+  in
+  Genv.mkgenv
+    gsymbs
+    gextfuns
+    (Genv.genv_instrs ge)
+    bnext
+    (Genv.genv_senv ge).
 
 Fixpoint add_external_globals (extfuns: PTree.t external_function)
          (ge:Genv.t) (t: symbtable) : Genv.t :=
@@ -717,12 +714,12 @@ Fixpoint add_external_globals (extfuns: PTree.t external_function)
     add_external_globals extfuns ge' l
   end. 
 
-Definition symb_ignored_by_add_extern s :=
-  match symbentry_id s with
-  | None => true
-  | Some _ =>
-    is_symbol_internal s
-  end.
+(* Definition symb_ignored_by_add_extern s := *)
+(*   match symbentry_id s with *)
+(*   | None => true *)
+(*   | Some _ => *)
+(*     is_symbol_internal s *)
+(*   end. *)
 
 
 (* Lemma add_external_global_nextblock1: forall ge efs s, *)
@@ -761,16 +758,13 @@ Definition sec_index_to_block (i:N) : block :=
   end.
 
 Definition acc_symb_map (e:symbentry) (m:PTree.t (block * ptrofs)) :=
-  match symbentry_id e with
-  | None => m
-  | Some id =>
-    match symbentry_secindex e with
-    | secindex_normal i =>
-      let b := sec_index_to_block i in
-      let ofs := Ptrofs.repr (symbentry_value e) in
-      PTree.set id (b,ofs) m
-    | _ => m
-    end
+  let id := symbentry_id e in
+  match symbentry_secindex e with
+  | secindex_normal i =>
+    let b := sec_index_to_block i in
+    let ofs := Ptrofs.repr (symbentry_value e) in
+    PTree.set id (b,ofs) m
+  | _ => m
   end.
 
 Definition gen_symb_map (t:symbtable) : PTree.t (block * ptrofs) :=
@@ -808,7 +802,7 @@ Definition gen_extfuns (idgs: list (ident * option gdef)) :=
 
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in
-  let imap := gen_instr_map' (SeqTable.get sec_code_id (prog_sectable p)) in
+  let imap := gen_instr_map' (SecTable.get sec_code_id (prog_sectable p)) in
   let nextblock := 3%positive in
   let genv := Genv.mkgenv symbmap 
                           (PTree.empty external_function) 
@@ -847,35 +841,32 @@ Fixpoint store_init_data_list (m: mem) (b: block) (p: Z) (idl: list init_data)
   end.
 
 Definition alloc_external_symbol (m: mem) (e:symbentry): option mem :=
-  match symbentry_id e with
-  | None => Some m
-  | Some id =>
-    match symbentry_type e with
-    | symb_notype =>
-      let (m1, b) := Mem.alloc m 0 0 in
-      Some m1
-    | symb_func =>
-      match symbentry_secindex e with
-      | secindex_undef =>
-        let (m1, b) := Mem.alloc m 0 1 in
-        Mem.drop_perm m1 b 0 1 Nonempty        
-      | secindex_comm => 
-        None (**r Impossible *)
-      | secindex_normal _ => Some m
-      end
-    | symb_data =>
-      match symbentry_secindex e with
-      | secindex_undef
-      | secindex_comm => 
-        let sz := symbentry_size e in
-        let (m1, b) := Mem.alloc m 0 sz in
-        match store_zeros m1 b 0 sz with
-        | None => None
-        | Some m2 =>
-          Mem.drop_perm m2 b 0 sz Nonempty
-        end        
-      | secindex_normal _ => Some m
-      end
+  let id:= symbentry_id e in
+  match symbentry_type e with
+  | symb_notype =>
+    let (m1, b) := Mem.alloc m 0 0 in
+    Some m1
+  | symb_func =>
+    match symbentry_secindex e with
+    | secindex_undef =>
+      let (m1, b) := Mem.alloc m 0 1 in
+      Mem.drop_perm m1 b 0 1 Nonempty        
+    | secindex_comm => 
+      None (**r Impossible *)
+    | secindex_normal _ => Some m
+    end
+  | symb_data =>
+    match symbentry_secindex e with
+    | secindex_undef
+    | secindex_comm => 
+      let sz := symbentry_size e in
+      let (m1, b) := Mem.alloc m 0 sz in
+      match store_zeros m1 b 0 sz with
+      | None => None
+      | Some m2 =>
+        Mem.drop_perm m2 b 0 sz Nonempty
+      end        
+    | secindex_normal _ => Some m
     end
   end.
       
@@ -931,7 +922,7 @@ Fixpoint alloc_external_symbols (m: mem) (t: symbtable)
 
 
 Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
-  match SeqTable.get sec_data_id t with
+  match SecTable.get sec_data_id t with
   | None => None
   | Some sec =>
     let sz := (sec_size sec) in
@@ -951,7 +942,7 @@ Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
   end.
 
 Definition alloc_code_section (t:sectable) (m:mem) : option mem :=
-  match SeqTable.get sec_code_id t with
+  match SecTable.get sec_code_id t with
   | None => None
   | Some sec =>
     let sz := sec_size sec in

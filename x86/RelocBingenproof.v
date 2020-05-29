@@ -392,7 +392,8 @@ Proof.
     unfold transl_sectable in EQ.
     destruct (prog_sectable prog);inversion EQ.
     repeat (destruct s; inversion EQ;
-            destruct s0; inversion EQ).
+            destruct v0; inversion EQ).
+    destruct s; inversion EQ.
     monadInv EQ.
     simpl.
     unfold transl_code in EQ0.

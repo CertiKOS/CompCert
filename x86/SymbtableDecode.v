@@ -99,12 +99,12 @@ Proof.
   rewrite N2Z.id. auto. omega. simpl. omega.
   change (two_p (Z.of_nat 2 * 8)) with 65536. omega.
 Qed.
+
 Record valid_symbentry strtab (e: symbentry) : Prop :=
   {
     valid_symbentry_size: 0 <= symbentry_size e < two_p 32;
     valid_symbentry_value: 0 <= symbentry_value e < two_p 32;
-    valid_symbentry_id: forall id, symbentry_id e = Some id ->
-                                   exists si, strtab ! id  = Some si /\ 0 <= si < two_p 32;
+    valid_symbentry_id: exists si, strtab ! (symbentry_id e)  = Some si /\ 0 <= si < two_p 32;
     valid_symbentry_secindex: valid_secindex (symbentry_secindex e);
   }.
 
@@ -147,17 +147,20 @@ Definition decode_symbentry (lb: list byte) : res symbentry :=
     let ssize := decode_int32 st_size_bytes in
     do (st, bt) <- decode_glob_symb_info (decode_int st_info_bytes);
       do secindex <- decode_secindex st_shndx_bytes;
-      let sid := strtab_inv name_index in
-      OK (
-          {|
-            symbentry_id := sid;
-            symbentry_bind := bt;
-            symbentry_type := st;
-            symbentry_value := svalue;
-            symbentry_secindex := secindex;
-            symbentry_size := ssize
-          |}
-        ).
+      match strtab_inv name_index with
+      | None => Error (msg "No such name in string table")
+      | Some sid =>
+        OK (
+            {|
+              symbentry_id := sid;
+              symbentry_bind := bt;
+              symbentry_type := st;
+              symbentry_value := svalue;
+              symbentry_secindex := secindex;
+              symbentry_size := ssize
+            |}
+          )
+      end.
 
 Lemma fold_left_strtab_inv_stable:
   forall x l i,
@@ -342,17 +345,12 @@ Proof.
   rewrite decode_encode_int. rewrite Z.mod_small.
   rewrite decode_encode_int. rewrite Z.mod_small.
   f_equal. destruct e; f_equal.
-  simpl in *. destr_in EQ. destr_in EQ. inv EQ.
-  eapply strtab_inv_ok. auto.
-  apply strtab_inv_none. inv EQ. destruct valid_strtab as (o & v & lt).
-  eapply strtab_no_0; eauto.
+  simpl in *. destr_in EQ. inv EQ. 
+  erewrite strtab_inv_ok; eauto.
   eapply valid_symbentry_size; eauto.
   eapply valid_symbentry_value; eauto.
-  destr_in EQ.
   edestruct valid_symbentry_id as (id & EQid & IN); eauto.
   rewrite EQid in EQ. inv EQ. auto.
-  inv EQ.
-  split. omega. apply Z.gt_lt. apply two_p_gt_ZERO. omega.
   eapply valid_symbentry_secindex. eauto.
   apply encode_glob_symb_info_range.
   unfold encode_secindex.
@@ -428,9 +426,16 @@ Proof.
     inv V; auto. auto.
 Qed.
 
+Definition drop_dummy_symbentry (bs:list byte) :=
+  let N := length encode_dummy_symbentry in
+  do (_, bs') <- take_drop N bs;
+  OK bs'.
+
 Definition decode_symtable_section (s: section) : res symbtable :=
   match s with
-  | sec_bytes bytes => decode_symbentries bytes
+  | sec_bytes bytes => 
+    do bytes' <- (drop_dummy_symbentry bytes);
+    decode_symbentries bytes'
   | _ => Error (msg "decode_symtable_section: should be a bytes section")
   end.
 
@@ -467,10 +472,10 @@ Proof.
   destr_in EQ0. simpl in *. inv EQ0.
   red. simpl.
   destruct (prog_sectable p); simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence.
-  destruct s3; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
   erewrite decode_create_symtable_section; eauto.
   apply beq_nat_true in Heqb.
   rewrite app_length in Heqb. simpl in Heqb. omega.
@@ -508,10 +513,10 @@ Proof.
   monadInv TP. destr_in EQ0. inv EQ0. simpl in *.
   unfold transf_program_inv. simpl.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
-  destruct s0; simpl in *; try congruence.
-  destruct s1; simpl in *; try congruence.
-  destruct s2; simpl in *; try congruence.
-  destruct s3; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
   erewrite decode_create_symtable_section; eauto.
   f_equal. destruct p; simpl. f_equal; simpl in *. auto.
   apply beq_nat_true in Heqb. rewrite app_length in Heqb; simpl in Heqb. omega.

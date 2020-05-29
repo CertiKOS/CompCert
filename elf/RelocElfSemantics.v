@@ -27,7 +27,7 @@ Definition reloc_program_of_elf_program (p:RelocElf.elf_file) : RelocProgram.pro
       RelocProgram.prog_main := prog_main p;
       RelocProgram.prog_senv := prog_senv p;
 
-      prog_sectable := sec_null :: map sec_bytes (elf_sections p);
+      prog_sectable := map sec_bytes (elf_sections p);
       prog_symbtable := nil;
       prog_strtable := PTree.empty Z;
       prog_reloctables := {| reloctable_code := nil;

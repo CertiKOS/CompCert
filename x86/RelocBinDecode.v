@@ -46,7 +46,7 @@ Section PRESERVATION.
     := ZTree.get ofs rtbl_ofs_map.
 
   Definition get_nth_symbol (n:N)
-    := SeqTable.get n symtbl.
+    := SymbTable.get n symtbl.
 
   
       
@@ -381,12 +381,9 @@ Definition decode_call (rofs:Z) (mc: list byte): res(instruction * list byte):=
    match get_nth_symbol (reloc_symb relocEntry) with
    |None => Error (msg"Call target not found!")
    |Some symb =>
-    match symbentry_id symb with
-    |None => Error (msg"Call target has no id")
-    |Some id =>
-     do remains <- remove_first_n mc 4;
-     OK(Pcall (inr id) (mksignature [] None (mkcallconv false false false)),remains )
-    end
+    let id :=  symbentry_id symb in
+    do remains <- remove_first_n mc 4;
+    OK(Pcall (inr id) (mksignature [] None (mkcallconv false false false)),remains )
    end     
   end.
 

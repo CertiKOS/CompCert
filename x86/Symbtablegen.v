@@ -39,7 +39,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
   match def with
   | None =>
     (** This is an external symbol with unknown type *)
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := bindty;
       symbentry_type := symb_notype;
       symbentry_value := 0;
@@ -50,7 +50,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     match AST.gvar_init gvar with
     | nil => 
       (** This is an external data symbol *)
-      {|symbentry_id := Some id;
+      {|symbentry_id := id;
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := 0;
@@ -59,7 +59,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       |}
     | [Init_space sz] =>
       (** This is an external data symbol in the COMM section *)
-      {|symbentry_id := Some id;
+      {|symbentry_id := id;
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
@@ -68,7 +68,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       |}
     | _ =>
       (** This is an internal data symbol *)
-      {|symbentry_id := Some id;
+      {|symbentry_id := id;
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := dsize;
@@ -78,7 +78,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     end
   | Some (Gfun (External ef)) =>
     (** This is an external function symbol *)
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := 0;
@@ -86,7 +86,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       symbentry_size := 0;
     |}
   | Some (Gfun (Internal f)) =>
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := csize;
@@ -130,8 +130,7 @@ Definition acc_symb (ssize: symbtable * Z * Z)
 (** Generate the symbol and section table *)
 Definition gen_symb_table defs :=
   let '(rstbl, dsize, csize) := 
-      fold_left acc_symb
-                defs ([dummy_symbentry], 0, 0) in
+      fold_left acc_symb  defs (nil, 0, 0) in
   (rev rstbl, dsize, csize).
 
 End WITH_CODE_DATA_SEC.
@@ -347,7 +346,7 @@ Definition create_data_section (defs: list (ident * option (globdef fundef unit)
 Definition create_sec_table defs : sectable :=
   let data_sec := create_data_section defs in
   let code_sec := create_code_section defs in
-  [sec_null; data_sec; code_sec].
+  [data_sec; code_sec].
 
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=

@@ -35,7 +35,7 @@ Lemma acc_symb_ids_eq: forall ids s,
     acc_symb_ids ids s = acc_symb_ids [] s ++ ids.
 Proof.
   unfold acc_symb_ids.
-  intros. destr.
+  intros. cbn. auto.
 Qed.
 
 Lemma acc_symb_ids_inv: forall stbl ids,
@@ -46,7 +46,6 @@ Proof.
   - intros. cbn.
     erewrite IHstbl. erewrite (IHstbl (acc_symb_ids [] s)).
     rewrite <- app_assoc. f_equal.
-    rewrite <- acc_symb_ids_eq. auto.
 Qed.
 
 Lemma add_symb_to_list_permutation: forall stbl stbl',
@@ -65,10 +64,7 @@ Proof.
     rewrite (add_symb_to_list_inv l (add_symb_to_list (add_symb_to_list [] x) y)).
     apply Permutation_app; auto.
     unfold add_symb_to_list.
-    destr. destr. 
     constructor.
-    constructor. constructor.
-    auto.
   - eapply Permutation_trans; eauto.
 Qed.
 
@@ -83,8 +79,6 @@ Proof.
     rewrite IHstbl. 
     rewrite map_app. 
     f_equal.
-    unfold acc_symb_ids, add_symb_to_list.
-    destr.
 Qed.
 
 Lemma get_symbentry_ids_add_symb_eq: forall stbl, 
@@ -111,8 +105,7 @@ Proof.
     rewrite (acc_symb_ids_inv l (acc_symb_ids (acc_symb_ids [] x) y)).
     apply Permutation_app; auto.
     unfold acc_symb_ids. 
-    destr. destr. constructor; auto. constructor; auto.
-    auto.
+    constructor; auto. 
   - eapply Permutation_trans; eauto.
 Qed.
 
@@ -132,7 +125,7 @@ Qed.
 
 Lemma elements_of_acc_symb_to_list_perm': forall idstbl,
     list_norepet (map fst idstbl) ->
-    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl ->
+    Forall (fun '(id, e) => symbentry_id e = id) idstbl ->
     Permutation (PTree.elements 
                    (PTree_Properties.of_list
                       (fold_left add_symb_to_list (map snd idstbl) nil)))
@@ -161,7 +154,7 @@ Qed.
 
 Lemma elements_of_symbtable_to_tree_perm: forall idstbl,
     list_norepet (map fst idstbl) ->
-    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl ->
+    Forall (fun '(id, e) => symbentry_id e = id) idstbl ->
     Permutation (PTree.elements (symbtable_to_tree (map snd idstbl))) idstbl.
 Proof.
   intros stbl NORPT IDEQ.
@@ -342,7 +335,7 @@ Qed.
 
 
 Lemma get_symbentry_id : forall d_id c_id dsz csz id def,
-    symbentry_id (get_symbentry d_id c_id dsz csz id def) = Some id.
+    symbentry_id (get_symbentry d_id c_id dsz csz id def) = id.
 Proof.
   intros until def.
   destruct def. destruct g. destruct f.
@@ -380,7 +373,7 @@ Qed.
 Lemma get_internal_var_entry : forall dsec csec dsz csz id v,
     is_var_internal v = true ->
     get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := get_bind_ty id;
       symbentry_type := symb_data;
       symbentry_value := dsz;
@@ -399,7 +392,7 @@ Qed.
 Lemma get_comm_var_entry : forall dsec csec dsz csz id v,
     is_var_comm v = true ->
     get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := get_bind_ty id;
       symbentry_type := symb_data;
       symbentry_value := 8 ; 
@@ -423,7 +416,7 @@ Qed.
 Lemma get_external_var_entry : forall dsec csec dsz csz id v,
     is_var_extern v = true ->
     get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := get_bind_ty id;
       symbentry_type := symb_data;
       symbentry_value := 0;
@@ -1595,8 +1588,7 @@ Proof.
   rewrite rev_app_distr. cbn.
   apply acc_symb_index_in_range in FL.
   red. red in FL.
-  constructor; auto.
-  cbn. auto.
+  auto.
 Qed.
 
 
@@ -1706,108 +1698,108 @@ Proof.
 Qed.
 
 
-Lemma acc_symb_partition_extern_intern: forall asf id defs defs1 defs2 rstbl dsz1 csz1 dsz2 csz2,
-    asf = acc_symb sec_data_id sec_code_id ->
-    partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
-    fold_left asf defs ([], dsz1, csz1) = (rstbl, dsz2, csz2) ->
-    Forall (fun '(id', def) => is_def_internal is_fundef_internal def = false) defs1 ->
-    exists stbl1 stbl2,
-      partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\
-      fold_left asf defs1 ([], 0, 0) = (rev stbl1, 0, 0) /\
-      fold_left asf defs2 ([], dsz1, csz1) = (rev stbl2, dsz2, csz2).
-Proof.
-  induction defs as [|def defs].
-  - intros until csz2.
-    intros ASF PART ACC EXT.
-    simpl in *. inv PART. inv ACC. simpl.
-    eauto.
-  - intros until csz2.
-    intros ASF PART ACC EXT.
-    simpl in *. destr_in PART. destruct def as (id' & def).
-    destruct ident_eq; subst.
-    + simpl in *. destr_in ACC. inv PART.
-      generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
-      destruct 1 as (rstbl' & EQ & ACC'). subst.
-      inv EXT.
-      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC' H2).
-      destruct 1 as (stbl1' & stbl2' & PART' & ACC'' & ACC''').
-      rewrite rev_unit. simpl.
-      rewrite PART'.
-      unfold symbentry_id_eq. rewrite get_symbentry_id.
-      rewrite dec_eq_true.
-      do 2 eexists; split; auto. 
-      generalize (update_code_data_size_external_size_inv _ _ _ H1 Heqp0).
-      destruct 1; subst. 
-      split; auto.
-      generalize (update_code_data_size_external_ignore_size def 0 0 H1).
-      intros UPDATE'. rewrite UPDATE'.
-      simpl. 
-      rewrite (get_extern_symbentry_ignore_size _ _ id def dsz1 csz1 0 0); auto.
-      apply acc_symb_append_nil. auto.
-    + simpl in *. destr_in ACC. inv PART.
-      generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
-      destruct 1 as (rstbl' & EQ & ACC'). subst.
-      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC' EXT).
-      destruct 1 as (stbl1' & stbl2' & PART' & ACC'' & ACC''').
-      rewrite rev_unit. simpl.
-      rewrite PART'.
-      unfold symbentry_id_eq. rewrite get_symbentry_id.
-      rewrite dec_eq_false; auto.
-      do 2 eexists; split; auto.
-      rewrite Heqp0. 
-      split; auto.
-      apply acc_symb_append_nil. auto.
-Qed.
+(* Lemma acc_symb_partition_extern_intern: forall asf id defs defs1 defs2 rstbl dsz1 csz1 dsz2 csz2, *)
+(*     asf = acc_symb sec_data_id sec_code_id -> *)
+(*     partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) -> *)
+(*     fold_left asf defs ([], dsz1, csz1) = (rstbl, dsz2, csz2) -> *)
+(*     Forall (fun '(id', def) => is_def_internal is_fundef_internal def = false) defs1 -> *)
+(*     exists stbl1 stbl2, *)
+(*       partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\ *)
+(*       fold_left asf defs1 ([], 0, 0) = (rev stbl1, 0, 0) /\ *)
+(*       fold_left asf defs2 ([], dsz1, csz1) = (rev stbl2, dsz2, csz2). *)
+(* Proof. *)
+(*   induction defs as [|def defs]. *)
+(*   - intros until csz2. *)
+(*     intros ASF PART ACC EXT. *)
+(*     simpl in *. inv PART. inv ACC. simpl. *)
+(*     eauto. *)
+(*   - intros until csz2. *)
+(*     intros ASF PART ACC EXT. *)
+(*     simpl in *. destr_in PART. destruct def as (id' & def). *)
+(*     destruct ident_eq; subst. *)
+(*     + simpl in *. destr_in ACC. inv PART. *)
+(*       generalize (acc_symb_inv _ _ _ _ eq_refl ACC). *)
+(*       destruct 1 as (rstbl' & EQ & ACC'). subst. *)
+(*       inv EXT. *)
+(*       generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC' H2). *)
+(*       destruct 1 as (stbl1' & stbl2' & PART' & ACC'' & ACC'''). *)
+(*       rewrite rev_unit. simpl. *)
+(*       rewrite PART'. *)
+(*       unfold symbentry_id_eq. rewrite get_symbentry_id. *)
+(*       rewrite dec_eq_true. *)
+(*       do 2 eexists; split; auto.  *)
+(*       generalize (update_code_data_size_external_size_inv _ _ _ H1 Heqp0). *)
+(*       destruct 1; subst.  *)
+(*       split; auto. *)
+(*       generalize (update_code_data_size_external_ignore_size def 0 0 H1). *)
+(*       intros UPDATE'. rewrite UPDATE'. *)
+(*       simpl.  *)
+(*       rewrite (get_extern_symbentry_ignore_size _ _ id def dsz1 csz1 0 0); auto. *)
+(*       apply acc_symb_append_nil. auto. *)
+(*     + simpl in *. destr_in ACC. inv PART. *)
+(*       generalize (acc_symb_inv _ _ _ _ eq_refl ACC). *)
+(*       destruct 1 as (rstbl' & EQ & ACC'). subst. *)
+(*       generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC' EXT). *)
+(*       destruct 1 as (stbl1' & stbl2' & PART' & ACC'' & ACC'''). *)
+(*       rewrite rev_unit. simpl. *)
+(*       rewrite PART'. *)
+(*       unfold symbentry_id_eq. rewrite get_symbentry_id. *)
+(*       rewrite dec_eq_false; auto. *)
+(*       do 2 eexists; split; auto. *)
+(*       rewrite Heqp0.  *)
+(*       split; auto. *)
+(*       apply acc_symb_append_nil. auto. *)
+(* Qed. *)
       
       
 Definition match_def_symbentry (id_def: ident * option gdef) e :=
   let '(id, def) := id_def in
   exists dsz csz, e = get_symbentry sec_data_id sec_code_id dsz csz id def.
     
-Lemma acc_symb_pres_partition: forall asf id defs defs1 defs2 rstbl dsz1 csz1 dsz2 csz2,
-    asf = acc_symb sec_data_id sec_code_id ->
-    partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) ->
-    fold_left asf defs ([], dsz1, csz1) = (rstbl, dsz2, csz2) ->
-    exists stbl1 stbl2,
-      partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\
-      Forall2 match_def_symbentry defs1 stbl1  /\
-      Forall2 match_def_symbentry defs2 stbl2.
-Proof.
-  induction defs as [|def defs].
-  - intros until csz2. 
-    intros ASF PART ACC.
-    simpl in *. inv PART. inv ACC. simpl. eauto.
-  - intros until csz2.
-    intros ASF PART ACC. subst.
-    simpl in *.
-    destruct def as (id', def).
-    destr_in PART. destr_in ACC.
-    generalize (acc_symb_inv _ _ _ _ eq_refl ACC).
-    destruct 1 as (rstbl' & EQ & ACC'). subst.
-    destruct ident_eq; inv PART; simpl in *.
-    + rewrite rev_unit.
-      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC').
-      destruct 1 as (stbl1' & stbl2' & PART' & MATCH1 & MATCH2).
-      simpl. rewrite PART'.
-      unfold symbentry_id_eq. 
-      rewrite get_symbentry_id. 
-      rewrite dec_eq_true.
-      do 2 eexists; split; eauto.
-      split; auto.
-      constructor; auto.
-      red. eauto.
-    + rewrite rev_unit.
-      generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC').
-      destruct 1 as (stbl1' & stbl2' & PART' & MATCH1 & MATCH2).
-      simpl. rewrite PART'.
-      unfold symbentry_id_eq. 
-      rewrite get_symbentry_id. 
-      rewrite dec_eq_false; auto.
-      do 2 eexists; split; eauto.
-      split; auto.
-      constructor; auto.
-      red. eauto.
-Qed.      
+(* Lemma acc_symb_pres_partition: forall asf id defs defs1 defs2 rstbl dsz1 csz1 dsz2 csz2, *)
+(*     asf = acc_symb sec_data_id sec_code_id -> *)
+(*     partition (fun '(id', _) => ident_eq id' id) defs = (defs1, defs2) -> *)
+(*     fold_left asf defs ([], dsz1, csz1) = (rstbl, dsz2, csz2) -> *)
+(*     exists stbl1 stbl2, *)
+(*       partition (symbentry_id_eq id) (rev rstbl) = (stbl1, stbl2) /\ *)
+(*       Forall2 match_def_symbentry defs1 stbl1  /\ *)
+(*       Forall2 match_def_symbentry defs2 stbl2. *)
+(* Proof. *)
+(*   induction defs as [|def defs]. *)
+(*   - intros until csz2.  *)
+(*     intros ASF PART ACC. *)
+(*     simpl in *. inv PART. inv ACC. simpl. eauto. *)
+(*   - intros until csz2. *)
+(*     intros ASF PART ACC. subst. *)
+(*     simpl in *. *)
+(*     destruct def as (id', def). *)
+(*     destr_in PART. destr_in ACC. *)
+(*     generalize (acc_symb_inv _ _ _ _ eq_refl ACC). *)
+(*     destruct 1 as (rstbl' & EQ & ACC'). subst. *)
+(*     destruct ident_eq; inv PART; simpl in *. *)
+(*     + rewrite rev_unit. *)
+(*       generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC'). *)
+(*       destruct 1 as (stbl1' & stbl2' & PART' & MATCH1 & MATCH2). *)
+(*       simpl. rewrite PART'. *)
+(*       unfold symbentry_id_eq.  *)
+(*       rewrite get_symbentry_id.  *)
+(*       rewrite dec_eq_true. *)
+(*       do 2 eexists; split; eauto. *)
+(*       split; auto. *)
+(*       constructor; auto. *)
+(*       red. eauto. *)
+(*     + rewrite rev_unit. *)
+(*       generalize (IHdefs _ _ _ _ _ _ _ eq_refl eq_refl ACC'). *)
+(*       destruct 1 as (stbl1' & stbl2' & PART' & MATCH1 & MATCH2). *)
+(*       simpl. rewrite PART'. *)
+(*       unfold symbentry_id_eq.  *)
+(*       rewrite get_symbentry_id.  *)
+(*       rewrite dec_eq_false; auto. *)
+(*       do 2 eexists; split; eauto. *)
+(*       split; auto. *)
+(*       constructor; auto. *)
+(*       red. eauto. *)
+(* Qed.       *)
 
 
 Lemma get_symbentry_pres_internal_prop : forall id dsz csz def,
@@ -1936,8 +1928,8 @@ Lemma link_get_symbentry_left_some_right_none_comm: forall did cid def id dsz1 d
 Proof.
   intros until csz2.
   destruct def. destruct f.
-  - cbn. rewrite peq_true. auto.
-  - cbn. rewrite peq_true. auto.
+  - cbn. unfold link_symb. cbn. rewrite peq_true. auto.
+  - cbn. unfold link_symb. cbn. rewrite peq_true. auto.
   - unfold link_symb.
     repeat rewrite get_symbentry_id.
     rewrite peq_true.
@@ -1965,7 +1957,7 @@ Proof.
   - inv LINK.    
     eapply link_get_symbentry_left_some_right_none_comm; eauto.
   - inv LINK. cbn. auto.
-    rewrite peq_true. auto.
+    unfold link_symb; cbn. rewrite peq_true. auto.
 Qed.
 
 Lemma link_get_symbentry_right_extfundef_comm: forall did cid id f1 f2 f dsz1 csz1 dsz2 csz2,
@@ -2041,7 +2033,7 @@ Proof.
   - generalize (link_comm_vars_init _ _ INT1 INT2 LINK).
     destruct 1 as (EQ & INIT). subst.
     repeat (rewrite get_comm_var_entry; auto).
-    cbn. rewrite peq_true.
+    cbn. unfold link_symb; cbn. rewrite peq_true.
     rewrite EQ.
     destruct zeq; try congruence.
     erewrite Zmax_left; auto.
@@ -2051,18 +2043,21 @@ Proof.
     rewrite (get_comm_var_entry _ _ _ _ _ _ INT1).
     rewrite (get_external_var_entry _ _ _ _ _ _ INT2).
     rewrite get_comm_var_entry; cbn; auto.
+    unfold link_symb; cbn.
     rewrite peq_true. auto.
   - generalize (link_extern_comm_var_init _ _ INT1 INT2 LINK).
     intros. subst.
     rewrite (get_comm_var_entry _ _ _ _ _ _ INT2).
     rewrite (get_external_var_entry _ _ _ _ _ _ INT1).
     rewrite get_comm_var_entry; auto.
+    unfold link_symb; cbn.
     cbn. rewrite peq_true. auto.
   - generalize (link_extern_vars_init _ _ INT1 INT2 LINK).
     intros. subst.
     rewrite (get_external_var_entry _ _ _ _ _ _ INT2).
     rewrite (get_external_var_entry _ _ _ _ _ _ INT1).
     rewrite get_external_var_entry; auto.
+    unfold link_symb; cbn.
     cbn. rewrite peq_true. auto.
 Qed.    
     
@@ -2454,15 +2449,6 @@ Proof.
 Qed.
 
 
-
-Lemma reloc_symb_id_eq: forall id rf e e', 
-      reloc_symbol rf e = Some e' -> symbentry_id_eq id e = symbentry_id_eq id e'.
-Proof.
-  intros.
-  unfold symbentry_id_eq.
-  erewrite reloc_symb_pres_id; eauto.
-Qed.
-
 Lemma update_size_offset : forall def dsz csz dsz1 csz1 dofs cofs,
     update_code_data_size dsz csz def = (dsz1, csz1) ->
     update_code_data_size (dofs + dsz) (cofs + csz) def = (dofs + dsz1, cofs + csz1).
@@ -2536,9 +2522,8 @@ Proof.
     intros ASF ACC1 ACC2 RELOC.
     cbn in *. inv ACC1.
     rewrite app_nil_r.
-    replace ([], dsz1', csz1') with (@nil symbentry, dsz1'+0, csz1'+0).
-    eapply acc_symb_reloc; eauto.
-    f_equal. f_equal. omega. omega.
+    erewrite <- acc_symb_reloc; eauto.
+    repeat f_equal. omega. omega.
   - intros until csz1'.
     intros ASF ACC1 ACC2 RELOC.
     cbn in *. rewrite ASF in ACC1. unfold acc_symb in ACC1.
@@ -3009,11 +2994,10 @@ Proof.
   apply acc_symb_inv' in Heqp.
   destruct Heqp as (s2 & EQ & ACC2). subst.
   rewrite rev_app_distr in GST2. cbn in GST2. inv GST2.
-  rewrite symbtable_to_tree_ignore_dummy in GET.
-  apply reloc_symbtable_cons_inv in RS.
-  destruct RS as (e & s3 & RS & RE & EQ). subst.
-  cbn in RE. inv RE. 
-  rewrite symbtable_to_tree_ignore_dummy.
+  (* apply reloc_symbtable_cons_inv in RS. *)
+  (* destruct RS as (e & s3 & RS & RE & EQ). subst. *)
+  (* cbn in RE. inv RE.  *)
+  (* rewrite symbtable_to_tree_ignore_dummy. *)
   generalize (acc_symb_reloc (AST.prog_defs p2) _ _ _ _ eq_refl ACC2 RS).
   rewrite Z.add_0_r.  rewrite Z.add_0_r.
   intros ACC2'.
@@ -3021,7 +3005,7 @@ Proof.
   destr; auto.
   generalize (acc_symb_tree_entry_some_inv _ _ _ _ _ _ NORPT1 ACC1 GET).
   intros (def1 & GET1).
-  rewrite <- (rev_involutive s3) in Heqo.
+  rewrite <- (rev_involutive stbl2') in Heqo.
   generalize (acc_symb_tree_entry_some_inv _ _ _ _ _ _ NORPT2 ACC2' Heqo).
   intros (def2 & GET2).
 
@@ -3145,7 +3129,7 @@ Proof.
     rewrite rev_app_distr. cbn.
     exists ((id, get_symbentry did cid dsz3 csz3 id def) :: entries').
     split. 
-    2: (cbn; congruence).
+    Focus 2. cbn. f_equal. auto.
     red. constructor; auto. 
     split; auto.
     
@@ -3275,7 +3259,7 @@ Proof.
     rewrite rev_app_distr. cbn.
     exists ((id, get_symbentry did cid dsz3 csz3 id def) :: entries').
     split. 
-    2: (cbn; congruence).
+    Focus 2. cbn. f_equal. auto.
     red. constructor; auto. 
     split; auto.
     red in SRC2.
@@ -3538,7 +3522,7 @@ Lemma symbtable_entry_equiv_sizes_cons :
       stbl
       (def_data_size def1 + dsz1)
       (def_code_size def1 + csz1) defs1 ->
-    (forall e, In e stbl ->  symbentry_id e <> Some p) ->
+    (forall e, In e stbl ->  symbentry_id e <> p) ->
     symbtable_entry_equiv_sizes stbl dsz1 csz1 ((p, def1) :: defs1).
 Proof.
   intros stbl dsz1 csz1 p def1 defs1 SB NE.
@@ -3556,7 +3540,7 @@ Proof.
 Qed.
 
 Lemma get_symbentry_ids_in: forall e stbl i,
-    In e stbl -> symbentry_id e = Some i ->
+    In e stbl -> symbentry_id e = i ->
     In i (get_symbentry_ids (rev stbl)).
 Proof.
   induction stbl as [|e' stbl].
@@ -3568,9 +3552,7 @@ Proof.
   rewrite rev_app_distr.
   rewrite in_app_iff.
   inv IN.
-  - right. cbn. 
-    unfold acc_symb_ids. rewrite SE.
-    cbn. auto.
+  - right. cbn. auto.
   - left. eapply IHstbl; eauto.
 Qed.
 
@@ -3644,10 +3626,9 @@ Proof.
         generalize (acc_symb_pres_ids _ _ _ _ _ ACC).
         intros IDSEQ'.
         setoid_rewrite IDSEQ' in IDSEQ.
-        assert (forall e, In e stbl' ->  symbentry_id e <> Some p) as IDNEQ. 
+        assert (forall e, In e stbl' ->  symbentry_id e <> p) as IDNEQ. 
         { intros e IN'.  
-          destruct (symbentry_id e) eqn:EQ; try congruence.
-          assert (In i (get_symbentry_ids (rev stbl'))).
+          assert (In (symbentry_id e) (get_symbentry_ids (rev stbl'))).
           { eapply get_symbentry_ids_in; eauto. }
           rewrite <- IDSEQ in H.
           apply in_map_filter in H.
@@ -3665,10 +3646,9 @@ Proof.
       generalize (acc_symb_pres_ids _ _ _ _ _ ACC).
       intros IDSEQ'.
       setoid_rewrite IDSEQ' in IDSEQ.
-      assert (forall e, In e stbl ->  symbentry_id e <> Some id1) as IDNEQ. 
+      assert (forall e, In e stbl ->  symbentry_id e <> id1) as IDNEQ. 
       { intros e IN'.  
-        destruct (symbentry_id e) eqn:EQ; try congruence.
-        assert (In i (get_symbentry_ids (rev stbl))).
+        assert (In (symbentry_id e) (get_symbentry_ids (rev stbl))).
         { eapply get_symbentry_ids_in; eauto. }
         rewrite <- IDSEQ in H.
         apply in_map_filter in H.
@@ -3782,7 +3762,7 @@ Lemma link_ordered_gen_symb_comm_eq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 st
         (PTree.combine link_symb_merge 
                        (symbtable_to_tree stbl1)
                        (symbtable_to_tree stbl2')) = Some (entries, t2) /\
-      stbl3 = dummy_symbentry :: map snd (PTree.elements t2 ++ entries).
+      stbl3 = map snd (PTree.elements t2 ++ entries).
 Proof.
   intros until defs3.
   intros CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
@@ -3802,9 +3782,6 @@ Proof.
   destruct Heqp0 as (stbl2 & EQ2 & ACCSYM2). subst.
   rewrite rev_app_distr in RELOC. 
   cbn [rev "++"] in RELOC. 
-  apply reloc_symbtable_cons_inv in RELOC.
-  destruct RELOC as (e' & stbl4 & RELOC & RSYMB & EQ). subst.
-  cbn in RSYMB. inv RSYMB.
   generalize (acc_symb_reloc _ _ _ _ _ eq_refl ACCSYM2 RELOC).
   repeat rewrite Z.add_0_r. intros ACCSYM2'.
   destr_in GS3. destruct p. inv GS3.
@@ -3813,7 +3790,7 @@ Proof.
   repeat rewrite rev_app_distr in *; cbn[rev "++"] in *.
   repeat rewrite symbtable_to_tree_ignore_dummy in *.
   apply reloc_symbtable_rev_inv in RELOC.
-  destruct RELOC as (stbl2' & RELOC & EQ). subst.
+  destruct RELOC as (stbl2'' & RELOC & EQ). subst.
   rewrite rev_involutive in ACCSYM2'.  
 
   rewrite fold_left_app in ACCSYM3.
@@ -3865,7 +3842,7 @@ Proof.
   (** Matching between remaining ids and external symbols*)
   assert (exists entries, PTree_combine_ids_defs_match 
                        (symbtable_to_tree (rev stbl1)) 
-                       (symbtable_to_tree (rev stbl2'))
+                       (symbtable_to_tree (rev stbl2''))
                        link_symb_merge
                        (map fst (PTree.elements t1)) entries /\
                      map snd entries = rev s) as RM_MATCH'.
@@ -3967,7 +3944,7 @@ Proof.
   (** Matching between ids and internal symbols from program 2 *)    
   assert (exists entries, PTree_combine_ids_defs_match 
                        (symbtable_to_tree (rev stbl1)) 
-                       (symbtable_to_tree (rev stbl2'))
+                       (symbtable_to_tree (rev stbl2''))
                        link_symb_merge
                        (collect_internal_def_ids is_fundef_internal p2)
                        entries /\
@@ -3980,7 +3957,7 @@ Proof.
   (** Matching between ids and internal symbols from program 1 *)    
   assert (exists entries, PTree_combine_ids_defs_match 
                        (symbtable_to_tree (rev stbl1)) 
-                       (symbtable_to_tree (rev stbl2'))
+                       (symbtable_to_tree (rev stbl2''))
                        link_symb_merge
                        (collect_internal_def_ids is_fundef_internal p1)
                        entries /\
@@ -4007,7 +3984,7 @@ Proof.
               (collect_internal_def_ids is_fundef_internal p1 ++
                collect_internal_def_ids is_fundef_internal p2)
               (PTree.combine link_symb_merge (symbtable_to_tree (rev stbl1))
-                 (symbtable_to_tree (rev stbl2'))) = Some (entries, t2)) as EXT'.
+                 (symbtable_to_tree (rev stbl2''))) = Some (entries, t2)) as EXT'.
   { eapply PTree_extract_elements_exists; eauto.
     eapply PTree_extract_elements_domain_norepet; eauto.
     apply incl_app.
@@ -4016,11 +3993,11 @@ Proof.
   }
   destruct EXT' as (entries & t2 & EXT').
   do 2 eexists. split; eauto.
-  f_equal. f_equal.
+  f_equal.
   
   assert (PTree_combine_ids_defs_match 
             (symbtable_to_tree (rev stbl1))
-            (symbtable_to_tree (rev stbl2'))
+            (symbtable_to_tree (rev stbl2''))
             link_symb_merge
             (collect_internal_def_ids is_fundef_internal p1 ++
              collect_internal_def_ids is_fundef_internal p2)
@@ -4028,7 +4005,7 @@ Proof.
   { eapply PTree_extract_elements_combine_match; eauto. }
   assert (PTree_combine_ids_defs_match 
             (symbtable_to_tree (rev stbl1))
-            (symbtable_to_tree (rev stbl2'))
+            (symbtable_to_tree (rev stbl2''))
             link_symb_merge
             (map fst (PTree.elements t2))
             (PTree.elements t2)) as MATCH4.
@@ -4036,7 +4013,7 @@ Proof.
   
   assert (PTree_combine_ids_defs_match 
             (symbtable_to_tree (rev stbl1))
-            (symbtable_to_tree (rev stbl2')) 
+            (symbtable_to_tree (rev stbl2'')) 
             link_symb_merge
             (map fst (PTree.elements t1) ++
              collect_internal_def_ids is_fundef_internal p1 ++
@@ -4046,7 +4023,7 @@ Proof.
     eapply PTree_combine_ids_defs_match_app; eauto. }
   assert (PTree_combine_ids_defs_match 
             (symbtable_to_tree (rev stbl1))
-            (symbtable_to_tree (rev stbl2')) 
+            (symbtable_to_tree (rev stbl2'')) 
             link_symb_merge
             (map fst (PTree.elements t2) ++
              collect_internal_def_ids is_fundef_internal p1 ++
@@ -4068,7 +4045,7 @@ Qed.
 
 Lemma add_symb_to_list_id_eq: forall stbl id s,
     In (id, s) (fold_left add_symb_to_list stbl []) ->
-    symbentry_id s = Some id.
+    symbentry_id s = id.
 Proof.
   induction stbl as [| e stbl].
   - cbn. tauto.
@@ -4076,16 +4053,16 @@ Proof.
     rewrite add_symb_to_list_inv in IN.
     rewrite in_app in IN. destruct IN.
     eauto.
-    unfold add_symb_to_list in H. destr_in H.
-    inv H; try congruence. inv H0. inv H.
+    unfold add_symb_to_list in H. 
+    inv H; try congruence. inv H0. 
 Qed.
 
 
 Lemma link_symb_pres_id: forall s1 s2 s id,
-    symbentry_id s1 = Some id ->
-    symbentry_id s2 = Some id ->
+    symbentry_id s1 = id ->
+    symbentry_id s2 = id ->
     link_symb s1 s2 = Some s ->
-    symbentry_id s = Some id.
+    symbentry_id s = id.
 Proof.
   intros s1 s2 s id ID1 ID2 LINK.
   unfold link_symb in LINK.
@@ -4109,7 +4086,7 @@ Lemma link_symb_elements_entry_id_eq: forall stbl1 stbl2 id e,
           (PTree.combine link_symb_merge
                          (symbtable_to_tree stbl1)
                          (symbtable_to_tree stbl2))) ->
-    symbentry_id_eq id e = true.
+    symbentry_id e = id.
 Proof.
   intros stbl1 stbl2 id e IN.
   apply PTree.elements_complete in IN.
@@ -4120,20 +4097,17 @@ Proof.
     apply PTree_Properties.in_of_list in Heqo0.
     apply add_symb_to_list_id_eq in Heqo.
     apply add_symb_to_list_id_eq in Heqo0.
-    unfold symbentry_id_eq.
     erewrite (link_symb_pres_id s s0); eauto.
-    rewrite peq_true. auto.
+    congruence.
   - inv IN.
     apply PTree_Properties.in_of_list in Heqo.
     apply add_symb_to_list_id_eq in Heqo.
-    unfold symbentry_id_eq.
     rewrite Heqo. 
-    rewrite peq_true. auto.
+    auto.
   - apply PTree_Properties.in_of_list in IN.
     apply add_symb_to_list_id_eq in IN.
-    unfold symbentry_id_eq.
     rewrite IN. 
-    rewrite peq_true. auto.
+    auto.
 Qed.
 
 Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
@@ -4152,13 +4126,11 @@ Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1
     gen_symb_table sec_data_id sec_code_id (PTree.elements t' ++ defs3) = (stbl3, dsz3, csz3) ->
     dsz3 = dsz1 + dsz2 /\
     csz3 = csz1 + csz2 /\ 
-    symbtable_syneq 
-      (dummy_symbentry :: 
-                       map snd
-                       (PTree.elements
-                          (PTree.combine link_symb_merge 
-                                         (symbtable_to_tree stbl1)
-                                         (symbtable_to_tree stbl2')))) stbl3.
+    symbtable_syneq (map snd
+                         (PTree.elements
+                            (PTree.combine link_symb_merge 
+                                           (symbtable_to_tree stbl1)
+                                           (symbtable_to_tree stbl2')))) stbl3.
 Proof.
   intros until defs3.
   intros CHECK NORPT1 NORPT2 GS1 GS2 RELOC EXT GS3.
@@ -4167,7 +4139,6 @@ Proof.
   split; auto.
   split; auto.
   red.
-  apply perm_skip.
   apply PTree_extract_elements_permutation' in EXT'.
   apply Permutation_map; auto.
 Qed.
@@ -4710,7 +4681,6 @@ Proof.
   destruct list_norepet_dec; try inv NORPT1'.
   destruct list_norepet_dec; try inv NORPT2'.
   eexists; split; eauto.
-  apply perm_skip.
   unfold symbtable_to_tree.
   apply Permutation_map.
   apply PTree_combine_permutation; auto.
