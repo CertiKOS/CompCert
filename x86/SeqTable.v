@@ -1,20 +1,24 @@
 (** ** Tables *)
 Require Import NArith Lists.List.
 
-(** ** A table storing a sequence of elements. *)
+(** ** A table storing a sequence of elements. 
+       The index might start at a non-zero value. *)
 
-Module SeqTable.
+Module Type SeqTableParams.
+  Parameter V: Type.
+  Parameter ofs: N.
+End SeqTableParams.
 
-Definition t (V:Type) := list V.
+Module SeqTable(P: SeqTableParams).
 
-Section WITHV.
+  Definition t := list (P.V).
 
-  Context {V:Type}.
+  Definition idx i := (i - P.ofs)%N.
 
-  Definition get (i:N) (tbl: t V) := 
-    nth_error tbl (N.to_nat i).
+  Definition get (i:N) (tbl: t) := 
+    nth_error tbl (N.to_nat (idx i)).
 
-  Fixpoint set_nat (i:nat) (v:V) (tbl: t V) :=
+  Fixpoint set_nat (i:nat) (v:P.V) (tbl: t) :=
     match i, tbl with
     | O, h::l =>
       Some (v::l)
@@ -26,16 +30,14 @@ Section WITHV.
     | _, _ => None
     end.
 
-  Definition set (i:N) (v: V) (tbl: t V) :=
-    let i' := (N.to_nat i) in
+  Definition set (i:N) (v: P.V) (tbl: t) :=
+    let i' := (N.to_nat (idx i)) in
     set_nat i' v tbl.
 
-  Definition size (tbl:t V) :=
+  Definition size (tbl:t) :=
     length tbl.
 
-  Definition filter (f: V -> bool) (tbl: t V) :=
+  Definition filter (f: P.V -> bool) (tbl: t) :=
     List.filter f tbl.
-
-End WITHV.
 
 End SeqTable.

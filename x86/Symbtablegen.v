@@ -39,7 +39,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
   match def with
   | None =>
     (** This is an external symbol with unknown type *)
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := bindty;
       symbentry_type := symb_notype;
       symbentry_value := 0;
@@ -50,7 +50,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     match AST.gvar_init gvar with
     | nil => 
       (** This is an external data symbol *)
-      {|symbentry_id := Some id;
+      {|symbentry_id := id;
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := 0;
@@ -59,7 +59,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       |}
     | [Init_space sz] =>
       (** This is an external data symbol in the COMM section *)
-      {|symbentry_id := Some id;
+      {|symbentry_id := id;
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
@@ -68,7 +68,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       |}
     | _ =>
       (** This is an internal data symbol *)
-      {|symbentry_id := Some id;
+      {|symbentry_id := id;
         symbentry_bind := bindty;
         symbentry_type := symb_data;
         symbentry_value := dsize;
@@ -78,7 +78,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
     end
   | Some (Gfun (External ef)) =>
     (** This is an external function symbol *)
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := 0;
@@ -86,7 +86,7 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
       symbentry_size := 0;
     |}
   | Some (Gfun (Internal f)) =>
-    {|symbentry_id := Some id;
+    {|symbentry_id := id;
       symbentry_bind := bindty;
       symbentry_type := symb_func;
       symbentry_value := csize;
@@ -130,8 +130,7 @@ Definition acc_symb (ssize: symbtable * Z * Z)
 (** Generate the symbol and section table *)
 Definition gen_symb_table defs :=
   let '(rstbl, dsize, csize) := 
-      fold_left acc_symb
-                defs ([dummy_symbentry], 0, 0) in
+      fold_left acc_symb  defs (nil, 0, 0) in
   (rev rstbl, dsize, csize).
 
 End WITH_CODE_DATA_SEC.
@@ -238,11 +237,59 @@ Proof.
   - simpl. auto.
 Qed.
     
+Definition instr_invalid (i: instruction) := 
+  match i with
+  | Pjmp_l _ 
+  | Pjcc _ _ 
+  | Pjcc2 _ _ _ 
+  | Pjmptbl _ _ 
+  | Pallocframe _ _ _ 
+  | Pfreeframe _ _ 
+  | Pload_parent_pointer _ _ => True
+  | _ => False
+  end.
+
+Definition instr_valid i := ~instr_invalid i.
+
+Lemma instr_invalid_dec: forall i, {instr_invalid i} + {~instr_invalid i}.
+Proof.
+  destruct i; cbn; auto.
+Qed.
+
+Lemma instr_valid_dec: forall i, {instr_valid i} + {~instr_valid i}.
+Proof.
+  unfold instr_valid.
+  destruct i; cbn; auto.
+Qed.
+
+Definition def_instrs_valid (def: option (globdef fundef unit)) :=
+  match def with
+  | None => True
+  | Some (Gvar v) => True
+  | Some (Gfun f) =>
+    match f with
+    | External _ => True
+    | Internal f =>  Forall instr_valid (fn_code f)
+    end
+  end.
+
+Lemma def_instrs_valid_dec: 
+  forall def, {def_instrs_valid def} + {~def_instrs_valid def}.
+Proof.
+  destruct def. destruct g.
+  - destruct f. 
+    + simpl. apply Forall_dec. apply instr_valid_dec.
+    + simpl. auto.
+  - simpl. auto.
+  - simpl. auto.
+Qed.
+
 Record wf_prog (p:Asm.program) : Prop :=
   {
     wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
     wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
     wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
+    wf_prog_no_local_jmps: Forall def_instrs_valid (map snd (AST.prog_defs p));
   }.
 
 Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
@@ -250,7 +297,9 @@ Proof.
   destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
   destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
   destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
+  destruct (Forall_dec _ def_instrs_valid_dec (map snd (AST.prog_defs p))).
   left; constructor; auto.
+  right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
@@ -297,7 +346,7 @@ Definition create_data_section (defs: list (ident * option (globdef fundef unit)
 Definition create_sec_table defs : sectable :=
   let data_sec := create_data_section defs in
   let code_sec := create_code_section defs in
-  [sec_null; data_sec; code_sec].
+  [data_sec; code_sec].
 
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=

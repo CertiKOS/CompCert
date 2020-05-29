@@ -47,15 +47,11 @@ Fixpoint find_symb (id:ident) (stbl:symbtable) : res Z :=
   match stbl with 
   | nil => Error (msg "cannot find the 'main' symbol")
   | e::l => 
-    match symbentry_id e with
-    | None => 
+    if ident_eq id (symbentry_id e) then 
+      OK 0
+    else 
       do i <- find_symb id l;
       OK (i+1)
-    | Some id' => 
-      if ident_eq id id' then OK 0
-      else do i <- find_symb id l;
-        OK (i+1)
-    end
   end.
 
 Fixpoint find_symb' (id:ident) (stbl:symbtable) : res positive :=
@@ -77,7 +73,7 @@ Definition append_reloc_entry (t: reloctable) (e:relocentry) :=
 
 Definition transf_program (p:program) : res program :=
   do main_symb <- find_symb' (prog_main p) (prog_symbtable p);
-    match SeqTable.get sec_code_id (prog_sectable p) with
+    match SecTable.get sec_code_id (prog_sectable p) with
     | None => Error (msg "No .text section found")
     | Some txt_sec =>
       do txt_sec' <- expand_code_section txt_sec create_start_stub;
@@ -85,7 +81,7 @@ Definition transf_program (p:program) : res program :=
         do e <- create_start_stub_relocentry map main_symb (sec_size txt_sec);
           let rtbl := reloctable_code (prog_reloctables p) in
           let rtbl' := append_reloc_entry rtbl e in
-          match SeqTable.set sec_code_id txt_sec' (prog_sectable p)
+          match SecTable.set sec_code_id txt_sec' (prog_sectable p)
           with
           | Some stbl =>
             let p':=

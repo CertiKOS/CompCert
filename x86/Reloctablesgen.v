@@ -208,12 +208,12 @@ Definition transl_init_data_list (l:list init_data) : res reloctable :=
 (** ** Translation of the program *)
 
 Definition transl_sectable (stbl: sectable) :=
-  match SeqTable.get sec_code_id stbl with
+  match SecTable.get sec_code_id stbl with
   | Some (sec_text code) =>
     match transl_code code with
     | Error e => Error e
     | OK codereloctable =>
-      match SeqTable.get sec_data_id stbl with
+      match SecTable.get sec_data_id stbl with
       | Some (sec_data l) =>
         match transl_init_data_list l with
         | Error e => Error e
@@ -267,7 +267,6 @@ Definition transl_code' (c:code): res (code) :=
 Local Open Scope string_scope.
 Definition print_section (s: section) :=
   match s with
-  | sec_null => "null"
   | sec_text _ => "text"
   | sec_data _ => "data"
   | sec_bytes _ => "bytes"
@@ -281,10 +280,10 @@ Fixpoint print_sectable (stbl: sectable) :=
 
 Definition transl_sectable' (stbl: sectable): res sectable :=
   match stbl with
-    [sec_null; sec_data l; sec_text code] =>
+    [sec_data l; sec_text code] =>
     do code' <- transl_code' code;
-    OK [sec_null; sec_data l; sec_text code']
-  | _ => Error (msg "Expected section table to be [null; text; data], got " ++ msg (print_sectable stbl))
+    OK [sec_data l; sec_text code']
+  | _ => Error (msg "Expected section table to be [text; data], got " ++ msg (print_sectable stbl))
   end.
 
 

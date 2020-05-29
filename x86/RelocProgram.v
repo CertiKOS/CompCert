@@ -53,14 +53,12 @@ Require Import Globalenvs SeqTable Asm.
 (** ** Sections *)
 
 Inductive section : Type :=
-| sec_null
 | sec_text (code: list instruction)
 | sec_data (init: list init_data)
 | sec_bytes (bs: list byte).
 
 Definition sec_size (s: section) : Z :=
   match s with
-  | sec_null => 0
   | sec_text c => code_size c
   | sec_data d => AST.init_data_list_size d
   | sec_bytes bs => Z.of_nat (length bs)
@@ -68,8 +66,13 @@ Definition sec_size (s: section) : Z :=
 
 (** Positive indexes to sections are mapped by the identity function,
     the 0-th section is a pre-defined null section *)
-(* Module SecIndex := IdIndex. *)
-Definition sectable := @SeqTable.t section.
+Module SecTblParams.
+  Definition V := section.
+  Definition ofs := 1%N.
+End SecTblParams.
+
+Module SecTable := SeqTable(SecTblParams).
+Definition sectable := SecTable.t.
 
 Definition sections_size stbl :=
   fold_left (fun sz sec => sz + (sec_size sec)) stbl 0.
@@ -90,7 +93,7 @@ Inductive bindtype : Type :=
 
 Record symbentry : Type :=
 {
-  symbentry_id: option ident;  (** The original identifier of the symbol *) 
+  symbentry_id: ident;  (** The original identifier of the symbol *) 
   symbentry_bind: bindtype;
   symbentry_type: symbtype;
   symbentry_value: Z;  (** This holds the alignment info if secindex is secindex_comm,
@@ -99,14 +102,14 @@ Record symbentry : Type :=
   symbentry_size: Z;
 }.
 
-Definition dummy_symbentry : symbentry :=
-  {| symbentry_id := None;
-     symbentry_bind := bind_local;
-     symbentry_type := symb_notype;
-     symbentry_value := 0;
-     symbentry_secindex := secindex_undef;
-     symbentry_size := 0;
-  |}.
+(* Definition dummy_symbentry : symbentry := *)
+(*   {| symbentry_id := None; *)
+(*      symbentry_bind := bind_local; *)
+(*      symbentry_type := symb_notype; *)
+(*      symbentry_value := 0; *)
+(*      symbentry_secindex := secindex_undef; *)
+(*      symbentry_size := 0; *)
+(*   |}. *)
 
 Definition is_symbol_internal e :=
   match symbentry_secindex e with
@@ -114,10 +117,16 @@ Definition is_symbol_internal e :=
   | _ => false
   end.
 
+
 (** Positive indexes to symbols are mapped by the identity function,
     the 0-th section is a pre-defined dummy symbol *)
-(* Module SymbIndex := IdIndex. *)
-Definition symbtable := SeqTable.t symbentry.
+Module SymbTblParams.
+  Definition V := symbentry.
+  Definition ofs := 1%N.
+End SymbTblParams.
+
+Module SymbTable := SeqTable(SymbTblParams).
+Definition symbtable := SymbTable.t.
 
 (** ** Relocation table *)
 Inductive reloctype : Type := reloc_abs | reloc_rel | reloc_null.
@@ -130,9 +139,13 @@ Record relocentry : Type :=
   reloc_addend : Z;
 }.
 
-(** Positive indexes to symbols are mapped by subtraction by one *)
-(* Module RelocIndex := SubOneIndex. *)
-Definition reloctable := SeqTable.t relocentry.
+Module RelocTblParams.
+  Definition V := relocentry.
+  Definition ofs := 0%N.
+End RelocTblParams.
+
+Module RelocTable := SeqTable(RelocTblParams).
+Definition reloctable := RelocTable.t.
 
 (** ** String table *)
 Definition strtable := PTree.t Z.
@@ -181,15 +194,11 @@ Definition symb_index_map_type := PTree.t N.
 
 Definition acc_symb_index_map (rs:(N * symb_index_map_type)) (e:symbentry) : N * symb_index_map_type :=
   let '(index, map) := rs in
-  let map' := 
-      match symbentry_id e with
-      | None => map
-      | Some id => PTree.set id index map
-      end in
+  let map' := PTree.set (symbentry_id e) index map in
   (N.succ index, map').
 
 Definition gen_symb_index_map (stbl: symbtable) : symb_index_map_type :=
-  let '(_, map) := fold_left acc_symb_index_map stbl (0%N, PTree.empty N) in
+  let '(_, map) := fold_left acc_symb_index_map stbl (SymbTblParams.ofs, PTree.empty N) in
   map.
 
 Definition reloc_ofs_map_type := ZTree.t relocentry.
@@ -221,30 +230,17 @@ Definition sec_shstrtbl_id := 7%N.
 
 (** Ultility function s*)
 Definition add_symb_to_list (t: list (ident * symbentry)) (s:symbentry) :=
-  match symbentry_id s with
-  | None => t
-  | Some id => (id, s) :: t
-  end.
+  (symbentry_id s, s) :: t.
 
 Definition symbtable_to_tree (t:symbtable) : PTree.t symbentry :=
   let l := fold_left add_symb_to_list t nil in
   PTree_Properties.of_list l.
 
 Definition acc_symb_ids (ids: list ident) (s:symbentry) :=
-  match symbentry_id s with
-  | None => ids
-  | Some id => id :: ids
-  end.
+  symbentry_id s :: ids.
 
 Definition get_symbentry_ids (t:symbtable) : list ident :=
   rev (fold_left acc_symb_ids t nil).
-
-
-Definition is_not_dummy_symbentry (e:symbentry) :=
-  match symbentry_id e with
-  | None => false
-  | Some _ => true
-  end.
 
 (* Definition symbentry_id_neq (id:ident) (e:symbentry) := *)
 (*   match symbentry_id e with *)
@@ -252,30 +248,30 @@ Definition is_not_dummy_symbentry (e:symbentry) :=
 (*   | Some id' => if ident_eq id id' then false else true *)
 (*   end. *)
 
-Definition symbentry_id_eq (id:ident) (e:symbentry) :=
-  match symbentry_id e with
-  | None => false
-  | Some id' => if ident_eq id id' then true else false
-  end.
+(* Definition symbentry_id_eq (id:ident) (e:symbentry) := *)
+(*   match symbentry_id e with *)
+(*   | None => false *)
+(*   | Some id' => if ident_eq id id' then true else false *)
+(*   end. *)
 
 
-Lemma symbtable_to_tree_ignore_dummy: forall stbl, 
-    symbtable_to_tree (dummy_symbentry :: stbl) = symbtable_to_tree stbl.
-Proof.
-  intros. unfold symbtable_to_tree. cbn. auto.
-Qed.
+(* Lemma symbtable_to_tree_ignore_dummy: forall stbl,  *)
+(*     symbtable_to_tree (dummy_symbentry :: stbl) = symbtable_to_tree stbl. *)
+(* Proof. *)
+(*   intros. unfold symbtable_to_tree. cbn. auto. *)
+(* Qed. *)
 
-Lemma add_symb_to_list_id_eq: forall id e l,
-    symbentry_id_eq id e = true -> add_symb_to_list l e = (id,e)::l.
-Proof.
-  intros id e l EQ.
-  unfold symbentry_id_eq in EQ. 
-  destr_in EQ. destruct ident_eq; try congruence. subst.
-  unfold add_symb_to_list. rewrite Heqo. auto.
-Qed.
+(* Lemma add_symb_to_list_id_eq: forall id e l, *)
+(*     symbentry_id_eq id e = true -> add_symb_to_list l e = (id,e)::l. *)
+(* Proof. *)
+(*   intros id e l EQ. *)
+(*   unfold symbentry_id_eq in EQ.  *)
+(*   destr_in EQ. destruct ident_eq; try congruence. subst. *)
+(*   unfold add_symb_to_list. rewrite Heqo. auto. *)
+(* Qed. *)
 
 Lemma acc_to_list_loop: forall idstbl1 idstbl2,
-    Forall (fun '(id, e) => symbentry_id_eq id e = true) idstbl1 ->
+    Forall (fun '(id, e) => symbentry_id e = id) idstbl1 ->
     (fold_left add_symb_to_list (map snd idstbl1) idstbl2) = (rev idstbl1) ++ idstbl2.
 Proof.
   induction idstbl1 as [|ide idstbl1].
@@ -284,7 +280,6 @@ Proof.
     destruct ide as (id,e). 
     inv IDEQ.
     cbn.
-    erewrite add_symb_to_list_id_eq; eauto.
     rewrite <- app_assoc.
     auto.
 Qed.
@@ -298,5 +293,4 @@ Proof.
     rewrite IHl1.
     rewrite (IHl1 (add_symb_to_list nil e)).
     rewrite <- app_assoc. f_equal.
-    unfold add_symb_to_list. destr.
 Qed.

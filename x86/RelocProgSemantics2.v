@@ -34,7 +34,7 @@ Definition store_init_data_bytes (m: mem) (b: block) (p: Z) (bytes: list byte)
   Mem.storebytes m b p memvals.
 
 Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
-  match SeqTable.get sec_data_id t with
+  match SecTable.get sec_data_id t with
   | None => None
   | Some sec =>
     let sz := (sec_size sec) in
@@ -104,14 +104,14 @@ End WITHMAPS.
 
 Definition decode_prog_code_section (p:program) : res program :=
   let t := (prog_sectable p) in
-  match SeqTable.get sec_code_id t with
+  match SecTable.get sec_code_id t with
   | None => Error (msg "Cannot find a code section in the program")
   | Some sec =>
     let rtbl :=  get_reloctable RELOC_CODE (prog_reloctables p) in
     let rofsmap := gen_reloc_ofs_map rtbl in
     let stbl := prog_symbtable p in
     do sec' <- decode_code_section rofsmap stbl sec;
-      match SeqTable.set sec_code_id sec' t with
+      match SecTable.set sec_code_id sec' t with
       | None => Error (msg "Cannot find a code section in the program")
       | Some t' =>
         OK {| prog_defs      := prog_defs p;
