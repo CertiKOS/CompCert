@@ -844,8 +844,11 @@ Definition alloc_external_symbol (m: mem) (e:symbentry): option mem :=
   let id:= symbentry_id e in
   match symbentry_type e with
   | symb_notype =>
-    let (m1, b) := Mem.alloc m 0 0 in
-    Some m1
+    match symbentry_secindex e with
+    | secindex_undef =>
+      let (m1, b) := Mem.alloc m 0 0 in Some m1
+    | _ => None
+    end
   | symb_func =>
     match symbentry_secindex e with
     | secindex_undef =>
@@ -1017,10 +1020,103 @@ Proof.
 Qed.
 
 
-(* Lemma alloc_external_symbols_nextblock: forall p m1 m, *)
-(*   alloc_external_symbols m1 (prog_symbtable p) = Some m -> *)
-(*   Mem.nextblock m = pos_advance_N (Mem.nextblock m1) (num_of_external_symbs (prog_symbtable p)). *)
-(* Admitted. *)
+Definition num_of_external_symbs (tbl:SymbTable.t) :=
+  length (filter (fun s => negb (is_symbol_internal s)) tbl).
+
+Lemma alloc_external_symbol_nextblock1 : forall e m m',
+  is_symbol_internal e = false ->
+  alloc_external_symbol m e = Some m' -> 
+  Mem.nextblock m' = Pos.succ (Mem.nextblock m).
+Proof.
+  intros e m m' SI ALLOC.
+  unfold alloc_external_symbol in ALLOC.
+  repeat destr_in ALLOC.
+  - unfold is_symbol_internal in SI.
+    rewrite Heqs0 in SI. congruence.
+  - erewrite Mem.nextblock_drop; eauto.
+    erewrite Mem.nextblock_alloc; eauto.
+  - unfold is_symbol_internal in SI.
+    rewrite Heqs0 in SI. congruence.
+  - erewrite Mem.nextblock_drop; eauto.
+    erewrite Genv.store_zeros_nextblock; eauto.
+    erewrite Mem.nextblock_alloc; eauto.
+  - erewrite Mem.nextblock_drop; eauto.
+    erewrite Genv.store_zeros_nextblock; eauto.
+    erewrite Mem.nextblock_alloc; eauto.
+  - erewrite Mem.nextblock_alloc; eauto.
+Qed.
+
+Lemma alloc_external_symbol_nextblock2 : forall e m m',
+  is_symbol_internal e = true ->
+  alloc_external_symbol m e = Some m' -> 
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  intros e m m' SI ALLOC.
+  unfold alloc_external_symbol in ALLOC.
+  repeat destr_in ALLOC.
+  - unfold is_symbol_internal in SI.
+    rewrite Heqs0 in SI. congruence.
+  - unfold is_symbol_internal in SI.
+    rewrite Heqs0 in SI. congruence.
+  - unfold is_symbol_internal in SI.
+    rewrite Heqs0 in SI. congruence.
+  - unfold is_symbol_internal in SI.
+    rewrite Heqs0 in SI. congruence.
+Qed.
+
+Lemma alloc_external_symbols_nextblock: forall tbl m1 m,
+  alloc_external_symbols m1 tbl = Some m ->
+  Mem.nextblock m = pos_advance_N (Mem.nextblock m1) (num_of_external_symbs tbl).
+Proof.
+  induction tbl; intros; inv H.
+  - auto.
+  - destr_match_in H1; inv H1.
+    simpl. 
+    exploit IHtbl; eauto. intros NB.
+    destruct (is_symbol_internal a) eqn:SI.    
+    + exploit alloc_external_symbol_nextblock2; eauto.
+      intros NB1.
+      cbn. rewrite SI. cbn. 
+      rewrite NB. f_equal. auto.
+    + exploit alloc_external_symbol_nextblock1; eauto.
+      intros NB1.
+      cbn. rewrite SI. cbn.
+      rewrite NB. f_equal. auto.
+Qed.
+
+Lemma add_external_global_nextblock1: forall ge extfuns e,
+    is_symbol_internal e = false ->
+    Genv.genv_next (add_external_global extfuns ge e) = 
+    Pos.succ (Genv.genv_next ge).
+Proof.
+  intros ge extfuns e SI.
+  unfold add_external_global.
+  rewrite SI. cbn. auto.
+Qed.  
+
+Lemma add_external_global_nextblock2: forall ge extfuns e,
+    is_symbol_internal e = true ->
+    Genv.genv_next (add_external_global extfuns ge e) = 
+    Genv.genv_next ge.
+Proof.
+  intros ge extfuns e SI.
+  unfold add_external_global.
+  rewrite SI. cbn. auto.
+Qed.
+
+Lemma add_external_globals_nextblock: forall tbl ge extfuns,
+  Genv.genv_next (add_external_globals extfuns ge tbl) = 
+  pos_advance_N (Genv.genv_next ge) (num_of_external_symbs tbl).
+Proof.
+  induction tbl; intros; simpl.
+  - auto.
+  - rewrite IHtbl. 
+    destruct (is_symbol_internal a) eqn:SI.
+    + erewrite add_external_global_nextblock2; eauto.
+      cbn. rewrite SI. cbn. auto.
+    + erewrite add_external_global_nextblock1; eauto.
+      cbn. rewrite SI. cbn. auto.
+Qed.
 
 
 Lemma init_mem_genv_next: forall (p: program) m,
@@ -1033,10 +1129,11 @@ Proof.
   exploit alloc_data_section_nextblock; eauto. intros NB1.
   rewrite Mem.nextblock_empty in NB1. cbn in NB1.
   exploit alloc_code_section_nextblock; eauto. intros NB2.
-  (* exploit alloc_external_symbols_nextblock; eauto. intros NB3. *)
-  (* unfold globalenv. *)
-Admitted.
-
+  exploit alloc_external_symbols_nextblock; eauto. intros NB3.
+  unfold globalenv.
+  erewrite add_external_globals_nextblock. cbn.
+  rewrite NB1 in NB2. cbn in NB2. congruence.
+Qed.
 
 
 (** Execution of whole programs. *)
