@@ -15,6 +15,7 @@ Require Import Events Floats Memory Smallstep.
 Require Import Asm RelocProgram RawAsm Globalenvs.
 Require Import Locations Stacklayout Conventions EraseArgs.
 Require Import Linking SeqTable Errors.
+Require Import LocalLib.
 
     
 (** Global environments using only the symbol table *)
@@ -716,6 +717,24 @@ Fixpoint add_external_globals (extfuns: PTree.t external_function)
     add_external_globals extfuns ge' l
   end. 
 
+Definition symb_ignored_by_add_extern s :=
+  match symbentry_id s with
+  | None => true
+  | Some _ =>
+    is_symbol_internal s
+  end.
+
+
+(* Lemma add_external_global_nextblock1: forall ge efs s, *)
+(*     is_symbol_internal s = true -> Genv.genv_next (add_external_global efs ge s) = Genv.genv_next ge. *)
+(* Proof. *)
+(*   intros. unfold add_external_global. *)
+(*   destr.  *)
+(* Qed. *)
+
+(* Lemma add_external_global_nextblock2: forall ge efs s, *)
+(*     is_symbol_internal s = false -> Genv.genv_next (add_external_global efs ge s) = Pos.succ (Genv.genv_next ge). *)
+(* Proof. *)
 
 Lemma genv_senv_add_external_global:
   forall exts ge a,
@@ -955,6 +974,78 @@ Definition init_mem (p: program) :=
       alloc_external_symbols m2 (prog_symbtable p)
     end
   end.
+
+(** Properties about init_mem *)
+
+Lemma store_init_data_nextblock : forall v ge m b ofs m',
+  store_init_data ge m b ofs v = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  intros. destruct v; simpl in *; try now (eapply Mem.nextblock_store; eauto).
+  inv H. auto.
+Qed.
+    
+Lemma store_init_data_list_nextblock : forall l ge m b ofs m',
+  store_init_data_list ge m b ofs l = Some m' ->
+  Mem.nextblock m' = Mem.nextblock m.
+Proof.
+  induction l; intros.
+  - inv H. auto.
+  - inv H. destr_match_in H1; inv H1.
+    exploit store_init_data_nextblock; eauto.
+    exploit IHl; eauto. intros. congruence.
+Qed.
+
+Lemma alloc_data_section_nextblock: forall ge stbl m m',
+  alloc_data_section ge stbl m = Some m' -> Mem.nextblock m' = Pos.succ (Mem.nextblock m).
+Proof.
+  intros ge stbl m m' ALLOC.
+  unfold alloc_data_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.nextblock_alloc; eauto.
+  intros NB1.
+  exploit Globalenvs.Genv.store_zeros_nextblock; eauto.
+  intros NB2.
+  exploit store_init_data_list_nextblock; eauto.
+  intros NB3.
+  exploit Mem.nextblock_drop; eauto.
+  intros NB4. 
+  congruence.
+Qed.
+
+Lemma alloc_code_section_nextblock: forall stbl m m',
+  alloc_code_section stbl m = Some m' -> Mem.nextblock m' = Pos.succ (Mem.nextblock m).
+Proof.
+  intros stbl m m' ALLOC.
+  unfold alloc_code_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.nextblock_alloc; eauto.
+  intros NB1.
+  exploit Mem.nextblock_drop; eauto.
+  intros NB2. congruence.
+Qed.
+
+
+(* Lemma alloc_external_symbols_nextblock: forall p m1 m, *)
+(*   alloc_external_symbols m1 (prog_symbtable p) = Some m -> *)
+(*   Mem.nextblock m = pos_advance_N (Mem.nextblock m1) (num_of_external_symbs (prog_symbtable p)). *)
+(* Admitted. *)
+
+
+Lemma init_mem_genv_next: forall (p: program) m,
+  init_mem p = Some m ->
+  Genv.genv_next (globalenv p) = Mem.nextblock m.
+Proof.
+  unfold init_mem; intros.
+  destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
+  destr_match_in H; inv H. destr_in H1.
+  exploit alloc_data_section_nextblock; eauto. intros NB1.
+  rewrite Mem.nextblock_empty in NB1. cbn in NB1.
+  exploit alloc_code_section_nextblock; eauto. intros NB2.
+  (* exploit alloc_external_symbols_nextblock; eauto. intros NB3. *)
+  (* unfold globalenv. *)
+Admitted.
+
 
 
 (** Execution of whole programs. *)

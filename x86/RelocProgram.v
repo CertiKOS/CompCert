@@ -114,6 +114,7 @@ Definition is_symbol_internal e :=
   | _ => false
   end.
 
+
 (** Positive indexes to symbols are mapped by the identity function,
     the 0-th section is a pre-defined dummy symbol *)
 (* Module SymbIndex := IdIndex. *)

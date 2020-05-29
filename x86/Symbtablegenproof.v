@@ -15,27 +15,6 @@ Require AsmFacts.
 
 Open Scope Z_scope.
 
-Ltac destr_if := 
-  match goal with 
-  | [ |- context [if ?b then _ else _] ] => 
-    let eq := fresh "EQ" in
-    (destruct b eqn:eq)
-  end.
-
-Ltac destr_match := 
-  match goal with 
-  | [ |- context [match ?b with _ => _ end] ] => 
-    let eq := fresh "EQ" in
-    (destruct b eqn:eq)
-  end.
-
-Ltac destr_match_in H := 
-  match type of H with 
-  | context [match ?b with _ => _ end] => 
-    let eq := fresh "EQ" in
-    (destruct b eqn:eq)
-  end.
-
 
 Ltac monadInvX1 H :=
   let monadInvX H :=  
@@ -338,12 +317,189 @@ Proof.
   rewrite Ptrofs.add_zero_l. auto.
 Qed.
 
+(** Initial Memory Injection *)
+Definition init_meminj : meminj :=
+  let ge := Genv.globalenv prog in
+  let tge := globalenv tprog in
+  fun b =>
+    (* (genv_next ge) is the stack block of the source program *)
+    if eq_block b (Globalenvs.Genv.genv_next ge)
+    then Some (Genv.genv_next tge, 0)
+    else
+      match (Genv.invert_symbol ge b) with
+      | None => None
+      | Some id =>
+        match Genv.find_symbol tge id with
+        | None => None
+        | Some (b,ofs) => Some (b, Ptrofs.unsigned ofs)
+        end
+      end.
+
+Theorem init_meminj_match_sminj : 
+    match_inj init_meminj.
+Proof.
+Admitted.
+
+(** Initial memory injection for global variables (not including the stacks) *)
+Definition globs_meminj : meminj :=
+  let ge := Genv.globalenv prog in
+  let tge := globalenv tprog in
+  fun b =>
+      match (Genv.invert_symbol ge b) with
+      | None => None
+      | Some id =>
+        match Genv.find_symbol tge id with
+        | None => None
+        | Some (b, ofs) => Some (b, Ptrofs.unsigned ofs)
+        end
+      end.
+
+Lemma init_mem_pres_inject : 
+  forall m
+    (TRANF: transf_program prog = OK tprog)
+    (INITMEM: Genv.init_mem prog = Some m),
+    exists m', init_mem tprog = Some m' /\ Mem.inject globs_meminj (def_frame_inj m) m m'.
+Proof.
+Admitted.
+
 
 Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Val.inject j (rs r) (rs r)) st1,
     RealAsm.initial_state prog rs st1  ->
     exists st2, initial_state tprog rs st2 /\ match_states st1 st2.
 Proof.
-  Admitted.
+  intros rs SELFINJECT st1 INIT.
+  generalize TRANSF. intros TRANSF'.
+  unfold match_prog in TRANSF'. unfold transf_program in TRANSF'.
+  destruct (check_wellformedness prog) eqn:WF. 2: congruence. repeat destr_in TRANSF'.
+  rename z0 into dsize. rename z into csize. 
+  inv INIT.
+  generalize init_meminj_match_sminj.
+  intros MATCH_SMINJ.
+  exploit (init_mem_pres_inject m); eauto.
+  intros (m' & INITM' & MINJ).
+  inversion H0.
+  (* push_new stage *)
+  exploit Mem.push_new_stage_inject; eauto. intros NSTGINJ.
+  exploit (Mem.alloc_parallel_inject globs_meminj (1%nat :: def_frame_inj m)
+          (Mem.push_new_stage m) (Mem.push_new_stage m')
+          0 (Mem.stack_limit + align (size_chunk Mptr) 8) m1 bstack
+          0 (Mem.stack_limit + align (size_chunk Mptr) 8)); eauto. omega. omega.
+  intros (j' & m1' & bstack' & MALLOC' & AINJ & INCR & FBSTACK & NOTBSTK).
+  rewrite <- push_new_stage_def_frame_inj in AINJ.
+  erewrite alloc_pres_def_frame_inj in AINJ; eauto.
+  assert (bstack = Globalenvs.Genv.genv_next ge).
+  {
+    exploit (Genv.init_mem_genv_next prog m); eauto. intros BEQ. unfold ge. rewrite BEQ.
+    apply Mem.alloc_result in MALLOC; eauto.
+    subst bstack. apply Mem.push_new_stage_nextblock.
+  }
+(*   assert (bstack' = Genv.genv_next tge). *)
+(*   { *)
+(*     exploit (@init_mem_genv_next instruction); eauto. intros BEQ. *)
+(*     unfold tge. rewrite BEQ. *)
+(*     exploit Mem.alloc_result; eauto. *)
+(*     intros. subst. apply Mem.push_new_stage_nextblock. *)
+(*   } *)
+(*   assert (forall x, j' x = init_meminj x). *)
+(*   { *)
+(*     intros. destruct (eq_block x bstack). *)
+(*     subst x. rewrite FBSTACK. unfold init_meminj. subst. *)
+(*     rewrite dec_eq_true; auto. *)
+(*     erewrite NOTBSTK; eauto. *)
+(*     unfold init_meminj. subst. *)
+(*     rewrite dec_eq_false; auto. *)
+(*   } *)
+(*   exploit Mem.inject_ext; eauto. intros MINJ'. *)
+(*   exploit Mem.drop_parallel_inject; eauto. red. simpl. auto. *)
+(*   unfold init_meminj. fold ge. rewrite <- H4. rewrite pred_dec_true. eauto. auto. *)
+(*   intros (m2' & MDROP' & DMINJ). simpl in MDROP'. rewrite Z.add_0_r in MDROP'. *)
+(*   erewrite (drop_perm_pres_def_frame_inj m1) in DMINJ; eauto. *)
+  
+(*   assert (exists m3', Mem.record_stack_blocks m2' (make_singleton_frame_adt' bstack' RawAsm.frame_info_mono 0) = Some m3' *)
+(*                  /\ Mem.inject (init_meminj) (def_frame_inj m3) m3 m3') as RCD. *)
+(*   { *)
+(*     unfold def_frame_inj. unfold def_frame_inj in DMINJ. *)
+(*     eapply (Mem.record_stack_block_inject_flat m2 m3 m2' (init_meminj) *)
+(*            (make_singleton_frame_adt' bstack RawAsm.frame_info_mono 0)); eauto. *)
+(*     (* frame inject *) *)
+(*     red. unfold make_singleton_frame_adt'. simpl. constructor.  *)
+(*     simpl. intros b2 delta FINJ. *)
+(*     unfold init_meminj in FINJ. fold ge in FINJ. rewrite <- H4 in FINJ. *)
+(*     rewrite pred_dec_true in FINJ; auto. inv FINJ. *)
+(*     exists RawAsm.frame_info_mono. split. auto. apply inject_frame_info_id. *)
+(*     constructor. *)
+(*     (* in frame *) *)
+(*     unfold make_singleton_frame_adt'. simpl. unfold in_frame. simpl. *)
+(*     repeat rewrite_stack_blocks. *)
+(*     erewrite init_mem_stack; eauto. *)
+(*     (* valid frame *) *)
+(*     unfold make_singleton_frame_adt'. simpl. red. unfold in_frame. *)
+(*     simpl. intuition. subst. *)
+(*     eapply Mem.drop_perm_valid_block_1; eauto. *)
+(*     eapply Mem.valid_new_block; eauto. *)
+(*     (* frame_agree_perms *) *)
+(*     red. unfold make_singleton_frame_adt'. simpl. *)
+(*     intros b fi o k p BEQ PERM. inv BEQ; try contradiction. *)
+(*     inv H7. unfold RawAsm.frame_info_mono. simpl. *)
+(*     erewrite drop_perm_perm in PERM; eauto. destruct PERM. *)
+(*     eapply Mem.perm_alloc_3; eauto. *)
+(*     (* in frame iff *) *)
+(*     unfold make_singleton_frame_adt'. unfold in_frame. simpl. *)
+(*     intros b1 b2 delta INJB. split. *)
+(*     intros BEQ. destruct BEQ; try contradiction. subst b1. *)
+(*     unfold init_meminj in INJB. fold ge in INJB. rewrite <- H4 in INJB. *)
+(*     rewrite pred_dec_true in INJB; auto. inv INJB. left; auto. *)
+(*     intros BEQ. destruct BEQ; try contradiction. subst b2. *)
+(*     assert (bstack' = Mem.nextblock (Mem.push_new_stage m')) as BEQ. *)
+(*     eapply Mem.alloc_result; eauto using MALLOC'. *)
+(*     rewrite Mem.push_new_stage_nextblock in BEQ. *)
+(*     erewrite <- init_mem_genv_next in BEQ; eauto using INITM'. *)
+(*     subst bstack'. *)
+(*     destruct (eq_block bstack b1); auto. *)
+(*     assert (b1 <> bstack) by congruence. *)
+(*     apply NOTBSTK in H5. rewrite H6 in H5. rewrite INJB in H5. *)
+(*     left. symmetry. subst bstack. eapply init_meminj_genv_next_inv; eauto. *)
+
+(*     (* top frame *) *)
+(*     red. repeat rewrite_stack_blocks. constructor. auto. *)
+(*     (* size stack *) *)
+(*     repeat rewrite_stack_blocks. *)
+(*     erewrite init_mem_stack; eauto. simpl. omega. *)
+(*   } *)
+
+(*   destruct RCD as (m3' & RCDSB & RMINJ). *)
+(*   set (rs0' := rs # PC <- (Genv.symbol_address tge tprog.(prog_main) Ptrofs.zero) *)
+(*                   # RA <- Vnullptr *)
+(*                   # RSP <- (Vptr bstack' (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr))))) in *. *)
+(*   edestruct storev_mapped_inject' as (m4' & ST & SMINJ). apply RMINJ. eauto. econstructor. *)
+(*   rewrite <- H6, FBSTACK; eauto. reflexivity. constructor. *)
+(*   exists (State rs0' m4'). split. *)
+(*   - eapply initial_state_intro; eauto. *)
+(*     eapply initial_state_gen_intro; eauto. *)
+(*     subst. fold tge in MDROP'. eauto. *)
+(*     subst. fold tge in MDROP'. rewrite Ptrofs.add_zero in ST. eauto. *)
+(*   - eapply match_states_intro; eauto. *)
+(*     + eapply valid_instr_offset_is_internal_init; eauto. inv w; auto. *)
+(*     + eapply extfun_entry_is_external_init; eauto. inv w; auto. *)
+(*     + red. *)
+(*       intros. eapply extfun_transf; eauto. inv w; auto. *)
+(*     + red. unfold rs0, rs0'. *)
+(*       apply val_inject_set. *)
+(*       apply val_inject_set. *)
+(*       apply val_inject_set. *)
+(*       auto. *)
+(*       exploit (main_ptr_inject); eauto. unfold Globalenvs.Genv.symbol_address. *)
+(*       unfold ge, ge0 in *. rewrite H2. fold tge. auto. *)
+(*       unfold Vnullptr. destr; auto. *)
+(*       econstructor. unfold init_meminj. subst bstack. fold ge. rewrite peq_true. subst bstack'.  fold tge. eauto. *)
+(*       rewrite Ptrofs.add_zero. *)
+(*       apply Ptrofs.sub_add_opp. *)
+(*     + red. intros b g FD. *)
+(*       unfold Genv.find_def in FD. eapply Genv.genv_defs_range in FD. *)
+(*       revert FD. red. rewnb. *)
+(*       fold ge. intros. xomega. *)
+(* Qed. *)
+Admitted.
 
 
 (** ** Simulation of Single Step Execution *)

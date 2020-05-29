@@ -7,8 +7,52 @@ Require Import Permutation.
 Require Import Values Events Memtype Memory.
 Import ListNotations.
 
+Ltac destr_if := 
+  match goal with 
+  | [ |- context [if ?b then _ else _] ] => 
+    let eq := fresh "EQ" in
+    (destruct b eqn:eq)
+  end.
+
+Ltac destr_match := 
+  match goal with 
+  | [ |- context [match ?b with _ => _ end] ] => 
+    let eq := fresh "EQ" in
+    (destruct b eqn:eq)
+  end.
+
+Ltac destr_match_in H := 
+  match type of H with 
+  | context [match ?b with _ => _ end] => 
+    let eq := fresh "EQ" in
+    (destruct b eqn:eq)
+  end.
 
 (** ** Properties about basic data structures *)
+
+Fixpoint pos_advance_N (p:positive) (n:nat) : positive :=
+  match n with
+  | O => p
+  | Datatypes.S n' => pos_advance_N (Psucc p) n'
+  end.
+
+Lemma psucc_advance_Nsucc_eq : forall n p,
+  pos_advance_N (Pos.succ p) n = Pos.succ (pos_advance_N p n).
+Proof.
+  induction n; intros.
+  - simpl. auto.
+  - simpl. rewrite IHn. auto.
+Qed.
+
+Lemma pos_advance_N_ple : forall p n,
+  Ple p (pos_advance_N p n).
+Proof.
+  induction n; intros.
+  - simpl. apply Ple_refl.
+  - simpl.
+    rewrite psucc_advance_Nsucc_eq.
+    apply Ple_trans with (pos_advance_N p n); auto. apply Ple_succ.
+Qed.
 
 Lemma Z_max_0 : forall z, z >= 0 -> Z.max z 0 = z.
 Proof.
@@ -674,6 +718,21 @@ Proof.
   destruct v1; try congruence.
   intros STORE.
   eapply store_pres_def_frame_inj; eauto.
+Qed.
+
+Lemma push_new_stage_def_frame_inj : forall m,
+    def_frame_inj (Mem.push_new_stage m) = (1%nat :: def_frame_inj m).
+Proof.
+  unfold def_frame_inj. intros.
+  erewrite Mem.push_new_stage_stack. simpl. auto.
+Qed.
+
+Lemma alloc_pres_def_frame_inj : forall m1 lo hi m1' b,
+    Mem.alloc m1 lo hi = (m1', b) ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  unfold def_frame_inj. intros.
+  apply Mem.alloc_stack_blocks in H. rewrite H. auto.
 Qed.
 
 
