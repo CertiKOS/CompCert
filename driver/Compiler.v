@@ -1116,7 +1116,6 @@ Proof.
   eapply compose_forward_simulations.
   eapply TablesEncodeproof.transf_program_correct; eauto; admit.
   apply RelocElfgenproof.transf_program_correct; eauto. admit. admit.
-  eapply RealAsm.real_asm_receptive.
   eapply RelocProgSemantics3.semantics_determinate.
 Admitted.
 

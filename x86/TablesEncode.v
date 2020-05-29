@@ -43,8 +43,8 @@ Definition transf_program (p:program) : res program :=
              prog_senv := p.(prog_senv);
           |} in
       let len := (length (prog_sectable p')) in
-      if beq_nat len 8 then
+      if beq_nat len 7 then
         OK p'
       else
-        Error [MSG "In TablesEncode: number of sections is incorrect (not 8): "; POS (Pos.of_nat len)].
+        Error [MSG "In TablesEncode: number of sections is incorrect (not 7): "; POS (Pos.of_nat len)].
 

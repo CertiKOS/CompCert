@@ -166,7 +166,7 @@ Lemma tables_encode_spec:
     prog_symbtable prog = prog_symbtable tprog /\
     prog_reloctables prog = prog_reloctables tprog /\
     prog_senv prog = prog_senv tprog /\
-    length (prog_sectable prog) = 3%nat /\
+    length (prog_sectable prog) = 2%nat /\
     exists (strmap : Maps.PTree.t Z) (sbytes : list byte) symt,
       get_strings_map_bytes (fold_right acc_symbols nil (prog_symbtable prog)) =
       OK (strmap, sbytes) /\
@@ -221,7 +221,7 @@ Proof.
   destruct (prog_sectable prog) eqn:?; simpl in LEN; try congruence.
   destruct s eqn:?; simpl in LEN; try congruence.
   destruct l eqn:?; simpl in LEN; try congruence. simpl.
-  destruct l0 eqn:?; simpl in LEN; try congruence.
+  auto.
 Qed.
 
 Lemma genv_reloc_same:
@@ -256,7 +256,7 @@ Proof.
   destruct (prog_sectable prog) eqn:?; simpl in LEN; try omega.
   destruct s eqn:?; simpl in LEN; try omega.
   destruct l eqn:?; simpl in LEN; try omega.
-  destruct l0 eqn:?; simpl in LEN; try omega. simpl.
+  simpl.
   rewrite decode_encode_reloctable. simpl.
   rewrite decode_encode_reloctable. simpl.
   erewrite decode_string_map_correct'. 2: eauto. simpl.

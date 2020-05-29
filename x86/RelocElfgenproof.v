@@ -46,12 +46,13 @@ Proof.
   unfold match_prog in TRANSF. unfold gen_reloc_elf in TRANSF.
   monadInv TRANSF. repeat destr_in EQ0.
   unfold decode_tables.
-  unfold gen_sections in EQ. destr_in EQ.
-  assert (map sec_bytes x = s0).
+  unfold gen_sections in EQ. 
+  assert (map sec_bytes x = (prog_sectable prog)).
   {
     revert EQ. clear. revert x.
-    induction s0; simpl; intros; eauto. inv EQ. reflexivity.
-    destruct (fold_right acc_sections (OK []) s0) eqn:?.
+    generalize (prog_sectable prog).
+    induction s; simpl; intros; eauto. inv EQ. reflexivity.
+    destruct (fold_right acc_sections (OK []) s) eqn:?.
     unfold acc_sections in EQ. simpl in EQ. monadInv EQ. simpl. f_equal.
     unfold transl_section in EQ0. destr_in EQ0. eauto.
     simpl in EQ. inv EQ.
@@ -65,8 +66,8 @@ Proof.
   destruct x; simpl in Heqb; try omega.
   destruct x; simpl in Heqb; try omega.
   destruct x; simpl in Heqb; try omega.
-  destruct x; simpl in Heqb; try omega.
-  simpl in first_section_is_null. inv first_section_is_null. subst. simpl.
+  rewrite <- H.
+  subst. simpl.
   auto.
 Qed.
 
@@ -119,7 +120,7 @@ Proof.
     monadInv TRANSF. repeat destr_in EQ0.
     unfold reloc_program_of_elf_program. simpl.
     apply semantics3same; simpl; auto.
-    destruct (prog_sectable prog); simpl in *; try congruence.
+    unfold gen_sections in EQ.
     apply Nat.eqb_eq in Heqb.
     destruct x; simpl in Heqb; try omega.
     destruct x; simpl in Heqb; try omega.
@@ -128,8 +129,6 @@ Proof.
     destruct x; simpl in Heqb; try omega.
     destruct x; simpl in Heqb; try omega.
     destruct x; simpl in Heqb; try omega.
-    destruct x; simpl in Heqb; try omega.
-    inv first_section_is_null.
     apply fr_acc_sections_map in EQ. subst. auto.
   }
   rewrite EQ.

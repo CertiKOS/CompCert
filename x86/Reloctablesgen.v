@@ -280,10 +280,10 @@ Fixpoint print_sectable (stbl: sectable) :=
 
 Definition transl_sectable' (stbl: sectable): res sectable :=
   match stbl with
-    [sec_null; sec_data l; sec_text code] =>
+    [sec_data l; sec_text code] =>
     do code' <- transl_code' code;
-    OK [sec_null; sec_data l; sec_text code']
-  | _ => Error (msg "Expected section table to be [null; text; data], got " ++ msg (print_sectable stbl))
+    OK [sec_data l; sec_text code']
+  | _ => Error (msg "Expected section table to be [text; data], got " ++ msg (print_sectable stbl))
   end.
 
 
