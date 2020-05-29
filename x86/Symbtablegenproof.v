@@ -900,6 +900,13 @@ Proof.
   repeat apply regset_inject_expand; auto.
 Qed.
 
+Lemma extcall_pres_glob_block_valid : forall ef ge vargs m1 t vres m2,
+  external_call ef ge vargs m1 t vres m2 -> glob_block_valid m1 -> glob_block_valid m2.
+Proof.
+  unfold glob_block_valid in *. intros.
+  eapply external_call_valid_block; eauto.
+Qed.
+
 
 (** The internal step preserves the invariant *)
 Lemma exec_instr_step : forall j rs1 rs2 m1 m2 rs1' m1' i ofs f b
@@ -1156,9 +1163,8 @@ Proof.
       set (rs3 := (Asm.set_res res vres rs1)) in *.
       set (rs4 := (Asm.set_res res vres2 rs2)) in *.
       intros.
-      admit. (* eauto with inject_db. *)
-    + (* eapply extcall_pres_glob_block_valid; eauto. *)
-      admit.
+      eauto with inject_db.
+    + eapply extcall_pres_glob_block_valid; eauto.
 
   - (* External call *)
     unfold regset_inject in RSINJ. generalize (RSINJ Asm.PC). rewrite H. 
@@ -1196,8 +1202,8 @@ Proof.
         apply regset_inject_expand; auto.
         apply regset_inject_expand; auto. eapply val_inject_incr; eauto.
         apply Val.offset_ptr_inject; eauto.
-      * admit. (* eapply extcall_pres_glob_block_valid; eauto. *)
-Admitted.
+      * eapply extcall_pres_glob_block_valid; eauto.
+Qed.
 
 
 (** ** Matching of the Final States*)
@@ -1215,8 +1221,6 @@ Qed.
 
 
 (** ** The Main Correctness Theorem *)
-
-
 Lemma transf_program_correct:
   forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef)) 
                      (semantics tprog (Pregmap.init Vundef)).
