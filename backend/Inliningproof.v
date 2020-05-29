@@ -1937,7 +1937,8 @@ Proof.
     rewrite symbols_preserved. replace (prog_main tprog) with (prog_main prog). auto.
     symmetry; eapply match_program_main; eauto.
     rewrite <- H3. eapply sig_function_translated; eauto.
-  - edestruct (Mem.record_init_sp_flat_inject) as (m2' & RIS & INJ).
+  - exploit Genv.init_mem_stack; eauto; intros NIL_EQ.
+    edestruct (Mem.record_init_sp_flat_inject) as (m2' & RIS & INJ).
     eapply Genv.initmem_inject; eauto. omega. eauto. auto.
     rewrite RIS in H4; inv H4. 
     eapply match_call_states.
@@ -1953,22 +1954,15 @@ Proof.
       * rewnb. apply Ple_refl.
     + intro b0.
       repeat rewrite_stack_blocks.
+      rewrite NIL_EQ.
       rewrite ! in_stack_cons.
-      intros [[]|[[|[]]|]]. 
+      intros [[]|[[|[]]|[]]]. 
       simpl in H; subst. rewnb. 
       unfold Mem.flat_inj.
       destr. eauto. xomega.
-      rewnb. unfold Mem.flat_inj.
-      destr. eauto.
-      exploit Mem.in_stack_valid; eauto.
-      intros. unfold Mem.valid_block in H4.
-      exploit n.
-      eapply Plt_trans. apply H4. apply Plt_succ.
-      intros. inversion H5.
     + repeat rewrite_stack_blocks. simpl.
-      econstructor; simpl; eauto.
-      * admit.
-      * omega.
+      rewrite NIL_EQ.
+      repeat econstructor; simpl; eauto; omega.
 Qed.
 
 Lemma transf_final_states:
