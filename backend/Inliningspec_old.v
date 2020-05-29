@@ -13,9 +13,9 @@
 (** RTL function inlining: relational specification *)
 
 Require Import Coqlib Wfsimpl Maps Errors Integers.
-Require Import AST Linking.
-Require Import Op Registers RTL.
-Require Import Inlining.
+Require Import AST_old Linking_old.
+Require Import Op_old Registers_old RTL_old.
+Require Import Inlining_old.
 
 (** ** Soundness of function environments. *)
 
@@ -41,16 +41,27 @@ Proof.
   }
   assert (ADD: forall dm fenv idg,
              P dm fenv ->
-             P (PTree.set (fst idg) (snd idg) dm) (add_globdef fenv idg)).
+             P (match snd idg with
+                  | Some g => PTree.set (fst idg) g dm
+                  | _ => PTree.remove (fst idg) dm
+                end) (add_globdef fenv idg)).
   { intros dm fenv [id g]; simpl; intros.
-    destruct g as [ [f|ef] | v]; auto.
+    destruct g as [ [ [f|ef] | v] | ] ; auto.
     destruct (should_inline id f); auto.
     red; intros. rewrite ! PTree.gsspec in *.
     destruct (peq id0 id); auto. inv H0; auto.
+    unfold P. intros ? ? .
+    rewrite ! PTree.grspec.
+    destruct (PTree.elt_eq id0 id); auto.
+    discriminate.
   }
   assert (REC: forall l dm fenv,
             P dm fenv ->
-            P (fold_left (fun x idg => PTree.set (fst idg) (snd idg) x) l dm)
+            P (fold_left (fun x idg =>
+                            match snd idg with
+                              | Some g => PTree.set (fst idg) g x
+                              | None => PTree.remove (fst idg) x
+                            end) l dm)
               (fold_left add_globdef l fenv)).
   { induction l; simpl; intros. 
   - auto.
@@ -381,29 +392,31 @@ Lemma expand_instr_unchanged:
 Proof.
   generalize set_instr_other; intros A.
   intros. unfold expand_instr in H; destruct instr; eauto.
-(* call *)
-  destruct (can_inline fe s1). eauto.
-  monadInv H. unfold inline_function in EQ. monadInv EQ.
-  transitivity (s2.(st_code)!pc'). eauto.
-  transitivity (s5.(st_code)!pc'). eapply add_moves_unchanged; eauto.
+  - (* call *)
+    destruct (can_inline fe s1). eauto.
+    monadInv H. unfold inline_function in EQ. monadInv EQ.
+    transitivity (s2.(st_code)!pc'). eauto.
+    transitivity (s5.(st_code)!pc').
+    + eapply add_moves_unchanged; eauto.
+      left. inversion INCR5. inversion INCR3. monadInv EQ1; simpl in *. xomega.
+    + transitivity (s4.(st_code)!pc').
+      * eapply rec_unchanged; eauto.
+        -- simpl. monadInv EQ; simpl. monadInv EQ1; simpl. xomega.
+        -- simpl. monadInv EQ1; simpl. auto.
+      * monadInv EQ; simpl. monadInv EQ1; simpl. auto.
+  - (* tailcall *)
+    destruct (can_inline fe s1).
+    destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
+    monadInv H. unfold inline_tail_function in EQ. monadInv EQ.
+    transitivity (s2.(st_code)!pc'). eauto.
+    transitivity (s5.(st_code)!pc'). eapply add_moves_unchanged; eauto.
     left. inversion INCR5. inversion INCR3. monadInv EQ1; simpl in *. xomega.
-  transitivity (s4.(st_code)!pc'). eapply rec_unchanged; eauto.
+    transitivity (s4.(st_code)!pc'). eapply rec_unchanged; eauto.
     simpl. monadInv EQ; simpl. monadInv EQ1; simpl. xomega.
     simpl. monadInv EQ1; simpl. auto.
-  monadInv EQ; simpl. monadInv EQ1; simpl. auto.
-(* tailcall *)
-  destruct (can_inline fe s1).
-  destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
-  monadInv H. unfold inline_tail_function in EQ. monadInv EQ.
-  transitivity (s2.(st_code)!pc'). eauto.
-  transitivity (s5.(st_code)!pc'). eapply add_moves_unchanged; eauto.
-    left. inversion INCR5. inversion INCR3. monadInv EQ1; simpl in *. xomega.
-  transitivity (s4.(st_code)!pc'). eapply rec_unchanged; eauto.
-    simpl. monadInv EQ; simpl. monadInv EQ1; simpl. xomega.
-    simpl. monadInv EQ1; simpl. auto.
-  monadInv EQ; simpl. monadInv EQ1; simpl. auto.
-(* return *)
-  destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
+    monadInv EQ; simpl. monadInv EQ1; simpl. auto.
+  - (* return *)
+    destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
 Qed.
 
 Lemma iter_expand_instr_unchanged:
@@ -489,72 +502,72 @@ Proof.
   generalize set_instr_same; intros BASE.
   unfold expand_instr in EXP; destruct instr; simpl in DEFS;
   try (econstructor; eauto; fail).
-(* call *)
-  destruct (can_inline fe s1) as [|id f P Q].
-  (* not inlined *)
-  eapply tr_call; eauto.
-  (* inlined *)
-  subst s1.
-  monadInv EXP. unfold inline_function in EQ; monadInv EQ.
-  set (ctx' := callcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f) n r).
-  inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
-  apply tr_call_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
-  eapply BASE; eauto.
-  eapply add_moves_spec; eauto.
-    intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega.
-    xomega. xomega.
-  eapply rec_spec; eauto.
-    red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
-    simpl. subst s2; simpl in *; xomega.
-    simpl. subst s3; simpl in *; xomega.
-    simpl. xomega.
-    simpl. apply align_divides. apply min_alignment_pos.
-    assert (dstk ctx + mstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
-    omega.
-    intros. simpl in H. rewrite S1.
-    transitivity (s1.(st_code)!pc0). eapply set_instr_other; eauto. unfold node in *; xomega.
-    eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
-  red; simpl. subst s2; simpl in *. xomega.
-  red; simpl. split. auto. apply align_le. apply min_alignment_pos.
-(* tailcall *)
-  destruct (can_inline fe s1) as [|id f P Q].
-  (* not inlined *)
-  destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
-  (* turned into a call *)
-  eapply tr_tailcall_call; eauto.
-  (* preserved *)
-  eapply tr_tailcall; eauto.
-  (* inlined *)
-  subst s1.
-  monadInv EXP. unfold inline_function in EQ; monadInv EQ.
-  set (ctx' := tailcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f)) in *.
-  inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
-  apply tr_tailcall_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
-  eapply BASE; eauto.
-  eapply add_moves_spec; eauto.
-    intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega. xomega. xomega.
-  eapply rec_spec; eauto.
-    red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
-    simpl. subst s3; simpl in *. subst s2; simpl in *. xomega.
-    simpl. subst s3; simpl in *; xomega.
-    simpl. xomega.
-    simpl. apply align_divides. apply min_alignment_pos.
-    assert (dstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
-    omega.
-    intros. simpl in H. rewrite S1.
-    transitivity (s1.(st_code))!pc0. eapply set_instr_other; eauto. unfold node in *; xomega.
-    eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
-  red; simpl.
-subst s2; simpl in *; xomega.
-  red; auto.
-(* builtin *)
-  eapply tr_builtin; eauto. destruct b; eauto.
-(* return *)
-  destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
-  (* inlined *)
-  eapply tr_return_inlined; eauto.
-  (* unchanged *)
-  eapply tr_return; eauto.
+  - (* call *)
+    destruct (can_inline fe s1) as [|id f P Q].
+    + (* not inlined *)
+      eapply tr_call; eauto.
+    + (* inlined *)
+      subst s1.
+      monadInv EXP. unfold inline_function in EQ; monadInv EQ.
+      set (ctx' := callcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f) n r).
+      inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
+      apply tr_call_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
+      * eapply BASE; eauto.
+      * eapply add_moves_spec; eauto.
+        intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega.
+        xomega. xomega.
+      * eapply rec_spec; eauto.
+        -- red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
+        -- simpl. subst s2; simpl in *; xomega.
+        -- simpl. subst s3; simpl in *; xomega.
+        -- simpl. xomega.
+        -- simpl. apply align_divides. apply min_alignment_pos.
+        -- assert (dstk ctx + mstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
+        -- omega.
+        -- intros. simpl in H. rewrite S1.
+           transitivity (s1.(st_code)!pc0). eapply set_instr_other; eauto. unfold node in *; xomega.
+           eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
+      * red; simpl. subst s2; simpl in *. xomega.
+      * red; simpl. split. auto. apply align_le. apply min_alignment_pos.
+  - (* tailcall *)
+    destruct (can_inline fe s1) as [|id f P Q].
+    (* not inlined *)
+    destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
+    (* turned into a call *)
+    eapply tr_tailcall_call; eauto.
+    (* preserved *)
+    eapply tr_tailcall; eauto.
+      (* (* inlined *) *)
+      subst s1.
+      monadInv EXP. unfold inline_function in EQ; monadInv EQ.
+      set (ctx' := tailcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f)) in *.
+      inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
+      apply tr_tailcall_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
+      eapply BASE; eauto.
+      eapply add_moves_spec; eauto.
+      intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega. xomega. xomega.
+      eapply rec_spec; eauto.
+      red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
+      simpl. subst s3; simpl in *. subst s2; simpl in *. xomega.
+      simpl. subst s3; simpl in *; xomega.
+      simpl. xomega.
+      simpl. apply align_divides. apply min_alignment_pos.
+      assert (dstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
+      omega.
+      intros. simpl in H. rewrite S1.
+      transitivity (s1.(st_code))!pc0. eapply set_instr_other; eauto. unfold node in *; xomega.
+      eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
+      red; simpl.
+      subst s2; simpl in *; xomega.
+      red; auto.
+  - (* builtin *)
+    eapply tr_builtin; eauto. destruct b; eauto.
+  - (* return *)
+    destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
+    + (* inlined *)
+      eapply tr_return_inlined; eauto.
+    + (* unchanged *)
+      eapply tr_return; eauto.
 Qed.
 
 Lemma iter_expand_instr_spec:

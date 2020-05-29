@@ -13,10 +13,10 @@
 (** Instruction selection for 64-bit integer operations *)
 
 Require Import Coqlib.
-Require Import Compopts.
-Require Import AST Integers Floats.
-Require Import Op CminorSel.
-Require Import SelectOp SplitLong.
+Require Import Compopts_old.
+Require Import AST_old Integers Floats.
+Require Import Op_old CminorSel_old.
+Require Import SelectOp_old SplitLong_old.
 
 Local Open Scope cminorsel_scope.
 Local Open Scope string_scope.
@@ -26,31 +26,31 @@ Section SELECT.
 Context {hf: helper_functions}.
 
 Definition longconst (n: int64) : expr :=
-  if Archi.splitlong then SplitLong.longconst n else Eop (Olongconst n) Enil.
+  if Archi.splitlong then SplitLong_old.longconst n else Eop (Olongconst n) Enil.
 
 Definition is_longconst (e: expr) :=
-  if Archi.splitlong then SplitLong.is_longconst e else
+  if Archi.splitlong then SplitLong_old.is_longconst e else
   match e with
   | Eop (Olongconst n) Enil => Some n
   | _ => None
   end.
 
 Definition intoflong (e: expr) :=
-  if Archi.splitlong then SplitLong.intoflong e else
+  if Archi.splitlong then SplitLong_old.intoflong e else
   match is_longconst e with
   | Some n => Eop (Ointconst (Int.repr (Int64.unsigned n))) Enil
   | None =>  Eop Olowlong (e ::: Enil)
   end.
 
 Definition longofint (e: expr) :=
-  if Archi.splitlong then SplitLong.longofint e else
+  if Archi.splitlong then SplitLong_old.longofint e else
   match is_intconst e with
   | Some n => longconst (Int64.repr (Int.signed n))
   | None =>  Eop Ocast32signed (e ::: Enil)
   end.
 
 Definition longofintu (e: expr) :=
-  if Archi.splitlong then SplitLong.longofintu e else
+  if Archi.splitlong then SplitLong_old.longofintu e else
   match is_intconst e with
   | Some n => longconst (Int64.repr (Int.unsigned n))
   | None =>  Eop Ocast32unsigned (e ::: Enil)
@@ -59,7 +59,7 @@ Definition longofintu (e: expr) :=
 (** Original definition:
 <<
 Nondetfunction notl (e: expr) :=
-  if Archi.splitlong then SplitLong.notl e else
+  if Archi.splitlong then SplitLong_old.notl e else
   match e with
   | Eop (Olongconst n) Enil => longconst (Int64.not n)
   | Eop Onotl (t1:::Enil) => t1
@@ -81,7 +81,7 @@ Definition notl_match (e: expr) :=
   end.
 
 Definition notl (e: expr) :=
- if Archi.splitlong then SplitLong.notl e else match notl_match e with
+ if Archi.splitlong then SplitLong_old.notl e else match notl_match e with
   | notl_case1 n => (* Eop (Olongconst n) Enil *) 
       longconst (Int64.not n)
   | notl_case2 t1 => (* Eop Onotl (t1:::Enil) *) 
@@ -133,7 +133,7 @@ Definition andlimm (n1: int64) (e2: expr) :=
 (** Original definition:
 <<
 Nondetfunction andl (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.andl e1 e2 else
+  if Archi.splitlong then SplitLong_old.andl e1 e2 else
   match e1, e2 with
   | Eop (Olongconst n1) Enil, t2 => andlimm n1 t2
   | t1, Eop (Olongconst n2) Enil => andlimm n2 t1
@@ -155,7 +155,7 @@ Definition andl_match (e1: expr) (e2: expr) :=
   end.
 
 Definition andl (e1: expr) (e2: expr) :=
- if Archi.splitlong then SplitLong.andl e1 e2 else match andl_match e1 e2 with
+ if Archi.splitlong then SplitLong_old.andl e1 e2 else match andl_match e1 e2 with
   | andl_case1 n1 t2 => (* Eop (Olongconst n1) Enil, t2 *) 
       andlimm n1 t2
   | andl_case2 t1 n2 => (* t1, Eop (Olongconst n2) Enil *) 
@@ -204,7 +204,7 @@ Definition orlimm (n1: int64) (e2: expr) :=
 (** Original definition:
 <<
 Nondetfunction orl (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.orl e1 e2 else
+  if Archi.splitlong then SplitLong_old.orl e1 e2 else
   match e1, e2 with
   | Eop (Olongconst n1) Enil, t2 => orlimm n1 t2
   | t1, Eop (Olongconst n2) Enil => orlimm n2 t1
@@ -239,7 +239,7 @@ Definition orl_match (e1: expr) (e2: expr) :=
   end.
 
 Definition orl (e1: expr) (e2: expr) :=
- if Archi.splitlong then SplitLong.orl e1 e2 else match orl_match e1 e2 with
+ if Archi.splitlong then SplitLong_old.orl e1 e2 else match orl_match e1 e2 with
   | orl_case1 n1 t2 => (* Eop (Olongconst n1) Enil, t2 *) 
       orlimm n1 t2
   | orl_case2 t1 n2 => (* t1, Eop (Olongconst n2) Enil *) 
@@ -297,7 +297,7 @@ Definition xorlimm (n1: int64) (e2: expr) :=
 (** Original definition:
 <<
 Nondetfunction xorl (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.xorl e1 e2 else
+  if Archi.splitlong then SplitLong_old.xorl e1 e2 else
   match e1, e2 with
   | Eop (Olongconst n1) Enil, t2 => xorlimm n1 t2
   | t1, Eop (Olongconst n2) Enil => xorlimm n2 t1
@@ -319,7 +319,7 @@ Definition xorl_match (e1: expr) (e2: expr) :=
   end.
 
 Definition xorl (e1: expr) (e2: expr) :=
- if Archi.splitlong then SplitLong.xorl e1 e2 else match xorl_match e1 e2 with
+ if Archi.splitlong then SplitLong_old.xorl e1 e2 else match xorl_match e1 e2 with
   | xorl_case1 n1 t2 => (* Eop (Olongconst n1) Enil, t2 *) 
       xorlimm n1 t2
   | xorl_case2 t1 n2 => (* t1, Eop (Olongconst n2) Enil *) 
@@ -332,7 +332,7 @@ Definition xorl (e1: expr) (e2: expr) :=
 (** Original definition:
 <<
 Nondetfunction shllimm (e1: expr) (n: int) :=
-  if Archi.splitlong then SplitLong.shllimm e1 n else
+  if Archi.splitlong then SplitLong_old.shllimm e1 n else
   if Int.eq n Int.zero then e1 else
   if negb (Int.ltu n Int64.iwordsize') then
     Eop Oshll (e1:::Eop (Ointconst n) Enil:::Enil)
@@ -372,7 +372,7 @@ Definition shllimm_match (e1: expr)  :=
   end.
 
 Definition shllimm (e1: expr) (n: int) :=
- if Archi.splitlong then SplitLong.shllimm e1 n else if Int.eq n Int.zero then e1 else if negb (Int.ltu n Int64.iwordsize') then Eop Oshll (e1:::Eop (Ointconst n) Enil:::Enil) else match shllimm_match e1 with
+ if Archi.splitlong then SplitLong_old.shllimm e1 n else if Int.eq n Int.zero then e1 else if negb (Int.ltu n Int64.iwordsize') then Eop Oshll (e1:::Eop (Ointconst n) Enil:::Enil) else match shllimm_match e1 with
   | shllimm_case1 n1 => (* Eop (Olongconst n1) Enil *) 
       Eop (Olongconst(Int64.shl' n1 n)) Enil
   | shllimm_case2 n1 t1 => (* Eop (Oshllimm n1) (t1:::Enil) *) 
@@ -387,7 +387,7 @@ Definition shllimm (e1: expr) (n: int) :=
 (** Original definition:
 <<
 Nondetfunction shrluimm (e1: expr) (n: int) :=
-  if Archi.splitlong then SplitLong.shrluimm e1 n else
+  if Archi.splitlong then SplitLong_old.shrluimm e1 n else
   if Int.eq n Int.zero then e1 else
   if negb (Int.ltu n Int64.iwordsize') then
     Eop Oshrlu (e1:::Eop (Ointconst n) Enil:::Enil)
@@ -418,7 +418,7 @@ Definition shrluimm_match (e1: expr)  :=
   end.
 
 Definition shrluimm (e1: expr) (n: int) :=
- if Archi.splitlong then SplitLong.shrluimm e1 n else if Int.eq n Int.zero then e1 else if negb (Int.ltu n Int64.iwordsize') then Eop Oshrlu (e1:::Eop (Ointconst n) Enil:::Enil) else match shrluimm_match e1 with
+ if Archi.splitlong then SplitLong_old.shrluimm e1 n else if Int.eq n Int.zero then e1 else if negb (Int.ltu n Int64.iwordsize') then Eop Oshrlu (e1:::Eop (Ointconst n) Enil:::Enil) else match shrluimm_match e1 with
   | shrluimm_case1 n1 => (* Eop (Olongconst n1) Enil *) 
       Eop (Olongconst(Int64.shru' n1 n)) Enil
   | shrluimm_case2 n1 t1 => (* Eop (Oshrluimm n1) (t1:::Enil) *) 
@@ -431,7 +431,7 @@ Definition shrluimm (e1: expr) (n: int) :=
 (** Original definition:
 <<
 Nondetfunction shrlimm (e1: expr) (n: int) :=
-  if Archi.splitlong then SplitLong.shrlimm e1 n else
+  if Archi.splitlong then SplitLong_old.shrlimm e1 n else
   if Int.eq n Int.zero then e1 else
   if negb (Int.ltu n Int64.iwordsize') then
     Eop Oshrl (e1:::Eop (Ointconst n) Enil:::Enil)
@@ -462,7 +462,7 @@ Definition shrlimm_match (e1: expr)  :=
   end.
 
 Definition shrlimm (e1: expr) (n: int) :=
- if Archi.splitlong then SplitLong.shrlimm e1 n else if Int.eq n Int.zero then e1 else if negb (Int.ltu n Int64.iwordsize') then Eop Oshrl (e1:::Eop (Ointconst n) Enil:::Enil) else match shrlimm_match e1 with
+ if Archi.splitlong then SplitLong_old.shrlimm e1 n else if Int.eq n Int.zero then e1 else if negb (Int.ltu n Int64.iwordsize') then Eop Oshrl (e1:::Eop (Ointconst n) Enil:::Enil) else match shrlimm_match e1 with
   | shrlimm_case1 n1 => (* Eop (Olongconst n1) Enil *) 
       Eop (Olongconst(Int64.shr' n1 n)) Enil
   | shrlimm_case2 n1 t1 => (* Eop (Oshrlimm n1) (t1:::Enil) *) 
@@ -473,21 +473,21 @@ Definition shrlimm (e1: expr) (n: int) :=
 
 
 Definition shll (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.shll e1 e2 else
+  if Archi.splitlong then SplitLong_old.shll e1 e2 else
   match is_intconst e2 with
   | Some n2 => shllimm e1 n2
   | None => Eop Oshll (e1:::e2:::Enil)
   end.
 
 Definition shrl (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.shrl e1 e2 else
+  if Archi.splitlong then SplitLong_old.shrl e1 e2 else
   match is_intconst e2 with
   | Some n2 => shrlimm e1 n2
   | None => Eop Oshrl (e1:::e2:::Enil)
   end.
 
 Definition shrlu (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.shrlu e1 e2 else
+  if Archi.splitlong then SplitLong_old.shrlu e1 e2 else
   match is_intconst e2 with
   | Some n2 => shrluimm e1 n2
   | _ => Eop Oshrlu (e1:::e2:::Enil)
@@ -531,7 +531,7 @@ Definition addlimm (n: int64) (e: expr) :=
 (** Original definition:
 <<
 Nondetfunction addl (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.addl e1 e2 else
+  if Archi.splitlong then SplitLong_old.addl e1 e2 else
   match e1, e2 with
   | Eop (Olongconst n1) Enil, t2 => addlimm n1 t2
   | t1, Eop (Olongconst n2) Enil => addlimm n2 t1
@@ -582,7 +582,7 @@ Definition addl_match (e1: expr) (e2: expr) :=
   end.
 
 Definition addl (e1: expr) (e2: expr) :=
- if Archi.splitlong then SplitLong.addl e1 e2 else match addl_match e1 e2 with
+ if Archi.splitlong then SplitLong_old.addl e1 e2 else match addl_match e1 e2 with
   | addl_case1 n1 t2 => (* Eop (Olongconst n1) Enil, t2 *) 
       addlimm n1 t2
   | addl_case2 t1 n2 => (* t1, Eop (Olongconst n2) Enil *) 
@@ -607,7 +607,7 @@ Definition addl (e1: expr) (e2: expr) :=
 
 
 Definition negl (e: expr) :=
-  if Archi.splitlong then SplitLong.negl e else
+  if Archi.splitlong then SplitLong_old.negl e else
   match is_longconst e with
   | Some n => longconst (Int64.neg n)
   | None =>  Eop Onegl (e ::: Enil)
@@ -616,7 +616,7 @@ Definition negl (e: expr) :=
 (** Original definition:
 <<
 Nondetfunction subl (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.subl e1 e2 else
+  if Archi.splitlong then SplitLong_old.subl e1 e2 else
   match e1, e2 with
   | t1, Eop (Olongconst n2) Enil => addlimm (Int64.neg n2) t1
   | Eop (Oleal (Aindexed n1)) (t1:::Enil), Eop (Oleal (Aindexed n2)) (t2:::Enil) =>
@@ -648,7 +648,7 @@ Definition subl_match (e1: expr) (e2: expr) :=
   end.
 
 Definition subl (e1: expr) (e2: expr) :=
- if Archi.splitlong then SplitLong.subl e1 e2 else match subl_match e1 e2 with
+ if Archi.splitlong then SplitLong_old.subl e1 e2 else match subl_match e1 e2 with
   | subl_case1 t1 n2 => (* t1, Eop (Olongconst n2) Enil *) 
       addlimm (Int64.neg n2) t1
   | subl_case2 n1 t1 n2 t2 => (* Eop (Oleal (Aindexed n1)) (t1:::Enil), Eop (Oleal (Aindexed n2)) (t2:::Enil) *) 
@@ -675,7 +675,7 @@ Definition mullimm_base (n1: int64) (e2: expr) :=
 (** Original definition:
 <<
 Nondetfunction mullimm (n1: int64) (e2: expr) :=
-  if Archi.splitlong then SplitLong.mullimm n1 e2
+  if Archi.splitlong then SplitLong_old.mullimm n1 e2
   else if Int64.eq n1 Int64.zero then longconst Int64.zero
   else if Int64.eq n1 Int64.one then e2
   else match e2 with
@@ -699,7 +699,7 @@ Definition mullimm_match (e2: expr) :=
   end.
 
 Definition mullimm (n1: int64) (e2: expr) :=
- if Archi.splitlong then SplitLong.mullimm n1 e2 else if Int64.eq n1 Int64.zero then longconst Int64.zero else if Int64.eq n1 Int64.one then e2 else match mullimm_match e2 with
+ if Archi.splitlong then SplitLong_old.mullimm n1 e2 else if Int64.eq n1 Int64.zero then longconst Int64.zero else if Int64.eq n1 Int64.one then e2 else match mullimm_match e2 with
   | mullimm_case1 n2 => (* Eop (Olongconst n2) Enil *) 
       longconst (Int64.mul n1 n2)
   | mullimm_case2 n2 t2 => (* Eop (Oleal (Aindexed n2)) (t2:::Enil) *) 
@@ -712,7 +712,7 @@ Definition mullimm (n1: int64) (e2: expr) :=
 (** Original definition:
 <<
 Nondetfunction mull (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.mull e1 e2 else
+  if Archi.splitlong then SplitLong_old.mull e1 e2 else
   match e1, e2 with
   | Eop (Olongconst n1) Enil, t2 => mullimm n1 t2
   | t1, Eop (Olongconst n2) Enil => mullimm n2 t1
@@ -734,7 +734,7 @@ Definition mull_match (e1: expr) (e2: expr) :=
   end.
 
 Definition mull (e1: expr) (e2: expr) :=
- if Archi.splitlong then SplitLong.mull e1 e2 else match mull_match e1 e2 with
+ if Archi.splitlong then SplitLong_old.mull e1 e2 else match mull_match e1 e2 with
   | mull_case1 n1 t2 => (* Eop (Olongconst n1) Enil, t2 *) 
       mullimm n1 t2
   | mull_case2 t1 n2 => (* t1, Eop (Olongconst n2) Enil *) 
@@ -745,28 +745,28 @@ Definition mull (e1: expr) (e2: expr) :=
 
 
 Definition mullhu (e1: expr) (n2: int64) :=
-  if Archi.splitlong then SplitLong.mullhu e1 n2 else
+  if Archi.splitlong then SplitLong_old.mullhu e1 n2 else
   Eop Omullhu (e1 ::: longconst n2 ::: Enil).
 
 Definition mullhs (e1: expr) (n2: int64) :=
-  if Archi.splitlong then SplitLong.mullhs e1 n2 else
+  if Archi.splitlong then SplitLong_old.mullhs e1 n2 else
   Eop Omullhs (e1 ::: longconst n2 ::: Enil).
 
 Definition shrxlimm (e: expr) (n: int) :=
-  if Archi.splitlong then SplitLong.shrxlimm e n else
+  if Archi.splitlong then SplitLong_old.shrxlimm e n else
   if Int.eq n Int.zero then e else Eop (Oshrxlimm n) (e ::: Enil).
 
 Definition divlu_base (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.divlu_base e1 e2 else Eop Odivlu (e1:::e2:::Enil).
+  if Archi.splitlong then SplitLong_old.divlu_base e1 e2 else Eop Odivlu (e1:::e2:::Enil).
 Definition modlu_base (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.modlu_base e1 e2 else Eop Omodlu (e1:::e2:::Enil).
+  if Archi.splitlong then SplitLong_old.modlu_base e1 e2 else Eop Omodlu (e1:::e2:::Enil).
 Definition divls_base (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.divls_base e1 e2 else Eop Odivl (e1:::e2:::Enil).
+  if Archi.splitlong then SplitLong_old.divls_base e1 e2 else Eop Odivl (e1:::e2:::Enil).
 Definition modls_base (e1: expr) (e2: expr) :=
-  if Archi.splitlong then SplitLong.modls_base e1 e2 else Eop Omodl (e1:::e2:::Enil).
+  if Archi.splitlong then SplitLong_old.modls_base e1 e2 else Eop Omodl (e1:::e2:::Enil).
 
 Definition cmplu (c: comparison) (e1 e2: expr) :=
-  if Archi.splitlong then SplitLong.cmplu c e1 e2 else
+  if Archi.splitlong then SplitLong_old.cmplu c e1 e2 else
   match is_longconst e1, is_longconst e2 with
   | Some n1, Some n2 =>
       Eop (Ointconst (if Int64.cmpu c n1 n2 then Int.one else Int.zero)) Enil
@@ -776,7 +776,7 @@ Definition cmplu (c: comparison) (e1 e2: expr) :=
   end.
 
 Definition cmpl (c: comparison) (e1 e2: expr) :=
-  if Archi.splitlong then SplitLong.cmpl c e1 e2 else
+  if Archi.splitlong then SplitLong_old.cmpl c e1 e2 else
   match is_longconst e1, is_longconst e2 with
   | Some n1, Some n2 =>
       Eop (Ointconst (if Int64.cmp c n1 n2 then Int.one else Int.zero)) Enil
@@ -786,19 +786,19 @@ Definition cmpl (c: comparison) (e1 e2: expr) :=
   end.
 
 Definition longoffloat (e: expr) :=
-  if Archi.splitlong then SplitLong.longoffloat e else 
+  if Archi.splitlong then SplitLong_old.longoffloat e else 
   Eop Olongoffloat (e:::Enil).
 
 Definition floatoflong (e: expr) := 
-  if Archi.splitlong then SplitLong.floatoflong e else 
+  if Archi.splitlong then SplitLong_old.floatoflong e else 
   Eop Ofloatoflong (e:::Enil).
 
 Definition longofsingle (e: expr) := 
-  if Archi.splitlong then SplitLong.longofsingle e else 
+  if Archi.splitlong then SplitLong_old.longofsingle e else 
   Eop Olongofsingle (e:::Enil).
 
 Definition singleoflong (e: expr) := 
-  if Archi.splitlong then SplitLong.singleoflong e else 
+  if Archi.splitlong then SplitLong_old.singleoflong e else 
   Eop Osingleoflong (e:::Enil).
 
 End SELECT.

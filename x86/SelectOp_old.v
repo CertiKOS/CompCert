@@ -37,9 +37,9 @@
 *)
 
 Require Import Coqlib.
-Require Import Compopts.
-Require Import AST Integers Floats.
-Require Import Op CminorSel.
+Require Import Compopts_old.
+Require Import AST_old Integers Floats.
+Require Import Op_old CminorSel_old.
 
 Local Open Scope cminorsel_scope.
 

@@ -97,8 +97,8 @@ Record function : Type := mkfunction {
   fn_body: stmt
 }.
 
-Definition fundef := AST.fundef function.
-Definition program := AST.program fundef unit.
+Definition fundef := AST_old.fundef function.
+Definition program := AST_old.program fundef unit.
 
 Definition funsig (fd: fundef) :=
   match fd with

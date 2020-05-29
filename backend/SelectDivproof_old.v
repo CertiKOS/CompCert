@@ -13,9 +13,9 @@
 (** Correctness of instruction selection for integer division *)
 
 Require Import Zquot Coqlib.
-Require Import AST Integers Floats Values Memory Globalenvs Events.
-Require Import Cminor Op CminorSel.
-Require Import SelectOp SelectOpproof SplitLong SplitLongproof SelectLong SelectLongproof SelectDiv.
+Require Import AST_old Integers Floats Values_old Memory_old Globalenvs_old Events_old.
+Require Import Cminor_old Op_old CminorSel_old.
+Require Import SelectOp_old SelectOpproof_old SplitLong_old SplitLongproof_old SelectLong_old SelectLongproof_old SelectDiv_old.
 
 Local Open Scope cminorsel_scope.
 
@@ -523,7 +523,7 @@ Proof.
   replace (Vint (Int.shru i l)) with (Val.shru (Vint i) (Vint l)).
   apply eval_shruimm; auto.
   simpl. erewrite Int.is_power2_range; eauto.
-- destruct (Compopts.optim_for_size tt).
+- destruct (Compopts_old.optim_for_size tt).
   + eapply eval_divu_base; eauto. EvalOp.
   + destruct (divu_mul_params (Int.unsigned n2)) as [[p M] | ] eqn:PARAMS.
     * exists (Vint (Int.divu i n2)); split; auto.
@@ -568,7 +568,7 @@ Proof.
   change (Vint (Int.and i (Int.sub n2 Int.one)))
     with (Val.and (Vint i) (Vint (Int.sub n2 Int.one))).
   apply eval_andimm. auto.
-- destruct (Compopts.optim_for_size tt).
+- destruct (Compopts_old.optim_for_size tt).
   + eapply eval_modu_base; eauto. EvalOp.
   + destruct (divu_mul_params (Int.unsigned n2)) as [[p M] | ] eqn:PARAMS.
     * econstructor; split.
@@ -643,7 +643,7 @@ Proof.
 - destruct (Int.ltu l (Int.repr 31)) eqn:LT31.
   + eapply eval_shrximm; eauto. eapply Val.divs_pow2; eauto.
   + eapply eval_divs_base; eauto. EvalOp.
-- destruct (Compopts.optim_for_size tt).
+- destruct (Compopts_old.optim_for_size tt).
   + eapply eval_divs_base; eauto. EvalOp.
   + destruct (divs_mul_params (Int.signed n2)) as [[p M] | ] eqn:PARAMS.
     * exists (Vint (Int.divs i n2)); split; auto.
@@ -684,7 +684,7 @@ Proof.
     apply eval_mod_from_div. eexact X. simpl; eauto.
     simpl. auto.
   + eapply eval_mods_base; eauto. EvalOp.
-- destruct (Compopts.optim_for_size tt).
+- destruct (Compopts_old.optim_for_size tt).
   + eapply eval_mods_base; eauto. EvalOp.
   + destruct (divs_mul_params (Int.signed n2)) as [[p M] | ] eqn:PARAMS.
     * econstructor; split.
@@ -752,7 +752,7 @@ Proof.
   econstructor; split. apply eval_longconst. constructor.
 + destruct (Int64.is_power2' n2) as [l|] eqn:POW.
 * exploit Val.divlu_pow2; eauto. intros EQ; subst z. apply eval_shrluimm; auto.
-* destruct (Compopts.optim_for_size tt). eapply eval_divlu_base; eauto.
+* destruct (Compopts_old.optim_for_size tt). eapply eval_divlu_base; eauto.
   destruct (divlu_mul_params (Int64.unsigned n2)) as [[p M]|] eqn:PARAMS. 
 ** destruct x; simpl in H1; try discriminate.
    destruct (Int64.eq n2 Int64.zero); inv H1.
@@ -777,7 +777,7 @@ Proof.
   econstructor; split. apply eval_longconst. constructor.
 + destruct (Int64.is_power2 n2) as [l|] eqn:POW.
 * exploit Val.modlu_pow2; eauto. intros EQ; subst z. eapply eval_andl; eauto. apply eval_longconst.
-* destruct (Compopts.optim_for_size tt). eapply eval_modlu_base; eauto.
+* destruct (Compopts_old.optim_for_size tt). eapply eval_modlu_base; eauto.
   destruct (divlu_mul_params (Int64.unsigned n2)) as [[p M]|] eqn:PARAMS. 
 ** destruct x; simpl in H1; try discriminate.
    destruct (Int64.eq n2 Int64.zero) eqn:Z; inv H1.
@@ -847,7 +847,7 @@ Proof.
 * destruct (Int.ltu l (Int.repr 63)) eqn:LT.
 ** exploit Val.divls_pow2; eauto. intros EQ. eapply eval_shrxlimm; eauto.
 ** eapply eval_divls_base; eauto.
-* destruct (Compopts.optim_for_size tt). eapply eval_divls_base; eauto.
+* destruct (Compopts_old.optim_for_size tt). eapply eval_divls_base; eauto.
   destruct (divls_mul_params (Int64.signed n2)) as [[p M]|] eqn:PARAMS. 
 ** destruct x; simpl in H1; try discriminate.
    destruct (Int64.eq n2 Int64.zero
@@ -889,7 +889,7 @@ Proof.
   econstructor. eauto. eapply eval_modl_from_divl. eexact A1. reflexivity.      
   rewrite Int64.mods_divs. auto.
 **eapply eval_modls_base; eauto.
-* destruct (Compopts.optim_for_size tt). eapply eval_modls_base; eauto.
+* destruct (Compopts_old.optim_for_size tt). eapply eval_modls_base; eauto.
   destruct (divls_mul_params (Int64.signed n2)) as [[p M]|] eqn:PARAMS. 
 ** destruct x; simpl in H1; try discriminate.
    destruct (Int64.eq n2 Int64.zero

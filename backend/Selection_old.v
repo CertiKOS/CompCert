@@ -24,11 +24,11 @@
 
 Require String.
 Require Import Coqlib Maps.
-Require Import AST Errors Integers Globalenvs Switch.
-Require Cminor.
-Require Import Op CminorSel.
-Require Import SelectOp SplitLong SelectLong SelectDiv.
-Require Machregs.
+Require Import AST_old Errors Integers Globalenvs_old Switch_old.
+Require Cminor_old.
+Require Import Op_old CminorSel_old.
+Require Import SelectOp_old SplitLong_old SelectLong_old SelectDiv_old.
+Require Machregs_old.
 
 Local Open Scope cminorsel_scope.
 Local Open Scope error_monad_scope.
@@ -61,113 +61,113 @@ Definition store (chunk: memory_chunk) (e1 e2: expr) :=
 
 Section SELECTION.
 
-Definition globdef := AST.globdef Cminor.fundef unit.
+Definition globdef := AST_old.globdef Cminor_old.fundef unit.
 Variable defmap: PTree.t globdef.
 Context {hf: helper_functions}.
 
-Definition sel_constant (cst: Cminor.constant) : expr :=
+Definition sel_constant (cst: Cminor_old.constant) : expr :=
   match cst with
-  | Cminor.Ointconst n => Eop (Ointconst n) Enil
-  | Cminor.Ofloatconst f => Eop (Ofloatconst f) Enil
-  | Cminor.Osingleconst f => Eop (Osingleconst f) Enil
-  | Cminor.Olongconst n => longconst n
-  | Cminor.Oaddrsymbol id ofs => addrsymbol id ofs
-  | Cminor.Oaddrstack ofs => addrstack ofs
+  | Cminor_old.Ointconst n => Eop (Ointconst n) Enil
+  | Cminor_old.Ofloatconst f => Eop (Ofloatconst f) Enil
+  | Cminor_old.Osingleconst f => Eop (Osingleconst f) Enil
+  | Cminor_old.Olongconst n => longconst n
+  | Cminor_old.Oaddrsymbol id ofs => addrsymbol id ofs
+  | Cminor_old.Oaddrstack ofs => addrstack ofs
   end.
 
-Definition sel_unop (op: Cminor.unary_operation) (arg: expr) : expr :=
+Definition sel_unop (op: Cminor_old.unary_operation) (arg: expr) : expr :=
   match op with
-  | Cminor.Ocast8unsigned => cast8unsigned arg
-  | Cminor.Ocast8signed => cast8signed arg
-  | Cminor.Ocast16unsigned => cast16unsigned arg
-  | Cminor.Ocast16signed => cast16signed arg
-  | Cminor.Onegint => negint arg
-  | Cminor.Onotint => notint arg
-  | Cminor.Onegf => negf arg
-  | Cminor.Oabsf => absf arg
-  | Cminor.Onegfs => negfs arg
-  | Cminor.Oabsfs => absfs arg
-  | Cminor.Osingleoffloat => singleoffloat arg
-  | Cminor.Ofloatofsingle => floatofsingle arg
-  | Cminor.Ointoffloat => intoffloat arg
-  | Cminor.Ointuoffloat => intuoffloat arg
-  | Cminor.Ofloatofint => floatofint arg
-  | Cminor.Ofloatofintu => floatofintu arg
-  | Cminor.Ointofsingle => intofsingle arg
-  | Cminor.Ointuofsingle => intuofsingle arg
-  | Cminor.Osingleofint => singleofint arg
-  | Cminor.Osingleofintu => singleofintu arg
-  | Cminor.Onegl => negl arg
-  | Cminor.Onotl => notl arg
-  | Cminor.Ointoflong => intoflong arg
-  | Cminor.Olongofint => longofint arg
-  | Cminor.Olongofintu => longofintu arg
-  | Cminor.Olongoffloat => longoffloat arg
-  | Cminor.Olonguoffloat => longuoffloat arg
-  | Cminor.Ofloatoflong => floatoflong arg
-  | Cminor.Ofloatoflongu => floatoflongu arg
-  | Cminor.Olongofsingle => longofsingle arg
-  | Cminor.Olonguofsingle => longuofsingle arg
-  | Cminor.Osingleoflong => singleoflong arg
-  | Cminor.Osingleoflongu => singleoflongu arg
+  | Cminor_old.Ocast8unsigned => cast8unsigned arg
+  | Cminor_old.Ocast8signed => cast8signed arg
+  | Cminor_old.Ocast16unsigned => cast16unsigned arg
+  | Cminor_old.Ocast16signed => cast16signed arg
+  | Cminor_old.Onegint => negint arg
+  | Cminor_old.Onotint => notint arg
+  | Cminor_old.Onegf => negf arg
+  | Cminor_old.Oabsf => absf arg
+  | Cminor_old.Onegfs => negfs arg
+  | Cminor_old.Oabsfs => absfs arg
+  | Cminor_old.Osingleoffloat => singleoffloat arg
+  | Cminor_old.Ofloatofsingle => floatofsingle arg
+  | Cminor_old.Ointoffloat => intoffloat arg
+  | Cminor_old.Ointuoffloat => intuoffloat arg
+  | Cminor_old.Ofloatofint => floatofint arg
+  | Cminor_old.Ofloatofintu => floatofintu arg
+  | Cminor_old.Ointofsingle => intofsingle arg
+  | Cminor_old.Ointuofsingle => intuofsingle arg
+  | Cminor_old.Osingleofint => singleofint arg
+  | Cminor_old.Osingleofintu => singleofintu arg
+  | Cminor_old.Onegl => negl arg
+  | Cminor_old.Onotl => notl arg
+  | Cminor_old.Ointoflong => intoflong arg
+  | Cminor_old.Olongofint => longofint arg
+  | Cminor_old.Olongofintu => longofintu arg
+  | Cminor_old.Olongoffloat => longoffloat arg
+  | Cminor_old.Olonguoffloat => longuoffloat arg
+  | Cminor_old.Ofloatoflong => floatoflong arg
+  | Cminor_old.Ofloatoflongu => floatoflongu arg
+  | Cminor_old.Olongofsingle => longofsingle arg
+  | Cminor_old.Olonguofsingle => longuofsingle arg
+  | Cminor_old.Osingleoflong => singleoflong arg
+  | Cminor_old.Osingleoflongu => singleoflongu arg
   end.
 
-Definition sel_binop (op: Cminor.binary_operation) (arg1 arg2: expr) : expr :=
+Definition sel_binop (op: Cminor_old.binary_operation) (arg1 arg2: expr) : expr :=
   match op with
-  | Cminor.Oadd => add arg1 arg2
-  | Cminor.Osub => sub arg1 arg2
-  | Cminor.Omul => mul arg1 arg2
-  | Cminor.Odiv => divs arg1 arg2
-  | Cminor.Odivu => divu arg1 arg2
-  | Cminor.Omod => mods arg1 arg2
-  | Cminor.Omodu => modu arg1 arg2
-  | Cminor.Oand => and arg1 arg2
-  | Cminor.Oor => or arg1 arg2
-  | Cminor.Oxor => xor arg1 arg2
-  | Cminor.Oshl => shl arg1 arg2
-  | Cminor.Oshr => shr arg1 arg2
-  | Cminor.Oshru => shru arg1 arg2
-  | Cminor.Oaddf => addf arg1 arg2
-  | Cminor.Osubf => subf arg1 arg2
-  | Cminor.Omulf => mulf arg1 arg2
-  | Cminor.Odivf => divf arg1 arg2
-  | Cminor.Oaddfs => addfs arg1 arg2
-  | Cminor.Osubfs => subfs arg1 arg2
-  | Cminor.Omulfs => mulfs arg1 arg2
-  | Cminor.Odivfs => divfs arg1 arg2
-  | Cminor.Oaddl => addl arg1 arg2
-  | Cminor.Osubl => subl arg1 arg2
-  | Cminor.Omull => mull arg1 arg2
-  | Cminor.Odivl => divls arg1 arg2
-  | Cminor.Odivlu => divlu arg1 arg2
-  | Cminor.Omodl => modls arg1 arg2
-  | Cminor.Omodlu => modlu arg1 arg2
-  | Cminor.Oandl => andl arg1 arg2
-  | Cminor.Oorl => orl arg1 arg2
-  | Cminor.Oxorl => xorl arg1 arg2
-  | Cminor.Oshll => shll arg1 arg2
-  | Cminor.Oshrl => shrl arg1 arg2
-  | Cminor.Oshrlu => shrlu arg1 arg2
-  | Cminor.Ocmp c => comp c arg1 arg2
-  | Cminor.Ocmpu c => compu c arg1 arg2
-  | Cminor.Ocmpf c => compf c arg1 arg2
-  | Cminor.Ocmpfs c => compfs c arg1 arg2
-  | Cminor.Ocmpl c => cmpl c arg1 arg2
-  | Cminor.Ocmplu c => cmplu c arg1 arg2
+  | Cminor_old.Oadd => add arg1 arg2
+  | Cminor_old.Osub => sub arg1 arg2
+  | Cminor_old.Omul => mul arg1 arg2
+  | Cminor_old.Odiv => divs arg1 arg2
+  | Cminor_old.Odivu => divu arg1 arg2
+  | Cminor_old.Omod => mods arg1 arg2
+  | Cminor_old.Omodu => modu arg1 arg2
+  | Cminor_old.Oand => and arg1 arg2
+  | Cminor_old.Oor => or arg1 arg2
+  | Cminor_old.Oxor => xor arg1 arg2
+  | Cminor_old.Oshl => shl arg1 arg2
+  | Cminor_old.Oshr => shr arg1 arg2
+  | Cminor_old.Oshru => shru arg1 arg2
+  | Cminor_old.Oaddf => addf arg1 arg2
+  | Cminor_old.Osubf => subf arg1 arg2
+  | Cminor_old.Omulf => mulf arg1 arg2
+  | Cminor_old.Odivf => divf arg1 arg2
+  | Cminor_old.Oaddfs => addfs arg1 arg2
+  | Cminor_old.Osubfs => subfs arg1 arg2
+  | Cminor_old.Omulfs => mulfs arg1 arg2
+  | Cminor_old.Odivfs => divfs arg1 arg2
+  | Cminor_old.Oaddl => addl arg1 arg2
+  | Cminor_old.Osubl => subl arg1 arg2
+  | Cminor_old.Omull => mull arg1 arg2
+  | Cminor_old.Odivl => divls arg1 arg2
+  | Cminor_old.Odivlu => divlu arg1 arg2
+  | Cminor_old.Omodl => modls arg1 arg2
+  | Cminor_old.Omodlu => modlu arg1 arg2
+  | Cminor_old.Oandl => andl arg1 arg2
+  | Cminor_old.Oorl => orl arg1 arg2
+  | Cminor_old.Oxorl => xorl arg1 arg2
+  | Cminor_old.Oshll => shll arg1 arg2
+  | Cminor_old.Oshrl => shrl arg1 arg2
+  | Cminor_old.Oshrlu => shrlu arg1 arg2
+  | Cminor_old.Ocmp c => comp c arg1 arg2
+  | Cminor_old.Ocmpu c => compu c arg1 arg2
+  | Cminor_old.Ocmpf c => compf c arg1 arg2
+  | Cminor_old.Ocmpfs c => compfs c arg1 arg2
+  | Cminor_old.Ocmpl c => cmpl c arg1 arg2
+  | Cminor_old.Ocmplu c => cmplu c arg1 arg2
   end.
 
 (** Conversion from Cminor expression to Cminorsel expressions *)
 
-Fixpoint sel_expr (a: Cminor.expr) : expr :=
+Fixpoint sel_expr (a: Cminor_old.expr) : expr :=
   match a with
-  | Cminor.Evar id => Evar id
-  | Cminor.Econst cst => sel_constant cst
-  | Cminor.Eunop op arg => sel_unop op (sel_expr arg)
-  | Cminor.Ebinop op arg1 arg2 => sel_binop op (sel_expr arg1) (sel_expr arg2)
-  | Cminor.Eload chunk addr => load chunk (sel_expr addr)
+  | Cminor_old.Evar id => Evar id
+  | Cminor_old.Econst cst => sel_constant cst
+  | Cminor_old.Eunop op arg => sel_unop op (sel_expr arg)
+  | Cminor_old.Ebinop op arg1 arg2 => sel_binop op (sel_expr arg1) (sel_expr arg2)
+  | Cminor_old.Eload chunk addr => load chunk (sel_expr addr)
   end.
 
-Fixpoint sel_exprlist (al: list Cminor.expr) : exprlist :=
+Fixpoint sel_exprlist (al: list Cminor_old.expr) : exprlist :=
   match al with
   | nil => Enil
   | a :: bl => Econs (sel_expr a) (sel_exprlist bl)
@@ -181,14 +181,14 @@ Inductive call_kind : Type :=
   | Call_imm (id: ident)
   | Call_builtin (ef: external_function).
 
-Definition expr_is_addrof_ident (e: Cminor.expr) : option ident :=
+Definition expr_is_addrof_ident (e: Cminor_old.expr) : option ident :=
   match e with
-  | Cminor.Econst (Cminor.Oaddrsymbol id ofs) =>
+  | Cminor_old.Econst (Cminor_old.Oaddrsymbol id ofs) =>
       if Ptrofs.eq ofs Ptrofs.zero then Some id else None
   | _ => None
   end.
 
-Definition classify_call (e: Cminor.expr) : call_kind :=
+Definition classify_call (e: Cminor_old.expr) : call_kind :=
   match expr_is_addrof_ident e with
   | None => Call_default
   | Some id =>
@@ -201,14 +201,14 @@ Definition classify_call (e: Cminor.expr) : call_kind :=
 (** Builtin arguments and results *)
 
 Definition sel_builtin_arg
-       (e: Cminor.expr) (c: builtin_arg_constraint): AST.builtin_arg expr :=
+       (e: Cminor_old.expr) (c: builtin_arg_constraint): AST_old.builtin_arg expr :=
   let e' := sel_expr e in
   let ba := builtin_arg e' in
   if builtin_arg_ok ba c then ba else BA e'.
 
 Fixpoint sel_builtin_args
-       (el: list Cminor.expr)
-       (cl: list builtin_arg_constraint): list (AST.builtin_arg expr) :=
+       (el: list Cminor_old.expr)
+       (cl: list builtin_arg_constraint): list (AST_old.builtin_arg expr) :=
   match el with
   | nil => nil
   | e :: el =>
@@ -269,69 +269,69 @@ Definition sel_switch_long :=
 
 (** Conversion from Cminor statements to Cminorsel statements. *)
 
-Fixpoint sel_stmt (s: Cminor.stmt) : res stmt :=
+Fixpoint sel_stmt (s: Cminor_old.stmt) : res stmt :=
   match s with
-  | Cminor.Sskip => OK Sskip
-  | Cminor.Sassign id e => OK (Sassign id (sel_expr e))
-  | Cminor.Sstore chunk addr rhs => OK (store chunk (sel_expr addr) (sel_expr rhs))
-  | Cminor.Scall optid sg fn args =>
+  | Cminor_old.Sskip => OK Sskip
+  | Cminor_old.Sassign id e => OK (Sassign id (sel_expr e))
+  | Cminor_old.Sstore chunk addr rhs => OK (store chunk (sel_expr addr) (sel_expr rhs))
+  | Cminor_old.Scall optid sg fn args =>
       OK (match classify_call fn with
       | Call_default => Scall optid sg (inl _ (sel_expr fn)) (sel_exprlist args)
       | Call_imm id  => Scall optid sg (inr _ id) (sel_exprlist args)
       | Call_builtin ef => Sbuiltin (sel_builtin_res optid) ef
                                     (sel_builtin_args args
-                                       (Machregs.builtin_constraints ef))
+                                       (Machregs_old.builtin_constraints ef))
       end)
-  | Cminor.Sbuiltin optid ef args =>
+  | Cminor_old.Sbuiltin optid ef args =>
       OK (Sbuiltin (sel_builtin_res optid) ef
-                   (sel_builtin_args args (Machregs.builtin_constraints ef)))
-  | Cminor.Stailcall sg fn args =>
+                   (sel_builtin_args args (Machregs_old.builtin_constraints ef)))
+  | Cminor_old.Stailcall sg fn args =>
       OK (match classify_call fn with
       | Call_imm id  => Stailcall sg (inr _ id) (sel_exprlist args)
       | _            => Stailcall sg (inl _ (sel_expr fn)) (sel_exprlist args)
       end)
-  | Cminor.Sseq s1 s2 =>
+  | Cminor_old.Sseq s1 s2 =>
       do s1' <- sel_stmt s1; do s2' <- sel_stmt s2;
       OK (Sseq s1' s2')
-  | Cminor.Sifthenelse e ifso ifnot =>
+  | Cminor_old.Sifthenelse e ifso ifnot =>
       do ifso' <- sel_stmt ifso; do ifnot' <- sel_stmt ifnot;
       OK (Sifthenelse (condexpr_of_expr (sel_expr e)) ifso' ifnot')
-  | Cminor.Sloop body =>
+  | Cminor_old.Sloop body =>
       do body' <- sel_stmt body; OK (Sloop body')
-  | Cminor.Sblock body =>
+  | Cminor_old.Sblock body =>
       do body' <- sel_stmt body; OK (Sblock body')
-  | Cminor.Sexit n => OK (Sexit n)
-  | Cminor.Sswitch false e cases dfl =>
+  | Cminor_old.Sexit n => OK (Sexit n)
+  | Cminor_old.Sswitch false e cases dfl =>
       let t := compile_switch Int.modulus dfl cases in
       if validate_switch Int.modulus dfl cases t
       then OK (Sswitch (XElet (sel_expr e) (sel_switch_int O t)))
       else Error (msg "Selection: bad switch (int)")
-  | Cminor.Sswitch true e cases dfl =>
+  | Cminor_old.Sswitch true e cases dfl =>
       let t := compile_switch Int64.modulus dfl cases in
       if validate_switch Int64.modulus dfl cases t
       then OK (Sswitch (XElet (sel_expr e) (sel_switch_long O t)))
       else Error (msg "Selection: bad switch (long)")
-  | Cminor.Sreturn None => OK (Sreturn None)
-  | Cminor.Sreturn (Some e) => OK (Sreturn (Some (sel_expr e)))
-  | Cminor.Slabel lbl body =>
+  | Cminor_old.Sreturn None => OK (Sreturn None)
+  | Cminor_old.Sreturn (Some e) => OK (Sreturn (Some (sel_expr e)))
+  | Cminor_old.Slabel lbl body =>
       do body' <- sel_stmt body; OK (Slabel lbl body')
-  | Cminor.Sgoto lbl => OK (Sgoto lbl)
+  | Cminor_old.Sgoto lbl => OK (Sgoto lbl)
   end.
 
 End SELECTION.
 
 (** Conversion of functions. *)
 
-Definition sel_function (dm: PTree.t globdef) (hf: helper_functions) (f: Cminor.function) : res function :=
-  do body' <- sel_stmt dm f.(Cminor.fn_body);
+Definition sel_function (dm: PTree.t globdef) (hf: helper_functions) (f: Cminor_old.function) : res function :=
+  do body' <- sel_stmt dm f.(Cminor_old.fn_body);
   OK (mkfunction
-        f.(Cminor.fn_sig)
-        f.(Cminor.fn_params)
-        f.(Cminor.fn_vars)
-        f.(Cminor.fn_stackspace)
+        f.(Cminor_old.fn_sig)
+        f.(Cminor_old.fn_params)
+        f.(Cminor_old.fn_vars)
+        f.(Cminor_old.fn_stackspace)
         body').
 
-Definition sel_fundef (dm: PTree.t globdef) (hf: helper_functions) (f: Cminor.fundef) : res fundef :=
+Definition sel_fundef (dm: PTree.t globdef) (hf: helper_functions) (f: Cminor_old.fundef) : res fundef :=
   transf_partial_fundef (sel_function dm hf) f.
 
 (** Setting up the helper functions. *)
@@ -399,7 +399,7 @@ Definition get_helpers (defmap: PTree.t globdef) : res helper_functions :=
 
 (** Conversion of programs. *)
 
-Definition sel_program (p: Cminor.program) : res program :=
+Definition sel_program (p: Cminor_old.program) : res program :=
   let dm := prog_defmap p in
   do hf <- get_helpers dm;
   transform_partial_program (sel_fundef dm hf) p.

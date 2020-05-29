@@ -13,16 +13,16 @@
 (** Correctness of instruction selection for operators *)
 
 Require Import Coqlib.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import Memory.
-Require Import Globalenvs.
-Require Import Cminor.
-Require Import Op.
-Require Import CminorSel.
-Require Import SelectOp.
+Require Import Values_old.
+Require Import Memory_old.
+Require Import Globalenvs_old.
+Require Import Cminor_old.
+Require Import Op_old.
+Require Import CminorSel_old.
+Require Import SelectOp_old.
 
 Local Open Scope cminorsel_scope.
 
@@ -74,7 +74,7 @@ Ltac TrivialExists :=
 (** * Correctness of the smart constructors *)
 
 Section CMCONSTR.
-Context `{external_call: Events.ExternalCalls}.
+Context `{external_call: Events_old.ExternalCalls}.
 
 Variable ge: genv.
 Variable sp: val.
@@ -941,7 +941,7 @@ Qed.
 Theorem eval_builtin_arg:
   forall a v,
   eval_expr ge sp e m nil a v ->
-  CminorSel.eval_builtin_arg ge sp e m (builtin_arg a) v.
+  CminorSel_old.eval_builtin_arg ge sp e m (builtin_arg a) v.
 Proof.
   intros until v. unfold builtin_arg; case (builtin_arg_match a); intros; InvEval.
 - constructor.

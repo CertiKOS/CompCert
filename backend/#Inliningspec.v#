@@ -306,7 +306,7 @@ Inductive tr_instr: context -> node -> instruction -> code -> Prop :=
       tr_funbody ctx' f c ->
       ctx'.(retinfo) = ctx.(retinfo) ->
       context_below ctx ctx' ->
-      context_stack_tailcall ctx f ctx' ->
+      context_stack_tailcall ctx f tx' ->
       tr_instr ctx pc (Itailcall sg (inr _ id) args) c
   | tr_builtin: forall ctx pc c ef args res s,
       match res with BR r => Ple r ctx.(mreg) | _ => True end ->

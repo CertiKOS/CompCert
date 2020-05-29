@@ -14,9 +14,9 @@
 
 Require Import String.
 Require Import Coqlib Maps.
-Require Import AST Errors Integers Floats.
-Require Import Values Memory Globalenvs Events Cminor Op CminorSel.
-Require Import SelectOp SelectOpproof SplitLong.
+Require Import AST_old Errors Integers Floats.
+Require Import Values_old Memory_old Globalenvs_old Events_old Cminor_old Op_old CminorSel_old.
+Require Import SelectOp_old SelectOpproof_old SplitLong_old.
 
 Local Open Scope cminorsel_scope.
 Local Open Scope string_scope.
@@ -60,10 +60,10 @@ Class I64HelpersCorrect mem
  /\ (forall x y, external_implements "__i64_smulh" sig_ll_l (x::y::nil) (Val.mullhs x y))
 }.
 
-Definition helper_declared {F V: Type} (p: AST.program (AST.fundef F) V) (id: ident) (name: string) (sg: signature) : Prop :=
+Definition helper_declared {F V: Type} (p: AST_old.program (AST_old.fundef F) V) (id: ident) (name: string) (sg: signature) : Prop :=
   (prog_defmap p)!id = Some (Gfun (External (EF_runtime name sg))).
 
-Definition helper_functions_declared {F V: Type} (p: AST.program (AST.fundef F) V) (hf: helper_functions) : Prop :=
+Definition helper_functions_declared {F V: Type} (p: AST_old.program (AST_old.fundef F) V) (hf: helper_functions) : Prop :=
      helper_declared p i64_dtos "__i64_dtos" sig_f_l
   /\ helper_declared p i64_dtou "__i64_dtou" sig_f_l
   /\ helper_declared p i64_stod "__i64_stod" sig_l_f

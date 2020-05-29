@@ -1,622 +1,214 @@
-21,23d20
-< Section WITHROMEMFOR.
-< Context `{romem_for_instance: ROMemFor}.
-< 
-33,34d29
-< End WITHROMEMFOR.
-< 
-37,38c32,74
-< Local Notation locset := Mem.locset.
-< Local Notation magree := Mem.magree.
+16,18c16,18
+< Require Import AST_old Linking_old.
+< Require Import Op_old Registers_old RTL_old.
+< Require Import Inlining_old.
 ---
-> (** The [magree] predicate is a variant of [Mem.extends] where we
->   allow the contents of the two memory states to differ arbitrarily
->   on some locations.  The predicate [P] is true on the locations whose
->   contents must be in the [lessdef] relation. *)
-> 
-> Definition locset := block -> Z -> Prop.
-> 
-> Record magree (m1 m2: mem) (P: locset) : Prop := mk_magree {
->   ma_perm:
->     forall b ofs k p,
->     Mem.perm m1 b ofs k p -> Mem.perm m2 b ofs k p;
->   ma_perm_inv:
->     forall b ofs k p,
->     Mem.perm m2 b ofs k p -> Mem.perm m1 b ofs k p \/ ~Mem.perm m1 b ofs Max Nonempty;
->   ma_memval:
->     forall b ofs,
->     Mem.perm m1 b ofs Cur Readable ->
->     P b ofs ->
->     memval_lessdef (ZMap.get ofs (PMap.get b (Mem.mem_contents m1)))
->                    (ZMap.get ofs (PMap.get b (Mem.mem_contents m2)));
->   ma_nextblock:
->     Mem.nextblock m2 = Mem.nextblock m1
-> }.
-> 
-> Lemma magree_monotone:
->   forall m1 m2 (P Q: locset),
->   magree m1 m2 P ->
->   (forall b ofs, Q b ofs -> P b ofs) ->
->   magree m1 m2 Q.
-> Proof.
->   intros. destruct H. constructor; auto.
-> Qed.
-> 
-> Lemma mextends_agree:
->   forall m1 m2 P, Mem.extends m1 m2 -> magree m1 m2 P.
-> Proof.
->   intros. destruct H. destruct mext_inj. constructor; intros.
-> - replace ofs with (ofs + 0) by omega. eapply mi_perm; eauto. auto.
-> - eauto.
-> - exploit mi_memval; eauto. unfold inject_id; eauto.
->   rewrite Zplus_0_r. auto.
-> - auto.
-> Qed.
-40,52c76,85
-< Local Notation magree_storebytes_parallel := Mem.magree_storebytes_parallel.
-< Local Notation magree_monotone := Mem.magree_monotone.
-< Local Notation magree_load := Mem.magree_load.
-< Local Notation magree_valid_access := Mem.magree_valid_access.
-< Local Notation ma_perm := Mem.ma_perm.
-< Local Notation magree_store_left := Mem.magree_store_left.
-< Local Notation magree_extends := Mem.magree_extends.
-< Local Notation magree_free := Mem.magree_free.
-< Local Notation magree_loadbytes := Mem.magree_loadbytes.
-< Local Notation magree_storebytes_left := Mem.magree_storebytes_left.
-< Local Notation mextends_agree := Mem.mextends_agree.
-< Local Notation magree_push := Mem.magree_push.
-< Local Notation magree_unrecord := Mem.magree_unrecord.
+> Require Import AST Linking.
+> Require Import Op Registers RTL.
+> Require Import Inlining.
+44,47c44
+<              P (match snd idg with
+<                   | Some g => PTree.set (fst idg) g dm
+<                   | _ => PTree.remove (fst idg) dm
+<                 end) (add_globdef fenv idg)).
 ---
-> Lemma magree_extends:
->   forall m1 m2 (P: locset),
->   (forall b ofs, P b ofs) ->
->   magree m1 m2 P -> Mem.extends m1 m2.
-> Proof.
->   intros. destruct H0. constructor; auto. constructor; unfold inject_id; intros.
-> - inv H0. rewrite Zplus_0_r. eauto.
-> - inv H0. apply Zdivide_0.
-> - inv H0. rewrite Zplus_0_r. eapply ma_memval0; eauto.
-> Qed.
-53a87,175
-> Lemma magree_loadbytes:
->   forall m1 m2 P b ofs n bytes,
->   magree m1 m2 P ->
->   Mem.loadbytes m1 b ofs n = Some bytes ->
->   (forall i, ofs <= i < ofs + n -> P b i) ->
->   exists bytes', Mem.loadbytes m2 b ofs n = Some bytes' /\ list_forall2 memval_lessdef bytes bytes'.
-> Proof.
->   assert (GETN: forall c1 c2 n ofs,
->     (forall i, ofs <= i < ofs + Z.of_nat n -> memval_lessdef (ZMap.get i c1) (ZMap.get i c2)) ->
->     list_forall2 memval_lessdef (Mem.getN n ofs c1) (Mem.getN n ofs c2)).
->   {
->     induction n; intros; simpl.
->     constructor.
->     rewrite inj_S in H. constructor.
->     apply H. omega.
->     apply IHn. intros; apply H; omega.
->   }
-> Local Transparent Mem.loadbytes.
->   unfold Mem.loadbytes; intros. destruct H.
->   destruct (Mem.range_perm_dec m1 b ofs (ofs + n) Cur Readable); inv H0.
->   rewrite pred_dec_true. econstructor; split; eauto.
->   apply GETN. intros. rewrite nat_of_Z_max in H.
->   assert (ofs <= i < ofs + n) by xomega.
->   apply ma_memval0; auto.
->   red; intros; eauto.
-> Qed.
-> 
-> Lemma magree_load:
->   forall m1 m2 P chunk b ofs v,
->   magree m1 m2 P ->
->   Mem.load chunk m1 b ofs = Some v ->
->   (forall i, ofs <= i < ofs + size_chunk chunk -> P b i) ->
->   exists v', Mem.load chunk m2 b ofs = Some v' /\ Val.lessdef v v'.
-> Proof.
->   intros. exploit Mem.load_valid_access; eauto. intros [A B].
->   exploit Mem.load_loadbytes; eauto. intros [bytes [C D]].
->   exploit magree_loadbytes; eauto. intros [bytes' [E F]].
->   exists (decode_val chunk bytes'); split.
->   apply Mem.loadbytes_load; auto.
->   apply val_inject_id. subst v. apply decode_val_inject; auto.
-> Qed.
-> 
-> Lemma magree_storebytes_parallel:
->   forall m1 m2 (P Q: locset) b ofs bytes1 m1' bytes2,
->   magree m1 m2 P ->
->   Mem.storebytes m1 b ofs bytes1 = Some m1' ->
->   (forall b' i, Q b' i ->
->                 b' <> b \/ i < ofs \/ ofs + Z_of_nat (length bytes1) <= i ->
->                 P b' i) ->
->   list_forall2 memval_lessdef bytes1 bytes2 ->
->   exists m2', Mem.storebytes m2 b ofs bytes2 = Some m2' /\ magree m1' m2' Q.
-> Proof.
->   assert (SETN: forall (access: Z -> Prop) bytes1 bytes2,
->     list_forall2 memval_lessdef bytes1 bytes2 ->
->     forall p c1 c2,
->     (forall i, access i -> i < p \/ p + Z.of_nat (length bytes1) <= i -> memval_lessdef (ZMap.get i c1) (ZMap.get i c2)) ->
->     forall q, access q ->
->     memval_lessdef (ZMap.get q (Mem.setN bytes1 p c1))
->                    (ZMap.get q (Mem.setN bytes2 p c2))).
->   {
->     induction 1; intros; simpl.
->   - apply H; auto. simpl. omega.
->   - simpl length in H1; rewrite inj_S in H1.
->     apply IHlist_forall2; auto.
->     intros. rewrite ! ZMap.gsspec. destruct (ZIndexed.eq i p). auto.
->     apply H1; auto. unfold ZIndexed.t in *; omega.
->   }
->   intros.
->   destruct (Mem.range_perm_storebytes m2 b ofs bytes2) as [m2' ST2].
->   { erewrite <- list_forall2_length by eauto. red; intros.
->     eapply ma_perm; eauto.
->     eapply Mem.storebytes_range_perm; eauto. }
->   exists m2'; split; auto.
->   constructor; intros.
-> - eapply Mem.perm_storebytes_1; eauto. eapply ma_perm; eauto.
->   eapply Mem.perm_storebytes_2; eauto.
-> - exploit ma_perm_inv; eauto using Mem.perm_storebytes_2.
->   intuition eauto using Mem.perm_storebytes_1, Mem.perm_storebytes_2.
-> - rewrite (Mem.storebytes_mem_contents _ _ _ _ _ H0).
->   rewrite (Mem.storebytes_mem_contents _ _ _ _ _ ST2).
->   rewrite ! PMap.gsspec. destruct (peq b0 b).
-> + subst b0. apply SETN with (access := fun ofs => Mem.perm m1' b ofs Cur Readable /\ Q b ofs); auto.
->   intros. destruct H5. eapply ma_memval; eauto.
->   eapply Mem.perm_storebytes_2; eauto.
-> + eapply ma_memval; eauto. eapply Mem.perm_storebytes_2; eauto.
-> - rewrite (Mem.nextblock_storebytes _ _ _ _ _ H0).
->   rewrite (Mem.nextblock_storebytes _ _ _ _ _ ST2).
->   eapply ma_nextblock; eauto.
-> Qed.
-56d177
-<   forall `{memory_model_prf: Mem.MemoryModel} {injperm: InjectPerm},
-67c188
-<   exploit Mem.store_valid_access_3; eauto. intros [A [B C]].
+>              P (PTree.set (fst idg) (snd idg) dm) (add_globdef fenv idg)).
+49c46
+<     destruct g as [ [ [f|ef] | v] | ] ; auto.
 ---
->   exploit Mem.store_valid_access_3; eauto. intros [A B].
-77a199,277
-> Lemma magree_storebytes_left:
->   forall m1 m2 P b ofs bytes1 m1',
->   magree m1 m2 P ->
->   Mem.storebytes m1 b ofs bytes1 = Some m1' ->
->   (forall i, ofs <= i < ofs + Z_of_nat (length bytes1) -> ~(P b i)) ->
->   magree m1' m2 P.
-> Proof.
->   intros. constructor; intros.
-> - eapply ma_perm; eauto. eapply Mem.perm_storebytes_2; eauto.
-> - exploit ma_perm_inv; eauto.
->   intuition eauto using Mem.perm_storebytes_1, Mem.perm_storebytes_2.
-> - rewrite (Mem.storebytes_mem_contents _ _ _ _ _ H0).
->   rewrite PMap.gsspec. destruct (peq b0 b).
-> + subst b0. rewrite Mem.setN_outside. eapply ma_memval; eauto. eapply Mem.perm_storebytes_2; eauto.
->   destruct (zlt ofs0 ofs); auto. destruct (zle (ofs + Z.of_nat (length bytes1)) ofs0); try omega.
->   elim (H1 ofs0). omega. auto.
-> + eapply ma_memval; eauto. eapply Mem.perm_storebytes_2; eauto.
-> - rewrite (Mem.nextblock_storebytes _ _ _ _ _ H0).
->   eapply ma_nextblock; eauto.
-> Qed.
-> 
-> Lemma magree_store_left:
->   forall m1 m2 P chunk b ofs v1 m1',
->   magree m1 m2 P ->
->   Mem.store chunk m1 b ofs v1 = Some m1' ->
->   (forall i, ofs <= i < ofs + size_chunk chunk -> ~(P b i)) ->
->   magree m1' m2 P.
-> Proof.
->   intros. eapply magree_storebytes_left; eauto.
->   eapply Mem.store_storebytes; eauto.
->   intros. rewrite encode_val_length in H2.
->   rewrite <- size_chunk_conv in H2. apply H1; auto.
-> Qed.
-> 
-> Lemma magree_free:
->   forall m1 m2 (P Q: locset) b lo hi m1',
->   magree m1 m2 P ->
->   Mem.free m1 b lo hi = Some m1' ->
->   (forall b' i, Q b' i ->
->                 b' <> b \/ ~(lo <= i < hi) ->
->                 P b' i) ->
->   exists m2', Mem.free m2 b lo hi = Some m2' /\ magree m1' m2' Q.
-> Proof.
->   intros.
->   destruct (Mem.range_perm_free m2 b lo hi) as [m2' FREE].
->   red; intros. eapply ma_perm; eauto. eapply Mem.free_range_perm; eauto.
->   exists m2'; split; auto.
->   constructor; intros.
-> - (* permissions *)
->   assert (Mem.perm m2 b0 ofs k p). { eapply ma_perm; eauto. eapply Mem.perm_free_3; eauto. }
->   exploit Mem.perm_free_inv; eauto. intros [[A B] | A]; auto.
->   subst b0. eelim Mem.perm_free_2. eexact H0. eauto. eauto.
-> - (* inverse permissions *)
->   exploit ma_perm_inv; eauto using Mem.perm_free_3. intros [A|A].
->   eapply Mem.perm_free_inv in A; eauto. destruct A as [[A B] | A]; auto.
->   subst b0; right; eapply Mem.perm_free_2; eauto.
->   right; intuition eauto using Mem.perm_free_3.
-> - (* contents *)
->   rewrite (Mem.free_result _ _ _ _ _ H0).
->   rewrite (Mem.free_result _ _ _ _ _ FREE).
->   simpl. eapply ma_memval; eauto. eapply Mem.perm_free_3; eauto.
->   apply H1; auto. destruct (eq_block b0 b); auto.
->   subst b0. right. red; intros. eelim Mem.perm_free_2. eexact H0. eauto. eauto.
-> - (* nextblock *)
->   rewrite (Mem.free_result _ _ _ _ _ H0).
->   rewrite (Mem.free_result _ _ _ _ _ FREE).
->   simpl. eapply ma_nextblock; eauto.
-> Qed.
-> 
-> Lemma magree_valid_access:
->   forall m1 m2 (P: locset) chunk b ofs p,
->   magree m1 m2 P ->
->   Mem.valid_access m1 chunk b ofs p ->
->   Mem.valid_access m2 chunk b ofs p.
-> Proof.
->   intros. destruct H0; split; auto.
->   red; intros. eapply ma_perm; eauto.
-> Qed.
-> 
-181,182d380
-< Context `{external_calls_prf: ExternalCalls}.
-< Existing Instance inject_perm_all.
-185a384
-> Hypothesis TRANSF: match_prog prog tprog.
-189,193d387
-< Section WITHROMEMFOR.
-< Context `{romem_for_instance: ROMemFor}.
-< 
-< Hypothesis TRANSF: match_prog prog tprog.
-< 
-202,207d395
-< Lemma genv_next_preserved:
-<   Genv.genv_next tge = Genv.genv_next ge.
-< Proof.
-<   apply senv_preserved.
-< Qed.
-< 
-319c507
-<       forall s f args m ts tf targs tm cu sz
+>     destruct g as [ [f|ef] | v]; auto.
+53,56d49
+<     unfold P. intros ? ? .
+<     rewrite ! PTree.grspec.
+<     destruct (PTree.elt_eq id0 id); auto.
+<     discriminate.
+60,64c53
+<             P (fold_left (fun x idg =>
+<                             match snd idg with
+<                               | Some g => PTree.set (fst idg) g x
+<                               | None => PTree.remove (fst idg) x
+<                             end) l dm)
 ---
->       forall s f args m ts tf targs tm cu
-325,326c513,514
-<       match_states (Callstate s f args m sz)
-<                    (Callstate ts tf targs tm sz)
+>             P (fold_left (fun x idg => PTree.set (fst idg) (snd idg) x) l dm)
+395,412c384,399
+<   - (* call *)
+<     destruct (can_inline fe s1). eauto.
+<     monadInv H. unfold inline_function in EQ. monadInv EQ.
+<     transitivity (s2.(st_code)!pc'). eauto.
+<     transitivity (s5.(st_code)!pc').
+<     + eapply add_moves_unchanged; eauto.
+<       left. inversion INCR5. inversion INCR3. monadInv EQ1; simpl in *. xomega.
+<     + transitivity (s4.(st_code)!pc').
+<       * eapply rec_unchanged; eauto.
+<         -- simpl. monadInv EQ; simpl. monadInv EQ1; simpl. xomega.
+<         -- simpl. monadInv EQ1; simpl. auto.
+<       * monadInv EQ; simpl. monadInv EQ1; simpl. auto.
+<   - (* tailcall *)
+<     destruct (can_inline fe s1).
+<     destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
+<     monadInv H. unfold inline_tail_function in EQ. monadInv EQ.
+<     transitivity (s2.(st_code)!pc'). eauto.
+<     transitivity (s5.(st_code)!pc'). eapply add_moves_unchanged; eauto.
 ---
->       match_states (Callstate s f args m)
->                    (Callstate ts tf targs tm)
-==========================================================================================
-464,466c652
-<     eapply Mem.load_valid_access; eauto.
-<     eapply inject_perm_condition_writable; constructor.
-<   }
+> (* call *)
+>   destruct (can_inline fe s1). eauto.
+>   monadInv H. unfold inline_function in EQ. monadInv EQ.
+>   transitivity (s2.(st_code)!pc'). eauto.
+>   transitivity (s5.(st_code)!pc'). eapply add_moves_unchanged; eauto.
+>     left. inversion INCR5. inversion INCR3. monadInv EQ1; simpl in *. xomega.
+>   transitivity (s4.(st_code)!pc'). eapply rec_unchanged; eauto.
+>     simpl. monadInv EQ; simpl. monadInv EQ1; simpl. xomega.
+>     simpl. monadInv EQ1; simpl. auto.
+>   monadInv EQ; simpl. monadInv EQ1; simpl. auto.
+> (* tailcall *)
+>   destruct (can_inline fe s1).
+>   destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
+>   monadInv H. unfold inline_tail_function in EQ. monadInv EQ.
+>   transitivity (s2.(st_code)!pc'). eauto.
+>   transitivity (s5.(st_code)!pc'). eapply add_moves_unchanged; eauto.
+414c401
+<     transitivity (s4.(st_code)!pc'). eapply rec_unchanged; eauto.
 ---
->     eapply Mem.load_valid_access; eauto. }
-492d677
-< 
-501c686
-<          /\ magree m' tm' (nlive ge sp nm).
+>   transitivity (s4.(st_code)!pc'). eapply rec_unchanged; eauto.
+417,419c404,406
+<     monadInv EQ; simpl. monadInv EQ1; simpl. auto.
+<   - (* return *)
+<     destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
 ---
->            /\ magree m' tm' (nlive ge sp nm).
-512,513c697
-<   exists tm'; split. econstructor. econstructor; eauto.
-<   auto.
+>   monadInv EQ; simpl. monadInv EQ1; simpl. auto.
+> (* return *)
+>   destruct (retinfo ctx) as [[rpc rreg]|]; eauto.
+505,570c492,557
+<   - (* call *)
+<     destruct (can_inline fe s1) as [|id f P Q].
+<     + (* not inlined *)
+<       eapply tr_call; eauto.
+<     + (* inlined *)
+<       subst s1.
+<       monadInv EXP. unfold inline_function in EQ; monadInv EQ.
+<       set (ctx' := callcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f) n r).
+<       inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
+<       apply tr_call_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
+<       * eapply BASE; eauto.
+<       * eapply add_moves_spec; eauto.
+<         intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega.
+<         xomega. xomega.
+<       * eapply rec_spec; eauto.
+<         -- red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
+<         -- simpl. subst s2; simpl in *; xomega.
+<         -- simpl. subst s3; simpl in *; xomega.
+<         -- simpl. xomega.
+<         -- simpl. apply align_divides. apply min_alignment_pos.
+<         -- assert (dstk ctx + mstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
+<         -- omega.
+<         -- intros. simpl in H. rewrite S1.
+<            transitivity (s1.(st_code)!pc0). eapply set_instr_other; eauto. unfold node in *; xomega.
+<            eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
+<       * red; simpl. subst s2; simpl in *. xomega.
+<       * red; simpl. split. auto. apply align_le. apply min_alignment_pos.
+<   - (* tailcall *)
+<     destruct (can_inline fe s1) as [|id f P Q].
+<     (* not inlined *)
+<     destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
+<     (* turned into a call *)
+<     eapply tr_tailcall_call; eauto.
+<     (* preserved *)
+<     eapply tr_tailcall; eauto.
+<       (* (* inlined *) *)
+<       subst s1.
+<       monadInv EXP. unfold inline_function in EQ; monadInv EQ.
+<       set (ctx' := tailcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f)) in *.
+<       inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
+<       apply tr_tailcall_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
+<       eapply BASE; eauto.
+<       eapply add_moves_spec; eauto.
+<       intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega. xomega. xomega.
+<       eapply rec_spec; eauto.
+<       red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
+<       simpl. subst s3; simpl in *. subst s2; simpl in *. xomega.
+<       simpl. subst s3; simpl in *; xomega.
+<       simpl. xomega.
+<       simpl. apply align_divides. apply min_alignment_pos.
+<       assert (dstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
+<       omega.
+<       intros. simpl in H. rewrite S1.
+<       transitivity (s1.(st_code))!pc0. eapply set_instr_other; eauto. unfold node in *; xomega.
+<       eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
+<       red; simpl.
+<       subst s2; simpl in *; xomega.
+<       red; auto.
+<   - (* builtin *)
+<     eapply tr_builtin; eauto. destruct b; eauto.
+<   - (* return *)
+<     destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
+<     + (* inlined *)
+<       eapply tr_return_inlined; eauto.
+<     + (* unchanged *)
+<       eapply tr_return; eauto.
 ---
->   exists tm'; split. econstructor. econstructor; eauto. auto.
-524,525c708,712
-< Variable fn_stack_requirements: ident -> Z.
-< 
----
-> Theorem step_simulation:
->   forall S1 t S2, step ge S1 t S2 ->
->   forall S1', match_states S1 S1' -> sound_state prog S1 ->
->   exists S2', step tge S1' t S2' /\ match_states S2 S2'.
-> Proof.
-547,583c734
-< 
-< Lemma stack_equiv_inv_step:
-<   forall S1 t S2
-<     (STEP: step fn_stack_requirements ge S1 t S2)
-<     S1' (MS: match_states S1 S1')
-<     S2' (STEP': step fn_stack_requirements tge S1' t S2')
-<     (SEI: stack_equiv_inv S1 S1'),
-<     stack_equiv_inv S2 S2'.
-< Proof.
-<   intros.
-<   inv STEP; inv MS; try TransfInstr; inv STEP'; try congruence;
-<     unfold stack_equiv_inv in *; simpl in *; repeat rewrite_stack_blocks; eauto;
-<       try match goal with
-<         H1: (fn_code ?f) ! ?pc = _,
-<             H2: (fn_code ?f) ! ?pc = _ |- _ =>
-<         rewrite H1 in H2; repeat destr_in H2
-<       end.
-<   - repeat constructor; auto.
-<   - intros A B; revert SEI; rewrite A, B. simpl.
-<     inversion 1; subst. repeat constructor; simpl; auto.
-<     destruct LF2; simpl; auto.
-<     red in H1; repeat destr_in H1; constructor; auto.
-<   - intros A B; revert SEI; rewrite A, B. simpl.
-<     inversion 1; subst. repeat constructor; simpl; auto.
-<     destruct LF2; simpl; auto.
-<   - monadInv FUN.
-<   - monadInv FUN.
-<   - eauto using stack_equiv_tail.
-< Qed.
-< 
-< Theorem step_simulation:
-<   forall S1 t S2, step fn_stack_requirements ge S1 t S2 ->
-<   forall S1', match_states S1 S1' -> sound_state prog S1 -> stack_inv S1' -> stack_equiv_inv S1 S1' ->
-<   exists S2', step fn_stack_requirements tge S1' t S2' /\ match_states S2 S2'.
-< Proof.
-< 
-<   induction 1; intros S1' MS SS SI SEI; inv MS.
----
->   induction 1; intros S1' MS SS; inv MS.
-603c754
-<   eapply exec_Iop with (v0 := Vint Int.zero); eauto.
----
->   eapply exec_Iop with (v := Vint Int.zero); eauto.
-612c763
-<   exploit needs_of_operation_sound. intros; eapply ma_perm; eauto. constructor.
----
->   exploit needs_of_operation_sound. eapply ma_perm; eauto.
-615c766
-<   eapply exec_Iop with (v0 := tv); eauto.
----
->   eapply exec_Iop with (v := tv); eauto.
-630c781
-<   exploit needs_of_operation_sound. intros; eapply ma_perm; eauto. constructor. eauto. eauto 2 with na. eauto with na.
----
->   exploit needs_of_operation_sound. eapply ma_perm; eauto. eauto. eauto 2 with na. eauto with na.
-633c784
-<   eapply exec_Iop with (v0 := tv); eauto.
----
->   eapply exec_Iop with (v := tv); eauto.
-650c801
-<   eapply exec_Iop with (v0 := Vint Int.zero); eauto.
----
->   eapply exec_Iop with (v := Vint Int.zero); eauto.
-704,715c855
-<   eapply exec_Icall; eauto.
-<   {
-<     destruct ros; simpl in RIF |- *; auto.
-<     destruct RIF as (b & o & EQ & EQ1).      
-<     simpl. 
-<     apply add_needs_all_eagree in ENV.
-<     eapply add_need_all_lessdef in ENV.
-<     generalize (ENV). rewrite EQ. inversion 1.
-<     rewrite symbols_preserved; eauto.
-<     auto.
-<   }
-<   eapply sig_function_translated; eauto.
----
->   eapply exec_Icall; eauto. eapply sig_function_translated; eauto.
-723d862
-<   apply Mem.extends_push.
-729c868
-<   exploit magree_free. eauto. constructor. eauto. instantiate (1 := nlive ge stk nmem_all).
----
->   exploit magree_free. eauto. eauto. instantiate (1 := nlive ge stk nmem_all).
-732,735d870
-<   exploit Mem.magree_tailcall_stage; eauto. inv SI. inv MSA1.
-<   eapply Mem.free_top_tframe_no_perm; eauto.
-<   erewrite <- stacksize_translated; eauto.
-<   intros (tm2' & E & F).
-737,748c872
-<   eapply exec_Itailcall; eauto.
-<   {
-<     destruct ros; simpl in RIF |- *; auto.
-<     destruct RIF as (b & o & EQ & EQ1).      
-<     simpl. 
-<     apply add_needs_all_eagree in ENV.
-<     eapply add_need_all_lessdef in ENV.
-<     generalize (ENV). rewrite EQ. inversion 1.
-<     rewrite symbols_preserved; eauto.
-<     auto.
-<   }
-<   eapply sig_function_translated; eauto.
----
->   eapply exec_Itailcall; eauto. eapply sig_function_translated; eauto.
-751c875
-<   eapply Mem.magree_extends; eauto. apply nlive_all.
----
->   eapply magree_extends; eauto. apply nlive_all.
-758c882
-<   inv H0. inv H7. rename b1 into v1.
----
->   inv H0. inv H6. rename b1 into v1.
-766c890
-<   assert (X: exists tvres, volatile_load ge chunk (Mem.push_new_stage tm) b ofs t tvres /\ Val.lessdef vres tvres).
----
->   assert (X: exists tvres, volatile_load ge chunk tm b ofs t tvres /\ Val.lessdef vres tvres).
-768c892
-<     inv H3.
----
->     inv H2.
-770,771c894
-<   * exploit magree_load.
-<     apply Mem.magree_push. eauto. eauto.
----
->   * exploit magree_load; eauto.
-778d900
-<   rewrite Mem.unrecord_push in H2; inv H2.
-784c906
-<   constructor. simpl. eauto. apply Mem.unrecord_push.
----
->   constructor. simpl. eauto.
-789c911
-<   inv H0. inv H7. inv H8. rename b1 into v1. rename b0 into v2.
----
->   inv H0. inv H6. inv H7. rename b1 into v1. rename b0 into v2.
-794,795d915
-<   exploit transfer_builtin_arg_sound. eexact H5. eauto. eauto. eauto. eauto. eauto.
-<   intros (tv1 & A1 & B1 & C1 & D1).
-796a917,918
->   intros (tv1 & A1 & B1 & C1 & D1).
->   exploit transfer_builtin_arg_sound. eexact H3. eauto. eauto. eauto. eauto. eauto.
-798c920
-<   exploit transf_volatile_store; eauto. apply magree_push. apply D2.
----
->   exploit transf_volatile_store; eauto.
-800d921
-<   edestruct magree_unrecord as (m2' & USB & MAG). apply Q. eauto.
-802c923
-<   eapply exec_Ibuiltin. eauto.
----
->   eapply exec_Ibuiltin; eauto.
-806c927
-<   simpl; eauto. eauto. auto.
----
->   simpl; eauto.
-811c932
-<   inv H0. inv H7. inv H8. rename b1 into v1. rename b0 into v2.
----
->   inv H0. inv H6. inv H7. rename b1 into v1. rename b0 into v2.
-820c941
-<   exploit transfer_builtin_arg_sound. eexact H4. eauto. eauto. eauto. eauto. eauto.
----
->   exploit transfer_builtin_arg_sound. eexact H3. eauto. eauto. eauto. eauto. eauto.
-822c943
-<   exploit transfer_builtin_arg_sound. eexact H5. eauto. eauto. eauto. eauto. eauto.
----
->   exploit transfer_builtin_arg_sound. eexact H4. eauto. eauto. eauto. eauto. eauto.
-825c946
-<   exploit magree_loadbytes. 2: eauto. apply magree_push; eauto.
----
->   exploit magree_loadbytes. eauto. eauto.
-829c950
-<   exploit magree_storebytes_parallel. 2: eauto. apply magree_push.
----
->   exploit magree_storebytes_parallel.
-832a954
->   eauto.
-840,841d961
-<   edestruct magree_unrecord as (m2' & USB & MAG). apply B. eauto.
-<     
-850d969
-< 
-853c972
-<   inv H0. inv H7. inv H8. rename b1 into v1. rename b0 into v2.
----
->   inv H0. inv H6. inv H7. rename b1 into v1. rename b0 into v2.
-857,860d975
-< 
-<   edestruct Mem.storebytes_push as (m2 & SB); eauto.
-<   exploit Mem.push_storebytes_unrecord; eauto. rewrite H2. intro A; inv A.
-< 
-865,866c980,981
-<   eapply magree_storebytes_left. 2: eauto. eauto. 
-<   clear H4.
----
->   eapply magree_storebytes_left; eauto.
->   clear H3.
-872d986
-< 
-878d991
-<   rewrite Mem.unrecord_push in H2. inv H2.
-883c996
-<   constructor. eapply eventval_list_match_lessdef; eauto 2 with na. apply Mem.unrecord_push.
----
->   constructor. eapply eventval_list_match_lessdef; eauto 2 with na.
-890,891c1003
-<   inv H1. inv B. inv H7.
-<   rewrite Mem.unrecord_push in H2; inv H2.
----
->   inv H1. inv B. inv H6.
-898d1009
-<   apply Mem.unrecord_push.
-904d1014
-<   rewrite Mem.unrecord_push in H2; inv H2.
-907d1016
-<   apply Mem.unrecord_push.
-920,923c1029,1030
-<   apply Mem.extends_push. eapply magree_extends; eauto. intros. apply nlive_all.
-<   intros (v' & tm' & P & Q & R & ST).
-<   exploit Mem.unrecord_stack_block_extends; eauto.
-<   intros (m2' & USB & EXT).
----
->   eapply magree_extends; eauto. intros. apply nlive_all.
->   intros (v' & tm' & P & Q & R & S).
-936c1043
-<   eapply needs_of_condition_sound. intros; eapply ma_perm; eauto. constructor. eauto. eauto with na.
----
->   eapply needs_of_condition_sound. eapply ma_perm; eauto. eauto. eauto with na.
-951c1058
-<   exploit magree_free. eauto. constructor. eauto. instantiate (1 := nlive ge stk nmem_all).
----
->   exploit magree_free. eauto. eauto. instantiate (1 := nlive ge stk nmem_all).
-966,974c1073,1077
-<   exploit Mem.record_push_extends_flat_alloc. apply H. apply A. all: eauto.
-<   + inv SI. auto.
-<   + repeat rewrite_stack_blocks. apply Z.eq_le_incl. eauto using stack_equiv_fsize, stack_equiv_tail.
-<   + intros (m2' & USB & EXT).
-<     econstructor; split.
-<     econstructor; simpl; eauto.
-<     simpl. econstructor; eauto.
-<     apply eagree_init_regs; auto.
-<     apply mextends_agree; auto.
----
->   econstructor; split.
->   econstructor; simpl; eauto.
->   simpl. econstructor; eauto.
->   apply eagree_init_regs; auto.
->   apply mextends_agree; auto.
-978c1081
-<   intros (res' & tm' & A & B & C & DE).
----
->   intros (res' & tm' & A & B & C & D).
-986,988c1089
-<   inv STACKS. inv H2.
-<   exploit Mem.unrecord_stack_block_extends; eauto.
-<   intros (m2' & USB & EXT).
----
->   inv STACKS. inv H1.
-990c1091
-<   constructor. eauto.
----
->   constructor.
-994,1001d1094
-< End WITHROMEMFOR.
-< 
-< Local Existing Instance romem_for_wp_instance.
-< 
-< Hypothesis TRANSF: match_prog prog tprog.
-< 
-< Variable fn_stack_requirements: ident -> Z.
-< 
-1003,1004c1096,1097
-<   forall st1, initial_state fn_stack_requirements prog st1 ->
-<   exists st2, initial_state fn_stack_requirements tprog st2 /\ match_states st1 st2.
----
->   forall st1, initial_state prog st1 ->
->   exists st2, initial_state tprog st2 /\ match_states st1 st2.
-1008c1101
-<   exists (Callstate nil tf nil (Mem.push_new_stage m2) (fn_stack_requirements (prog_main tprog))); split.
----
->   exists (Callstate nil tf nil m0); split.
-1013d1105
-<   assumption.
-1016c1108
-<   erewrite <- match_program_main; eauto. econstructor; eauto. constructor. apply Mem.extends_refl.
----
->   econstructor; eauto. constructor. apply Mem.extends_refl.
-1029c1121
-<   forward_simulation (RTL.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
----
->   forward_simulation (RTL.semantics prog) (RTL.semantics tprog).
-1033c1125
-<      (match_states := fun s1 s2 => sound_state prog s1 /\ match_states s1 s2 /\ stack_inv s2 /\ stack_equiv_inv s1 s2).
----
->      (match_states := fun s1 s2 => sound_state prog s1 /\ match_states s1 s2).
-1035d1126
-<   assumption.
-1038,1044c1129,1130
-<   eapply stack_inv_initial; eauto.
-<   inv H; inv A. red. simpl.
-<   repeat rewrite_stack_blocks.
-<   repeat erewrite Genv.init_mem_stack by eauto.
-<   repeat constructor.
-< - simpl; intros. destruct H as (? & MS & ?). eapply transf_final_states; eauto.
-< - simpl; intros. destruct H0 as (SS & MS & SI & SEI).
----
-> - simpl; intros. destruct H. eapply transf_final_states; eauto.
-> - simpl; intros. destruct H0.
-1047,1048d1132
-<   exploit stack_inv_inv. apply A. eauto. intro SI2.
-<   exploit stack_equiv_inv_step; eauto. intros.
+> (* call *)
+>   destruct (can_inline fe s1) as [|id f P Q].
+>   (* not inlined *)
+>   eapply tr_call; eauto.
+>   (* inlined *)
+>   subst s1.
+>   monadInv EXP. unfold inline_function in EQ; monadInv EQ.
+>   set (ctx' := callcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f) n r).
+>   inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
+>   apply tr_call_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
+>   eapply BASE; eauto.
+>   eapply add_moves_spec; eauto.
+>     intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega.
+>     xomega. xomega.
+>   eapply rec_spec; eauto.
+>     red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
+>     simpl. subst s2; simpl in *; xomega.
+>     simpl. subst s3; simpl in *; xomega.
+>     simpl. xomega.
+>     simpl. apply align_divides. apply min_alignment_pos.
+>     assert (dstk ctx + mstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
+>     omega.
+>     intros. simpl in H. rewrite S1.
+>     transitivity (s1.(st_code)!pc0). eapply set_instr_other; eauto. unfold node in *; xomega.
+>     eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
+>   red; simpl. subst s2; simpl in *. xomega.
+>   red; simpl. split. auto. apply align_le. apply min_alignment_pos.
+> (* tailcall *)
+>   destruct (can_inline fe s1) as [|id f P Q].
+>   (* not inlined *)
+>   destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
+>   (* turned into a call *)
+>   eapply tr_tailcall_call; eauto.
+>   (* preserved *)
+>   eapply tr_tailcall; eauto.
+>   (* inlined *)
+>   subst s1.
+>   monadInv EXP. unfold inline_function in EQ; monadInv EQ.
+>   set (ctx' := tailcontext ctx x1 x2 (max_reg_function f) (fn_stacksize f)) in *.
+>   inversion EQ0; inversion EQ1; inversion EQ. inv_incr.
+>   apply tr_tailcall_inlined with (pc1 := x0) (ctx' := ctx') (f := f); auto.
+>   eapply BASE; eauto.
+>   eapply add_moves_spec; eauto.
+>     intros. rewrite S1. eapply set_instr_other; eauto. unfold node; xomega. xomega. xomega.
+>   eapply rec_spec; eauto.
+>     red; intros. rewrite PTree.grspec in H. destruct (PTree.elt_eq id0 id); try discriminate. auto.
+>     simpl. subst s3; simpl in *. subst s2; simpl in *. xomega.
+>     simpl. subst s3; simpl in *; xomega.
+>     simpl. xomega.
+>     simpl. apply align_divides. apply min_alignment_pos.
+>     assert (dstk ctx <= dstk ctx'). simpl. apply align_le. apply min_alignment_pos. omega.
+>     omega.
+>     intros. simpl in H. rewrite S1.
+>     transitivity (s1.(st_code))!pc0. eapply set_instr_other; eauto. unfold node in *; xomega.
+>     eapply add_moves_unchanged; eauto. unfold node in *; xomega. xomega.
+>   red; simpl.
+> subst s2; simpl in *; xomega.
+>   red; auto.
+> (* builtin *)
+>   eapply tr_builtin; eauto. destruct b; eauto.
+> (* return *)
+>   destruct (retinfo ctx) as [[rpc rreg] | ] eqn:?.
+>   (* inlined *)
+>   eapply tr_return_inlined; eauto.
+>   (* unchanged *)
+>   eapply tr_return; eauto.

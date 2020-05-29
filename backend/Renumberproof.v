@@ -280,3 +280,5 @@ Proof.
 Qed.
 
 End PRESERVATION.
+
+End STACK_WRAPPER.

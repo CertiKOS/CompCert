@@ -13,8 +13,8 @@
 (** RTL function inlining *)
 
 Require Import Coqlib Wfsimpl Maps Errors Integers.
-Require Import AST Linking.
-Require Import Op Registers RTL.
+Require Import AST_old Linking_old.
+Require Import Op_old Registers_old RTL_old.
 
 (** ** Environment of inlinable functions *)
 
@@ -29,9 +29,9 @@ Definition size_fenv (fenv: funenv) := PTree_Properties.cardinal fenv.
 
 Parameter should_inline: ident -> function -> bool.
 
-Definition add_globdef (fenv: funenv) (idg: ident * globdef fundef unit) : funenv :=
+Definition add_globdef (fenv: funenv) (idg: ident * option (globdef fundef unit)) : funenv :=
   match idg with
-  | (id, Gfun (Internal f)) =>
+  | (id, Some (Gfun (Internal f))) =>
       if should_inline id f
       then PTree.set id f fenv
       else PTree.remove id fenv
@@ -453,9 +453,9 @@ Definition transf_function (fenv: funenv) (f: function) : Errors.res function :=
     Error(msg "Inlining: stack too big").
 
 Definition transf_fundef (fenv: funenv) (fd: fundef) : Errors.res fundef :=
-  AST.transf_partial_fundef (transf_function fenv) fd.
+  AST_old.transf_partial_fundef (transf_function fenv) fd.
 
 Definition transf_program (p: program): Errors.res program :=
   let fenv := funenv_program p in
-  AST.transform_partial_program (transf_fundef fenv) p.
+  AST_old.transform_partial_program (transf_fundef fenv) p.
 

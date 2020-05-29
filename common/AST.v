@@ -705,7 +705,3 @@ Definition builtin_arg_ok
   | _, OK_all => true
   | _, _ => false
   end.
-
-(*SACC: stack requirements for internal functions *)
-
-Variable fn_stack_requirement : ident -> Z.

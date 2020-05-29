@@ -13,9 +13,9 @@
 (** Instruction selection for division and modulus *)
 
 Require Import Coqlib.
-Require Import Compopts.
-Require Import AST Integers Floats.
-Require Import Op CminorSel SelectOp SplitLong SelectLong.
+Require Import Compopts_old.
+Require Import AST_old Integers Floats.
+Require Import Op_old CminorSel_old SelectOp_old SplitLong_old SelectLong_old.
 
 Local Open Scope cminorsel_scope.
 

@@ -1677,101 +1677,6 @@ Axiom is_stack_top_extends:
   is_stack_top (stack m1) b ->
   is_stack_top (stack m2) b.
 
-(** SACC: The [magree] predicate is a variant of [extends] where we
-  allow the contents of the two memory states to differ arbitrarily
-  on some locations.  The predicate [P] is true on the locations whose
-  contents must be in the [lessdef] relation. Needed by Deadcodeproof. *)
-
-Definition locset := block -> Z -> Prop.
-
-Parameter magree : forall (m1 m2 : mem) (P : locset), Prop.
-
-(** ** Properties of [magree]. *)
-
-(*X* SACC:*)
-Axiom ma_perm:
-  forall m1 m2 (P: locset),
-  magree m1 m2 P ->
-  forall b ofs k p,
-  perm m1 b ofs k p -> perm m2 b ofs k p.
-
-(*X* SACC:*)
-Axiom magree_monotone:
-  forall m1 m2 (P Q: locset),
-  magree m1 m2 P ->
-  (forall b ofs, Q b ofs -> P b ofs) ->
-  magree m1 m2 Q.
-
-(*X* SACC:*)
-Axiom mextends_agree:
-  forall m1 m2 P, extends m1 m2 -> magree m1 m2 P.
-
-(*X*)
-Axiom magree_extends:
-  forall m1 m2 (P: locset),
-  (forall b ofs, P b ofs) ->
-  magree m1 m2 P -> extends m1 m2.
-
-(*X* SACC:*)
-Axiom magree_loadbytes:
-  forall m1 m2 P b ofs n bytes,
-  magree m1 m2 P ->
-  loadbytes m1 b ofs n = Some bytes ->
-  (forall i, ofs <= i < ofs + n -> P b i) ->
-  exists bytes', loadbytes m2 b ofs n = Some bytes' /\ list_forall2 memval_lessdef bytes bytes'.
-
-(*X* SACC:*)
-Axiom magree_load:
-  forall m1 m2 P chunk b ofs v,
-  magree m1 m2 P ->
-  load chunk m1 b ofs = Some v ->
-  (forall i, ofs <= i < ofs + size_chunk chunk -> P b i) ->
-  exists v', load chunk m2 b ofs = Some v' /\ Val.lessdef v v'.
-
-(*X* SACC:*)
-Axiom magree_storebytes_parallel:
-  forall m1 m2 (P Q: locset) b ofs bytes1 m1' bytes2,
-  magree m1 m2 P ->
-  storebytes m1 b ofs bytes1 = Some m1' ->
-  (forall b' i, Q b' i ->
-                b' <> b \/ i < ofs \/ ofs + Z_of_nat (length bytes1) <= i ->
-                P b' i) ->
-  list_forall2 memval_lessdef bytes1 bytes2 ->
-  exists m2', storebytes m2 b ofs bytes2 = Some m2' /\ magree m1' m2' Q.
-
-(*X* SACC:*)
-Axiom magree_storebytes_left:
-  forall m1 m2 P b ofs bytes1 m1',
-  magree m1 m2 P ->
-  storebytes m1 b ofs bytes1 = Some m1' ->
-  (forall i, ofs <= i < ofs + Z_of_nat (length bytes1) -> ~(P b i)) ->
-  magree m1' m2 P.
-
-(*X* SACC:*)
-Axiom magree_store_left:
-  forall m1 m2 P chunk b ofs v1 m1',
-  magree m1 m2 P ->
-  store chunk m1 b ofs v1 = Some m1' ->
-  (forall i, ofs <= i < ofs + size_chunk chunk -> ~(P b i)) ->
-  magree m1' m2 P.
-
-(*X* SACC:*)
-Axiom magree_free:
-  forall m1 m2 (P Q: locset) b lo hi m1',
-  magree m1 m2 P ->
-  free m1 b lo hi = Some m1' ->
-  (forall b' i, Q b' i ->
-   b' <> b \/ ~(lo <= i < hi) ->
-   P b' i) ->
-  exists m2', free m2 b lo hi = Some m2' /\ magree m1' m2' Q.
-
-(*X* SACC:*)
-Axiom magree_valid_access:
-  forall m1 m2 (P: locset) chunk b ofs p,
-  magree m1 m2 P ->
-  valid_access m1 chunk b ofs p ->
-  valid_access m2 chunk b ofs p.
-
 (** Weak Memory injections *)
 
 Parameter weak_inject: meminj -> frameinj -> mem -> mem -> Prop.
@@ -2318,11 +2223,6 @@ Axiom storebytes_push:
   exists m2,
     storebytes m b o bytes = Some m2.
 
-Axiom magree_push:
-  forall P m1 m2,
-  magree m1 m2 P ->
-  magree (push_new_stage m1) (push_new_stage m2) P.
-
 Axiom push_new_stage_inject_flat:
    forall j m1 m2,
    inject j (flat_frameinj (length (stack m1))) m1 m2 ->
@@ -2335,13 +2235,6 @@ Axiom tailcall_stage_unchanged_on:
   forall P m1 m2,
   tailcall_stage m1 = Some m2 ->
   unchanged_on P m1 m2.
-
-Axiom magree_tailcall_stage:
-  forall P m1 m2 m1',
-  magree m1 m2 P ->
-  tailcall_stage m1 = Some m1' ->
-  top_frame_no_perm m2 ->
-  exists m2', tailcall_stage m2 = Some m2' /\ magree m1' m2' P.
 
 Axiom tailcall_stage_tc:
   forall m1 m2,
@@ -2727,14 +2620,6 @@ Axiom unrecord_stack_block_get_frame_info:
   unrecord_stack_block m = Some m' ->
   ~ is_stack_top (stack m) b ->
   get_frame_info (stack m') b = get_frame_info (stack m) b.
-
-Axiom magree_unrecord:
-  forall m1 m2 P,
-  magree m1 m2 P ->
-  forall m1',
-  unrecord_stack_block m1 = Some m1' ->
-  exists m2',
-  unrecord_stack_block m2 = Some m2' /\ magree m1' m2' P.
 
 (* Interaction of [unrecord_stack] with [push_new_stage] *)
 
