@@ -45,7 +45,9 @@ BACKEND=(
 	./backend/RTLgenspec.v
 	./backend/RTLgenproof.v
 	#Tailcall
-	#Inlining
+	./backend/Inlining.v
+	./backend/Inliningspec.v
+	./backend/Inliningproof.v
 	./backend/Renumber.v
 	./backend/Renumberproof.v
 	./backend/Locations.v
