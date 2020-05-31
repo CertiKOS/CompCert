@@ -407,8 +407,13 @@ Proof.
   intros did cid p stbl dz cz e i GEN IN SI.
   unfold gen_symb_table in GEN.
   destr_in GEN. destruct p0. inv GEN.
-  clear.
-Admitted.
+  exploit acc_symb_index_in_range; eauto.
+  intros RNG. red in RNG.
+  rewrite Forall_forall in RNG. 
+  apply RNG in IN. red in IN. 
+  rewrite SI in IN. inv IN; auto. inv H; auto. inv H0.
+Qed.
+
 
 Lemma find_symbol_globenv_block_bound :
   forall (id : ident) b ofs, Genv.find_symbol (globalenv tprog) id = Some (b, ofs) 
