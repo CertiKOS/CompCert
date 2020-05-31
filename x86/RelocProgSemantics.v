@@ -714,24 +714,6 @@ Fixpoint add_external_globals (extfuns: PTree.t external_function)
     add_external_globals extfuns ge' l
   end. 
 
-(* Definition symb_ignored_by_add_extern s := *)
-(*   match symbentry_id s with *)
-(*   | None => true *)
-(*   | Some _ => *)
-(*     is_symbol_internal s *)
-(*   end. *)
-
-
-(* Lemma add_external_global_nextblock1: forall ge efs s, *)
-(*     is_symbol_internal s = true -> Genv.genv_next (add_external_global efs ge s) = Genv.genv_next ge. *)
-(* Proof. *)
-(*   intros. unfold add_external_global. *)
-(*   destr.  *)
-(* Qed. *)
-
-(* Lemma add_external_global_nextblock2: forall ge efs s, *)
-(*     is_symbol_internal s = false -> Genv.genv_next (add_external_global efs ge s) = Pos.succ (Genv.genv_next ge). *)
-(* Proof. *)
 
 Lemma genv_senv_add_external_global:
   forall exts ge a,
@@ -750,6 +732,35 @@ Proof.
   rewrite IHst.
   apply genv_senv_add_external_global.
 Qed.
+
+
+Definition find_symbol_block_bound ge :=
+  forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).
+
+Lemma add_global_pres_find_symbol_block_bound: forall extfuns ge e,
+  find_symbol_block_bound ge -> find_symbol_block_bound (add_external_global extfuns ge e).
+Proof.
+  unfold find_symbol_block_bound. intros.
+  unfold add_external_global in *. cbn in *.
+  unfold Genv.find_symbol in H0. cbn in H0.
+  destr.
+  - eapply H; eauto.
+  - destruct (peq (symbentry_id e) id).
+    + subst. rewrite PTree.gss in H0. inv H0.
+      apply Plt_succ.
+    + rewrite PTree.gso in H0; auto.
+      apply Plt_trans_succ; auto. 
+      eapply H; eauto.
+Qed.
+
+Lemma add_external_globals_pres_find_symbol_block_bound: forall stbl extfuns ge,
+  find_symbol_block_bound ge -> find_symbol_block_bound (add_external_globals extfuns ge stbl).
+Proof.
+  induction stbl; intros; simpl.
+  - auto.
+  - apply IHstbl. apply add_global_pres_find_symbol_block_bound. auto.
+Qed.
+
 
 Definition sec_index_to_block (i:N) : block :=
   match i with
@@ -800,6 +811,7 @@ Definition acc_extfuns (idg: ident * option gdef) extfuns :=
 Definition gen_extfuns (idgs: list (ident * option gdef)) :=
   fold_right acc_extfuns (PTree.empty external_function) idgs.
 
+
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in
   let imap := gen_instr_map' (SecTable.get sec_code_id (prog_sectable p)) in
@@ -811,6 +823,8 @@ Definition globalenv (p: program) : Genv.t :=
                           (prog_senv p) in
   let extfuns := gen_extfuns p.(prog_defs) in
   add_external_globals extfuns genv p.(prog_symbtable).
+
+
 
 (** Initialization of memory *)
 Section WITHGE.

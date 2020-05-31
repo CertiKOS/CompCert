@@ -3,7 +3,7 @@
 (* Date:   Dec 2, 2019 *)
 (* *******************  *)
 
-Require Import Coqlib Errors.
+Require Import Coqlib Errors Maps.
 Require Import Integers Floats AST Linking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
@@ -362,11 +362,64 @@ Lemma init_mem_pres_inject :
 Proof.
 Admitted.
 
+(** Inversion of initial memory injection on genv_next *)
+
+Lemma acc_symb_map_inv : forall stbl t id b ofs,
+    t ! id = None ->
+    (fold_right acc_symb_map t stbl) ! id = Some (b, ofs) ->
+    exists e, In e stbl /\ 
+         id = symbentry_id e /\ 
+         (exists i, symbentry_secindex e = secindex_normal i /\
+               b = sec_index_to_block i) /\
+         ofs = Ptrofs.repr (symbentry_value e).
+Proof.
+clear.
+Admitted.
+
+Lemma gen_symb_table_index_range: forall did cid p stbl dz cz e i,
+    gen_symb_table did cid p = (stbl, dz, cz) ->
+    In e stbl -> 
+    symbentry_secindex e = secindex_normal i ->
+    i = did \/ i = cid.
+Proof.
+clear.
+Admitted.
+
+Lemma find_symbol_globenv_block_bound :
+  forall (id : ident) b ofs, Genv.find_symbol (globalenv tprog) id = Some (b, ofs) 
+                        -> Pos.lt b (Genv.genv_next (globalenv tprog)).
+Proof.
+  unfold globalenv. simpl. intros.
+  exploit add_external_globals_pres_find_symbol_block_bound; eauto. 
+  red. simpl. intros.
+  unfold match_prog in TRANSF. unfold transf_program in TRANSF.
+  repeat destr_in TRANSF. cbn in H0.
+  clear H. 
+  unfold Genv.find_symbol in H0. cbn in H0.
+  exploit acc_symb_map_inv; eauto.
+  apply PTree.gempty.
+  intros (e & IN & ID & (i & SI & BL) & OFS). subst.
+  exploit gen_symb_table_index_range; eauto.
+  intros [I | I]; subst; cbn; xomega. 
+Qed.
+
 Lemma init_meminj_genv_next_inv : forall b delta
     (MINJ: init_meminj b = Some (Genv.genv_next tge, delta)),
     b = Globalenvs.Genv.genv_next ge.
 Proof.
-Admitted.
+  intros.
+  unfold init_meminj in MINJ. destruct eq_block; inv MINJ.
+  - unfold ge. auto.
+  - destr_match_in H0; inv H0.
+    destr_match_in H1; inv H1.
+    destruct p. inv H0.
+    exploit find_symbol_globenv_block_bound; eauto.
+    intros.
+    exfalso. generalize H.
+    setoid_rewrite <- Pos.compare_nlt_iff.
+    apply Pos.lt_irrefl.
+Qed.
+
 
 Lemma main_ptr_inject:
   forall (MATCH_INJ: match_inj init_meminj),
