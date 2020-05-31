@@ -754,6 +754,14 @@ Proof.
   erewrite <- store_pres_def_frame_inj; eauto.
 Qed.
 
+Lemma drop_perm_pres_def_frame_inj : forall m1 lo hi m1' b p,
+    Mem.drop_perm m1 b lo hi p = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  unfold def_frame_inj. intros.
+  apply Mem.drop_perm_stack in H. rewrite H. auto.
+Qed.
+
 Theorem storev_mapped_inject':
   forall f chunk m1 a1 v1 n1 m2 a2 v2,
   Mem.inject f (def_frame_inj m1) m1 m2 ->
