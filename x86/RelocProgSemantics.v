@@ -714,24 +714,6 @@ Fixpoint add_external_globals (extfuns: PTree.t external_function)
     add_external_globals extfuns ge' l
   end. 
 
-(* Definition symb_ignored_by_add_extern s := *)
-(*   match symbentry_id s with *)
-(*   | None => true *)
-(*   | Some _ => *)
-(*     is_symbol_internal s *)
-(*   end. *)
-
-
-(* Lemma add_external_global_nextblock1: forall ge efs s, *)
-(*     is_symbol_internal s = true -> Genv.genv_next (add_external_global efs ge s) = Genv.genv_next ge. *)
-(* Proof. *)
-(*   intros. unfold add_external_global. *)
-(*   destr.  *)
-(* Qed. *)
-
-(* Lemma add_external_global_nextblock2: forall ge efs s, *)
-(*     is_symbol_internal s = false -> Genv.genv_next (add_external_global efs ge s) = Pos.succ (Genv.genv_next ge). *)
-(* Proof. *)
 
 Lemma genv_senv_add_external_global:
   forall exts ge a,
@@ -750,6 +732,76 @@ Proof.
   rewrite IHst.
   apply genv_senv_add_external_global.
 Qed.
+
+Lemma add_external_global_pres_instrs : forall extfuns ge e,
+    Genv.genv_instrs (add_external_global extfuns ge e) = Genv.genv_instrs ge.
+Proof.
+  intros. unfold add_external_global.
+  cbn. auto.
+Qed.
+
+Lemma add_external_globals_pres_instrs : forall extfuns stbl ge,
+    Genv.genv_instrs (add_external_globals extfuns ge stbl) = Genv.genv_instrs ge.
+Proof.
+  induction stbl; simpl; intros.
+  - auto.
+  - etransitivity. 
+    rewrite IHstbl; eauto.
+    eapply add_external_global_pres_instrs; eauto.
+Qed.
+
+Hint Resolve in_eq in_cons.
+
+Definition only_internal_symbol i stbl := 
+    (forall e, In e stbl -> symbentry_id e = i -> is_symbol_internal e = true).
+
+Lemma add_external_globals_pres_find_symbol : forall extfuns stbl ge i,
+    only_internal_symbol i stbl ->
+    Genv.find_symbol (add_external_globals extfuns ge stbl) i = Genv.find_symbol ge i.
+Proof.
+  unfold only_internal_symbol.
+  induction stbl as [|e stbl]; intros; simpl.
+  - auto.
+  - etransitivity.
+    erewrite IHstbl; eauto.
+    unfold add_external_global.
+    unfold Genv.find_symbol. cbn.
+    destr; eauto.
+    destruct (peq (symbentry_id e) i).
+    + subst. 
+      generalize (H e (in_eq _ _) eq_refl).
+      congruence.
+    + erewrite PTree.gso; eauto.
+Qed.
+
+
+Definition find_symbol_block_bound ge :=
+  forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).
+
+Lemma add_global_pres_find_symbol_block_bound: forall extfuns ge e,
+  find_symbol_block_bound ge -> find_symbol_block_bound (add_external_global extfuns ge e).
+Proof.
+  unfold find_symbol_block_bound. intros.
+  unfold add_external_global in *. cbn in *.
+  unfold Genv.find_symbol in H0. cbn in H0.
+  destr.
+  - eapply H; eauto.
+  - destruct (peq (symbentry_id e) id).
+    + subst. rewrite PTree.gss in H0. inv H0.
+      apply Plt_succ.
+    + rewrite PTree.gso in H0; auto.
+      apply Plt_trans_succ; auto. 
+      eapply H; eauto.
+Qed.
+
+Lemma add_external_globals_pres_find_symbol_block_bound: forall stbl extfuns ge,
+  find_symbol_block_bound ge -> find_symbol_block_bound (add_external_globals extfuns ge stbl).
+Proof.
+  induction stbl; intros; simpl.
+  - auto.
+  - apply IHstbl. apply add_global_pres_find_symbol_block_bound. auto.
+Qed.
+
 
 Definition sec_index_to_block (i:N) : block :=
   match i with
@@ -800,6 +852,7 @@ Definition acc_extfuns (idg: ident * option gdef) extfuns :=
 Definition gen_extfuns (idgs: list (ident * option gdef)) :=
   fold_right acc_extfuns (PTree.empty external_function) idgs.
 
+
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in
   let imap := gen_instr_map' (SecTable.get sec_code_id (prog_sectable p)) in
@@ -811,6 +864,8 @@ Definition globalenv (p: program) : Genv.t :=
                           (prog_senv p) in
   let extfuns := gen_extfuns p.(prog_defs) in
   add_external_globals extfuns genv p.(prog_symbtable).
+
+
 
 (** Initialization of memory *)
 Section WITHGE.
@@ -1134,6 +1189,99 @@ Proof.
   erewrite add_external_globals_nextblock. cbn.
   rewrite NB1 in NB2. cbn in NB2. congruence.
 Qed.
+
+
+Lemma store_init_data_stack : forall v ge (m m' : mem) (b : block) (ofs : Z),
+       store_init_data ge m b ofs v = Some m' -> Mem.stack m' = Mem.stack m.
+Proof.
+  intros v ge0 m m' b ofs H. destruct v; simpl in *; try (now eapply Mem.store_stack_blocks; eauto).
+  inv H. auto.
+Qed.
+
+Lemma store_init_data_list_stack : forall l ge (m m' : mem) (b : block) (ofs : Z),
+       store_init_data_list ge m b ofs l = Some m' -> Mem.stack m' = Mem.stack m.
+Proof.
+  induction l; intros.
+  - simpl in H. inv H. auto.
+  - simpl in H. destr_match_in H; inv H.
+    exploit store_init_data_stack; eauto.
+    exploit IHl; eauto.
+    intros. congruence.
+Qed.
+
+Existing Instance inject_perm_all.
+
+Lemma alloc_external_symbol_stack: forall e m m',
+    alloc_external_symbol m e = Some m' -> Mem.stack m = Mem.stack m'.
+Proof.
+  intros e m m' ALLOC.
+  unfold alloc_external_symbol in ALLOC.
+  repeat destr_in ALLOC.
+  - exploit Mem.drop_perm_stack; eauto.
+    exploit Mem.alloc_stack_blocks; eauto. intros.
+    congruence.
+  - exploit Mem.drop_perm_stack; eauto.
+    exploit Genv.store_zeros_stack; eauto.
+    exploit Mem.alloc_stack_blocks; eauto. intros.
+    congruence.
+  - exploit Mem.drop_perm_stack; eauto.
+    exploit Genv.store_zeros_stack; eauto.
+    exploit Mem.alloc_stack_blocks; eauto. intros.
+    congruence.
+  - exploit Mem.alloc_stack_blocks; eauto. 
+Qed.
+
+    
+Lemma alloc_external_symbols_stack: forall stbl m m',
+    alloc_external_symbols m stbl = Some m' -> Mem.stack m = Mem.stack m'.
+Proof.
+  induction stbl; inversion 1.
+  - inv H. auto.
+  - destr_match_in H1; inv H1.
+    exploit alloc_external_symbol_stack; eauto.
+    intros STKEQ. rewrite STKEQ.
+    erewrite IHstbl; eauto.
+Qed.
+    
+Lemma alloc_data_section_stack: forall ge stbl m m',
+    alloc_data_section ge stbl m = Some m' -> 
+    Mem.stack m = Mem.stack m'.
+Proof.
+  intros ge stbl m m' ALLOC.
+  unfold alloc_data_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.drop_perm_stack; eauto.
+  exploit store_init_data_list_stack; eauto.
+  exploit Genv.store_zeros_stack; eauto.
+  exploit Mem.alloc_stack_blocks; eauto. intros.
+  congruence.
+Qed.
+
+Lemma alloc_code_section_stack: forall stbl m m',
+    alloc_code_section stbl m = Some m' -> 
+    Mem.stack m = Mem.stack m'.
+Proof.
+  intros stbl m m' ALLOC.
+  unfold alloc_code_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.drop_perm_stack; eauto.
+  exploit Mem.alloc_stack_blocks; eauto. intros.
+  congruence.
+Qed.
+
+Lemma init_mem_stack:
+  forall p m,
+    init_mem p = Some m ->
+    Mem.stack m = nil.
+Proof.
+  intros. unfold init_mem in H.
+  repeat destr_in H.
+  erewrite <- alloc_external_symbols_stack; eauto.
+  erewrite <- alloc_code_section_stack; eauto.
+  erewrite <- alloc_data_section_stack; eauto.
+  erewrite Mem.empty_stack; eauto.
+Qed.
+
 
 
 (** Execution of whole programs. *)

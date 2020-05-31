@@ -3,17 +3,20 @@
 (* Date:   Dec 2, 2019 *)
 (* *******************  *)
 
-Require Import Coqlib Errors.
+Require Import Coqlib Errors Maps.
 Require Import Integers Floats AST Linking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import Symbtablegen.
 Require Import RelocProgram RelocProgSemantics.
 Require Import LocalLib AsmInject.
+Require Import Symbtablegenproof1.
 Import ListNotations.
 Require AsmFacts.
 
 Open Scope Z_scope.
+
+Hint Resolve in_eq in_cons.
 
 
 Ltac monadInvX1 H :=
@@ -240,7 +243,8 @@ Qed.
 (** * Main Preservaiton Proofs *)
 Section PRESERVATION.
 
-Context `{external_calls_prf: ExternalCalls}.
+Context `{memory_model: Mem.MemoryModel }.
+Context `{external_calls_prf: !ExternalCallsOps mem}.
 Existing Instance inject_perm_all.
 
 Local Existing Instance mem_accessors_default.
@@ -404,10 +408,155 @@ Definition init_meminj : meminj :=
         end
       end.
 
+(* Lemma symbtable_to_tree_acc_symb_map_sync': forall stbl stbl' id e b ofs, *)
+(*     ~ In id (map fst stbl') -> *)
+(*     (PTree_Properties.of_list (symbtable_to_idlist stbl [] ++ stbl')) ! id = Some e -> *)
+(*     (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) -> *)
+(*     ofs = Ptrofs.repr (symbentry_value e) /\ *)
+(*     (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i). *)
+(* Proof. *)
+(*   induction stbl as [|e stbl]. *)
+(*   - cbn. intros stbl' id e b ofs NIN ADD ACC. *)
+(*     rewrite PTree.gempty in ACC. congruence. *)
+(*   - intros stbl' id e' b ofs NIN ADD ACC. *)
+(*     cbn [fold_left "++"] in ADD. *)
+(*     unfold add_symb_to_list at 2 in ADD.  *)
+(*     rewrite add_symb_to_list_inv in ADD. *)
+(*     rewrite <- app_assoc in ADD. *)
+(*     cbn in ACC. *)
+
+(*     Lemma acc_symb_map_inv : forall e t b ofs, *)
+(*         t ! (symbentry_id e) = None -> *)
+(*         (acc_symb_map e t) ! (symbentry_id e) = Some (b, ofs) -> *)
+(*         ofs = Ptrofs.repr (symbentry_value e) /\ *)
+(*         (exists i : N, *)
+(*             symbentry_secindex e = secindex_normal i /\ *)
+(*             b = sec_index_to_block i). *)
+(*     Proof. *)
+(*       intros e t b ofs GET ACC. *)
+(*       unfold acc_symb_map in ACC. *)
+(*       destr_in ACC. *)
+(*       erewrite PTree.gss in ACC. inv ACC. *)
+(*       eauto. *)
+(*     Qed. *)
+
+(*     destruct (peq id (symbentry_id e)). *)
+(*     + subst. *)
+      
+(*     apply IHstbl. *)
+(*     unfold acc_symb_map in ACC. *)
+
+
+Lemma symbtable_to_tree_acc_symb_map_sync: forall stbl id e b ofs,
+    (symbtable_to_tree stbl) ! id = Some e ->
+    (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) ->
+    ofs = Ptrofs.repr (symbentry_value e) /\
+    (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i).
+Proof.
+(*   unfold symbtable_to_tree. *)
+(*   intros. eapply symbtable_to_tree_acc_symb_map_sync'; eauto. *)
+(*   instantiate (1:=nil). intros IN. inv IN. *)
+(*   rewrite List.app_nil_r. auto. *)
+(* Qed. *)
+
+(*   induction stbl as [|e stbl]. *)
+(*   - intros id e b ofs ADD ACC. *)
+(*     cbn in *. rewrite PTree.gempty in ACC. congruence. *)
+(*   - intros id e' b ofs ADD ACC. *)
+(*     cbn [fold_left] in ADD. *)
+(*     cbn in ACC.  *)
+(*     unfold acc_symb_map at 1 in ACC. *)
+    
+
+Admitted.
+
+Lemma pres_find_instr: forall defs id f ofs i,
+    In (id, Some (Gfun (Internal f))) defs ->
+    find_instr (Ptrofs.unsigned ofs) (fn_code f) = Some i ->
+    gen_instr_map (fold_right acc_instrs [] defs)
+                  (Ptrofs.add ofs (Ptrofs.repr (defs_code_size (defs_before id defs)))) = Some i.
+Proof.
+  clear.
+Admitted.
+
+Lemma gen_symb_table_only_internal_symbol: 
+  forall did cid defs stbl dz cz id def,
+    is_def_internal is_fundef_internal def = true ->
+    gen_symb_table did cid defs = (stbl, dz, cz) ->
+    In (id, def) defs ->
+    only_internal_symbol id stbl.
+  clear.
+Admitted.
+
+
 Theorem init_meminj_match_sminj : 
     match_inj init_meminj.
 Proof.
+  generalize TRANSF. intros TRANSF'.
+  unfold match_prog in TRANSF'.
+  unfold transf_program in TRANSF'.
+  repeat destr_in TRANSF'. 
+  destruct p. inv Heqp0. monadInv TRANSF'.
+  revert H0. intros TL.
+  constructor.
+
+  - (* agree_inj_instrs *)
+    intros b b' f ofs ofs' i FPTR FINST INITINJ.
+    unfold init_meminj in INITINJ. 
+    (* revert TL. *)
+    destruct eq_block. inv INITINJ.
+    unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+    destr_match_in INITINJ; inv INITINJ.
+    destr_match_in H0; inv H0.
+    destruct p. inv H1. rewrite Ptrofs.repr_unsigned.
+    unfold globalenv in EQ0; simpl in EQ0.
+    rewrite add_external_globals_pres_find_symbol in EQ0.
+    unfold Genv.find_symbol in EQ0. cbn in EQ0.
+    apply Genv.invert_find_symbol in EQ.
+    exploit (Genv.find_symbol_funct_ptr_inversion prog); eauto.
+    intros FINPROG.
+    unfold Genv.find_instr. unfold tge.
+    cbn.
+    rewrite add_external_globals_pres_instrs. cbn.
+    unfold create_sec_table.
+    replace (Pos.to_nat 1) with 1%nat by xomega.
+    cbn.
+    unfold gen_symb_table in Heqp.
+    destr_in Heqp. destruct p. inv Heqp.
+    exploit acc_symb_tree_entry_some; eauto.
+    { inv w. auto. }
+    { eapply PTree_Properties.of_list_norepet; eauto.
+      inv w. auto. }
+    cbn. intros GET.
+    unfold gen_symb_map in EQ0.
+    (* exploit symbtable_to_tree_acc_symb_map_sync; eauto. *)
+    (* cbn. intros (EQOFS & i' & SEC & EQB). subst. *)
+    (* inv SEC. *)
+    (* eapply pres_find_instr; eauto. *)
+    (* exploit Genv.find_symbol_funct_ptr_inversion; eauto. *)
+    (* apply Genv.invert_find_symbol. eauto. eauto. intros IN. *)
+    (* eapply gen_symb_table_only_internal_symbol; eauto. *)
+    (* cbn. auto. *)
+
+(*   - (* agree_inj_globs *) *)
+(*     intros id b FSYM. *)
+(*     unfold ge in FSYM. *)
+(*     exploit Genv.find_symbol_inversion; eauto. intros INSYM. *)
+(*     unfold prog_defs_names in INSYM. *)
+(*     rewrite in_map_iff in INSYM. destruct INSYM as (def & EQ1 & IN). *)
+(*     destruct def. simpl in EQ1. subst i. *)
+(*     exploit transl_prog_pres_def; eauto. *)
+(*     intros (def' & sb & IN' & TLDEF). *)
+(*     exploit find_symbol_exists; eauto. *)
+(*     intros (b' & ofs' & FSYM'). *)
+(*     exists b', ofs'. split; auto. *)
+(*     unfold init_meminj. destruct eq_block. *)
+(*     subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction. *)
+(*     apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto. *)
+
+(* Qed. *)
 Admitted.
+
 
 (** Initial memory injection for global variables (not including the stacks) *)
 Definition globs_meminj : meminj :=
@@ -430,6 +579,116 @@ Lemma init_mem_pres_inject :
     exists m', init_mem tprog = Some m' /\ Mem.inject globs_meminj (def_frame_inj m) m m'.
 Proof.
 Admitted.
+
+(** Inversion of initial memory injection on genv_next *)
+Lemma acc_symb_map_inv : forall stbl t id b ofs,
+    t ! id = None ->
+    (fold_right acc_symb_map t stbl) ! id = Some (b, ofs) ->
+    exists e, In e stbl /\ 
+         id = symbentry_id e /\ 
+         (exists i, symbentry_secindex e = secindex_normal i /\
+               b = sec_index_to_block i) /\
+         ofs = Ptrofs.repr (symbentry_value e).
+Proof.
+  induction stbl as [|e stbl].
+  - intros. cbn in *. congruence.
+  - intros t id b ofs NON ACC. cbn in ACC.
+    unfold acc_symb_map in ACC.
+    destr_in ACC.
+    + destruct (peq (symbentry_id e) id).
+      * subst. rewrite PTree.gss in ACC. inv ACC.
+        eexists. intuition. eauto.
+      * rewrite PTree.gso in ACC; auto.
+        exploit IHstbl; eauto.
+        intros (e' & IN & ID & (i & SI & BL) & OFS).
+        subst. 
+        exists e'. split; eauto.
+    + exploit IHstbl; eauto.
+      intros (e' & IN & ID & (i & SI & BL) & OFS).
+      subst. 
+      exists e'. split; eauto.
+    + exploit IHstbl; eauto.
+      intros (e' & IN & ID & (i & SI & BL) & OFS).
+      subst. 
+      exists e'. split; eauto.
+Qed.        
+
+Lemma gen_symb_table_index_range: forall did cid p stbl dz cz e i,
+    gen_symb_table did cid p = (stbl, dz, cz) ->
+    In e stbl -> 
+    symbentry_secindex e = secindex_normal i ->
+    i = did \/ i = cid.
+Proof.
+  intros did cid p stbl dz cz e i GEN IN SI.
+  unfold gen_symb_table in GEN.
+  destr_in GEN. destruct p0. inv GEN.
+  exploit acc_symb_index_in_range; eauto.
+  intros RNG. red in RNG.
+  rewrite Forall_forall in RNG. 
+  apply RNG in IN. red in IN. 
+  rewrite SI in IN. inv IN; auto. inv H; auto. inv H0.
+Qed.
+
+
+Lemma find_symbol_globenv_block_bound :
+  forall (id : ident) b ofs, Genv.find_symbol (globalenv tprog) id = Some (b, ofs) 
+                        -> Pos.lt b (Genv.genv_next (globalenv tprog)).
+Proof.
+  unfold globalenv. simpl. intros.
+  exploit add_external_globals_pres_find_symbol_block_bound; eauto. 
+  red. simpl. intros.
+  unfold match_prog in TRANSF. unfold transf_program in TRANSF.
+  repeat destr_in TRANSF. cbn in H0.
+  clear H. 
+  unfold Genv.find_symbol in H0. cbn in H0.
+  exploit acc_symb_map_inv; eauto.
+  apply PTree.gempty.
+  intros (e & IN & ID & (i & SI & BL) & OFS). subst.
+  exploit gen_symb_table_index_range; eauto.
+  intros [I | I]; subst; cbn; xomega. 
+Qed.
+
+Lemma init_meminj_genv_next_inv : forall b delta
+    (MINJ: init_meminj b = Some (Genv.genv_next tge, delta)),
+    b = Globalenvs.Genv.genv_next ge.
+Proof.
+  intros.
+  unfold init_meminj in MINJ. destruct eq_block; inv MINJ.
+  - unfold ge. auto.
+  - destr_match_in H0; inv H0.
+    destr_match_in H1; inv H1.
+    destruct p. inv H0.
+    exploit find_symbol_globenv_block_bound; eauto.
+    intros.
+    exfalso. generalize H.
+    setoid_rewrite <- Pos.compare_nlt_iff.
+    apply Pos.lt_irrefl.
+Qed.
+
+(** Injection of main pointer *)
+Lemma main_ptr_inject:
+  forall (MATCH_INJ: match_inj init_meminj),
+    Val.inject init_meminj
+               (Globalenvs.Genv.symbol_address
+                  (Globalenvs.Genv.globalenv prog)
+                  (AST.prog_main prog) Ptrofs.zero)
+               (Genv.symbol_address
+                  (globalenv tprog)
+                  (prog_main tprog) Ptrofs.zero).
+Proof.
+  intros.
+  unfold match_prog in TRANSF. unfold transf_program in TRANSF.
+  repeat destr_in TRANSF. destruct p. inv Heqp0. monadInv TRANSF.
+  cbn [prog_main].
+  rewrite H0. clear H0.
+  inv w. auto.
+  red in wf_prog_main_exists. rewrite Exists_exists in wf_prog_main_exists.
+  destruct wf_prog_main_exists as (def & IN & P).
+  destruct def. destruct o; destruct P as [IDEQ P]; inv P.
+  cbn [prog_main].
+  eapply symbol_address_inject; eauto.
+Qed.
+
 
 
 Lemma transf_initial_states : forall rs (SELF: forall j, forall r : PregEq.t, Val.inject j (rs r) (rs r)) st1,
@@ -462,113 +721,112 @@ Proof.
     apply Mem.alloc_result in MALLOC; eauto.
     subst bstack. apply Mem.push_new_stage_nextblock.
   }
-(*   assert (bstack' = Genv.genv_next tge). *)
-(*   { *)
-(*     exploit (@init_mem_genv_next instruction); eauto. intros BEQ. *)
-(*     unfold tge. rewrite BEQ. *)
-(*     exploit Mem.alloc_result; eauto. *)
-(*     intros. subst. apply Mem.push_new_stage_nextblock. *)
-(*   } *)
-(*   assert (forall x, j' x = init_meminj x). *)
-(*   { *)
-(*     intros. destruct (eq_block x bstack). *)
-(*     subst x. rewrite FBSTACK. unfold init_meminj. subst. *)
-(*     rewrite dec_eq_true; auto. *)
-(*     erewrite NOTBSTK; eauto. *)
-(*     unfold init_meminj. subst. *)
-(*     rewrite dec_eq_false; auto. *)
-(*   } *)
-(*   exploit Mem.inject_ext; eauto. intros MINJ'. *)
-(*   exploit Mem.drop_parallel_inject; eauto. red. simpl. auto. *)
-(*   unfold init_meminj. fold ge. rewrite <- H4. rewrite pred_dec_true. eauto. auto. *)
-(*   intros (m2' & MDROP' & DMINJ). simpl in MDROP'. rewrite Z.add_0_r in MDROP'. *)
-(*   erewrite (drop_perm_pres_def_frame_inj m1) in DMINJ; eauto. *)
+  assert (bstack' = Genv.genv_next tge).
+  {
+    exploit init_mem_genv_next; eauto. intros BEQ.
+    unfold tge. rewrite BEQ.
+    exploit Mem.alloc_result; eauto.
+    intros. subst. apply Mem.push_new_stage_nextblock.
+  }
+  assert (forall x, j' x = init_meminj x).
+  {
+    intros. destruct (eq_block x bstack).
+    subst x. rewrite FBSTACK. unfold init_meminj. subst.
+    rewrite dec_eq_true; auto.
+    erewrite NOTBSTK; eauto.
+    unfold init_meminj. subst.
+    rewrite dec_eq_false; auto.
+  }
+  exploit Mem.inject_ext; eauto. intros MINJ'.
+  exploit Mem.drop_parallel_inject; eauto. red. simpl. auto.
+  unfold init_meminj. fold ge. rewrite <- H3. rewrite pred_dec_true. eauto. auto.
+  intros (m2' & MDROP' & DMINJ). simpl in MDROP'. rewrite Z.add_0_r in MDROP'.
+  erewrite (drop_perm_pres_def_frame_inj m1) in DMINJ; eauto.
   
-(*   assert (exists m3', Mem.record_stack_blocks m2' (make_singleton_frame_adt' bstack' RawAsm.frame_info_mono 0) = Some m3' *)
-(*                  /\ Mem.inject (init_meminj) (def_frame_inj m3) m3 m3') as RCD. *)
-(*   { *)
-(*     unfold def_frame_inj. unfold def_frame_inj in DMINJ. *)
-(*     eapply (Mem.record_stack_block_inject_flat m2 m3 m2' (init_meminj) *)
-(*            (make_singleton_frame_adt' bstack RawAsm.frame_info_mono 0)); eauto. *)
-(*     (* frame inject *) *)
-(*     red. unfold make_singleton_frame_adt'. simpl. constructor.  *)
-(*     simpl. intros b2 delta FINJ. *)
-(*     unfold init_meminj in FINJ. fold ge in FINJ. rewrite <- H4 in FINJ. *)
-(*     rewrite pred_dec_true in FINJ; auto. inv FINJ. *)
-(*     exists RawAsm.frame_info_mono. split. auto. apply inject_frame_info_id. *)
-(*     constructor. *)
-(*     (* in frame *) *)
-(*     unfold make_singleton_frame_adt'. simpl. unfold in_frame. simpl. *)
-(*     repeat rewrite_stack_blocks. *)
-(*     erewrite init_mem_stack; eauto. *)
-(*     (* valid frame *) *)
-(*     unfold make_singleton_frame_adt'. simpl. red. unfold in_frame. *)
-(*     simpl. intuition. subst. *)
-(*     eapply Mem.drop_perm_valid_block_1; eauto. *)
-(*     eapply Mem.valid_new_block; eauto. *)
-(*     (* frame_agree_perms *) *)
-(*     red. unfold make_singleton_frame_adt'. simpl. *)
-(*     intros b fi o k p BEQ PERM. inv BEQ; try contradiction. *)
-(*     inv H7. unfold RawAsm.frame_info_mono. simpl. *)
-(*     erewrite drop_perm_perm in PERM; eauto. destruct PERM. *)
-(*     eapply Mem.perm_alloc_3; eauto. *)
-(*     (* in frame iff *) *)
-(*     unfold make_singleton_frame_adt'. unfold in_frame. simpl. *)
-(*     intros b1 b2 delta INJB. split. *)
-(*     intros BEQ. destruct BEQ; try contradiction. subst b1. *)
-(*     unfold init_meminj in INJB. fold ge in INJB. rewrite <- H4 in INJB. *)
-(*     rewrite pred_dec_true in INJB; auto. inv INJB. left; auto. *)
-(*     intros BEQ. destruct BEQ; try contradiction. subst b2. *)
-(*     assert (bstack' = Mem.nextblock (Mem.push_new_stage m')) as BEQ. *)
-(*     eapply Mem.alloc_result; eauto using MALLOC'. *)
-(*     rewrite Mem.push_new_stage_nextblock in BEQ. *)
-(*     erewrite <- init_mem_genv_next in BEQ; eauto using INITM'. *)
-(*     subst bstack'. *)
-(*     destruct (eq_block bstack b1); auto. *)
-(*     assert (b1 <> bstack) by congruence. *)
-(*     apply NOTBSTK in H5. rewrite H6 in H5. rewrite INJB in H5. *)
-(*     left. symmetry. subst bstack. eapply init_meminj_genv_next_inv; eauto. *)
+  assert (exists m3', Mem.record_stack_blocks m2' (make_singleton_frame_adt' bstack' RawAsm.frame_info_mono 0) = Some m3'
+                 /\ Mem.inject (init_meminj) (def_frame_inj m3) m3 m3') as RCD.
+  {
+    unfold def_frame_inj. unfold def_frame_inj in DMINJ.
+    eapply (Mem.record_stack_block_inject_flat m2 m3 m2' (init_meminj)
+           (make_singleton_frame_adt' bstack RawAsm.frame_info_mono 0)); eauto.
+    (* frame inject *)
+    red. unfold make_singleton_frame_adt'. simpl. constructor.
+    simpl. intros b2 delta FINJ.
+    unfold init_meminj in FINJ. fold ge in FINJ. rewrite <- H3 in FINJ.
+    rewrite pred_dec_true in FINJ; auto. inv FINJ.
+    exists RawAsm.frame_info_mono. split. auto. apply inject_frame_info_id.
+    constructor.
+    (* in frame *)
+    unfold make_singleton_frame_adt'. simpl. unfold in_frame. simpl.
+    repeat rewrite_stack_blocks.
+    erewrite init_mem_stack; eauto.
+    (* valid frame *)
+    unfold make_singleton_frame_adt'. simpl. red. unfold in_frame.
+    simpl. intuition. subst.
+    eapply Mem.drop_perm_valid_block_1; eauto.
+    eapply Mem.valid_new_block; eauto.
+    (* frame_agree_perms *)
+    red. unfold make_singleton_frame_adt'. simpl.
+    intros b fi o k p BEQ PERM. inv BEQ; try contradiction.
+    inv H6. unfold RawAsm.frame_info_mono. simpl.
+    erewrite drop_perm_perm in PERM; eauto. destruct PERM.
+    eapply Mem.perm_alloc_3; eauto.
+    (* in frame iff *)
+    unfold make_singleton_frame_adt'. unfold in_frame. simpl.
+    intros b1 b2 delta INJB. split.
+    intros BEQ. destruct BEQ; try contradiction. subst b1.
+    unfold init_meminj in INJB. fold ge in INJB. rewrite <- H3 in INJB.
+    rewrite pred_dec_true in INJB; auto. inv INJB. left; auto.
+    intros BEQ. destruct BEQ; try contradiction. subst b2.
+    assert (bstack' = Mem.nextblock (Mem.push_new_stage m')) as BEQ.
+    eapply Mem.alloc_result; eauto using MALLOC'.
+    rewrite Mem.push_new_stage_nextblock in BEQ.
+    erewrite <- init_mem_genv_next in BEQ; eauto using INITM'.
+    subst bstack'.
+    destruct (eq_block bstack b1); auto.
+    assert (b1 <> bstack) by congruence.
+    apply NOTBSTK in H4. rewrite H5 in H4. rewrite INJB in H4.
+    left. symmetry. subst bstack. eapply init_meminj_genv_next_inv; eauto.
 
-(*     (* top frame *) *)
-(*     red. repeat rewrite_stack_blocks. constructor. auto. *)
-(*     (* size stack *) *)
-(*     repeat rewrite_stack_blocks. *)
-(*     erewrite init_mem_stack; eauto. simpl. omega. *)
-(*   } *)
+    (* top frame *)
+    red. repeat rewrite_stack_blocks. constructor. auto.
+    (* size stack *)
+    repeat rewrite_stack_blocks.
+    erewrite init_mem_stack; eauto. simpl. omega.
+  }
 
-(*   destruct RCD as (m3' & RCDSB & RMINJ). *)
-(*   set (rs0' := rs # PC <- (Genv.symbol_address tge tprog.(prog_main) Ptrofs.zero) *)
-(*                   # RA <- Vnullptr *)
-(*                   # RSP <- (Vptr bstack' (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr))))) in *. *)
-(*   edestruct storev_mapped_inject' as (m4' & ST & SMINJ). apply RMINJ. eauto. econstructor. *)
-(*   rewrite <- H6, FBSTACK; eauto. reflexivity. constructor. *)
-(*   exists (State rs0' m4'). split. *)
-(*   - eapply initial_state_intro; eauto. *)
-(*     eapply initial_state_gen_intro; eauto. *)
-(*     subst. fold tge in MDROP'. eauto. *)
-(*     subst. fold tge in MDROP'. rewrite Ptrofs.add_zero in ST. eauto. *)
-(*   - eapply match_states_intro; eauto. *)
-(*     + eapply valid_instr_offset_is_internal_init; eauto. inv w; auto. *)
-(*     + eapply extfun_entry_is_external_init; eauto. inv w; auto. *)
-(*     + red. *)
-(*       intros. eapply extfun_transf; eauto. inv w; auto. *)
-(*     + red. unfold rs0, rs0'. *)
-(*       apply val_inject_set. *)
-(*       apply val_inject_set. *)
-(*       apply val_inject_set. *)
-(*       auto. *)
-(*       exploit (main_ptr_inject); eauto. unfold Globalenvs.Genv.symbol_address. *)
-(*       unfold ge, ge0 in *. rewrite H2. fold tge. auto. *)
-(*       unfold Vnullptr. destr; auto. *)
-(*       econstructor. unfold init_meminj. subst bstack. fold ge. rewrite peq_true. subst bstack'.  fold tge. eauto. *)
-(*       rewrite Ptrofs.add_zero. *)
-(*       apply Ptrofs.sub_add_opp. *)
-(*     + red. intros b g FD. *)
-(*       unfold Genv.find_def in FD. eapply Genv.genv_defs_range in FD. *)
-(*       revert FD. red. rewnb. *)
-(*       fold ge. intros. xomega. *)
-(* Qed. *)
-Admitted.
+  destruct RCD as (m3' & RCDSB & RMINJ).
+  set (rs0' := rs # PC <- (Genv.symbol_address tge tprog.(prog_main) Ptrofs.zero)
+                  # RA <- Vnullptr
+                  # RSP <- (Vptr bstack' (Ptrofs.sub (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8)) (Ptrofs.repr (size_chunk Mptr))))) in *.
+  edestruct storev_mapped_inject' as (m4' & ST & SMINJ). apply RMINJ. eauto. econstructor.
+  rewrite <- H5, FBSTACK; eauto. reflexivity. constructor.
+  exists (State rs0' m4'). split.
+  - eapply initial_state_intro; eauto.
+    eapply initial_state_gen_intro; eauto.
+    subst. fold tge in MDROP'. eauto.
+    subst. fold tge in MDROP'. rewrite Ptrofs.add_zero in ST. eauto.
+  - eapply match_states_intro; eauto.
+    (* + eapply valid_instr_offset_is_internal_init; eauto. inv w; auto. *)
+    (* + eapply extfun_entry_is_external_init; eauto. inv w; auto. *)
+    (* + red. *)
+    (*   intros. eapply extfun_transf; eauto. inv w; auto. *)
+    + red. unfold rs0, rs0'.
+      apply AsmFacts.val_inject_set.
+      apply AsmFacts.val_inject_set.
+      apply AsmFacts.val_inject_set.
+      auto.
+      exploit (main_ptr_inject); eauto. unfold Globalenvs.Genv.symbol_address.
+      unfold ge, ge0 in *. rewrite H1. fold tge. auto.
+      unfold Vnullptr. destr; auto.
+      econstructor. unfold init_meminj. subst bstack. fold ge. rewrite peq_true. subst bstack'.  fold tge. eauto.
+      rewrite Ptrofs.add_zero.
+      apply Ptrofs.sub_add_opp.
+    + red. intros b g FD.
+      unfold Genv.find_def in FD. eapply Genv.genv_defs_range in FD.
+      revert FD. red. rewnb.
+      fold ge. intros. xomega.
+Qed.
 
 
 (** ** Simulation of Single Step Execution *)

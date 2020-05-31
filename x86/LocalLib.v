@@ -30,6 +30,34 @@ Ltac destr_match_in H :=
 
 (** ** Properties about basic data structures *)
 
+Lemma map_pres_subset_rel: forall A B (l1 l2:list A) (f: A -> B),
+    (forall x, In x l1 -> In x l2)
+    -> (forall y, In y (map f l1) -> In y (map f l2)).
+Proof.
+  intros A B l1 l2 f SUB y IN.
+  rewrite in_map_iff in *.
+  destruct IN as (x & EQ & IN). subst.
+  eauto.
+Qed.
+
+Lemma Forall_app_distr: forall A f (l1 l2 : list A),
+    Forall f (l1 ++ l2) 
+    <-> Forall f l1 /\ Forall f l2.
+Proof.
+  induction l1 as [|e l1].
+  - intros l2. cbn. split; auto.
+    tauto.
+  - cbn. intros. generalize (IHl1 l2).
+    destruct 1 as [F1 F2].
+    split.
+    + intros F3. inv F3.
+      generalize (F1 H2). 
+      destruct 1. split; auto.
+    + intros F3. destruct F3 as [F4 F5]. inv F4.
+      auto.
+Qed.
+
+
 Fixpoint pos_advance_N (p:positive) (n:nat) : positive :=
   match n with
   | O => p
@@ -688,7 +716,57 @@ Proof.
   destruct v1'; auto. inv H0. auto.
 Qed.
 
+(** ** Properties about Programs *)
+Lemma init_data_eq_dec: forall (i1 i2: init_data),
+    {i1 = i2} + {i1 <> i2}.
+Proof.
+  decide equality; try apply Int.eq_dec.
+  apply Int64.eq_dec.
+  apply Floats.Float32.eq_dec.
+  apply Floats.Float.eq_dec.
+  apply Z.eq_dec.
+  apply Ptrofs.eq_dec.
+  apply ident_eq.
+Qed.
 
+(* Definition list_init_data_external (il: list init_data) := *)
+(*   il = nil. *)
+
+(* Definition list_init_data_common (il: list init_data) := *)
+(*   exists sz, il = [Init_space sz]. *)
+
+(* Definition list_init_data_internal (il: list init_data) := *)
+(*   il <> nil /\ (forall sz, il <> [Init_space sz]). *)
+
+(* Lemma init_data_list_cases: forall (il:list init_data), *)
+(*     list_init_data_external il \/ *)
+(*     list_init_data_common il \/ *)
+(*     list_init_data_internal il. *)
+(* Proof. *)
+(*   intros. *)
+(*   edestruct (list_eq_dec init_data_eq_dec il nil); auto. *)
+(*   destruct il; try congruence. *)
+(*   destruct i; cbn; auto. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   destruct il. *)
+(*     right. left. red. eauto. *)
+(*     right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(* Qed.   *)
+
+Lemma init_data_list_size_app : forall l1 l2,
+    init_data_list_size (l1 ++ l2) = (init_data_list_size l1) + (init_data_list_size l2).
+Proof.
+  induction l1 as [| e l2'].
+  - intros l2. simpl. auto.
+  - intros l2. simpl in *.
+    rewrite IHl2'; omega.
+Qed.
 
 (** ** Propreties about injection of memories *)
 
@@ -752,6 +830,14 @@ Proof.
   intros (n2 & STORE & MINJ).
   eexists. split. eauto.
   erewrite <- store_pres_def_frame_inj; eauto.
+Qed.
+
+Lemma drop_perm_pres_def_frame_inj : forall m1 lo hi m1' b p,
+    Mem.drop_perm m1 b lo hi p = Some m1' ->
+    def_frame_inj m1 = def_frame_inj m1'.
+Proof.
+  unfold def_frame_inj. intros.
+  apply Mem.drop_perm_stack in H. rewrite H. auto.
 Qed.
 
 Theorem storev_mapped_inject':
