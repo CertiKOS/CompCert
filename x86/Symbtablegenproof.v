@@ -362,13 +362,6 @@ Lemma init_mem_pres_inject :
 Proof.
 Admitted.
 
-Lemma init_mem_stack:
-  forall p m,
-    init_mem p = Some m ->
-    Mem.stack m = nil.
-Proof.
-Admitted.
-
 Lemma init_meminj_genv_next_inv : forall b delta
     (MINJ: init_meminj b = Some (Genv.genv_next tge, delta)),
     b = Globalenvs.Genv.genv_next ge.

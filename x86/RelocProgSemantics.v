@@ -1136,6 +1136,99 @@ Proof.
 Qed.
 
 
+Lemma store_init_data_stack : forall v ge (m m' : mem) (b : block) (ofs : Z),
+       store_init_data ge m b ofs v = Some m' -> Mem.stack m' = Mem.stack m.
+Proof.
+  intros v ge0 m m' b ofs H. destruct v; simpl in *; try (now eapply Mem.store_stack_blocks; eauto).
+  inv H. auto.
+Qed.
+
+Lemma store_init_data_list_stack : forall l ge (m m' : mem) (b : block) (ofs : Z),
+       store_init_data_list ge m b ofs l = Some m' -> Mem.stack m' = Mem.stack m.
+Proof.
+  induction l; intros.
+  - simpl in H. inv H. auto.
+  - simpl in H. destr_match_in H; inv H.
+    exploit store_init_data_stack; eauto.
+    exploit IHl; eauto.
+    intros. congruence.
+Qed.
+
+Existing Instance inject_perm_all.
+
+Lemma alloc_external_symbol_stack: forall e m m',
+    alloc_external_symbol m e = Some m' -> Mem.stack m = Mem.stack m'.
+Proof.
+  intros e m m' ALLOC.
+  unfold alloc_external_symbol in ALLOC.
+  repeat destr_in ALLOC.
+  - exploit Mem.drop_perm_stack; eauto.
+    exploit Mem.alloc_stack_blocks; eauto. intros.
+    congruence.
+  - exploit Mem.drop_perm_stack; eauto.
+    exploit Genv.store_zeros_stack; eauto.
+    exploit Mem.alloc_stack_blocks; eauto. intros.
+    congruence.
+  - exploit Mem.drop_perm_stack; eauto.
+    exploit Genv.store_zeros_stack; eauto.
+    exploit Mem.alloc_stack_blocks; eauto. intros.
+    congruence.
+  - exploit Mem.alloc_stack_blocks; eauto. 
+Qed.
+
+    
+Lemma alloc_external_symbols_stack: forall stbl m m',
+    alloc_external_symbols m stbl = Some m' -> Mem.stack m = Mem.stack m'.
+Proof.
+  induction stbl; inversion 1.
+  - inv H. auto.
+  - destr_match_in H1; inv H1.
+    exploit alloc_external_symbol_stack; eauto.
+    intros STKEQ. rewrite STKEQ.
+    erewrite IHstbl; eauto.
+Qed.
+    
+Lemma alloc_data_section_stack: forall ge stbl m m',
+    alloc_data_section ge stbl m = Some m' -> 
+    Mem.stack m = Mem.stack m'.
+Proof.
+  intros ge stbl m m' ALLOC.
+  unfold alloc_data_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.drop_perm_stack; eauto.
+  exploit store_init_data_list_stack; eauto.
+  exploit Genv.store_zeros_stack; eauto.
+  exploit Mem.alloc_stack_blocks; eauto. intros.
+  congruence.
+Qed.
+
+Lemma alloc_code_section_stack: forall stbl m m',
+    alloc_code_section stbl m = Some m' -> 
+    Mem.stack m = Mem.stack m'.
+Proof.
+  intros stbl m m' ALLOC.
+  unfold alloc_code_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.drop_perm_stack; eauto.
+  exploit Mem.alloc_stack_blocks; eauto. intros.
+  congruence.
+Qed.
+
+Lemma init_mem_stack:
+  forall p m,
+    init_mem p = Some m ->
+    Mem.stack m = nil.
+Proof.
+  intros. unfold init_mem in H.
+  repeat destr_in H.
+  erewrite <- alloc_external_symbols_stack; eauto.
+  erewrite <- alloc_code_section_stack; eauto.
+  erewrite <- alloc_data_section_stack; eauto.
+  erewrite Mem.empty_stack; eauto.
+Qed.
+
+
+
 (** Execution of whole programs. *)
 Inductive initial_state_gen (p: program) (rs: regset) m: state -> Prop :=
   | initial_state_gen_intro:
