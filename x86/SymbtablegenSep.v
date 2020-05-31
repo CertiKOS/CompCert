@@ -3168,28 +3168,28 @@ Lemma link_symb_elements_entry_id_eq: forall stbl1 stbl2 id e,
                          (symbtable_to_tree stbl2))) ->
     symbentry_id e = id.
 Proof.
-(*   intros stbl1 stbl2 id e IN. *)
-(*   apply PTree.elements_complete in IN. *)
-(*   rewrite PTree.gcombine in IN; cbn; auto. *)
-(*   unfold link_symb_merge in IN. *)
-(*   destr_in IN. destr_in IN. *)
-(*   - apply PTree_Properties.in_of_list in Heqo. *)
-(*     apply PTree_Properties.in_of_list in Heqo0. *)
-(*     apply add_symb_to_list_id_eq in Heqo. *)
-(*     apply add_symb_to_list_id_eq in Heqo0. *)
-(*     erewrite (link_symb_pres_id s s0); eauto. *)
-(*     congruence. *)
-(*   - inv IN. *)
-(*     apply PTree_Properties.in_of_list in Heqo. *)
-(*     apply add_symb_to_list_id_eq in Heqo. *)
-(*     rewrite Heqo.  *)
-(*     auto. *)
-(*   - apply PTree_Properties.in_of_list in IN. *)
-(*     apply add_symb_to_list_id_eq in IN. *)
-(*     rewrite IN.  *)
-(*     auto. *)
-(* Qed. *)
-Admitted.
+  intros stbl1 stbl2 id e IN.
+  apply PTree.elements_complete in IN.
+  rewrite PTree.gcombine in IN; cbn; auto.
+  unfold link_symb_merge in IN.
+  destr_in IN. destr_in IN.
+  - apply PTree_Properties.in_of_list in Heqo.
+    apply PTree_Properties.in_of_list in Heqo0.
+    apply symbtable_to_idlist_id_eq in Heqo.
+    apply symbtable_to_idlist_id_eq in Heqo0.
+    erewrite (link_symb_pres_id s s0); eauto.
+    congruence.
+  - inv IN.
+    apply PTree_Properties.in_of_list in Heqo.
+    apply symbtable_to_idlist_id_eq in Heqo.
+    rewrite Heqo.
+    auto.
+  - apply PTree_Properties.in_of_list in IN.
+    apply symbtable_to_idlist_id_eq in IN.
+    rewrite IN.
+    auto.
+Qed.
+
 
 Lemma link_ordered_gen_symb_comm_syneq_size : forall p1 p2 stbl1 stbl2 dsz1 csz1 stbl2' dsz2 csz2 stbl3 dsz3 csz3 t' defs3,
     PTree_Properties.for_all (prog_option_defmap p1) (link_prog_check p1 p2) = true ->
@@ -3237,16 +3237,11 @@ Proof.
     destruct RELOC as (e' & stbl'' & RELOC & RS & EQ).
     subst.
     cbn.
-(*     rewrite acc_symb_ids_inv. rewrite rev_app_distr. *)
-(*     rewrite (acc_symb_ids_inv stbl''). rewrite rev_app_distr. *)
-(*     assert (acc_symb_ids [] e = acc_symb_ids [] e') as EQ. *)
-(*     { unfold acc_symb_ids. *)
-(*       erewrite reloc_symb_pres_id; eauto.  *)
-(*     } *)
-(*     rewrite EQ. f_equal. *)
-(*     eapply IHstbl; eauto. *)
-(* Qed. *)
-Admitted.
+    unfold reloc_symbol in RS.
+    f_equal.
+    + repeat destr_in RS. auto.
+    + eauto.
+Qed.
 
 
 Lemma link_ordered_gen_symb_comm : forall p1 p2 p stbl1 stbl2 dsz1 csz1 dsz2 csz2 f_ofs,
@@ -3666,13 +3661,11 @@ Lemma symbtable_to_tree_permutation_some: forall stbl stbl' id a,
 Proof.
   unfold symbtable_to_tree.
   intros stbl stbl' id a NORPT PERM ALL.
-(*   apply Permutation_pres_ptree_get_some with *)
-(*       (fold_left add_symb_to_list stbl []); eauto. *)
-(*   rewrite list_norepet_rev. *)
-(*   rewrite <- get_symbentry_ids_add_symb_eq. auto. *)
-(*   apply add_symb_to_list_permutation; auto. *)
-(* Qed. *)
-Admitted.
+  apply Permutation_pres_ptree_get_some with
+      (symbtable_to_idlist stbl); eauto.
+  rewrite <- get_symbentry_ids_add_symb_eq. auto.
+  apply symbtable_to_idlist_permutation; auto.
+Qed.
 
 Lemma symbtable_to_tree_permutation_none: forall stbl stbl' id,
     Permutation stbl stbl' ->
@@ -3681,11 +3674,10 @@ Lemma symbtable_to_tree_permutation_none: forall stbl stbl' id,
 Proof.
   unfold symbtable_to_tree.
   intros stbl stbl' id PERM ALL.
-(*   apply Permutation_pres_ptree_get_none with *)
-(*       (fold_left add_symb_to_list stbl []); eauto. *)
-(*   apply add_symb_to_list_permutation; eauto. *)
-(* Qed. *)
-Admitted.
+  apply Permutation_pres_ptree_get_none with
+      (symbtable_to_idlist stbl); eauto.
+  apply symbtable_to_idlist_permutation; eauto.
+Qed.
 
 Lemma link_symbtable_check_permutation: forall stbl stbl' id a,
     list_norepet (get_symbentry_ids stbl) ->

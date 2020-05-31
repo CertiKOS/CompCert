@@ -272,6 +272,14 @@ Definition get_symbentry_ids (t:symbtable) : list ident :=
 (*   unfold add_symb_to_list. rewrite Heqo. auto. *)
 (* Qed. *)
 
+Lemma symbtable_to_idlist_id_eq : forall stbl id e,
+  In (id, e) (symbtable_to_idlist stbl) -> 
+  symbentry_id e = id.
+Proof.
+  induction stbl as [|e stbl]; cbn; intuition.
+  inv H0. auto.
+Qed.
+
 Import List.ListNotations.
 Require Import Permutation.
 Require Import LocalLib.
