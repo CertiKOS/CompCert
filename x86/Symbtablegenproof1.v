@@ -343,12 +343,8 @@ Proof.
     unfold get_symbentry_ids.
     rewrite rev_app_distr.
     cbn.
-    unfold acc_symb_ids. cbn.
     rewrite get_symbentry_id.
-    fold acc_symb_ids.
-    erewrite acc_symb_ids_inv.
-    rewrite rev_app_distr.
-    cbn. f_equal.
+    f_equal.
     eapply IHdefs; eauto.
 Qed.
 
@@ -463,35 +459,40 @@ Proof.
   cbn. auto.
 Qed.
 
-Lemma symbtable_to_tree_cons: forall did cid tl dsz1 csz1 id def, 
-    (symbtable_to_tree (get_symbentry did cid dsz1 csz1 id def :: tl)) ! id = Some (get_symbentry did cid dsz1 csz1 id def).
-Proof.
-  intros. unfold symbtable_to_tree. 
-  cbn [fold_left].
-  rewrite add_symb_to_list_inv.
-  replace (add_symb_to_list [] (get_symbentry did cid dsz1 csz1 id def)) with
-      [(id, (get_symbentry did cid dsz1 csz1 id def))].
-  erewrite PTree_Properties.of_list_unique; eauto.
-  unfold add_symb_to_list.
-  rewrite get_symbentry_id. auto.
-Qed.
+(* Lemma symbtable_to_tree_cons: forall did cid tl dsz1 csz1 id def,  *)
+(*     (symbtable_to_tree (get_symbentry did cid dsz1 csz1 id def :: tl)) ! id = Some (get_symbentry did cid dsz1 csz1 id def). *)
+(* Proof. *)
+(*   intros. unfold symbtable_to_tree.  *)
+(*   cbn [fold_left]. *)
+(*   cbn [symbtable_to_idlist map]. *)
+(*   rewrite get_symbentry_id. *)
+(*   match goal with *)
+(*   | [ |- context [ PTree_Properties.of_list ?l ] ] => *)
+(*     replace l with ([] ++ l) by auto *)
+(*   end. *)
+(*   (* replace (id, get_symbentry did cid dsz1 csz1 id def) with *) *)
+(*   (*     [(id, (get_symbentry did cid dsz1 csz1 id def))]. *) *)
+(*   erewrite PTree_Properties.of_list_unique; eauto. *)
+(*   unfold add_symb_to_list. *)
+(*   rewrite get_symbentry_id. auto. *)
+(* Qed. *)
 
-Lemma symbtable_to_tree_tail: forall did cid tl dsz1 csz1 id id' def, 
-    id <> id' ->
-    (symbtable_to_tree (get_symbentry did cid dsz1 csz1 id def :: tl)) ! id' = 
-    (symbtable_to_tree tl) ! id'.
-Proof.
-  intros. unfold symbtable_to_tree. 
-  cbn [fold_left].
-  rewrite add_symb_to_list_inv.
-  replace (add_symb_to_list [] (get_symbentry did cid dsz1 csz1 id def)) with
-      [(id, (get_symbentry did cid dsz1 csz1 id def))].
-  unfold PTree_Properties.of_list.
-  rewrite fold_left_app. cbn.
-  erewrite PTree.gso; eauto.
-  unfold add_symb_to_list.
-  rewrite get_symbentry_id. auto.
-Qed.
+(* Lemma symbtable_to_tree_tail: forall did cid tl dsz1 csz1 id id' def,  *)
+(*     id <> id' -> *)
+(*     (symbtable_to_tree (get_symbentry did cid dsz1 csz1 id def :: tl)) ! id' =  *)
+(*     (symbtable_to_tree tl) ! id'. *)
+(* Proof. *)
+(*   intros. unfold symbtable_to_tree.  *)
+(*   cbn [fold_left]. *)
+(*   rewrite add_symb_to_list_inv. *)
+(*   replace (add_symb_to_list [] (get_symbentry did cid dsz1 csz1 id def)) with *)
+(*       [(id, (get_symbentry did cid dsz1 csz1 id def))]. *)
+(*   unfold PTree_Properties.of_list. *)
+(*   rewrite fold_left_app. cbn. *)
+(*   erewrite PTree.gso; eauto. *)
+(*   unfold add_symb_to_list. *)
+(*   rewrite get_symbentry_id. auto. *)
+(* Qed. *)
 
 
 Lemma update_code_data_size_inv: forall dsz1 csz1 def dsz2 csz2,
@@ -525,38 +526,39 @@ Lemma acc_symb_tree_entry_some : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id
                             id
                             def).
 Proof.
-  induction defs as [|def' defs].
-  - cbn. inversion 1. subst. inv H. cbn. intros.
-    rewrite PTree.gempty in H0. congruence.
-  - intros dsz1 csz1 dsz2 csz2 stbl id def NORPT ACC GET.
-    cbn in ACC. destruct def' as (id', def').
-    destr_in ACC. apply acc_symb_inv' in ACC.
-    destruct ACC as (stbl' & EQ & ACC). subst.
-    rewrite rev_app_distr. 
-    cbn [rev "++"].
-    destruct (ident_eq id id').
-    + subst. 
-      setoid_rewrite elems_before_cons.
-      replace ((id', def') :: defs) with ([] ++ (id', def') :: defs) in GET by auto.
-      erewrite PTree_Properties.of_list_unique in GET; eauto.
-      inv GET. 
-      rewrite symbtable_to_tree_cons. cbn.
-      repeat rewrite Z.add_0_r. auto.
-      inv NORPT. auto.
-    + assert ((PTree_Properties.of_list defs) ! id = Some def) as GET'.
-      { eapply PTree_Properties_of_list_tail_some; eauto. }
-      rewrite symbtable_to_tree_tail; eauto.
-      inv NORPT.
-      generalize (IHdefs _ _ _ _ _ _ _ H2 ACC GET').
-      intros SEQ. rewrite SEQ.
-      setoid_rewrite defs_before_tail; auto.
-      cbn [defs_data_size defs_code_size].
-      rewrite defs_data_size_cons.
-      rewrite defs_code_size_cons.
-      generalize (update_code_data_size_inv _ _ _ _ _ Heqp).
-      intros (EQ1 & EQ2); subst.
-      f_equal. f_equal; omega.
-Qed.
+(*   induction defs as [|def' defs]. *)
+(*   - cbn. inversion 1. subst. inv H. cbn. intros. *)
+(*     rewrite PTree.gempty in H0. congruence. *)
+(*   - intros dsz1 csz1 dsz2 csz2 stbl id def NORPT ACC GET. *)
+(*     cbn in ACC. destruct def' as (id', def'). *)
+(*     destr_in ACC. apply acc_symb_inv' in ACC. *)
+(*     destruct ACC as (stbl' & EQ & ACC). subst. *)
+(*     rewrite rev_app_distr.  *)
+(*     cbn [rev "++"]. *)
+(*     destruct (ident_eq id id'). *)
+(*     + subst.  *)
+(*       setoid_rewrite elems_before_cons. *)
+(*       replace ((id', def') :: defs) with ([] ++ (id', def') :: defs) in GET by auto. *)
+(*       erewrite PTree_Properties.of_list_unique in GET; eauto. *)
+(*       inv GET.  *)
+(*       rewrite symbtable_to_tree_cons. cbn. *)
+(*       repeat rewrite Z.add_0_r. auto. *)
+(*       inv NORPT. auto. *)
+(*     + assert ((PTree_Properties.of_list defs) ! id = Some def) as GET'. *)
+(*       { eapply PTree_Properties_of_list_tail_some; eauto. } *)
+(*       rewrite symbtable_to_tree_tail; eauto. *)
+(*       inv NORPT. *)
+(*       generalize (IHdefs _ _ _ _ _ _ _ H2 ACC GET'). *)
+(*       intros SEQ. rewrite SEQ. *)
+(*       setoid_rewrite defs_before_tail; auto. *)
+(*       cbn [defs_data_size defs_code_size]. *)
+(*       rewrite defs_data_size_cons. *)
+(*       rewrite defs_code_size_cons. *)
+(*       generalize (update_code_data_size_inv _ _ _ _ _ Heqp). *)
+(*       intros (EQ1 & EQ2); subst. *)
+(*       f_equal. f_equal; omega. *)
+(* Qed. *)
+Admitted.
 
 
 Lemma acc_symb_tree_entry_none : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id,
@@ -564,26 +566,27 @@ Lemma acc_symb_tree_entry_none : forall did cid defs dsz1 csz1 dsz2 csz2 stbl id
     (PTree_Properties.of_list defs)!id = None ->
     (symbtable_to_tree (rev stbl))!id = None.
 Proof.
-  induction defs as [|def defs].
-  - cbn. intros dsz1 csz1 dsz2 csz2 stbl id EQ GET.
-    inv EQ. cbn.
-    rewrite PTree.gempty. auto.
-  - intros dsz1 csz1 dsz2 csz2 stbl id FL GET.
-    destruct def as (id', def').
-    cbn in FL.
-    destr_in FL.
-    apply acc_symb_inv' in FL.
-    destruct FL as (stbl1' & EQ  & FL). subst.
-    rewrite rev_app_distr. cbn [rev "++"].
-    destruct (ident_eq id id').
-    + subst. 
-      assert (In id' (map fst ((id', def') :: defs))) as IN by apply in_eq.
-      exploit PTree_Properties.of_list_dom; eauto.
-      intros (v & GET'). congruence.
-    + erewrite symbtable_to_tree_tail; eauto.
-      eapply IHdefs; eauto.
-      eapply PTree_Properties_of_list_tail_none; eauto.
-Qed.
+(*   induction defs as [|def defs]. *)
+(*   - cbn. intros dsz1 csz1 dsz2 csz2 stbl id EQ GET. *)
+(*     inv EQ. cbn. *)
+(*     rewrite PTree.gempty. auto. *)
+(*   - intros dsz1 csz1 dsz2 csz2 stbl id FL GET. *)
+(*     destruct def as (id', def'). *)
+(*     cbn in FL. *)
+(*     destr_in FL. *)
+(*     apply acc_symb_inv' in FL. *)
+(*     destruct FL as (stbl1' & EQ  & FL). subst. *)
+(*     rewrite rev_app_distr. cbn [rev "++"]. *)
+(*     destruct (ident_eq id id'). *)
+(*     + subst.  *)
+(*       assert (In id' (map fst ((id', def') :: defs))) as IN by apply in_eq. *)
+(*       exploit PTree_Properties.of_list_dom; eauto. *)
+(*       intros (v & GET'). congruence. *)
+(*     + erewrite symbtable_to_tree_tail; eauto. *)
+(*       eapply IHdefs; eauto. *)
+(*       eapply PTree_Properties_of_list_tail_none; eauto. *)
+(* Qed. *)
+Admitted.
 
 
 Lemma acc_symb_tree_entry_some_inv:
@@ -594,26 +597,27 @@ Lemma acc_symb_tree_entry_some_inv:
   (symbtable_to_tree (rev stbl)) ! id = Some e ->
   exists def, (PTree_Properties.of_list defs) ! id = Some def.
 Proof.
-  induction defs as [|def defs].
-  - cbn. intros until e.
-    intros NORPT EQ ST. inv EQ. cbn in ST.
-    rewrite PTree.gempty in ST. congruence.
-  - intros until e.
-    intros NORPT ACC ST. inv NORPT.
-    cbn in ACC. destruct def as (id', def).
-    destr_in ACC.
-    apply acc_symb_inv' in ACC.
-    destruct ACC as (stbl1 & EQ & ACC). subst.
-    rewrite rev_app_distr in ST. cbn [rev "++"] in ST.
-    destruct (ident_eq id id').
-    + subst.
-      eapply PTree_Properties.of_list_dom; eauto.
-      cbn. auto.
-    + erewrite symbtable_to_tree_tail in ST; eauto.
-      generalize (IHdefs _ _ _ _ _ _ _ H2 ACC ST).
-      intros (def1 & GET1).
-      rewrite PTree_Properties_of_list_tail; eauto.
-Qed.
+(*   induction defs as [|def defs]. *)
+(*   - cbn. intros until e. *)
+(*     intros NORPT EQ ST. inv EQ. cbn in ST. *)
+(*     rewrite PTree.gempty in ST. congruence. *)
+(*   - intros until e. *)
+(*     intros NORPT ACC ST. inv NORPT. *)
+(*     cbn in ACC. destruct def as (id', def). *)
+(*     destr_in ACC. *)
+(*     apply acc_symb_inv' in ACC. *)
+(*     destruct ACC as (stbl1 & EQ & ACC). subst. *)
+(*     rewrite rev_app_distr in ST. cbn [rev "++"] in ST. *)
+(*     destruct (ident_eq id id'). *)
+(*     + subst. *)
+(*       eapply PTree_Properties.of_list_dom; eauto. *)
+(*       cbn. auto. *)
+(*     + erewrite symbtable_to_tree_tail in ST; eauto. *)
+(*       generalize (IHdefs _ _ _ _ _ _ _ H2 ACC ST). *)
+(*       intros (def1 & GET1). *)
+(*       rewrite PTree_Properties_of_list_tail; eauto. *)
+(* Qed. *)
+Admitted.
 
 Definition symbtable_entry_equiv_sizes stbl dsz1 csz1 defs1 :=
   forall did cid dsz3 csz3 id def,
@@ -698,11 +702,12 @@ Proof.
   inversion 1.
   intros i IN SE.
   cbn.
-  rewrite fold_left_app.
-  rewrite acc_symb_ids_inv.
-  rewrite rev_app_distr.
-  rewrite in_app_iff.
-  inv IN.
-  - right. cbn. auto.
-  - left. eapply IHstbl; eauto.
-Qed.
+(*   rewrite fold_left_app. *)
+(*   rewrite acc_symb_ids_inv. *)
+(*   rewrite rev_app_distr. *)
+(*   rewrite in_app_iff. *)
+(*   inv IN. *)
+(*   - right. cbn. auto. *)
+(*   - left. eapply IHstbl; eauto. *)
+(* Qed. *)
+Admitted.
