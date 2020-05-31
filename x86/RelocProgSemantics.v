@@ -733,6 +733,47 @@ Proof.
   apply genv_senv_add_external_global.
 Qed.
 
+Lemma add_external_global_pres_instrs : forall extfuns ge e,
+    Genv.genv_instrs (add_external_global extfuns ge e) = Genv.genv_instrs ge.
+Proof.
+  intros. unfold add_external_global.
+  cbn. auto.
+Qed.
+
+Lemma add_external_globals_pres_instrs : forall extfuns stbl ge,
+    Genv.genv_instrs (add_external_globals extfuns ge stbl) = Genv.genv_instrs ge.
+Proof.
+  induction stbl; simpl; intros.
+  - auto.
+  - etransitivity. 
+    rewrite IHstbl; eauto.
+    eapply add_external_global_pres_instrs; eauto.
+Qed.
+
+Hint Resolve in_eq in_cons.
+
+Definition only_internal_symbol i stbl := 
+    (forall e, In e stbl -> symbentry_id e = i -> is_symbol_internal e = true).
+
+Lemma add_external_globals_pres_find_symbol : forall extfuns stbl ge i,
+    only_internal_symbol i stbl ->
+    Genv.find_symbol (add_external_globals extfuns ge stbl) i = Genv.find_symbol ge i.
+Proof.
+  unfold only_internal_symbol.
+  induction stbl as [|e stbl]; intros; simpl.
+  - auto.
+  - etransitivity.
+    erewrite IHstbl; eauto.
+    unfold add_external_global.
+    unfold Genv.find_symbol. cbn.
+    destr; eauto.
+    destruct (peq (symbentry_id e) i).
+    + subst. 
+      generalize (H e (in_eq _ _) eq_refl).
+      congruence.
+    + erewrite PTree.gso; eauto.
+Qed.
+
 
 Definition find_symbol_block_bound ge :=
   forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).

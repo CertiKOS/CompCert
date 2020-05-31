@@ -338,10 +338,103 @@ Definition init_meminj : meminj :=
         end
       end.
 
+
+Lemma symbtable_to_tree_acc_symb_map_sync: forall stbl id e b ofs,
+    (symbtable_to_tree stbl) ! id = Some e ->
+    (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) ->
+    ofs = Ptrofs.repr (symbentry_value e) /\
+    (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i).
+Proof.
+  clear.
+Admitted.
+
+Lemma pres_find_instr: forall defs id f ofs i,
+    In (id, Some (Gfun (Internal f))) defs ->
+    find_instr (Ptrofs.unsigned ofs) (fn_code f) = Some i ->
+    gen_instr_map (fold_right acc_instrs [] defs)
+                  (Ptrofs.add ofs (Ptrofs.repr (defs_code_size (defs_before id defs)))) = Some i.
+Proof.
+  clear.
+Admitted.
+
+Lemma gen_symb_table_only_internal_symbol: 
+  forall did cid defs stbl dz cz id def,
+    is_def_internal is_fundef_internal def = true ->
+    gen_symb_table did cid defs = (stbl, dz, cz) ->
+    In (id, def) defs ->
+    only_internal_symbol id stbl.
+  clear.
+Admitted.
+
+
 Theorem init_meminj_match_sminj : 
     match_inj init_meminj.
 Proof.
+  generalize TRANSF. intros TRANSF'.
+  unfold match_prog in TRANSF'.
+  unfold transf_program in TRANSF'.
+  repeat destr_in TRANSF'. 
+  destruct p. inv Heqp0. monadInv TRANSF'.
+  revert H0. intros TL.
+  constructor.
+
+  - (* agree_inj_instrs *)
+    intros b b' f ofs ofs' i FPTR FINST INITINJ.
+    unfold init_meminj in INITINJ. 
+    (* revert TL. *)
+    destruct eq_block. inv INITINJ.
+    unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+    destr_match_in INITINJ; inv INITINJ.
+    destr_match_in H0; inv H0.
+    destruct p. inv H1. rewrite Ptrofs.repr_unsigned.
+    unfold globalenv in EQ0; simpl in EQ0.
+    rewrite add_external_globals_pres_find_symbol in EQ0.
+    unfold Genv.find_symbol in EQ0. cbn in EQ0.
+    apply Genv.invert_find_symbol in EQ.
+    exploit (Genv.find_symbol_funct_ptr_inversion prog); eauto.
+    intros FINPROG.
+    unfold Genv.find_instr. unfold tge.
+    cbn.
+    rewrite add_external_globals_pres_instrs. cbn.
+    unfold create_sec_table.
+    replace (Pos.to_nat 1) with 1%nat by xomega.
+    cbn.
+    unfold gen_symb_table in Heqp.
+    destr_in Heqp. destruct p. inv Heqp.
+    exploit acc_symb_tree_entry_some; eauto.
+    { inv w. auto. }
+    { eapply PTree_Properties.of_list_norepet; eauto.
+      inv w. auto. }
+    cbn. intros GET.
+    unfold gen_symb_map in EQ0.
+    exploit symbtable_to_tree_acc_symb_map_sync; eauto.
+    cbn. intros (EQOFS & i' & SEC & EQB). subst.
+    inv SEC.
+    eapply pres_find_instr; eauto.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    apply Genv.invert_find_symbol. eauto. eauto. intros IN.
+    eapply gen_symb_table_only_internal_symbol; eauto.
+    cbn. auto.
+
+(*   - (* agree_inj_globs *) *)
+(*     intros id b FSYM. *)
+(*     unfold ge in FSYM. *)
+(*     exploit Genv.find_symbol_inversion; eauto. intros INSYM. *)
+(*     unfold prog_defs_names in INSYM. *)
+(*     rewrite in_map_iff in INSYM. destruct INSYM as (def & EQ1 & IN). *)
+(*     destruct def. simpl in EQ1. subst i. *)
+(*     exploit transl_prog_pres_def; eauto. *)
+(*     intros (def' & sb & IN' & TLDEF). *)
+(*     exploit find_symbol_exists; eauto. *)
+(*     intros (b' & ofs' & FSYM'). *)
+(*     exists b', ofs'. split; auto. *)
+(*     unfold init_meminj. destruct eq_block. *)
+(*     subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction. *)
+(*     apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto. *)
+
+(* Qed. *)
 Admitted.
+
 
 (** Initial memory injection for global variables (not including the stacks) *)
 Definition globs_meminj : meminj :=
