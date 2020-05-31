@@ -17,6 +17,15 @@ Require Import Asmgen.
 Require Asmgenproof0.
 Require Import Errors.
 
+Lemma code_size_app: forall l1 l2,
+    code_size (l1 ++ l2) = code_size l1 + code_size l2.
+Proof.
+  induction l1 as [| e l2'].
+  - intros l2. simpl. auto.
+  - intros l2. simpl in *.
+    rewrite IHl2'; omega.
+Qed.
+
 Section WITHMEMORYMODEL.
 
   (* Context {mem} `{memory_model: Mem.MemoryModel mem}. *)

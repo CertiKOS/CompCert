@@ -716,7 +716,57 @@ Proof.
   destruct v1'; auto. inv H0. auto.
 Qed.
 
+(** ** Properties about Programs *)
+Lemma init_data_eq_dec: forall (i1 i2: init_data),
+    {i1 = i2} + {i1 <> i2}.
+Proof.
+  decide equality; try apply Int.eq_dec.
+  apply Int64.eq_dec.
+  apply Floats.Float32.eq_dec.
+  apply Floats.Float.eq_dec.
+  apply Z.eq_dec.
+  apply Ptrofs.eq_dec.
+  apply ident_eq.
+Qed.
 
+(* Definition list_init_data_external (il: list init_data) := *)
+(*   il = nil. *)
+
+(* Definition list_init_data_common (il: list init_data) := *)
+(*   exists sz, il = [Init_space sz]. *)
+
+(* Definition list_init_data_internal (il: list init_data) := *)
+(*   il <> nil /\ (forall sz, il <> [Init_space sz]). *)
+
+(* Lemma init_data_list_cases: forall (il:list init_data), *)
+(*     list_init_data_external il \/ *)
+(*     list_init_data_common il \/ *)
+(*     list_init_data_internal il. *)
+(* Proof. *)
+(*   intros. *)
+(*   edestruct (list_eq_dec init_data_eq_dec il nil); auto. *)
+(*   destruct il; try congruence. *)
+(*   destruct i; cbn; auto. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(*   destruct il. *)
+(*     right. left. red. eauto. *)
+(*     right. right. red. split; auto. intros. congruence. *)
+(*   right. right. red. split; auto. intros. congruence. *)
+(* Qed.   *)
+
+Lemma init_data_list_size_app : forall l1 l2,
+    init_data_list_size (l1 ++ l2) = (init_data_list_size l1) + (init_data_list_size l2).
+Proof.
+  induction l1 as [| e l2'].
+  - intros l2. simpl. auto.
+  - intros l2. simpl in *.
+    rewrite IHl2'; omega.
+Qed.
 
 (** ** Propreties about injection of memories *)
 
