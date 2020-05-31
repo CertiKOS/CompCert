@@ -10,6 +10,7 @@ Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import Symbtablegen.
 Require Import RelocProgram RelocProgSemantics.
 Require Import LocalLib AsmInject.
+Require Import Symbtablegenproof1.
 Import ListNotations.
 Require AsmFacts.
 
