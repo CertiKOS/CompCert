@@ -226,7 +226,46 @@ Definition transl_sectable (stbl: sectable) :=
   | _ => Error (msg "Expected code section to be a sec_text")
   end.
 
+Fixpoint ok_builtin_arg {A} (ba: builtin_arg A) : bool :=
+  match ba with
+  | BA_addrglobal _ _
+  | BA_loadglobal _ _ _ => false
+  | BA_splitlong ba1 ba2 => ok_builtin_arg ba1 && ok_builtin_arg ba2
+  | _ => true
+  end.
+
+Definition unsupported i :=
+  match i with
+  | Pmovq_rm _ _
+  | Pmovq_mr _ _
+  | Pmovsd_fm_a _ _
+  | Pmovsd_mf_a _ _
+  | Pmovsd_fm _ _
+  | Pmovsd_mf _ _
+  | Pmovss_fm _ _
+  | Pmovss_mf _ _
+  | Pfldl_m _
+  | Pfstpl_m _
+  | Pflds_m _
+  | Pfstps_m _
+  | Pmovb_mr _ _
+  | Pmovw_mr _ _
+  | Pmovzb_rm _ _
+  | Pmovsb_rm _ _
+  | Pmovzw_rm _ _
+  | Pmovsw_rm _ _
+  | Pleaq _ _
+    => true
+  | Pbuiltin _ args _ =>
+    negb (forallb ok_builtin_arg args)
+  | _ => false
+  end.
+
+
 Definition id_eliminate (i:instruction):res (instruction):=
+  if unsupported i
+  then Error (msg "unsupported instruction in id_eliminate")
+  else 
     match i with
   | Pjmp (inr id) sg =>
     OK (Pjmp (inr xH) sg)
@@ -282,7 +321,9 @@ Definition transl_sectable' (stbl: sectable): res sectable :=
   match stbl with
     [sec_data l; sec_text code] =>
     do code' <- transl_code' code;
-    OK [sec_data l; sec_text code']
+    if zlt (code_size code') Ptrofs.max_unsigned
+    then OK [sec_data l; sec_text code']
+    else Error (msg "code_size transl_sectable'")
   | _ => Error (msg "Expected section table to be [text; data], got " ++ msg (print_sectable stbl))
   end.
 

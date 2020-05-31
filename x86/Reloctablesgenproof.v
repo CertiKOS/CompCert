@@ -52,8 +52,8 @@ Let tge := globalenv tprog.
 
 Lemma acc_reloc_ofs_symb_ok:
   forall stbl e m s id,
-    SeqTable.SeqTable.get (reloc_symb e) stbl = Some s ->
-    symbentry_id s = Some id ->
+    SymbTable.get (reloc_symb e) stbl = Some s ->
+    symbentry_id s = id ->
     Maps.ZTree.get (reloc_offset e) (acc_reloc_ofs_symb stbl e m) = Some id.
 Proof.
   unfold acc_reloc_ofs_symb. intros stbl e m s id STBL ID.
@@ -66,15 +66,15 @@ Lemma acc_reloc_ofs_symb_other:
     Maps.ZTree.get o (acc_reloc_ofs_symb stbl e m) = Maps.ZTree.get o m.
 Proof.
   unfold acc_reloc_ofs_symb. intros stbl e m o DIFF.
-  destr. destr. rewrite Maps.ZTree.gso. auto. auto.
+  destr. rewrite Maps.ZTree.gso. auto. auto.
 Qed.
 
 Lemma gen_reloc_ofs_symb_ok:
   forall stbl rtbl e s id,
     In e rtbl ->
     list_norepet (map (fun e => reloc_offset e) rtbl) ->
-    SeqTable.SeqTable.get (reloc_symb e) stbl = Some s ->
-    symbentry_id s = Some id ->
+    SymbTable.get (reloc_symb e) stbl = Some s ->
+    symbentry_id s = id ->
     Maps.ZTree.get (reloc_offset e) (gen_reloc_ofs_symb stbl rtbl) = Some id.
 Proof.
   induction rtbl; simpl. easy.
@@ -119,8 +119,8 @@ Lemma add_reloc_ofs_symb_same_rtbl_id_in:
     let rtbl := get_reloctable rtbl_id rmap in
     In e rtbl ->
     list_norepet (map (fun e => reloc_offset e) rtbl) ->
-    SeqTable.SeqTable.get (reloc_symb e) stbl = Some s ->
-    symbentry_id s = Some id ->
+    SymbTable.get (reloc_symb e) stbl = Some s ->
+    symbentry_id s = id ->
     Maps.ZTree.get (reloc_offset e) ((add_reloc_ofs_symb stbl rtbl_id rmap ofsmap) rtbl_id) = Some id.
 Proof.
   intros. unfold add_reloc_ofs_symb. destr.
@@ -151,8 +151,8 @@ Lemma gen_reloc_ofs_symbs_ok:
     let rtbl := get_reloctable rtbl_id (prog_reloctables p) in
     In e rtbl ->
     list_norepet (map reloc_offset rtbl) ->
-    SeqTable.SeqTable.get (reloc_symb e) (prog_symbtable p) = Some s ->
-    symbentry_id s = Some id ->
+    SymbTable.get (reloc_symb e) (prog_symbtable p) = Some s ->
+    symbentry_id s = id ->
     Maps.ZTree.get (reloc_offset e) (gen_reloc_ofs_symbs p rtbl_id) = Some id.
 Proof.
   intros. unfold gen_reloc_ofs_symbs.
@@ -186,8 +186,8 @@ Lemma genv_reloc_ofs_symb_ok:
     let rtbl := get_reloctable rtbl_id (prog_reloctables p) in
     In e rtbl ->
     list_norepet (map reloc_offset rtbl) ->
-    SeqTable.SeqTable.get (reloc_symb e) (prog_symbtable p) = Some s ->
-    symbentry_id s = Some id ->
+    SymbTable.get (reloc_symb e) (prog_symbtable p) = Some s ->
+    symbentry_id s = id ->
     Maps.ZTree.get (reloc_offset e) (Genv.genv_reloc_ofs_symb (globalenv p) rtbl_id) = Some id.
 Proof.
   intros. unfold globalenv. simpl.
@@ -208,8 +208,8 @@ Lemma transl_sectable_ok:
   forall sim stbl creloc dreloc,
     transl_sectable sim stbl = OK (creloc, dreloc) ->
     exists c l,
-      SeqTable.SeqTable.get sec_code_id stbl = Some (sec_text c) /\
-      SeqTable.SeqTable.get sec_data_id stbl = Some (sec_data l) /\
+      SecTable.get sec_code_id stbl = Some (sec_text c) /\
+      SecTable.get sec_data_id stbl = Some (sec_data l) /\
       transl_code sim c = OK creloc /\
       transl_init_data_list sim l = OK dreloc.
 Proof.
@@ -363,7 +363,7 @@ Lemma add_external_global_symb_unchanged:
     Genv.genv_next (add_external_global t tge e).
 Proof.
   unfold add_external_global.
-  intros. destr. simpl. destr.
+  intros. destr. simpl. split; congruence.
 Qed.
 
 Lemma add_external_globals_symb_unchanged:
@@ -399,8 +399,8 @@ Lemma symb_address_2:
     let rtbl := reloctable_data (prog_reloctables tprog) in
     In e rtbl ->
     list_norepet reloc_offset ## rtbl ->
-    SeqTable.SeqTable.get idx (prog_symbtable tprog) = Some s ->
-    symbentry_id s = Some i ->
+    SymbTable.get idx (prog_symbtable tprog) = Some s ->
+    symbentry_id s = i ->
     (* Maps.PTree.get i sim = Some idx -> *)
     reloc_symb e = idx ->
     reloc_offset e = idofs ->
@@ -417,7 +417,6 @@ Proof.
   rewrite genv_symb_ok. auto.
 Qed.
 
-
 Axiom nr_defs:
   list_norepet (map fst (prog_defs tprog)).
 
@@ -431,51 +430,62 @@ Lemma genv_symb_add_external_global:
   forall t ge se id b o,
     Maps.PTree.get id (Genv.genv_symb (add_external_global t ge se)) = Some (b,o) ->
     Maps.PTree.get id (Genv.genv_symb ge) = Some (b,o) \/
-    (symbentry_id se = Some id /\ is_symbol_internal se = false).
+    (symbentry_id se =  id /\ is_symbol_internal se = false /\ b = Genv.genv_next ge /\ o = Ptrofs.zero).
 Proof.
   unfold add_external_global. simpl. intros.
-  destr_in H. simpl in H. destr_in H.
+  destr_in H.
   rewrite Maps.PTree.gsspec in H.
-  destr_in H. subst. inv H. auto.
+  destr_in H.
 Qed.
+
+Require Import Lia.
 
 Lemma genv_symb_add_external_globals:
   forall t stbl ge id b o,
     Maps.PTree.get id (Genv.genv_symb (add_external_globals t ge stbl)) = Some (b,o) ->
     Maps.PTree.get id (Genv.genv_symb ge) = Some (b,o) \/
-    (exists se,
-        In se stbl /\
-        symbentry_id se = Some id /\
-        is_symbol_internal se = false).
+    (exists se l1 l2,
+        stbl = l1 ++ se :: l2 /\
+        symbentry_id se = id /\
+        is_symbol_internal se = false /\
+        b = Pos.of_nat (Pos.to_nat (Genv.genv_next ge) + length (filter (fun s => negb (is_symbol_internal s)) l1)) /\
+        o = Ptrofs.zero
+    ).
 Proof.
   induction stbl. simpl. auto.
   simpl. intros.
   eapply IHstbl in H.
   destruct H.
   - apply genv_symb_add_external_global in H. destruct H; auto.
-    right. eexists; split. left; eauto. destruct H. auto.
-  - destruct H as (se & IN & EQ & EXT).
-    right; exists se; repeat split; auto.
+    decompose [and] H.
+    right. eexists; exists nil; eexists; split. simpl. reflexivity.
+    repeat split; auto. simpl. rewrite Nat.add_0_r.
+    rewrite Pos2Nat.id. auto.
+  - destruct H as (se & l1 & l2 & SPLIT & EQ & EXT & B & O).
+    right; exists se; exists (a::l1); exists l2; repeat split; auto.
+    subst. simpl. reflexivity.
+    subst.
+    apply Nat2Pos.inj_iff. lia. lia.
+    unfold add_external_global. simpl.
+    destr. simpl.
+    lia.
 Qed.
 
 Lemma fold_acc_symb_map_in_stbl:
   forall (id : positive) (stbl : symbtable) t0 (b : block) (o : ptrofs),
   Maps.PTree.get id (fold_right acc_symb_map t0 stbl) = Some (b, o) ->
-  (exists se : symbentry, In se stbl /\ symbentry_id se = Some id) \/
+  (exists se : symbentry, In se stbl /\ symbentry_id se = id) \/
   Maps.PTree.get id t0 = Some (b, o).
 Proof.
   induction stbl; simpl; intros; eauto.
   unfold acc_symb_map in H at 1.
   destr_in H.
-  - destr_in H.
-    + rewrite Maps.PTree.gsspec in H. destr_in H.
-      inv H.
-      left; eexists; split; eauto. eapply IHstbl in H; eauto.
-      destruct H; eauto. decompose [ex and] H. eauto.
-    + eapply IHstbl in H; eauto.
-      destruct H; eauto. decompose [ex and] H. eauto.
-    + eapply IHstbl in H; eauto.
-      destruct H; eauto. decompose [ex and] H. eauto.
+  - rewrite Maps.PTree.gsspec in H. destr_in H.
+    inv H.
+    left; eexists; split; eauto. eapply IHstbl in H; eauto.
+    destruct H; eauto. decompose [ex and] H. eauto.
+  - eapply IHstbl in H; eauto.
+    destruct H; eauto. decompose [ex and] H. eauto.
   - eapply IHstbl in H; eauto.
     destruct H; eauto. decompose [ex and] H. eauto.
 Qed.
@@ -483,7 +493,7 @@ Qed.
 Lemma gen_symb_map_in_stbl:
   forall id stbl b o,
     Maps.PTree.get id (gen_symb_map stbl) = Some (b, o) ->
-    exists se, In se stbl /\ symbentry_id se = Some id.
+    exists se, In se stbl /\ symbentry_id se = id.
 Proof.
   unfold gen_symb_map.
   intros.
@@ -491,15 +501,13 @@ Proof.
   rewrite Maps.PTree.gempty in H0. congruence.
 Qed.
 
+(* Can be more precise if needed *)
 Lemma genv_symb_in_defs:
   forall p id b o,
     Maps.PTree.get id (Genv.genv_symb (RelocProgSemantics.globalenv p)) = Some (b,o) ->
     (exists se,
         In se (prog_symbtable p) /\
-        symbentry_id se = Some id (* /\ *)
-        (* symbentry_secindex se = secindex_normal i /\ *)
-        (* b = sec_index_to_block i /\ *)
-        (* o = Ptrofs.repr (symbentry_value se) *)
+        symbentry_id se = id
     ).
 Proof.
   unfold RelocProgSemantics.globalenv.
@@ -508,7 +516,9 @@ Proof.
   destruct H.
   simpl in H.
   - eapply gen_symb_map_in_stbl; eauto.
-  - decompose [ex and] H; eauto.
+  - simpl in H. decompose [ex and] H; eauto.
+    eexists; split; eauto.
+    rewrite H1. rewrite in_app. right. left. reflexivity.
 Qed.
 
 Lemma prog_symtable_same:
@@ -518,44 +528,53 @@ Proof.
   unfold match_prog, Reloctablesgen.transf_program in TRANSF.
   monadInv TRANSF. reflexivity.
 Qed.
+Require Import Lia.
+
 
 Lemma symb_address_has_symtable_entry:
   forall i b o,
     RelocProgSemantics.Genv.find_symbol ge i = Some (b, o) ->
     exists idx s,
-      SeqTable.SeqTable.get idx (prog_symbtable tprog) = Some s /\
-      symbentry_id s = Some i.
+      SymbTable.get idx (prog_symbtable tprog) = Some s /\
+      symbentry_id s = i /\
+      idx <> N0.
 Proof.
   intros i b o FS.
-  unfold SeqTable.SeqTable.get.
+  unfold SymbTable.get.
   rewrite <- prog_symtable_same.
   unfold RelocProgSemantics.Genv.find_symbol in FS.
   edestruct genv_symb_in_defs as (se & IN & ID); eauto.
   destruct (In_nth_error _ _ IN).
-  exists (N.of_nat x); eexists.
+  exists (N.add SymbTblParams.ofs (N.of_nat x)); eexists.
+  split; eauto. rewrite <- H. f_equal.
+  unfold SymbTable.idx.
+  rewrite N.add_comm.
+  rewrite <- N.add_sub_assoc. 2: apply N.le_refl.
+  rewrite N.sub_diag. rewrite N.add_0_r.
   rewrite Nnat.Nat2N.id. eauto.
+  split; auto.
+  unfold SymbTblParams.ofs. lia.
 Qed.
 
 Lemma fold_acc_symb_index_map_acc:
   forall stbl i t0 t1 n ofs ofs',
     (* list_norepet (map symbentry_id stbl) -> *)
-    ~ In (Some i) (map symbentry_id stbl) ->
+    ~ In (i) (map symbentry_id stbl) ->
     Maps.PTree.get i t0 = Some n ->
     fold_left acc_symb_index_map stbl (ofs, t0) = (ofs', t1) ->
   Maps.PTree.get i t1 = Some n.
 Proof.
   induction stbl; simpl; intros i t0 t1 n ofs ofs' NR GET FL.
   - inv FL. auto.
-  - destr_in FL; eauto.
-    eapply IHstbl. 3: eauto. intuition.
-    rewrite Maps.PTree.gso; auto. intuition congruence.
+  - eapply IHstbl. 3: eauto. intuition.
+    rewrite Maps.PTree.gso; auto.
 Qed.
 
 Lemma fold_acc_symb_index_map_ok:
   forall (stbl1 stbl stbl2 : list symbentry) (e : symbentry) (i : ident) ofs t0,
   stbl = stbl1 ++ e :: stbl2 ->
-  symbentry_id e = Some i ->
-  list_norepet (filter (fun a => match a with None => false | _ => true end) (map symbentry_id stbl)) ->
+  symbentry_id e = i ->
+  list_norepet (map symbentry_id stbl) ->
   exists n junk,
     fold_left acc_symb_index_map stbl1 (ofs, t0) = (n, junk) /\
     Maps.PTree.get i
@@ -563,36 +582,29 @@ Lemma fold_acc_symb_index_map_ok:
     Some n.
 Proof.
   induction stbl1; simpl; intros; eauto.
-  - (do 2 eexists); split; eauto. subst. simpl. destr. destr_in Heqp. inv H0.
+  - (do 2 eexists); split; eauto. subst. simpl. destr.
     erewrite fold_acc_symb_index_map_acc; eauto. simpl in H1.
-    rewrite Heqo in H1. inv H1.
-    intro IN; apply H2. rewrite filter_In. auto.
+    inv H1.
+    intro IN; apply H2. auto.
     rewrite Maps.PTree.gss. auto.
   - destruct stbl. inv H. inv H. simpl.
     eapply IHstbl1. eauto. auto.
-    simpl in H1. destr_in H1. inv H1. auto.
+    simpl in H1. inv H1; auto.
 Qed.
 
 Lemma gen_symb_index_map_ok:
   forall stbl stbl1 stbl2 e i,
   stbl = stbl1 ++ e :: stbl2 ->
-  symbentry_id e = Some i ->
-  list_norepet (filter (fun a => match a with None => false | _ => true end) (map symbentry_id stbl)) ->
+  symbentry_id e = i ->
+  list_norepet (map symbentry_id stbl) ->
   exists n junk,
-    fold_left acc_symb_index_map stbl1 (0%N, Maps.PTree.empty _) = (n, junk) /\
+    fold_left acc_symb_index_map stbl1 (SymbTblParams.ofs, Maps.PTree.empty _) = (n, junk) /\
     Maps.PTree.get i (gen_symb_index_map stbl) = Some n.
 Proof.
   unfold gen_symb_index_map.
-  intros; eapply fold_acc_symb_index_map_ok; eauto.
+  intros. eapply fold_acc_symb_index_map_ok; eauto.
 Qed.
 
-(* Axiom ge_tge_ok: *)
-(*   forall (i0: ident) (o: Z) (i1: ptrofs), *)
-(*     (* Genv.find_symbol tge RELOC_DATA i0 = Some (b, o) -> *) *)
-(*     Maps.ZTree.get o (Genv.genv_reloc_ofs_symb tge RELOC_DATA) = Some i0 -> *)
-(*     RelocProgSemantics.Genv.symbol_address ge i0 i1 = Genv.symbol_address tge RELOC_DATA o i1. *)
-
-Require Import Lia.
 
 Lemma fold_acc_sym_len:
   forall stbl1 o t0 n junk,
@@ -607,28 +619,23 @@ Proof.
 Qed.
 
 Lemma nth_error_nodup:
-  forall {T U} (l: list T) n1 n2 x y (f: T -> option U),
+  forall {T U} (l: list T) n1 n2 x y (f: T -> U),
   nth_error l n1 = Some x ->
   nth_error l n2 = Some y ->
-  list_norepet (filter (fun a => match a with None => false  | _ => true end)
-                       (map f l)) ->
-  f x <> None ->
+  list_norepet f ## l ->
   f x = f y ->
   n1 = n2.
 Proof.
   induction l; simpl; intros; eauto.
   rewrite nth_error_nil in H. easy.
   destruct n1, n2; simpl in *; auto.
-  - inv H. exfalso. destr_in H1. destr_in Heqb. inv H1. apply H5.
-    rewrite filter_In. split; auto.
+  - inv H. exfalso. inv H1. apply H4.
     rewrite in_map_iff. exists y; split; auto.
-    eapply nth_error_in; eauto. destr_in Heqb.
-  - inv H0. exfalso. destr_in H1. destr_in Heqb. inv H1. apply H5.
-    rewrite filter_In. split; auto.
+    eapply nth_error_in; eauto.
+  - inv H0. exfalso. inv H1. apply H4.
     rewrite in_map_iff. exists x; split; auto.
-    eapply nth_error_in; eauto. destr_in Heqb.
-  - f_equal. eapply IHl; eauto.
-    destr_in H1. inv H1; auto.
+    eapply nth_error_in; eauto.
+  - f_equal. eapply IHl; eauto. inv H1; eauto.
 Qed.
 
 Lemma transl_init_data_ok_all_symbs_in_sim:
@@ -639,15 +646,16 @@ Lemma transl_init_data_ok_all_symbs_in_sim:
 Proof.
   unfold transl_init_data_list.
   intros i0 i1 init sim rdata IN.
-  generalize (OK (0, @nil relocentry)).
+  generalize (OK (0, @nil RelocTblParams.V)).
   revert init rdata IN.
   induction init; simpl; intros; eauto.
   monadInv H. destr_in EQ0. inv EQ0.
   destruct IN.
-  - subst. simpl in EQ. destruct r. repeat destr_in EQ.
-    destr_in H0. destr_in H0. simpl in H0.
+  - subst.
+    unfold acc_init_data at 2 in EQ.
+    destruct r; simpl in EQ. repeat destr_in EQ.
     rewrite fold_acc_init_data_error in H0. congruence.
-    simpl in EQ.
+    rewrite fold_acc_init_data_error in H0. congruence.
     rewrite fold_acc_init_data_error in EQ. congruence.
   - eapply IHinit. auto. rewrite EQ. simpl. reflexivity.
 Qed.
@@ -657,29 +665,86 @@ Lemma in_acc_symb_index_map_in_stbl:
     fold_left acc_symb_index_map stbl (o, map) = (o', map') ->
     Maps.PTree.get i0 map' <> None ->
     Maps.PTree.get i0 map <> None \/
-    exists s : symbentry, In s stbl /\ symbentry_id s = Some i0.
+    exists s : symbentry, In s stbl /\ symbentry_id s = i0.
 Proof.
   induction stbl; simpl; intros; eauto. inv H. auto.
   eapply IHstbl in H.
-  destruct H. destr_in H.
+  destruct H.
   rewrite Maps.PTree.gsspec in H. destr_in H. subst. right; eauto.
   destruct H as (s & IN & ID); eauto. auto.
+Qed.
+
+Lemma symbtable_cons:
+  forall n a l s,
+    (SymbTblParams.ofs <= n)%N ->
+    SymbTable.get n l = Some s ->
+    SymbTable.get (N.succ n) (a::l) = Some s.
+Proof.
+  unfold SymbTable.get.
+  unfold SymbTable.idx.
+  intros.
+  rewrite N.sub_succ_l. 2: lia.
+  rewrite Nnat.N2Nat.inj_succ. simpl. auto.
+Qed.
+
+Lemma in_acc_symb_index_map_in_stbl_nth:
+  forall (i0 : positive) (stbl : symbtable) o map o' map' n,
+    fold_left acc_symb_index_map stbl (o, map) = (o', map') ->
+    N.le SymbTblParams.ofs o ->
+    (forall i n, Maps.PTree.get i map = Some n -> N.lt n o /\ N.le SymbTblParams.ofs n) ->
+    Maps.PTree.get i0 map' = Some n ->
+    (N.lt n o /\ Maps.PTree.get i0 map = Some n) \/
+    (N.le o n /\ exists s : symbentry,
+        nth_error stbl (N.to_nat (N.sub n o)) = Some s /\
+        symbentry_id s = i0).
+Proof.
+  induction stbl; simpl; intros; eauto.
+  - inv H. left. split; eauto. eapply H1; eauto.
+  - exploit IHstbl. eauto.
+    + lia.
+    + intros i n0. rewrite Maps.PTree.gsspec.
+      destr.
+      * intro A; inv A. split. lia. lia.
+      * intro A; apply H1 in A. intuition lia.
+    + eauto.
+    + intros [(LT & GET) | (GT & s & GET & EQ)].
+      * rewrite Maps.PTree.gsspec in GET. repeat destr_in GET.
+        -- right. split. lia. exists a; split; auto. rewrite N.sub_diag. reflexivity.
+        -- left; split; eauto. eapply H1; eauto.
+      * right; split. lia. exists s; split; auto.
+        replace (n - o)%N with (N.succ (n - N.succ o)). 2: lia.
+        rewrite Nnat.N2Nat.inj_succ. simpl. auto.
 Qed.
 
 Lemma in_sim_in_stbl:
   forall i0 stbl,
     Maps.PTree.get i0 (gen_symb_index_map stbl) <> None ->
-    exists s, In s stbl /\ symbentry_id s = Some i0.
+    exists s, In s stbl /\ symbentry_id s = i0.
 Proof.
   unfold gen_symb_index_map. intros. destr_in H.
   eapply in_acc_symb_index_map_in_stbl in H; eauto.
   rewrite Maps.PTree.gempty in H. intuition congruence.
 Qed.
 
+Lemma in_sim_in_stbl_nth:
+  forall i0 stbl n,
+    Maps.PTree.get i0 (gen_symb_index_map stbl) = Some n ->
+    exists s, SymbTable.get n stbl = Some s /\ symbentry_id s = i0.
+Proof.
+  unfold gen_symb_index_map. intros. destr_in H.
+  eapply in_acc_symb_index_map_in_stbl_nth in H; eauto.
+  - rewrite Maps.PTree.gempty in H.
+    destruct H. intuition congruence.
+    decompose [and ex] H. clear H.
+    eexists; split; eauto.
+  - lia.
+  - intros i n1. rewrite Maps.PTree.gempty; congruence.
+Qed.
+
 Lemma in_stbl_in_gen_symb_map:
   forall s i0 i stbl,
     In s stbl ->
-    symbentry_id s = Some i0 ->
+    symbentry_id s = i0 ->
     symbentry_secindex s = secindex_normal i ->
     Maps.PTree.get i0 (gen_symb_map stbl) <> None.
 Proof.
@@ -690,11 +755,11 @@ Proof.
   induction stbl; simpl; intros; eauto.
   destruct H.
   - subst.
-    unfold acc_symb_map at 1. rewrite H0, H1.
+    unfold acc_symb_map at 1. rewrite H1.
     rewrite Maps.PTree.gss. congruence.
   - specialize (IHstbl t H H0 H1).
     unfold acc_symb_map at 1.
-    destr. destr.
+    destr.
     rewrite Maps.PTree.gsspec. destr.
 Qed.
 
@@ -706,14 +771,14 @@ Proof.
   induction stbl; simpl; intros; eauto.
   apply IHstbl.
   unfold add_external_global.
-  destr. simpl. destr.
+  destr. simpl.
   rewrite Maps.PTree.gsspec. destr.
 Qed.
 
 Lemma in_stbl_external_in_genv_symb:
   forall s i0 extfuns stbl ge,
     In s stbl ->
-    symbentry_id s = Some i0 ->
+    symbentry_id s = i0 ->
     is_symbol_internal s = false ->
     Maps.PTree.get i0 (Genv.genv_symb (add_external_globals extfuns ge stbl)) <> None.
 Proof.
@@ -721,7 +786,7 @@ Proof.
   destruct H.
   - subst.
     apply add_external_globals_acc.
-    unfold add_external_global. rewrite H0. simpl.
+    unfold add_external_global. simpl.
     rewrite H1.
     rewrite Maps.PTree.gss. congruence.
   - eauto.
@@ -730,7 +795,7 @@ Qed.
 Lemma in_stbl_in_genv_symb:
   forall s i0,
     In s (prog_symbtable prog) ->
-    symbentry_id s = Some i0 ->
+    symbentry_id s = i0 ->
     Maps.PTree.get i0 (Genv.genv_symb ge) <> None.
 Proof.
   intros.
@@ -754,12 +819,7 @@ Proof.
 Qed.
 
 Axiom norepet_symbentry_id:
-  list_norepet
-    (filter (fun a => match a with
-                      | Some _ => true
-                      | None => false
-                      end) symbentry_id ## (prog_symbtable tprog)).
-
+  list_norepet symbentry_id ## (prog_symbtable tprog).
 
 Lemma transl_init_data_norepet:
   forall sim z0 a r,
@@ -840,9 +900,9 @@ Proof.
   unfold RelocProgSemantics.Genv.symbol_address in SID.
   unfold Genv.symbol_address.
   destr_in SID. destr_in SID.
-  edestruct symb_address_has_symtable_entry as (idx & s & GET & ID). eauto.
+  edestruct symb_address_has_symtable_entry as (idx & s & GET & ID & idxPOS). eauto.
   edestruct in_split as (stbl1 & stbl2 & EQ). eapply nth_error_In.
-  unfold SeqTable.SeqTable.get in GET. apply GET.
+  unfold SymbTable.get in GET. apply GET.
   edestruct gen_symb_index_map_ok as (n & junk & FL & SYMGET). eauto. eauto.
   eapply norepet_symbentry_id.
   edestruct transl_init_data_list_ok as (e & ofs & rtbl' & INreloc & FL2 & ROFS & TYP & RSYM & RADD).
@@ -852,11 +912,14 @@ Proof.
   exploit (@nth_error_nodup). exact GET.
   rewrite EQ. rewrite nth_error_app2. instantiate (2:= length stbl1).
   rewrite Nat.sub_diag. reflexivity. omega.
-  eapply norepet_symbentry_id. congruence. reflexivity. intro idxEQ.
+  instantiate (1:= symbentry_id).
+  exact norepet_symbentry_id. congruence. intro idxEQ.
   erewrite symb_address_2. eauto. 3: eauto. eauto.
   eapply norepet_reloctables. eauto.
   eauto.  3: eauto.
-  rewrite RSYM. rewrite Neq. rewrite <- idxEQ. rewrite Nnat.N2Nat.id. lia.
+  rewrite RSYM. rewrite Neq.
+  setoid_rewrite <- idxEQ. unfold SymbTable.idx. rewrite Nnat.N2Nat.id.
+  unfold SymbTblParams.ofs. lia.
   rewrite ROFS.
   revert FL2 FOLD. rewrite <- prog_symtable_same. fold sim.
   congruence.
@@ -873,7 +936,7 @@ Lemma transl_init_data_list_inv:
 Proof.
   unfold transl_init_data_list.
   intros sim init dreloc a.
-  generalize (OK (0, @nil relocentry)).
+  generalize (OK (0, @nil RelocTblParams.V)).
   revert init dreloc a.
   induction init; simpl; intros; eauto. easy.
   destruct H0; subst; eauto.
@@ -913,9 +976,12 @@ Qed.
 
 Lemma prog_sectable_eq:
   exists init c c',
-    prog_sectable prog = [sec_null; sec_data init; sec_text c] /\
+    prog_sectable prog = [sec_data init; sec_text c] /\
     transl_code' c = OK c' /\
-    prog_sectable tprog = [sec_null; sec_data init; sec_text c'] /\
+    transl_code (gen_symb_index_map (prog_symbtable prog)) c =
+    OK (reloctable_code (prog_reloctables tprog)) /\
+    0 <= code_size c' < Ptrofs.max_unsigned /\
+    prog_sectable tprog = [sec_data init; sec_text c'] /\
     transl_init_data_list (gen_symb_index_map (prog_symbtable prog)) init =
     OK (reloctable_data (prog_reloctables tprog)).
 Proof.
@@ -923,8 +989,12 @@ Proof.
   monadInv TRANSF. simpl in *.
   exploit transl_sectable_ok. eauto.
   intros (c & l & CODE & DATA & TCODE & TDATA).
-  unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H0. simpl.
-  (do 3 eexists). split. eauto. split. eauto. split. eauto.
+  unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H0.
+  repeat destr_in EQ1. simpl.
+  (do 3 eexists). split. eauto. split. eauto.
+  split. vm_compute in CODE. inv CODE. auto.
+  split. split. generalize (code_size_non_neg x2); lia. auto.
+  split. eauto.
   vm_compute in DATA. inv DATA. auto.
 Qed.
 
@@ -936,7 +1006,7 @@ Proof.
   intros m0 m ADS.
   unfold RelocProgSemantics.alloc_data_section, alloc_data_section in *.
   repeat destr_in ADS.
-  destruct (prog_sectable_eq) as (init' & c & c' & PS1 & TC & PS2 & TIDL).
+  destruct (prog_sectable_eq) as (init' & c & c' & PS1 & TC & TC' & CodeRng &PS2 & TIDL).
   rewrite PS2. simpl.
   rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
   simpl in *.
@@ -1008,7 +1078,7 @@ Proof.
   intros m0 m ACS.
   unfold RelocProgSemantics.alloc_code_section, alloc_code_section in *.
   repeat destr_in ACS.
-  destruct (prog_sectable_eq) as (init' & c & c' & PS1 & TC & PS2 & TIDL).
+  destruct (prog_sectable_eq) as (init' & c & c' & PS1 & TC & TC' & CodeRng & PS2 & TIDL).
   rewrite PS2. simpl.
   rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
   erewrite transl_code_size; eauto.
@@ -1016,14 +1086,28 @@ Proof.
   rewrite Heqp. auto.
 Qed.
 
+
+Lemma alloc_external_symbol_ok:
+  forall m1 s m2,
+    RelocProgSemantics.alloc_external_symbol m1 s = Some m2 ->
+    alloc_external_symbol m1 s = Some m2.
+Proof.
+  unfold RelocProgSemantics.alloc_external_symbol.
+  unfold alloc_external_symbol.
+  intros.
+  repeat destr_in H.
+Qed.
+
 Lemma alloc_external_symbols_ok:
-  forall m1,
-    alloc_external_symbols m1 (prog_symbtable tprog) =
-    RelocProgSemantics.alloc_external_symbols m1 (prog_symbtable prog).
+  forall m1 m2,
+    RelocProgSemantics.alloc_external_symbols m1 (prog_symbtable prog) = Some m2 ->
+    alloc_external_symbols m1 (prog_symbtable tprog) = Some m2.
 Proof.
   rewrite prog_symtable_same.
   generalize (prog_symbtable tprog).
   induction s; simpl; intros; eauto.
+  destr_in H.
+  erewrite alloc_external_symbol_ok; eauto.
 Qed.
 
 Lemma init_mem_ok:
@@ -1036,7 +1120,8 @@ Proof.
   repeat destr_in IM.
   erewrite alloc_data_section_ok; eauto.
   erewrite alloc_code_section_ok; eauto.
-  apply alloc_external_symbols_ok.
+  rewrite H0.
+  eapply alloc_external_symbols_ok; eauto.
 Qed.
 
 Lemma main_preserved:
@@ -1045,7 +1130,6 @@ Proof.
   unfold match_prog, transf_program in TRANSF.
   monadInv TRANSF. reflexivity.
 Qed.
-
 
 Lemma main_ok:
   RelocProgSemantics.Genv.symbol_address ge (prog_main prog) Ptrofs.zero =
@@ -1193,7 +1277,7 @@ Proof.
   unfold ge in H.
   unfold RelocProgSemantics.globalenv in *.
   rewrite instrs_add_external_globals in *. simpl in *.
-  destruct (prog_sectable_eq) as (init & c & c' & PS1 & TC & PS2 & TIDL).
+  destruct (prog_sectable_eq) as (init & c & c' & PS1 & TC & TC' & CodeRng & PS2 & TIDL).
   rewrite PS1, PS2 in *.
   simpl in *.
   unfold gen_instr_map, transl_code' in *.
@@ -1225,6 +1309,7 @@ Definition instr_reloc_id (i:instruction) : res ident :=
   end.
 
 
+
 Lemma exec_instr_ok:
   forall i rs m rs' m' i' bpc opc
          (PC: rs PC = Vptr bpc opc)
@@ -1238,8 +1323,10 @@ Lemma exec_instr_ok:
     exec_instr tge i' rs m = Next rs' m'.
 Proof.
   intros.
+  unfold id_eliminate in ELIM. destr_in ELIM.
   destruct i; simpl in *; inv EI; inv ELIM; simpl; eauto;
-    try (unfold exec_instr, get_pc_offset; rewrite PC; auto; fail).
+    try (unfold exec_instr, get_pc_offset; rewrite PC; auto; fail);
+    try (intuition congruence).
   - unfold exec_instr. unfold get_pc_offset; rewrite PC; auto.
     simpl in *.
     erewrite SYMBS. 2: eauto. 2: reflexivity. auto.
@@ -1270,7 +1357,6 @@ Proof.
       f_equal. f_equal. apply  SYMBS. reflexivity. reflexivity.
     }
     repeat destr.
-  - admit.                      (* to check... *)
   - assert (i' =  Pmovl_mr match a with
                            | Addrmode rb ss (inl _) => a
                            | Addrmode rb ss (inr (_, ptrofs)) =>
@@ -1297,10 +1383,44 @@ Proof.
       f_equal. f_equal. apply  SYMBS. reflexivity. reflexivity.
     }
     repeat destr.
-  - admit.
-  - unfold exec_instr. unfold get_pc_offset.
+  - assert (i' =  Pleal rd match a with
+                           | Addrmode rb ss (inl _) => a
+                           | Addrmode rb ss (inr (_, ptrofs)) =>
+                             Addrmode rb ss (inr (1%positive, ptrofs))
+                           end).
+    repeat destr_in H0; inv H0. clear H0. subst.
+    unfold exec_instr. unfold get_pc_offset.
     rewrite PC. unfold id_reloc_offset. Opaque Z.add. simpl.
-    unfold exec_load. unfold RelocProgSemantics.exec_load.
+    f_equal. f_equal. f_equal.
+    + repeat destr.
+      unfold eval_addrmode32, RelocProgSemantics.eval_addrmode32.
+      f_equal. f_equal. apply  SYMBS. reflexivity. reflexivity.
+    + repeat destr.
+  - destr.
+    + inv H0. inv H1. unfold exec_instr.
+      unfold get_pc_offset.
+      rewrite PC. auto.
+    + inv H0. inv H1. unfold exec_instr.
+      unfold get_pc_offset.
+      rewrite PC. simpl. f_equal. f_equal. eapply SYMBS; eauto.
+  - destr_in H0. destr_in H1.
+    + inv H0. inv H1. unfold exec_instr.
+      unfold get_pc_offset.
+      rewrite PC. rewrite <- PC. rewrite Heqo. f_equal.
+    + inv H0. inv H1. unfold exec_instr.
+      unfold get_pc_offset.
+      replace (instr_size (Pcall (inr xH) sg)) with (instr_size (Pcall (inr i) sg)).
+      rewrite PC. rewrite <- PC. rewrite Heqo. simpl. f_equal. f_equal.
+      f_equal. eapply SYMBS; eauto.
+      reflexivity.
+  - assert (i' =  Pmov_rm_a rd match a with
+       | Addrmode rb ss (inl _) => a
+       | Addrmode rb ss (inr (_, ptrofs)) =>
+         (Addrmode rb ss (inr (1%positive, ptrofs)))
+                               end).
+    repeat destr_in H1. clear H1. subst.
+    unfold exec_instr. unfold get_pc_offset. rewrite PC.
+    unfold exec_load, RelocProgSemantics.exec_load.
     match goal with
     | |-
       match Mem.loadv _ _ ?v1 with _ => _ end =
@@ -1309,20 +1429,394 @@ Proof.
       assert (x: v1 = v2); [|rewrite x; auto]
     end.
     {
+      destr. destr. destr.
       unfold eval_addrmode, RelocProgSemantics.eval_addrmode.
       destr.
       unfold eval_addrmode64, RelocProgSemantics.eval_addrmode64.
-      destr.
-      f_equal. f_equal. repeat destr.
-      unfold RelocProgSemantics.Genv.symbol_address.
-      apply  SYMBS. reflexivity. reflexivity.
+      f_equal. f_equal. simpl. apply  SYMBS. reflexivity. reflexivity.
       unfold eval_addrmode32, RelocProgSemantics.eval_addrmode32.
-      f_equal. f_equal. apply  SYMBS. reflexivity. reflexivity.
+      f_equal. f_equal. simpl. apply  SYMBS. reflexivity. reflexivity.
     }
-    repeat destr.
+    destr. f_equal. f_equal. simpl. f_equal. repeat destr.
+  - assert (i' =  Pmov_mr_a  match a with
+       | Addrmode rb ss (inl _) => a
+       | Addrmode rb ss (inr (_, ptrofs)) =>
+         (Addrmode rb ss (inr (1%positive, ptrofs)))
+                               end rs0).
+    repeat destr_in H1. clear H1. subst.
+    unfold exec_instr. unfold get_pc_offset. rewrite PC.
+    unfold exec_store, RelocProgSemantics.exec_store.
+    match goal with
+    | |-
+      match Mem.storev _ _ ?v1 _ with _ => _ end =
+      match Mem.storev _ _ ?v2 _ with _ => _ end =>
+      let x := fresh in
+      assert (x: v1 = v2); [|rewrite x; auto]
+    end.
+    {
+      destr. destr. destr.
+      unfold eval_addrmode, RelocProgSemantics.eval_addrmode.
+      destr.
+      unfold eval_addrmode64, RelocProgSemantics.eval_addrmode64.
+      f_equal. f_equal. simpl. apply  SYMBS. reflexivity. reflexivity.
+      unfold eval_addrmode32, RelocProgSemantics.eval_addrmode32.
+      f_equal. f_equal. simpl. apply  SYMBS. reflexivity. reflexivity.
+    }
+    destr. f_equal. f_equal. simpl. f_equal. repeat destr.
+Qed.
+
+Lemma transl_instr_gen_reloc_ofs_symb:
+  forall stbl ofs0 i0 l l' id0 idofs0
+    (RNG: 0 <= ofs0 <= Ptrofs.max_unsigned)
+    (TI: transl_instr (gen_symb_index_map stbl) ofs0 i0 = OK l)
+    (IR_id: instr_reloc_id i0 = OK id0)
+    (IR_ofs: id_reloc_offset (Ptrofs.unsigned (Ptrofs.repr ofs0)) i0 = Some idofs0),
+    Maps.ZTree.get idofs0 (gen_reloc_ofs_symb stbl (l ++ l')) = Some id0.
+Proof.
+  intros.
+  assert (exists e,
+             l = [e] /\
+             reloc_offset e = idofs0 /\
+             Maps.PTree.get id0 (gen_symb_index_map stbl) = Some (reloc_symb e)
+         ).
+  destruct i0; simpl in *; inv IR_id.
+  - monadInv TI. unfold compute_instr_abs_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs. destr_in IR_ofs. simpl in *. inv IR_ofs.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. rewrite Ptrofs.unsigned_repr; auto.
+  - repeat destr_in TI. simpl in *. inv H0.
+    monadInv H1. unfold compute_instr_disp_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs. destr_in EQ.
+    unfold compute_instr_abs_relocentry in EQ.
+    destr_in IR_ofs. simpl in *. inv IR_ofs. inv H0.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. rewrite Ptrofs.unsigned_repr; auto.
+  - repeat destr_in TI. simpl in *. inv H0.
+    monadInv H1. unfold compute_instr_disp_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs. destr_in EQ.
+    unfold compute_instr_abs_relocentry in EQ.
+    destr_in IR_ofs. simpl in *. inv IR_ofs. inv H0.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. rewrite Ptrofs.unsigned_repr; auto.
+
+  - repeat destr_in TI. simpl in *. inv H0.
+    monadInv H1. unfold compute_instr_disp_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs. destr_in EQ.
+    unfold compute_instr_abs_relocentry in EQ.
+    destr_in IR_ofs. simpl in *. inv IR_ofs. inv H0.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. rewrite Ptrofs.unsigned_repr; auto.
+
+  - repeat destr_in TI.
+    monadInv H1. inv H0. unfold compute_instr_rel_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs. destr_in IR_ofs.
+    simpl in EQ.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. inv IR_ofs. rewrite Ptrofs.unsigned_repr; auto.
+
+  - repeat destr_in TI.
+    monadInv H1. inv H0. unfold compute_instr_rel_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs. destr_in IR_ofs.
+    simpl in EQ.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. inv IR_ofs. rewrite Ptrofs.unsigned_repr; auto.
+
+  - repeat destr_in TI. simpl in *. inv H0.
+    monadInv H1. simpl in *. destr_in H0. inv H0. unfold compute_instr_disp_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs.
+    unfold compute_instr_abs_relocentry in EQ.
+    destr_in IR_ofs. simpl in *. inv IR_ofs.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. rewrite Ptrofs.unsigned_repr; auto.
+  - repeat destr_in TI. simpl in *. inv H0.
+    monadInv H1. simpl in *. destr_in H0. inv H0.
+    unfold compute_instr_disp_relocentry in EQ.
+    unfold id_reloc_offset in IR_ofs.
+    unfold compute_instr_abs_relocentry in EQ.
+    destr_in IR_ofs. simpl in *. inv IR_ofs.
+    destr_in EQ. inv EQ.
+    eexists; repeat split; eauto. simpl. rewrite Ptrofs.unsigned_repr; auto.
+  - destruct H as (e & EQ & OFS & SYMB). subst.
+    edestruct in_sim_in_stbl_nth as (s & GET & EQ). rewrite SYMB. reflexivity.
+    simpl.
+    eapply acc_reloc_ofs_symb_ok. eauto. eauto.
+Qed.
+
+Lemma gen_reloc_ofs_symb_app:
+  forall (stbl : symbtable) (rtbl1 rtbl2 : list relocentry) (o : Z),
+    ~ In o reloc_offset ## rtbl1 ->
+    Maps.ZTree.get o (gen_reloc_ofs_symb stbl (rtbl1 ++ rtbl2)) =
+    Maps.ZTree.get o (gen_reloc_ofs_symb stbl rtbl2).
+Proof.
+  induction rtbl1; simpl; intros; eauto.
+  rewrite acc_reloc_ofs_symb_other. 2: intuition. eauto.
+Qed.
+
+Lemma addrmode_reloc_offset_addrmode_size:
+  forall a,
+    0 <= addrmode_reloc_offset a < addrmode_size a.
+Proof.
+  Transparent addrmode_size.
+  unfold addrmode_size, addrmode_reloc_offset. intros; split. 2: lia.
+  generalize (addrmode_size_aux_pos a). lia.
+  Opaque addrmode_size.
+Qed.
+
+Lemma instr_size_reloc_offset:
+  forall i z,
+    instr_reloc_offset i = OK z ->
+    0 <= z < instr_size i.
+Proof.
+  Transparent instr_size.
+  destruct i; simpl; intros z IRO; inv IRO; try destr; try lia.
+  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  inv H0; lia.
+  inv H0; lia.
+  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  Opaque instr_size.
+Qed.
+
+Lemma transl_instr_reloc_offset_range:
+  forall sim ofs a l,
+    transl_instr sim ofs a = OK l ->
+    forall o, In o reloc_offset ## l ->
+              ofs <= o < ofs + instr_size a.
+Proof.
+  intros sim ofs a. generalize (instr_size_reloc_offset a). intro RNG.
+  intros l TI o IN.
+
+  Ltac autoinv :=
+    repeat match goal with
+           | H : OK _ = OK _ |- _ => inv H
+           | H : OK _ = Error _ |- _ => inv H
+           | H : Error _ = OK _ |- _ => inv H
+           | H : In _ (_ ## []) |- _ => simpl in H; inv H
+           | H : In _ (_ ## [_]) |- _ => simpl in H; destruct H as [H|[]]
+           | H : bind _ _ = OK _ |- _ => monadInv H
+           | H : context [match ?a with _ => _ end] |- _ => destr_in H
+           | H1 : (forall _, instr_reloc_offset _ = OK _ -> _),
+                  H2 : instr_reloc_offset ?a = _ |- _ =>
+             specialize (H1 _ H2)
+           | H: compute_instr_abs_relocentry _ _ _ _ _ = OK _ |- _ =>
+             unfold compute_instr_abs_relocentry in H
+           | H: compute_instr_disp_relocentry _ _ _ _ = OK _ |- _ =>
+             unfold compute_instr_disp_relocentry in H
+           | H: compute_instr_rel_relocentry _ _ _ _ = OK _ |- _ =>
+             unfold compute_instr_rel_relocentry in H
+           end.
+
+  destruct a; simpl in TI; autoinv; simpl; try lia.
+Qed.
+
+Lemma fold_acc_instrs_error:
+  forall l sim e,
+    fold_left (acc_instrs sim) l (Error e) = Error e.
+Proof.
+  induction l; simpl; intros; eauto.
+Qed.
+
+Lemma gen_instr_map_gen_reloc_ofs_symb_ok:
+  forall c ofs i id idofs
+         ofs0 map0 ofs1 map1
+         (GIM: fold_left acc_instr_map c (Ptrofs.repr ofs0, map0) = (Ptrofs.repr ofs1, map1))
+         (INSTR : map1 ofs = Some i)
+         (IRI : instr_reloc_id i = OK id)
+         (IRO : id_reloc_offset (Ptrofs.unsigned ofs) i = Some idofs)
+         creloc0 creloc1 stbl
+         (FL : fold_left (acc_instrs (gen_symb_index_map stbl)) c
+                         (OK (ofs0, creloc0)) =
+               OK (ofs1, creloc1))
+         (REPR: 0 <= ofs0 <= Ptrofs.max_unsigned)
+         (REPR2: 0 <= ofs0 + code_size c <= Ptrofs.max_unsigned)
+         (MAP0OFS: forall ofs i,
+             map0 ofs = Some i -> Ptrofs.unsigned ofs + instr_size i <= ofs0
+         )
+         (REC: forall ofs i id idofs,
+             map0 ofs = Some i ->
+             instr_reloc_id i = OK id ->
+             id_reloc_offset (Ptrofs.unsigned ofs) i = Some idofs ->
+             Maps.ZTree.get idofs (gen_reloc_ofs_symb stbl creloc0) = Some id
+         ),
+    Maps.ZTree.get idofs (gen_reloc_ofs_symb stbl creloc1) = Some id.
+Proof.
+  induction c; simpl; intros; eauto.
+  - inv FL. inv GIM. eauto.
+  - destruct (transl_instr (gen_symb_index_map stbl) (ofs0) a) eqn:?.
+    + simpl in FL.
+      eapply IHc in FL. eauto.
+      rewrite <- GIM. f_equal. f_equal.
+      unfold Ptrofs.add. rewrite ! Ptrofs.unsigned_repr. auto.
+      apply instr_size_repr. auto.
+      reflexivity. eauto. auto. auto.
+      generalize (code_size_non_neg c). split. 2: lia.
+      generalize (instr_size_positive a); lia. lia.
+      {
+        simpl. intros. destr_in H; eauto. inv H.
+        rewrite Ptrofs.unsigned_repr. generalize (instr_size_positive i0). lia. auto.
+        eapply MAP0OFS in H. generalize (instr_size_positive a). lia.
+      }
+      {
+        simpl. intros. destr_in H. inv H.
+        eapply transl_instr_gen_reloc_ofs_symb. 2: eauto. all: eauto.
+        erewrite gen_reloc_ofs_symb_app. eauto.
+        intro IN.
+        exploit transl_instr_reloc_offset_range. eauto. eauto.
+        generalize (MAP0OFS _ _ H).
+        unfold id_reloc_offset in H1.
+        destr_in H1. inv H1.
+        exploit instr_size_reloc_offset. apply Heqr0. lia.
+      }
+    + simpl in FL.
+      rewrite fold_acc_instrs_error in FL. inv FL.
+Qed.
+
+Lemma acc_instr_map_acc_instrs_same_size:
+  forall c ofs0 map0 ofs1 map1 sim creloc0 creloc1 x,
+    0 <= ofs0 <= Ptrofs.max_unsigned ->
+     0 <= ofs0 + code_size c <= Ptrofs.max_unsigned ->
+        fold_left acc_instr_map c (Ptrofs.repr ofs0, map0) = (ofs1, map1) ->
+        fold_left (acc_instrs sim) c (OK (ofs0, creloc0)) = OK (x, creloc1) ->
+        Ptrofs.repr x = ofs1 /\ x = code_size c + ofs0.
+Proof.
+  induction c; simpl; intros; eauto.
+  - inv H1; inv H2. auto.
+  - destruct (transl_instr sim ofs0 a) eqn:?; simpl in *.
+    + exploit IHc. 3: eauto.
+      rewrite ! Ptrofs.unsigned_repr.
+      generalize (instr_size_positive a) (code_size_non_neg c). lia.
+      generalize (instr_size_positive a) (code_size_non_neg c). lia.
+      auto.
+      rewrite ! Ptrofs.unsigned_repr. lia.
+      generalize (instr_size_positive a) (code_size_non_neg c). lia.
+      auto.
+      rewrite ! Ptrofs.unsigned_repr. eauto.
+      generalize (instr_size_positive a) (code_size_non_neg c). lia.
+      auto.
+      intros (A & B). split; auto.
+      subst.
+      rewrite ! Ptrofs.unsigned_repr. lia.
+      generalize (instr_size_positive a) (code_size_non_neg c). lia.
+      auto.
+    + rewrite fold_acc_instrs_error in H2; inv H2.
+Qed.
+
+Lemma instr_map_reloc_id_ok:
+  forall ofs i id idofs,
+    gen_instr_map' (SecTable.get sec_code_id (prog_sectable prog)) ofs = Some i ->
+    instr_reloc_id i = OK id ->
+    id_reloc_offset (Ptrofs.unsigned ofs) i = Some idofs ->
+    Maps.ZTree.get idofs (gen_reloc_ofs_symbs tprog RELOC_CODE) = Some id.
+Proof.
+  intros ofs i id idofs GIM IRI IRO.
+  unfold gen_reloc_ofs_symbs.
+  unfold add_reloc_ofs_symb at 1. destr.
+  destruct (prog_sectable_eq) as (init & c & c' & PS1 & TC & TC' & CodeRng & PS2 & _).
+  unfold transl_code in TC'. monadInv TC'.
+  unfold get_reloctable.
+  rewrite PS1 in GIM. simpl in GIM.
+  unfold gen_instr_map in GIM. destr_in GIM.
+  rewrite <- (Ptrofs.repr_unsigned Ptrofs.zero) in Heqp.
+  rewrite <- (Ptrofs.repr_unsigned i0) in Heqp.
+  eapply gen_instr_map_gen_reloc_ofs_symb_ok.
+  apply Heqp. eauto. auto. auto.
+  rewrite <- prog_symtable_same. rewrite Ptrofs.unsigned_zero.
+  rewrite EQ. f_equal. f_equal.
+  exploit acc_instr_map_acc_instrs_same_size; eauto.
+  vm_compute. intuition congruence.
+  erewrite <- transl_code_size by eauto. rewrite Ptrofs.unsigned_zero. lia.
+  rewrite Ptrofs.unsigned_zero.
+  intros (A & B).
+  subst.
+  rewrite <- (Ptrofs.unsigned_repr (code_size c + 0)).
+  rewrite A. rewrite Ptrofs.repr_unsigned. auto. 
+  erewrite <- transl_code_size by eauto. lia.
+  rewrite Ptrofs.unsigned_zero. lia.
+  rewrite Ptrofs.unsigned_zero.   erewrite <- transl_code_size by eauto. lia.
+  simpl. congruence.
+  simpl. congruence.
+Qed.
+
+Lemma symbol_address_code_transl:
+  forall b ofs i
+         (H2 : RelocProgSemantics.Genv.find_instr ge (Vptr b ofs) = Some i),
+  forall (idofs : Z) (id : ident) (ofs0 : ptrofs),
+    instr_reloc_id i = OK id ->
+    id_reloc_offset (Ptrofs.unsigned ofs) i = Some idofs ->
+    RelocProgSemantics.Genv.symbol_address ge id ofs0 = Genv.symbol_address tge RELOC_CODE idofs ofs0.
+Proof.
+  unfold Genv.symbol_address.
+  unfold RelocProgSemantics.Genv.symbol_address.
+  unfold Genv.find_symbol.
+  unfold RelocProgSemantics.Genv.find_symbol.
+  unfold tge, ge.
+  unfold globalenv. simpl.
+  unfold RelocProgSemantics.globalenv. simpl.
+  intros.
+  rewrite instrs_add_external_globals in H2. simpl in H2.
+  erewrite instr_map_reloc_id_ok; eauto.
+  rewrite prog_symtable_same.
+  rewrite defs_preserved.
+  match goal with
+  | |- match ?a with _ => _ end = match ?b with _ => _ end =>
+    assert (a = b)
+  end.
+  f_equal.
+  apply add_external_globals_symb_unchanged.
+  simpl. auto.
+  simpl. auto.
+  rewrite H1. reflexivity.
+Qed.
 
 
+Lemma eval_builtin_arg_ok:
+  forall preg rs0 sp m a1 b1,
+    RelocProgSemantics.eval_builtin_arg preg ge rs0 sp m a1 b1 ->
+    ok_builtin_arg a1 = true ->
+    eval_builtin_arg preg tge None rs0 sp m a1 b1.
+Proof.
+  induction 1; simpl; intros; eauto; try (econstructor; eauto; fail).
+  easy. easy.
+  rewrite andb_true_iff in H1.
+  destruct H1. econstructor; eauto.
+Qed.
 
+Lemma eval_builtin_args_ok:
+  forall preg rs0 sp m args vargs,
+    forallb ok_builtin_arg args = true ->
+    RelocProgSemantics.eval_builtin_args preg
+                                         ge rs0
+                                         sp m args vargs ->
+    eval_builtin_args preg tge None rs0
+                      sp m args vargs.
+Proof.
+  induction 2; simpl; intros; eauto. constructor.
+  simpl in H. rewrite andb_true_iff in H. destruct H.
+  constructor; eauto.
+  eapply eval_builtin_arg_ok; eauto.
+  eapply IHlist_forall2. auto.
+Qed.
+
+Lemma senv_preserved:
+  Genv.genv_senv ge = Genv.genv_senv (Genv.genv_genv tge).
+Proof.
+  intros.
+  unfold tge, ge.
+  unfold globalenv. simpl.
+  unfold RelocProgSemantics.globalenv.
+  rewrite ! genv_senv_add_external_globals. simpl.
+  unfold match_prog, transf_program in TRANSF.
+  monadInv TRANSF. reflexivity.
+Qed.
+
+Lemma external_call_ok:
+  forall ef vargs m t vres m',
+    external_call ef (Genv.genv_senv ge) vargs m t vres m' ->
+    external_call ef (Genv.genv_senv (Genv.genv_genv tge)) vargs m t vres m'.
+Proof.
+  intros. rewrite <- senv_preserved. eauto.
 Qed.
 
 
@@ -1348,19 +1842,28 @@ Proof.
     inv H0. constructor; auto.
   - simpl.
     intros. subst. inv H.
-    edestruct find_instr_ok as (i' & FI & ELIM); eauto.
-    exploit exec_step_internal. eauto.
-    erewrite <- find_ext_funct_ok; eauto.
-    eauto.
-
-    (* exec_step_internal
-     : forall (ge : Genv.t) (b : block) (ofs : ptrofs) (i : instruction) (rs : preg -> val) 
-         (m : mem) (rs' : regset) (m' : mem),
-       rs PC = Vptr b ofs ->
-       Genv.find_ext_funct ge (Vptr b ofs) = None ->
-       Genv.find_instr ge (Vptr b ofs) = Some i ->
-       exec_instr ge i rs m = Next rs' m' -> step ge (State rs m) E0 (State rs' m')
- *)
+    + edestruct find_instr_ok as (i' & FI & ELIM); eauto.
+      exploit exec_step_internal. eauto.
+      erewrite <- find_ext_funct_ok; eauto.
+      eauto.
+      eapply exec_instr_ok; eauto.
+      intros; symmetry; eapply symbol_address_code_transl; eauto.
+      intro STEP. eexists; split; eauto.
+    + edestruct find_instr_ok as (i' & FI & ELIM); eauto.
+      unfold id_eliminate in ELIM. destr_in ELIM. inv ELIM. simpl in Heqb0.
+      apply negb_false_iff in Heqb0.
+      exploit exec_step_builtin. eauto.
+      erewrite <- find_ext_funct_ok; eauto.
+      eauto. reflexivity.
+      eapply eval_builtin_args_ok; eauto.
+      eapply external_call_ok; eauto. auto. reflexivity.
+      intro STEP. eexists; split; eauto.
+    + exploit exec_step_external. eauto.
+      erewrite <- find_ext_funct_ok; eauto. eauto. auto.
+      eauto. eapply external_call_ok; eauto.
+      reflexivity.
+      intro STEP.
+      eexists; split; eauto.
 Qed.
 
 End PRESERVATION.
