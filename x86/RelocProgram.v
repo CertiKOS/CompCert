@@ -242,6 +242,7 @@ Definition acc_symb_ids (ids: list ident) (s:symbentry) :=
 Definition get_symbentry_ids (t:symbtable) : list ident :=
   rev (fold_left acc_symb_ids t nil).
 
+(** ** Various Properties *)
 (* Definition symbentry_id_neq (id:ident) (e:symbentry) := *)
 (*   match symbentry_id e with *)
 (*   | None => true *)
@@ -270,6 +271,10 @@ Definition get_symbentry_ids (t:symbtable) : list ident :=
 (*   unfold add_symb_to_list. rewrite Heqo. auto. *)
 (* Qed. *)
 
+Import List.ListNotations.
+Require Import Permutation.
+Require Import LocalLib.
+
 Lemma acc_to_list_loop: forall idstbl1 idstbl2,
     Forall (fun '(id, e) => symbentry_id e = id) idstbl1 ->
     (fold_left add_symb_to_list (map snd idstbl1) idstbl2) = (rev idstbl1) ++ idstbl2.
@@ -285,7 +290,7 @@ Proof.
 Qed.
 
 Lemma add_symb_to_list_inv: forall l1 l2,
-    fold_left add_symb_to_list l1 l2 = fold_left add_symb_to_list l1 nil ++ l2.
+    fold_left add_symb_to_list l1 l2 = fold_left add_symb_to_list l1 [] ++ l2.
 Proof.
   induction l1 as [|e l1].
   - cbn. auto.
@@ -293,4 +298,135 @@ Proof.
     rewrite IHl1.
     rewrite (IHl1 (add_symb_to_list nil e)).
     rewrite <- app_assoc. f_equal.
+Qed.
+
+Lemma acc_symb_ids_eq: forall ids s, 
+    acc_symb_ids ids s = acc_symb_ids nil s ++ ids.
+Proof.
+  unfold acc_symb_ids.
+  intros. cbn. auto.
+Qed.
+
+Lemma acc_symb_ids_inv: forall stbl ids,
+    fold_left acc_symb_ids stbl ids = fold_left acc_symb_ids stbl [] ++ ids.
+Proof.
+  induction stbl as [|s stbl].
+  - intros. cbn. auto.
+  - intros. cbn.
+    erewrite IHstbl. erewrite (IHstbl (acc_symb_ids [] s)).
+    rewrite <- app_assoc. f_equal.
+Qed.
+
+Lemma add_symb_to_list_permutation: forall stbl stbl',
+    Permutation stbl stbl' ->
+    Permutation (fold_left add_symb_to_list stbl [])
+                (fold_left add_symb_to_list stbl' []).
+Proof.
+  induction 1.
+  - cbn. auto.
+  - cbn. 
+    rewrite (add_symb_to_list_inv l (add_symb_to_list [] x)). 
+    rewrite (add_symb_to_list_inv l' (add_symb_to_list [] x)).
+    apply Permutation_app; auto.
+  - cbn.
+    rewrite (add_symb_to_list_inv l (add_symb_to_list (add_symb_to_list [] y) x)). 
+    rewrite (add_symb_to_list_inv l (add_symb_to_list (add_symb_to_list [] x) y)).
+    apply Permutation_app; auto.
+    unfold add_symb_to_list.
+    constructor.
+  - eapply Permutation_trans; eauto.
+Qed.
+
+Lemma acc_symb_ids_add_symb_eq: forall stbl, 
+    fold_left acc_symb_ids stbl [] = map fst (fold_left add_symb_to_list stbl []).
+Proof.
+  induction stbl as [|e stbl].
+  - cbn. auto.
+  - cbn. 
+    rewrite add_symb_to_list_inv.
+    rewrite acc_symb_ids_inv.
+    rewrite IHstbl. 
+    rewrite map_app. 
+    f_equal.
+Qed.
+
+Lemma get_symbentry_ids_add_symb_eq: forall stbl, 
+    get_symbentry_ids stbl = rev (map fst (fold_left add_symb_to_list stbl [])).
+Proof.
+  unfold get_symbentry_ids.
+  intros.
+  f_equal. apply acc_symb_ids_add_symb_eq.
+Qed.
+
+Lemma acc_symb_ids_permutation: forall stbl stbl',
+    Permutation stbl stbl' ->
+    Permutation (fold_left acc_symb_ids stbl [])
+                (fold_left acc_symb_ids stbl' []).
+Proof.
+  induction 1.
+  - cbn. auto.
+  - cbn. 
+    rewrite (acc_symb_ids_inv l).
+    rewrite (acc_symb_ids_inv l').
+    apply Permutation_app; auto.
+  - cbn.
+    rewrite (acc_symb_ids_inv l).
+    rewrite (acc_symb_ids_inv l (acc_symb_ids (acc_symb_ids [] x) y)).
+    apply Permutation_app; auto.
+    unfold acc_symb_ids. 
+    constructor; auto. 
+  - eapply Permutation_trans; eauto.
+Qed.
+
+
+Lemma get_symbentry_ids_permutation: forall stbl stbl',
+    Permutation stbl stbl' ->
+    Permutation (get_symbentry_ids stbl) (get_symbentry_ids stbl').
+Proof.
+  intros stbl stbl' PERM.
+  unfold get_symbentry_ids.
+  eapply Permutation_trans.
+  apply Permutation_sym. apply Permutation_rev.
+  eapply Permutation_trans; [|apply Permutation_rev].
+  apply acc_symb_ids_permutation; eauto.
+Qed.
+
+
+Lemma elements_of_acc_symb_to_list_perm': forall idstbl,
+    list_norepet (map fst idstbl) ->
+    Forall (fun '(id, e) => symbentry_id e = id) idstbl ->
+    Permutation (PTree.elements 
+                   (PTree_Properties.of_list
+                      (fold_left add_symb_to_list (map snd idstbl) nil)))
+                idstbl.
+Proof.
+  intros.
+  erewrite acc_to_list_loop; eauto.
+  rewrite app_nil_r.
+  apply NoDup_Permutation.
+  apply NoDup_ptree_elements.
+  apply NoDup_map_inv with (f:=fst).
+  rewrite NoDup_list_norepet_equiv. auto.
+  intros (id,e). split.
+  - intros IN.
+    apply PTree.elements_complete in IN.
+    apply PTree_Properties.in_of_list in IN.
+    rewrite in_rev. auto.
+  - intros IN.
+    apply PTree.elements_correct.
+    apply PTree_Properties.of_list_norepet.
+    eapply Permutation_pres_list_norepet; eauto.
+    apply Permutation_map.
+    apply Permutation_rev.
+    rewrite <- in_rev. auto.
+Qed.
+
+Lemma elements_of_symbtable_to_tree_perm: forall idstbl,
+    list_norepet (map fst idstbl) ->
+    Forall (fun '(id, e) => symbentry_id e = id) idstbl ->
+    Permutation (PTree.elements (symbtable_to_tree (map snd idstbl))) idstbl.
+Proof.
+  intros stbl NORPT IDEQ.
+  unfold symbtable_to_tree.
+  eapply elements_of_acc_symb_to_list_perm'; eauto.
 Qed.

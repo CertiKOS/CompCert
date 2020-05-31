@@ -30,6 +30,34 @@ Ltac destr_match_in H :=
 
 (** ** Properties about basic data structures *)
 
+Lemma map_pres_subset_rel: forall A B (l1 l2:list A) (f: A -> B),
+    (forall x, In x l1 -> In x l2)
+    -> (forall y, In y (map f l1) -> In y (map f l2)).
+Proof.
+  intros A B l1 l2 f SUB y IN.
+  rewrite in_map_iff in *.
+  destruct IN as (x & EQ & IN). subst.
+  eauto.
+Qed.
+
+Lemma Forall_app_distr: forall A f (l1 l2 : list A),
+    Forall f (l1 ++ l2) 
+    <-> Forall f l1 /\ Forall f l2.
+Proof.
+  induction l1 as [|e l1].
+  - intros l2. cbn. split; auto.
+    tauto.
+  - cbn. intros. generalize (IHl1 l2).
+    destruct 1 as [F1 F2].
+    split.
+    + intros F3. inv F3.
+      generalize (F1 H2). 
+      destruct 1. split; auto.
+    + intros F3. destruct F3 as [F4 F5]. inv F4.
+      auto.
+Qed.
+
+
 Fixpoint pos_advance_N (p:positive) (n:nat) : positive :=
   match n with
   | O => p

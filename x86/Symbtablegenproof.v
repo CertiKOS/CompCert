@@ -15,6 +15,8 @@ Require AsmFacts.
 
 Open Scope Z_scope.
 
+Hint Resolve in_eq in_cons.
+
 
 Ltac monadInvX1 H :=
   let monadInvX H :=  
@@ -363,7 +365,6 @@ Proof.
 Admitted.
 
 (** Inversion of initial memory injection on genv_next *)
-
 Lemma acc_symb_map_inv : forall stbl t id b ofs,
     t ! id = None ->
     (fold_right acc_symb_map t stbl) ! id = Some (b, ofs) ->
@@ -373,8 +374,28 @@ Lemma acc_symb_map_inv : forall stbl t id b ofs,
                b = sec_index_to_block i) /\
          ofs = Ptrofs.repr (symbentry_value e).
 Proof.
-clear.
-Admitted.
+  induction stbl as [|e stbl].
+  - intros. cbn in *. congruence.
+  - intros t id b ofs NON ACC. cbn in ACC.
+    unfold acc_symb_map in ACC.
+    destr_in ACC.
+    + destruct (peq (symbentry_id e) id).
+      * subst. rewrite PTree.gss in ACC. inv ACC.
+        eexists. intuition. eauto.
+      * rewrite PTree.gso in ACC; auto.
+        exploit IHstbl; eauto.
+        intros (e' & IN & ID & (i & SI & BL) & OFS).
+        subst. 
+        exists e'. split; eauto.
+    + exploit IHstbl; eauto.
+      intros (e' & IN & ID & (i & SI & BL) & OFS).
+      subst. 
+      exists e'. split; eauto.
+    + exploit IHstbl; eauto.
+      intros (e' & IN & ID & (i & SI & BL) & OFS).
+      subst. 
+      exists e'. split; eauto.
+Qed.        
 
 Lemma gen_symb_table_index_range: forall did cid p stbl dz cz e i,
     gen_symb_table did cid p = (stbl, dz, cz) ->
@@ -382,7 +403,10 @@ Lemma gen_symb_table_index_range: forall did cid p stbl dz cz e i,
     symbentry_secindex e = secindex_normal i ->
     i = did \/ i = cid.
 Proof.
-clear.
+  intros did cid p stbl dz cz e i GEN IN SI.
+  unfold gen_symb_table in GEN.
+  destr_in GEN. destruct p0. inv GEN.
+  clear.
 Admitted.
 
 Lemma find_symbol_globenv_block_bound :
