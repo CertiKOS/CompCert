@@ -1996,3 +1996,5 @@ Proof.
 Qed.
 
 End INLINING.
+
+End STACK_WRAPPER.

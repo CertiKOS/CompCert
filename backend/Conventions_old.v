@@ -14,9 +14,9 @@
     machine registers and stack slots. *)
 
 Require Import Coqlib.
-Require Import AST.
-Require Import Locations.
-Require Export Conventions1.
+Require Import AST_old.
+Require Import Locations_old.
+Require Export Conventions1_old.
 
 (** The processor-dependent and EABI-dependent definitions are in
     [arch/abi/Conventions1.v].  This file adds various processor-independent

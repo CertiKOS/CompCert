@@ -12,7 +12,7 @@
 
 (** Recognition of tail calls. *)
 
-Require Import Coqlib Maps AST Registers Op RTL Conventions.
+Require Import Coqlib Maps AST_old Registers_old Op_old RTL_old Conventions_old.
 
 (** An [Icall] instruction that stores its result in register [rreg]
   can be turned into a tail call if:
@@ -93,11 +93,11 @@ Definition transf_instr (f: function) (pc: node) (instr: instruction) :=
 
 Definition transf_function (f: function) : function :=
   if zeq f.(fn_stacksize) 0
-  then RTL.transf_function (transf_instr f) f
+  then RTL_old.transf_function (transf_instr f) f
   else f.
 
 Definition transf_fundef (fd: fundef) : fundef :=
-  AST.transf_fundef transf_function fd.
+  AST_old.transf_fundef transf_function fd.
 
 Definition transf_program (p: program) : program :=
   transform_program transf_fundef p.

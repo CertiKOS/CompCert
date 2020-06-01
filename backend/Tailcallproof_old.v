@@ -202,7 +202,7 @@ Qed.
 
 (** * Proof of semantic preservation *)
 
-Definition match_prog (p tp: RTL.program) :=
+Definition match_prog (p tp: RTL_old.program) :=
   match_program (fun cu f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
@@ -237,13 +237,13 @@ Lemma symbols_preserved:
 Proof (Genv.find_symbol_transf TRANSL).
 
 Lemma functions_translated:
-  forall (v: val) (f: RTL.fundef),
+  forall (v: val) (f: RTL_old.fundef),
   Genv.find_funct ge v = Some f ->
   Genv.find_funct tge v = Some (transf_fundef f).
 Proof (Genv.find_funct_transf TRANSL).
 
 Lemma funct_ptr_translated:
-  forall (b: block) (f: RTL.fundef),
+  forall (b: block) (f: RTL_old.fundef),
   Genv.find_funct_ptr ge b = Some f ->
   Genv.find_funct_ptr tge b = Some (transf_fundef f).
 Proof (Genv.find_funct_ptr_transf TRANSL).
@@ -1243,7 +1243,7 @@ Qed.
   follows. *)
 
 Theorem transf_program_correct:
-  forward_simulation (RTL.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
+  forward_simulation (RTL_old.semantics fn_stack_requirements prog) (RTL_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_opt with (measure := measure); eauto.
   apply senv_preserved. 

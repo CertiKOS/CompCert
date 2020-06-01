@@ -17,9 +17,9 @@ Require Import OrderedType.
 Require Import Coqlib.
 Require Import Maps.
 Require Import Ordered.
-Require Import AST.
-Require Import Values.
-Require Export Machregs.
+Require Import AST_old.
+Require Import Values_old.
+Require Export Machregs_old.
 
 (** * Representation of locations *)
 

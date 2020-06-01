@@ -1946,8 +1946,8 @@ Section EVAL_BUILTIN_ARG_LESSDEF''.
 End EVAL_BUILTIN_ARG_LESSDEF''.
 *)
 
-(* Used in Unusedglobproof *)
-(*
+(*SACC: eval_builtin_arg_inject; 
+  used in Unusedglobproof and Tailcall *)
 Section EVAL_BUILTIN_ARG_INJECT.
 
 Variable A: Type.
@@ -1961,7 +1961,6 @@ Variable g: frameinj.
 
 Hypothesis sp_inject: Val.inject j sp1 sp2.
 Hypothesis env_inject: forall x, Val.inject j (e1 x) (e2 x).
-Context {perminj: InjectPerm}.
 Hypothesis mem_extends: Mem.inject j g m1 m2.
 
 Hypothesis senv_preserved:
@@ -2020,7 +2019,6 @@ Proof.
 Qed.
 
 End EVAL_BUILTIN_ARG_INJECT.
-*)
 
 Lemma eval_builtin_arg_push:
   forall {A} ge (e: A -> val) sp m a v,

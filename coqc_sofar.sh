@@ -44,15 +44,16 @@ BACKEND=(
 	./backend/RTLgen.v
 	./backend/RTLgenspec.v
 	./backend/RTLgenproof.v
-	#Tailcall
+	./backend/Locations.v
+	./x86/Conventions1.v
+	./backend/Conventions.v
+	./backend/Tailcall.v
+	./backend/Tailcallproof.v
 	./backend/Inlining.v
 	./backend/Inliningspec.v
 	./backend/Inliningproof.v
 	./backend/Renumber.v
 	./backend/Renumberproof.v
-	./backend/Locations.v
-	./x86/Conventions1.v
-	./backend/Conventions.v
 	./backend/RTLtyping.v
 	./backend/Kildall.v
 	./backend/Liveness.v
@@ -72,8 +73,6 @@ BACKEND=(
 	./x86/NeedOp.v
 	./backend/Deadcode.v
 	./backend/Deadcodeproof.v
-	./backend/Inlining.v
-	./backend/Inliningspec.v
 	)
 
 FRONTEND=(

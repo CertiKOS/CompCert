@@ -304,11 +304,11 @@
 >       Val.lessdef (rs#r) v' ->
 >       match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
 >                    (Returnstate s' v' m').
-567c380
+==========================================================================================567c380
 <   | Callstate s f args m sz => 0%nat
 ---
 >   | Callstate s f args m => 0%nat
-586,760d398
+==========================================================================================586,760d398
 < 
 < Lemma regs_inject_regs:
 <   forall j rs1 rs2, regs_inject j rs1 rs2 ->
@@ -484,7 +484,7 @@
 <   apply Mem.agree_perms_mem. 
 < Qed.
 < 
-762,764c400,402
+==========================================================================================762,764c400,402
 <   forall s1 t s2, step fn_stack_requirements ge s1 t s2 ->
 <   forall s1' (MS: match_states s1 s1') (NI1: nextblock_inv s1) (NI2: nextblock_inv s1') (SPV: sp_valid s1) (* (MSA: match_stack s1) *) (MSA: stack_inv s1) (MSA': stack_inv s1'),
 <   (exists s2', step fn_stack_requirements tge s1' t s2' /\ match_states s2 s2')

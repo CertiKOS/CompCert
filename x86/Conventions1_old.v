@@ -14,7 +14,7 @@
     machine registers and stack slots. *)
 
 Require Import Coqlib Decidableplus.
-Require Import AST Machregs Locations.
+Require Import AST_old Machregs_old Locations_old.
 
 (** * Classification of machine registers *)
 

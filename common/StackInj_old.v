@@ -1,4 +1,4 @@
-Require Import Coqlib Tactics StackADT.
+Require Import Coqlib Tactics StackADT_old.
 
 (* Specifying the shape of stack injection functions *)
 
