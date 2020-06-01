@@ -2058,6 +2058,8 @@ Ltac rewrite_perms_fw :=
   end.
 *)
 
+(*Arguments Genv.init_mem_stack {_ _ _}.*)
+
 Ltac rewrite_stack_blocks :=
   match goal with
   | H:Mem.alloc _ _ _ = (?m, _) |- context [ Mem.stack ?m ] => rewrite (Mem.alloc_stack_unchanged _ _ _ _ _ H)
@@ -2070,7 +2072,7 @@ Ltac rewrite_stack_blocks :=
   | H:Mem.drop_perm _ _ _ _ _ = Some ?m |- context [ Mem.stack ?m ] => rewrite (Mem.drop_perm_stack_unchanged _ _ _ _ _ _ H)
   | H: context[ Mem.stack (Mem.push_new_stage ?m)] |- _ => rewrite Mem.push_new_stage_stack in H; inv H
   | |- context[ Mem.stack (Mem.push_new_stage ?m)] => rewrite Mem.push_new_stage_stack
-  | H: Genv.init_mem _ = Some ?m |- context [Mem.stack ?m] => rewrite (Genv.init_mem_stack _ _ H)
+  | H: Genv.init_mem _ _ _ = Some ?m |- context [Mem.stack ?m] => rewrite (Genv.init_mem_stack _ _ H)
   | H:Mem.record_stack_blocks _ _ = Some ?m |- context [ Mem.stack ?m ] =>
     let f := fresh "f" in
     let r := fresh "r" in
@@ -2112,9 +2114,7 @@ Ltac rewrite_perms_bw H :=
   end.
 *)
 
-(*
-Arguments Genv.init_mem_genv_next {mem _ _ _}.
-*)
+(*Arguments Genv.init_mem_genv_next {_ _}.*)
 
 Ltac rewnb :=
   repeat
@@ -2138,7 +2138,7 @@ Ltac rewnb :=
       eapply Plt_Ple_trans; [ | apply external_call_nextblock in H; exact H ]
     | H: external_call _ _ _ ?m1 _ _ ?m2 |- Ple _ (Mem.nextblock ?m2) =>
       eapply Ple_trans; [ | apply external_call_nextblock in H; exact H ]
-    | H: Genv.init_mem _ = Some ?m |- context [Mem.nextblock ?m] =>
+    | H: Genv.init_mem _ _ _ = Some ?m |- context [Mem.nextblock ?m] =>
       rewrite <- (Genv.init_mem_genv_next _ _ H)
     | H: Mem.tailcall_stage ?m1 = Some ?m2 |- context [ Mem.nextblock ?m2] =>
       rewrite (Mem.tailcall_stage_nextblock _ _ H)

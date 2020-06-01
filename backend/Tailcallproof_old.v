@@ -1203,13 +1203,13 @@ Proof.
   edestruct (Mem.record_init_sp_flat_inject m0 m0 m2) as (m2' & RIS & INJ); eauto.
   eapply Genv.initmem_inject; eauto. omega. 
   assert (m2 = m2') by congruence. subst.
-  econstructor. eauto.
+  econstructor. eauto. 
   split.
   econstructor. constructor. constructor.
   * apply Mem.push_new_stage_inject; eauto.
   * repeat rewrite_stack_blocks. simpl.
     repeat econstructor; omega.
-  * unfold Mem.flat_inj; rewnb.
+  * unfold Mem.flat_inj. rewnb.
     fold ge. split; intros.
     apply pred_dec_true; xomega.
     destr_in H.
