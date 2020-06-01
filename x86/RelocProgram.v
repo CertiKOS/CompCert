@@ -111,7 +111,7 @@ Record symbentry : Type :=
 (*      symbentry_size := 0; *)
 (*   |}. *)
 
-Definition is_symbol_internal e :=
+Definition is_symbentry_internal e :=
   match symbentry_secindex e with
   | secindex_normal _ => true
   | _ => false

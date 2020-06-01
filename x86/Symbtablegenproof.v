@@ -672,15 +672,54 @@ Proof.
   rewrite Ptrofs.add_zero_l. auto.
 Qed.
 
+Lemma gen_symb_table_only_internal_symbol_aux: 
+  forall did cid defs stbl dz1 cz1 dz2 cz2 id def,
+    list_norepet (map fst defs) ->
+    is_def_internal is_fundef_internal def = true ->
+    fold_left (acc_symb did cid) defs ([], dz1, cz1) = (stbl, dz2, cz2) ->
+    In (id, def) defs ->
+    only_internal_symbol id (rev stbl).
+Proof.
+  induction defs as [|def defs].
+  - cbn. intros. contradiction.
+  - intros stbl dz1 cz1 dz2 cz2 id def1 NORPT INT ACC IN. 
+    inv NORPT. cbn in ACC. destruct def as (id1, def).
+    destr_in ACC.
+    apply acc_symb_inv' in ACC.
+    destruct ACC as (stbl1' & EQ & ACC). subst.
+    rewrite rev_app_distr. cbn.
+    inv IN.
+    + inv H. cbn in H1.
+      erewrite acc_symb_pres_ids in H1; eauto.
+      red. intros. inv H.
+      * rewrite <- H3.
+        erewrite <- get_symbentry_pres_internal_prop; eauto.
+      * exfalso. apply H1.
+        unfold get_symbentry_ids.
+        rewrite in_map_iff. eauto.
+    + cbn in H1.
+      red. intros. inv H0.
+      * rewrite get_symbentry_id in H. 
+        exfalso. apply H1. rewrite in_map_iff. 
+        exists (id1, def1). split; auto.
+      * eapply IHdefs; eauto.
+Qed.
+      
 
 Lemma gen_symb_table_only_internal_symbol: 
   forall did cid defs stbl dz cz id def,
+    list_norepet (map fst defs) ->
     is_def_internal is_fundef_internal def = true ->
     gen_symb_table did cid defs = (stbl, dz, cz) ->
     In (id, def) defs ->
     only_internal_symbol id stbl.
-  clear.
-Admitted.
+Proof.
+  intros until def.
+  intros NORPT INT GS IN.
+  unfold gen_symb_table in GS. destr_in GS.
+  destruct p. inv GS.
+  eapply gen_symb_table_only_internal_symbol_aux; eauto.
+Qed.
 
 
 Theorem init_meminj_match_sminj : 

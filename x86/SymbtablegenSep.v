@@ -1315,21 +1315,6 @@ Definition match_def_symbentry (id_def: ident * option gdef) e :=
 (* Qed.       *)
 
 
-Lemma get_symbentry_pres_internal_prop : forall id dsz csz def,
-    is_def_internal is_fundef_internal def = 
-    is_symbentry_internal (get_symbentry sec_data_id sec_code_id dsz csz id def).
-Proof.
-  intros. destruct def.
-  destruct g. destruct f.
-  - cbn. auto.
-  - cbn. auto.
-  - cbn. unfold is_var_internal. 
-    destruct (gvar_init v); cbn; auto.
-    destruct i; cbn; auto.
-    destruct l; cbn; auto.
-  - cbn. auto.
-Qed.
-
 Lemma match_def_symbentry_pres_internal_prop : forall id def e,
     match_def_symbentry (id, def) e ->
     is_def_internal is_fundef_internal def = is_symbentry_internal e.

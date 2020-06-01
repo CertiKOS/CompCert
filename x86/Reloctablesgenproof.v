@@ -430,7 +430,7 @@ Lemma genv_symb_add_external_global:
   forall t ge se id b o,
     Maps.PTree.get id (Genv.genv_symb (add_external_global t ge se)) = Some (b,o) ->
     Maps.PTree.get id (Genv.genv_symb ge) = Some (b,o) \/
-    (symbentry_id se =  id /\ is_symbol_internal se = false /\ b = Genv.genv_next ge /\ o = Ptrofs.zero).
+    (symbentry_id se =  id /\ is_symbentry_internal se = false /\ b = Genv.genv_next ge /\ o = Ptrofs.zero).
 Proof.
   unfold add_external_global. simpl. intros.
   destr_in H.
@@ -447,8 +447,8 @@ Lemma genv_symb_add_external_globals:
     (exists se l1 l2,
         stbl = l1 ++ se :: l2 /\
         symbentry_id se = id /\
-        is_symbol_internal se = false /\
-        b = Pos.of_nat (Pos.to_nat (Genv.genv_next ge) + length (filter (fun s => negb (is_symbol_internal s)) l1)) /\
+        is_symbentry_internal se = false /\
+        b = Pos.of_nat (Pos.to_nat (Genv.genv_next ge) + length (filter (fun s => negb (is_symbentry_internal s)) l1)) /\
         o = Ptrofs.zero
     ).
 Proof.
@@ -779,7 +779,7 @@ Lemma in_stbl_external_in_genv_symb:
   forall s i0 extfuns stbl ge,
     In s stbl ->
     symbentry_id s = i0 ->
-    is_symbol_internal s = false ->
+    is_symbentry_internal s = false ->
     Maps.PTree.get i0 (Genv.genv_symb (add_external_globals extfuns ge stbl)) <> None.
 Proof.
   induction stbl; simpl; intros; eauto.
@@ -800,9 +800,9 @@ Lemma in_stbl_in_genv_symb:
 Proof.
   intros.
   unfold ge. unfold RelocProgSemantics.globalenv.
-  destruct (is_symbol_internal s) eqn:INT.
+  destruct (is_symbentry_internal s) eqn:INT.
   - apply add_external_globals_acc. simpl.
-    unfold is_symbol_internal in INT. destr_in INT.
+    unfold is_symbentry_internal in INT. destr_in INT.
     eapply in_stbl_in_gen_symb_map; eauto.
   - eapply in_stbl_external_in_genv_symb; eauto.
 Qed.

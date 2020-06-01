@@ -673,7 +673,7 @@ Definition add_external_global (extfuns: PTree.t external_function)
            (ge:Genv.t) (e: symbentry) : Genv.t :=
   let id := symbentry_id e in
   let gsymbs := 
-      if is_symbol_internal e then
+      if is_symbentry_internal e then
         Genv.genv_symb ge
       else
         PTree.set id (Genv.genv_next ge, Ptrofs.zero)
@@ -682,7 +682,7 @@ Definition add_external_global (extfuns: PTree.t external_function)
   let gextfuns :=
       match symbentry_type e with
       | symb_func =>
-        if is_symbol_internal e then
+        if is_symbentry_internal e then
           Genv.genv_ext_funs ge
         else
           match PTree.get id extfuns with
@@ -694,7 +694,7 @@ Definition add_external_global (extfuns: PTree.t external_function)
       end
   in
   let bnext := 
-      if is_symbol_internal e 
+      if is_symbentry_internal e 
       then Genv.genv_next ge 
       else Psucc (Genv.genv_next ge)
   in
@@ -753,7 +753,7 @@ Qed.
 Hint Resolve in_eq in_cons.
 
 Definition only_internal_symbol i stbl := 
-    (forall e, In e stbl -> symbentry_id e = i -> is_symbol_internal e = true).
+    (forall e, In e stbl -> symbentry_id e = i -> is_symbentry_internal e = true).
 
 Lemma add_external_globals_pres_find_symbol : forall extfuns stbl ge i,
     only_internal_symbol i stbl ->
@@ -1076,21 +1076,21 @@ Qed.
 
 
 Definition num_of_external_symbs (tbl:SymbTable.t) :=
-  length (filter (fun s => negb (is_symbol_internal s)) tbl).
+  length (filter (fun s => negb (is_symbentry_internal s)) tbl).
 
 Lemma alloc_external_symbol_nextblock1 : forall e m m',
-  is_symbol_internal e = false ->
+  is_symbentry_internal e = false ->
   alloc_external_symbol m e = Some m' -> 
   Mem.nextblock m' = Pos.succ (Mem.nextblock m).
 Proof.
   intros e m m' SI ALLOC.
   unfold alloc_external_symbol in ALLOC.
   repeat destr_in ALLOC.
-  - unfold is_symbol_internal in SI.
+  - unfold is_symbentry_internal in SI.
     rewrite Heqs0 in SI. congruence.
   - erewrite Mem.nextblock_drop; eauto.
     erewrite Mem.nextblock_alloc; eauto.
-  - unfold is_symbol_internal in SI.
+  - unfold is_symbentry_internal in SI.
     rewrite Heqs0 in SI. congruence.
   - erewrite Mem.nextblock_drop; eauto.
     erewrite Genv.store_zeros_nextblock; eauto.
@@ -1102,20 +1102,20 @@ Proof.
 Qed.
 
 Lemma alloc_external_symbol_nextblock2 : forall e m m',
-  is_symbol_internal e = true ->
+  is_symbentry_internal e = true ->
   alloc_external_symbol m e = Some m' -> 
   Mem.nextblock m' = Mem.nextblock m.
 Proof.
   intros e m m' SI ALLOC.
   unfold alloc_external_symbol in ALLOC.
   repeat destr_in ALLOC.
-  - unfold is_symbol_internal in SI.
+  - unfold is_symbentry_internal in SI.
     rewrite Heqs0 in SI. congruence.
-  - unfold is_symbol_internal in SI.
+  - unfold is_symbentry_internal in SI.
     rewrite Heqs0 in SI. congruence.
-  - unfold is_symbol_internal in SI.
+  - unfold is_symbentry_internal in SI.
     rewrite Heqs0 in SI. congruence.
-  - unfold is_symbol_internal in SI.
+  - unfold is_symbentry_internal in SI.
     rewrite Heqs0 in SI. congruence.
 Qed.
 
@@ -1128,7 +1128,7 @@ Proof.
   - destr_match_in H1; inv H1.
     simpl. 
     exploit IHtbl; eauto. intros NB.
-    destruct (is_symbol_internal a) eqn:SI.    
+    destruct (is_symbentry_internal a) eqn:SI.    
     + exploit alloc_external_symbol_nextblock2; eauto.
       intros NB1.
       cbn. rewrite SI. cbn. 
@@ -1140,7 +1140,7 @@ Proof.
 Qed.
 
 Lemma add_external_global_nextblock1: forall ge extfuns e,
-    is_symbol_internal e = false ->
+    is_symbentry_internal e = false ->
     Genv.genv_next (add_external_global extfuns ge e) = 
     Pos.succ (Genv.genv_next ge).
 Proof.
@@ -1150,7 +1150,7 @@ Proof.
 Qed.  
 
 Lemma add_external_global_nextblock2: forall ge extfuns e,
-    is_symbol_internal e = true ->
+    is_symbentry_internal e = true ->
     Genv.genv_next (add_external_global extfuns ge e) = 
     Genv.genv_next ge.
 Proof.
@@ -1166,7 +1166,7 @@ Proof.
   induction tbl; intros; simpl.
   - auto.
   - rewrite IHtbl. 
-    destruct (is_symbol_internal a) eqn:SI.
+    destruct (is_symbentry_internal a) eqn:SI.
     + erewrite add_external_global_nextblock2; eauto.
       cbn. rewrite SI. cbn. auto.
     + erewrite add_external_global_nextblock1; eauto.

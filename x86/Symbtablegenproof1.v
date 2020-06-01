@@ -11,7 +11,24 @@ Require Import RelocProgram Symbtablegen.
 Require Import CheckDef.
 Require Import AsmFacts.
 Require Import LocalLib.
+Require Import Linking.
 Import ListNotations.
+
+
+Lemma get_symbentry_pres_internal_prop : forall did cid id dsz csz def,
+    is_def_internal is_fundef_internal def = 
+    is_symbentry_internal (get_symbentry did cid dsz csz id def).
+Proof.
+  intros. destruct def.
+  destruct g. destruct f.
+  - cbn. auto.
+  - cbn. auto.
+  - cbn. unfold is_var_internal. 
+    destruct (gvar_init v); cbn; auto.
+    destruct i; cbn; auto.
+    destruct l; cbn; auto.
+  - cbn. auto.
+Qed.
 
 
 Lemma get_symbentry_id : forall d_id c_id dsz csz id def,
