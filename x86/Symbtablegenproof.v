@@ -478,14 +478,200 @@ Proof.
   rewrite PTree.gempty; auto.
 Qed.
 
+
+Lemma acc_instr_map_no_effect: forall c ofs' ofs map cz map',
+    fold_left acc_instr_map c (ofs', map') = (cz, map) ->
+    (Ptrofs.unsigned ofs) < (Ptrofs.unsigned ofs') ->
+    map ofs = map' ofs.
+Proof.
+  induction c as [|i c].
+  - cbn. intros. inv H. auto.
+  - cbn. intros ofs' ofs map cz map' ACC LE.
+    assert (Ptrofs.unsigned ofs < Ptrofs.unsigned (Ptrofs.add ofs' (Ptrofs.repr (instr_size i)))) as LE'.
+    { 
+      rewrite Ptrofs.add_unsigned.
+      repeat rewrite Ptrofs.unsigned_repr. 
+      generalize (instr_size_positive i). omega.
+      apply instr_size_repr.
+      admit.
+      apply instr_size_repr.
+    }
+    generalize (IHc _ _ _ _ _ ACC LE').
+    intros MAP'.
+    rewrite MAP'.
+    destr. subst. omega.
+Admitted.
+
+Lemma acc_instr_map_pres_find : forall c i ofs ofs' map map' cz,
+    find_instr ofs c = Some i ->
+    fold_left acc_instr_map c (ofs', map') = (cz, map) ->
+    map (Ptrofs.add ofs' (Ptrofs.repr ofs)) = Some i.
+Proof.
+  induction c as [|i c].
+  - cbn. intros. congruence.
+  - intros i1 ofs ofs' map map' cz FIND ACC.
+    cbn in FIND. destruct zeq. subst.
+    + inv FIND. 
+      rewrite Ptrofs.add_zero.
+      cbn in ACC.
+      erewrite acc_instr_map_no_effect; eauto.
+      cbn. destruct Ptrofs.eq_dec; congruence.
+      rewrite Ptrofs.add_unsigned.
+      rewrite Ptrofs.unsigned_repr. 
+      generalize (Ptrofs.unsigned_range (Ptrofs.repr (instr_size i1))).
+      rewrite Ptrofs.unsigned_repr. 
+      generalize (instr_size_positive i1). omega.
+      apply instr_size_repr.
+      admit.
+    + cbn in ACC.
+      exploit IHc; eauto.
+      intros MAP.
+      rewrite Ptrofs.add_assoc in MAP.
+      rewrite <- MAP. f_equal. f_equal.
+      rewrite Ptrofs.add_unsigned. 
+      rewrite Ptrofs.unsigned_repr. 
+      rewrite Ptrofs.unsigned_repr. 
+      f_equal. omega.
+      admit.
+      apply instr_size_repr.
+Admitted.
+
+
+Lemma acc_symb_map_size: forall c ofs map cz map',
+    fold_left acc_instr_map c (ofs, map) = (cz, map') -> 
+    cz = Ptrofs.add ofs (Ptrofs.repr (code_size c)).
+Proof.
+  induction c as [|i c].
+  - cbn; intros. inv H. rewrite Ptrofs.add_zero. auto.
+  - intros ofs map cz map' ACC.
+    cbn in ACC.
+    apply IHc in ACC. subst.
+    rewrite Ptrofs.add_assoc.
+    f_equal.
+    rewrite Ptrofs.add_unsigned. 
+    rewrite Ptrofs.unsigned_repr. 
+    rewrite Ptrofs.unsigned_repr. auto.
+    admit.
+    apply instr_size_repr.
+Admitted.
+
+
+Lemma code_size_bound: forall defs (id:ident) f,
+    In (id, Some (Gfun (Internal f))) defs ->
+    code_size (fn_code f) <= odefs_size (map snd defs).
+Proof.
+  induction defs as [|def defs].
+  - cbn. intros. contradiction.
+  - cbn. intros id f [EQ | IN].
+    + subst. cbn. 
+      generalize (odefs_size_pos (map snd defs)).
+      intros LE.
+      apply le_add_pos. auto.
+    + generalize (IHdefs _ _ IN).
+      intros. etransitivity; eauto.
+      rewrite Z.add_comm. apply le_add_pos.      
+      eapply odef_size_pos.
+Qed.
+
+Lemma def_code_size_le_odef_size : forall def, 
+    def_code_size def <= odef_size def.
+Proof.
+  intros. destruct def. destruct g. destruct f.
+  cbn. omega.
+  cbn. omega.
+  cbn. generalize (init_data_list_size_pos (gvar_init v)). omega.
+  cbn. omega.
+Qed.
+
+Lemma pres_find_instr_aux: forall (defs: list (ident * option (globdef fundef unit))) id f ofs i cz t ofs' t',
+    list_norepet (map fst defs) ->
+    In (id, Some (Gfun (Internal f))) defs ->
+    find_instr (Ptrofs.unsigned ofs) (fn_code f) = Some i ->
+    (cz, t) = fold_left acc_instr_map (fold_right acc_instrs [] defs) (ofs', t') ->
+    t (Ptrofs.add ofs (Ptrofs.add ofs' (Ptrofs.repr (defs_code_size (defs_before id defs))))) = Some i.
+Proof.
+  induction defs as [|def defs].
+  - intros.
+    cbn in *. contradiction.
+  - intros id f ofs i cz t ofs' t' NORPT IN FIND ACC.
+    assert (Ptrofs.unsigned ofs' + odefs_size (map snd (def::defs)) <= Ptrofs.max_unsigned) as SZ. 
+    { admit. }
+    inv NORPT.
+    generalize (code_size_bound _ _ _ IN). intros CBN.
+    assert (Ptrofs.unsigned ofs' + code_size (fn_code f) <= Ptrofs.max_unsigned) as CBN1.
+    { etransitivity; eauto. 
+      rewrite <- Z.add_le_mono_l. auto. }
+    assert (0 <= code_size (fn_code f) <= Ptrofs.max_unsigned) as CRNG.
+    { split. generalize (code_size_non_neg (fn_code f)). omega.
+      generalize (Ptrofs.unsigned_range ofs'). intros. inv H.
+      etransitivity. exact CBN.
+      apply Z_le_add_l_inv with (Ptrofs.unsigned ofs'); auto. }
+    generalize (find_instr_bound _ _ _ FIND). intros IBND.
+    generalize (instr_size_positive i). intros IPOS. 
+    assert (0 <= Ptrofs.unsigned ofs + Ptrofs.unsigned ofs' <= Ptrofs.max_unsigned).
+    { split.
+      generalize (Ptrofs.unsigned_range ofs'). 
+      generalize (Ptrofs.unsigned_range ofs); omega. omega.
+    }
+    inv IN.
+    + cbn in ACC.
+      rewrite fold_left_app in ACC.
+      rewrite defs_before_head. cbn.
+      rewrite Ptrofs.add_zero.
+      destruct (fold_left acc_instr_map (fn_code f) (ofs', t'))
+               as (cz', t'') eqn:ACC'.
+      erewrite acc_instr_map_no_effect; eauto.
+      rewrite Ptrofs.add_commut.
+      replace ofs with ((Ptrofs.repr (Ptrofs.unsigned ofs))).
+      eapply acc_instr_map_pres_find; eauto.
+      erewrite Ptrofs.repr_unsigned; auto.
+      exploit acc_symb_map_size; eauto.
+      intros. subst. 
+      rewrite Ptrofs.add_unsigned.
+      rewrite Ptrofs.unsigned_repr.
+      rewrite Ptrofs.add_unsigned.
+      rewrite Ptrofs.unsigned_repr.
+      rewrite Ptrofs.unsigned_repr; auto.
+      generalize (code_size_non_neg (fn_code f)). intros. omega.
+      rewrite Ptrofs.unsigned_repr; auto.
+      generalize (Ptrofs.unsigned_range ofs'). omega.
+      auto.
+      
+    + destruct def as (id', def).
+      rewrite defs_before_tail.
+      rewrite defs_code_size_cons.
+      cbn in ACC.
+      rewrite fold_left_app in ACC.
+      destruct (fold_left acc_instr_map (get_def_instrs def) (ofs', t')) as (ofs'', t'') eqn:ACC1.
+      exploit acc_symb_map_size; eauto. intros.
+      assert (def_code_size def <= odef_size def) as DCBND.
+      { eapply def_code_size_le_odef_size. }
+      assert (t (Ptrofs.add ofs (Ptrofs.add ofs'' (Ptrofs.repr (defs_code_size (defs_before id defs))))) = Some i) as IHR.
+      { eapply IHdefs; eauto. }
+      subst. rewrite <- IHR. f_equal. f_equal.
+      rewrite Ptrofs.add_assoc. f_equal.
+      rewrite Ptrofs.add_unsigned. f_equal.
+      repeat rewrite Ptrofs.unsigned_repr. auto.
+      admit.
+      admit.
+      intros ID. subst. apply H1.
+      rewrite in_map_iff. cbn. 
+      eexists; split; eauto. cbn. auto.
+Admitted.        
+
 Lemma pres_find_instr: forall defs id f ofs i,
+    list_norepet (map fst defs) ->
     In (id, Some (Gfun (Internal f))) defs ->
     find_instr (Ptrofs.unsigned ofs) (fn_code f) = Some i ->
     gen_instr_map (fold_right acc_instrs [] defs)
                   (Ptrofs.add ofs (Ptrofs.repr (defs_code_size (defs_before id defs)))) = Some i.
 Proof.
-  clear.
-Admitted.
+  unfold gen_instr_map.
+  intros. destr. 
+  exploit pres_find_instr_aux; eauto.
+  rewrite Ptrofs.add_zero_l. auto.
+Qed.
+
 
 Lemma gen_symb_table_only_internal_symbol: 
   forall did cid defs stbl dz cz id def,
