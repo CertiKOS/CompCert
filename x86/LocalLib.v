@@ -298,6 +298,15 @@ Qed.
 
 (** PTree Properties *)
 
+Lemma PTree_Properties_of_list_cons:
+  forall {A : Type} (k : PTree.elt) (v : A) (l : list (PTree.elt * A)),
+  ~ In k (map fst l) -> (PTree_Properties.of_list ((k, v) :: l)) ! k = Some v.
+Proof.
+  intros.
+  replace ((k, v) :: l) with ([] ++ (k, v) :: l) by auto.
+  apply PTree_Properties.of_list_unique; auto.
+Qed.
+
 Lemma PTree_Properties_of_list_iter_inv_some': forall {A} n defs (t:PTree.t A) id def f,
     length defs = n ->
     f = (fun (m : PTree.t A) (k_v : PTree.elt * A) => PTree.set (fst k_v) (snd k_v) m) ->

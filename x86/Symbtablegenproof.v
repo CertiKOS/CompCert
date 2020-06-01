@@ -408,67 +408,75 @@ Definition init_meminj : meminj :=
         end
       end.
 
-(* Lemma symbtable_to_tree_acc_symb_map_sync': forall stbl stbl' id e b ofs, *)
-(*     ~ In id (map fst stbl') -> *)
-(*     (PTree_Properties.of_list (symbtable_to_idlist stbl [] ++ stbl')) ! id = Some e -> *)
-(*     (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) -> *)
-(*     ofs = Ptrofs.repr (symbentry_value e) /\ *)
-(*     (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i). *)
-(* Proof. *)
-(*   induction stbl as [|e stbl]. *)
-(*   - cbn. intros stbl' id e b ofs NIN ADD ACC. *)
-(*     rewrite PTree.gempty in ACC. congruence. *)
-(*   - intros stbl' id e' b ofs NIN ADD ACC. *)
-(*     cbn [fold_left "++"] in ADD. *)
-(*     unfold add_symb_to_list at 2 in ADD.  *)
-(*     rewrite add_symb_to_list_inv in ADD. *)
-(*     rewrite <- app_assoc in ADD. *)
-(*     cbn in ACC. *)
+Lemma acc_symb_map_inv : forall e t b ofs,
+    t ! (symbentry_id e) = None ->
+    (acc_symb_map e t) ! (symbentry_id e) = Some (b, ofs) ->
+    ofs = Ptrofs.repr (symbentry_value e) /\
+    (exists i : N,
+        symbentry_secindex e = secindex_normal i /\
+        b = sec_index_to_block i).
+Proof.
+  intros e t b ofs GET ACC.
+  unfold acc_symb_map in ACC.
+  destr_in ACC.
+  erewrite PTree.gss in ACC. inv ACC.
+  eauto.
+Qed.
 
-(*     Lemma acc_symb_map_inv : forall e t b ofs, *)
-(*         t ! (symbentry_id e) = None -> *)
-(*         (acc_symb_map e t) ! (symbentry_id e) = Some (b, ofs) -> *)
-(*         ofs = Ptrofs.repr (symbentry_value e) /\ *)
-(*         (exists i : N, *)
-(*             symbentry_secindex e = secindex_normal i /\ *)
-(*             b = sec_index_to_block i). *)
-(*     Proof. *)
-(*       intros e t b ofs GET ACC. *)
-(*       unfold acc_symb_map in ACC. *)
-(*       destr_in ACC. *)
-(*       erewrite PTree.gss in ACC. inv ACC. *)
-(*       eauto. *)
-(*     Qed. *)
+Lemma acc_symb_map_no_effect: forall stbl id t,
+    ~In id (get_symbentry_ids stbl) ->
+    (fold_right acc_symb_map t stbl) ! id = t ! id.
+Proof.
+  induction stbl as [|e stbl].
+  - cbn. auto.
+  - cbn. intros id t NIN.
+    unfold acc_symb_map.
+    destr; auto.
+    destruct (peq (symbentry_id e) id); subst; eauto.
+    + tauto.
+    + erewrite PTree.gso; eauto.
+Qed.
 
-(*     destruct (peq id (symbentry_id e)). *)
-(*     + subst. *)
-      
-(*     apply IHstbl. *)
-(*     unfold acc_symb_map in ACC. *)
+Lemma symbtable_to_tree_acc_symb_map_inv': forall stbl id e b ofs t,
+    list_norepet (get_symbentry_ids stbl) ->
+    (PTree_Properties.of_list (symbtable_to_idlist stbl)) ! id = Some e ->
+    t ! id = None ->
+    (fold_right acc_symb_map t stbl) ! id = Some (b, ofs) ->
+    ofs = Ptrofs.repr (symbentry_value e) /\
+    (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i).
+Proof.
+  induction stbl as [|e stbl].
+  - cbn. intros.
+    congruence.
+  - intros id e0 b ofs t NORPT T NG ACC.
+    unfold get_symbentry_ids in NORPT.
+    inv NORPT.
+    cbn [symbtable_to_idlist map] in T.
+    cbn in ACC.
+    destruct (peq id (symbentry_id e)).
+    + subst.
+      rewrite PTree_Properties_of_list_cons in T. inv T.
+      apply acc_symb_map_inv with (fold_right acc_symb_map t stbl); eauto.     
+      erewrite acc_symb_map_no_effect; eauto.
+      rewrite list_map_compose. cbn. auto.
+    + erewrite PTree_Properties_of_list_tail in T; eauto. 
+      eapply IHstbl; eauto.
+      unfold acc_symb_map in ACC.
+      destr_in ACC; auto.
+      erewrite PTree.gso in ACC; eauto.
+Qed.
 
-
-Lemma symbtable_to_tree_acc_symb_map_sync: forall stbl id e b ofs,
+Lemma symbtable_to_tree_acc_symb_map_inv: forall stbl id e b ofs,
+    list_norepet (get_symbentry_ids stbl) ->
     (symbtable_to_tree stbl) ! id = Some e ->
     (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) ->
     ofs = Ptrofs.repr (symbentry_value e) /\
     (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i).
 Proof.
-(*   unfold symbtable_to_tree. *)
-(*   intros. eapply symbtable_to_tree_acc_symb_map_sync'; eauto. *)
-(*   instantiate (1:=nil). intros IN. inv IN. *)
-(*   rewrite List.app_nil_r. auto. *)
-(* Qed. *)
-
-(*   induction stbl as [|e stbl]. *)
-(*   - intros id e b ofs ADD ACC. *)
-(*     cbn in *. rewrite PTree.gempty in ACC. congruence. *)
-(*   - intros id e' b ofs ADD ACC. *)
-(*     cbn [fold_left] in ADD. *)
-(*     cbn in ACC.  *)
-(*     unfold acc_symb_map at 1 in ACC. *)
-    
-
-Admitted.
+  unfold symbtable_to_tree.
+  intros. eapply symbtable_to_tree_acc_symb_map_inv'; eauto.
+  rewrite PTree.gempty; auto.
+Qed.
 
 Lemma pres_find_instr: forall defs id f ofs i,
     In (id, Some (Gfun (Internal f))) defs ->
@@ -581,7 +589,7 @@ Proof.
 Admitted.
 
 (** Inversion of initial memory injection on genv_next *)
-Lemma acc_symb_map_inv : forall stbl t id b ofs,
+Lemma acc_symb_maps_inv : forall stbl t id b ofs,
     t ! id = None ->
     (fold_right acc_symb_map t stbl) ! id = Some (b, ofs) ->
     exists e, In e stbl /\ 
@@ -641,7 +649,7 @@ Proof.
   repeat destr_in TRANSF. cbn in H0.
   clear H. 
   unfold Genv.find_symbol in H0. cbn in H0.
-  exploit acc_symb_map_inv; eauto.
+  exploit acc_symb_maps_inv; eauto.
   apply PTree.gempty.
   intros (e & IN & ID & (i & SI & BL) & OFS). subst.
   exploit gen_symb_table_index_range; eauto.
