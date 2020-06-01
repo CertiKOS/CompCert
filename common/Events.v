@@ -2072,7 +2072,7 @@ Ltac rewrite_stack_blocks :=
   | H:Mem.drop_perm _ _ _ _ _ = Some ?m |- context [ Mem.stack ?m ] => rewrite (Mem.drop_perm_stack_unchanged _ _ _ _ _ _ H)
   | H: context[ Mem.stack (Mem.push_new_stage ?m)] |- _ => rewrite Mem.push_new_stage_stack in H; inv H
   | |- context[ Mem.stack (Mem.push_new_stage ?m)] => rewrite Mem.push_new_stage_stack
-  | H: Genv.init_mem _ _ _ = Some ?m |- context [Mem.stack ?m] => rewrite (Genv.init_mem_stack _ _ H)
+  | H: Genv.init_mem _ _ _ = Some ?m |- context [Mem.stack ?m] => rewrite (Genv.init_mem_stack _ _ _ _ H)
   | H:Mem.record_stack_blocks _ _ = Some ?m |- context [ Mem.stack ?m ] =>
     let f := fresh "f" in
     let r := fresh "r" in
@@ -2139,7 +2139,7 @@ Ltac rewnb :=
     | H: external_call _ _ _ ?m1 _ _ ?m2 |- Ple _ (Mem.nextblock ?m2) =>
       eapply Ple_trans; [ | apply external_call_nextblock in H; exact H ]
     | H: Genv.init_mem _ _ _ = Some ?m |- context [Mem.nextblock ?m] =>
-      rewrite <- (Genv.init_mem_genv_next _ _ H)
+      rewrite <- (Genv.init_mem_genv_next _ _ _ _ H)
     | H: Mem.tailcall_stage ?m1 = Some ?m2 |- context [ Mem.nextblock ?m2] =>
       rewrite (Mem.tailcall_stage_nextblock _ _ H)
     | H: Mem.record_init_sp ?m1 = Some ?m2 |- context [ Mem.nextblock ?m2] =>
