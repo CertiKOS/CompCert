@@ -11,14 +11,27 @@ Require Import RelocProgram RelocProgSemantics RelocProgSemantics1.
 Require Import Symbtablegen.
 Require Import Reloctablesgen.
 Import ListNotations.
+Require Import Lia.
 
 Definition match_prog p tp :=
-  transf_program p = OK tp.
+  exists tp',
+    transf_program p = OK tp' /\
+    prog_defs tp = prog_defs tp' /\
+    prog_public tp = prog_public tp' /\
+    prog_main tp = prog_main tp' /\
+    prog_sectable tp = prog_sectable tp' /\
+    prog_symbtable tp = prog_symbtable tp' /\
+    prog_strtable tp = prog_strtable tp' /\
+    Permutation.Permutation
+      (reloctable_code (prog_reloctables tp)) (reloctable_code (prog_reloctables tp')) /\
+    Permutation.Permutation
+      (reloctable_data (prog_reloctables tp)) (reloctable_data (prog_reloctables tp')) /\
+    prog_senv tp = prog_senv tp'.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
 Proof.
-  unfold match_prog; intuition.
+  unfold match_prog. intros. exists tp; intuition.
 Qed.
 
 Section PRESERVATION.
@@ -387,9 +400,11 @@ Lemma genv_symb_ok:
   Genv.genv_symb (RelocProgSemantics.globalenv tprog).
 Proof.
   unfold match_prog in TRANSF.
-  unfold transf_program in TRANSF.
-  monadInv TRANSF.
-  unfold RelocProgSemantics.globalenv. simpl.
+  decompose [ex and] TRANSF.
+  unfold transf_program in H0.
+  monadInv H0.
+  unfold RelocProgSemantics.globalenv. simpl. simpl in *.
+  rewrite H, H4, H3.
   apply add_external_globals_symb_unchanged. simpl. auto. simpl. auto.
 Qed.
 
@@ -526,9 +541,12 @@ Lemma prog_symtable_same:
 Proof.
   clear ge tge.
   unfold match_prog, Reloctablesgen.transf_program in TRANSF.
-  monadInv TRANSF. reflexivity.
+  decompose [ex and] TRANSF.
+  unfold transf_program in H0.
+  monadInv H0. simpl in *. congruence.
 Qed.
-Require Import Lia.
+
+
 
 
 Lemma symb_address_has_symtable_entry:
@@ -886,15 +904,16 @@ Proof.
 Qed.
 
 Lemma store_init_data_ok:
-  forall i m b o m' l1 l2 rtbl init,
+  forall i m b o m' l1 l2 rtbl init dreloc,
     let sim := gen_symb_index_map (prog_symbtable prog) in
     init = l1 ++ i :: l2 ->
-    transl_init_data_list sim init = OK (reloctable_data (prog_reloctables tprog)) ->
+    transl_init_data_list sim init = OK dreloc ->
+    Permutation.Permutation dreloc (reloctable_data (prog_reloctables tprog)) ->
     fold_left (acc_init_data sim) l1 (OK (0, [])) = OK (o, rtbl) ->
     RelocProgSemantics.store_init_data ge m b o i = Some m' ->
     store_init_data tge m b o i = Some m'.
 Proof.
-  intros i m b o m' l1 l2 rtbl init sim SPLIT TIDL FOLD SID.
+  intros i m b o m' l1 l2 rtbl init dreloc sim SPLIT TIDL PERM FOLD SID.
   unfold RelocProgSemantics.store_init_data, store_init_data in *.
   destr_in SID.
   unfold RelocProgSemantics.Genv.symbol_address in SID.
@@ -914,8 +933,11 @@ Proof.
   rewrite Nat.sub_diag. reflexivity. omega.
   instantiate (1:= symbentry_id).
   exact norepet_symbentry_id. congruence. intro idxEQ.
-  erewrite symb_address_2. eauto. 3: eauto. eauto.
-  eapply norepet_reloctables. eauto.
+  erewrite symb_address_2. eauto. 3: eauto.
+  eapply Permutation.Permutation_in. eauto. eauto.
+  eauto.
+  eapply LocalLib.Permutation_pres_list_norepet.
+  eapply norepet_reloctables. eauto. apply Permutation.Permutation_map. eauto.
   eauto.  3: eauto.
   rewrite RSYM. rewrite Neq.
   setoid_rewrite <- idxEQ. unfold SymbTable.idx. rewrite Nnat.N2Nat.id.
@@ -952,50 +974,56 @@ Qed.
 
 
 Lemma store_init_data_list_ok:
-  forall i m b o m' init l1 rtbl,
+  forall i m b o m' init l1 rtbl dreloc,
     let sim := gen_symb_index_map (prog_symbtable prog) in
     init = l1 ++ i ->
-    transl_init_data_list sim init = OK (reloctable_data (prog_reloctables tprog)) ->
+    transl_init_data_list sim init = OK dreloc ->
+    Permutation.Permutation dreloc (reloctable_data (prog_reloctables tprog)) ->
     fold_left (acc_init_data sim) l1 (OK (0, [])) = OK (o, rtbl) ->
     RelocProgSemantics.store_init_data_list ge m b o i = Some m' ->
     store_init_data_list tge m b o i = Some m'.
 Proof.
   induction i; simpl; intros; eauto.
-  destr_in H2.
+  destr_in H3.
   erewrite store_init_data_ok.
-  3: eauto. 2: eauto. 2: eauto. 2: eauto.
+  3: eauto. 2: eauto. 3: eauto. 3: eauto. 2: auto.
   edestruct (transl_init_data_list_inv) as (oo & ri & TID). apply H0. subst.
   rewrite in_app; right; left; eauto.
   rewrite transl_init_data_translate in TID.
   monadInv TID.
   eapply IHi. 2: eauto. instantiate (1:=l1 ++ a :: nil). rewrite <- app_assoc. simpl. auto.
-  rewrite fold_left_app. rewrite H1. simpl.
+  eauto.
+  rewrite fold_left_app. rewrite H2. simpl.
   rewrite transl_init_data_translate, EQ. simpl.
   f_equal.  auto.
 Qed.
 
 Lemma prog_sectable_eq:
-  exists init c c',
+  exists init c c' creloc dreloc,
     prog_sectable prog = [sec_data init; sec_text c] /\
     transl_code' c = OK c' /\
-    transl_code (gen_symb_index_map (prog_symbtable prog)) c =
-    OK (reloctable_code (prog_reloctables tprog)) /\
+    transl_code (gen_symb_index_map (prog_symbtable prog)) c = OK creloc /\
+    Permutation.Permutation creloc (reloctable_code (prog_reloctables tprog)) /\
     0 <= code_size c' < Ptrofs.max_unsigned /\
     prog_sectable tprog = [sec_data init; sec_text c'] /\
-    transl_init_data_list (gen_symb_index_map (prog_symbtable prog)) init =
-    OK (reloctable_data (prog_reloctables tprog)).
+    transl_init_data_list (gen_symb_index_map (prog_symbtable prog)) init = OK dreloc /\
+    Permutation.Permutation dreloc (reloctable_data (prog_reloctables tprog)).
 Proof.
-  unfold match_prog, transf_program in TRANSF.
-  monadInv TRANSF. simpl in *.
+  unfold match_prog in TRANSF.
+  decompose [ex and] TRANSF.
+  unfold transf_program in H0.
+  monadInv H0. simpl in *.
   exploit transl_sectable_ok. eauto.
   intros (c & l & CODE & DATA & TCODE & TDATA).
-  unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H0.
+  unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H8.
   repeat destr_in EQ1. simpl.
-  (do 3 eexists). split. eauto. split. eauto.
-  split. vm_compute in CODE. inv CODE. auto.
-  split. split. generalize (code_size_non_neg x2); lia. auto.
+  (do 5 eexists). split. eauto. split. eauto.
+  split. vm_compute in CODE. inv CODE. eauto.
+  split. apply Permutation.Permutation_sym. auto.
+  split. split. generalize (code_size_non_neg x); lia. auto.
   split. eauto.
-  vm_compute in DATA. inv DATA. auto.
+  split. vm_compute in DATA. inv DATA. eauto.
+  apply Permutation.Permutation_sym. auto.
 Qed.
 
 Lemma alloc_data_section_ok:
@@ -1006,7 +1034,7 @@ Proof.
   intros m0 m ADS.
   unfold RelocProgSemantics.alloc_data_section, alloc_data_section in *.
   repeat destr_in ADS.
-  destruct (prog_sectable_eq) as (init' & c & c' & PS1 & TC & TC' & CodeRng &PS2 & TIDL).
+  destruct (prog_sectable_eq) as (init' & c & c' & creloc & dreloc & PS1 & TC & TC' & PERMc & CodeRng &PS2 & TIDL & PERMd).
   rewrite PS2. simpl.
   rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
   simpl in *.
@@ -1078,14 +1106,14 @@ Proof.
   intros m0 m ACS.
   unfold RelocProgSemantics.alloc_code_section, alloc_code_section in *.
   repeat destr_in ACS.
-  destruct (prog_sectable_eq) as (init' & c & c' & PS1 & TC & TC' & CodeRng & PS2 & TIDL).
+  destruct (prog_sectable_eq) as (init' & c & c' & dreloc & creloc & PS1 & TC & TC' &
+                                  PERMc & CodeRng & PS2 & TIDL & PERMd).
   rewrite PS2. simpl.
   rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
   erewrite transl_code_size; eauto.
   simpl in *.
   rewrite Heqp. auto.
 Qed.
-
 
 Lemma alloc_external_symbol_ok:
   forall m1 s m2,
@@ -1127,8 +1155,10 @@ Qed.
 Lemma main_preserved:
   prog_main prog = prog_main tprog.
 Proof.
-  unfold match_prog, transf_program in TRANSF.
-  monadInv TRANSF. reflexivity.
+  unfold match_prog in TRANSF.
+  decompose [ex and] TRANSF. clear TRANSF.
+  unfold transf_program in H0.
+  monadInv H0. simpl in *. congruence.
 Qed.
 
 Lemma main_ok:
@@ -1147,8 +1177,10 @@ Qed.
 Lemma defs_preserved:
   prog_defs prog = prog_defs tprog.
 Proof.
-  unfold match_prog, transf_program in TRANSF.
-  monadInv TRANSF. reflexivity.
+  unfold match_prog in TRANSF.
+  decompose [ex and] TRANSF. clear TRANSF.
+  unfold transf_program in H0.
+  monadInv H0. simpl in *. congruence.
 Qed.
 
 Lemma ext_funs_add_external_global:
@@ -1277,7 +1309,8 @@ Proof.
   unfold ge in H.
   unfold RelocProgSemantics.globalenv in *.
   rewrite instrs_add_external_globals in *. simpl in *.
-  destruct (prog_sectable_eq) as (init & c & c' & PS1 & TC & TC' & CodeRng & PS2 & TIDL).
+  destruct (prog_sectable_eq) as (init & c & c' & creloc & dreloc & PS1 & TC & TC' &
+                                  PERMc & CodeRng & PS2 & TIDL & PERMd).
   rewrite PS1, PS2 in *.
   simpl in *.
   unfold gen_instr_map, transl_code' in *.
@@ -1703,6 +1736,93 @@ Proof.
     + rewrite fold_acc_instrs_error in H2; inv H2.
 Qed.
 
+Lemma set_set:
+  forall {A} k1 (t: Maps.PTree.t A) v1 k2 v2,
+    (k1 = k2 -> v1 = v2) ->
+    Maps.PTree.set k1 v1 (Maps.PTree.set k2 v2 t) =
+    Maps.PTree.set k2 v2 (Maps.PTree.set k1 v1 t).
+Proof.
+  induction k1; simpl; intros; eauto.
+  - destruct t.
+    + destruct k2; simpl; auto. rewrite IHk1. auto. intros; apply H; congruence.
+    + destruct k2; simpl; auto. rewrite IHk1. auto. intros; apply H; congruence.
+  - destruct t.
+    + destruct k2; simpl; auto. rewrite IHk1. auto. intros; apply H; congruence.
+    + destruct k2; simpl; auto. rewrite IHk1. auto. intros; apply H; congruence.
+  - destruct t.
+    + destruct k2; simpl; auto. rewrite H; auto.
+    + destruct k2; simpl; auto. rewrite H; auto.
+Qed.
+
+Lemma gen_reloc_ofs_symb_permut:
+  forall stbl rtbl1 rtbl2,
+    Permutation.Permutation rtbl1 rtbl2 ->
+    list_norepet reloc_offset ## rtbl1 ->
+    gen_reloc_ofs_symb stbl rtbl1 = gen_reloc_ofs_symb stbl rtbl2.
+Proof.
+  induction 1; simpl; intros; eauto.
+  - unfold acc_reloc_ofs_symb. inv H0. destr.
+  - inv H. inv H3. unfold acc_reloc_ofs_symb. destr. destr.
+    apply set_set.
+    intros EQ; apply Maps.ZIndexed.index_inj in EQ.
+    exfalso. apply H2. rewrite EQ. left; auto.
+  - rewrite IHPermutation1.  apply IHPermutation2.
+    eapply LocalLib.Permutation_pres_list_norepet; eauto. apply Permutation.Permutation_map; auto.
+    auto.
+Qed.
+
+Lemma transl_instr_norepet:
+  forall sim z a l,
+    transl_instr sim z a = OK l ->
+    list_norepet reloc_offset ## l.
+Proof.
+  unfold transl_instr.
+  intros.
+  repeat destr_in H; simpl; try constructor.
+  - unfold compute_instr_abs_relocentry in *.
+    monadInv H1. repeat constructor. simpl. auto.
+  - unfold compute_instr_disp_relocentry in *.
+    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
+  - unfold compute_instr_disp_relocentry in *.
+    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
+  - unfold compute_instr_disp_relocentry in *.
+    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
+  - unfold compute_instr_rel_relocentry in *.
+    monadInv H1. repeat constructor; simpl; auto.
+  - unfold compute_instr_rel_relocentry in *.
+    monadInv H1. repeat constructor; simpl; auto.
+  - unfold compute_instr_disp_relocentry in *.
+    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
+  - unfold compute_instr_disp_relocentry in *.
+    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
+Qed.
+
+Lemma transl_code_norepet:
+  forall sim c cr0 cr1 z0 z1,
+    list_norepet reloc_offset ## cr0 ->
+    Forall (fun e => reloc_offset e < z0) cr0 ->
+    fold_left (acc_instrs sim) c (OK (z0, cr0)) = OK (z1, cr1) ->
+    list_norepet reloc_offset ## cr1.
+Proof.
+  induction c; simpl; intros; eauto.
+  inv H1. auto.
+  unfold bind in H1. destr_in H1.
+  - apply IHc in H1. auto.
+    + rewrite map_app. rewrite list_norepet_app. split; [|split].
+      eapply transl_instr_norepet; eauto. auto.
+      red; intros.
+      (* rewrite in_map_iff in H2. destruct H2 as (x0 & EQ & INl). subst. *)
+      rewrite in_map_iff in H3. destruct H3 as (x1 & EQ & INcr0). subst.
+      rewrite Forall_forall in H0. apply H0 in INcr0.
+      eapply transl_instr_reloc_offset_range in Heqr. 2: eauto. lia.
+    + rewrite Forall_forall in H0 |- *.
+      intros.
+      rewrite in_app in H2. destruct H2; eauto.
+      eapply transl_instr_reloc_offset_range in Heqr. 2: apply in_map; eauto. lia.
+      apply H0 in H2. generalize (instr_size_positive a); lia.
+  - rewrite fold_acc_instrs_error in H1. congruence.
+Qed.
+
 Lemma instr_map_reloc_id_ok:
   forall ofs i id idofs,
     gen_instr_map' (SecTable.get sec_code_id (prog_sectable prog)) ofs = Some i ->
@@ -1713,9 +1833,12 @@ Proof.
   intros ofs i id idofs GIM IRI IRO.
   unfold gen_reloc_ofs_symbs.
   unfold add_reloc_ofs_symb at 1. destr.
-  destruct (prog_sectable_eq) as (init & c & c' & PS1 & TC & TC' & CodeRng & PS2 & _).
+  destruct (prog_sectable_eq) as (init & c & c' & creloc & dreloc & PS1 & TC & TC' &
+                                  PERMc & CodeRng & PS2 & TIDL & PERMd).
   unfold transl_code in TC'. monadInv TC'.
   unfold get_reloctable.
+  erewrite <- gen_reloc_ofs_symb_permut. 2: eauto.
+  2: eapply transl_code_norepet; eauto. 2: constructor.
   rewrite PS1 in GIM. simpl in GIM.
   unfold gen_instr_map in GIM. destr_in GIM.
   rewrite <- (Ptrofs.repr_unsigned Ptrofs.zero) in Heqp.
@@ -1807,8 +1930,10 @@ Proof.
   unfold globalenv. simpl.
   unfold RelocProgSemantics.globalenv.
   rewrite ! genv_senv_add_external_globals. simpl.
-  unfold match_prog, transf_program in TRANSF.
-  monadInv TRANSF. reflexivity.
+  unfold match_prog in TRANSF.
+  decompose [ex and] TRANSF. clear TRANSF.
+  unfold transf_program in H0.
+  monadInv H0. simpl in *. congruence.
 Qed.
 
 Lemma external_call_ok:
@@ -1826,11 +1951,11 @@ Lemma transf_program_correct:
 Proof.
   intro rs.
   eapply forward_simulation_step with (match_states := fun a b : Asm.state => a = b).
-  - simpl. unfold globalenv. simpl. unfold genv_senv. simpl.
-    unfold match_prog in TRANSF.
-    unfold transf_program in TRANSF.
-    monadInv TRANSF. unfold RelocProgSemantics.globalenv. intro id. simpl.
-    rewrite ! genv_senv_add_external_globals. simpl. auto.
+  - simpl.
+    intros.
+    fold ge.
+    rewrite senv_preserved.
+    unfold genv_senv. fold ge. reflexivity.
   - intros s1 IS. eexists; split; eauto.
     unfold semantics. simpl. inv IS. simpl in *.
     exploit init_mem_ok; eauto. intro IM.
@@ -3116,18 +3241,72 @@ Proof.
   rewrite fold_acc_id_eliminate_app. rewrite EQ0. simpl. rewrite rev_app_distr. auto.
 Qed.
 
+Lemma update_reloctable_symb_permut:
+  forall stbl s dreloc1 dreloc2,
+    Permutation.Permutation dreloc1 dreloc2 ->
+    forall dreloc1',
+      update_reloctable_symb stbl s dreloc1 = Some dreloc1' ->
+      exists dreloc2',
+        update_reloctable_symb stbl s dreloc2 = Some dreloc2' /\
+        Permutation.Permutation dreloc1' dreloc2'.
+Proof.
+  unfold update_reloctable_symb.
+  induction 1; simpl; intros; eauto.
+  - unfold acc_update_reloc_symb in H0 at 1. repeat destr_in H0.
+    edestruct IHPermutation as (dreloc2' & FR & PERM). eauto.
+    rewrite FR. simpl. rewrite Heqo0. eexists; split; eauto.
+  - unfold acc_update_reloc_symb in H at 1 2.
+    unfold acc_update_reloc_symb at 1 2.
+    repeat destr_in H. repeat destr_in Heqo.
+    eexists; split; eauto.
+    apply Permutation.perm_swap.
+  - edestruct IHPermutation1 as (dreloc2' & FR & PERM); eauto.
+    edestruct IHPermutation2 as (dreloc3' & FR' & PERM'); eauto.
+    rewrite FR'. eexists; split; eauto.
+    eapply Permutation.perm_trans; eauto.
+Qed.
+
+
+Lemma link_reloctable_permut:
+  forall sz stbl1 stbl2 s1 dreloc1 dreloc2 dreloc1' dreloc2' dreloc,
+    link_reloctable sz stbl1 stbl2 s1 dreloc1 dreloc2 = Some dreloc ->
+    Permutation.Permutation dreloc1 dreloc1' ->
+    Permutation.Permutation dreloc2 dreloc2' ->
+    exists dreloc',
+      link_reloctable sz stbl1 stbl2 s1 dreloc1' dreloc2' = Some dreloc' /\
+      Permutation.Permutation dreloc dreloc'.
+Proof.
+  unfold link_reloctable.
+  intros.
+  repeat destr_in H.
+
+  edestruct update_reloctable_symb_permut as (r' & URS1 & PERM1). 2: apply Heqo. eauto.
+  edestruct update_reloctable_symb_permut as (r0' & URS2 & PERM2). 2: apply Heqo0. eauto.
+  rewrite URS1. rewrite URS2.
+  eexists; split; eauto.
+  apply Permutation.Permutation_app. auto.
+  apply Permutation.Permutation_map. auto.
+Qed.
+
+
 Instance reloctablesgen_transflink : @TransfLink _ _ RelocLinking.Linker_reloc_prog RelocLinking1.Linker_reloc_prog match_prog.
 Proof.
-  red. simpl.
+  red. simpl. 
   unfold match_prog.
   intros. simpl.
   unfold link_reloc_prog.
   unfold transf_program.
   unfold RelocLinking.link_reloc_prog in *.
   simpl in *.
-  repeat destr_in H.
-  unfold transf_program in H0, H1.
-  monadInv H0; monadInv H1. simpl.
+  repeat destr_in H. simpl in *.
+  destruct H0 as (tp1' & TP1 & defs1 & public1 & main1 & sectable1 & symbtable1 & strtable1
+                  & creloc1 & dreloc1 & senv1).
+  destruct H1 as (tp2' & TP2 & defs2 & public2 & main2 & sectable2 & symbtable2 & strtable2
+                  & creloc2 & dreloc2 & senv2).
+  unfold transf_program in TP1, TP2.
+  monadInv TP1; monadInv TP2. simpl in *.
+  repeat rewrite ? defs1, ? public1, ? main1, ? sectable1, ? symbtable1, ? strtable1, ? senv1 in *.
+  repeat rewrite ? defs2, ? public2, ? main2, ? sectable2, ? symbtable2, ? strtable2, ? senv2 in *.
   rewrite Heqo.
   edestruct transl_sectable'_code as (code1 & code1' & EQcode1 & TC1 & EQcode1'). apply EQ1. eauto.
   erewrite transl_sectable'_data. 2: apply EQ1. 2: eauto.
@@ -3144,7 +3323,6 @@ Proof.
   intros (c & l & EQ10 & EQ11 & TC & TIDL). inv EQ10; inv EQ11. inv H0.
   exploit transl_sectable_ok. apply EQ0. rewrite PS2. cbn. simpl.
   intros (c' & l' & EQ10 & EQ11 & TC' & TIDL'). inv EQ10; inv EQ11.
-  
   unfold link_code_reloctable. simpl.
   rewrite EQcode1'.
   unfold transf_program. simpl.
@@ -3159,23 +3337,43 @@ Proof.
   unfold SecTable.get. simpl.
   simpl in Heqo7. inv Heqo7.
   simpl in Heqo8; inv Heqo8.
-erewrite transl_code'_app by eauto. simpl.
-  exploit transl_code_app. eauto. eauto. eauto. eauto.
-  intros (c2'' & c2''' & LR & TCtp & PERM).
-  erewrite transl_code_size by eauto. rewrite LR. rewrite TCtp.
-
 
   exploit tidl_link_reloctable. eauto. eauto. eauto. eauto.
   intros (t1' & t2' & URS1 & URS2 & LR' & TIDLtp).
-  rewrite LR'.
-  rewrite TIDLtp.
+  rewrite symbtable1, symbtable2.
 
-  rewrite PS2 in EQ3.
-  exploit transl_sectable'_code. apply EQ3. reflexivity.
-  intros (c & c'0 & EQ10 & TC10 & EQ11). vm_compute in EQ11.
-  repeat destr_in EQ11. inv EQ10.
+
+
+  erewrite transl_code'_app by eauto. simpl.
+  exploit transl_code_app. eauto. eauto. eauto. eauto.
+  intros (c2'' & c2''' & LR & TCtp & PERM).
+  
+  
+  exploit link_reloctable_permut. apply LR.
+  apply Permutation.Permutation_sym. eauto.
+  apply Permutation.Permutation_sym. eauto.
+  intros (creloc' & LRcode & PERMCODE).
+
+  exploit link_reloctable_permut. apply LR'.
+  apply Permutation.Permutation_sym. eauto.
+  apply Permutation.Permutation_sym. eauto.
+  intros (dreloc' & LRdata & PERMDaTA).
+
+  rewrite LRdata.
+  erewrite transl_code_size by eauto. rewrite LRcode.
+
+  rewrite TCtp. rewrite TIDLtp. eexists; split. eauto. simpl.
   destruct zlt.
-  simpl. destruct zlt.
-  simpl.
+  simpl. eexists; split; eauto. simpl.
+  repeat split.
+  eapply Permutation.perm_trans.
+  apply Permutation.Permutation_sym; eauto. auto.
 
+  eapply Permutation.perm_trans.
+  apply Permutation.Permutation_sym; eauto.
+  apply Permutation.Permutation_app_comm.
+
+  exfalso.
+  admit.                        (* code_size (c1' ++ c2') >= Ptrofs.max_unsigned. *)
+  
 Admitted.

@@ -84,13 +84,7 @@ Definition link_code_reloctable (p1 p2 p: program) : option reloctable :=
     let t1 := reloctable_code (prog_reloctables p1) in
     let t2 := reloctable_code (prog_reloctables p2) in
     let csz := sec_size code_sec1 in
-    match SecTable.get sec_code_id (prog_sectable p2) with
-    | Some code_sec2 =>
-      if zlt (sec_size code_sec1 + sec_size code_sec2) Ptrofs.max_unsigned
-      then link_reloctable csz stbl1 stbl2 sidxmap t1 t2
-      else None
-    | _ => None
-    end
+    link_reloctable csz stbl1 stbl2 sidxmap t1 t2
   | _ => None
   end.
 
