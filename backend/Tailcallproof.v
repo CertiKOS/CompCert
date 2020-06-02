@@ -445,9 +445,7 @@ Inductive match_states: state -> state -> Prop :=
     (*SACC:*)(MLD: Mem.inject j (S n :: g ++ l) m m')
     (*SACC:*)(SZ: tc_sizes (S n :: g ++ l) (Mem.stack m) (Mem.stack m'))
     (*SACC:*)(IG: inject_globals ge j)
-    (*SACC:*)(JB: j sp = Some (sp', 0))
-    (*SACC:*)(*(INCR: inject_incr (Mem.flat_inj (Mem.nextblock init_m)) j)*)
-    (*SACC:*)(*(SEP: inject_separated (Mem.flat_inj (Mem.nextblock init_m)) j init_m init_m)*),
+    (*SACC:*)(JB: j sp = Some (sp', 0)),
       match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
                    (State s' (transf_function f) (Vptr (*SACC:*)sp' Ptrofs.zero) pc rs' m')
   | match_states_call:
@@ -458,9 +456,7 @@ Inductive match_states: state -> state -> Prop :=
   (*SACC:*)(LDargs: Val.inject_list j args args')
   (*SACC:*)(MLD: Mem.inject j (S n :: g ++ l) m m')
   (*SACC:*)(SZ: tc_sizes (S n :: g ++ l) (Mem.stack m) (Mem.stack m'))
-  (*SACC:*)(IG: inject_globals ge j)
-  (*SACC:*)(*(INCR: inject_incr (Mem.flat_inj (Mem.nextblock init_m)) j)*)
-  (*SACC:*)(*(SEP: inject_separated (Mem.flat_inj (Mem.nextblock init_m)) j init_m init_m)*),
+  (*SACC:*)(IG: inject_globals ge j),
       match_states (Callstate s f args m (*SACC:*)sz)
                    (Callstate s' (transf_fundef f) args' m' (*SACC:*)sz)
   | match_states_return:
@@ -471,9 +467,7 @@ Inductive match_states: state -> state -> Prop :=
    (*SACC:*)(LDret: Val.inject j v v')
    (*SACC:*)(MLD: Mem.inject j (S n :: g ++ l) m m')
    (*SACC:*)(SZ: tc_sizes (g ++ l) (drop (S n) (Mem.stack m)) (tl (Mem.stack m')))
-   (*SACC:*)(IG: inject_globals ge j)
-   (*SACC:*)(*(INCR: inject_incr (Mem.flat_inj (Mem.nextblock init_m)) j)*)
-   (*SACC:*)(*(SEP: inject_separated (Mem.flat_inj (Mem.nextblock init_m)) j init_m init_m)*),
+   (*SACC:*)(IG: inject_globals ge j),
       match_states (Returnstate s v m)
                    (Returnstate s' v' m')
   | match_states_interm:
@@ -486,9 +480,7 @@ Inductive match_states: state -> state -> Prop :=
    (*SACC:comments this*)(*Val.lessdef (rs#r) v'*)
    (*SACC:*)(LDret: Val.inject j (rs#r) v')
    (*SACC:*)(SZ: tc_sizes (g++l) (drop (S n) (Mem.stack m)) (tl (Mem.stack m')))
-   (*SACC:*)(IG: inject_globals ge j)
-   (*SACC:*)(*(INCR: inject_incr (Mem.flat_inj (Mem.nextblock init_m)) j)*)
-   (*SACC:*)(*(SEP: inject_separated (Mem.flat_inj (Mem.nextblock init_m)) j init_m init_m)*),
+   (*SACC:*)(IG: inject_globals ge j),
       match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
                    (Returnstate s' v' m').
 
