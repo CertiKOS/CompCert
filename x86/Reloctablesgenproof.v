@@ -1870,9 +1870,1319 @@ End PRESERVATION.
 
 Require Import RelocLinking RelocLinking1.
 
+
+Lemma transl_sectable'_code:
+  forall stbl stbl' v,
+    transl_sectable' stbl = OK stbl' ->
+    SecTable.get sec_code_id stbl = Some v ->
+    exists c c',
+      v = sec_text c /\ transl_code' c = OK c' /\
+      SecTable.get sec_code_id stbl' = Some (sec_text c').
+Proof.
+  unfold transl_sectable'; intros. repeat destr_in H.
+  monadInv H2. repeat destr_in EQ0. eauto.
+  vm_compute in H0. inv H0. unfold SecTable.get. simpl. eauto.
+Qed.
+
+Lemma transl_sectable'_data:
+  forall stbl stbl' v,
+    transl_sectable' stbl = OK stbl' ->
+    SecTable.get sec_data_id stbl = Some v ->
+    SecTable.get sec_data_id stbl' = Some v.
+Proof.
+  unfold transl_sectable'; intros. repeat destr_in H.
+  monadInv H2. repeat destr_in EQ0. eauto.
+Qed.
+
+
+
+Lemma transl_instrs_acc:
+  forall sim sim' z a e,
+    (forall x y,
+        Maps.PTree.get x sim = Some y ->
+        Maps.PTree.get x sim' = Some y
+    ) ->
+    transl_instr sim z a = OK e ->
+    transl_instr sim' z a = OK e.
+Proof.
+  intros.
+  destruct a; simpl in *; eauto.
+  - unfold compute_instr_abs_relocentry in *.
+    monadInv H0. monadInv EQ. rewrite EQ0. destr_in EQ1.
+    erewrite H; eauto. inv EQ1. simpl. auto.
+  - repeat destr_in H0.
+    unfold compute_instr_disp_relocentry in *.
+    destr_in H2. monadInv H2.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. rewrite EQ0. destr_in EQ1.
+    erewrite H; eauto.
+  - repeat destr_in H0.
+    unfold compute_instr_disp_relocentry in *.
+    destr_in H2. monadInv H2.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. rewrite EQ0. destr_in EQ1.
+    erewrite H; eauto.
+  - repeat destr_in H0.
+    unfold compute_instr_disp_relocentry in *.
+    destr_in H2. monadInv H2.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. rewrite EQ0. destr_in EQ1.
+    erewrite H; eauto.
+  - repeat destr_in H0.
+    unfold compute_instr_rel_relocentry in *.
+    monadInv H2. monadInv EQ. rewrite EQ0. rewrite EQ. simpl.
+    destr_in EQ2.
+    erewrite H; eauto.
+  - repeat destr_in H0.
+    unfold compute_instr_rel_relocentry in *.
+    monadInv H2. monadInv EQ. rewrite EQ0. rewrite EQ. simpl.
+    destr_in EQ2.
+    erewrite H; eauto.
+  - repeat destr_in H0.
+    unfold compute_instr_disp_relocentry in *.
+    destr_in H2. monadInv H2.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. rewrite EQ0. destr_in EQ1.
+    erewrite H; eauto.
+  - repeat destr_in H0.
+    unfold compute_instr_disp_relocentry in *.
+    destr_in H2. monadInv H2.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. rewrite EQ0. destr_in EQ1.
+    erewrite H; eauto.
+Qed.
+
+Lemma fold_acc_instrs_acc:
+  forall sim sim' c1 z l z1 l1,
+    (forall x y,
+        Maps.PTree.get x sim = Some y ->
+        Maps.PTree.get x sim' = Some y
+    ) ->
+    fold_left (acc_instrs sim) c1 (OK (z, l)) = OK (z1, l1) ->
+    fold_left (acc_instrs sim') c1 (OK (z, l)) = OK (z1, l1).
+Proof.
+  induction c1; simpl; intros; eauto.
+  destruct (transl_instr sim z a) eqn:?; simpl in *.
+  2: rewrite fold_acc_instrs_error in H0; simpl in H0; congruence.
+  erewrite transl_instrs_acc; eauto.
+Qed.
+
+Lemma get_symbtable_to_tree:
+  forall stbl,
+    (symbtable_to_tree stbl) =
+    (Maps.PTree_Properties.of_list (fun s => (symbentry_id s, s)) ## stbl).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma link_sectable_ok:
+  forall stbl1 stbl2 s stbl1' stbl2',
+    link_sectable stbl1 stbl2 = Some s ->
+    transl_sectable' stbl1 = OK stbl1' ->
+    transl_sectable' stbl2 = OK stbl2' ->
+    exists init1 init2 c1 c2 c1' c2',
+      stbl1 = [sec_data init1; sec_text c1] /\
+      stbl2 = [sec_data init2; sec_text c2] /\
+      transl_code' c1 = OK c1' /\
+      transl_code' c2 = OK c2' /\
+      link_sectable stbl1' stbl2' = Some [sec_data (init1 ++ init2); sec_text (c1' ++ c2')].
+Proof.
+  intros.
+  unfold link_sectable in *. repeat destr_in H.
+  unfold transl_sectable' in H0, H1.
+  repeat destr_in H0; repeat destr_in H1.
+  monadInv H0; monadInv H2.
+  repeat destr_in EQ0; repeat destr_in EQ2.
+  unfold SecTable.get in *; simpl in *. inv Heqo. inv Heqo0. inv Heqo1. inv Heqo2.
+  simpl in *. inv Heqo3. inv Heqo4.
+  (do 6 eexists); repeat split; eauto.
+Qed.
+
+Lemma transl_init_data_list_gets:
+  forall stbl1 l x0,
+    transl_init_data_list (gen_symb_index_map stbl1) l = OK x0 ->
+    Forall (fun e =>
+              exists se i,
+                SymbTable.get (reloc_symb e) stbl1 = Some se /\
+                Maps.PTree.get (symbentry_id se) (gen_symb_index_map stbl1) = Some i
+           ) x0.
+Proof.
+  unfold transl_init_data_list.
+  intros. monadInv H. repeat destr_in EQ0.
+  assert (
+      forall l z0 x0 z1 x1,
+        fold_left (acc_init_data (gen_symb_index_map stbl1)) l (OK (z0, x0)) = OK (z1, x1) ->
+        Forall
+          (fun e : relocentry =>
+             exists (se : SymbTblParams.V) (i : N),
+               SymbTable.get (reloc_symb e) stbl1 = Some se /\
+               Maps.PTree.get (symbentry_id se) (gen_symb_index_map stbl1) = Some i) x0 ->
+        Forall
+          (fun e : relocentry =>
+             exists (se : SymbTblParams.V) (i : N),
+               SymbTable.get (reloc_symb e) stbl1 = Some se /\
+               Maps.PTree.get (symbentry_id se) (gen_symb_index_map stbl1) = Some i) x1).
+  {
+    clear. induction l; simpl; intros; eauto.
+    - inv H; auto.
+    - destruct (transl_init_data (gen_symb_index_map stbl1) z0 a) eqn:?.
+      2: simpl in H. 2: rewrite fold_acc_init_data_error in H; congruence.
+      simpl in H.
+      exploit IHl. eauto.
+      rewrite Forall_forall in *.
+      intro x. rewrite in_app. intros [INr | INx0]; eauto.
+      unfold transl_init_data in Heqr.
+      repeat destr_in Heqr; simpl in *; try intuition congruence.
+      destruct INr as [EQ|[]]. subst. simpl.
+      exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+      (do 2 eexists); split. eauto. subst. eauto. auto.
+  }
+  eapply H. eauto. constructor.
+Qed.
+
+Lemma update_reloctable_symb_ok:
+  forall stbl1 x0 s1,
+    Forall (fun e =>
+              exists se i,
+                SymbTable.get (reloc_symb e) stbl1 = Some se /\
+                Maps.PTree.get (symbentry_id se) (gen_symb_index_map s1) = Some i
+           ) x0 ->
+    exists t1',
+      update_reloctable_symb stbl1 (gen_symb_index_map s1) x0 = Some t1'.
+Proof.
+  unfold update_reloctable_symb.
+  intros.
+  assert (
+      forall t0,
+      exists t1' : reloctable,
+        fold_right (acc_update_reloc_symb stbl1 (gen_symb_index_map s1)) (Some t0) x0 = Some (t1' ++ t0)
+    ).
+  {
+    revert x0 H; induction 1; simpl; intros; eauto.
+    exists nil; reflexivity.
+    edestruct IHForall as (t1' & EQ). rewrite EQ.
+    destruct H as (se & i & GET & GET').
+    unfold acc_update_reloc_symb. unfold update_reloc_symb. rewrite GET. rewrite GET'.
+    eexists; eauto. f_equal. rewrite app_comm_cons. reflexivity.
+  }
+  edestruct H0. rewrite H1. rewrite app_nil_r. eauto.
+Qed.
+
+
+
+Lemma list_norepet_map_inv:
+  forall {A B} (f: A -> B) (l: list A) (lnr: list_norepet f ## l)
+         x1 x2 (IN1 : In x1 l) (IN2: In x2 l)
+         (EQ: f x1 = f x2),
+    x1 = x2.
+Proof.
+  induction l; simpl; intros; eauto. easy.
+  inv lnr. trim IHl. auto.
+  destruct IN1, IN2; eauto.
+  - subst. auto.
+  - subst. exfalso; apply H1; rewrite in_map_iff; eauto.
+  - subst. exfalso; apply H1; rewrite in_map_iff; eauto.
+Qed.
+
+Lemma in_in_symbtable_to_tree:
+  forall stbl se,
+    list_norepet symbentry_id ## stbl ->
+    In se stbl ->
+    Maps.PTree.get (symbentry_id se) (symbtable_to_tree stbl) = Some se.
+Proof.
+  intros.
+  rewrite get_symbtable_to_tree.
+  erewrite Maps.PTree_Properties.of_list_norepet. eauto.
+  rewrite map_map. apply H.
+  rewrite in_map_iff. eauto.
+Qed.
+
+Lemma get_symbentry_ids_eq:
+  forall l,
+    get_symbentry_ids l = symbentry_id ## l.
+Proof.
+  unfold get_symbentry_ids. reflexivity.
+Qed.
+
+Lemma list_norepet_map_inv':
+  forall
+    {A B} (f: A -> B) l,
+    list_norepet f ## l ->
+    list_norepet l.
+Proof.
+  induction l; simpl; intros; eauto. constructor.
+  inv H. constructor; auto. intro AA; apply H2; rewrite in_map_iff; eauto.
+Qed.
+
+Lemma link_symbtable_ok_l:
+  forall stbl1 stbl2 s,
+    link_symbtable stbl1 stbl2 = Some s ->
+    forall se,
+      Maps.PTree.get (symbentry_id se) (symbtable_to_tree s) =
+      link_symb_merge (Maps.PTree.get (symbentry_id se) (symbtable_to_tree stbl1))
+                      (Maps.PTree.get (symbentry_id se) (symbtable_to_tree stbl2)).
+Proof.
+  unfold link_symbtable. intros stbl1 stbl2 s LINK se.
+  destr_in LINK.
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as ((nr1 & nr2) & check).
+  apply proj_sumbool_true in nr1.
+  apply proj_sumbool_true in nr2.
+  rewrite Maps.PTree_Properties.for_all_correct in check.
+  inv LINK.
+  unfold symbtable_to_tree.
+  unfold symbtable_to_idlist.
+  
+  assert (forall {A} P (f: option A -> option A -> option A) t1 t2,
+             f None None = None ->
+             Forall P (Maps.PTree.elements t1) ->
+             Forall P (Maps.PTree.elements t2) ->
+             (forall a1 a2 i a,
+                 (forall aa1, a1 = Some aa1 -> P (i, aa1)) ->
+                 (forall aa2, a2 = Some aa2 -> P (i, aa2)) ->
+                 f a1 a2 = Some a ->
+                 P (i, a)
+             ) ->
+             Forall P (Maps.PTree.elements (Maps.PTree.combine f t1 t2))
+         ).
+  {
+    intros A P f t1 t2 FN P1 P2 FP.
+    rewrite Forall_forall in *.
+    intros (i & a) IN.
+    apply Maps.PTree.elements_complete in IN.
+    rewrite Maps.PTree.gcombine in IN; auto.
+    destruct (Maps.PTree.get i t1) eqn:G1.
+    - exploit P1. eapply Maps.PTree.elements_correct; eauto.
+      intros.
+      destruct (Maps.PTree.get i t2) eqn:G2. exploit P2. eapply Maps.PTree.elements_correct; eauto.
+      intros.
+      eapply FP; eauto. inversion 1; subst; eauto. inversion 1; subst; eauto.
+      eapply FP; eauto. inversion 1; subst; eauto. inversion 1; subst; eauto.
+    - destruct (Maps.PTree.get i t2) eqn:G2. exploit P2. eapply Maps.PTree.elements_correct; eauto.
+      intros.
+      eapply FP; eauto. inversion 1; subst; eauto. inversion 1; subst; eauto.
+      eapply FP; eauto. inversion 1; subst; eauto. inversion 1; subst; eauto.
+  }
+  assert (
+    forall s,
+      In s (Maps.PTree.elements
+                    (Maps.PTree.combine link_symb_merge
+                       (Maps.PTree_Properties.of_list
+                          (fun s : symbentry => (symbentry_id s, s)) ## stbl1)
+                       (Maps.PTree_Properties.of_list
+                          (fun s : symbentry => (symbentry_id s, s)) ## stbl2))) ->
+      symbentry_id (snd s) = fst s
+  ).
+  {
+    rewrite <- Forall_forall.
+    apply H. reflexivity.
+     - rewrite Forall_forall; intros.
+      destruct x.
+      apply Maps.PTree.elements_complete in H0. simpl.
+      apply Maps.PTree_Properties.in_of_list in H0. rewrite in_map_iff in H0.
+      decompose [ex and] H0; eauto. inv H2; eauto.
+    - rewrite Forall_forall; intros.
+      destruct x.
+      apply Maps.PTree.elements_complete in H0. simpl.
+      apply Maps.PTree_Properties.in_of_list in H0. rewrite in_map_iff in H0.
+      decompose [ex and] H0; eauto. inv H2; eauto.
+    - simpl.
+      intros. destruct a1, a2; simpl in H2; repeat destr_in H2.
+      specialize (H0 _ eq_refl). specialize (H1 _ eq_refl). subst.
+      unfold link_symb in H4. repeat destr_in H4; simpl; auto.
+      specialize (H0 _ eq_refl). auto.
+      specialize (H1 _ eq_refl). auto.
+  }
+
+  rewrite map_map.
+  erewrite list_map_exten. rewrite map_id.
+  rewrite Maps.PTree_Properties.of_list_elements.
+  rewrite Maps.PTree.gcombine. 2: reflexivity. auto.
+  {
+    simpl. intros. apply H0 in H1. destruct x; simpl in *; subst; auto.
+  }
+Qed.
+
+Lemma get_symbtable_to_tree':
+  forall stbl se,
+    list_norepet symbentry_id ## stbl ->
+    In se stbl ->
+    Maps.PTree.get (symbentry_id se) (symbtable_to_tree stbl) = Some se.
+Proof.
+  intros.
+  rewrite get_symbtable_to_tree.
+  erewrite Maps.PTree_Properties.of_list_norepet. eauto.
+  - rewrite map_map. simpl. apply H.
+  - rewrite in_map_iff. eexists; split; eauto.
+Qed.
+
+Lemma symbtable_to_tree_get_symb_index_map:
+  forall stbl x se,
+    list_norepet symbentry_id ## stbl ->
+    Maps.PTree.get x (symbtable_to_tree stbl) = Some se ->
+    x = symbentry_id se /\
+    exists n,
+      Maps.PTree.get x (gen_symb_index_map stbl) = Some n.
+Proof.
+  intros. rewrite get_symbtable_to_tree in H0.
+  apply Maps.PTree_Properties.in_of_list in H0.
+  rewrite in_map_iff in H0.
+  decompose [ex and] H0; clear H0. subst. inv H2. split; eauto.
+  edestruct in_split as (l1 & l2 & SPLIT). eauto.
+  exploit gen_symb_index_map_ok. eauto. eauto. auto.
+  intro A; decompose [ex and] A. eauto.
+Qed.
+
+Lemma get_symb_index_map_symbtable_to_tree:
+  forall stbl x n,
+    list_norepet symbentry_id ## stbl ->
+    Maps.PTree.get x (gen_symb_index_map stbl) = Some n ->
+    exists se,
+      SymbTable.get n stbl = Some se /\
+      x = symbentry_id se /\
+      Maps.PTree.get x (symbtable_to_tree stbl) = Some se.
+Proof.
+  intros.
+  exploit in_sim_in_stbl_nth. eauto.
+  intros (s & GET & EQ). eexists; split; eauto. split; auto.
+  rewrite get_symbtable_to_tree.
+  apply Maps.PTree_Properties.of_list_norepet.
+  rewrite map_map. simpl. apply H.
+  rewrite in_map_iff. subst. eexists; split; eauto.
+  unfold SymbTable.get in GET.
+  eapply nth_error_In; eauto.
+Qed.
+
+Lemma link_symbtable_norepet:
+  forall s1 s2 s,
+    link_symbtable s1 s2 = Some s ->
+    list_norepet symbentry_id ## s1 /\
+    list_norepet symbentry_id ## s2 /\
+    list_norepet symbentry_id ## s /\
+    forall (x : Maps.PTree.elt) (a : symbentry),
+      Maps.PTree.get x (symbtable_to_tree s1) = Some a ->
+      link_symbtable_check (symbtable_to_tree s2) x a = true
+.
+Proof.
+  intros.
+  unfold link_symbtable in H.
+  destr_in H.
+  repeat rewrite andb_true_iff in Heqb.
+  destruct Heqb as ((nr1 & nr2) & check).
+  apply proj_sumbool_true in nr1.
+  apply proj_sumbool_true in nr2.
+  rewrite Maps.PTree_Properties.for_all_correct in check.
+  rewrite get_symbentry_ids_eq in *. eauto.
+  intuition.
+  inv H.
+  rewrite map_map.
+  erewrite list_map_exten.
+  apply Maps.PTree.elements_keys_norepet.
+  intros x IN.
+  destruct x.
+  apply Maps.PTree.elements_complete in IN.
+  rewrite Maps.PTree.gcombine in IN. simpl.
+  2: reflexivity.
+  rewrite ! get_symbtable_to_tree in IN.
+  unfold link_symb_merge in IN. destr_in IN.
+  apply Maps.PTree_Properties.in_of_list in Heqo.
+  rewrite in_map_iff in Heqo.
+  decompose [ex and] Heqo; eauto. inv H0; eauto.
+  rename Heqo into EX.
+  destr_in IN.
+  apply Maps.PTree_Properties.in_of_list in Heqo.
+  rewrite in_map_iff in Heqo.
+  decompose [ex and] Heqo; eauto. inv H0; eauto.
+  unfold link_symb in IN. repeat destr_in IN; simpl; auto.
+  apply Maps.PTree_Properties.in_of_list in IN.
+  rewrite in_map_iff in IN.
+  decompose [ex and] IN; eauto. inv H0; eauto.
+Qed.
+
+
+Lemma link_symb_merge_ok:
+  forall s1 s2 x se,
+    link_symbtable_check (symbtable_to_tree s2) x se = true ->
+    Maps.PTree.get x (symbtable_to_tree s1) = Some se ->
+    exists se',
+      link_symb_merge (Some se) (Maps.PTree.get x (symbtable_to_tree s2)) = Some se'.
+Proof.
+  unfold link_symb_merge, link_symbtable_check.
+  intros. repeat destr_in H; eauto.
+Qed.
+
+Lemma ursymb_ok:
+  forall stbl a r0 stbl' s,
+    link_symbtable stbl stbl' = Some s ->
+    update_reloc_symb stbl (gen_symb_index_map stbl) a = Some r0 ->
+    exists r1,
+      update_reloc_symb stbl (gen_symb_index_map s) a = Some r1.
+Proof.
+  unfold update_reloc_symb.
+  intros. repeat destr_in H0.
+  exploit link_symbtable_norepet. eauto. intros (nr1 & nr2 & nr3 & check).
+  exploit (get_symb_index_map_symbtable_to_tree). 2: eauto. eauto.
+  intros (se & GET & EQ & stree).
+  exploit link_symbtable_ok_l. eauto. intro EQsymb. rewrite stree in EQsymb.
+  edestruct link_symb_merge_ok. eauto. eauto.
+  exploit symbtable_to_tree_get_symb_index_map. 3: intros (A & n0 & B).
+  3: rewrite B; eauto. auto.
+  erewrite link_symbtable_ok_l. 2: eauto.
+  rewrite stree. eauto.
+Qed.
+
+Lemma reloc_symbtable_eq:
+  forall get_reloc_offset stbl stbl',
+    reloc_symbtable get_reloc_offset stbl = Some stbl' ->
+    list_forall2 (fun se se' =>
+                    reloc_symbol get_reloc_offset se = Some se'
+                 ) stbl stbl'.
+Proof.
+  unfold reloc_symbtable. induction stbl; simpl; intros; eauto.
+  - inv H. constructor.
+  - destruct (fold_right (reloc_iter get_reloc_offset) (Some []) stbl) eqn:?.
+    + simpl in H. destr_in H. inv H. constructor; auto.
+    + simpl in H. congruence.
+Qed.
+
+Lemma norepet_reloc_symbtable:
+  forall get_reloc_offset stbl stbl',
+    list_norepet symbentry_id ## stbl ->
+    reloc_symbtable get_reloc_offset stbl = Some stbl' ->
+    list_norepet symbentry_id ## stbl'.
+Proof.
+  intros.
+  apply reloc_symbtable_eq in H0.
+  revert H0 H; induction 1; simpl; intros; eauto.
+  inv H1; constructor; auto.
+  assert (symbentry_id a1 = symbentry_id b1).
+  unfold reloc_symbol in H.  repeat destr_in H; simpl in *; eauto.
+  intro IN; apply H4.
+  rewrite in_map_iff in IN |- *. decompose [ex and] IN.
+  eapply list_forall2_in_right in H6. 2: eauto.
+  decompose [ex and] H6. exists x0; split; auto.
+  unfold reloc_symbol in H8.  repeat destr_in H8; simpl in *; eauto. congruence.
+Qed.
+
+Lemma reloc_symbtable_to_tree:
+  forall stbl stbl' get_reloc_ofs x se
+         (NR: list_norepet symbentry_id ## stbl'),
+    Maps.PTree.get x (symbtable_to_tree stbl) = Some se ->
+    reloc_symbtable get_reloc_ofs stbl = Some stbl' ->
+    exists se',
+      reloc_symbol get_reloc_ofs se = Some se' /\
+      Maps.PTree.get x (symbtable_to_tree stbl') = Some se'.
+Proof.
+  intros. rewrite get_symbtable_to_tree in H |- *.
+  apply reloc_symbtable_eq in H0.
+  apply Maps.PTree_Properties.in_of_list in H.
+  rewrite in_map_iff in H. destruct H as (x0 & eq & IN). inv eq.
+  edestruct list_forall2_in_left as (se' & IN' & EQ). eauto. eauto. simpl in EQ.
+  exists se'. split. auto.
+  apply Maps.PTree_Properties.of_list_norepet.
+  rewrite map_map. auto. 
+  rewrite in_map_iff. eexists; split. 2: eauto.
+  f_equal.
+  unfold reloc_symbol in EQ; repeat destr_in EQ; auto.
+Qed.
+
+Lemma ursymb_ok_r:
+  forall stbl a r0 stbl' s stbl2 get_reloc_ofs,
+    link_symbtable stbl stbl' = Some s ->
+    reloc_symbtable get_reloc_ofs stbl2 = Some stbl' ->
+    update_reloc_symb stbl2 (gen_symb_index_map stbl2) a = Some r0 ->
+    exists r1,
+      update_reloc_symb stbl2 (gen_symb_index_map s) a = Some r1.
+Proof.
+  unfold update_reloc_symb.
+  intros. repeat destr_in H1.
+  exploit link_symbtable_norepet. eauto. intros (nr1 & nr2 & nr3 & check).
+  assert (NR2: list_norepet symbentry_id ## stbl2).
+  {
+    clear - H0 nr2.
+    apply reloc_symbtable_eq in H0.
+    revert H0 nr2.
+    induction 1; simpl; intros; eauto.
+    inv nr2. constructor; auto.
+    assert (symbentry_id a1 = symbentry_id b1).
+    unfold reloc_symbol in H.  repeat destr_in H; simpl in *; eauto.
+    intro IN; apply H3.
+    rewrite in_map_iff in IN |- *. decompose [ex and] IN.
+    eapply list_forall2_in_left in H6. 2: eauto.
+    decompose [ex and] H6. exists x0; split; auto.
+    unfold reloc_symbol in H8.  repeat destr_in H8; simpl in *; eauto. congruence.
+  }
+  exploit (get_symb_index_map_symbtable_to_tree). 2: eauto. auto.
+  intros (se & GET & EQ & stree).
+  edestruct reloc_symbtable_to_tree as (se' & RELSYMB & GET'). 3: eauto. 2: eauto. auto.
+  exploit link_symbtable_ok_l. eauto. intro EQsymb. rewrite GET' in EQsymb.
+  destruct (Maps.PTree.get (symbentry_id v) (symbtable_to_tree stbl)) eqn:STBLGET.
+  specialize (check _ _ STBLGET).
+  unfold link_symbtable_check in check. rewrite GET' in check.
+  unfold link_symb_merge in EQsymb.
+  destr_in check.
+  exploit symbtable_to_tree_get_symb_index_map. 3: intros (A & n0 & B).
+  3: rewrite B; eauto. auto.
+  erewrite link_symbtable_ok_l. 2: eauto.
+  rewrite GET'. rewrite STBLGET. simpl. eauto.
+  simpl in EQsymb.
+  exploit symbtable_to_tree_get_symb_index_map. 3: intros (A & n0 & B).
+  3: rewrite B; eauto. auto.
+  erewrite link_symbtable_ok_l. 2: eauto.
+  rewrite GET'. rewrite STBLGET. simpl. eauto.
+Qed.
+
+Lemma urs_ok:
+  forall stbl x x' stbl' s,
+    link_symbtable stbl stbl' = Some s ->
+    update_reloctable_symb stbl (gen_symb_index_map stbl) x = Some x' ->
+    exists x'',
+      update_reloctable_symb stbl (gen_symb_index_map s) x = Some x''.
+Proof.
+  unfold update_reloctable_symb.
+  intros stbl x x' stbl' s LS.
+  generalize (@nil RelocTblParams.V).
+  revert x x'.
+  induction x; simpl; intros; eauto.
+  destruct (fold_right (acc_update_reloc_symb stbl (gen_symb_index_map stbl)) (Some l) x) eqn:?.
+  - simpl in H.
+    repeat destr_in H.
+    edestruct IHx. eauto. rewrite H. simpl.
+    edestruct ursymb_ok; eauto. rewrite H0. eauto.
+  - simpl in H. congruence.
+Qed.
+
+Lemma urs_ok_r:
+  forall stbl x x' stbl' s stbl2 get_reloc_ofs,
+    link_symbtable stbl stbl' = Some s ->
+    reloc_symbtable get_reloc_ofs stbl2 = Some stbl' ->
+    update_reloctable_symb stbl2 (gen_symb_index_map stbl2) x = Some x' ->
+    exists x'',
+      update_reloctable_symb stbl2 (gen_symb_index_map s) x = Some x''.
+Proof.
+  unfold update_reloctable_symb.
+  intros stbl x x' stbl' s stbl2 get_reloc_ofs LS RS.
+  generalize (@nil RelocTblParams.V).
+  revert x x'.
+  induction x; simpl; intros; eauto.
+  destruct (fold_right (acc_update_reloc_symb stbl2 (gen_symb_index_map stbl2)) (Some l) x) eqn:?.
+  - simpl in H.
+    repeat destr_in H.
+    edestruct IHx. eauto. rewrite H. simpl.
+    edestruct ursymb_ok_r; eauto. rewrite H0. eauto.
+  - simpl in H. congruence.
+Qed.
+
+
+Lemma list_forall2_nth:
+  forall {A B} P (l1 : list A) (l2: list B)
+         (LF: list_forall2 P l1 l2)
+         n x1
+         (NTH: nth_error l1 n = Some x1),
+  exists x2,
+    nth_error l2 n = Some x2 /\ P x1 x2.
+Proof.
+  induction 1; simpl; intros; eauto.
+  rewrite nth_error_nil in NTH. easy.
+  destruct n.
+  - simpl in *. inv NTH. eauto.
+  - simpl in *. eauto.
+Qed.
+
+Lemma update_reloc_reloc:
+  forall dsize csize stbl stbl'
+         (RS : list_forall2
+                 (fun se se' : symbentry => reloc_symbol (reloc_offset_fun dsize csize) se = Some se') stbl
+                 stbl')
+         sim a r0
+         (URS: update_reloc_symb stbl sim a = Some r0),
+  exists r1, update_reloc_symb stbl' sim a = Some r1.
+Proof.
+  unfold update_reloc_symb.
+  intros. repeat destr_in URS.
+  unfold SymbTable.get in *.
+  edestruct @list_forall2_nth as (v2 & NTH & P). eauto. eauto.
+  setoid_rewrite NTH. simpl in P.
+  unfold reloc_symbol in P. repeat destr_in P; simpl; rewrite Heqo0; eauto.
+Qed.
+
+Lemma update_reloctable_reloc:
+  forall stbl sim x x' dsize csize stbl',
+    update_reloctable_symb stbl sim x = Some x' ->
+    reloc_symbtable (reloc_offset_fun dsize csize) stbl = Some stbl' ->
+    exists x'', update_reloctable_symb stbl' sim x = Some x''.
+Proof.
+  unfold update_reloctable_symb.
+  intros stbl sim x x' dsize csize stbl' URS RS.
+  apply reloc_symbtable_eq in RS.
+  revert x x' URS.
+  induction x; simpl; intros; eauto.
+  destruct (fold_right (acc_update_reloc_symb stbl sim) (Some []) x) eqn:?; simpl in URS; try congruence.
+  destr_in URS. inv URS.
+  edestruct IHx. eauto. rewrite H. simpl.
+  edestruct update_reloc_reloc. eauto. eauto. rewrite H0; eauto.
+Qed.
+
+Lemma fold_acc_init_data_size:
+  forall sim l z0 l0 z1 l1,
+    fold_left (acc_init_data sim) l (OK (z0, l0)) = OK (z1, l1) ->
+    z1 = init_data_list_size l + z0.
+Proof.
+  induction l; simpl; intros; eauto.
+  inv H; auto.
+  unfold bind in H; destr_in H. apply IHl in H. subst. omega.
+  rewrite fold_acc_init_data_error in H; congruence.
+Qed.
+
+Lemma tidl_app:
+  forall sim l1 l2 l1' l2',
+    transl_init_data_list sim l1 = OK l1' ->
+    transl_init_data_list sim l2 = OK l2' ->
+    transl_init_data_list sim (l1 ++ l2) =
+    OK ((shift_relocentry_offset (init_data_list_size l1)) ## l2' ++ l1').
+Proof.
+  intros. unfold transl_init_data_list in *.
+  monadInv H. monadInv H0. repeat destr_in EQ0. repeat destr_in EQ2.
+  rewrite fold_left_app.
+  rewrite fold_acc_init_data_ok. rewrite EQ. simpl.
+  rewrite fold_acc_init_data_ok. rewrite EQ1. simpl.
+  rewrite app_nil_r. f_equal. f_equal.
+  unfold shift_relocentry_offset.
+  apply list_map_exten. intros. f_equal. f_equal.
+  apply fold_acc_init_data_size in EQ. omega.
+  erewrite list_map_exten. apply map_id. intros. simpl. destruct x; simpl. f_equal. omega.
+Qed.
+
+
+Lemma acc_update_reloc_symb_eq:
+  forall stbl sim l l',
+    update_reloctable_symb stbl sim l = Some l' ->
+    list_forall2 (fun a b => update_reloc_symb stbl sim a = Some b) l l'.
+Proof.
+  unfold update_reloctable_symb.
+  induction l; simpl; intros; eauto. inv H; constructor.
+  destruct (fold_right (acc_update_reloc_symb stbl sim) (Some []) l) eqn:?.
+  simpl in H. destr_in H. inv H.
+  constructor; eauto.
+  simpl in H. congruence.
+Qed.
+
+Lemma nat_diff_S_add:
+  forall n m,
+    n <> Datatypes.S (m + n).
+Proof.
+  intros. omega.
+Qed.
+
+Lemma list_forall2_app_inv_l:
+  forall {A B} (P: A -> B -> Prop) l1 l2 l',
+    list_forall2 P (l1 ++ l2) l' ->
+    exists l1' l2',
+      list_forall2 P l1 l1' /\
+      list_forall2 P l2 l2' /\
+      l' = l1' ++ l2'.
+Proof.
+  induction l1; simpl; intros; eauto.
+  exists [], l'; repeat split. constructor. auto.
+  inv H. edestruct IHl1 as (l1' & l2' & LF1 & LF2 & SPLIT). eauto. subst.
+  exists (b1::l1'), l2'; repeat split; auto. constructor; auto.
+Qed.
+
+Lemma list_forall2_map:
+  forall {A} (P: A -> A -> Prop) f
+         (Fprop: forall x y, P x y -> P (f x) (f y))
+         l l',
+    list_forall2 P l l' ->
+    list_forall2 P (f ## l) (f ## l').
+Proof.
+  induction 2; simpl; intros; eauto. constructor.
+  constructor; eauto.
+Qed.
+
+Lemma aurs_aid_ok:
+  forall stbl sim l l' l'' l0' z0 l0 z1
+         (LF: list_forall2 (fun a b => update_reloc_symb stbl sim a = Some b) l' l'')
+         (LF: list_forall2 (fun a b => update_reloc_symb stbl sim a = Some b) l0 l0')
+         (FL : fold_left (acc_init_data (gen_symb_index_map stbl)) l (OK (z0, l0)) = OK (z1, l' ++ l0)),
+    fold_left (acc_init_data sim) l (OK (z0, l0')) = OK (z1, l'' ++ l0').
+Proof.
+  induction l; simpl; intros; eauto. inv FL.
+  destruct l'. inv LF. simpl. auto.
+  apply (f_equal (@length _)) in H1. rewrite app_length in H1. simpl in H1. exfalso.
+  apply nat_diff_S_add in H1. auto.
+  unfold bind in FL. destr_in FL.
+  rewrite fold_acc_init_data_ok in FL. unfold bind in FL. destr_in FL. destr_in FL. inv FL.
+  rewrite app_assoc in H1. apply app_inv_tail in H1. subst.
+  edestruct @list_forall2_app_inv_l as (l1' & l2' & LF1 & LF2 & SPLIT). apply LF. subst.
+  assert (transl_init_data sim z0 a = OK l2').
+  {
+    revert LF2 Heqr. clear.
+    unfold transl_init_data. intros LF2 EQ.
+    repeat destr_in EQ; inv LF2; auto.
+    unfold update_reloc_symb in H1. simpl in H1. repeat destr_in H1.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). eauto. subst.
+    rewrite Heqo0 in GET; inv GET. rewrite Heqo1. inv H3. reflexivity.
+  }
+  rewrite H. simpl.
+  rewrite fold_acc_init_data_ok.
+  erewrite IHl. 3: constructor. simpl. f_equal. f_equal.
+  rewrite app_assoc. f_equal. f_equal. rewrite app_nil_r.
+  instantiate (1:=
+ (fun d : relocentry =>
+   {|
+   reloc_offset := reloc_offset d - (z0 + init_data_size a);
+   reloc_type := reloc_type d;
+   reloc_symb := reloc_symb d;
+   reloc_addend := reloc_addend d |}) ## l1'
+              ). rewrite map_map. simpl. erewrite list_map_exten. apply map_id. simpl; intros.
+  destruct x; f_equal. simpl. omega.
+  apply list_forall2_map.
+  {
+    clear. unfold update_reloc_symb. simpl. intros.
+    repeat destr_in H. simpl. auto.
+  }
+  apply LF1.
+  setoid_rewrite Heqr0. f_equal. f_equal.
+  rewrite map_map. simpl. rewrite app_nil_r.
+  erewrite list_map_exten. symmetry. apply map_id. simpl; intros. destruct x; f_equal; simpl; auto. omega.
+  rewrite fold_acc_init_data_error in FL. congruence.
+Qed.
+
+Lemma tidl_urs:
+  forall stbl sim l l' l'',
+    transl_init_data_list (gen_symb_index_map stbl) l = OK l' ->
+    update_reloctable_symb stbl sim l' = Some l'' ->
+    transl_init_data_list sim l = OK l''.
+Proof.
+  unfold transl_init_data_list.
+  intros. monadInv H. repeat destr_in EQ0.
+  erewrite aurs_aid_ok. 3: constructor.
+  3: rewrite app_nil_r; eauto.
+  2: apply acc_update_reloc_symb_eq; eauto.
+  simpl. rewrite app_nil_r; auto.
+Qed.
+
+Lemma tidl_link_reloctable:
+  forall stbl1 stbl2 csize s0 s1 l l' x0 x3,
+    link_symbtable stbl1 s0 = Some s1 ->
+    reloc_symbtable (reloc_offset_fun (sec_size (sec_data l)) csize)
+                    stbl2 = Some s0 ->
+    transl_init_data_list (gen_symb_index_map stbl1) l = OK x0 ->
+    transl_init_data_list (gen_symb_index_map stbl2) l' = OK x3 ->
+    exists t1' t2',
+      update_reloctable_symb stbl1 (gen_symb_index_map s1) x0 = Some t1' /\
+      update_reloctable_symb stbl2 (gen_symb_index_map s1) x3 = Some t2' /\
+      link_reloctable (init_data_list_size l) stbl1 stbl2
+                      (gen_symb_index_map s1) x0 x3 =
+      Some (t1' ++ (shift_relocentry_offset (init_data_list_size l)) ## t2') /\
+      transl_init_data_list (gen_symb_index_map s1) (l ++ l') =
+      OK((shift_relocentry_offset (init_data_list_size l)) ## t2' ++ t1').
+Proof.
+  intros.
+  unfold link_reloctable.
+  
+  edestruct update_reloctable_symb_ok.
+  eapply transl_init_data_list_gets in H1. eauto.
+
+  edestruct update_reloctable_symb_ok.
+  eapply transl_init_data_list_gets in H2. eauto.
+
+  edestruct urs_ok. eauto. apply H3.
+  edestruct urs_ok_r. eauto. eauto. eauto.
+  rewrite H5. rewrite H6.
+
+  exists x2, x4; repeat split.
+  erewrite tidl_app.
+  2: eapply tidl_urs; eauto.
+  2: eapply tidl_urs; eauto.
+  auto.
+Qed.
+
+Lemma transl_code_gets :
+  forall (stbl1 : symbtable) c (x0 : reloctable),
+    transl_code (gen_symb_index_map stbl1) c = OK x0 ->
+    Forall
+      (fun e : relocentry =>
+         exists (se : SymbTblParams.V) (i : N),
+           SymbTable.get (reloc_symb e) stbl1 = Some se /\
+           Maps.PTree.get (symbentry_id se) (gen_symb_index_map stbl1) = Some i) x0.
+Proof.
+  unfold transl_code.
+  intros. monadInv H.
+  revert x x0 EQ.
+
+  assert (
+      forall z0 x0 z1 x1,
+        fold_left (acc_instrs (gen_symb_index_map stbl1)) c (OK (z0, x0)) = OK (z1, x1) ->
+        Forall
+          (fun e : relocentry =>
+             exists (se : SymbTblParams.V) (i : N),
+               SymbTable.get (reloc_symb e) stbl1 = Some se /\
+               Maps.PTree.get (symbentry_id se) (gen_symb_index_map stbl1) = Some i) x0 ->
+        Forall
+          (fun e : relocentry =>
+             exists (se : SymbTblParams.V) (i : N),
+               SymbTable.get (reloc_symb e) stbl1 = Some se /\
+               Maps.PTree.get (symbentry_id se) (gen_symb_index_map stbl1) = Some i) x1
+    ).
+  {
+    clear. induction c; simpl; intros; eauto.
+    - inv H; auto.
+    - destruct (transl_instr (gen_symb_index_map stbl1) z0 a) eqn:?.
+      2: simpl in H. 2: rewrite fold_acc_instrs_error in H; congruence.
+      simpl in H.
+      exploit IHc. eauto.
+      rewrite Forall_forall in *.
+      intro x. rewrite in_app. intros [INr | INx0]; eauto.
+      unfold transl_instr in Heqr.
+      repeat destr_in Heqr; simpl in *; try intuition congruence.
+      + monadInv H2. unfold compute_instr_abs_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ1.
+        destruct INr as [EQ|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_disp_relocentry in EQ.
+        destr_in EQ.  unfold compute_instr_abs_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ1.
+        destruct INr as [EQ|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_disp_relocentry in EQ.
+        destr_in EQ.  unfold compute_instr_abs_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ1.
+        destruct INr as [EQ|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_disp_relocentry in EQ.
+        destr_in EQ.  unfold compute_instr_abs_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ1.
+        destruct INr as [EQ|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_rel_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ2.
+        destruct INr as [EQr|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_rel_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ2.
+        destruct INr as [EQr|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_disp_relocentry in EQ.
+        destr_in EQ.  unfold compute_instr_abs_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ1.
+        destruct INr as [EQ|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + monadInv H2. unfold compute_instr_disp_relocentry in EQ.
+        destr_in EQ.  unfold compute_instr_abs_relocentry in EQ.
+        monadInv EQ. repeat destr_in EQ1.
+        destruct INr as [EQ|[]]. subst. simpl.
+        exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
+        (do 2 eexists); split. eauto. subst. eauto.
+      + auto.
+  }
+  intros. eapply H. eauto. constructor.
+Qed.
+
+
+Lemma fold_acc_instrs_split:
+  forall c1 sim z0 cr1 cr2 z1,
+    fold_left (acc_instrs sim) c1 (OK (z0, cr1)) = OK (z1, cr2) ->
+    exists cr2',
+      cr2 = cr2' ++ cr1.
+Proof.
+  induction c1; simpl; intros; eauto.
+  inv H.
+  exists nil. reflexivity.
+  destruct (transl_instr sim z0 a) eqn:?.
+  simpl in H.
+  apply IHc1 in H.
+  destruct H. subst. exists (x ++ l). rewrite <- app_assoc. reflexivity.
+  simpl in H; rewrite fold_acc_instrs_error in H; congruence.
+Qed.
+
+Lemma update_reloctable_symb_gen:
+  forall stbl1 sim l1 l1' l2',
+    fold_right (acc_update_reloc_symb stbl1 sim) (Some []) l1 = Some l1' ->
+    fold_right (acc_update_reloc_symb stbl1 sim) (Some l2') l1 = Some (l1' ++ l2').
+Proof.
+  induction l1; simpl; intros; eauto. inv H. reflexivity.
+  destruct (fold_right (acc_update_reloc_symb stbl1 sim) (Some []) l1) eqn:?; simpl in *; try congruence.
+  repeat destr_in H.
+  erewrite IHl1; eauto. simpl. rewrite Heqo0. auto.
+Qed.
+
+Lemma update_reloctable_symb_gen':
+  forall stbl1 sim l1 l2' l12,
+    fold_right (acc_update_reloc_symb stbl1 sim) (Some l2') l1 = Some l12 ->
+    exists l1',
+      fold_right (acc_update_reloc_symb stbl1 sim) (Some []) l1 = Some l1' /\
+      l12 = l1' ++ l2'.
+Proof.
+  induction l1; simpl; intros; eauto. inv H. eexists; split; eauto.
+  destruct (fold_right (acc_update_reloc_symb stbl1 sim) (Some l2') l1) eqn:?; simpl in *; try congruence.
+  repeat destr_in H.
+  edestruct IHl1 as (l1' & FR & EQ); eauto. rewrite FR. simpl. rewrite Heqo0.
+  eexists; split; eauto. simpl. subst. reflexivity.
+Qed.
+
+
+Lemma update_reloctable_symb_app:
+  forall stbl1 sim l1 l2 l1' l2',
+    update_reloctable_symb stbl1 sim l1 = Some l1' ->
+    update_reloctable_symb stbl1 sim l2 = Some l2' ->
+    update_reloctable_symb stbl1 sim (l1 ++ l2) = Some (l1' ++ l2').
+Proof.
+  unfold update_reloctable_symb.
+  intros.
+  rewrite fold_right_app. setoid_rewrite H0.
+  eapply update_reloctable_symb_gen; eauto.
+Qed.
+
+Lemma fold_acc_update_error:
+  forall stbl1 sim l1,
+    fold_right (acc_update_reloc_symb stbl1 sim) None l1 = None.
+Proof.
+  induction l1; simpl; intros; eauto.
+  rewrite IHl1. simpl. auto.
+Qed.
+
+Lemma update_reloctable_symb_split:
+  forall stbl1 sim l1 l2 l12,
+    update_reloctable_symb stbl1 sim (l1 ++ l2) = Some l12 ->
+    exists l1' l2',
+      l12 = l1' ++ l2' /\
+      update_reloctable_symb stbl1 sim l1 = Some l1' /\
+      update_reloctable_symb stbl1 sim l2 = Some l2'.
+
+Proof.
+  unfold update_reloctable_symb.
+  intros.
+  rewrite fold_right_app in H.
+  destruct (fold_right (acc_update_reloc_symb stbl1 sim) (Some []) l2) eqn:?.
+  setoid_rewrite Heqo in H.
+  edestruct update_reloctable_symb_gen' as (l1' & Fr & EQ). apply H.
+  setoid_rewrite Fr.
+  subst. (do 2 eexists); repeat split.
+  setoid_rewrite Heqo in H. rewrite fold_acc_update_error in H. congruence.
+Qed.
+
+Lemma transl_instr_reloc:
+  forall stbl1 s1 z0 a l l2',
+    transl_instr (gen_symb_index_map stbl1) z0 a = OK l ->
+    update_reloctable_symb stbl1 (gen_symb_index_map s1) l = Some l2' ->
+    transl_instr (gen_symb_index_map s1) z0 a = OK l2'.
+Proof.
+  intros.
+  unfold transl_instr in *.
+  repeat destr_in H; simpl in *; repeat destr_in H0; auto.
+  - monadInv H2. unfold compute_instr_abs_relocentry in *. monadInv EQ. repeat destr_in EQ1.
+    rewrite EQ0. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1.
+    rewrite EQ0. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1.
+    rewrite EQ0. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1.
+    rewrite EQ0. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_rel_relocentry in *. monadInv EQ.
+    repeat destr_in EQ2.
+    rewrite EQ0. rewrite EQ. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_rel_relocentry in *. monadInv EQ.
+    repeat destr_in EQ2.
+    rewrite EQ0. rewrite EQ. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1.
+    rewrite EQ0. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+  - monadInv H2. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1.
+    rewrite EQ0. simpl. simpl in *. repeat destr_in H1.
+    unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
+    edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
+    rewrite Heqo2. simpl. auto.
+Qed.
+
+
+Lemma transl_instr_translate:
+  forall sim z a l n,
+    transl_instr sim z a = OK l ->
+    transl_instr sim (z + n) a = OK (shift_relocentry_offset n) ## l.
+Proof.
+  unfold transl_instr.
+  intros.
+  repeat destr_in H; simpl in *; auto.
+  - monadInv H1. unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
+    rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
+    rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
+    rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
+    rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_rel_relocentry in *.
+    monadInv EQ. repeat destr_in EQ2. unfold shift_relocentry_offset.
+    rewrite EQ0, EQ; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_rel_relocentry in *.
+    monadInv EQ. repeat destr_in EQ2. unfold shift_relocentry_offset.
+    rewrite EQ0, EQ; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
+    rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+  - monadInv H1. unfold compute_instr_disp_relocentry in *. destr_in EQ.
+    unfold compute_instr_abs_relocentry in *.
+    monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
+    rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+Qed.
+
+Lemma fold_acc_instrs_translate:
+  forall sim c z0 z1 l1 l2 n,
+    fold_left (acc_instrs sim) c (OK (z0, l1)) = OK (z1, l2) ->
+    fold_left (acc_instrs sim) c (OK (z0 + n, (shift_relocentry_offset n) ## l1)) =
+    OK (z1 + n, (shift_relocentry_offset n) ## l2).
+Proof.
+  induction c; simpl; intros; eauto.
+  - inv H. auto.
+  - destruct (transl_instr sim z0 a) eqn:?; simpl in *.
+    erewrite transl_instr_translate; eauto. simpl.
+    erewrite  <- IHc. 2: eauto.
+    f_equal. rewrite map_app.
+    f_equal. f_equal. omega.
+    rewrite fold_acc_instrs_error in H. congruence.
+Qed.
+
+Lemma update_shift:
+  forall stbl sim n c c',
+    update_reloctable_symb stbl sim c = Some c' ->
+    update_reloctable_symb stbl sim ((shift_relocentry_offset n) ## c) = Some (shift_relocentry_offset n) ## c'.
+Proof.
+  induction c; simpl; intros; eauto.
+  - inv H; auto.
+  - destruct (update_reloctable_symb stbl sim c) eqn:?.
+    simpl in H. repeat destr_in H.
+    erewrite IHc; eauto. simpl. unfold update_reloc_symb in *. repeat destr_in Heqo0. simpl.
+    rewrite Heqo1, Heqo2. auto.
+    simpl in H; congruence.
+Qed.
+
+Lemma fold_acc_instrs_list:
+  forall sim c z0 cr1,
+    fold_left (acc_instrs sim) c (OK (z0, cr1)) =
+    bind2 (fold_left (acc_instrs sim) c (OK (z0, [])))
+          (fun z cr0 => OK (z, cr0 ++ cr1)).
+Proof.
+  induction c; simpl; intros; eauto.
+  - destruct (transl_instr sim z0 a) eqn:?; simpl in *; try congruence.
+    rewrite (IHc _ (l ++ cr1)).
+    rewrite (IHc _ (l ++ [])).
+    rewrite app_nil_r.
+    unfold bind2. destr. destr. rewrite <- app_assoc. auto.
+    rewrite fold_acc_instrs_error. reflexivity.
+Qed.
+
+Lemma transl_code_size':
+  forall sim c z1 l z2 l',
+    fold_left (acc_instrs sim) c (OK (z1, l)) = OK (z2, l') ->
+    z2 = z1 + code_size c.
+Proof.
+  induction c; simpl; intros; eauto.
+  inv H. omega.
+  unfold bind in H. destr_in H; simpl in H.
+  2: rewrite fold_acc_instrs_error in H; congruence.
+  apply IHc in H. omega.
+Qed.
+
+Lemma transl_code_app:
+  forall stbl1 stbl2 stbl2' s1 c1 c2 c1' c2' dsize,
+    reloc_symbtable (reloc_offset_fun dsize (code_size c1)) stbl2 = Some stbl2' ->
+    link_symbtable stbl1 stbl2' = Some s1 ->
+    transl_code (gen_symb_index_map stbl1) c1 = OK c1' ->
+    transl_code (gen_symb_index_map stbl2) c2 = OK c2' ->
+    exists c2'' c2''',
+      link_reloctable (code_size c1) stbl1 stbl2 (gen_symb_index_map s1) c1' c2' = Some c2'' /\
+      transl_code (gen_symb_index_map s1) (c1 ++ c2) = OK (c2''') /\
+      Permutation.Permutation c2'' c2'''.
+Proof.
+  intros.
+  unfold transl_code, link_reloctable in *.
+
+  edestruct update_reloctable_symb_ok.
+  eapply transl_code_gets in H1. eauto.
+  edestruct urs_ok. eauto. eauto. rewrite H4.
+
+  edestruct update_reloctable_symb_ok.
+  eapply transl_code_gets in H2. eauto.
+  edestruct urs_ok_r. eauto. eauto. eauto.
+  rewrite H6.
+
+  rewrite fold_left_app.
+
+  monadInv H1. monadInv H2.
+  assert (
+      forall stbl1 s1 c1 z0 cr1 z1 cr2 cr3 cr1',
+        fold_left (acc_instrs (gen_symb_index_map stbl1)) c1 (OK (z0, cr1)) = OK (z1, cr2 ++ cr1) ->
+        update_reloctable_symb stbl1 (gen_symb_index_map s1) cr2 = Some cr3 ->
+        update_reloctable_symb stbl1 (gen_symb_index_map s1) cr1 = Some cr1' ->
+        fold_left (acc_instrs (gen_symb_index_map s1)) c1 (OK (z0, cr1')) = OK (z1, cr3 ++ cr1')
+    ).
+  {
+    clear.
+    induction c1; simpl; intros; eauto.
+    - inv H. destruct cr2. simpl in H0. inv H0. simpl.  auto.
+      apply (f_equal (@length _)) in H4.
+      simpl in H4. rewrite app_length in H4. omega.
+    - destruct (transl_instr (gen_symb_index_map stbl1) z0 a) eqn:?.
+      2: simpl in H; rewrite fold_acc_instrs_error in H; congruence.
+      simpl in H.
+
+      edestruct fold_acc_instrs_split. apply H.
+      rewrite app_assoc in H2. apply app_inv_tail in H2. subst.
+
+      edestruct update_reloctable_symb_split as (l1' & l2' & SPLIT & UR1 & UR2). apply H0.
+      rewrite <- app_assoc in H.
+      exploit IHc1. apply H. eauto.
+      eapply update_reloctable_symb_app. eauto. eauto.
+
+      erewrite transl_instr_reloc. 2: eauto. 2: eauto. simpl. subst. rewrite app_assoc. auto.
+  }
+
+  erewrite H1 with (cr1:=[]). 2: rewrite app_nil_r; eauto. 3: reflexivity. 2: eauto.
+  simpl.
+  rewrite app_nil_r.
+
+  generalize (fold_acc_instrs_translate _ _ _ _ _ _ x3 EQ0). intro EQ1.
+  simpl in EQ1.
+
+
+  rewrite fold_acc_instrs_list.
+  erewrite H1 with(cr1:=[]). 4: reflexivity. 3: apply update_shift. 3: apply H6.
+  2: rewrite app_nil_r; eauto.
+  simpl.
+  eauto.
+
+  eexists; eexists. split; [|split]. eauto. eauto.
+  rewrite app_nil_r.
+
+  apply transl_code_size' in EQ. rewrite EQ. simpl.
+  apply Permutation.Permutation_app_comm.
+Qed.
+
+Lemma transl_code'_app:
+  forall c1 c2 c1' c2',
+    transl_code' c1 = OK c1' ->
+    transl_code' c2 = OK c2' ->
+    transl_code' (c1 ++ c2) = OK (c1' ++ c2').
+Proof.
+  unfold transl_code'. intros.
+  monadInv H. monadInv H0.
+  rewrite fold_left_app. rewrite EQ.
+  rewrite fold_acc_id_eliminate_app. rewrite EQ0. simpl. rewrite rev_app_distr. auto.
+Qed.
+
 Instance reloctablesgen_transflink : @TransfLink _ _ RelocLinking.Linker_reloc_prog RelocLinking1.Linker_reloc_prog match_prog.
 Proof.
   red. simpl.
   unfold match_prog.
   intros. simpl.
-Admitted.
+  unfold link_reloc_prog.
+  unfold transf_program.
+  unfold RelocLinking.link_reloc_prog in *.
+  simpl in *.
+  repeat destr_in H.
+  unfold transf_program in H0, H1.
+  monadInv H0; monadInv H1. simpl.
+  rewrite Heqo.
+  edestruct transl_sectable'_code as (code1 & code1' & EQcode1 & TC1 & EQcode1'). apply EQ1. eauto.
+  erewrite transl_sectable'_data. 2: apply EQ1. 2: eauto.
+  rewrite EQcode1'.
+  exploit link_sectable_ok. eauto. eauto. eauto.
+  intros (init1 & init2 & c1 & c2 & c1' & c2' & PS1 & PS2 & TC1' & TC2 & LINK).
+  rewrite LINK. simpl.
+  rewrite PS1 in Heqo1. vm_compute in Heqo1. inv Heqo1. simpl in Heqo3.
+  erewrite transl_code_size. 2: eauto. rewrite Heqo3. rewrite Heqo4. simpl.
+  unfold link_data_reloctable. simpl.
+  erewrite transl_sectable'_data. 2: eauto. 2: eauto.
+  rewrite PS1 in Heqo0. vm_compute in Heqo0. inv Heqo0. simpl.
+  exploit transl_sectable_ok. apply EQ. rewrite PS1. cbn. simpl.
+  intros (c & l & EQ10 & EQ11 & TC & TIDL). inv EQ10; inv EQ11. inv H0.
+  exploit transl_sectable_ok. apply EQ0. rewrite PS2. cbn. simpl.
+  intros (c' & l' & EQ10 & EQ11 & TC' & TIDL'). inv EQ10; inv EQ11.
+  
+  unfold link_code_reloctable. simpl.
+  rewrite EQcode1'.
+  unfold transf_program. simpl.
+  unfold transl_sectable.
+
+  rewrite PS1, PS2 in Heqo2. simpl in Heqo2.
+  unfold link_sectable in Heqo2. repeat destr_in Heqo2.
+  vm_compute in Heqo0; inv Heqo0.
+  vm_compute in Heqo1; inv Heqo1.
+  vm_compute in Heqo5; inv Heqo5.
+  vm_compute in Heqo6; inv Heqo6.
+  unfold SecTable.get. simpl.
+  simpl in Heqo7. inv Heqo7.
+  simpl in Heqo8; inv Heqo8.
+erewrite transl_code'_app by eauto. simpl.
+  exploit transl_code_app. eauto. eauto. eauto. eauto.
+  intros (c2'' & c2''' & LR & TCtp & PERM).
+  erewrite transl_code_size by eauto. rewrite LR. rewrite TCtp.
+
+
+  exploit tidl_link_reloctable. eauto. eauto. eauto. eauto.
+  intros (t1' & t2' & URS1 & URS2 & LR' & TIDLtp).
+  rewrite LR'.
+  rewrite TIDLtp.
+
+  rewrite PS2 in EQ3.
+  exploit transl_sectable'_code. apply EQ3. reflexivity.
+  intros (c & c'0 & EQ10 & TC10 & EQ11). vm_compute in EQ11.
+  repeat destr_in EQ11. inv EQ10.
+  destruct zlt.
+  simpl. destruct zlt.
+  simpl.
+
+  
+  rewrite PS1, PS2 in *.
+  
+
+  edestruct link_sectable_ok as (init1 & init2 & c1 & c2 & c1'' & c2'' & PS1' & PS2' & TC1'' & TC2'' & LS). apply Heqo2. eauto. eauto.
+
+  edestruct transl_sectable'_code as (code2 & code2' & EQcode2 & TC2 & EQcode2'). apply EQ3. eauto.
+Qed.
