@@ -3178,11 +3178,4 @@ erewrite transl_code'_app by eauto. simpl.
   simpl. destruct zlt.
   simpl.
 
-  
-  rewrite PS1, PS2 in *.
-  
-
-  edestruct link_sectable_ok as (init1 & init2 & c1 & c2 & c1'' & c2'' & PS1' & PS2' & TC1'' & TC2'' & LS). apply Heqo2. eauto. eauto.
-
-  edestruct transl_sectable'_code as (code2 & code2' & EQcode2 & TC2 & EQcode2'). apply EQ3. eauto.
-Qed.
+Admitted.
