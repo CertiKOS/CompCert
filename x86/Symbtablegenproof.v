@@ -408,86 +408,6 @@ Definition init_meminj : meminj :=
         end
       end.
 
-(* Lemma symbtable_to_tree_acc_symb_map_sync': forall stbl stbl' id e b ofs, *)
-(*     ~ In id (map fst stbl') -> *)
-(*     (PTree_Properties.of_list (symbtable_to_idlist stbl [] ++ stbl')) ! id = Some e -> *)
-(*     (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) -> *)
-(*     ofs = Ptrofs.repr (symbentry_value e) /\ *)
-(*     (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i). *)
-(* Proof. *)
-(*   induction stbl as [|e stbl]. *)
-(*   - cbn. intros stbl' id e b ofs NIN ADD ACC. *)
-(*     rewrite PTree.gempty in ACC. congruence. *)
-(*   - intros stbl' id e' b ofs NIN ADD ACC. *)
-(*     cbn [fold_left "++"] in ADD. *)
-(*     unfold add_symb_to_list at 2 in ADD.  *)
-(*     rewrite add_symb_to_list_inv in ADD. *)
-(*     rewrite <- app_assoc in ADD. *)
-(*     cbn in ACC. *)
-
-(*     Lemma acc_symb_map_inv : forall e t b ofs, *)
-(*         t ! (symbentry_id e) = None -> *)
-(*         (acc_symb_map e t) ! (symbentry_id e) = Some (b, ofs) -> *)
-(*         ofs = Ptrofs.repr (symbentry_value e) /\ *)
-(*         (exists i : N, *)
-(*             symbentry_secindex e = secindex_normal i /\ *)
-(*             b = sec_index_to_block i). *)
-(*     Proof. *)
-(*       intros e t b ofs GET ACC. *)
-(*       unfold acc_symb_map in ACC. *)
-(*       destr_in ACC. *)
-(*       erewrite PTree.gss in ACC. inv ACC. *)
-(*       eauto. *)
-(*     Qed. *)
-
-(*     destruct (peq id (symbentry_id e)). *)
-(*     + subst. *)
-      
-(*     apply IHstbl. *)
-(*     unfold acc_symb_map in ACC. *)
-
-
-Lemma symbtable_to_tree_acc_symb_map_sync: forall stbl id e b ofs,
-    (symbtable_to_tree stbl) ! id = Some e ->
-    (fold_right acc_symb_map (PTree.empty _) stbl) ! id = Some (b, ofs) ->
-    ofs = Ptrofs.repr (symbentry_value e) /\
-    (exists i, symbentry_secindex e = secindex_normal i /\ b = sec_index_to_block i).
-Proof.
-(*   unfold symbtable_to_tree. *)
-(*   intros. eapply symbtable_to_tree_acc_symb_map_sync'; eauto. *)
-(*   instantiate (1:=nil). intros IN. inv IN. *)
-(*   rewrite List.app_nil_r. auto. *)
-(* Qed. *)
-
-(*   induction stbl as [|e stbl]. *)
-(*   - intros id e b ofs ADD ACC. *)
-(*     cbn in *. rewrite PTree.gempty in ACC. congruence. *)
-(*   - intros id e' b ofs ADD ACC. *)
-(*     cbn [fold_left] in ADD. *)
-(*     cbn in ACC.  *)
-(*     unfold acc_symb_map at 1 in ACC. *)
-    
-
-Admitted.
-
-Lemma pres_find_instr: forall defs id f ofs i,
-    In (id, Some (Gfun (Internal f))) defs ->
-    find_instr (Ptrofs.unsigned ofs) (fn_code f) = Some i ->
-    gen_instr_map (fold_right acc_instrs [] defs)
-                  (Ptrofs.add ofs (Ptrofs.repr (defs_code_size (defs_before id defs)))) = Some i.
-Proof.
-  clear.
-Admitted.
-
-Lemma gen_symb_table_only_internal_symbol: 
-  forall did cid defs stbl dz cz id def,
-    is_def_internal is_fundef_internal def = true ->
-    gen_symb_table did cid defs = (stbl, dz, cz) ->
-    In (id, def) defs ->
-    only_internal_symbol id stbl.
-  clear.
-Admitted.
-
 
 Theorem init_meminj_match_sminj : 
     match_inj init_meminj.
@@ -528,31 +448,113 @@ Proof.
     { eapply PTree_Properties.of_list_norepet; eauto.
       inv w. auto. }
     cbn. intros GET.
+    inversion w.
     unfold gen_symb_map in EQ0.
-    (* exploit symbtable_to_tree_acc_symb_map_sync; eauto. *)
+    exploit symbtable_to_tree_acc_symb_map_inv; eauto.
+    erewrite <- acc_symb_pres_ids; eauto. 
+    cbn. intros (EQOFS & i' & SEC & EQB). subst.
+    inv SEC.
+    eapply pres_find_instr; eauto. 
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    apply Genv.invert_find_symbol. eauto. eauto. intros IN.
+    eapply gen_symb_table_only_internal_symbol; eauto.
+    inv w; auto.
+    cbn. auto.
+
+  - (* agree_inj_globs *)
+    intros id b FSYM.
+    unfold init_meminj.
+    destruct eq_block. 
+    subst b. exfalso. eapply Genv.find_symbol_genv_next_absurd; eauto.
+    exploit Genv.find_invert_symbol; eauto. intros INV.
+    unfold ge in INV. rewrite INV.
+    assert (exists b' ofs', Genv.find_symbol tge id = Some (b', ofs')) as FIND'.
+    { 
+      unfold ge in FSYM.
+      exploit Genv.find_symbol_inversion; eauto. intros INSYM.
+      unfold prog_defs_names in INSYM.
+      apply PTree_Properties.of_list_dom in INSYM.
+      destruct INSYM as (def & GET).
+      inversion w.
+      unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. inv Heqp.
+      exploit acc_symb_tree_entry_some; eauto.
+      intros GET'.
+      unfold globalenv in tge; cbn in tge.
+      unfold tge.
+      unfold Genv.find_symbol.
+      (* exploit transl_prog_pres_def; eauto. *)
+      (* intros (def' & sb & IN' & TLDEF). *)
+      (* exploit find_symbol_exists; eauto. *)
+      (* intros (b' & ofs' & FSYM'). *)
+      (* exists b', ofs'. split; auto. *)
+      (* unfold init_meminj. destruct eq_block. *)
+      (* subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction. *)
+      (* apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto. *)
+      
+      admit. }
+    destruct FIND' as (b' & ofs' & FIND').
+    exists b', ofs'. split; auto. unfold tge in FIND'. rewrite FIND'. auto.
+
+  - (* agree_inj_ext_funct *)
+    intros b f ofs b' FPTR INITINJ.
+    unfold init_meminj in INITINJ. 
+    destruct eq_block. inv INITINJ.
+    unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+    destr_match_in INITINJ; try congruence.
+    destr_match_in INITINJ; try congruence.
+    destruct p. inv INITINJ. rewrite Ptrofs.repr_unsigned.
+    unfold globalenv in EQ0; simpl in EQ0.
+    unfold Genv.find_ext_funct.
+    (* rewrite add_external_globals_pres_find_symbol in EQ0. *)
+    (* unfold Genv.find_symbol in EQ0. cbn in EQ0. *)
+    (* apply Genv.invert_find_symbol in EQ. *)
+    (* exploit (Genv.find_symbol_funct_ptr_inversion prog); eauto. *)
+    (* intros FINPROG. *)
+    (* unfold Genv.find_instr. unfold tge. *)
+    (* cbn. *)
+    (* rewrite add_external_globals_pres_instrs. cbn. *)
+    (* unfold create_sec_table. *)
+    (* replace (Pos.to_nat 1) with 1%nat by xomega. *)
+    (* cbn. *)
+    (* unfold gen_symb_table in Heqp. *)
+    (* destr_in Heqp. destruct p. inv Heqp. *)
+    (* exploit acc_symb_tree_entry_some; eauto. *)
+    (* { inv w. auto. } *)
+    (* { eapply PTree_Properties.of_list_norepet; eauto. *)
+    (*   inv w. auto. } *)
+    (* cbn. intros GET. *)
+    (* inversion w. *)
+    (* unfold gen_symb_map in EQ0. *)
+    (* exploit symbtable_to_tree_acc_symb_map_inv; eauto. *)
+    (* erewrite <- acc_symb_pres_ids; eauto.  *)
     (* cbn. intros (EQOFS & i' & SEC & EQB). subst. *)
     (* inv SEC. *)
-    (* eapply pres_find_instr; eauto. *)
+    (* eapply pres_find_instr; eauto.  *)
     (* exploit Genv.find_symbol_funct_ptr_inversion; eauto. *)
     (* apply Genv.invert_find_symbol. eauto. eauto. intros IN. *)
     (* eapply gen_symb_table_only_internal_symbol; eauto. *)
+    (* inv w; auto. *)
     (* cbn. auto. *)
+    admit.
 
-(*   - (* agree_inj_globs *) *)
-(*     intros id b FSYM. *)
-(*     unfold ge in FSYM. *)
-(*     exploit Genv.find_symbol_inversion; eauto. intros INSYM. *)
-(*     unfold prog_defs_names in INSYM. *)
-(*     rewrite in_map_iff in INSYM. destruct INSYM as (def & EQ1 & IN). *)
-(*     destruct def. simpl in EQ1. subst i. *)
-(*     exploit transl_prog_pres_def; eauto. *)
-(*     intros (def' & sb & IN' & TLDEF). *)
-(*     exploit find_symbol_exists; eauto. *)
-(*     intros (b' & ofs' & FSYM'). *)
-(*     exists b', ofs'. split; auto. *)
-(*     unfold init_meminj. destruct eq_block. *)
-(*     subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction. *)
-(*     apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto. *)
+  - (* agree_inj_int_funct *)
+    intros b f ofs b' ofs' FPTR INITINJ.
+    unfold init_meminj in INITINJ. 
+    destruct eq_block. inv INITINJ.
+    unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
+    destr_match_in INITINJ; try congruence.
+    destr_match_in INITINJ; try congruence.
+    destruct p. inv INITINJ. 
+    unfold globalenv in EQ0; simpl in EQ0.
+    unfold Genv.find_ext_funct.
+    rewrite add_external_globals_pres_find_symbol in EQ0.
+    unfold Genv.find_symbol in EQ0. cbn in EQ0.
+    admit.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    apply Genv.invert_find_symbol. eauto. eauto. intros IN.
+    eapply gen_symb_table_only_internal_symbol; eauto.
+    inv w; auto.
+    cbn. auto.
 
 (* Qed. *)
 Admitted.
@@ -581,7 +583,7 @@ Proof.
 Admitted.
 
 (** Inversion of initial memory injection on genv_next *)
-Lemma acc_symb_map_inv : forall stbl t id b ofs,
+Lemma acc_symb_maps_inv : forall stbl t id b ofs,
     t ! id = None ->
     (fold_right acc_symb_map t stbl) ! id = Some (b, ofs) ->
     exists e, In e stbl /\ 
@@ -641,7 +643,7 @@ Proof.
   repeat destr_in TRANSF. cbn in H0.
   clear H. 
   unfold Genv.find_symbol in H0. cbn in H0.
-  exploit acc_symb_map_inv; eauto.
+  exploit acc_symb_maps_inv; eauto.
   apply PTree.gempty.
   intros (e & IN & ID & (i & SI & BL) & OFS). subst.
   exploit gen_symb_table_index_range; eauto.

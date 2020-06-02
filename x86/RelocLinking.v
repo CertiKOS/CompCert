@@ -48,13 +48,13 @@ Definition link_symbtype (t1 t2: symbtype) :=
 (*   | secindex_normal _ , secindex_normal _ => ONone *)
 (*   end. *)
 
-Definition is_symbentry_internal (e2: symbentry) : bool :=
-  let i2 := symbentry_secindex e2 in
-  match i2 with
-  | secindex_undef
-  | secindex_comm => false
-  | _ => true
-  end.
+(* Definition is_symbentry_internal (e2: symbentry) : bool := *)
+(*   let i2 := symbentry_secindex e2 in *)
+(*   match i2 with *)
+(*   | secindex_undef *)
+(*   | secindex_comm => false *)
+(*   | _ => true *)
+(*   end. *)
 
 Definition update_symbtype (e: symbentry) t :=
   {| symbentry_id    := symbentry_id e;

@@ -145,7 +145,7 @@ Definition one_greater_last_local_symb_index p :=
                                     | bind_local => true
                                     | _ => false
                                     end) t in
-  Z.of_nat (length locals).
+  Z.of_nat (1 + length locals).
 
 Definition gen_symtab_sec_header p :=
   let t := (prog_sectable p) in
@@ -485,7 +485,8 @@ Proof.
   change 16 with (Z.of_nat 16).
   rewrite <- Nat2Z.inj_mul.
   apply Nat2Z.inj_le.
-  transitivity (length (prog_symbtable p)).
+  transitivity (S (length (prog_symbtable p))).
+  cbn. apply le_n_S.
   apply length_filter.
   lia.
 Qed.

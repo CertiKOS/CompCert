@@ -87,6 +87,13 @@ Proof.
   intros. apply Zmax_left. auto.
 Qed.
 
+Lemma Z_le_add_l_inv: forall (a b c:Z),
+    0 <= a -> a + b <= c -> b <= c.
+Proof.
+  intros. omega.
+Qed.
+
+
 Lemma not_in_app: forall {A} a (l1 l2: list A),
     ~In a (l1 ++ l2) <-> ~In a l1 /\ ~ In a l2.
 Proof.
@@ -297,6 +304,15 @@ Proof.
 Qed.
 
 (** PTree Properties *)
+
+Lemma PTree_Properties_of_list_cons:
+  forall {A : Type} (k : PTree.elt) (v : A) (l : list (PTree.elt * A)),
+  ~ In k (map fst l) -> (PTree_Properties.of_list ((k, v) :: l)) ! k = Some v.
+Proof.
+  intros.
+  replace ((k, v) :: l) with ([] ++ (k, v) :: l) by auto.
+  apply PTree_Properties.of_list_unique; auto.
+Qed.
 
 Lemma PTree_Properties_of_list_iter_inv_some': forall {A} n defs (t:PTree.t A) id def f,
     length defs = n ->

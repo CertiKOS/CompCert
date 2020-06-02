@@ -16,6 +16,51 @@ Set Implicit Arguments.
 
 Local Open Scope error_monad_scope.
 
+Definition def_size (def: AST.globdef Asm.fundef unit) : Z :=
+  match def with
+  | AST.Gfun (External e) => 1
+  | AST.Gfun (Internal f) => Asm.code_size (Asm.fn_code f)
+  | AST.Gvar v => AST.init_data_list_size (AST.gvar_init v)
+  end.
+
+Definition odef_size (def: option (AST.globdef Asm.fundef unit)) : Z :=
+  match def with
+  | Some def => def_size def
+  | _ => 0
+  end.
+
+Lemma def_size_pos:
+  forall d,
+    0 <= def_size d.
+Proof.
+  unfold def_size. intros.
+  destr.
+  destr. generalize (code_size_non_neg (Asm.fn_code f0)); omega.
+  omega.
+  generalize (AST.init_data_list_size_pos (AST.gvar_init v)); omega.
+Qed.
+
+Lemma odef_size_pos:
+  forall d,
+    0 <= odef_size d.
+Proof.
+  unfold odef_size. intros.
+  destr. apply def_size_pos. omega.
+Qed.
+
+Definition odefs_size (defs: list (option (AST.globdef Asm.fundef unit))) : Z :=
+  fold_right (fun def sz => odef_size def + sz) 0 defs.
+
+Lemma odefs_size_pos:
+  forall defs, 0 <= odefs_size defs.
+Proof.
+  induction defs as [|def defs].
+  - cbn. omega.
+  - cbn. generalize (odef_size_pos def).
+    intros. apply OMEGA2; eauto.
+Qed.
+
+
 (** * Generation of symbol table *)
 
 
