@@ -73,6 +73,8 @@ BACKEND=(
 	./x86/NeedOp.v
 	./backend/Deadcode.v
 	./backend/Deadcodeproof.v
+	./backend/Unusedglob.v
+	./backend/Unusedglobproof.v
 	)
 
 FRONTEND=(

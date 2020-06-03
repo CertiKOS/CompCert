@@ -6672,98 +6672,6 @@ Qed.
 (** The following property is needed by Unusedglobproof, to prove
     injection between the initial memory states. *)
 
-Lemma zero_delta_inject f g m1 m2:
-  (forall b1 b2 delta, f b1 = Some (b2, delta) -> delta = 0) ->
-  (forall b1 b2, f b1 = Some (b2, 0) -> valid_block m1 b1 /\ valid_block m2 b2) ->
-  (forall b1 p, f b1 = Some p -> forall b2, f b2 = Some p -> b1 = b2) ->
-  (forall b1 b2,
-     f b1 = Some (b2, 0) ->
-     forall o k p,
-       perm m1 b1 o k p ->
-       perm m2 b2 o k p) ->
-  (forall b1 b2,
-     f b1 = Some (b2, 0) ->
-     forall o k p,
-       perm m2 b2 o k p ->
-       perm m1 b1 o k p \/ ~ perm m1 b1 o Max Nonempty) ->
-  (forall b1 b2,
-     f b1 = Some (b2, 0) ->
-     forall o v1,
-       loadbytes m1 b1 o 1 = Some (v1 :: nil) ->
-       exists v2,
-         loadbytes m2 b2 o 1 = Some (v2 :: nil) /\
-         memval_inject f v1 v2) ->
-  stack_inject f (perm m1) g (stack m1) (stack m2) ->
-  inject f g m1 m2.
-Proof.
-  intros Delta0 VB NODUP PERM PERMINV LOADBYTES STACK.
-  constructor.
-  {
-    constructor.
-    - intros b1 b2 delta ofs k p FB1 PERM'.
-      specialize (Delta0 _ _ _ FB1).
-      subst.
-      rewrite Z.add_0_r.
-      eapply PERM; eauto.
-    - intros b1 b2 delta chunk ofs p FB1 RP.
-      specialize (Delta0 _ _ _ FB1).
-      subst.
-      exists 0. omega.
-    - intros b1 ofs b2 delta H3 H4.
-      specialize (Delta0 _ _ _ H3).
-      subst.
-      rewrite Z.add_0_r.
-      specialize (LOADBYTES _ _ H3 ofs).
-      revert LOADBYTES.
-      unfold loadbytes.
-      destruct (range_perm_dec m1 b1 ofs (ofs + 1) Cur Readable) as [ | n1].
-      + simpl.
-        destruct (range_perm_dec m2 b2 ofs (ofs + 1) Cur Readable) as [ | n2].
-        {
-          intro H2.
-          specialize (H2 _ (eq_refl _)).
-          destruct H2 as (? & H2 & INJ).
-          congruence.
-        }
-        destruct n2.
-        red. intros ofs0 H.
-        eapply PERM; eauto.
-      + destruct n1.
-        red. intros ofs0 H.
-        replace ofs0 with ofs by omega.
-        assumption.
-    - assumption.
-  }
-  + intros b H3.
-    destruct (f b) as [ [ ] | ] eqn:F; auto.
-    specialize (Delta0 _ _ _ F).
-    subst.
-    destruct H3.
-    eapply VB; eauto.
-  + intros b b' delta H3.
-    specialize (Delta0 _ _ _ H3).
-    subst.
-    eapply VB; eauto.
-  + unfold meminj_no_overlap.
-    intros b1 b1' delta1 b2 b2' delta2 ofs1 ofs2 H3 H4 H5 H6 H7.
-    generalize (Delta0 _ _ _ H4). intro; subst.
-    generalize (Delta0 _ _ _ H5). intro; subst.
-    left.
-    intro; subst.
-    destruct H3; eauto.
-  + intros b b' delta H3.
-    specialize (Delta0 _ _ _ H3).
-    subst.
-    split.
-    * omega.
-    * intros. rewrite Z.add_0_r. apply Ptrofs.unsigned_range_2.
-  + intros b1 ofs b2 delta k p H3 H4.
-    exploit Delta0; eauto. intro; subst.
-    eapply PERMINV; eauto.
-    replace ofs with (ofs + 0) by omega.
-    assumption.
-Qed.
-
 Theorem self_inject:
   forall f m,
   (forall b, f b = None \/ f b = Some (b, 0)) ->
@@ -6775,34 +6683,56 @@ Theorem self_inject:
        f b' <> None) ->
   inject f (flat_frameinj (length (stack m))) m m.
 Proof.
-  intros f m H H0 H1.
-  apply zero_delta_inject.
-  + intros b1 b2 delta H2.
-    destruct (H b1); congruence.
-  + intros b1 b2 H2.
-    destruct (H b1); try congruence.
-    replace b2 with b1 by congruence.
-    assert (f b1 <> None) by congruence.
-    auto.
-  + intros b1 p H2 b2 H3.
-    destruct (H b1); destruct (H b2); congruence.
-  + intros b1 b2 H2 o k p H3.
-    destruct (H b1); congruence.
-  + intros b1 b2 H2 o k p H3.
-    destruct (H b1); intuition congruence.
-  + intros b1 b2 H2 o v1 H3.
-    destruct (H b1); try congruence.
-    replace b2 with b1 by congruence.
-    esplit.
-    split; eauto.
-    destruct v1 as [ | | v]; try constructor.
-    destruct v as [ | | | | | b ]; try constructor.
-    apply H1 in H3; try congruence.
-    destruct (H b); try congruence.
-    econstructor; eauto.
-    rewrite Ptrofs.add_zero.
-    reflexivity.
-  + apply stack_inject_flat. auto.
+  intros.
+  assert (F_EQ : forall b b' delta, f b = Some (b', delta) -> b' = b /\ delta = 0).
+  {
+    intros. 
+    destruct H with b; rewrite H2 in H3;
+    inversion H3;
+    eauto.
+  }
+  constructor; intros.
+  - constructor; intros;
+    try (exploit F_EQ; eauto; intros EQ; destruct EQ; try subst).
+    + rewrite Z.add_0_r.
+      assumption.
+    + exists 0. omega.
+    + rewrite Z.add_0_r.
+      remember (ZMap.get ofs (mem_contents m) # b1) as v.
+      destruct v; try constructor.
+      destruct v; try constructor.
+      assert (LOADBYTES: loadbytes m b1 ofs 1 =
+              Some (Fragment (Vptr b i) q n :: nil)).
+      { unfold loadbytes.
+        destruct (range_perm_dec m b1 ofs (ofs + 1) Cur Readable).
+        - simpl. rewrite Heqv. reflexivity.
+        - destruct n0.
+          red; intros.
+          replace ofs0 with ofs by omega.
+          assumption.
+      }
+      apply H1 in LOADBYTES; try congruence.
+      destruct (H b); try congruence.
+      econstructor; eauto.
+      rewrite Ptrofs.add_zero.
+      reflexivity.
+    + apply stack_inject_flat. auto.
+  - destruct (H b). assumption. 
+    destruct H2. apply H0.
+    congruence.
+  - exploit F_EQ; eauto; intros EQ; destruct EQ; subst.
+    apply H0; congruence.
+  - unfold meminj_no_overlap.
+    intros.
+    destruct (F_EQ _ _ _ H3), (F_EQ _ _ _ H4); subst.
+    left; assumption.
+  - destruct (F_EQ _ _ _ H2); subst.
+    split. omega.
+    intros. rewrite Z.add_0_r. apply Ptrofs.unsigned_range_2.
+  - left.
+    destruct (F_EQ _ _ _ H2); subst.
+    rewrite Z.add_0_r in H3.
+    assumption.
 Qed.
 
 Theorem frame_inject_flat:
