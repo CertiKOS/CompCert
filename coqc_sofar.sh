@@ -75,6 +75,17 @@ BACKEND=(
 	./backend/Deadcodeproof.v
 	./backend/Unusedglob.v
 	./backend/Unusedglobproof.v
+	./backend/LTL.v
+	./backend/Allocation.v
+	./backend/Allocproof.v
+	./backend/Tunneling.v
+	./backend/Tunnelingproof.v
+	./backend/Linear.v
+	./backend/Linearize.v
+	./backend/Linearizeproof.v
+	./backend/CleanupLabels.v
+	./backend/CleanupLabelsproof.v
+	./backend/Debugvar.v
 	)
 
 FRONTEND=(

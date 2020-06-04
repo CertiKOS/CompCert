@@ -16,8 +16,8 @@
   for register allocation and the source language for linearization. *)
 
 Require Import Coqlib Maps.
-Require Import AST Integers Values Events Memory Globalenvs Smallstep.
-Require Import Op Locations Conventions.
+Require Import AST_old Integers Values_old Events_old Memory_old Globalenvs_old Smallstep_old.
+Require Import Op_old Locations_old Conventions_old.
 
 (** * Abstract syntax *)
 
@@ -52,9 +52,9 @@ Record function: Type := mkfunction {
   fn_entrypoint: node
 }.
 
-Definition fundef := AST.fundef function.
+Definition fundef := AST_old.fundef function.
 
-Definition program := AST.program fundef unit.
+Definition program := AST_old.program fundef unit.
 
 Definition funsig (fd: fundef) :=
   match fd with
@@ -116,7 +116,7 @@ Inductive stackframe : Type :=
              (bb: bblock),      (**r continuation in calling function *)
       stackframe.
 
-Inductive state : Type :=
+Inductive state `{memory_model_ops: Mem.MemoryModelOps} : Type :=
   | State:
       forall (stack: list stackframe) (**r call stack *)
              (f: function)            (**r function currently executing *)
@@ -137,8 +137,7 @@ Inductive state : Type :=
       forall (stack: list stackframe) (**r call stack *)
              (f: fundef)              (**r function to call *)
              (ls: locset)             (**r location state of caller *)
-             (m: mem)                 (**r memory state *)
-             ((*SACC:*)sz : Z),       (**r stack size requirement for callee *)
+             (m: mem) (sz: Z),                (**r memory state *)
       state
   | Returnstate:
       forall (stack: list stackframe) (**r call stack *)
@@ -147,13 +146,23 @@ Inductive state : Type :=
       state.
 
 
-(*SACC:*)
-Section STACK_WRAPPER.
+Section WITHEXTERNALCALLSOPS.
+Context `{external_calls_prf: ExternalCalls}.
 
-(*SACC:*)
-Variable fn_stack_requirements : ident -> Z.
+Variable fn_stack_requirements: ident -> Z.
 
 Section RELSEM.
+
+(** [parent_locset cs] returns the mapping of values for locations
+  of the caller function. *)
+
+Variable init_ls: locset.
+
+Definition parent_locset (stack: list stackframe) : locset :=
+  match stack with
+  | nil => init_ls
+  | Stackframe f sp ls bb :: stack' => ls
+  end.
 
 Variable ge: genv.
 
@@ -182,20 +191,10 @@ Definition find_function (ros: mreg + ident) (rs: locset) : option fundef :=
       end
   end.
 
-(*SACC:*)
 Definition ros_is_function (ros: mreg + ident) (rs: locset) (i: ident) : Prop :=
   match ros with
   | inl r => exists b o, rs (R r) = Vptr b o /\ Genv.find_symbol ge i = Some b
   | inr symb => i = symb
-  end.
-
-(** [parent_locset cs] returns the mapping of values for locations
-  of the caller function. *)
-
-Definition parent_locset (stack: list stackframe) : locset :=
-  match stack with
-  | nil => Locmap.init Vundef
-  | Stackframe f sp ls bb :: stack' => ls
   end.
 
 Inductive step: state -> trace -> state -> Prop :=
@@ -228,28 +227,27 @@ Inductive step: state -> trace -> state -> Prop :=
       rs' = undef_regs (destroyed_by_store chunk addr) rs ->
       step (Block s f sp (Lstore chunk addr args src :: bb) rs m)
         E0 (Block s f sp bb rs' m')
-  | exec_Lcall: forall s f sp sig ros bb rs m fd (*SACC:*)fid
-      ((*SACC:*)IFI: ros_is_function ros rs fid),
+  | exec_Lcall: forall s f sp sig ros bb rs m fd id (IFI: ros_is_function ros rs id),
       find_function ros rs = Some fd ->
       funsig fd = sig ->
       step (Block s f sp (Lcall sig ros :: bb) rs m)
-        E0 (Callstate (Stackframe f sp rs bb :: s) fd rs ((*SACC:*)Mem.push_new_stage m) ((*SACC:*)fn_stack_requirements fid))
-  | exec_Ltailcall: forall s f sp sig ros bb rs m fd rs' m' (*SACC:*)m'' (*SACC:*)fid
-      ((*SACC:*)IFI: ros_is_function ros rs' fid),
+        E0 (Callstate (Stackframe f sp rs bb :: s) fd rs (Mem.push_new_stage m) (fn_stack_requirements id))
+  | exec_Ltailcall: forall s f sp sig ros bb rs m fd rs' m' m'' id (IFI: ros_is_function ros rs' id),
       rs' = return_regs (parent_locset s) rs ->
       find_function ros rs' = Some fd ->
       funsig fd = sig ->
       Mem.free m sp 0 f.(fn_stacksize) = Some m' ->
-  (*SACC:*)Mem.tailcall_stage m' = Some m'' ->
+      Mem.tailcall_stage m' = Some m'' ->
       step (Block s f (Vptr sp Ptrofs.zero) (Ltailcall sig ros :: bb) rs m)
-        E0 (Callstate s fd rs' (*SACC:*)m'' ((*SACC:*)fn_stack_requirements fid))
-  | exec_Lbuiltin: forall s f sp ef args res bb rs m vargs t vres rs' m' (*SACC:*)m'',
+        E0 (Callstate s fd rs' m'' (fn_stack_requirements id))
+  | exec_Lbuiltin: forall s f sp ef args res bb rs m vargs t vres rs' m' m'',
       eval_builtin_args ge rs sp m args vargs ->
-      external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
-  (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
+      external_call ef ge vargs (Mem.push_new_stage m) t vres m' ->
+      Mem.unrecord_stack_block m' = Some m'' ->
       rs' = Locmap.setres res vres (undef_regs (destroyed_by_builtin ef) rs) ->
-      step (Block s f sp (Lbuiltin ef args res :: bb) rs m)
-         t (Block s f sp bb rs' m'')
+      forall BUILTIN_ENABLED : builtin_enabled ef,
+        step (Block s f sp (Lbuiltin ef args res :: bb) rs m)
+             t (Block s f sp bb rs' m'')
   | exec_Lbranch: forall s f sp pc bb rs m,
       step (Block s f sp (Lbranch pc :: bb) rs m)
         E0 (State s f sp pc rs m)
@@ -269,20 +267,20 @@ Inductive step: state -> trace -> state -> Prop :=
       Mem.free m sp 0 f.(fn_stacksize) = Some m' ->
       step (Block s f (Vptr sp Ptrofs.zero) (Lreturn :: bb) rs m)
         E0 (Returnstate s (return_regs (parent_locset s) rs) m')
-  | exec_function_internal: forall s f rs m m' (*SACC:*)m'' sp rs' (*SACC:*)sz,
+  | exec_function_internal: forall s f rs m m' m'' sp rs' sz,
       Mem.alloc m 0 f.(fn_stacksize) = (m', sp) ->
-  (*SACC:*)Mem.record_stack_blocks m' (make_singleton_frame_adt sp (fn_stacksize f) sz) = Some m'' ->
+      Mem.record_stack_blocks m' (make_singleton_frame_adt sp (fn_stacksize f) sz) = Some m'' ->
       rs' = undef_regs destroyed_at_function_entry (call_regs rs) ->
-      step (Callstate s (Internal f) rs m (*SACC:*)sz)
-        E0 (State s f (Vptr sp Ptrofs.zero) f.(fn_entrypoint) rs' (*SACC:*)m'')
-  | exec_function_external: forall s ef t args res rs m rs' m' (*SACC:*)sz,
+      step (Callstate s (Internal f) rs m sz)
+        E0 (State s f (Vptr sp Ptrofs.zero) f.(fn_entrypoint) rs' m'')
+  | exec_function_external: forall s ef t args res rs m rs' m' sz,
       args = map (fun p => Locmap.getpair p rs) (loc_arguments (ef_sig ef)) ->
       external_call ef ge args m t res m' ->
-      rs' = Locmap.setpair (loc_result (ef_sig ef)) res rs (*SACC:*)(*(undef_regs destroyed_at_call rs)*) ->
-      step (Callstate s (External ef) rs m (*SACC:*)sz)
+      rs' = Locmap.setpair (loc_result (ef_sig ef)) res (undef_regs destroyed_at_call rs) ->
+      step (Callstate s (External ef) rs m sz)
          t (Returnstate s rs' m')
   | exec_return: forall f sp rs1 bb s rs m m',
-  (*SACC:*)Mem.unrecord_stack_block m = Some m' ->
+      Mem.unrecord_stack_block m = Some m' ->
       step (Returnstate (Stackframe f sp rs1 bb :: s) rs m)
         E0 (Block s f sp bb rs m').
 
@@ -294,14 +292,14 @@ End RELSEM.
   by the calling conventions. *)
 
 Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0 (*SACC:*)m2,
+  | initial_state_intro: forall b f m0 m2,
       let ge := Genv.globalenv p in
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       funsig f = signature_main ->
-  (*SACC:*)Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate nil f (Locmap.init Vundef) ((*SACC:*)Mem.push_new_stage m2) ((*SACC:*)fn_stack_requirements (prog_main p))).
+      Mem.record_init_sp m0 = Some m2 ->
+      initial_state p (Callstate nil f (Locmap.init Vundef) (Mem.push_new_stage m2) (fn_stack_requirements (prog_main p))).
 
 Inductive final_state: state -> int -> Prop :=
   | final_state_intro: forall rs m retcode,
@@ -309,9 +307,9 @@ Inductive final_state: state -> int -> Prop :=
       final_state (Returnstate nil rs m) retcode.
 
 Definition semantics (p: program) :=
-  Semantics step (initial_state p) final_state (Genv.globalenv p).
+  Semantics (step (Locmap.init Vundef)) (initial_state p) final_state (Genv.globalenv p).
 
-End STACK_WRAPPER.
+End WITHEXTERNALCALLSOPS.
 
 (** * Operations over LTL *)
 
@@ -329,16 +327,16 @@ Fixpoint successors_block (b: bblock) : list node :=
   | instr :: b' => successors_block b'
   end.
 
-(*SACC:*)
-Section STACKINV.
-
-(** Invariant of LTL programs  *)
+(** Invariant of RTL programs  *)
 
 Definition block_of_stackframe s: option (block * Z) :=
   match s with
     Stackframe f (Vptr sp _) _ _ => Some (sp, fn_stacksize f)
   | _ => None
   end.
+
+Section STACKINV.
+  Context `{extcallops: ExternalCalls}.
 
   Inductive stack_inv : state -> Prop :=
   | stack_inv_regular: forall s f sp pc rs m o
@@ -358,10 +356,11 @@ Definition block_of_stackframe s: option (block * Z) :=
   Variable fn_stack_requirements: ident -> Z.
   Variable p: program.
   Let ge := Genv.globalenv p.
+  Variable init_ls: locset.
 
   Lemma stack_inv_inv:
     forall S1 t S2,
-      step fn_stack_requirements ge S1 t S2 ->
+      step fn_stack_requirements init_ls ge S1 t S2 ->
       stack_inv S1 -> stack_inv S2.
   Proof.
     destruct 1; simpl; intros SI;

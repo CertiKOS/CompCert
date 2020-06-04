@@ -15,13 +15,13 @@
 
 Require Import FSets.
 Require Import Coqlib Ordered Maps Errors Integers Floats.
-Require Import AST Linking Lattice Kildall.
-Require Import Values Memory Globalenvs Events Smallstep.
+Require Import AST_old Linking_old Lattice Kildall_old.
+Require Import Values_old Memory_old Globalenvs_old Events_old Smallstep_old.
 Require Archi.
-Require Import Op Registers RTL Locations Conventions RTLtyping LTL.
-Require Import Allocation.
+Require Import Op_old Registers_old RTL_old Locations_old Conventions_old RTLtyping_old LTL_old.
+Require Import Allocation_old.
 
-Definition match_prog (p: RTL.program) (tp: LTL.program) :=
+Definition match_prog (p: RTL_old.program) (tp: LTL_old.program) :=
   match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
@@ -52,7 +52,7 @@ Definition wf_move (m: move) : Prop :=
 Definition wf_moves (mv: moves) : Prop :=
   List.Forall wf_move mv.
 
-Inductive expand_block_shape: block_shape -> RTL.instruction -> LTL.bblock -> Prop :=
+Inductive expand_block_shape: block_shape -> RTL_old.instruction -> LTL_old.bblock -> Prop :=
   | ebs_nop: forall mv s k,
       wf_moves mv ->
       expand_block_shape (BSnop mv s)
@@ -321,11 +321,11 @@ Qed.
 Lemma matching_instr_block:
   forall f1 f2 pc bsh i,
   (pair_codes f1 f2)!pc = Some bsh ->
-  (RTL.fn_code f1)!pc = Some i ->
-  exists b, (LTL.fn_code f2)!pc = Some b /\ expand_block_shape bsh i b.
+  (RTL_old.fn_code f1)!pc = Some i ->
+  exists b, (LTL_old.fn_code f2)!pc = Some b /\ expand_block_shape bsh i b.
 Proof.
   intros. unfold pair_codes in H. rewrite PTree.gcombine in H; auto. rewrite H0 in H.
-  destruct (LTL.fn_code f2)!pc as [b|].
+  destruct (LTL_old.fn_code f2)!pc as [b|].
   exists b; split; auto. apply pair_instr_block_sound; auto.
   discriminate.
 Qed.
@@ -1282,6 +1282,12 @@ Proof.
   unfold return_regs. destruct (is_callee_save r). discriminate. auto.
 Qed.
 
+Section WITHEXTERNALCALLS.
+  Existing Instance inject_perm_all.
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable fn_stack_requirements: ident -> Z.
+
 Lemma loadv_int64_split:
   forall m a v,
   Mem.loadv Mint64 m a = Some v -> Archi.splitlong = true ->
@@ -1309,7 +1315,7 @@ Proof.
 Qed.
 
 Lemma add_equations_builtin_arg_lessdef:
-  forall env (ge: RTL.genv) sp rs ls m arg v,
+  forall env (ge: RTL_old.genv) sp rs ls m arg v,
   eval_builtin_arg ge (fun r => rs#r) sp m arg v ->
   forall e e' arg',
   add_equations_builtin_arg env arg arg' e = Some e' ->
@@ -1350,7 +1356,7 @@ Proof.
 Qed.
 
 Lemma add_equations_builtin_args_lessdef:
-  forall env (ge: RTL.genv) sp rs ls m tm arg vl,
+  forall env (ge: RTL_old.genv) sp rs ls m tm arg vl,
   eval_builtin_args ge (fun r => rs#r) sp m arg vl ->
   forall arg' e e',
   add_equations_builtin_args env arg arg' e = Some e' ->
@@ -1364,7 +1370,7 @@ Proof.
 - exploit IHlist_forall2; eauto. intros (vl' & A & B).
   exploit add_equations_builtin_arg_lessdef; eauto.
   eapply add_equations_builtin_args_satisf; eauto. intros (v1' & C & D).
-  exploit (@eval_builtin_arg_lessdef _ ge ls ls); eauto. intros (v1'' & E & F).
+  exploit (eval_builtin_arg_lessdef (ge := ge) (e1 := ls) ls); eauto. intros (v1'' & E & F).
   exists (v1'' :: vl'); split; constructor; auto. eapply Val.lessdef_trans; eauto.
 Qed.
 
@@ -1379,7 +1385,7 @@ Proof.
 Qed.
 
 Lemma add_equations_debug_args_eval:
-  forall env (ge: RTL.genv) sp rs ls m tm arg vl,
+  forall env (ge: RTL_old.genv) sp rs ls m tm arg vl,
   eval_builtin_args ge (fun r => rs#r) sp m arg vl ->
   forall arg' e e',
   add_equations_debug_args env arg arg' e = Some e' ->
@@ -1395,13 +1401,13 @@ Proof.
 + exploit IHlist_forall2; eauto. intros (vl' & B).
   exploit add_equations_builtin_arg_lessdef; eauto.
   eapply add_equations_debug_args_satisf; eauto. intros (v1' & C & D).
-  exploit (@eval_builtin_arg_lessdef _ ge ls ls); eauto. intros (v1'' & E & F).
+  exploit (eval_builtin_arg_lessdef (ge := ge) (e1 := ls) ls); eauto. intros (v1'' & E & F).
   exists (v1'' :: vl'); constructor; auto.
 + eauto.
 Qed.
 
 Lemma add_equations_builtin_eval:
-  forall ef env args args' e1 e2 m1 m1' rs ls (ge: RTL.genv) sp vargs t vres m2,
+  forall ef env args args' e1 e2 m1 m1' rs ls (ge: RTL_old.genv) sp vargs t vres m2,
   wt_regset env rs ->
   match ef with
   | EF_debug _ _ _ => add_equations_debug_args env args args' e1
@@ -1505,19 +1511,19 @@ Qed.
 
 (** Inversion on [transf_function] *)
 
-Inductive transf_function_spec (f: RTL.function) (tf: LTL.function) : Prop :=
+Inductive transf_function_spec (f: RTL_old.function) (tf: LTL_old.function) : Prop :=
   | transf_function_spec_intro:
       forall env an mv k e1 e2,
       wt_function f env ->
       analyze f env (pair_codes f tf) = Some an ->
-      (LTL.fn_code tf)!(LTL.fn_entrypoint tf) = Some(expand_moves mv (Lbranch (RTL.fn_entrypoint f) :: k)) ->
+      (LTL_old.fn_code tf)!(LTL_old.fn_entrypoint tf) = Some(expand_moves mv (Lbranch (RTL_old.fn_entrypoint f) :: k)) ->
       wf_moves mv ->
-      transfer f env (pair_codes f tf) (RTL.fn_entrypoint f) an!!(RTL.fn_entrypoint f) = OK e1 ->
+      transfer f env (pair_codes f tf) (RTL_old.fn_entrypoint f) an!!(RTL_old.fn_entrypoint f) = OK e1 ->
       track_moves env mv e1 = Some e2 ->
-      compat_entry (RTL.fn_params f) (loc_parameters (fn_sig tf)) e2 = true ->
+      compat_entry (RTL_old.fn_params f) (loc_parameters (fn_sig tf)) e2 = true ->
       can_undef destroyed_at_function_entry e2 = true ->
-      RTL.fn_stacksize f = LTL.fn_stacksize tf ->
-      RTL.fn_sig f = LTL.fn_sig tf ->
+      RTL_old.fn_stacksize f = LTL_old.fn_stacksize tf ->
+      RTL_old.fn_sig f = LTL_old.fn_sig tf ->
       transf_function_spec f tf.
 
 Lemma transf_function_inv:
@@ -1542,12 +1548,12 @@ Qed.
 Lemma invert_code:
   forall f env tf pc i opte e,
   wt_function f env ->
-  (RTL.fn_code f)!pc = Some i ->
+  (RTL_old.fn_code f)!pc = Some i ->
   transfer f env (pair_codes f tf) pc opte = OK e ->
   exists eafter, exists bsh, exists bb,
   opte = OK eafter /\
   (pair_codes f tf)!pc = Some bsh /\
-  (LTL.fn_code tf)!pc = Some bb /\
+  (LTL_old.fn_code tf)!pc = Some bb /\
   expand_block_shape bsh i bb /\
   transfer_aux f env bsh eafter = Some e /\
   wt_instr f env i.
@@ -1562,14 +1568,10 @@ Qed.
 
 (** * Semantic preservation *)
 
-Section STACK_WRAPPER.
-
-Variable fn_stack_requirements : ident -> Z.
-
 Section PRESERVATION.
 
-Variable prog: RTL.program.
-Variable tprog: LTL.program.
+Variable prog: RTL_old.program.
+Variable tprog: LTL_old.program.
 Hypothesis TRANSF: match_prog prog tprog.
 
 Let ge := Genv.globalenv prog.
@@ -1583,15 +1585,21 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_match TRANSF).
 
+Lemma genv_next_preserved:
+  Genv.genv_next tge = Genv.genv_next ge.
+Proof.
+  apply senv_preserved.
+Qed.
+
 Lemma functions_translated:
-  forall (v: val) (f: RTL.fundef),
+  forall (v: val) (f: RTL_old.fundef),
   Genv.find_funct ge v = Some f ->
   exists tf,
   Genv.find_funct tge v = Some tf /\ transf_fundef f = OK tf.
 Proof (Genv.find_funct_transf_partial TRANSF).
 
 Lemma function_ptr_translated:
-  forall (b: block) (f: RTL.fundef),
+  forall (b: block) (f: RTL_old.fundef),
   Genv.find_funct_ptr ge b = Some f ->
   exists tf,
   Genv.find_funct_ptr tge b = Some tf /\ transf_fundef f = OK tf.
@@ -1600,7 +1608,7 @@ Proof (Genv.find_funct_ptr_transf_partial TRANSF).
 Lemma sig_function_translated:
   forall f tf,
   transf_fundef f = OK tf ->
-  LTL.funsig tf = RTL.funsig f.
+  LTL_old.funsig tf = RTL_old.funsig f.
 Proof.
   intros; destruct f; monadInv H.
   destruct (transf_function_inv _ _ EQ). simpl; auto.
@@ -1609,13 +1617,13 @@ Qed.
 
 Lemma find_function_translated:
   forall ros rs fd ros' e e' ls,
-  RTL.find_function ge ros rs = Some fd ->
+  RTL_old.find_function ge ros rs = Some fd ->
   add_equation_ros ros ros' e = Some e' ->
   satisf rs ls e' ->
   exists tfd,
-  LTL.find_function tge ros' ls = Some tfd /\ transf_fundef fd = OK tfd.
+  LTL_old.find_function tge ros' ls = Some tfd /\ transf_fundef fd = OK tfd.
 Proof.
-  unfold RTL.find_function, LTL.find_function; intros.
+  unfold RTL_old.find_function, LTL_old.find_function; intros.
   destruct ros as [r|id]; destruct ros' as [r'|id']; simpl in H0; MonadInv.
   (* two regs *)
   exploit add_equation_lessdef; eauto. intros LD. inv LD.
@@ -1626,6 +1634,10 @@ Proof.
   eapply function_ptr_translated; eauto.
 Qed.
 
+Section WITHINILS.
+
+Variable init_ls: locset.
+
 Lemma exec_moves:
   forall mv env rs s f sp bb m e e' ls,
   track_moves env mv e = Some e' ->
@@ -1633,7 +1645,7 @@ Lemma exec_moves:
   satisf rs ls e' ->
   wt_regset env rs ->
   exists ls',
-    star (step (*SACC:*)fn_stack_requirements) tge (Block s f sp (expand_moves mv bb) ls m)
+    star (step fn_stack_requirements init_ls) tge (Block s f sp (expand_moves mv bb) ls m)
                E0 (Block s f sp bb ls' m)
   /\ satisf rs ls' e.
 Proof.
@@ -1663,9 +1675,11 @@ Qed.
 
 (** The simulation relation *)
 
-Inductive match_stackframes: list RTL.stackframe -> list LTL.stackframe -> signature -> Prop :=
+Variable restype: option typ.
+
+Inductive match_stackframes: list RTL_old.stackframe -> list LTL_old.stackframe -> signature -> Prop :=
   | match_stackframes_nil: forall sg,
-      sg.(sig_res) = Some Tint ->
+      Some sg.(sig_res) = Some restype ->
       match_stackframes nil nil sg
   | match_stackframes_cons:
       forall res f sp pc rs s tf bb ls ts sg an e env
@@ -1681,15 +1695,15 @@ Inductive match_stackframes: list RTL.stackframe -> list LTL.stackframe -> signa
            Val.has_type v (env res) ->
            agree_callee_save ls ls1 ->
            exists ls2,
-           star (LTL.step (*SACC:*)fn_stack_requirements) tge (Block ts tf sp bb ls1 m)
+           star (LTL_old.step fn_stack_requirements init_ls) tge (Block ts tf sp bb ls1 m)
                           E0 (State ts tf sp pc ls2 m)
            /\ satisf (rs#res <- v) ls2 e),
       match_stackframes
-        (RTL.Stackframe res f sp pc rs :: s)
-        (LTL.Stackframe tf sp ls bb :: ts)
+        (RTL_old.Stackframe res f sp pc rs :: s)
+        (LTL_old.Stackframe tf sp ls bb :: ts)
         sg.
 
-Inductive match_states: RTL.state -> LTL.state -> Prop :=
+Inductive match_states: RTL_old.state -> LTL_old.state -> Prop :=
   | match_states_intro:
       forall s f sp pc rs m ts tf ls m' an e env
         (STACKS: match_stackframes s ts (fn_sig tf))
@@ -1698,32 +1712,32 @@ Inductive match_states: RTL.state -> LTL.state -> Prop :=
         (EQ: transfer f env (pair_codes f tf) pc an!!pc = OK e)
         (SAT: satisf rs ls e)
         (MEM: Mem.extends m m')
-  (*SACC:*)(STRUCT: stack_equiv (Mem.stack m) (Mem.stack m'))
+        (STRUCT: stack_equiv (Mem.stack m) (Mem.stack m'))
         (WTF: wt_function f env)
         (WTRS: wt_regset env rs),
-      match_states (RTL.State s f sp pc rs m)
-                   (LTL.State ts tf sp pc ls m')
+      match_states (RTL_old.State s f sp pc rs m)
+                   (LTL_old.State ts tf sp pc ls m')
   | match_states_call:
-      forall s f args m ts tf ls m' (*SACC:*)sz
+      forall s f args m ts tf ls m' sz
         (STACKS: match_stackframes s ts (funsig tf))
         (FUN: transf_fundef f = OK tf)
         (ARGS: Val.lessdef_list args (map (fun p => Locmap.getpair p ls) (loc_arguments (funsig tf))))
-        (AG: agree_callee_save (parent_locset ts) ls)
+        (AG: agree_callee_save (parent_locset init_ls ts) ls)
         (MEM: Mem.extends m m')
-  (*SACC:*)(STRUCT: stack_equiv (Mem.stack m) (Mem.stack m'))
+        (STRUCT: stack_equiv (Mem.stack m) (Mem.stack m'))
         (WTARGS: Val.has_type_list args (sig_args (funsig tf))),
-      match_states (RTL.Callstate s f args m (*SACC:*)sz)
-                   (LTL.Callstate ts tf ls m' (*SACC:*)sz)
+      match_states (RTL_old.Callstate s f args m sz)
+                   (LTL_old.Callstate ts tf ls m' sz)
   | match_states_return:
       forall s res m ts ls m' sg
         (STACKS: match_stackframes s ts sg)
         (RES: Val.lessdef res (Locmap.getpair (map_rpair R (loc_result sg)) ls))
-        (AG: agree_callee_save (parent_locset ts) ls)
+        (AG: agree_callee_save (parent_locset init_ls ts) ls)
         (MEM: Mem.extends m m')
-  (*SACC:*)(STRUCT: stack_equiv (Mem.stack m) (Mem.stack m'))
+        (STRUCT: stack_equiv (Mem.stack m) (Mem.stack m'))
         (WTRES: Val.has_type res (proj_sig_res sg)),
-      match_states (RTL.Returnstate s res m)
-                   (LTL.Returnstate ts ls m').
+      match_states (RTL_old.Returnstate s res m)
+                   (LTL_old.Returnstate ts ls m').
 
 Lemma match_stackframes_change_sig:
   forall s ts sg sg',
@@ -1740,7 +1754,7 @@ Qed.
 
 Ltac UseShape :=
   match goal with
-  | [ WT: wt_function _ _, CODE: (RTL.fn_code _)!_ = Some _, EQ: transfer _ _ _ _ _ = OK _ |- _ ] =>
+  | [ WT: wt_function _ _, CODE: (RTL_old.fn_code _)!_ = Some _, EQ: transfer _ _ _ _ _ = OK _ |- _ ] =>
       destruct (invert_code _ _ _ _ _ _ _ WT CODE EQ) as (eafter & bsh & bb & AFTER & BSH & TCODE & EBS & TR & WTI);
       inv EBS; unfold transfer_aux in TR; MonadInv
   end.
@@ -1763,10 +1777,11 @@ Qed.
 (** The proof of semantic preservation is a simulation argument of the
     "plus" kind. *)
 
+
 Lemma step_simulation:
-  forall S1 t S2, RTL.step (*SACC:*)fn_stack_requirements ge S1 t S2 -> wt_state S1 ->
-  forall S1', match_states S1 S1' -> (*SACC:*)stack_inv S1' ->
-  exists S2', plus (LTL.step (*SACC:*)fn_stack_requirements) tge S1' t S2' /\ match_states S2 S2'.
+  forall S1 t S2, RTL_old.step fn_stack_requirements ge S1 t S2 -> wt_state restype S1 ->
+  forall S1', match_states S1 S1' -> stack_inv S1' ->
+  exists S2', plus (LTL_old.step fn_stack_requirements init_ls) tge S1' t S2' /\ match_states S2 S2'.
 Proof.
   induction 1; intros WT S1' MS SI; inv MS; try UseShape.
 
@@ -2064,7 +2079,7 @@ Proof.
   econstructor. eexact F1'. eexact STORE1'. instantiate (1 := ls2). auto.
   eapply star_trans. eexact U.
   eapply star_two.
-  eapply exec_Lstore with (m' := m2'). eexact F2''. discriminate||exact STORE2'. eauto.
+  eapply exec_Lstore with (m'1 := m2'). eexact F2''. discriminate||exact STORE2'. eauto.
   constructor. eauto. eauto. eauto. eauto. traceEq.
   exploit satisf_successors; eauto. simpl; eauto.
   eapply can_undef_satisf. eauto.
@@ -2074,7 +2089,7 @@ Proof.
   repeat rewrite_stack_blocks; eauto.
 
 (* call *)
-- set (sg := RTL.funsig fd) in *.
+- set (sg := RTL_old.funsig fd) in *.
   set (args' := loc_arguments sg) in *.
   set (res' := loc_result sg) in *.
   exploit (exec_moves mv1); eauto. intros [ls1 [A1 B1]].
@@ -2086,7 +2101,7 @@ Proof.
   eapply star_right. eexact A1. econstructor; eauto.
   {
     destruct ros, ros'; simpl in *; auto.
-    - destruct H as (b & o & EQ0 & EQ1).
+    - destruct RIF as (b & o & EQ0 & EQ1).
       eapply add_equations_args_satisf in B1; eauto.
       red in B1.
       generalize (B1 (Eq Full r (R m0))).
@@ -2114,17 +2129,16 @@ Proof.
   eapply star_right. eexact A2. constructor. traceEq.
   apply satisf_incr with eafter; auto.
   rewrite SIG. eapply add_equations_args_lessdef; eauto.
-  inv WTI. rewrite <- H8. apply wt_regset_list; auto.
+  inv WTI. rewrite <- H7. apply wt_regset_list; auto.
   simpl. red; auto.
   apply Mem.extends_push; auto.
   repeat rewrite_stack_blocks. repeat constructor; auto.
-  inv WTI. rewrite SIG. rewrite <- H8. apply wt_regset_list; auto.
-
+  inv WTI. rewrite SIG. rewrite <- H7. apply wt_regset_list; auto.
 
 (* tailcall *)
-- set (sg := RTL.funsig fd) in *.
+- set (sg := RTL_old.funsig fd) in *.
   set (args' := loc_arguments sg) in *.
-  exploit Mem.free_parallel_extends; eauto. intros [tm' [P Q]].
+  exploit Mem.free_parallel_extends; eauto. constructor. intros [tm' [P Q]].
   exploit Mem.tailcall_stage_extends; eauto.
   inv SI. inv MSA1. eapply Mem.free_top_tframe_no_perm; eauto.
   destruct (transf_function_inv _ _ FUN). congruence.
@@ -2139,7 +2153,7 @@ Proof.
 
   {
     destruct ros, ros'; simpl in *; auto.
-    - destruct H as (b & o & EQ0 & EQ1).
+    - destruct RIF as (b & o & EQ0 & EQ1).
       eapply add_equations_args_satisf in B1; eauto.
       red in B1.
       generalize (B1 (Eq Full r (Locations.R m0))).
@@ -2153,21 +2167,20 @@ Proof.
     - destruct ident_eq; try congruence.
   }
   rewrite <- E. apply find_function_tailcall; auto.
-  replace (fn_stacksize tf) with (RTL.fn_stacksize f); eauto.
+  replace (fn_stacksize tf) with (RTL_old.fn_stacksize f); eauto.
   destruct (transf_function_inv _ _ FUN); auto.
   eauto. traceEq.
   econstructor; eauto.
   eapply match_stackframes_change_sig; eauto. rewrite SIG. rewrite e0. decEq.
   destruct (transf_function_inv _ _ FUN); auto.
   rewrite SIG. rewrite return_regs_arg_values; auto. eapply add_equations_args_lessdef; eauto.
-  inv WTI. rewrite <- H8. apply wt_regset_list; auto.
+  inv WTI. rewrite <- H7. apply wt_regset_list; auto.
   apply return_regs_agree_callee_save.
   repeat rewrite_stack_blocks; eauto.
   intros A B; rewrite A, B in STRUCT. inv STRUCT; constructor; auto.
-  red. simpl. split; auto. inv LF2. red in H5. red.
-  red in H2. repeat destr_in H2. simpl. constructor; auto.
-  rewrite SIG. inv WTI. rewrite <- H8. apply wt_regset_list; auto.
-
+  red. simpl. split; auto. inv LF2. red in H4. red.
+  red in H1. repeat destr_in H1. simpl. constructor; auto.
+  rewrite SIG. inv WTI. rewrite <- H7. apply wt_regset_list; auto.
 
 (* builtin *)
 - exploit (exec_moves mv1); eauto. intros [ls1 [A1 B1]].
@@ -2227,14 +2240,14 @@ Proof.
 
 (* return *)
 - destruct (transf_function_inv _ _ FUN).
-  exploit Mem.free_parallel_extends; eauto. rewrite H10. intros [m'' [P Q]].
+  exploit Mem.free_parallel_extends; eauto. constructor. rewrite H10. intros [tm' [P Q]].
   inv WTI; MonadInv.
 + (* without an argument *)
   exploit (exec_moves mv); eauto. intros [ls1 [A1 B1]].
   econstructor; split.
   eapply plus_left. econstructor; eauto.
   eapply star_right. eexact A1.
-  econstructor. eauto. eauto. traceEq.
+  econstructor. eauto. eauto. eauto. traceEq.
   simpl. econstructor; eauto.
   apply return_regs_agree_callee_save.
   repeat rewrite_stack_blocks; eauto using stack_equiv_tail.
@@ -2244,15 +2257,15 @@ Proof.
   econstructor; split.
   eapply plus_left. econstructor; eauto.
   eapply star_right. eexact A1.
-  econstructor. eauto. eauto. traceEq.
+  econstructor. eauto. eauto. eauto. traceEq.
   simpl. econstructor; eauto. rewrite <- H11.
-  replace (Locmap.getpair (map_rpair R (loc_result (RTL.fn_sig f)))
-                          (return_regs (parent_locset ts) ls1))
-  with (Locmap.getpair (map_rpair R (loc_result (RTL.fn_sig f))) ls1).
+  replace (Locmap.getpair (map_rpair R (loc_result (RTL_old.fn_sig f)))
+                          (return_regs (parent_locset init_ls ts) ls1))
+  with (Locmap.getpair (map_rpair R (loc_result (RTL_old.fn_sig f))) ls1).
   eapply add_equations_res_lessdef; eauto.
   rewrite H13. apply WTRS.
-  generalize (loc_result_caller_save (RTL.fn_sig f)). 
-  destruct (loc_result (RTL.fn_sig f)); simpl.
+  generalize (loc_result_caller_save (RTL_old.fn_sig f)). 
+  destruct (loc_result (RTL_old.fn_sig f)); simpl.
   intros A; rewrite A; auto.
   intros [A B]; rewrite A, B; auto.
   apply return_regs_agree_callee_save.
@@ -2294,7 +2307,7 @@ Proof.
   econstructor; split.
   apply plus_one. econstructor; eauto.
   eapply external_call_symbols_preserved with (ge1 := ge); eauto. apply senv_preserved.
-  econstructor; eauto. 
+  econstructor; eauto.
   simpl. destruct (loc_result (ef_sig ef)) eqn:RES; simpl.
   rewrite Locmap.gss; auto.
   generalize (loc_result_pair (ef_sig ef)); rewrite RES; intros (A & B & C & D & E). 
@@ -2302,7 +2315,23 @@ Proof.
   rewrite Locmap.gss. rewrite Locmap.gso by (red; auto). rewrite Locmap.gss. 
   rewrite val_longofwords_eq by auto. auto.
   red; intros. rewrite (AG l H0).
-  symmetry; apply Locmap.gpo. 
+  rewrite Locmap.gpo.
+  rewrite undef_regs_outside. auto.
+  unfold destroyed_at_call.
+  destruct l; simpl in H0.
+  rewrite Loc.notin_iff.
+  intros.
+  rewrite in_map_iff in H1. destruct H1 as (x & EQ & IN).
+  subst.
+  simpl.
+  rewrite filter_In in IN.
+  intuition subst. rewrite H0 in H3;simpl in H3; discriminate. 
+  rewrite Loc.notin_iff.
+  intros.
+  rewrite in_map_iff in H1. destruct H1 as (x & EQ & IN).
+  subst.
+  simpl. auto.
+  
   assert (X: forall r, is_callee_save r = false -> Loc.diff l (R r)).
   { intros. destruct l; simpl in *. congruence. auto. }
   generalize (loc_result_caller_save (ef_sig ef)). destruct (loc_result (ef_sig ef)); simpl; intuition auto.
@@ -2321,14 +2350,16 @@ Proof.
   apply wt_regset_assign; auto. rewrite WTRES0; auto.
 Qed.
 
+End WITHINILS.
+
 Lemma initial_states_simulation:
-  forall st1, RTL.initial_state (*SACC:*)fn_stack_requirements prog st1 ->
-  exists st2, LTL.initial_state (*SACC:*)fn_stack_requirements tprog st2 /\ match_states st1 st2.
+  forall st1, RTL_old.initial_state fn_stack_requirements prog st1 ->
+  exists st2, LTL_old.initial_state fn_stack_requirements tprog st2 /\ match_states (Locmap.init Vundef) (Some Tint) st1 st2.
 Proof.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   exploit sig_function_translated; eauto. intros SIG.
-  exists (LTL.Callstate nil tf (Locmap.init Vundef) (Mem.push_new_stage m2) (fn_stack_requirements (prog_main tprog))); split.
+  exists (LTL_old.Callstate nil tf (Locmap.init Vundef) (Mem.push_new_stage m2) (fn_stack_requirements (prog_main tprog))); split.
   econstructor; eauto.
   eapply (Genv.init_mem_transf_partial TRANSF); eauto.
   rewrite symbols_preserved.
@@ -2340,19 +2371,17 @@ Proof.
   rewrite SIG, H3, loc_arguments_main. auto.
   red; auto.
   apply Mem.extends_refl.
-  repeat rewrite_stack_blocks. 
-  exploit Genv.init_mem_stack; eauto; intros NIL_EQ; rewrite NIL_EQ.
-  repeat constructor.
+  repeat rewrite_stack_blocks. repeat constructor.
   rewrite SIG, H3. constructor.
 Qed.
 
 Lemma final_states_simulation:
   forall st1 st2 r,
-  match_states st1 st2 -> RTL.final_state st1 r -> LTL.final_state st2 r.
+  match_states (Locmap.init Vundef) (Some Tint) st1 st2 -> RTL_old.final_state st1 r -> LTL_old.final_state st2 r.
 Proof.
   intros. inv H0. inv H. inv STACKS. 
   econstructor. rewrite <- (loc_result_exten sg). inv RES; auto.
-  rewrite H; auto.  
+  inv H. rewrite H1. reflexivity.
 Qed.
  
 Lemma wt_prog: wt_program prog.
@@ -2360,8 +2389,10 @@ Proof.
   red; intros. 
   exploit list_forall2_in_left. eexact (proj1 TRANSF). eauto. 
   intros ([i' gd] & A & B & C). simpl in *; subst i'.
-  inv C. destruct f; simpl in *.
-- monadInv H2.  
+  inv C.
+  inv H1.
+  destruct f; simpl in *.
+- monadInv H3.
   unfold transf_function in EQ.
   destruct (type_function f) as [env|] eqn:TF; try discriminate.
   econstructor. eapply type_function_correct; eauto.
@@ -2369,15 +2400,14 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (RTL.semantics (*SACC:*)fn_stack_requirements prog) (LTL.semantics (*SACC:*)fn_stack_requirements tprog).
+  forward_simulation (RTL_old.semantics fn_stack_requirements prog) (LTL_old.semantics fn_stack_requirements tprog).
 Proof.
-  set (ms := fun s s' => wt_state s /\ stack_inv s' /\ match_states s s').
+  set (ms := fun s s' => wt_state (Some Tint) s /\ stack_inv s' /\ match_states (Locmap.init Vundef) (Some Tint) s s').
   eapply forward_simulation_plus with (match_states := ms).
 - apply senv_preserved.
 - intros. exploit initial_states_simulation; eauto. intros [st2 [A B]].
   exists st2; split; auto. split; auto.
-  eapply wt_initial_state with (p := prog); auto. exact wt_prog.
-  apply H. split; auto.
+  eapply wt_initial_state with (p := prog); auto. exact wt_prog. apply H. split; auto.
   eapply stack_inv_initial; eauto.
 - intros. destruct H as (WT & SI & MS). eapply final_states_simulation; eauto.
 - intros. destruct H0 as (WT & SI & MS).
@@ -2390,4 +2420,4 @@ Qed.
 
 End PRESERVATION.
 
-End STACK_WRAPPER.
+End WITHEXTERNALCALLS.

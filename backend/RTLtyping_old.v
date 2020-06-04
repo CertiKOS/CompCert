@@ -14,18 +14,18 @@
 
 Require Import Coqlib.
 Require Import Errors.
-Require Import Unityping.
+Require Import Unityping_old.
 Require Import Maps.
-Require Import AST.
-Require Import Op.
-Require Import Registers.
-Require Import Globalenvs.
-Require Import Values.
+Require Import AST_old.
+Require Import Op_old.
+Require Import Registers_old.
+Require Import Globalenvs_old.
+Require Import Values_old.
 Require Import Integers.
-Require Import Memory.
-Require Import Events.
-Require Import RTL.
-Require Import Conventions.
+Require Import Memory_old.
+Require Import Events_old.
+Require Import RTL_old.
+Require Import Conventions_old.
 
 (** * The type system *)
 

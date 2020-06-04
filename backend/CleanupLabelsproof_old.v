@@ -14,10 +14,10 @@
 
 Require Import FSets.
 Require Import Coqlib Ordered Integers.
-Require Import AST Linking.
-Require Import Values Memory Events Globalenvs Smallstep.
-Require Import Op Locations Linear.
-Require Import CleanupLabels.
+Require Import AST_old Linking_old.
+Require Import Values_old Memory_old Events_old Globalenvs_old Smallstep_old.
+Require Import Op_old Locations_old Linear_old.
+Require Import CleanupLabels_old.
 
 Module LabelsetFacts := FSetFacts.Facts(Labelset).
 
@@ -30,13 +30,10 @@ Proof.
   intros. eapply match_transform_program; eauto.
 Qed.
 
-(*SACC:*)
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable fn_stack_requirements : ident -> Z.
-
 Section CLEANUP.
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable fn_stack_requirements: ident -> Z.
 
 Variables prog tprog: program.
 Hypothesis TRANSL: match_prog prog tprog.
@@ -51,6 +48,12 @@ Proof (Genv.find_symbol_transf TRANSL).
 Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf TRANSL).
+
+Lemma genv_next_preserved:
+  Genv.genv_next tge = Genv.genv_next ge.
+Proof.
+  apply senv_preserved.
+Qed.
 
 Lemma functions_translated:
   forall v f,
@@ -81,17 +84,6 @@ Proof.
   rewrite symbols_preserved. destruct (Genv.find_symbol ge i).
   apply function_ptr_translated; auto.
   congruence.
-Qed.
-
-(*SACC:*)
-Lemma ros_is_function_translated:
-  forall ros rs i,
-    ros_is_function ge ros rs i ->
-    ros_is_function tge ros rs i.
-Proof.
-  destruct ros; simpl; intros.
-  rewrite symbols_preserved; eauto.
-  auto.
 Qed.
 
 (** Correctness of [labels_branched_to]. *)
@@ -222,10 +214,10 @@ Inductive match_states: state -> state -> Prop :=
       match_states (State s f sp c ls m)
                    (State ts (transf_function f) sp (remove_unused_labels (labels_branched_to f.(fn_code)) c) ls m)
   | match_states_call:
-      forall s f ls m ts (*SACC:*)sz,
+      forall s f ls m ts sz,
       list_forall2 match_stackframes s ts ->
-      match_states (Callstate s f ls m (*SACC:*)sz)
-                   (Callstate ts (transf_fundef f) ls m (*SACC:*)sz)
+      match_states (Callstate s f ls m sz)
+                   (Callstate ts (transf_fundef f) ls m sz)
   | match_states_return:
       forall s ls m ts,
       list_forall2 match_stackframes s ts ->
@@ -239,17 +231,33 @@ Definition measure (st: state) : nat :=
   end.
 
 Lemma match_parent_locset:
+  forall init_ls,
   forall s ts,
   list_forall2 match_stackframes s ts ->
-  parent_locset ts = parent_locset s.
+  parent_locset init_ls ts = parent_locset init_ls s.
 Proof.
   induction 1; simpl. auto. inv H; auto.
 Qed.
 
+Section WITHINITLS. 
+
+Variable init_ls: locset.
+
+Lemma ros_is_function_translated:
+  forall ros rs i,
+    ros_is_function ge ros rs i ->
+    ros_is_function tge ros rs i.
+Proof.
+  destruct ros; simpl; intros.
+  rewrite symbols_preserved; eauto.
+  auto.
+Qed.
+
+
 Theorem transf_step_correct:
-  forall s1 t s2, step (*SACC:*)fn_stack_requirements ge s1 t s2 ->
+  forall s1 t s2, step fn_stack_requirements init_ls ge s1 t s2 ->
   forall s1' (MS: match_states s1 s1'),
-  (exists s2', step (*SACC:*)fn_stack_requirements tge s1' t s2' /\ match_states s2 s2')
+  (exists s2', step fn_stack_requirements init_ls tge s1' t s2' /\ match_states s2 s2')
   \/ (measure s2 < measure s1 /\ t = E0 /\ match_states s2 s1')%nat.
 Proof.
   induction 1; intros; inv MS; try rewrite remove_unused_labels_cons.
@@ -280,15 +288,14 @@ Proof.
   econstructor; eauto with coqlib.
 (* Lcall *)
   left; econstructor; split.
-  econstructor. 
+  econstructor.
   eapply ros_is_function_translated; eauto.
   eapply find_function_translated; eauto.
   symmetry; apply sig_function_translated.
   econstructor; eauto. constructor; auto. constructor; eauto with coqlib.
 (* Ltailcall *)
   left; econstructor; split.
-  econstructor. 
-  eapply ros_is_function_translated; eauto.
+  econstructor. eapply ros_is_function_translated; eauto.
   symmetry; erewrite match_parent_locset; eauto. eapply find_function_translated; eauto.
   symmetry; apply sig_function_translated.
   simpl. eauto. eauto.
@@ -298,7 +305,7 @@ Proof.
   econstructor.
   eapply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
-  eauto. eauto. eauto.
+  eauto. eauto. auto.
   econstructor; eauto with coqlib.
 (* Llabel *)
   case_eq (Labelset.mem lbl (labels_branched_to (fn_code f))); intros.
@@ -336,7 +343,8 @@ Proof.
   econstructor; eauto with coqlib.
 (* external function *)
   left; econstructor; split.
-  econstructor; eauto. eapply external_call_symbols_preserved; eauto. apply senv_preserved.
+  econstructor; eauto.
+  eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   econstructor; eauto with coqlib.
 (* return *)
   inv H4. inv H2. left; econstructor; split.
@@ -344,17 +352,19 @@ Proof.
   econstructor; eauto.
 Qed.
 
+End WITHINITLS.
+
 Lemma transf_initial_states:
-  forall st1, initial_state (*SACC:*)fn_stack_requirements prog st1 ->
-  exists st2, initial_state (*SACC:*)fn_stack_requirements tprog st2 /\ match_states st1 st2.
+  forall st1, initial_state fn_stack_requirements prog st1 ->
+  exists st2, initial_state fn_stack_requirements tprog st2 /\ match_states st1 st2.
 Proof.
   intros. inv H.
   econstructor; split.
-  eapply initial_state_intro with (f := transf_fundef f).
+  eapply initial_state_intro with (f0 := transf_fundef f).
   eapply (Genv.init_mem_transf TRANSL); eauto.
   rewrite (match_program_main TRANSL), symbols_preserved; eauto.
   apply function_ptr_translated; auto.
-  rewrite sig_function_translated. auto. eauto.
+  rewrite sig_function_translated. auto. eauto. eauto.
   rewrite (match_program_main TRANSL); constructor; auto. constructor.
 Qed.
 
@@ -366,15 +376,14 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (Linear.semantics (*SACC:*)fn_stack_requirements prog) (Linear.semantics (*SACC:*)fn_stack_requirements tprog).
+  forward_simulation (Linear.semantics fn_stack_requirements prog) (Linear.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_opt.
   apply senv_preserved.
   eexact transf_initial_states.
   eexact transf_final_states.
-  eexact transf_step_correct.
+  apply transf_step_correct.
 Qed.
 
 End CLEANUP.
 
-End STACK_WRAPPER.

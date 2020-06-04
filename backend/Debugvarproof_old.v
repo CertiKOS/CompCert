@@ -284,14 +284,9 @@ Qed.
 
 (** * Semantic preservation *)
 
-(*SACC:*)
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable fn_stack_requirements : ident -> Z.
-
 Section PRESERVATION.
-
+Context `{external_calls_prf: ExternalCalls}.
+Variable fn_stack_requirements: ident -> Z.
 Variable prog: program.
 Variable tprog: program.
 
@@ -307,6 +302,12 @@ Proof (Genv.find_symbol_match TRANSF).
 Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_match TRANSF).
+
+Lemma genv_next_preserved:
+  Genv.genv_next tge = Genv.genv_next ge.
+Proof.
+  apply senv_preserved.
+Qed.
 
 Lemma functions_translated:
   forall (v: val) (f: fundef),
@@ -346,17 +347,6 @@ Proof.
   congruence.
 Qed.
 
-(*SACC:*)
-Lemma ros_is_function_translated:
-  forall ros rs i,
-    ros_is_function ge ros rs i ->
-    ros_is_function tge ros rs i.
-Proof.
-  destruct ros; simpl; intros.
-  rewrite symbols_preserved; eauto.
-  auto.
-Qed.
-
 (** Evaluation of the debug annotations introduced by the transformation. *)
 
 Lemma can_eval_safe_arg:
@@ -370,9 +360,13 @@ Proof.
   exists (Val.longofwords v1 v2); auto with barg.
 Qed.
 
+Section WITHINITLS.
+
+Variable init_ls: locset.
+
 Lemma eval_add_delta_ranges:
   forall s f sp c rs m before after,
-  star (step (*SACC:*)fn_stack_requirements) tge (State s f sp (add_delta_ranges before after c) rs m)
+  star (step fn_stack_requirements init_ls) tge (State s f sp (add_delta_ranges before after c) rs m)
              E0 (State s f sp c rs m).
 Proof.
   intros. unfold add_delta_ranges.
@@ -386,18 +380,16 @@ Proof.
   econstructor.
   constructor. eexact E1. constructor.
   simpl; constructor.
-  simpl; auto.
   apply Mem.unrecord_push.
-  traceEq.
-  auto.
+  simpl; auto.
+  auto. traceEq.
 - eapply star_step; eauto.
   econstructor.
   constructor.
   simpl; constructor.
-  simpl; auto.
   apply Mem.unrecord_push.
-  traceEq.
-  auto.
+  simpl; auto.
+  auto. traceEq.
 Qed.
 
 (** Matching between program states. *)
@@ -420,11 +412,11 @@ Inductive match_states: Linear.state ->  Linear.state -> Prop :=
       match_states (State s f sp c rs m)
                    (State ts tf sp tc rs m)
   | match_states_call:
-      forall s f rs m tf ts (*SACC:*)sz,
+      forall s f rs m tf ts sz,
       list_forall2 match_stackframes s ts ->
       transf_fundef f = OK tf ->
-      match_states (Callstate s f rs m (*SACC:*)sz)
-                   (Callstate ts tf rs m (*SACC:*)sz)
+      match_states (Callstate s f rs m sz)
+                   (Callstate ts tf rs m sz)
   | match_states_return:
       forall s rs m ts,
       list_forall2 match_stackframes s ts ->
@@ -434,17 +426,27 @@ Inductive match_states: Linear.state ->  Linear.state -> Prop :=
 Lemma parent_locset_match:
   forall s ts,
   list_forall2 match_stackframes s ts ->
-  parent_locset ts = parent_locset s.
+  parent_locset init_ls ts = parent_locset init_ls s.
 Proof.
   induction 1; simpl. auto. inv H; auto.
+Qed.
+
+Lemma ros_is_function_translated:
+  forall ros rs i,
+    ros_is_function ge ros rs i ->
+    ros_is_function tge ros rs i.
+Proof.
+  destruct ros; simpl; intros.
+  rewrite symbols_preserved; eauto.
+  auto.
 Qed.
 
 (** The simulation diagram. *)
 
 Theorem transf_step_correct:
-  forall s1 t s2, step (*SACC:*)fn_stack_requirements ge s1 t s2 ->
+  forall s1 t s2, step fn_stack_requirements init_ls ge s1 t s2 ->
   forall ts1 (MS: match_states s1 ts1),
-  exists ts2, plus (step (*SACC:*)fn_stack_requirements) tge ts1 t ts2 /\ match_states s2 ts2.
+  exists ts2, plus (step fn_stack_requirements init_ls) tge ts1 t ts2 /\ match_states s2 ts2.
 Proof.
   induction 1; intros ts1 MS; inv MS; try (inv TRC).
 - (* getstack *)
@@ -465,7 +467,7 @@ Proof.
 - (* load *)
   econstructor; split.
   eapply plus_left.
-  eapply exec_Lload with (a := a).
+  eapply exec_Lload with (a0 := a).
   rewrite <- H; apply eval_addressing_preserved; exact symbols_preserved.
   eauto. eauto.
   apply eval_add_delta_ranges. traceEq.
@@ -473,7 +475,7 @@ Proof.
 - (* store *)
   econstructor; split.
   eapply plus_left.
-  eapply exec_Lstore with (a := a).
+  eapply exec_Lstore with (a0 := a).
   rewrite <- H; apply eval_addressing_preserved; exact symbols_preserved.
   eauto. eauto.
   apply eval_add_delta_ranges. traceEq.
@@ -491,13 +493,11 @@ Proof.
   exploit parent_locset_match; eauto. intros PLS.
   econstructor; split.
   apply plus_one.
-  econstructor. 
-  eapply ros_is_function_translated; eauto.
-  rewrite PLS. reflexivity. 
+  econstructor. eapply ros_is_function_translated; eauto.
+  rewrite PLS. eauto.
   eexact A.
   symmetry; apply sig_preserved; auto.
-  inv TRF; eauto. traceEq.
-  eauto. 
+  inv TRF; eauto. eauto. 
   constructor; auto.
 - (* builtin *)
   econstructor; split.
@@ -533,7 +533,7 @@ Proof.
   constructor; auto.
 - (* return *)
   econstructor; split.
-  apply plus_one.  constructor. inv TRF; eauto. traceEq.
+  apply plus_one.  econstructor. inv TRF; eauto. eauto.
   rewrite (parent_locset_match _ _ STACKS). constructor; auto.
 - (* internal function *)
   monadInv H9. rename x into tf.
@@ -554,9 +554,11 @@ Proof.
   constructor; auto.
 Qed.
 
+End WITHINITLS.
+
 Lemma transf_initial_states:
-  forall st1, initial_state (*SACC:*)fn_stack_requirements prog st1 ->
-  exists st2, initial_state (*SACC:*)fn_stack_requirements tprog st2 /\ match_states st1 st2.
+  forall st1, initial_state fn_stack_requirements prog st1 ->
+  exists st2, initial_state fn_stack_requirements tprog st2 /\ match_states st1 st2.
 Proof.
   intros. inversion H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
@@ -575,15 +577,13 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (semantics (*SACC:*)fn_stack_requirements prog) (semantics (*SACC:*)fn_stack_requirements tprog).
+  forward_simulation (semantics fn_stack_requirements prog) (semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_plus.
   apply senv_preserved.
   eexact transf_initial_states.
   eexact transf_final_states.
-  eexact transf_step_correct.
+  apply transf_step_correct.
 Qed.
 
 End PRESERVATION.
-
-End STACK_WRAPPER.

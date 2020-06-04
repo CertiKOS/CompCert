@@ -13,15 +13,15 @@
 (** Correctness proof for code linearization *)
 
 Require Import FSets.
-Require Import Coqlib Maps Ordered Errors Lattice Kildall Integers.
-Require Import AST Linking.
-Require Import Values Memory Events Globalenvs Smallstep.
-Require Import Op Locations LTL Linear.
-Require Import Linearize.
+Require Import Coqlib Maps Ordered Errors Lattice Kildall_old Integers.
+Require Import AST_old Linking_old.
+Require Import Values_old Memory_old Events_old Globalenvs_old Smallstep_old.
+Require Import Op_old Locations_old LTL_old Linear_old.
+Require Import Linearize_old.
 
 Module NodesetFacts := FSetFacts.Facts(Nodeset).
 
-Definition match_prog (p: LTL.program) (tp: Linear.program) :=
+Definition match_prog (p: LTL_old.program) (tp: Linear_old.program) :=
   match_program (fun ctx f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
@@ -30,16 +30,13 @@ Proof.
   intros. eapply match_transform_partial_program; eauto.
 Qed.
 
-(*SACC:*)
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable fn_stack_requirements : ident -> Z.
-
 Section LINEARIZATION.
+Context `{external_calls_prf: ExternalCalls}.
 
-Variable prog: LTL.program.
-Variable tprog: Linear.program.
+Variable fn_stack_requirements: ident -> Z.
+
+Variable prog: LTL_old.program.
+Variable tprog: Linear_old.program.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
@@ -69,10 +66,16 @@ Lemma senv_preserved:
   Senv.equiv ge tge.
 Proof (Genv.senv_transf_partial TRANSF).
 
+Lemma genv_next_preserved:
+  Genv.genv_next tge = Genv.genv_next ge.
+Proof.
+  apply senv_preserved.
+Qed.
+
 Lemma sig_preserved:
   forall f tf,
   transf_fundef f = OK tf ->
-  Linear.funsig tf = LTL.funsig f.
+  Linear_old.funsig tf = LTL_old.funsig f.
 Proof.
   unfold transf_fundef, transf_partial_fundef; intros.
   destruct f. monadInv H. monadInv EQ. reflexivity.
@@ -82,18 +85,18 @@ Qed.
 Lemma stacksize_preserved:
   forall f tf,
   transf_function f = OK tf ->
-  Linear.fn_stacksize tf = LTL.fn_stacksize f.
+  Linear_old.fn_stacksize tf = LTL_old.fn_stacksize f.
 Proof.
   intros. monadInv H. auto.
 Qed.
 
 Lemma find_function_translated:
   forall ros ls f,
-  LTL.find_function ge ros ls = Some f ->
+  LTL_old.find_function ge ros ls = Some f ->
   exists tf,
   find_function tge ros ls = Some tf /\ transf_fundef f = OK tf.
 Proof.
-  unfold LTL.find_function; intros; destruct ros; simpl.
+  unfold LTL_old.find_function; intros; destruct ros; simpl.
   apply functions_translated; auto.
   rewrite symbols_preserved. destruct (Genv.find_symbol ge i).
   apply function_ptr_translated; auto.
@@ -120,7 +123,7 @@ Qed.
 
 Lemma reachable_successors:
   forall f pc pc' b,
-  f.(LTL.fn_code)!pc = Some b -> In pc' (successors_block b) ->
+  f.(LTL_old.fn_code)!pc = Some b -> In pc' (successors_block b) ->
   (reachable f)!!pc = true ->
   (reachable f)!!pc' = true.
 Proof.
@@ -165,7 +168,7 @@ Qed.
 Lemma check_reachable_correct:
   forall f reach s pc i,
   check_reachable f reach s = true ->
-  f.(LTL.fn_code)!pc = Some i ->
+  f.(LTL_old.fn_code)!pc = Some i ->
   reach!!pc = true ->
   Nodeset.In pc s.
 Proof.
@@ -195,7 +198,7 @@ Qed.
 Lemma enumerate_complete:
   forall f enum pc i,
   enumerate f = OK enum ->
-  f.(LTL.fn_code)!pc = Some i ->
+  f.(LTL_old.fn_code)!pc = Some i ->
   (reachable f)!!pc = true ->
   In pc enum.
 Proof.
@@ -253,12 +256,13 @@ Qed.
 (** Correctness of the [starts_with] test. *)
 
 Lemma starts_with_correct:
+  forall lm,
   forall lbl c1 c2 c3 s f sp ls m,
   is_tail c1 c2 ->
   unique_labels c2 ->
   starts_with lbl c1 = true ->
   find_label lbl c2 = Some c3 ->
-  plus (step (*SACC:*)fn_stack_requirements) tge (State s f sp c1 ls m)
+  plus ((step fn_stack_requirements) lm) tge (State s f sp c1 ls m)
              E0 (State s f sp c3 ls m).
 Proof.
   induction c1.
@@ -296,19 +300,19 @@ Qed.
 Remark linearize_body_cons:
   forall f pc enum,
   linearize_body f (pc :: enum) =
-  match f.(LTL.fn_code)!pc with
+  match f.(LTL_old.fn_code)!pc with
   | None => linearize_body f enum
   | Some b => Llabel pc :: linearize_block b (linearize_body f enum)
   end.
 Proof.
   intros. unfold linearize_body. rewrite list_fold_right_eq.
-  unfold linearize_node. destruct (LTL.fn_code f)!pc; auto.
+  unfold linearize_node. destruct (LTL_old.fn_code f)!pc; auto.
 Qed.
 
 Lemma find_label_lin_rec:
   forall f enum pc b,
   In pc enum ->
-  f.(LTL.fn_code)!pc = Some b ->
+  f.(LTL_old.fn_code)!pc = Some b ->
   exists k, find_label pc (linearize_body f enum) = Some (linearize_block b k).
 Proof.
   induction enum; intros.
@@ -319,7 +323,7 @@ Proof.
   rewrite H0. simpl. rewrite peq_true. auto.
   assert (In pc enum). simpl in H. tauto.
   destruct (IHenum pc b H1 H0) as [k FIND].
-  exists k. destruct (LTL.fn_code f)!a.
+  exists k. destruct (LTL_old.fn_code f)!a.
   simpl. rewrite peq_false. rewrite find_label_lin_block. auto. auto.
   auto.
 Qed.
@@ -327,7 +331,7 @@ Qed.
 Lemma find_label_lin:
   forall f tf pc b,
   transf_function f = OK tf ->
-  f.(LTL.fn_code)!pc = Some b ->
+  f.(LTL_old.fn_code)!pc = Some b ->
   (reachable f)!!pc = true ->
   exists k,
   find_label pc (fn_code tf) = Some (linearize_block b k).
@@ -340,7 +344,7 @@ Qed.
 Lemma find_label_lin_inv:
   forall f tf pc b k,
   transf_function f = OK tf ->
-  f.(LTL.fn_code)!pc = Some b ->
+  f.(LTL_old.fn_code)!pc = Some b ->
   (reachable f)!!pc = true ->
   find_label pc (fn_code tf) = Some k ->
   exists k', k = linearize_block b k'.
@@ -377,7 +381,7 @@ Lemma label_in_lin_rec:
 Proof.
   induction enum.
   simpl; auto.
-  rewrite linearize_body_cons. destruct (LTL.fn_code f)!a.
+  rewrite linearize_body_cons. destruct (LTL_old.fn_code f)!a.
   simpl. intros [A|B]. left; congruence.
   right. apply IHenum. eapply label_in_lin_block; eauto.
   intro; right; auto.
@@ -408,7 +412,7 @@ Proof.
   induction enum.
   simpl; auto.
   rewrite linearize_body_cons.
-  intro. destruct (LTL.fn_code f)!a.
+  intro. destruct (LTL_old.fn_code f)!a.
   simpl. split. red. intro. inversion H. elim H3.
   apply label_in_lin_rec with f.
   apply label_in_lin_block with b. auto.
@@ -458,11 +462,12 @@ Proof.
 Qed.
 
 Lemma add_branch_correct:
+  forall lm,
   forall lbl c k s f tf sp ls m,
   transf_function f = OK tf ->
   is_tail k tf.(fn_code) ->
   find_label lbl tf.(fn_code) = Some c ->
-  plus (step (*SACC:*)fn_stack_requirements) tge (State s tf sp (add_branch lbl k) ls m)
+  plus ((step fn_stack_requirements) lm) tge (State s tf sp (add_branch lbl k) ls m)
              E0 (State s tf sp c ls m).
 Proof.
   intros. unfold add_branch.
@@ -490,33 +495,33 @@ Qed.
   control-flow graph, the transformed state is at a code
   sequence [c] that starts with the label [pc]. *)
 
-Inductive match_stackframes: LTL.stackframe -> Linear.stackframe -> Prop :=
+Inductive match_stackframes: LTL_old.stackframe -> Linear_old.stackframe -> Prop :=
   | match_stackframe_intro:
       forall f sp bb ls tf c,
       transf_function f = OK tf ->
       (forall pc, In pc (successors_block bb) -> (reachable f)!!pc = true) ->
       is_tail c tf.(fn_code) ->
       match_stackframes
-        (LTL.Stackframe f sp ls bb)
-        (Linear.Stackframe tf sp ls (linearize_block bb c)).
+        (LTL_old.Stackframe f sp ls bb)
+        (Linear_old.Stackframe tf sp ls (linearize_block bb c)).
 
-Inductive match_states: LTL.state -> Linear.state -> Prop :=
+Inductive match_states: LTL_old.state -> Linear_old.state -> Prop :=
   | match_states_add_branch:
       forall s f sp pc ls m tf ts c
         (STACKS: list_forall2 match_stackframes s ts)
         (TRF: transf_function f = OK tf)
         (REACH: (reachable f)!!pc = true)
         (TAIL: is_tail c tf.(fn_code)),
-      match_states (LTL.State s f sp pc ls m)
-                   (Linear.State ts tf sp (add_branch pc c) ls m)
+      match_states (LTL_old.State s f sp pc ls m)
+                   (Linear_old.State ts tf sp (add_branch pc c) ls m)
   | match_states_cond_taken:
       forall s f sp pc ls m tf ts cond args c
         (STACKS: list_forall2 match_stackframes s ts)
         (TRF: transf_function f = OK tf)
         (REACH: (reachable f)!!pc = true)
         (JUMP: eval_condition cond (reglist ls args) m = Some true),
-      match_states (LTL.State s f sp pc (undef_regs (destroyed_by_cond cond) ls) m)
-                   (Linear.State ts tf sp (Lcond cond args pc :: c) ls m)
+      match_states (LTL_old.State s f sp pc (undef_regs (destroyed_by_cond cond) ls) m)
+                   (Linear_old.State ts tf sp (Lcond cond args pc :: c) ls m)
   | match_states_jumptable:
       forall s f sp pc ls m tf ts arg tbl c n
         (STACKS: list_forall2 match_stackframes s ts)
@@ -524,45 +529,49 @@ Inductive match_states: LTL.state -> Linear.state -> Prop :=
         (REACH: (reachable f)!!pc = true)
         (ARG: ls (R arg) = Vint n)
         (JUMP: list_nth_z tbl (Int.unsigned n) = Some pc),
-      match_states (LTL.State s f sp pc (undef_regs destroyed_by_jumptable ls) m)
-                   (Linear.State ts tf sp (Ljumptable arg tbl :: c) ls m)
+      match_states (LTL_old.State s f sp pc (undef_regs destroyed_by_jumptable ls) m)
+                   (Linear_old.State ts tf sp (Ljumptable arg tbl :: c) ls m)
   | match_states_block:
       forall s f sp bb ls m tf ts c
         (STACKS: list_forall2 match_stackframes s ts)
         (TRF: transf_function f = OK tf)
         (REACH: forall pc, In pc (successors_block bb) -> (reachable f)!!pc = true)
         (TAIL: is_tail c tf.(fn_code)),
-      match_states (LTL.Block s f sp bb ls m)
-                   (Linear.State ts tf sp (linearize_block bb c) ls m)
+      match_states (LTL_old.Block s f sp bb ls m)
+                   (Linear_old.State ts tf sp (linearize_block bb c) ls m)
   | match_states_call:
-      forall s f ls m tf ts (*SACC:*)sz,
+      forall s f ls m tf ts sz,
       list_forall2 match_stackframes s ts ->
       transf_fundef f = OK tf ->
-      match_states (LTL.Callstate s f ls m (*SACC:*)sz)
-                   (Linear.Callstate ts tf ls m (*SACC:*)sz)
+      match_states (LTL_old.Callstate s f ls m sz)
+                   (Linear_old.Callstate ts tf ls m sz)
   | match_states_return:
       forall s ls m ts,
       list_forall2 match_stackframes s ts ->
-      match_states (LTL.Returnstate s ls m)
-                   (Linear.Returnstate ts ls m).
+      match_states (LTL_old.Returnstate s ls m)
+                   (Linear_old.Returnstate ts ls m).
 
-Definition measure (S: LTL.state) : nat :=
+Definition measure (S: LTL_old.state) : nat :=
   match S with
-  | LTL.State s f sp pc ls m => 0%nat
-  | LTL.Block s f sp bb ls m => 1%nat
+  | LTL_old.State s f sp pc ls m => 0%nat
+  | LTL_old.Block s f sp bb ls m => 1%nat
   | _ => 0%nat
   end.
 
+Section WITHINITLS.
+
+Variable init_ls: locset.
+
 Remark match_parent_locset:
-  forall s ts, list_forall2 match_stackframes s ts -> parent_locset ts = LTL.parent_locset s.
+  forall s ts, list_forall2 match_stackframes s ts -> parent_locset init_ls ts = LTL_old.parent_locset init_ls s.
 Proof.
   induction 1; simpl. auto. inv H; auto.
 Qed.
 
-(*SACC:*)
+
 Lemma ros_is_function_translated:
   forall ros rs id
-    (IFI : LTL.ros_is_function ge ros rs id),
+    (IFI : LTL_old.ros_is_function ge ros rs id),
     ros_is_function tge ros rs id.
 Proof.
   destruct ros; simpl; intros; auto.
@@ -571,9 +580,9 @@ Proof.
 Qed.
 
 Theorem transf_step_correct:
-  forall s1 t s2, LTL.step (*SACC:*)fn_stack_requirements ge s1 t s2 ->
+  forall s1 t s2, LTL_old.step fn_stack_requirements init_ls ge s1 t s2 ->
   forall s1' (MS: match_states s1 s1'),
-  (exists s2', plus (Linear.step (*SACC:*)fn_stack_requirements) tge s1' t s2' /\ match_states s2 s2')
+  (exists s2', plus (Linear_old.step fn_stack_requirements init_ls) tge s1' t s2' /\ match_states s2 s2')
   \/ (measure s2 < measure s1 /\ t = E0 /\ match_states s2 s1')%nat.
 Proof.
   induction 1; intros; try (inv MS).
@@ -645,8 +654,8 @@ Proof.
   exploit find_function_translated; eauto. intros [tfd [A B]].
   left; econstructor; split. simpl.
   apply plus_one. econstructor; eauto.
-  rewrite (match_parent_locset _ _ STACKS). eauto.
   eapply ros_is_function_translated; eauto.
+  rewrite (match_parent_locset _ _ STACKS). eauto.
   rewrite (match_parent_locset _ _ STACKS). eauto.
   symmetry; eapply sig_preserved; eauto.
   rewrite (stacksize_preserved _ _ TRF); eauto.
@@ -702,7 +711,7 @@ Proof.
   rewrite (match_parent_locset _ _ STACKS). econstructor; eauto.
 
   (* internal functions *)
-  assert (REACH: (reachable f)!!(LTL.fn_entrypoint f) = true).
+  assert (REACH: (reachable f)!!(LTL_old.fn_entrypoint f) = true).
     apply reachable_entrypoint.
   monadInv H9.
   left; econstructor; split.
@@ -721,14 +730,13 @@ Proof.
   (* return *)
   inv H4. inv H2.
   left; econstructor; split.
-  apply plus_one. econstructor.
-  eauto.
+  apply plus_one. econstructor. eauto.
   econstructor; eauto.
 Qed.
 
 Lemma transf_initial_states:
-  forall st1, LTL.initial_state (*SACC:*)fn_stack_requirements prog st1 ->
-  exists st2, Linear.initial_state (*SACC:*)fn_stack_requirements tprog st2 /\ match_states st1 st2.
+  forall st1, LTL_old.initial_state fn_stack_requirements prog st1 ->
+  exists st2, Linear_old.initial_state fn_stack_requirements tprog st2 /\ match_states st1 st2.
 Proof.
   intros. inversion H.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
@@ -742,21 +750,21 @@ Qed.
 
 Lemma transf_final_states:
   forall st1 st2 r,
-  match_states st1 st2 -> LTL.final_state st1 r -> Linear.final_state st2 r.
+  match_states st1 st2 -> LTL_old.final_state st1 r -> Linear_old.final_state st2 r.
 Proof.
   intros. inv H0. inv H. inv H5. econstructor; eauto.
 Qed.
 
+End WITHINITLS.
+
 Theorem transf_program_correct:
-  forward_simulation (LTL.semantics (*SACC:*)fn_stack_requirements prog) (Linear.semantics (*SACC:*)fn_stack_requirements tprog).
+  forward_simulation (LTL_old.semantics fn_stack_requirements prog) (Linear_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_star.
   apply senv_preserved.
   eexact transf_initial_states.
   eexact transf_final_states.
-  eexact transf_step_correct.
+  apply transf_step_correct.
 Qed.
 
 End LINEARIZATION.
-
-End STACK_WRAPPER.  
