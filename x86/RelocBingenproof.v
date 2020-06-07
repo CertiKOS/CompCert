@@ -135,7 +135,74 @@ Proof.
   auto.
 Admitted.
 
+Lemma decode_int_app: forall l bytes x,
+    RelocBinDecode.decode_int_n bytes 4 = OK x
+    ->RelocBinDecode.decode_int_n (bytes++l) 4 = OK x.
+Admitted.
 
+Lemma remove_first_n_app: forall {A} (bytes:list A) n x l,
+    RelocBinDecode.remove_first_n bytes n = OK x
+    ->RelocBinDecode.remove_first_n (bytes++l) n = OK(x++l).
+Admitted.
+
+
+Lemma decode_0f_app: forall bytes h t l,
+    RelocBinDecode.decode_0f bytes = OK(h, t)
+    ->RelocBinDecode.decode_0f (bytes++l) = OK(h, t++l).
+Proof.
+  intros bytes h t l HDecode.
+  unfold RelocBinDecode.decode_0f in HDecode.
+  unfold RelocBinDecode.decode_0f.
+  monadInv HDecode.
+  cbn [RelocBinDecode.get_n].
+  cbn [RelocBinDecode.get_n] in EQ.
+  destruct bytes; inversion EQ.
+  simpl.
+  simpl in EQ0.
+  destruct Byte.eq_dec.
+  (* imull *)
+  unfold RelocBinDecode.decode_imull_rr in EQ0.
+  monadInv EQ0.
+  unfold RelocBinDecode.decode_imull_rr.
+  simpl in EQ1. destruct bytes; inversion EQ1.
+  simpl. rewrite EQ0.
+  simpl. simpl in EQ2.
+  inversion EQ2. auto.
+  (* jcc *)
+  unfold RelocBinDecode.decode_jcc_rel in EQ0.
+  simpl in EQ0.
+  monadInv EQ0.
+  do 4 (destruct bytes; inversion EQ0).
+  unfold RelocBinDecode.decode_jcc_rel.
+  simpl. unfold RelocBinDecode.decode_int_n.
+  simpl.
+  rewrite<- H4.
+  unfold RelocBinDecode.decode_int_n in EQ1.
+  simpl in EQ1.
+  destruct bytes.
+  simpl in EQ1. simpl.
+  destruct l; simpl;
+  rewrite <- H0.
+  repeat (destruct Byte.eq_dec; try(inversion EQ3; rewrite<- H6;
+                                    rewrite <- H4; simpl; inversion EQ1; auto)).
+  repeat (destruct Byte.eq_dec; try(inversion EQ3; rewrite<- H6;
+                                    rewrite <- H4; simpl; inversion EQ1; auto)).
+  simpl in EQ1. simpl.
+  rewrite <- H0.
+  repeat (destruct Byte.eq_dec; try(inversion EQ3; rewrite<- H6;
+                                    rewrite <- H4; simpl; inversion EQ1; auto)).
+Qed.
+
+Lemma decode_addrmode_size_app: forall bytes x l,
+    RelocBinDecode.decode_addrmode_size bytes = OK x
+    -> RelocBinDecode.decode_addrmode_size (bytes++l) = OK x.
+Admitted.
+
+Lemma decode_addrmode_app:forall rtbl_ofs_map ofs bytes p l l1,
+    RelocBinDecode.decode_addrmode rtbl_ofs_map ofs bytes = OK (p, l)
+    ->RelocBinDecode.decode_addrmode rtbl_ofs_map ofs (bytes++l1) = OK (p, l++l1).
+Admitted.
+  
 Lemma decode_app:forall x rtbl_ofs_map symbt ofs bytes h t,
     RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes =OK (h, t)                 
     -> RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs (bytes++x) = OK (h, t++x).
@@ -151,13 +218,41 @@ Proof.
   (* jmp *)
   destruct Byte.eq_dec.
   unfold  RelocBinDecode.decode_jmp_l_rel.
-  unfold  RelocBinDecode.decode_jmp_l_rel in H2.
-  destruct bytes. simpl in H2. inversion H2.
-  unfold RelocBinDecode.decode_int_n in H2.
-  unfold RelocBinDecode.sublist in H2.
-  unfold decode_int in H2.
-  unfold int_of_bytes in H2. simpl.
-  (** *Something is wrong *)
+  unfold  RelocBinDecode.decode_jmp_l_rel in HDecode.
+  monadInv HDecode.
+  rewrite(decode_int_app x bytes x0).
+  rewrite(remove_first_n_app bytes 4 t x).
+  simpl.
+  1-3: auto.
+  (* decode_0f *)
+  destruct Byte.eq_dec.
+  rewrite(decode_0f_app bytes h t x).
+  1-2: auto.
+  (* call *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_call.
+  unfold RelocBinDecode.decode_call in HDecode.
+  monadInv HDecode.
+  rewrite (decode_int_app x bytes x0 EQ).
+  simpl.
+  destruct RelocBinDecode.find_ofs_in_rtbl; inversion EQ0.
+  destruct RelocBinDecode.get_nth_symbol; inversion H3.
+  monadInv H4.
+  do 4 (destruct bytes;inversion EQ1).
+  simpl. auto.
+  (* leal *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_leal.
+  unfold RelocBinDecode.decode_leal in HDecode.
+  monadInv HDecode.
+  rewrite (decode_addrmode_size_app _ _ x EQ).
+  simpl.
+  destruct x1.
+  rewrite(decode_addrmode_app _ _ _ _ _ x EQ1).
+  simpl. auto.
+  
+
+
 Admitted.
 
 
