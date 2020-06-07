@@ -202,7 +202,100 @@ Lemma decode_addrmode_app:forall rtbl_ofs_map ofs bytes p l l1,
     RelocBinDecode.decode_addrmode rtbl_ofs_map ofs bytes = OK (p, l)
     ->RelocBinDecode.decode_addrmode rtbl_ofs_map ofs (bytes++l1) = OK (p, l++l1).
 Admitted.
+
+
+Lemma decode_81_app: forall bytes h t l,
+    RelocBinDecode.decode_81 bytes = OK (h, t)
+    ->RelocBinDecode.decode_81 (bytes++l) = OK (h, t++l).
+Proof.
+  intros bytes h t l HDecode.
+  unfold RelocBinDecode.decode_81 in HDecode.
+  simpl in HDecode.
+  unfold RelocBinDecode.decode_81. simpl.
+  destruct bytes; inversion HDecode.
+  simpl in HDecode.
+  simpl.
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_cmpl_ri in H0.
+  unfold RelocBinDecode.decode_cmpl_ri.
+  monadInv H0.
+  simpl.
+  simpl in EQ1. simpl in EQ. inversion EQ.
+  rewrite EQ1.
+  simpl.
+  simpl in EQ0. inversion EQ0.
+  rewrite(decode_int_app l _ _ EQ2).
+  simpl.
+  unfold RelocBinDecode.remove_first_n in EQ3.
+  do 4 (destruct bytes; inversion EQ3).
+  rewrite<- H1. simpl. rewrite H5. auto.
+
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_addl_ri.
+  unfold RelocBinDecode.decode_addl_ri in H0.
+  simpl in H0.
+  monadInv H0.
+  simpl.
+  rewrite EQ.
+  simpl.
+  rewrite(decode_int_app l _ _ EQ1).
+  simpl.
+  do 4 (destruct bytes; inversion EQ0).
+  simpl. auto.
+
+  destruct Byte.eq_dec;inversion H0.
+  unfold RelocBinDecode.decode_subl_ri in HDecode.
+  unfold RelocBinDecode.decode_subl_ri.
+  monadInv HDecode.
+  simpl.
+  simpl in EQ1.
+  simpl in EQ; inversion EQ.
+  rewrite EQ1.
+  simpl.
+  simpl in EQ0; inversion EQ0.
+  rewrite(decode_int_app l _ _ EQ2).
+  simpl.
+  simpl in EQ3.
+  do 4 (destruct bytes; inversion EQ3).
+  rewrite <- H3.
+  simpl.
+  rewrite H7. auto.
+Qed.
+
+Lemma decode_8b_app:forall rtbl_ofs_map ofs bytes h t l,
+    RelocBinDecode.decode_8b rtbl_ofs_map ofs bytes = OK(h,t)
+    -> RelocBinDecode.decode_8b rtbl_ofs_map ofs (bytes ++l )
+       = OK(h, t++l).
+Proof.
+  intros rtbl_ofs_map ofs bytes h t l HDecode.
+  unfold RelocBinDecode.decode_8b.
+  unfold RelocBinDecode.decode_8b in HDecode.
+  monadInv HDecode.
+  simpl in *.
+  destruct bytes; inversion EQ.
+  simpl.
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_mov_rr.
+  simpl.
+  unfold RelocBinDecode.decode_mov_rr in EQ0.
+  monadInv EQ0.
+  inversion EQ1.
+  rewrite EQ0. simpl.
+  inversion EQ2. auto.
+
+  unfold RelocBinDecode.decode_movl_rm.
+  unfold RelocBinDecode.decode_movl_rm in EQ0.
+  monadInv EQ0.
+  setoid_rewrite (decode_addrmode_size_app _ _ l EQ1).
+  simpl.
+  destruct x1.
+  setoid_rewrite (decode_addrmode_app _ _ _ _ _ l EQ0).
+  simpl. auto.
+Qed.
+
+
   
+
 Lemma decode_app:forall x rtbl_ofs_map symbt ofs bytes h t,
     RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes =OK (h, t)                 
     -> RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs (bytes++x) = OK (h, t++x).
@@ -250,10 +343,139 @@ Proof.
   destruct x1.
   rewrite(decode_addrmode_app _ _ _ _ _ x EQ1).
   simpl. auto.
-  
+  (* xorl *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_xorl_r.
+  unfold RelocBinDecode.decode_xorl_r in H2.
+  monadInv H2.
+  unfold RelocBinDecode.get_n in EQ.
+  destruct bytes; inversion EQ.
+  simpl.
+  simpl in EQ1.
+  rewrite EQ1.
+  simpl.
+  simpl in EQ0.
+  inversion EQ0.
+  auto.
+  (* decode_81 *)
+  destruct Byte.eq_dec.
+  rewrite(decode_81_app _ _ _ x H2).
+  auto.
+  (* decode_subl_rr *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_subl_rr.
+  unfold RelocBinDecode.decode_subl_rr in HDecode.
+  simpl in HDecode.
+  monadInv HDecode.
+  simpl.
+  destruct bytes; inversion EQ.
+  simpl.
+  rewrite EQ1.
+  rewrite EQ0.
+  simpl.
+  inversion EQ2. auto.
+  (* decode_movl_ri *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_movl_ri.
+  unfold RelocBinDecode.decode_movl_ri in HDecode; simpl in HDecode.
+  monadInv HDecode.
+  simpl.
+  rewrite EQ.
+  rewrite(decode_int_app x _ _ EQ1).
+  simpl.
+  do 4 (destruct bytes; inversion EQ0).
+  simpl. auto.
+  (* decode_8b *)
+  destruct Byte.eq_dec.
+  rewrite(decode_8b_app _ _ _ _ _ x H2).
+  auto.
+  (* decode_movl_mr *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_movl_mr.
+  unfold RelocBinDecode.decode_movl_mr in H2.
+  monadInv H2.
+  rewrite(decode_addrmode_size_app  _ _ x EQ).
+  simpl.
+  destruct x1.
+  rewrite(decode_addrmode_app _ _ _ _ _ x EQ1).
+  simpl. auto.
 
-
-Admitted.
+  (* decode_testl_rr *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_testl_rr.
+  unfold RelocBinDecode.decode_testl_rr in HDecode.
+  monadInv HDecode.
+  inversion EQ. destruct bytes; inversion H3.
+  simpl.
+  rewrite EQ1.
+  simpl. inversion EQ0. auto.
+  (* Pret *)
+  destruct Byte.eq_dec.
+  inversion HDecode. auto.
+  (* imull_ri *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_imull_ri.
+  unfold RelocBinDecode.decode_imull_ri in HDecode.
+  monadInv HDecode.
+  inversion EQ.
+  destruct bytes;inversion H3.
+  simpl.
+  simpl in EQ1. rewrite EQ1.
+  simpl.
+  inversion EQ0.
+  rewrite (decode_int_app x _ _ EQ2).
+  simpl.
+  inversion EQ3.
+  rewrite<- H5.
+  do 4 (destruct bytes;inversion H6).
+  simpl.
+  auto.
+  (* cmpl_rr *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_cmpl_rr.
+  unfold RelocBinDecode.decode_cmpl_rr in HDecode.
+  monadInv HDecode.
+  inversion EQ. destruct bytes; inversion H3.
+  simpl.
+  rewrite EQ1. simpl.
+  inversion EQ0.
+  auto.
+  (* Pcltd *)
+  destruct Byte.eq_dec.
+  inversion HDecode. auto.
+  (* idivl *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_idivl.
+  unfold RelocBinDecode.decode_idivl in HDecode.
+  monadInv HDecode.
+  inversion EQ. destruct bytes; inversion H3.
+  simpl.
+  simpl in EQ1. rewrite EQ1.
+  simpl. inversion EQ0. auto.
+  (* sall *)
+  destruct Byte.eq_dec.
+  unfold RelocBinDecode.decode_sall_ri.
+  unfold RelocBinDecode.decode_sall_ri in HDecode.
+  simpl in HDecode.
+  monadInv HDecode.
+  destruct bytes; inversion EQ.
+  simpl.
+  rewrite EQ1. simpl.
+  inversion EQ0.
+  unfold RelocBinDecode.decode_int_n in EQ2.
+  monadInv EQ2.
+  unfold RelocBinDecode.decode_int_n.
+  destruct x2;inversion EQ3.
+  simpl.
+  inversion EQ4.
+  monadInv H4.
+  destruct t.
+  destruct x.
+  simpl. inversion EQ2. auto.
+  simpl. inversion EQ2. auto.
+  simpl. inversion EQ2. auto.
+  inversion HDecode.
+Qed.
 
 
 
