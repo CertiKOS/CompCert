@@ -80,7 +80,8 @@ Proof.
     simpl. omega.
   }
   rewrite HTailB. omega.
-  admit.    
+  admit.
+  (* easy *)
 Admitted.
 
 Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
@@ -133,17 +134,55 @@ Proof.
   simpl.
   omega.
   auto.
+  (* easy *)
 Admitted.
 
 Lemma decode_int_app: forall l bytes x,
     RelocBinDecode.decode_int_n bytes 4 = OK x
     ->RelocBinDecode.decode_int_n (bytes++l) 4 = OK x.
-Admitted.
+Proof.
+  intros l bytes x HDecode.
+  unfold RelocBinDecode.decode_int_n.
+  unfold RelocBinDecode.decode_int_n in HDecode.
+  monadInv HDecode.
+  simpl in EQ.
+  do 4(destruct bytes; inversion EQ).
+  simpl.
+  destruct bytes;
+  simpl; destruct l; simpl; inversion H3; auto.
+Qed.
 
+Lemma decode_int_1_app: forall l bytes x,
+    RelocBinDecode.decode_int_n bytes 1 = OK x
+    ->RelocBinDecode.decode_int_n (bytes++l) 1 = OK x.
+Proof.
+  intros l bytes x HDecode.
+  unfold RelocBinDecode.decode_int_n.
+  unfold RelocBinDecode.decode_int_n in HDecode.
+  monadInv HDecode.
+  simpl in EQ.
+  destruct bytes; inversion EQ.
+  simpl.
+  destruct bytes;
+  simpl; destruct l; simpl; inversion H0; auto.
+Qed.
+  
 Lemma remove_first_n_app: forall {A} (bytes:list A) n x l,
     RelocBinDecode.remove_first_n bytes n = OK x
     ->RelocBinDecode.remove_first_n (bytes++l) n = OK(x++l).
-Admitted.
+Proof.
+  intros A bytes n x l HDecode.
+  revert dependent bytes.
+  induction n.
+  simpl. intros bytes HDecode. inversion HDecode. auto.
+  intros bytes HDecode.
+  simpl in HDecode.
+  destruct bytes; inversion HDecode.
+  generalize(IHn _ HDecode).
+  simpl. auto.
+Qed.
+
+
 
 
 Lemma decode_0f_app: forall bytes h t l,
@@ -196,12 +235,166 @@ Qed.
 Lemma decode_addrmode_size_app: forall bytes x l,
     RelocBinDecode.decode_addrmode_size bytes = OK x
     -> RelocBinDecode.decode_addrmode_size (bytes++l) = OK x.
-Admitted.
+Proof.
+  intros bytes x l HDecode.
+  unfold RelocBinDecode.decode_addrmode_size.
+  unfold RelocBinDecode.decode_addrmode_size in HDecode.
+  destruct bytes;inversion HDecode.
+  simpl.
+  auto.
+Qed.
+
+Lemma addrmode_SIB_parse_base_app: forall mode base bs mc x l,
+    RelocBinDecode.addrmode_SIB_parse_base mode base bs mc = OK x ->
+    RelocBinDecode.addrmode_SIB_parse_base mode base bs (mc++l) = OK x.
+Proof.
+  intros mode base bs mc x l HDecode.
+  unfold RelocBinDecode.addrmode_SIB_parse_base.
+  unfold RelocBinDecode.addrmode_SIB_parse_base in HDecode.
+  destruct Byte.eq_dec.
+  destruct Byte.eq_dec.
+  monadInv HDecode.
+  rewrite (decode_int_app l _ _ EQ). simpl. auto.
+  destruct Byte.eq_dec.
+  monadInv HDecode.
+  rewrite(decode_int_1_app l _ _ EQ). simpl. auto.
+  destruct Byte.eq_dec.
+  monadInv HDecode.
+  rewrite (decode_int_app l _ _ EQ). simpl. auto.
+  inversion HDecode.
+  destruct Byte.eq_dec.
+  auto.
+  destruct Byte.eq_dec.
+  monadInv HDecode.
+  rewrite(decode_int_1_app l _ _ EQ). simpl; auto.
+  destruct Byte.eq_dec; inversion HDecode.
+  monadInv HDecode.
+  rewrite(decode_int_app l _ _ EQ). simpl. auto.
+Qed.
+
+Lemma addrmode_parse_SIB_app:forall rtbl ofs x1 x2 bytes a l1 l,
+    RelocBinDecode.addrmode_parse_SIB rtbl ofs x1 x2 bytes = OK (a,l1)->
+    RelocBinDecode.addrmode_parse_SIB rtbl ofs x1 x2 (bytes++l) = OK (a, l1++l).
+Proof.
+  intros rtbl ofs x1 x2 bytes a l1 l HDecode.
+  unfold RelocBinDecode.addrmode_parse_SIB.
+  unfold RelocBinDecode.addrmode_parse_SIB in HDecode.
+  monadInv HDecode.
+  rewrite EQ0. simpl.
+  rewrite EQ. simpl.
+  rewrite EQ1. simpl.
+  rewrite (addrmode_SIB_parse_base_app _ _ _ _ _ l EQ2).
+  simpl.
+  destruct (RelocBinDecode.find_ofs_in_rtbl rtbl ofs).
+  destruct Byte.eq_dec.
+  destruct Byte.eq_dec.
+  monadInv EQ4.
+  simpl in EQ3.
+  do 4 (destruct bytes; inversion EQ3).
+  simpl.
+  auto.
+  inversion EQ4. auto.
+  inversion EQ4. auto.
+  destruct Byte.eq_dec.
+  destruct Byte.eq_dec.
+  monadInv EQ4.
+  simpl in EQ3.
+  do 4 (destruct bytes; inversion EQ3).
+  simpl.
+  auto.
+  1-2: inversion EQ4; auto.
+Qed.
 
 Lemma decode_addrmode_app:forall rtbl_ofs_map ofs bytes p l l1,
     RelocBinDecode.decode_addrmode rtbl_ofs_map ofs bytes = OK (p, l)
     ->RelocBinDecode.decode_addrmode rtbl_ofs_map ofs (bytes++l1) = OK (p, l++l1).
-Admitted.
+Proof.
+  intros rtbl_ofs_map ofs bytes p l l1 HDecode.
+  unfold  RelocBinDecode.decode_addrmode.
+  unfold  RelocBinDecode.decode_addrmode in HDecode.
+  destruct bytes; inversion HDecode.
+  monadInv HDecode.
+  simpl.
+  rewrite EQ.
+  simpl.
+  destruct Byte.eq_dec.
+  monadInv EQ0.
+  rewrite EQ1.
+  simpl. destruct Byte.eq_dec.
+  monadInv EQ2.
+  simpl in EQ2.
+  destruct bytes; inversion EQ2. simpl.
+  inversion EQ0.
+  destruct x3.
+  rewrite (addrmode_parse_SIB_app _ _ _ _ _ _ _ l1 EQ3).
+  simpl. auto.
+  destruct Byte.eq_dec.
+  monadInv EQ2.
+  rewrite(decode_int_app l1 _ _ EQ0).
+  simpl.
+  destruct(RelocBinDecode.find_ofs_in_rtbl rtbl_ofs_map ofs).
+  monadInv EQ3.
+  simpl in EQ2.
+  do 4 (destruct bytes; inversion EQ2).
+  simpl.
+  auto.
+  monadInv EQ3.
+  simpl in EQ2.
+  do 4(destruct bytes; inversion EQ2).
+  simpl.
+  auto.
+  inversion EQ2. auto.
+  destruct Byte.eq_dec.
+  monadInv EQ0.
+  rewrite EQ1.
+  simpl.
+  destruct Byte.eq_dec.
+  monadInv EQ2.
+  simpl in EQ2.
+  destruct bytes; inversion EQ2. simpl.
+  destruct x3.
+  inversion EQ3.
+  simpl in EQ0.
+  inversion EQ0.
+  rewrite(addrmode_parse_SIB_app _ _ _ _ _ _ _ l1 EQ3).
+  simpl.
+  simpl in EQ4.
+  destruct l0;inversion EQ4. simpl. auto.
+  monadInv EQ2.
+  rewrite (decode_int_1_app l1 _ _ EQ0).
+  simpl.
+  simpl in EQ2.
+  destruct bytes; inversion EQ2.
+  simpl.
+  auto.
+
+  destruct Byte.eq_dec.
+  monadInv EQ0.
+  rewrite EQ1. simpl.
+  destruct Byte.eq_dec.
+  monadInv EQ2.
+  simpl in EQ2.
+  destruct bytes; inversion EQ2.
+  simpl.
+  simpl in EQ0. inversion EQ0.
+  destruct x3.
+  rewrite(addrmode_parse_SIB_app _ _ _ _ _ _ _ l1 EQ3).
+  simpl.
+  simpl in EQ4.
+  do 4 (destruct l0;inversion EQ4).
+  simpl.
+  auto.
+  monadInv EQ2.
+  rewrite(decode_int_app l1 _ _ EQ0).
+  simpl.
+  destruct (RelocBinDecode.find_ofs_in_rtbl rtbl_ofs_map ofs).
+  1-2: monadInv EQ3;
+    simpl in EQ2;
+    do 4 (destruct bytes; inversion EQ2);
+    simpl;
+    auto.
+  inversion EQ0.
+Qed.
 
 
 Lemma decode_81_app: forall bytes h t l,
