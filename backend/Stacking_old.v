@@ -10,12 +10,12 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-(** Layout of activation records; translation from Linear to Mach. *)
+(** Layout of activation records; translation from Linear to Mach_old. *)
 
 Require Import Coqlib Errors.
-Require Import Integers AST.
-Require Import Op Locations Linear Mach.
-Require Import Bounds Conventions Stacklayout Lineartyping.
+Require Import Integers AST_old.
+Require Import Op_old Locations_old Linear_old Mach_old.
+Require Import Bounds_old Conventions_old Stacklayout_old Lineartyping_old.
 
 (** * Layout of activation records *)
 
@@ -32,41 +32,41 @@ Definition offset_arg (x: Z) := fe_ofs_arg + 4 * x.
   store in the frame the values of callee-save registers [rl],
   starting at offset [ofs]. *)
 
-Fixpoint save_callee_save_rec (rl: list mreg) (ofs: Z) (k: Mach.code) :=
+Fixpoint save_callee_save_rec (rl: list mreg) (ofs: Z) (k: Mach_old.code) :=
   match rl with
   | nil => k
   | r :: rl =>
       let ty := mreg_type r in
-      let sz := AST.typesize ty in
+      let sz := AST_old.typesize ty in
       let ofs1 := align ofs sz in
       Msetstack r (Ptrofs.repr ofs1) ty :: save_callee_save_rec rl (ofs1 + sz) k
   end.
 
-Definition save_callee_save (fe: frame_env) (k: Mach.code) :=
+Definition save_callee_save (fe: frame_env) (k: Mach_old.code) :=
   save_callee_save_rec fe.(fe_used_callee_save) fe.(fe_ofs_callee_save) k.
 
 (** [restore_callee_save fe k] adds before [k] the instructions that
   re-load from the frame the values of callee-save registers used by the
   current function, restoring these registers to their initial values. *)
 
-Fixpoint restore_callee_save_rec (rl: list mreg) (ofs: Z) (k: Mach.code) :=
+Fixpoint restore_callee_save_rec (rl: list mreg) (ofs: Z) (k: Mach_old.code) :=
   match rl with
   | nil => k
   | r :: rl =>
       let ty := mreg_type r in
-      let sz := AST.typesize ty in
+      let sz := AST_old.typesize ty in
       let ofs1 := align ofs sz in
       Mgetstack (Ptrofs.repr ofs1) ty r :: restore_callee_save_rec rl (ofs1 + sz) k
   end.
 
-Definition restore_callee_save (fe: frame_env) (k: Mach.code) :=
+Definition restore_callee_save (fe: frame_env) (k: Mach_old.code) :=
   restore_callee_save_rec fe.(fe_used_callee_save) fe.(fe_ofs_callee_save) k.
 
 (** * Code transformation. *)
 
 (** Translation of operations and addressing mode.
   The Cminor stack data block starts at offset 0 in Linear,
-  but at offset [fe.(fe_stack_data)] in Mach.
+  but at offset [fe.(fe_stack_data)] in Mach_old.
   Operations and addressing mode that are relative to the stack pointer
   must therefore be offset by [fe.(fe_stack_data)] to preserve their
   behaviour. *)
@@ -109,7 +109,7 @@ Fixpoint transl_builtin_arg (fe: frame_env) (a: builtin_arg loc) : builtin_arg m
   before the function returns. *)
 
 Definition transl_instr
-    (fe: frame_env) (i: Linear.instruction) (k: Mach.code) : Mach.code :=
+    (fe: frame_env) (i: Linear_old.instruction) (k: Mach_old.code) : Mach_old.code :=
   match i with
   | Lgetstack sl ofs ty r =>
       match sl with
@@ -163,15 +163,15 @@ Definition transl_instr
   offsets. *)
 
 Definition transl_code
-    (fe: frame_env) (il: list Linear.instruction) : Mach.code :=
+    (fe: frame_env) (il: list Linear_old.instruction) : Mach_old.code :=
   list_fold_right (transl_instr fe) il nil.
 
-Definition transl_body (f: Linear.function) (fe: frame_env) :=
-  save_callee_save fe (transl_code fe f.(Linear.fn_code)).
+Definition transl_body (f: Linear_old.function) (fe: frame_env) :=
+  save_callee_save fe (transl_code fe f.(Linear_old.fn_code)).
 
 Local Open Scope string_scope.
 
-Definition transf_function (f: Linear.function) : res Mach.function :=
+Definition transf_function (f: Linear_old.function) : res Mach_old.function :=
   let fe := make_env (function_bounds f) in
   if negb (wt_function f) then
     Error (msg "Ill-formed Linear code")
@@ -180,15 +180,15 @@ Definition transf_function (f: Linear.function) : res Mach.function :=
        else
          let b := (function_bounds f) in
          let fe := make_env b in
-         OK (Mach.mkfunction
-               (Linear.fn_sig f)
+         OK (Mach_old.mkfunction
+               (Linear_old.fn_sig f)
                (transl_body f fe)
                (fe_size fe)
                (Ptrofs.repr (fe_ofs_retaddr fe))
                (fe_stack_data fe, fe_stack_data fe + bound_stack_data b)).
 
-Definition transf_fundef (f: Linear.fundef) : res Mach.fundef :=
-  AST.transf_partial_fundef transf_function f.
+Definition transf_fundef (f: Linear_old.fundef) : res Mach_old.fundef :=
+  AST_old.transf_partial_fundef transf_function f.
 
-Definition transf_program (p: Linear.program) : res Mach.program :=
+Definition transf_program (p: Linear_old.program) : res Mach_old.program :=
   transform_partial_program transf_fundef p.

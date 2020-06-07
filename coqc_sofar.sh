@@ -86,6 +86,12 @@ BACKEND=(
 	./backend/CleanupLabels.v
 	./backend/CleanupLabelsproof.v
 	./backend/Debugvar.v
+	./backend/Debugvarproof.v
+	./backend/Bounds.v
+	./x86/Stacklayout.v
+	./backend/Mach.v
+	./backend/Lineartyping.v
+	./backend/Stacking.v
 	)
 
 FRONTEND=(

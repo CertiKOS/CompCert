@@ -13,18 +13,18 @@
 (** Type-checking Linear code. *)
 
 Require Import Coqlib.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
-Require Import Values.
-Require Import Globalenvs.
-Require Import Memory.
-Require Import Events.
-Require Import Op.
-Require Import Machregs.
-Require Import Locations.
-Require Import Conventions.
-Require Import LTL.
-Require Import Linear.
+Require Import Values_old.
+Require Import Globalenvs_old.
+Require Import Memory_old.
+Require Import Events_old.
+Require Import Op_old.
+Require Import Machregs_old.
+Require Import Locations_old.
+Require Import Conventions_old.
+Require Import LTL_old.
+Require Import Linear_old.
 
 (** The rules are presented as boolean-valued functions so that we
   get an executable type-checker for free. *)
@@ -205,8 +205,12 @@ Definition wt_fundef (fd: fundef) :=
   | External ef => True
   end.
 
+Section WITHINITLS.
+Variable init_ls: locset.
+
 Inductive wt_callstack: list stackframe -> Prop :=
   | wt_callstack_nil:
+      wt_locset init_ls ->
       wt_callstack nil
   | wt_callstack_cons: forall f sp rs c s
         (WTSTK: wt_callstack s)
@@ -216,37 +220,36 @@ Inductive wt_callstack: list stackframe -> Prop :=
       wt_callstack (Stackframe f sp rs c :: s).
 
 Lemma wt_parent_locset:
-  forall s, wt_callstack s -> wt_locset (parent_locset s).
+  forall s, wt_callstack s -> wt_locset (parent_locset init_ls s).
 Proof.
   induction 1; simpl.
-- apply wt_init.
+- auto.
 - auto.
 Qed.
 
-Inductive wt_state: state -> Prop :=
+Inductive wt_state `{memory_model_ops: Mem.MemoryModelOps}: state -> Prop :=
   | wt_regular_state: forall s f sp c rs m
         (WTSTK: wt_callstack s )
         (WTF: wt_function f = true)
         (WTC: wt_code f c = true)
         (WTRS: wt_locset rs),
       wt_state (State s f sp c rs m)
-  | wt_call_state: forall s fd rs m (*SACC:*)sz
+  | wt_call_state: forall s fd rs m sz
         (WTSTK: wt_callstack s)
         (WTFD: wt_fundef fd)
         (WTRS: wt_locset rs),
-      wt_state (Callstate s fd rs m (*SACC:*)sz)
+      wt_state (Callstate s fd rs m sz)
   | wt_return_state: forall s rs m
         (WTSTK: wt_callstack s)
         (WTRS: wt_locset rs),
       wt_state (Returnstate s rs m).
 
+End WITHINITLS.
+
 (** Preservation of state typing by transitions *)
 
-(*SACC:*)
-Section STACK_WRAPPER.
-
-(*SACC:*)
-Variable fn_stack_requirements: ident -> Z.
+Section WITHEXTERNALCALLS.
+Context `{external_calls_prf: ExternalCalls}.
 
 Section SOUNDNESS.
 
@@ -254,13 +257,13 @@ Variable prog: program.
 Let ge := Genv.globalenv prog.
 
 Hypothesis wt_prog:
-  forall i fd, In (i, Gfun fd) prog.(prog_defs) -> wt_fundef fd.
+  forall i fd, In (i, Some (Gfun fd)) prog.(prog_defs) -> wt_fundef fd.
 
 Lemma wt_find_function:
   forall ros rs f, find_function ge ros rs = Some f -> wt_fundef f.
 Proof.
   intros.
-  assert (X: exists i, In (i, Gfun f) prog.(prog_defs)).
+  assert (X: exists i, In (i, Some (Gfun f)) prog.(prog_defs)).
   {
     destruct ros as [r | s]; simpl in H.
     eapply Genv.find_funct_inversion; eauto.
@@ -270,8 +273,13 @@ Proof.
   destruct X as [i IN]. eapply wt_prog; eauto.
 Qed.
 
+Section WITHINITLS.
+
+Variable fn_stack_requirements: ident -> Z.
+Variable init_ls: locset.
+
 Theorem step_type_preservation:
-  forall S1 t S2, step (*SACC:*)fn_stack_requirements ge S1 t S2 -> wt_state S1 -> wt_state S2.
+  forall S1 t S2, step fn_stack_requirements init_ls ge S1 t S2 -> wt_state init_ls S1 -> wt_state init_ls S2.
 Proof.
 Local Opaque mreg_type.
   induction 1; intros WTS; inv WTS.
@@ -347,14 +355,19 @@ Local Opaque mreg_type.
 - (* external function *)
   econstructor. auto. apply wt_setpair; auto.
   eapply external_call_well_typed; eauto.
+  apply wt_undef_regs; auto.
 - (* return *)
   inv WTSTK. econstructor; eauto.
 Qed.
 
+End WITHINITLS.
+
+Variable fn_stack_requirements: ident -> Z. 
 Theorem wt_initial_state:
-  forall S, initial_state (*SACC:*)fn_stack_requirements prog S -> wt_state S.
+  forall S, initial_state fn_stack_requirements prog S -> wt_state (Locmap.init Vundef) S.
 Proof.
   induction 1. econstructor. constructor.
+  apply wt_init.
   unfold ge0 in H1. exploit Genv.find_funct_ptr_inversion; eauto.
   intros [id IN]. eapply wt_prog; eauto.
   apply wt_init.
@@ -362,13 +375,13 @@ Qed.
 
 End SOUNDNESS.
 
-End STACK_WRAPPER.
-
 (** Properties of well-typed states that are used in [Stackingproof]. *)
+
+Variable init_ls: locset.
 
 Lemma wt_state_getstack:
   forall s f sp sl ofs ty rd c rs m,
-  wt_state (State s f sp (Lgetstack sl ofs ty rd :: c) rs m) ->
+  wt_state init_ls (State s f sp (Lgetstack sl ofs ty rd :: c) rs m) ->
   slot_valid f sl ofs ty = true.
 Proof.
   intros. inv H. simpl in WTC; InvBooleans. auto.
@@ -376,7 +389,7 @@ Qed.
 
 Lemma wt_state_setstack:
   forall s f sp sl ofs ty r c rs m,
-  wt_state (State s f sp (Lsetstack r sl ofs ty :: c) rs m) ->
+  wt_state init_ls (State s f sp (Lsetstack r sl ofs ty :: c) rs m) ->
   slot_valid f sl ofs ty = true /\ slot_writable sl = true.
 Proof.
   intros. inv H. simpl in WTC; InvBooleans. intuition.
@@ -384,7 +397,7 @@ Qed.
 
 Lemma wt_state_tailcall:
   forall s f sp sg ros c rs m,
-  wt_state (State s f sp (Ltailcall sg ros :: c) rs m) ->
+  wt_state init_ls (State s f sp (Ltailcall sg ros :: c) rs m) ->
   size_arguments sg = 0.
 Proof.
   intros. inv H. simpl in WTC; InvBooleans. auto.
@@ -392,16 +405,18 @@ Qed.
 
 Lemma wt_state_builtin:
   forall s f sp ef args res c rs m,
-  wt_state (State s f sp (Lbuiltin ef args res :: c) rs m) ->
+  wt_state init_ls (State s f sp (Lbuiltin ef args res :: c) rs m) ->
   forallb (loc_valid f) (params_of_builtin_args args) = true.
 Proof.
   intros. inv H. simpl in WTC; InvBooleans. auto.
 Qed.
 
 Lemma wt_callstate_wt_regs:
-  forall s f rs m (*SACC:*)sz,
-  wt_state (Callstate s f rs m (*SACC:*)sz) ->
+  forall s f rs m sz,
+  wt_state init_ls (Callstate s f rs m sz) ->
   forall r, Val.has_type (rs (R r)) (mreg_type r).
 Proof.
   intros. inv H. apply WTRS.
 Qed.
+
+End WITHEXTERNALCALLS.

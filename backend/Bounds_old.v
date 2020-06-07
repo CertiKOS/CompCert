@@ -15,11 +15,11 @@
 Require Import FSets FSetAVL.
 Require Import Coqlib Ordered.
 Require Intv.
-Require Import AST.
-Require Import Op.
-Require Import Machregs Locations.
-Require Import Linear.
-Require Import Conventions.
+Require Import AST_old.
+Require Import Op_old.
+Require Import Machregs_old Locations_old.
+Require Import Linear_old.
+Require Import Conventions_old.
 
 Module RegOrd := OrderedIndexed (IndexedMreg).
 Module RegSet := FSetAVL.Make (RegOrd).
@@ -434,7 +434,7 @@ Fixpoint size_callee_save_area_rec (l: list mreg) (ofs: Z) : Z :=
   | nil => ofs
   | r :: l =>
       let ty := mreg_type r in
-      let sz := AST.typesize ty in
+      let sz := AST_old.typesize ty in
       size_callee_save_area_rec l (align ofs sz + sz)
   end.
 
@@ -448,8 +448,8 @@ Local Opaque mreg_type.
   induction l as [ | r l]; intros; simpl.
 - omega.
 - eapply Zle_trans. 2: apply IHl. 
-  generalize (AST.typesize_pos (mreg_type r)); intros.
-  apply Zle_trans with (align ofs (AST.typesize (mreg_type r))). 
+  generalize (AST_old.typesize_pos (mreg_type r)); intros.
+  apply Zle_trans with (align ofs (AST_old.typesize (mreg_type r))). 
   apply align_le; auto.
   omega.
 Qed.
@@ -466,8 +466,7 @@ Qed.
 
 Record frame_env : Type := mk_frame_env {
   fe_size: Z;
-(*SACC: remove stack link and use stack abstraction instead*)
-(*fe_ofs_link: Z;*)
+  (* fe_ofs_link: Z; *)
   fe_ofs_retaddr: Z;
   fe_ofs_local: Z;
   fe_ofs_callee_save: Z;

@@ -17,7 +17,7 @@ Require Import Integers AST.
 Require Import Op Locations Linear Mach.
 Require Import Bounds Conventions Stacklayout Lineartyping.
 
-(** * Layout of activation records *)
+(** * Layout of activation records *) 
 
 (** The machine- and ABI-dependent aspects of the layout are defined
   in module [Stacklayout]. *)
@@ -182,7 +182,7 @@ Definition transf_function (f: Linear.function) : res Mach.function :=
          f.(Linear.fn_sig)
          (transl_body f fe)
          fe.(fe_size)
-         (Ptrofs.repr fe.(fe_ofs_link))
+         (*SACC: comments this*)(*(Ptrofs.repr fe.(fe_ofs_link))*)
          (Ptrofs.repr fe.(fe_ofs_retaddr))).
 
 Definition transf_fundef (f: Linear.fundef) : res Mach.fundef :=

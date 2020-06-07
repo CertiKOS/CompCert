@@ -1104,7 +1104,6 @@ Proof.
   intros m1 m1' m2 j P fi b b' delta n FB INVAR MINJ NIN fa finone (* PUB *) fablocks fasize
          RSB1 PERM0 PERM1 PERM2 UNIQ fa' fa'eq TTNP SEQ.
   destruct MINJ as (MINJ & PM & DISJ).
-  Check Mem.record_push_inject_flat.
   edestruct (Mem.record_push_inject_flat _ _ _ MINJ fa fa') as (m2' & RSB2 & MINJ'); simpl in *.
   - setoid_rewrite Forall_forall.  intros. destruct x.  simpl in *.
     rewrite fablocks in H. simpl in H. destruct H; try easy. inv H.

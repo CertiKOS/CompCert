@@ -10,21 +10,21 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-(** Correctness proof for the translation from Linear to Mach. *)
+(** Correctness proof for the translation from Linear to Mach_old. *)
 
 (** This file proves semantic preservation for the [Stacking] pass. *)
 
 Require Import Coqlib Errors.
-Require Import Integers AST Linking.
+Require Import Integers AST_old Linking_old.
 Require Import Setoid.
-Require Import Values Memory Separation Events Globalenvs Smallstep.
-Require Import LTL Op Locations Linear Mach.
-Require Import Bounds Conventions Stacklayout Lineartyping.
-Require Import Stacking.
+Require Import Values_old Memory_old Separation_old Events_old Globalenvs_old Smallstep_old.
+Require Import LTL_old Op_old Locations_old Linear_old Mach_old.
+Require Import Bounds_old Conventions_old Stacklayout_old Lineartyping_old.
+Require Import Stacking_old.
 
 Local Open Scope sep_scope.
 
-Definition match_prog (p: Linear.program) (tp: Mach.program) :=
+Definition match_prog (p: Linear_old.program) (tp: Mach_old.program) :=
   match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
@@ -36,19 +36,19 @@ Qed.
 (** * Basic properties of the translation *)
 
 Lemma typesize_typesize:
-  forall ty, AST.typesize ty = 4 * Locations.typesize ty.
+  forall ty, AST_old.typesize ty = 4 * Locations_old.typesize ty.
 Proof.
   destruct ty; auto.
 Qed.
 
 Remark size_type_chunk:
-  forall ty, size_chunk (chunk_of_type ty) = AST.typesize ty.
+  forall ty, size_chunk (chunk_of_type ty) = AST_old.typesize ty.
 Proof.
   destruct ty; reflexivity.
 Qed.
 
 Remark align_type_chunk:
-  forall ty, align_chunk (chunk_of_type ty) = 4 * Locations.typealign ty.
+  forall ty, align_chunk (chunk_of_type ty) = 4 * Locations_old.typealign ty.
 Proof.
   destruct ty; reflexivity.
 Qed.
@@ -78,15 +78,15 @@ Section PRESERVATION.
   Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
 
-Variable return_address_offset: Mach.function -> Mach.code -> ptrofs -> Prop.
+Variable return_address_offset: Mach_old.function -> Mach_old.code -> ptrofs -> Prop.
 
 Hypothesis return_address_offset_exists:
   forall f sg ros c,
   is_tail (Mcall sg ros :: c) (fn_code f) ->
   exists ofs, return_address_offset f c ofs.
 
-Variable prog: Linear.program.
-Variable tprog: Mach.program.
+Variable prog: Linear_old.program.
+Variable tprog: Mach_old.program.
 Hypothesis TRANSF: match_prog prog tprog.
 Let ge := Genv.globalenv prog.
 Let tge := Genv.globalenv tprog.
@@ -94,7 +94,7 @@ Let tge := Genv.globalenv tprog.
 Section WITHINITSP.
 
 Variables init_ra: val.
-Let step := Mach.step init_ra return_address_offset invalidate_frame1.
+Let step := Mach_old.step init_ra return_address_offset invalidate_frame1.
 
 Opaque bound_outgoing bound_local bound_stack_data Z.mul Z.add.
 
@@ -103,15 +103,15 @@ Transparent bound_outgoing bound_local bound_stack_data Z.mul Z.add.
 
 Section FRAME_PROPERTIES.
 
-Variable f: Linear.function.
+Variable f: Linear_old.function.
 Let b := function_bounds f.
 Let fe := make_env b.
-Variable tf: Mach.function.
+Variable tf: Mach_old.function.
 Hypothesis TRANSF_F: transf_function f = OK tf.
 
 Lemma unfold_transf_function:
-  tf = Mach.mkfunction
-         f.(Linear.fn_sig)
+  tf = Mach_old.mkfunction
+         f.(Linear_old.fn_sig)
          (transl_body f fe)
          fe.(fe_size)
          (* (Ptrofs.repr fe.(fe_ofs_link)) *)
@@ -144,7 +144,7 @@ Proof.
 Qed.
 
 Remark bound_stack_data_stacksize:
-  f.(Linear.fn_stacksize) <= b.(bound_stack_data).
+  f.(Linear_old.fn_stacksize) <= b.(bound_stack_data).
 Proof.
   unfold b, function_bounds, bound_stack_data. apply Zmax1.
 Qed.
@@ -461,7 +461,7 @@ Fixpoint contains_callee_saves (j: meminj) (sp: block) (pos: Z) (rl: list mreg) 
   | nil => pure True
   | r :: rl =>
       let ty := mreg_type r in
-      let sz := AST.typesize ty in
+      let sz := AST_old.typesize ty in
       let pos1 := align pos sz in
       contains (chunk_of_type ty) sp pos1 (fun v => Val.inject j (ls (R r)) v)
       ** contains_callee_saves j sp (pos1 + sz) rl ls
@@ -701,7 +701,7 @@ Qed.
 Corollary frame_undef_regs:
   forall j sp ls ls0 parent retaddr m P rl,
   m |= frame_contents j sp ls ls0 parent retaddr ** P ->
-  m |= frame_contents j sp (LTL.undef_regs rl ls) ls0 parent retaddr ** P.
+  m |= frame_contents j sp (LTL_old.undef_regs rl ls) ls0 parent retaddr ** P.
 Proof.
 Local Opaque sepconj.
   induction rl; simpl; intros.
@@ -765,7 +765,7 @@ Record agree_locs (ls ls0: locset) : Prop :=
         corresponding Outgoing stack slots in the caller *)
     agree_incoming:
        forall ofs ty,
-       In (S Incoming ofs ty) (regs_of_rpairs (loc_parameters f.(Linear.fn_sig))) ->
+       In (S Incoming ofs ty) (regs_of_rpairs (loc_parameters f.(Linear_old.fn_sig))) ->
        ls (S Incoming ofs ty) = ls0 (S Outgoing ofs ty)
 }.
 
@@ -857,7 +857,7 @@ Qed.
 Lemma agree_regs_undef_regs:
   forall j rl ls rs,
   agree_regs j ls rs ->
-  agree_regs j (LTL.undef_regs rl ls) (Mach.undef_regs rl rs).
+  agree_regs j (LTL_old.undef_regs rl ls) (Mach_old.undef_regs rl rs).
 Proof.
   induction rl; simpl; intros.
   auto.
@@ -945,7 +945,7 @@ Lemma agree_locs_undef_regs:
   forall ls0 regs ls,
   agree_locs ls ls0 ->
   (forall r, In r regs -> mreg_within_bounds b r) ->
-  agree_locs (LTL.undef_regs regs ls) ls0.
+  agree_locs (LTL_old.undef_regs regs ls) ls0.
 Proof.
   induction regs; simpl; intros.
   auto.
@@ -956,7 +956,7 @@ Lemma agree_locs_undef_locs_1:
   forall ls0 regs ls,
   agree_locs ls ls0 ->
   (forall r, In r regs -> is_callee_save r = false) ->
-  agree_locs (LTL.undef_regs regs ls) ls0.
+  agree_locs (LTL_old.undef_regs regs ls) ls0.
 Proof.
   intros. eapply agree_locs_undef_regs; eauto.
   intros. apply caller_save_reg_within_bounds. auto.
@@ -966,7 +966,7 @@ Lemma agree_locs_undef_locs:
   forall ls0 regs ls,
   agree_locs ls ls0 ->
   existsb is_callee_save regs = false ->
-  agree_locs (LTL.undef_regs regs ls) ls0.
+  agree_locs (LTL_old.undef_regs regs ls) ls0.
 Proof.
   intros. eapply agree_locs_undef_locs_1; eauto. 
   intros. destruct (is_callee_save r) eqn:CS; auto. 
@@ -1191,9 +1191,9 @@ Local Opaque mreg_type.
   split. auto.
   split. auto. apply Mem.unchanged_on_refl. 
 - set (ty := mreg_type r) in *.
-  set (sz := AST.typesize ty) in *.
+  set (sz := AST_old.typesize ty) in *.
   set (pos1 := align pos sz) in *.
-  assert (SZPOS: sz > 0) by (apply AST.typesize_pos).
+  assert (SZPOS: sz > 0) by (apply AST_old.typesize_pos).
   assert (SZREC: pos1 + sz <= size_callee_save_area_rec l (pos1 + sz)) by (apply size_callee_save_area_rec_incr).
   assert (POS1: pos <= pos1) by (apply align_le; auto).
   assert (AL1: (align_chunk (chunk_of_type ty) | pos1)).
@@ -1237,7 +1237,7 @@ Qed.
 End SAVE_CALLEE_SAVE.
 
 Remark LTL_undef_regs_same:
-  forall r rl ls, In r rl -> LTL.undef_regs rl ls (R r) = Vundef.
+  forall r rl ls, In r rl -> LTL_old.undef_regs rl ls (R r) = Vundef.
 Proof.
   induction rl; simpl; intros. contradiction.
   unfold Locmap.set. destruct (Loc.eq (R a) (R r)). auto.
@@ -1246,14 +1246,14 @@ Proof.
 Qed.
 
 Remark LTL_undef_regs_others:
-  forall r rl ls, ~In r rl -> LTL.undef_regs rl ls (R r) = ls (R r).
+  forall r rl ls, ~In r rl -> LTL_old.undef_regs rl ls (R r) = ls (R r).
 Proof.
   induction rl; simpl; intros. auto.
   rewrite Locmap.gso. apply IHrl. intuition. red. intuition.
 Qed.
 
 Remark LTL_undef_regs_slot:
-  forall sl ofs ty rl ls, LTL.undef_regs rl ls (S sl ofs ty) = ls (S sl ofs ty).
+  forall sl ofs ty rl ls, LTL_old.undef_regs rl ls (S sl ofs ty) = ls (S sl ofs ty).
 Proof.
   induction rl; simpl; intros. auto.
   rewrite Locmap.gso. apply IHrl. red; auto.
@@ -1261,7 +1261,7 @@ Qed.
 
 Remark undef_regs_type:
   forall ty l rl ls,
-  Val.has_type (ls l) ty -> Val.has_type (LTL.undef_regs rl ls l) ty.
+  Val.has_type (ls l) ty -> Val.has_type (LTL_old.undef_regs rl ls l) ty.
 Proof.
   induction rl; simpl; intros.
 - auto.
@@ -1329,7 +1329,7 @@ Lemma save_callee_save_correct:
   agree_callee_save ls ls0 ->
   agree_regs j ls rs ->
   is_stack_top (Mem.stack m) sp ->
-  let ls1 := LTL.undef_regs destroyed_at_function_entry (LTL.call_regs ls) in
+  let ls1 := LTL_old.undef_regs destroyed_at_function_entry (LTL_old.call_regs ls) in
   let rs1 := undef_regs destroyed_at_function_entry rs in
   exists rs', exists m',
      star step tge
@@ -1391,10 +1391,10 @@ Lemma function_prologue_correct:
   agree_regs j ls rs ->
   agree_callee_save ls ls0 ->
   (forall r, Val.has_type (ls (R r)) (mreg_type r)) ->
-  ls1 = LTL.undef_regs destroyed_at_function_entry (LTL.call_regs ls) ->
+  ls1 = LTL_old.undef_regs destroyed_at_function_entry (LTL_old.call_regs ls) ->
   rs1 = undef_regs destroyed_at_function_entry rs ->
-  Mem.alloc m1 0 f.(Linear.fn_stacksize) = (m2', sp) ->
-  Mem.record_stack_blocks m2' (make_singleton_frame_adt sp (Linear.fn_stacksize f) (fe_size fe)) = Some m2 ->
+  Mem.alloc m1 0 f.(Linear_old.fn_stacksize) = (m2', sp) ->
+  Mem.record_stack_blocks m2' (make_singleton_frame_adt sp (Linear_old.fn_stacksize f) (fe_size fe)) = Some m2 ->
   Val.has_type parent Tptr -> Val.has_type ra Tptr -> ra <> Vundef ->
   top_tframe_tc (Mem.stack m1') ->
   stack_equiv (Mem.stack m1) (Mem.stack m1') ->
@@ -1559,7 +1559,7 @@ Proof.
   apply agree_regs_inject_incr with j; auto.
   eapply Mem.record_stack_block_is_stack_top; eauto.
   red. simpl; auto.
-  replace (LTL.undef_regs destroyed_at_function_entry (call_regs ls)) with ls1 by auto.
+  replace (LTL_old.undef_regs destroyed_at_function_entry (call_regs ls)) with ls1 by auto.
   replace (undef_regs destroyed_at_function_entry rs) with rs1 by auto.
   simpl.
   clear SEP; intros (rs2 & m6' & SAVE_CS & SEP & PERMS & ST & GFI & AGREGS' & VALID & UNCH).
@@ -1701,9 +1701,9 @@ Local Opaque mreg_type.
   exists rs. intuition auto. apply star_refl.
 - (* inductive case *)
   set (ty := mreg_type r) in *.
-  set (sz := AST.typesize ty) in *.
+  set (sz := AST_old.typesize ty) in *.
   set (ofs1 := align ofs sz).
-  assert (SZPOS: sz > 0) by (apply AST.typesize_pos).
+  assert (SZPOS: sz > 0) by (apply AST_old.typesize_pos).
   assert (OFSLE: ofs <= ofs1) by (apply align_le; auto).
   assert (BOUND: mreg_within_bounds b r) by eauto.
   exploit contains_get_stack.
@@ -1769,7 +1769,7 @@ Lemma function_epilogue_correct:
   agree_regs j ls rs ->
   agree_locs ls ls0 ->
   j sp = Some(sp', fe.(fe_stack_data)) ->
-  Mem.free m sp 0 f.(Linear.fn_stacksize) = Some m1 ->
+  Mem.free m sp 0 f.(Linear_old.fn_stacksize) = Some m1 ->
   stack_equiv (Mem.stack m) (Mem.stack m') ->
   exists rs1, exists m1',
       Mem.loadbytesv Mptr m' (Val.offset_ptr (Vptr sp' Ptrofs.zero) tf.(fn_retaddr_ofs)) = Some ra
@@ -1830,11 +1830,11 @@ End FRAME_PROPERTIES.
 
 Variable init_ls: locset.
 
-Fixpoint stack_contents (j: meminj) (cs: list Linear.stackframe) (cs': list Mach.stackframe)
+Fixpoint stack_contents (j: meminj) (cs: list Linear_old.stackframe) (cs': list Mach_old.stackframe)
          (stk: stack): massert :=
   match cs, cs' with
   | nil, nil => pure True
-  | Linear.Stackframe f _ ls c :: cs, Mach.Stackframe fb sp' ra c' :: cs' =>
+  | Linear_old.Stackframe f _ ls c :: cs, Mach_old.Stackframe fb sp' ra c' :: cs' =>
     frame_contents f j sp' ls (parent_locset init_ls cs) (parent_sp stk) (parent_ra init_ra cs')
                    ** stack_contents j cs cs' (tl stk)
   | _, _ => pure False
@@ -1889,7 +1889,7 @@ Variable init_sg: signature.
   of the Linear and Mach call stacks. *)
 
 Inductive match_stacks (j: meminj) :
-  list Linear.stackframe -> list stackframe -> signature -> signature -> Prop :=
+  list Linear_old.stackframe -> list stackframe -> signature -> signature -> Prop :=
 | match_stacks_empty:
     forall sg
       (TP: tailcall_possible sg \/ sg = init_sg)
@@ -1898,7 +1898,7 @@ Inductive match_stacks (j: meminj) :
 | match_stacks_cons:
     forall f sp ls c cs fb sp' ra c' cs' sg trf
       isg
-      (TAIL: is_tail c (Linear.fn_code f))
+      (TAIL: is_tail c (Linear_old.fn_code f))
       (FINDF: Genv.find_funct_ptr tge fb = Some (Internal trf))
       (TRF: transf_function f = OK trf)
       (TRC: transl_code (make_env (function_bounds f)) c = c')
@@ -1910,9 +1910,9 @@ Inductive match_stacks (j: meminj) :
           In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
           slot_within_bounds (function_bounds f) Outgoing ofs ty)
       (BND: 4 * size_arguments sg <= Ptrofs.max_unsigned)
-      (STK: match_stacks j cs cs' (Linear.fn_sig f) isg),
+      (STK: match_stacks j cs cs' (Linear_old.fn_sig f) isg),
       match_stacks j
-                   (Linear.Stackframe f (Vptr sp Ptrofs.zero) ls c :: cs)
+                   (Linear_old.Stackframe f (Vptr sp Ptrofs.zero) ls c :: cs)
                    (Stackframe fb sp' ra c' :: cs')
                    sg isg.
 
@@ -2011,14 +2011,14 @@ Section LABELS.
 
 Remark find_label_save_callee_save:
   forall lbl l ofs k,
-  Mach.find_label lbl (save_callee_save_rec l ofs k) = Mach.find_label lbl k.
+  Mach_old.find_label lbl (save_callee_save_rec l ofs k) = Mach_old.find_label lbl k.
 Proof.
   induction l; simpl; auto.
 Qed.
 
 Remark find_label_restore_callee_save:
   forall lbl l ofs k,
-  Mach.find_label lbl (restore_callee_save_rec l ofs k) = Mach.find_label lbl k.
+  Mach_old.find_label lbl (restore_callee_save_rec l ofs k) = Mach_old.find_label lbl k.
 Proof.
   induction l; simpl; auto.
 Qed.
@@ -2031,8 +2031,8 @@ Qed.
 
 Lemma find_label_transl_code:
   forall fe lbl c,
-  Mach.find_label lbl (transl_code fe c) =
-    option_map (transl_code fe) (Linear.find_label lbl c).
+  Mach_old.find_label lbl (transl_code fe c) =
+    option_map (transl_code fe) (Linear_old.find_label lbl c).
 Proof.
   induction c; simpl; intros.
 - auto.
@@ -2048,8 +2048,8 @@ Qed.
 Lemma transl_find_label:
   forall f tf lbl c,
   transf_function f = OK tf ->
-  Linear.find_label lbl f.(Linear.fn_code) = Some c ->
-  Mach.find_label lbl tf.(Mach.fn_code) =
+  Linear_old.find_label lbl f.(Linear_old.fn_code) = Some c ->
+  Mach_old.find_label lbl tf.(Mach_old.fn_code) =
     Some (transl_code (make_env (function_bounds f)) c).
 Proof.
   intros. rewrite (unfold_transf_function _ _ H).  simpl.
@@ -2063,11 +2063,11 @@ End LABELS.
 
 Lemma find_label_tail:
   forall lbl c c',
-  Linear.find_label lbl c = Some c' -> is_tail c' c.
+  Linear_old.find_label lbl c = Some c' -> is_tail c' c.
 Proof.
   induction c; simpl.
   intros; discriminate.
-  intro c'. case (Linear.is_label lbl a); intros.
+  intro c'. case (Linear_old.is_label lbl a); intros.
   injection H; intro; subst c'. auto with coqlib.
   auto with coqlib.
 Qed.
@@ -2112,7 +2112,7 @@ Qed.
 Lemma is_tail_transf_function:
   forall f tf c,
   transf_function f = OK tf ->
-  is_tail c (Linear.fn_code f) ->
+  is_tail c (Linear_old.fn_code f) ->
   is_tail (transl_code (make_env (function_bounds f)) c) (fn_code tf).
 Proof.
   intros. rewrite (unfold_transf_function _ _ H). simpl.
@@ -2152,7 +2152,7 @@ Lemma function_ptr_translated:
 Proof (Genv.find_funct_ptr_transf_partial TRANSF).
 
 Lemma sig_preserved:
-  forall f tf, transf_fundef f = OK tf -> Mach.funsig tf = Linear.funsig f.
+  forall f tf, transf_fundef f = OK tf -> Mach_old.funsig tf = Linear_old.funsig f.
 Proof.
   intros until tf; unfold transf_fundef, transf_partial_fundef.
   destruct f; intros; monadInv H.
@@ -2164,7 +2164,7 @@ Lemma find_function_translated:
   forall j ls rs m ros f,
   agree_regs j ls rs ->
   m |= globalenv_inject ge j ->
-  Linear.find_function ge ros ls = Some f ->
+  Linear_old.find_function ge ros ls = Some f ->
   exists bf, exists tf,
      find_function_ptr tge ros rs = Some bf
   /\ Genv.find_funct_ptr tge bf = Some tf
@@ -2196,7 +2196,7 @@ Definition init_sp : val := current_sp init_stk.
 
 Definition init_args_mach j sg m' :=
   forall sl of ty,
-    List.In (Locations.S sl of ty) (regs_of_rpairs (loc_arguments sg)) ->
+    List.In (Locations_old.S sl of ty) (regs_of_rpairs (loc_arguments sg)) ->
     forall rs,
     exists v,
       extcall_arg rs m' init_sp (S sl of ty) v /\
@@ -2207,7 +2207,7 @@ Definition init_args_mach j sg m' :=
 Section EXTERNAL_ARGUMENTS.
 
 Variable j: meminj.
-Variable cs: list Linear.stackframe.
+Variable cs: list Linear_old.stackframe.
 Variable cs': list stackframe.
 Variable sg: signature.
 Variables bound bound': block.
@@ -2299,10 +2299,10 @@ End EXTERNAL_ARGUMENTS.
 
 Section BUILTIN_ARGUMENTS.
 
-Variable f: Linear.function.
+Variable f: Linear_old.function.
 Let b := function_bounds f.
 Let fe := make_env b.
-Variable tf: Mach.function.
+Variable tf: Mach_old.function.
 Hypothesis TRANSF_F: transf_function f = OK tf.
 Variable j: meminj.
 Variable g: frameinj.
@@ -2481,10 +2481,10 @@ Definition fn_stack_requirements (i: ident) : Z :=
 
 Variable init_m: mem.
 
-Inductive match_states: Linear.state -> Mach.state -> Prop :=
+Inductive match_states: Linear_old.state -> Mach_old.state -> Prop :=
 | match_states_intro:
     forall sg_ cs f sp c ls m cs' fb sp' rs m' j tf
-        (STACKS: match_stacks j cs cs' f.(Linear.fn_sig) sg_)
+        (STACKS: match_stacks j cs cs' f.(Linear_old.fn_sig) sg_)
         (TRANSL: transf_function f = OK tf)
         (FIND: Genv.find_funct_ptr tge fb = Some (Internal tf))
         (AGREGS: agree_regs j ls rs)
@@ -2496,18 +2496,18 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
         (INCR_init: inject_incr (Mem.flat_inj (Mem.nextblock init_m)) j)
         (INCR_sep: inject_separated (Mem.flat_inj (Mem.nextblock init_m)) j init_m init_m)
         (MACH: Ple (Mem.nextblock init_m) (Mem.nextblock m'))
-        (TAIL: is_tail c (Linear.fn_code f))
+        (TAIL: is_tail c (Linear_old.fn_code f))
         (SEP: m' |= frame_contents f j sp' ls (parent_locset init_ls cs) (parent_sp (Mem.stack m')) (parent_ra init_ra cs')
                  ** stack_contents j cs cs' (tl (Mem.stack m'))
                  ** (mconj (minjection j (flat_frameinj (length (Mem.stack m))) m) (minit_args_mach j sg_))
                  ** globalenv_inject ge j
         )
         (SE: stack_equiv (Mem.stack m) (Mem.stack m')),
-      match_states (Linear.State cs f (Vptr sp Ptrofs.zero) c ls m)
-                   (Mach.State cs' fb (Vptr sp' Ptrofs.zero) (transl_code (make_env (function_bounds f)) c) rs m')
+      match_states (Linear_old.State cs f (Vptr sp Ptrofs.zero) c ls m)
+                   (Mach_old.State cs' fb (Vptr sp' Ptrofs.zero) (transl_code (make_env (function_bounds f)) c) rs m')
   | match_states_call:
       forall sg_ cs f ls m cs' fb rs m' j tf sz
-        (STACKS: match_stacks j cs cs' (Linear.funsig f) sg_)
+        (STACKS: match_stacks j cs cs' (Linear_old.funsig f) sg_)
         (TRANSL: transf_fundef f = OK tf)
         (FIND: Genv.find_funct_ptr tge fb = Some tf)
         (SZEQ: exists i, Genv.invert_symbol tge fb = Some i /\ sz = fn_stack_requirements i) 
@@ -2523,7 +2523,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
                  ** globalenv_inject ge j)
         (SE: stack_equiv (Mem.stack m) (Mem.stack m'))
         (* (TTNP: top_tframe_no_perm (Mem.perm m') (Mem.stack m')) *),
-      match_states (Linear.Callstate cs f ls m sz) (Mach.Callstate cs' fb rs m')
+      match_states (Linear_old.Callstate cs f ls m sz) (Mach_old.Callstate cs' fb rs m')
   | match_states_return:
       forall sg_ cs ls m cs' rs m' j sg
         (STACKS: match_stacks j cs cs' sg sg_)
@@ -2538,7 +2538,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
                  ** (mconj (minjection j (flat_frameinj (length (Mem.stack m))) m) (minit_args_mach j sg_))
                  ** globalenv_inject ge j)
         (SE: stack_equiv (Mem.stack m) (Mem.stack m')),
-      match_states (Linear.Returnstate cs ls m) (Mach.Returnstate cs' rs m').
+      match_states (Linear_old.Returnstate cs ls m) (Mach_old.Returnstate cs' rs m').
 
 (** Record [massert_eqv] and [massert_imp] as relations so that they can be used by rewriting tactics. *)
 Local Add Relation massert massert_imp
@@ -2914,14 +2914,14 @@ Qed.
 Lemma external_call_step_correct:
   forall s ef res rs1 m t m' sz
     (H0 : external_call ef ge (fun p : rpair loc => Locmap.getpair p rs1) ## (loc_arguments (ef_sig ef)) m t res m')
-    (WTS : wt_state init_ls (Linear.Callstate s (External ef) rs1 m sz))
-    (LIN : nextblock_properties_linear init_m (Linear.Callstate s (External ef) rs1 m sz))
+    (WTS : wt_state init_ls (Linear_old.Callstate s (External ef) rs1 m sz))
+    (LIN : nextblock_properties_linear init_m (Linear_old.Callstate s (External ef) rs1 m sz))
     cs' fb rs m'0
     (CSC : call_stack_consistency tge init_sg init_stk (Callstate cs' fb rs m'0))
     (MACH: Ple (Mem.nextblock init_m) (Mem.nextblock m'0))
     (* (MACH : nextblock_properties_mach init_sp init_m init_sg (Callstate cs' fb rs m'0)) *)
     sg_ j tf
-    (STACKS : match_stacks j s cs' (Linear.funsig (External ef)) sg_)
+    (STACKS : match_stacks j s cs' (Linear_old.funsig (External ef)) sg_)
     (TRANSL : transf_fundef (External ef) = OK tf)
     (FIND : Genv.find_funct_ptr tge fb = Some tf)
     (AGREGS : agree_regs j rs1 rs)
@@ -2934,7 +2934,7 @@ Lemma external_call_step_correct:
     (SE:   stack_equiv (Mem.stack m) (Mem.stack m'0)),
   exists s2' : state,
     plus step tge (Callstate cs' fb rs m'0) t s2' /\
-    match_states (Linear.Returnstate s (Locmap.setpair (loc_result (ef_sig ef)) res (LTL.undef_regs destroyed_at_call rs1)) m') s2'.
+    match_states (Linear_old.Returnstate s (Locmap.setpair (loc_result (ef_sig ef)) res (LTL_old.undef_regs destroyed_at_call rs1)) m') s2'.
 Proof.
   intros.
   simpl in TRANSL. inversion TRANSL; subst tf.
@@ -3134,7 +3134,7 @@ Proof.
 Qed.
 
 Theorem transf_step_correct:
-  forall s1 t s2, Linear.step fn_stack_requirements init_ls ge s1 t s2 ->
+  forall s1 t s2, Linear_old.step fn_stack_requirements init_ls ge s1 t s2 ->
              forall (WTS: wt_state init_ls s1) s1'
                (LIN: nextblock_properties_linear init_m s1)
                (* (MACH: nextblock_properties_mach init_sp init_m init_sg s1') *)
@@ -3248,7 +3248,7 @@ Proof.
     assert (A: exists m'',
                store_stack m' (Vptr sp' Ptrofs.zero) ty (Ptrofs.repr ofs') (rs0 src) = Some m''
                /\ m'' |= frame_contents f j sp' (Locmap.set (S sl ofs ty) (rs (R src))
-                                                           (LTL.undef_regs (destroyed_by_setstack ty) rs))
+                                                           (LTL_old.undef_regs (destroyed_by_setstack ty) rs))
                      (parent_locset init_ls s) (parent_sp (Mem.stack m')) (parent_ra init_ra cs')
                      ** stack_contents j s cs' (tl (Mem.stack m')) ** (mconj (minjection j (flat_frameinj (length (Mem.stack m))) m) (minit_args_mach j sg_)) ** globalenv_inject ge j
            ).
@@ -3489,7 +3489,7 @@ Proof.
     * econstructor; eauto with coqlib.
       apply Val.Vptr_has_type.
       intros; red.
-      apply Zle_trans with (size_arguments (Linear.funsig f')); auto.
+      apply Zle_trans with (size_arguments (Linear_old.funsig f')); auto.
       apply loc_arguments_bounded; auto.
       etransitivity. apply Z.mul_le_mono_nonneg_l. omega. apply BOUND.
       etransitivity. 2: eapply size_no_overflow; eauto.
@@ -3549,7 +3549,7 @@ Proof.
     rewrite Ptrofs.unsigned_zero; simpl.
     rewrite (unfold_transf_function _ _ TRANSL). apply R. 
     traceEq.
-  + assert (TAILCALL: tailcall_possible (Linear.funsig f')).
+  + assert (TAILCALL: tailcall_possible (Linear_old.funsig f')).
     {
       apply zero_size_arguments_tailcall_possible. eapply wt_state_tailcall; eauto.
     }
@@ -3562,7 +3562,7 @@ Proof.
       repeat destr_in A.
       destruct IFI as (bb & oo & IFI & IFI').
       exploit globalenv_inject_preserves_globals. apply SEP. intros (MPG1 & MPG2 & MPG3).
-      generalize (U (Locations.R m0)), (AGREGS m0), (T m0).
+      generalize (U (Locations_old.R m0)), (AGREGS m0), (T m0).
       destr_in IFI.
       simpl. rewrite IFI, Heqv. rewrite Heqb0. inversion 3; subst.
       erewrite MPG1 in H8; eauto. inv H8.
@@ -4045,7 +4045,7 @@ Proof.
   eapply stack_equiv_tail; eauto.
 Qed.
 
-Inductive match_states_inv (s : Linear.state) (s': Mach.state): Prop :=
+Inductive match_states_inv (s : Linear_old.state) (s': Mach_old.state): Prop :=
 | msi_intro
     (MS: match_states s s')
     (LIN: nextblock_properties_linear init_m s)
@@ -4056,7 +4056,7 @@ Inductive match_states_inv (s : Linear.state) (s': Mach.state): Prop :=
 Theorem transf_step_correct'
         (frame_size_correct: forall (fb : block) (f : function), Genv.find_funct_ptr tge fb = Some (Internal f) -> 0 < fn_stacksize f)
         (init_sp_zero: forall b o, init_sp = Vptr b o -> o = Ptrofs.zero):
-  forall s1 t s2, Linear.step fn_stack_requirements init_ls ge s1 t s2 ->
+  forall s1 t s2, Linear_old.step fn_stack_requirements init_ls ge s1 t s2 ->
              forall (WTS: wt_state init_ls s1) s1'
                (MS: match_states_inv s1 s1'),
   exists s2', plus step tge s1' t s2' /\ match_states_inv s2 s2'.
@@ -4084,16 +4084,16 @@ End WITHMEMINIT.
 
 End WITHINITSP.
 
-Definition mem_state (s: Mach.state) : mem :=
+Definition mem_state (s: Mach_old.state) : mem :=
   match s with
     State _ _ _ _ _ m
   | Callstate _ _ _ m
   | Returnstate _ _ m => m
   end.
 
-Inductive match_states' (s : Linear.state) (s': Mach.state): Prop :=
+Inductive match_states' (s : Linear_old.state) (s': Mach_old.state): Prop :=
 | match_states'_intro IS:
-    Mach.initial_state tprog IS ->
+    Mach_old.initial_state tprog IS ->
     match_states_inv
       Vnullptr (Locmap.init Vundef) (signature_main)
       ((Some (make_singleton_frame_adt (Genv.genv_next (Genv.globalenv tprog)) 0 0), nil) :: nil)
@@ -4101,8 +4101,8 @@ Inductive match_states' (s : Linear.state) (s': Mach.state): Prop :=
     match_states' s s'.
 
 Lemma transf_initial_states:
-  forall st1, Linear.initial_state fn_stack_requirements prog st1 ->
-  exists st2, Mach.initial_state tprog st2 /\ match_states' st1 st2.
+  forall st1, Linear_old.initial_state fn_stack_requirements prog st1 ->
+  exists st2, Mach_old.initial_state tprog st2 /\ match_states' st1 st2.
 Proof.
   intros. inv H.
   exploit (Genv.init_mem_transf_partial TRANSF). eauto. intro TINIT.
@@ -4176,7 +4176,7 @@ Qed.
 
 Lemma transf_final_states:
   forall st1 st2 r,
-  match_states' st1 st2 -> Linear.final_state st1 r -> Mach.final_state st2 r.
+  match_states' st1 st2 -> Linear_old.final_state st1 r -> Mach_old.final_state st2 r.
 Proof.
   intros. inv H0. inv H. inv H2. inv MS.
   inv STACKS; try congruence.
@@ -4207,9 +4207,9 @@ Qed.
 Lemma stacking_frame_correct:
   forall p tp,
     match_prog p tp ->
-    forall (fb : Values.block) (f : Mach.function),
+    forall (fb : Values.block) (f : Mach_old.function),
       Genv.find_funct_ptr (Genv.globalenv tp) fb = Some (Internal f) ->
-      0 < Mach.fn_stacksize f.
+      0 < Mach_old.fn_stacksize f.
 Proof.
   intros p tp MP fb f FFP.
   red in MP.
@@ -4225,7 +4225,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (Linear.semantics fn_stack_requirements prog) (Mach.semantics1 return_address_offset tprog).
+  forward_simulation (Linear_old.semantics fn_stack_requirements prog) (Mach_old.semantics1 return_address_offset tprog).
 Proof.
   set (ms := fun s s' => wt_state (Locmap.init Vundef) s /\ match_states' s s').
   eapply forward_simulation_plus with (match_states := ms).

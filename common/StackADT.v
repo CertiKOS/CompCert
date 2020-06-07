@@ -2044,6 +2044,7 @@ Definition make_singleton_frame_adt (b: block) (sz: Z) (machsz: Z) :=
     frame_adt_size_pos := Z.le_max_l _ _
   |}.
 
+(*
 Definition make_singleton_frame_adt' (b: block) fi (sz: Z) :=
   {|
     frame_adt_blocks := (b,fi)::nil;
@@ -2051,6 +2052,7 @@ Definition make_singleton_frame_adt' (b: block) fi (sz: Z) :=
     frame_adt_blocks_norepet := norepet_1 _;
     frame_adt_size_pos := Z.le_max_l _ _
   |}.
+*)
 
   Lemma val_inject_ext:
     forall j1 j2 v1 v2,
