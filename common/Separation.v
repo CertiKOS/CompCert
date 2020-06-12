@@ -1071,7 +1071,6 @@ Proof.
   simpl. intros. rewrite Zmax_spec in H4. destr_in H4. omega. eauto.
 Qed.
 
-(*
 Lemma push_rule:
   forall j g m1 m2 P,
     m2 |= minjection j g m1 ** P ->
@@ -1161,6 +1160,4 @@ Proof.
   intros (m2'0 & UNRECORD' & SEP'').
   eexists; eexists; eauto.
 Qed.
-*)
-
 *)

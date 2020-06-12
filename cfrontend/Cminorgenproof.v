@@ -2514,9 +2514,9 @@ Proof.
   {
     exploit match_globalenvs_init. eauto. intro MG.
     inv MG; constructor; simpl. 
-    unfold Mem.flat_inj; rewnb. intros; destr. apply n in H4. inversion H4.
-    unfold Mem.flat_inj. rewnb. intros b1 b2 delta EQ PLT; repeat destr_in EQ.
-    intros id b2 FS; eapply SYMBOLS in FS; xomega.
+    unfold Mem.flat_inj. intros; destr. apply n in H4. inversion H4.
+    unfold Mem.flat_inj. intros b1 b2 delta EQ PLT; repeat destr_in EQ.
+    intros id b2 FS; eapply SYMBOLS in FS. xomega.
     intros b2 fd FFP; eapply FUNCTIONS in FFP; xomega.
     intros b2 gv FVI; eapply VARINFOS in FVI; xomega.
   }

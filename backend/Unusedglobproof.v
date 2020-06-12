@@ -1270,8 +1270,6 @@ Local Transparent Mem.loadbytes.
   rewrite nat_of_Z_eq by (apply init_data_list_size_pos). omega.
 - repeat rewrite_stack_blocks.
   unfold flat_frameinj; simpl.
-  exploit Genv.init_mem_stack. eapply IM. intros NIL_EQ; rewrite NIL_EQ.
-  exploit Genv.init_mem_stack. eapply TIM. intros NIL_EQ'; rewrite NIL_EQ'.
   apply stack_inject_nil.
 Qed.
 
@@ -1375,8 +1373,6 @@ Proof.
   intros (R & S & T).
   rewrite <- Genv.find_funct_ptr_iff in R.
   edestruct Mem.record_init_sp_inject as (m1' & RIS & INJ'); eauto. 
-  exploit Genv.init_mem_stack. apply H0. intros NIL_EQ. rewrite NIL_EQ.
-  exploit Genv.init_mem_stack. apply A. intros NIL_EQ'. rewrite NIL_EQ'.
   repeat rewrite_stack_blocks. 
   omega.
   exists (Callstate nil f nil (Mem.push_new_stage m1') (fn_stack_requirements (prog_main tp))); split.
@@ -1411,11 +1407,9 @@ Proof.
       contradict FD; unfold Mem.valid_block. rewnb; xomega.
   - unfold ge.
     rewnb. 
-    exploit Genv.init_mem_genv_next. apply H0. intros NB_EQ. rewrite NB_EQ.
     xomega.
   - unfold tge.
     rewnb. 
-    exploit Genv.init_mem_genv_next. apply A. intros NB_EQ. rewrite NB_EQ.
     xomega.
 Qed.
 
@@ -1438,8 +1432,6 @@ Proof.
   inv IS1; inv IS2; inv MS.
   red. simpl.
   repeat rewrite_stack_blocks.
-  exploit Genv.init_mem_stack. eapply H. intro NIL_EQ. rewrite NIL_EQ.
-  exploit Genv.init_mem_stack. eapply H4. intro NIL_EQ'. rewrite NIL_EQ'.
   repeat constructor.
 Qed.
 

@@ -1937,8 +1937,7 @@ Proof.
     rewrite symbols_preserved. replace (prog_main tprog) with (prog_main prog). auto.
     symmetry; eapply match_program_main; eauto.
     rewrite <- H3. eapply sig_function_translated; eauto.
-  - exploit Genv.init_mem_stack; eauto; intros NIL_EQ.
-    edestruct (Mem.record_init_sp_flat_inject) as (m2' & RIS & INJ).
+  - edestruct (Mem.record_init_sp_flat_inject) as (m2' & RIS & INJ).
     eapply Genv.initmem_inject; eauto. omega. eauto. auto.
     rewrite RIS in H4; inv H4. 
     eapply match_call_states.
@@ -1954,14 +1953,12 @@ Proof.
       * rewnb. apply Ple_refl.
     + intro b0.
       repeat rewrite_stack_blocks.
-      rewrite NIL_EQ.
       rewrite ! in_stack_cons.
       intros [[]|[[|[]]|[]]]. 
       simpl in H; subst. rewnb. 
       unfold Mem.flat_inj.
       destr. eauto. xomega.
     + repeat rewrite_stack_blocks. simpl.
-      rewrite NIL_EQ.
       repeat econstructor; simpl; eauto; omega.
 Qed.
 

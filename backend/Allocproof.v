@@ -2341,7 +2341,6 @@ Proof.
   red; auto.
   apply Mem.extends_refl.
   repeat rewrite_stack_blocks. 
-  exploit Genv.init_mem_stack; eauto; intros NIL_EQ; rewrite NIL_EQ.
   repeat constructor.
   rewrite SIG, H3. constructor.
 Qed.

@@ -1162,17 +1162,14 @@ Proof.
   edestruct (Mem.record_init_sp_flat_inject m0 m0 m2) as (m2' & RIS & INJ); eauto.
   eapply Genv.initmem_inject; eauto. omega. 
   assert (m2 = m2') by congruence. subst.
-  exploit Genv.init_mem_stack; eauto; intros NIL_EQ.
-  exploit Genv.init_mem_genv_next; eauto; intros NB_EQ.
   split.
   - econstructor. 
     + constructor.
     + constructor.
     + apply Mem.push_new_stage_inject; eauto.
-    + repeat rewrite_stack_blocks. rewrite NIL_EQ. simpl.
+    + repeat rewrite_stack_blocks. simpl.
       repeat econstructor; omega.
     + unfold Mem.flat_inj; rewnb.
-      rewrite <- NB_EQ.
       fold ge. split; intros.
       apply pred_dec_true; xomega.
       destr_in H.
@@ -1187,8 +1184,8 @@ Proof.
       eauto.
       rewrite sig_preserved; auto.
     + red; simpl. constructor.
-    + red. simpl. rewnb. rewrite <- NB_EQ. unfold ge. xomega.
-    + red. simpl. rewnb. rewrite <- NB_EQ. unfold ge. xomega.
+    + red. simpl. rewnb. unfold ge. xomega.
+    + red. simpl. rewnb. unfold ge. xomega.
 Qed.
 
 Lemma transf_final_states:
