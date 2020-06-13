@@ -458,21 +458,36 @@ Definition stack_blocks_of_callstack (l : list stackframe) : list (option (block
            end
          end) l.
 
+Inductive callstack_function_defined : list stackframe -> Prop :=
+| cfd_empty:
+    callstack_function_defined nil
+| cfd_cons:
+    forall fb sp' ra c' cs' (*SACC:*)(*trf*)
+(*SACC:*)(*(FINDF: Genv.find_funct_ptr ge fb = Some (Internal trf))*)
+      (CFD: callstack_function_defined cs')
+      (*SACC:
+      (RAU: return_address_offset trf c' ra)
+      (TAIL: exists l sg ros, fn_code trf = l ++ (Mcall sg ros :: c')),*),
+      callstack_function_defined (Stackframe fb sp' (Vptr fb ra) c' :: cs').
+
 Inductive call_stack_consistency: state -> Prop :=
 | call_stack_consistency_intro:
     forall c cs' fb sp' rs m' tf
      (FIND: Genv.find_funct_ptr ge fb = Some (Internal tf))
-     (CSA: call_stack_agree (Some (sp', default_frame_info (fn_stacksize tf)) :: stack_blocks_of_callstack cs') (Mem.stack m')),
+     (CSA: call_stack_agree (Some (sp', default_frame_info (fn_stacksize tf)) :: stack_blocks_of_callstack cs') (Mem.stack m'))
+     (CFD: callstack_function_defined cs'),
      call_stack_consistency (State cs' fb (Vptr sp' Ptrofs.zero) c rs m')
 | call_stack_consistency_call:
     forall cs' fb rs m'
       (CSA: call_stack_agree (stack_blocks_of_callstack cs') (tl (Mem.stack m')))
-      (TTNP: top_tframe_tc (Mem.stack m')),
+      (TTNP: top_tframe_tc (Mem.stack m'))
+      (CFD: callstack_function_defined cs'),
       call_stack_consistency (Callstate cs' fb rs m')
 | call_stack_consistency_return:
     forall cs' rs m'
       (CSA: call_stack_agree (stack_blocks_of_callstack cs') (tl (Mem.stack m')))
-      (TTNP: Mem.top_frame_no_perm m'),
+      (TTNP: Mem.top_frame_no_perm m')
+      (CFD: callstack_function_defined cs'),
       call_stack_consistency (Returnstate cs' rs m').
 
 End STACK_WRAPPER.

@@ -3889,7 +3889,7 @@ Proof.
   simpl. eauto.
   eapply (type_parent_sp init_stk); eauto.
   eapply match_stacks_type_retaddr; eauto.
-  inv HC. inv CFD; simpl. congruence. congruence.
+  inv HC. inv CFD. simpl. congruence. simpl. congruence.
   inv CSC. auto.
   auto.
   rename SEP into SEP_init;

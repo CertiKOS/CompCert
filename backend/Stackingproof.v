@@ -1524,7 +1524,8 @@ Lemma function_epilogue_correct:
     E0 (State cs fb (Vptr sp' Ptrofs.zero) k rs1 m')
   /\ agree_regs j (return_regs ls0 ls) rs1
   /\ agree_callee_save (return_regs ls0 ls) ls0
-  /\ m1' |= minjection j ((*SACC:*)flat_frameinj (length (Mem.stack m1))) m1 ** P.
+  /\ m1' |= minjection j ((*SACC:*)flat_frameinj (length (Mem.stack m1))) m1 ** P
+(*SACC:*)/\ stack_equiv (Mem.stack m1) (Mem.stack m1').
 Proof.
   intros until fb; intros STACK SEP AGR AGL INJ FREE SE.
   (* Can free *)
@@ -1561,7 +1562,8 @@ Proof.
     rewrite NCS by auto. apply AGR.
   split. red; unfold return_regs; intros.
     destruct l; auto. rewrite H; auto.
-  rewrite_stack_blocks. assumption.
+  split. rewrite_stack_blocks; assumption.
+  repeat rewrite_stack_blocks; eauto.
 Qed.
 
 End FRAME_PROPERTIES.
@@ -2052,6 +2054,17 @@ End BUILTIN_ARGUMENTS.
 - Well-typedness of [f].
 *)
 
+(*SACC:*)
+Definition fn_stack_requirements (i: ident) : Z :=
+  match Genv.find_symbol tge i with
+    Some b =>
+    match Genv.find_funct_ptr tge b with
+    | Some (Internal f) => fn_stacksize f
+    | _ => 0
+    end
+  | None => 0
+  end.
+
 Inductive match_states: Linear.state -> Mach.state -> Prop :=
   | match_states_intro:
       forall cs f sp c ls m cs' fb sp' rs m' j tf
@@ -2073,7 +2086,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
                  ** stack_contents j cs cs' ((*SACC:*)tl (Mem.stack m'))
                  ** minjection j ((*SACC:*)flat_frameinj (length (Mem.stack m))) m
                  ** globalenv_inject ge j)
-  (*SACC:*)(*(SE: stack_equiv (Mem.stack m) (Mem.stack m'))*),
+  (*SACC:*)(SE: stack_equiv (Mem.stack m) (Mem.stack m')),
       match_states (Linear.State cs f (Vptr sp Ptrofs.zero) c ls m)
                    (Mach.State cs' fb (Vptr sp' Ptrofs.zero) (transl_code (make_env (function_bounds f)) c) rs m')
   | match_states_call:
@@ -2081,7 +2094,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
         (STACKS: match_stacks j cs cs' (Linear.funsig f))
         (TRANSL: transf_fundef f = OK tf)
         (FIND: Genv.find_funct_ptr tge fb = Some tf)
-  (*SACC:*)(*(SZEQ: exists i, Genv.invert_symbol tge fb = Some i /\ sz = fn_stack_requirements i)*)
+  (*SACC:*)(SZEQ: exists i, Genv.invert_symbol tge fb = Some i /\ sz = fn_stack_requirements i)
         (AGREGS: agree_regs j ls rs)
         (AGLOCS: agree_callee_save ls (parent_locset cs))
         (*SACC:
@@ -2093,7 +2106,7 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
         (SEP: m' |= stack_contents j cs cs' ((*SACC:*)tl (Mem.stack m'))
                  ** minjection j ((*SACC:*)flat_frameinj (length (Mem.stack m))) m
                  ** globalenv_inject ge j)
-  (*SACC:*)(*(SE: stack_equiv (Mem.stack m) (Mem.stack m'))*),
+  (*SACC:*)(SE: stack_equiv (Mem.stack m) (Mem.stack m')),
       match_states (Linear.Callstate cs f ls m (*SACC:*)sz)
                    (Mach.Callstate cs' fb rs m')
   | match_states_return:
@@ -2110,20 +2123,34 @@ Inductive match_states: Linear.state -> Mach.state -> Prop :=
         (SEP: m' |= stack_contents j cs cs' ((*SACC:*)tl (Mem.stack m'))
                  ** minjection j ((*SACC:*)flat_frameinj (length (Mem.stack m))) m
                  ** globalenv_inject ge j)
-   (*SACC:*)(*(SE: stack_equiv (Mem.stack m) (Mem.stack m'))*),
+   (*SACC:*)(SE: stack_equiv (Mem.stack m) (Mem.stack m')),
       match_states (Linear.Returnstate cs ls m)
                   (Mach.Returnstate cs' rs m').
 
 (*SACC:*)
-Definition fn_stack_requirements (i: ident) : Z :=
-  match Genv.find_symbol tge i with
-    Some b =>
-    match Genv.find_funct_ptr tge b with
-    | Some (Internal f) => fn_stacksize f
-    | _ => 0
-    end
-  | None => 0
-  end.
+Lemma tailcall_stage_rule:
+  forall m1 m1' m2 j g P,
+    m2 |= minjection j g m1 ** P ->
+    Mem.tailcall_stage m1 = Some m1' ->
+    Mem.top_frame_no_perm m2 ->
+    m_invar_stack P = false ->
+    exists m2', Mem.tailcall_stage m2 = Some m2' /\
+           m2' |= minjection j g m1' ** P.
+Proof.
+  intros m1 m1' m2 j g P SEP TC TFNP INVAR.
+  exploit Mem.tailcall_stage_inject; eauto. apply SEP. intros (m2' & TC' & INJ').
+  eexists; split; eauto.
+  destruct SEP as (INJ & PM & DISJ).
+  split; [|split].
+  - simpl in *. auto.
+  - eapply m_invar. eauto.
+    eauto using Mem.tailcall_stage_unchanged_on.
+    congruence.
+  - red; intros. eapply DISJ. 2: eauto. simpl in H |- *.
+    decompose [ex and] H.
+    repeat eexists;  eauto.
+    revert H3; rewrite_perms. auto.
+Qed.
 
 Theorem transf_step_correct:
   forall s1 t s2, Linear.step (*SACC:*)fn_stack_requirements ge s1 t s2 ->
@@ -2205,6 +2232,7 @@ Proof.
     * apply agree_locs_set_slot. apply agree_locs_undef_locs. auto. apply destroyed_by_setstack_caller_save. auto.
     * eauto with coqlib.
     * unfold store_stack in *; simpl in *; rewrite_stack_blocks; eauto.
+    * unfold store_stack in *; simpl in *; rewrite_stack_blocks; eauto.
 
 - (* Lop *)
   assert (exists v',
@@ -2266,7 +2294,8 @@ Proof.
   apply agree_locs_undef_locs. auto. apply destroyed_by_store_caller_save.
   auto. eauto with coqlib.
   repeat rewrite_stack_blocks; eauto. eapply frame_undef_regs; eauto.
-  
+  repeat rewrite_stack_blocks; eauto.
+
 - (* Lcall *)
   exploit find_function_translated; eauto.
     eapply sep_proj2. eapply sep_proj2. eapply sep_proj2. eexact SEP.
@@ -2300,22 +2329,74 @@ Proof.
       intros; red.
         apply Zle_trans with (size_arguments (Linear.funsig f')); auto.
         apply loc_arguments_bounded; auto.
+    * exists fid; split; auto.
+      destruct ros; simpl in *; eauto.
+      repeat destr_in A.
+      destruct IFI as (bb & oo & IFI & IFI').
+      exploit globalenv_inject_preserves_globals. apply SEP. intros (MPG1 & MPG2 & MPG3).
+      generalize (AGREGS m0).
+      rewrite IFI, Heqv. inversion 1; subst.
+      erewrite MPG1 in H4; eauto. inv H4.
+      eapply Genv.find_invert_symbol; eauto.
+      rewrite symbols_preserved; eauto.
+      subst. 
+      eapply Genv.find_invert_symbol; eauto.
     * simpl; red; auto.
     * simpl. rewrite sep_assoc. revert SEP'. repeat rewrite_stack_blocks. auto.
+    * repeat rewrite_stack_blocks; eauto.
+      repeat constructor. auto.
 
 - (* Ltailcall *)
   rewrite (sep_swap (stack_contents j s cs' _)) in SEP.
+  inv CSC. rewrite FIND in FIND0; inv FIND0.
+  rename tf0 into tf. 
   exploit function_epilogue_correct; eauto.
-  clear SEP. intros (rs1 & m1' & P & Q & R & S & T & U & SEP).
+  rewrite m_invar_stack_sepconj. rewrite stack_contents_invar_stack. reflexivity.
+  clear SEP. intros (rs1 & m1' & P & Q & R & S & T & U & SEP & SE').
+  edestruct tailcall_stage_rule as (m2' & TC' & SEP'); eauto.
+  {
+    inv CSA.
+    eapply Mem.free_top_tframe_no_perm; eauto.
+  }
+  rewrite m_invar_stack_sepconj. rewrite stack_contents_invar_stack. reflexivity.
   rewrite sep_swap in SEP.
   exploit find_function_translated; eauto.
     eapply sep_proj2. eapply sep_proj2. eexact SEP.
   intros [bf [tf' [A [B C]]]].
   econstructor; split.
-  eapply plus_right. eexact S. econstructor; eauto. traceEq.
-  econstructor; eauto.
-  apply match_stacks_change_sig with (Linear.fn_sig f); auto.
-  apply zero_size_arguments_tailcall_possible. eapply wt_state_tailcall; eauto.
+  + eapply plus_right. eexact S. econstructor; eauto. traceEq.
+  + assert (TAILCALL: tailcall_possible (Linear.funsig f')).
+    {
+      apply zero_size_arguments_tailcall_possible. eapply wt_state_tailcall; eauto.
+    }
+    exploit match_stacks_change_sig; eauto.
+    intros MS'.
+    econstructor; eauto.
+     * exists fid; split; auto.
+       destruct ros; simpl in *; eauto.
+       repeat destr_in A.
+       destruct IFI as (bb & oo & IFI & IFI').
+       exploit globalenv_inject_preserves_globals. apply SEP. intros (MPG1 & MPG2 & MPG3).
+       generalize (U (Locations.R m0)), (AGREGS m0), (T m0).
+       destr_in IFI.
+       simpl. rewrite IFI, Heqv. rewrite Heqb0. inversion 3; subst.
+       erewrite MPG1 in H8; eauto. inv H8.
+       eapply Genv.find_invert_symbol; eauto.
+       rewrite symbols_preserved; eauto.
+       simpl. rewrite IFI, Heqv. rewrite Heqb0. inversion 3; subst.
+       erewrite MPG1 in H8; eauto. inv H8.
+       eapply Genv.find_invert_symbol; eauto.
+       rewrite symbols_preserved; eauto.
+       subst. 
+       eapply Genv.find_invert_symbol; eauto.
+     * rewrite sep_swap12.
+       revert SEP'. 
+       repeat rewrite_stack_blocks. 
+       intros D E; rewrite D, E. simpl; auto.
+     * revert SE'. repeat rewrite_stack_blocks.
+       clear; intros A B; rewrite A, B; intro SE; inv SE; constructor; auto.
+       split; simpl; auto.
+       destruct LF2 as (C & D); red in C; red in D; repeat destr_in C; constructor; auto.
 
 - (* Lbuiltin *)
   destruct BOUND as [BND1 BND2].
@@ -2326,19 +2407,30 @@ Proof.
   intros [vargs' [P Q]].
   rewrite <- sep_assoc, sep_comm, sep_assoc in SEP.
   exploit external_call_parallel_rule; eauto.
+  apply push_rule; eauto.
+  rewrite ! m_invar_stack_sepconj.
+  rewrite frame_contents_invar_stack, stack_contents_invar_stack; reflexivity.
   clear SEP; intros (j' & res' & m1' & EC & RES & SEP & INCR & ISEP).
-  rewrite <- sep_assoc, sep_comm, sep_assoc in SEP.
+  exploit unrecord_stack_block_parallel_rule. 
+  3: eassumption. 2: eassumption.
+  rewrite ! m_invar_stack_sepconj.
+  rewrite frame_contents_invar_stack, stack_contents_invar_stack; reflexivity.
+  intros (m2' & USB & SEP').
   econstructor; split.
-  apply plus_one. econstructor; eauto.
-  eapply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved.
-  eapply external_call_symbols_preserved; eauto. apply senv_preserved.
-  eapply match_states_intro with (j := j'); eauto with coqlib.
-  eapply match_stacks_change_meminj; eauto.
-  apply agree_regs_set_res; auto. apply agree_regs_undef_regs; auto. eapply agree_regs_inject_incr; eauto.
-  apply agree_locs_set_res; auto. apply agree_locs_undef_regs; auto.
-  apply frame_set_res. apply frame_undef_regs. apply frame_contents_incr with j; auto. 
-  rewrite sep_swap2. apply stack_contents_change_meminj with j; auto. rewrite sep_swap2.
-  exact SEP.
+  + apply plus_one. econstructor; eauto.
+    eapply eval_builtin_args_preserved with (ge1 := ge); eauto. 
+    exact symbols_preserved.
+    eapply external_call_symbols_preserved; eauto. apply senv_preserved.
+  + eapply match_states_intro with (j := j'); eauto with coqlib.
+    eapply match_stacks_change_meminj; eauto.
+    apply agree_regs_set_res; auto. apply agree_regs_undef_regs; auto. eapply agree_regs_inject_incr; eauto.
+    apply agree_locs_set_res; auto. apply agree_locs_undef_regs; auto.
+    apply frame_set_res. apply frame_undef_regs. apply frame_contents_incr with j; auto. 
+    rewrite sep_swap2. apply stack_contents_change_meminj with j; auto. rewrite sep_swap2.
+    repeat rewrite_stack_blocks. simpl.
+    rewrite sep_comm, sep_assoc, sep_comm, sep_assoc, sep_assoc.
+    exact SEP'.
+    repeat rewrite_stack_blocks; simpl; auto.
 
 - (* Llabel *)
   econstructor; split.
@@ -2355,14 +2447,11 @@ Proof.
 - (* Lcond, true *)
   econstructor; split.
   apply plus_one. eapply exec_Mcond_true; eauto.
-  eapply eval_condition_inject with (m1 := m). eapply agree_reglist; eauto. apply sep_pick3 in SEP; exact SEP. auto.
+  eapply eval_condition_inject with (m1 := m). eapply agree_reglist; eauto. 
+  apply sep_pick3 in SEP; exact SEP. auto.
   eapply transl_find_label; eauto.
-  econstructor. eauto. eauto. eauto.
-  apply agree_regs_undef_regs; auto.
-  apply agree_locs_undef_locs. auto. apply destroyed_by_cond_caller_save.
-  auto. 
+  econstructor; eauto. 
   eapply find_label_tail; eauto.
-  apply frame_undef_regs; auto.
 
 - (* Lcond, false *)
   econstructor; split.
@@ -2373,6 +2462,7 @@ Proof.
   apply agree_locs_undef_locs. auto. apply destroyed_by_cond_caller_save.
   auto. eauto with coqlib.
   apply frame_undef_regs; auto.
+  assumption.
 
 - (* Ljumptable *)
   assert (rs0 arg = Vint n).
@@ -2385,15 +2475,20 @@ Proof.
   apply agree_locs_undef_locs. auto. apply destroyed_by_jumptable_caller_save.
   auto. eapply find_label_tail; eauto.
   apply frame_undef_regs; auto.
+  assumption.
 
 - (* Lreturn *)
-  rewrite (sep_swap (stack_contents j s cs')) in SEP.
+  rewrite (sep_swap (stack_contents j s cs' _)) in SEP.
+  inv CSC. rewrite FIND0 in FIND; inv FIND.
   exploit function_epilogue_correct; eauto.
+  rewrite m_invar_stack_sepconj, stack_contents_invar_stack; reflexivity.
   intros (rs' & m1' & A & B & C & D & E & F & G).
   econstructor; split.
-  eapply plus_right. eexact D. econstructor; eauto. traceEq.
-  econstructor; eauto.
-  rewrite sep_swap; exact G.
+  + eapply plus_right. eexact D. econstructor; eauto. traceEq.
+  + econstructor; eauto.
+    rewrite_stack_blocks. simpl.
+    rewrite sep_swap; apply G.
+    apply G.
 
 - (* internal function *)
   revert TRANSL. unfold transf_fundef, transf_partial_fundef.
@@ -2401,21 +2496,41 @@ Proof.
   intros EQ; inversion EQ; clear EQ; subst tf.
   rewrite sep_comm, sep_assoc in SEP. 
   exploit function_prologue_correct; eauto.
+  apply stack_contents_invar_stack.
   red; intros; eapply wt_callstate_wt_regs; eauto.
-  eapply match_stacks_type_sp; eauto.
+  revert H0.
+  destruct SZEQ as (i & IS & EQ); subst.
+  unfold fn_stack_requirements.
+  erewrite Genv.invert_find_symbol; eauto.
+  rewrite FIND.
+  erewrite (unfold_transf_function _ _ TRANSL); eauto.
+  eapply type_parent_sp; eauto.
   eapply match_stacks_type_retaddr; eauto.
+  inv CSC; inv CFD; simpl; discriminate.
+  inv CSC; auto.
   clear SEP;
   intros (j' & rs' & m2' & sp' & m3' & m4' & m5' & A & B & C & D & E & F & SEP & J & K).
   rewrite (sep_comm (globalenv_inject ge j')) in SEP.
-  rewrite (sep_swap (minjection j' m')) in SEP.
+  rewrite (sep_swap (minjection j' (flat_frameinj
+              (length (Mem.stack m''))) m'')) in SEP.
   econstructor; split.
-  eapply plus_left. econstructor; eauto.
-  rewrite (unfold_transf_function _ _ TRANSL). unfold fn_code. unfold transl_body.
-  eexact D. traceEq.
-  eapply match_states_intro with (j := j'); eauto with coqlib.
-  eapply match_stacks_change_meminj; eauto.
-  rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.
-
+  + eapply plus_left. econstructor; eauto.
+    rewrite (unfold_transf_function _ _ TRANSL). unfold fn_code. unfold transl_body.
+    eexact D. traceEq.
+  + eapply match_states_intro with (j := j'); eauto with coqlib.
+    * eapply match_stacks_change_meminj; eauto.
+    * admit. (*rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.*)
+    * repeat rewrite_stack_blocks. destruct IST as (IST1 & IST2). rewrite IST1.
+      repeat rewrite_stack_blocks. rewrite IST2.
+      intros.
+      rewrite EQ1, EQ3 in SE. simpl in *. inv SE; repeat constructor; auto.
+      simpl.
+      destruct SZEQ as (i & INVERT & EQ).
+      subst.
+      unfold fn_stack_requirements.
+      erewrite Genv.invert_find_symbol; eauto.
+      rewrite FIND. reflexivity.
+      simpl. apply LF2.
 - (* external function *)
   simpl in TRANSL. inversion TRANSL; subst tf.
   exploit transl_external_arguments; eauto. apply sep_proj1 in SEP; eauto. intros [vl [ARGS VINJ]].
