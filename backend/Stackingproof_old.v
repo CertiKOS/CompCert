@@ -3889,7 +3889,7 @@ Proof.
   simpl. eauto.
   eapply (type_parent_sp init_stk); eauto.
   eapply match_stacks_type_retaddr; eauto.
-  inv HC. inv CFD. simpl. congruence. simpl. congruence.
+  inv HC. inv CFD; simpl. congruence. congruence.
   inv CSC. auto.
   auto.
   rename SEP into SEP_init;
@@ -4091,6 +4091,8 @@ Definition mem_state (s: Mach_old.state) : mem :=
   | Returnstate _ _ m => m
   end.
 
+Check match_states_inv.
+
 Inductive match_states' (s : Linear_old.state) (s': Mach_old.state): Prop :=
 | match_states'_intro IS:
     Mach_old.initial_state tprog IS ->
@@ -4113,7 +4115,7 @@ Proof.
   {
     econstructor; eauto.
     rewrite (match_program_main TRANSF).
-    rewrite symbols_preserved. eauto.
+    rewrite symbols_preserved; eauto.
   }
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
   eexists; split; eauto.

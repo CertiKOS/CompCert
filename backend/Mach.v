@@ -126,7 +126,7 @@ Definition store_stack (m: mem) (sp: val) (ty: typ) (ofs: ptrofs) (v: val) :=
 
 (*SACC: Stack properties of store_stack*)
 (*SACC:*)
-Lemma store_stack_unchanged:
+Lemma store_stack_stack_unchanged:
   forall m1 sp ty o v m2,
     store_stack m1 sp ty o v = Some m2 ->
     Mem.stack m2 = Mem.stack m1.
@@ -438,10 +438,12 @@ End RELSEM.
 
 Variable ge: genv.
 
+Variable init_stk : stack.
+
 (* Stack Invariants *)
 
 Inductive call_stack_agree : list (option (block * frame_info)) -> stack -> Prop :=
-  | call_stack_agree_nil : call_stack_agree nil nil
+  | call_stack_agree_nil s (STKEQ: s = init_stk) : call_stack_agree nil s
   | call_stack_agree_cons lsp s f r sp bi
       (REC : call_stack_agree lsp s)
       (FSIZE : frame_adt_size f = frame_size bi)
@@ -462,8 +464,8 @@ Inductive callstack_function_defined : list stackframe -> Prop :=
 | cfd_empty:
     callstack_function_defined nil
 | cfd_cons:
-    forall fb sp' ra c' cs' (*SACC:*)(*trf*)
-(*SACC:*)(*(FINDF: Genv.find_funct_ptr ge fb = Some (Internal trf))*)
+    forall fb sp' ra c' cs' (*SACC:*)trf
+(*SACC:*)(FINDF: Genv.find_funct_ptr ge fb = Some (Internal trf))
       (CFD: callstack_function_defined cs')
       (*SACC:
       (RAU: return_address_offset trf c' ra)
@@ -490,6 +492,65 @@ Inductive call_stack_consistency: state -> Prop :=
       (CFD: callstack_function_defined cs'),
       call_stack_consistency (Returnstate cs' rs m').
 
+Variable rao: function -> code -> ptrofs -> Prop.
+
+Ltac same_hyps :=
+  repeat match goal with
+           H1: ?a = _, H2: ?a = _ |- _ => rewrite H1 in H2; inv H2
+         end.
+
+Hypothesis invalidate_frame_tl_stack:
+  forall m1 m2,
+    invalidate_frame m1 = Some m2 ->
+    tl (Mem.stack m2) = tl (Mem.stack m1).
+
+Hypothesis invalidate_frame_top_no_perm:
+  forall m1 m2,
+    invalidate_frame m1 = Some m2 ->
+    Mem.top_frame_no_perm m1 ->
+    Mem.top_frame_no_perm m2.
+
+Lemma csc_step:
+  forall s1 t s2,
+    step rao ge s1 t s2 ->
+    call_stack_consistency s1 ->
+    call_stack_consistency s2.
+Proof.
+  destruct 1; simpl; intros CSC; inv CSC;
+    same_hyps; try now (econstructor; eauto).
+  - econstructor; eauto. erewrite store_stack_stack_unchanged; eauto.
+  - econstructor; eauto. destruct a; simpl in *; try discriminate. erewrite Mem.store_stack_unchanged; eauto.
+  - econstructor. rewrite_stack_blocks. simpl. 
+    rewrite H0. auto.
+    red. rewrite_stack_blocks. constructor. reflexivity.
+    econstructor; eauto.
+  - econstructor; eauto. repeat rewrite_stack_blocks. simpl. intro EQ; rewrite EQ in CSA.
+    inv CSA; simpl; auto.
+    red. rewrite_stack_blocks. intros; constructor. easy.
+  - econstructor; eauto. repeat rewrite_stack_blocks; simpl; eauto.
+  - econstructor; eauto.
+    erewrite invalidate_frame_tl_stack; eauto. repeat rewrite_stack_blocks; simpl; eauto.
+    inv CSA. eauto.
+    eapply invalidate_frame_top_no_perm; eauto.
+    inv CSA.
+    eapply Mem.free_top_tframe_no_perm; eauto.
+  - econstructor; eauto; repeat rewrite_stack_blocks; simpl; eauto.
+    repeat econstructor; eauto.
+    exploit store_stack_stack_unchanged. eauto.
+    intros EQ3. rewrite EQ3 in EQ1.
+    revert EQ1; rewrite_stack_blocks. intro. rewrite EQ1 in CSA. simpl in *.
+    auto.
+  - econstructor; eauto; repeat rewrite_stack_blocks; simpl; eauto.
+    red; rewrite_stack_blocks.
+    inv TTNP.
+    constructor. unfold in_frames; rewrite H3; easy.
+  - inv CFD. simpl in CSA.
+    rewrite FINDF in CSA. destr_in CSA. eauto.
+    econstructor; eauto.
+    repeat rewrite_stack_blocks. simpl.
+    rewrite <- H4. constructor; eauto.
+Qed.
+
 End STACK_WRAPPER.
 
 Inductive initial_state (p: program): state -> Prop :=
@@ -498,7 +559,7 @@ Inductive initial_state (p: program): state -> Prop :=
       Genv.init_mem p = Some m0 ->
       Genv.find_symbol ge p.(prog_main) = Some fb ->
   (*SACC:*)Mem.record_init_sp m0 = Some m2 ->
-      initial_state p (Callstate nil fb (Regmap.init Vundef) (*SACC:*)m2).
+      initial_state p (Callstate nil fb (Regmap.init Vundef) (*SACC:*)(Mem.push_new_stage m2)).
 
 Inductive final_state: state -> int -> Prop :=
   | final_state_intro: forall rs m r retcode,
@@ -509,8 +570,48 @@ Inductive final_state: state -> int -> Prop :=
 (*SACC: do not tailcall*)
 Definition invalidate_frame1 (m: mem) := Some m.
 
+(*SACC:*)
+Lemma invalidate_frame1_tl_stack:
+  forall m1 m2,
+    invalidate_frame1 m1 = Some m2 ->
+    tl (Mem.stack m2) = tl (Mem.stack m1).
+Proof.
+  unfold invalidate_frame1; intros m1 m2 EQ; inv EQ; auto.
+Qed.
+
+(*SACC:*)
+Lemma invalidate_frame1_top_no_perm:
+  forall m1 m2,
+    invalidate_frame1 m1 = Some m2 ->
+    Mem.top_frame_no_perm m1 ->
+    Mem.top_frame_no_perm m2.
+Proof.
+  unfold invalidate_frame1; intros m1 m2 EQ; inv EQ; auto.
+Qed.
+
 (*SACC: tailcall*)
 Definition invalidate_frame2 (m: mem) := Mem.tailcall_stage m.
+
+(*SACC:*)
+Lemma invalidate_frame2_tl_stack:
+  forall m1 m2,
+    invalidate_frame2 m1 = Some m2 ->
+    tl (Mem.stack m2) = tl (Mem.stack m1).
+Proof.
+  unfold invalidate_frame2; intros; rewrite_stack_blocks. intro EQ; rewrite EQ; simpl; auto.
+Qed.
+
+(*SACC:*)
+Lemma invalidate_frame2_top_no_perm:
+  forall m1 m2,
+    invalidate_frame2 m1 = Some m2 ->
+    Mem.top_frame_no_perm m1 ->
+    Mem.top_frame_no_perm m2.
+Proof.
+  unfold invalidate_frame2; intros m1 m2 EQ TTNP.
+  red. apply Mem.tailcall_stage_tc in EQ. inv EQ.
+  constructor; unfold in_frames; simpl. rewrite H0; easy.
+Qed.
 
 Definition semantics1 (rao: function -> code -> ptrofs -> Prop) (p: program) :=
   Semantics (step (*SACC:*)invalidate_frame1 rao) (initial_state p) final_state (Genv.globalenv p).
