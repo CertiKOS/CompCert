@@ -726,7 +726,12 @@ Proof.
   generalize (list_has_tail code2 n HLCode2).
   intros [tail [prefix HCode2]].
   rewrite HCode2.
-  assert(HLPrefix: length prefix = n) by admit.
+  assert(HLPrefix: length prefix = n). {
+    rewrite HCode2 in HLCode2.
+    rewrite app_length in HLCode2.
+    simpl in HLCode2.
+    omega.
+  }
   rewrite HCode2 in HFoldCode2.
   generalize (prefix_success _ _ _ _ _ _ _ HFoldCode2).
   intros [z' [l' HFoldPrefix]].
@@ -740,7 +745,10 @@ Proof.
   simpl in HFoldCode2.
   monadInv HFoldCode2.
   intros HSpecPrefix.
-  assert(HInstrSize: instr_size_acc (code ++ prefix) = instr_size_acc code + instr_size_acc prefix) by admit.
+  assert(HInstrSize: instr_size_acc (code ++ prefix) = instr_size_acc code + instr_size_acc prefix). {
+    rewrite (instr_size_app (length code) code prefix eq_refl).
+    auto.
+  }
   rewrite <- Zplus_assoc in EQ.
   rewrite <- HInstrSize in EQ.
   generalize (transl_code_spec_inc _ _ _ _ _ _ _ HSpecPrefix EQ).
@@ -748,7 +756,8 @@ Proof.
   intros HResult.
   rewrite rev_app_distr.
   rewrite rev_involutive.
-  auto.  
+  auto.
+  (* easy *)
 Admitted.
 
 
@@ -786,7 +795,11 @@ Proof.
   generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ 1 HPrefix eq_refl HEncode).
   rewrite HTail.
   auto.
-  admit.
+  rewrite HTail in HLength.
+  rewrite app_length in HLength.
+  simpl in HLength.
+  omega.
+  (* easy *)
 Admitted.
 
 
@@ -865,6 +878,43 @@ Proof.
     simpl. auto.
 Qed.
 
+
+
+Lemma spec_decode_ex': forall ln n code ofs l rtbl symtbl ,
+    length code = ln->
+    length l = n ->
+    transl_code_spec code l ofs rtbl symtbl ->
+    exists code', decode_instrs rtbl symtbl n ofs l nil = OK code'/\ instr_eq_list code code'.
+Proof.
+  induction ln.
+  (* bc *)
+  admit.
+  intros n code ofs l rtbl symtbl HLC HL HTrans.
+  generalize (list_has_tail _ _ HLC).
+  intros (tail & prefix & HCode).
+  rewrite HCode in HTrans.
+  unfold transl_code_spec in HTrans.
+
+  
+  (* induction code. *)
+  (* revert dependent n. *)
+  (* (* base case *) *)
+  (* admit. *)
+  (* intros ofs l rtbl symtbl HL HTrans. *)
+  (* unfold transl_code_spec in HTrans. *)
+  (* destruct HTrans as (h' & t' & HDecode & HInstr_eq & HTrans). *)
+  (* generalize (IHcode ofs l  *)
+
+  (* induction n. *)
+  (* (* base case *) *)
+  (* admit. *)
+  (* intros code ofs l rtbl symtbl HL HTransf. *)
+  
+  (* simpl. *)
+  
+
+Admitted.
+
 Section PRESERVATION.
   Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
@@ -884,7 +934,12 @@ Proof.
   unfold match_prog, transf_program in TRANSF. monadInv TRANSF.
   unfold decode_prog_code_section. simpl.
   unfold transl_sectable in EQ. repeat destr_in EQ.
-  monadInv H0. simpl.
+  monadInv H0. simpl. unfold decode_instrs'.
+  
+  (* help *)
+  (* I don't think this lemma is correct because the decoder 
+     could not generate exactly the same instruction as the pre-encoded one.
+     The relation instr_eq should be used here. *)
 Admitted.
 
 Lemma transf_initial_states:
@@ -910,13 +965,17 @@ Proof.
     destruct x. monadInv EQ2.    
     generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
     intros HTranslSpec.
-    generalize (spec_decode_ex code 0 (rev l) _ _  HTranslSpec).
-    intros (fuel & c' & HEncodeDecode).
+    generalize (spec_decode_ex' (length (rev l)) code 0 (rev l) _ _   eq_refl HTranslSpec).
+    (* generalize (spec_decode_ex code 0 (rev l) _ _  HTranslSpec). *)
+    intros (c' & HEncodeDecode).
     destruct HEncodeDecode as [HDecode HDecodeEQ].
     econstructor.
     unfold decode_prog_code_section.
-    simpl. unfold sec_code_id.
-    (* rewrite HDecode. simpl. eauto. *)
+    simpl.
+    unfold decode_instrs'.    
+    rewrite HDecode.
+    simpl.
+    eauto.
 
     (* init_mem *)
     admit.
