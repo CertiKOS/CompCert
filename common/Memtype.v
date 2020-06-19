@@ -2658,4 +2658,20 @@ Axiom inject_tailcall_left_new_stage_right:
   tailcall_stage m1 = Some m1' ->
   inject j (1%nat:: n :: g) m1' (push_new_stage m2).
 
+(* [loadbytesv] properties *)
+
+Axiom loadbytesv_inject:
+  forall j g chunk m m' v v' ra,
+  inject j g m m' ->
+  Val.inject j v v' ->
+  loadbytesv chunk m v = Some ra ->
+  exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.inject j ra ra'.
+
+Axiom loadbytesv_extends:
+  forall chunk m m' v v' ra,
+  extends m m' ->
+  Val.lessdef v v' ->
+  loadbytesv chunk m v = Some ra ->
+  exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.lessdef ra ra'.
+
 End MEM.

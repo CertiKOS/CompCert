@@ -93,6 +93,7 @@ BACKEND=(
 	./backend/Lineartyping.v
 	./backend/Stacking.v
 	./backend/Stackingproof.v
+	./backend/Mach2Mach2.v
 	)
 
 FRONTEND=(

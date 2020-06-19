@@ -8738,6 +8738,62 @@ Proof.
   eapply perm_drop_3; eauto. right; left. omega.
 Qed.
 
+(* [loadbytesv] properties *)
+
+Theorem loadbytesv_inject:
+  forall j g chunk m m' v v' ra,
+    inject j g m m' ->
+    Val.inject j v v' ->
+    loadbytesv chunk m v = Some ra ->
+    exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.inject j ra ra'.
+Proof.
+  intros j g chunk m m' v v' ra MINJ VINJ L.
+  unfold loadbytesv in *.
+  destr_in L. inv VINJ.
+  destr_in L.
+  edestruct Mem.loadbytes_inject as (l' & L' & INJ); eauto.
+  erewrite Mem.address_inject; eauto.
+  rewrite L'.
+  - unfold encoded_ra in L |- *.
+    repeat destr_in L.
+    erewrite proj_bytes_inject; eauto.
+    destr. eapply proj_bytes_not_inject in Heqo0; eauto. 2: congruence.
+    erewrite proj_value_undef in H0; eauto.
+    contradict H0. unfold Mptr. destr; simpl; congruence.
+    generalize (proj_value_inject _ (quantity_chunk Mptr) _ _ INJ). intro VINJ.
+    generalize (Val.load_result_inject _ Mptr _ _ VINJ). intro VINJ'.
+    unfold is_ptr in H0. destr_in H0. inv H0. inv VINJ'.
+    eexists; split. simpl. eauto.
+    econstructor; eauto.
+  - eapply Mem.loadbytes_range_perm; eauto. generalize (size_chunk_pos chunk); omega.
+Qed.
+
+Theorem loadbytesv_extends:
+  forall chunk m m' v v' ra,
+    extends m m' ->
+    Val.lessdef v v' ->
+    loadbytesv chunk m v = Some ra ->
+    exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.lessdef ra ra'.
+Proof.
+  intros chunk m m' v v' ra MEXT VLD L.
+  unfold loadbytesv in *.
+  destr_in L. inv VLD.
+  destr_in L.
+  edestruct Mem.loadbytes_extends as (l' & L' & EXT); eauto.
+  rewrite L'.
+  - unfold encoded_ra in L |- *.
+    repeat destr_in L.
+    erewrite proj_bytes_inject; eauto.
+    destr. eapply proj_bytes_not_inject in Heqo0; eauto. 2: congruence.
+    erewrite proj_value_undef in H0; eauto.
+    contradict H0. unfold Mptr. destr; simpl; congruence.
+    generalize (proj_value_inject _ (quantity_chunk Mptr) _ _ EXT). intro VEXT.
+    generalize (Val.load_result_inject _ Mptr _ _ VEXT). intro VEXT'.
+    unfold is_ptr in H0. destr_in H0. inv H0. inv VEXT'. inv H2.
+    eexists; split. simpl. eauto.
+    rewrite Ptrofs.add_zero. econstructor; eauto.
+Qed.
+
 End Mem.
 
 Notation mem := Mem.mem.
