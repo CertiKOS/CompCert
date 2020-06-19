@@ -7,13 +7,6 @@ Import ListNotations.
 Local Open Scope error_monad_scope.
 Close Scope nat_scope.
 
-Definition linear_addr reg ofs := 
-  Addrmode (Some reg) None (inl ofs).
-
-Definition Plea := if Archi.ptr64 then Pleaq else Pleal.
-Definition Padd dst src z := Plea dst (linear_addr src z).
-Definition Psub dst src z := Padd dst src (- z).
-
 Definition transf_instr (i: instruction): list instruction :=
   match i with
   | Pallocframe sz pubrange ofs_ra =>

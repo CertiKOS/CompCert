@@ -3785,6 +3785,8 @@ Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program
     exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp.
 Proof.
   intros p1 p2 tp1 tp2 p LINK MATCH1 MATCH2.
+  unfold link in LINK.
+  unfold Linker_prog_ordered in LINK.
   unfold link. unfold Linker_reloc_prog. unfold link_reloc_prog.
   generalize (match_prog_perm MATCH1). intros OMATCH1.
   generalize (match_prog_perm MATCH2). intros OMATCH2.

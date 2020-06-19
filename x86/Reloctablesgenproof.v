@@ -403,6 +403,7 @@ Proof.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
   monadInv H0.
+  repeat destr_in EQ2.
   unfold RelocProgSemantics.globalenv. simpl. simpl in *.
   rewrite H, H4, H3.
   apply add_external_globals_symb_unchanged. simpl. auto. simpl. auto.
@@ -432,14 +433,17 @@ Proof.
   rewrite genv_symb_ok. auto.
 Qed.
 
-Axiom nr_defs:
+Lemma nr_defs:
   list_norepet (map fst (prog_defs tprog)).
+Proof.
+  unfold match_prog in TRANSF.
+  decompose [ex and] TRANSF.
+  unfold transf_program in H0.
+  monadInv H0.
+  repeat destr_in EQ2.
+  rewrite H. simpl; auto.
+Qed.
 
-Axiom symb_table_ok:
-  forall id d,
-    In (id, d) (prog_defs tprog) ->
-    exists dofs1 cofs1,
-      In (Symbtablegen.get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) (prog_symbtable tprog).
 
 Lemma genv_symb_add_external_global:
   forall t ge se id b o,
@@ -539,15 +543,13 @@ Qed.
 Lemma prog_symtable_same:
   prog_symbtable prog = prog_symbtable tprog.
 Proof.
-  clear ge tge.
-  unfold match_prog, Reloctablesgen.transf_program in TRANSF.
+  unfold match_prog in TRANSF.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
-  monadInv H0. simpl in *. congruence.
+  monadInv H0.
+  repeat destr_in EQ2.
+  rewrite H4. simpl; auto.
 Qed.
-
-
-
 
 Lemma symb_address_has_symtable_entry:
   forall i b o,
@@ -836,8 +838,16 @@ Proof.
   eapply in_stbl_in_genv_symb; eauto.
 Qed.
 
-Axiom norepet_symbentry_id:
+Lemma norepet_symbentry_id:
   list_norepet symbentry_id ## (prog_symbtable tprog).
+Proof.
+  unfold match_prog in TRANSF.
+  decompose [ex and] TRANSF.
+  unfold transf_program in H0.
+  monadInv H0.
+  repeat destr_in EQ2.
+  rewrite H4. simpl; auto.
+Qed.
 
 Lemma transl_init_data_norepet:
   forall sim z0 a r,
@@ -1013,8 +1023,9 @@ Proof.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
   monadInv H0. simpl in *.
+  repeat destr_in EQ2.
   exploit transl_sectable_ok. eauto.
-  intros (c & l & CODE & DATA & TCODE & TDATA).
+  intros (c & ll & CODE & DATA & TCODE & TDATA).
   unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H8.
   repeat destr_in EQ1. simpl.
   (do 5 eexists). split. eauto. split. eauto.
@@ -1158,7 +1169,7 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF. clear TRANSF.
   unfold transf_program in H0.
-  monadInv H0. simpl in *. congruence.
+  monadInv H0. simpl in *. repeat destr_in EQ2. simpl in *. congruence.
 Qed.
 
 Lemma main_ok:
@@ -1180,7 +1191,7 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF. clear TRANSF.
   unfold transf_program in H0.
-  monadInv H0. simpl in *. congruence.
+  monadInv H0. repeat destr_in EQ2. simpl in *. congruence.
 Qed.
 
 Lemma ext_funs_add_external_global:
@@ -1933,7 +1944,7 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF. clear TRANSF.
   unfold transf_program in H0.
-  monadInv H0. simpl in *. congruence.
+  monadInv H0. repeat destr_in EQ2. simpl in *. congruence.
 Qed.
 
 Lemma external_call_ok:
@@ -3288,7 +3299,6 @@ Proof.
   apply Permutation.Permutation_map. auto.
 Qed.
 
-
 Instance reloctablesgen_transflink : @TransfLink _ _ RelocLinking.Linker_reloc_prog RelocLinking1.Linker_reloc_prog match_prog.
 Proof.
   red. simpl. 
@@ -3305,6 +3315,7 @@ Proof.
                   & creloc2 & dreloc2 & senv2).
   unfold transf_program in TP1, TP2.
   monadInv TP1; monadInv TP2. simpl in *.
+  repeat destr_in EQ2. repeat destr_in EQ5. simpl in *.
   repeat rewrite ? defs1, ? public1, ? main1, ? sectable1, ? symbtable1, ? strtable1, ? senv1 in *.
   repeat rewrite ? defs2, ? public2, ? main2, ? sectable2, ? symbtable2, ? strtable2, ? senv2 in *.
   rewrite Heqo.
@@ -3320,7 +3331,7 @@ Proof.
   erewrite transl_sectable'_data. 2: eauto. 2: eauto.
   rewrite PS1 in Heqo0. vm_compute in Heqo0. inv Heqo0. simpl.
   exploit transl_sectable_ok. apply EQ. rewrite PS1. cbn. simpl.
-  intros (c & l & EQ10 & EQ11 & TC & TIDL). inv EQ10; inv EQ11. inv H0.
+  intros (c & ll & EQ10 & EQ11 & TC & TIDL). inv EQ10; inv EQ11. inv H0.
   exploit transl_sectable_ok. apply EQ0. rewrite PS2. cbn. simpl.
   intros (c' & l' & EQ10 & EQ11 & TC' & TIDL'). inv EQ10; inv EQ11.
   unfold link_code_reloctable. simpl.
@@ -3364,7 +3375,10 @@ Proof.
 
   rewrite TCtp. rewrite TIDLtp. eexists; split. eauto. simpl.
   destruct zlt.
-  simpl. eexists; split; eauto. simpl.
+  simpl.
+
+  rewrite ! pred_dec_true.
+  eexists; split; eauto. simpl.
   repeat split.
   eapply Permutation.perm_trans.
   apply Permutation.Permutation_sym; eauto. auto.
@@ -3372,6 +3386,13 @@ Proof.
   eapply Permutation.perm_trans.
   apply Permutation.Permutation_sym; eauto.
   apply Permutation.Permutation_app_comm.
+
+  exploit link_symbtable_norepet; eauto. intuition.
+
+  simpl in Heqo.
+  apply link_prog_inv in Heqo. intuition subst. simpl.
+  apply Maps.PTree.elements_keys_norepet.
+
 
   exfalso.
   admit.                        (* code_size (c1' ++ c2') >= Ptrofs.max_unsigned. *)

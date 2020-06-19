@@ -334,13 +334,22 @@ End WITH_SYMB_INDEX_MAP.
 Definition transf_program (p:program) : res program :=
   let map := gen_symb_index_map (p.(prog_symbtable)) in
   do (codereloc, datareloc) <- transl_sectable map (prog_sectable p);
-    do sec' <- transl_sectable' (prog_sectable p);
-  OK {| prog_defs := prog_defs p;
-        prog_public := prog_public p;
-        prog_main := prog_main p;
-        prog_sectable := sec';
-        prog_strtable := prog_strtable p;
-        prog_symbtable := prog_symbtable p;
-        prog_reloctables := Build_reloctable_map codereloc datareloc;
-        prog_senv := prog_senv p;
-     |}.
+  do sec' <- transl_sectable' (prog_sectable p);
+  if list_norepet_dec ident_eq (List.map fst (prog_defs p))
+  then
+    if list_norepet_dec ident_eq (List.map symbentry_id (prog_symbtable p))
+    then
+    OK {| prog_defs := prog_defs p;
+          prog_public := prog_public p;
+          prog_main := prog_main p;
+          prog_sectable := sec';
+          prog_strtable := prog_strtable p;
+          prog_symbtable := prog_symbtable p;
+          prog_reloctables := Build_reloctable_map codereloc datareloc;
+          prog_senv := prog_senv p;
+       |}
+    else
+      Error (msg "Symbol entry identifiers repeat in symbol table")
+  else
+    Error (msg "Identifiers repeat in program definitions")
+.

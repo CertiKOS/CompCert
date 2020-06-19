@@ -349,7 +349,7 @@ Qed.
 
 Global Opaque addrmode_size.
 
-Definition instr_size (i: instruction) : Z :=
+Let instr_size' (i: instruction) : Z :=
   match i with
   | Pjmp_l _ => 5
   | Pjcc _ _ => 6
@@ -382,6 +382,53 @@ Definition instr_size (i: instruction) : Z :=
   | _ => 1
   end.
 
+Definition linear_addr reg ofs :=
+  Addrmode (Some reg) None (inl ofs).
+
+Definition Plea := if Archi.ptr64 then Pleaq else Pleal.
+Definition Padd dst src z := Plea dst (linear_addr src z).
+Definition Psub dst src z := Padd dst src (- z).
+
+
+Definition instr_size (i: instruction) : Z :=
+  match i with
+  | Pallocframe sz _ _ =>
+    instr_size' (Padd RAX RSP (size_chunk Mptr)) +
+    instr_size' (Psub RSP RSP (align sz 8 - size_chunk Mptr))
+  | Pfreeframe sz _ =>
+    instr_size' (Padd RSP RSP (align sz 8 - size_chunk Mptr))
+  | Pload_parent_pointer rd z =>
+    instr_size' (Padd rd RSP (align (Z.max 0 z) 8))
+  | _ => instr_size' i
+  end.
+
+  Lemma instr_size_alloc:
+    forall sz pub ora i z,
+      instr_size (Pallocframe sz pub ora) = instr_size (Padd RAX RSP z) + (instr_size (Psub RSP RSP i)).
+  Proof.
+    simpl.
+    unfold Psub, Padd, Plea. simpl.
+    intros.
+    unfold linear_addr.
+    destr.
+  Qed.
+
+  Lemma instr_size_free:
+    forall sz ora s,
+      instr_size (Pfreeframe sz ora) = instr_size (Padd RSP RSP s).
+  Proof.
+    simpl. unfold Padd, Plea. simpl.
+    destr.
+  Qed.
+
+  Lemma instr_size_load_parent_pointer:
+    forall r s a,
+      instr_size (Pload_parent_pointer r s) = instr_size (Padd r RSP a).
+  Proof.
+    simpl. unfold Padd, Plea. destr.
+  Qed.
+
+
 Lemma Pjmp_rel_size_eq : forall ofs l,
     instr_size (Pjmp_l_rel ofs) = instr_size (Pjmp_l l).
 Proof.
@@ -406,16 +453,23 @@ Proof.
   simpl. auto.
 Qed.
 
-Lemma instr_size_positive : forall i, 0 < instr_size i.
+Lemma instr_size'_positive : forall i, 0 < instr_size' i.
 Proof.
-  intros. unfold instr_size. 
+  intros. unfold instr_size'.
   destruct i; try omega;
     try (generalize (addrmode_size_pos a); omega);
     try (destr; omega).
-Qed.  
+Qed.
 
-Lemma z_le_ptrofs_max: forall n, 
-    n < two_power_nat (if Archi.ptr64 then 64 else 32) -> 
+Lemma instr_size_positive : forall i, 0 < instr_size i.
+Proof.
+  intros. unfold instr_size.
+  generalize (instr_size'_positive i).
+  destruct i; auto.
+Qed.
+
+Lemma z_le_ptrofs_max: forall n,
+    n < two_power_nat (if Archi.ptr64 then 64 else 32) ->
     n <= Ptrofs.max_unsigned.
 Proof.
   intros. unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
@@ -445,9 +499,9 @@ Ltac solve_amod_le_ptrofs_max :=
     [ generalize (addrmode_size_upper_bound a); omega | solve_n_le_ptrofs_max ]
   end.
 
-Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
+Lemma instr_size'_repr: forall i, 0 <= instr_size' i <= Ptrofs.max_unsigned.
 Proof.
-  intros. unfold instr_size. 
+  intros. unfold instr_size'. 
   destruct i; split; try omega; 
   try solve_n_le_ptrofs_max;
   try (generalize (addrmode_size_pos a); omega);
@@ -457,9 +511,16 @@ Proof.
   destr; omega.
   destr; try solve_n_le_ptrofs_max.
 Qed.
-  
-Global Opaque instr_size.
 
+Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
+Proof.
+  intros.
+  generalize (instr_size'_repr i).
+  unfold instr_size.
+  destruct i; auto.
+Qed.
+
+Global Opaque instr_size.
 
 
 Definition code := list instruction.

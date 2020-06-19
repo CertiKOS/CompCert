@@ -77,18 +77,6 @@ Section WITHMEMORYMODEL.
   Proof.
     apply senv_preserved.
   Qed.
-
-  Axiom instr_size_alloc:
-    forall sz pub ora r i a rr,
-      instr_size (Pallocframe sz pub ora) = instr_size (Plea r a) + (instr_size (Psub rr rr i)).
-
-  Axiom instr_size_free:
-    forall sz ora r s,
-      instr_size (Pfreeframe sz ora) = instr_size (Padd r r s).
-
-  Axiom instr_size_load_parent_pointer:
-    forall r s rd a,
-      instr_size (Pload_parent_pointer r s) = instr_size (Plea rd a).
   
   Lemma transf_instr_size:
     forall i,
@@ -468,9 +456,10 @@ Section WITHMEMORYMODEL.
         econstructor. rewrite Asmgenproof0.nextinstr_pc. repeat rewrite Pregmap.gso by congruence.
         rewrite H. simpl. eauto.
         eauto. erewrite wf_asm_pc_repr'; eauto.
-        erewrite (instr_size_alloc sz pubrange ofs_ra RAX (align sz 8 - size_chunk Mptr)
-                                   (linear_addr RSP (size_chunk Mptr)) RSP).
+        erewrite (instr_size_alloc sz pubrange ofs_ra (align sz 8 - size_chunk Mptr)
+                                   (size_chunk Mptr)).
         generalize (instr_size_positive (Psub RSP RSP (align sz 8 - size_chunk Mptr))).
+        unfold Padd.
         generalize (instr_size_positive (Plea RAX (linear_addr RSP (size_chunk Mptr)))).
         omega.
         unfold Psub, Padd. rewrite exec_instr_Plea. f_equal.
@@ -513,7 +502,7 @@ Section WITHMEMORYMODEL.
         unfold Padd. rewrite exec_instr_Plea.
         f_equal. apply Axioms.extensionality. intro r.
         setoid_rewrite Pregmap.gsspec. destr. repeat rewrite Pregmap.gso by congruence.
-        setoid_rewrite <- instr_size_load_parent_pointer. eauto.
+        (* setoid_rewrite <- instr_size_load_parent_pointer. eauto. *)
         setoid_rewrite Pregmap.gsspec. destr.
         apply eval_addrmode_offset_ptr.
         inv INV. edestruct RSPPTR as ( bb & oo & EQ & _); eauto.

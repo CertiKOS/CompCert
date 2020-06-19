@@ -345,4 +345,4 @@ Record valid_elf_file ef :=
       check_sizes (tl (elf_section_headers ef)) (elf_sections ef) 52 = OK tt;
     vef_first_section_null:
       nth_error (elf_section_headers ef) O = Some null_section_header;
-  }.
+ }.

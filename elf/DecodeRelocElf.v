@@ -13,6 +13,7 @@ Require Import EncodeRelocElf.
 Import Hex.
 Import ListNotations.
 Require Import Encode.
+Require Import RelocElfSemantics.
 
 Set Implicit Arguments.
 Set Asymmetric Patterns.
@@ -396,7 +397,7 @@ Proof.
     rewrite EQofs. rewrite Nat2Z.id. auto.
 Qed.
 
-Definition decode_elf_file (l: list byte) (p: program) : res elf_file :=
+Definition decode_elf_file (l: list byte) (p: program) senv : res elf_file :=
   do (ehbytes, _) <- take_drop 52 l;
   do eh <- decode_elf_header ehbytes;
   do shs <- decode_section_headers eh l;
@@ -405,6 +406,7 @@ Definition decode_elf_file (l: list byte) (p: program) : res elf_file :=
       prog_defs := AST.prog_defs p;
       prog_public := AST.prog_public p;
       prog_main := AST.prog_main p;
+      prog_senv := senv;
       elf_head := eh;
       elf_sections := tl ss;
       elf_section_headers := shs
@@ -421,8 +423,8 @@ Proof.
 Qed.
 
 Lemma decode_encode_elf_file ef (V: valid_elf_file ef):
-  let '(l,p) := encode_elf_file ef in
-  decode_elf_file l p = OK ef.
+  let '(l,p,senv) := encode_elf_file ef in
+  decode_elf_file l p senv = OK ef.
 Proof.
   unfold encode_elf_file, decode_elf_file.
   rewrite take_drop_length_app. 2: reflexivity.
@@ -439,6 +441,6 @@ Proof.
                                   (encode_section_headers (elf_section_headers ef))).
   eauto. reflexivity. intro DS. rewrite <- Heql. rewrite DS.
   simpl.
-  clear.
-  destruct ef. simpl in *. reflexivity.
+  destruct ef. simpl in *. f_equal.
 Qed.
+
