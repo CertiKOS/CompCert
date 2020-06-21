@@ -953,10 +953,32 @@ Lemma decode_fuel_le: forall rtbl symtbl fuel fuel' ofs l instrs code,
     -> (fuel' >= fuel)%nat
     -> decode_instrs rtbl symtbl fuel' ofs l instrs = OK code.
 Proof.
-  intros rtbl symtbl fuel fuel' ofs l instrs code HDecode HGE.
-  
-
-Admitted.
+  intros rtbl symtbl.
+  induction fuel.
+  (* bc *)
+  intros fuel' ofs l instrs code HDecode HFGE.
+  simpl in HDecode.
+  destruct l; inversion HDecode.
+  unfold decode_instrs.
+  destruct fuel'.
+  1-2: auto.
+  intros fuel' ofs l instrs code HDecode HGE.
+  induction HGE.
+  auto.
+  simpl in HDecode.
+  destruct l.
+  (* easy *)
+  simpl. auto.
+  monadInv HDecode.
+  destruct x.
+  cbn [decode_instrs].
+  rewrite EQ.
+  simpl.
+  cut((m >= fuel)%nat).
+  intros HMGE.
+  generalize (IHfuel _ _ _ _ _ EQ0 HMGE). auto.
+  omega.
+Qed.
 
 
 Section PRESERVATION.
@@ -1011,16 +1033,21 @@ Proof.
     intros HTranslSpec.
     generalize (spec_decode_ex' code 0 (rev l) _ _ HTranslSpec).
     (* generalize (spec_decode_ex code 0 (rev l) _ _  HTranslSpec). *)
-    intros (c' & HEncodeDecode).
-    destruct HEncodeDecode as [HDecode HDecodeEQ].
+    intros (c' & code' & HEncodeDecode).
+    destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]].
     econstructor.
     unfold decode_prog_code_section.
     simpl.
-    (* unfold decode_instrs'.     *)
-    (* rewrite HDecode. *)
-    (* simpl. *)
-    (* eauto. *)
-
+    cut(((length(rev l)) >= c')%nat).
+    intros HGE.
+    generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE).
+    intros HDecode'.
+    unfold decode_instrs'.
+    rewrite HDecode'.
+    simpl.
+    eauto.
+    omega.
+    
     (* init_mem *)
     admit.
     (* initial_state_gen *)
