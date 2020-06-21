@@ -52,7 +52,7 @@ let compile_c_ast sourcename csyntax ofile =
   if !option_reloc_elf then
   begin
     match Compiler.transf_c_program_bytes csyntax with
-     | Errors.OK (bs, p) ->
+     | Errors.OK ((bs, p), _) ->
         ElfFileOutput.write_elf ofile bs
      | Errors.Error msg ->
         eprintf "%s: %a" sourcename print_error msg;
