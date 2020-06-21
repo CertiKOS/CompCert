@@ -774,6 +774,17 @@ Proof.
     + erewrite PTree.gso; eauto.
 Qed.
 
+Lemma add_external_globals_pres_find_symbol' : forall extfuns stbl ge i,
+    ~ In i (get_symbentry_ids stbl) ->
+    Genv.find_symbol (add_external_globals extfuns ge stbl) i = Genv.find_symbol ge i.
+Proof.
+  intros extfuns stbl ge i NIN.
+  eapply add_external_globals_pres_find_symbol; eauto.
+  red. intros e IN EQ. subst.
+  exfalso. eapply NIN. 
+  eapply in_map; eauto.
+Qed.
+
 
 Definition find_symbol_block_bound ge :=
   forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).

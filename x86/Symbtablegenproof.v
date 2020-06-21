@@ -480,18 +480,41 @@ Proof.
       exploit acc_symb_tree_entry_some; eauto.
       intros GET'.
       unfold globalenv in tge; cbn in tge.
+      cbn in GET'.
       unfold tge.
-      unfold Genv.find_symbol.
-      (* exploit transl_prog_pres_def; eauto. *)
-      (* intros (def' & sb & IN' & TLDEF). *)
-      (* exploit find_symbol_exists; eauto. *)
-      (* intros (b' & ofs' & FSYM'). *)
-      (* exists b', ofs'. split; auto. *)
-      (* unfold init_meminj. destruct eq_block. *)
-      (* subst b.  apply Genv.find_symbol_genv_next_absurd in FSYM. contradiction. *)
-      (* apply Genv.find_invert_symbol in FSYM. rewrite FSYM. rewrite FSYM'. auto. *)
-      
-      admit. }
+      unfold symbtable_to_tree in GET'.
+      apply PTree_Properties.in_of_list in GET'.
+      set (e:= get_symbentry sec_data_id sec_code_id
+                             (defs_data_size (defs_before id (AST.prog_defs prog)))
+                             (defs_code_size (defs_before id (AST.prog_defs prog))) id def) in GET'.
+      destruct (is_def_internal is_fundef_internal def) eqn:INT.
+      *
+        assert (is_symbentry_internal e = true) as INT'.
+        { subst e.
+          erewrite <- get_symbentry_pres_internal_prop; eauto. }
+        assert (In e (rev s)) as IN'.
+        { unfold symbtable_to_idlist in GET'.
+          erewrite in_map_iff in GET'. 
+          destruct GET' as (e' & EQ & IN''). inversion EQ.  subst e'. auto.
+        } 
+        erewrite acc_symb_pres_ids in wf_prog_norepet_defs; eauto.
+        generalize (acc_symb_map_get_some_int _ _ (PTree.empty _)
+                                              wf_prog_norepet_defs IN' INT').
+        intros (b' & ofs' & GET'').
+        assert (symbentry_id e = id) as IDEQ.
+        { subst e. rewrite get_symbentry_id. auto. }
+        
+        erewrite add_external_globals_pres_find_symbol; eauto.
+        unfold Genv.find_symbol. cbn. rewrite <- IDEQ. eauto.
+        rewrite <- IDEQ. eapply norepet_only_internal_symbol; eauto.
+      * 
+        unfold symbtable_to_idlist in GET'.
+        rewrite in_map_iff in GET'.
+        destruct GET' as (e' & EQ' & IN). inversion EQ'. subst e'.
+        erewrite add_external_globals_find_symb; eauto.
+        erewrite acc_symb_pres_ids in wf_prog_norepet_defs; eauto.
+        subst e. erewrite <- get_symbentry_pres_internal_prop. auto.
+    }
     destruct FIND' as (b' & ofs' & FIND').
     exists b', ofs'. split; auto. unfold tge in FIND'. rewrite FIND'. auto.
 
@@ -502,9 +525,19 @@ Proof.
     unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
     destr_match_in INITINJ; try congruence.
     destr_match_in INITINJ; try congruence.
-    destruct p. inv INITINJ. rewrite Ptrofs.repr_unsigned.
+    destruct p. inversion INITINJ. clear INITINJ. subst b0 ofs. 
+    rewrite Ptrofs.repr_unsigned.
     unfold globalenv in EQ0; simpl in EQ0.
-    unfold Genv.find_ext_funct.
+    apply Genv.invert_find_symbol in EQ.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    intros IN.
+    assert (prog_symbtable tprog = l) as SL by (subst tprog; auto).
+    rewrite SL in EQ0.
+    unfold tge. unfold globalenv. cbn.
+    rewrite SL.
+    
+    
+    
     (* rewrite add_external_globals_pres_find_symbol in EQ0. *)
     (* unfold Genv.find_symbol in EQ0. cbn in EQ0. *)
     (* apply Genv.invert_find_symbol in EQ. *)
