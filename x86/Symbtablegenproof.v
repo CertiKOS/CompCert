@@ -525,9 +525,19 @@ Proof.
     unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
     destr_match_in INITINJ; try congruence.
     destr_match_in INITINJ; try congruence.
-    destruct p. inv INITINJ. rewrite Ptrofs.repr_unsigned.
+    destruct p. inversion INITINJ. clear INITINJ. subst b0 ofs. 
+    rewrite Ptrofs.repr_unsigned.
     unfold globalenv in EQ0; simpl in EQ0.
-    unfold Genv.find_ext_funct.
+    apply Genv.invert_find_symbol in EQ.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    intros IN.
+    assert (prog_symbtable tprog = l) as SL by (subst tprog; auto).
+    rewrite SL in EQ0.
+    unfold tge. unfold globalenv. cbn.
+    rewrite SL.
+    
+    
+    
     (* rewrite add_external_globals_pres_find_symbol in EQ0. *)
     (* unfold Genv.find_symbol in EQ0. cbn in EQ0. *)
     (* apply Genv.invert_find_symbol in EQ. *)
