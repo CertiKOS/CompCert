@@ -790,6 +790,36 @@ Proof.
 Qed.
 
 
+Lemma acc_symb_map_ignore: forall id e t,
+    id <> symbentry_id e ->
+    (acc_symb_map e t) ! id = t ! id.
+Proof.
+  intros.
+  unfold acc_symb_map. destr; eauto.
+  erewrite PTree.gso; auto.
+Qed.
+
+Lemma acc_symb_map_get_some_int: forall stbl e t,
+    list_norepet (get_symbentry_ids stbl) ->
+    In e stbl ->
+    is_symbentry_internal e = true ->
+    exists b ofs, 
+      (fold_right acc_symb_map t stbl) ! (symbentry_id e) 
+      = Some (b, ofs).
+Proof.
+  induction stbl as [|e' stbl].
+  - cbn. intros. contradiction.
+  - cbn. intros e t NORPT [EQ | IN] INT.
+    + subst. unfold is_symbentry_internal in INT.
+      destr_in INT. 
+      unfold acc_symb_map. rewrite Heqs.
+      erewrite PTree.gss. eauto.
+    + inv NORPT.
+      erewrite acc_symb_map_ignore; eauto.
+      intros EQ. rewrite <- EQ in H1.
+      apply H1. eapply in_map; eauto.
+Qed.
+
 Lemma acc_instr_map_no_effect: forall c ofs' ofs map cz map',
     fold_left acc_instr_map c (ofs', map') = (cz, map) ->
     (Ptrofs.unsigned ofs) < (Ptrofs.unsigned ofs') ->
@@ -1033,3 +1063,73 @@ Proof.
   eapply gen_symb_table_only_internal_symbol_aux; eauto.
 Qed.
 
+Lemma norepet_only_internal_symbol: forall stbl e,
+    list_norepet (get_symbentry_ids stbl) ->
+    In e stbl ->
+    is_symbentry_internal e = true ->
+    only_internal_symbol (symbentry_id e) stbl.
+Proof.
+  induction stbl as [|e' stbl].
+  - cbn. intros. red. auto.
+  - cbn. intros e NORPT [EQ|IN] INT. 
+    + subst. inv NORPT.
+      red. intros e'' IN' ID.
+      inv IN'; auto.
+      rewrite <- ID in H1.
+      exfalso.
+      apply H1. apply in_map; auto.
+    + inv NORPT.
+      red. intros e'' IN' ID. inv IN'.
+      * rewrite ID in H1.
+        exfalso. apply H1. 
+        apply in_map; auto.
+      * generalize (IHstbl _ H2 IN INT).
+        intros ONLY.
+        red in ONLY. eauto.
+Qed.
+
+
+Definition symbs_before (id:ident) (stbl: symbtable) :=
+  elems_before ident_eq id (symbtable_to_idlist stbl).
+
+Lemma symbs_before_tail:
+  forall id e stbl,
+  id <> (symbentry_id e) ->
+  symbs_before id (e :: stbl) = e :: symbs_before id stbl.
+Proof.
+  intros.
+  unfold symbs_before, symbtable_to_idlist.
+  cbn [map].
+  eapply elems_before_tail; auto.
+Qed.
+        
+Lemma add_external_globals_find_symb : forall stbl e ge extfuns, 
+    list_norepet (get_symbentry_ids stbl) ->
+    In e stbl ->
+    is_symbentry_internal e = false ->
+    Genv.find_symbol (add_external_globals extfuns ge stbl) (symbentry_id e) =
+    Some (pos_advance_N (Genv.genv_next ge) 
+                        (num_of_external_symbs (symbs_before (symbentry_id e) stbl)), 
+          Ptrofs.zero).
+Proof.
+  induction stbl as [|e' stbl].
+  - intros e ge extfuns NORPT IN INT. inv IN.
+  - intros e ge extfuns NORPT IN INT.
+    inv NORPT. inv IN. 
+    + cbn. rewrite peq_true. cbn.
+      erewrite add_external_globals_pres_find_symbol'; eauto.
+      unfold add_external_global, Genv.find_symbol; cbn.
+      rewrite INT.
+      rewrite PTree.gss. auto.
+    + 
+      assert (symbentry_id e <> symbentry_id e') as NEQ.
+      { 
+        intros EQ. rewrite <- EQ in H1.
+        apply H1. apply in_map; auto.
+      }
+      erewrite symbs_before_tail; eauto.
+      cbn. erewrite IHstbl; eauto.
+      f_equal. destruct (is_symbentry_internal e') eqn:INT'; cbn.
+      * rewrite INT'. f_equal.
+      * rewrite INT'. f_equal.
+Qed.
