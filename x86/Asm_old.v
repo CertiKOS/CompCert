@@ -13,8 +13,8 @@
 (** Abstract syntax and semantics for IA32 assembly language *)
 
 Require Import String Coqlib Maps.
-Require Import AST Integers Floats Values Memory Events Globalenvs Smallstep.
-Require Import Locations Stacklayout Conventions.
+Require Import AST_old Integers Floats Values_old Memory_old Events_old Globalenvs_old Smallstep_old.
+Require Import Locations_old Stacklayout_old Conventions_old.
 
 Definition alignw:Z := 8.
 
@@ -464,8 +464,8 @@ Global Opaque instr_size.
 
 Definition code := list instruction.
 Record function : Type := mkfunction { fn_sig: signature; fn_code: code; fn_stacksize: Z; fn_pubrange: Z * Z }.
-Definition fundef := AST.fundef function.
-Definition program := AST.program fundef unit.
+Definition fundef := AST_old.fundef function.
+Definition program := AST_old.program fundef unit.
 
 Definition instr_not_jmp_rel (i:instruction) :=
   match i with
@@ -1603,14 +1603,14 @@ Definition preg_of (r: mreg) : preg :=
   | SI => IR RSI
   | DI => IR RDI
   | BP => IR RBP
-  | Machregs.R8 => IR R8
-  | Machregs.R9 => IR R9
-  | Machregs.R10 => IR R10
-  | Machregs.R11 => IR R11
-  | Machregs.R12 => IR R12
-  | Machregs.R13 => IR R13
-  | Machregs.R14 => IR R14
-  | Machregs.R15 => IR R15
+  | Machregs_old.R8 => IR R8
+  | Machregs_old.R9 => IR R9
+  | Machregs_old.R10 => IR R10
+  | Machregs_old.R11 => IR R11
+  | Machregs_old.R12 => IR R12
+  | Machregs_old.R13 => IR R13
+  | Machregs_old.R14 => IR R14
+  | Machregs_old.R15 => IR R15
   | X0 => FR XMM0
   | X1 => FR XMM1
   | X2 => FR XMM2
@@ -1638,7 +1638,7 @@ Inductive extcall_arg (rs: regset) (m: mem): loc -> val -> Prop :=
   | extcall_arg_reg: forall r,
       extcall_arg rs m (R r) (rs (preg_of r))
   | extcall_arg_stack: forall ofs ty bofs v,
-      bofs = Stacklayout.fe_ofs_arg + 4 * ofs ->
+      bofs = Stacklayout_old.fe_ofs_arg + 4 * ofs ->
       Mem.loadv (chunk_of_type ty) m
                 (Val.offset_ptr (rs (IR RSP)) (Ptrofs.repr bofs)) = Some v ->
       extcall_arg rs m (S Outgoing ofs ty) v.
@@ -1717,7 +1717,7 @@ End RELSEM.
 
 (** Execution of whole programs. *)
 
-Inductive initial_state {F V} (p: AST.program F V): state -> Prop :=
+Inductive initial_state {F V} (p: AST_old.program F V): state -> Prop :=
   | initial_state_intro: forall m0 m2 bmain,
       Genv.init_mem p = Some m0 ->
       Mem.record_init_sp m0 = Some m2 ->

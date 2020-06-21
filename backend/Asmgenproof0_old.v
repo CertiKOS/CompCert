@@ -14,20 +14,20 @@
 
 Require Import Coqlib.
 Require Intv.
-Require Import AST.
+Require Import AST_old.
 Require Import Errors.
 Require Import Integers.
 Require Import Floats.
-Require Import Values.
-Require Import Memory.
-Require Import Globalenvs.
-Require Import Events.
-Require Import Smallstep.
-Require Import Locations.
-Require Import Mach.
-Require Import Asm.
-Require Import Asmgen.
-Require Import Conventions.
+Require Import Values_old.
+Require Import Memory_old.
+Require Import Globalenvs_old.
+Require Import Events_old.
+Require Import Smallstep_old.
+Require Import Locations_old.
+Require Import Mach_old.
+Require Import Asm_old.
+Require Import Asmgen_old.
+Require Import Conventions_old.
 
 (** * Processor registers and register states *)
 
@@ -64,7 +64,6 @@ Lemma data_diff:
 Proof.
   congruence.
 Qed.
-
 Hint Resolve data_diff: asmgen.
 
 Lemma preg_of_not_SP:
@@ -82,26 +81,26 @@ Qed.
 Hint Resolve preg_of_not_SP preg_of_not_PC: asmgen.
 
 Lemma nextinstr_pc:
-  forall rs (*SACC:*)sz, (nextinstr rs (*SACC:*)sz)#PC = Val.offset_ptr rs#PC (*SACC:*)sz.
+  forall rs sz, (nextinstr rs sz)#PC = Val.offset_ptr rs#PC sz.
 Proof.
   intros. apply Pregmap.gss.
 Qed.
 
 Lemma nextinstr_inv:
-  forall r rs (*SACC:*)sz, r <> PC -> (nextinstr rs (*SACC:*)sz)#r = rs#r.
+  forall r rs sz, r <> PC -> (nextinstr rs sz)#r = rs#r.
 Proof.
   intros. unfold nextinstr. apply Pregmap.gso. red; intro; subst. auto.
 Qed.
 
 Lemma nextinstr_inv1:
-  forall r rs (*SACC:*)sz, data_preg r = true -> (nextinstr rs (*SACC:*)sz)#r = rs#r.
+  forall r rs sz, data_preg r = true -> (nextinstr rs sz)#r = rs#r.
 Proof.
   intros. apply nextinstr_inv. red; intro; subst; discriminate.
 Qed.
 
 Lemma nextinstr_set_preg:
-  forall rs m v (*SACC:*)sz,
-  (nextinstr (rs#(preg_of m) <- v) (*SACC:*)sz)#PC = Val.offset_ptr rs#PC (*SACC:*)sz.
+  forall rs m v sz,
+  (nextinstr (rs#(preg_of m) <- v) sz)#PC = Val.offset_ptr rs#PC sz.
 Proof.
   intros. unfold nextinstr. rewrite Pregmap.gss.
   rewrite Pregmap.gso. auto. apply sym_not_eq. apply preg_of_not_PC.
@@ -148,10 +147,10 @@ Qed.
 
 (** * Agreement between Mach registers and processor registers *)
 
-Record agree (ms: Mach.regset) (sp: val) (rs: Asm.regset) : Prop := mkagree {
+Record agree (ms: Mach_old.regset) (sp: val) (rs: Asm_old.regset) : Prop := mkagree {
   agree_sp: rs#SP = sp;
   agree_sp_def: sp <> Vundef;
-(*SACC:*)(*agree_sp_type: Val.has_type sp Tptr;*)
+  agree_sp_type: Val.has_type sp Tptr;
   agree_mregs: forall r: mreg, Val.lessdef (ms r) (rs#(preg_of r))
 }.
 
@@ -239,8 +238,8 @@ Proof.
 Qed.
 
 Lemma agree_nextinstr:
-  forall ms sp rs (*SACC:*)sz,
-  agree ms sp rs -> agree ms sp (nextinstr rs (*SACC:*)sz).
+  forall ms sp rs sz,
+  agree ms sp rs -> agree ms sp (nextinstr rs sz).
 Proof.
   intros. unfold nextinstr. apply agree_set_other. auto. auto.
 Qed.
@@ -249,7 +248,7 @@ Lemma agree_set_pair:
   forall sp p v v' ms rs,
   agree ms sp rs ->
   Val.lessdef v v' ->
-  agree (Mach.set_pair p v ms) sp (set_pair (map_rpair preg_of p) v' rs).
+  agree (Mach_old.set_pair p v ms) sp (set_pair (map_rpair preg_of p) v' rs).
 Proof.
   intros. destruct p; simpl.
 - apply agree_set_mreg_parallel; auto.
@@ -274,14 +273,14 @@ Lemma agree_undef_regs:
   forall ms sp rl rs rs',
   agree ms sp rs ->
   (forall r', data_preg r' = true -> preg_notin r' rl -> rs'#r' = rs#r') ->
-  agree (Mach.undef_regs rl ms) sp rs'.
+  agree (Mach_old.undef_regs rl ms) sp rs'.
 Proof.
   intros. destruct H. split; auto.
   rewrite <- agree_sp0. apply H0; auto.
   rewrite preg_notin_charact. intros. apply not_eq_sym. apply preg_of_not_SP.
   intros. destruct (In_dec mreg_eq r rl).
-  rewrite Mach.undef_regs_same; auto.
-  rewrite Mach.undef_regs_other; auto. rewrite H0; auto.
+  rewrite Mach_old.undef_regs_same; auto.
+  rewrite Mach_old.undef_regs_other; auto. rewrite H0; auto.
   apply preg_of_data.
   rewrite preg_notin_charact. intros; red; intros. elim n.
   exploit preg_of_injective; eauto. congruence.
@@ -292,7 +291,7 @@ Lemma agree_set_undef_mreg:
   agree ms sp rs ->
   Val.lessdef v (rs'#(preg_of r)) ->
   (forall r', data_preg r' = true -> r' <> preg_of r -> preg_notin r' rl -> rs'#r' = rs#r') ->
-  agree (Regmap.set r v (Mach.undef_regs rl ms)) sp rs'.
+  agree (Regmap.set r v (Mach_old.undef_regs rl ms)) sp rs'.
 Proof.
   intros. apply agree_set_mreg with (rs'#(preg_of r) <- (rs#(preg_of r))); auto.
   apply agree_undef_regs with rs; auto.
@@ -304,7 +303,7 @@ Qed.
 Lemma agree_change_sp:
   forall ms sp rs sp',
   agree ms sp rs -> sp' <> Vundef ->
-(*SACC:*)(*forall TYPE: Val.has_type sp' Tptr,*)
+  forall TYPE: Val.has_type sp' Tptr,
   agree ms sp' (rs#SP <- sp').
 Proof.
   intros. inv H. split; auto.
@@ -314,12 +313,16 @@ Qed.
 (** Connection between Mach and Asm calling conventions for external
     functions. *)
 
+Section WITHEXTERNALCALLS.
+Context `{external_calls_prf: ExternalCalls}.
+Context {injperm: InjectPerm}.
+
 Lemma extcall_arg_match:
   forall ms sp rs m m' l v,
   agree ms sp rs ->
   Mem.extends m m' ->
-  Mach.extcall_arg ms m sp l v ->
-  exists v', Asm.extcall_arg rs m' l v' /\ Val.lessdef v v'.
+  Mach_old.extcall_arg ms m sp l v ->
+  exists v', Asm_old.extcall_arg rs m' l v' /\ Val.lessdef v v'.
 Proof.
   intros. inv H1.
   exists (rs#(preg_of r)); split. constructor. eapply preg_val; eauto.
@@ -334,8 +337,8 @@ Lemma extcall_arg_pair_match:
   forall ms sp rs m m' p v,
   agree ms sp rs ->
   Mem.extends m m' ->
-  Mach.extcall_arg_pair ms m sp p v ->
-  exists v', Asm.extcall_arg_pair rs m' p v' /\ Val.lessdef v v'.
+  Mach_old.extcall_arg_pair ms m sp p v ->
+  exists v', Asm_old.extcall_arg_pair rs m' p v' /\ Val.lessdef v v'.
 Proof.
   intros. inv H1.
 - exploit extcall_arg_match; eauto. intros (v' & A & B). exists v'; split; auto. constructor; auto.
@@ -347,8 +350,8 @@ Qed.
 Lemma extcall_args_match:
   forall ms sp rs m m', agree ms sp rs -> Mem.extends m m' ->
   forall ll vl,
-  list_forall2 (Mach.extcall_arg_pair ms m sp) ll vl ->
-  exists vl', list_forall2 (Asm.extcall_arg_pair rs m') ll vl' /\ Val.lessdef_list vl vl'.
+  list_forall2 (Mach_old.extcall_arg_pair ms m sp) ll vl ->
+  exists vl', list_forall2 (Asm_old.extcall_arg_pair rs m') ll vl' /\ Val.lessdef_list vl vl'.
 Proof.
   induction 3; intros.
   exists (@nil val); split. constructor. constructor.
@@ -360,10 +363,10 @@ Qed.
 Lemma extcall_arguments_match:
   forall ms m m' sp rs sg args,
   agree ms sp rs -> Mem.extends m m' ->
-  Mach.extcall_arguments ms m sp sg args ->
-  exists args', Asm.extcall_arguments rs m' sg args' /\ Val.lessdef_list args args'.
+  Mach_old.extcall_arguments ms m sp sg args ->
+  exists args', Asm_old.extcall_arguments rs m' sg args' /\ Val.lessdef_list args args'.
 Proof.
-  unfold Mach.extcall_arguments, Asm.extcall_arguments; intros.
+  unfold Mach_old.extcall_arguments, Asm_old.extcall_arguments; intros.
   eapply extcall_args_match; eauto.
 Qed.
 
@@ -385,7 +388,7 @@ Lemma builtin_args_match:
 Proof.
   induction 3; intros; simpl.
   exists (@nil val); split; constructor.
-  exploit (@eval_builtin_arg_lessdef _ ge ms (fun r => rs (preg_of r))); eauto.
+  exploit (eval_builtin_arg_lessdef (ge := ge) (e1 := ms) (fun r => rs (preg_of r))); eauto.
   intros; eapply preg_val; eauto.
   intros (v1' & A & B).
   destruct IHlist_forall2 as [vl' [C D]].
@@ -396,7 +399,7 @@ Lemma agree_set_res:
   forall res ms sp rs v v',
   agree ms sp rs ->
   Val.lessdef v v' ->
-  agree (Mach.set_res res v ms) sp (Asm.set_res (map_builtin_res preg_of res) v' rs).
+  agree (Mach_old.set_res res v ms) sp (Asm_old.set_res (map_builtin_res preg_of res) v' rs).
 Proof.
   induction res; simpl; intros.
 - eapply agree_set_mreg; eauto. rewrite Pregmap.gss. auto.
@@ -437,12 +440,12 @@ Inductive code_tail: Z -> code -> code -> Prop :=
       code_tail 0 c c
   | code_tail_S: forall pos i c1 c2,
       code_tail pos c1 c2 ->
-      code_tail (pos + (*SACC:*)instr_size i) (i :: c1) c2.
+      code_tail (pos + instr_size i) (i :: c1) c2.
 
 Lemma code_tail_pos:
   forall pos c1 c2, code_tail pos c1 c2 -> pos >= 0.
 Proof.
-  induction 1. omega. 
+  induction 1. omega.
   generalize (instr_size_positive i); omega.
 Qed.
 
@@ -454,7 +457,7 @@ Proof.
   induction c1; simpl; intros.
   inv H.
   destruct (zeq pos 0). subst pos.
-  inv H. auto. generalize (code_tail_pos _ _ _ H4). intro.
+  inv H. auto. generalize (code_tail_pos _ _ _ H4). intro. 
   generalize (instr_size_positive a); omega.
   inv H. congruence. replace (pos0 + (instr_size a) - (instr_size a)) with pos0 by omega.
   eauto.
@@ -462,7 +465,7 @@ Qed.
 
 Remark code_tail_bounds_1:
   forall fn ofs c,
-  code_tail ofs fn c -> 0 <= ofs <= (*SACC:*)code_size fn.
+  code_tail ofs fn c -> 0 <= ofs <= code_size fn.
 Proof.
   induction 1; intros; simpl.
   generalize (code_size_non_neg c). omega.
@@ -471,49 +474,54 @@ Qed.
 
 Remark code_tail_bounds_2:
   forall fn ofs i c,
-  code_tail ofs fn (i :: c) -> 0 <= ofs < (*SACC:*)code_size fn.
+  code_tail ofs fn (i :: c) -> 0 <= ofs < code_size fn.
 Proof.
   assert (forall ofs fn c, code_tail ofs fn c ->
-          forall i c', c = i :: c' -> 0 <= ofs < (*SACC:*)code_size fn).
-  induction 1; intros; simpl.
-  rewrite H. simpl. generalize (instr_size_positive i).
-  generalize (code_size_non_neg c'). omega.
-  generalize (instr_size_positive i).
-  generalize (IHcode_tail _ _ H0). omega.
+          forall i c', c = i :: c' -> 0 <= ofs < code_size fn).
+  {
+    induction 1; intros; simpl.
+    - rewrite H. simpl. generalize (instr_size_positive i).
+      generalize (code_size_non_neg c'). omega.
+    - generalize (instr_size_positive i).
+      generalize (IHcode_tail _ _ H0). omega.
+  }
   eauto.
 Qed.
 
 Lemma code_tail_next:
   forall fn ofs i c,
   code_tail ofs fn (i :: c) ->
-  code_tail (ofs + (*SACC:*)instr_size i) fn c.
+  code_tail (ofs + instr_size i) fn c.
 Proof.
   assert (forall ofs fn c, code_tail ofs fn c ->
-          forall i c', c = i :: c' -> code_tail (ofs + instr_size i) fn c').
-  induction 1; intros.
-  subst c. constructor. constructor.
-  replace (pos + instr_size i + instr_size i0) with
+          forall i c', c = i :: c' -> code_tail (ofs + (instr_size i)) fn c').
+  { 
+    induction 1; intros.
+    - subst c. constructor. constructor.
+    - replace (pos + instr_size i + instr_size i0) with
               ((pos + instr_size i0) + instr_size i).
-  constructor. auto. omega.
+      constructor. auto. omega.
+  }
   eauto.
 Qed.
 
+
 Lemma code_tail_next_int:
   forall fn ofs i c,
-  (*SACC:*)code_size fn <= Ptrofs.max_unsigned ->
+  code_size fn <= Ptrofs.max_unsigned ->
   code_tail (Ptrofs.unsigned ofs) fn (i :: c) ->
-  code_tail (Ptrofs.unsigned (Ptrofs.add ofs ((*SACC:*)Ptrofs.repr (instr_size i)))) fn c.
+  code_tail (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr (instr_size i)))) fn c.
 Proof.
   intros. rewrite Ptrofs.add_unsigned.
   rewrite (Ptrofs.unsigned_repr (instr_size i)). 
   rewrite Ptrofs.unsigned_repr.
   apply code_tail_next; auto.
-  apply code_tail_next in H0.
-  generalize (code_tail_bounds_1 _ _ _ H0). omega.
-  apply code_tail_next in H0.
-  generalize (code_tail_bounds_1 _ _ _ H0).
-  generalize (Ptrofs.unsigned_range ofs). 
-  generalize (instr_size_positive i). intros. omega.
+  - apply code_tail_next in H0.
+    generalize (code_tail_bounds_1 _ _ _ H0). omega.
+  - apply code_tail_next in H0.
+    generalize (code_tail_bounds_1 _ _ _ H0).
+    generalize (Ptrofs.unsigned_range ofs). 
+    generalize (instr_size_positive i). intros. omega.
 Qed.
 
 (** [transl_code_at_pc pc fb f c ep tf tc] holds if the code pointer [pc] points
@@ -521,8 +529,8 @@ Qed.
   and [tc] is the tail of the generated code at the position corresponding
   to the code pointer [pc]. *)
 
-Inductive transl_code_at_pc (ge: Mach.genv):
-    val -> block -> Mach.function -> Mach.code -> bool -> Asm.function -> Asm.code -> Prop :=
+Inductive transl_code_at_pc (ge: Mach_old.genv):
+    val -> block -> Mach_old.function -> Mach_old.code -> bool -> Asm_old.function -> Asm_old.code -> Prop :=
   transl_code_at_pc_intro:
     forall b ofs f c ep tf tc,
     Genv.find_funct_ptr ge b = Some(Internal f) ->
@@ -549,7 +557,7 @@ Lemma transl_code'_transl_code:
   forall f il ep,
   transl_code' f il ep = transl_code f il ep.
 Proof.
-  intros. unfold transl_code'. rewrite transl_code_rec_transl_code.
+  intros. unfold transl_code'. unfold Asmgen_old.transl_code'. rewrite transl_code_rec_transl_code.
   destruct (transl_code f il ep); auto.
 Qed.
 
@@ -578,7 +586,7 @@ Qed.
 >>
 *)
 
-Definition return_address_offset (f: Mach.function) (c: Mach.code) (ofs: ptrofs) : Prop :=
+Definition return_address_offset (f: Mach_old.function) (c: Mach_old.code) (ofs: ptrofs) : Prop :=
   forall tf tc,
   transf_function f = OK tf ->
   transl_code f c false = OK tc ->
@@ -594,7 +602,7 @@ Lemma is_tail_code_tail:
   forall c1 c2, is_tail c1 c2 -> exists ofs, code_tail ofs c2 c1.
 Proof.
   induction 1. exists 0; constructor.
-  destruct IHis_tail as [ofs CT]. exists (ofs + instr_size i); constructor; auto.
+  destruct IHis_tail as [ofs CT]. exists (ofs + (instr_size i)); constructor; auto.
 Qed.
 
 Section RETADDR_EXISTS.
@@ -603,9 +611,9 @@ Hypothesis transl_instr_tail:
   forall f i ep k c, transl_instr f i ep k = OK c -> is_tail k c.
 Hypothesis transf_function_inv:
   forall f tf, transf_function f = OK tf ->
-  exists tc, exists ep, transl_code f (Mach.fn_code f) ep = OK tc /\ is_tail tc (fn_code tf).
+  exists tc, exists ep, transl_code f (Mach_old.fn_code f) ep = OK tc /\ is_tail tc (fn_code tf).
 Hypothesis transf_function_len:
-  forall f tf, transf_function f = OK tf -> (*SACC:*)code_size (fn_code tf) <= Ptrofs.max_unsigned.
+  forall f tf, transf_function f = OK tf -> code_size (fn_code tf) <= Ptrofs.max_unsigned.
 
 Lemma transl_code_tail:
   forall f c1 c2, is_tail c1 c2 ->
@@ -620,14 +628,15 @@ Proof.
 Qed.
 
 Lemma return_address_exists:
-  forall f sg ros c, is_tail (Mcall sg ros :: c) f.(Mach.fn_code) ->
+  forall f sg ros c, is_tail (Mcall sg ros :: c) f.(Mach_old.fn_code) ->
   exists ra, return_address_offset f c ra.
 Proof.
   intros. destruct (transf_function f) as [tf|] eqn:TF.
 + exploit transf_function_inv; eauto. intros (tc1 & ep1 & TR1 & TL1).
   exploit transl_code_tail; eauto. intros (tc2 & ep2 & TR2 & TL2).
 Opaque transl_instr.
-  monadInv TR2.
+  monadInv TR2. 
+  assert (transl_instr f (Mcall sg ros) ep2 x = OK tc2) by auto.
   assert (TL3: is_tail x (fn_code tf)).
   { apply is_tail_trans with tc1; auto.
     apply is_tail_trans with tc2; auto.
@@ -687,7 +696,7 @@ Lemma label_pos_code_tail:
   exists pos',
   label_pos lbl pos c = Some pos'
   /\ code_tail (pos' - pos) c c'
-  /\ pos < pos' <= pos + (*SACC:*)code_size c.
+  /\ pos < pos' <= pos + code_size c.
 Proof.
   induction c.
   simpl; intros. discriminate.
@@ -701,7 +710,7 @@ Proof.
   exists pos'. split. auto. split.
   replace (pos' - pos) with ((pos' - (pos + instr_size a)) + instr_size a) by omega.
   constructor. auto.
-generalize (code_size_non_neg c). generalize (instr_size_positive a). omega.
+  generalize (code_size_non_neg c). generalize (instr_size_positive a). omega.
 Qed.
 
 (** Helper lemmas to reason about
@@ -736,7 +745,8 @@ Lemma tail_nolabel_cons:
 Proof.
   intros. destruct H0. split.
   constructor; auto.
-  intros. simpl. rewrite <- H1. destruct i; reflexivity || contradiction.
+  intros. simpl. rewrite <- H1. 
+  destruct i; reflexivity || contradiction.
 Qed.
 
 Hint Resolve tail_nolabel_refl: labels.
@@ -756,10 +766,10 @@ Ltac TailNoLabel :=
 
 (** * Execution of straight-line code *)
 
-Section SACC_WRAPPER.
+Section WITHCONFIG.
 
-(*SACC:*)
-Variable init_stk : stack.
+  Local Existing Instance mem_accessors_default.
+  Variable init_stk: stack.
 
 Section STRAIGHTLINE.
 
@@ -777,13 +787,13 @@ Inductive exec_straight: code -> regset -> mem ->
                          code -> regset -> mem -> Prop :=
   | exec_straight_one:
       forall i1 c rs1 m1 rs2 m2,
-      exec_instr (*SACC:*)init_stk ge fn i1 rs1 m1 = Next rs2 m2 ->
-      rs2#PC = Val.offset_ptr rs1#PC ((*SACC:*)Ptrofs.repr (instr_size i1)) ->
+        exec_instr init_stk ge fn i1 rs1 m1 = Next rs2 m2 ->
+      rs2#PC = Val.offset_ptr rs1#PC (Ptrofs.repr (instr_size i1)) ->
       exec_straight (i1 :: c) rs1 m1 c rs2 m2
   | exec_straight_step:
       forall i c rs1 m1 rs2 m2 c' rs3 m3,
-      exec_instr (*SACC:*)init_stk ge fn i rs1 m1 = Next rs2 m2 ->
-      rs2#PC = Val.offset_ptr rs1#PC ((*SACC:*)Ptrofs.repr (instr_size i)) ->
+      exec_instr init_stk ge fn i rs1 m1 = Next rs2 m2 ->
+      rs2#PC = Val.offset_ptr rs1#PC (Ptrofs.repr (instr_size i)) ->
       exec_straight c rs2 m2 c' rs3 m3 ->
       exec_straight (i :: c) rs1 m1 c' rs3 m3.
 
@@ -800,10 +810,10 @@ Qed.
 
 Lemma exec_straight_two:
   forall i1 i2 c rs1 m1 rs2 m2 rs3 m3,
-  exec_instr (*SACC:*)init_stk ge fn i1 rs1 m1 = Next rs2 m2 ->
-  exec_instr (*SACC:*)init_stk ge fn i2 rs2 m2 = Next rs3 m3 ->
-  rs2#PC = Val.offset_ptr rs1#PC ((*SACC:*)Ptrofs.repr (instr_size i1)) ->
-  rs3#PC = Val.offset_ptr rs2#PC ((*SACC:*)Ptrofs.repr (instr_size i2)) ->
+  exec_instr init_stk ge fn i1 rs1 m1 = Next rs2 m2 ->
+  exec_instr init_stk ge fn i2 rs2 m2 = Next rs3 m3 ->
+  rs2#PC = Val.offset_ptr rs1#PC (Ptrofs.repr (instr_size i1)) ->
+  rs3#PC = Val.offset_ptr rs2#PC (Ptrofs.repr (instr_size i2)) ->
   exec_straight (i1 :: i2 :: c) rs1 m1 c rs3 m3.
 Proof.
   intros. apply exec_straight_step with rs2 m2; auto.
@@ -812,12 +822,12 @@ Qed.
 
 Lemma exec_straight_three:
   forall i1 i2 i3 c rs1 m1 rs2 m2 rs3 m3 rs4 m4,
-  exec_instr (*SACC:*)init_stk ge fn i1 rs1 m1 = Next rs2 m2 ->
-  exec_instr (*SACC:*)init_stk ge fn i2 rs2 m2 = Next rs3 m3 ->
-  exec_instr (*SACC:*)init_stk ge fn i3 rs3 m3 = Next rs4 m4 ->
-  rs2#PC = Val.offset_ptr rs1#PC ((*SACC:*)Ptrofs.repr (instr_size i1)) ->
-  rs3#PC = Val.offset_ptr rs2#PC ((*SACC:*)Ptrofs.repr (instr_size i2)) ->
-  rs4#PC = Val.offset_ptr rs3#PC ((*SACC:*)Ptrofs.repr (instr_size i3)) ->
+  exec_instr init_stk ge fn i1 rs1 m1 = Next rs2 m2 ->
+  exec_instr init_stk ge fn i2 rs2 m2 = Next rs3 m3 ->
+  exec_instr init_stk ge fn i3 rs3 m3 = Next rs4 m4 ->
+  rs2#PC = Val.offset_ptr rs1#PC (Ptrofs.repr (instr_size i1)) ->
+  rs3#PC = Val.offset_ptr rs2#PC (Ptrofs.repr (instr_size i2)) ->
+  rs4#PC = Val.offset_ptr rs3#PC (Ptrofs.repr (instr_size i3)) ->
   exec_straight (i1 :: i2 :: i3 :: c) rs1 m1 c rs4 m4.
 Proof.
   intros. apply exec_straight_step with rs2 m2; auto.
@@ -830,12 +840,12 @@ Qed.
 Lemma exec_straight_steps_1:
   forall c rs m c' rs' m',
   exec_straight c rs m c' rs' m' ->
-  (*SACC:*)code_size (fn_code fn) <= Ptrofs.max_unsigned ->
+  code_size (fn_code fn) <= Ptrofs.max_unsigned ->
   forall b ofs,
   rs#PC = Vptr b ofs ->
   Genv.find_funct_ptr ge b = Some (Internal fn) ->
   code_tail (Ptrofs.unsigned ofs) (fn_code fn) c ->
-  plus (step (*SACC:*)init_stk) ge (State rs m) E0 (State rs' m').
+  plus (step init_stk) ge (State rs m) E0 (State rs' m').
 Proof.
   induction 1; intros.
   apply plus_one.
@@ -854,7 +864,7 @@ Qed.
 Lemma exec_straight_steps_2:
   forall c rs m c' rs' m',
   exec_straight c rs m c' rs' m' ->
-  (*SACC:*)code_size (fn_code fn) <= Ptrofs.max_unsigned ->
+  code_size (fn_code fn) <= Ptrofs.max_unsigned ->
   forall b ofs,
   rs#PC = Vptr b ofs ->
   Genv.find_funct_ptr ge b = Some (Internal fn) ->
@@ -878,58 +888,52 @@ End STRAIGHTLINE.
 
 Section MATCH_STACK.
 
-Variable ge: Mach.genv.
+Variables init_ra: val.
+Hypothesis init_ra_not_vundef: init_ra <> Vundef.
+Hypothesis init_ra_type: Val.has_type init_ra Tptr.
 
-Inductive match_stack: list Mach.stackframe -> Prop :=
+Variable ge: Mach_old.genv.
+
+Inductive match_stack: list Mach_old.stackframe -> Prop :=
   | match_stack_nil:
       match_stack nil
   | match_stack_cons: forall fb sp ra c s f tf tc,
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       transl_code_at_pc ge ra fb f c false tf tc ->
-      (*SACC: comments this*)(*sp <> Vundef ->*)
       match_stack s ->
       match_stack (Stackframe fb sp ra c :: s).
 
-(*SACC:*)(*
-Lemma parent_sp_def: forall s, match_stack s -> parent_sp s <> Vundef.
-Proof.
-  induction 1; simpl. 
-  unfold Vnullptr; destruct Archi.ptr64; congruence.
-  auto.
-Qed.
-*)
+Lemma parent_ra_def: forall s, match_stack s -> parent_ra init_ra s <> Vundef.
+Proof. induction 1; simpl; try congruence. inv H0. congruence. Qed.
 
-Lemma parent_ra_def: forall s, match_stack s -> parent_ra s <> Vundef.
-Proof. 
-  induction 1; simpl.
-  unfold Vnullptr; destruct Archi.ptr64; congruence.
-  inv H0. congruence.
-Qed.
-
-(*SACC:*)(*
-Lemma lessdef_parent_sp:
-  forall s v,
-  match_stack s -> Val.lessdef (parent_sp s) v -> v = parent_sp s.
-Proof.
-  intros. inv H0. auto. exploit parent_sp_def; eauto. tauto.
-Qed.
-*)
+Lemma parent_ra_type: forall s, match_stack s -> Val.has_type (parent_ra init_ra s) Tptr.
+Proof. induction 1; simpl; try congruence. inv H0. constructor. Qed.
 
 Lemma lessdef_parent_ra:
   forall s v,
-  match_stack s -> Val.lessdef (parent_ra s) v -> v = parent_ra s.
+  match_stack s -> Val.lessdef (parent_ra init_ra s) v -> v = parent_ra init_ra s.
 Proof.
   intros. inv H0. auto. exploit parent_ra_def; eauto. tauto.
 Qed.
 
-(*SACC:*)(*
-Lemma parent_ra_type: forall s, match_stack s -> Val.has_type (parent_ra s) Tptr.
-Proof. 
-  induction 1; simpl; try congruence.
-  inv H0. constructor.
-Qed.*)
-
 End MATCH_STACK.
 
-End SACC_WRAPPER.
+End WITHCONFIG.
 
+End WITHEXTERNALCALLS.
+
+Hint Extern 1 (nolabel _) => exact I : labels.
+Hint Resolve tail_nolabel_refl: labels.
+
+Ltac TailNoLabel :=
+  eauto with labels;
+  match goal with
+  | [ |- tail_nolabel _ (_ :: _) ] => apply tail_nolabel_cons; [auto; exact I | TailNoLabel]
+  | [ H: Error _ = OK _ |- _ ] => discriminate
+  | [ H: assertion_failed = OK _ |- _ ] => discriminate
+  | [ H: OK _ = OK _ |- _ ] => inv H; TailNoLabel
+  | [ H: bind _ _ = OK _ |- _ ] => monadInv H;  TailNoLabel
+  | [ H: (if ?x then _ else _) = OK _ |- _ ] => destruct x; TailNoLabel
+  | [ H: match ?x with nil => _ | _ :: _ => _ end = OK _ |- _ ] => destruct x; TailNoLabel
+  | _ => idtac
+  end.
