@@ -5,6 +5,7 @@
 Require Import Coqlib Integers AST Maps.
 Require Import Permutation.
 Require Import Values Events Memtype Memory.
+Require Import Globalenvs.
 Import ListNotations.
 
 Ltac destr_if := 
@@ -989,6 +990,36 @@ Proof.
   exploit (cmplu_bool_lessdef j v1 v2 v1' v2' m m' c); eauto. intros.
   inversion H2; subst; simpl; constructor.
   apply Val.vofbool_inject.
+Qed.
+
+
+(** *)
+Lemma alloc_perm_range: forall m lo hi m' b k p,
+    Mem.alloc m lo hi = (m', b) ->
+    Mem.range_perm m' b lo hi k p.
+Proof.
+  intros m lo hi m' b k p ALLOC.
+  red. intros ofs OFS.
+  eapply alloc_perm in ALLOC; eauto.
+  rewrite ALLOC. rewrite peq_true. auto.
+Qed.
+
+Lemma stack_access_nil: forall b lo hi, stack_access nil b lo hi.
+Proof.
+  intros.
+  red. right. red.
+  unfold get_frame_info. unfold get_assoc_stack. auto.
+Qed.
+
+
+Lemma store_zeros_pres_range_perm: forall m b lo hi m' k p,
+    store_zeros m b lo hi = Some m' ->
+    Mem.range_perm m b lo hi k p ->
+    Mem.range_perm m' b lo hi k p.
+Proof.
+  intros m b lo hi m' k p STZ RP.
+  red. red in RP. intros ofs H.
+  erewrite <- Genv.store_zeros_perm; eauto.
 Qed.
 
 
