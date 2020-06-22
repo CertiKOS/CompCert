@@ -9,8 +9,9 @@ Require Import Errors.
 Require Import Memtype.
 Require Import RelocProgram.
 Require Import CheckDef.
+Require Import LocalLib.
+Require Globalenvs.
 Import ListNotations.
-
 
 Set Implicit Arguments.
 
@@ -294,62 +295,6 @@ Definition instr_invalid (i: instruction) :=
   | _ => False
   end.
 
-Definition instr_valid i := ~instr_invalid i.
-
-Lemma instr_invalid_dec: forall i, {instr_invalid i} + {~instr_invalid i}.
-Proof.
-  destruct i; cbn; auto.
-Qed.
-
-Lemma instr_valid_dec: forall i, {instr_valid i} + {~instr_valid i}.
-Proof.
-  unfold instr_valid.
-  destruct i; cbn; auto.
-Qed.
-
-Definition def_instrs_valid (def: option (globdef fundef unit)) :=
-  match def with
-  | None => True
-  | Some (Gvar v) => True
-  | Some (Gfun f) =>
-    match f with
-    | External _ => True
-    | Internal f =>  Forall instr_valid (fn_code f)
-    end
-  end.
-
-Lemma def_instrs_valid_dec: 
-  forall def, {def_instrs_valid def} + {~def_instrs_valid def}.
-Proof.
-  destruct def. destruct g.
-  - destruct f. 
-    + simpl. apply Forall_dec. apply instr_valid_dec.
-    + simpl. auto.
-  - simpl. auto.
-  - simpl. auto.
-Qed.
-
-Record wf_prog (p:Asm.program) : Prop :=
-  {
-    wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
-    wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
-    wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
-    wf_prog_no_local_jmps: Forall def_instrs_valid (map snd (AST.prog_defs p));
-  }.
-
-Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
-Proof.
-  destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
-  destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
-  destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
-  destruct (Forall_dec _ def_instrs_valid_dec (map snd (AST.prog_defs p))).
-  left; constructor; auto.
-  right. inversion 1. apply n. auto.
-  right. inversion 1. apply n. auto.
-  right. inversion 1. apply n. auto.
-  right. inversion 1. apply n. auto.
-Qed.
-
 
 (** Create the code section *)
 Definition get_def_instrs (def: option (globdef fundef unit)) : code :=
@@ -392,6 +337,92 @@ Definition create_sec_table defs : sectable :=
   let data_sec := create_data_section defs in
   let code_sec := create_code_section defs in
   [data_sec; code_sec].
+
+
+Definition instr_valid i := ~instr_invalid i.
+
+Lemma instr_invalid_dec: forall i, {instr_invalid i} + {~instr_invalid i}.
+Proof.
+  destruct i; cbn; auto.
+Qed.
+
+Lemma instr_valid_dec: forall i, {instr_valid i} + {~instr_valid i}.
+Proof.
+  unfold instr_valid.
+  destruct i; cbn; auto.
+Qed.
+
+Definition def_instrs_valid (def: option (globdef fundef unit)) :=
+  match def with
+  | None => True
+  | Some (Gvar v) => True
+  | Some (Gfun f) =>
+    match f with
+    | External _ => True
+    | Internal f =>  Forall instr_valid (fn_code f)
+    end
+  end.
+
+Lemma def_instrs_valid_dec: 
+  forall def, {def_instrs_valid def} + {~def_instrs_valid def}.
+Proof.
+  destruct def. destruct g.
+  - destruct f. 
+    + simpl. apply Forall_dec. apply instr_valid_dec.
+    + simpl. auto.
+  - simpl. auto.
+  - simpl. auto.
+Qed.
+
+Definition init_data_aligned (def: option (globdef fundef unit)) :=
+  Globalenvs.Genv.init_data_list_aligned 0 (get_def_init_data def).
+
+Lemma init_data_aligned_dec: forall def, 
+    {init_data_aligned def} + {~init_data_aligned def}.
+Proof.
+  unfold init_data_aligned. 
+  intros. apply init_data_list_aligned_dec.
+Qed.
+
+Definition data_size_aligned (def: option (globdef fundef unit)) :=
+  (alignw | init_data_list_size (get_def_init_data def)).
+
+Lemma data_size_aligned_dec: forall def,
+    {data_size_aligned def} + {~data_size_aligned def}.
+Proof.
+  intros.
+  unfold data_size_aligned.
+  apply Zdivide_dec.
+  unfold alignw. omega.
+Qed.
+    
+Record wf_prog (p:Asm.program) : Prop :=
+  {
+    wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
+    wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
+    wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
+    wf_prog_no_local_jmps: Forall def_instrs_valid (map snd (AST.prog_defs p));
+    wf_prog_init_data_aligned: Forall init_data_aligned (map snd (AST.prog_defs p));
+    wf_prog_data_size_aligned: Forall data_size_aligned (map snd (AST.prog_defs p));
+  }.
+
+Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
+Proof.
+  destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
+  destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
+  destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
+  destruct (Forall_dec _ def_instrs_valid_dec (map snd (AST.prog_defs p))).
+  destruct (Forall_dec _ init_data_aligned_dec (map snd (AST.prog_defs p))).
+  destruct (Forall_dec _ data_size_aligned_dec (map snd (AST.prog_defs p))).
+  left; constructor; auto.
+  right. inversion 1. apply n. auto.
+  right. inversion 1. apply n. auto.
+  right. inversion 1. apply n. auto.
+  right. inversion 1. apply n. auto.
+  right. inversion 1. apply n. auto.
+  right. inversion 1. apply n. auto.
+Qed.
+
 
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=

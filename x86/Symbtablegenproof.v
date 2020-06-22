@@ -636,6 +636,25 @@ Definition globs_meminj : meminj :=
         end
       end.
 
+Lemma acc_init_data_list_aligned: forall defs sz,
+    Forall init_data_aligned (map snd defs) ->
+    Forall data_size_aligned (map snd defs) ->
+    (alignw | sz) ->
+    Genv.init_data_list_aligned sz (fold_right acc_init_data [] defs).
+Proof.
+  clear.
+  induction defs as [|def defs].
+  - cbn. auto.
+  - cbn. intros sz IAL SAL AL.
+    generalize (Forall_cons_inv  _ _ _ IAL). intros IAL'.
+    generalize (Forall_cons_inv  _ _ _ SAL). intros SAL'.
+    destruct def. destruct o; eauto.
+    destruct g; eauto.
+    cbn. destr; eauto.
+    destruct i0; rewrite <- Heql; eauto.
+
+Admitted.
+
 Lemma init_mem_pres_inject : 
   forall m
     (INITMEM: Genv.init_mem prog = Some m),
@@ -643,7 +662,7 @@ Lemma init_mem_pres_inject :
 Proof.
   unfold Genv.init_mem, init_mem. intros.
   unfold match_prog, transf_program in TRANSF.
-  destr_in TRANSF.
+  destr_in TRANSF. inv w.
   destr_in TRANSF. destruct p. 
   destr_in TRANSF. inv TRANSF. cbn.
   destruct (Mem.alloc Mem.empty 0 (init_data_list_size (fold_right acc_init_data [] (AST.prog_defs prog)))) eqn:IALLOC.
@@ -664,21 +683,20 @@ Proof.
   generalize (store_zeros_pres_range_perm _ _ _ _ _ _ _ STZ RPERM).
   intros RPERM1.
   
-  (* assert (exists m' : mem, store_init_data_list tge m1 b 0 idata = Some m'). *)
-  (* {  *)
-  (*   eapply store_init_data_list_exists; eauto. cbn. *)
-  (*   erewrite Genv.store_zeros_stack_access; eauto. *)
-  (*   erewrite Mem.alloc_stack_blocks; eauto. *)
-  (*   rewrite Mem.empty_stack. *)
-  (*   apply stack_access_nil. *)
-
-  (*   Lemma init_data_list_aligned : forall l,  *)
-  (*       Genv.init_data_list_aligned 0 l. *)
-  (*   Proof. *)
-  (*     induction l as [|id l]. *)
-  (*     - cbn. auto. *)
-  (*     - cbn. split. apply Z.divide_0_r. *)
-        
+  assert (exists m' : mem, store_init_data_list tge m1 b 0 idata = Some m') as SL.
+  {
+    eapply store_init_data_list_exists; eauto. cbn.
+    erewrite Genv.store_zeros_stack_access; eauto.
+    erewrite Mem.alloc_stack_blocks; eauto.
+    rewrite Mem.empty_stack.
+    apply stack_access_nil.
+    eapply acc_init_data_list_aligned; eauto.
+    apply Z.divide_0_r.
+  }
+  destruct SL as (m2 & SL).
+  generalize SL. intros SL'.
+  unfold tge in SL'. cbn in SL'.
+  rewrite SL'. clear SL'.
 
 (*   destr. *)
 (*   destr. destr. *)

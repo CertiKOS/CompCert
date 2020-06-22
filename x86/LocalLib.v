@@ -58,6 +58,13 @@ Proof.
       auto.
 Qed.
 
+Lemma Forall_cons_inv: forall {A} f e (l:list A),
+    Forall f (e :: l) -> Forall f l.
+Proof.
+  intros.
+  rewrite Forall_forall in *.
+  intuition.
+Qed.
 
 Fixpoint pos_advance_N (p:positive) (n:nat) : positive :=
   match n with
@@ -1022,5 +1029,33 @@ Proof.
   erewrite <- Genv.store_zeros_perm; eauto.
 Qed.
 
+
+Lemma init_data_alignment_pos: forall id,
+    0 < Genv.init_data_alignment id.
+Proof.
+  intros. destruct id; cbn; try omega.
+  destr; omega.
+Qed.
+
+Lemma init_data_list_aligned_dec: forall l p,
+    {Genv.init_data_list_aligned p l} + 
+    {~Genv.init_data_list_aligned p l}.
+Proof.
+  induction l as [|id l]; cbn; auto.
+  intros p.
+  assert ({(Genv.init_data_alignment id | p)} + 
+          {~(Genv.init_data_alignment id | p)}).
+  { 
+    eapply Zdivide_dec; eauto.
+    generalize (init_data_alignment_pos id). omega. 
+  }
+  generalize (IHl (p + init_data_size id)).
+  intros.
+  inv H; inv H0.
+  - left; split; auto.
+  - right; tauto.
+  - right; tauto.
+  - right; tauto.
+Qed.
 
 End WITHMEMORYMODEL.
