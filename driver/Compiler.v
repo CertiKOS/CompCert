@@ -90,7 +90,7 @@ Require Symbtablegenproof.
 Require Reloctablesgen.
 Require Reloctablesgenproof.
 Require RelocBingen.
-Require RelocBingenproof.
+(* Require RelocBingenproof. *)
 Require Stubgen.
 Require StrtableEncode.
 Require SymbtableEncode.
@@ -394,6 +394,7 @@ Definition bytes_passes :=
   ::: mkpass RelocBingenproof.match_prog
   ::: mkpass TablesEncodeproof.match_prog
   ::: mkpass RelocElfgenproof.match_prog
+  ::: mkpass EncodeElfCorrect.match_prog
   ::: pass_nil _.
 
 Definition match_prog_bytes :=

@@ -124,10 +124,9 @@ BACKEND=\
   SymbtablegenSep.v Symbtablegenproof.v Symbtablegenproof1.v\
   PermuteProgproof.v PermuteProgSep.v \
   RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
-  TablesEncodeproof.v \
+  TablesEncodeproof.v Reloctablesgenproof.v \
   RelocBinDecode.v \
   LocalLib.v AsmInject.v
-
 
 
 # Encoding of data into bytes
@@ -135,7 +134,7 @@ BACKEND=\
 ENCODE=Encode.v Bits.v Hex.v
 
 # ELF files
-ELF=RelocElf.v EncodeRelocElf.v RelocElfSemantics.v
+ELF=RelocElf.v EncodeRelocElf.v RelocElfSemantics.v DecodeRelocElf.v ElfBytesSemantics.v EncodeElfCorrect.v
 
 # C front-end modules (in cfrontend/)
 

@@ -346,3 +346,80 @@ Record valid_elf_file ef :=
     vef_first_section_null:
       nth_error (elf_section_headers ef) O = Some null_section_header;
  }.
+
+Lemma intv_dec: forall lo hi x, {lo <= x < hi} + {~ lo <= x < hi}.
+Proof.
+  intros.
+  destruct (zle lo x). 2: right; intro A; omega.
+  destruct (zlt x hi). left; omega. right; intro A; omega.
+Defined.
+
+Lemma valid_section_flags_dec: forall l, {valid_section_flags l} + { ~ valid_section_flags l}.
+Proof.
+  destruct l. left; constructor.
+  destruct l.
+  right; intro A; inv A.
+  destruct s. right; intro A; inv A.
+  destruct l. 2: right; intro A; inv A.
+  destruct s0; try (right; intro A; inv A; fail); left; try constructor.
+  right; intro A; inv A.
+Defined.
+
+Lemma valid_elf_header_dec: forall eh, {valid_elf_header eh} + {~ valid_elf_header eh}.
+Proof.
+  intros.
+  destruct (intv_dec 0 (two_p 32) (e_entry eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (e_phoff eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (e_shoff eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (e_flags eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 16) (e_ehsize eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 16) (e_phentsize eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 16) (e_phnum eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 16) (e_shentsize eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 16) (e_shnum eh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 16) (e_shstrndx eh)). 2: right; intro A; inv A; omega.
+  left; constructor; auto.
+Defined.
+
+Lemma valid_section_header_dec: forall sh, {valid_section_header sh} + {~ valid_section_header sh}.
+Proof.
+  intros.
+  destruct (intv_dec 0 (two_p 32) (sh_name sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_addr sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_offset sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_size sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_link sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_info sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_addralign sh)). 2: right; intro A; inv A; omega.
+  destruct (intv_dec 0 (two_p 32) (sh_entsize sh)). 2: right; intro A; inv A; omega.
+  destruct (valid_section_flags_dec (sh_flags sh)). 2: right; intro A; inv A; congruence.
+  left; constructor; auto.
+Defined.
+
+Lemma section_header_dec: forall sh1 sh2 : section_header, {sh1 = sh2} + {sh1 <> sh2}.
+Proof.
+  intros.
+  decide equality; try apply zeq.
+  apply list_eq_dec. intros; decide equality.
+  decide equality.
+Defined.
+
+Lemma valid_elf_file_dec: forall ef, {valid_elf_file ef} + {~ valid_elf_file ef}.
+Proof.
+  intros.
+  destruct (valid_elf_header_dec (elf_head ef)). 2: right; intro A; inv A; congruence.
+  destruct (Forall_dec _ (valid_section_header_dec) (elf_section_headers ef)).
+  2: right; intro A; inv A; congruence.
+  destruct (zeq (e_shoff (elf_head ef)) (52 + fold_right (fun s acc => acc + Z.of_nat (length s)) 0 (elf_sections ef))).
+  2: right; intro A; inv A; congruence.
+  destruct (zeq (e_shnum (elf_head ef)) (Z.of_nat (length (elf_section_headers ef)))).
+  2: right; intro A; inv A; congruence.
+  destruct (check_sizes (tl (elf_section_headers ef)) (elf_sections ef) 52) eqn:?.
+  2: right; intro A; inv A; congruence.
+  destruct u.
+  destruct (nth_error (elf_section_headers ef) 0) eqn:NTH.
+  2: right; intro A; inv A; congruence.
+  destruct (section_header_dec s null_section_header). subst.
+  2: right; intro A; inv A; congruence.
+  left; constructor; auto.
+Defined.
