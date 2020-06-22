@@ -12,6 +12,7 @@ Require Import CheckDef.
 Require Import RealAsm AsmFacts.
 Require Import LocalLib.
 Require Import Linking.
+Require Globalenvs.
 Import ListNotations.
 
 
@@ -1196,3 +1197,74 @@ Proof.
       apply H1. apply in_map. auto.
 Qed.
       
+
+Lemma init_data_alignment_div_alignw: forall id,
+        (Globalenvs.Genv.init_data_alignment id | alignw).
+Proof.
+  intros. 
+  unfold Globalenvs.Genv.init_data_alignment. 
+  unfold alignw.
+  destruct id; red.
+  - exists 8. omega.
+  - exists 4. omega.
+  - exists 2. omega.
+  - exists 1. omega.
+  - exists 2. omega.
+  - exists 2. omega.
+  - exists 8. omega.
+  - destr. exists 1; omega. exists 2; omega.
+Qed.
+
+
+Lemma init_data_list_align_offset: forall l p sz,
+    Globalenvs.Genv.init_data_list_aligned p l ->
+    (alignw | sz) ->
+    Globalenvs.Genv.init_data_list_aligned (p + sz) l.
+Proof.
+  induction l as [|id l].
+  - cbn. auto.
+  - intros p sz INIT AL.
+    cbn in *. 
+    destruct INIT as (AL1 & INIT).
+    split; auto.
+    eapply Z.divide_add_r; eauto.
+    apply Z.divide_trans with alignw; auto.
+    apply init_data_alignment_div_alignw.
+    replace (p + sz + init_data_size id) with
+        (p + init_data_size id + sz) by omega.
+    eauto.
+Qed.
+
+Lemma acc_init_data_list_aligned: forall defs sz,
+    Forall init_data_aligned (map snd defs) ->
+    Forall data_size_aligned (map snd defs) ->
+    (alignw | sz) ->
+    Globalenvs.Genv.init_data_list_aligned sz (fold_right acc_init_data [] defs).
+Proof.
+  clear.
+  induction defs as [|def defs].
+  - cbn. auto.
+  - cbn. intros sz IAL SAL AL.
+    generalize (Forall_cons_inv  _ _ _ IAL). intros IAL'.
+    generalize (Forall_cons_inv  _ _ _ SAL). intros SAL'.
+    destruct def. destruct o; eauto.
+    destruct g; eauto.
+    cbn. destr; eauto.
+    cbn in IAL, SAL.
+    rewrite Forall_forall in IAL, SAL.
+    specialize (IAL (Some (Gvar v)) (in_eq _ _)).
+    specialize (SAL (Some (Gvar v)) (in_eq _ _)).
+    cbn in IAL, SAL.
+    rewrite Heql in IAL.
+    red in SAL. cbn in SAL.
+    rewrite Heql in SAL.
+    match goal with
+    | [ |- Globalenvs.Genv.init_data_list_aligned _ (?l ++ _) ] =>
+      set (l' := l) in *
+    end.
+    eapply init_data_list_aligned_app; eauto.
+    replace sz with (0 + sz) by auto.
+    eapply init_data_list_align_offset; eauto.
+    eapply IHdefs; eauto.
+    eapply Z.divide_add_r; eauto.
+Qed.

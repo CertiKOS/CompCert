@@ -1058,4 +1058,19 @@ Proof.
   - right; tauto.
 Qed.
 
+Lemma init_data_list_aligned_app : forall l1 p l2,
+    Genv.init_data_list_aligned p l1 ->
+    Genv.init_data_list_aligned (p + init_data_list_size l1) l2 ->
+    Genv.init_data_list_aligned p (l1 ++ l2).
+Proof.
+  induction l1 as [|id l1].
+  - cbn. intros. rewrite Z.add_0_r in H0. auto.
+  - intros p l2 AL1 AL2.
+    cbn in *. destruct AL1 as (AL & AL1). 
+    split; auto.
+    rewrite Z.add_assoc in AL2.
+    eapply IHl1; eauto.
+Qed.
+
+
 End WITHMEMORYMODEL.

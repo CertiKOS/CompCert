@@ -636,24 +636,7 @@ Definition globs_meminj : meminj :=
         end
       end.
 
-Lemma acc_init_data_list_aligned: forall defs sz,
-    Forall init_data_aligned (map snd defs) ->
-    Forall data_size_aligned (map snd defs) ->
-    (alignw | sz) ->
-    Genv.init_data_list_aligned sz (fold_right acc_init_data [] defs).
-Proof.
-  clear.
-  induction defs as [|def defs].
-  - cbn. auto.
-  - cbn. intros sz IAL SAL AL.
-    generalize (Forall_cons_inv  _ _ _ IAL). intros IAL'.
-    generalize (Forall_cons_inv  _ _ _ SAL). intros SAL'.
-    destruct def. destruct o; eauto.
-    destruct g; eauto.
-    cbn. destr; eauto.
-    destruct i0; rewrite <- Heql; eauto.
 
-Admitted.
 
 Lemma init_mem_pres_inject : 
   forall m
