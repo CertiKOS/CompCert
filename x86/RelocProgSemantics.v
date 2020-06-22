@@ -774,6 +774,36 @@ Proof.
     + erewrite PTree.gso; eauto.
 Qed.
 
+Lemma add_external_globals_pres_find_symbol' : forall extfuns stbl ge i,
+    ~ In i (get_symbentry_ids stbl) ->
+    Genv.find_symbol (add_external_globals extfuns ge stbl) i = Genv.find_symbol ge i.
+Proof.
+  intros extfuns stbl ge i NIN.
+  eapply add_external_globals_pres_find_symbol; eauto.
+  red. intros e IN EQ. subst.
+  exfalso. eapply NIN. 
+  eapply in_map; eauto.
+Qed.
+
+Lemma add_external_globals_pres_ext_funs:
+  forall (stbl : symbtable) (extfuns : PTree.t external_function) (ge : Genv.t) (i : ident),
+    Pos.lt i (Genv.genv_next ge) ->
+    (Genv.genv_ext_funs (add_external_globals extfuns ge stbl)) ! i = (Genv.genv_ext_funs ge) ! i.
+Proof.
+  induction stbl as [| e stbl].
+  - intros extfuns ge i LT.
+    cbn. auto.
+  - intros extfuns ge i LT.
+    cbn.
+    erewrite IHstbl; eauto.
+    + unfold add_external_global; cbn.
+      repeat (destr; auto). 
+      rewrite PTree.gso; auto.
+      xomega.
+    + unfold add_external_global; cbn.
+      destr; xomega.
+Qed.
+
 
 Definition find_symbol_block_bound ge :=
   forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).
@@ -852,6 +882,23 @@ Definition acc_extfuns (idg: ident * option gdef) extfuns :=
 Definition gen_extfuns (idgs: list (ident * option gdef)) :=
   fold_right acc_extfuns (PTree.empty external_function) idgs.
 
+Lemma PTree_Properteis_of_list_get_extfuns : forall defs i f,
+    list_norepet (map fst defs) ->
+    (PTree_Properties.of_list defs) ! i = Some (Some (Gfun (External f))) ->
+    (gen_extfuns defs) ! i = Some f.
+Proof.
+  induction defs as [|def defs].
+  - cbn. intros. rewrite PTree.gempty in H0. congruence.
+  - intros i f NORPT OF. destruct def as (id, def).
+    inv NORPT.
+    destruct (ident_eq id i).
+    + subst. erewrite PTree_Properties_of_list_cons in OF; auto.
+      inv OF. cbn.
+      rewrite PTree.gss. auto.
+    + erewrite PTree_Properties_of_list_tail in OF; eauto.
+      cbn. repeat (destr; eauto; subst).
+      erewrite PTree.gso; auto.
+Qed.
 
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in
@@ -1282,6 +1329,95 @@ Proof.
   erewrite Mem.empty_stack; eauto.
 Qed.
 
+
+
+Section INITDATA.
+
+Variable ge: Genv.t.
+
+Remark store_init_data_perm:
+  forall k prm b' q i b m p m',
+  store_init_data ge m b p i = Some m' ->
+  (Mem.perm m b' q k prm <-> Mem.perm m' b' q k prm).
+Proof.
+  intros. 
+  assert (forall chunk v,
+          Mem.store chunk m b p v = Some m' ->
+          (Mem.perm m b' q k prm <-> Mem.perm m' b' q k prm)).
+    intros; split; eauto with mem.
+  destruct i; simpl in H; eauto. 
+  inv H; tauto.
+Qed.
+
+Remark store_init_data_list_perm:
+  forall k prm b' q idl b m p m',
+  store_init_data_list ge m b p idl = Some m' ->
+  (Mem.perm m b' q k prm <-> Mem.perm m' b' q k prm).
+Proof.
+  induction idl as [ | i1 idl]; simpl; intros.
+- inv H; tauto.
+- destruct (store_init_data ge m b p i1) as [m1|] eqn:S1; try discriminate.
+  transitivity (Mem.perm m1 b' q k prm). 
+  eapply store_init_data_perm; eauto.
+  eapply IHidl; eauto.
+Qed.
+
+Lemma store_init_data_exists:
+  forall m b p i,
+    Mem.range_perm m b p (p + init_data_size i) Cur Writable ->
+    stack_access (Mem.stack m) b p (p + init_data_size i)  ->
+    (Genv.init_data_alignment i | p) ->
+    (* (forall id ofs, i = Init_addrof id ofs -> exists b, find_symbol ge id = Some b) -> *)
+    exists m', store_init_data ge m b p i = Some m'.
+Proof.
+  intros. 
+  assert (DFL: forall chunk v,
+          init_data_size i = size_chunk chunk ->
+          Genv.init_data_alignment i = align_chunk chunk ->
+          exists m', Mem.store chunk m b p v = Some m').
+  { intros. destruct (Mem.valid_access_store m chunk b p v) as (m' & STORE).
+    split. rewrite <- H2; auto. split. rewrite <- H3; auto. 
+    intros _. rewrite <- H2; auto.
+    exists m'; auto. }
+  destruct i; eauto.
+  simpl. exists m; auto.
+Qed.
+
+Lemma store_init_data_stack_access:
+  forall m b p i1 m1,
+    store_init_data ge m b p i1 = Some m1 ->
+    forall b' lo hi,
+      stack_access (Mem.stack m1) b' lo hi <-> stack_access (Mem.stack m) b' lo hi.
+Proof.
+  unfold store_init_data.
+  destruct i1; intros; try now (eapply Mem.store_stack_access ; eauto).
+  inv H; tauto.
+Qed.
+
+Lemma store_init_data_list_exists:
+  forall b il m p,
+  Mem.range_perm m b p (p + init_data_list_size il) Cur Writable ->
+  stack_access (Mem.stack m) b p (p + init_data_list_size il) ->
+  Genv.init_data_list_aligned p il ->
+  (* (forall id ofs, In (Init_addrof id ofs) il -> exists b, find_symbol ge id = Some b) -> *)
+  exists m', store_init_data_list ge m b p il = Some m'.
+Proof.
+  induction il as [ | i1 il ]; simpl; intros.
+- exists m; auto.
+- destruct H1. 
+  destruct (@store_init_data_exists m b p i1) as (m1 & S1); eauto.
+  red; intros. apply H. generalize (init_data_list_size_pos il); omega.
+  eapply stack_access_inside; eauto; try omega.
+  generalize (init_data_list_size_pos il); omega.
+  rewrite S1.
+  apply IHil; eauto. 
+  red; intros. erewrite <- store_init_data_perm by eauto. apply H. generalize (init_data_size_pos i1); omega.
+  eapply stack_access_inside; eauto.
+  eapply store_init_data_stack_access; eauto.
+  generalize (init_data_size_pos i1); omega. omega.  
+Qed.
+
+End INITDATA.
 
 
 (** Execution of whole programs. *)

@@ -867,9 +867,7 @@ Proof.
         try(destruct h';inversion EQ; auto).
 
       1-2: rewrite H; rewrite H0; auto.
-    }
-      
-      
+    }      
     rewrite <- IEQ.
     generalize (decode_instrs_append _ _ _ _ _ [h'] _ DE').
     intros HAppend.
@@ -878,42 +876,110 @@ Proof.
     simpl. auto.
 Qed.
 
-
-
-Lemma spec_decode_ex': forall ln n code ofs l rtbl symtbl ,
-    length code = ln->
-    length l = n ->
-    transl_code_spec code l ofs rtbl symtbl ->
-    exists code', decode_instrs rtbl symtbl n ofs l nil = OK code'/\ instr_eq_list code code'.
+Lemma spec_inj: forall code l l' ofs rtbl symtbl,
+    transl_code_spec code l ofs rtbl symtbl
+    ->transl_code_spec code l' ofs rtbl symtbl
+    -> l = l'.
 Proof.
-  induction ln.
+  induction code.
   (* bc *)
   admit.
-  intros n code ofs l rtbl symtbl HLC HL HTrans.
-  generalize (list_has_tail _ _ HLC).
-  intros (tail & prefix & HCode).
-  rewrite HCode in HTrans.
-  unfold transl_code_spec in HTrans.
+  intros l l' ofs rtbl symtbl HL HL'.
+  simpl in HL, HL'.
+  (* HELP *)
+  (* describe the relation between `bytes` and `t` in *)
+  (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *)
+Admitted.  
 
-  
-  (* induction code. *)
-  (* revert dependent n. *)
-  (* (* base case *) *)
-  (* admit. *)
-  (* intros ofs l rtbl symtbl HL HTrans. *)
-  (* unfold transl_code_spec in HTrans. *)
-  (* destruct HTrans as (h' & t' & HDecode & HInstr_eq & HTrans). *)
-  (* generalize (IHcode ofs l  *)
 
-  (* induction n. *)
-  (* (* base case *) *)
-  (* admit. *)
-  (* intros code ofs l rtbl symtbl HL HTransf. *)
-  
-  (* simpl. *)
-  
+Lemma spec_length: forall code l t ofs rtbl symtbl i,
+    transl_code_spec (i::code) l ofs rtbl symtbl
+    -> transl_code_spec code t (ofs+instr_size i) rtbl symtbl
+    -> Z.of_nat (length l) = Z.of_nat (length t) + (instr_size i).
+Proof.
+  intros code l t ofs rtbl symtbl i HL HT.
 
+  (* HELP *)
+  (* describe the relation between `bytes` and `t` in *)
+  (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *)
 Admitted.
+
+Lemma spec_decode_ex': forall code ofs l rtbl symtbl,
+    transl_code_spec code l ofs rtbl symtbl ->
+    exists fuel code', decode_instrs rtbl symtbl fuel ofs l nil = OK code'/\ instr_eq_list code code'
+                       /\ (fuel <= length(l))%nat.
+Proof.
+  induction code as [|i code].
+  - (* base case *)
+    intros ofs l rtbl symtbl TL.
+    cbn in TL. destruct l; try contradiction.
+    cbn. exists O, nil. split; auto.
+  - intros ofs l rtbl symtbl TL.
+    generalize TL. intros TL'.
+    cbn in TL.
+    destruct TL as (h' & t' & DE & EQ & TL).
+    generalize (IHcode _ _ _ _ TL).
+    intros (fuel & code' & DE' & EQ' & EQL).
+    generalize (spec_length code l t' ofs rtbl symtbl i TL' TL).
+    intros HLength.
+    exists (Datatypes.S fuel), (h'::code').
+    split.
+    2: split.
+    cbn. destruct l. cbn in DE. congruence.
+    rewrite DE. cbn.
+    assert (instr_size i = instr_size h') as IEQ. {
+      destruct i;
+        simpl in EQ;
+        try(rewrite EQ;
+            auto);
+        try(destruct h';inversion EQ; auto).
+      1-2: rewrite H; rewrite H0; auto.
+    }      
+    rewrite <- IEQ.
+    generalize (decode_instrs_append _ _ _ _ _ [h'] _ DE').
+    intros HAppend.
+    simpl in HAppend.
+    auto.
+    simpl. auto.
+    assert(HSize: instr_size i >= 1). {
+      generalize (instr_size_positive i).
+      omega.
+    }
+    omega.
+Qed.
+
+Lemma decode_fuel_le: forall rtbl symtbl fuel fuel' ofs l instrs code,
+    decode_instrs rtbl symtbl fuel ofs l instrs = OK code
+    -> (fuel' >= fuel)%nat
+    -> decode_instrs rtbl symtbl fuel' ofs l instrs = OK code.
+Proof.
+  intros rtbl symtbl.
+  induction fuel.
+  (* bc *)
+  intros fuel' ofs l instrs code HDecode HFGE.
+  simpl in HDecode.
+  destruct l; inversion HDecode.
+  unfold decode_instrs.
+  destruct fuel'.
+  1-2: auto.
+  intros fuel' ofs l instrs code HDecode HGE.
+  induction HGE.
+  auto.
+  simpl in HDecode.
+  destruct l.
+  (* easy *)
+  simpl. auto.
+  monadInv HDecode.
+  destruct x.
+  cbn [decode_instrs].
+  rewrite EQ.
+  simpl.
+  cut((m >= fuel)%nat).
+  intros HMGE.
+  generalize (IHfuel _ _ _ _ _ EQ0 HMGE). auto.
+  omega.
+Qed.
+
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
@@ -965,18 +1031,23 @@ Proof.
     destruct x. monadInv EQ2.    
     generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
     intros HTranslSpec.
-    generalize (spec_decode_ex' (length (rev l)) code 0 (rev l) _ _   eq_refl HTranslSpec).
+    generalize (spec_decode_ex' code 0 (rev l) _ _ HTranslSpec).
     (* generalize (spec_decode_ex code 0 (rev l) _ _  HTranslSpec). *)
-    intros (c' & HEncodeDecode).
-    destruct HEncodeDecode as [HDecode HDecodeEQ].
+    intros (c' & code' & HEncodeDecode).
+    destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]].
     econstructor.
     unfold decode_prog_code_section.
     simpl.
-    unfold decode_instrs'.    
-    rewrite HDecode.
+    cut(((length(rev l)) >= c')%nat).
+    intros HGE.
+    generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE).
+    intros HDecode'.
+    unfold decode_instrs'.
+    rewrite HDecode'.
     simpl.
     eauto.
-
+    omega.
+    
     (* init_mem *)
     admit.
     (* initial_state_gen *)
