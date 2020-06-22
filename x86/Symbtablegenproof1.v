@@ -1133,3 +1133,39 @@ Proof.
       * rewrite INT'. f_equal.
       * rewrite INT'. f_equal.
 Qed.
+
+Lemma add_external_globals_ext_funs : forall stbl extfuns ge e f,
+    list_norepet (get_symbentry_ids stbl) ->
+    In e stbl ->
+    is_symbentry_internal e = false ->
+    symbentry_type e = symb_func ->
+    extfuns ! (symbentry_id e) = Some f ->
+    (Genv.genv_ext_funs (add_external_globals extfuns ge stbl)) ! 
+       (pos_advance_N (Genv.genv_next ge) (num_of_external_symbs (symbs_before (symbentry_id e) stbl))) = Some f.
+Proof.
+  clear.
+  induction stbl as [| e' stbl].
+  - cbn. intros. contradiction.
+  - intros extfuns ge e f NORPT [EQ | IN] INT TYP EXT; inv NORPT.
+    + cbn. subst. rewrite peq_true. cbn.
+      erewrite add_external_globals_pres_ext_funs; eauto.
+      unfold add_external_global; cbn.
+      rewrite TYP. rewrite INT. rewrite EXT. 
+      rewrite PTree.gss. auto.
+      unfold add_external_global; cbn.
+      rewrite INT.
+      xomega.
+    + assert (symbentry_id e <> symbentry_id e') as NEQ.
+      { 
+        intros EQ. rewrite <- EQ in H1.
+        apply H1. eapply in_map; auto.
+      }
+      rewrite symbs_before_tail; auto.
+      cbn.
+      generalize (IHstbl _ (add_external_global extfuns ge e') _ _ H2 IN INT TYP EXT).
+      intros GET'. rewrite <- GET'.
+      f_equal.
+      destruct (is_symbentry_internal e') eqn:INT'.
+      * cbn. rewrite INT'. auto.
+      * cbn. rewrite INT'. auto.
+Qed.

@@ -785,6 +785,25 @@ Proof.
   eapply in_map; eauto.
 Qed.
 
+Lemma add_external_globals_pres_ext_funs:
+  forall (stbl : symbtable) (extfuns : PTree.t external_function) (ge : Genv.t) (i : ident),
+    Pos.lt i (Genv.genv_next ge) ->
+    (Genv.genv_ext_funs (add_external_globals extfuns ge stbl)) ! i = (Genv.genv_ext_funs ge) ! i.
+Proof.
+  induction stbl as [| e stbl].
+  - intros extfuns ge i LT.
+    cbn. auto.
+  - intros extfuns ge i LT.
+    cbn.
+    erewrite IHstbl; eauto.
+    + unfold add_external_global; cbn.
+      repeat (destr; auto). 
+      rewrite PTree.gso; auto.
+      xomega.
+    + unfold add_external_global; cbn.
+      destr; xomega.
+Qed.
+
 
 Definition find_symbol_block_bound ge :=
   forall id b ofs, Genv.find_symbol ge id = Some (b, ofs) -> Pos.lt b (Genv.genv_next ge).
@@ -863,6 +882,23 @@ Definition acc_extfuns (idg: ident * option gdef) extfuns :=
 Definition gen_extfuns (idgs: list (ident * option gdef)) :=
   fold_right acc_extfuns (PTree.empty external_function) idgs.
 
+Lemma PTree_Properteis_of_list_get_extfuns : forall defs i f,
+    list_norepet (map fst defs) ->
+    (PTree_Properties.of_list defs) ! i = Some (Some (Gfun (External f))) ->
+    (gen_extfuns defs) ! i = Some f.
+Proof.
+  induction defs as [|def defs].
+  - cbn. intros. rewrite PTree.gempty in H0. congruence.
+  - intros i f NORPT OF. destruct def as (id, def).
+    inv NORPT.
+    destruct (ident_eq id i).
+    + subst. erewrite PTree_Properties_of_list_cons in OF; auto.
+      inv OF. cbn.
+      rewrite PTree.gss. auto.
+    + erewrite PTree_Properties_of_list_tail in OF; eauto.
+      cbn. repeat (destr; eauto; subst).
+      erewrite PTree.gso; auto.
+Qed.
 
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in

@@ -527,48 +527,50 @@ Proof.
     destr_match_in INITINJ; try congruence.
     destruct p. inversion INITINJ. clear INITINJ. subst b0 ofs. 
     rewrite Ptrofs.repr_unsigned.
-    unfold globalenv in EQ0; simpl in EQ0.
     apply Genv.invert_find_symbol in EQ.
     exploit Genv.find_symbol_funct_ptr_inversion; eauto.
     intros IN.
-    assert (prog_symbtable tprog = l) as SL by (subst tprog; auto).
-    rewrite SL in EQ0.
-    unfold tge. unfold globalenv. cbn.
-    rewrite SL.
-    
-    
-    
-    (* rewrite add_external_globals_pres_find_symbol in EQ0. *)
-    (* unfold Genv.find_symbol in EQ0. cbn in EQ0. *)
-    (* apply Genv.invert_find_symbol in EQ. *)
-    (* exploit (Genv.find_symbol_funct_ptr_inversion prog); eauto. *)
-    (* intros FINPROG. *)
-    (* unfold Genv.find_instr. unfold tge. *)
-    (* cbn. *)
-    (* rewrite add_external_globals_pres_instrs. cbn. *)
-    (* unfold create_sec_table. *)
-    (* replace (Pos.to_nat 1) with 1%nat by xomega. *)
-    (* cbn. *)
-    (* unfold gen_symb_table in Heqp. *)
-    (* destr_in Heqp. destruct p. inv Heqp. *)
-    (* exploit acc_symb_tree_entry_some; eauto. *)
-    (* { inv w. auto. } *)
-    (* { eapply PTree_Properties.of_list_norepet; eauto. *)
-    (*   inv w. auto. } *)
-    (* cbn. intros GET. *)
-    (* inversion w. *)
-    (* unfold gen_symb_map in EQ0. *)
-    (* exploit symbtable_to_tree_acc_symb_map_inv; eauto. *)
-    (* erewrite <- acc_symb_pres_ids; eauto.  *)
-    (* cbn. intros (EQOFS & i' & SEC & EQB). subst. *)
-    (* inv SEC. *)
-    (* eapply pres_find_instr; eauto.  *)
-    (* exploit Genv.find_symbol_funct_ptr_inversion; eauto. *)
-    (* apply Genv.invert_find_symbol. eauto. eauto. intros IN. *)
-    (* eapply gen_symb_table_only_internal_symbol; eauto. *)
-    (* inv w; auto. *)
-    (* cbn. auto. *)
-    admit.
+    inversion w.
+    exploit PTree_Properties.of_list_norepet; eauto.
+    intros GET.
+    unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. 
+    inversion Heqp. subst l z0 z.
+    exploit acc_symb_tree_entry_some; eauto.
+    intros GET'.     
+    cbn in GET'.
+    unfold globalenv in tge; cbn in tge.
+    unfold tge.
+    unfold symbtable_to_tree in GET'.
+    apply PTree_Properties.in_of_list in GET'.
+    match type of GET' with
+    | In (_, ?e') _ => set (e:= e') in GET'
+    end.
+    unfold globalenv in EQ0; simpl in EQ0.
+    replace (prog_symbtable tprog) with (rev s) in * by (subst tprog; auto).
+    replace (prog_defs tprog) with (AST.prog_defs prog) in * by (subst tprog; auto).
+    cbn.
+    unfold symbtable_to_idlist in GET'.
+    rewrite in_map_iff in GET'.
+    destruct GET' as (e' & EQ' & IN'). inversion EQ'. clear EQ'. subst e'.
+    erewrite <- H0 in EQ0.
+    erewrite add_external_globals_find_symb in EQ0; eauto. 
+    inversion EQ0; clear EQ0. subst i0 b'.
+    rewrite <- H0.
+    assert ((gen_extfuns (AST.prog_defs prog)) ! (symbentry_id e) = Some f) as EXT.
+    { 
+      rewrite H0. 
+      eapply PTree_Properteis_of_list_get_extfuns; eauto.      
+    }
+    match goal with 
+    | [ |- context [ add_external_globals _ ?ge _ ] ] => set (ige := ge)
+    end.
+    erewrite acc_symb_pres_ids in wf_prog_norepet_defs; eauto.
+    assert (is_symbentry_internal e = false) as INT by auto.
+    assert (symbentry_type e = symb_func) as TYP by auto.
+    generalize (add_external_globals_ext_funs _ _ ige _ _ wf_prog_norepet_defs IN' INT TYP EXT).
+    intros EGET. rewrite <- EGET.
+    repeat f_equal.
+    erewrite <- acc_symb_pres_ids; eauto.    
 
   - (* agree_inj_int_funct *)
     intros b f ofs b' ofs' FPTR INITINJ.
