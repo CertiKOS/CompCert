@@ -1169,3 +1169,31 @@ Proof.
       * cbn. rewrite INT'. auto.
       * cbn. rewrite INT'. auto.
 Qed.
+
+Lemma gen_symb_map_internal_block_range: forall stbl e b ofs i,
+    list_norepet (get_symbentry_ids stbl) ->
+    is_symbentry_internal e = true ->
+    symbentry_secindex e = secindex_normal i ->
+    (i < 3)%N ->
+    In e stbl ->
+    (gen_symb_map stbl) ! (symbentry_id e) = Some (b, ofs) ->
+    (b < 3)%positive.
+Proof.
+  induction stbl as [|e' stbl].
+  - cbn. intros. contradiction.
+  - cbn. intros e b ofs i NORPT INT IDX IDXRNG [EQ|IN] GS; inv NORPT.
+    + exploit acc_symb_map_inv; eauto.
+      erewrite acc_symb_map_no_effect; eauto.
+      apply PTree.gempty.
+      intros (OFS & i' & INDX & B). subst. 
+      unfold sec_index_to_block. destr; try xomega.
+      subst. rewrite IDX in INDX. inv INDX. xomega. 
+    + unfold acc_symb_map in GS.
+      destr_in GS; eauto.
+      rewrite PTree.gso in GS. eauto.
+      intros EQ.
+      rewrite <- EQ in H1.
+      apply H1. apply in_map. auto.
+Qed.
+      
+

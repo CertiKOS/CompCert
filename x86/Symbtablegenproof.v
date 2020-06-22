@@ -579,20 +579,47 @@ Proof.
     unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
     destr_match_in INITINJ; try congruence.
     destr_match_in INITINJ; try congruence.
-    destruct p. inv INITINJ. 
+    destruct p. inversion INITINJ. clear INITINJ. subst b0 ofs. 
+    apply Genv.invert_find_symbol in EQ.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    intros IN.
+    inversion w.
+    exploit PTree_Properties.of_list_norepet; eauto.
+    intros GET.
+    generalize Heqp. intros GENSYM.
+    unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. 
+    inversion Heqp. subst l z0 z.
+    exploit acc_symb_tree_entry_some; eauto.
+    intros GET'.     
+    cbn in GET'.
+    unfold globalenv in tge; cbn in tge.
+    unfold tge.
+    unfold symbtable_to_tree in GET'.
+    apply PTree_Properties.in_of_list in GET'.
+    match type of GET' with
+    | In (_, ?e') _ => set (e:= e') in GET'
+    end.
     unfold globalenv in EQ0; simpl in EQ0.
-    unfold Genv.find_ext_funct.
+    replace (prog_symbtable tprog) with (rev s) in * by (subst tprog; auto).
+    replace (prog_defs tprog) with (AST.prog_defs prog) in * by (subst tprog; auto).
+    cbn.
+    unfold symbtable_to_idlist in GET'.
+    rewrite in_map_iff in GET'.
+    destruct GET' as (e' & EQ' & IN'). inversion EQ'. clear EQ'. subst e'.
+    erewrite <- H0 in EQ0.
     rewrite add_external_globals_pres_find_symbol in EQ0.
     unfold Genv.find_symbol in EQ0. cbn in EQ0.
-    admit.
-    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
-    apply Genv.invert_find_symbol. eauto. eauto. intros IN.
+    erewrite add_external_globals_pres_ext_funs; eauto. 
+    cbn. rewrite PTree.gempty. auto. cbn.    
+    eapply gen_symb_map_internal_block_range; eauto. 
+    erewrite <- acc_symb_pres_ids; eauto.
+    subst e. auto. 
+    subst e. auto.
+    cbn; auto. 
+    unfold sec_code_id. xomega.
     eapply gen_symb_table_only_internal_symbol; eauto.
-    inv w; auto.
     cbn. auto.
-
-(* Qed. *)
-Admitted.
+Qed.
 
 
 (** Initial memory injection for global variables (not including the stacks) *)
