@@ -1016,8 +1016,7 @@ Proof.
   exists st1.
   inv HInit.
   split.
-  +
-    unfold match_prog in TRANSF.
+  + unfold match_prog in TRANSF.
     unfold transf_program in TRANSF.
     monadInv TRANSF.
     unfold transl_sectable in EQ.
@@ -1032,7 +1031,6 @@ Proof.
     generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
     intros HTranslSpec.
     generalize (spec_decode_ex' code 0 (rev l) _ _ HTranslSpec).
-    (* generalize (spec_decode_ex code 0 (rev l) _ _  HTranslSpec). *)
     intros (c' & code' & HEncodeDecode).
     destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]].
     econstructor.
@@ -1046,8 +1044,7 @@ Proof.
     rewrite HDecode'.
     simpl.
     eauto.
-    omega.
-    
+    omega.    
     (* init_mem *)
     admit.
     (* initial_state_gen *)
