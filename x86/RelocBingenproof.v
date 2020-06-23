@@ -1019,6 +1019,7 @@ Proof.
   + unfold match_prog in TRANSF.
     unfold transf_program in TRANSF.
     monadInv TRANSF.
+    repeat destr_in EQ2.
     unfold transl_sectable in EQ.
     destruct (prog_sectable prog);inversion EQ.
     repeat (destruct v; inversion EQ;
@@ -1027,16 +1028,16 @@ Proof.
     simpl.
     unfold transl_code in EQ0.
     monadInv  EQ0.
-    destruct x. monadInv EQ2.    
-    generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ1).
+    destruct x. monadInv EQ3.
+    generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ2).
     intros HTranslSpec.
-    generalize (spec_decode_ex' code 0 (rev l) _ _ HTranslSpec).
+    generalize (spec_decode_ex' code 0 (rev l0) _ _ HTranslSpec).
     intros (c' & code' & HEncodeDecode).
     destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]].
     econstructor.
     unfold decode_prog_code_section.
     simpl.
-    cut(((length(rev l)) >= c')%nat).
+    cut(((length(rev l0)) >= c')%nat).
     intros HGE.
     generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE).
     intros HDecode'.
@@ -1294,7 +1295,7 @@ Proof.
   intro rs.
   apply forward_simulation_step with (match_states := fun x y : Asm.state => x = y).
   + simpl.
-    unfold match_prog, transf_program in TRANSF. monadInv TRANSF.
+    unfold match_prog, transf_program in TRANSF. monadInv TRANSF. repeat destr_in EQ2.
     unfold globalenv, genv_senv. simpl.
     unfold RelocProgSemantics.globalenv. simpl. intro id.
     rewrite ! RelocProgSemantics.genv_senv_add_external_globals. simpl. auto.

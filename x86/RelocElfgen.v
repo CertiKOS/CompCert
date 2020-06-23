@@ -16,6 +16,7 @@ Require Import Hex Bits.
 Require Import SymbtableEncode.
 Import Hex Bits.
 Import ListNotations.
+Require Import RelocProgSemantics3.
 
 Set Implicit Arguments.
 
@@ -236,6 +237,7 @@ Definition gen_sections (t:sectable) : res (list section) :=
 
 Definition gen_reloc_elf (p:program) : res elf_file :=
   do secs <- gen_sections (prog_sectable p);
+  do _ <- RelocProgSemantics3.decode_tables p;
     if (beq_nat (length secs) 7) then
       if zlt (get_elf_shoff p) (two_p 32)
       then 
@@ -500,7 +502,7 @@ Lemma gen_reloc_elf_valid p ef (GRE: gen_reloc_elf p = OK ef)
 Proof.
   unfold gen_reloc_elf in GRE.
   monadInv GRE.
-  repeat destr_in EQ0.
+  repeat destr_in EQ2.
   Opaque Z.add Z.eqb check_sizes.
   constructor; simpl.
   - apply gen_elf_header_valid. split; auto.
@@ -621,10 +623,10 @@ Proof.
     simpl in H10. monadInv H10.
     monadInv EQ.
     monadInv EQ0.
-    monadInv EQ2.
     monadInv EQ3.
     monadInv EQ4.
     monadInv EQ5.
+    monadInv EQ6.
     cbn.
     rewrite Heqs.
     unfold check_sizes.

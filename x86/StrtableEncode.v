@@ -38,13 +38,13 @@ Definition acc_strmap r (idb: ident * list byte) :=
   let next'  := next + Z.of_nat(length bytes) in
   (map', next').
 
-Definition get_strings_map_bytes (symbols: list ident) : res (PTree.t Z * list byte) :=
+Definition get_strings_map_bytes (symbols: list ident) : res (list (ident * list byte) * PTree.t Z * list byte) :=
   do idbytes <-
      fold_right acc_symbol_strings (OK []) symbols;
   let '(strmap, maxofs) := fold_left acc_strmap idbytes (PTree.empty Z, 1) in
   let sbytes := fold_right (fun '(id,bytes) acc => bytes ++ acc) [] idbytes in
   if zlt maxofs Int.max_unsigned then
-    OK (strmap, HB["00"] :: sbytes)
+    OK (idbytes, strmap, HB["00"] :: sbytes)
   else Error (msg "Too many strings").
                              
 Definition create_strtab_section (strs: list byte) := sec_bytes strs.
@@ -55,7 +55,7 @@ Definition transf_program (p:program) : res program :=
   let symbols :=
       fold_right acc_symbols [] (prog_symbtable p) in
   do r <- get_strings_map_bytes symbols;
-  let '(strmap, sbytes) := r in
+  let '(idbytes, strmap, sbytes) := r in
   let strsec := create_strtab_section sbytes in
   let p' :=
       {| prog_defs := p.(prog_defs);
@@ -166,8 +166,8 @@ Proof.
   unfold get_strings_map_bytes in EQ.
   rewrite EQ0 in EQ. simpl in EQ. repeat destr_in EQ.
   exists z; split; auto.
-  revert z Heqp l0.
-  assert (valid_strtable_thr x (PTree.empty Z) 1 /\ 0 < 1).
+  revert z Heqp l1.
+  assert (valid_strtable_thr l0 (PTree.empty Z) 1 /\ 0 < 1).
   {
     split.
     constructor; setoid_rewrite PTree.gempty; congruence.
@@ -178,13 +178,13 @@ Proof.
   revert VALID POS.
   generalize (PTree.empty Z) 1.
   clear -LNR'.
-  assert (forall elt, In elt x -> In elt x) by auto. revert H.
-  generalize x at 1 4.
-  induction x0; simpl.
+  assert (forall elt, In elt l0 -> In elt l0) by auto. revert H.
+  generalize l0 at 1 4.
+  induction l1; simpl.
   - intros; eauto. inv Heqp. auto.
   - intros IN t z VALID POS t0 z1 FOLD LT.
     destr_in FOLD.
-    eapply IHx0 in FOLD. auto. eauto.
+    eapply IHl1 in FOLD. auto. eauto.
     constructor; repeat setoid_rewrite PTree.gsspec.
     + intros i0 j x1 y bytesx bytesy ox oy. repeat destr.
       * intros Tx Ty Bx By Diff Ox Oy. inv Tx. inv VALID.

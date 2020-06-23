@@ -191,3 +191,11 @@ Ltac monadInv H :=
   | (?F _ = OK _) =>
       ((progress simpl in H) || unfold F in H); monadInv1 H
   end.
+
+Ltac autoinv :=
+  repeat match goal with
+         | H: context [match ?a with _ => _ end] |- _ =>
+           repeat destr_in H
+         | H: bind _ _ = OK _ |- _ =>
+           monadInv H
+         end.

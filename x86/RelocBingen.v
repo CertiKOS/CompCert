@@ -8,6 +8,7 @@ Require Import Globalenvs.
 Require Import Asm RelocProgram.
 Require Import Hex Bits Memdata Encode SeqTable.
 Require Import Reloctablesgen.
+Require Import SymbolString.
 Import Hex Bits.
 Import ListNotations.
 
@@ -313,6 +314,18 @@ Definition transl_sectable (stbl: sectable) relocmap : res sectable :=
 
 Definition transf_program (p:program) : res program := 
   do stbl <- transl_sectable (prog_sectable p) (prog_reloctables p);
+  do szstrings <- fold_right
+                    (fun (id : ident) (acc : res Z) =>
+                       match acc with
+                       | OK z =>
+                         match SymbolString.find_symbol_pos id with
+                         | Some pos => OK (z + 2 + Z.of_nat (length pos))
+                         | None => Error (msg "cannot find string")
+                         end
+                       | Error _ => acc
+                       end) (OK 0) (map symbentry_id (prog_symbtable p));
+  if zlt szstrings Int.max_unsigned
+  then 
   OK {| prog_defs := prog_defs p;
         prog_public := prog_public p;
         prog_main := prog_main p;
@@ -321,5 +334,6 @@ Definition transf_program (p:program) : res program :=
         prog_symbtable := prog_symbtable p;
         prog_reloctables := prog_reloctables p;
         prog_senv := prog_senv p;
-     |}.
+     |}
+  else Error (msg "Too many strings in symbtable").
 

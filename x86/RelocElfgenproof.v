@@ -37,14 +37,18 @@ Hypothesis TRANSF: match_prog prog tprog.
 (* Hypothesis first_section_is_null: *)
 (*   hd_error (prog_sectable prog) = Some sec_null. *)
 
-Hypothesis decodable:
+Lemma decodable:
   exists pp, decode_tables prog = OK pp.
+Proof.
+  unfold match_prog in TRANSF. unfold gen_reloc_elf in TRANSF.
+  monadInv TRANSF. repeat destr_in EQ2. eauto.
+Qed.
 
 Lemma decode_tables_same:
   decode_tables prog = decode_tables (reloc_program_of_elf_program tprog).
 Proof.
   unfold match_prog in TRANSF. unfold gen_reloc_elf in TRANSF.
-  monadInv TRANSF. repeat destr_in EQ0.
+  monadInv TRANSF. repeat destr_in EQ2.
   unfold decode_tables.
   unfold gen_sections in EQ. 
   assert (map sec_bytes x = (prog_sectable prog)).
@@ -56,7 +60,7 @@ Proof.
     unfold acc_sections in EQ. simpl in EQ. monadInv EQ. simpl. f_equal.
     unfold transl_section in EQ0. destr_in EQ0. eauto.
     simpl in EQ. inv EQ.
-  }
+  } 
   unfold reloc_program_of_elf_program. simpl.
   apply Nat.eqb_eq in Heqb.
   destruct x; simpl in Heqb; try omega.
@@ -117,7 +121,7 @@ Proof.
               RelocProgSemantics3.semantics (reloc_program_of_elf_program tprog) rs).
   {
     unfold match_prog, gen_reloc_elf in TRANSF.
-    monadInv TRANSF. repeat destr_in EQ0.
+    monadInv TRANSF. repeat destr_in EQ2.
     unfold reloc_program_of_elf_program. simpl.
     apply semantics3same; simpl; auto.
     unfold gen_sections in EQ.
@@ -130,6 +134,7 @@ Proof.
     destruct x; simpl in Heqb; try omega.
     destruct x; simpl in Heqb; try omega.
     apply fr_acc_sections_map in EQ. subst. auto.
+    eauto.
   }
   rewrite EQ.
   eapply forward_simulation_step with (match_states := fun (e1 e2: Asm.state) => e1 = e2);
@@ -155,12 +160,86 @@ Proof.
   auto. auto. auto.
 Defined.
 
+Lemma gen_sections_succeeds:
+  forall st,
+    Forall (fun s => exists b, s = sec_bytes b) st
+    <->
+    (exists x, gen_sections st = OK x).
+Proof.
+  split.
+  - unfold gen_sections. induction 1; simpl; intros; eauto.
+    destruct H. subst.
+    destruct IHForall. rewrite H. simpl. eauto.
+  - unfold gen_sections. intros (x & EQ). revert x EQ.
+    induction st; simpl; intros; eauto.
+    unfold acc_sections in EQ at 1. repeat destr_in EQ. monadInv H0.
+    eapply IHst in EQ. constructor; auto.
+    unfold transl_section in EQ1. repeat destr_in EQ1. eauto.
+Qed.
+
+Lemma Forall_app:
+  forall {A} P (l1 l2: list A),
+    Forall P l1 ->
+    Forall P l2 ->
+    Forall P (l1 ++ l2).
+Proof.
+  intros. rewrite Forall_forall in *.
+  intros x IN. rewrite in_app in IN. intuition eauto.
+Qed.
+
 Instance tl : @TransfLink _ _ TablesEncodeproof.linker2
                           linker2
                           match_prog.
 Proof.
   red. simpl. unfold link_reloc_elf_gen.
-  unfold match_prog.
   intros.
   unfold link_reloc_decode_tables.
+  erewrite <- decode_tables_same. 2: eauto.
+  erewrite <- decode_tables_same. 2: eauto.
+  unfold link_reloc_decode_tables in H.
+  repeat destr_in H.
+  cut (exists tp, gen_reloc_elf p = OK tp). intros (tp & EQ); rewrite EQ; eauto.
+  unfold match_prog in *.
+  unfold gen_reloc_elf in *.
+  monadInv H0. monadInv H1.
+  repeat destr_in EQ2. repeat destr_in EQ5.
+  edestruct (proj1 (gen_sections_succeeds (prog_sectable p))) as (secs & GS).
+  unfold TablesEncode.transf_program in Heqr1. monadInv Heqr1.
+  repeat destr_in EQ3. monadInv H0.
+  repeat destr_in EQ5. simpl in *.
+  apply Forall_app.
+  {
+    clear - Heqr Heqr0 Heqo.
+    unfold RelocBingenproof.link_reloc_bingen in Heqo. repeat destr_in Heqo.
+    unfold RelocBingen.transf_program in Heqr3. monadInv Heqr3. repeat destr_in EQ2. simpl. clear EQ1.
+    unfold RelocBingen.transl_sectable in EQ. repeat destr_in EQ. monadInv H0.
+    repeat constructor; eauto.
+  }
+  {
+    constructor. eauto.
+    constructor. unfold SymbtableEncode.create_symbtable_section in EQ3. monadInv EQ3. eauto.
+    constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
+    constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
+    constructor. unfold ShstrtableEncode.create_shstrtab_section. eauto.
+    constructor.
+  }
+  rewrite GS. simpl.
+  unfold decode_tables.
+  unfold RelocBingenproof.link_reloc_bingen in Heqo. autoinv.
+  generalize (valid_strtable_p _ _ Heqr1). intro VALID_STR.
+  unfold TablesEncode.transf_program in Heqr1. autoinv. simpl in *.
+  unfold RelocBingen.transf_program in Heqr4. autoinv. simpl in *.
+  unfold RelocBingen.transl_sectable in EQ5. autoinv. simpl in *.
+  rewrite ReloctablesDecode.decode_encode_reloctable.
+  rewrite ReloctablesDecode.decode_encode_reloctable. simpl.
+  erewrite StrtableDecode.decode_string_map_correct'. 2: eauto; fail. simpl.
+  rewrite EQ2. simpl. erewrite SymbtableDecode.decode_create_symtable_section.
+  4-5: eauto. simpl.
+  unfold acc_sections in GS. autoinv. simpl.
+  rewrite pred_dec_true. eauto.
+  admit.                        (* get_elf_shoff < 2 ^ 32 *)
+  eapply VALID_STR. eauto.
+  eapply prog_strings_eq; eauto.
+  generalize (f RELOC_CODE). simpl. auto.
+  generalize (f RELOC_DATA). simpl. auto.
 Admitted.

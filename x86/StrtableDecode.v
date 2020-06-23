@@ -156,7 +156,8 @@ Definition decode_strtable_section (s: section): res (list ident * PTree.t Z) :=
   match s with
   | sec_bytes bytes =>
     do symbols <- decode_string_map bytes;
-      do (strmap, _) <- get_strings_map_bytes symbols;
+    do r <- get_strings_map_bytes symbols;
+    let '(idbytes, strmap, _) := r in
       OK(symbols, strmap)
   | _ => Error []
   end.
@@ -224,7 +225,7 @@ Theorem transf_program_inv_correct p p'
   transf_program_inv p' = OK p.
 Proof.
   unfold transf_program in TP.
-  monadInv TP. destr_in EQ0. destr_in EQ0. inv EQ0. simpl in *.
+  monadInv TP. repeat destr_in EQ0. simpl in *.
   unfold transf_program_inv. simpl. 
   apply beq_nat_true in Heqb.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.

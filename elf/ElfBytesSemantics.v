@@ -50,4 +50,12 @@ Proof.
   constructor; try red; simpl; intros; easy.
 Qed.
 
+Theorem reloc_prog_single_events l p senv rs:
+  single_events (semantics l p senv rs).
+Proof.
+  unfold semantics. destr.
+  apply RelocElfSemantics.reloc_prog_single_events.
+  red. simpl. easy.
+Qed.
+
 End WITHEXTERNALCALLS.

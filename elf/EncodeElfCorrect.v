@@ -4,6 +4,10 @@ Require Import EncodeRelocElf DecodeRelocElf.
 Require Import RelocElf.
 Require Import Coqlib Errors.
 
+Require Import Linking.
+Require Import RelocElfgenproof.
+
+
 Definition match_prog : elf_file -> (list Integers.Byte.int * Asm.program * Globalenvs.Senv.t) -> Prop :=
   fun p p' => encode_elf_file p = OK p'.
 
@@ -29,3 +33,45 @@ Proof.
 Qed.
 
 End PRES.
+
+Definition link (p1 p2: list Integers.Byte.int * Asm.program * Globalenvs.Senv.t) :=
+  let '(b1, p1, s1) := p1 in let '(b2, p2, s2) := p2 in
+  match decode_elf_file b1 p1 s1, decode_elf_file b2 p2 s2 with
+  | OK e1, OK e2 =>
+    match link_reloc_elf_gen e1 e2 with
+    | Some e =>
+      match encode_elf_file e with
+        OK r => Some r
+      | _ => None
+      end
+    | None => None
+    end
+  | _, _ => None
+  end.
+
+Instance linker : Linker (list Integers.Byte.int * Asm.program * Globalenvs.Senv.t).
+Proof.
+  eapply Build_Linker with (link := link) (linkorder := fun _ _ => True).
+  auto. auto. auto.
+Defined.
+
+Instance tl : Linking.TransfLink match_prog.
+Proof.
+  red. simpl.
+  unfold match_prog.
+  intros.
+  unfold link. repeat (destr; [idtac]).
+  erewrite decode_encode_elf_file. 2: eauto.
+  erewrite decode_encode_elf_file. 2: eauto. rewrite H.
+  cut (exists tp, encode_elf_file p = OK tp).
+  intros (tp & ENC). rewrite ENC; eauto. subst.
+  unfold encode_elf_file in *. repeat destr_in H0. repeat destr_in H1.
+  rewrite pred_dec_true. eauto.
+  unfold link_reloc_elf_gen in H. repeat destr_in H.
+  unfold TablesEncodeproof.link_reloc_decode_tables in Heqo. repeat destr_in Heqo.
+  unfold TablesEncode.transf_program in Heqr2. monadInv Heqr2. repeat destr_in EQ0.
+  monadInv H0. repeat destr_in EQ1.
+  eapply RelocElfgen.gen_reloc_elf_valid; eauto.
+  simpl. rewrite in_app. right. simpl. auto.
+Defined.
+
