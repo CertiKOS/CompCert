@@ -5,6 +5,7 @@
 Require Import Coqlib Integers AST Maps.
 Require Import Permutation.
 Require Import Values Events Memtype Memory.
+Require Import Globalenvs.
 Import ListNotations.
 
 Ltac destr_if := 
@@ -57,6 +58,13 @@ Proof.
       auto.
 Qed.
 
+Lemma Forall_cons_inv: forall {A} f e (l:list A),
+    Forall f (e :: l) -> Forall f l.
+Proof.
+  intros.
+  rewrite Forall_forall in *.
+  intuition.
+Qed.
 
 Fixpoint pos_advance_N (p:positive) (n:nat) : positive :=
   match n with
@@ -989,6 +997,79 @@ Proof.
   exploit (cmplu_bool_lessdef j v1 v2 v1' v2' m m' c); eauto. intros.
   inversion H2; subst; simpl; constructor.
   apply Val.vofbool_inject.
+Qed.
+
+
+(** *)
+Lemma alloc_perm_range: forall m lo hi m' b k p,
+    Mem.alloc m lo hi = (m', b) ->
+    Mem.range_perm m' b lo hi k p.
+Proof.
+  intros m lo hi m' b k p ALLOC.
+  red. intros ofs OFS.
+  eapply alloc_perm in ALLOC; eauto.
+  rewrite ALLOC. rewrite peq_true. auto.
+Qed.
+
+Lemma stack_access_nil: forall b lo hi, stack_access nil b lo hi.
+Proof.
+  intros.
+  red. right. red.
+  unfold get_frame_info. unfold get_assoc_stack. auto.
+Qed.
+
+
+Lemma store_zeros_pres_range_perm: forall m b lo hi m' k p,
+    store_zeros m b lo hi = Some m' ->
+    Mem.range_perm m b lo hi k p ->
+    Mem.range_perm m' b lo hi k p.
+Proof.
+  intros m b lo hi m' k p STZ RP.
+  red. red in RP. intros ofs H.
+  erewrite <- Genv.store_zeros_perm; eauto.
+Qed.
+
+
+Lemma init_data_alignment_pos: forall id,
+    0 < Genv.init_data_alignment id.
+Proof.
+  intros. destruct id; cbn; try omega.
+  destr; omega.
+Qed.
+
+Lemma init_data_list_aligned_dec: forall l p,
+    {Genv.init_data_list_aligned p l} + 
+    {~Genv.init_data_list_aligned p l}.
+Proof.
+  induction l as [|id l]; cbn; auto.
+  intros p.
+  assert ({(Genv.init_data_alignment id | p)} + 
+          {~(Genv.init_data_alignment id | p)}).
+  { 
+    eapply Zdivide_dec; eauto.
+    generalize (init_data_alignment_pos id). omega. 
+  }
+  generalize (IHl (p + init_data_size id)).
+  intros.
+  inv H; inv H0.
+  - left; split; auto.
+  - right; tauto.
+  - right; tauto.
+  - right; tauto.
+Qed.
+
+Lemma init_data_list_aligned_app : forall l1 p l2,
+    Genv.init_data_list_aligned p l1 ->
+    Genv.init_data_list_aligned (p + init_data_list_size l1) l2 ->
+    Genv.init_data_list_aligned p (l1 ++ l2).
+Proof.
+  induction l1 as [|id l1].
+  - cbn. intros. rewrite Z.add_0_r in H0. auto.
+  - intros p l2 AL1 AL2.
+    cbn in *. destruct AL1 as (AL & AL1). 
+    split; auto.
+    rewrite Z.add_assoc in AL2.
+    eapply IHl1; eauto.
 Qed.
 
 

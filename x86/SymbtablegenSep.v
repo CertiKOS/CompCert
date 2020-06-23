@@ -3390,6 +3390,20 @@ Proof.
   eapply Permutation_in; eauto.
 Qed.
 
+Lemma init_data_aligned_perm: forall p p',
+    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
+    Forall init_data_aligned (map snd (AST.prog_defs p)) ->
+    Forall init_data_aligned (map snd (AST.prog_defs p')).
+Proof.
+Admitted.
+
+Lemma data_size_aligned_perm: forall p p',
+    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
+    Forall data_size_aligned (map snd (AST.prog_defs p)) ->
+    Forall data_size_aligned (map snd (AST.prog_defs p')).
+Proof.
+Admitted.
+
 Lemma wf_prog_perm: forall p p',
     Permutation (AST.prog_defs p) (AST.prog_defs p') ->
     AST.prog_main p = AST.prog_main p' ->
@@ -3403,6 +3417,8 @@ Proof.
     eapply main_exists_perm; eauto.
   - eapply def_aligned_perm; eauto.
   - eapply def_instrs_valid_perm; eauto.
+  - eapply init_data_aligned_perm; eauto.
+  - eapply data_size_aligned_perm; eauto.
 Qed.
 
 Lemma main_exists_combine: 
@@ -3565,6 +3581,30 @@ Proof.
     eauto.
 Qed.
 
+Lemma init_data_aligned_combine: 
+  forall defs1 defs2,
+    Forall init_data_aligned (map snd defs1) ->
+    Forall init_data_aligned (map snd defs2) ->
+    Forall init_data_aligned
+           (map snd (PTree.elements
+                       (PTree.combine link_prog_merge
+                                      (PTree_Properties.of_list defs1)
+                                      (PTree_Properties.of_list defs2)))).
+Proof.
+Admitted.
+
+Lemma data_size_aligned_combine: 
+  forall defs1 defs2,
+    Forall data_size_aligned (map snd defs1) ->
+    Forall data_size_aligned (map snd defs2) ->
+    Forall data_size_aligned
+           (map snd (PTree.elements
+                       (PTree.combine link_prog_merge
+                                      (PTree_Properties.of_list defs1)
+                                      (PTree_Properties.of_list defs2)))).
+Proof.
+Admitted.
+
 
 Lemma link_prog_pres_wf_prog: forall p1 p2 p,
     link_prog p1 p2 = Some p ->
@@ -3589,6 +3629,8 @@ Proof.
     eapply main_exists_combine; eauto.
   - eapply def_aligned_combine; eauto.
   - eapply def_instrs_valid_combine; eauto.
+  - eapply init_data_aligned_combine; eauto.
+  - eapply data_size_aligned_combine; eauto.
 Qed.
 
 Lemma link_ordered_prog_pres_wf_prog: forall p1 p2 p,

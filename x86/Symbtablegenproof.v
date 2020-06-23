@@ -527,48 +527,50 @@ Proof.
     destr_match_in INITINJ; try congruence.
     destruct p. inversion INITINJ. clear INITINJ. subst b0 ofs. 
     rewrite Ptrofs.repr_unsigned.
-    unfold globalenv in EQ0; simpl in EQ0.
     apply Genv.invert_find_symbol in EQ.
     exploit Genv.find_symbol_funct_ptr_inversion; eauto.
     intros IN.
-    assert (prog_symbtable tprog = l) as SL by (subst tprog; auto).
-    rewrite SL in EQ0.
-    unfold tge. unfold globalenv. cbn.
-    rewrite SL.
-    
-    
-    
-    (* rewrite add_external_globals_pres_find_symbol in EQ0. *)
-    (* unfold Genv.find_symbol in EQ0. cbn in EQ0. *)
-    (* apply Genv.invert_find_symbol in EQ. *)
-    (* exploit (Genv.find_symbol_funct_ptr_inversion prog); eauto. *)
-    (* intros FINPROG. *)
-    (* unfold Genv.find_instr. unfold tge. *)
-    (* cbn. *)
-    (* rewrite add_external_globals_pres_instrs. cbn. *)
-    (* unfold create_sec_table. *)
-    (* replace (Pos.to_nat 1) with 1%nat by xomega. *)
-    (* cbn. *)
-    (* unfold gen_symb_table in Heqp. *)
-    (* destr_in Heqp. destruct p. inv Heqp. *)
-    (* exploit acc_symb_tree_entry_some; eauto. *)
-    (* { inv w. auto. } *)
-    (* { eapply PTree_Properties.of_list_norepet; eauto. *)
-    (*   inv w. auto. } *)
-    (* cbn. intros GET. *)
-    (* inversion w. *)
-    (* unfold gen_symb_map in EQ0. *)
-    (* exploit symbtable_to_tree_acc_symb_map_inv; eauto. *)
-    (* erewrite <- acc_symb_pres_ids; eauto.  *)
-    (* cbn. intros (EQOFS & i' & SEC & EQB). subst. *)
-    (* inv SEC. *)
-    (* eapply pres_find_instr; eauto.  *)
-    (* exploit Genv.find_symbol_funct_ptr_inversion; eauto. *)
-    (* apply Genv.invert_find_symbol. eauto. eauto. intros IN. *)
-    (* eapply gen_symb_table_only_internal_symbol; eauto. *)
-    (* inv w; auto. *)
-    (* cbn. auto. *)
-    admit.
+    inversion w.
+    exploit PTree_Properties.of_list_norepet; eauto.
+    intros GET.
+    unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. 
+    inversion Heqp. subst l z0 z.
+    exploit acc_symb_tree_entry_some; eauto.
+    intros GET'.     
+    cbn in GET'.
+    unfold globalenv in tge; cbn in tge.
+    unfold tge.
+    unfold symbtable_to_tree in GET'.
+    apply PTree_Properties.in_of_list in GET'.
+    match type of GET' with
+    | In (_, ?e') _ => set (e:= e') in GET'
+    end.
+    unfold globalenv in EQ0; simpl in EQ0.
+    replace (prog_symbtable tprog) with (rev s) in * by (subst tprog; auto).
+    replace (prog_defs tprog) with (AST.prog_defs prog) in * by (subst tprog; auto).
+    cbn.
+    unfold symbtable_to_idlist in GET'.
+    rewrite in_map_iff in GET'.
+    destruct GET' as (e' & EQ' & IN'). inversion EQ'. clear EQ'. subst e'.
+    erewrite <- H0 in EQ0.
+    erewrite add_external_globals_find_symb in EQ0; eauto. 
+    inversion EQ0; clear EQ0. subst i0 b'.
+    rewrite <- H0.
+    assert ((gen_extfuns (AST.prog_defs prog)) ! (symbentry_id e) = Some f) as EXT.
+    { 
+      rewrite H0. 
+      eapply PTree_Properteis_of_list_get_extfuns; eauto.      
+    }
+    match goal with 
+    | [ |- context [ add_external_globals _ ?ge _ ] ] => set (ige := ge)
+    end.
+    erewrite acc_symb_pres_ids in wf_prog_norepet_defs; eauto.
+    assert (is_symbentry_internal e = false) as INT by auto.
+    assert (symbentry_type e = symb_func) as TYP by auto.
+    generalize (add_external_globals_ext_funs _ _ ige _ _ wf_prog_norepet_defs IN' INT TYP EXT).
+    intros EGET. rewrite <- EGET.
+    repeat f_equal.
+    erewrite <- acc_symb_pres_ids; eauto.    
 
   - (* agree_inj_int_funct *)
     intros b f ofs b' ofs' FPTR INITINJ.
@@ -577,20 +579,47 @@ Proof.
     unfold ge in FPTR. exploit Genv.genv_next_find_funct_ptr_absurd; eauto. contradiction.
     destr_match_in INITINJ; try congruence.
     destr_match_in INITINJ; try congruence.
-    destruct p. inv INITINJ. 
+    destruct p. inversion INITINJ. clear INITINJ. subst b0 ofs. 
+    apply Genv.invert_find_symbol in EQ.
+    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
+    intros IN.
+    inversion w.
+    exploit PTree_Properties.of_list_norepet; eauto.
+    intros GET.
+    generalize Heqp. intros GENSYM.
+    unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. 
+    inversion Heqp. subst l z0 z.
+    exploit acc_symb_tree_entry_some; eauto.
+    intros GET'.     
+    cbn in GET'.
+    unfold globalenv in tge; cbn in tge.
+    unfold tge.
+    unfold symbtable_to_tree in GET'.
+    apply PTree_Properties.in_of_list in GET'.
+    match type of GET' with
+    | In (_, ?e') _ => set (e:= e') in GET'
+    end.
     unfold globalenv in EQ0; simpl in EQ0.
-    unfold Genv.find_ext_funct.
+    replace (prog_symbtable tprog) with (rev s) in * by (subst tprog; auto).
+    replace (prog_defs tprog) with (AST.prog_defs prog) in * by (subst tprog; auto).
+    cbn.
+    unfold symbtable_to_idlist in GET'.
+    rewrite in_map_iff in GET'.
+    destruct GET' as (e' & EQ' & IN'). inversion EQ'. clear EQ'. subst e'.
+    erewrite <- H0 in EQ0.
     rewrite add_external_globals_pres_find_symbol in EQ0.
     unfold Genv.find_symbol in EQ0. cbn in EQ0.
-    admit.
-    exploit Genv.find_symbol_funct_ptr_inversion; eauto.
-    apply Genv.invert_find_symbol. eauto. eauto. intros IN.
+    erewrite add_external_globals_pres_ext_funs; eauto. 
+    cbn. rewrite PTree.gempty. auto. cbn.    
+    eapply gen_symb_map_internal_block_range; eauto. 
+    erewrite <- acc_symb_pres_ids; eauto.
+    subst e. auto. 
+    subst e. auto.
+    cbn; auto. 
+    unfold sec_code_id. xomega.
     eapply gen_symb_table_only_internal_symbol; eauto.
-    inv w; auto.
     cbn. auto.
-
-(* Qed. *)
-Admitted.
+Qed.
 
 
 (** Initial memory injection for global variables (not including the stacks) *)
@@ -607,13 +636,102 @@ Definition globs_meminj : meminj :=
         end
       end.
 
+
+
 Lemma init_mem_pres_inject : 
   forall m
-    (TRANF: transf_program prog = OK tprog)
     (INITMEM: Genv.init_mem prog = Some m),
     exists m', init_mem tprog = Some m' /\ Mem.inject globs_meminj (def_frame_inj m) m m'.
 Proof.
+  unfold Genv.init_mem, init_mem. intros.
+  unfold match_prog, transf_program in TRANSF.
+  destr_in TRANSF. inv w.
+  destr_in TRANSF. destruct p. 
+  destr_in TRANSF. inv TRANSF. cbn.
+  destruct (Mem.alloc Mem.empty 0 (init_data_list_size (fold_right acc_init_data [] (AST.prog_defs prog)))) eqn:IALLOC.
+  set (idata := (fold_right acc_init_data [] (AST.prog_defs prog))) in *.
+  generalize (alloc_perm_range _ _ _ _ _ Cur Writable IALLOC).
+  intros RPERM.
+  assert (exists m1, store_zeros m0 b 0 (init_data_list_size idata) = Some m1) as STZ.
+  { 
+    eapply Genv.store_zeros_exists; eauto.
+    cbn. erewrite Mem.alloc_stack_blocks; eauto.
+    rewrite Mem.empty_stack. 
+    eapply stack_access_nil.
+    erewrite Mem.alloc_stack_blocks; eauto.
+    rewrite Mem.empty_stack. cbn. auto.
+  }
+  destruct STZ as (m1 & STZ).
+  rewrite STZ.
+  generalize (store_zeros_pres_range_perm _ _ _ _ _ _ _ STZ RPERM).
+  intros RPERM1.
+  
+  assert (exists m' : mem, store_init_data_list tge m1 b 0 idata = Some m') as SL.
+  {
+    eapply store_init_data_list_exists; eauto. cbn.
+    erewrite Genv.store_zeros_stack_access; eauto.
+    erewrite Mem.alloc_stack_blocks; eauto.
+    rewrite Mem.empty_stack.
+    apply stack_access_nil.
+    eapply acc_init_data_list_aligned; eauto.
+    apply Z.divide_0_r.
+  }
+  destruct SL as (m2 & SL).
+  generalize SL. intros SL'.
+  unfold tge in SL'. cbn in SL'.
+  rewrite SL'. clear SL'.
+
+(*   destr. *)
+(*   destr. destr. *)
+
+(*   destruct (Mem.alloc Mem.empty 0 0) eqn:IALLOC. *)
+(*   exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK. *)
+(*   rewrite Mem.nextblock_empty in NEXTBLOCK. simpl in NEXTBLOCK. *)
+(*   exploit alloc_globals_segments_weak_inject; eauto. *)
+(*   erewrite Mem.alloc_stack_blocks; eauto. *)
+(*   erewrite Mem.empty_stack; eauto. *)
+(*   intros (m' & GALLOC & SINJ). *)
+(*   set (m1 := alloc_segments m0 (list_of_segments tprog)) in *. *)
+(*   rewrite GALLOC. *)
+(*   generalize (store_all_globals_inject). intro AAGI. *)
+(*   generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'. *)
+(*   unfold transf_program in TRANSF'. *)
+(*   destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'. *)
+(*   unfold transl_prog_with_map in H0.  *)
+(*   destruct (transl_globdefs g (AST.prog_defs prog)) eqn: TLGLB; inversion H0.  *)
+(*   clear H0. simpl. *)
+(*   inversion UPDATE. subst g l z0 z. *)
+(*   exploit AAGI; eauto using INITMEM, SINJ, Mem.inject_ext. *)
+(*   - inv w. auto. *)
+(*   - erewrite alloc_globals_nextblock; eauto. *)
+(*     subst m1. *)
+(*     erewrite alloc_segments_nextblock; eauto. *)
+(*     erewrite Mem.nextblock_alloc; eauto.  *)
+(*     erewrite Mem.nextblock_empty. simpl.     *)
+(*     subst tprog. simpl. *)
+(*     erewrite transl_globdefs_pres_len; eauto. *)
+(*   - erewrite <- alloc_globals_stack; eauto. *)
+(*     subst m1. erewrite alloc_segments_stack; eauto. *)
+(*     erewrite Mem.alloc_stack_blocks; eauto. *)
+(*     erewrite Mem.empty_stack; eauto. *)
+(*   - eapply alloc_globals_perm_ofs; eauto. subst m1. *)
+(*     eapply alloc_segments_perm_ofs; eauto.  *)
+(*     intros b0 ofs k p PERM. erewrite alloc_perm in PERM; eauto. *)
+(*     destruct peq. omega. apply Mem.perm_empty in PERM. contradiction. *)
+(*   - intros id odef b' delta IN FSYM ofs k p OFS. *)
+(*     destruct (vit_dec _ _ odef). *)
+(*     + eapply alloc_globals_pres_perm; eauto. *)
+(*       subst m1. eapply alloc_segments_init_perm; eauto. *)
+(*     + eapply alloc_globals_init_perm; eauto. *)
+(*       subst m1. erewrite alloc_segments_nextblock; eauto. simpl. *)
+(*       rewrite NEXTBLOCK. auto. *)
+(*   - intros (m1' & ALLOC' & MINJ). *)
+(*     exists m1'. split. subst. simpl. *)
+(*     unfold tge in ALLOC'. auto. *)
+(*     auto. *)
+(* Qed. *)
 Admitted.
+
 
 (** Inversion of initial memory injection on genv_next *)
 Lemma acc_symb_maps_inv : forall stbl t id b ofs,
