@@ -16,7 +16,6 @@ Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Globalenvs Smallstep.
 Require Import Locations Stacklayout Conventions.
 
-Definition alignw:Z := 8.
 
 (** * Abstract syntax *)
 

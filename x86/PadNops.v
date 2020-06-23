@@ -9,6 +9,7 @@ Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
 Require Import Globalenvs .
+Require Import LocalLib.
 Import ListNotations.
 
 Set Implicit Arguments.

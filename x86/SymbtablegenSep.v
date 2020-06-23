@@ -848,10 +848,10 @@ Proof.
   - inv LINK. eapply def_internal_imply_eq; eauto.
 Qed.
 
-Lemma get_def_init_data_eq : forall d1 d2,
+Lemma get_def_init_data_eq : forall {F V} (d1 d2: option (globdef (AST.fundef F) V)),
       def_eq d1 d2 -> get_def_init_data d1 = get_def_init_data d2.
 Proof.
-  intros d1 d2 EQ. inv EQ.
+  intros F V d1 d2 EQ. inv EQ.
   - simpl. auto.
   - simpl in *. rewrite H1. auto.
 Qed.
@@ -864,21 +864,21 @@ Proof.
   - simpl in *. auto.
 Qed.
 
-Lemma extern_var_init_data_nil : forall v,
+Lemma extern_var_init_data_nil : forall {F V} (v:globvar V),
     is_var_internal v = false ->
-    get_def_init_data (Some (Gvar v)) = [].
+    @get_def_init_data F _ (Some (Gvar v)) = [].
 Proof.
-  intros v H. simpl in *.
+  intros F V v H. simpl in *.
   unfold is_var_internal in H.
   destruct (gvar_init v); try congruence.
   destruct i; simpl in *; try congruence.
   destruct l; simpl in *; try congruence.
 Qed.
 
-Lemma extern_init_data_nil : forall def,
+Lemma extern_init_data_nil : forall {F V} (def: option (globdef (AST.fundef F) V)),
     def_internal def = false -> get_def_init_data def = nil.
 Proof.
-  intros def H.
+  intros F V def H.
   destruct def. destruct g. 
   - simpl in *. auto.
   - simpl in H. apply extern_var_init_data_nil. auto.
@@ -924,11 +924,11 @@ Proof.
       { intros. eapply IN; eauto. apply in_cons. auto. }
       generalize (IHdefs1 _ _ _ IN' H3).
       intros (DEQ & CEQ). rewrite DEQ, CEQ. 
-      rewrite (get_def_init_data_eq DEFEQ).
+      setoid_rewrite (get_def_init_data_eq DEFEQ).
       rewrite (get_def_instrs_eq DEFEQ).
       auto.
     + cbn.
-      rewrite extern_init_data_nil; auto. cbn.
+      setoid_rewrite extern_init_data_nil; auto. cbn.
       rewrite extern_fun_nil; auto. cbn.
       eapply IHdefs1; eauto.
       intros. eapply IN; eauto. apply in_cons. auto.
@@ -952,9 +952,9 @@ Proof.
   induction 1.
   - simpl. auto.
   - destruct e as (id, def). simpl.     
-    erewrite extern_init_data_nil; eauto.
+    setoid_rewrite extern_init_data_nil; eauto.
   - destruct e as (id, def). simpl.
-    erewrite extern_init_data_nil; eauto.
+    setoid_rewrite extern_init_data_nil; eauto.
   - simpl.
     rewrite IHlist_in_order. auto.
     apply acc_init_data_eq; auto.
@@ -969,7 +969,7 @@ Proof.
   - intros H. 
     cbn. unfold acc_init_data. destruct def.
     inv H.
-    erewrite extern_init_data_nil; eauto. 
+    setoid_rewrite extern_init_data_nil; eauto. 
 Qed.
 
 
@@ -2431,7 +2431,7 @@ Lemma def_external_data_size_0: forall def,
 Proof.
   intros.
   unfold def_data_size.
-  rewrite extern_init_data_nil; auto.
+  setoid_rewrite extern_init_data_nil; auto.
 Qed.
 
 Lemma def_external_code_size_0: forall def,
@@ -2446,7 +2446,7 @@ Lemma def_eq_data_size_eq: forall d1 d2,
     def_eq d1 d2 -> def_data_size d1 = def_data_size d2.
 Proof.
   intros. unfold def_data_size.
-  erewrite get_def_init_data_eq; eauto.
+  setoid_rewrite (get_def_init_data_eq H); eauto.
 Qed.
 
 Lemma def_eq_code_size_eq: forall d1 d2,
@@ -2798,7 +2798,7 @@ Proof.
     generalize (Forall_inv H).
     intros DI. destruct def as (id, def). cbn.
     unfold def_data_size.
-    erewrite extern_init_data_nil; eauto. cbn.
+    setoid_rewrite extern_init_data_nil; eauto. cbn.
     eapply IHdefs; eauto.
     inv H. auto.
 Qed.
@@ -3390,13 +3390,6 @@ Proof.
   eapply Permutation_in; eauto.
 Qed.
 
-Lemma init_data_aligned_perm: forall p p',
-    Permutation (AST.prog_defs p) (AST.prog_defs p') ->
-    Forall init_data_aligned (map snd (AST.prog_defs p)) ->
-    Forall init_data_aligned (map snd (AST.prog_defs p')).
-Proof.
-Admitted.
-
 Lemma data_size_aligned_perm: forall p p',
     Permutation (AST.prog_defs p) (AST.prog_defs p') ->
     Forall data_size_aligned (map snd (AST.prog_defs p)) ->
@@ -3417,7 +3410,6 @@ Proof.
     eapply main_exists_perm; eauto.
   - eapply def_aligned_perm; eauto.
   - eapply def_instrs_valid_perm; eauto.
-  - eapply init_data_aligned_perm; eauto.
   - eapply data_size_aligned_perm; eauto.
 Qed.
 
@@ -3581,18 +3573,6 @@ Proof.
     eauto.
 Qed.
 
-Lemma init_data_aligned_combine: 
-  forall defs1 defs2,
-    Forall init_data_aligned (map snd defs1) ->
-    Forall init_data_aligned (map snd defs2) ->
-    Forall init_data_aligned
-           (map snd (PTree.elements
-                       (PTree.combine link_prog_merge
-                                      (PTree_Properties.of_list defs1)
-                                      (PTree_Properties.of_list defs2)))).
-Proof.
-Admitted.
-
 Lemma data_size_aligned_combine: 
   forall defs1 defs2,
     Forall data_size_aligned (map snd defs1) ->
@@ -3629,7 +3609,6 @@ Proof.
     eapply main_exists_combine; eauto.
   - eapply def_aligned_combine; eauto.
   - eapply def_instrs_valid_combine; eauto.
-  - eapply init_data_aligned_combine; eauto.
   - eapply data_size_aligned_combine; eauto.
 Qed.
 
