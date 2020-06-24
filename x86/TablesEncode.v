@@ -93,6 +93,9 @@ Proof.
 Defined.
 
 
+Parameter dump_reloctables: reloctable_map -> res program.
+Axiom dump_reloctables_error: forall r, dump_reloctables r = Error [MSG "Reloctables not OK"].
+
 Definition transf_program (p:program) : res program :=
   let symbols := fold_right acc_symbols [] (prog_symbtable p) in
   do r <- get_strings_map_bytes symbols;
@@ -122,7 +125,7 @@ Definition transf_program (p:program) : res program :=
             OK p'
           else
             Error [MSG "In TablesEncode: number of sections is incorrect (not 7): "; POS (Pos.of_nat len)]
-        else Error [MSG "Reloctables not OK."]
+        else dump_reloctables (prog_reloctables p)
       else Error [MSG "Symbol ids repeat."]
     else Error [MSG "Empty strings."]
   else Error [MSG "Invalid symbentries"].

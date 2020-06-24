@@ -11,3 +11,8 @@ Require Import Ascii String.
     finding the strings associated with the global symbols *)
 Parameter find_symbol_pos : ident -> option (list positive).
 
+Parameter string_to_ident : list byte -> option ident.
+
+Axiom string_to_ident_symbol_to_pos:
+  forall s lb, find_symbol_pos s = Some lb ->
+               string_to_ident (map (fun p => Byte.repr (Zpos p)) lb) = Some s.

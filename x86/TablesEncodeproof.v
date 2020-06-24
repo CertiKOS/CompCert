@@ -35,6 +35,7 @@ Lemma valid_reloctables:
 Proof.
   unfold transf_program in transf_encode.
   monadInv transf_encode. repeat destr_in EQ0.
+  rewrite dump_reloctables_error in H0. congruence.
 Qed.
 
 Lemma valid_symbentries_p:
@@ -215,6 +216,7 @@ Proof.
     simpl in Heqb. omega.
   }
   rewrite EQ. exists t, l, l0, x. auto.
+  rewrite dump_reloctables_error in H0. congruence.
 Qed.
 
 Lemma genv_senv_same:

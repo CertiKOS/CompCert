@@ -23,10 +23,6 @@ Local Open Scope bits_scope.
 
 
 
-Variable string_to_ident : list byte -> option ident.
-Axiom string_to_ident_symbol_to_pos:
-  forall s lb, find_symbol_pos s = Some lb ->
-               string_to_ident (map (fun p => Byte.repr (Zpos p)) lb) = Some s.
 
 Fixpoint split_bytes (l: list byte) (cur: list byte) (acc: list (list byte)) :=
   match l with

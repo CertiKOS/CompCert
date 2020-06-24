@@ -200,13 +200,9 @@ Proof.
   repeat destr_in H.
   cut (exists tp, gen_reloc_elf p = OK tp). intros (tp & EQ); rewrite EQ; eauto.
   unfold match_prog in *.
-  unfold gen_reloc_elf in *.
-  monadInv H0. monadInv H1.
-  repeat destr_in EQ2. repeat destr_in EQ5.
+  unfold gen_reloc_elf in *. autoinv.
   edestruct (proj1 (gen_sections_succeeds (prog_sectable p))) as (secs & GS).
-  unfold TablesEncode.transf_program in Heqr1. monadInv Heqr1.
-  repeat destr_in EQ3. monadInv H0.
-  repeat destr_in EQ5. simpl in *.
+  unfold TablesEncode.transf_program in Heqr1. autoinv. simpl in *.
   apply Forall_app.
   {
     clear - Heqr Heqr0 Heqo.
@@ -217,12 +213,13 @@ Proof.
   }
   {
     constructor. eauto.
-    constructor. unfold SymbtableEncode.create_symbtable_section in EQ3. monadInv EQ3. eauto.
+    constructor. unfold SymbtableEncode.create_symbtable_section in EQ4. autoinv. eauto.
     constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
     constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
     constructor. unfold ShstrtableEncode.create_shstrtab_section. eauto.
     constructor.
   }
+  rewrite TablesEncode.dump_reloctables_error in H0. congruence.
   rewrite GS. simpl.
   unfold decode_tables.
   unfold RelocBingenproof.link_reloc_bingen in Heqo. autoinv.
@@ -242,4 +239,5 @@ Proof.
   eapply prog_strings_eq; eauto.
   generalize (f RELOC_CODE). simpl. auto.
   generalize (f RELOC_DATA). simpl. auto.
+  rewrite TablesEncode.dump_reloctables_error in H0; congruence.
 Admitted.

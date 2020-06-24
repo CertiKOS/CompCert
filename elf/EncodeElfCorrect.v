@@ -65,13 +65,13 @@ Proof.
   erewrite decode_encode_elf_file. 2: eauto. rewrite H.
   cut (exists tp, encode_elf_file p = OK tp).
   intros (tp & ENC). rewrite ENC; eauto. subst.
-  unfold encode_elf_file in *. repeat destr_in H0. repeat destr_in H1.
+  unfold encode_elf_file in *. autoinv.
   rewrite pred_dec_true. eauto.
-  unfold link_reloc_elf_gen in H. repeat destr_in H.
-  unfold TablesEncodeproof.link_reloc_decode_tables in Heqo. repeat destr_in Heqo.
-  unfold TablesEncode.transf_program in Heqr2. monadInv Heqr2. repeat destr_in EQ0.
-  monadInv H0. repeat destr_in EQ1.
+  unfold link_reloc_elf_gen in H. autoinv.
+  unfold TablesEncodeproof.link_reloc_decode_tables in Heqo. autoinv.
+  unfold TablesEncode.transf_program in Heqr2. autoinv.
   eapply RelocElfgen.gen_reloc_elf_valid; eauto.
   simpl. rewrite in_app. right. simpl. auto.
+  rewrite TablesEncode.dump_reloctables_error in H0; congruence.
 Defined.
 

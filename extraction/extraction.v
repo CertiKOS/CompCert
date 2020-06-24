@@ -117,6 +117,9 @@ Extract Constant Compopts.debug =>
 
 (* Strtablegen *)
 Extract Constant SymbolString.find_symbol_pos => "FindSymbolString.find_symbol_pos".
+Extract Constant SymbolString.string_to_ident => "FindSymbolString.string_to_ident".
+
+Extract Constant TablesEncode.dump_reloctables => "DumpReloctables.dump_reloctables".
 
 (* CheckDef *)
 Extract Constant CheckDef.is_def_builtin => "CheckDefImpl.is_def_builtin".

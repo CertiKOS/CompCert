@@ -57,3 +57,13 @@ let find_symbol_pos a : positive list option =
   with
   | Not_found ->
      None
+
+let string_to_ident (l: Byte.int list) : positive option =
+  try
+    let cl = List.map (fun b -> Char.chr (Z.to_int (Byte.unsigned b))) l in
+    let s = String.init (List.length cl) (List.nth cl) in
+    let i = Hashtbl.find atom_of_string s in
+    Some i
+  with
+  | Not_found ->
+    None
