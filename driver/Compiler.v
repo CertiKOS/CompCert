@@ -108,6 +108,7 @@ Require PermuteProgSep.
 Require RelocProgSyneq.
 Require RelocProgSyneqproof.
 Require EncodeElfCorrect.
+Require RemoveAddend RemoveAddendproof.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -222,6 +223,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@@ time "Generation of relocation table" Reloctablesgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
+  @@ time "Removing addendums" RemoveAddend.transf_program
   @@@ time "Encoding of tables" TablesEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
@@ -234,6 +236,7 @@ Definition transf_c_program_bytes' (p: Csyntax.program) :=
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   @@@ time "Generation of relocation table" Reloctablesgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program
+  @@ time "Removing addendums" RemoveAddend.transf_program
   @@@ time "Encoding of tables" TablesEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file
@@ -394,6 +397,7 @@ Definition bytes_passes :=
   ::: mkpass SymbtablegenSep.match_prog
   ::: mkpass Reloctablesgenproof.match_prog
   ::: mkpass RelocBingenproof.match_prog
+  ::: mkpass RemoveAddendproof.match_prog
   ::: mkpass TablesEncodeproof.match_prog
   ::: mkpass RelocElfgenproof.match_prog
   ::: mkpass EncodeElfCorrect.match_prog
