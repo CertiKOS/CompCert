@@ -262,14 +262,68 @@ Qed.
 
 End PRESERVATION.
 
-Instance tl' : @TransfLink _ _ RelocBingenproof.linker2 RelocBingenproof.linker2 match_prog.
+Lemma update_reloc_symb_remove_addend:
+  forall sym sim rtbl r,
+    RelocLinking1.update_reloc_symb sym sim rtbl = Some r ->
+    RelocLinking1.update_reloc_symb sym sim (remove_addend_relocentry rtbl) = Some (remove_addend_relocentry r).
+Proof.
+  unfold RelocLinking1.update_reloc_symb. intros. simpl. autoinv. reflexivity.
+Qed.
+
+Lemma update_reloctable_symb_remove_addend:
+  forall sym sim rtbl r,
+    RelocLinking1.update_reloctable_symb sym sim rtbl = Some r ->
+    RelocLinking1.update_reloctable_symb sym sim (remove_addend_reloctable rtbl) = Some (remove_addend_reloctable r).
+Proof.
+  unfold RelocLinking1.update_reloctable_symb.
+  induction rtbl; simpl; intros; eauto. inv H. auto.
+  unfold RelocLinking1.acc_update_reloc_symb in H at 1.
+  unfold RelocLinking1.acc_update_reloc_symb at 1.
+  autoinv.
+  erewrite IHrtbl. 2: eauto. simpl.
+  erewrite update_reloc_symb_remove_addend; eauto.
+Qed.
+
+Lemma remove_addend_reloctable_app:
+  forall l1 l2,
+    remove_addend_reloctable (l1 ++ l2) = remove_addend_reloctable l1 ++ remove_addend_reloctable l2.
+Proof.
+  unfold remove_addend_reloctable.
+  intros. rewrite map_app. auto.
+Qed.
+
+Lemma link_reloctable_remove_addend:
+  forall z sym1 sym2 sim rtbl1 rtbl2 rtbl,
+    RelocLinking1.link_reloctable z sym1 sym2 sim rtbl1 rtbl2 = Some rtbl ->
+    RelocLinking1.link_reloctable z sym1 sym2 sim (remove_addend_reloctable rtbl1) (remove_addend_reloctable rtbl2) = Some (remove_addend_reloctable rtbl).
+Proof.
+  unfold RelocLinking1.link_reloctable.
+  intros. autoinv.
+  erewrite update_reloctable_symb_remove_addend; eauto.
+  erewrite update_reloctable_symb_remove_addend; eauto.
+  rewrite remove_addend_reloctable_app.
+  f_equal. f_equal. unfold remove_addend_reloctable. rewrite ! map_map.
+  apply list_map_exten. intros.
+  unfold remove_addend_relocentry. simpl. unfold RelocLinking1.shift_relocentry_offset. simpl. reflexivity.
+Qed.
+
+
+Instance tl' : @TransfLink _ _ RelocLinking1.Linker_reloc_prog RelocLinking1.Linker_reloc_prog match_prog.
 Proof.
   red. unfold link. simpl.
-  unfold link_reloc_bingen. unfold match_prog. intros. autoinv.
-  exploit decode_prog_section_correct. apply Heqr. intros (tp1 & DEC1 & MP1).
-  exploit decode_prog_section_correct. apply Heqr0. intros (tp2 & DEC2 & MP2).
-  rewrite DEC1, DEC2.
-  
+  unfold RelocLinking1.link_reloc_prog. unfold match_prog. intros. autoinv.
+  unfold transf_program. simpl.
+  unfold RelocLinking.link_reloc_prog in *. simpl in *. autoinv. simpl in *.
+  unfold RelocLinking1.link_data_reloctable in *. autoinv. simpl in *.
+  rewrite Heqo.
+  erewrite link_reloctable_remove_addend; eauto.
+  unfold RelocLinking1.link_code_reloctable in *. autoinv. simpl in *.
+  rewrite Heqo0.
+  erewrite link_reloctable_remove_addend; eauto.
+  eexists; split; eauto.
+Defined.
+
+(*
   
   exploit tl. apply Heqo. eauto. eauto. intros (tp & LINK & MP).
   simpl in LINK. rewrite LINK.
@@ -368,3 +422,4 @@ Proof.
   intros. unfold transf_program. autoinv. simpl.
   rewrite Heqo. rewrite Heqo0, Heqo1, Heqo2, Heqo3, Heqo4. eauto.
 Defined.
+*)

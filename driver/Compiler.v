@@ -543,7 +543,7 @@ Proof.
   destruct (Symbtablegen.transf_program (PadInitData.transf_program (PadNops.transf_program p0))) eqn:STG; simpl in T; try discriminate.
   destruct (Reloctablesgen.transf_program p2) eqn: RTG; simpl in T; try discriminate.
   destruct (RelocBingen.transf_program p3) eqn: RBG; simpl in T; try discriminate.
-  destruct (TablesEncode.transf_program p4) eqn: TE; simpl in T; try discriminate.
+  destruct (TablesEncode.transf_program (RemoveAddend.transf_program p4)) eqn: TE; simpl in T; try discriminate.
   destruct (RelocElfgen.gen_reloc_elf p5) eqn:GRE; simpl in T; try discriminate.
   red.
   repeat rewrite compose_passes_app.
@@ -572,6 +572,8 @@ Proof.
   apply Reloctablesgenproof.transf_program_match. eauto.
   eexists; split.
   apply RelocBingenproof.transf_program_match. eauto.
+  eexists; split.
+  apply RemoveAddendproof.transf_program_match. eauto.
   eexists; split.
   apply TablesEncodeproof.transf_program_match. eauto.
   eexists; split.
@@ -1061,6 +1063,12 @@ Lemma RelocBingen_fn_stack_requirements_match:
 Proof.
 Admitted.
 
+Lemma RemoveAddend_fn_stack_requirements_match: 
+  forall p tp
+    (FM: RemoveAddendproof.match_prog p tp),
+    reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
+Proof.
+Admitted.
 
 Lemma TablesEncode_fn_stack_requirements_match: 
   forall p tp
@@ -1102,7 +1110,7 @@ Proof.
   rewrite compose_passes_app in P.
   destruct P as (pi' & RP & FP). 
   simpl in FP.
-  destruct FP as (p2 & FP & p3 & PP & p4 & PP1 & p5 & PM & p6 & SG & p7 & RTG & p8 & RBG & p9 & TE & p10 & REG & p11 & EE & EQ). subst. destr. destr.
+  destruct FP as (p2 & FP & p3 & PP & p4 & PP1 & p5 & PM & p6 & SG & p7 & RTG & p8 & RBG & p9 & RA & p9' & TE & p10 & REG & p11 & EE & EQ). subst. destr. destr.
   assert (match_prog_real p pi'). {
     red.
     apply compose_passes_app. eexists; split; eauto.
@@ -1126,6 +1134,8 @@ Proof.
   eapply eq_trans.
   apply RelocBingen_fn_stack_requirements_match; eauto.
   eapply eq_trans.
+  apply RemoveAddend_fn_stack_requirements_match; eauto.
+  eapply eq_trans.
   apply TablesEncode_fn_stack_requirements_match; eauto.
   eapply eq_trans.
   apply RelocElfGen_fn_stack_requirements_match; eauto.
@@ -1148,6 +1158,8 @@ Proof.
   eapply Reloctablesgenproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.
   eapply RelocBingenproof.transf_program_correct; eauto.
+  eapply compose_forward_simulations.
+  eapply RemoveAddendproof.transf_program_correct. eauto.
   eapply compose_forward_simulations.
   eapply TablesEncodeproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.
