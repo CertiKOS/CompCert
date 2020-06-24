@@ -650,11 +650,12 @@ Proof.
   destr_in TRANSF. inv TRANSF. cbn.
   destruct (Mem.alloc Mem.empty 0 (init_data_list_size (fold_right acc_init_data [] (AST.prog_defs prog)))) eqn:IALLOC.
   set (idata := (fold_right acc_init_data [] (AST.prog_defs prog))) in *.
-  generalize (alloc_perm_range _ _ _ _ _ Cur Writable IALLOC).
+  generalize (alloc_perm_range _ _ _ _ _ Cur Freeable IALLOC).
   intros RPERM.
   assert (exists m1, store_zeros m0 b 0 (init_data_list_size idata) = Some m1) as STZ.
   { 
     eapply Genv.store_zeros_exists; eauto.
+    eapply Mem.range_perm_implies; eauto. constructor.
     cbn. erewrite Mem.alloc_stack_blocks; eauto.
     rewrite Mem.empty_stack. 
     eapply stack_access_nil.
@@ -669,11 +670,13 @@ Proof.
   assert (exists m' : mem, store_init_data_list tge m1 b 0 idata = Some m') as SL.
   {
     eapply store_init_data_list_exists; eauto. cbn.
+    eapply Mem.range_perm_implies; eauto. constructor.
     erewrite Genv.store_zeros_stack_access; eauto.
     erewrite Mem.alloc_stack_blocks; eauto.
     rewrite Mem.empty_stack.
     apply stack_access_nil.
     eapply acc_init_data_list_aligned; eauto.
+    eapply init_mem_data_aligned; eauto.
     apply Z.divide_0_r.
   }
   destruct SL as (m2 & SL).

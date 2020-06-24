@@ -1198,45 +1198,8 @@ Proof.
 Qed.
       
 
-Lemma init_data_alignment_div_alignw: forall id,
-        (Globalenvs.Genv.init_data_alignment id | alignw).
-Proof.
-  intros. 
-  unfold Globalenvs.Genv.init_data_alignment. 
-  unfold alignw.
-  destruct id; red.
-  - exists 8. omega.
-  - exists 4. omega.
-  - exists 2. omega.
-  - exists 1. omega.
-  - exists 2. omega.
-  - exists 2. omega.
-  - exists 8. omega.
-  - destr. exists 1; omega. exists 2; omega.
-Qed.
-
-
-Lemma init_data_list_align_offset: forall l p sz,
-    Globalenvs.Genv.init_data_list_aligned p l ->
-    (alignw | sz) ->
-    Globalenvs.Genv.init_data_list_aligned (p + sz) l.
-Proof.
-  induction l as [|id l].
-  - cbn. auto.
-  - intros p sz INIT AL.
-    cbn in *. 
-    destruct INIT as (AL1 & INIT).
-    split; auto.
-    eapply Z.divide_add_r; eauto.
-    apply Z.divide_trans with alignw; auto.
-    apply init_data_alignment_div_alignw.
-    replace (p + sz + init_data_size id) with
-        (p + init_data_size id + sz) by omega.
-    eauto.
-Qed.
-
 Lemma acc_init_data_list_aligned: forall defs sz,
-    Forall init_data_aligned (map snd defs) ->
+    Forall init_data_list_aligned0 (map snd defs) ->
     Forall data_size_aligned (map snd defs) ->
     (alignw | sz) ->
     Globalenvs.Genv.init_data_list_aligned sz (fold_right acc_init_data [] defs).

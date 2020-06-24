@@ -422,14 +422,15 @@ Proof.
   Opaque take_drop.
 Qed.
 
-Lemma decode_encode_elf_file ef (V: valid_elf_file ef):
-  let '(l,p,senv) := encode_elf_file ef in
+Lemma decode_encode_elf_file ef l p senv:
+  encode_elf_file ef = OK (l, p, senv) ->
   decode_elf_file l p senv = OK ef.
 Proof.
   unfold encode_elf_file, decode_elf_file.
+  destr. intro A; inv A.
   rewrite take_drop_length_app. 2: reflexivity.
   simpl.
-  inv V.
+  inv v.
   rewrite decode_encode_elf_header; auto. simpl.
   rewrite decode_encode_section_headers; auto. simpl.
   destruct (elf_section_headers ef) eqn:?. simpl in vef_first_section_null. inv vef_first_section_null.

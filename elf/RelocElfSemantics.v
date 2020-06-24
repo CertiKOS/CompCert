@@ -52,4 +52,11 @@ Proof.
   apply RelocProgSemantics3.reloc_prog_receptive.
 Qed.
 
+Theorem reloc_prog_single_events p rs:
+  single_events (semantics p rs).
+Proof.
+  apply RelocProgSemantics2.reloc_prog_single_events.
+Qed.
+
+
 End WITHEXTERNALCALLS.

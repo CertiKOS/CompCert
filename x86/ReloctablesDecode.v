@@ -13,6 +13,7 @@ Require Import SeqTable Memdata.
 Require Import Hex Bits.
 Import Hex Bits.
 Import ListNotations.
+Require Import TablesEncode.
 Require Import ReloctablesEncode.
 Require Import Encode ZArith.
 Set Implicit Arguments.
@@ -88,12 +89,6 @@ Definition decode_relocentry (l: list byte) : res relocentry :=
     do (rt, sym) <- decode_reloc_info infobytes;
       OK ({| reloc_offset := ofs; reloc_type := rt; reloc_symb := sym; reloc_addend := 0 |}).
 
-Record valid_relocentry (e: relocentry) :=
-  {
-    reloc_offset_range: 0 <= reloc_offset e < 2 ^ 32;
-    reloc_symb_range: Z.of_N (reloc_symb e) < two_p 24;
-    reloc_addend_range: 0 = reloc_addend e;
-  }.
 
 (* Record eq_relocentry (e1 e2: relocentry) := *)
 (*   { *)

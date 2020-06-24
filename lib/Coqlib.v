@@ -1548,4 +1548,11 @@ Lemma list_forall2_iff:
 Proof.
   intros; split; induction 1; econstructor; eauto; apply EQ; auto.
 Qed.
-  
+
+Lemma intv_dec: forall lo hi x, {lo <= x < hi} + {~ lo <= x < hi}.
+Proof.
+  intros.
+  destruct (zle lo x). 2: right; intro A; omega.
+  destruct (zlt x hi). left; omega. right; intro A; omega.
+Defined.
+

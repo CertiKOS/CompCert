@@ -313,17 +313,6 @@ Definition create_code_section (defs: list (ident * option (globdef fundef unit)
   sec_text code.
 
 (** Create the data section *)
-Definition get_def_init_data (def: option (globdef fundef unit)) : list init_data :=
-  match def with
-  | Some (Gvar v) => 
-    match (gvar_init v) with
-    | nil
-    | [Init_space _] => []
-    | _ => gvar_init v
-    end
-  | _ => []
-  end.
-
 Definition acc_init_data (iddef: ident * option (globdef fundef unit)) dinit :=
   let '(id, def) := iddef in
   (get_def_init_data def) ++ dinit.
@@ -374,16 +363,6 @@ Proof.
   - simpl. auto.
 Qed.
 
-Definition init_data_aligned (def: option (globdef fundef unit)) :=
-  Globalenvs.Genv.init_data_list_aligned 0 (get_def_init_data def).
-
-Lemma init_data_aligned_dec: forall def, 
-    {init_data_aligned def} + {~init_data_aligned def}.
-Proof.
-  unfold init_data_aligned. 
-  intros. apply init_data_list_aligned_dec.
-Qed.
-
 Definition data_size_aligned (def: option (globdef fundef unit)) :=
   (alignw | init_data_list_size (get_def_init_data def)).
 
@@ -402,7 +381,6 @@ Record wf_prog (p:Asm.program) : Prop :=
     wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
     wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
     wf_prog_no_local_jmps: Forall def_instrs_valid (map snd (AST.prog_defs p));
-    wf_prog_init_data_aligned: Forall init_data_aligned (map snd (AST.prog_defs p));
     wf_prog_data_size_aligned: Forall data_size_aligned (map snd (AST.prog_defs p));
   }.
 
@@ -412,10 +390,8 @@ Proof.
   destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
   destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
   destruct (Forall_dec _ def_instrs_valid_dec (map snd (AST.prog_defs p))).
-  destruct (Forall_dec _ init_data_aligned_dec (map snd (AST.prog_defs p))).
   destruct (Forall_dec _ data_size_aligned_dec (map snd (AST.prog_defs p))).
   left; constructor; auto.
-  right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
