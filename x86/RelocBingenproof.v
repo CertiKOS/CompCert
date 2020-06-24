@@ -876,20 +876,38 @@ Proof.
     simpl. auto.
 Qed.
 
-Lemma spec_inj: forall code l l' ofs rtbl symtbl,
+(* Lemma spec_inj: forall code l l' ofs rtbl symtbl, *)
+(*     transl_code_spec code l ofs rtbl symtbl *)
+(*     ->transl_code_spec code l' ofs rtbl symtbl *)
+(*     -> l = l'. *)
+(* Proof. *)
+(*   induction code. *)
+(*   (* bc *) *)
+(*   admit. *)
+(*   intros l l' ofs rtbl symtbl HL HL'. *)
+(*   simpl in HL, HL'. *)
+(*   (* HELP *) *)
+(*   (* describe the relation between `bytes` and `t` in *) *)
+(*   (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *) *)
+(* Admitted.   *)
+
+
+Lemma spec_length_rel: forall code l  ofs rtbl symtbl,
     transl_code_spec code l ofs rtbl symtbl
-    ->transl_code_spec code l' ofs rtbl symtbl
-    -> l = l'.
+    -> instr_size_acc code = Z.of_nat (length l).
 Proof.
   induction code.
   (* bc *)
   admit.
-  intros l l' ofs rtbl symtbl HL HL'.
-  simpl in HL, HL'.
-  (* HELP *)
-  (* describe the relation between `bytes` and `t` in *)
-  (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *)
-Admitted.  
+  intros l ofs rtbl symtbl HSpec.
+  cbn [ transl_code_spec] in HSpec.
+  destruct HSpec as (h' &  t' & HDecode & HInstrEq & HTransl).
+  assert(HLength: Z.of_nat(length l) = Z.of_nat(length t') + instr_size h'). {
+    
+  generalize (IHcode _ _ _ _ HTransl).
+  intros H.
+Admitted.
+    
 
 
 Lemma spec_length: forall code l t ofs rtbl symtbl i,
@@ -898,7 +916,7 @@ Lemma spec_length: forall code l t ofs rtbl symtbl i,
     -> Z.of_nat (length l) = Z.of_nat (length t) + (instr_size i).
 Proof.
   intros code l t ofs rtbl symtbl i HL HT.
-
+  simpl in HL.
   (* HELP *)
   (* describe the relation between `bytes` and `t` in *)
   (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *)
@@ -1033,6 +1051,7 @@ Proof.
     generalize (spec_decode_ex' code 0 (rev l) _ _ HTranslSpec).
     intros (c' & code' & HEncodeDecode).
     destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]].
+    destruct prog. simpl.
     econstructor.
     unfold decode_prog_code_section.
     simpl.
@@ -1041,15 +1060,41 @@ Proof.
     generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE).
     intros HDecode'.
     unfold decode_instrs'.
+    simpl in HDecode'.
     rewrite HDecode'.
     simpl.
     eauto.
     omega.    
     (* init_mem *)
+    (* unfold RelocProgSemantics1.init_mem in H. *)
+    unfold init_mem.
+    simpl.
+    unfold alloc_data_section.
+    simpl in *.
+    unfold RelocProgSemantics1.init_mem in H.
+    unfold RelocProgSemantics1.alloc_data_section in H.
+    simpl in H.
+    destruct (SecTable.get sec_data_id prog_sectable).
+    2:inversion H.
+    destruct v.
+    1,3: inversion H.
+
+    
+    destruct (Mem.alloc Mem.empty 0 (Z.of_nat (length x1))) eqn: EQAlloc.
+    unfold store_zeros.
+    
+    
+    destruct(store_zeros_terminate m0 b 0 (Z.of_nat (length x1))) eqn:EQZero.
+    
+    
+    
+    
+
+    
     admit.
     (* initial_state_gen *)
     admit.
-  (* + reflexivity. *)
+  + reflexivity.
 Admitted.
 
 
@@ -1341,7 +1386,7 @@ Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
 Proof.
   red. simpl. unfold link_reloc_bingen.
   intros.
-  erewrite reverse_decode_prog_code_section. 2: exact H0.
-  erewrite reverse_decode_prog_code_section. 2: exact H1.
-  rewrite H.
+  (* erewrite reverse_decode_prog_code_section. 2: exact H0. *)
+  (* erewrite reverse_decode_prog_code_section. 2: exact H1. *)
+  (* rewrite H. *)
 Admitted.
