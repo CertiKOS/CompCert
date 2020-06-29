@@ -205,11 +205,20 @@ Proof.
   unfold TablesEncode.transf_program in Heqr1. autoinv. simpl in *.
   apply Forall_app.
   {
-    clear - Heqr Heqr0 Heqo.
-    unfold RelocBingenproof.link_reloc_bingen in Heqo. repeat destr_in Heqo.
-    unfold RelocBingen.transf_program in Heqr3. monadInv Heqr3. repeat destr_in EQ2. simpl. clear EQ1.
-    unfold RelocBingen.transl_sectable in EQ. repeat destr_in EQ. monadInv H0.
-    repeat constructor; eauto.
+    unfold RelocLinking1.link_reloc_prog in Heqo. autoinv. simpl in *.
+    unfold RelocLinking.link_reloc_prog in Heqo0. autoinv. simpl in *.
+    unfold RelocLinking.link_sectable in Heqo5. autoinv. simpl in *.
+    unfold RelocLinking1.link_code_reloctable, RelocLinking1.link_data_reloctable in *.
+    rewrite Heqo8 in Heqo2.
+    rewrite Heqo0 in Heqo1. simpl in *.
+    rewrite EQ1 in Heqr; inv Heqr.
+    rewrite EQ3 in Heqr0; inv Heqr0.
+    unfold decode_tables in EQ1, EQ3. autoinv.
+    unfold gen_sections in EQ0, EQ. simpl in *. unfold acc_sections in *. autoinv.
+    unfold transl_section in *. autoinv. simpl in *.
+    vm_compute in Heqo0, Heqo8, Heqo9, Heqo10.
+    inv Heqo0; inv Heqo3; inv Heqo8; inv Heqo4; inv Heqo9; inv Heqo10; inv Heqo11.
+    simpl in Heqo12. inv Heqo12. repeat constructor; eauto.
   }
   {
     constructor. eauto.
@@ -222,11 +231,12 @@ Proof.
   rewrite TablesEncode.dump_reloctables_error in H0. congruence.
   rewrite GS. simpl.
   unfold decode_tables.
-  unfold RelocBingenproof.link_reloc_bingen in Heqo. autoinv.
   generalize (valid_strtable_p _ _ Heqr1). intro VALID_STR.
   unfold TablesEncode.transf_program in Heqr1. autoinv. simpl in *.
-  unfold RelocBingen.transf_program in Heqr4. autoinv. simpl in *.
-  unfold RelocBingen.transl_sectable in EQ5. autoinv. simpl in *.
+  unfold gen_sections in GS. simpl in *.
+  unfold RelocLinking1.link_reloc_prog in Heqo. autoinv. simpl in *.
+  unfold RelocLinking.link_reloc_prog in Heqo0. autoinv. simpl in *.
+  unfold RelocLinking.link_sectable in Heqo5. autoinv. simpl in *.
   rewrite ReloctablesDecode.decode_encode_reloctable.
   rewrite ReloctablesDecode.decode_encode_reloctable. simpl.
   erewrite StrtableDecode.decode_string_map_correct'. 2: eauto; fail. simpl.

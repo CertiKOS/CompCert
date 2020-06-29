@@ -1361,33 +1361,165 @@ Qed.
 End PRESERVATION.
 
 Require Import RelocLinking1.
-Definition link_reloc_bingen (p1 p2: RelocProgram.program) : option RelocProgram.program :=
-  match RelocProgSemantics2.decode_prog_code_section p1, RelocProgSemantics2.decode_prog_code_section p2 with
-    | OK pp1, OK pp2 =>
-      match RelocLinking1.link_reloc_prog pp1 pp2 with
-        Some pp =>
-        match RelocBingen.transf_program pp with
-        | OK tp => Some tp
-        | _ => None
-        end
-      | _ => None
-      end
-    | _, _ => None
-  end.
+(* Definition link_reloc_bingen (p1 p2: RelocProgram.program) : option RelocProgram.program := *)
+(*   match RelocProgSemantics2.decode_prog_code_section p1, RelocProgSemantics2.decode_prog_code_section p2 with *)
+(*     | OK pp1, OK pp2 => *)
+(*       match RelocLinking1.link_reloc_prog pp1 pp2 with *)
+(*         Some pp => *)
+(*         match RelocBingen.transf_program pp with *)
+(*         | OK tp => Some tp *)
+(*         | _ => None *)
+(*         end *)
+(*       | _ => None *)
+(*       end *)
+(*     | _, _ => None *)
+(*   end. *)
 
-Instance linker2 : Linker RelocProgram.program.
+(* Instance linker2 : Linker RelocProgram.program. *)
+(* Proof. *)
+(*   eapply Build_Linker with (link := link_reloc_bingen) (linkorder := fun _ _ => True). *)
+(*   auto. auto. auto. *)
+(* Defined. *)
+
+Lemma transl_sectable_get_code:
+  forall rmap sect sect',
+    transl_sectable sect rmap = OK sect' ->
+    forall s,
+      SecTable.get sec_code_id sect = Some s ->
+      exists code x,
+        s = sec_text code /\
+        transl_code (gen_reloc_ofs_map (reloctable_code rmap)) code = OK x /\
+        SecTable.get sec_code_id sect' = Some (sec_bytes x).
 Proof.
-  eapply Build_Linker with (link := link_reloc_bingen) (linkorder := fun _ _ => True).
-  auto. auto. auto.
-Defined.
+  unfold transl_sectable. intros. autoinv.
+  vm_compute in H0. inv H0.
+  exists code, x. split; auto.
+Qed.
+
+Lemma transl_sectable_get_data:
+  forall rmap sect sect',
+    transl_sectable sect rmap = OK sect' ->
+    forall s,
+      SecTable.get sec_data_id sect = Some s ->
+      exists data x,
+        s = sec_data data /\
+        transl_init_data_list (gen_reloc_ofs_map (reloctable_data rmap)) data = OK x /\
+        SecTable.get sec_data_id sect' = Some (sec_bytes x).
+Proof.
+  unfold transl_sectable. intros. autoinv.
+  vm_compute in H0. inv H0.
+  exists init, x0. split; auto.
+Qed.
+
+Lemma transl_init_data_size:
+  forall rmap o l bl,
+    transl_init_data rmap o l = OK bl ->
+    Z.of_nat (length bl) = init_data_size l.
+Proof.
+  unfold transl_init_data. intros. autoinv; simpl; rewrite ? encode_int_length; auto.
+  unfold Encode.zero_bytes.
+  rewrite map_length. rewrite seq_length. apply nat_of_Z_max.
+Qed.
+
+Lemma init_data_list_size_rev:
+  forall l,
+    init_data_list_size (rev l) = init_data_list_size l.
+Proof.
+  induction l; simpl; intros; eauto.
+  rewrite LocalLib.init_data_list_size_app. simpl. omega.
+Qed.
+
+Lemma transl_init_data_list_size:
+  forall rmap l bl,
+    transl_init_data_list rmap l = OK bl ->
+    Z.of_nat (length bl) = init_data_list_size l.
+Proof.
+  unfold transl_init_data_list. intros. autoinv.
+  rewrite <- fold_left_rev_right in EQ.
+  rewrite rev_length.
+  revert EQ.
+  rewrite <- init_data_list_size_rev.
+  generalize (rev l) z l0. clear.
+  induction l; simpl; intros; eauto.
+  inv EQ. reflexivity.
+  unfold acc_init_data at 1 in EQ. autoinv.
+  apply IHl in EQ0. rewrite <- EQ0.
+  rewrite app_length, rev_length.
+  rewrite Nat2Z.inj_add.
+  erewrite <- transl_init_data_size; eauto.
+Qed.
+
+Lemma code_size_rev:
+  forall l, code_size (rev l) = code_size l.
+Proof.
+  induction l; simpl; intros; eauto.
+  rewrite RealAsm.code_size_app. simpl. omega.
+Qed.
+
+Lemma encode_instrs_size:
+  forall rmap o i bl,
+    encode_instr rmap o i = OK bl ->
+    Asm.instr_size i = Z.of_nat (length bl).
+Proof.
+  Transparent Asm.instr_size. Opaque Z.add.
+  destruct i; simpl; intros; autoinv; simpl; auto; try congruence.
+Admitted.
+
+Lemma transl_code_size:
+  forall rmap l bl,
+    transl_code rmap l = OK bl ->
+    Z.of_nat (length bl) = code_size l.
+Proof.
+  unfold transl_code. intros. autoinv.
+  rewrite <- fold_left_rev_right in EQ.
+  rewrite rev_length.
+  revert EQ.
+  rewrite <- code_size_rev.
+  generalize (rev l) z l0. clear.
+  induction l; simpl; intros; eauto.
+  inv EQ. reflexivity.
+  unfold acc_instrs at 1 in EQ. autoinv.
+  apply IHl in EQ0. rewrite <- EQ0.
+  rewrite app_length, rev_length.
+  rewrite Nat2Z.inj_add.
+  erewrite encode_instrs_size; eauto.
+Qed.
+
+Lemma link_sectable_ok:
+  forall sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim,
+    RelocLinking.link_sectable sect1 sect2 = Some s ->
+    transl_sectable sect1 rmap1 = OK sect1' ->
+    transl_sectable sect2 rmap2 = OK sect2' ->
+    link_reloctable z symt1 symt2 sim (reloctable_data rmap1) (reloctable_data rmap2) = Some rdata ->
+    link_reloctable z' symt1 symt2 sim (reloctable_code rmap1) (reloctable_code rmap2) = Some rcode ->
+    exists s',
+      RelocLinking.link_sectable sect1' sect2' = Some s' /\
+      transl_sectable s {| reloctable_code := rcode; reloctable_data := rdata |} = OK s'.
+Proof.
+Admitted.
+
 
 Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
-                          linker2
+                          RelocLinking1.Linker_reloc_prog
                           match_prog.
 Proof.
-  red. simpl. unfold link_reloc_bingen.
-  intros.
-  (* erewrite reverse_decode_prog_code_section. 2: exact H0. *)
-  (* erewrite reverse_decode_prog_code_section. 2: exact H1. *)
-  (* rewrite H. *)
+  red. simpl. unfold link_reloc_prog.
+  intros. unfold match_prog in H0, H1. unfold transf_program in H0, H1.
+  monadInv H0. repeat destr_in EQ2.
+  monadInv H1. repeat destr_in EQ4.
+  autoinv. unfold RelocLinking.link_reloc_prog in *.
+  simpl. autoinv. simpl.
+  edestruct transl_sectable_get_data as (data0 & data1 & EQdata0 & TIDL & GETdata). apply EQ. eauto.
+  edestruct transl_sectable_get_code as (code0 & code1 & EQcode0 & TC & GETcode). apply EQ. eauto.
+  rewrite GETdata, GETcode. simpl. subst. simpl in *.
+  unfold link_code_reloctable, link_data_reloctable in *. simpl in *.
+  rewrite ? GETdata, ?GETcode, ?Heqo3, ?Heqo4 in *. simpl in *.
+  erewrite (transl_init_data_list_size _ _ _ TIDL) in *.
+  erewrite (transl_code_size _ _ _ TC) in *.
+  edestruct link_sectable_ok as (s' & LS & TS). eauto. eauto. eauto. eauto. eauto.
+  rewrite LS. rewrite Heqo6. rewrite Heqo7. simpl.
+  rewrite Heqo0. rewrite Heqo1.
+  eexists; split; eauto.
+  red. unfold transf_program. simpl.
+  rewrite TS. simpl. unfold bind. destr. destr. admit. admit.
 Admitted.

@@ -125,6 +125,7 @@ BACKEND=\
   PermuteProgproof.v PermuteProgSep.v \
   RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
   TablesEncodeproof.v Reloctablesgenproof.v \
+	RemoveAddend.v RemoveAddendproof.v \
   RelocBinDecode.v \
   LocalLib.v AsmInject.v
 

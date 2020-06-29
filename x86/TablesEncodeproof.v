@@ -291,8 +291,8 @@ Proof.
   erewrite decode_string_map_correct'. 2: eauto. simpl.
   rewrite GSMB. simpl.
   erewrite decode_create_symtable_section. 5: eauto. simpl.
-  destruct prog; simpl in *. subst. f_equal. f_equal; intuition try congruence.
-  destruct tprog; simpl. destruct prog_reloctables; simpl; auto.
+  destruct prog; simpl in *. simpl. subst. f_equal. f_equal.
+  destruct (prog_reloctables tprog). simpl. auto.
   eapply valid_strtable_p; eauto.
   eapply prog_strings_eq; eauto.
   eapply valid_symbentries_p; eauto.
@@ -300,12 +300,21 @@ Proof.
   apply valid_reloctables with (id := RELOC_DATA).
 Qed.
 
+(* Require RemoveAddendproof. *)
+
+Theorem semantics2_id_correct p rs:
+  forward_simulation (RelocProgSemantics2.semantics p rs)
+                     (RelocProgSemantics2.semantics p rs).
+Proof.
+  apply forward_simulation_step with (match_states:= eq); simpl; intros; subst; eauto.
+Qed.
+
 Theorem transf_program_correct rs:
   forward_simulation (RelocProgSemantics2.semantics prog rs)
                      (RelocProgSemantics3.semantics tprog rs).
 Proof.
   unfold semantics. rewrite decode_tables_correct.
-  eapply forward_simulation_step with (match_states := fun (e1 e2: Asm.state) => e1 = e2); simpl; intuition try congruence; subst; eauto.
+  apply semantics2_id_correct.
 Qed.
 
 End PRESERVATION.
@@ -313,7 +322,7 @@ End PRESERVATION.
 Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option RelocProgram.program :=
   match RelocProgSemantics3.decode_tables p1, RelocProgSemantics3.decode_tables p2 with
     | OK pp1, OK pp2 =>
-      match RelocBingenproof.link_reloc_bingen pp1 pp2 with
+      match RelocLinking1.link_reloc_prog pp1 pp2 with
         Some pp =>
         match TablesEncode.transf_program pp with
         | OK tp => Some tp
@@ -332,218 +341,218 @@ Defined.
 
 Require Import Lia.
 
-Lemma SecTable_gsspec':
-  forall (i j : nat) (tbl : SecTable.t) (tbl' : list SecTblParams.V) (v : SecTblParams.V),
-    SecTable.set_nat i v tbl = Some tbl' ->
-    nth_error tbl' j = if Nat.eq_dec i j then Some v else nth_error tbl j.
-Proof.
-  induction i; simpl; intros; eauto.
-  - repeat destr_in H. destr.
-    + subst; reflexivity.
-    + destruct j; simpl; auto. congruence.
-  - repeat destr_in H.
-    generalize (IHi i _ _ _ Heqo). intro EQ1.
-    destr. subst; simpl. rewrite EQ1. destr.
-    destruct j. reflexivity. simpl.
-    erewrite IHi. destr. eauto.
-Qed.
+(* Lemma SecTable_gsspec': *)
+(*   forall (i j : nat) (tbl : SecTable.t) (tbl' : list SecTblParams.V) (v : SecTblParams.V), *)
+(*     SecTable.set_nat i v tbl = Some tbl' -> *)
+(*     nth_error tbl' j = if Nat.eq_dec i j then Some v else nth_error tbl j. *)
+(* Proof. *)
+(*   induction i; simpl; intros; eauto. *)
+(*   - repeat destr_in H. destr. *)
+(*     + subst; reflexivity. *)
+(*     + destruct j; simpl; auto. congruence. *)
+(*   - repeat destr_in H. *)
+(*     generalize (IHi i _ _ _ Heqo). intro EQ1. *)
+(*     destr. subst; simpl. rewrite EQ1. destr. *)
+(*     destruct j. reflexivity. simpl. *)
+(*     erewrite IHi. destr. eauto. *)
+(* Qed. *)
 
-Lemma SecTable_gsspec:
-  forall i j tbl tbl' v,
-    (j >= SecTblParams.ofs)%N ->
-    (i >= SecTblParams.ofs)%N ->
-    SecTable.set i v tbl = Some tbl' ->
-    SecTable.get j tbl' = if N.eq_dec i j then Some v else SecTable.get j tbl.
-Proof.
-  unfold SecTable.set, SecTable.get.
-  intros.
-  erewrite SecTable_gsspec'. 2: eauto.
-  destr.
-  - apply Nnat.N2Nat.inj in e.
-    unfold SecTable.idx in e.
-    destr.
-    apply f_equal with (f:= fun x => N.add x SecTblParams.ofs) in e.
-    rewrite <- ! N.add_sub_swap in e by lia.
-    rewrite !N.add_sub in e. congruence.
-  - destr.
-Qed.
+(* Lemma SecTable_gsspec: *)
+(*   forall i j tbl tbl' v, *)
+(*     (j >= SecTblParams.ofs)%N -> *)
+(*     (i >= SecTblParams.ofs)%N -> *)
+(*     SecTable.set i v tbl = Some tbl' -> *)
+(*     SecTable.get j tbl' = if N.eq_dec i j then Some v else SecTable.get j tbl. *)
+(* Proof. *)
+(*   unfold SecTable.set, SecTable.get. *)
+(*   intros. *)
+(*   erewrite SecTable_gsspec'. 2: eauto. *)
+(*   destr. *)
+(*   - apply Nnat.N2Nat.inj in e. *)
+(*     unfold SecTable.idx in e. *)
+(*     destr. *)
+(*     apply f_equal with (f:= fun x => N.add x SecTblParams.ofs) in e. *)
+(*     rewrite <- ! N.add_sub_swap in e by lia. *)
+(*     rewrite !N.add_sub in e. congruence. *)
+(*   - destr. *)
+(* Qed. *)
 
-Lemma remove_first_n_length:
-  forall {A} n (l l': list A),
-    RelocBinDecode.remove_first_n l n = OK l' ->
-    length l = (length l' + n)%nat.
-Proof.
-  induction n; simpl; intros; eauto. inv H. lia.
-  repeat destr_in H. simpl. apply IHn in H1. lia.
-Qed.
+(* Lemma remove_first_n_length: *)
+(*   forall {A} n (l l': list A), *)
+(*     RelocBinDecode.remove_first_n l n = OK l' -> *)
+(*     length l = (length l' + n)%nat. *)
+(* Proof. *)
+(*   induction n; simpl; intros; eauto. inv H. lia. *)
+(*   repeat destr_in H. simpl. apply IHn in H1. lia. *)
+(* Qed. *)
 
-Ltac autoinv :=
-  repeat match goal with
-         | H: context [match ?a with _ => _ end] |- _ =>
-           repeat destr_in H
-         | H: bind _ _ = OK _ |- _ =>
-           monadInv H
-         end.
+(* Ltac autoinv := *)
+(*   repeat match goal with *)
+(*          | H: context [match ?a with _ => _ end] |- _ => *)
+(*            repeat destr_in H *)
+(*          | H: bind _ _ = OK _ |- _ => *)
+(*            monadInv H *)
+(*          end. *)
 
 Opaque Z.of_nat Z.add.
-Transparent Asm.addrmode_size.
+(* Transparent Asm.addrmode_size. *)
 
-Lemma decode_addrmode_SIB_size:
-  forall rom ofs sib mod_b mc am mc',
-    RelocBinDecode.addrmode_parse_SIB rom ofs sib mod_b mc = OK (am, mc') ->
-    let idx := ( Byte.shru (Byte.and sib (Byte.repr 56)) (Byte.repr 3)) in
-    let ss :=  (Byte.shru sib (Byte.repr 6)) in
-    let bs := (Byte.and sib (Byte.repr 7)) in
-    idx <> Byte.repr 4 -> (* RSP can not be the index of SIB *)
-    (if Byte.eq_dec bs (Byte.repr 5)
-     then
-       if Byte.eq_dec mod_b (Byte.zero)
-       then 2 else 6
-     else 6
-    )
-    + Z.of_nat (length mc) = Asm.addrmode_size am + Z.of_nat (length mc').
-Proof.
-  intros rom ofs sib mod_b mc am mc' APSIB idx ss bs NORSP.
-  unfold RelocBinDecode.addrmode_parse_SIB in APSIB.
-  unfold Asm.addrmode_size.
-  fold bs ss idx in APSIB.
-  autoinv.
-  - simpl.
-    unfold RelocBinDecode.addrmode_SIB_parse_index.
-    simpl. rewrite ! Z.add_0_l.
-    rewrite pred_dec_true. 2: rewrite e0. 2: reflexivity.
-    rewrite (@ pred_dec_true (Byte.repr 0 = Byte.zero)). 2: reflexivity.
-    rewrite (@ pred_dec_false (idx = _)). 2: auto.
-    lia.
-  - simpl.
-    rewrite pred_dec_false by auto.
-    unfold RelocBinDecode.addrmode_SIB_parse_index.
-    rewrite pred_dec_false by auto. lia.
-  - simpl.
-    unfold RelocBinDecode.addrmode_SIB_parse_base in EQ2. simpl in EQ2.
-    rewrite !Z.add_0_l in *.
-    rewrite (@pred_dec_false (mod_b = Byte.zero)) in * by auto.
-    rewrite (@pred_dec_false (mod_b = Byte.repr 0)) in * by auto.
-    unfold RelocBinDecode.addrmode_SIB_parse_index.
-    rewrite (@pred_dec_false (idx = _)) by auto. destr.
-  - rewrite pred_dec_true. 2: rewrite e0; reflexivity.
-    rewrite pred_dec_true by reflexivity. simpl.
-    unfold RelocBinDecode.addrmode_SIB_parse_index.
-    rewrite (@pred_dec_false (idx = _)) by auto. lia.
-  - rewrite pred_dec_false. 2: auto.
-    simpl.
-    unfold RelocBinDecode.addrmode_SIB_parse_index.
-    rewrite (@pred_dec_false (idx = _)) by auto. lia.
-  - simpl.
-    unfold RelocBinDecode.addrmode_SIB_parse_index.
-    rewrite (@pred_dec_false (idx = _)) by auto.
-    rewrite (@pred_dec_false (mod_b = Byte.zero)) in * by auto. destr.
-Qed.
+(* Lemma decode_addrmode_SIB_size: *)
+(*   forall rom ofs sib mod_b mc am mc', *)
+(*     RelocBinDecode.addrmode_parse_SIB rom ofs sib mod_b mc = OK (am, mc') -> *)
+(*     let idx := ( Byte.shru (Byte.and sib (Byte.repr 56)) (Byte.repr 3)) in *)
+(*     let ss :=  (Byte.shru sib (Byte.repr 6)) in *)
+(*     let bs := (Byte.and sib (Byte.repr 7)) in *)
+(*     idx <> Byte.repr 4 -> (* RSP can not be the index of SIB *) *)
+(*     (if Byte.eq_dec bs (Byte.repr 5) *)
+(*      then *)
+(*        if Byte.eq_dec mod_b (Byte.zero) *)
+(*        then 2 else 6 *)
+(*      else 6 *)
+(*     ) *)
+(*     + Z.of_nat (length mc) = Asm.addrmode_size am + Z.of_nat (length mc'). *)
+(* Proof. *)
+(*   intros rom ofs sib mod_b mc am mc' APSIB idx ss bs NORSP. *)
+(*   unfold RelocBinDecode.addrmode_parse_SIB in APSIB. *)
+(*   unfold Asm.addrmode_size. *)
+(*   fold bs ss idx in APSIB. *)
+(*   autoinv. *)
+(*   - simpl. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_index. *)
+(*     simpl. rewrite ! Z.add_0_l. *)
+(*     rewrite pred_dec_true. 2: rewrite e0. 2: reflexivity. *)
+(*     rewrite (@ pred_dec_true (Byte.repr 0 = Byte.zero)). 2: reflexivity. *)
+(*     rewrite (@ pred_dec_false (idx = _)). 2: auto. *)
+(*     lia. *)
+(*   - simpl. *)
+(*     rewrite pred_dec_false by auto. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_index. *)
+(*     rewrite pred_dec_false by auto. lia. *)
+(*   - simpl. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_base in EQ2. simpl in EQ2. *)
+(*     rewrite !Z.add_0_l in *. *)
+(*     rewrite (@pred_dec_false (mod_b = Byte.zero)) in * by auto. *)
+(*     rewrite (@pred_dec_false (mod_b = Byte.repr 0)) in * by auto. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_index. *)
+(*     rewrite (@pred_dec_false (idx = _)) by auto. destr. *)
+(*   - rewrite pred_dec_true. 2: rewrite e0; reflexivity. *)
+(*     rewrite pred_dec_true by reflexivity. simpl. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_index. *)
+(*     rewrite (@pred_dec_false (idx = _)) by auto. lia. *)
+(*   - rewrite pred_dec_false. 2: auto. *)
+(*     simpl. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_index. *)
+(*     rewrite (@pred_dec_false (idx = _)) by auto. lia. *)
+(*   - simpl. *)
+(*     unfold RelocBinDecode.addrmode_SIB_parse_index. *)
+(*     rewrite (@pred_dec_false (idx = _)) by auto. *)
+(*     rewrite (@pred_dec_false (mod_b = Byte.zero)) in * by auto. destr. *)
+(* Qed. *)
 
-Lemma decode_addrmode_size:
-  forall rom ofs l x0,
-    RelocBinDecode.decode_addrmode rom ofs l = OK x0 ->
-    Z.of_nat (length l) = Asm.addrmode_size (snd (fst x0)) + Z.of_nat (length (snd x0)).
-Proof.
-  unfold RelocBinDecode.decode_addrmode. intros.
-  unfold Asm.addrmode_size.
-  autoinv; simpl.
-  - destruct x2. exploit decode_addrmode_SIB_size. eauto. admit.
-    rewrite e. rewrite (@pred_dec_true ( _ = Byte.zero)) by reflexivity. simpl; intros.
-    unfold Asm.addrmode_size in H. rewrite <- H.
-    unfold RelocBinDecode.addrmode_parse_SIB in EQ0.
-    monadInv EQ0.
-    repeat destr_in EQ6.
-    rewrite e2. rewrite pred_dec_true; auto. lia.
-    simpl in H.
-    admit. admit. admit.
-  - lia.
-  - lia.
-  - admit.
-  - destruct x2. exploit decode_addrmode_SIB_size. eauto. admit. simpl in *. subst.
-    rewrite e. rewrite (@pred_dec_false ( _ = Byte.zero)). 2: intro A; inv A. simpl; intros.
-    unfold Asm.addrmode_size in H. admit.
-  - admit.
-  -
-Admitted.
+(* Lemma decode_addrmode_size: *)
+(*   forall rom ofs l x0, *)
+(*     RelocBinDecode.decode_addrmode rom ofs l = OK x0 -> *)
+(*     Z.of_nat (length l) = Asm.addrmode_size (snd (fst x0)) + Z.of_nat (length (snd x0)). *)
+(* Proof. *)
+(*   unfold RelocBinDecode.decode_addrmode. intros. *)
+(*   unfold Asm.addrmode_size. *)
+(*   autoinv; simpl. *)
+(*   - destruct x2. exploit decode_addrmode_SIB_size. eauto. admit. *)
+(*     rewrite e. rewrite (@pred_dec_true ( _ = Byte.zero)) by reflexivity. simpl; intros. *)
+(*     unfold Asm.addrmode_size in H. rewrite <- H. *)
+(*     unfold RelocBinDecode.addrmode_parse_SIB in EQ0. *)
+(*     monadInv EQ0. *)
+(*     repeat destr_in EQ6. *)
+(*     rewrite e2. rewrite pred_dec_true; auto. lia. *)
+(*     simpl in H. *)
+(*     admit. admit. admit. *)
+(*   - lia. *)
+(*   - lia. *)
+(*   - admit. *)
+(*   - destruct x2. exploit decode_addrmode_SIB_size. eauto. admit. simpl in *. subst. *)
+(*     rewrite e. rewrite (@pred_dec_false ( _ = Byte.zero)). 2: intro A; inv A. simpl; intros. *)
+(*     unfold Asm.addrmode_size in H. admit. *)
+(*   - admit. *)
+(*   - *)
+(* Admitted. *)
 
-Lemma decode_instr_size:
-  forall rom symt ofs bs ins bs',
-    RelocBinDecode.fmc_instr_decode rom symt ofs bs = OK (ins, bs') ->
-    Z.of_nat (length bs) = Asm.instr_size ins + Z.of_nat (length bs').
-Proof.
-  Transparent Asm.instr_size.
-  unfold RelocBinDecode.fmc_instr_decode, Asm.instr_size.
-  intros rom symt ofs bs ins bs' DEC.
-  Ltac helper :=
-    repeat match goal with
-           | H: RelocBinDecode.remove_first_n ?l ?n = OK ?l' |- _ =>
-             rewrite (remove_first_n_length _ _ _ H)
-           | H: context [match ?a with _ => _ end] |- _ =>
-             repeat destr_in H
-           | H: bind _ _ = OK _ |- _ =>
-             monadInv H
-           | H: ?f ?l = OK (?ins: Asm.instruction, ?bs': list byte) |- _ =>
-             unfold f in H
-           | H: ?f _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ =>
-             unfold f in H
-           | H: ?f _ _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ =>
-             unfold f in H
-           | H: ?f _ _ _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ =>
-             unfold f in H
-           | H: ?f _ _ _ _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ =>
-             unfold f in H
-           | |- _ => simpl; try lia
-           end.
+(* Lemma decode_instr_size: *)
+(*   forall rom symt ofs bs ins bs', *)
+(*     RelocBinDecode.fmc_instr_decode rom symt ofs bs = OK (ins, bs') -> *)
+(*     Z.of_nat (length bs) = Asm.instr_size ins + Z.of_nat (length bs'). *)
+(* Proof. *)
+(*   Transparent Asm.instr_size. *)
+(*   unfold RelocBinDecode.fmc_instr_decode, Asm.instr_size. *)
+(*   intros rom symt ofs bs ins bs' DEC. *)
+(*   Ltac helper := *)
+(*     repeat match goal with *)
+(*            | H: RelocBinDecode.remove_first_n ?l ?n = OK ?l' |- _ => *)
+(*              rewrite (remove_first_n_length _ _ _ H) *)
+(*            | H: context [match ?a with _ => _ end] |- _ => *)
+(*              repeat destr_in H *)
+(*            | H: bind _ _ = OK _ |- _ => *)
+(*              monadInv H *)
+(*            | H: ?f ?l = OK (?ins: Asm.instruction, ?bs': list byte) |- _ => *)
+(*              unfold f in H *)
+(*            | H: ?f _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ => *)
+(*              unfold f in H *)
+(*            | H: ?f _ _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ => *)
+(*              unfold f in H *)
+(*            | H: ?f _ _ _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ => *)
+(*              unfold f in H *)
+(*            | H: ?f _ _ _ _ _ = OK (?ins: Asm.instruction, ?bs': list byte) |- _ => *)
+(*              unfold f in H *)
+(*            | |- _ => simpl; try lia *)
+(*            end. *)
   Transparent Z.of_nat.
-  repeat destr_in DEC.
-  - helper.
-  - helper.
-  - helper.
-  - helper.
-  - helper.
-    exploit decode_addrmode_size. eauto. lia.
-  - helper.
-  - helper.
-  - helper.
-  - helper.
-  - helper.
-    exploit decode_addrmode_size. eauto. lia.
-  - helper.
-    exploit decode_addrmode_size. eauto. lia.
-  - helper.
-  - helper.
-  - helper.
-    admit.
-  - helper.
-  - helper.
-  - helper.
-  - helper.
-Admitted.
+(*   repeat destr_in DEC. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*     exploit decode_addrmode_size. eauto. lia. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*     exploit decode_addrmode_size. eauto. lia. *)
+(*   - helper. *)
+(*     exploit decode_addrmode_size. eauto. lia. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*     admit. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(*   - helper. *)
+(* Admitted. *)
 
-Lemma decode_instrs_size:
-  forall rom symt fuel bs ofs insns x1,
-    decode_instrs rom symt fuel ofs bs insns = OK x1 ->
-    Z.of_nat (length bs) + Asm.code_size (rev insns) = Asm.code_size x1.
-Proof.
-  induction fuel;  intros; eauto.
-  - simpl in H. repeat destr_in H. simpl. auto.
-  - simpl in H. destr_in H. inv H; simpl; auto.
-    monadInv H.
-    destruct x. erewrite decode_instr_size; eauto.
-    erewrite <- IHfuel with (x1 := x1); eauto.
-    simpl. rewrite AsmFacts.code_size_app. simpl. lia.
-Qed.
+(* Lemma decode_instrs_size: *)
+(*   forall rom symt fuel bs ofs insns x1, *)
+(*     decode_instrs rom symt fuel ofs bs insns = OK x1 -> *)
+(*     Z.of_nat (length bs) + Asm.code_size (rev insns) = Asm.code_size x1. *)
+(* Proof. *)
+(*   induction fuel;  intros; eauto. *)
+(*   - simpl in H. repeat destr_in H. simpl. auto. *)
+(*   - simpl in H. destr_in H. inv H; simpl; auto. *)
+(*     monadInv H. *)
+(*     destruct x. erewrite decode_instr_size; eauto. *)
+(*     erewrite <- IHfuel with (x1 := x1); eauto. *)
+(*     simpl. rewrite AsmFacts.code_size_app. simpl. lia. *)
+(* Qed. *)
 
-Lemma decode_instrs'_size:
-  forall rom symt bs x1,
-    decode_instrs' rom symt bs = OK x1 ->
-    Z.of_nat (length bs) = Asm.code_size x1.
-Proof.
-  unfold decode_instrs'. intros rom symt bs x1 DEC.
-  monadInv DEC.
-  eapply decode_instrs_size in EQ. simpl in EQ. lia.
-Qed.
+(* Lemma decode_instrs'_size: *)
+(*   forall rom symt bs x1, *)
+(*     decode_instrs' rom symt bs = OK x1 -> *)
+(*     Z.of_nat (length bs) = Asm.code_size x1. *)
+(* Proof. *)
+(*   unfold decode_instrs'. intros rom symt bs x1 DEC. *)
+(*   monadInv DEC. *)
+(*   eapply decode_instrs_size in EQ. simpl in EQ. lia. *)
+(* Qed. *)
 
 
 Lemma fold_acc_strmap_size:
@@ -639,17 +648,13 @@ Qed.
 
 Lemma link_reloc_bingen_sectable:
   forall p1 p2 p,
-    link_reloc_bingen p1 p2 = Some p ->
+    RelocLinking1.link_reloc_prog p1 p2 = Some p ->
     length (prog_sectable p) = 2%nat.
 Proof.
-  unfold link_reloc_bingen.
-  intros.
-  repeat destr_in H.
-  unfold RelocBingen.transf_program in Heqr1.
-  autoinv. simpl.
-  unfold RelocBingen.transl_sectable in EQ. autoinv. reflexivity.
+  unfold RelocLinking1.link_reloc_prog, RelocLinking.link_reloc_prog.
+  intros. autoinv. simpl. clear - Heqo5.
+  unfold RelocLinking.link_sectable in Heqo5. autoinv. reflexivity.
 Qed.
-
 
 
 Lemma get_symbtable_to_tree:
@@ -671,45 +676,45 @@ Proof.
   decompose [ex and] H; clear H. inv H1. auto.
 Qed.
 
-Lemma get_strings_map_bytes_in:
-  forall l idbytes strmap sbytes,
-    get_strings_map_bytes l = OK (idbytes, strmap, sbytes) ->
-    forall i si,
-      Maps.PTree.get i strmap = Some si ->
-      In i l.
-Proof.
-  unfold get_strings_map_bytes. intros. autoinv.
+(* Lemma get_strings_map_bytes_in: *)
+(*   forall l idbytes strmap sbytes, *)
+(*     get_strings_map_bytes l = OK (idbytes, strmap, sbytes) -> *)
+(*     forall i si, *)
+(*       Maps.PTree.get i strmap = Some si -> *)
+(*       In i l. *)
+(* Proof. *)
+(*   unfold get_strings_map_bytes. intros. autoinv. *)
 
-  assert (
-      forall idbytes t0 o0 t1 o1 i si,
-        fold_left acc_strmap idbytes (t0, o0) = (t1, o1) ->
-        Maps.PTree.get i t1 = Some si ->
-        Maps.PTree.get i t0 <> None \/ In i (map fst idbytes)
-    ).
-  {
-    clear.
-    induction idbytes; simpl; intros; eauto.
-    inv H. left ; congruence.
-    destr_in H. eapply IHidbytes in H; eauto.
-    rewrite Maps.PTree.gsspec in H. destr_in H. destruct H. subst; simpl; auto. eauto.
-  }
-  edestruct H. eauto. eauto. rewrite Maps.PTree.gempty in H1. congruence.
+(*   assert ( *)
+(*       forall idbytes t0 o0 t1 o1 i si, *)
+(*         fold_left acc_strmap idbytes (t0, o0) = (t1, o1) -> *)
+(*         Maps.PTree.get i t1 = Some si -> *)
+(*         Maps.PTree.get i t0 <> None \/ In i (map fst idbytes) *)
+(*     ). *)
+(*   { *)
+(*     clear. *)
+(*     induction idbytes; simpl; intros; eauto. *)
+(*     inv H. left ; congruence. *)
+(*     destr_in H. eapply IHidbytes in H; eauto. *)
+(*     rewrite Maps.PTree.gsspec in H. destr_in H. destruct H. subst; simpl; auto. eauto. *)
+(*   } *)
+(*   edestruct H. eauto. eauto. rewrite Maps.PTree.gempty in H1. congruence. *)
 
-  assert (forall l b0 b1,
-             fold_right acc_symbol_strings (OK b0) l = OK b1 ->
-             forall i,
-               In i (map fst b1) ->
-               In i (map fst b0) \/ In i l
-         ).
-  {
-    clear.
-    induction l; simpl; intros; eauto.
-    inv H. auto.
-    unfold acc_symbol_strings in H at 1. autoinv. simpl in H0. destruct H0; auto.
-    eapply IHl in EQ; eauto. intuition.
-  }
-  edestruct H2; eauto. easy.
-Qed.
+(*   assert (forall l b0 b1, *)
+(*              fold_right acc_symbol_strings (OK b0) l = OK b1 -> *)
+(*              forall i, *)
+(*                In i (map fst b1) -> *)
+(*                In i (map fst b0) \/ In i l *)
+(*          ). *)
+(*   { *)
+(*     clear. *)
+(*     induction l; simpl; intros; eauto. *)
+(*     inv H. auto. *)
+(*     unfold acc_symbol_strings in H at 1. autoinv. simpl in H0. destruct H0; auto. *)
+(*     eapply IHl in EQ; eauto. intuition. *)
+(*   } *)
+(*   edestruct H2; eauto. easy. *)
+(* Qed. *)
 
 Lemma acc_strmap_acc:
   forall l t0 i0 t1 i1,
@@ -777,7 +782,7 @@ Proof.
 
   assert (id = symbentry_id se). {
     unfold RelocLinking.link_symb_merge in *. autoinv.
-    exploit symbtable_to_tree_get_id. apply Heqo. 
+    exploit symbtable_to_tree_get_id. apply Heqo.
     exploit symbtable_to_tree_get_id. apply Heqo0. intuition subst.
     unfold RelocLinking.link_symb in H0. autoinv.
     simpl; auto. simpl; auto.
@@ -825,7 +830,7 @@ Proof.
   admit.                    (* reloc offset could overflow *)
 Admitted.
 
-Instance tl : @TransfLink _ _ RelocBingenproof.linker2
+Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
                           linker2
                           match_prog.
 Proof.
@@ -837,11 +842,7 @@ Proof.
   simpl. rewrite H.
   cut (exists tp, transf_program p = OK tp).
   intros (tp & TP); rewrite TP; eauto.
-  unfold transf_program in *.
-  monadInv H0. monadInv H1.
-  repeat destr_in EQ0. repeat destr_in EQ2.
-  monadInv H1. monadInv H2.
-  repeat destr_in EQ2. repeat destr_in EQ4.
+  unfold transf_program in *. autoinv. simpl in *.
 
   assert (
       exists s0 v v0,
@@ -852,49 +853,12 @@ Proof.
       Some (prog_symbtable p) = RelocLinking.link_symbtable (prog_symbtable p1) s0).
   {
     clear - H.
-    unfold link_reloc_bingen in H. repeat destr_in H.
-    unfold RelocBingen.transf_program in Heqr1. monadInv Heqr1. repeat destr_in EQ2. simpl.
-    clear EQ. unfold RelocLinking1.link_reloc_prog in Heqo.
-    repeat destr_in Heqo. simpl. clear Heqo1 Heqo2. simpl in *.
-    unfold RelocLinking.link_reloc_prog in Heqo0.
-    repeat destr_in Heqo0. simpl.
-    unfold decode_prog_code_section in Heqr0, Heqr.
-    repeat destr_in Heqr0. repeat destr_in Heqr.
-    monadInv H0. monadInv H1.
-    repeat destr_in EQ0. repeat destr_in EQ3. simpl in *.
-
-
-    erewrite SecTable_gsspec in Heqo1, Heqo2. 4,7: eauto.
-    2-5: unfold sec_code_id, sec_data_id, SecTblParams.ofs; lia.
-    repeat destr_in Heqo2.
-    repeat destr_in Heqo1. inv e0. rewrite H0.
-    (do 3 eexists); (do 3 split); eauto.
-    rewrite <- Heqo4. f_equal. f_equal.
-    unfold decode_code_section in EQ2. repeat destr_in EQ2.
-    monadInv H1.
+    unfold RelocLinking1.link_reloc_prog in H. autoinv.
     simpl.
-    erewrite decode_instrs'_size; eauto.
+    unfold RelocLinking.link_reloc_prog in Heqo. autoinv. simpl. exists s0, v, v0; repeat split; eauto.
   }
-  
-  assert (EXsz: exists z,
-             fold_right
-               (fun (id : ident) (acc : res Z) =>
-                  match acc with
-                  | OK z =>
-                    match SymbolString.find_symbol_pos id with
-                    | Some pos => OK (z + 2 + Z.of_nat (length pos))
-                    | None => Error (msg "cannot find string")
-                    end
-                  | Error _ => acc
-                  end) (OK 0) (fold_right acc_symbols [] (prog_symbtable p)) = OK z
-             /\ z < Int.max_unsigned
-         ).
-  {
-    clear - H. unfold link_reloc_bingen in H. repeat destr_in H.
-    unfold RelocBingen.transf_program in Heqr1. autoinv. eexists; split; eauto.
-  }
-  destruct EXsz as (sz & EQsz & LT).
-  exploit (get_strings_map_bytes_exists (prog_symbtable p)); eauto.
+
+  exploit (get_strings_map_bytes_exists (prog_symbtable p)); eauto. admit. admit.
   intros (idbytes & strmap & sbytes & smb). rewrite smb. simpl.
   destruct H0 as (s0 & v & v0 & GETdata & GETcode & RELOCsym & EQsym).
 
@@ -941,18 +905,16 @@ Proof.
   {
     rewrite Forall_forall. intros.
 
-
-
     exploit link_symbtable_in. 2: eauto. eauto.
 
     assert (ValidRelocSymbentries: Forall (valid_symbentry t0) s0).
     {
-      clear - f1 RELOCsym.
+      clear - f2 RELOCsym.
       unfold RelocLinking.reloc_symbtable in RELOCsym.
-      revert f1 RELOCsym.
+      revert f2 RELOCsym.
       generalize (prog_symbtable p2) (RelocLinking.reloc_offset_fun (sec_size v) (sec_size v0)) s0. clear.
       induction s; simpl; intros; eauto. inv RELOCsym; auto.
-      inv f1.
+      inv f2.
       unfold RelocLinking.reloc_iter at 1 in RELOCsym.
       autoinv.
       constructor; eauto.
@@ -960,8 +922,6 @@ Proof.
       inv H1. rewrite Heqs0 in *. constructor; simpl in *; auto.
       admit.                    (* symbentry_value relocated could overflow... *)
     }
-    
-
     unfold RelocLinking.link_symb_merge. destr.
 
     destr.
@@ -974,7 +934,7 @@ Proof.
     - exploit symbtable_to_tree_get_id. apply Heqo.
       exploit symbtable_to_tree_get_id. apply Heqo0.
       intros (EQid1 & IN1) (EQid2 & IN2) LS.
-      rewrite Forall_forall in f. generalize (f _ IN2).
+      rewrite Forall_forall in f1. generalize (f1 _ IN2).
       rewrite Forall_forall in ValidRelocSymbentries. generalize (ValidRelocSymbentries _ IN1).
       unfold RelocLinking.link_symb in LS.
       inversion 1; inversion 1; constructor; simpl; eauto.
@@ -993,7 +953,7 @@ Proof.
     - intro A; inv A.
       exploit symbtable_to_tree_get_id. apply Heqo.
       intros (EQid1 & IN1).
-      rewrite Forall_forall in f. generalize (f _ IN1).
+      rewrite Forall_forall in f1. generalize (f1 _ IN1).
       inversion 1; constructor; simpl; eauto.
       edestruct get_strings_map_bytes_has_mapping as (si & MAP1).
       3: rewrite MAP1. eauto.
@@ -1015,30 +975,21 @@ Proof.
   assert (prog_strtable p = Maps.PTree.empty Z).
   {
     clear - e e0 H.
-    unfold link_reloc_bingen in H. autoinv.
-    unfold RelocBingen.transf_program in Heqr1. autoinv. simpl. clear - e e0 Heqo Heqr Heqr0.
-    unfold RelocLinking1.link_reloc_prog in Heqo. autoinv. simpl.
-    clear Heqo1 Heqo2.
-    unfold RelocLinking.link_reloc_prog in Heqo0. autoinv. simpl.
-    clear Heqo5 Heqo4 Heqo1 Heqo2 Heqo3.
-    unfold decode_prog_code_section in Heqr. autoinv. simpl. auto.
+    unfold RelocLinking1.link_reloc_prog in H. autoinv. simpl.
+    unfold RelocLinking.link_reloc_prog in Heqo. autoinv. simpl. auto.
   }
   rewrite pred_dec_true by auto.
   rewrite pred_dec_true by auto.
   assert ((forall id : reloctable_id, Forall valid_relocentry (get_reloctable id (prog_reloctables p)))).
   {
-    clear - f2 f0 H.
-    unfold link_reloc_bingen in H. autoinv.
-    unfold RelocBingen.transf_program in Heqr1. autoinv. simpl.
-    clear EQ1 EQ l.
-    unfold RelocLinking1.link_reloc_prog in Heqo. autoinv. simpl. clear Heqo0.
-    unfold RelocLinking1.link_data_reloctable in Heqo1. autoinv.
-    unfold RelocLinking1.link_code_reloctable in Heqo2. autoinv.
-    unfold decode_prog_code_section in Heqr, Heqr0. autoinv. simpl in *.
-    clear - H0 H1 f0 f2.
+    clear - f0 f H.
+    unfold RelocLinking1.link_reloc_prog in H. autoinv. simpl.
+    unfold RelocLinking1.link_data_reloctable in Heqo0. autoinv.
+    unfold RelocLinking1.link_code_reloctable in Heqo1. autoinv.
+    simpl in *.
+    clear - H0 H1 f f0.
     intros.
-    
-    specialize (f0 id). specialize (f2 id).
+    specialize (f id). specialize (f0 id).
     destruct id; simpl in *; eapply link_reloctable_valid. 4,8: eauto. all: eauto.
     admit.
     admit.                      (* sim gives values < 2 ^ 24 *)
@@ -1056,6 +1007,9 @@ Proof.
     apply in_map. auto.
   }
   simpl. rewrite app_length. simpl.
-
+  
   erewrite link_reloc_bingen_sectable; eauto. simpl. eauto.
+  rewrite dump_reloctables_error in H1. congruence.
+  rewrite dump_reloctables_error in H1. congruence.
+  rewrite dump_reloctables_error in H1. congruence.
 Admitted.

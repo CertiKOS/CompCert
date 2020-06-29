@@ -109,7 +109,7 @@ Proof.
   rewrite take_drop_length. simpl.
   rewrite decode_encode_reloc_info. simpl.
   rewrite decode_encode_int32. rewrite Z.mod_small; simpl in *; auto.
-  subst. auto. simpl in *; auto. setoid_rewrite encode_int_length. auto.
+  subst. auto. subst. auto. simpl in *; auto.
 Qed.
 
 Program Fixpoint decode_reloctable l {measure (length l)} : res (list relocentry) :=
@@ -140,7 +140,21 @@ Lemma decode_reloctable_eq l:
          end
   end.
 Proof.
-Admitted.
+  unfold decode_reloctable. destr. rewrite Wf.fix_sub_eq. simpl. fold decode_reloctable. destr.
+  destr.
+  intros x f g H.
+  destruct x. auto.
+  Transparent take_drop.
+  destruct x; simpl. auto. 
+  destruct x; simpl. auto. 
+  destruct x; simpl. auto. 
+  destruct x; simpl. auto. 
+  destruct x; simpl. auto. 
+  destruct x; simpl. auto. 
+  destruct x; simpl. auto. 
+  unfold bind. destr. rewrite H. auto.
+Qed.
+Opaque take_drop.
 
 Lemma length_encode_relocentry e:
   length (encode_relocentry e) = 8%nat.
@@ -192,7 +206,8 @@ Lemma decode_create_reloctables_sections p:
   Forall valid_relocentry (reloctable_code (prog_reloctables p)) ->
   Forall valid_relocentry (reloctable_data (prog_reloctables p)) ->
   decode_reloctables_sections (create_reloctables_sections p) =
-  OK ((reloctable_code (prog_reloctables p)), (reloctable_data (prog_reloctables p))).
+  OK ((reloctable_code (prog_reloctables p)),
+      (reloctable_data (prog_reloctables p))).
 Proof.
   unfold create_reloctables_sections, decode_reloctables_sections.
   intros.
