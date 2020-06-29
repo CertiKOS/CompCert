@@ -1013,18 +1013,18 @@ Let tge := RelocProgSemantics1.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-Lemma reverse_decode_prog_code_section: decode_prog_code_section tprog = OK prog.
-Proof.
-  unfold match_prog, transf_program in TRANSF. monadInv TRANSF.
-  unfold decode_prog_code_section. simpl.
-  unfold transl_sectable in EQ. repeat destr_in EQ.
-  monadInv H0. simpl. unfold decode_instrs'.
+(* Lemma reverse_decode_prog_code_section: decode_prog_code_section tprog = OK prog. *)
+(* Proof. *)
+(*   unfold match_prog, transf_program in TRANSF. monadInv TRANSF. *)
+(*   unfold decode_prog_code_section. simpl. *)
+(*   unfold transl_sectable in EQ. repeat destr_in EQ. *)
+(*   monadInv H0. simpl. unfold decode_instrs'. *)
   
-  (* help *)
-  (* I don't think this lemma is correct because the decoder 
-     could not generate exactly the same instruction as the pre-encoded one.
-     The relation instr_eq should be used here. *)
-Admitted.
+(*   (* help *) *)
+(*   (* I don't think this lemma is correct because the decoder  *)
+(*      could not generate exactly the same instruction as the pre-encoded one. *)
+(*      The relation instr_eq should be used here. *) *)
+(* Admitted. *)
 
 Lemma transf_initial_states:
   forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
@@ -1080,20 +1080,33 @@ Proof.
     destruct v.
     1,3: inversion H.
 
-    
-    destruct (Mem.alloc Mem.empty 0 (Z.of_nat (length x2))) eqn: EQAlloc.
-    unfold store_zeros.
-    
-    
-    destruct(store_zeros_terminate m0 b 0 (Z.of_nat (length x2))) eqn:EQZero.
-    
-    
-    
-    
-
-    
+    assert(HDataSize: (sec_size (sec_data init0)) = (Z.of_nat (length x2))) by admit.
+    rewrite <- HDataSize.
+    destruct (Mem.alloc Mem.empty 0 (sec_size (sec_data init0))) eqn: EQM0.
+    destruct (store_zeros m0 b 0 (sec_size (sec_data init0))) eqn:EQM1.
+    2: inversion H.
+    destruct store_init_data_list eqn:EQM2.
+    2: inversion H.
+    assert(HStoreSuccess: exists m3, store_init_data_bytes m1 b 0 x2 = Some m3) by admit.
+    destruct HStoreSuccess as (m3 & HStoreSuccess).
+    rewrite HStoreSuccess.
+    assert(HDropPerm: exists m4, Mem.drop_perm m3 b 0 (sec_size (sec_data init0)) Writable = Some m4) by admit.
+    destruct HDropPerm as (m4 & HDropPerm).
+    rewrite HDropPerm.
+    unfold alloc_code_section.
+    simpl.
+    destruct ( Mem.alloc m4 0 (code_size code')) eqn: EQM5.
+    assert(HDropPerm6: exists m6, Mem.drop_perm m5 b0 0 (code_size code') Nonempty = Some m6) by admit.
+    destruct HDropPerm6 as (m6 & HDropPerm6).
+    rewrite HDropPerm6.    
     admit.
     (* initial_state_gen *)
+    
+    
+    inversion H0.
+
+    
+    
     admit.
   + reflexivity.
 Admitted.
