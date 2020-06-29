@@ -1081,11 +1081,11 @@ Proof.
     1,3: inversion H.
 
     
-    destruct (Mem.alloc Mem.empty 0 (Z.of_nat (length x1))) eqn: EQAlloc.
+    destruct (Mem.alloc Mem.empty 0 (Z.of_nat (length x2))) eqn: EQAlloc.
     unfold store_zeros.
     
     
-    destruct(store_zeros_terminate m0 b 0 (Z.of_nat (length x1))) eqn:EQZero.
+    destruct(store_zeros_terminate m0 b 0 (Z.of_nat (length x2))) eqn:EQZero.
     
     
     
