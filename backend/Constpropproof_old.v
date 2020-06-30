@@ -683,7 +683,7 @@ Qed.
   follows. *)
 
 Theorem transf_program_correct:
-  forward_simulation (RTL.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
+  forward_simulation (RTL_old.semantics fn_stack_requirements prog) (RTL_old.semantics fn_stack_requirements tprog).
 Proof.
   apply Forward_simulation with lt (fun n s1 s2 => sound_state prog s1 /\ match_states n s1 s2 /\ stack_inv s2); constructor.
 - apply lt_wf.

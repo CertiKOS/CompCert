@@ -2676,6 +2676,7 @@ Proof.
   repeat rewrite_stack_blocks. repeat constructor; auto.
   constructor. repeat rewrite_stack_blocks. simpl.
   constructor. rewnb. reflexivity.
+  econstructor. simpl. auto.
   repeat rewrite_stack_blocks. constructor. simpl. reflexivity.
   constructor.
 Qed.
@@ -2704,6 +2705,26 @@ Proof.
 - monadInv H2. unfold transf_function in EQ.
   destruct (wt_function f). auto. discriminate.
 - auto.
+Qed.
+
+Lemma stacking_frame_correct:
+  forall p tp,
+    match_prog p tp ->
+    forall (fb : Values.block) (f : Mach.function),
+      Genv.find_funct_ptr (Genv.globalenv tp) fb = Some (Internal f) ->
+      0 < Mach.fn_stacksize f.
+Proof.
+  intros p tp MP fb f FFP.
+  red in MP.
+  inv MP.
+  exploit Globalenvs.Genv.find_funct_ptr_inversion. eauto. intros (id & IN).
+  eapply list_forall2_in_right in IN; eauto.
+  destruct IN as (x1 & IN & MIOG).
+  inv MIOG. simpl in *. subst. inv H2.
+  destruct f1; simpl in *; try discriminate.
+  monadInv H5.
+  rewrite (unfold_transf_function _ _ EQ). 
+  Opaque fe_size. simpl. apply fe_size_pos.
 Qed.
 
 Theorem transf_program_correct:

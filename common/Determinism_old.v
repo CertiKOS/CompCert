@@ -18,12 +18,12 @@
 
 Require Import String.
 Require Import Coqlib.
-Require Import AST.
+Require Import AST_old.
 Require Import Integers.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Smallstep.
-Require Import Behaviors.
+Require Import Events_old.
+Require Import Globalenvs_old.
+Require Import Smallstep_old.
+Require Import Behaviors_old.
 
 (** * Deterministic worlds *)
 

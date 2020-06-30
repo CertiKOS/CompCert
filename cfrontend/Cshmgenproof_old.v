@@ -1966,9 +1966,9 @@ Local Transparent Ctypes_old.Linker_program.
            (prog_comp_env p1) (prog_comp_env p2) (prog_comp_env_eq p1)
            (prog_comp_env_eq p2) EQ) as (env & P & Q).
   intros E.
-  eapply Linking.link_match_program; eauto.
+  eapply Linking_old.link_match_program; eauto.
 - intros.
-(*Local Transparent Linker_fundef Linking.Linker_fundef.*)
+Local Transparent Linker_fundef Linking_old.Linker_fundef.
   inv H3; inv H4; simpl in H2.
 + discriminate.
 + destruct ef; inv H2. econstructor; split. simpl; eauto. left; constructor; auto.

@@ -1,17 +1,17 @@
-Require Import Machregs.
-Require Import Asm.
+Require Import Machregs_old.
+Require Import Asm_old.
 Require Import Integers.
 Require Import ZArith.
 Require Import Archi.
 Require Import Coqlib.
-Require Import AST.
-Require Import Values Memdata Memtype.
-Require Import Asmgenproof0 Conventions1.
+Require Import AST_old.
+Require Import Values_old Memdata_old Memtype_old.
+Require Import Asmgenproof0_old Conventions1_old.
 
 Lemma nextinstr_nf_pc: forall rs sz, nextinstr_nf rs sz PC = Val.offset_ptr (rs PC) sz.
 Proof.
   unfold nextinstr_nf. simpl.
-  intros. rewrite Asmgenproof0.nextinstr_pc. f_equal.
+  intros. rewrite Asmgenproof0_old.nextinstr_pc. f_equal.
 Qed.
 
 Lemma nextinstr_rsp:
@@ -28,28 +28,28 @@ Lemma nextinstr_nf_rsp:
 Proof.
   unfold nextinstr_nf.
   intros. rewrite nextinstr_rsp.
-  rewrite Asmgenproof0.undef_regs_other; auto.
+  rewrite Asmgenproof0_old.undef_regs_other; auto.
   simpl; intuition subst; congruence.
 Qed.
 
 Ltac simpl_regs_in H :=
   repeat first [ rewrite Pregmap.gso in H by congruence
                | rewrite Pregmap.gss in H
-               | rewrite Asmgenproof0.nextinstr_pc in H
+               | rewrite Asmgenproof0_old.nextinstr_pc in H
                | rewrite nextinstr_rsp in H
                | rewrite nextinstr_nf_rsp in H
                | rewrite nextinstr_nf_pc in H
-               | rewrite Asmgenproof0.nextinstr_inv in H by congruence
+               | rewrite Asmgenproof0_old.nextinstr_inv in H by congruence
                ].
 
 Ltac simpl_regs :=
   repeat first [ rewrite Pregmap.gso by congruence
                | rewrite Pregmap.gss
-               | rewrite Asmgenproof0.nextinstr_pc
+               | rewrite Asmgenproof0_old.nextinstr_pc
                | rewrite nextinstr_rsp
                | rewrite nextinstr_nf_rsp
                | rewrite nextinstr_nf_pc
-               | rewrite Asmgenproof0.nextinstr_inv by congruence
+               | rewrite Asmgenproof0_old.nextinstr_inv by congruence
                ].
 
 
@@ -196,17 +196,17 @@ Proof.
 Qed.
 
 Lemma rsp_not_destroyed_at_call:
-  Asmgenproof0.preg_notin RSP destroyed_at_call.
+  Asmgenproof0_old.preg_notin RSP destroyed_at_call.
 Proof.
-  unfold destroyed_at_call. apply Asmgenproof0.preg_notin_charact.
+  unfold destroyed_at_call. apply Asmgenproof0_old.preg_notin_charact.
   intros. intro EQ; symmetry in EQ.
   apply  preg_of_not_rsp in EQ. congruence.
 Qed.
 
 Lemma pc_not_destroyed_builtin ef:
-  Asmgenproof0.preg_notin PC (destroyed_by_builtin ef).
+  Asmgenproof0_old.preg_notin PC (destroyed_by_builtin ef).
 Proof.
-  apply Asmgenproof0.preg_notin_charact.
+  apply Asmgenproof0_old.preg_notin_charact.
   intros. unfold preg_of. destr.
 Qed.
 
@@ -215,7 +215,7 @@ Lemma no_rsp_loc_external_result sg:
 Proof.
   unfold loc_external_result.
   generalize (loc_result sg).
-  induction r; simpl; intros; try split; apply Asmgenproof0.preg_of_not_SP.
+  induction r; simpl; intros; try split; apply Asmgenproof0_old.preg_of_not_SP.
 Qed.
 
 Lemma set_res_other:

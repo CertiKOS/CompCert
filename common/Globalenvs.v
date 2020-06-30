@@ -127,9 +127,8 @@ Proof.
 Qed.
 
 Definition equiv (se1 se2: t) : Prop :=
-     (* SACC: *)
-     (* nextblock se2 = nextblock se1 /\ *)
-     (forall id, find_symbol se2 id = find_symbol se1 id)
+(* SACC: *)nextblock se2 = nextblock se1
+  /\ (forall id, find_symbol se2 id = find_symbol se1 id)
   /\ (forall id, public_symbol se2 id = public_symbol se1 id)
   /\ (forall b, block_is_volatile se2 b = block_is_volatile se1 b).
 
@@ -2300,6 +2299,7 @@ Theorem senv_match:
   Senv.equiv (to_senv (globalenv p)) (to_senv (globalenv tp)).
 Proof.
   red; simpl. repeat split.
+- apply genv_next_match.
 - apply find_symbol_match.
 - intros. unfold public_symbol. rewrite find_symbol_match. 
   rewrite ! globalenv_public. 

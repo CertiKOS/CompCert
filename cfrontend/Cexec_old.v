@@ -96,14 +96,14 @@ Variable ge: genv.
 
 Definition eventval_of_val (v: val) (t: typ) : option eventval :=
   match v with
-  | Vint i => check (typ_eq t AST.Tint); Some (EVint i)
-  | Vfloat f => check (typ_eq t AST.Tfloat); Some (EVfloat f)
-  | Vsingle f => check (typ_eq t AST.Tsingle); Some (EVsingle f)
-  | Vlong n => check (typ_eq t AST.Tlong); Some (EVlong n)
+  | Vint i => check (typ_eq t AST_old.Tint); Some (EVint i)
+  | Vfloat f => check (typ_eq t AST_old.Tfloat); Some (EVfloat f)
+  | Vsingle f => check (typ_eq t AST_old.Tsingle); Some (EVsingle f)
+  | Vlong n => check (typ_eq t AST_old.Tlong); Some (EVlong n)
   | Vptr b ofs =>
       do id <- Genv.invert_symbol ge b;
       check (Genv.public_symbol ge id);
-      check (typ_eq t AST.Tptr);
+      check (typ_eq t AST_old.Tptr);
       Some (EVptr_global id ofs)
   | _ => None
   end.
@@ -120,13 +120,13 @@ Fixpoint list_eventval_of_val (vl: list val) (tl: list typ) : option (list event
 
 Definition val_of_eventval (ev: eventval) (t: typ) : option val :=
   match ev with
-  | EVint i => check (typ_eq t AST.Tint); Some (Vint i)
-  | EVfloat f => check (typ_eq t AST.Tfloat); Some (Vfloat f)
-  | EVsingle f => check (typ_eq t AST.Tsingle); Some (Vsingle f)
-  | EVlong n => check (typ_eq t AST.Tlong); Some (Vlong n)
+  | EVint i => check (typ_eq t AST_old.Tint); Some (Vint i)
+  | EVfloat f => check (typ_eq t AST_old.Tfloat); Some (Vfloat f)
+  | EVsingle f => check (typ_eq t AST_old.Tsingle); Some (Vsingle f)
+  | EVlong n => check (typ_eq t AST_old.Tlong); Some (Vlong n)
   | EVptr_global id ofs =>
       check (Genv.public_symbol ge id);
-      check (typ_eq t AST.Tptr);
+      check (typ_eq t AST_old.Tptr);
       do b <- Genv.find_symbol ge id;
       Some (Vptr b ofs)
   end.
@@ -1247,10 +1247,10 @@ Qed.
 
 Lemma wrong_kind_ok:
   forall k a m,
-  k <> Cstrategy.expr_kind a ->
+  k <> Cstrategy_old.expr_kind a ->
   reducts_ok k a m stuck.
 Proof.
-  intros. apply stuck_ok. red; intros. exploit Cstrategy.imm_safe_kind; eauto.
+  intros. apply stuck_ok. red; intros. exploit Cstrategy_old.imm_safe_kind; eauto.
   eapply imm_safe_t_imm_safe; eauto.
 Qed.
 
@@ -1911,13 +1911,13 @@ Qed.
 Variable fn_stack_requirements: ident -> Z.
 
 Definition can_crash_world (w: world) (S: state) : Prop :=
-  exists t, exists S', Csem.step fn_stack_requirements ge S t S' /\ forall w', ~possible_trace w t w'.
+  exists t, exists S', Csem_old.step fn_stack_requirements ge S t S' /\ forall w', ~possible_trace w t w'.
 
 Theorem not_imm_safe_t:
   forall K C a m f k,
   context K RV C ->
   ~imm_safe_t K a m ->
-  Csem.step fn_stack_requirements ge (ExprState f (C a) k e m) E0 Stuckstate \/ can_crash_world w (ExprState f (C a) k e m).
+  Csem_old.step fn_stack_requirements ge (ExprState f (C a) k e m) E0 Stuckstate \/ can_crash_world w (ExprState f (C a) k e m).
 Proof.
   intros. destruct (classic (imm_safe ge e K a m)).
   exploit imm_safe_imm_safe_t; eauto.
@@ -2386,7 +2386,7 @@ Hint Extern 3 => exact I.
 Theorem do_step_sound:
   forall w S rule t S',
   In (TR rule t S') (do_step w S) ->
-  Csem.step fn_stack_requirements ge S t S' \/ (t = E0 /\ S' = Stuckstate /\ can_crash_world fn_stack_requirements w S).
+  Csem_old.step fn_stack_requirements ge S t S' \/ (t = E0 /\ S' = Stuckstate /\ can_crash_world fn_stack_requirements w S).
 Proof with try (left; right; econstructor; eauto; fail).
   intros until S'. destruct S; simpl.
 (* State *)
@@ -2483,7 +2483,7 @@ Qed.
 
 Theorem do_step_complete:
   forall w S t S' w',
-    possible_trace w t w' -> Csem.step fn_stack_requirements ge S t S' ->
+    possible_trace w t w' -> Csem_old.step fn_stack_requirements ge S t S' ->
     exists rule, In (TR rule t S') (do_step w S).
 Proof with (unfold ret; eauto with coqlib).
   intros until w'; intros PT H.

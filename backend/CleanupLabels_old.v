@@ -22,7 +22,7 @@
 
 Require Import FSets FSetAVL.
 Require Import Coqlib Ordered.
-Require Import Linear.
+Require Import Linear_old.
 
 Module Labelset := FSetAVL.Make(OrderedPositive).
 
@@ -65,7 +65,7 @@ Definition transf_function (f: function) : function :=
      (cleanup_labels (fn_code f)).
 
 Definition transf_fundef (f: fundef) : fundef :=
-  AST.transf_fundef transf_function f.
+  AST_old.transf_fundef transf_function f.
 
 Definition transf_program (p: program) : program :=
-  AST.transform_program transf_fundef p.
+  AST_old.transform_program transf_fundef p.

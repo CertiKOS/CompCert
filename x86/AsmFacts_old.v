@@ -1,20 +1,20 @@
-Require Import Smallstep.
-Require Import Machregs.
-Require Import Asm.
+Require Import Smallstep_old.
+Require Import Machregs_old.
+Require Import Asm_old.
 Require Import Integers.
 Require Import List.
 Require Import ZArith.
-Require Import Memtype.
-Require Import Memory.
+Require Import Memtype_old.
+Require Import Memory_old.
 Require Import Archi.
 Require Import Coqlib.
-Require Import AST.
-Require Import Globalenvs.
-Require Import Events.
-Require Import Values.
-Require Import Conventions1.
-Require Import Asmgen.
-Require Asmgenproof0.
+Require Import AST_old.
+Require Import Globalenvs_old.
+Require Import Events_old.
+Require Import Values_old.
+Require Import Conventions1_old.
+Require Import Asmgen_old.
+Require Asmgenproof0_old.
 Require Import Errors.
 
 Section WITHMEMORYMODEL.
@@ -39,10 +39,10 @@ Section WITHMEMORYMODEL.
       content of the RSP register. We prove that Asm programs resulting from the
       Stacking pass satisfy this requirement. *)
 
-  Definition asm_instr_no_rsp (i : Asm.instruction) : Prop :=
+  Definition asm_instr_no_rsp (i : Asm_old.instruction) : Prop :=
     stack_invar i = true ->
-    forall (ge: Genv.t Asm.fundef unit) rs1 m1 rs2 m2 f init_stk,
-      Asm.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
+    forall (ge: Genv.t Asm_old.fundef unit) rs1 m1 rs2 m2 f init_stk,
+      Asm_old.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
       rs2 # RSP = rs1 # RSP.
   
   Definition written_regs i : list preg :=
@@ -202,7 +202,7 @@ Section WITHMEMORYMODEL.
     | _ => nil
     end.
 
-  Require Import AsmRegs.
+  Require Import AsmRegs_old.
 
   Ltac simpl_not_in NIN :=
     let H1 := fresh in
@@ -240,12 +240,12 @@ Section WITHMEMORYMODEL.
     intros.
     simpl_not_in H.
     simpl. simpl_regs. 
-    rewrite Asmgenproof0.undef_regs_other. auto. intros; intro; subst. congruence.
+    rewrite Asmgenproof0_old.undef_regs_other. auto. intros; intro; subst. congruence.
   Qed.
   
   Lemma exec_instr_only_written_regs:
-    forall (ge: Genv.t Asm.fundef unit) rs1 m1 rs2 m2 f i init_stk r,
-      Asm.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
+    forall (ge: Genv.t Asm_old.fundef unit) rs1 m1 rs2 m2 f i init_stk r,
+      Asm_old.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
       ~ In  r (PC :: RA :: CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: written_regs i) ->
       rs2 # r = rs1 # r.
   Proof.
@@ -292,7 +292,7 @@ Section WITHMEMORYMODEL.
     unfold check_asm_instr_no_rsp in H. unfold proj_sumbool in H. destr_in H. simpl in H. congruence.
   Qed.
   
-  Definition asm_code_no_rsp (c : Asm.code) : Prop :=
+  Definition asm_code_no_rsp (c : Asm_old.code) : Prop :=
     forall i,
       In i c ->
       asm_instr_no_rsp i.
@@ -319,10 +319,10 @@ Section WITHMEMORYMODEL.
   
   Lemma ireg_of_not_rsp:
     forall m x,
-      Asmgen.ireg_of m = OK x ->
+      Asmgen_old.ireg_of m = OK x ->
       IR x <> RSP.
   Proof.
-    unfold Asmgen.ireg_of.
+    unfold Asmgen_old.ireg_of.
     intros m x A.
     destr_in A. inv A.
     eapply preg_of_not_rsp in Heqp.
@@ -331,10 +331,10 @@ Section WITHMEMORYMODEL.
 
   Lemma freg_of_not_rsp:
     forall m x,
-      Asmgen.freg_of m = OK x ->
+      Asmgen_old.freg_of m = OK x ->
       FR x <> RSP.
   Proof.
-    unfold Asmgen.freg_of.
+    unfold Asmgen_old.freg_of.
     intros m x A. destr_in A. 
   Qed.
 
@@ -470,7 +470,7 @@ Section WITHMEMORYMODEL.
     monadInv H. repeat destr_in EQ0.
     monadInv EQ. repeat destr_in EQ1. simpl in *.
     destruct H0. subst. simpl in *. congruence.
-    rewrite Asmgenproof0.transl_code'_transl_code in EQ0.
+    rewrite Asmgenproof0_old.transl_code'_transl_code in EQ0.
     eapply transl_code_no_rsp in EQ0; eauto. simpl. auto.
   Qed.
 
@@ -499,7 +499,7 @@ Section WITHMEMORYMODEL.
   (* Proof. *)
   (*   unfold nextinstr_nf. *)
   (*   intros. rewrite nextinstr_rsp. *)
-  (*   rewrite Asmgenproof0.undef_regs_other; auto. *)
+  (*   rewrite Asmgenproof0_old.undef_regs_other; auto. *)
   (*   simpl; intuition subst; congruence.  *)
   (* Qed. *)
 
@@ -509,7 +509,7 @@ Section WITHMEMORYMODEL.
   (* Proof. *)
   (*   unfold compare_floats. *)
   (*   intros. *)
-  (*   destruct a, b; rewrite ?Asmgenproof0.undef_regs_other by simpl; intuition congruence. *)
+  (*   destruct a, b; rewrite ?Asmgenproof0_old.undef_regs_other by simpl; intuition congruence. *)
   (* Qed. *)
 
 
@@ -519,7 +519,7 @@ Section WITHMEMORYMODEL.
   (* Proof. *)
   (*   unfold compare_floats32. *)
   (*   intros. *)
-  (*   destruct a, b; rewrite ?Asmgenproof0.undef_regs_other by simpl; intuition congruence. *)
+  (*   destruct a, b; rewrite ?Asmgenproof0_old.undef_regs_other by simpl; intuition congruence. *)
   (* Qed. *)
 
 
@@ -544,7 +544,7 @@ Section WITHMEMORYMODEL.
   (*   intros F V ge' K m1 am rs1 f0 rs2 m2 l sz INL STORE. *)
   (*   unfold exec_store in STORE. repeat destr_in STORE. *)
   (*   rewrite nextinstr_nf_rsp.  *)
-  (*   rewrite Asmgenproof0.undef_regs_other. *)
+  (*   rewrite Asmgenproof0_old.undef_regs_other. *)
   (*   auto. intros; apply not_eq_sym. auto. *)
   (* Qed. *)
 
@@ -557,7 +557,7 @@ Section WITHMEMORYMODEL.
   (*     asm_code_no_rsp x1. *)
   (* Proof. *)
   (*   intros i t m x0 x1 r IH EQ. *)
-  (*   unfold loadind in EQ. unfold Asmgen.loadind in EQ. *)
+  (*   unfold loadind in EQ. unfold Asmgen_old.loadind in EQ. *)
   (*   simpl in EQ. *)
   (*   repeat destr_in EQ; apply asm_code_no_rsp_cons; auto; red; simpl; *)
   (*   intros ge rs1 m1 rs2 m2 ff init_stk EI; unfold exec_instr in EI; simpl in EI; *)
@@ -571,7 +571,7 @@ Section WITHMEMORYMODEL.
   (*     asm_code_no_rsp x1. *)
   (* Proof. *)
   (*   intros i t m x0 x1 r IH EQ. *)
-  (*   unfold storeind in EQ. unfold Asmgen.storeind in EQ. *)
+  (*   unfold storeind in EQ. unfold Asmgen_old.storeind in EQ. *)
   (*   repeat destr_in EQ; apply asm_code_no_rsp_cons; auto; red; simpl; *)
   (*     intros ge rs1 m1 rs2 m2 ff init_stk EI; unfold exec_instr in EI; simpl in EI; *)
   (*     eapply exec_store_rsp; eauto; simpl; intuition subst; congruence. *)
@@ -584,7 +584,7 @@ Section WITHMEMORYMODEL.
   (*     asm_code_no_rsp x1. *)
   (* Proof. *)
   (*   intros x0 x1 m m0 A B. *)
-  (*   unfold mk_mov in B. unfold Asmgen.mk_mov in B. *)
+  (*   unfold mk_mov in B. unfold Asmgen_old.mk_mov in B. *)
   (*   repeat destr_in B; apply asm_code_no_rsp_cons; auto; red; simpl; intros; *)
   (*     inv H0; rewrite nextinstr_rsp; *)
   (*       rewrite Pregmap.gso; auto; *)
@@ -604,7 +604,7 @@ Section WITHMEMORYMODEL.
   (*   forall x0 m x2 i c, *)
   (*     asm_code_no_rsp x0 -> *)
   (*     In i (mk_setcc c x2 x0) -> *)
-  (*     Asmgen.ireg_of m = OK x2 -> *)
+  (*     Asmgen_old.ireg_of m = OK x2 -> *)
   (*     asm_instr_no_rsp i. *)
   (* Proof. *)
   (*   intros x0 m x2 i c A B C. *)
@@ -622,11 +622,11 @@ Section WITHMEMORYMODEL.
   (*       let init_stk := fresh "init_stk" in *)
   (*       let EI := fresh "EI" in *)
   (*       intros invar ge rs1 m1 rs2 m2 f init_stk EI; *)
-  (*       unfold Asm.exec_instr in EI; simpl in EI; solve_rs *)
+  (*       unfold Asm_old.exec_instr in EI; simpl in EI; solve_rs *)
   (*     end. *)
-  (*   unfold mk_setcc in B. unfold Asmgen.mk_setcc in B. *)
+  (*   unfold mk_setcc in B. unfold Asmgen_old.mk_setcc in B. *)
   (*   destr_in B; destruct c; simpl in *; *)
-  (*     unfold Asmgen.mk_setcc_base in *; simpl in *; *)
+  (*     unfold Asmgen_old.mk_setcc_base in *; simpl in *; *)
   (*       (intuition subst; simpl in *; eauto; try now ainr). *)
   (*   - destr_in B; simpl in *; intuition subst; simpl in *; auto; try ainr. *)
   (*   - destr_in B; simpl in *; intuition subst; simpl in *; auto; try ainr. *)
@@ -635,11 +635,11 @@ Section WITHMEMORYMODEL.
   (* Lemma asmgen_transl_cond_rsp: *)
   (*   forall x0 m x2 x1 cond l, *)
   (*     asm_code_no_rsp x0 -> *)
-  (*     Asmgen.ireg_of m = OK x2 -> *)
-  (*     transl_cond cond l (mk_setcc (Asmgen.testcond_for_condition cond) x2 x0) = OK x1 -> *)
+  (*     Asmgen_old.ireg_of m = OK x2 -> *)
+  (*     transl_cond cond l (mk_setcc (Asmgen_old.testcond_for_condition cond) x2 x0) = OK x1 -> *)
   (*     asm_code_no_rsp x1. *)
   (* Proof. *)
-  (*   unfold transl_cond, Asmgen.transl_cond; simpl. *)
+  (*   unfold transl_cond, Asmgen_old.transl_cond; simpl. *)
   (*   intros x0 m x2 x1 cond l ACNR IREG TRANSL. *)
   (*   repeat destr_in TRANSL; try destruct (c:comparison); *)
   (*     invasm; eauto; *)
@@ -647,7 +647,7 @@ Section WITHMEMORYMODEL.
   (* Qed. *)
 
   (* Lemma goto_label_rsp: *)
-  (*   forall (ge: Genv.t Asm.fundef unit) rs1 rs2 f l m1 m2, *)
+  (*   forall (ge: Genv.t Asm_old.fundef unit) rs1 rs2 f l m1 m2, *)
   (*     goto_label ge f l rs1 m1 = Next rs2 m2 -> *)
   (*     rs2 RSP = rs1 RSP. *)
   (* Proof. *)
@@ -671,7 +671,7 @@ Section WITHMEMORYMODEL.
   (* Lemma asmgen_transl_cond_rsp': *)
   (*   forall x0 x2 x1 cond l, *)
   (*     asm_code_no_rsp x0 -> *)
-  (*     transl_cond cond l (mk_jcc (Asmgen.testcond_for_condition cond) x2 x0) = OK x1 -> *)
+  (*     transl_cond cond l (mk_jcc (Asmgen_old.testcond_for_condition cond) x2 x0) = OK x1 -> *)
   (*     asm_code_no_rsp x1. *)
   (* Proof. *)
   (*   unfold transl_cond; simpl. *)
@@ -686,14 +686,14 @@ Section WITHMEMORYMODEL.
   (*   forall x0 *)
   (*     (ACNR : asm_code_no_rsp x0) *)
   (*     m x3 *)
-  (*     (IREG: Asmgen.ireg_of m = OK x3) *)
+  (*     (IREG: Asmgen_old.ireg_of m = OK x3) *)
   (*     x2 x1 i *)
   (*     (REC: forall x2,  asm_instr_no_rsp ((i x3 x2))) *)
-  (*     (CONV: Asmgen.mk_intconv i x3 x2 x0 = OK x1), *)
+  (*     (CONV: Asmgen_old.mk_intconv i x3 x2 x0 = OK x1), *)
   (*     asm_code_no_rsp x1. *)
   (* Proof. *)
   (*   intros. *)
-  (*   unfold Asmgen.mk_intconv in CONV. inv CONV. *)
+  (*   unfold Asmgen_old.mk_intconv in CONV. inv CONV. *)
   (*   destr; repeat apply asm_code_no_rsp_cons; auto. *)
   (*   red; simpl; intros; invasm; solve_rs. *)
   (* Qed. *)
@@ -701,10 +701,10 @@ Section WITHMEMORYMODEL.
   (* Lemma asmgen_no_change_rsp: *)
   (*   forall f tf, *)
   (*     transf_function f = OK tf -> *)
-  (*     asm_code_no_rsp (Asm.fn_code tf). *)
+  (*     asm_code_no_rsp (Asm_old.fn_code tf). *)
   (* Proof. *)
   (*   intros f tf TR. *)
-  (*   unfold transf_function, Asmgen.transf_function in TR. *)
+  (*   unfold transf_function, Asmgen_old.transf_function in TR. *)
   (*   monadInv TR. *)
   (*   destr_in EQ0. inv EQ0. *)
   (*   unfold transl_function in EQ. *)
@@ -728,8 +728,8 @@ Section WITHMEMORYMODEL.
   (*     match goal with *)
   (*     | EQ: context [match ?a with _ => _ end] |- _ => destr_in EQ *)
   (*     | EQ: loadind _ _ _ _ _ = OK ?x |- asm_code_no_rsp ?x => eapply loadind_no_change_rsp in EQ; eauto *)
-  (*     | EQ: Asmgen.storeind _ _ _ _ _ = OK ?x |- asm_code_no_rsp ?x => eapply storeind_no_change_rsp in EQ; eauto *)
-  (*     | EQ: Asmgen.mk_intconv _ _ _ _ = OK ?x |- asm_code_no_rsp ?x => eapply intconv_no_change_rsp in EQ; eauto *)
+  (*     | EQ: Asmgen_old.storeind _ _ _ _ _ = OK ?x |- asm_code_no_rsp ?x => eapply storeind_no_change_rsp in EQ; eauto *)
+  (*     | EQ: Asmgen_old.mk_intconv _ _ _ _ = OK ?x |- asm_code_no_rsp ?x => eapply intconv_no_change_rsp in EQ; eauto *)
   (*     | EQ: bind _ _ = OK _ |- _ => monadInv EQ *)
   (*     | EQ: OK _ = OK _ |- _ => inv EQ *)
   (*     | |- asm_instr_no_rsp _ => now (red; simpl; intros; invasm; solve_rs) *)
@@ -738,18 +738,18 @@ Section WITHMEMORYMODEL.
   (*     end. *)
   (*   Hint Resolve not_eq_sym ireg_of_not_rsp freg_of_not_rsp. *)
   (*   destruct a; simpl in EQ; repeat (t; simpl). *)
-  (*   - unfold Asmgen.transl_op in EQ. *)
+  (*   - unfold Asmgen_old.transl_op in EQ. *)
   (*     repeat destr_in EQ; repeat t; try now (invasm; solve_rs). *)
   (*     + eapply mk_move_nochange_rsp; eauto. *)
   (*     + repeat (t; simpl). *)
   (*     + eapply asmgen_transl_cond_rsp; eauto. *)
-  (*   - unfold Asmgen.transl_load in EQ. *)
+  (*   - unfold Asmgen_old.transl_load in EQ. *)
   (*     repeat t; eapply exec_load_rsp; eauto. *)
-  (*   - unfold Asmgen.transl_store in EQ. *)
+  (*   - unfold Asmgen_old.transl_store in EQ. *)
   (*     repeat t; try eapply exec_store_rsp; eauto; try easy. *)
-  (*     unfold Asmgen.mk_storebyte in EQ4. inv EQ4. *)
+  (*     unfold Asmgen_old.mk_storebyte in EQ4. inv EQ4. *)
   (*     repeat (t; simpl); eapply exec_store_rsp; eauto; easy. *)
-  (*     unfold Asmgen.mk_storebyte in EQ4. inv EQ4. *)
+  (*     unfold Asmgen_old.mk_storebyte in EQ4. inv EQ4. *)
   (*     repeat (t; simpl); eapply exec_store_rsp; eauto; easy. *)
   (*   - inv H0. *)
   (*   - repeat t. eapply goto_label_rsp; eauto. *)
@@ -757,14 +757,14 @@ Section WITHMEMORYMODEL.
   (*   - erewrite goto_label_rsp. 2: eauto. solve_rs. *)
   (* Qed. *)
 
-  Definition asm_instr_no_stack (i : Asm.instruction) : Prop :=
+  Definition asm_instr_no_stack (i : Asm_old.instruction) : Prop :=
     stack_invar i = true ->
-    forall (ge: Genv.t Asm.fundef unit) rs1 m1 rs2 m2 f init_stk,
-      Asm.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
+    forall (ge: Genv.t Asm_old.fundef unit) rs1 m1 rs2 m2 f init_stk,
+      Asm_old.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
       Mem.stack m2 = Mem.stack m1 /\ (forall b o k p, Mem.perm m2 b o k p <-> Mem.perm m1 b o k p).
 
   Lemma exec_store_stack:
-    forall (ge: Genv.t Asm.fundef unit) k m1 a rs1 rs l rs2 m2 sz,
+    forall (ge: Genv.t Asm_old.fundef unit) k m1 a rs1 rs l rs2 m2 sz,
       exec_store ge k m1 a rs1 rs l sz = Next rs2 m2 ->
       Mem.stack m2 = Mem.stack m1 /\ (forall b o k p, Mem.perm m2 b o k p <-> Mem.perm m1 b o k p).
   Proof.
@@ -779,7 +779,7 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma exec_load_stack:
-    forall (ge: Genv.t Asm.fundef unit) k m1 a rs1 rs rs2 m2 sz,
+    forall (ge: Genv.t Asm_old.fundef unit) k m1 a rs1 rs rs2 m2 sz,
       exec_load ge k m1 a rs1 rs sz = Next rs2 m2 ->
       Mem.stack m2 = Mem.stack m1 /\ (forall b o k p, Mem.perm m2 b o k p <-> Mem.perm m1 b o k p).
   Proof.
@@ -788,7 +788,7 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma goto_label_stack:
-    forall (ge: Genv.t Asm.fundef unit) f l m1 rs1 rs2 m2,
+    forall (ge: Genv.t Asm_old.fundef unit) f l m1 rs1 rs2 m2,
       goto_label ge f l rs1 m1 = Next rs2 m2 ->
       Mem.stack m2 = Mem.stack m1 /\ (forall b o k p, Mem.perm m2 b o k p <-> Mem.perm m1 b o k p).
   Proof.
@@ -797,7 +797,7 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma goto_ofs_stack:
-    forall (ge: Genv.t Asm.fundef unit) sz ofs m1 rs1 rs2 m2,
+    forall (ge: Genv.t Asm_old.fundef unit) sz ofs m1 rs1 rs2 m2,
       goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
       Mem.stack m2 = Mem.stack m1 /\ (forall b o k p, Mem.perm m2 b o k p <-> Mem.perm m1 b o k p).
   Proof.
@@ -823,8 +823,8 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Definition asm_instr_nb_fw i:=
-    forall (ge: Genv.t Asm.fundef unit) f rs1 m1 rs2 m2 init_stk,
-      Asm.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
+    forall (ge: Genv.t Asm_old.fundef unit) f rs1 m1 rs2 m2 init_stk,
+      Asm_old.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
       Ple (Mem.nextblock m1) (Mem.nextblock m2).
 
   Definition asm_code_nb_fw c :=
@@ -832,7 +832,7 @@ Section WITHMEMORYMODEL.
 
 
     Lemma exec_store_nb:
-      forall (ge: Genv.t Asm.fundef unit) k m1 a rs1 rs l rs2 m2 sz,
+      forall (ge: Genv.t Asm_old.fundef unit) k m1 a rs1 rs l rs2 m2 sz,
         exec_store ge k m1 a rs1 rs l sz = Next rs2 m2 ->
         Ple (Mem.nextblock m1) (Mem.nextblock m2).
     Proof.
@@ -843,7 +843,7 @@ Section WITHMEMORYMODEL.
     Qed.
 
     Lemma exec_load_nb:
-      forall (ge: Genv.t Asm.fundef unit) k m1 a rs1 rs rs2 m2 sz,
+      forall (ge: Genv.t Asm_old.fundef unit) k m1 a rs1 rs rs2 m2 sz,
         exec_load ge k m1 a rs1 rs sz = Next rs2 m2 ->
         Ple (Mem.nextblock m1) (Mem.nextblock m2).
     Proof.
@@ -920,7 +920,7 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma exec_load_unchanged_stack:
-    forall (ge: Genv.t Asm.fundef unit) chunk m1 a rs1 rd sz rs2 m2 P,
+    forall (ge: Genv.t Asm_old.fundef unit) chunk m1 a rs1 rd sz rs2 m2 P,
       exec_load ge chunk m1 a rs1 rd sz = Next rs2 m2 ->
       Mem.unchanged_on P m1 m2.
   Proof.
@@ -973,7 +973,7 @@ Section WITHMEMORYMODEL.
   Qed.
   
   Lemma exec_store_unchanged_stack:
-    forall (ge: Genv.t Asm.fundef unit) chunk m1 a rs1 rd rds sz rs2 m2 init_stk l,
+    forall (ge: Genv.t Asm_old.fundef unit) chunk m1 a rs1 rd rds sz rs2 m2 init_stk l,
       Mem.stack m1 = l ++ init_stk ->
       exec_store ge chunk m1 a rs1 rd rds sz = Next rs2 m2 ->
       Mem.unchanged_on (fun (b : block) (o : Z) => ~ stack_access init_stk b o (o + 1)) m1 m2.
@@ -993,7 +993,7 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma goto_label_unchanged_stack:
-    forall (ge: Genv.t Asm.fundef unit) m1 rs1 f lbl rs2 m2 P,
+    forall (ge: Genv.t Asm_old.fundef unit) m1 rs1 f lbl rs2 m2 P,
       goto_label ge f lbl rs1 m1 = Next rs2 m2 ->
       Mem.unchanged_on P m1 m2.
   Proof.
@@ -1003,7 +1003,7 @@ Section WITHMEMORYMODEL.
   Qed.
   
   Lemma goto_ofs_unchanged_stack:
-    forall (ge: Genv.t Asm.fundef unit) m1 rs1 sz ofs rs2 m2 P,
+    forall (ge: Genv.t Asm_old.fundef unit) m1 rs1 sz ofs rs2 m2 P,
       goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
       Mem.unchanged_on P m1 m2.
   Proof.
@@ -1013,9 +1013,9 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma exec_instr_unchanged_stack:
-    forall (ge: Genv.t Asm.fundef unit) f i rs1 m1 rs2 m2 init_stk l,
+    forall (ge: Genv.t Asm_old.fundef unit) f i rs1 m1 rs2 m2 init_stk l,
       Mem.stack m1 = l ++ init_stk ->
-      Asm.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
+      Asm_old.exec_instr init_stk ge f i rs1 m1 = Next rs2 m2 ->
       Mem.unchanged_on
         (fun b o => ~ stack_access init_stk b o (o+1))
         m1 m2 /\
@@ -1133,7 +1133,7 @@ Section WITHMEMORYMODEL.
   Qed.
 
   Lemma initial_state_stack_is_app:
-    forall (prog: Asm.program) rs m,
+    forall (prog: Asm_old.program) rs m,
       initial_state prog (State rs m) ->
       Mem.stack m = ((None,nil) ::
                                 (Some (make_singleton_frame_adt (Genv.genv_next (Genv.globalenv prog)) 0 0 ), nil) :: nil).

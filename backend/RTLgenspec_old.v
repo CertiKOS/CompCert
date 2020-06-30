@@ -906,18 +906,18 @@ Inductive tr_stmt (c: code) (map: mapping):
 (** [tr_function f tf] specifies the RTL function [tf] that
   [RTLgen.transl_function] returns.  *)
 
-Inductive tr_function: CminorSel.function -> RTL.function -> Prop :=
+Inductive tr_function: CminorSel_old.function -> RTL_old.function -> Prop :=
   | tr_function_intro:
       forall f code rparams map1 s0 s1 i1 rvars map2 s2 i2 nentry ngoto nret rret orret,
-      add_vars init_mapping f.(CminorSel.fn_params) s0 = OK (rparams, map1) s1 i1 ->
-      add_vars map1 f.(CminorSel.fn_vars) s1 = OK (rvars, map2) s2 i2 ->
-      orret = ret_reg f.(CminorSel.fn_sig) rret ->
-      tr_stmt code map2 f.(CminorSel.fn_body) nentry nret nil ngoto nret orret ->
+      add_vars init_mapping f.(CminorSel_old.fn_params) s0 = OK (rparams, map1) s1 i1 ->
+      add_vars map1 f.(CminorSel_old.fn_vars) s1 = OK (rvars, map2) s2 i2 ->
+      orret = ret_reg f.(CminorSel_old.fn_sig) rret ->
+      tr_stmt code map2 f.(CminorSel_old.fn_body) nentry nret nil ngoto nret orret ->
       code!nret = Some(Ireturn orret) ->
-      tr_function f (RTL.mkfunction
-                       f.(CminorSel.fn_sig)
+      tr_function f (RTL_old.mkfunction
+                       f.(CminorSel_old.fn_sig)
                        rparams
-                       f.(CminorSel.fn_stackspace)
+                       f.(CminorSel_old.fn_stackspace)
                        code
                        nentry).
 
@@ -1350,7 +1350,7 @@ Proof.
   intros [C D].
   eapply tr_function_intro; eauto with rtlg.
   eapply transl_stmt_charact; eauto with rtlg.
-  unfold ret_reg. destruct (sig_res (CminorSel.fn_sig f)).
+  unfold ret_reg. destruct (sig_res (CminorSel_old.fn_sig f)).
   constructor. eauto with rtlg. eauto with rtlg.
   constructor.
 Qed.

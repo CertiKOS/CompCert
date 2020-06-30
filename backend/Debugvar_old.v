@@ -14,8 +14,8 @@
     debugging information. *)
 
 Require Import Axioms Coqlib Maps Iteration Errors.
-Require Import Integers Floats AST.
-Require Import Machregs Locations Conventions Linear.
+Require Import Integers Floats AST_old.
+Require Import Machregs_old Locations_old Conventions_old Linear_old.
 
 (** A debug info is a [builtin_arg loc] expression that safely evaluates
    in any context. *)
@@ -362,7 +362,7 @@ Definition transf_function (f: function) : res function :=
   end.
 
 Definition transf_fundef (fd: fundef) : res fundef :=
-  AST.transf_partial_fundef transf_function fd.
+  AST_old.transf_partial_fundef transf_function fd.
 
 Definition transf_program (p: program) : res program :=
   transform_partial_program transf_fundef p.

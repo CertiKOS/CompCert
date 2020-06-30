@@ -21,7 +21,7 @@ Require Import CleanupLabels_old.
 
 Module LabelsetFacts := FSetFacts.Facts(Labelset).
 
-Definition match_prog (p tp: Linear.program) :=
+Definition match_prog (p tp: Linear_old.program) :=
   match_program (fun ctx f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
@@ -275,13 +275,13 @@ Proof.
   apply eval_operation_preserved. exact symbols_preserved.
   econstructor; eauto with coqlib.
 (* Lload *)
-  assert (eval_addressing tge sp addr (LTL.reglist rs args) = Some a).
+  assert (eval_addressing tge sp addr (LTL_old.reglist rs args) = Some a).
     rewrite <- H. apply eval_addressing_preserved. exact symbols_preserved.
   left; econstructor; split.
   econstructor; eauto.
   econstructor; eauto with coqlib.
 (* Lstore *)
-  assert (eval_addressing tge sp addr (LTL.reglist rs args) = Some a).
+  assert (eval_addressing tge sp addr (LTL_old.reglist rs args) = Some a).
     rewrite <- H. apply eval_addressing_preserved. exact symbols_preserved.
   left; econstructor; split.
   econstructor; eauto.
@@ -376,7 +376,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (Linear.semantics fn_stack_requirements prog) (Linear.semantics fn_stack_requirements tprog).
+  forward_simulation (Linear_old.semantics fn_stack_requirements prog) (Linear_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_opt.
   apply senv_preserved.

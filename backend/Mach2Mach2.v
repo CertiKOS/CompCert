@@ -284,7 +284,7 @@ Theorem step_correct:
       repeat rewrite_stack_blocks; eauto. constructor; auto.
     - edestruct Mem.free_parallel_extends as (m2' & FREE' & EXT); eauto.
       edestruct Mem.loadbytesv_extends as (ra2 & LOADV' & LD). apply MLD.
-      2: apply H1. simpl; auto.
+      2: apply H2. simpl; auto.
       edestruct Mem.tailcall_stage_extends as (m3' & TC' & EXT'); eauto.
       inv CSA0. eapply Mem.free_top_tframe_no_perm; eauto.
       eexists; split. econstructor; eauto.
@@ -402,11 +402,11 @@ Proof.
   - simpl; intros s1 IS. eexists; split; eauto. split. eapply initial_transf; eauto.
     inv IS. repeat apply conj; constructor.
     + simpl. constructor. repeat rewrite_stack_blocks. simpl.
-      rewnb. fold ge. reflexivity.
+      rewnb. fold ge. reflexivity. econstructor. simpl. auto.
     + repeat rewrite_stack_blocks. constructor. reflexivity.
     + constructor.
     + simpl. constructor. repeat rewrite_stack_blocks. simpl.
-      rewnb. reflexivity.
+      rewnb. reflexivity. econstructor. simpl. auto.
     + repeat rewrite_stack_blocks. constructor. reflexivity.
     + constructor.
   - simpl. intros s1 s2 r (MS & CSC). eapply final_transf; eauto.

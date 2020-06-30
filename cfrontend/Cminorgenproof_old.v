@@ -2578,7 +2578,7 @@ Proof.
   destruct TRANSL as (_ & MAIN & _).
   rewrite MAIN.
   eapply match_callstate with (f := Mem.flat_inj (Mem.nextblock m2)) (cs := @nil frame) (cenv := PTree.empty Z).
-  auto.  
+  auto. 
   auto.
   apply stack_equiv_refl.
   rewrite Mem.push_new_stage_nextblock.
@@ -2586,11 +2586,19 @@ Proof.
   apply match_callstack_push.
   eapply match_callstack_record; eauto.
   eapply mcs_nil.
-  rewrite Mem.push_new_stage_nextblock.
-  unfold Mem.record_init_sp in RIS. destr_in RIS.
-  apply match_callstack_push.
-  eapply match_callstack_record; eauto.
-  eapply mcs_nil.
+  {
+    exploit match_globalenvs_init. eauto. intro MG.
+    inv MG; constructor; simpl. apply Ple_refl. 
+    unfold Mem.flat_inj; rewnb. intros; destr.
+    unfold Mem.flat_inj. rewnb. intros b1 b2 delta EQ PLT; repeat destr_in EQ.
+    intros id b2 FS; eapply SYMBOLS in FS; xomega.
+    intros b2 fd FFP; eapply FUNCTIONS in FFP; xomega.
+    intros b2 gv FVI; eapply VARINFOS in FVI; xomega.
+  }
+  rewnb. xomega.
+  rewnb. xomega.
+  constructor.
+  red; auto.
   constructor.
 Qed.
 

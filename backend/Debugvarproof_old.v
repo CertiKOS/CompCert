@@ -13,10 +13,10 @@
 (** Correctness proof for the [Debugvar] pass. *)
 
 Require Import Axioms Coqlib Maps Iteration Errors.
-Require Import Integers Floats AST Linking.
-Require Import Values Memory Events Globalenvs Smallstep.
-Require Import Machregs Locations Conventions Op Linear.
-Require Import Debugvar.
+Require Import Integers Floats AST_old Linking_old.
+Require Import Values_old Memory_old Events_old Globalenvs_old Smallstep_old.
+Require Import Machregs_old Locations_old Conventions_old Op_old Linear_old.
+Require Import Debugvar_old.
 
 (** * Relational characterization of the transformation *)
 
@@ -394,7 +394,7 @@ Qed.
 
 (** Matching between program states. *)
 
-Inductive match_stackframes: Linear.stackframe -> Linear.stackframe -> Prop :=
+Inductive match_stackframes: Linear_old.stackframe -> Linear_old.stackframe -> Prop :=
   | match_stackframe_intro:
       forall f sp rs c tf tc before after,
       match_function f tf ->
@@ -403,7 +403,7 @@ Inductive match_stackframes: Linear.stackframe -> Linear.stackframe -> Prop :=
         (Stackframe f sp rs c)
         (Stackframe tf sp rs (add_delta_ranges before after tc)).
 
-Inductive match_states: Linear.state ->  Linear.state -> Prop :=
+Inductive match_states: Linear_old.state ->  Linear_old.state -> Prop :=
   | match_states_instr:
       forall s f sp c rs m tf ts tc
         (STACKS: list_forall2 match_stackframes s ts)

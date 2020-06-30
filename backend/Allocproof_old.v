@@ -2156,7 +2156,7 @@ Proof.
     - destruct RIF as (b & o & EQ0 & EQ1).
       eapply add_equations_args_satisf in B1; eauto.
       red in B1.
-      generalize (B1 (Eq Full r (Locations.R m0))).
+      generalize (B1 (Eq Full r (Locations_old.R m0))).
       inv Heqo. simpl. 
       rewrite ESF.add_iff. simpl.
       intros A. rewrite EQ0 in A.  specialize (A (or_introl eq_refl)). inversion A.

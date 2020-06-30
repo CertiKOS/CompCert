@@ -804,11 +804,11 @@ Lemma volatile_load_preserved:
   volatile_load ge1 chunk m b ofs t v ->
   volatile_load ge2 chunk m b ofs t v.
 Proof.
-  intros. destruct H as (A & B & C). inv H0; constructor; auto.
-  rewrite C; auto.
-  rewrite A; auto.
+  intros. destruct H as (A & B & C & D). inv H0; constructor; auto.
+  rewrite D; auto.
+  rewrite B; auto.
   eapply eventval_match_preserved; eauto.
-  rewrite C; auto.
+  rewrite D; auto.
 Qed.
 
 Lemma volatile_load_extends:
@@ -919,11 +919,11 @@ Lemma volatile_store_preserved:
   volatile_store ge1 chunk m1 b ofs v t m2 ->
   volatile_store ge2 chunk m1 b ofs v t m2.
 Proof.
-  intros. destruct H as (A & B & C). inv H0; constructor; auto.
-  rewrite C; auto.
-  rewrite A; auto.
+  intros. destruct H as (A & B & C & D). inv H0; constructor; auto.
+  rewrite D; auto.
+  rewrite B; auto.
   eapply eventval_match_preserved; eauto.
-  rewrite C; auto.
+  rewrite D; auto.
 Qed.
 
 Lemma volatile_store_readonly:
@@ -1394,7 +1394,7 @@ Proof.
 (* well typed *)
 - inv H. simpl. auto.
 (* symbols *)
-- destruct H as (A & B & C). inv H0. econstructor; eauto.
+- destruct H as (A & B & C & D). inv H0. econstructor; eauto.
   eapply eventval_list_match_preserved; eauto.
 (* valid blocks *)
 - inv H; auto.
@@ -1443,7 +1443,7 @@ Proof.
 (* well typed *)
 - inv H. unfold proj_sig_res; simpl. eapply eventval_match_type; eauto.
 (* symbols *)
-- destruct H as (A & B & C). inv H0. econstructor; eauto.
+- destruct H as (A & B & C & D). inv H0. econstructor; eauto.
   eapply eventval_match_preserved; eauto.
 (* valid blocks *)
 - inv H; auto.

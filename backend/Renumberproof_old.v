@@ -13,11 +13,11 @@
 (** Postorder renumbering of RTL control-flow graphs. *)
 
 Require Import Coqlib Maps Postorder.
-Require Import AST Linking.
-Require Import Values Memory Globalenvs Events Smallstep.
-Require Import Op Registers RTL Renumber.
+Require Import AST_old Linking_old.
+Require Import Values_old Memory_old Globalenvs_old Events_old Smallstep_old.
+Require Import Op_old Registers_old RTL_old Renumber_old.
 
-Definition match_prog (p tp: RTL.program) :=
+Definition match_prog (p tp: RTL_old.program) :=
   match_program (fun ctx f tf => tf = transf_fundef f) eq p tp.
 
 Lemma transf_program_match:
@@ -153,13 +153,13 @@ Proof.
   unfold successors_map. rewrite PTree.gmap1. rewrite H. auto.
 Qed.
 
-Inductive match_frames: RTL.stackframe -> RTL.stackframe -> Prop :=
+Inductive match_frames: RTL_old.stackframe -> RTL_old.stackframe -> Prop :=
   | match_frames_intro: forall res f sp pc rs
         (REACH: reach f pc),
       match_frames (Stackframe res f sp pc rs)
                    (Stackframe res (transf_function f) sp (renum_pc (pnum f) pc) rs).
 
-Inductive match_states: RTL.state -> RTL.state -> Prop :=
+Inductive match_states: RTL_old.state -> RTL_old.state -> Prop :=
   | match_regular_states: forall stk f sp pc rs m stk'
         (STACKS: list_forall2 match_frames stk stk')
         (REACH: reach f pc),
@@ -175,9 +175,9 @@ Inductive match_states: RTL.state -> RTL.state -> Prop :=
                    (Returnstate stk' v m).
 
 Lemma step_simulation:
-  forall S1 t S2, RTL.step fn_stack_requirements ge S1 t S2 ->
+  forall S1 t S2, RTL_old.step fn_stack_requirements ge S1 t S2 ->
   forall S1', match_states S1 S1' ->
-  exists S2', RTL.step fn_stack_requirements tge S1' t S2' /\ match_states S2 S2'.
+  exists S2', RTL_old.step fn_stack_requirements tge S1' t S2' /\ match_states S2 S2'.
 Proof.
   induction 1; intros S1' MS; inv MS; try TR_AT.
 (* nop *)
@@ -252,8 +252,8 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall S1, RTL.initial_state fn_stack_requirements prog S1 ->
-  exists S2, RTL.initial_state fn_stack_requirements tprog S2 /\ match_states S1 S2.
+  forall S1, RTL_old.initial_state fn_stack_requirements prog S1 ->
+  exists S2, RTL_old.initial_state fn_stack_requirements tprog S2 /\ match_states S1 S2.
 Proof.
   intros. inv H. econstructor; split.
   econstructor.
@@ -266,13 +266,13 @@ Proof.
 Qed.
 
 Lemma transf_final_states:
-  forall S1 S2 r, match_states S1 S2 -> RTL.final_state S1 r -> RTL.final_state S2 r.
+  forall S1 S2 r, match_states S1 S2 -> RTL_old.final_state S1 r -> RTL_old.final_state S2 r.
 Proof.
   intros. inv H0. inv H. inv STACKS. constructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (RTL.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
+  forward_simulation (RTL_old.semantics fn_stack_requirements prog) (RTL_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_step.
   apply senv_preserved.

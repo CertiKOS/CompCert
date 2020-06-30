@@ -427,7 +427,7 @@ Proof.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (LTL.semantics fn_stack_requirements prog) (LTL.semantics fn_stack_requirements tprog).
+  forward_simulation (LTL_old.semantics fn_stack_requirements prog) (LTL_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_opt.
   apply senv_preserved.

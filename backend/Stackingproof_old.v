@@ -4209,14 +4209,14 @@ Qed.
 Lemma stacking_frame_correct:
   forall p tp,
     match_prog p tp ->
-    forall (fb : Values.block) (f : Mach_old.function),
+    forall (fb : Values_old.block) (f : Mach_old.function),
       Genv.find_funct_ptr (Genv.globalenv tp) fb = Some (Internal f) ->
       0 < Mach_old.fn_stacksize f.
 Proof.
   intros p tp MP fb f FFP.
   red in MP.
   inv MP.
-  exploit Globalenvs.Genv.find_funct_ptr_inversion. eauto. intros (id & IN).
+  exploit Globalenvs_old.Genv.find_funct_ptr_inversion. eauto. intros (id & IN).
   eapply list_forall2_in_right in IN; eauto.
   destruct IN as (x1 & IN & MIOG).
   inv MIOG. simpl in *. subst. inv H2. inv H4.

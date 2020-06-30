@@ -1401,7 +1401,7 @@ Qed.
 
 
 Theorem transf_program_correct:
-  forward_simulation (RTL.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
+  forward_simulation (RTL_old.semantics fn_stack_requirements prog) (RTL_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_step with
       (match_states := fun s1 s2 => sound_state prog s1 /\ match_states s1 s2 /\ stack_inv s2 /\ stack_equiv_inv s1 s2).

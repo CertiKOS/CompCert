@@ -1842,6 +1842,8 @@ Qed.
 
 End CORRECTNESS.
 
+End STACK_WRAPPER.
+
 (** ** Commutation with linking *)
 
 Instance TransfCshmgenLink : TransfLink match_prog.
@@ -1871,5 +1873,3 @@ Local Transparent Linker_fundef Linking.Linker_fundef.
 - intros. exists tt. auto.
 - replace (program_of_program p) with pp. auto. inv E; destruct pp; auto.
 Qed.
-
-End STACK_WRAPPER.

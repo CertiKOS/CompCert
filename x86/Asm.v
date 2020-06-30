@@ -1473,7 +1473,7 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pret =>
       (*Next (rs#PC <- (rs#RA)) m*)
   (*SACC:*)
-    check (check_ra_after_call ge (rs#RA));
+    (*check (check_ra_after_call ge (rs#RA));*)
     check (check_top_tc m);
     do m' <- Mem.unrecord_stack_block m;
       Next (rs#PC <- (rs#RA) #RA <- Vundef) m'

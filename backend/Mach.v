@@ -347,6 +347,7 @@ Inductive step: state -> trace -> state -> Prop :=
   | exec_Mcall:
       forall s fb sp sig ros c rs m f f' ra,
       find_function_ptr ge ros rs = Some f' ->
+  (*SACC:*)(exists fd, Genv.find_funct_ptr ge f' = Some fd) ->
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
       return_address_offset f c ra ->
       step (State s fb  (Vptr sp Ptrofs.zero) (Mcall sig ros :: c) rs m)
@@ -355,6 +356,7 @@ Inductive step: state -> trace -> state -> Prop :=
   | exec_Mtailcall:
       forall s fb stk soff sig ros c rs m f f' m' (*SACC:*)m'',
       find_function_ptr ge ros rs = Some f' ->
+  (*SACC:*)(exists fd, Genv.find_funct_ptr ge f' = Some fd) ->
       Genv.find_funct_ptr ge fb = Some (Internal f) ->
   (*SACC:*)(*load_stack m (Vptr stk soff) Tptr f.(fn_link_ofs) = Some (parent_sp s) ->*)
   (*SACC:*)Mem.loadbytesv Mptr m (Val.offset_ptr (Vptr stk soff) f.(fn_retaddr_ofs)) = Some (parent_ra s) ->
@@ -442,8 +444,14 @@ Variable init_stk : stack.
 
 (* Stack Invariants *)
 
+Inductive init_sp_stackinfo : stack -> Prop :=
+| iss_intro
+    fr b fi tf s:
+    frame_adt_blocks fr = (b, fi) :: nil ->
+    init_sp_stackinfo ((Some fr,tf)::s).
+
 Inductive call_stack_agree : list (option (block * frame_info)) -> stack -> Prop :=
-  | call_stack_agree_nil s (STKEQ: s = init_stk) : call_stack_agree nil s
+  | call_stack_agree_nil s (STKEQ: s = init_stk) (INIT: init_sp_stackinfo init_stk) : call_stack_agree nil s
   | call_stack_agree_cons lsp s f r sp bi
       (REC : call_stack_agree lsp s)
       (FSIZE : frame_adt_size f = frame_size bi)
@@ -521,7 +529,7 @@ Proof.
   - econstructor; eauto. erewrite store_stack_stack_unchanged; eauto.
   - econstructor; eauto. destruct a; simpl in *; try discriminate. erewrite Mem.store_stack_unchanged; eauto.
   - econstructor. rewrite_stack_blocks. simpl. 
-    rewrite H0. auto.
+    rewrite H1. auto.
     red. rewrite_stack_blocks. constructor. reflexivity.
     econstructor; eauto.
   - econstructor; eauto. repeat rewrite_stack_blocks. simpl. intro EQ; rewrite EQ in CSA.

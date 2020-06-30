@@ -10,7 +10,7 @@
 (*                                                                     *)
 (* *********************************************************************)
 
-(** Translation from CminorSel to RTL. *)
+(** Translation from CminorSel to RTL_old. *)
 
 Require Import Coqlib.
 Require Errors.
@@ -643,7 +643,7 @@ Fixpoint transl_stmt (map: mapping) (s: stmt) (nd: node)
 
 (** Preallocate CFG nodes for each label defined in the function body. *)
 
-Definition alloc_label (lbl: Cminor.label) (maps: labelmap * state) : labelmap * state :=
+Definition alloc_label (lbl: Cminor_old.label) (maps: labelmap * state) : labelmap * state :=
   let (map, s) := maps in
   let n := s.(st_nextnode) in
   (PTree.set lbl n map,
@@ -668,24 +668,24 @@ Definition ret_reg (sig: signature) (rd: reg) : option reg :=
   | Some ty => Some rd
   end.
 
-Definition transl_fun (f: CminorSel.function) (ngoto: labelmap): mon (node * list reg) :=
-  do (rparams, map1) <- add_vars init_mapping f.(CminorSel.fn_params);
-  do (rvars, map2) <- add_vars map1 f.(CminorSel.fn_vars);
+Definition transl_fun (f: CminorSel_old.function) (ngoto: labelmap): mon (node * list reg) :=
+  do (rparams, map1) <- add_vars init_mapping f.(CminorSel_old.fn_params);
+  do (rvars, map2) <- add_vars map1 f.(CminorSel_old.fn_vars);
   do rret <- new_reg;
-  let orret := ret_reg f.(CminorSel.fn_sig) rret in
+  let orret := ret_reg f.(CminorSel_old.fn_sig) rret in
   do nret <- add_instr (Ireturn orret);
-  do nentry <- transl_stmt map2 f.(CminorSel.fn_body) nret nil ngoto nret orret;
+  do nentry <- transl_stmt map2 f.(CminorSel_old.fn_body) nret nil ngoto nret orret;
   ret (nentry, rparams).
 
-Definition transl_function (f: CminorSel.function) : Errors.res RTL.function :=
+Definition transl_function (f: CminorSel_old.function) : Errors.res RTL_old.function :=
   let (ngoto, s0) := reserve_labels f.(fn_body) (PTree.empty node, init_state) in
   match transl_fun f ngoto s0 with
   | Error msg => Errors.Error msg
   | OK (nentry, rparams) s i =>
-      Errors.OK (RTL.mkfunction
-                   f.(CminorSel.fn_sig)
+      Errors.OK (RTL_old.mkfunction
+                   f.(CminorSel_old.fn_sig)
                    rparams
-                   f.(CminorSel.fn_stackspace)
+                   f.(CminorSel_old.fn_stackspace)
                    s.(st_code)
                    nentry)
   end.
@@ -694,5 +694,5 @@ Definition transl_fundef := transf_partial_fundef transl_function.
 
 (** Translation of a whole program. *)
 
-Definition transl_program (p: CminorSel.program) : Errors.res RTL.program :=
+Definition transl_program (p: CminorSel_old.program) : Errors.res RTL_old.program :=
   transform_partial_program transl_fundef p.

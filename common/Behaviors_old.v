@@ -18,10 +18,10 @@
 Require Import Classical.
 Require Import ClassicalEpsilon.
 Require Import Coqlib.
-Require Import Events.
-Require Import Globalenvs.
+Require Import Events_old.
+Require Import Globalenvs_old.
 Require Import Integers.
-Require Import Smallstep.
+Require Import Smallstep_old.
 
 Set Implicit Arguments.
 

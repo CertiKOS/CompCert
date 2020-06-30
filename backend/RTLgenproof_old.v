@@ -348,7 +348,7 @@ Qed.
 
 Require Import Errors.
 
-Definition match_prog (p: CminorSel.program) (tp: RTL.program) :=
+Definition match_prog (p: CminorSel_old.program) (tp: RTL_old.program) :=
   match_program (fun cu f tf => transl_fundef f = Errors.OK tf) eq p tp.
 
 Lemma transf_program_match:
@@ -361,12 +361,12 @@ Section CORRECTNESS.
 Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
 Variable fn_stack_requirements: ident -> Z.
-Variable prog: CminorSel.program.
-Variable tprog: RTL.program.
+Variable prog: CminorSel_old.program.
+Variable tprog: RTL_old.program.
 Hypothesis TRANSL: match_prog prog tprog.
 
-Let ge : CminorSel.genv := Genv.globalenv prog.
-Let tge : RTL.genv := Genv.globalenv tprog.
+Let ge : CminorSel_old.genv := Genv.globalenv prog.
+Let tge : RTL_old.genv := Genv.globalenv tprog.
 
 (** Relationship between the global environments for the original
   CminorSel program and the generated RTL program. *)
@@ -377,7 +377,7 @@ Proof
   (Genv.find_symbol_transf_partial TRANSL).
 
 Lemma function_ptr_translated:
-  forall (b: block) (f: CminorSel.fundef),
+  forall (b: block) (f: CminorSel_old.fundef),
   Genv.find_funct_ptr ge b = Some f ->
   exists tf,
   Genv.find_funct_ptr tge b = Some tf /\ transl_fundef f = OK tf.
@@ -385,7 +385,7 @@ Proof
   (Genv.find_funct_ptr_transf_partial TRANSL).
 
 Lemma functions_translated:
-  forall (v: val) (f: CminorSel.fundef),
+  forall (v: val) (f: CminorSel_old.fundef),
   Genv.find_funct ge v = Some f ->
   exists tf,
   Genv.find_funct tge v = Some tf /\ transl_fundef f = OK tf.
@@ -393,9 +393,9 @@ Proof
   (Genv.find_funct_transf_partial TRANSL).
 
 Lemma sig_transl_function:
-  forall (f: CminorSel.fundef) (tf: RTL.fundef),
+  forall (f: CminorSel_old.fundef) (tf: RTL_old.fundef),
   transl_fundef f = OK tf ->
-  RTL.funsig tf = CminorSel.funsig f.
+  RTL_old.funsig tf = CminorSel_old.funsig f.
 Proof.
   intros until tf. unfold transl_fundef, transf_partial_fundef.
   case f; intro.
@@ -582,11 +582,11 @@ Proof.
 Qed.
 
 Lemma transl_expr_Eload_correct:
-  forall (le : letenv) (chunk : memory_chunk) (addr : Op.addressing)
+  forall (le : letenv) (chunk : memory_chunk) (addr : Op_old.addressing)
          (args : exprlist) (vargs : list val) (vaddr v : val),
   eval_exprlist ge sp e m le args vargs ->
   transl_exprlist_prop le args vargs ->
-  Op.eval_addressing ge sp addr vargs = Some vaddr ->
+  Op_old.eval_addressing ge sp addr vargs = Some vaddr ->
   Mem.loadv chunk m vaddr = Some v ->
   transl_expr_prop le (Eload chunk addr args) v.
 Proof.
@@ -697,7 +697,7 @@ Proof.
 Qed.
 
 Remark eval_builtin_args_trivial:
-  forall (ge: RTL.genv) (rs: regset) sp m rl,
+  forall (ge: RTL_old.genv) (rs: regset) sp m rl,
   eval_builtin_args ge (fun r => rs#r) sp m (List.map (@BA reg) rl) rs##rl.
 Proof.
   induction rl; simpl.
@@ -1026,7 +1026,7 @@ Lemma invert_eval_builtin_arg:
   eval_builtin_arg ge sp e m a v ->
   exists vl,
      eval_exprlist ge sp e m nil (exprlist_of_expr_list (params_of_builtin_arg a)) vl
-  /\ Events.eval_builtin_arg ge (fun v => v) sp m (fst (convert_builtin_arg a vl)) v
+  /\ Events_old.eval_builtin_arg ge (fun v => v) sp m (fst (convert_builtin_arg a vl)) v
   /\ (forall vl', convert_builtin_arg a (vl ++ vl') = (fst (convert_builtin_arg a vl), vl')).
 Proof.
   induction 1; simpl; econstructor; intuition eauto with evalexpr barg.
@@ -1040,7 +1040,7 @@ Lemma invert_eval_builtin_args:
   list_forall2 (eval_builtin_arg ge sp e m) al vl ->
   exists vl',
      eval_exprlist ge sp e m nil (exprlist_of_expr_list (params_of_builtin_args al)) vl'
-  /\ Events.eval_builtin_args ge (fun v => v) sp m (convert_builtin_args al vl') vl.
+  /\ Events_old.eval_builtin_args ge (fun v => v) sp m (convert_builtin_args al vl') vl.
 Proof.
   induction 1; simpl.
 - exists (@nil val); split; constructor.
@@ -1054,9 +1054,9 @@ Qed.
 Lemma transl_eval_builtin_arg:
   forall rs a vl rl v,
   Val.lessdef_list vl rs##rl ->
-  Events.eval_builtin_arg ge (fun v => v) sp m (fst (convert_builtin_arg a vl)) v ->
+  Events_old.eval_builtin_arg ge (fun v => v) sp m (fst (convert_builtin_arg a vl)) v ->
   exists v',
-     Events.eval_builtin_arg ge (fun r => rs#r) sp m (fst (convert_builtin_arg a rl)) v'
+     Events_old.eval_builtin_arg ge (fun r => rs#r) sp m (fst (convert_builtin_arg a rl)) v'
   /\ Val.lessdef v v'
   /\ Val.lessdef_list (snd (convert_builtin_arg a vl)) rs##(snd (convert_builtin_arg a rl)).
 Proof.
@@ -1081,9 +1081,9 @@ Qed.
 Lemma transl_eval_builtin_args:
   forall rs al vl1 rl vl,
   Val.lessdef_list vl1 rs##rl ->
-  Events.eval_builtin_args ge (fun v => v) sp m (convert_builtin_args al vl1) vl ->
+  Events_old.eval_builtin_args ge (fun v => v) sp m (convert_builtin_args al vl1) vl ->
   exists vl',
-     Events.eval_builtin_args ge (fun r => rs#r) sp m (convert_builtin_args al rl) vl'
+     Events_old.eval_builtin_args ge (fun r => rs#r) sp m (convert_builtin_args al rl) vl'
   /\ Val.lessdef_list vl vl'.
 Proof.
   induction al; simpl; intros until vl; intros LD EV.
@@ -1122,13 +1122,13 @@ Fixpoint size_cont (k: cont) : nat :=
   | _ => 0%nat
   end.
 
-Definition measure_state (S: CminorSel.state) :=
+Definition measure_state (S: CminorSel_old.state) :=
   match S with
-  | CminorSel.State _ s k _ _ _ => (size_stmt s + size_cont k, size_stmt s)
+  | CminorSel_old.State _ s k _ _ _ => (size_stmt s + size_cont k, size_stmt s)
   | _                           => (0, 0)
   end.
 
-Definition lt_state (S1 S2: CminorSel.state) :=
+Definition lt_state (S1 S2: CminorSel_old.state) :=
   lex_ord lt lt (measure_state S1) (measure_state S2).
 
 Lemma lt_state_intro:
@@ -1136,8 +1136,8 @@ Lemma lt_state_intro:
   size_stmt s1 + size_cont k1 < size_stmt s2 + size_cont k2
   \/ (size_stmt s1 + size_cont k1 = size_stmt s2 + size_cont k2
       /\ size_stmt s1 < size_stmt s2) ->
-  lt_state (CminorSel.State f1 s1 k1 sp1 e1 m1)
-           (CminorSel.State f2 s2 k2 sp2 e2 m2).
+  lt_state (CminorSel_old.State f1 s1 k1 sp1 e1 m1)
+           (CminorSel_old.State f2 s2 k2 sp2 e2 m2).
 Proof.
   intros. unfold lt_state. simpl. destruct H as [A | [A B]].
   left. auto.
@@ -1180,17 +1180,17 @@ Qed.
 
 *)
 
-Inductive tr_fun (tf: function) (map: mapping) (f: CminorSel.function)
+Inductive tr_fun (tf: function) (map: mapping) (f: CminorSel_old.function)
                      (ngoto: labelmap) (nret: node) (rret: option reg) : Prop :=
   | tr_fun_intro: forall nentry r,
-      rret = ret_reg f.(CminorSel.fn_sig) r ->
+      rret = ret_reg f.(CminorSel_old.fn_sig) r ->
       tr_stmt tf.(fn_code) map f.(fn_body) nentry nret nil ngoto nret rret ->
       tf.(fn_stacksize) = f.(fn_stackspace) ->
       tr_fun tf map f ngoto nret rret.
 
-Inductive tr_cont: RTL.code -> mapping ->
-                   CminorSel.cont -> node -> list node -> labelmap -> node -> option reg ->
-                   list RTL.stackframe -> Prop :=
+Inductive tr_cont: RTL_old.code -> mapping ->
+                   CminorSel_old.cont -> node -> list node -> labelmap -> node -> option reg ->
+                   list RTL_old.stackframe -> Prop :=
   | tr_Kseq: forall c map s k nd nexits ngoto nret rret cs n,
       tr_stmt c map s nd n nexits ngoto nret rret ->
       tr_cont c map k n nexits ngoto nret rret cs ->
@@ -1207,7 +1207,7 @@ Inductive tr_cont: RTL.code -> mapping ->
       match_stacks (Kcall optid f sp e k) cs ->
       tr_cont c map (Kcall optid f sp e k) nret nil ngoto nret rret cs
 
-with match_stacks: CminorSel.cont -> list RTL.stackframe -> Prop :=
+with match_stacks: CminorSel_old.cont -> list RTL_old.stackframe -> Prop :=
   | match_stacks_stop:
       match_stacks Kstop nil
   | match_stacks_call: forall optid f sp e k r tf n rs cs map nexits ngoto nret rret,
@@ -1218,7 +1218,7 @@ with match_stacks: CminorSel.cont -> list RTL.stackframe -> Prop :=
       tr_cont tf.(fn_code) map k n nexits ngoto nret rret cs ->
       match_stacks (Kcall optid f sp e k) (Stackframe r tf sp n rs :: cs).
 
-Inductive match_states: CminorSel.state -> RTL.state -> Prop :=
+Inductive match_states: CminorSel_old.state -> RTL_old.state -> Prop :=
   | match_state:
       forall f s k sp e m tm cs tf ns rs map ncont nexits ngoto nret rret
         (MWF: map_wf map)
@@ -1228,8 +1228,8 @@ Inductive match_states: CminorSel.state -> RTL.state -> Prop :=
         (ME: match_env map e nil rs)
         (MEXT: Mem.extends m tm)
         (SE: stack_equiv (Mem.stack m) (Mem.stack tm)),
-      match_states (CminorSel.State f s k sp e m)
-                   (RTL.State cs tf sp ns rs tm)
+      match_states (CminorSel_old.State f s k sp e m)
+                   (RTL_old.State cs tf sp ns rs tm)
   | match_callstate: 
       forall f args targs k m tm cs tf sz
         (TF: transl_fundef f = OK tf)
@@ -1237,16 +1237,16 @@ Inductive match_states: CminorSel.state -> RTL.state -> Prop :=
         (LD: Val.lessdef_list args targs)
         (MEXT: Mem.extends m tm)
         (SE: stack_equiv (Mem.stack m) (Mem.stack tm)),
-      match_states (CminorSel.Callstate f args k m sz)
-                   (RTL.Callstate cs tf targs tm sz)
+      match_states (CminorSel_old.Callstate f args k m sz)
+                   (RTL_old.Callstate cs tf targs tm sz)
   | match_returnstate:
       forall v tv k m tm cs
         (MS: match_stacks k cs)
         (LD: Val.lessdef v tv)
         (MEXT: Mem.extends m tm)
         (SE: stack_equiv (Mem.stack m) (Mem.stack tm)),
-      match_states (CminorSel.Returnstate v k m)
-                   (RTL.Returnstate cs tv tm).
+      match_states (CminorSel_old.Returnstate v k m)
+                   (RTL_old.Returnstate cs tv tm).
 
 Lemma match_stacks_call_cont:
   forall c map k ncont nexits ngoto nret rret cs,
@@ -1302,10 +1302,10 @@ Qed.
 
 
 Theorem transl_step_correct:
-  forall S1 t S2, CminorSel.step fn_stack_requirements ge S1 t S2 ->
+  forall S1 t S2, CminorSel_old.step fn_stack_requirements ge S1 t S2 ->
   forall R1, match_states S1 R1 -> stack_inv R1 ->
   exists R2,
-  (plus (RTL.step fn_stack_requirements) tge R1 t R2 \/ (star (RTL.step fn_stack_requirements) tge R1 t R2 /\ lt_state S2 S1))
+  (plus (RTL_old.step fn_stack_requirements) tge R1 t R2 \/ (star (RTL_old.step fn_stack_requirements) tge R1 t R2 /\ lt_state S2 S1))
   /\ match_states S2 R2.
 Proof.
   induction 1; intros R1 MSTATE SI; inv MSTATE; inv SI.
@@ -1591,13 +1591,13 @@ Proof.
   - (* internal call *)
     monadInv TF. exploit transl_function_charact; eauto. intro TRF.
     inversion TRF. subst f0.
-    pose (e := set_locals (fn_vars f) (set_params vargs (CminorSel.fn_params f))).
+    pose (e := set_locals (fn_vars f) (set_params vargs (CminorSel_old.fn_params f))).
     pose (rs := init_regs targs rparams).
     assert (ME: match_env map2 e nil rs).
     unfold rs, e. eapply match_init_env_init_reg; eauto.
     assert (MWF: map_wf map2).
     assert (map_valid init_mapping s0) by apply init_mapping_valid.
-    exploit (add_vars_valid (CminorSel.fn_params f)); eauto. intros [A B].
+    exploit (add_vars_valid (CminorSel_old.fn_params f)); eauto. intros [A B].
     eapply add_vars_wf; eauto. eapply add_vars_wf; eauto. apply init_mapping_wf.
     edestruct Mem.alloc_extends as [tm' []]; eauto; try apply Zle_refl.
     exploit Mem.record_push_extends_flat_alloc. apply H. apply H6. eauto. all: eauto.
@@ -1634,8 +1634,8 @@ Proof.
 Qed.
 
 Lemma transl_initial_states:
-  forall S, CminorSel.initial_state fn_stack_requirements prog S ->
-       exists R, RTL.initial_state fn_stack_requirements tprog R /\ match_states S R.
+  forall S, CminorSel_old.initial_state fn_stack_requirements prog S ->
+       exists R, RTL_old.initial_state fn_stack_requirements tprog R /\ match_states S R.
 Proof.
   induction 1.
   exploit function_ptr_translated; eauto. intros [tf [A B]].
@@ -1654,13 +1654,13 @@ Qed.
 
 Lemma transl_final_states:
   forall S R r,
-    match_states S R -> CminorSel.final_state S r -> RTL.final_state R r.
+    match_states S R -> CminorSel_old.final_state S r -> RTL_old.final_state R r.
 Proof.
   intros. inv H0. inv H. inv MS. inv LD. constructor.
 Qed.
 
 Theorem transf_program_correct:
-  forward_simulation (CminorSel.semantics fn_stack_requirements prog) (RTL.semantics fn_stack_requirements tprog).
+  forward_simulation (CminorSel_old.semantics fn_stack_requirements prog) (RTL_old.semantics fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_star_wf with (order := lt_state) (match_states := fun s1 s2 => match_states s1 s2 /\ stack_inv s2).
   apply senv_preserved.

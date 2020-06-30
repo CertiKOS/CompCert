@@ -20,7 +20,7 @@ Require Import SimplExpr_old SimplExprspec_old.
 
 (** ** Relational specification of the translation. *)
 
-Definition match_prog (p: Csyntax.program) (tp: Clight.program) :=
+Definition match_prog (p: Csyntax_old.program) (tp: Clight_old.program) :=
     match_program (fun ctx f tf => tr_fundef f tf) eq p tp
  /\ prog_types tp = prog_types p.
 
@@ -40,17 +40,17 @@ Context `{external_calls_prf: ExternalCalls}.
 
 Variable fn_stack_requirements: ident -> Z.
 Hypothesis fn_stack_requirements_pos: forall i, 0 <= fn_stack_requirements i.
-Variable prog: Csyntax.program.
-Variable tprog: Clight.program.
+Variable prog: Csyntax_old.program.
+Variable tprog: Clight_old.program.
 Hypothesis TRANSL: match_prog prog tprog.
 
-Let ge := Csem.globalenv prog.
-Let tge := Clight.globalenv tprog.
+Let ge := Csem_old.globalenv prog.
+Let tge := Clight_old.globalenv tprog.
 
 (** Invariance properties. *)
 
 Lemma comp_env_preserved:
-  Clight.genv_cenv tge = Csem.genv_cenv ge.
+  Clight_old.genv_cenv tge = Csem_old.genv_cenv ge.
 Proof.
   simpl. destruct TRANSL. generalize (prog_comp_env_eq tprog) (prog_comp_env_eq prog). 
   congruence.
@@ -86,16 +86,16 @@ Qed.
 
 Lemma type_of_fundef_preserved:
   forall f tf, tr_fundef f tf ->
-  type_of_fundef tf = Csyntax.type_of_fundef f.
+  type_of_fundef tf = Csyntax_old.type_of_fundef f.
 Proof.
   intros. inv H.
-  inv H0; simpl. unfold type_of_function, Csyntax.type_of_function. congruence.
+  inv H0; simpl. unfold type_of_function, Csyntax_old.type_of_function. congruence.
   auto.
 Qed.
 
 Lemma function_return_preserved:
   forall f tf, tr_function f tf ->
-  fn_return tf = Csyntax.fn_return f.
+  fn_return tf = Csyntax_old.fn_return f.
 Proof.
   intros. inv H; auto.
 Qed.
@@ -117,7 +117,7 @@ Proof.
   destruct (andb_prop _ _ H6). inv H1.
     rewrite H0; eauto. simpl; auto.
     unfold chunk_for_volatile_type in H9.
-    destruct (type_is_volatile (Csyntax.typeof e1)); simpl in H8; congruence.
+    destruct (type_is_volatile (Csyntax_old.typeof e1)); simpl in H8; congruence.
   rewrite H0; auto. simpl; auto.
   rewrite H0; auto. simpl; auto.
   destruct (andb_prop _ _ H7). rewrite H0; auto. rewrite H2; auto. simpl; auto.
@@ -139,9 +139,9 @@ Proof (proj2 tr_simple_nil).
 
 Remark deref_loc_translated:
   forall ty m b ofs t v,
-  Csem.deref_loc ge ty m b ofs t v ->
+  Csem_old.deref_loc ge ty m b ofs t v ->
   match chunk_for_volatile_type ty with
-  | None => t = E0 /\ Clight.deref_loc ty m b ofs v
+  | None => t = E0 /\ Clight_old.deref_loc ty m b ofs v
   | Some chunk => volatile_load tge chunk m b ofs t v
   end.
 Proof.
@@ -158,9 +158,9 @@ Qed.
 
 Remark assign_loc_translated:
   forall ty m b ofs v t m',
-  Csem.assign_loc ge ty m b ofs v t m' ->
+  Csem_old.assign_loc ge ty m b ofs v t m' ->
   match chunk_for_volatile_type ty with
-  | None => t = E0 /\ Clight.assign_loc tge ty m b ofs v m'
+  | None => t = E0 /\ Clight_old.assign_loc tge ty m b ofs v m'
   | Some chunk => volatile_store tge chunk m b ofs v t m'
   end.
 Proof.
@@ -208,11 +208,11 @@ Lemma tr_simple:
   forall le dst sl a tmps,
   tr_expr le dst r sl a tmps ->
   match dst with
-  | For_val => sl = nil /\ Csyntax.typeof r = typeof a /\ eval_expr tge e le m a v
+  | For_val => sl = nil /\ Csyntax_old.typeof r = typeof a /\ eval_expr tge e le m a v
   | For_effects => sl = nil
   | For_set sd =>
       exists b, sl = do_set sd b
-             /\ Csyntax.typeof r = typeof b
+             /\ Csyntax_old.typeof r = typeof b
              /\ eval_expr tge e le m b v
   end)
 /\
@@ -220,7 +220,7 @@ Lemma tr_simple:
   eval_simple_lvalue ge e m l b ofs ->
   forall le sl a tmps,
   tr_expr le For_val l sl a tmps ->
-  sl = nil /\ Csyntax.typeof l = typeof a /\ eval_lvalue tge e le m a b ofs).
+  sl = nil /\ Csyntax_old.typeof l = typeof a /\ eval_lvalue tge e le m a b ofs).
 Proof.
 Opaque makeif.
   intros e m.
@@ -296,11 +296,11 @@ Lemma tr_simple_rvalue:
   forall le dst sl a tmps,
   tr_expr le dst r sl a tmps ->
   match dst with
-  | For_val => sl = nil /\ Csyntax.typeof r = typeof a /\ eval_expr tge e le m a v
+  | For_val => sl = nil /\ Csyntax_old.typeof r = typeof a /\ eval_expr tge e le m a v
   | For_effects => sl = nil
   | For_set sd =>
       exists b, sl = do_set sd b
-             /\ Csyntax.typeof r = typeof b
+             /\ Csyntax_old.typeof r = typeof b
              /\ eval_expr tge e le m b v
   end.
 Proof.
@@ -312,7 +312,7 @@ Lemma tr_simple_lvalue:
   eval_simple_lvalue ge e m l b ofs ->
   forall le sl a tmps,
   tr_expr le For_val l sl a tmps ->
-  sl = nil /\ Csyntax.typeof l = typeof a /\ eval_lvalue tge e le m a b ofs.
+  sl = nil /\ Csyntax_old.typeof l = typeof a /\ eval_lvalue tge e le m a b ofs.
 Proof.
   intros e m. exact (proj2 (tr_simple e m)).
 Qed.
@@ -336,8 +336,8 @@ Qed.
 
 Lemma typeof_context:
   forall k1 k2 C, leftcontext k1 k2 C ->
-  forall e1 e2, Csyntax.typeof e1 = Csyntax.typeof e2 ->
-  Csyntax.typeof (C e1) = Csyntax.typeof (C e2).
+  forall e1 e2, Csyntax_old.typeof e1 = Csyntax_old.typeof e2 ->
+  Csyntax_old.typeof (C e1) = Csyntax_old.typeof (C e2).
 Proof.
   induction 1; intros; auto.
 Qed.
@@ -358,7 +358,7 @@ Lemma tr_expr_leftcontext_rec:
   /\ (forall le' e' sl3,
         tr_expr le' dst' e' sl3 a' tmp' ->
         (forall id, ~In id tmp' -> le'!id = le!id) ->
-        Csyntax.typeof e' = Csyntax.typeof e ->
+        Csyntax_old.typeof e' = Csyntax_old.typeof e ->
         tr_expr le' dst (C e') (sl3 ++ sl2) a tmps)
  ) /\ (
   forall from C, leftcontextlist from C ->
@@ -371,7 +371,7 @@ Lemma tr_expr_leftcontext_rec:
   /\ (forall le' e' sl3,
         tr_expr le' dst' e' sl3 a' tmp' ->
         (forall id, ~In id tmp' -> le'!id = le!id) ->
-        Csyntax.typeof e' = Csyntax.typeof e ->
+        Csyntax_old.typeof e' = Csyntax_old.typeof e ->
         tr_exprlist le' (C e') (sl3 ++ sl2) a tmps)
 ).
 Proof.
@@ -716,7 +716,7 @@ Theorem tr_expr_leftcontext:
   /\ (forall le' r' sl3,
         tr_expr le' dst' r' sl3 a' tmp' ->
         (forall id, ~In id tmp' -> le'!id = le!id) ->
-        Csyntax.typeof r' = Csyntax.typeof r ->
+        Csyntax_old.typeof r' = Csyntax_old.typeof r ->
         tr_expr le' dst (C r') (sl3 ++ sl2) a tmps).
 Proof.
   intros. eapply (proj1 tr_expr_leftcontext_rec); eauto.
@@ -735,7 +735,7 @@ Theorem tr_top_leftcontext:
   /\ (forall le' m' r' sl3,
         tr_expr le' dst' r' sl3 a' tmp' ->
         (forall id, ~In id tmp' -> le'!id = le!id) ->
-        Csyntax.typeof r' = Csyntax.typeof r ->
+        Csyntax_old.typeof r' = Csyntax_old.typeof r ->
         tr_top tge e le' m' dst (C r') (sl3 ++ sl2) a tmps).
 Proof.
   induction 1; intros.
@@ -815,7 +815,7 @@ Qed.
 
 Lemma step_make_set:
   forall id a ty m b ofs t v e le f k,
-  Csem.deref_loc ge ty m b ofs t v ->
+  Csem_old.deref_loc ge ty m b ofs t v ->
   eval_lvalue tge e le m a b ofs ->
   typeof a = ty ->
   (step1 fn_stack_requirements) tge (State f (make_set id a) k e le m)
@@ -841,7 +841,7 @@ Lemma step_make_assign:
              forall fi,
                get_frame_info (Mem.stack m) b = Some fi ->
                forall o, frame_perm fi o = Public),
-  Csem.assign_loc ge ty m b ofs v t m' ->
+  Csem_old.assign_loc ge ty m b ofs v t m' ->
   eval_lvalue tge e le m a1 b ofs ->
   eval_expr tge e le m a2 v2 ->
   sem_cast v2 (typeof a2) ty m = Some v ->
@@ -889,7 +889,7 @@ Qed.
 
 Lemma step_tr_rvalof:
   forall ty m b ofs t v e le a sl a' tmp f k,
-  Csem.deref_loc ge ty m b ofs t v ->
+  Csem_old.deref_loc ge ty m b ofs t v ->
   eval_lvalue tge e le m a b ofs ->
   tr_rvalof ty a sl a' tmp ->
   typeof a = ty ->
@@ -917,48 +917,48 @@ Qed.
 
 (** Matching between continuations *)
 
-Inductive match_cont : Csem.cont -> cont -> Prop :=
+Inductive match_cont : Csem_old.cont -> cont -> Prop :=
   | match_Kstop:
-      match_cont Csem.Kstop Kstop
+      match_cont Csem_old.Kstop Kstop
   | match_Kseq: forall s k ts tk,
       tr_stmt s ts ->
       match_cont k tk ->
-      match_cont (Csem.Kseq s k) (Kseq ts tk)
+      match_cont (Csem_old.Kseq s k) (Kseq ts tk)
   | match_Kwhile2: forall r s k s' ts tk,
       tr_if r Sskip Sbreak s' ->
       tr_stmt s ts ->
       match_cont k tk ->
-      match_cont (Csem.Kwhile2 r s k)
+      match_cont (Csem_old.Kwhile2 r s k)
                  (Kloop1 (Ssequence s' ts) Sskip tk)
   | match_Kdowhile1: forall r s k s' ts tk,
       tr_if r Sskip Sbreak s' ->
       tr_stmt s ts ->
       match_cont k tk ->
-      match_cont (Csem.Kdowhile1 r s k)
+      match_cont (Csem_old.Kdowhile1 r s k)
                  (Kloop1 ts s' tk)
   | match_Kfor3: forall r s3 s k ts3 s' ts tk,
       tr_if r Sskip Sbreak s' ->
       tr_stmt s3 ts3 ->
       tr_stmt s ts ->
       match_cont k tk ->
-      match_cont (Csem.Kfor3 r s3 s k)
+      match_cont (Csem_old.Kfor3 r s3 s k)
                  (Kloop1 (Ssequence s' ts) ts3 tk)
   | match_Kfor4: forall r s3 s k ts3 s' ts tk,
       tr_if r Sskip Sbreak s' ->
       tr_stmt s3 ts3 ->
       tr_stmt s ts ->
       match_cont k tk ->
-      match_cont (Csem.Kfor4 r s3 s k)
+      match_cont (Csem_old.Kfor4 r s3 s k)
                  (Kloop2 (Ssequence s' ts) ts3 tk)
   | match_Kswitch2: forall k tk,
       match_cont k tk ->
-      match_cont (Csem.Kswitch2 k) (Kswitch tk)
+      match_cont (Csem_old.Kswitch2 k) (Kswitch tk)
   | match_Kcall: forall f e C ty k optid tf le sl tk a dest tmps,
       tr_function f tf ->
       leftcontext RV RV C ->
-      (forall v m, tr_top tge e (set_opttemp optid v le) m dest (C (Csyntax.Eval v ty)) sl a tmps) ->
+      (forall v m, tr_top tge e (set_opttemp optid v le) m dest (C (Csyntax_old.Eval v ty)) sl a tmps) ->
       match_cont_exp dest a k tk ->
-      match_cont (Csem.Kcall f e C ty k)
+      match_cont (Csem_old.Kcall f e C ty k)
                  (Kcall optid tf e le (Kseqlist sl tk))
 (*
   | match_Kcall_some: forall f e C ty k dst tf le sl tk a dest tmps,
@@ -966,24 +966,24 @@ Inductive match_cont : Csem.cont -> cont -> Prop :=
       leftcontext RV RV C ->
       (forall v m, tr_top tge e (PTree.set dst v le) m dest (C (C.Eval v ty)) sl a tmps) ->
       match_cont_exp dest a k tk ->
-      match_cont (Csem.Kcall f e C ty k)
+      match_cont (Csem_old.Kcall f e C ty k)
                  (Kcall (Some dst) tf e le (Kseqlist sl tk))
 *)
 
-with match_cont_exp : destination -> expr -> Csem.cont -> cont -> Prop :=
+with match_cont_exp : destination -> expr -> Csem_old.cont -> cont -> Prop :=
   | match_Kdo: forall k a tk,
       match_cont k tk ->
-      match_cont_exp For_effects a (Csem.Kdo k) tk
+      match_cont_exp For_effects a (Csem_old.Kdo k) tk
   | match_Kifthenelse_1: forall a s1 s2 k ts1 ts2 tk,
       tr_stmt s1 ts1 -> tr_stmt s2 ts2 ->
       match_cont k tk ->
-      match_cont_exp For_val a (Csem.Kifthenelse s1 s2 k) (Kseq (Sifthenelse a ts1 ts2) tk)
+      match_cont_exp For_val a (Csem_old.Kifthenelse s1 s2 k) (Kseq (Sifthenelse a ts1 ts2) tk)
   | match_Kwhile1: forall r s k s' a ts tk,
       tr_if r Sskip Sbreak s' ->
       tr_stmt s ts ->
       match_cont k tk ->
       match_cont_exp For_val a
-         (Csem.Kwhile1 r s k)
+         (Csem_old.Kwhile1 r s k)
          (Kseq (makeif a Sskip Sbreak)
            (Kseq ts (Kloop1 (Ssequence s' ts) Sskip tk)))
   | match_Kdowhile2: forall r s k s' a ts tk,
@@ -991,7 +991,7 @@ with match_cont_exp : destination -> expr -> Csem.cont -> cont -> Prop :=
       tr_stmt s ts ->
       match_cont k tk ->
       match_cont_exp For_val a
-        (Csem.Kdowhile2 r s k)
+        (Csem_old.Kdowhile2 r s k)
         (Kseq (makeif a Sskip Sbreak) (Kloop2 ts s' tk))
   | match_Kfor2: forall r s3 s k s' a ts3 ts tk,
       tr_if r Sskip Sbreak s' ->
@@ -999,21 +999,21 @@ with match_cont_exp : destination -> expr -> Csem.cont -> cont -> Prop :=
       tr_stmt s ts ->
       match_cont k tk ->
       match_cont_exp For_val a
-        (Csem.Kfor2 r s3 s k)
+        (Csem_old.Kfor2 r s3 s k)
         (Kseq (makeif a Sskip Sbreak)
           (Kseq ts (Kloop1 (Ssequence s' ts) ts3 tk)))
   | match_Kswitch1: forall ls k a tls tk,
       tr_lblstmts ls tls ->
       match_cont k tk ->
-      match_cont_exp For_val a (Csem.Kswitch1 ls k) (Kseq (Sswitch a tls) tk)
+      match_cont_exp For_val a (Csem_old.Kswitch1 ls k) (Kseq (Sswitch a tls) tk)
   | match_Kreturn: forall k a tk,
       match_cont k tk ->
-      match_cont_exp For_val a (Csem.Kreturn k) (Kseq (Sreturn (Some a)) tk).
+      match_cont_exp For_val a (Csem_old.Kreturn k) (Kseq (Sreturn (Some a)) tk).
 
 Lemma match_cont_call:
   forall k tk,
   match_cont k tk ->
-  match_cont (Csem.call_cont k) (call_cont tk).
+  match_cont (Csem_old.call_cont k) (call_cont tk).
 Proof.
   induction 1; simpl; auto. constructor. econstructor; eauto.
 Qed.
@@ -1036,50 +1036,50 @@ Fixpoint nostackinfo (adt: stack) (k: cont) : Prop :=
     end
   end.
 
-Inductive match_states: Csem.state -> state -> Prop :=
+Inductive match_states: Csem_old.state -> state -> Prop :=
   | match_exprstates: forall f r k e m tf sl tk le dest a tmps,
       tr_function f tf ->
       tr_top tge e le m dest r sl a tmps ->
       match_cont_exp dest a k tk ->
       nostackinfo (Mem.stack m) (Kcall None tf e le tk) ->
-      match_states (Csem.ExprState f r k e m)
+      match_states (Csem_old.ExprState f r k e m)
                    (State tf Sskip (Kseqlist sl tk) e le m)
   | match_regularstates: forall f s k e m tf ts tk le,
       tr_function f tf ->
       tr_stmt s ts ->
       match_cont k tk ->
       nostackinfo (Mem.stack m) (Kcall None tf e le tk) ->
-      match_states (Csem.State f s k e m)
+      match_states (Csem_old.State f s k e m)
                    (State tf ts tk e le m)
   | match_callstates: forall fd args k m tfd tk sz (SZpos: 0 <= sz),
       tr_fundef fd tfd ->
       match_cont k tk ->
       top_tframe_tc (Mem.stack m) ->
       nostackinfo (tl (Mem.stack m)) tk ->
-      match_states (Csem.Callstate fd args k m sz)
+      match_states (Csem_old.Callstate fd args k m sz)
                    (Callstate tfd args tk m sz)
   | match_returnstates: forall res k m tk,
       match_cont k tk ->
       nostackinfo (tl (Mem.stack m)) tk ->
-      match_states (Csem.Returnstate res k m)
+      match_states (Csem_old.Returnstate res k m)
                    (Returnstate res tk m)
   | match_stuckstate: forall S,
-      match_states Csem.Stuckstate S.
+      match_states Csem_old.Stuckstate S.
 
 (** Additional results on translation of statements *)
 
 Lemma tr_select_switch:
   forall n ls tls,
   tr_lblstmts ls tls ->
-  tr_lblstmts (Csem.select_switch n ls) (select_switch n tls).
+  tr_lblstmts (Csem_old.select_switch n ls) (select_switch n tls).
 Proof.
   assert (DFL: forall ls tls,
       tr_lblstmts ls tls ->
-      tr_lblstmts (Csem.select_switch_default ls) (select_switch_default tls)).
+      tr_lblstmts (Csem_old.select_switch_default ls) (select_switch_default tls)).
   { induction 1; simpl. constructor. destruct c; auto. constructor; auto. }
   assert (CASE: forall n ls tls,
       tr_lblstmts ls tls ->
-      match Csem.select_switch_case n ls with
+      match Csem_old.select_switch_case n ls with
       | None =>
           select_switch_case n tls = None
       | Some ls' =>
@@ -1089,9 +1089,9 @@ Proof.
     auto.
     destruct c; auto. destruct (zeq z n); auto.
     econstructor; split; eauto. constructor; auto. }
-  intros. unfold Csem.select_switch, select_switch.
+  intros. unfold Csem_old.select_switch, select_switch.
   specialize (CASE n ls tls H).
-  destruct (Csem.select_switch_case n ls) as [ls'|].
+  destruct (Csem_old.select_switch_case n ls) as [ls'|].
   destruct CASE as [tls' [P Q]]. rewrite P. auto.
   rewrite CASE. apply DFL; auto.
 Qed.
@@ -1099,7 +1099,7 @@ Qed.
 Lemma tr_seq_of_labeled_statement:
   forall ls tls,
   tr_lblstmts ls tls ->
-  tr_stmt (Csem.seq_of_labeled_statement ls) (seq_of_labeled_statement tls).
+  tr_stmt (Csem_old.seq_of_labeled_statement ls) (seq_of_labeled_statement tls).
 Proof.
   induction 1; simpl; constructor; auto.
 Qed.
@@ -1249,7 +1249,7 @@ Lemma tr_find_label:
   forall s k ts tk
     (TR: tr_stmt s ts)
     (MC: match_cont k tk),
-  match Csem.find_label lbl s k with
+  match Csem_old.find_label lbl s k with
   | None =>
       find_label lbl ts tk = None
   | Some (s', k') =>
@@ -1262,7 +1262,7 @@ with tr_find_label_ls:
   forall s k ts tk
     (TR: tr_lblstmts s ts)
     (MC: match_cont k tk),
-  match Csem.find_label_ls lbl s k with
+  match Csem_old.find_label_ls lbl s k with
   | None =>
       find_label_ls lbl ts tk = None
   | Some (s', k') =>
@@ -1276,53 +1276,53 @@ Proof.
   auto.
   eapply tr_find_label_expr_stmt; eauto.
 (* seq *)
-  exploit (IHs1 (Csem.Kseq s2 k)); eauto. constructor; eauto.
-  destruct (Csem.find_label lbl s1 (Csem.Kseq s2 k)) as [[s' k'] | ].
+  exploit (IHs1 (Csem_old.Kseq s2 k)); eauto. constructor; eauto.
+  destruct (Csem_old.find_label lbl s1 (Csem_old.Kseq s2 k)) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; auto.
   intro EQ. rewrite EQ. eapply IHs2; eauto.
 (* if *)
   rename s' into sr.
   rewrite (tr_find_label_expression _ _ _ H2).
   exploit (IHs1 k); eauto.
-  destruct (Csem.find_label lbl s1 k) as [[s' k'] | ].
+  destruct (Csem_old.find_label lbl s1 k) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; intuition.
   intro EQ. rewrite EQ. eapply IHs2; eauto.
 (* while *)
   rename s' into sr.
   rewrite (tr_find_label_if _ _ H1); auto.
   exploit (IHs (Kwhile2 e s k)); eauto. econstructor; eauto.
-  destruct (Csem.find_label lbl s (Kwhile2 e s k)) as [[s' k'] | ].
+  destruct (Csem_old.find_label lbl s (Kwhile2 e s k)) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; intuition.
   intro EQ. rewrite EQ. auto.
 (* dowhile *)
   rename s' into sr.
   rewrite (tr_find_label_if _ _ H1); auto.
   exploit (IHs (Kdowhile1 e s k)); eauto. econstructor; eauto.
-  destruct (Csem.find_label lbl s (Kdowhile1 e s k)) as [[s' k'] | ].
+  destruct (Csem_old.find_label lbl s (Kdowhile1 e s k)) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; intuition.
   intro EQ. rewrite EQ. auto.
 (* for skip *)
   rename s' into sr.
   rewrite (tr_find_label_if _ _ H4); auto.
-  exploit (IHs3 (Csem.Kfor3 e s2 s3 k)); eauto. econstructor; eauto.
-  destruct (Csem.find_label lbl s3 (Csem.Kfor3 e s2 s3 k)) as [[s' k'] | ].
+  exploit (IHs3 (Csem_old.Kfor3 e s2 s3 k)); eauto. econstructor; eauto.
+  destruct (Csem_old.find_label lbl s3 (Csem_old.Kfor3 e s2 s3 k)) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; intuition.
   intro EQ. rewrite EQ.
-  exploit (IHs2 (Csem.Kfor4 e s2 s3 k)); eauto. econstructor; eauto.
+  exploit (IHs2 (Csem_old.Kfor4 e s2 s3 k)); eauto. econstructor; eauto.
 (* for not skip *)
   rename s' into sr.
   rewrite (tr_find_label_if _ _ H3); auto.
-  exploit (IHs1 (Csem.Kseq (Csyntax.Sfor Csyntax.Sskip e s2 s3) k)); eauto.
+  exploit (IHs1 (Csem_old.Kseq (Csyntax_old.Sfor Csyntax_old.Sskip e s2 s3) k)); eauto.
     econstructor; eauto. econstructor; eauto.
-  destruct (Csem.find_label lbl s1
-               (Csem.Kseq (Csyntax.Sfor Csyntax.Sskip e s2 s3) k)) as [[s' k'] | ].
+  destruct (Csem_old.find_label lbl s1
+               (Csem_old.Kseq (Csyntax_old.Sfor Csyntax_old.Sskip e s2 s3) k)) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; intuition.
   intro EQ; rewrite EQ.
-  exploit (IHs3 (Csem.Kfor3 e s2 s3 k)); eauto. econstructor; eauto.
-  destruct (Csem.find_label lbl s3 (Csem.Kfor3 e s2 s3 k)) as [[s'' k''] | ].
+  exploit (IHs3 (Csem_old.Kfor3 e s2 s3 k)); eauto. econstructor; eauto.
+  destruct (Csem_old.find_label lbl s3 (Csem_old.Kfor3 e s2 s3 k)) as [[s'' k''] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; intuition.
   intro EQ'. rewrite EQ'.
-  exploit (IHs2 (Csem.Kfor4 e s2 s3 k)); eauto. econstructor; eauto.
+  exploit (IHs2 (Csem_old.Kfor4 e s2 s3 k)); eauto. econstructor; eauto.
 (* break, continue, return 0 *)
   auto. auto. auto.
 (* return 1 *)
@@ -1338,10 +1338,10 @@ Proof.
 (* nil *)
   auto.
 (* case *)
-  exploit (tr_find_label s (Csem.Kseq (Csem.seq_of_labeled_statement s0) k)); eauto.
+  exploit (tr_find_label s (Csem_old.Kseq (Csem_old.seq_of_labeled_statement s0) k)); eauto.
   econstructor; eauto. apply tr_seq_of_labeled_statement; eauto.
-  destruct (Csem.find_label lbl s
-    (Csem.Kseq (Csem.seq_of_labeled_statement s0) k)) as [[s' k'] | ].
+  destruct (Csem_old.find_label lbl s
+    (Csem_old.Kseq (Csem_old.seq_of_labeled_statement s0) k)) as [[s' k'] | ].
   intros [ts' [tk' [A [B C]]]]. rewrite A. exists ts'; exists tk'; auto.
   intro EQ. rewrite EQ. eapply IHs; eauto.
 Qed.
@@ -1362,44 +1362,44 @@ End FIND_LABEL.
 
 The following measure decreases for these stuttering steps. *)
 
-Fixpoint esize (a: Csyntax.expr) : nat :=
+Fixpoint esize (a: Csyntax_old.expr) : nat :=
   match a with
-  | Csyntax.Eloc _ _ _ => 1%nat
-  | Csyntax.Evar _ _ => 1%nat
-  | Csyntax.Ederef r1 _ => S(esize r1)
-  | Csyntax.Efield l1 _ _ => S(esize l1)
-  | Csyntax.Eval _ _ => O
-  | Csyntax.Evalof l1 _ => S(esize l1)
-  | Csyntax.Eaddrof l1 _ => S(esize l1)
-  | Csyntax.Eunop _ r1 _ => S(esize r1)
-  | Csyntax.Ebinop _ r1 r2 _ => S(esize r1 + esize r2)%nat
-  | Csyntax.Ecast r1 _ => S(esize r1)
-  | Csyntax.Eseqand r1 _ _ => S(esize r1)
-  | Csyntax.Eseqor r1 _ _ => S(esize r1)
-  | Csyntax.Econdition r1 _ _ _ => S(esize r1)
-  | Csyntax.Esizeof _ _ => 1%nat
-  | Csyntax.Ealignof _ _ => 1%nat
-  | Csyntax.Eassign l1 r2 _ => S(esize l1 + esize r2)%nat
-  | Csyntax.Eassignop _ l1 r2 _ _ => S(esize l1 + esize r2)%nat
-  | Csyntax.Epostincr _ l1 _ => S(esize l1)
-  | Csyntax.Ecomma r1 r2 _ => S(esize r1 + esize r2)%nat
-  | Csyntax.Ecall r1 rl2 _ => S(esize r1 + esizelist rl2)%nat
-  | Csyntax.Ebuiltin ef _ rl _ => S(esizelist rl)%nat
-  | Csyntax.Eparen r1 _ _ => S(esize r1)
+  | Csyntax_old.Eloc _ _ _ => 1%nat
+  | Csyntax_old.Evar _ _ => 1%nat
+  | Csyntax_old.Ederef r1 _ => S(esize r1)
+  | Csyntax_old.Efield l1 _ _ => S(esize l1)
+  | Csyntax_old.Eval _ _ => O
+  | Csyntax_old.Evalof l1 _ => S(esize l1)
+  | Csyntax_old.Eaddrof l1 _ => S(esize l1)
+  | Csyntax_old.Eunop _ r1 _ => S(esize r1)
+  | Csyntax_old.Ebinop _ r1 r2 _ => S(esize r1 + esize r2)%nat
+  | Csyntax_old.Ecast r1 _ => S(esize r1)
+  | Csyntax_old.Eseqand r1 _ _ => S(esize r1)
+  | Csyntax_old.Eseqor r1 _ _ => S(esize r1)
+  | Csyntax_old.Econdition r1 _ _ _ => S(esize r1)
+  | Csyntax_old.Esizeof _ _ => 1%nat
+  | Csyntax_old.Ealignof _ _ => 1%nat
+  | Csyntax_old.Eassign l1 r2 _ => S(esize l1 + esize r2)%nat
+  | Csyntax_old.Eassignop _ l1 r2 _ _ => S(esize l1 + esize r2)%nat
+  | Csyntax_old.Epostincr _ l1 _ => S(esize l1)
+  | Csyntax_old.Ecomma r1 r2 _ => S(esize r1 + esize r2)%nat
+  | Csyntax_old.Ecall r1 rl2 _ => S(esize r1 + esizelist rl2)%nat
+  | Csyntax_old.Ebuiltin ef _ rl _ => S(esizelist rl)%nat
+  | Csyntax_old.Eparen r1 _ _ => S(esize r1)
   end
 
-with esizelist (el: Csyntax.exprlist) : nat :=
+with esizelist (el: Csyntax_old.exprlist) : nat :=
   match el with
-  | Csyntax.Enil => O
-  | Csyntax.Econs r1 rl2 => (esize r1 + esizelist rl2)%nat
+  | Csyntax_old.Enil => O
+  | Csyntax_old.Econs r1 rl2 => (esize r1 + esizelist rl2)%nat
   end.
 
-Definition measure (st: Csem.state) : nat :=
+Definition measure (st: Csem_old.state) : nat :=
   match st with
-  | Csem.ExprState _ r _ _ _ => (esize r + 1)%nat
-  | Csem.State _ Csyntax.Sskip _ _ _ => 0%nat
-  | Csem.State _ (Csyntax.Sdo r) _ _ _ => (esize r + 2)%nat
-  | Csem.State _ (Csyntax.Sifthenelse r _ _) _ _ _ => (esize r + 2)%nat
+  | Csem_old.ExprState _ r _ _ _ => (esize r + 1)%nat
+  | Csem_old.State _ Csyntax_old.Sskip _ _ _ => 0%nat
+  | Csem_old.State _ (Csyntax_old.Sdo r) _ _ _ => (esize r + 2)%nat
+  | Csem_old.State _ (Csyntax_old.Sifthenelse r _ _) _ _ _ => (esize r + 2)%nat
   | _ => 0%nat
   end.
 
@@ -1431,7 +1431,7 @@ Lemma tr_val_gen:
         forall tge e le' m,
           (forall id, In id tmp -> le'!id = le!id) ->
           eval_expr tge e le' m a v) ->
-    tr_expr le dst (Csyntax.Eval v ty) (final dst a) a tmp.
+    tr_expr le dst (Csyntax_old.Eval v ty) (final dst a) a tmp.
 Proof.
   intros. destruct dst; simpl; econstructor; auto.
 Qed.
@@ -1460,7 +1460,7 @@ Qed.
 
 Lemma assign_loc_nostackinfo:
   forall ge t m b o v t' m',
-    Csem.assign_loc ge t m b o v t' m' ->
+    Csem_old.assign_loc ge t m b o v t' m' ->
     forall tk oi tf e le oi' tf' e' le',
       nostackinfo (Mem.stack m) (Kcall oi tf e le tk) ->
       nostackinfo (Mem.stack m' ) (Kcall oi' tf' e' le' tk).
@@ -1489,7 +1489,7 @@ Proof.
 Qed.
 
 Lemma estep_simulation:
-  forall S1 t S2, Cstrategy.estep fn_stack_requirements ge S1 t S2 ->
+  forall S1 t S2, Cstrategy_old.estep fn_stack_requirements ge S1 t S2 ->
   forall S1' (MS: match_states S1 S1'),
   exists S2',
      (plus (step1 fn_stack_requirements) tge S1' t S2' \/
@@ -1523,7 +1523,7 @@ Proof.
   econstructor; split.
   left. eapply plus_two. constructor. eapply step_make_set; eauto. traceEq.
   econstructor; eauto.
-  change (final dst' (Etempvar t0 (Csyntax.typeof l)) ++ sl2) with (nil ++ (final dst' (Etempvar t0 (Csyntax.typeof l)) ++ sl2)).
+  change (final dst' (Etempvar t0 (Csyntax_old.typeof l)) ++ sl2) with (nil ++ (final dst' (Etempvar t0 (Csyntax_old.typeof l)) ++ sl2)).
   apply S. apply tr_val_gen. auto.
   intros. constructor. rewrite H5; auto. apply PTree.gss.
   intros. apply PTree.gso. red; intros; subst; elim H5; auto.
@@ -1939,7 +1939,7 @@ Proof.
   left. eapply plus_left. constructor. apply star_one.
   econstructor. econstructor; eauto. rewrite <- TY1; eauto. traceEq.
   econstructor; eauto.
-  change sl2 with (final For_val (Etempvar t (Csyntax.typeof r)) ++ sl2). apply S.
+  change sl2 with (final For_val (Etempvar t (Csyntax_old.typeof r)) ++ sl2). apply S.
   constructor. auto. intros. constructor. rewrite H2; auto. apply PTree.gss.
   intros. apply PTree.gso. intuition congruence.
   auto.
@@ -2048,7 +2048,7 @@ Qed.
 
 Lemma tr_top_val_for_val_inv:
   forall e le m v ty sl a tmps,
-  tr_top tge e le m For_val (Csyntax.Eval v ty) sl a tmps ->
+  tr_top tge e le m For_val (Csyntax_old.Eval v ty) sl a tmps ->
   sl = nil /\ typeof a = ty /\ eval_expr tge e le m a v.
 Proof.
   intros. inv H. auto. inv H0. auto.
@@ -2056,7 +2056,7 @@ Qed.
 
 Lemma alloc_variables_preserved:
   forall e m params e' m',
-  Csem.alloc_variables ge e m params e' m' ->
+  Csem_old.alloc_variables ge e m params e' m' ->
   alloc_variables tge e m params e' m'.
 Proof.
   induction 1; econstructor; eauto. rewrite comp_env_preserved; auto.
@@ -2064,7 +2064,7 @@ Qed.
 
 Lemma bind_parameters_preserved:
   forall e m params args m',
-  Csem.bind_parameters ge e m params args m' ->
+  Csem_old.bind_parameters ge e m params args m' ->
   bind_parameters tge e m params args m'.
 Proof.
   induction 1; econstructor; eauto. inv H0.
@@ -2074,10 +2074,10 @@ Proof.
 Qed.
 
 Lemma blocks_of_env_preserved:
-  forall e, blocks_of_env tge e = Csem.blocks_of_env ge e.
+  forall e, blocks_of_env tge e = Csem_old.blocks_of_env ge e.
 Proof.
-  intros; unfold blocks_of_env, Csem.blocks_of_env.
-  unfold block_of_binding, Csem.block_of_binding.
+  intros; unfold blocks_of_env, Csem_old.blocks_of_env.
+  unfold block_of_binding, Csem_old.block_of_binding.
   rewrite comp_env_preserved. auto.
 Qed.
 
@@ -2110,7 +2110,7 @@ Qed.
 
 Lemma assign_loc_stack:
   forall ge t m b o v t' m',
-    Csem.assign_loc ge t m b o v t' m' ->
+    Csem_old.assign_loc ge t m b o v t' m' ->
     Mem.stack m' = Mem.stack m.
 Proof.
   intros ge0 t m b o v t' m' AL.
@@ -2120,7 +2120,7 @@ Qed.
 
 Lemma bind_parameters_stack:
   forall ge e m1 pars vargs m2,
-    Csem.bind_parameters ge e m1 pars vargs m2 ->
+    Csem_old.bind_parameters ge e m1 pars vargs m2 ->
     Mem.stack m2 = Mem.stack m1.
 Proof.
   induction 1; simpl; intros; eauto.
@@ -2129,7 +2129,7 @@ Qed.
 
 Lemma alloc_variables_stack:
   forall ge e m1 vars e2 m2,
-    Csem.alloc_variables ge e m1 vars e2 m2 ->
+    Csem_old.alloc_variables ge e m1 vars e2 m2 ->
     Mem.stack m2 = Mem.stack m1.
 Proof.
   induction 1; simpl; intros; eauto.
@@ -2137,7 +2137,7 @@ Proof.
 Qed.
 
 Lemma sstep_simulation:
-  forall S1 t S2, Csem.sstep ge S1 t S2 ->
+  forall S1 t S2, Csem_old.sstep ge S1 t S2 ->
   forall S1' (MS: match_states S1 S1'),
   exists S2',
      (plus (step1 fn_stack_requirements) tge S1' t S2' \/
@@ -2419,7 +2419,7 @@ Qed.
 (** Semantic preservation *)
 
 Theorem simulation:
-  forall S1 t S2, Cstrategy.step fn_stack_requirements ge S1 t S2 ->
+  forall S1 t S2, Cstrategy_old.step fn_stack_requirements ge S1 t S2 ->
   forall S1' (MS: match_states S1 S1'),
   exists S2',
      (plus (step1 fn_stack_requirements) tge S1' t S2' \/
@@ -2433,8 +2433,8 @@ Qed.
 
 Lemma transl_initial_states:
   forall S,
-  Csem.initial_state fn_stack_requirements prog S ->
-  exists S', Clight.initial_state fn_stack_requirements tprog S' /\ match_states S S'.
+  Csem_old.initial_state fn_stack_requirements prog S ->
+  exists S', Clight_old.initial_state fn_stack_requirements tprog S' /\ match_states S S'.
 Proof.
   intros. inv H.
   exploit function_ptr_translated; eauto. intros [tf [FIND TR]].
@@ -2455,13 +2455,13 @@ Qed.
 
 Lemma transl_final_states:
   forall S S' r,
-  match_states S S' -> Csem.final_state S r -> Clight.final_state S' r.
+  match_states S S' -> Csem_old.final_state S r -> Clight_old.final_state S' r.
 Proof.
   intros. inv H0. inv H. inv H4. constructor.
 Qed.
 
 Theorem transl_program_correct:
-  forward_simulation (Cstrategy.semantics fn_stack_requirements prog) (Clight.semantics1 fn_stack_requirements tprog).
+  forward_simulation (Cstrategy_old.semantics fn_stack_requirements prog) (Clight_old.semantics1 fn_stack_requirements tprog).
 Proof.
   eapply forward_simulation_star_wf with (order := ltof _ measure).
   eapply senv_preserved.
@@ -2477,7 +2477,7 @@ End PRESERVATION.
 
 Instance TransfSimplExprLink : TransfLink match_prog.
 Proof.
-  red; intros. eapply Ctypes.link_match_program; eauto. 
+  red; intros. eapply Ctypes_old.link_match_program; eauto. 
 - intros.
 Local Transparent Linker_fundef.
   simpl in *; unfold link_fundef in *. inv H3; inv H4; try discriminate.

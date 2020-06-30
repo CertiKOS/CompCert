@@ -94,6 +94,11 @@ BACKEND=(
 	./backend/Stacking.v
 	./backend/Stackingproof.v
 	./backend/Mach2Mach2.v
+	./x86/Asm.v
+	./x86/Asmgen.v
+	./backend/Asmgenproof0.v
+	./x86/Asmgenproof1.v
+	./x86/Asmgenproof.v
 	)
 
 FRONTEND=(

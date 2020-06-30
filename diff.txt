@@ -1,765 +1,280 @@
-25,26c25,26
-<   forall ms sp rs sz,
-<   agree ms sp rs -> agree ms sp (nextinstr_nf rs sz).
----
->   forall ms sp rs,
->   agree ms sp rs -> agree ms sp (nextinstr_nf rs).
-=============================================================================================================
-36c36
-<   forall r rs sz,
----
->   forall r rs,
-=============================================================================================================
-38c38
-<   (nextinstr_nf rs sz)#r = rs#r.
----
->   (nextinstr_nf rs)#r = rs#r.
-=============================================================================================================
-47,48c47,48
-<   forall r rs sz,
-<   data_preg r = true -> (nextinstr_nf rs sz)#r = rs#r.
----
->   forall r rs,
->   data_preg r = true -> (nextinstr_nf rs)#r = rs#r.
-=============================================================================================================
-54,55c54,55
-<   forall rs m v sz,
-<   (nextinstr_nf (rs#(preg_of m) <- v) sz)#PC = Val.offset_ptr rs#PC sz.
----
->   forall rs m v,
->   (nextinstr_nf (rs#(preg_of m) <- v))#PC = Val.offset_ptr rs#PC Ptrofs.one.
-=============================================================================================================
-58c58
-<   transitivity (nextinstr (rs#(preg_of m) <- v) sz PC). auto.
----
->   transitivity (nextinstr (rs#(preg_of m) <- v) PC). auto.
-=============================================================================================================
-66c66
-<   | [ |- nextinstr_nf _ _ _ = _ ] =>
----
->   | [ |- nextinstr_nf _ _ = _ ] =>
-=============================================================================================================
-69c69
-<   | [ |- nextinstr _ _ _ = _ ] =>
----
->   | [ |- nextinstr _ _ = _ ] =>
-=============================================================================================================
-86,87d85
-< Local Existing Instance mem_accessors_default.
+30a31
+> Require Initializers.
+==========================================================================================
+50d50
+< Require Mach2Mach2.
+==========================================================================================73d72
 < 
-=============================================================================================================
-89d86
-< Context `{memory_model_prf: Mem.MemoryModel}.
-=============================================================================================================
-91d87
-< Variable init_stk: stack.
-=============================================================================================================
-95,98d90
+==========================================================================================77d75
 < 
-< Definition instr_size_in_ptrofs (i:instruction) : ptrofs :=
-<   Ptrofs.repr (instr_size i).
+==========================================================================================122,123d119
+< Local Existing Instance ValueAnalysis.romem_for_wp_instance.
 < 
-=============================================================================================================
-105c97
-<      exec_straight init_stk ge fn c rs1 m k rs2 m
----
->      exec_straight ge fn c rs1 m k rs2 m
-=============================================================================================================
-112c104
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-115c107
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-208c200
-<      exec_straight init_stk ge fn c rs1 m k rs2 m
----
->      exec_straight ge fn c rs1 m k rs2 m
-=============================================================================================================
-217,224c209,212
-<   set (rs2 := nextinstr (compare_ints (Vint x) (Vint Int.zero) rs1 m) 
-<                         (instr_size_in_ptrofs (Ptestl_rr RAX RAX))).
-<   set (rs3 := nextinstr (rs2#RCX <- (Vint x'))
-<                         (instr_size_in_ptrofs (Pleal RCX (Addrmode (Some RAX) None (inl _ (Int.unsigned tnm1)))))).
-<   set (rs4 := nextinstr (if Int.lt x Int.zero then rs3#RAX <- (Vint x') else rs3)
-<                         (instr_size_in_ptrofs (Pcmov Cond_l RAX RCX))).
-<   set (rs5 := nextinstr_nf (rs4#RAX <- (Val.shr rs4#RAX (Vint n)))
-<                            (instr_size_in_ptrofs (Psarl_ri RAX n))).
----
->   set (rs2 := nextinstr (compare_ints (Vint x) (Vint Int.zero) rs1 m)).
->   set (rs3 := nextinstr (rs2#RCX <- (Vint x'))).
->   set (rs4 := nextinstr (if Int.lt x Int.zero then rs3#RAX <- (Vint x') else rs3)).
->   set (rs5 := nextinstr_nf (rs4#RAX <- (Val.shr rs4#RAX (Vint n)))).
-=============================================================================================================
-228,229c216,217
-<   apply exec_straight_step with rs2 m. unfold exec_instr; simpl. rewrite A. simpl. rewrite Int.and_idem. auto. auto.
-<   apply exec_straight_step with rs3 m. unfold exec_instr; simpl.
----
->   apply exec_straight_step with rs2 m. simpl. rewrite A. simpl. rewrite Int.and_idem. auto. auto.
->   apply exec_straight_step with rs3 m. simpl.
-=============================================================================================================
-232c220
-<   apply exec_straight_step with rs4 m. unfold exec_instr; simpl.
----
->   apply exec_straight_step with rs4 m. simpl.
-=============================================================================================================
-251c239
-<      exec_straight init_stk ge fn c rs1 m k rs2 m
----
->      exec_straight ge fn c rs1 m k rs2 m
-=============================================================================================================
-255c243
-<   unfold mk_shrxlimm; unfold Asmgen.mk_shrxlimm; intros. exploit Val.shrxl_shrl_2; eauto. intros EQ.
----
->   unfold mk_shrxlimm; intros. exploit Val.shrxl_shrl_2; eauto. intros EQ.
-=============================================================================================================
-257c245
-< - econstructor; split. apply exec_straight_one. unfold exec_instr; simpl; reflexivity. auto.
----
-> - econstructor; split. apply exec_straight_one. simpl; reflexivity. auto.
-=============================================================================================================
-263,270c251,254
-<   set (rs2 := nextinstr_nf (rs1#RDX <- v1)
-<                            (instr_size_in_ptrofs Pcqto)).
-<   set (rs3 := nextinstr_nf (rs2#RDX <- v2)
-<                            (instr_size_in_ptrofs (Pshrq_ri RDX (Int.sub (Int.repr 64) n)))).
-<   set (rs4 := nextinstr (rs3#RAX <- v3)
-<                         (instr_size_in_ptrofs (Pleaq RAX (Addrmode (Some RAX) (Some (RDX, 1)) (inl 0))))).
-<   set (rs5 := nextinstr_nf (rs4#RAX <- v4)
-<                            (instr_size_in_ptrofs (Psarq_ri RAX n))).
----
->   set (rs2 := nextinstr_nf (rs1#RDX <- v1)).
->   set (rs3 := nextinstr_nf (rs2#RDX <- v2)).
->   set (rs4 := nextinstr (rs3#RAX <- v3)).
->   set (rs5 := nextinstr_nf (rs4#RAX <- v4)).
-=============================================================================================================
-279,282c263,266
-<   eapply exec_straight_trans.
-<   eapply exec_straight_two; reflexivity.
-<   eapply exec_straight_two.
-<   unfold exec_instr; simpl. rewrite X. reflexivity. reflexivity. reflexivity. reflexivity.
----
->   eapply exec_straight_trans with (rs2 := rs3).
->   eapply exec_straight_two with (rs2 := rs2); reflexivity.
->   eapply exec_straight_two with (rs2 := rs4).
->   simpl. rewrite X. reflexivity. reflexivity. reflexivity. reflexivity.
-=============================================================================================================
-293c277
-<    exec_instr init_stk ge c (mk rd rs) r m = Next (nextinstr (r#rd <- (sem r#rs)) (instr_size_in_ptrofs(mk rd rs))) m) ->
----
->    exec_instr ge c (mk rd rs) r m = Next (nextinstr (r#rd <- (sem r#rs))) m) ->
-=============================================================================================================
-295c279
-<      exec_straight init_stk ge fn c rs1 m k rs2 m
----
->      exec_straight ge fn c rs1 m k rs2 m
-=============================================================================================================
-299,300c283,284
-<   unfold mk_intconv; unfold Asmgen.mk_intconv; intros. destruct (Archi.ptr64 || low_ireg rs); monadInv H.
-<   econstructor. split. apply exec_straight_one. simpl. rewrite H0. eauto. auto.
----
->   unfold mk_intconv; intros. destruct (Archi.ptr64 || low_ireg rs); monadInv H.
->   econstructor. split. apply exec_straight_one. rewrite H0. eauto. auto.
-=============================================================================================================
-303c287
-<   unfold exec_instr; simpl. eauto. apply H0. auto. auto.
----
->   simpl. eauto. apply H0. auto. auto.
-=============================================================================================================
-326c310
-<      exec_straight init_stk ge fn c rs1 m1 k rs2 m2
----
->      exec_straight ge fn c rs1 m1 k rs2 m2
-=============================================================================================================
-329c313
-<   unfold mk_storebyte; unfold Asmgen.mk_storebyte; intros.
----
->   unfold mk_storebyte; intros.
-=============================================================================================================
-333,335c317
-<   unfold exec_instr; simpl. unfold exec_store. rewrite H0.
-<   eauto.
-<   auto.
----
->   simpl. unfold exec_store. rewrite H0. eauto. auto.
-=============================================================================================================
-341,344c323,324
-<   set (rs2 := nextinstr (rs1#RCX <- (eval_addrmode32 ge addr rs1))
-<                         (instr_size_in_ptrofs (Pleal RCX addr))).
-<   set (rs3 := nextinstr (rs2#RAX <- (rs1 r))
-<                         (instr_size_in_ptrofs (Pmov_rr RAX r))).
----
->   set (rs2 := nextinstr (rs1#RCX <- (eval_addrmode32 ge addr rs1))).
->   set (rs3 := nextinstr (rs2#RAX <- (rs1 r))).
-=============================================================================================================
-347,350c327,329
-<   unfold exec_instr; simpl. auto.
-<   unfold exec_instr; simpl. replace (rs2 r) with (rs1 r). auto. symmetry. unfold rs2; Simplifs.
-<   unfold exec_instr; simpl. unfold exec_store.
-<   unfold eval_addrmode; rewrite H1; simpl. rewrite Int.add_zero.
----
->   simpl. auto.
->   simpl. replace (rs2 r) with (rs1 r). auto. symmetry. unfold rs2; Simplifs.
->   simpl. unfold exec_store. unfold eval_addrmode; rewrite H1; simpl. rewrite Int.add_zero.
-=============================================================================================================
-355,356c334
-<   rewrite H0.
-<   eauto.
----
->   rewrite H0. eauto.
-=============================================================================================================
-363,364c341
-<   set (rs2 := nextinstr (rs1#RAX <- (rs1 r))
-<                         (instr_size_in_ptrofs (Pmov_rr RAX r))).
----
->   set (rs2 := nextinstr (rs1#RAX <- (rs1 r))).
-=============================================================================================================
-367,368c344,345
-<   unfold exec_instr; simpl. auto.
-<   unfold exec_instr; simpl. unfold exec_store. unfold eval_addrmode in *; rewrite H1 in *.
----
->   simpl. auto.
->   simpl. unfold exec_store. unfold eval_addrmode in *; rewrite H1 in *.
-=============================================================================================================
-370,371c347
-<   change (rs2 RAX) with (rs1 r). rewrite H0.
-<   eauto.
----
->   change (rs2 RAX) with (rs1 r). rewrite H0. eauto.
-=============================================================================================================
-403c379
-<      exec_straight init_stk ge fn c rs m k rs' m
----
->      exec_straight ge fn c rs m k rs' m
-=============================================================================================================
-407c383
-<   unfold loadind; unfold Asmgen.loadind; intros.
----
->   unfold loadind; intros.
-=============================================================================================================
-412,414c388,389
-<   monadInv H. 
-<   eexists (nextinstr_nf (rs#(preg_of dst) <- v) (instr_size_in_ptrofs x)); split.
-< - loadind_correct_solve; apply exec_straight_one; unfold exec_instr; simpl; auto; simpl in *; unfold exec_load; rewrite ?Heqb, ?H0; eauto. 
----
->   exists (nextinstr_nf (rs#(preg_of dst) <- v)); split.
-> - loadind_correct_solve; apply exec_straight_one; auto; simpl in *; unfold exec_load; rewrite ?Heqb, ?H0; auto.
-=============================================================================================================
-420,421c395,396
-<     storeind src base ofs ty k = OK c ->
-<     Mem.storev (chunk_of_type ty) m (Val.offset_ptr rs#base ofs) (rs#(preg_of src)) = Some m' ->
----
->   storeind src base ofs ty k = OK c ->
->   Mem.storev (chunk_of_type ty) m (Val.offset_ptr rs#base ofs) (rs#(preg_of src)) = Some m' ->
-=============================================================================================================
-423c398
-<      exec_straight init_stk ge fn c rs m k rs' m'
----
->      exec_straight ge fn c rs m k rs' m'
-=============================================================================================================
-426c401
-<   unfold storeind; unfold Asmgen.storeind; intros base ofs ty src k rs c m m' SI STORE.
----
->   unfold storeind; intros.
-=============================================================================================================
-430,432c405,406
-<   rewrite <- H in *.
-<   monadInv SI.
-<   loadind_correct_solve; simpl in *;
----
->   rewrite <- H1 in H0.
->   loadind_correct_solve; simpl in H0;
-=============================================================================================================
-434,435c408,409
-<   [apply exec_straight_one; [unfold exec_instr; simpl; unfold exec_store; rewrite ?Heqb, STORE;eauto|auto]
-<   |unfold exec_instr; simpl; intros; unfold undef_regs; repeat Simplifs]).
----
->   [apply exec_straight_one; [simpl; unfold exec_store; rewrite ?Heqb, H0;eauto|auto]
->   |simpl; intros; unfold undef_regs; repeat Simplifs]).
-=============================================================================================================
-532,533c506,507
-<   forall rs v1 v2 m sz,
-<   let rs' := nextinstr (compare_ints v1 v2 rs m) sz in
----
->   forall rs v1 v2 m,
->   let rs' := nextinstr (compare_ints v1 v2 rs m) in
-=============================================================================================================
-549c523
-<   forall c v1 v2 rs m b sz,
----
->   forall c v1 v2 rs m b,
-=============================================================================================================
-552c526
-<                 (nextinstr (compare_ints v1 v2 rs m) sz) = Some b.
----
->                 (nextinstr (compare_ints v1 v2 rs m)) = Some b.
-=============================================================================================================
-571c545
-<   forall c v1 v2 rs m b sz,
----
->   forall c v1 v2 rs m b,
-=============================================================================================================
-574c548
-<                 (nextinstr (compare_ints v1 v2 rs m) sz) = Some b.
----
->                 (nextinstr (compare_ints v1 v2 rs m)) = Some b.
-=============================================================================================================
-619,620c593,594
-<   forall rs v1 v2 m sz,
-<   let rs' := nextinstr (compare_longs v1 v2 rs m) sz in
----
->   forall rs v1 v2 m,
->   let rs' := nextinstr (compare_longs v1 v2 rs m) in
-=============================================================================================================
-653c627
-<   forall c v1 v2 rs m b sz,
----
->   forall c v1 v2 rs m b,
-=============================================================================================================
-656c630
-<                 (nextinstr (compare_longs v1 v2 rs m) sz) = Some b.
----
->                 (nextinstr (compare_longs v1 v2 rs m)) = Some b.
-=============================================================================================================
-674c648
-<   forall c v1 v2 rs m b sz,
----
->   forall c v1 v2 rs m b,
-=============================================================================================================
-677c651
-<                 (nextinstr (compare_longs v1 v2 rs m) sz) = Some b.
----
->                 (nextinstr (compare_longs v1 v2 rs m)) = Some b.
-=============================================================================================================
-722,723c696,697
-<   forall rs n1 n2 sz,
-<   let rs' := nextinstr (compare_floats (Vfloat n1) (Vfloat n2) rs) sz in
----
->   forall rs n1 n2,
->   let rs' := nextinstr (compare_floats (Vfloat n1) (Vfloat n2) rs) in
-=============================================================================================================
-737,738c711,712
-<   forall rs n1 n2 sz,
-<   let rs' := nextinstr (compare_floats32 (Vsingle n1) (Vsingle n2) rs) sz in
----
->   forall rs n1 n2,
->   let rs' := nextinstr (compare_floats32 (Vsingle n1) (Vsingle n2) rs) in
-=============================================================================================================
-774c748
-<   forall c n1 n2 rs sz,
----
->   forall c n1 n2 rs,
-=============================================================================================================
-777c751
-<                                           (Vfloat (swap_floats c n2 n1)) rs) sz) =
----
->                                           (Vfloat (swap_floats c n2 n1)) rs)) =
-=============================================================================================================
-822c796
-<   forall c n1 n2 rs sz,
----
->   forall c n1 n2 rs,
-=============================================================================================================
-825c799
-<                                           (Vfloat (swap_floats c n2 n1)) rs) sz) =
----
->                                           (Vfloat (swap_floats c n2 n1)) rs)) =
-=============================================================================================================
-870c844
-<   forall c n1 n2 rs sz,
----
->   forall c n1 n2 rs,
-=============================================================================================================
-873c847
-<                                             (Vsingle (swap_floats c n2 n1)) rs) sz) =
----
->                                             (Vsingle (swap_floats c n2 n1)) rs)) =
-=============================================================================================================
-918c892
-<   forall c n1 n2 rs sz,
----
->   forall c n1 n2 rs,
-=============================================================================================================
-921c895
-<                                             (Vsingle (swap_floats c n2 n1)) rs) sz) =
----
->                                             (Vsingle (swap_floats c n2 n1)) rs)) =
-=============================================================================================================
-997c971
-<      exec_straight init_stk ge fn c rs m k rs' m
----
->      exec_straight ge fn c rs m k rs' m
-=============================================================================================================
-1004c978
-<   unfold transl_cond; unfold Asmgen.transl_cond; intros.
----
->   unfold transl_cond; intros.
-=============================================================================================================
-1008c982
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-1014c988
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-1020c994
-<   econstructor; split. apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1024c998
-<   econstructor; split. apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1030c1004
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-1036c1010
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-1042c1016
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-1048c1022
-<   econstructor; split. apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1052c1026
-<   econstructor; split. apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1058c1032
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl. eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-=============================================================================================================
-1064,1065c1038
-<   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)
-<                (instr_size_in_ptrofs (floatcomp c0 x x0))).
----
->   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-=============================================================================================================
-1067c1040
-<   destruct c0; unfold exec_instr; simpl; auto.
----
->   destruct c0; simpl; auto.
-=============================================================================================================
-1074,1075c1047
-<   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)
-<                (instr_size_in_ptrofs (floatcomp c0 x x0))).
----
->   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-=============================================================================================================
-1084,1085c1056
-<   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)
-<                (instr_size_in_ptrofs (floatcomp32 c0 x x0))).
----
->   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-=============================================================================================================
-1087c1058
-<   destruct c0; unfold exec_instr; simpl; auto.
----
->   destruct c0; simpl; auto.
-=============================================================================================================
-1094,1095c1065
-<   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)
-<                (instr_size_in_ptrofs (floatcomp32 c0 x x0))).
----
->   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-=============================================================================================================
-1104c1074
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1111c1081
-<   econstructor. split. apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   econstructor. split. apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1119c1089
-<   forall c rs sz, eval_testcond c (nextinstr rs sz) = eval_testcond c rs.
----
->   forall c rs, eval_testcond c (nextinstr rs) = eval_testcond c rs.
-=============================================================================================================
-1133c1103
-<   exec_straight init_stk ge fn (mk_setcc_base cond rd k) rs1 m k rs2 m
----
->   exec_straight ge fn (mk_setcc_base cond rd k) rs1 m k rs2 m
-=============================================================================================================
-1140c1110
-<   apply exec_straight_one. unfold exec_instr; simpl; eauto. auto.
----
->   apply exec_straight_one. simpl; eauto. auto.
-=============================================================================================================
-1158d1127
-<   unfold mk_setcc_base. unfold Asmgen.mk_setcc_base.
-=============================================================================================================
-1162,1164c1131,1133
-<   unfold exec_instr; simpl; eauto.
-<   unfold exec_instr; simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
-<   unfold exec_instr; simpl; eauto.
----
->   simpl; eauto.
->   simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
->   simpl; eauto.
-=============================================================================================================
-1169,1171c1138,1140
-<   unfold exec_instr; simpl; eauto.
-<   unfold exec_instr; simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
-<   unfold exec_instr; simpl. eauto.
----
->   simpl; eauto.
->   simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
->   simpl. eauto.
-=============================================================================================================
-1193d1161
-<   unfold mk_setcc_base. unfold Asmgen.mk_setcc_base.
-=============================================================================================================
-1197,1199c1165,1167
-<   unfold exec_instr; simpl; eauto.
-<   unfold exec_instr; simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
-<   unfold exec_instr; simpl; eauto.
----
->   simpl; eauto.
->   simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
->   simpl; eauto.
-=============================================================================================================
-1204,1206c1172,1174
-<   unfold exec_instr; simpl; eauto.
-<   unfold exec_instr; simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
-<   unfold exec_instr; simpl. eauto.
----
->   simpl; eauto.
->   simpl. rewrite eval_testcond_nextinstr. repeat rewrite eval_testcond_set_ireg. eauto.
->   simpl. eauto.
-=============================================================================================================
-1215c1183
-<   exec_straight init_stk ge fn (mk_setcc cond rd k) rs1 m k rs2 m
----
->   exec_straight ge fn (mk_setcc cond rd k) rs1 m k rs2 m
-=============================================================================================================
-1219c1187
-<   intros. unfold mk_setcc; unfold Asmgen.mk_setcc. destruct (Archi.ptr64 || low_ireg rd).
----
->   intros. unfold mk_setcc. destruct (Archi.ptr64 || low_ireg rd).
-=============================================================================================================
-1223c1191
-<     unfold exec_instr; simpl. eauto. simpl. auto.
----
->     simpl. eauto. simpl. auto.
-=============================================================================================================
-1243c1211 here
-<   [ apply exec_straight_one; [ unfold exec_instr; simpl; eauto | auto ]
----
->   [ apply exec_straight_one; [ simpl; eauto | auto ]
-=============================================================================================================
-1251c1219
-<      exec_straight init_stk ge fn c rs m k rs' m
----
->      exec_straight ge fn c rs m k rs' m
-=============================================================================================================
-1259c1227
-<      exec_straight init_stk ge fn c rs m k rs' m
----
->      exec_straight ge fn c rs m k rs' m
-=============================================================================================================
-1263c1231
-<      exec_straight init_stk ge fn c rs m k rs' m
----
->      exec_straight ge fn c rs m k rs' m
-=============================================================================================================
-1294c1262
-<   set (rs1 := nextinstr_nf (rs#RDX <- (Vint nh)) (instr_size_in_ptrofs Pcltd)).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- (Vint nh))).
-=============================================================================================================
-1296,1297c1264,1265
-<   eapply exec_straight_two with (rs3 := rs1). unfold exec_instr; simpl. rewrite A. reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). simpl. rewrite A. reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1306c1274
-<   set (rs1 := nextinstr_nf (rs#RDX <- Vzero) (instr_size_in_ptrofs (Pxorl_r RDX))).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- Vzero)).
-=============================================================================================================
-1308,1309c1276,1277
-<   eapply exec_straight_two with (rs3 := rs1). reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1318c1286
-<   set (rs1 := nextinstr_nf (rs#RDX <- (Vint nh)) (instr_size_in_ptrofs (Pcltd))).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- (Vint nh))).
-=============================================================================================================
-1320,1321c1288,1289
-<   eapply exec_straight_two with (rs3 := rs1). unfold exec_instr; simpl. rewrite A. reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). simpl. rewrite A. reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1330c1298
-<   set (rs1 := nextinstr_nf (rs#RDX <- Vzero) (instr_size_in_ptrofs (Pxorl_r RDX))).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- Vzero)).
-=============================================================================================================
-1332,1333c1300,1301
-<   eapply exec_straight_two with (rs3 := rs1). reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1351c1319
-<   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong nh)) (instr_size_in_ptrofs Pcqto)).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong nh))).
-=============================================================================================================
-1353,1354c1321,1322
-<   eapply exec_straight_two with (rs3 := rs1). unfold exec_instr; simpl. rewrite A. reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). simpl. rewrite A. reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1363c1331
-<   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong Int64.zero)) (instr_size_in_ptrofs (Pxorq_r RDX))).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong Int64.zero))).
-=============================================================================================================
-1365,1366c1333,1334
-<   eapply exec_straight_two with (rs3 := rs1). reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1375c1343
-<   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong nh)) (instr_size_in_ptrofs Pcqto)).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong nh))).
-=============================================================================================================
-1377,1378c1345,1346
-<   eapply exec_straight_two with (rs3 := rs1). unfold exec_instr; simpl. rewrite A. reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). simpl. rewrite A. reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1387c1355
-<   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong Int64.zero)) (instr_size_in_ptrofs (Pxorq_r RDX))).
----
->   set (rs1 := nextinstr_nf (rs#RDX <- (Vlong Int64.zero))).
-=============================================================================================================
-1389,1390c1357,1358
-<   eapply exec_straight_two with (rs3 := rs1). reflexivity.
-<   unfold exec_instr; simpl. change (rs1 RAX) with (rs RAX); rewrite B.
----
->   eapply exec_straight_two with (rs2 := rs1). reflexivity.
->   simpl. change (rs1 RAX) with (rs RAX); rewrite B.
-=============================================================================================================
-1401c1369
-<   unfold exec_instr; simpl. reflexivity.  unfold exec_instr; simpl. reflexivity. auto. auto.
----
->   simpl. reflexivity.  simpl. reflexivity. auto. auto.
-=============================================================================================================
-1441c1409
-<      exec_straight init_stk ge fn c rs m k rs' m
----
->      exec_straight ge fn c rs m k rs' m
-=============================================================================================================
-1445c1413
-<   unfold transl_load; unfold Asmgen.transl_load; intros. monadInv H. monadInv EQ.
----
->   unfold transl_load; intros. monadInv H.
-=============================================================================================================
-1447,1449c1415,1417
-<   assert (EA': eval_addrmode ge x0 rs = a). destruct a; simpl in H1; try discriminate; inv EA; auto.
-<   set (rs2 := nextinstr_nf (rs#(preg_of dest) <- v) (instr_size_in_ptrofs x)).
-<   assert (exec_load ge chunk m x0 rs (preg_of dest) (instr_size_in_ptrofs x) = Next rs2 m).
----
->   assert (EA': eval_addrmode ge x rs = a). destruct a; simpl in H1; try discriminate; inv EA; auto.
->   set (rs2 := nextinstr_nf (rs#(preg_of dest) <- v)).
->   assert (exec_load ge chunk m x rs (preg_of dest) = Next rs2 m).
-=============================================================================================================
-1451,1452c1419,1420
-<   assert (rs2 PC = Val.offset_ptr (rs PC) (instr_size_in_ptrofs x)).
-<     transitivity (Val.offset_ptr ((rs#(preg_of dest) <- v) PC) (instr_size_in_ptrofs x)).
----
->   assert (rs2 PC = Val.offset_ptr (rs PC) Ptrofs.one).
->     transitivity (Val.offset_ptr ((rs#(preg_of dest) <- v) PC) Ptrofs.one).
-=============================================================================================================
-1466c1434
-<      exec_straight init_stk ge fn c rs m k rs' m'
----
->      exec_straight ge fn c rs m k rs' m'
-=============================================================================================================
-1472,1473c1440
-<   rewrite <- EA' in H1.
-<   destruct chunk; ArgsInv.
----
->   rewrite <- EA' in H1. destruct chunk; ArgsInv.
-=============================================================================================================
-1477c1444
-<   (* int8unsigned *)
----
-> (* int8unsigned *)
-=============================================================================================================
-1481c1448
-<   apply exec_straight_one. unfold exec_instr; simpl. unfold exec_store.
----
->   apply exec_straight_one. simpl. unfold exec_store.
-=============================================================================================================
-1484,1485c1451
-<   rewrite H1.
-<   eauto.
----
->   rewrite H1. eauto.
-=============================================================================================================
-1491c1457
-<   apply exec_straight_one. unfold exec_instr; simpl. unfold exec_store. rewrite H1. eauto. auto.
----
->   apply exec_straight_one. simpl. unfold exec_store. rewrite H1. eauto. auto.
-=============================================================================================================
-1495c1461
-<   apply exec_straight_one. unfold exec_instr; simpl. unfold exec_store. rewrite H1. eauto. auto.
----
->   apply exec_straight_one. simpl. unfold exec_store. rewrite H1. eauto. auto.
-=============================================================================================================
-1499c1465
-<   apply exec_straight_one. unfold exec_instr; simpl. unfold exec_store. rewrite H1. eauto. auto.
----
->   apply exec_straight_one. simpl. unfold exec_store. rewrite H1. eauto. auto.
-=============================================================================================================
-1503c1469
-<   apply exec_straight_one. unfold exec_instr; simpl. unfold exec_store. rewrite H1. eauto. auto.
----
->   apply exec_straight_one. simpl. unfold exec_store. rewrite H1. eauto. auto.
-=============================================================================================================
-1507c1473
-<   apply exec_straight_one. unfold exec_instr; simpl. unfold exec_store. rewrite H1. eauto. auto.
----
->   apply exec_straight_one. simpl. unfold exec_store. rewrite H1. eauto. auto.
+==========================================================================================129c125
+<   @@@ partial_if Compopts.optim_inlining (time "Inlining" Inlining.transf_program)
+---
+>   @@@ time "Inlining" Inlining.transf_program
+==========================================================================================151c147
+<    @@@ time "Asm generation" Asmgen.transf_program.
+---
+>   @@@ time "Asm generation" Asmgen.transf_program.
+==========================================================================================172a169,172
+> (** Force [Initializers] and [Cexec] to be extracted as well. *)
+> 
+> Definition transl_init := Initializers.transl_init.
+> Definition cexec_do_step := Cexec.do_step.
+==========================================================================================239c239
+<   ::: mkpass (match_if Compopts.optim_inlining Inliningproof.match_prog)
+---
+>   ::: mkpass Inliningproof.match_prog
+==========================================================================================262,278d261
+< Fixpoint passes_app {A B C} (l1: Passes A B) (l2: Passes B C) : Passes A C :=
+<   match l1 in (Passes AA BB) return (Passes BB C -> Passes AA C) with
+<   | pass_nil _ => fun l3 => l3
+<   | pass_cons _ _ _ P1 l1 => fun l2 => P1 ::: passes_app l1 l2
+<   end l2.
+< 
+< (* Instance transf_check_link: TransfLink PseudoInstructions.match_check_prog. *)
+< (* Proof. *)
+< (*   red. intros p1 p2 tp1 tp2 p LINK (MP1 & O1) (MP2 & O2). *)
+< (*   exploit (fun lv => @TransfPartialLink Asm.function Asm.function unit lv (PseudoInstructions.transf_check_function) p1 p2 tp1 tp2 p); eauto. intros (tp & TLINK & TMP). *)
+< (*   exists tp; split; eauto. *)
+< (*   split; auto. *)
+< 
+< (*   eauto. eauto. *)
+< (* Defined. *)
+< 
+< 
+==========================================================================================299c282
+<   destruct (partial_if optim_inlining Inlining.transf_program p7) as [p8|e] eqn:P8; simpl in T; try discriminate.
+---
+>   destruct (Inlining.transf_program p7) as [p8|e] eqn:P8; simpl in T; try discriminate.
+==========================================================================================320c303
+<   exists p8; split. eapply partial_if_match; eauto. apply Inliningproof.transf_program_match; auto.
+---
+>   exists p8; split. apply Inliningproof.transf_program_match; auto.
+333c316
+<   exists tp; split. apply Asmgenproof.transf_program_match; auto.
+---
+>   exists tp; split. apply Asmgenproof.transf_program_match; auto. 
+337,348d319
+< Lemma compose_passes_app:
+<   forall {l1 l2} (A: Passes l1 l2) {l3} (B: Passes l2 l3) p tp,
+<     compose_passes (passes_app A B) p tp <->
+<     exists pi, compose_passes A p pi /\ compose_passes B pi tp.
+< Proof.
+<   induction A; simpl; intros. split. eexists; split; eauto.
+<   intros (pi & EQ & CP); inv EQ; auto.
+<   setoid_rewrite IHA. split; intro H; decompose [ex and] H; eauto.
+< Qed.
+< 
+< 
+< 
+352c323
+<   [match_prog] relation) preserves semantics by constructing
+---
+>   [match_prog] relation) preserves semantics by constructing 
+364,365c335
+<   forall {RETVAL: Type},
+<   forall sem: _ RETVAL, forward_simulation sem sem.
+---
+>   forall sem, forward_simulation sem sem.
+375,376c345
+<   forall {RETVAL: Type},
+<   forall (A: Type) (sem: A -> semantics RETVAL) (flag: unit -> bool) (transf: A -> A -> Prop) (prog tprog: A),
+---
+>   forall (A: Type) (sem: A -> semantics) (flag: unit -> bool) (transf: A -> A -> Prop) (prog tprog: A),
+384,454d352
+< Section WITHEXTERNALCALLS.
+<   Local Existing Instance Events.symbols_inject_instance.
+<   Local Existing Instance StackADT.inject_perm_all.
+<   Context `{external_calls_prf: Events.ExternalCalls
+<                                   (symbols_inject_instance := Events.symbols_inject_instance) }.
+<   Context {i64_helpers_correct_prf: SplitLongproof.I64HelpersCorrect mem}.
+<   Context `{memory_model_x_prf: !Unusedglobproof.Mem.MemoryModelX mem}.
+< 
+< Definition fn_stack_requirements (tp: Asm.program) (id: ident) : Z :=
+<   match Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv tp) id with
+<   | Some b =>
+<     match Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv tp) b with
+<     | Some (Internal f) => Asm.fn_stacksize f
+<     | _ => 0
+<     end
+<   | None => 0
+<   end.
+< 
+< 
+< Definition printable_oracle (tp: Asm.program) : list (ident * Z) :=
+<   fold_left (fun acc gd =>
+<                match gd with
+<                  (id,Some (Gfun (Internal f))) => (id, fn_stack_requirements tp id)::acc
+<                | _ => acc
+<                end) (prog_defs tp) nil.
+< 
+< Lemma match_program_no_more_functions:
+<   forall {F1 V1 F2 V2}
+<          `{Linker F1} `{Linker V1}
+<          Mf Mv
+<          (p1: program F1 V1) (p2: program F2 V2),
+<     match_program Mf Mv p1 p2 ->
+<     forall b,
+<     Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p1) b = None ->
+<     Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p2) b = None.
+< Proof.
+<   intros.
+<   generalize (Globalenvs.Genv.find_def_match_2 H1 b).
+<   inversion 1.
+<   - destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p2) b) eqn:?; auto.
+<     apply Globalenvs.Genv.find_funct_ptr_iff in Heqo. congruence.
+<   - destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p2) b) eqn:?; auto.
+<     apply Globalenvs.Genv.find_funct_ptr_iff in Heqo. rewrite Heqo in H5.  inv H5.
+<     inv H6.
+<     symmetry in H4.
+<     apply Globalenvs.Genv.find_funct_ptr_iff in H4. congruence.
+< Qed.
+< 
+< 
+< Lemma fn_stack_requirements_pos:
+<   forall ps p i,
+<     Asmgenproof.match_prog ps p ->
+<     0 <= fn_stack_requirements p i.
+< Proof.
+<   unfold fn_stack_requirements.
+<   intros. repeat destr; try omega.
+<   destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv ps) b) eqn:FFPMACH.
+<   - edestruct (Asmgenproof.functions_translated _ _ H _ _ FFPMACH) as (if0 & FFPASM & EQ). rewrite Heqo0 in FFPASM. inv FFPASM.
+<     unfold Asmgen.transf_fundef, transf_partial_fundef in EQ.
+<     destr_in EQ. monadInv EQ.
+<     unfold Asmgen.transf_function in EQ0. monadInv EQ0. repeat destr_in EQ1. unfold Asmgen.transl_function in EQ.
+<     monadInv EQ. repeat destr_in EQ1. simpl.
+<     unfold StackADT.frame_info_of_size_and_pubrange in Heqo1. destr_in Heqo1.
+<   - eapply match_program_no_more_functions in FFPMACH; eauto. congruence.
+< Qed.
+< 
+< Definition mk_init_stk {F V} (p: AST.program F V) : StackADT.stack :=
+<   (Some (StackADT.make_singleton_frame_adt
+<            (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv p)) 0 0), nil) :: nil .
+< 
+< 
+457,460c355,357
+<     match_prog p tp ->
+<     let init_stk := mk_init_stk tp in
+<   forward_simulation (Cstrategy.semantics (fn_stack_requirements tp) p) (Asm.semantics tp init_stk)
+<   /\ backward_simulation (atomic (Cstrategy.semantics (fn_stack_requirements tp) p)) (Asm.semantics tp init_stk).
+---
+>   match_prog p tp ->
+>   forward_simulation (Cstrategy.semantics p) (Asm.semantics tp)
+>   /\ backward_simulation (atomic (Cstrategy.semantics p)) (Asm.semantics tp).
+469,471c366,367
+<   repeat DestructM.
+<   intros init_stk.
+<   assert (F: forward_simulation (Cstrategy.semantics (fn_stack_requirements tp) p) (Asm.semantics tp init_stk)).
+---
+>   repeat DestructM. subst tp.
+>   assert (F: forward_simulation (Cstrategy.semantics p) (Asm.semantics p21)).
+474c370
+<     eapply SimplExprproof.transl_program_correct; try eassumption. intros; eapply fn_stack_requirements_pos. subst; eauto.
+---
+>     eapply SimplExprproof.transl_program_correct; eassumption.
+486c382
+<     eapply match_if_simulation. eassumption. intros; eapply Tailcallproof.transf_program_correct; eauto.
+---
+>     eapply match_if_simulation. eassumption. exact Tailcallproof.transf_program_correct.
+488c384
+<     eapply match_if_simulation. eassumption. eapply Inliningproof.transf_program_correct; eassumption.
+---
+>     eapply Inliningproof.transf_program_correct; eassumption.
+491c387
+<     eapply match_if_simulation. eassumption. apply Constpropproof.transf_program_correct.
+---
+>     eapply match_if_simulation. eassumption. exact Constpropproof.transf_program_correct.
+493c389
+<     eapply match_if_simulation. eassumption. apply Renumberproof.transf_program_correct.
+---
+>     eapply match_if_simulation. eassumption. exact Renumberproof.transf_program_correct.
+495c391
+<     eapply match_if_simulation. eassumption. intros; eapply CSEproof.transf_program_correct; assumption.
+---
+>     eapply match_if_simulation. eassumption. exact CSEproof.transf_program_correct.
+497c393
+<     eapply match_if_simulation. eassumption. intros; eapply Deadcodeproof.transf_program_correct; eassumption.
+---
+>     eapply match_if_simulation. eassumption. exact Deadcodeproof.transf_program_correct; eassumption.
+509c405
+<     eapply match_if_simulation. eassumption. apply Debugvarproof.transf_program_correct.
+---
+>     eapply match_if_simulation. eassumption. exact Debugvarproof.transf_program_correct.
+511,542c407,410
+<     replace (fn_stack_requirements tp) with (Stackingproof.fn_stack_requirements p20).
+<   eapply Stackingproof.transf_program_correct with
+<       (return_address_offset := Asmgenproof0.return_address_offset);
+<     try assumption.
+<     exact (Asmgenproof.return_address_exists).
+<     {
+<       clear - M19 MM.
+<       subst.
+<       unfold Stackingproof.fn_stack_requirements, fn_stack_requirements.
+<       apply Axioms.extensionality.
+<       intros i.
+<       erewrite Asmgenproof.symbols_preserved; eauto.
+<       destruct (Globalenvs.Genv.find_symbol (Globalenvs.Genv.globalenv p20) i) eqn:?; auto.
+<       destruct (Globalenvs.Genv.find_funct_ptr (Globalenvs.Genv.globalenv p20) b) eqn:?; auto.
+<       eapply Asmgenproof.functions_translated in Heqo0. 2: eauto.
+<       destruct Heqo0 as (tf & FFP & TF); rewrite FFP.
+<       destruct f; simpl in *; monadInv TF; auto.
+<       unfold Asmgen.transf_function in EQ. monadInv EQ. destr_in EQ1. inv EQ1.
+<       unfold Asmgen.transl_function in EQ0. monadInv EQ0. repeat destr_in EQ1. simpl. auto.
+<       eapply match_program_no_more_functions in Heqo0; eauto. rewrite Heqo0. auto.
+<     }
+<   eapply compose_forward_simulations.
+<     instantiate (1 := Mach.semantics2 Asmgenproof0.return_address_offset p20).
+<     apply Mach2Mach2.mach2_simulation.
+<     eapply Stackingproof.stacking_frame_correct; eauto.
+<     subst. unfold init_stk, mk_init_stk.
+<     replace (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv tp))
+<       with (Globalenvs.Genv.genv_next (Globalenvs.Genv.globalenv p20)).
+<     eapply Asmgenproof.transf_program_correct. eassumption.
+<     eapply Stackingproof.stacking_frame_correct; eauto.
+<     eapply Globalenvs.Genv.senv_transf_partial in M19.
+<     destruct M19 as (NB & _). simpl in NB. auto.
+---
+>     eapply Stackingproof.transf_program_correct with (return_address_offset := Asmgenproof0.return_address_offset).
+>     exact Asmgenproof.return_address_exists.
+>     eassumption.
+>   eapply Asmgenproof.transf_program_correct; eassumption.
+553,555c421,422
+<     match_prog p tp ->
+<     let init_stk := mk_init_stk tp in
+<   backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (Asm.semantics tp init_stk).
+---
+>   match_prog p tp ->
+>   backward_simulation (Csem.semantics p) (Asm.semantics tp).
+558c425
+<   apply compose_backward_simulation with (atomic (Cstrategy.semantics (fn_stack_requirements tp) p)).
+---
+>   apply compose_backward_simulation with (atomic (Cstrategy.semantics p)).
+567,568d433
+< 
+< 
+583,585c448,449
+<     transf_c_program p = OK tp ->
+<     let init_stk := mk_init_stk tp in
+<   backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (Asm.semantics tp init_stk).
+---
+>   transf_c_program p = OK tp ->
+>   backward_simulation (Csem.semantics p) (Asm.semantics tp).
+590,591d453
+< 
+< 
+610,612c472
+<       /\
+<       let init_stk := mk_init_stk asm_program in
+<       backward_simulation (Csem.semantics (fn_stack_requirements asm_program) c_program) (Asm.semantics asm_program init_stk).
+---
+>    /\ backward_simulation (Csem.semantics c_program) (Asm.semantics asm_program).
+622,626d481
+< 
+< 
+< 
+< End WITHEXTERNALCALLS.
+< 

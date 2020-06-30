@@ -435,7 +435,7 @@ Qed.
 
 Lemma plus_safe:
   forall s1 s2 t s3,
-  safe s1 -> star (Csem_old.step fn_stack_requirements) ge s1 E0 s2 -> (safe s2 -> plus (Csem.step fn_stack_requirements) ge s2 t s3) ->
+  safe s1 -> star (Csem_old.step fn_stack_requirements) ge s1 E0 s2 -> (safe s2 -> plus (Csem_old.step fn_stack_requirements) ge s2 t s3) ->
   plus (Csem_old.step fn_stack_requirements) ge s1 t s3.
 Proof.
   intros. eapply star_plus_trans; eauto. apply H1. eapply safe_steps; eauto. auto.
@@ -718,11 +718,11 @@ Variable m: mem.
 Lemma eval_simple_steps:
    (forall a v, eval_simple_rvalue e m a v ->
     forall C, context RV RV C ->
-    star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
+    star (Csem_old.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                    E0 (ExprState f (C (Eval v (typeof a))) k e m))
 /\ (forall a b ofs, eval_simple_lvalue e m a b ofs ->
     forall C, context LV RV C ->
-    star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
+    star (Csem_old.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                    E0 (ExprState f (C (Eloc b ofs (typeof a))) k e m)).
 Proof.
 
@@ -766,14 +766,14 @@ Qed.
 Lemma eval_simple_rvalue_steps:
   forall a v, eval_simple_rvalue e m a v ->
   forall C, context RV RV C ->
-  star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
+  star (Csem_old.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                 E0 (ExprState f (C (Eval v (typeof a))) k e m).
 Proof (proj1 eval_simple_steps).
 
 Lemma eval_simple_lvalue_steps:
   forall a b ofs, eval_simple_lvalue e m a b ofs ->
   forall C, context LV RV C ->
-  star (Csem.step fn_stack_requirements) ge (ExprState f (C a) k e m)
+  star (Csem_old.step fn_stack_requirements) ge (ExprState f (C a) k e m)
                 E0 (ExprState f (C (Eloc b ofs (typeof a))) k e m).
 Proof (proj2 eval_simple_steps).
 
@@ -992,7 +992,7 @@ Hint Resolve contextlist'_head contextlist'_tail.
 Lemma eval_simple_list_steps:
   forall rl vl, eval_simple_list' rl vl ->
   forall C, contextlist' C ->
-  star (Csem.step fn_stack_requirements) ge (ExprState f (C rl) k e m)
+  star (Csem_old.step fn_stack_requirements) ge (ExprState f (C rl) k e m)
                 E0 (ExprState f (C (rval_list vl rl)) k e m).
 Proof.
   induction 1; intros.
@@ -1154,7 +1154,7 @@ End DECOMPOSITION.
 
 Lemma estep_simulation:
   forall S t S',
-  estep S t S' -> plus (Csem.step fn_stack_requirements) ge S t S'.
+  estep S t S' -> plus (Csem_old.step fn_stack_requirements) ge S t S'.
 Proof.
   intros. inv H.
 (* simple *)
@@ -1276,14 +1276,14 @@ Proof.
   eapply plus_right.
   eapply eval_simple_list_steps with (C := fun x => C(Ecall (Eval vf (typeof rf)) x ty)); eauto.
   eapply contextlist'_call with (rl0 := Enil); auto.
-  left; apply Csem.step_call; eauto. econstructor; eauto.
+  left; apply Csem_old.step_call; eauto. econstructor; eauto.
   traceEq. auto.
 (* builtin *)
   exploit eval_simple_list_implies; eauto. intros [vl' [A B]].
   eapply plus_right.
   eapply eval_simple_list_steps with (C := fun x => C(Ebuiltin ef tyargs x ty)); eauto.
   eapply contextlist'_builtin with (rl0 := Enil); auto.
-  left; apply Csem.step_rred; eauto. econstructor; eauto.
+  left; apply Csem_old.step_rred; eauto. econstructor; eauto.
   traceEq.
 Qed.
 
@@ -1606,7 +1606,7 @@ Qed.
 (** The main simulation result. *)
 
 Theorem strategy_simulation:
-  forall p, backward_simulation (Csem.semantics fn_stack_requirements p) (semantics p).
+  forall p, backward_simulation (Csem_old.semantics fn_stack_requirements p) (semantics p).
 Proof.
   intros.
   apply backward_simulation_plus with (match_states := fun (S1 S2: state) => S1 = S2); simpl.
