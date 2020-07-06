@@ -8,7 +8,7 @@ target the framework of *refinement-based game semantics*.
 This is a modified version of CompCert v3.5. The language semantics
 and correctness proofs have been updated to describe the behavior of
 individual compilation units. Most passes from Clight to Asm have
-been update, for the x86 architecture.
+been updated, for the x86 architecture.
 
 ## Building
 
@@ -17,7 +17,7 @@ passes are not available and the full extracted compiler cannot be
 built. However the Coq version of the Clight to Asm compiler can be
 compiled in the following way.
 
-Build requirements are similar to that of CompCert v3.5. In addition,
+Build requirements are similar to that of CompCert v3.6. In addition,
 our modifications rely on the Coqrel library, which must be built
 first. We will include Coqrel in any self-contained archive we
 distribute, but if you are working in a git clone, you must first
@@ -39,7 +39,7 @@ If appropriate to your setting, we recommend you use a -j option when
 invoking make so as to enable parallel compilation.
 
 The remainder of this document is the original `README.md` distributed
-with CompCert v3.5.
+with CompCert v3.6.
 
 ---
 
