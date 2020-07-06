@@ -314,7 +314,7 @@ compcerto: FORCE
 	mkdir $@.n
 	git archive HEAD | tar -C $@.n -x
 	(cd coqrel && git archive HEAD) | tar -C $@.n/coqrel -x
-	git diff $(DIFFFLAGS) v3.5 > $@.n/compcerto.diff
+	git diff $(DIFFFLAGS) v3.6 > $@.n/compcerto.diff
 	mv $@.n $@
 
 %.tar.bz2: %
