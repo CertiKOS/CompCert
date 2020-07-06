@@ -998,6 +998,48 @@ Proof.
   omega.
 Qed.
 
+ (* {| *)
+ (*    prog_defs := prog_defs prog; *)
+ (*    prog_public := prog_public prog; *)
+ (*    prog_main := prog_main prog; *)
+ (*    prog_sectable := [sec_bytes x2; sec_bytes x1]; *)
+ (*    prog_symbtable := prog_symbtable prog; *)
+ (*    prog_strtable := prog_strtable prog; *)
+ (*    prog_reloctables := prog_reloctables prog; *)
+ (*    prog_senv := prog_senv prog |} *)
+
+Definition prog_eq prog tprog:=
+  prog.(prog_defs) = tprog.(prog_defs)
+  /\  prog.(prog_main) = tprog.(prog_main)
+  /\ prog.(prog_public) = tprog.(prog_public)
+  /\ prog.(prog_symbtable) = tprog.(prog_symbtable)
+  /\ prog.(prog_reloctables) = tprog.(prog_reloctables)
+  /\ prog.(prog_senv) = tprog.(prog_senv)
+  /\ prog.(prog_strtable) = tprog.(prog_strtable).
+(* not correct!! sectable is not equal!! globalenv prog = globalenv tprog *)
+
+Lemma prog_eq_transitivity: forall a b c,
+    prog_eq a b
+    ->prog_eq b c
+    ->prog_eq a c.
+Admitted.
+
+Lemma prog_eq_symm: forall a b,
+    prog_eq a b
+    ->prog_eq b a.
+Admitted.
+
+Definition get_prog_code prog :=
+  let sec_table := prog.(prog_sectable) in
+  match SecTable.get sec_code_id sec_table with
+  |None => None
+  |Some code_sec
+   => match code_sec with
+      |sec_text c => Some c
+      |_ => None
+      end
+  end.
+
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
@@ -1025,6 +1067,40 @@ Hypothesis TRANSF: match_prog prog tprog.
 (*      could not generate exactly the same instruction as the pre-encoded one. *)
 (*      The relation instr_eq should be used here. *) *)
 (* Admitted. *)
+Lemma prog_tprog_eq:
+  prog_eq prog tprog.
+Proof.
+  unfold match_prog in TRANSF.
+  unfold transf_program in TRANSF.
+  monadInv TRANSF.
+  repeat destr_in EQ2.
+  unfold prog_eq.
+  simpl.
+  repeat (split; auto).
+Qed.
+
+Lemma init_mem_eq: forall m,
+  RelocProgSemantics1.init_mem prog = Some m
+  -> init_mem tprog = Some m.
+Admitted.
+
+
+
+Lemma decode_prog_code_section_eq:
+  exists prog' c c',(decode_prog_code_section tprog = OK prog'
+                     /\ get_prog_code prog' = Some c'
+                     /\ get_prog_code prog = Some c
+                     /\ instr_eq_list c c'
+                     /\ prog_eq prog prog'
+                     /\ init_mem prog' = init_mem tprog).
+Admitted.
+
+
+Lemma genv_find_symbol: forall prog tprog sym,
+    prog_eq prog tprog
+    -> (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) 
+                                               sym Ptrofs.zero) = (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym Ptrofs.zero).
+Admitted.
 
 Lemma transf_initial_states:
   forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
@@ -1034,83 +1110,116 @@ Proof.
   exists st1.
   inv HInit.
   split.
-  + unfold match_prog in TRANSF.
-    unfold transf_program in TRANSF.
-    monadInv TRANSF.
-    repeat destr_in EQ2.
-    unfold transl_sectable in EQ.
-    destruct (prog_sectable prog);inversion EQ.
-    repeat (destruct v; inversion EQ;
-            destruct s; inversion EQ).
-    monadInv EQ.
-    simpl.
-    unfold transl_code in EQ0.
-    monadInv  EQ0.
-    destruct x. monadInv EQ3.
-    generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ2).
-    intros HTranslSpec.
-    generalize (spec_decode_ex' code 0 (rev l0) _ _ HTranslSpec).
-    intros (c' & code' & HEncodeDecode).
-    destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]].
-    destruct prog. simpl.
-    econstructor.
-    unfold decode_prog_code_section.
-    simpl.
-    cut(((length(rev l0)) >= c')%nat).
-    intros HGE.
-    generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE).
-    intros HDecode'.
-    unfold decode_instrs'.
-    simpl in HDecode'.
-    rewrite HDecode'.
-    simpl.
-    eauto.
-    omega.    
-    (* init_mem *)
-    (* unfold RelocProgSemantics1.init_mem in H. *)
-    unfold init_mem.
-    simpl.
-    unfold alloc_data_section.
-    simpl in *.
-    unfold RelocProgSemantics1.init_mem in H.
-    unfold RelocProgSemantics1.alloc_data_section in H.
-    simpl in H.
-    destruct (SecTable.get sec_data_id prog_sectable).
-    2:inversion H.
-    destruct v.
-    1,3: inversion H.
-
-    assert(HDataSize: (sec_size (sec_data init0)) = (Z.of_nat (length x2))) by admit.
-    rewrite <- HDataSize.
-    destruct (Mem.alloc Mem.empty 0 (sec_size (sec_data init0))) eqn: EQM0.
-    destruct (store_zeros m0 b 0 (sec_size (sec_data init0))) eqn:EQM1.
-    2: inversion H.
-    destruct store_init_data_list eqn:EQM2.
-    2: inversion H.
-    assert(HStoreSuccess: exists m3, store_init_data_bytes m1 b 0 x2 = Some m3) by admit.
-    destruct HStoreSuccess as (m3 & HStoreSuccess).
-    rewrite HStoreSuccess.
-    assert(HDropPerm: exists m4, Mem.drop_perm m3 b 0 (sec_size (sec_data init0)) Writable = Some m4) by admit.
-    destruct HDropPerm as (m4 & HDropPerm).
-    rewrite HDropPerm.
-    unfold alloc_code_section.
-    simpl.
-    destruct ( Mem.alloc m4 0 (code_size code')) eqn: EQM5.
-    assert(HDropPerm6: exists m6, Mem.drop_perm m5 b0 0 (code_size code') Nonempty = Some m6) by admit.
-    destruct HDropPerm6 as (m6 & HDropPerm6).
-    rewrite HDropPerm6.    
-    admit.
-    (* initial_state_gen *)
-    
-    
+  +
+    generalize decode_prog_code_section_eq.
+    intros (prog' & c & c' & HDecodeEx & HCode' & HCode & HInstr_eq & HProgEq & HMemEq).
+    generalize (initial_state_intro tprog rs st1 m prog' HDecodeEx).
+    intros HInitState.
+    rewrite HMemEq in HInitState.
+    generalize (init_mem_eq m H).
+    intros HInitMem.
+    generalize (HInitState HInitMem).
+    clear HInitState.
+    intros HInitState.
     inversion H0.
+    generalize (prog_tprog_eq).
+    intros HTProgEq.
+    generalize (prog_eq_symm _ _ HProgEq).
+    clear HProgEq.
+    intros HProgEq.
+    generalize (prog_eq_transitivity _ _ _ HProgEq HTProgEq).
+    intros HProgEq'.
+    generalize HProgEq.
+    unfold prog_eq in HProgEq.
+    destruct HProgEq as (HDefsEq & HMainEq & HPublicEq & HSymEq & HRelocEq & HSenvEq & HStrEq).
+    intros HProgEq.
+    generalize (initial_state_gen_intro prog' rs _ _ _ _ _ _ MALLOC MDROP MRSB MST).
+    rewrite HMainEq.
+
+    generalize (prog_eq_symm _ _ HProgEq).
+    intros HProgEq_rev.
+    generalize (genv_find_symbol prog prog' (prog_main prog) HProgEq_rev).
+    intros HSymbolFind.
+    simpl. rewrite<- HSymbolFind.
+    rewrite H1.
+    unfold rs0 in H1. unfold ge0 in H1. simpl in H1. rewrite H1.
+    intros HInitStateGen.
+    generalize (HInitState HInitStateGen).
+    auto.
+
 
     
+    (* (* unfold RelocProgSemantics.Genv.symbol_address. *) *)
+    (* (* unfold RelocProgSemantics.globalenv. *) *)
+    (* (* unfold RelocProgSemantics.Genv.find_symbol. *) *)
+    (* (* rewrite HSymEq. *) *)
+
+    (* rewrite rs0. *)
+    (* (* match goal with *) *)
+    (* (* | [|- (_  rs1 := ?x)] => rewrite x *) *)
+    (* (* end. *) *)
+     
+    (* rewrite  HTMainEq in rs0. *)
     
-    admit.
+
+    (* apply(initial_state_gen_intro). *)
+    
+
+
+    (* assert(HInitMem: init_mem prog' = Some m). { *)
+    (*   unfold init_mem. *)
+
+    
+
+
+
+    
+    (* unfold match_prog in TRANSF. *)
+    (* unfold transf_program in TRANSF. *)
+    (* monadInv TRANSF. *)
+    (* repeat destr_in EQ2. *)
+    (* unfold transl_sectable in EQ. *)
+    (* destruct (prog_sectable prog);inversion EQ. *)
+    (* repeat (destruct v; inversion EQ; *)
+    (*         destruct s; inversion EQ). *)
+    (* monadInv EQ. *)
+    (* simpl. *)
+    (* unfold transl_code in EQ0. *)
+    (* monadInv  EQ0. *)
+    (* destruct x. monadInv EQ3. *)
+    (* generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ2). *)
+    (* intros HTranslSpec. *)
+    (* generalize (spec_decode_ex' code 0 (rev l0) _ _ HTranslSpec). *)
+    (* intros (c' & code' & HEncodeDecode). *)
+    (* destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]]. *)
+    (* match goal with *)
+    (* | [|- initial_state ?tp _ _] => *)
+    (*   set (tprog := tp) in * *)
+    (* end. *)
+    (* assert(HDecodeTprogEx: exists prog', decode_prog_code_section tprog = OK prog') by admit. *)
+    
+    (* destruct HDecodeTprog as (prog' & HDecodeTprog). *)
+
+    (* (* (* destruct prog. simpl. *) *) *)
+    (* apply (initial_state_intro tprog rs st1 m prog'). *)
+    (* auto. *)
+    (* econstructor. *)
+    
+    (* unfold decode_prog_code_section. *)
+    (* simpl. *)
+    (* cut(((length(rev l0)) >= c')%nat). *)
+    (* intros HGE. *)
+    (* generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE). *)
+    (* intros HDecode'. *)
+    (* unfold decode_instrs'. *)
+    (* simpl in HDecode'. *)
+    (* rewrite HDecode'. *)
+    (* simpl. *)
+    (* eauto. *)
+    (* omega. *)
+
   + reflexivity.
-Admitted.
-
+Qed.
 
 Lemma transf_final_states:
   forall st1 st2 r,
