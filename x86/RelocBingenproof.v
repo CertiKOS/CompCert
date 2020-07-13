@@ -1238,6 +1238,8 @@ Proof.
   unfold transf_program in H0.
   monadInv H0. simpl.
   intros b ofs Hge.
+  repeat destr_in EQ2.
+  
 
   (** *TODO Help3 *)
   (* unfold RelocProgSemantics.Genv.genv_ext_funs. *)
@@ -1317,7 +1319,9 @@ Proof.
   exists s2.
   split;auto.
   induction HStep.
-  + rewrite <- MS.
+  +
+    (* exec_step_internal *)
+    rewrite <- MS.
     unfold tge.
     (* not find def *)
     generalize (not_find_ext_funct_refl _ _ H0). auto.
@@ -1430,19 +1434,27 @@ Proof.
     unfold exec_instr. auto.
 
   +
+    (* exec_step_builtin *)
     rewrite <- MS.
-    econstructor.
-    eauto.
+    assert(HArgs: eval_builtin_args preg tge idofs rs (rs RSP) m args vargs) by admit.
+    econstructor; try eauto.
+    (* not found exfunc refl *)
     generalize (not_find_ext_funct_refl _ _ H0).
     auto.
-    admit.
-    eauto.
-    admit.    
-    admit.
+    (* built in refl *)
+    generalize (find_instr_refl _ _ _ H1).
+    intros (i & HFind & HEq).
+    inversion HEq.
+    rewrite HFind.
+    rewrite H6.
     auto.
-    eauto.
-
-  + rewrite <- MS.
+    simpl in H4. simpl.
+    
+    assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) vargs m t vres m') by admit.
+    auto.
+  +
+    (* exec_step_external *)
+    rewrite <- MS.
     admit.
     
 Admitted.
