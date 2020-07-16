@@ -1076,14 +1076,28 @@ Proof.
     eapply IHl1; eauto.
 Qed.
 
-
 Definition get_def_init_data {F V} (def: option (globdef F V)) : list init_data :=
   match def with
   | Some (Gvar v) => 
     match (gvar_init v) with
     | nil
+    | [Init_space _] => []                        
+    | _ => if v.(gvar_readonly)
+          then []
+          else gvar_init v
+    end
+  | _ => []
+  end.
+
+Definition get_def_init_rodata {F V} (def: option (globdef F V)) : list init_data :=
+  match def with
+  | Some (Gvar v) => 
+    match (gvar_init v) with
+    | nil
     | [Init_space _] => []
-    | _ => gvar_init v
+    | _ => if v.(gvar_readonly)
+          then gvar_init v
+          else []
     end
   | _ => []
   end.
@@ -1091,8 +1105,8 @@ Definition get_def_init_data {F V} (def: option (globdef F V)) : list init_data 
 Lemma init_data_alignment_div_alignw: forall id,
         (Globalenvs.Genv.init_data_alignment id | alignw).
 Proof.
-  intros. 
-  unfold Globalenvs.Genv.init_data_alignment. 
+  intros.
+  unfold Globalenvs.Genv.init_data_alignment.
   unfold alignw.
   destruct id; red.
   - exists 8. omega.
@@ -1114,7 +1128,7 @@ Proof.
   induction l as [|id l].
   - cbn. auto.
   - intros p sz INIT AL.
-    cbn in *. 
+    cbn in *.
     destruct INIT as (AL1 & INIT).
     split; auto.
     eapply Z.divide_add_r; eauto.
@@ -1129,31 +1143,32 @@ Qed.
 Definition init_data_list_aligned0 {F V} (def: option (globdef F V)) :=
   Globalenvs.Genv.init_data_list_aligned 0 (get_def_init_data def).
 
-Lemma init_data_list_aligned0_dec: forall {F V} (def: option (globdef F V)), 
+Lemma init_data_list_aligned0_dec: forall {F V} (def: option (globdef F V)),
     {init_data_list_aligned0 def} + {~init_data_list_aligned0 def}.
 Proof.
-  unfold init_data_list_aligned0. 
+  unfold init_data_list_aligned0.
   intros. apply init_data_list_aligned_dec.
 Qed.
 
-Lemma init_mem_data_aligned:
-  forall {F V : Type} (p : AST.program F V) (m : mem),
-    Genv.init_mem p = Some m ->
-    Forall init_data_list_aligned0 (map snd (AST.prog_defs p)).
-Proof.
-  intros F V p m INIT.
-  rewrite Forall_forall.
-  intros def IN.
-  red. destruct def; [| cbn; auto].
-  cbn [get_def_init_data]. 
-  destruct g; cbn; auto.
-  destr; cbn; auto.
-  erewrite in_map_iff in IN.
-  destruct IN as ((id', def) & EQ & IN). cbn in EQ. subst.
-  exploit Genv.init_mem_inversion; eauto.
-  intros (AL & O).
-  destruct i; try congruence.
-  destruct l; [cbn; eauto | congruence].
-Qed.
-
+(***** Remove Proofs By Chris Start ******)
+(* Lemma init_mem_data_aligned: *)
+(*   forall {F V : Type} (p : AST.program F V) (m : mem), *)
+(*     Genv.init_mem p = Some m -> *)
+(*     Forall init_data_list_aligned0 (map snd (AST.prog_defs p)). *)
+(* Proof. *)
+(*   intros F V p m INIT. *)
+(*   rewrite Forall_forall. *)
+(*   intros def IN. *)
+(*   red. destruct def; [| cbn; auto]. *)
+(*   cbn [get_def_init_data].  *)
+(*   destruct g; cbn; auto. *)
+(*   destr; cbn; auto. *)
+(*   erewrite in_map_iff in IN. *)
+(*   destruct IN as ((id', def) & EQ & IN). cbn in EQ. subst. *)
+(*   exploit Genv.init_mem_inversion; eauto. *)
+(*   intros (AL & O). *)
+(*   destruct i; try congruence. *)
+(*   destruct l; [cbn; eauto | congruence]. *)
+(* Qed. *)
+(***** Remove Proofs By Chris End ******)
 End WITHMEMORYMODEL.

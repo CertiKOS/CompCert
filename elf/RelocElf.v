@@ -319,6 +319,7 @@ Fixpoint check_sizes shs (ss: list section) ofs :=
 
 Inductive valid_section_flags : list section_flag -> Prop :=
 | vsf_nil : valid_section_flags []
+| vsf_alloc : valid_section_flags [SHF_ALLOC]
 | vsf_alloc_write : valid_section_flags [SHF_ALLOC; SHF_WRITE]
 | vsf_alloc_exec : valid_section_flags [SHF_ALLOC; SHF_EXECINSTR].
 
@@ -357,8 +358,8 @@ Defined.
 Lemma valid_section_flags_dec: forall l, {valid_section_flags l} + { ~ valid_section_flags l}.
 Proof.
   destruct l. left; constructor.
-  destruct l.
-  right; intro A; inv A.
+  destruct l. destruct s. right. intro A. inv A.
+  left. constructor. right. intro A. inv A.
   destruct s. right; intro A; inv A.
   destruct l. 2: right; intro A; inv A.
   destruct s0; try (right; intro A; inv A; fail); left; try constructor.

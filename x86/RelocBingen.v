@@ -305,10 +305,11 @@ End WITH_RELOC_OFS_MAP.
 
 Definition transl_sectable (stbl: sectable) relocmap : res sectable :=
   match stbl with
-  | [sec_data l; sec_text code] =>
+  | [sec_rodata rdl; sec_data dl; sec_text code] =>
     do codebytes <- transl_code (gen_reloc_ofs_map (reloctable_code relocmap)) code;
-    do databytes <- transl_init_data_list (gen_reloc_ofs_map (reloctable_data relocmap)) l;
-      OK [sec_bytes databytes; sec_bytes codebytes]
+    do databytes <- transl_init_data_list (gen_reloc_ofs_map (reloctable_data relocmap)) dl;
+    do rodatabytes <- transl_init_data_list (gen_reloc_ofs_map (reloctable_rodata relocmap)) rdl;
+      OK [sec_bytes rodatabytes; sec_bytes databytes; sec_bytes codebytes]
   | _ => Error (msg "Expected the section table to be [sec_data; sec_text]")
   end.
 

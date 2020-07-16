@@ -31,7 +31,8 @@ Definition reloc_program_of_elf_program (p:RelocElf.elf_file) : RelocProgram.pro
       prog_symbtable := nil;
       prog_strtable := PTree.empty Z;
       prog_reloctables := {| reloctable_code := nil;
-                             reloctable_data := nil
+                             reloctable_data := nil;
+                             reloctable_rodata := nil;
                           |};
 
     |}.

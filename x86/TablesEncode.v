@@ -44,7 +44,9 @@ Proof.
   intros.
   destruct (Forall_dec _ (valid_relocentry_dec) (get_reloctable RELOC_CODE rtbls)).
   destruct (Forall_dec _ (valid_relocentry_dec) (get_reloctable RELOC_DATA rtbls)).
+  destruct (Forall_dec _ (valid_relocentry_dec) (get_reloctable RELOC_RODATA rtbls)).
   left; destruct id; auto.
+  right; intro A; apply n; auto.
   right; intro A; apply n; auto.
   right; intro A; apply n; auto.
 Defined.
@@ -106,6 +108,7 @@ Definition transf_program (p:program) : res program :=
         if reloctables_ok_dec (prog_reloctables p) then
           let strsec := create_strtab_section sbytes in
           do symsec <- create_symbtable_section strmap (prog_symbtable p);
+          let rodatarelocsec := create_reloctable_section (reloctable_rodata (prog_reloctables p)) in
           let datarelocsec := create_reloctable_section (reloctable_data (prog_reloctables p)) in
           let coderelocsec := create_reloctable_section (reloctable_code (prog_reloctables p)) in
           let shstrsec := create_shstrtab_section in
@@ -114,17 +117,17 @@ Definition transf_program (p:program) : res program :=
                  prog_public := p.(prog_public);
                  prog_main := p.(prog_main);
                  prog_sectable :=
-                   p.(prog_sectable) ++ [strsec; symsec; datarelocsec; coderelocsec; shstrsec];
+                   p.(prog_sectable) ++ [strsec; symsec; rodatarelocsec; datarelocsec; coderelocsec; shstrsec];
                  prog_strtable := strmap;
                  prog_symbtable := p.(prog_symbtable);
                  prog_reloctables := prog_reloctables p;
                  prog_senv := p.(prog_senv);
               |} in
           let len := (length (prog_sectable p')) in
-          if beq_nat len 7 then
+          if beq_nat len 9 then
             OK p'
           else
-            Error [MSG "In TablesEncode: number of sections is incorrect (not 7): "; POS (Pos.of_nat len)]
+            Error [MSG "In TablesEncode: number of sections is incorrect (not 9): "; POS (Pos.of_nat len)]
         else dump_reloctables (prog_reloctables p)
       else Error [MSG "Symbol ids repeat."]
     else Error [MSG "Empty strings."]
