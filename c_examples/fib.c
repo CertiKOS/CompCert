@@ -1,14 +1,19 @@
-int fib (int n)
+#include <stdlib.h>
+#include <stdio.h>
+
+int fib(int n)
 {
-  if (n <= 2) 
+  if (n < 2) 
     return 1;
-  else 
+  else
     return fib(n-1) + fib(n-2);
 }
 
-int n = 12;
-
-int main() 
+int main(int argc, char ** argv)
 {
-  return fib(n);
+  int n, r;
+  if (argc >= 2) n = atoi(argv[1]); else n = 40;
+  r = fib(n);
+  printf("fib(%d) = %d\n", n, r);
+  return 0;
 }
