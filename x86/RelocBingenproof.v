@@ -1026,7 +1026,8 @@ Hypothesis TRANSF: match_prog prog tprog.
 (*      The relation instr_eq should be used here. *) *)
 (* Admitted. *)
 
-Lemma transf_initial_states:
+(***** Remove Proofs By Chris Start ******)
+(* Lemma transf_initial_states:
   forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
          exists st2, initial_state tprog rs st2 /\  st1 = st2.
 Proof.
@@ -1109,8 +1110,8 @@ Proof.
     
     admit.
   + reflexivity.
-Admitted.
-
+Admitted. *)
+(***** Remove Proofs By Chris End ******)
 
 Lemma transf_final_states:
   forall st1 st2 r,
@@ -1346,8 +1347,8 @@ Admitted.
   
   
 
-
-Lemma transf_program_correct:
+(***** Remove Proofs By Chris Start ******)
+(* Lemma transf_program_correct:
   forall rs, forward_simulation (RelocProgSemantics1.semantics prog rs) (RelocProgSemantics2.semantics tprog rs).
 Proof.
   intro rs.
@@ -1368,8 +1369,8 @@ Proof.
     fold ge in HStep.
     generalize(step_simulation _ _ _ HStep s2 HState).
     auto.
-Qed.
-    
+Qed. *)
+(***** Remove Proofs By Chris End ******)
 
 End PRESERVATION.
 
@@ -1394,7 +1395,8 @@ Require Import RelocLinking1.
 (*   auto. auto. auto. *)
 (* Defined. *)
 
-Lemma transl_sectable_get_code:
+(***** Remove Proofs By Chris Start ******)
+(* Lemma transl_sectable_get_code:
   forall rmap sect sect',
     transl_sectable sect rmap = OK sect' ->
     forall s,
@@ -1535,4 +1537,5 @@ Proof.
   eexists; split; eauto.
   red. unfold transf_program. simpl.
   rewrite TS. simpl. unfold bind. destr. destr. admit. admit.
-Admitted.
+Admitted. *)
+(***** Remove Proofs By Chris End ******)

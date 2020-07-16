@@ -15,7 +15,8 @@ Require Import Linking.
 Require Globalenvs.
 Import ListNotations.
 
-
+(***** Remove Proofs By Chris Start ******)
+(*
 Lemma get_symbentry_pres_internal_prop : forall did cid id dsz csz def,
     is_def_internal is_fundef_internal def = 
     is_symbentry_internal (get_symbentry did cid dsz csz id def).
@@ -1231,3 +1232,5 @@ Proof.
     eapply IHdefs; eauto.
     eapply Z.divide_add_r; eauto.
 Qed.
+*)
+(***** Remove Proofs By Chris End ******)

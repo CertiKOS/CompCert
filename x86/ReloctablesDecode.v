@@ -243,7 +243,8 @@ Proof.
   repeat destr. intro A; inv A. reflexivity.
 Qed.
 
-Lemma transf_program_inv_correct p p':
+(***** Remove Proofs By Chris Start ******)
+(* Lemma transf_program_inv_correct p p':
   Forall valid_relocentry (reloctable_code (prog_reloctables p)) ->
   Forall valid_relocentry (reloctable_data (prog_reloctables p)) ->
   transf_program p = OK p' ->
@@ -263,4 +264,5 @@ Proof.
   rewrite decode_encode_reloctable; auto.
   rewrite decode_encode_reloctable; auto. simpl.
   Transparent take_drop. simpl. f_equal. destruct p; f_equal; simpl in *; auto.
-Qed.
+Qed. *)
+(***** Remove Proofs By Chris End ******)

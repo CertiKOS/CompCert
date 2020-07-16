@@ -18,7 +18,8 @@ Open Scope Z_scope.
 
 Hint Resolve in_eq in_cons.
 
-
+(***** Remove Proofs By Chris Start ******)
+(*
 Ltac monadInvX1 H :=
   let monadInvX H :=  
       monadInvX1 H ||
@@ -1880,3 +1881,5 @@ Qed.
 
 
 End PRESERVATION.
+*)
+(***** Remove Proofs By Chris End ******)

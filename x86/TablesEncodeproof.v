@@ -15,7 +15,8 @@ Import ListNotations.
 Definition match_prog (p tp:RelocProgram.program) :=
   transf_program p = OK tp.
 
-Lemma transf_program_match:
+(***** Remove Proofs By Chris Start ******)
+(* Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
 Proof.
   intros. red. auto.
@@ -318,6 +319,8 @@ Proof.
 Qed.
 
 End PRESERVATION.
+*)
+(***** Remove Proofs By Chris End ******)
 
 Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option RelocProgram.program :=
   match RelocProgSemantics3.decode_tables p1, RelocProgSemantics3.decode_tables p2 with
@@ -333,6 +336,8 @@ Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option Reloc
     | _, _ => None
   end.
 
+(***** Remove Proofs By Chris Start ******)
+(*
 Instance linker2 : Linker RelocProgram.program.
 Proof.
   eapply Build_Linker with (link := link_reloc_decode_tables) (linkorder := fun _ _ => True).
@@ -1012,4 +1017,5 @@ Proof.
   rewrite dump_reloctables_error in H1. congruence.
   rewrite dump_reloctables_error in H1. congruence.
   rewrite dump_reloctables_error in H1. congruence.
-Admitted.
+Admitted. *)
+(***** Remove Proofs By Chris End ******)

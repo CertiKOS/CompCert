@@ -16,7 +16,8 @@ Import ListNotations.
 Definition match_prog p tp :=
   gen_reloc_elf p = OK tp.
 
-Lemma transf_program_match:
+(***** Remove Proofs By Chris Start ******)
+(* Lemma transf_program_match:
   forall p tp, gen_reloc_elf p = OK tp -> match_prog p tp.
 Proof.
   unfold match_prog; intuition.
@@ -142,7 +143,8 @@ Proof.
 Qed.
 
 End PRESERVATION.
-
+*)
+(***** Remove Proofs By Chris End ******)
 
 Definition link_reloc_elf_gen (p1 p2: RelocElf.elf_file) : option RelocElf.elf_file :=
   match link_reloc_decode_tables (reloc_program_of_elf_program p1) (reloc_program_of_elf_program p2) with
@@ -154,6 +156,8 @@ Definition link_reloc_elf_gen (p1 p2: RelocElf.elf_file) : option RelocElf.elf_f
   | _ => None
   end.
 
+(***** Remove Proofs By Chris Start ******)
+(*
 Instance linker2 : Linker RelocElf.elf_file.
 Proof.
   eapply Build_Linker with (link := link_reloc_elf_gen) (linkorder := fun _ _ => True).
@@ -250,4 +254,5 @@ Proof.
   generalize (f RELOC_CODE). simpl. auto.
   generalize (f RELOC_DATA). simpl. auto.
   rewrite TablesEncode.dump_reloctables_error in H0; congruence.
-Admitted.
+Admitted. *)
+(***** Remove Proofs By Chris End ******)

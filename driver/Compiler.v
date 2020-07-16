@@ -370,7 +370,8 @@ Definition real_asm_passes :=
 Definition match_prog_real :=
   pass_match (compose_passes (passes_app CompCert's_passes real_asm_passes)).
 
-Definition reloc_asm_passes :=
+(***** Remove Proofs By Chris Start ******)
+(* Definition reloc_asm_passes :=
              (mkpass Asmlabelgenproof.match_prog ::: pass_nil _).
 
 Definition match_prog_reloc :=
@@ -402,9 +403,13 @@ Definition bytes_passes :=
   ::: mkpass RelocElfgenproof.match_prog
   ::: mkpass EncodeElfCorrect.match_prog
   ::: pass_nil _.
+ *)
+(***** Remove Proofs By Chris End ******)
 
+(* Definition match_prog_bytes :=
+  pass_match (compose_passes (passes_app CompCert's_passes (passes_app real_asm_passes bytes_passes))). *)
 Definition match_prog_bytes :=
-  pass_match (compose_passes (passes_app CompCert's_passes (passes_app real_asm_passes bytes_passes))).
+  pass_match (compose_passes (passes_app CompCert's_passes real_asm_passes)).
 
 (** The [transf_c_program] function, when successful, produces
   assembly code that is in the [match_prog] relation with the source C program. *)
@@ -495,7 +500,8 @@ Proof.
   apply PseudoInstructionsproof.transf_program_match; auto.
 Qed.
 
-Theorem transf_c_elim_label_match :
+(***** Remove Proofs By Chris Start ******)
+(* Theorem transf_c_elim_label_match :
   forall p tp,
     transf_c_elim_label p = OK tp ->
     match_prog_reloc p tp.
@@ -581,8 +587,8 @@ Proof.
   eexists; split.
   red. eauto.
   eauto.
-Qed.
-
+Qed. *)
+(***** Remove Proofs By Chris End ******)
 
 
 (** * Semantic preservation *)
@@ -946,8 +952,8 @@ Qed.
 
 (** To be moved to Asmlabelgenproof *)
 
-
-Lemma Asmlabelgen_fn_stack_requirements_match : forall p tp,
+(***** Remove Proofs By Chris Start ******)
+(* Lemma Asmlabelgen_fn_stack_requirements_match : forall p tp,
     Asmlabelgenproof.match_prog p tp ->
     fn_stack_requirements p = fn_stack_requirements tp.
 Proof.
@@ -1167,7 +1173,8 @@ Proof.
   apply EncodeElfCorrect.encode_elf_correct; eauto.
   apply RealAsm.real_asm_receptive.
   eapply ElfBytesSemantics.semantics_determinate.
-Qed.
+Qed. *)
+(***** Remove Proofs By Chris End ******)
 
 
 
@@ -1208,7 +1215,8 @@ Proof.
   intros. apply c_semantic_preservation_real. apply transf_c_program_real_match; auto.
 Qed.
 
-Theorem transf_c_elim_label_correct:
+(***** Remove Proofs By Chris Start ******)
+(* Theorem transf_c_elim_label_correct:
   forall p tp,
     transf_c_elim_label p = OK tp ->
     backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
@@ -1223,8 +1231,8 @@ Theorem transf_c_program_correct_bytes:
 Proof.
   intros. exploit c_semantic_preservation_bytes. apply transf_c_program_bytes_match; eauto.
   simpl. auto.
-Qed.
-
+Qed. *)
+(***** Remove Proofs By Chris End ******)
 
 (** Here is the separate compilation case.  Consider a nonempty list [c_units]
   of C source files (compilation units), [C1 ,,, Cn].  Assume that every
@@ -1302,7 +1310,8 @@ Proof.
 Qed.
 
 
-Theorem separate_transf_c_program_correct_reloc:
+(***** Remove Proofs By Chris Start ******)
+(* Theorem separate_transf_c_program_correct_reloc:
   forall c_units asm_units c_program,
   nlist_forall2 (fun cu tcu => transf_c_elim_label cu = OK tcu) c_units asm_units ->
   link_list c_units = Some c_program ->
@@ -1321,8 +1330,8 @@ Proof.
   { eapply link_list_compose_passes; eauto. }
   destruct H2 as (asm_program & P & Q).
   exists asm_program; split; auto. apply c_semantic_preservation_reloc; auto.
-Qed.
-
+Qed. *)
+(***** Remove Proofs By Chris End ******)
 
 (*
 Theorem separate_transf_c_program_correct_flat:

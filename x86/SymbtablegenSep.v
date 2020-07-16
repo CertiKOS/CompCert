@@ -31,8 +31,8 @@ Local Transparent Linker_prog_ordered.
 
 Hint Resolve link_prog_merge_symm.
 
-
-Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
+(***** Remove Proofs By Chris Start ******)
+(* Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
     partition f l = (l1, l2) -> 
     (forall x, In x l1 -> f x = true) /\ (forall x, In x l2 -> f x = false).
 Proof.
@@ -3895,3 +3895,5 @@ Qed.
 
 Instance TransfLinkSymbtablegen : TransfLink match_prog :=
   link_transf_symbtablegen.
+**)
+(***** Remove Proofs By Chris End ******)

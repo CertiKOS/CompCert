@@ -13,6 +13,8 @@ Require Import Reloctablesgen.
 Import ListNotations.
 Require Import Lia.
 
+(***** Remove Proofs By Chris Start ******)
+(*
 Definition match_prog p tp :=
   exists tp',
     transf_program p = OK tp' /\
@@ -3397,4 +3399,5 @@ Proof.
   exfalso.
   admit.                        (* code_size (c1' ++ c2') >= Ptrofs.max_unsigned. *)
   
-Admitted.
+Admitted. *)
+(***** Remove Proofs By Chris End ******)

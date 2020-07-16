@@ -7,7 +7,8 @@ Require Import RelocProgSemantics2.
 Require Import RelocBingenproof.
 
 Import ListNotations.
-
+(***** Remove Proofs By Chris Start ******)
+(*
 Definition match_prog (p tp:RelocProgram.program) :=
   transf_program p = tp.
 
@@ -321,7 +322,8 @@ Proof.
   rewrite Heqo0.
   erewrite link_reloctable_remove_addend; eauto.
   eexists; split; eauto.
-Defined.
+Defined. *)
+(***** Remove Proofs By Chris End ******)
 
 (*
   
