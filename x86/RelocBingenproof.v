@@ -1455,8 +1455,21 @@ Proof.
   +
     (* exec_step_external *)
     rewrite <- MS.
-    admit.
-    
+    generalize (exec_step_external tge b ofs ef args res rs m t rs' m').
+    intros HExecStepExt.
+    generalize (HExecStepExt H).
+    clear HExecStepExt. intros HExecStepExt.
+    assert(HFoundExt: Genv.find_ext_funct tge (Vptr b ofs) = Some ef) by admit.
+    generalize (HExecStepExt HFoundExt).
+    clear HExecStepExt. intros HExecStepExt.
+    rewrite LOADRA in HExecStepExt.
+    generalize (HExecStepExt ra eq_refl RA_NOT_VUNDEF ARGS).
+    clear HExecStepExt. intros HExecStepExt.
+    assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) args m t res m') by admit.
+    generalize (HExecStepExt HExtCall).
+    clear HExecStepExt. intros HExecStepExt.
+    generalize (HExecStepExt H2).
+    auto.
 Admitted.
 
 
@@ -1590,14 +1603,29 @@ Proof.
   rewrite RealAsm.code_size_app. simpl. omega.
 Qed.
 
+Lemma encode_int32_size: forall x,
+    (length(Encode.encode_int32 x) = 4)%nat.
+Admitted.
+
+Lemma encode_addrmode_size_refl: forall rmap o i a rd x,
+    encode_addrmode rmap o i a rd = OK x
+    -> addrmode_size a = Z.of_nat (length x).
+Admitted.
+
 Lemma encode_instrs_size:
   forall rmap o i bl,
     encode_instr rmap o i = OK bl ->
     Asm.instr_size i = Z.of_nat (length bl).
 Proof.
   Transparent Asm.instr_size. Opaque Z.add.
-  destruct i; simpl; intros; autoinv; simpl; auto; try congruence.
-Admitted.
+  destruct i eqn:EQI; simpl; intros; autoinv; simpl;auto;try congruence.
+  1-3,6,7:rewrite (encode_addrmode_size_refl _ _ _ _ _ _ EQ);
+    rewrite Zpos_P_of_succ_nat; omega.
+  1-6:inversion H; auto.
+  rewrite app_length.
+  rewrite encode_int32_size.
+  unfold encode_testcond. destruct c; simpl; auto.
+Qed.
 
 Lemma transl_code_size:
   forall rmap l bl,
