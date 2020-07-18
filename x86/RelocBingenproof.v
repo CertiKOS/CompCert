@@ -1664,7 +1664,7 @@ Admitted.
 Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
                           RelocLinking1.Linker_reloc_prog
                           match_prog.
-Proof.
+Proof.  
   red. simpl. unfold link_reloc_prog.
   intros. unfold match_prog in H0, H1. unfold transf_program in H0, H1.
   monadInv H0. repeat destr_in EQ2.

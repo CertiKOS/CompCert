@@ -370,6 +370,7 @@ Let instr_size' (i: instruction) : Z :=
   | Ptestl_rr _ _ => 2
   | Pret => 1
   | Pimull_rr _ _ => 3
+  | Pimull_ri _ _ => 6
   | Pcmpl_rr _ _ => 2
   | Pcmpl_ri _ _ => 6
   | Pcltd => 1
