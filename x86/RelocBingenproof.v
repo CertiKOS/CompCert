@@ -1082,6 +1082,35 @@ Qed.
 Lemma init_mem_eq: forall m,
   RelocProgSemantics1.init_mem prog = Some m
   -> init_mem tprog = Some m.
+Proof.
+  intros m HInit.
+  unfold RelocProgSemantics1.init_mem in HInit.
+  destruct (RelocProgSemantics1.alloc_data_section (globalenv prog) (prog_sectable prog) Mem.empty) eqn:EQData;
+    inversion HInit.
+  clear H0.
+  destruct (alloc_code_section (prog_sectable prog) m0) eqn:EQCode;
+    inversion HInit.
+  clear H0.
+  unfold init_mem.
+  unfold alloc_data_section.
+  unfold match_prog in TRANSF.
+  unfold transf_program in TRANSF.
+  monadInv TRANSF.
+  destruct zlt; inversion EQ2.
+  simpl.
+  unfold transl_sectable in EQ.
+  destruct (prog_sectable prog);inversion EQ.
+  destruct v;inversion EQ. clear H1.
+  destruct s; inversion H2.
+  clear H2.
+  destruct v; inversion H1.
+  destruct s; inversion H2.
+  clear H2. clear H3.
+  monadInv H1.
+  simpl.
+  
+  
+
 Admitted.
 
 
