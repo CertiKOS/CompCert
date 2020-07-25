@@ -1092,6 +1092,7 @@ Proof.
     inversion HInit.
   clear H0.
   unfold init_mem.
+  (* data section *)
   unfold alloc_data_section.
   unfold match_prog in TRANSF.
   unfold transf_program in TRANSF.
@@ -1108,8 +1109,38 @@ Proof.
   clear H2. clear H3.
   monadInv H1.
   simpl.
+  unfold RelocProgSemantics1.alloc_data_section in EQData.
+  simpl in EQData.
+  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length x2)) by admit.
+  rewrite <- HSizeEQ.
+  destruct (Mem.alloc Mem.empty 0 (init_data_list_size init)) eqn:EQM.
+  destruct (store_zeros m2 b 0 (init_data_list_size init)) eqn:EQZeros;inversion EQData.
+  clear H0.
+  assert(HStoreInitBytes:  store_init_data_bytes m3 b 0 x2 = store_init_data_list (globalenv prog) m3 b 0 init) by admit.
+  rewrite HStoreInitBytes.
+  destruct (store_init_data_list (globalenv prog) m3 b 0 init); inversion EQData.
+  clear H0.
+  rewrite EQData.
+
+  clear EQData.
+  clear HStoreInitBytes.
+  clear HSizeEQ.
+  clear EQ4.
+  clear EQ1.
+  clear EQM.
+  clear EQZeros.
   
   
+  (* code section *)
+  unfold alloc_code_section.
+  simpl.
+  unfold alloc_code_section in EQCode.
+  simpl in EQCode.
+  assert(HSizeEQ: code_size code = Z.of_nat(length x1)) by admit.
+  rewrite <- HSizeEQ.
+  destruct ( Mem.alloc m0 0 (code_size code)) eqn:EQM.
+  rewrite EQCode.
+  auto.
 
 Admitted.
 
