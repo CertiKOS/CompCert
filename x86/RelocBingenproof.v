@@ -1138,6 +1138,31 @@ Context `{external_calls_prf: ExternalCalls}.
 Local Existing Instance mem_accessors_default.
 
 
+
+Lemma init_data_list_relf: forall init m b ofs result bytes prog,
+    store_init_data_list (globalenv prog) m b ofs init = Some result
+    -> transl_init_data_list (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog))) init = OK bytes
+    -> store_init_data_bytes m b ofs bytes = Some result.
+Proof.
+  induction init.
+  (* bc *)
+  admit.
+
+  intros m b ofs result bytes prog HInit HTransl.
+  simpl in HInit.
+  set (rofs := (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog)))) in *.
+  assert(exists l dbytes,
+            transl_init_data rofs 0 a = OK dbytes
+            /\ bytes = dbytes ++ l) by admit.
+  destruct H as (l & dbytes & HDB & HBytes).
+  (** got a problem here *)
+  
+  
+
+Admitted.
+
+
+
 Variables prog tprog: program.
 
 Let ge := RelocProgSemantics1.globalenv prog.
@@ -1210,8 +1235,11 @@ Proof.
   destruct (store_zeros m2 b 0 (init_data_list_size init)) eqn:EQZeros;inversion EQData.
   clear H0.
   assert(HStoreInitBytes: forall m4, store_init_data_list (globalenv prog) m3 b 0 init = Some m4-> store_init_data_bytes m3 b 0 x2 = Some m4). {
-    
-    admit.
+    destruct (store_init_data_list (globalenv prog) m3 b 0 init) eqn:EQInitData; inversion EQData.
+    generalize (init_data_list_relf _ _ _ _ _ _ _ EQInitData EQ4).
+    intros HStoreInitBytes m5 EQM5.
+    rewrite <- EQM5.
+    auto.
   }
 
   destruct (store_init_data_list (globalenv prog) m3 b 0 init); inversion EQData.
@@ -1242,10 +1270,7 @@ Proof.
   destruct ( Mem.alloc m0 0 (code_size code)) eqn:EQM.
   rewrite EQCode.
   auto.
-  
-
-Admitted.
-
+Qed.
 
 
 Lemma decode_prog_code_section_eq:
