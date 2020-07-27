@@ -700,7 +700,97 @@ Proof.
     auto.
 Qed.
 
+Lemma transl_init_data_size:
+  forall rmap o l bl,
+    transl_init_data rmap o l = OK bl ->
+    Z.of_nat (length bl) = init_data_size l.
+Proof.
+  unfold transl_init_data. intros. autoinv; simpl; rewrite ? encode_int_length; auto.
+  unfold Encode.zero_bytes.
+  rewrite map_length. rewrite seq_length. apply nat_of_Z_max.
+Qed.
 
+Lemma init_data_list_size_rev:
+  forall l,
+    init_data_list_size (rev l) = init_data_list_size l.
+Proof.
+  induction l; simpl; intros; eauto.
+  rewrite LocalLib.init_data_list_size_app. simpl. omega.
+Qed.
+
+Lemma transl_init_data_list_size:
+  forall rmap l bl,
+    transl_init_data_list rmap l = OK bl ->
+    Z.of_nat (length bl) = init_data_list_size l.
+Proof.
+  unfold transl_init_data_list. intros. autoinv.
+  rewrite <- fold_left_rev_right in EQ.
+  rewrite rev_length.
+  revert EQ.
+  rewrite <- init_data_list_size_rev.
+  generalize (rev l) z l0. clear.
+  induction l; simpl; intros; eauto.
+  inv EQ. reflexivity.
+  unfold acc_init_data at 1 in EQ. autoinv.
+  apply IHl in EQ0. rewrite <- EQ0.
+  rewrite app_length, rev_length.
+  rewrite Nat2Z.inj_add.
+  erewrite <- transl_init_data_size; eauto.
+Qed.
+
+
+
+Lemma encode_int32_size: forall x,
+    (length(Encode.encode_int32 x) = 4)%nat.
+Admitted.
+
+Lemma encode_addrmode_size_refl: forall rmap o i a rd x,
+    encode_addrmode rmap o i a rd = OK x
+    -> addrmode_size a = Z.of_nat (length x).
+Admitted.
+
+Lemma encode_instrs_size:
+  forall rmap o i bl,
+    encode_instr rmap o i = OK bl ->
+    Asm.instr_size i = Z.of_nat (length bl).
+Proof.
+  Transparent Asm.instr_size. Opaque Z.add.
+  destruct i eqn:EQI; simpl; intros; autoinv; simpl;auto;try congruence.
+  1-3,6,7:rewrite (encode_addrmode_size_refl _ _ _ _ _ _ EQ);
+    rewrite Zpos_P_of_succ_nat; omega.
+  1-6:inversion H; auto.
+  rewrite app_length.
+  rewrite encode_int32_size.
+  unfold encode_testcond. destruct c; simpl; auto.
+Qed.
+
+
+Lemma code_size_rev:
+  forall l, code_size (rev l) = code_size l.
+Proof.
+  induction l; simpl; intros; eauto.
+  rewrite RealAsm.code_size_app. simpl. omega.
+Qed.
+
+Lemma transl_code_size:
+  forall rmap l bl,
+    transl_code rmap l = OK bl ->
+    Z.of_nat (length bl) = code_size l.
+Proof.
+  unfold transl_code. intros. autoinv.
+  rewrite <- fold_left_rev_right in EQ.
+  rewrite rev_length.
+  revert EQ.
+  rewrite <- code_size_rev.
+  generalize (rev l) z l0. clear.
+  induction l; simpl; intros; eauto.
+  inv EQ. reflexivity.
+  unfold acc_instrs at 1 in EQ. autoinv.
+  apply IHl in EQ0. rewrite <- EQ0.
+  rewrite app_length, rev_length.
+  rewrite Nat2Z.inj_add.
+  erewrite encode_instrs_size; eauto.
+Qed.
 
 (* This lemma means the transl_code could preserve the spec 
  * Specifically, if there're two list, code code', having the relation `transl_code_spec` ,
@@ -1111,17 +1201,24 @@ Proof.
   simpl.
   unfold RelocProgSemantics1.alloc_data_section in EQData.
   simpl in EQData.
-  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length x2)) by admit.
+  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length x2)). {
+    generalize (transl_init_data_list_size _ _ _  EQ4).
+    auto.
+  }
   rewrite <- HSizeEQ.
   destruct (Mem.alloc Mem.empty 0 (init_data_list_size init)) eqn:EQM.
   destruct (store_zeros m2 b 0 (init_data_list_size init)) eqn:EQZeros;inversion EQData.
   clear H0.
-  assert(HStoreInitBytes:  store_init_data_bytes m3 b 0 x2 = store_init_data_list (globalenv prog) m3 b 0 init) by admit.
-  rewrite HStoreInitBytes.
-  destruct (store_init_data_list (globalenv prog) m3 b 0 init); inversion EQData.
-  clear H0.
-  rewrite EQData.
+  assert(HStoreInitBytes: forall m4, store_init_data_list (globalenv prog) m3 b 0 init = Some m4-> store_init_data_bytes m3 b 0 x2 = Some m4). {
+    
+    admit.
+  }
 
+  destruct (store_init_data_list (globalenv prog) m3 b 0 init); inversion EQData.
+  rewrite (HStoreInitBytes m4 eq_refl).
+  rewrite H0.
+  
+  clear H0.
   clear EQData.
   clear HStoreInitBytes.
   clear HSizeEQ.
@@ -1136,11 +1233,16 @@ Proof.
   simpl.
   unfold alloc_code_section in EQCode.
   simpl in EQCode.
-  assert(HSizeEQ: code_size code = Z.of_nat(length x1)) by admit.
+  assert(HSizeEQ: code_size code = Z.of_nat(length x1)). {
+    generalize (transl_code_size _ _ _ EQ0).
+    auto.
+  }
+    
   rewrite <- HSizeEQ.
   destruct ( Mem.alloc m0 0 (code_size code)) eqn:EQM.
   rewrite EQCode.
   auto.
+  
 
 Admitted.
 
@@ -1618,94 +1720,8 @@ Proof.
   exists init, x0. split; auto.
 Qed.
 
-Lemma transl_init_data_size:
-  forall rmap o l bl,
-    transl_init_data rmap o l = OK bl ->
-    Z.of_nat (length bl) = init_data_size l.
-Proof.
-  unfold transl_init_data. intros. autoinv; simpl; rewrite ? encode_int_length; auto.
-  unfold Encode.zero_bytes.
-  rewrite map_length. rewrite seq_length. apply nat_of_Z_max.
-Qed.
 
-Lemma init_data_list_size_rev:
-  forall l,
-    init_data_list_size (rev l) = init_data_list_size l.
-Proof.
-  induction l; simpl; intros; eauto.
-  rewrite LocalLib.init_data_list_size_app. simpl. omega.
-Qed.
 
-Lemma transl_init_data_list_size:
-  forall rmap l bl,
-    transl_init_data_list rmap l = OK bl ->
-    Z.of_nat (length bl) = init_data_list_size l.
-Proof.
-  unfold transl_init_data_list. intros. autoinv.
-  rewrite <- fold_left_rev_right in EQ.
-  rewrite rev_length.
-  revert EQ.
-  rewrite <- init_data_list_size_rev.
-  generalize (rev l) z l0. clear.
-  induction l; simpl; intros; eauto.
-  inv EQ. reflexivity.
-  unfold acc_init_data at 1 in EQ. autoinv.
-  apply IHl in EQ0. rewrite <- EQ0.
-  rewrite app_length, rev_length.
-  rewrite Nat2Z.inj_add.
-  erewrite <- transl_init_data_size; eauto.
-Qed.
-
-Lemma code_size_rev:
-  forall l, code_size (rev l) = code_size l.
-Proof.
-  induction l; simpl; intros; eauto.
-  rewrite RealAsm.code_size_app. simpl. omega.
-Qed.
-
-Lemma encode_int32_size: forall x,
-    (length(Encode.encode_int32 x) = 4)%nat.
-Admitted.
-
-Lemma encode_addrmode_size_refl: forall rmap o i a rd x,
-    encode_addrmode rmap o i a rd = OK x
-    -> addrmode_size a = Z.of_nat (length x).
-Admitted.
-
-Lemma encode_instrs_size:
-  forall rmap o i bl,
-    encode_instr rmap o i = OK bl ->
-    Asm.instr_size i = Z.of_nat (length bl).
-Proof.
-  Transparent Asm.instr_size. Opaque Z.add.
-  destruct i eqn:EQI; simpl; intros; autoinv; simpl;auto;try congruence.
-  1-3,6,7:rewrite (encode_addrmode_size_refl _ _ _ _ _ _ EQ);
-    rewrite Zpos_P_of_succ_nat; omega.
-  1-6:inversion H; auto.
-  rewrite app_length.
-  rewrite encode_int32_size.
-  unfold encode_testcond. destruct c; simpl; auto.
-Qed.
-
-Lemma transl_code_size:
-  forall rmap l bl,
-    transl_code rmap l = OK bl ->
-    Z.of_nat (length bl) = code_size l.
-Proof.
-  unfold transl_code. intros. autoinv.
-  rewrite <- fold_left_rev_right in EQ.
-  rewrite rev_length.
-  revert EQ.
-  rewrite <- code_size_rev.
-  generalize (rev l) z l0. clear.
-  induction l; simpl; intros; eauto.
-  inv EQ. reflexivity.
-  unfold acc_instrs at 1 in EQ. autoinv.
-  apply IHl in EQ0. rewrite <- EQ0.
-  rewrite app_length, rev_length.
-  rewrite Nat2Z.inj_add.
-  erewrite encode_instrs_size; eauto.
-Qed.
 
 Lemma link_sectable_ok:
   forall sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim,
