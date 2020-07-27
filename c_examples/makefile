@@ -8,7 +8,7 @@ CFLAGS=-O1 -Wall
 OBJDUMP=objdump
 READELF=readelf
 
-PROGS= rodata
+PROGS= rodata aes
 
 all: $(PROGS:%=%.ccomp.out) $(PROGS:%=%.gcc.out)
 
