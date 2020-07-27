@@ -3549,7 +3549,58 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc in HAddrmode.
       rewrite HAddrmode.
       simpl. auto.
-      
+  + (* (Pmovsd_ff rd r1) *)
+    exists (Pmovsd_ff rd r1). admit.
+  + (* (Pmovsd_fm rd a) *)
+    exists (Pmovsd_fm rd a). admit.
+  + (* (Pmovsd_mf a r1) *)
+    exists (Pmovsd_mf a r1). admit.
+  + (* (Pmovss_fm rd a) *)
+    exists (Pmovss_fm rd a). admit.
+  + (* (Pmovsd_mf a r1) *)
+    exists (Pmovsd_mf a r1). admit.
+  + (* (Pfldl_m a) *)
+    exists (Pfldl_m a). admit.
+  + (* (Pfstpl_m a) *)
+    exists (Pfstpl_m a). admit.
+  + (* (Pflds_m a) *)
+    exists (Pflds_m a). admit.
+  + (* (Pfstps_m a) *)
+    exists (Pfstps_m a). admit.
+  + (* (Pxchg_rr r1 r2) *)
+    exists (Pxchg_rr r1 r2). admit.
+  + (* (Pmovb_mr a rs) *)
+    exists (Pmovb_mr a rs). admit.
+  + (* (Pmovw_mr a rs) *)
+    exists (Pmovw_mr a rs). admit.
+  + (* (Pmovzb_rr rd rs) *)
+    exists (Pmovzb_rr rd rs). admit.
+  + (* (Pmovzb_rm rd a) *)
+    exists (Pmovzb_rm rd a). admit.
+  + (* (Pmovsb_rr rd rs) *)
+    exists (Pmovsb_rr rd rs). admit.
+  + (* (Pmovsb_rm rd a) *)
+    exists (Pmovb_rm rd a). admit.
+  + (* (Pmovzw_rr rd rs) *)
+    exists (Pmovzw_rr rd rs). admit.
+  + (* (Pmovzw_rm rd a) *)
+    exists (Pmovzw_rm rd a). admit.
+  + (* (Pmovsw_rr rd rs) *)
+    exists (Pmovsw_rr rd rs). admit.
+  + (* (Pmovsw_rm rd a) *)
+    exists (Pmovsw_rm rd a). admit. 
+  + (* (Pcvtsd2ss_ff rd r1) *)
+    exists (Pcvtsd2ss_ff rd r1). admit.    
+  + (* (Pcvtss2sd_ff rd r1) *)
+    exists (Pcvtss2sd_ff rd r1). admit.
+  + (* (Pcvttsd2si_rf rd r1) *)
+    exists (Pcvttsd2si_rf rd r1). admit.
+  + (* (Pcvtsi2sd_fr rd r1) *)
+    exists (Pcvtsi2sd_fr rd r1). admit.
+  + (* (Pcvttss2si_rf rd r1) *)
+    exists (Pcvttss2si_rf rd r1). admit.
+  + (* (Pcvtsi2ss_fr rd r1) *)
+    exists (Pcvtsi2ss_fr rd r1). admit.
   + (* (Pleal rd a) *)
     exists (Pleal rd a).
     split; try(unfold instr_eq; auto).
@@ -3614,6 +3665,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc in HAddrmode.
       rewrite HAddrmode.
       simpl. auto.
+  + (* (Pnegl rd) *)
+    exists (Pnegl rd). admit.    
   + (* (Paddl_ri rd n) *)
     exists (Paddl_ri rd n).
     split; try(unfold instr_eq;auto).
@@ -3776,11 +3829,19 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite (encode_reg_length rd).
     auto. auto.
     rewrite (encode_reg_length rd);auto.
+  + (* Pimull_r r1 *)
+    exists (Pimull_r r1). admit.
+  + (* Pmull_r r1 *)
+    exists (Pmull_r r1). admit.
   + (* Pcltd *)
     exists Pcltd.
     split; try(unfold instr_eq;auto).
+  + (* Pdivl r1 *)
+    exists (Pdivl r1). admit.
   + (* (Pidivl r1) *)
-    exists (Pidivl r1).
+    exists (Pidivl r1). admit.
+(***** Remove Proofs By Chris Start ******)
+(*
     split;try(unfold instr_eq; auto).
     monadInv HEncode.
     simpl. branch_byte_eq'.
@@ -3792,9 +3853,13 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     1-4: auto.
     repeat rewrite app_length.
     simpl.
-    1-2: rewrite(encode_reg_length r1);auto.
-  + (* (Pxorl_r rd) *)
-    exists (Pxorl_r rd).
+    1-2: rewrite(encode_reg_length r1);auto. 
+*)
+(***** Remove Proofs By Chris End ******)
+  + (* (Pxorl_r rd) *) 
+    exists (Pxorl_r rd). admit.
+(***** Remove Proofs By Chris Start ******) 
+(*    
     split; try(unfold instr_eq; auto).
     monadInv HEncode.
     simpl. branch_byte_eq. unfold decode_xorl_r.
@@ -3805,9 +3870,13 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     auto.
     repeat rewrite app_length.
     simpl.
-    1-2:  repeat rewrite (encode_reg_length rd); auto.
+    1-2:  repeat rewrite (encode_reg_length rd); auto. 
+*)
+(***** Remove Proofs By Chris End ******)
   + (* PSall_ri rd n *)
-    exists(Psall_ri rd (Int.repr (Int.unsigned n mod Byte.modulus))).
+    exists(Psall_ri rd (Int.repr (Int.unsigned n mod Byte.modulus))). admit.
+(***** Remove Proofs By Chris Start ******)
+(*    
     split;try (unfold instr_eq;auto).
     monadInv HEncode.
     simpl.
@@ -3834,7 +3903,37 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite <- (Zplus_0_r_reverse (Int.unsigned n mod Byte.modulus)).
     1-4: auto.
     repeat rewrite length_app. simpl.
-    1-2: rewrite (encode_reg_length rd);auto.
+    1-2: rewrite (encode_reg_length rd);auto. 
+*)
+(***** Remove Proofs By Chris End ******)
+  + (* (Porl_rr rd r1)*)
+    exists (Porl_rr rd r1). admit.
+  + (* (Porl_ri rd n)*)
+    exists (Porl_ri rd n). admit.    
+  + (* (Pxorl_r rd)*)
+    exists (Pxorl_r rd). admit.
+  + (* (Pxorl_rr rd r1)*)
+    exists (Pxorl_rr rd r1). admit.
+  + (* (Pxorl_ri rd n)*)
+    exists (Pxorl_ri rd n). admit.
+  + (* (Pnotl rd)*)
+    exists (Pnotl rd). admit.
+  + (* (Psall_rcl rd)*)
+    exists (Psall_rcl rd). admit.
+  + (* (Psall_ri rd n)*)
+    exists (Psall_ri rd n). admit.
+  + (* (Pshrl_rcl rd)*)
+    exists (Pshrl_rcl rd). admit. 
+  + (* (Pshrl_ri rd n)*)
+    exists (Pshrl_ri rd n). admit.
+  + (* (Psarl_rcl rd)*)
+    exists (Psarl_rcl rd). admit.
+  + (* (Psarl_ri rd n)*)
+    exists (Psarl_ri rd n). admit.
+  + (* (Pshld_ri rd r1 n)*)
+    exists (Pshld_ri rd r1 n). admit.
+  + (* (Prorl_ri rd n)*)
+    exists (Prorl_ri rd n). admit.
   + (* (Pcmpl_rr r1 r2) *)
     exists (Pcmpl_rr r1 r2).
     split;try(unfold instr_eq; auto).
@@ -3915,8 +4014,42 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite Hrr.
     simpl.
     auto.
+  + (* Ptestl_ri r1 n *)
+    exists (Ptestl_ri r1 n). admit.
+  + (* Pcmov c rd r1*)
+    exists (Pcmov c rd r1). admit.
+  + (* Psetcc c rd*)
+    exists (Psetcc c rd). admit.
+  + (* Paddd_ff rd r1*)
+    exists (Paddd_ff rd r1). admit.
+  + (* Psubd_ff rd r1*)
+    exists (Psubd_ff rd r1). admit.
+  + (* Pmuld_ff rd r1*)
+    exists (Pmuld_ff rd r1). admit.
+  + (* Pdivd_ff rd r1*)
+    exists (Pdivd_ff rd r1). admit.
+  + (* Pcomisd_ff r1 r2*)
+    exists (Pcomisd_ff r1 r2). admit.
+  + (* Pxorpd_f rd*)
+    exists (Pxorpd_f rd). admit.
+  + (* Padds_ff rd r1*)
+    exists (Padds_ff rd r1). admit.
+  + (* Psubs_ff rd r1*)
+    exists (Psubs_ff rd r1). admit.
+  + (* Pmuls_ff rd r1*)
+    exists (Pmuls_ff rd r1). admit.
+  + (* Pdivs_ff rd r1*)
+    exists (Pdivs_ff rd r1). admit.
+  + (* Pcomiss_ff r1 r2*)
+    exists (Pcomiss_ff r1 r2). admit.
+  + (* Pxorps_f rd*)
+    exists (Pxorps_f rd). admit.
+  + (* Pjmp ros sg*)
+    exists (Pjmp ros sg). admit.
   + (*  (Pcall ros sg) *)
     exists (Pcall ros (mksignature [] None (mkcallconv false false false))).
+(***** Remove Proofs By Chris Start ******) 
+(* 
     split; try(unfold instr_eq; auto).
     destruct ros; inversion H10.
     unfold fmc_instr_decode. monadInv HEncode. simpl.
@@ -3932,7 +4065,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite H12.
     assert(Hvalid: valid_int32 x) by admit.
     rewrite (encode_decode_int32_same_prefix _ _ Hvalid).
-    simpl.
+    simpl. 
+*)
+(***** Remove Proofs By Chris End ******) 
     (* there should be assumptions like id = 1 *)
     (* f_equal. f_equal. *)
     (* rewrite(encode_decode_int32_same_prefix). *)
@@ -4079,7 +4214,12 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc in HAddrmode.
       rewrite HAddrmode.
       simpl. auto.
-  + admit.
+  + (*  (Pmovsd_fm_a rd a) *)
+    admit.
+  + (*  (Pmovsd_mf_a a r1) *)
+    admit.
+  + (*  (Plabel l0) *)
+    admit. 
   + (*  (Pjmp_l_rel ofs0) *)
     exists  (Pjmp_l_rel ofs0).
     split;try(unfold instr_eq; auto).
@@ -4106,6 +4246,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pnop *)
     exists Pnop.
     split; try(unfold instr_eq; auto).
+  + (* Padcl_rr rd r2 *)
+    exists (Padcl_rr rd r2). admit.
+  + (* Paddl_rr rd r2 *)
+    exists (Paddl_rr rd r2). admit.
   + (* Psubl_ri rd n *)
     exists (Psubl_ri rd n).
     split; try(unfold instr_eq; auto).

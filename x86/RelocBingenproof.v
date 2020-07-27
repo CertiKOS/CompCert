@@ -1238,7 +1238,28 @@ Proof.
     1-2: rewrite HInsEQ.
     1-2: generalize (eval_addrmode_refl (id_reloc_offset z i') a rs).
     1-2: intros HAddrmode; rewrite HAddrmode; auto.
-    
+
+    (* movsd_fm *)
+    admit.
+    (* movsd_mf *)
+    admit.
+    (* movss_fm *)
+    admit.
+    (* movss_mf *)
+    admit.
+    (* fldl_m *)
+    admit.
+    (* fstpl_m *)
+    admit.
+    (* flds_m *)
+    admit.
+    (* fstps_m *)
+    admit.
+    (* movb_mr *)
+    admit.
+    (* movzb_rm *)
+    admit.
+
     (* lea *)
     rewrite HInsEQ.
     generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs).
