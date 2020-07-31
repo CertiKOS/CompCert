@@ -9,8 +9,9 @@ Require Import Globalenvs.
 Import ListNotations.
 
 
-Definition alignw:Z := 8.
+Axiom unsigned_repr: forall n, Ptrofs.unsigned (Ptrofs.repr n) = n.
 
+Definition alignw:Z := 8.
 
 Ltac destr_if := 
   match goal with 

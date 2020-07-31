@@ -11,6 +11,7 @@ Require Import Integers Floats AST Linking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import Asmlabelgen.
+Require Import LocalLib.
 Import ListNotations.
 Require AsmFacts.
 
@@ -319,22 +320,51 @@ Lemma transf_ros_refl: forall ros rs,
 Admitted.
 
 
-Section WITHMATCH.
+(* Section WITHMATCH. *)
           
-Context {A B V: Type} {LA: Linker A} {LV: Linker V}.
-Context {transf: A -> res B} {p: AST.program A V} {tp: AST.program B V}.
-Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp.
+(* Context {A B V: Type} {LA: Linker A} {LV: Linker V}. *)
+(* Context {transf: A -> res B} {p: AST.program A V} {tp: AST.program B V}. *)
+(* Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp. *)
                 
-Theorem find_funct_ptr_transf_partial_inv:
-  forall b ef,
-  Genv.find_funct_ptr (Genv.globalenv tp) b = Some ef ->
-  exists f,
-  Genv.find_funct_ptr (Genv.globalenv p) b = Some f /\ transf f = OK ef.
+(* Theorem find_funct_ptr_some_inv: *)
+(*   forall b ef, *)
+(*   Genv.find_funct_ptr (Genv.globalenv tp) b = Some ef -> *)
+(*   exists f, *)
+(*   Genv.find_funct_ptr (Genv.globalenv p) b = Some f /\ transf f = OK ef. *)
+(* Proof. *)
+(*   clear.  *)
+(* Admitted. *)
+
+(* Theorem find_funct_ptr_none_inv: *)
+(*   forall b ef, *)
+(*   Genv.find_funct_ptr (Genv.globalenv tp) b = Some ef -> *)
+(*   exists f, *)
+(*   Genv.find_funct_ptr (Genv.globalenv p) b = Some f /\ transf f = OK ef. *)
+(* Proof. *)
+(*   clear.  *)
+(* Admitted. *)
+
+(* End WITHMATCH. *)
+
+
+Lemma list_nth_z_findAllLabel_comm: forall t n l c l',
+    list_nth_z t n = Some l ->
+    findAllLabel t c = OK l' ->
+    exists ofs, label_pos l 0 c = Some ofs /\
+           list_nth_z l' n = Some ofs.
 Proof.
-Admitted.
-
-End WITHMATCH.
-
+  induction t as [|h t'].
+  - cbn. intros. congruence.
+  - cbn. intros n l c l' EQ LP.
+    destruct zeq.
+    + subst. inv EQ. destr_in LP.
+      monadInv LP. eauto.
+    + destr_in LP. monadInv LP.
+      exploit IHt'; eauto.
+      intros (ofs & LP' & NTH).
+      eexists; split; eauto.
+      cbn. destruct zeq; try congruence.
+Qed.
 
 
 Lemma offsets_after_call_transf_refl: forall c x,
@@ -351,7 +381,6 @@ Proof.
     unfold offsets_after_call.
 
 Admitted.
-
 
 
 Theorem step_simulation:
@@ -379,14 +408,9 @@ Proof.
     inversion H.
     auto.
     assert(In i (fn_code f)) as Hin. {
-      admit.
+      eapply Asmgenproof0.find_instr_in; eauto.
     }
       
-    (* destruct i eqn:EQI. *)
-    (* +++ *)
-    (*   simpl in HInstrTransf. inversion HInstrTransf. simpl. simpl in H4. *)
-    (*   rewrite <- H4. inversion MS. auto. *)
-
     destruct i eqn:EQI;
       try (
           simpl in HInstrTransf; inversion HInstrTransf; simpl; simpl in H4;
@@ -436,41 +460,6 @@ Proof.
               simpl in HNRel; inversion HNRel
             )
         ).
-    (* destruct i eqn:EQI; *)
-    (*   try ( destruct HInsProperty; *)
-    (*         [ now(destruct H0 as (HNE & HI'); *)
-    (*               rewrite <- HI'; *)
-    (*               unfold exec_instr; *)
-    (*               unfold exec_instr in H4; *)
-    (*               inversion H4; *)
-    (*               try( *)
-    (*                   (* symbol *) *)
-    (*                   generalize (transf_symbol_refl id); *)
-    (*                   intros Hid; *)
-    (*                   rewrite <- Hid); *)
-    (*               inversion H; try rewrite H6; *)
-    (*               try ( *)
-    (*                   (* load/store *) *)
-    (*                   try unfold exec_load; *)
-    (*                   try unfold exec_store; *)
-    (*                   generalize(transf_addrmode_refl a rs0); *)
-    (*                   intros HAddrmode; rewrite HAddrmode;  *)
-    (*                   auto); *)
-    (*               try ( *)
-    (*                   (* lea *) *)
-    (*                   try generalize(transf_addrmode32_refl a rs0); *)
-    (*                   intros HAddrmode32; *)
-    (*                   try generalize(transf_addrmode64_refl a rs0); *)
-    (*                   intros HAddrmode64; *)
-    (*                   unfold eval_addrmode in HAddrmode32; *)
-    (*                   unfold eval_addrmode in HAddrmode64; *)
-    (*                   try rewrite HAddrmode32; *)
-    (*                   try rewrite HAddrmode64; *)
-    (*                   auto) *)
-    (*              ) *)
-    (*         | *)
-    (*         destruct H0; inversion H0; inversion H5; *)
-    (*         inversion H6; inversion H7; inversion H8; inversion H9; inversion H10]). *)
     +++
       (* jmp_l *)
       destruct (label_pos l 0 (fn_code f)) eqn:EQLb; inversion H5.
@@ -486,33 +475,11 @@ Proof.
       f_equal.
       f_equal.
       f_equal.
-      
-      repeat rewrite Ptrofs.add_signed.      
-      f_equal.
-      repeat rewrite Ptrofs.signed_repr.
-      
-      assert (instr_size (Pjmp_l_rel (z - (Ptrofs.unsigned ofs + instr_size (Pjmp_l l)))) = instr_size (Pjmp_l l)) as Hsize. {
-        admit.
-      }
-      rewrite Hsize.
-      assert (Ptrofs.unsigned ofs = Ptrofs.signed ofs) as Hofs. {
-        admit.
-      }
-      rewrite Hofs.      
-      repeat rewrite Z.add_assoc.
-      rewrite Zplus_minus.
-      auto.
-      (*** TBD *)
-      admit.
-      (*** TBD *)
-      admit.
-      (*** TBD *)
-      admit.
-      (*** TBD *)
-      admit.
-      (*** TBD *)
-      admit.
-
+      Transparent instr_size.
+      cbn.
+      repeat rewrite Ptrofs.add_unsigned.
+      f_equal. repeat rewrite unsigned_repr. 
+      omega.
     +++
       (* Pjcc c l *)
       rewrite <- H8.
@@ -536,17 +503,10 @@ Proof.
         f_equal.
         f_equal.
         f_equal.
-        repeat rewrite Ptrofs.add_signed.      
+        repeat rewrite Ptrofs.add_unsigned.      
         f_equal.
-        repeat rewrite Ptrofs.signed_repr.
-        rewrite <- (Pjcc_rel_size_eq   (z - (Ptrofs.unsigned ofs + instr_size (Pjcc c l))) l).
-        assert (Ptrofs.signed ofs = Ptrofs.unsigned ofs) as Hofs by admit.
-        rewrite Hofs.
-        repeat rewrite Z.add_assoc.
-        rewrite Zplus_minus.
-        auto.
-        admit. admit. admit. admit. admit.
-        
+        repeat rewrite unsigned_repr.
+        omega.
       ++++
         rewrite <- H9. rewrite H4.
         destruct (label_pos l 0 (fn_code f)) eqn:EQLb; inversion H5.
@@ -571,110 +531,61 @@ Proof.
         rewrite H1. rewrite FPTR.
         unfold goto_label. rewrite EQLb. rewrite H1. rewrite H2.
         f_equal. f_equal. f_equal.
-        repeat rewrite Ptrofs.add_signed.
+        repeat rewrite Ptrofs.add_unsigned.
         f_equal.
-        repeat rewrite Ptrofs.signed_repr.
-        rewrite <- (Pjcc2_rel_size_eq _ l _ _).
-        assert(Ptrofs.signed ofs = Ptrofs.unsigned ofs) as Hofs by admit.
-        rewrite Hofs.
-        repeat rewrite Z.add_assoc.
-        rewrite Zplus_minus.
-        auto.
-        admit. admit. admit. admit. admit.
+        repeat rewrite unsigned_repr.
+        omega.
         +++++
           auto.
       ++++ auto.
     +++
     (* pjmptbl *)
-      rewrite <- H8. rewrite <- H9. rewrite H4.
-      monadInv H5.
-      simpl.
-      destruct (rs r);inversion H4.
-      rewrite (list_nth_z_map).
-      destruct (list_nth_z tbl (Int.unsigned i)) eqn:EQnth; inversion H4.
-      generalize(list_nth_z_range _ _ EQnth).
-      intros HIRange.
-      Lemma transf_lbl_list: forall tbl c x,
-          findAllLabel tbl c = OK x
-          -> list_length_z tbl = list_length_z x.
-      Admitted.
-
-      generalize (transf_lbl_list tbl (fn_code f) x EQ1).
-      intros EQLen.
-
-      Lemma list_get_n: forall {A:Type}  n (l:list A),
-          n < list_length_z l
-          ->exists a, list_nth_z l n = Some a.
-      Admitted.
-      assert (Int.unsigned i < list_length_z x) as HxLen. {        
-        setoid_rewrite <- EQLen.
-        omega.
-      }
-
-      Lemma transf_lbl_prop: forall tbl c x i lbl z,
-          findAllLabel tbl c = OK x
-          -> list_nth_z tbl i = Some lbl
-          -> list_nth_z x i = Some z
-          -> (label_pos lbl 0 c) = Some z.
-      Admitted.
-      generalize (list_get_n (Int.unsigned i) x HxLen).
-      intros (a & HnthX).
-      rewrite HnthX. simpl. unfold goto_label.
-      generalize (transf_lbl_prop tbl (fn_code f) x (Int.unsigned i) l a EQ1 EQnth HnthX).
-      intros Hpos.
-      rewrite Hpos. unfold goto_label in H6.
-      rewrite Hpos in H6.
-      destruct ( (rs # RAX <- Vundef) # RDX <- Vundef PC) eqn:EQPC; inversion H6.
-      assert ( (rs # RAX <- Vundef) # RDX <- Vundef PC = rs PC) as HPC. {
-        unfold Pregmap.set.
-        destruct (PregEq.eq PC RDX).
-        inversion e.
-        destruct (PregEq.eq PC RAX).
-        inversion e.
-        auto.
-      }
-      rewrite HPC in EQPC.
-      rewrite EQPC in H1.
-      inversion H1.
-      rewrite H2.
+      subst.
+      unfold bind in H5. destr_in H5; try congruence.
+      replace (instr_size (Pjmptbl r tbl)) with 1 in H5.
+      assert ((Pjmptbl_rel r (Z.add (- (1 + Ptrofs.unsigned ofs))) ## l) = i') as IEQ. 
+      { inversion H5; auto. }
+      subst i'. cbn[exec_instr Asm.exec_instr].
+      destr; auto.
+      symmetry.
+      destr. 
+      exploit list_nth_z_findAllLabel_comm; eauto.
+      intros (ofs1 & LPOS & NTH).
+      rewrite list_nth_z_map. rewrite NTH. 
+      cbn [option_map].
+      Transparent instr_size. cbn [instr_size Asm.instr_size'].
+      unfold goto_label. rewrite LPOS.
       unfold goto_ofs.
-      rewrite HPC. rewrite EQPC. rewrite H9. rewrite FPTR.
-      f_equal. f_equal. f_equal.
-      rewrite H11.
-      repeat rewrite Ptrofs.add_signed.
-      repeat rewrite Ptrofs.signed_repr.
+      destr; try congruence.
+      destr.
+      ++++ assert (exists tf, Genv.find_funct_ptr tge b0 = Some tf /\ transf_fundef f1 = OK tf) as TF.
+           { eapply Genv.find_funct_ptr_transf_partial; eauto. }
+           destruct TF as (tf & FIND & TRANSF').
+           unfold tge in FIND. rewrite FIND.
+           f_equal. f_equal. f_equal.
+           rewrite (Ptrofs.add_unsigned (Ptrofs.repr 1)).
+           repeat rewrite unsigned_repr; auto.
+           rewrite Pregmap.gso in Heqv0.
+           rewrite Pregmap.gso in Heqv0.
+           rewrite H1 in Heqv0. inv Heqv0.
+           rewrite Ptrofs.add_unsigned.
+           rewrite unsigned_repr. f_equal. omega.
+           intros NREG. congruence.
+           intros NREG. congruence.
+      ++++ assert (Genv.find_funct_ptr (Genv.globalenv tprog) b0 = None) as FP.
+           { unfold ge in Heqo0. 
+             unfold match_prog in TRANSF. 
+             eapply (@Genv.find_funct_ptr_transf_none_partial fundef fundef); eauto.
+           }
+           rewrite FP. auto.
+      ++++ cbn. auto.
+
+    +++ 
+      destr; try congruence.
       f_equal.
-      assert(Ptrofs.signed ofs  = Ptrofs.unsigned ofs) as Hofs by admit.
-      rewrite Hofs.
-
-      rewrite <- (Pjmptbl_rel_size_eq r tbl  (Z.add (-(instr_size (Pjmptbl r tbl) + Ptrofs.unsigned ofs))) ## x).
-      repeat rewrite Z.add_assoc.
-      omega.
-      admit. admit. admit. admit. admit.
-
-    +++ admit.
-    (* +++ subst. rewrite H4. *)
-
-    (*   Lemma check_ra_after_call_eq : forall v a b, *)
-    (*     check_ra_after_call ge v = left a <-> check_ra_after_call tge v = left b. *)
-    (*   Admitted. *)
-
-    (*   destruct check_ra_after_call eqn:N; try congruence. *)
-    (*   rewrite check_ra_after_call_eq in N. unfold tge in N. *)
-    (*   rewrite N. *)
-    (*   destruct (Mem.check_top_tc m); inversion H4. *)
-    (*   auto. *)
-                                                    
-    (*   (* Lemma transf_ra_refl: forall v, *) *)
-    (*   (*   ra_after_call ge v = ra_after_call tge v. *) *)
-    (*   (* Admitted. *) *)
-      
-    (*   (* destruct (check_ra_after_call (Genv.globalenv tprog) (rs RA)) eqn:EQRA. *) *)
-    (*   (* destruct (check_ra_after_call ge (rs RA)) eqn:EQRA'. *) *)
-    (*   (* auto. *) *)
-    (*   (* generalize (transf_ra_refl (rs RA)). *) *)
-    (*   (* intros HRA. *) *)
-    (*   (* destruct (Mem.check_top_tc m); inversion H4. *) *)
+      f_equal.
+      f_equal.
+      rewrite transf_ros_refl. auto.
           
   ++
     generalize(Genv.find_funct_ptr_transf_partial TRANSF _  H2).
@@ -706,8 +617,7 @@ Proof.
     eapply Genv.senv_transf_partial; eauto.
         
   + destruct S2. constructor.
-Admitted.
-
+Qed.
 
 
 Lemma transf_initial_states:
