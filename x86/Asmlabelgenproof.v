@@ -82,10 +82,21 @@ Fixpoint transl_code_spec ofs allcode code code' : Prop :=
 Definition transl_code_spec_base allcode code' :=
   transl_code_spec 0 allcode allcode code'.
 
-Lemma find_instr_inv : forall ofs code i,
+Lemma find_instr_inv : forall  code ofs i,
     find_instr ofs code = Some i ->
     exists l1 l2, code = l1 ++ (i :: l2) /\ code_size l1 = ofs.
-Admitted.
+Proof.
+  induction code as [|i code].
+  - cbn. intros. congruence.
+  - cbn. intros ofs i' FI.
+    destruct zeq; subst.
+    + inv FI. exists nil. cbn. eauto.
+    + exploit IHcode; eauto.
+      intros (l1 & l2 & C & SZ). subst.
+      exists (i::l1), l2. cbn. split; eauto.
+      omega.
+Qed.
+
 
 Lemma app_cons_comm: forall (A:Type) (l1:list A) a l2,
     (l1 ++ [a]) ++ l2 = l1 ++ a :: l2.
@@ -366,21 +377,6 @@ Proof.
       cbn. destruct zeq; try congruence.
 Qed.
 
-
-Lemma offsets_after_call_transf_refl: forall c x,
-    transl_code c = OK x
-    ->(offsets_after_call x 0) = (offsets_after_call c 0).
-Proof.
-  intros c x HTrans.
-  induction c.
-  + simpl. monadInv  HTrans. simpl in EQ. inversion EQ. rewrite <- H0 in EQ0. inversion EQ0.
-    simpl. auto.
-  + unfold offsets_after_call.
-    unfold transl_code in HTrans.
-    setoid_rewrite (fold_left_app _ [a] c) in HTrans.    
-    unfold offsets_after_call.
-
-Admitted.
 
 
 Theorem step_simulation:
