@@ -742,11 +742,19 @@ Qed.
 
 Lemma encode_int32_size: forall x,
     (length(Encode.encode_int32 x) = 4)%nat.
-Admitted.
+Proof.
+  intros x.
+  unfold Encode.encode_int32.
+  unfold encode_int.
+  unfold bytes_of_int.
+  auto.
+Qed.
+
 
 Lemma encode_addrmode_size_refl: forall rmap o i a rd x,
     encode_addrmode rmap o i a rd = OK x
     -> addrmode_size a = Z.of_nat (length x).
+  (* easy *)
 Admitted.
 
 Lemma encode_instrs_size:
@@ -1106,18 +1114,37 @@ Definition prog_eq prog tprog:=
   /\ prog.(prog_reloctables) = tprog.(prog_reloctables)
   /\ prog.(prog_senv) = tprog.(prog_senv)
   /\ prog.(prog_strtable) = tprog.(prog_strtable).
-(* not correct!! sectable is not equal!! globalenv prog = globalenv tprog *)
+(* sectable is not equal!! globalenv prog = globalenv tprog *)
 
 Lemma prog_eq_transitivity: forall a b c,
     prog_eq a b
     ->prog_eq b c
     ->prog_eq a c.
-Admitted.
+Proof.
+  intros a b c HAB HBC.
+  unfold prog_eq in *.
+  destruct HAB as (HABDefs & HABMain & HABPub & HABSym & HABReloc & HABSenv & HABStr).
+  destruct HBC as (HBCDefs & HBCMain & HBCPub & HBCSym & HBCReloc & HBCSenv & HBCStr).
+  repeat split.
+  rewrite HABDefs. auto.
+  rewrite HABMain. auto.
+  rewrite HABPub. auto.
+  rewrite HABSym. auto.
+  rewrite HABReloc. auto.
+  rewrite HABSenv. auto.
+  rewrite HABStr. auto.
+Qed.
 
 Lemma prog_eq_symm: forall a b,
     prog_eq a b
     ->prog_eq b a.
-Admitted.
+Proof.
+  intros a b H.
+  unfold prog_eq in *.
+  destruct H as (H1 & H2 & H3 & H4 & H5 & H6 & H7).
+  repeat split; auto.
+Qed.
+
 
 Definition get_prog_code prog :=
   let sec_table := prog.(prog_sectable) in
@@ -1137,6 +1164,14 @@ Context `{external_calls_prf: ExternalCalls}.
 
 Local Existing Instance mem_accessors_default.
 
+
+
+
+Lemma init_data_list_relf': forall init m b ofs ofs' result bytes prog dbytes,
+    store_init_data_list (globalenv prog) m b ofs init = Some result
+    -> fold_left (acc_init_data (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog)))) init (OK (ofs,bytes)) = OK (ofs', rev dbytes++bytes)
+    -> store_init_data_bytes m b ofs (rev dbytes) = Some result.
+Admitted.
 
 
 (** this lemma is not correct.
