@@ -88,8 +88,10 @@ Require SymbtablegenSep.
 Require Symbtablegenproof.
 (* Require NormalizeSymb. *)
 Require Reloctablesgen.
+Require Reloctablesgen2.
 Require Reloctablesgenproof.
 Require RelocBingen.
+Require RelocBingen2.
 (* Require RelocBingenproof. *)
 Require Stubgen.
 Require StrtableEncode.
@@ -227,6 +229,21 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@@ time "Encoding of tables" TablesEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
+
+Definition transf_c_program_bytes_more (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
+  transf_c_program_real p
+  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
+  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
+  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
+  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
+  (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
+  @@@ time "Generation of relocation table" Reloctablesgen2.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen2.transf_program
+  (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
+  @@ time "Removing addendums" RemoveAddend.transf_program
+  @@@ time "Encoding of tables" TablesEncode.transf_program
+  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
+  @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.  
 
 Definition transf_c_program_bytes' (p: Csyntax.program) :=
   transf_c_program_real p
