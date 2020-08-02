@@ -106,19 +106,39 @@ Proof.
   - simpl. f_equal. apply IHl1.
 Qed.
 
-Lemma transl_code_spec_app : forall ofs allcode code1 rcode1 i i',
-    transl_code_spec ofs allcode code1 (rev rcode1) ->
+Lemma transl_code_spec_app : forall code1 ofs allcode code2 i i',
+    transl_code_spec ofs allcode code1 code2 ->
     transl_instr i (ofs + code_size code1) allcode = OK i' ->
-    transl_code_spec ofs allcode (code1 ++ [i]) (rev rcode1 ++ [i']).
-Admitted.
+    transl_code_spec ofs allcode (code1 ++ [i]) (code2 ++ [i']).
+Proof.
+  induction code1 as [|h1 code1].
+  - intros ofs allcode code2 i i' TL TI.
+    cbn in *. destr_in TL. subst. cbn. split; auto.
+    rewrite <- TI. f_equal. omega.
+  - intros ofs allcode code2 i i' TL TI.
+    cbn in *. destr_in TL. destruct TL as (TIH & TL).
+    cbn. split; auto.
+    eapply IHcode1; eauto.
+    rewrite <-TI. f_equal. omega.
+Qed.
+
 
 Lemma code_size_app : forall c1 c2,
     code_size (c1 ++ c2) = code_size c1 + code_size c2.
-Admitted.
+Proof.
+  induction c1 as [|i c1].
+  - intros c2. cbn. auto.
+  - intros c2. cbn. rewrite IHc1. omega.
+Qed.
+
 
 Lemma transl_code_err: forall allcode code e r,
     fold_left (acc_transl_instr allcode) code (Error e) <> OK r.
-Admitted.
+Proof.
+  induction code as [|i code].
+  - cbn. intros. intros H. congruence.
+  - cbn. eauto.
+Qed.
 
 Lemma transl_code_spec_pf : forall allcode ofs0 code2 ofs1 code1 rcode1 rcode2,
     transl_code_spec ofs0 allcode code1 (rev rcode1) ->
@@ -152,6 +172,18 @@ Proof.
   red. simpl. auto.
 Qed.
 
+Lemma transl_instr_pres_size: forall i i' ofs code,
+    transl_instr i ofs code = OK i' -> instr_size i = instr_size i'.
+Proof.
+  intros i i' ofs code TL.
+  destruct i; cbn in *; inv TL; auto.
+  Transparent instr_size.
+  - destr_in H0. inv H0. cbn; auto.
+  - destr_in H0. inv H0. cbn; auto.
+  - destr_in H0. inv H0. cbn; auto.
+  - monadInv H0. cbn. auto.
+Qed.
+
 
 Lemma transl_code_spec_inv : forall l1 i l2 l ofs code,
     transl_code_spec ofs code (l1 ++ i :: l2) l ->
@@ -173,14 +205,15 @@ Proof.
     exists (i0 :: l1'), l2', i'. split.
     simpl. auto. split.
     rewrite <- TI. f_equal. omega.
-    assert (instr_size i0 = instr_size a) as EQ. admit.
+    assert (instr_size i0 = instr_size a) as EQ. 
+    { erewrite <- transl_instr_pres_size; eauto. }
     rewrite <- EQ. simpl.
     destruct zeq.
-    admit.
+    generalize (instr_size_positive i0). intros IPOS.
+    generalize (code_size_non_neg l1). intros CPOS.
+    omega.
     rewrite <- FIND. f_equal. omega.
-Admitted.
-
-
+Qed.
 
 
 Lemma find_instr_in_tprog: forall code ofs code' i,
@@ -303,8 +336,8 @@ Proof.
 Qed.
 
 
-Lemma transf_symbol_refl: forall id,
-    (Genv.symbol_address tge id Ptrofs.zero) = (Genv.symbol_address ge id Ptrofs.zero).
+Lemma transf_symbol_refl: forall id ofs,
+    (Genv.symbol_address tge id ofs) = (Genv.symbol_address ge id ofs).
 Proof.
   intros id.
   unfold Genv.symbol_address.
@@ -313,50 +346,53 @@ Proof.
   rewrite (Genv.find_symbol_transf_partial TRANSF id). auto.
 Qed.
 
-
-Lemma transf_addrmode_refl: forall a rs,
-    eval_addrmode ge a rs = eval_addrmode tge a rs.
-Admitted.
+  
 
 Lemma transf_addrmode32_refl: forall a rs,
     eval_addrmode32 ge a rs = eval_addrmode32 tge a rs.
-Admitted.
+Proof.
+  intros. unfold eval_addrmode32.
+  destruct a. destruct base, ofs, const; auto.
+  - destruct p, p0; auto.
+    rewrite transf_symbol_refl. auto.
+  - destruct p; auto.
+    rewrite transf_symbol_refl. auto.
+  - destruct p, p0; auto.
+    rewrite transf_symbol_refl. auto.
+  - destruct p; auto.
+    rewrite transf_symbol_refl. auto.
+Qed.
 
 Lemma transf_addrmode64_refl: forall a rs,
     eval_addrmode64 ge a rs = eval_addrmode64 tge a rs.
-Admitted.
+Proof.
+  intros. unfold eval_addrmode64.
+  destruct a. destruct base, ofs, const; auto.
+  - destruct p, p0; auto.
+    rewrite transf_symbol_refl. auto.
+  - destruct p; auto.
+    rewrite transf_symbol_refl. auto.
+  - destruct p, p0; auto.
+    rewrite transf_symbol_refl. auto.
+  - destruct p; auto.
+    rewrite transf_symbol_refl. auto.
+Qed.
+
+Lemma transf_addrmode_refl: forall a rs,
+    eval_addrmode ge a rs = eval_addrmode tge a rs.
+Proof.
+  intros. unfold eval_addrmode. destruct Archi.ptr64.
+  - eapply transf_addrmode64_refl; eauto.
+  - eapply transf_addrmode32_refl; eauto.
+Qed.
 
 Lemma transf_ros_refl: forall ros rs,
     eval_ros tge ros rs = eval_ros ge ros rs.
-Admitted.
-
-
-(* Section WITHMATCH. *)
-          
-(* Context {A B V: Type} {LA: Linker A} {LV: Linker V}. *)
-(* Context {transf: A -> res B} {p: AST.program A V} {tp: AST.program B V}. *)
-(* Hypothesis progmatch: match_program (fun cu f tf => transf f = OK tf) eq p tp. *)
-                
-(* Theorem find_funct_ptr_some_inv: *)
-(*   forall b ef, *)
-(*   Genv.find_funct_ptr (Genv.globalenv tp) b = Some ef -> *)
-(*   exists f, *)
-(*   Genv.find_funct_ptr (Genv.globalenv p) b = Some f /\ transf f = OK ef. *)
-(* Proof. *)
-(*   clear.  *)
-(* Admitted. *)
-
-(* Theorem find_funct_ptr_none_inv: *)
-(*   forall b ef, *)
-(*   Genv.find_funct_ptr (Genv.globalenv tp) b = Some ef -> *)
-(*   exists f, *)
-(*   Genv.find_funct_ptr (Genv.globalenv p) b = Some f /\ transf f = OK ef. *)
-(* Proof. *)
-(*   clear.  *)
-(* Admitted. *)
-
-(* End WITHMATCH. *)
-
+Proof.
+  unfold eval_ros. intros.
+  destruct ros; auto.
+  apply transf_symbol_refl.
+Qed.
 
 Lemma list_nth_z_findAllLabel_comm: forall t n l c l',
     list_nth_z t n = Some l ->
