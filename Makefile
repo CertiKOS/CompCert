@@ -112,8 +112,8 @@ BACKEND=\
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
-  Symbtablegen.v  Reloctablesgen.v Reloctablesgenproof.v \
-	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
+  Symbtablegen.v  Reloctablesgen.v Reloctablesgen2.v  Reloctablesgenproof.v \
+	RelocBingen.v RelocBingen2.v RelocBinDecode.v RelocBingenproof.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
 	TablesEncode.v \
 	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
@@ -128,7 +128,6 @@ BACKEND=\
 	RemoveAddend.v RemoveAddendproof.v \
   RelocBinDecode.v \
   LocalLib.v AsmInject.v
-
 
 # Encoding of data into bytes
 
