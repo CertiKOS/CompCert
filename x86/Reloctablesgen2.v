@@ -252,24 +252,13 @@ Fixpoint ok_builtin_arg {A} (ba: builtin_arg A) : bool :=
   | BA_splitlong ba1 ba2 => ok_builtin_arg ba1 && ok_builtin_arg ba2
   | _ => true
   end.
-
 Definition unsupported i :=
   match i with
   | Pmovq_rm _ _
   | Pmovq_mr _ _
   | Pmovsd_fm_a _ _
   | Pmovsd_mf_a _ _
-  | Pmovsd_fm _ _
-  | Pmovsd_mf _ _
-  | Pmovss_fm _ _
-  | Pmovss_mf _ _
-  | Pfldl_m _
-  | Pfstpl_m _
-  | Pflds_m _
-  | Pfstps_m _
-  | Pmovb_mr _ _
   | Pmovw_mr _ _
-  | Pmovzb_rm _ _
   | Pmovsb_rm _ _
   | Pmovzw_rm _ _
   | Pmovsw_rm _ _
@@ -279,6 +268,8 @@ Definition unsupported i :=
     negb (forallb ok_builtin_arg args)
   | _ => false
   end.
+
+
 
 Definition id_eliminate (i:instruction):res (instruction):=
   if unsupported i
