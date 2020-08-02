@@ -23,28 +23,75 @@ Definition addrmode_reloc_offset (a:addrmode) : Z :=
   addrmode_size_aux a.
 
 
+
+
+
+(** Calculate the starting offset of the bytes
+    that need to be relocated in an instruction *)
 Definition instr_reloc_offset (i:instruction) : res Z :=
   match i with
   | Pmov_rs _ _ => OK 2
   | Pcall (inr _) _ => OK 1
   | Pjmp (inr _) _ => OK 1
-  | Pleal _ a
-  | Pmovl_rm _ a
-  | Pmovl_mr a _
-  | Pmov_rm_a _ a
-  | Pmov_mr_a a _
-  | Pfldl_m a
-  | Pfstpl_m a
-  | Pflds_m a
-  | Pfstps_m a
-  | Pmovsd_fm _ a
-  | Pmovsd_mf a _
-  | Pmovss_fm _ a
-  | Pmovss_mf a _
-  | Pmovb_mr a _ 
-  | Pmovzb_rm _ a =>
+  | Pleal rd a =>
     let aofs := addrmode_reloc_offset a in
     OK (1 + aofs)
+  | Pmovl_rm _ a =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmovl_mr a _ =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmov_rm_a _ a =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmov_mr_a a _ =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pmovsd_fm_a frd a
+  | Pmovsd_fm frd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pmovsd_mf_a a fr1
+  | Pmovsd_mf a fr1 =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pmovss_fm frd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pmovss_mf a fr1 =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pfldl_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pfstpl_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pflds_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pfstps_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pmovb_mr a rs =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pmovw_mr a rs =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovzb_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovzw_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovsb_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovsw_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)                      
   | _ => Error [MSG "Calculation of relocation offset failed: Either there is no possible relocation location or the instruction ";
               MSG (instr_to_string i); MSG " is not supported yet by relocation"]
   end.
