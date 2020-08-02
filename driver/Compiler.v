@@ -213,6 +213,7 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
+
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program

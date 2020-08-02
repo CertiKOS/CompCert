@@ -1015,6 +1015,53 @@ End WITHGE.
 
 End INVARIANT.
 
+
+Section WITHGETGE.
+
+    Variable (ge tge: Genv.t Asm.fundef unit).
+    Hypothesis (SADDR_EQ: forall id ofs, Genv.symbol_address tge id ofs = Genv.symbol_address ge id ofs).
+
+    Hint Rewrite SADDR_EQ.
+
+    Ltac unfold_loadstore :=
+      match goal with
+      | [ |- context[ exec_load _ _ _ _ _ _ _] ] =>
+        unfold exec_load
+      | [ |- context[ exec_store _ _ _ _ _ _ _ _] ] =>
+        unfold exec_store
+      end.
+
+    Ltac rewrite_eval_addrmode :=
+      match goal with
+      | [ |- context[ eval_addrmode _ _ _ ] ] =>
+        erewrite eval_addrmode_same; eauto
+      end.
+
+    Lemma exec_instr_same : forall (i:instruction) f f' i rs m,
+        instr_valid i ->
+        exec_instr ge f i rs m = exec_instr tge f' i rs m.
+    Proof.
+      intros i f f' i0 rs m VI.
+      destruct i0; cbn; auto;
+        try (unfold_loadstore; rewrite_eval_addrmode);
+        try (red in VI; cbn in VI; contradiction).
+      - congruence.
+      - erewrite eval_addrmode32_same; eauto.
+      - erewrite eval_addrmode64_same; eauto.
+      - erewrite eval_ros_same; eauto.
+        admit.
+      - erewrite eval_ros_same; eauto.
+      - admit.
+      - destr; auto. destr; auto. 
+        admit.
+      - destr; auto. destr; auto. destr; auto. destr; auto.
+        admit.
+      - destr; auto. destr; auto.
+        admit.
+Admitted.
+
+End WITHGETGE.
+
 End WITHMEMORYMODEL.
 
 Section RECEPTIVEDET.
@@ -1081,3 +1128,6 @@ Section RECEPTIVEDET.
   Qed.
 
 End RECEPTIVEDET.
+
+
+

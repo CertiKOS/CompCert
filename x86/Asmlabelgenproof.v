@@ -123,15 +123,6 @@ Proof.
 Qed.
 
 
-Lemma code_size_app : forall c1 c2,
-    code_size (c1 ++ c2) = code_size c1 + code_size c2.
-Proof.
-  induction c1 as [|i c1].
-  - intros c2. cbn. auto.
-  - intros c2. cbn. rewrite IHc1. omega.
-Qed.
-
-
 Lemma transl_code_err: forall allcode code e r,
     fold_left (acc_transl_instr allcode) code (Error e) <> OK r.
 Proof.
@@ -346,36 +337,18 @@ Proof.
   rewrite (Genv.find_symbol_transf_partial TRANSF id). auto.
 Qed.
 
-  
-
 Lemma transf_addrmode32_refl: forall a rs,
     eval_addrmode32 ge a rs = eval_addrmode32 tge a rs.
 Proof.
-  intros. unfold eval_addrmode32.
-  destruct a. destruct base, ofs, const; auto.
-  - destruct p, p0; auto.
-    rewrite transf_symbol_refl. auto.
-  - destruct p; auto.
-    rewrite transf_symbol_refl. auto.
-  - destruct p, p0; auto.
-    rewrite transf_symbol_refl. auto.
-  - destruct p; auto.
-    rewrite transf_symbol_refl. auto.
+  eapply AsmFacts.eval_addrmode32_same; eauto.
+  intros. erewrite transf_symbol_refl; eauto.
 Qed.
 
 Lemma transf_addrmode64_refl: forall a rs,
     eval_addrmode64 ge a rs = eval_addrmode64 tge a rs.
 Proof.
-  intros. unfold eval_addrmode64.
-  destruct a. destruct base, ofs, const; auto.
-  - destruct p, p0; auto.
-    rewrite transf_symbol_refl. auto.
-  - destruct p; auto.
-    rewrite transf_symbol_refl. auto.
-  - destruct p, p0; auto.
-    rewrite transf_symbol_refl. auto.
-  - destruct p; auto.
-    rewrite transf_symbol_refl. auto.
+  eapply AsmFacts.eval_addrmode64_same; eauto.
+  intros. erewrite transf_symbol_refl; eauto.
 Qed.
 
 Lemma transf_addrmode_refl: forall a rs,
