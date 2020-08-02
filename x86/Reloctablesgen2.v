@@ -280,7 +280,6 @@ Definition unsupported i :=
   | _ => false
   end.
 
-
 Definition id_eliminate (i:instruction):res (instruction):=
   if unsupported i
   then Error (msg "unsupported instruction in id_eliminate")
@@ -298,6 +297,37 @@ Definition id_eliminate (i:instruction):res (instruction):=
   | Pmovl_mr (Addrmode rb ss (inr disp)) rs =>
     let '(id, ptrofs) := disp in
     OK (Pmovl_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pfldl_m (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pfldl_m (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pfstpl_m (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pfstpl_m (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pflds_m (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pflds_m (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pfstps_m (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pfstps_m (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovsd_fm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovsd_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovsd_mf (Addrmode rb ss (inr disp)) rs =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovsd_mf (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pmovss_fm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovss_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovss_mf (Addrmode rb ss (inr disp)) rs =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovss_mf (Addrmode rb ss (inr (xH, ptrofs))) rs)       
+  (** Moves with conversion *)
+  | Pmovb_mr (Addrmode rb ss (inr disp)) rs =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovb_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovzb_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
   (** Integer arithmetic *)
   | Pleal rd (Addrmode rb ss (inr disp))  =>
     let '(id, ptrofs) := disp in
