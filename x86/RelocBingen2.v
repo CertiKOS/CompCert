@@ -7,7 +7,7 @@ Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
 Require Import Asm RelocProgram.
 Require Import Hex Bits Memdata Encode SeqTable.
-Require Import Reloctablesgen.
+Require Import Reloctablesgen2.
 Require Import SymbolString.
 Import Hex Bits.
 Import ListNotations.
@@ -131,21 +131,21 @@ Definition encode_addrmode (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte
               match instr_reloc_offset i with
               |OK iofs =>
                match get_instr_reloc_addend' (iofs + sofs) with
-               |OK entry => Error[MSG (instr_to_string i); MSG "unexpected relocEntry"]
+               |OK entry => Error[MSG (instr_to_string i); MSG " unexpected relocEntry"]
                |Error _ => OK ofs
                end
               |Error _ => OK ofs
               end
            | inr (id, ofs) =>
-             if Ptrofs.eq_dec ofs Ptrofs.zero then
+             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
               match id with
               |xH => 
                (do iofs <- instr_reloc_offset i;
                 get_instr_reloc_addend' (iofs + sofs))
               |_ => Error [MSG (instr_to_string i); MSG ":id is "; POS id; MSG "(expected 1)"]
               end
-             else
-               Error (msg "ptrofs is not zero")             
+             (* else *)
+               (* Error (msg "ptrofs is not zero")              *)
             end;
   OK (abytes ++ (encode_int32 ofs)).
 
@@ -208,14 +208,14 @@ Definition encode_addrmode_f (sofs: Z) i (a: addrmode) (frd: freg) : res (list b
               |Error _ => OK ofs
               end
            | inr (id, ofs) =>
-             if Ptrofs.eq_dec ofs Ptrofs.zero then
+             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
                match id with
                |xH => (do iofs <- instr_reloc_offset i;
                       get_instr_reloc_addend' (iofs + sofs))
                |_ => Error [MSG (instr_to_string i); MSG ":id is "; POS id; MSG "(expected 1)"]
               end
-             else
-               Error (msg "ptrofs is not zero")             
+             (* else *)
+               (* Error (msg "ptrofs is not zero")              *)
            end;
   OK (abytes ++ (encode_int32 ofs)).
 

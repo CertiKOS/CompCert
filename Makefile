@@ -110,6 +110,7 @@ BACKEND=\
 	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
 	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
   RelocProgram.v \
+  Asmpielim.v\
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
   Symbtablegen.v  Reloctablesgen.v Reloctablesgen2.v  Reloctablesgenproof.v \

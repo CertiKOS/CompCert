@@ -91,7 +91,10 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
       OK (2 + aofs)
   | Pmovsw_rm rd a =>
     let aofs := addrmode_reloc_offset a in
-      OK (2 + aofs)                      
+      OK (2 + aofs)   
+  (* | Pmovsb_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)                    *)
   | _ => Error [MSG "Calculation of relocation offset failed: Either there is no possible relocation location or the instruction ";
               MSG (instr_to_string i); MSG " is not supported yet by relocation"]
   end.
@@ -198,8 +201,10 @@ Definition transl_instr (sofs:Z) (i: instruction) : res (list relocentry) :=
   | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
-  | Pmovsb_rm rd a =>
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
+  | Pmovsb_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+    (* Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"] *)
   | Pmovzw_rm rd a =>
     Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
   | Pmovsw_rm rd a =>
@@ -306,7 +311,7 @@ Definition unsupported i :=
   | Pmovsd_fm_a _ _
   | Pmovsd_mf_a _ _
   | Pmovw_mr _ _
-  | Pmovsb_rm _ _
+  (* | Pmovsb_rm _ _ *)
   | Pmovzw_rm _ _
   | Pmovsw_rm _ _
   | Pleaq _ _

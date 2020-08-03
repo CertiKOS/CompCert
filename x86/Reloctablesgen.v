@@ -35,7 +35,7 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmov_mr_a a _ =>
     let aofs := addrmode_reloc_offset a in
     OK (1 + aofs)
-  | _ => Error (msg "Calculation of relocation offset failed: Either there is no possible relocation location or the instruction is not supported yet by relocation")
+  | _ => Error (msg "In reloctablesgen1: Calculation of relocation offset failed: Either there is no possible relocation location or the instruction is not supported yet by relocation")
   end.
 
 (** Calculate the starting offset of the bytes

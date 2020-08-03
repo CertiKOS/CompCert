@@ -87,6 +87,7 @@ Require Symbtablegen.
 Require SymbtablegenSep.
 Require Symbtablegenproof.
 (* Require NormalizeSymb. *)
+Require Asmpielim.
 Require Reloctablesgen.
 Require Reloctablesgen2.
 Require Reloctablesgenproof.
@@ -232,6 +233,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
 
 Definition transf_c_program_bytes_more (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
   transf_c_program_real p
+  @@@ time "Psedoinstruction elimination" Asmpielim.transf_program
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
