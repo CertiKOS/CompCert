@@ -1201,6 +1201,11 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   extends m1 m2 ->
   weak_valid_pointer m1 b ofs = true -> weak_valid_pointer m2 b ofs = true;
 
+ drop_extends {injperm: InjectPerm} : forall m1 m2 b lo hi p m1',
+    extends m1 m2 ->
+    inject_perm_condition Freeable ->
+    drop_perm m1 b lo hi p = Some m1' ->
+    exists m2' : mem, drop_perm m2 b lo hi p = Some m2' /\ extends m1' m2';
   
 (** ** Properties of [magree]. *)
  ma_perm {injperm: InjectPerm}:

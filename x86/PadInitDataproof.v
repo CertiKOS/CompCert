@@ -73,7 +73,8 @@ Qed.
 
 
 Section PRESERVATION.
-  Existing Instance inject_perm_all.
+
+Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
 
 Local Existing Instance mem_accessors_default.
@@ -137,12 +138,6 @@ Lemma init_mem_transf: forall m,
     exists m', Genv.init_mem tprog = Some m' /\ Mem.extends m m'.
 Admitted.
 
-Lemma drop_perm_extends: forall m1 m2 b lo hi p m1',
-    Mem.extends m1 m2 ->
-    Mem.drop_perm m1 b lo hi p = Some m1' ->
-    exists m2' : mem, Mem.drop_perm m2 b lo hi p = Some m2' /\ Mem.extends m1' m2'.
-Admitted.
-
 Lemma initial_state_extends: forall m m' rs st prog prog',
     (forall b, Genv.find_symbol (Genv.globalenv prog) b = Genv.find_symbol (Genv.globalenv prog') b) ->
     prog_main prog = prog_main prog' ->
@@ -170,7 +165,9 @@ Proof.
   intros ISNIL1'. 
   rewrite Mem.push_new_stage_stack in ISNIL1'.
   rewrite ISNIL' in ISNIL1'.
-  generalize (drop_perm_extends _ _ _ _ _ _ _ EXT1 MDROP).
+  assert (inject_perm_condition Freeable) as IPF.
+  { red. cbn. auto. }
+  generalize (Mem.drop_extends _ _ _ _ _ _ _ EXT1 IPF MDROP).
   intros (m2' & MDROP' & EXT2).
   generalize (Mem.drop_perm_stack _ _ _ _ _ _ MDROP).
   intros ISNIL2. rewrite ISNIL1 in ISNIL2.
