@@ -1087,7 +1087,7 @@ Section WITHGETGE.
         erewrite eval_addrmode_same; eauto
       end.
 
-    Lemma exec_instr_same : forall (i:instruction) f f' i rs m,
+    Lemma exec_valid_instr_same : forall (i:instruction) f f' i rs m,
         instr_valid i ->
         exec_instr ge f i rs m = exec_instr tge f' i rs m.
     Proof.
@@ -1115,7 +1115,41 @@ Section WITHGETGE.
       - destr; eauto.
         destr; eauto.
         erewrite goto_ofs_eq; eauto.
-Qed.
+    Qed.
+
+    Lemma goto_label_eq : forall (i:instruction) f f' l rs m,
+        (forall lbl ofs, label_pos lbl ofs (fn_code f) = label_pos lbl ofs (fn_code f')) ->
+        goto_label ge f l rs m = goto_label tge f' l rs m.
+    Proof.
+      intros.
+      unfold goto_label. destr.
+      - rewrite <- H. rewrite Heqo. 
+        destr; auto. 
+        destr. 
+        exploit fptr_some_eq; eauto.
+        intros (f1 & FT). rewrite FT. auto.
+        rewrite FPTR_EQ in Heqo0. rewrite Heqo0. auto.
+      - rewrite <- H. rewrite Heqo. auto.
+    Qed.
+
+    Lemma exec_instr_same : forall (i:instruction) f f' i rs m,
+        (forall lbl ofs, label_pos lbl ofs (fn_code f) = label_pos lbl ofs (fn_code f')) ->
+        exec_instr ge f i rs m = exec_instr tge f' i rs m.
+    Proof.
+      intros i f f' i0 rs m LP.
+      destruct (instr_valid_dec i0).
+      eapply exec_valid_instr_same; eauto.
+      unfold instr_valid in n.
+      destruct i0; cbn in n; try tauto.
+      - cbn. eapply goto_label_eq; eauto.
+      - cbn. destr; auto. destr; auto.
+        eapply goto_label_eq; eauto.
+      - cbn. destr; auto. destr; auto.
+        destr; auto. destr; auto.
+        eapply goto_label_eq; eauto.
+      - cbn. destr; auto. cbn. destr; auto.
+        eapply goto_label_eq; eauto.
+    Qed.
 
 End WITHGETGE.
 
