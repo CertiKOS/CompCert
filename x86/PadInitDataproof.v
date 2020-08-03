@@ -7,9 +7,11 @@ Require Import Coqlib Errors.
 Require Import Integers Floats AST Linking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
+Require Import LocalLib.
+Require Import AsmFacts.
 Require Import PadInitData.
 Import ListNotations.
-Require Import AsmFacts.
+
 
 Lemma transf_globdef_pres_id : forall def,
     fst def = fst (transf_globdef def).
@@ -59,8 +61,6 @@ Proof.
 Qed.
 
 
-
-
 Definition match_prog (p tp:Asm.program) :=
   tp = transf_program p.
 
@@ -78,6 +78,114 @@ Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
 
 Local Existing Instance mem_accessors_default.
+
+
+Lemma transl_globvar_gvar_init: forall v,
+    gvar_init (transl_globvar v) = (gvar_init v) \/
+    exists sz, gvar_init (transl_globvar v) = (gvar_init v) ++ [Init_space sz].
+Proof.
+  intros. cbn.
+  destr; auto. repeat destr; eauto.
+Qed.
+
+Lemma transl_globvar_perm_globvar: forall v,
+    Genv.perm_globvar (transl_globvar v) = Genv.perm_globvar v.
+Proof.
+  intros. unfold transl_globvar, Genv.perm_globvar; cbn.
+  auto.
+Qed.
+
+Lemma transl_globvar_init_data_list_size: forall v, 
+    init_data_list_size (gvar_init v) <= init_data_list_size (gvar_init (transl_globvar v)).
+Proof.
+  intros. generalize (transl_globvar_gvar_init v).
+  intros [GI | GI].
+  - rewrite GI. omega.
+  - destruct GI as (sz & GI). rewrite GI.
+    rewrite init_data_list_size_app. 
+    cbn. generalize (Z.le_max_r sz 0).
+    intros. omega.
+Qed.
+
+Lemma store_init_data_list_extends: forall {F} (ge tge: Genv.t F unit) v m1 m1' m2 b ofs,
+    (forall b, Genv.find_symbol ge b = Genv.find_symbol tge b) ->
+    Mem.extends m1 m1' ->
+    Genv.store_init_data_list ge m1 b ofs (gvar_init v) = Some m2 ->
+    exists m2', Genv.store_init_data_list tge m1' b ofs (gvar_init (transl_globvar v)) = Some m2' /\
+           Mem.extends m2 m2'.
+Proof.
+Admitted.
+
+
+Lemma alloc_global_extends: forall ge tge def m1 m1' m2,
+    (forall b, Genv.find_symbol ge b = Genv.find_symbol tge b) ->
+    Mem.extends m1 m1' ->
+    Genv.alloc_global ge m1 def = Some m2 ->
+    exists m2', Genv.alloc_global tge m1' (transf_globdef def) = Some m2' /\
+           Mem.extends m2 m2'.
+Proof.
+  intros ge tge def m1 m1' m2 FS EXT ALLOC.
+  destruct def. destruct o. destruct g.
+  - cbn in *. 
+    destr_in ALLOC.
+    edestruct Mem.alloc_extends as (m' & ALLOC1 & EXT1); eauto.
+    instantiate (1:=0); omega.
+    instantiate (1:=1); omega.
+    rewrite ALLOC1.
+    eapply Mem.drop_extends; eauto.
+    cbn. auto.
+  - cbn in ALLOC. 
+    repeat destr_in ALLOC.
+    cbn - [transl_globvar].
+
+    generalize (transl_globvar_init_data_list_size v).
+    intros LE.
+    set (sz := init_data_list_size (gvar_init v)) in *.
+    set (sz' := init_data_list_size (gvar_init (transl_globvar v))) in *.
+    assert (exists m2', Mem.alloc m1' 0 sz' = (m2', b) /\ Mem.extends m m2') as ALLOC'.
+    { eapply Mem.alloc_extends; eauto. omega. }
+    destruct ALLOC' as (m2' & ALLOC' & EXT1).
+    rewrite ALLOC'.
+    assert (exists m3', store_zeros m2' b 0 sz' = Some m3' /\ Mem.extends m0 m3') as STZ.
+    { eapply store_zeros_extend; eauto. omega.
+      intros. destruct H. omega.
+      erewrite alloc_perm; eauto.
+      rewrite peq_true. intros RNG.
+      assert (0 <= sz).
+      { unfold sz. generalize (init_data_list_size_pos (gvar_init v)). intros. omega. }
+      omega.
+    }
+    destruct STZ as (m3' & STZ & EXT2).
+    rewrite STZ.
+    assert (exists m4', Genv.store_init_data_list tge m3' b 0 (gvar_init (transl_globvar v)) = Some m4' /\
+                   Mem.extends m3 m4') as SI.
+    { eapply store_init_data_list_extends; eauto. }
+    destruct SI as (m4' & SI & EXT3).
+    rewrite SI.
+    rewrite transl_globvar_perm_globvar.
+    admit.
+Admitted.
+
+Lemma alloc_globals_extends: forall ge tge defs m1 m1' m2,
+    (forall b, Genv.find_symbol ge b = Genv.find_symbol tge b) ->
+    Mem.extends m1 m1' ->
+    Genv.alloc_globals ge m1 defs = Some m2 ->
+    exists m2', Genv.alloc_globals tge m1' (map transf_globdef defs) = Some m2' /\
+           Mem.extends m2 m2'.
+Proof.
+  induction defs as [| def defs].
+  - cbn. intros m1 m1' m2 FS EXT EQ.
+    inv EQ. eauto.
+  - cbn. intros m1 m1' m2 FS EXT EQ.
+    destr_in EQ.
+    exploit alloc_global_extends; eauto.
+    intros (m2' & ALLOC1 & EXT1).
+    exploit IHdefs; eauto.
+    intros (m3' & ALLOC2 & EXT2).
+    eexists; split; eauto.
+    rewrite ALLOC1. eauto.
+Qed.
+
 
 
 Variable prog: Asm.program.
@@ -136,7 +244,16 @@ Admitted.
 Lemma init_mem_transf: forall m,
     Genv.init_mem prog = Some m ->
     exists m', Genv.init_mem tprog = Some m' /\ Mem.extends m m'.
-Admitted.
+Proof.
+  unfold Genv.init_mem.
+  intros m ALLOC.
+  red in TRANSF. unfold transf_program in TRANSF.
+  replace (prog_defs tprog) with (map transf_globdef (prog_defs prog)).
+  Focus 2. rewrite TRANSF. cbn. auto.
+  apply alloc_globals_extends with ge Mem.empty; eauto.
+  intros. rewrite find_symbol_transf. auto.
+  eapply Mem.extends_refl.
+Qed.
 
 Lemma initial_state_extends: forall m m' rs st prog prog',
     (forall b, Genv.find_symbol (Genv.globalenv prog) b = Genv.find_symbol (Genv.globalenv prog') b) ->
