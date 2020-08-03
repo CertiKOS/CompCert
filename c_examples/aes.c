@@ -36,14 +36,6 @@ typedef unsigned char	u8;
 typedef unsigned short	u16;
 typedef unsigned int	u32;
 
-#if defined(__ppc__) || defined(__PPC__) || defined(__ARMEB__)
-#define ARCH_BIG_ENDIAN
-#elif defined(__i386__) || defined(__x86_64__) || defined(__ARMEL__)
-#undef ARCH_BIG_ENDIAN
-#else
-#error "unknown endianness"
-#endif
-
 #ifdef ARCH_BIG_ENDIAN
 #define GETU32(pt) (*(u32 *)(pt))
 #define PUTU32(ct,st) (*(u32 *)(ct) = (st))
@@ -1448,6 +1440,6 @@ int main(int argc, char ** argv)
           (u8 *)"\x00\x11\x22\x33\x44\x55\x66\x77\x88\x99\xAA\xBB\xCC\xDD\xEE\xFF",
           (u8 *)"\x8E\xA2\xB7\xCA\x51\x67\x45\xBF\xEA\xFC\x49\x90\x4B\x49\x60\x89",
           5, 6);
-  do_bench(10000000);
+  do_bench(1000000);
   return 0;
 }

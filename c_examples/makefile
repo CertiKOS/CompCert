@@ -5,21 +5,31 @@ CCOMPFLAGS=-stdlib ../runtime -relf -static
 
 CFLAGS=-O1 -Wall
 
+LIBS= -lm
+
 OBJDUMP=objdump
 READELF=readelf
 
-PROGS= rodata aes
+PROGS=fib integr qsort fft fftsp fftw sha1 sha3 aes almabench \
+  lists binarytrees fannkuch knucleotide mandelbrot nbody\
+  nsieve nsievebits spectral \
+  bisect chomp perlin
+# unsupported: vmach siphash24
 
-all: $(PROGS:%=%.ccomp.out) $(PROGS:%=%.gcc.out)
+all: ccomp gcc
+ccomp: $(PROGS:%=%.ccomp.out) 
+gcc: $(PROGS:%=%.gcc.out)
 
 %.ccomp.out: %.c $(CCOMP)
-	$(CCOMP) $(CCOMPFLAGS) -o $*.ccomp.out $*.c
+	$(CCOMP) $(CCOMPFLAGS) -o $*.ccomp.out $*.c $(LIBS)
 	$(OBJDUMP) -D $*.o > $*.obj.ccomp.asm
 	$(READELF) -a $*.o > $*.obj.ccomp.hdr
+	#$(OBJDUMP) -D $*.ccomp.out > $*.ccomp.out.asm
+	#$(READELF) -a $*.ccomp.out > $*.ccomp.out.hdr
 
 %.gcc.out: %.c $(CCOMP)
 	$(CC) $(CFLAGS) -c $*.c
-	$(CC) $(CFLAGS) -o $*.gcc.out $*.o
+	$(CC) $(CFLAGS) -o $*.gcc.out $*.o $(LIBS)
 	$(OBJDUMP) -D $*.o > $*.obj.gcc.asm
 	$(READELF) -a $*.o > $*.obj.gcc.hdr
 
