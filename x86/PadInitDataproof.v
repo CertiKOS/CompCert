@@ -9,7 +9,7 @@ Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import PadInitData.
 Import ListNotations.
-Require AsmFacts.
+Require Import AsmFacts.
 
 Lemma transf_globdef_pres_id : forall def,
     fst def = fst (transf_globdef def).
@@ -87,8 +87,15 @@ Let tge := Genv.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
+Lemma prog_main_eq: prog_main prog = prog_main tprog.
+Proof.
+  red in TRANSF. unfold transf_program in TRANSF.
+  subst. cbn. auto.
+Qed.
+ 
 Inductive match_states : Asm.state -> Asm.state -> Prop :=
 |match_states_intro m m' rs:
+   Mem.stack m = Mem.stack m' ->
    Mem.extends m m' ->
    match_states (Asm.State rs m) (Asm.State rs m').
 
@@ -130,12 +137,81 @@ Lemma init_mem_transf: forall m,
     exists m', Genv.init_mem tprog = Some m' /\ Mem.extends m m'.
 Admitted.
 
+Lemma drop_perm_extends: forall m1 m2 b lo hi p m1',
+    Mem.extends m1 m2 ->
+    Mem.drop_perm m1 b lo hi p = Some m1' ->
+    exists m2' : mem, Mem.drop_perm m2 b lo hi p = Some m2' /\ Mem.extends m1' m2'.
+Admitted.
+
 Lemma initial_state_extends: forall m m' rs st prog prog',
     (forall b, Genv.find_symbol (Genv.globalenv prog) b = Genv.find_symbol (Genv.globalenv prog') b) ->
+    prog_main prog = prog_main prog' ->
+    Mem.stack m = nil ->
+    Mem.stack m' = nil ->
     Mem.extends m m' ->
     initial_state_gen prog rs m st ->
     exists st', initial_state_gen prog' rs m' st' /\ match_states st st'.
-Admitted.
+Proof.
+  intros m m' rs st prog0 prog' FS MAIN ISNIL ISNIL' EXT IS.
+  inv IS.
+  assert (exists m1' : mem, Mem.alloc (Mem.push_new_stage m') 0 
+                                 (Mem.stack_limit + align (size_chunk Mptr) 8) = (m1', bstack)
+                       /\ Mem.extends m1 m1') as MALLOC'.
+  { eapply Mem.alloc_extends; eauto.
+    eapply Mem.extends_push; eauto. 
+    omega. omega.
+  }
+  destruct MALLOC' as (m1' & MALLOC' & EXT1).
+  generalize (Mem.alloc_stack_blocks _ _ _ _ _ MALLOC).
+  intros ISNIL1. 
+  rewrite Mem.push_new_stage_stack in ISNIL1.
+  rewrite ISNIL in ISNIL1.
+  generalize (Mem.alloc_stack_blocks _ _ _ _ _ MALLOC').
+  intros ISNIL1'. 
+  rewrite Mem.push_new_stage_stack in ISNIL1'.
+  rewrite ISNIL' in ISNIL1'.
+  generalize (drop_perm_extends _ _ _ _ _ _ _ EXT1 MDROP).
+  intros (m2' & MDROP' & EXT2).
+  generalize (Mem.drop_perm_stack _ _ _ _ _ _ MDROP).
+  intros ISNIL2. rewrite ISNIL1 in ISNIL2.
+  generalize (Mem.drop_perm_stack _ _ _ _ _ _ MDROP').
+  intros ISNIL2'. rewrite ISNIL1' in ISNIL2'.
+  assert (exists m3', Mem.record_stack_blocks 
+                   m2' (make_singleton_frame_adt' bstack RawAsm.frame_info_mono 0) = Some m3' /\ Mem.extends m3 m3') 
+    as MRSB'.
+  { 
+    eapply Mem.record_stack_blocks_extends; eauto.
+    * rewrite ISNIL2'. auto.
+    * red. unfold make_singleton_frame_adt'. simpl.
+      intros b fi o k p BEQ PERM. inv BEQ; try contradiction.
+      inv H0. unfold RawAsm.frame_info_mono. simpl.
+      erewrite drop_perm_perm in PERM; eauto. destruct PERM.
+      eapply Mem.perm_alloc_3; eauto.
+    * red. repeat rewrite_stack_blocks. constructor. auto.
+    * repeat rewrite_stack_blocks.
+      rewrite ISNIL, ISNIL'. omega.
+  } 
+  destruct MRSB' as (m3' & MRSB' & EXT3).
+  generalize (Mem.record_stack_blocks_stack _ _ _ _ _ MRSB ISNIL2).
+  intros ISNIL3.
+  generalize (Mem.record_stack_blocks_stack _ _ _ _ _ MRSB' ISNIL2').
+  intros ISNIL3'.
+
+  assert (exists m4', Mem.storev Mptr m3' 
+                           (Vptr bstack (Ptrofs.repr (Mem.stack_limit + align (size_chunk Mptr) 8 - size_chunk Mptr))) Vnullptr = Some m4' 
+                /\ Mem.extends m4 m4') as STORE_RETADDR'.
+  { eapply Mem.storev_extends; eauto. }
+  destruct STORE_RETADDR' as (m4' & STORE_RETADDR' & EXT4).
+  generalize (Mem.storev_stack _ _ _ _ _ STORE_RETADDR).
+  intros ISNIL4. rewrite ISNIL3 in ISNIL4.
+  generalize (Mem.storev_stack _ _ _ _ _ STORE_RETADDR').
+  intros ISNIL4'. rewrite ISNIL3' in ISNIL4'.
+  exists (State rs0 m4'). split.
+  - econstructor; eauto.
+    rewrite <- FS. rewrite <- MAIN. auto.
+  - eapply match_states_intro; eauto. congruence.
+Qed.
+
 
 Theorem step_simulation:
   forall S1 t S2, step ge S1 t S2 ->
@@ -155,6 +231,9 @@ Proof.
   assert (exists st', initial_state_gen tprog rs m' st' /\ match_states st1 st') as IS.
   { apply initial_state_extends with m prog; eauto.
     intros. rewrite find_symbol_transf. auto. 
+    rewrite prog_main_eq. auto.
+    erewrite Genv.init_mem_stack; eauto.
+    erewrite Genv.init_mem_stack; eauto.
   }
   destruct IS as (st1' & IS & MS).
   exists st1'. split; eauto.
