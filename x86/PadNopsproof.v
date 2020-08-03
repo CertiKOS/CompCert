@@ -41,6 +41,29 @@ Inductive match_states : Asm.state -> Asm.state -> Prop :=
 |match_states_intro m rs:
    match_states (Asm.State rs m) (Asm.State rs m).
 
+Lemma transf_symbol_refl: forall id ofs,
+    (Genv.symbol_address tge id ofs) = (Genv.symbol_address ge id ofs).
+Proof.
+  intros id ofs.
+  unfold Genv.symbol_address.
+  red in TRANSF.
+  unfold ge, tge.
+  setoid_rewrite (Genv.find_symbol_transf TRANSF id). auto.
+Qed.
+
+Lemma find_funct_ptr_eq: forall b, Genv.find_funct_ptr ge b = None <-> Genv.find_funct_ptr tge b = None.
+Proof.
+  intros. red in TRANSF. unfold ge,tge.
+  split.
+  - intros. apply (Genv.find_funct_ptr_transf_none TRANSF); eauto.
+  - intros.
+    destruct (Genv.find_funct_ptr (Genv.globalenv prog) b) eqn:FP; auto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ FP).
+    intros. 
+    setoid_rewrite H0 in H. congruence.
+Qed.
+
+
 Theorem step_simulation:
   forall S1 t S2, step ge S1 t S2 ->
                   forall S1' (MS: match_states S1 S1'),
@@ -52,15 +75,32 @@ Proof.
     exists (State rs' m'). split; [|constructor].
     eapply exec_step_internal with (f0:= transl_function f) (i0:=i); eauto.
     generalize (Genv.find_funct_ptr_transf TRANSF _ H0); eauto.
-    admit.
+    unfold transl_function. cbn.
+    eapply find_instr_app_pres; eauto.
     erewrite <- exec_instr_same; eauto.
-    admit.
+    intros.
+    rewrite transf_symbol_refl. auto.
+    intros. apply find_funct_ptr_eq.
     admit.
 
   - (* Builtin step *)
+    eexists; split; [|constructor].
+    eapply exec_step_builtin with (f0:= transl_function f); eauto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ H0); eauto.
+    unfold transl_function. cbn.
+    eapply find_instr_app_pres; eauto.
+    apply eval_builtin_args_preserved with (ge1:=ge); eauto.
+    intros.
+    unfold ge, tge.
+    setoid_rewrite (Genv.find_symbol_transf TRANSF id). auto.
+    eapply external_call_symbols_preserved; eauto.
     admit.
 
   - (* External Step *)
+    eexists; split; [|constructor].
+    eapply exec_step_external; eauto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ H0); eauto.
+    eapply external_call_symbols_preserved; eauto.
     admit.
 
 Admitted.
