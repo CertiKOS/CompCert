@@ -79,14 +79,18 @@ Context `{external_calls_prf: ExternalCalls}.
 Local Existing Instance mem_accessors_default.
 
 
-Variable p: Asm.program.
-Variable tp: Asm.program.
+Variable prog: Asm.program.
+Variable tprog: Asm.program.
 
-Let ge := Genv.globalenv p.
-Let tge := Genv.globalenv tp.
+Let ge := Genv.globalenv prog.
+Let tge := Genv.globalenv tprog.
 
-Hypothesis TRANSF: match_prog p tp.
+Hypothesis TRANSF: match_prog prog tprog.
 
+Inductive match_states : Asm.state -> Asm.state -> Prop :=
+|match_states_intro m m' rs:
+   Mem.extends m m' ->
+   match_states (Asm.State rs m) (Asm.State rs m').
 
 Lemma find_symbol_transf: forall s,
     Genv.find_symbol tge s =
@@ -114,9 +118,76 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma transf_program_correct:
-  forall rs, forward_simulation (semantics p rs) (semantics tp rs).
+Lemma senv_equiv: Senv.equiv ge tge.
+Proof.
+  red in TRANSF. unfold ge, tge.
+  subst.
+  red. split; cbn.
+Admitted.
+
+Lemma init_mem_transf: forall m,
+    Genv.init_mem prog = Some m ->
+    exists m', Genv.init_mem tprog = Some m' /\ Mem.extends m m'.
+Admitted.
+
+Lemma initial_state_extends: forall m m' rs st prog prog',
+    (forall b, Genv.find_symbol (Genv.globalenv prog) b = Genv.find_symbol (Genv.globalenv prog') b) ->
+    Mem.extends m m' ->
+    initial_state_gen prog rs m st ->
+    exists st', initial_state_gen prog' rs m' st' /\ match_states st st'.
+Admitted.
+
+Theorem step_simulation:
+  forall S1 t S2, step ge S1 t S2 ->
+                  forall S1' (MS: match_states S1 S1'),
+                    (exists S2', step tge S1' t S2' /\ match_states S2 S2').
 Proof.
 Admitted.
+
+Lemma transf_initial_states:
+  forall st1 rs, initial_state prog rs st1 ->
+         exists st2, initial_state tprog rs st2 /\ match_states st1 st2.
+Proof.
+  intros st1 rs HInit.
+  inv HInit.
+  generalize (init_mem_transf _ H).
+  intros (m' & INIT & EXT).
+  assert (exists st', initial_state_gen tprog rs m' st' /\ match_states st1 st') as IS.
+  { apply initial_state_extends with m prog; eauto.
+    intros. rewrite find_symbol_transf. auto. 
+  }
+  destruct IS as (st1' & IS & MS).
+  exists st1'. split; eauto.
+  econstructor; eauto.
+Qed.
+
+
+Lemma transf_final_states:
+  forall st1 st2 r,
+  match_states st1 st2 -> final_state st1 r -> final_state st2 r.
+Proof.
+  intros st1 st2 r MS HFinal.
+  inv HFinal.
+  inv MS.
+  econstructor; eauto.
+Qed.
+
+
+Lemma transf_program_correct:
+  forall rs, forward_simulation (semantics prog rs) (semantics tprog rs).
+Proof.
+  intro rs.
+  apply forward_simulation_step with match_states.
+  + intros id. unfold match_prog in TRANSF.
+    generalize senv_equiv. intros SENV_EQ.
+    red in SENV_EQ.
+    destruct SENV_EQ as (S1 & S2 & S3 & S4). auto.
+  + simpl. intros s1 Hinit.
+    exploit transf_initial_states; eauto.
+  + simpl. intros s1 s2 r MS HFinal. eapply transf_final_states; eauto.
+  + simpl. intros s1 t s1' STEP s2 MS.
+    edestruct step_simulation as (STEP' & MS' ); eauto.
+Qed.
+  
 
 End PRESERVATION.
