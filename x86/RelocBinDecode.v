@@ -2093,7 +2093,45 @@ Proof.
                                                   :: char_to_bool "0"
                                                   :: x1 ++
                                                   char_to_bool "1"
-                                                  :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4) / 256))(Byte.repr 56)) (Byte.repr 3) = bB[x1]) by admit.
+                                                  :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4) / 256))(Byte.repr 56)) (Byte.repr 3) = bB[x1]). {             
+             rewrite <- Byte.and_shru.
+             rewrite shru563.
+             replace 256 with (2^8).
+             rewrite <- Z.shiftr_div_pow2.
+             replace  (char_to_bool "1"
+                 :: char_to_bool "0"
+                    :: x1 ++
+                       char_to_bool "1"
+                       :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4)
+               with
+                  (((char_to_bool "1"
+                 :: char_to_bool "0"
+                    :: x1) ++
+                       (char_to_bool "1"
+                       :: char_to_bool "0" :: [char_to_bool "0"])) ++ (x2 ++ x3 ++ x4)).
+             
+             setoid_rewrite (Z_shru_bits 8 ((char_to_bool "1"
+                 :: char_to_bool "0"
+                    :: x1) ++
+                       (char_to_bool "1"
+                       :: char_to_bool "0" :: [char_to_bool "0"]))  (x2 ++ x3 ++ x4)).
+             rewrite (shru_bits 3 _ _).
+             setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
+             auto.
+
+             1,3,4: repeat rewrite app_length; simpl.
+             1,2,4:rewrite (encode_reg_length rd x1); try omega.
+             1-8: auto.
+             repeat rewrite app_length. 
+             rewrite (encode_scale_length z0).
+             rewrite (encode_reg_length i0).
+             rewrite (encode_reg_length i1).
+             omega.
+             all: auto.
+             repeat rewrite <- app_assoc.
+             auto.
+             omega.
+             }
              rewrite HEQX1.
              generalize (encode_decode_ireg_refl _ _  EQ0).
              intros HRx1.
