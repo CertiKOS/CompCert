@@ -2298,7 +2298,20 @@ Proof.
                              (Byte.and
                                 bB[ char_to_bool "0"
                                                  :: char_to_bool "0"
-                                                 :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]](Byte.repr 56)) (Byte.repr 3) = bB[x1]) by admit.
+                                                 :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]](Byte.repr 56)) (Byte.repr 3) = bB[x1]). {
+               rewrite <- Byte.and_shru.
+               rewrite shru563.
+               replace (char_to_bool "0":: char_to_bool "0":: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"])
+                 with
+                   ((char_to_bool "0":: char_to_bool "0":: x1) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "0"])).
+               rewrite (shru_bits 3 _ _ ).
+               setoid_rewrite (and7 (char_to_bool "0" :: [char_to_bool "0"]) x1).
+               auto.
+
+               1,3,4: repeat rewrite app_length; simpl.
+               all:try rewrite (encode_reg_length rd x1); try omega.
+               all: auto.
+             }
              rewrite HEQx1.
              generalize (encode_decode_ireg_refl _ _ EQ0).
              intros Hreg1. destruct Hreg1.
@@ -2333,7 +2346,25 @@ Proof.
              unfold addrmode_parse_SIB.
              assert(HEQx3: Byte.shru
                              (Byte.and
-                                bB[ x2 ++ x3 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3) = bB[x3]) by admit.
+                                bB[ x2 ++ x3 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3) = bB[x3]). {
+               rewrite <- Byte.and_shru.
+               rewrite shru563.
+               
+               replace  (x2 ++ x3 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])
+                 with
+                   ((x2 ++ x3) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+               
+               rewrite (shru_bits 3 _ _).
+               setoid_rewrite (and7 x2 x3).
+               auto.
+
+               1,3,4: repeat rewrite app_length; simpl.
+               1,2,4:rewrite (encode_reg_length i0 x3); try omega.
+               1,3: rewrite (encode_scale_length z0); try omega.
+               all: auto.
+               repeat rewrite <- app_assoc.
+               auto.
+             }
              rewrite HEQx3.
              generalize(encode_decode_ireg_refl _ _ EQ2).
              intros Hregi.
@@ -2418,7 +2449,20 @@ Proof.
                rewrite HTurncate.
                assert(HEQx1:(Byte.shru
         (Byte.and bB[ b[ "10"] ++ x1 ++ b[ "100"]] (Byte.repr 56))
-        (Byte.repr 3)) = bB[x1]) by admit.
+        (Byte.repr 3)) = bB[x1]). {
+                 rewrite <- Byte.and_shru.
+                 rewrite shru563.
+                 replace  ( b[ "10"] ++ x1 ++ b[ "100"])
+               with
+                 ( (b[ "10"] ++ x1) ++ (b[ "100"])).
+             rewrite (shru_bits 3 _ _).
+             setoid_rewrite (and7 b["10"] x1).
+             all:auto.
+
+             all: repeat rewrite app_length; simpl.
+             all:rewrite (encode_reg_length rd x1); try omega.
+             all: auto.
+               }
                rewrite HEQx1.
                generalize (encode_decode_ireg_refl _ _ EQ0).
                intros Hrd.
@@ -2459,7 +2503,15 @@ Proof.
                                               :: char_to_bool "0" :: char_to_bool "0" :: x2] = bB[b["00100"]++x2])by admit.
                rewrite Hmod.
                unfold addrmode_parse_SIB.
-               assert(HEQ4_2:(Byte.shru (Byte.and bB[ b[ "00100"] ++ x2] (Byte.repr 56)) (Byte.repr 3)) = Byte.repr 4) by admit.
+               assert(HEQ4_2:(Byte.shru (Byte.and bB[ b[ "00100"] ++ x2] (Byte.repr 56)) (Byte.repr 3)) = Byte.repr 4). {
+                 rewrite <- Byte.and_shru.
+                 rewrite shru563.
+                 rewrite (shru_bits 3 _ _).
+                 setoid_rewrite (and7 b["00"] b["100"]).
+                 all:auto.
+                 rewrite app_length; simpl.
+                 all: rewrite (encode_reg_length RSP x2); try omega; auto.
+               }
                rewrite HEQ4_2.
                unfold addrmode_parse_reg.
                do 4 (try(rewrite byte_eq_false)).
@@ -2526,7 +2578,21 @@ Proof.
             unfold decode_addrmode.
             simpl.
             assert(HEQx1:(Byte.shru
-                            (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 56))(Byte.repr 3)) = bB[x1]) by admit.
+                            (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 56))(Byte.repr 3)) = bB[x1]). {
+              rewrite <- Byte.and_shru.
+              rewrite shru563.
+              replace (char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2)
+                with
+                  ((char_to_bool "1" :: char_to_bool "0" :: x1) ++ x2).
+              rewrite (shru_bits 3 _ _).
+              setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
+              auto.
+
+              1,3,4: repeat rewrite app_length; simpl.
+              1,2,4:rewrite (encode_reg_length rd x1); try omega.
+              1-8: auto.
+              all: rewrite (encode_reg_length i0 x2); try omega; auto.
+            }
             rewrite HEQx1.
             generalize(encode_decode_ireg_refl _ _ EQ0).
             intros Hrd.
@@ -2576,7 +2642,24 @@ Proof.
                            (Byte.and
                               bB[ char_to_bool "0"
                                                :: char_to_bool "0"
-                                               :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3)) = bB[x1]) by admit.
+                                               :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3)) = bB[x1]). {
+            rewrite <- Byte.and_shru.
+            rewrite shru563.
+            replace (char_to_bool "0"
+           :: char_to_bool "0"
+              :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])
+              with
+                ((char_to_bool "0"
+           :: char_to_bool "0"
+              :: x1) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+            rewrite (shru_bits 3 _ _).
+            setoid_rewrite (and7 (char_to_bool "0" :: [char_to_bool "0"]) x1).
+            all: auto.
+
+            1,3,4: repeat rewrite app_length; simpl.
+            all:rewrite (encode_reg_length rd x1); try omega.
+            1-8: auto.
+          }
           rewrite HEQx1.
           generalize (encode_decode_ireg_refl _ _ EQ0).
           intros Hrd.
@@ -2639,7 +2722,45 @@ Proof.
                                               :: char_to_bool "0"
                                               :: x1 ++
                                               char_to_bool "1"
-                                              :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4) / 256))(Byte.repr 56)) (Byte.repr 3) = bB[x1]) by admit.
+                                              :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4) / 256))(Byte.repr 56)) (Byte.repr 3) = bB[x1]). {
+               rewrite <- Byte.and_shru.
+               rewrite shru563.
+               replace 256 with (2^8).
+               rewrite <- Z.shiftr_div_pow2.
+               replace  (char_to_bool "1"
+                                      :: char_to_bool "0"
+                                      :: x1 ++
+                                      char_to_bool "1"
+                                      :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4)
+                 with
+                   (((char_to_bool "1"
+                                   :: char_to_bool "0"
+                                   :: x1) ++
+                                          (char_to_bool "1"
+                                                        :: char_to_bool "0" :: [char_to_bool "0"])) ++ (x2 ++ x3 ++ x4)).
+               
+               setoid_rewrite (Z_shru_bits 8 ((char_to_bool "1"
+                                                            :: char_to_bool "0"
+                                                            :: x1) ++
+                                                                   (char_to_bool "1"
+                                                                                 :: char_to_bool "0" :: [char_to_bool "0"]))  (x2 ++ x3 ++ x4)).
+               rewrite (shru_bits 3 _ _).
+               setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
+               auto.
+
+               1,3,4: repeat rewrite app_length; simpl.
+               1,2,4:rewrite (encode_reg_length rd x1); try omega.
+               1-8: auto.
+               repeat rewrite app_length. 
+               rewrite (encode_scale_length z).
+               rewrite (encode_reg_length i0).
+               rewrite (encode_reg_length i1).
+               omega.
+               all: auto.
+               repeat rewrite <- app_assoc.
+               auto.
+               omega.
+             }
              rewrite HEQX1.
              generalize (encode_decode_ireg_refl _ _  EQ0).
              intros HRx1.
@@ -2675,7 +2796,20 @@ Proof.
                                                   char_to_bool "1"
                                                   :: char_to_bool "0" :: char_to_bool "0" :: x2 ++ x3 ++ x4] = bB[x2++x3++x4]) by admit.
              rewrite HbBTruncate.
-             assert (HEQX3:Byte.shru (Byte.and bB[ x2 ++ x3 ++ x4] (Byte.repr 56)) (Byte.repr 3) = bB[x3]) by admit.
+             assert (HEQX3:Byte.shru (Byte.and bB[ x2 ++ x3 ++ x4] (Byte.repr 56)) (Byte.repr 3) = bB[x3]). {
+               rewrite <- Byte.and_shru.
+               rewrite shru563.
+               rewrite app_assoc.
+               rewrite (shru_bits 3 _ _).
+               setoid_rewrite (and7 x2 x3).
+               all:auto.
+               1,3: repeat rewrite app_length; simpl.
+               1-3: rewrite (encode_reg_length i0 x3).
+               1,3: rewrite (encode_scale_length z).
+               all: auto; try omega.
+               all: rewrite (encode_reg_length i1 x4); try omega.
+               all: auto.
+             }
              rewrite HEQX3.
              generalize (encode_decode_ireg_refl _ _  EQ2).
              intros HRi.
@@ -2799,7 +2933,24 @@ Proof.
                              (Byte.and
                                 bB[ char_to_bool "0"
                                                  :: char_to_bool "0"
-                                                 :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]](Byte.repr 56)) (Byte.repr 3) = bB[x1]) by admit.
+                                                 :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"]](Byte.repr 56)) (Byte.repr 3) = bB[x1]). {
+               rewrite <- Byte.and_shru.
+               rewrite shru563.
+               replace (char_to_bool "0"
+           :: char_to_bool "0"
+              :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "0"])
+                 with
+                   ((char_to_bool "0"
+           :: char_to_bool "0"
+              :: x1) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "0"])).
+               rewrite (shru_bits 3 _ _).
+               setoid_rewrite (and7 (char_to_bool "0" :: [char_to_bool "0"]) x1).
+               auto.
+
+               all: repeat rewrite app_length; simpl.
+               1-3:rewrite (encode_reg_length rd x1); try omega.
+               1-8: auto.
+             }
              rewrite HEQx1.
              generalize (encode_decode_ireg_refl _ _ EQ0).
              intros Hreg1. destruct Hreg1.
@@ -2834,7 +2985,21 @@ Proof.
              unfold addrmode_parse_SIB.
              assert(HEQx3: Byte.shru
                              (Byte.and
-                                bB[ x2 ++ x3 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3) = bB[x3]) by admit.
+                                bB[ x2 ++ x3 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3) = bB[x3]). {
+               rewrite <- Byte.and_shru.
+               rewrite shru563.
+               replace ( x2 ++ x3 ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]))
+                 with
+                   ( (x2 ++ x3) ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]).
+               rewrite (shru_bits 3 _ _).
+               setoid_rewrite (and7 x2 x3).
+               all: auto.
+               1,3: repeat rewrite app_length; simpl.
+               1-2: try rewrite(encode_scale_length z).
+               all: try rewrite(encode_reg_length i0).
+               all: try omega; auto.
+               repeat rewrite app_assoc. auto.
+             }
              rewrite HEQx3.
              generalize(encode_decode_ireg_refl _ _ EQ2).
              intros Hregi.
@@ -2922,7 +3087,20 @@ Proof.
                rewrite HTurncate.
                assert(HEQx1:(Byte.shru
         (Byte.and bB[ b[ "10"] ++ x1 ++ b[ "100"]] (Byte.repr 56))
-        (Byte.repr 3)) = bB[x1]) by admit.
+        (Byte.repr 3)) = bB[x1]). {
+                 rewrite <- Byte.and_shru.
+                 rewrite shru563.
+                 replace ( b[ "10"] ++ x1 ++ b[ "100"])
+                   with
+                     ( (b[ "10"] ++ x1) ++ b[ "100"]).
+                 rewrite (shru_bits 3 _ _).
+                 setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
+                 all:auto.
+
+                 1,3: repeat rewrite app_length; simpl.
+                 1,2,3:rewrite (encode_reg_length rd x1); try omega.
+                 1-8: auto.
+               }
                rewrite HEQx1.
                generalize (encode_decode_ireg_refl _ _ EQ0).
                intros Hrd.
@@ -2963,7 +3141,15 @@ Proof.
                                               :: char_to_bool "0" :: char_to_bool "0" :: x2] = bB[b["00100"]++x2])by admit.
                rewrite Hmod.
                unfold addrmode_parse_SIB.
-               assert(HEQ4_2:(Byte.shru (Byte.and bB[ b[ "00100"] ++ x2] (Byte.repr 56)) (Byte.repr 3)) = Byte.repr 4) by admit.
+               assert(HEQ4_2:(Byte.shru (Byte.and bB[ b[ "00100"] ++ x2] (Byte.repr 56)) (Byte.repr 3)) = Byte.repr 4). {
+                 rewrite <- Byte.and_shru.
+                 rewrite shru563.
+                 rewrite (shru_bits 3 _ _).
+                 setoid_rewrite (and7 b["00"] b["100"]).
+                 all:auto.
+                 rewrite app_length; simpl.
+                 all: rewrite (encode_reg_length RSP x2); try omega; auto.
+               }
                rewrite HEQ4_2.
                unfold addrmode_parse_reg.
                do 4 (try(rewrite byte_eq_false)).
@@ -3037,7 +3223,22 @@ Proof.
             unfold decode_addrmode.
             simpl.
             assert(HEQx1:(Byte.shru
-                            (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 56))(Byte.repr 3)) = bB[x1]) by admit.
+                            (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 56))(Byte.repr 3)) = bB[x1]). {
+              rewrite <- Byte.and_shru.
+              rewrite shru563.
+              replace (char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2)
+                with
+                  ((char_to_bool "1" :: char_to_bool "0" :: x1) ++ x2).
+              rewrite (shru_bits 3 _ _).
+              setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
+              auto.
+
+              1,3,4: repeat rewrite app_length; simpl.
+              1,2,4:rewrite (encode_reg_length rd x1); try omega.
+              1-8: auto.
+              all: rewrite (encode_reg_length i0 x2); try omega; auto.
+            }
+              
             rewrite HEQx1.
             generalize(encode_decode_ireg_refl _ _ EQ0).
             intros Hrd.
@@ -3094,7 +3295,24 @@ Proof.
                            (Byte.and
                               bB[ char_to_bool "0"
                                                :: char_to_bool "0"
-                                               :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3)) = bB[x1]) by admit.
+                                               :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3)) = bB[x1]). {
+            rewrite <- Byte.and_shru.
+            rewrite shru563.
+            replace (char_to_bool "0"
+           :: char_to_bool "0"
+              :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])
+              with
+                ((char_to_bool "0"
+           :: char_to_bool "0"
+              :: x1) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+            rewrite (shru_bits 3 _ _).
+            setoid_rewrite (and7 (char_to_bool "0" :: [char_to_bool "0"]) x1).
+            all: auto.
+
+            1,3,4: repeat rewrite app_length; simpl.
+            all:rewrite (encode_reg_length rd x1); try omega.
+            1-8: auto.
+          }
           rewrite HEQx1.
           generalize (encode_decode_ireg_refl _ _ EQ0).
           intros Hrd.
