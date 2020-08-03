@@ -163,8 +163,25 @@ Proof.
     destruct SI as (m4' & SI & EXT3).
     rewrite SI.
     rewrite transl_globvar_perm_globvar.
-    admit.
-Admitted.
+    eapply Mem.drop_extended_extends; eauto.
+    cbn. auto.
+    omega.
+    red. intros.
+    erewrite <- Genv.store_init_data_list_perm; eauto.
+    erewrite <- Genv.store_zeros_perm; eauto.
+    eapply Mem.perm_alloc_2; eauto.
+    intros ofs k p0 PERM [RNG|RNG]; try omega.
+    erewrite <- Genv.store_init_data_list_perm in PERM; eauto.
+    erewrite <- Genv.store_zeros_perm in PERM; eauto.
+    generalize (Mem.perm_alloc_3 _ _ _ _ _ Heqp _ _ _ PERM).
+    intro. omega.
+  - cbn in *.
+    destr_in ALLOC. inv ALLOC.
+    edestruct Mem.alloc_extends as (m' & ALLOC1 & EXT1); eauto.
+    instantiate (1:=0); omega.
+    instantiate (1:=0); omega.
+    rewrite ALLOC1. eauto.
+Qed.
 
 Lemma alloc_globals_extends: forall ge tge defs m1 m1' m2,
     (forall b, Genv.find_symbol ge b = Genv.find_symbol tge b) ->

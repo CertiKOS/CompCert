@@ -1043,7 +1043,7 @@ Lemma store_zeros_extend: forall m1 m1' b lo hi lo' hi' m2,
     exists m2', store_zeros m1' b lo' hi' = Some m2' /\
            Mem.extends m2 m2'.
 Proof.
-Admitted.
+Admitted.  
 
 Lemma init_data_alignment_pos: forall id,
     0 < Genv.init_data_alignment id.
