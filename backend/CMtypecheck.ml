@@ -342,8 +342,9 @@ let type_function id f =
 
 let type_globdef (id, gd) =
   match gd with
-  | Some(Gfun(Internal f)) -> type_function id f
-  | _ -> ()
+  | Gfun(Internal f) -> type_function id f
+  | Gfun(External ef) -> ()
+  | Gvar v -> ()
 
 let type_program p =
   List.iter type_globdef p.prog_defs; p

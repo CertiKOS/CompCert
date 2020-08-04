@@ -363,6 +363,14 @@ Definition fn_stack_requirements (tp: Asm.program) (id: ident) : Z :=
   end.
 
 (*SACC:*)
+Definition printable_oracle (tp: Asm.program) : list (ident * Z) :=
+  fold_left (fun acc gd =>
+               match gd with
+                 (id,  (Gfun (Internal f))) => (id, fn_stack_requirements tp id)::acc
+               | _ => acc
+               end) (prog_defs tp) nil.
+
+(*SACC:*)
 Lemma match_program_no_more_functions:
   forall {F1 V1 F2 V2}
          `{Linker F1} `{Linker V1}

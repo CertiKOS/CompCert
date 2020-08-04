@@ -17,12 +17,13 @@ open Camlcoq
 open AST
 open Integers
 open Values
-open Memory
+open MemImpl
 open Globalenvs
 open Events
 open Ctypes
 open Csyntax
 open Csem
+open InterpExternals
 
 (* Configuration *)
 
@@ -79,15 +80,16 @@ let print_event p = function
 let name_of_fundef prog fd =
   let rec find_name = function
   | [] -> "<unknown function>"
-  | (id, Gfun fd') :: rem ->
+  | (id, Some(Gfun fd')) :: rem ->
       if fd == fd' then extern_atom id else find_name rem
-  | (id, Gvar v) :: rem ->
+  | _ :: rem ->
       find_name rem
   in find_name prog.Ctypes.prog_defs
 
 let name_of_function prog fn =
   let rec find_name = function
   | [] -> "<unknown function>"
+  | (id, Some(Gfun(Ctypes.Internal fn'))) :: rem ->
       if fn == fn' then extern_atom id else find_name rem
   | (id, _) :: rem ->
       find_name rem
@@ -127,7 +129,7 @@ let print_state p (prog, ge, s) =
       fprintf p "in function %s, expression@ @[<hv 0>%a@]"
               (name_of_function prog f)
               PrintCsyntax.print_expr r
-  | Callstate(fd, args, k, m, _) ->
+  | Callstate(fd, args, k, m, sz) ->
       PrintCsyntax.print_pointer_hook := print_pointer ge.genv_genv Maps.PTree.empty;
       fprintf p "calling@ @[<hov 2>%s(%a)@]"
               (name_of_fundef prog fd)
@@ -221,7 +223,7 @@ let rank_state = function
 let mem_state = function
   | State(f, s, k, e, m) -> m
   | ExprState(f, r, k, e, m) -> m
-  | Callstate(fd, args, k, m, _) -> m
+  | Callstate(fd, args, k, m,_) -> m
   | Returnstate(res, k, m) -> m
   | Stuckstate -> assert false
 
@@ -254,148 +256,9 @@ let compare_state s1 s2 =
 
 module StateMap =
   Map.Make(struct
-             type t = state
+             type t = Cexecimpl.state
              let compare = compare_state
            end)
-
-(* Extract a string from a global pointer *)
-
-let extract_string m blk ofs =
-  let b = Buffer.create 80 in
-  let rec extract blk ofs =
-    match Mem.load Mint8unsigned m blk ofs with
-    | Some(Vint n) ->
-        let c = Char.chr (Z.to_int n) in
-        if c = '\000' then begin
-          Some(Buffer.contents b)
-        end else begin
-          Buffer.add_char b c;
-          extract blk (Z.succ ofs)
-        end
-    | _ ->
-        None in
-  extract blk ofs
-
-(* Emulation of printf *)
-
-(* All ISO C 99 formats *)
-
-let re_conversion = Str.regexp (
-  "\\(%[-+0# ]*[0-9]*\\(\\.[0-9]*\\)?\\)" (* group 1: flags, width, precision *)
-^ "\\(\\|[lhjztL]\\|hh\\|ll\\)"            (* group 3: length modifier *)
-^ "\\([aAcdeEfgGinopsuxX%]\\)"            (* group 4: conversion specifier *)
-)
-
-external format_float: string -> float -> string
-  = "caml_format_float"
-external format_int32: string -> int32 -> string
-  = "caml_int32_format"
-external format_int64: string -> int64 -> string
-  = "caml_int64_format"
-
-let format_value m flags length conv arg =
-  match conv.[0], length, arg with
-  | ('d'|'i'|'u'|'o'|'x'|'X'|'c'), (""|"h"|"hh"|"l"|"z"|"t"), Vint i ->
-      format_int32 (flags ^ conv) (camlint_of_coqint i)
-  | ('d'|'i'|'u'|'o'|'x'|'X'|'c'), (""|"h"|"hh"|"l"|"z"|"t"), _ ->
-      "<int argument expected>"
-  | ('d'|'i'|'u'|'o'|'x'|'X'), ("ll"|"j"), Vlong i ->
-      format_int64 (flags ^ conv) (camlint64_of_coqint i)
-  | ('d'|'i'|'u'|'o'|'x'|'X'), ("ll"|"j"), _ ->
-      "<long long argument expected"
-  | ('f'|'e'|'E'|'g'|'G'|'a'), (""|"l"), Vfloat f ->
-      format_float (flags ^ conv) (camlfloat_of_coqfloat f)
-  | ('f'|'e'|'E'|'g'|'G'|'a'), "", _ ->
-      "<float argument expected"
-  | 's', "", Vptr(blk, ofs) ->
-      begin match extract_string m blk ofs with
-      | Some s -> s
-      | None -> "<bad string>"
-      end
-  | 's', "", _ ->
-      "<pointer argument expected>"
-  | 'p', "", Vptr(blk, ofs) ->
-      Printf.sprintf "<%ld%+ld>" (P.to_int32 blk) (camlint_of_coqint ofs)
-  | 'p', "", Vint i ->
-      format_int32 (flags ^ "x") (camlint_of_coqint i)
-  | 'p', "", _ ->
-      "<int or pointer argument expected>"
-  | _, _, _ ->
-      "<unrecognized format>"
-
-let do_printf m fmt args =
-
-  let b = Buffer.create 80 in
-  let len = String.length fmt in
-
-  let opt_search_forward pos =
-    try Some(Str.search_forward re_conversion fmt pos)
-    with Not_found -> None in
-
-  let rec scan pos args =
-    if pos < len then begin
-    match opt_search_forward pos with
-    | None ->
-        Buffer.add_substring b fmt pos (len - pos)
-    | Some pos1 ->
-        Buffer.add_substring b fmt pos (pos1 - pos);
-        let flags = Str.matched_group 1 fmt
-        and length = Str.matched_group 3 fmt
-        and conv = Str.matched_group 4 fmt
-        and pos' = Str.match_end() in
-        if conv = "%" then begin
-          Buffer.add_char b '%';
-          scan pos' args
-        end else begin
-          match args with
-          | [] ->
-              Buffer.add_string b "<missing argument>";
-              scan pos' []
-          | arg :: args' ->
-              Buffer.add_string b (format_value m flags length conv arg);
-              scan pos' args'
-        end
-    end
-  in scan 0 args; Buffer.contents b
-
-(* Implementation of external functions *)
-
-let (>>=) opt f = match opt with None -> None | Some arg -> f arg
-
-(* Like eventval_of_val, but accepts static globals as well *)
-
-let convert_external_arg ge v t =
-  match v with
-  | Vint i -> Some (EVint i)
-  | Vfloat f -> Some (EVfloat f)
-  | Vsingle f -> Some (EVsingle f)
-  | Vlong n -> Some (EVlong n)
-  | Vptr(b, ofs) ->
-      Senv.invert_symbol ge b >>= fun id -> Some (EVptr_global(id, ofs))
-  | _ -> None
-
-let rec convert_external_args ge vl tl =
-  match vl, tl with
-  | [], [] -> Some []
-  | v1::vl, t1::tl ->
-      convert_external_arg ge v1 t1 >>= fun e1 ->
-      convert_external_args ge vl tl >>= fun el -> Some (e1 :: el)
-  | _, _ -> None
-
-let do_external_function id sg ge w args m =
-  match camlstring_of_coqstring id, args with
-  | "printf", Vptr(b, ofs) :: args' ->
-      extract_string m b ofs >>= fun fmt ->
-      let fmt' = do_printf m fmt args' in
-      let len = coqint_of_camlint (Int32.of_int (String.length fmt')) in
-      Format.print_string fmt';
-      flush stdout;
-      convert_external_args ge args sg.sig_args >>= fun eargs ->
-      Some(((w, [Event_syscall(id, eargs, EVint len)]), Vint len), m)
-  | _ ->
-      None
-
-let do_inline_assembly txt sg ge w args m = None
 
 (* Implementing external functions producing observable events *)
 
@@ -461,7 +324,7 @@ let diagnose_stuck_expr p ge w f a kont e m =
     | RV, Ebuiltin(ef, tyargs, rargs, ty) -> diagnose_list rargs
     | _, _ -> false in
   if found then true else begin
-    let l = Cexec.step_expr ge do_external_function do_inline_assembly e w k a m in
+    let l = Cexecimpl.step_expr ge e w k a m in
     if List.exists (fun (ctx,red) -> red = Cexec.Stuckred) l then begin
       PrintCsyntax.print_pointer_hook := print_pointer ge.genv_genv e;
       fprintf p "@[<hov 2>Stuck subexpression:@ %a@]@."
@@ -485,7 +348,7 @@ let diagnose_stuck_state p ge w = function
    (reduction rule, next state, next world). *)
 
 let do_step fsr p prog ge time s w =
-  match Cexec.at_final_state s with
+  match Cexecimpl.at_final_state s with
   | Some r ->
       if !trace >= 1 then
         fprintf p "Time %d: program terminated (exit code = %ld)@."
@@ -495,7 +358,7 @@ let do_step fsr p prog ge time s w =
       | First | Random -> exit (Int32.to_int (camlint_of_coqint r))
       end
   | None ->
-      let l = Cexec.do_step ge do_external_function do_inline_assembly fsr w s in
+      let l = Cexecimpl.do_step ge fsr w s in
       if l = []
       || List.exists (fun (Cexec.TR(r,t,s)) -> s = Stuckstate) l
       then begin
@@ -573,14 +436,14 @@ let rec explore_all fsr p prog ge time states =
 let world_program prog =
   let change_def (id, gd) =
     match gd with
-    | Gvar gv ->
+    | Some(Gvar gv) ->
         let gv' =
           if gv.gvar_volatile then
             {gv with gvar_readonly = false; gvar_volatile = false}
           else
             {gv with gvar_init = []} in
-        (id, Gvar gv')
-    | Gfun fd ->
+        (id, Some(Gvar gv'))
+    | _ ->
         (id, gd) in
  {prog with Ctypes.prog_defs = List.map change_def prog.Ctypes.prog_defs}
 
@@ -597,15 +460,15 @@ let change_main_function p old_main old_main_ty =
       fn_params = []; fn_vars = []; fn_body = body } in
   let new_main_id = intern_string "___main" in
   { prog_main = new_main_id;
-    Ctypes.prog_defs = (new_main_id, Gfun(Ctypes.Internal new_main_fn)) :: p.Ctypes.prog_defs;
+   Ctypes.prog_defs = (new_main_id, Some (Gfun(Ctypes.Internal new_main_fn))) :: p.Ctypes.prog_defs;
     Ctypes.prog_public = p.Ctypes.prog_public;
     prog_types = p.prog_types;
     prog_comp_env = p.prog_comp_env }
 
 let rec find_main_function name = function
   | [] -> None
-  | (id, Gfun fd) :: gdl -> if id = name then Some fd else find_main_function name gdl
-  | (id, Gvar v) :: gdl -> find_main_function name gdl
+  | (id, Some(Gfun fd)) :: gdl -> if id = name then Some fd else find_main_function name gdl
+  | _ :: gdl -> find_main_function name gdl
 
 let fixup_main p =
   match find_main_function p.Ctypes.prog_main p.Ctypes.prog_defs with
@@ -635,12 +498,12 @@ let execute prog =
   | Some prog1 ->
       let wprog = world_program prog1 in
       let wge = globalenv wprog in
-      match Genv.init_mem (program_of_program wprog) with
+      match Cexecimpl.init_mem (program_of_program wprog) with
       | None ->
           fprintf p "ERROR: World memory state undefined@."; exit 126
       | Some wm ->
-      let fsr = (fun _ -> Camlcoq.Z.of_sint 0) in
-      match Cexec.do_initial_state fsr prog1 with
+       let fsr = (fun _ -> Camlcoq.Z.of_sint 0) in
+      match Cexecimpl.do_initial_state fsr prog1 with
       | None ->
           fprintf p "ERROR: Initial state undefined@."; exit 126
       | Some(ge, s) ->

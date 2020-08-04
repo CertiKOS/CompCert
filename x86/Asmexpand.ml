@@ -29,7 +29,7 @@ let _1 = Integers.Int.one
 let _2 = coqint_of_camlint 2l
 let _4 = coqint_of_camlint 4l
 let _8 = coqint_of_camlint 8l
-  
+
 let _0z = Z.zero
 let _1z = Z.one
 let _2z = Z.of_sint 2
@@ -49,7 +49,7 @@ let _Plea (r, addr) =
 let align n a =
   if n >= 0 then (n + a - 1) land (-a) else n land (-a)
 
-let sp_adjustment_32 sz =  
+let sp_adjustment_32 sz =
   let sz = Z.to_int sz in
   (* Preserve proper alignment of the stack *)
   let sz = align sz (stack_alignment ()) in
@@ -72,7 +72,7 @@ let sp_adjustment_64 sz =
     (* The top 8 bytes have already been allocated by the "call" instruction. *)
     (sz - 8, -1)
   end
-  
+
 (* Built-ins.  They come in two flavors:
    - annotation statements: take their arguments in registers or stack
    locations; generate no code;
@@ -480,7 +480,7 @@ let set_al sg =
 
 let expand_instruction instr =
   match instr with
-  |  Pallocframe (sz, _, ofs_ra) ->
+  |  Pallocframe (sz, ofs_ra) ->
      if Archi.ptr64 then begin
        let (sz, save_regs) = sp_adjustment_64 sz in
        (* Allocate frame *)

@@ -29,7 +29,8 @@ Require Csyntax.
 Require Ctyping.
 Require Clight.
 Require Compiler.
-Require Parser.
+Require Cexecimpl.
+Require cparser.Parser.
 Require Initializers.
 Require Int31.
 
@@ -54,10 +55,8 @@ Extraction Inline DecidableClass.Decidable_witness DecidableClass.decide
 Extraction Inline Wfsimpl.Fix Wfsimpl.Fixm.
 
 (* Memory - work around an extraction bug. *)
-Extraction NoInline Memory.Mem.valid_pointer.
-
-(* Stack limit *)
-Extract Constant Memory.Mem.stack_limit' => "(Camlcoq.Z.of_uint 4096)".
+Extraction NoInline Memimpl.Mem.valid_pointer.
+Extract Constant Memtype.Mem.stack_limit' => "(Camlcoq.Z.of_uint 4096)".
 
 (* Errors *)
 Extraction Inline Errors.bind Errors.bind2.
@@ -91,6 +90,7 @@ Extract Constant Linearize.enumerate_aux => "Linearizeaux.enumerate_aux".
 Extract Constant SimplExpr.first_unused_ident => "Camlcoq.first_unused_ident".
 Extraction Inline SimplExpr.ret SimplExpr.error SimplExpr.bind SimplExpr.bind2.
 
+
 (* Compopts *)
 Extract Constant Compopts.optim_for_size =>
   "fun _ -> !Clflags.option_Osize".
@@ -102,6 +102,8 @@ Extract Constant Compopts.generate_float_constants =>
   "fun _ -> !Clflags.option_ffloatconstprop >= 2".
 Extract Constant Compopts.optim_tailcalls =>
   "fun _ -> !Clflags.option_ftailcalls".
+Extract Constant Compopts.optim_inlining =>
+  "fun _ -> !Clflags.option_finlining".
 Extract Constant Compopts.optim_constprop =>
   "fun _ -> !Clflags.option_fconstprop".
 Extract Constant Compopts.optim_CSE =>
@@ -112,6 +114,7 @@ Extract Constant Compopts.thumb =>
   "fun _ -> !Clflags.option_mthumb".
 Extract Constant Compopts.debug =>
   "fun _ -> !Clflags.option_g".
+
 
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".
@@ -143,6 +146,9 @@ Extract Constant Int31.compare31 => "Camlcoq.Int31.compare".
 Extract Constant Int31.On => "0".
 Extract Constant Int31.In => "1".
 
+(* Cexecimpl *)
+Extract Constant Cexecimpl.do_external_function => "InterpExternals.do_external_function".
+
 (* Processor-specific extraction directives *)
 
 Load extractionMachdep.
@@ -165,8 +171,9 @@ Set Extraction AccessOpaque.
 Cd "extraction".
 
 Separate Extraction
-   Compiler.transf_c_program Compiler.transf_cminor_program
-   Cexec.do_initial_state Cexec.do_step Cexec.at_final_state
+   Compiler.transf_c_program Compiler.transf_cminor_program 
+   Cexecimpl.do_initial_state Cexecimpl.do_step Cexecimpl.at_final_state
+   Cexecimpl.step_expr Cexecimpl.init_mem Cexecimpl.state
    Ctypes.merge_attributes Ctypes.remove_attributes Ctypes.build_composite_env
    Initializers.transl_init Initializers.constval
    Csyntax.Eindex Csyntax.Epreincr
@@ -184,5 +191,5 @@ Separate Extraction
    AST.signature_main
    Floats.Float32.from_parsed Floats.Float.from_parsed
    Globalenvs.Senv.invert_symbol
-   Parser.translation_unit_file
-   StackADT.empty_frame Compiler.printable_oracle.
+   Parser.translation_unit_file StackADT.empty_frame Coqlib.sum_left_map
+   Compiler.printable_oracle.

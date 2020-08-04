@@ -426,7 +426,7 @@ let print_function p id f =
 
 let print_fundef p id fd =
   match fd with
-  | Ctypes.External((EF_external _ | EF_runtime _| EF_malloc (*| EF_free*)), args, res, cconv) ->
+  | Ctypes.External((EF_external _ | EF_runtime _| EF_malloc (* | EF_free *)), args, res, cconv) ->
       fprintf p "extern %s;@ @ "
                 (name_cdecl (extern_atom id) (Tfunction(args, res, cconv)))
   | Ctypes.External(_, _, _, _) ->
@@ -517,13 +517,15 @@ let print_globvardecl p  id v =
 
 let print_globdecl p (id,gd) =
   match gd with
-  | Gfun f -> print_fundecl p id f
-  | Gvar v -> print_globvardecl p id v
+  | Some (Gfun f) -> print_fundecl p id f
+  | Some (Gvar v) -> print_globvardecl p id v
+  | None -> ()
 
 let print_globdef p (id, gd) =
   match gd with
-  | Gfun f -> print_fundef p id f
-  | Gvar v -> print_globvar p id v
+  | Some(Gfun f) -> print_fundef p id f
+  | Some(Gvar v) -> print_globvar p id v
+  | None -> ()
 
 let struct_or_union = function Struct -> "struct" | Union -> "union"
 
