@@ -10,9 +10,12 @@
 #include <stdlib.h>
 #include <math.h>
 
-static inline double eval_A(int i, int j) { return 1.0/((i+j)*(i+j+1)/2+i+1); }
+int SPE_GLB_INT1 = 1;
+double SPE_GLB_DB1 = 1.0;
 
-inline void eval_A_times_u(int N, const double u[], double Au[])
+static inline double eval_A(int i, int j) { return SPE_GLB_DB1/((i+j) * (i + j + SPE_GLB_INT1) / 2 + i + SPE_GLB_INT1); }
+
+static inline void eval_A_times_u(int N, const double u[], double Au[])
 {
   int i,j;
   for(i=0;i<N;i++)
@@ -22,7 +25,7 @@ inline void eval_A_times_u(int N, const double u[], double Au[])
     }
 }
 
-inline void eval_At_times_u(int N, const double u[], double Au[])
+static inline void eval_At_times_u(int N, const double u[], double Au[])
 {
   int i,j;
   for(i=0;i<N;i++)
@@ -43,11 +46,11 @@ void eval_AtA_times_u(int N, const double u[], double AtAu[])
 int main(int argc, char *argv[])
 {
   int i;
-  int N = ((argc == 2) ? atoi(argv[1]) : 5000);
+  int N = ((argc == 2) ? atoi(argv[SPE_GLB_INT1]) : 5000);
   double * u, * v, vBv, vv;
   u = malloc(N * sizeof(double));
   v = malloc(N * sizeof(double));
-  for(i=0;i<N;i++) u[i]=1;
+  for(i=0;i<N;i++) u[i]= SPE_GLB_INT1;
   for(i=0;i<10;i++)
     {
       eval_AtA_times_u(N,u,v);

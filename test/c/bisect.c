@@ -17,7 +17,14 @@
 #include <string.h>
 #include <math.h>
 
-#define DBL_EPSILON 0x1p-52
+int B_GLB_INTM1 = -1;
+int BI_GLB_INT7 = 7;
+double BI_GLB_DB1 = 1.0;
+double BI_GLB_DB0 = 0.0;
+double BI_GLB_DBHALF = 0.5;
+int BI_GLB_INT2 = 2;
+double BI_GLB_DB_2220446 = 2.2204460492503131E-16;
+double DBL_EPSILON = 0x1p-52;
 
 void  *allocvector(size_t size) 
 {
@@ -25,19 +32,19 @@ void  *allocvector(size_t size)
 
   if ( (V = (void *) malloc((size_t) size)) == NULL ) {
     fprintf(stderr, "Error: couldn't allocate V in allocvector.\n");
-    exit(2);
+    exit(BI_GLB_INT2);
   }
   memset(V,0,size);
   return V;
 }
 
-inline void dallocvector(int n, double **V)
+static inline void dallocvector(int n, double **V)
 {
   *V = (double *) allocvector((size_t) n*sizeof(double));
 }
 
 
-#define FUDGE  (double) 1.01
+double FUDGE = (double) 1.01;
 
 
 
@@ -100,13 +107,13 @@ mentioned in the code below.
   double q;
   
   a = 0;
-  q = 1.0;
+  q = BI_GLB_DB1;
 
   for(i=0; i<n; i++) {
 
 #ifndef TESTFIRST
 
-    if (q != 0.0) {
+    if (q != BI_GLB_DB0) {
 
 #ifndef RECIPROCAL
       q =  (c[i] - x) - beta[i]/q; 
@@ -241,13 +248,13 @@ Purpose:
 {
   int i;
   double h,xmin,xmax;
-  beta[0]  = b[0] = 0.0; 
+  beta[0]  = b[0] = BI_GLB_DB0; 
 
 
   /* calculate Gerschgorin interval */
   xmin = c[n-1] - FUDGE*fabs(b[n-1]);
   xmax = c[n-1] + FUDGE*fabs(b[n-1]);
-  for(i=n-2; i>=0; i--) { 
+  for(i= n - BI_GLB_INT2; i >= 0; i--) { 
     h = FUDGE*(fabs(b[i]) + fabs(b[i+1]));
     if (c[i] + h > xmax)  xmax = c[i] + h;
     if (c[i] - h < xmin)  xmin = c[i] - h;
@@ -256,10 +263,10 @@ Purpose:
   /*  printf("xmax = %lf  xmin = %lf\n",xmax,xmin); */
 
   /* estimate precision of calculated eigenvalues */  
-  *eps2 = DBL_EPSILON * (xmin + xmax > 0 ? xmax : -xmin);
+  *eps2 = DBL_EPSILON * (xmin + xmax > 0 ? xmax : B_GLB_INTM1 * xmin);
   if (eps1 <= 0)
     eps1 = *eps2;
-  *eps2 = 0.5 * eps1 + 7 * *eps2;
+  *eps2 = BI_GLB_DBHALF * eps1 + BI_GLB_INT7 * *eps2;
   { int a,k;
     double x1,xu,x0;
     double *wu; 
@@ -288,8 +295,8 @@ Purpose:
       if (x0 > x[k])
 	x0 = x[k];
 
-      x1 = (xu + x0)/2;
-      while ( x0-xu > 2*DBL_EPSILON*(fabs(xu)+fabs(x0))+eps1 ) {	
+      x1 = (xu + x0) / BI_GLB_INT2;
+      while ( x0-xu > BI_GLB_INT2 * DBL_EPSILON * (fabs(xu) + fabs(x0)) + eps1 ) {	
 	*z = *z + 1;
 	
 	/* Sturms Sequence  */
@@ -308,9 +315,9 @@ Purpose:
 	else {
 	  x0 = x1;
 	}	
-	x1 = (xu + x0)/2;	
+	x1 = (xu + x0) / BI_GLB_INT2;	
       }
-      x[k] = (xu + x0)/2;
+      x[k] = (xu + x0) / BI_GLB_INT2;
     }
     free(wu);
   }
@@ -346,7 +353,7 @@ int main(int argc,char *argv[])
 
   rep = 50;
   n = 500;
-  eps = 2.2204460492503131E-16;
+  eps = BI_GLB_DB_2220446;
 
   dallocvector(n,&D);
   dallocvector(n,&E);
@@ -358,7 +365,7 @@ int main(int argc,char *argv[])
     
     for (i=0; i<n; i++) {
       beta[i] = E[i] * E[i];
-      S[i] = 0.0;
+      S[i] = BI_GLB_DB0;
     }
     
     E[0] = beta[0] = 0;  

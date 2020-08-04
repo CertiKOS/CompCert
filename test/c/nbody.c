@@ -10,9 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define pi 3.141592653589793
-#define solar_mass (4 * pi * pi)
-#define days_per_year 365.24
+double pi = 3.141592653589793;
+double NB_GLB_DB4 = 4;
+#define solar_mass (NB_GLB_DB4 * pi * pi)
+double days_per_year = 365.24;
 
 struct planet {
   double x, y, z;
@@ -49,15 +50,21 @@ void advance(int nbodies, struct planet * bodies, double dt)
   }
 }
 
+double NB_GLB_DB0 = 0.0;
+
+double NB_GLB_DB_HALF = 0.5;
+
+double NB_GLB_DB001 = 0.01;
+
 double energy(int nbodies, struct planet * bodies)
 {
   double e;
   int i, j;
 
-  e = 0.0;
+  e = NB_GLB_DB0;
   for (i = 0; i < nbodies; i++) {
     struct planet * b = &(bodies[i]);
-    e += 0.5 * b->mass * (b->vx * b->vx + b->vy * b->vy + b->vz * b->vz);
+    e += NB_GLB_DB_HALF * b->mass * (b->vx * b->vx + b->vy * b->vy + b->vz * b->vz);
     for (j = i + 1; j < nbodies; j++) {
       struct planet * b2 = &(bodies[j]);
       double dx = b->x - b2->x;
@@ -69,19 +76,19 @@ double energy(int nbodies, struct planet * bodies)
   }
   return e;
 }
-
+double N_GLB_M1 = -1;
 void offset_momentum(int nbodies, struct planet * bodies)
 {
-  double px = 0.0, py = 0.0, pz = 0.0;
+  double px = NB_GLB_DB0, py = NB_GLB_DB0, pz = NB_GLB_DB0;
   int i;
   for (i = 0; i < nbodies; i++) {
     px += bodies[i].vx * bodies[i].mass;
     py += bodies[i].vy * bodies[i].mass;
     pz += bodies[i].vz * bodies[i].mass;
   }
-  bodies[0].vx = - px / solar_mass;
-  bodies[0].vy = - py / solar_mass;
-  bodies[0].vz = - pz / solar_mass;
+  bodies[0].vx = N_GLB_M1* px / solar_mass;
+  bodies[0].vy = N_GLB_M1* py / solar_mass;
+  bodies[0].vz = N_GLB_M1* pz / solar_mass;
 }
 
 #define NBODIES 5
@@ -147,7 +154,7 @@ int main(int argc, char ** argv)
   offset_momentum(NBODIES, bodies);
   printf ("%.9f\n", energy(NBODIES, bodies));
   for (i = 1; i <= n; i++)
-    advance(NBODIES, bodies, 0.01);
+    advance(NBODIES, bodies, NB_GLB_DB001);
   printf ("%.9f\n", energy(NBODIES, bodies));
   return 0;
 }
