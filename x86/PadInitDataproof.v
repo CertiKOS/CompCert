@@ -4,7 +4,7 @@
 (* *******************  *)
 
 Require Import Coqlib Errors.
-Require Import Integers Floats AST Linking.
+Require Import Integers Floats AST Linking Maps.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import LocalLib.
@@ -39,24 +39,36 @@ Qed.
 
 
 Lemma genv_find_funct_ptr_add_global_pres: forall def ge1 ge2 b,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
   Genv.find_funct_ptr ge1 b = Genv.find_funct_ptr ge2 b ->
   Genv.find_funct_ptr (Genv.add_global ge1 (transf_globdef def)) b =
   Genv.find_funct_ptr (Genv.add_global ge2 def) b.
 Proof.
-  intros def ge1 ge2 b FPTR.
-  Admitted.
-
+  intros def ge1 ge2 b NEXT FIND.
+  unfold Genv.find_funct_ptr.
+  destruct (peq b (Genv.genv_next ge1)).
+  - subst. erewrite Genv.add_global_find_def_eq.
+    rewrite NEXT. erewrite Genv.add_global_find_def_eq.
+    unfold transf_globdef. destruct def.
+    destruct o; cbn; auto.
+    destruct g; cbn; auto.
+  - erewrite Genv.add_global_find_def_neq; eauto.
+    erewrite Genv.add_global_find_def_neq; try congruence.
+    auto.
+Qed.
 
 Lemma genv_find_funct_ptr_pres: forall defs (ge1 ge2: Genv.t fundef unit) b,
+    Genv.genv_next ge1 = Genv.genv_next ge2 ->
     Genv.find_funct_ptr ge1 b = Genv.find_funct_ptr ge2 b ->
     Genv.find_funct_ptr (fold_left (Genv.add_global (V:=unit)) (map transf_globdef defs) ge1) b =
     Genv.find_funct_ptr (fold_left (Genv.add_global (V:=unit)) defs ge2) b.
 Proof.
   induction defs as [| def defs].
-  - intros ge1 ge2 b FPTR.
+  - intros ge1 ge2 b GE FPTR.
     cbn. congruence.
-  - intros ge1 ge2 b FPTR.
+  - intros ge1 ge2 b GE FPTR.
     cbn. apply IHdefs.
+    unfold Genv.add_global. cbn. congruence.
     apply genv_find_funct_ptr_add_global_pres; auto.
 Qed.
 
@@ -256,8 +268,7 @@ Proof.
   subst. cbn.
   intros. unfold ge. unfold Genv.globalenv.
   unfold Genv.add_globals.
-  apply genv_find_funct_ptr_pres.
-  reflexivity.
+  apply genv_find_funct_ptr_pres; reflexivity.
 Qed.
 
 Lemma senv_equiv: Senv.equiv ge tge.
