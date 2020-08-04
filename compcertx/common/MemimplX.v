@@ -970,6 +970,7 @@ Proof.
   intro; exact  Mem.valid_pointer_extends.
   intro; exact  Mem.weak_valid_pointer_extends.
   intro; exact  Mem.drop_extends.
+  intro; exact  Mem.drop_extended_extends.
   intro; exact  Mem.ma_perm.
   intro; exact  Mem.magree_monotone.
   intro; exact  Mem.mextends_agree.
