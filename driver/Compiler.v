@@ -240,7 +240,7 @@ Definition transf_c_program_bytes_more (p: Csyntax.program) : res (list Integers
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
   @@@ time "Generation of relocation table" Reloctablesgen2.transf_program
-  @@@ time "Encoding of instructions and data" RelocBingen2.transf_program
+  @@@ time "Encoding of instructions and data" RelocBingen.transf_program
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@ time "Removing addendums" RemoveAddend.transf_program
   @@@ time "Encoding of tables" TablesEncode.transf_program
