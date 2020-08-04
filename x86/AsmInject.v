@@ -232,4 +232,17 @@ Proof.
   - apply subl_overflow_inject; auto.
 Qed.
 
+
+(** ** Definition of extensions between register sets *)
+
+Definition regset_lessdef (rs rs' : regset) : Prop :=
+  forall r, Val.lessdef (rs r) (rs' r).
+
+
+Lemma regset_lessdef_refl: forall rs,
+    regset_lessdef rs rs.
+Proof.
+  intros. red. intros. constructor.
+Qed.
+
 End WITHMEMORYMODEL.

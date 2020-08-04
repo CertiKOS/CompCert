@@ -8,8 +8,9 @@ Require Import Integers Floats AST Linking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import LocalLib.
-Require Import AsmFacts.
+Require Import AsmFacts AsmInject.
 Require Import PadInitData.
+Require Import Asmgenproof0.
 Import ListNotations.
 
 
@@ -204,7 +205,6 @@ Proof.
 Qed.
 
 
-
 Variable prog: Asm.program.
 Variable tprog: Asm.program.
 
@@ -220,10 +220,11 @@ Proof.
 Qed.
  
 Inductive match_states : Asm.state -> Asm.state -> Prop :=
-|match_states_intro m m' rs:
+|match_states_intro m m' rs rs':
    Mem.stack m = Mem.stack m' ->
    Mem.extends m m' ->
-   match_states (Asm.State rs m) (Asm.State rs m').
+   regset_lessdef rs rs' ->
+   match_states (Asm.State rs m) (Asm.State rs' m').
 
 Lemma find_symbol_transf: forall s,
     Genv.find_symbol tge s =
@@ -341,15 +342,75 @@ Proof.
   - econstructor; eauto.
     rewrite <- FS. rewrite <- MAIN. auto.
   - eapply match_states_intro; eauto. congruence.
+    apply regset_lessdef_refl.
 Qed.
 
+
+Lemma exec_instr_simulation: forall f i rs1 m1 rs2 m2 rs1' m1',
+    exec_instr ge f i rs1 m1 = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', exec_instr tge f i rs1' m1' = Next rs2' m2' 
+           /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Proof.
+Admitted.
 
 Theorem step_simulation:
   forall S1 t S2, step ge S1 t S2 ->
                   forall S1' (MS: match_states S1 S1'),
                     (exists S2', step tge S1' t S2' /\ match_states S2 S2').
 Proof.
+  destruct 1; intros; inv MS.
+  
+  - (* Internal Step *)
+    exploit exec_instr_simulation; eauto.
+    intros (m2' & rs2' & EXEC & EXT & RS & STK).
+    exists (State rs2' m2'). split; [|constructor; auto].
+    eapply exec_step_internal; eauto.
+    red in H8. generalize (H8 PC). rewrite H.
+    inversion 1. eauto.
+    rewrite find_funct_ptr_transf. auto.
+  
+  - (* Builtin step *)
+    exploit eval_builtin_args_lessdef''; eauto.
+    intros (vargs' & EB & VLE).
+    exploit external_call_mem_extends; eauto.
+    intros (vres' & m2' & EC & VLER & EXT & UCHG).
+    eexists. split.
+    eapply exec_step_builtin; eauto.
+    red in H10. generalize (H10 PC).
+    rewrite H. inversion 1. eauto.
+    rewrite find_funct_ptr_transf. auto.
+    eapply eval_builtin_args_preserved with (ge1 := ge); eauto.
+    intros. rewrite find_symbol_transf. auto.
+    eapply external_call_symbols_preserved; eauto. exact senv_equiv.
+    constructor; eauto.
+    erewrite <- (external_call_stack_blocks _ _ _ m'0 _ _ m2'); eauto.
+    erewrite <- (external_call_stack_blocks _ _ _ m _ _ m'); eauto.
+    red. intros. unfold nextinstr_nf.
+    unfold nextinstr.
+    destruct (preg_eq r PC).
+    + subst. repeat rewrite Pregmap.gss; auto.
+      eapply Val.offset_ptr_lessdef; eauto.
+      repeat erewrite Asmgenproof0.undef_regs_other; eauto.
+      repeat rewrite AsmRegs.set_res_other; eauto.
+      repeat erewrite Asmgenproof0.undef_regs_other_2; eauto.
+      eapply AsmRegs.pc_not_destroyed_builtin.
+      eapply AsmRegs.pc_not_destroyed_builtin.
+      admit.
+      admit.
+      intros. intros EQ. subst. red in H4. intuition congruence. 
+      intros. intros EQ. subst. red in H4. intuition congruence. 
+    + repeat rewrite Pregmap.gso; eauto.
+      repeat rewrite AsmRegs.undef_regs_eq; eauto.
+      admit.
+
+  - (* External Step *)
+
 Admitted.
+
+    
 
 Lemma transf_initial_states:
   forall st1 rs, initial_state prog rs st1 ->
@@ -380,6 +441,10 @@ Proof.
   inv HFinal.
   inv MS.
   econstructor; eauto.
+  red in H6. generalize (H6 PC). 
+  rewrite H. inversion 1. auto.
+  red in H6. generalize (H6 RAX). 
+  rewrite H0. inversion 1. auto.
 Qed.
 
 
