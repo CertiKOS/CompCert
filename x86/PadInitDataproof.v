@@ -117,17 +117,25 @@ Proof.
     rewrite init_data_list_size_app. 
     cbn. generalize (Z.le_max_r sz 0).
     intros. omega.
-Qed.
+Qed.        
 
-Lemma store_init_data_list_extends: forall {F} (ge tge: Genv.t F unit) v m1 m1' m2 b ofs,
+Lemma store_init_data_list_extends': forall {F} (ge tge: Genv.t F unit) v m1 m1' m2 b ofs,
     (forall b, Genv.find_symbol ge b = Genv.find_symbol tge b) ->
     Mem.extends m1 m1' ->
     Genv.store_init_data_list ge m1 b ofs (gvar_init v) = Some m2 ->
     exists m2', Genv.store_init_data_list tge m1' b ofs (gvar_init (transl_globvar v)) = Some m2' /\
            Mem.extends m2 m2'.
 Proof.
-Admitted.
-
+  intros.
+  generalize (transl_globvar_gvar_init v).
+  destruct 1.
+  - rewrite H2. 
+    replace (gvar_init v) with (gvar_init v ++ []).
+    eapply store_init_data_list_extends; eauto.
+    rewrite app_nil_r; auto.
+  - destruct H2. rewrite H2.
+    eapply store_init_data_list_extends; eauto.
+Qed.
 
 Lemma alloc_global_extends: forall ge tge def m1 m1' m2,
     (forall b, Genv.find_symbol ge b = Genv.find_symbol tge b) ->
@@ -171,7 +179,7 @@ Proof.
     rewrite STZ.
     assert (exists m4', Genv.store_init_data_list tge m3' b 0 (gvar_init (transl_globvar v)) = Some m4' /\
                    Mem.extends m3 m4') as SI.
-    { eapply store_init_data_list_extends; eauto. }
+    { eapply store_init_data_list_extends'; eauto. }
     destruct SI as (m4' & SI & EXT3).
     rewrite SI.
     rewrite transl_globvar_perm_globvar.
