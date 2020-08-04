@@ -119,6 +119,9 @@ Extract Constant Compopts.debug =>
 Extract Constant SymbolString.find_symbol_pos => "FindSymbolString.find_symbol_pos".
 Extract Constant SymbolString.string_to_ident => "FindSymbolString.string_to_ident".
 
+Extract Constant SymbolString.create_float_literal_ident => "FloatliteralString.create_float_literal_ident".
+Extract Constant SymbolString.create_float_mask_ident => "FloatliteralString.create_float_mask_ident".
+
 Extract Constant TablesEncode.dump_reloctables => "DumpReloctables.dump_reloctables".
 
 (* CheckDef *)
