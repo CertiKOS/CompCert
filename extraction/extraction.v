@@ -181,7 +181,7 @@ Cd "extraction".
 
 Separate Extraction
    Compiler.transf_c_program Compiler.transf_cminor_program 
-   (* Compiler.transf_c_program_bytes *)
+   Compiler.transf_c_program_bytes true
    Compiler.transf_c_program_bytes_more
    Cexecimpl.do_initial_state Cexecimpl.do_step Cexecimpl.at_final_state
    Cexecimpl.step_expr Cexecimpl.init_mem Cexecimpl.state
