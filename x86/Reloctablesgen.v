@@ -38,14 +38,26 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pfstpl_m a
   | Pflds_m a
   | Pfstps_m a
+  | Pmovb_mr a _ =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmovw_mr a _
+  | Pmovzb_rm _ a
+  | Pmovsb_rm _ a
+  | Pmovzw_rm _ a
+  | Pmovsw_rm _ a =>
+    let aofs := addrmode_reloc_offset a in
+    OK (2 + aofs)
   | Pmovsd_fm _ a
   | Pmovsd_mf a _
   | Pmovss_fm _ a
   | Pmovss_mf a _
-  | Pmovb_mr a _ 
-  | Pmovzb_rm _ a =>
+  | Pxorpd_fm _ a
+  | Pxorps_fm _ a
+  | Pandpd_fm _ a
+  | Pandps_fm _ a =>
     let aofs := addrmode_reloc_offset a in
-    OK (1 + aofs)
+    OK (3 + aofs)
   | _ => Error [MSG "Calculation of relocation offset failed: Either there is no possible relocation location or the instruction ";
               MSG (instr_to_string i); MSG " is not supported yet by relocation"]
   end.
@@ -144,21 +156,37 @@ Definition transl_instr (sofs:Z) (i: instruction) : res (list relocentry) :=
   | Pfstps_m (Addrmode rb ss (inr disp)) => (**r [fstp] simple precision *)
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
-  (** Moves with conversion *)
+  | Pxorpd_fm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pxorps_fm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pandpd_fm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pandps_fm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+    (** Moves with conversion *)
   | Pmovb_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (8-bit int) *)
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
-  | Pmovw_mr a rs =>    (**r [mov] (16-bit int) *)
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
+  | Pmovw_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (16-bit int) *)
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
   | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
-  | Pmovsb_rm rd a =>
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
-  | Pmovzw_rm rd a =>
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
-  | Pmovsw_rm rd a =>
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
+  | Pmovsb_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pmovzw_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
   (** Integer arithmetic *)
   | Pleal rd (Addrmode rb ss (inr disp))  =>
     do e <- compute_instr_disp_relocentry sofs i disp;
@@ -269,10 +297,6 @@ Definition unsupported i :=
   | Pmovq_mr _ _
   | Pmovsd_fm_a _ _
   | Pmovsd_mf_a _ _
-  | Pmovw_mr _ _
-  | Pmovsb_rm _ _
-  | Pmovzw_rm _ _
-  | Pmovsw_rm _ _
   | Pleaq _ _
     => true
   | Pbuiltin _ args _ =>
@@ -321,14 +345,38 @@ Definition id_eliminate (i:instruction):res (instruction):=
     OK (Pmovss_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
   | Pmovss_mf (Addrmode rb ss (inr disp)) rs =>
     let '(id, ptrofs) := disp in
-    OK (Pmovss_mf (Addrmode rb ss (inr (xH, ptrofs))) rs)       
+    OK (Pmovss_mf (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pxorpd_fm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pxorpd_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pxorps_fm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pxorps_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pandpd_fm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pandpd_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pandps_fm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pandps_fm rd (Addrmode rb ss (inr (xH, ptrofs))))
   (** Moves with conversion *)
   | Pmovb_mr (Addrmode rb ss (inr disp)) rs =>
     let '(id, ptrofs) := disp in
     OK (Pmovb_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pmovw_mr (Addrmode rb ss (inr disp)) rs =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovw_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
   | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
     let '(id, ptrofs) := disp in
     OK (Pmovzb_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovsb_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovsb_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovzw_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovzw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovsw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
   (** Integer arithmetic *)
   | Pleal rd (Addrmode rb ss (inr disp))  =>
     let '(id, ptrofs) := disp in

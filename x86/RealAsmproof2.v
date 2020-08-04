@@ -730,6 +730,9 @@ Section WITHMEMORYMODEL.
         | None => True
         end.
   Proof.
+  Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*
     intros rs1 rs2 m1 m2 b ofs f i rs2' m2' SEQ PC2 FFP FI EI NII NIC NIF.
     simpl.
     inv SEQ.
@@ -772,7 +775,7 @@ Section WITHMEMORYMODEL.
         eapply goto_ofs_match; eauto.
         eapply goto_ofs_match; eauto.
         erewrite eval_testcond_seq by eauto. rewrite Heqo0. eapply goto_ofs_match; eauto.
-        erewrite eval_testcond_seq by eauto. rewrite Heqo0. 
+        erewrite eval_testcond_seq by eauto. rewrite Heqo0.
         do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq; repeat destr; simpl; regs_eq].
         erewrite eval_testcond_seq by eauto. rewrite Heqo0.
         do 2 eexists; split; [eauto|constructor; intros; simpl; regs_eq; repeat destr; simpl; regs_eq].
@@ -819,7 +822,9 @@ Section WITHMEMORYMODEL.
 
     rewrite PC2, FFP, FI. intro A. inv A. inv H. destruct H as [H|H]; inv H.
   Qed.
-
+*)
+(***** Remove Proofs By Chris End ******)
+  
   Lemma loadbytesv_storev:
     forall m' (rs2 rs1 : regset),
       Mem.loadbytesv Mptr m' (rs2 RSP) = Some (rs1 RA) ->

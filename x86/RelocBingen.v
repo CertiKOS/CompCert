@@ -136,16 +136,17 @@ Definition encode_addrmode (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte
                end
               |Error _ => OK ofs
               end
-           | inr (id, ofs) =>
-             if Ptrofs.eq_dec ofs Ptrofs.zero then
+            | inr (id, ofs) =>
+             (* Remove ofs Check By Chris *)
+             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
               match id with
               |xH => 
                (do iofs <- instr_reloc_offset i;
                 get_instr_reloc_addend' (iofs + sofs))
               |_ => Error [MSG (instr_to_string i); MSG ":id is "; POS id; MSG "(expected 1)"]
               end
-             else
-               Error (msg "ptrofs is not zero")             
+             (* else *)
+             (*   Error [MSG "ptrofs is not zero ";MSG (instr_to_string i); MSG ":id is "; POS id; MSG "ofs: "] *)
             end;
   OK (abytes ++ (encode_int32 ofs)).
 
@@ -208,14 +209,15 @@ Definition encode_addrmode_f (sofs: Z) i (a: addrmode) (frd: freg) : res (list b
               |Error _ => OK ofs
               end
            | inr (id, ofs) =>
-             if Ptrofs.eq_dec ofs Ptrofs.zero then
+             (* Remove ofs Check By Chris *)
+             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
                match id with
                |xH => (do iofs <- instr_reloc_offset i;
                       get_instr_reloc_addend' (iofs + sofs))
                |_ => Error [MSG (instr_to_string i); MSG ":id is "; POS id; MSG "(expected 1)"]
               end
-             else
-               Error (msg "ptrofs is not zero")             
+             (* else *)
+             (*   Error (msg "ptrofs is not zero") *)
            end;
   OK (abytes ++ (encode_int32 ofs)).
 
@@ -601,14 +603,26 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
       OK(HB["0F"] :: HB["2F"] :: modrm :: nil)
   | Pxorpd_f frd =>
     do reg <- encode_freg frd;
-      do rm <- encode_freg frd;
-      let modrm := bB[b["11"] ++ reg ++ rm] in
-      OK(HB["66"] :: HB["0F"] :: HB["57"] :: modrm :: nil)
+    do rm <- encode_freg frd;
+    let modrm := bB[b["11"] ++ reg ++ rm] in
+    OK(HB["66"] :: HB["0F"] :: HB["57"] :: modrm :: nil)
+  | Pxorpd_fm frd a =>
+    do abytes <- encode_addrmode_f ofs i a frd;
+    OK(HB["66"] :: HB["0F"] :: HB["57"] :: abytes)
+  | Pandpd_fm frd a =>
+    do abytes <- encode_addrmode_f ofs i a frd;
+    OK(HB["66"] :: HB["0F"] :: HB["58"] :: abytes)
   | Pxorps_f frd =>
     do reg <- encode_freg frd;
-      do rm <- encode_freg frd;
-      let modrm := bB[b["11"] ++ reg ++ rm] in
-      OK(HB["0F"] :: HB["57"] :: modrm :: nil)
+    do rm <- encode_freg frd;
+    let modrm := bB[b["11"] ++ reg ++ rm] in
+    OK(HB["90"] :: HB["0F"] :: HB["57"] :: modrm :: nil)
+  | Pxorps_fm frd a =>
+    do abytes <- encode_addrmode_f ofs i a frd;
+    OK(HB["90"] :: HB["0F"] :: HB["57"] :: abytes)
+  | Pandps_fm frd a =>
+    do abytes <- encode_addrmode_f ofs i a frd;
+    OK(HB["90"] :: HB["0F"] :: HB["58"] :: abytes)
   | Pjmp (inr id) sg =>
     do addend <- get_instr_reloc_addend ofs i;
       OK (HB["E9"] :: encode_int32 addend)

@@ -258,6 +258,9 @@ Section WITHMEMORYMODEL.
       ~ In  r (PC :: RA :: CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: written_regs i) ->
       rs2 # r = rs1 # r.
   Proof.
+  Admitted.
+  (***** Remove Proofs By Chris Start ******)
+  (*
     intros ge rs1 m1 rs2 m2 f i init_stk r EI NIN.
     simpl in NIN.
     simpl_not_in NIN. rename H7 into NIN.
@@ -284,6 +287,8 @@ Section WITHMEMORYMODEL.
     solveofs H7.
     solveofs H7.
   Qed.
+   *)
+(***** Remove Proofs By Chris End ******)
 
   Definition check_asm_instr_no_rsp i :=
     negb (in_dec preg_eq RSP (written_regs i)).

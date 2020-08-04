@@ -2069,6 +2069,9 @@ Lemma encode_decode_addrmode_relf: forall a rd bytes rofs i iofs sofs,
     -> rofs = iofs + sofs
     -> forall l, decode_addrmode rofs (bytes++l) = OK (rd, a, l).
 Proof.
+Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*
   intros a rd bytes rofs i iofs sofs HRelocOfs  HEncode  HRofs  l.
 
   unfold encode_addrmode in HEncode.
@@ -3101,6 +3104,8 @@ Proof.
           1-6:
           intros HNot; inversion HNot.
 Admitted.
+*)
+(***** Remove Proofs By Chris End ******)
 
 
 Lemma encode_decode_addr_size_relf: forall a rd abytes,
@@ -3413,6 +3418,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite HAddrmode1.
     simpl.
     auto.
+    admit.
+    admit.
   + (* Pmovl_rm rd a *)
     exists (Pmovl_rm rd a).
     split; try (unfold instr_eq; auto).
@@ -3484,7 +3491,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       intros HAddrmode.
       rewrite app_assoc.
       rewrite HAddrmode.
-      simpl. auto.       
+      simpl. auto.
+      admit.
   + (* (Pmovl_mr a rs) *)
     exists  (Pmovl_mr a rs).
     split;try(unfold instr_eq; auto).
@@ -4032,6 +4040,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pcomisd_ff r1 r2). admit.
   + (* Pxorpd_f rd*)
     exists (Pxorpd_f rd). admit.
+  + (* Pxorpd_fm rd*)
+    exists (Pxorpd_fm rd a). admit.
+  + (* Pandpd_fm rd*)
+    exists (Pandpd_fm rd a). admit.
   + (* Padds_ff rd r1*)
     exists (Padds_ff rd r1). admit.
   + (* Psubs_ff rd r1*)
@@ -4044,6 +4056,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pcomiss_ff r1 r2). admit.
   + (* Pxorps_f rd*)
     exists (Pxorps_f rd). admit.
+  + (* Pxorps_fm rd*)
+    exists (Pxorps_fm rd a). admit.
+  + (* Pandps_fm rd*)
+    exists (Pandps_fm rd a). admit.
   + (* Pjmp ros sg*)
     exists (Pjmp ros sg). admit.
   + (*  (Pcall ros sg) *)
@@ -4149,6 +4165,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite app_assoc.
       rewrite HAddrmode.
       simpl. auto.
+      admit.
   + (* (Pmov_mr_a a rs) *)
 
     exists  (Pmovl_mr a rs).

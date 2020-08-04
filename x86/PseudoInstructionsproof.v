@@ -410,6 +410,9 @@ Section WITHMEMORYMODEL.
     forall f i rs m (ID : id_instr i = true),
       exec_instr ge f i rs m = exec_instr tge (transf_function f) i rs m.
   Proof.
+  Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*
     generalize senv_preserved as EQ.
     destruct i; simpl; intros; eauto using exec_load_senv_equiv, exec_store_senv_equiv.
     unfold Genv.symbol_address.
@@ -433,7 +436,8 @@ Section WITHMEMORYMODEL.
     destr. destr. eapply goto_ofs_eq; eauto.
     
   Qed.
-  
+*)
+(***** Remove Proofs By Chris End ******)
   Lemma pseudo_instructions_step:
     forall s1 t s2
            (STEP : step (Genv.globalenv prog) s1 t s2)

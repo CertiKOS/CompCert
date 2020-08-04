@@ -225,6 +225,8 @@ Inductive instruction: Type :=
   | Pabsd (rd: freg)
   | Pcomisd_ff (r1 r2: freg)
   | Pxorpd_f (rd: freg)	              (**r [xor] with self = set to zero *)
+  | Pxorpd_fm (rd: freg) (a: addrmode)
+  | Pandpd_fm (rd: freg) (a: addrmode)
   | Padds_ff (rd: freg) (r1: freg)
   | Psubs_ff (rd: freg) (r1: freg)
   | Pmuls_ff (rd: freg) (r1: freg)
@@ -233,6 +235,8 @@ Inductive instruction: Type :=
   | Pabss (rd: freg)
   | Pcomiss_ff (r1 r2: freg)
   | Pxorps_f (rd: freg)	              (**r [xor] with self = set to zero *)
+  | Pxorps_fm (rd: freg) (a: addrmode)
+  | Pandps_fm (rd: freg) (a: addrmode)
   (** Branches and calls *)
   | Pjmp_l (l: label)
   | Pjmp (ros: ireg + ident) (sg: signature)
@@ -439,7 +443,11 @@ Let instr_size' (i: instruction) : Z :=
   | Pcomisd_ff fr1 fr2 => 4
   | Pcomiss_ff fr1 fr2 => 3
   | Pxorpd_f frd => 4
-  | Pxorps_f frd => 3
+  | Pxorpd_fm frd a => 3 + addrmode_size a
+  | Pandpd_fm frd a => 3 + addrmode_size a
+  | Pxorps_f frd => 4
+  | Pxorps_fm frd a => 3 + addrmode_size a
+  | Pandps_fm frd a => 3 + addrmode_size a
   | Pimull_ri rd n => 6
   | Paddl_rr _ _ => 2
   | Padcl_rr _ _ => 2
@@ -1530,6 +1538,12 @@ Definition exec_instr
       Next (nextinstr (compare_floats (rs r1) (rs r2) rs) sz) m
   | Pxorpd_f rd =>
       Next (nextinstr_nf (rs#rd <- (Vfloat Float.zero)) sz) m
+  | Pxorpd_fm rd a =>
+    let val_a := (eval_addrmode64 ge a rs) in
+    Next (nextinstr_nf (rs#rd <- (Val.xorl rs#rd val_a)) sz) m
+  | Pandpd_fm rd a =>
+    let val_a := (eval_addrmode64 ge a rs) in
+    Next (nextinstr_nf (rs#rd <- (Val.andl rs#rd val_a)) sz) m 
   (** Arithmetic operations over single-precision floats *)
   | Padds_ff rd r1 =>
       Next (nextinstr (rs#rd <- (Val.addfs rs#rd rs#r1)) sz) m
@@ -1546,7 +1560,13 @@ Definition exec_instr
   | Pcomiss_ff r1 r2 =>
       Next (nextinstr (compare_floats32 (rs r1) (rs r2) rs) sz) m
   | Pxorps_f rd =>
-      Next (nextinstr_nf (rs#rd <- (Vsingle Float32.zero)) sz) m
+    Next (nextinstr_nf (rs#rd <- (Vsingle Float32.zero)) sz) m
+  | Pxorps_fm rd a =>
+    let val_a := (eval_addrmode32 ge a rs) in
+    Next (nextinstr_nf (rs#rd <- (Val.xor rs#rd val_a)) sz) m
+  | Pandps_fm rd a =>
+    let val_a := (eval_addrmode32 ge a rs) in
+    Next (nextinstr_nf (rs#rd <- (Val.and rs#rd val_a)) sz) m
   (** Branches and calls *)
   | Pjmp_l lbl =>
       goto_label ge f lbl rs m
@@ -2074,6 +2094,8 @@ Definition instr_to_string (i:instruction) : string :=
   | Pabsd rd          => "Pabsd rd"
   | Pcomisd_ff r1 r2  => "Pcomisd_ff"
   | Pxorpd_f   rd     => "Pxorpd_f"       (**r [xor] with self = set to zero *)
+  | Pxorpd_fm  rd r1  => "Pxorpd_fm"
+  | Pandpd_fm  rd r1  => "Pandpd_fm"
   | Padds_ff   rd r1  => "Padds_ff"
   | Psubs_ff   rd r1  => "Psubs_ff"
   | Pmuls_ff   rd r1  => "Pmuls_ff"
@@ -2082,6 +2104,8 @@ Definition instr_to_string (i:instruction) : string :=
   | Pabss rd          => "Pabss rd"
   | Pcomiss_ff r1 r2  => "Pcomiss_ff"
   | Pxorps_f   rd     => "Pxorps_f"      (**r [xor] with self = set to zero *)
+  | Pxorps_fm  rd r1  => "Pxorps_fm"
+  | Pandps_fm  rd r1  => "Pandps_fm"
   (* (** Branches and calls *) *)
   | Pjmp_l l  => "Pjmp_l"
   | Pjmp ros sg => "Pjmp"

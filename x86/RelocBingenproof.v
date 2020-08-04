@@ -1257,7 +1257,15 @@ Proof.
     admit.
     (* movb_mr *)
     admit.
+    (* movw_mr *)
+    admit.
     (* movzb_rm *)
+    admit.
+    (* movsb_rm *)
+    admit.
+    (* movzw_rm *)
+    admit.
+    (* movsw_rm *)
     admit.
 
     (* lea *)
