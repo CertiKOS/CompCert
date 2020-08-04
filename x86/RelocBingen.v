@@ -820,9 +820,9 @@ Definition acc_instrs r i :=
   do r' <- r;
     let '(ofs, code) := r' in
     do c <- if more_inst then
-              encode_instr ofs i
+              encode_instr_more ofs i
             else
-              encode_instr_more ofs i;
+              encode_instr ofs i;
   OK (ofs + instr_size i, rev c ++ code).
 
 (** Translation of a sequence of instructions in a function *)
