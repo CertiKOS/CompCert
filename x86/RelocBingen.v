@@ -150,7 +150,7 @@ Definition encode_addrmode (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte
             end;
   OK (abytes ++ (encode_int32 ofs)).
 
-
+(* 
 Definition encode_addrmode_more (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte) :=
   let '(Addrmode bs ss disp) := a in
   do abytes <- encode_addrmode_aux a rd;
@@ -165,17 +165,17 @@ Definition encode_addrmode_more (sofs: Z) i (a: addrmode) (rd: ireg) : res (list
               |Error _ => OK ofs
               end
            | inr (id, ofs) =>
-             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
+             if Ptrofs.eq_dec ofs Ptrofs.zero then
               match id with
               |xH => 
                (do iofs <- instr_reloc_offset i;
                 get_instr_reloc_addend' (iofs + sofs))
               |_ => Error [MSG (instr_to_string i); MSG ":id is "; POS id; MSG "(expected 1)"]
               end
-             (* else *)
-               (* Error (msg "ptrofs is not zero")              *)
+             else
+               Error (msg "ptrofs is not zero")             
             end;
-  OK (abytes ++ (encode_int32 ofs)).
+  OK (abytes ++ (encode_int32 ofs)). *)
 
 
 
@@ -302,115 +302,151 @@ Definition encode_testcond_setcc (c:testcond) : list byte :=
   end.
 
 
-(** Encode a single instruction *)
-Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
+(* (** Encode a single instruction *) *)
+(* Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) := *)
+(*   match i with *)
+(*   | Pjmp_l_rel jofs => *)
+(*     OK (HB["E9"] :: encode_int32 jofs) *)
+(*   | Pjcc_rel c jofs => *)
+(*     let cbytes := encode_testcond c in *)
+(*     OK (cbytes ++ encode_int32 jofs) *)
+(*   | Pcall (inr id) _ => *)
+(*     do addend <- get_instr_reloc_addend ofs i; *)
+(*     OK (HB["E8"] :: encode_int32 addend) *)
+(*   | Pleal rd a => *)
+(*     do abytes <- encode_addrmode ofs i a rd; *)
+(*     OK (HB["8D"] :: abytes) *)
+(*   | Pxorl_r rd => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in *)
+(*     OK (HB["31"] :: modrm :: nil) *)
+(*   | Paddl_ri rd n => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     let modrm := bB[ b["11"] ++ b["000"] ++ rdbits ] in *)
+(*     let nbytes := encode_int32 (Int.unsigned n) in *)
+(*     OK (HB["81"] :: modrm :: nbytes) *)
+(*   | Psubl_ri rd n => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     let modrm := bB[ b["11"] ++ b["101"] ++ rdbits ] in *)
+(*     let nbytes := encode_int32 (Int.unsigned n) in *)
+(*     OK (HB["81"] :: modrm :: nbytes) *)
+(*   | Psubl_rr rd r1 => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in *)
+(*     OK (HB["2B"] :: modrm :: nil) *)
+(*   | Pmovl_ri rd n => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     let opcode := bB[b["10111"] ++ rdbits] in *)
+(*     let nbytes := encode_int32 (Int.unsigned n) in *)
+(*     OK (opcode :: nbytes) *)
+(*   | Pmov_rr rd r1 => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     let modrm := bB[ b["11"] ++ rdbits ++ r1bits] in *)
+(*     OK (HB["8B"] :: modrm :: nil) *)
+(*   | Pmovl_rm rd a => *)
+(*     do abytes <- encode_addrmode ofs i a rd; *)
+(*     OK (HB["8B"] :: abytes) *)
+(*   | Pmovl_mr a rs => *)
+(*     do abytes <- encode_addrmode ofs i a rs; *)
+(*     OK (HB["89"] :: abytes) *)
+(*   | Pmov_rm_a rd a => *)
+(*     do abytes <- encode_addrmode ofs i a rd; *)
+(*     OK (HB["8B"] :: abytes)     *)
+(*   | Pmov_mr_a a rs => *)
+(*     do abytes <- encode_addrmode ofs i a rs; *)
+(*     OK (HB["89"] :: abytes) *)
+(*   | Pmov_rs rd id => *)
+(*     do abytes <- encode_addrmode ofs i (Addrmode None None (inr (id,Ptrofs.zero))) rd; *)
+(*     OK (HB["8B"] :: abytes)   *)
+(*   | Ptestl_rr r1 r2 => *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     do r2bits <- encode_ireg r2; *)
+(*     let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in *)
+(*     OK (HB["85"] :: modrm :: nil) *)
+(*   | Pret => *)
+(*     OK (HB["C3"] :: nil) *)
+(*   | Pimull_rr rd r1 => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in *)
+(*     OK (HB["0F"] :: HB["AF"] :: modrm :: nil) *)
+(*   | Pimull_ri rd n => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in *)
+(*     let nbytes := encode_int32 (Int.unsigned n) in *)
+(*     OK (HB["69"] :: modrm :: nbytes) *)
+(*   | Pcmpl_rr r1 r2 => *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     do r2bits <- encode_ireg r2; *)
+(*     let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in *)
+(*     OK (HB["39"] :: modrm :: nil) *)
+(*   | Pcmpl_ri r1 n => *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in *)
+(*     let nbytes := encode_int32 (Int.unsigned n) in *)
+(*     OK (HB["81"] :: modrm :: nbytes) *)
+(*   | Pcltd => *)
+(*     OK (HB["99"] :: nil) *)
+(*   | Pidivl r1 => *)
+(*     do r1bits <- encode_ireg r1; *)
+(*     let modrm := bB[ b["11"] ++ b["110"] ++ r1bits ] in *)
+(*     OK (HB["F7"] :: modrm :: nil) *)
+(*   | Psall_ri rd n => *)
+(*     do rdbits <- encode_ireg rd; *)
+(*     let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in *)
+(*     let nbytes := [Byte.repr (Int.unsigned n)] in *)
+(*     OK (HB["C1"] :: modrm :: nbytes) *)
+(*   | Plabel _ *)
+(*   | Pnop => *)
+(*     OK (HB["90"] :: nil) *)
+(*   | _ => *)
+(*     Error [MSG "Encoding of the instruction is not supported yet: "; *)
+(*            MSG (instr_to_string i)] *)
+(*   end. *)
+
+Definition ready_for_proof (i: instruction) : bool :=
   match i with
-  | Pjmp_l_rel jofs =>
-    OK (HB["E9"] :: encode_int32 jofs)
-  | Pjcc_rel c jofs =>
-    let cbytes := encode_testcond c in
-    OK (cbytes ++ encode_int32 jofs)
-  | Pcall (inr id) _ =>
-    do addend <- get_instr_reloc_addend ofs i;
-    OK (HB["E8"] :: encode_int32 addend)
-  | Pleal rd a =>
-    do abytes <- encode_addrmode ofs i a rd;
-    OK (HB["8D"] :: abytes)
-  | Pxorl_r rd =>
-    do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
-    OK (HB["31"] :: modrm :: nil)
-  | Paddl_ri rd n =>
-    do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ b["000"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["81"] :: modrm :: nbytes)
-  | Psubl_ri rd n =>
-    do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ b["101"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["81"] :: modrm :: nbytes)
-  | Psubl_rr rd r1 =>
-    do rdbits <- encode_ireg rd;
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
-    OK (HB["2B"] :: modrm :: nil)
-  | Pmovl_ri rd n =>
-    do rdbits <- encode_ireg rd;
-    let opcode := bB[b["10111"] ++ rdbits] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (opcode :: nbytes)
-  | Pmov_rr rd r1 =>
-    do rdbits <- encode_ireg rd;
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ rdbits ++ r1bits] in
-    OK (HB["8B"] :: modrm :: nil)
-  | Pmovl_rm rd a =>
-    do abytes <- encode_addrmode ofs i a rd;
-    OK (HB["8B"] :: abytes)
-  | Pmovl_mr a rs =>
-    do abytes <- encode_addrmode ofs i a rs;
-    OK (HB["89"] :: abytes)
-  | Pmov_rm_a rd a =>
-    do abytes <- encode_addrmode ofs i a rd;
-    OK (HB["8B"] :: abytes)    
-  | Pmov_mr_a a rs =>
-    do abytes <- encode_addrmode ofs i a rs;
-    OK (HB["89"] :: abytes)
-  | Pmov_rs rd id =>
-    do abytes <- encode_addrmode ofs i (Addrmode None None (inr (id,Ptrofs.zero))) rd;
-    OK (HB["8B"] :: abytes)  
-  | Ptestl_rr r1 r2 =>
-    do r1bits <- encode_ireg r1;
-    do r2bits <- encode_ireg r2;
-    let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
-    OK (HB["85"] :: modrm :: nil)
-  | Pret =>
-    OK (HB["C3"] :: nil)
-  | Pimull_rr rd r1 =>
-    do rdbits <- encode_ireg rd;
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
-    OK (HB["0F"] :: HB["AF"] :: modrm :: nil)
-  | Pimull_ri rd n =>
-    do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["69"] :: modrm :: nbytes)
-  | Pcmpl_rr r1 r2 =>
-    do r1bits <- encode_ireg r1;
-    do r2bits <- encode_ireg r2;
-    let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
-    OK (HB["39"] :: modrm :: nil)
-  | Pcmpl_ri r1 n =>
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["81"] :: modrm :: nbytes)
-  | Pcltd =>
-    OK (HB["99"] :: nil)
-  | Pidivl r1 =>
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ b["110"] ++ r1bits ] in
-    OK (HB["F7"] :: modrm :: nil)
-  | Psall_ri rd n =>
-    do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
-    let nbytes := [Byte.repr (Int.unsigned n)] in
-    OK (HB["C1"] :: modrm :: nbytes)
-  | Plabel _
-  | Pnop =>
-    OK (HB["90"] :: nil)
-  | _ =>
-    Error [MSG "Encoding of the instruction is not supported yet: ";
-           MSG (instr_to_string i)]
+  | Pjmp_l_rel jofs => true
+  | Pjcc_rel c jofs => true
+  | Pcall (inr id) _ => true
+  | Pleal rd a => true
+  | Pxorl_r rd => true
+  | Paddl_ri rd n => true
+  | Psubl_ri rd n => true
+  | Psubl_rr rd r1 => true
+  | Pmovl_ri rd n => true
+  | Pmov_rr rd r1 => true
+  | Pmovl_rm rd a => true
+  | Pmovl_mr a rs => true
+  | Pmov_rm_a rd a => true
+  | Pmov_mr_a a rs => true
+  | Pmov_rs rd id => true
+  | Ptestl_rr r1 r2 => true
+  | Pret => true
+  | Pimull_rr rd r1 => true
+  | Pimull_ri rd n => true
+  | Pcmpl_rr r1 r2 => true
+  | Pcmpl_ri r1 n => true
+  | Pcltd => true
+  | Pidivl r1 => true
+  | Psall_ri rd n => true
+  | Plabel _ => true
+  | Pnop => true
+  | _ => false
   end.
 
+Section SEC_ENC.
+
+
+
+Variable more_inst :bool.
 
 
 
 (** Encode a single instruction *)
-Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
+Definition encode_instr' (ofs:Z) (i: instruction) : res (list byte) :=
   match i with
   | Pjmp_l_rel jofs =>
     OK (HB["E9"] :: encode_int32 jofs)
@@ -419,102 +455,102 @@ Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
     OK (cbytes ++ encode_int32 jofs)
   | Pcall (inr id) _ =>
     do addend <- get_instr_reloc_addend ofs i;
-    OK (HB["E8"] :: encode_int32 addend)
+      OK (HB["E8"] :: encode_int32 addend)
   | Pcall (inl reg) _ =>
     do rm <- encode_ireg reg;
-    (* reg filed must be 2 *)
-    let modrm := bB[b["11"] ++ b["010"] ++ rm] in
-    OK (HB["FF"] :: modrm :: nil)
+      (* reg filed must be 2 *)
+      let modrm := bB[b["11"] ++ b["010"] ++ rm] in
+      OK (HB["FF"] :: modrm :: nil)
   | Pleal rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
-    OK (HB["8D"] :: abytes)
+    do abytes <- encode_addrmode ofs i a rd;
+      OK (HB["8D"] :: abytes)
   | Pxorl_r rd =>
     do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
-    OK (HB["31"] :: modrm :: nil)
+      let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
+      OK (HB["31"] :: modrm :: nil)
   | Paddl_ri rd n =>
     do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ b["000"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["81"] :: modrm :: nbytes)
+      let modrm := bB[ b["11"] ++ b["000"] ++ rdbits ] in
+      let nbytes := encode_int32 (Int.unsigned n) in
+      OK (HB["81"] :: modrm :: nbytes)
   | Psubl_ri rd n =>
     do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ b["101"] ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["81"] :: modrm :: nbytes)
+      let modrm := bB[ b["11"] ++ b["101"] ++ rdbits ] in
+      let nbytes := encode_int32 (Int.unsigned n) in
+      OK (HB["81"] :: modrm :: nbytes)
   | Psubl_rr rd r1 =>
     do rdbits <- encode_ireg rd;
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
-    OK (HB["2B"] :: modrm :: nil)
+      do r1bits <- encode_ireg r1;
+      let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
+      OK (HB["2B"] :: modrm :: nil)
   | Pmovl_ri rd n =>
     do rdbits <- encode_ireg rd;
-    let opcode := bB[b["10111"] ++ rdbits] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (opcode :: nbytes)
+      let opcode := bB[b["10111"] ++ rdbits] in
+      let nbytes := encode_int32 (Int.unsigned n) in
+      OK (opcode :: nbytes)
   | Pmov_rr rd r1 =>
     do rdbits <- encode_ireg rd;
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ rdbits ++ r1bits] in
-    OK (HB["8B"] :: modrm :: nil)
+      do r1bits <- encode_ireg r1;
+      let modrm := bB[ b["11"] ++ rdbits ++ r1bits] in
+      OK (HB["8B"] :: modrm :: nil)
   | Pmovl_rm rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
-    OK (HB["8B"] :: abytes)
+    do abytes <- encode_addrmode ofs i a rd;
+      OK (HB["8B"] :: abytes)
   | Pmovl_mr a rs =>
-    do abytes <- encode_addrmode_more ofs i a rs;
-    OK (HB["89"] :: abytes)
+    do abytes <- encode_addrmode ofs i a rs;
+      OK (HB["89"] :: abytes)
   | Pmov_rm_a rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
-    OK (HB["8B"] :: abytes)    
+    do abytes <- encode_addrmode ofs i a rd;
+      OK (HB["8B"] :: abytes)    
   | Pmov_mr_a a rs =>
-    do abytes <- encode_addrmode_more ofs i a rs;
-    OK (HB["89"] :: abytes)
+    do abytes <- encode_addrmode ofs i a rs;
+      OK (HB["89"] :: abytes)
   | Pmov_rs rd id =>
-    do abytes <- encode_addrmode_more ofs i (Addrmode None None (inr (id,Ptrofs.zero))) rd;
-    OK (HB["8B"] :: abytes)
+    do abytes <- encode_addrmode ofs i (Addrmode None None (inr (id,Ptrofs.zero))) rd;
+      OK (HB["8B"] :: abytes)
   | Pmovsd_ff frd fr1 =>
     do bfrd <- encode_freg frd;
-    do bfr1 <- encode_freg fr1;
-    OK (HB["F2"] :: HB["0F"] :: HB["10"] :: bB[b["11"] ++ bfrd ++ bfr1]::nil)
+      do bfr1 <- encode_freg fr1;
+      OK (HB["F2"] :: HB["0F"] :: HB["10"] :: bB[b["11"] ++ bfrd ++ bfr1]::nil)
   | Pmovsd_fm_a frd a
   | Pmovsd_fm frd a =>
     do abytes <- encode_addrmode_f ofs i a frd;
-    OK(HB["F2"] :: HB["0F"] :: HB["10"] :: abytes)
+      OK(HB["F2"] :: HB["0F"] :: HB["10"] :: abytes)
   | Pmovsd_mf_a a fr1
   | Pmovsd_mf a fr1 =>
     do abytes <- encode_addrmode_f ofs i a fr1;
-    OK(HB["F2"] :: HB["0F"] :: HB["11"] :: abytes)
+      OK(HB["F2"] :: HB["0F"] :: HB["11"] :: abytes)
   | Pmovss_fm frd a =>
     do abytes <- encode_addrmode_f ofs i a frd;
-    OK(HB["F3"] :: HB["0F"] :: HB["10"] :: abytes)
+      OK(HB["F3"] :: HB["0F"] :: HB["10"] :: abytes)
   | Pmovss_mf a fr1 =>
     do abytes <- encode_addrmode_f ofs i a fr1;
-    OK(HB["F3"] :: HB["0F"] :: HB["11"] :: abytes)
+      OK(HB["F3"] :: HB["0F"] :: HB["11"] :: abytes)
   | Pfldl_m a =>
     (* the rd bits must be 000 *)
     do abytes <- encode_addrmode_f ofs i a XMM0;
-    OK(HB["DD"] :: abytes)
+      OK(HB["DD"] :: abytes)
   | Pfstpl_m a =>
     (* the rd bits must be 003 *)
     do abytes <- encode_addrmode_f ofs i a XMM3;
-    OK(HB["DD"] :: abytes)
+      OK(HB["DD"] :: abytes)
   | Pflds_m a =>
     (* the rd bits must be 000 *)
     do abytes <- encode_addrmode_f ofs i a XMM0;
-    OK(HB["D9"] :: abytes)
+      OK(HB["D9"] :: abytes)
   | Pfstps_m a =>
     (* the rd bits must be 003 *)
     do abytes <- encode_addrmode_f ofs i a XMM3;
-    OK(HB["D9"] :: abytes)
+      OK(HB["D9"] :: abytes)
   | Pxchg_rr r1 r2 =>
     do rm <- encode_ireg r1;
-    do reg <- encode_ireg r2;
-    OK(HB["87"] :: bB[b["11"] ++ reg ++ rm] :: nil)
+      do reg <- encode_ireg r2;
+      OK(HB["87"] :: bB[b["11"] ++ reg ++ rm] :: nil)
   | Pmovb_mr a rs =>
-    do abytes <- encode_addrmode_more ofs i a rs;
+    do abytes <- encode_addrmode ofs i a rs;
       OK(HB["88"] :: abytes)
   | Pmovw_mr a rs =>
-    do abytes <- encode_addrmode_more ofs i a rs;
+    do abytes <- encode_addrmode ofs i a rs;
       OK(HB["66"] :: HB["89"] :: abytes)
   | Pmovzb_rr rd rs =>
     do reg <- encode_ireg rd;
@@ -522,7 +558,7 @@ Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
       let modrm := bB[ b["11"] ++ reg ++ rm ] in
       OK (HB["0F"] :: HB["B6"] :: modrm ::nil)
   | Pmovzb_rm rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
+    do abytes <- encode_addrmode ofs i a rd;
       OK (HB["0F"] :: HB["B6"] :: abytes)
   | Pmovzw_rr rd rs =>
     do reg <- encode_ireg rd;
@@ -530,7 +566,7 @@ Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
       let modrm := bB[ b["11"] ++ reg ++ rm ] in
       OK (HB["0F"] :: HB["B7"] :: modrm ::nil)
   | Pmovzw_rm rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
+    do abytes <- encode_addrmode ofs i a rd;
       OK (HB["0F"] :: HB["B7"] :: abytes)
   | Pmovsb_rr rd rs =>
     do reg <- encode_ireg rd;
@@ -538,7 +574,7 @@ Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
       let modrm := bB[ b["11"] ++ reg ++ rm ] in
       OK (HB["0F"] :: HB["BE"] :: modrm ::nil)
   | Pmovsb_rm rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
+    do abytes <- encode_addrmode ofs i a rd;
       OK (HB["0F"] :: HB["BE"] :: abytes)
   | Pmovsw_rr rd rs =>
     do reg <- encode_ireg rd;
@@ -546,7 +582,7 @@ Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
       let modrm := bB[ b["11"] ++ reg ++ rm ] in
       OK (HB["0F"] :: HB["BF"] :: modrm ::nil)
   | Pmovsw_rm rd a =>
-    do abytes <- encode_addrmode_more ofs i a rd;
+    do abytes <- encode_addrmode ofs i a rd;
       OK (HB["0F"] :: HB["BF"] :: abytes)
   | Pcvtsd2ss_ff frd fr1 =>
     do reg <- encode_freg frd;
@@ -755,74 +791,82 @@ Definition encode_instr_more (ofs:Z) (i: instruction) : res (list byte) :=
       OK (HB["E9"] :: encode_int32 addend)
   | Pjmp (inl reg) sg =>
     do rm <- encode_ireg reg;
-    (* reg field must be 4 *)
+      (* reg field must be 4 *)
       let modrm := bB[b["11"] ++ b["100"] ++ rm] in
       OK(HB["FF"] :: modrm :: nil)
   | Ptestl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
-    do r2bits <- encode_ireg r2;
-    let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
-    OK (HB["85"] :: modrm :: nil)
+      do r2bits <- encode_ireg r2;
+      let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
+      OK (HB["85"] :: modrm :: nil)
   | Pret =>
     OK (HB["C3"] :: nil)
   | Pimull_rr rd r1 =>
     do rdbits <- encode_ireg rd;
-    do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
-    OK (HB["0F"] :: HB["AF"] :: modrm :: nil)
+      do r1bits <- encode_ireg r1;
+      let modrm := bB[ b["11"] ++ rdbits ++ r1bits ] in
+      OK (HB["0F"] :: HB["AF"] :: modrm :: nil)
   | Pimull_ri rd n =>
     do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["69"] :: modrm :: nbytes)
+      let modrm := bB[ b["11"] ++ rdbits ++ rdbits ] in
+      let nbytes := encode_int32 (Int.unsigned n) in
+      OK (HB["69"] :: modrm :: nbytes)
   | Pcmpl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
-    do r2bits <- encode_ireg r2;
-    let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
-    OK (HB["39"] :: modrm :: nil)
+      do r2bits <- encode_ireg r2;
+      let modrm := bB[ b["11"] ++ r2bits ++ r1bits ] in
+      OK (HB["39"] :: modrm :: nil)
   | Pcmpl_ri r1 n =>
     do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
-    let nbytes := encode_int32 (Int.unsigned n) in
-    OK (HB["81"] :: modrm :: nbytes)
+      let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
+      let nbytes := encode_int32 (Int.unsigned n) in
+      OK (HB["81"] :: modrm :: nbytes)
   | Pcltd =>
     OK (HB["99"] :: nil)
   | Pidivl r1 =>
     do r1bits <- encode_ireg r1;
-    let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
-    OK (HB["F7"] :: modrm :: nil)
+      let modrm := bB[ b["11"] ++ b["111"] ++ r1bits ] in
+      OK (HB["F7"] :: modrm :: nil)
   | Psall_ri rd n =>
     do rdbits <- encode_ireg rd;
-    let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
-    let nbytes := [Byte.repr (Int.unsigned n)] in
-    OK (HB["C1"] :: modrm :: nbytes)
+      let modrm := bB[ b["11"] ++ b["100"] ++ rdbits ] in
+      let nbytes := [Byte.repr (Int.unsigned n)] in
+      OK (HB["C1"] :: modrm :: nbytes)
   | Paddl_rr rd r2 =>
     do rdbits <- encode_ireg rd;
-    do r2bits <- encode_ireg r2;
-    let modrm := bB[b["11"] ++ r2bits ++ rdbits] in
-    OK (HB["01"] :: modrm :: nil)
+      do r2bits <- encode_ireg r2;
+      let modrm := bB[b["11"] ++ r2bits ++ rdbits] in
+      OK (HB["01"] :: modrm :: nil)
   | Padcl_rr rd r2 =>
     do rdbits <- encode_ireg rd;
-    do r2bits <- encode_ireg r2;
-    let modrm := bB[b["11"] ++ r2bits ++ rdbits] in
-    OK (HB["11"] :: modrm :: nil)
+      do r2bits <- encode_ireg r2;
+      let modrm := bB[b["11"] ++ r2bits ++ rdbits] in
+      OK (HB["11"] :: modrm :: nil)
   | Plabel _
   | Pnop =>
     OK (HB["90"] :: nil)
   | _ =>
     Error [MSG "Encoding of the instruction is not supported yet: ";
-           MSG (instr_to_string i)]
+             MSG (instr_to_string i)]
   end.
 
-Let more_inst := true.
+
+(** Encode a single instruction *)
+Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
+  if negb more_inst then
+    if negb (ready_for_proof i)then
+      Error[MSG (instr_to_string i);MSG" not ready for proof"]
+    else
+      encode_instr' ofs i
+  else
+    encode_instr' ofs i.
+
+
 
 Definition acc_instrs r i :=
   do r' <- r;
     let '(ofs, code) := r' in
-    do c <- if more_inst then
-              encode_instr_more ofs i
-            else
-              encode_instr ofs i;
+    do c <-encode_instr ofs i;
   OK (ofs + instr_size i, rev c ++ code).
 
 (** Translation of a sequence of instructions in a function *)
@@ -830,7 +874,7 @@ Definition transl_code (c:code) : res (list byte) :=
   do r <- fold_left acc_instrs c (OK (0, []));
   let '(_, c') := r in
   OK (rev c').
-
+End SEC_ENC.
 
 (** ** Encoding of data *)
 
@@ -863,14 +907,19 @@ End WITH_RELOC_OFS_MAP.
 
 (** ** Translation of a program *)
 
+Section SEC_ENC.
+
+  Variable more_inst : bool.
+
 Definition transl_sectable (stbl: sectable) relocmap : res sectable :=
   match stbl with
   | [sec_data l; sec_text code] =>
-    do codebytes <- transl_code (gen_reloc_ofs_map (reloctable_code relocmap)) code;
+    do codebytes <- transl_code (gen_reloc_ofs_map (reloctable_code relocmap)) more_inst code;
     do databytes <- transl_init_data_list (gen_reloc_ofs_map (reloctable_data relocmap)) l;
       OK [sec_bytes databytes; sec_bytes codebytes]
   | _ => Error (msg "Expected the section table to be [sec_data; sec_text]")
   end.
+
 
 Definition transf_program (p:program) : res program := 
   do stbl <- transl_sectable (prog_sectable p) (prog_reloctables p);
@@ -897,3 +946,4 @@ Definition transf_program (p:program) : res program :=
      |}
   else Error (msg "Too many strings in symbtable").
 
+End SEC_ENC.

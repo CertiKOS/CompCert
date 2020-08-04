@@ -3653,16 +3653,25 @@ Qed.
 
 
 
-
+Ltac unfold_and_simpl_encoder:=
+  match goal with
+  |[ H: encode_instr _ _ _ _ = OK _|- _]=>
+   unfold encode_instr in H; cbn [negb ready_for_proof negb] in H;
+   unfold encode_instr' in H
+  |_ => idtac
+  end.
 
 Lemma encode_decode_instr_refl: forall ofs i s l,
-    encode_instr rtbl_ofs_map ofs i = OK s
+    encode_instr rtbl_ofs_map false ofs i = OK s
     -> exists i', fmc_instr_decode ofs (s++l) = OK(i',l) /\
                   instr_eq i i'.
 
   intros ofs i s l HEncode.
   destruct i; inversion HEncode.
+  all: repeat unfold_and_simpl_encoder.
   + (* Pmov_rr rd r1 *)
+    unfold encode_instr in H10.
+    cbn [negb ready_for_proof negb] in H10.
     exists(Pmov_rr rd r1).
     split; try (unfold instr_eq; auto).
     monadInv H10.
@@ -3741,8 +3750,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     assert (HModrmPrefix : (Byte.and x0 HB[ "C0"]) <> HB["C0"] ) by admit.
     rewrite byte_eq_false; auto.
     unfold decode_movl_rm.
+    cbn [negb ready_for_proof negb] in HEncode.
+    unfold encode_instr' in HEncode.
     monadInv HEncode.
-    
     assert (exists irofs, instr_reloc_offset (Pmov_rs rd 1%positive)= OK irofs) as HInstr_reloc . {
       unfold instr_reloc_offset.
       eauto.
@@ -3811,7 +3821,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc.
       rewrite HAddrsize.
       set (am:= (addrmode_reloc_offset (Addrmode base ofs0 (inl z)))).
-      simpl.
+      cbn [negb ready_for_proof negb] in HEncode.
+      unfold encode_instr' in HEncode.
       monadInv HEncode.
       assert (exists irofs, instr_reloc_offset (Pmovl_rm rd (Addrmode base ofs0 (inl z))) = OK irofs)as HInstr_reloc . {
         unfold instr_reloc_offset.
@@ -3828,10 +3839,13 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       generalize (encode_decode_addrmode_relf _ _ _ (ofs + am + 1) _ _ _ HInstr_reloc EQ1 HOfs l).
       intros HAddr.
       rewrite app_assoc.
+      simpl.
       rewrite  HAddr.
       simpl. auto.
       
     ++
+      cbn [negb ready_for_proof negb] in HEncode.
+      unfold encode_instr' in HEncode.
       monadInv HEncode.
       destruct p.
       destruct (Ptrofs.eq_dec i0 Ptrofs.zero); inversion EQ.
@@ -4158,7 +4172,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     simpl. branch_byte_eq'.
     unfold decode_idivl.
     simpl.
-    setoid_rewrite(and7 (b["11"]++b["110"]) x).
+    setoid_rewrite(and7 (b["11"]++b["111"]) x).
     rewrite (encode_parse_reg_refl r1).
     simpl.
     1-4: auto.
@@ -4291,6 +4305,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pcall ros (mksignature [] None (mkcallconv false false false))).
     split; try(unfold instr_eq; auto).
     destruct ros; inversion H10.
+    cbn [negb] in H10.
+    cbn [negb] in HEncode.
     unfold fmc_instr_decode. monadInv HEncode. simpl.
     branch_byte_eq'.
     unfold decode_call.

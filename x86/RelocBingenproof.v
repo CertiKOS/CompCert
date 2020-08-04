@@ -40,10 +40,10 @@ Qed.
 
 
 Definition match_prog p tp :=
-  transf_program p = OK tp.
+  transf_program false p = OK tp.
 
 Lemma transf_program_match:
-  forall p tp, transf_program p = OK tp -> match_prog p tp.
+  forall p tp, transf_program false p = OK tp -> match_prog p tp.
 Proof.
   intros. subst. red.
   auto.
@@ -96,8 +96,8 @@ Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
 
 
 Lemma prefix_success: forall rtbl a b ofs r z l,
-    fold_left (acc_instrs rtbl) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
-    ->exists z' l', fold_left (acc_instrs rtbl) a  (OK (ofs, r)) = OK (z', l').
+    fold_left (acc_instrs rtbl false) (a ++ [b]) (OK (ofs, r)) = OK (z, l)
+    ->exists z' l', fold_left (acc_instrs rtbl false) a  (OK (ofs, r)) = OK (z', l').
 Proof.
   intros rtbl a b ofs r z l HFoldPrefix.
   rewrite fold_left_app in HFoldPrefix.
@@ -111,7 +111,7 @@ Qed.
 
 Lemma fold_spec_length: forall n rtbl code ofs r z l,
     length code = n ->
-    fold_left (acc_instrs rtbl) (code) (OK (ofs, r)) = OK (z, l)
+    fold_left (acc_instrs rtbl false) (code) (OK (ofs, r)) = OK (z, l)
     -> z = ofs + instr_size_acc code.
 Proof.
   induction n.
@@ -675,7 +675,7 @@ Qed.
 Lemma transl_code_spec_inc: forall code ofs rtbl_ofs_map symbt bytes instr x,
     (* length code = n -> *)
     transl_code_spec code bytes ofs rtbl_ofs_map symbt
-    -> encode_instr rtbl_ofs_map (ofs+(instr_size_acc code)) instr = OK x
+    -> encode_instr rtbl_ofs_map false (ofs+(instr_size_acc code)) instr = OK x
     -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map symbt.
 Proof.
   induction code as [|i code].
@@ -759,9 +759,11 @@ Admitted.
 
 Lemma encode_instrs_size:
   forall rmap o i bl,
-    encode_instr rmap o i = OK bl ->
+    encode_instr rmap false o i = OK bl ->
     Asm.instr_size i = Z.of_nat (length bl).
 Proof.
+  unfold encode_instr.
+  cbn [negb ready_for_proof negb].
   Transparent Asm.instr_size. Opaque Z.add.
   destruct i eqn:EQI; simpl; intros; autoinv; simpl;auto;try congruence.
   1-3,6,7:rewrite (encode_addrmode_size_refl _ _ _ _ _ _ EQ);
@@ -782,7 +784,7 @@ Qed.
 
 Lemma transl_code_size:
   forall rmap l bl,
-    transl_code rmap l = OK bl ->
+    transl_code rmap false l = OK bl ->
     Z.of_nat (length bl) = code_size l.
 Proof.
   unfold transl_code. intros. autoinv.
@@ -809,7 +811,7 @@ Qed.
 Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z n,
     transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
     -> length code2 = n
-    -> fold_left (acc_instrs rtbl_ofs_map) code2 (OK (ofs + (instr_size_acc code), code')) = OK (z, l)
+    -> fold_left (acc_instrs rtbl_ofs_map false) code2 (OK (ofs + (instr_size_acc code), code')) = OK (z, l)
     -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map symbt.
 Proof.
   intros code code' code2 l ofs rtbl_ofs_map symbt z n HTransCode.
@@ -861,7 +863,7 @@ Admitted.
 
 Lemma decode_encode_refl: forall n prog z code l,
     length code = n ->
-    fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog)))) code (OK (0, [])) = OK (z, l)
+    fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) false) code (OK (0, [])) = OK (z, l)
     -> transl_code_spec code (rev l) 0 (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) (prog_symbtable prog).
 Proof.
   intros n.
@@ -1498,7 +1500,7 @@ Definition ge_eq1 (ge1 ge2: RelocProgSemantics1.Genv.t) : Prop :=
   ge_eq (ge1.(Genv.genv_genv)) (ge2.(Genv.genv_genv)).
 
 Lemma transf_program_pres_genv: forall p1 p2,
-    transf_program p1 = OK p2 ->
+    transf_program false p1 = OK p2 ->
     ge_eq1 (globalenv p1) (globalenv p2).
 Admitted.
 
@@ -1764,12 +1766,12 @@ Require Import RelocLinking1.
 
 Lemma transl_sectable_get_code:
   forall rmap sect sect',
-    transl_sectable sect rmap = OK sect' ->
+    transl_sectable false sect rmap = OK sect' ->
     forall s,
       SecTable.get sec_code_id sect = Some s ->
       exists code x,
         s = sec_text code /\
-        transl_code (gen_reloc_ofs_map (reloctable_code rmap)) code = OK x /\
+        transl_code (gen_reloc_ofs_map (reloctable_code rmap)) false code = OK x /\
         SecTable.get sec_code_id sect' = Some (sec_bytes x).
 Proof.
   unfold transl_sectable. intros. autoinv.
@@ -1779,7 +1781,7 @@ Qed.
 
 Lemma transl_sectable_get_data:
   forall rmap sect sect',
-    transl_sectable sect rmap = OK sect' ->
+    transl_sectable false sect rmap = OK sect' ->
     forall s,
       SecTable.get sec_data_id sect = Some s ->
       exists data x,
@@ -1798,13 +1800,13 @@ Qed.
 Lemma link_sectable_ok:
   forall sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim,
     RelocLinking.link_sectable sect1 sect2 = Some s ->
-    transl_sectable sect1 rmap1 = OK sect1' ->
-    transl_sectable sect2 rmap2 = OK sect2' ->
+    transl_sectable false sect1 rmap1 = OK sect1' ->
+    transl_sectable false sect2 rmap2 = OK sect2' ->
     link_reloctable z symt1 symt2 sim (reloctable_data rmap1) (reloctable_data rmap2) = Some rdata ->
     link_reloctable z' symt1 symt2 sim (reloctable_code rmap1) (reloctable_code rmap2) = Some rcode ->
     exists s',
       RelocLinking.link_sectable sect1' sect2' = Some s' /\
-      transl_sectable s {| reloctable_code := rcode; reloctable_data := rdata |} = OK s'.
+      transl_sectable false s {| reloctable_code := rcode; reloctable_data := rdata |} = OK s'.
 Proof.
 Admitted.
 
