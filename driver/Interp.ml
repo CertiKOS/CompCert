@@ -88,6 +88,7 @@ let name_of_fundef prog fd =
 let name_of_function prog fn =
   let rec find_name = function
   | [] -> "<unknown function>"
+  | (id, Gfun(Ctypes.Internal fn')) :: rem ->
       if fn == fn' then extern_atom id else find_name rem
   | (id, _) :: rem ->
       find_name rem
