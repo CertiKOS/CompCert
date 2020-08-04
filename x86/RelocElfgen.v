@@ -119,7 +119,7 @@ Definition gen_rodata_sec_header p :=
      sh_size     := get_section_size sec_rodata_id t;
      sh_link     := 0;
      sh_info     := 0;
-     sh_addralign := 1;
+     sh_addralign := 16;
      sh_entsize  := 0;
   |}.
 

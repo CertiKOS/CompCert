@@ -9,7 +9,7 @@ Require Import Globalenvs.
 Import ListNotations.
 
 
-Definition alignw:Z := 8.
+Definition alignw:Z := 16.
 
 
 Ltac destr_if := 
@@ -1109,14 +1109,14 @@ Proof.
   unfold Globalenvs.Genv.init_data_alignment.
   unfold alignw.
   destruct id; red.
+  - exists 16. omega.
   - exists 8. omega.
   - exists 4. omega.
   - exists 2. omega.
-  - exists 1. omega.
-  - exists 2. omega.
-  - exists 2. omega.
-  - exists 8. omega.
-  - destr. exists 1; omega. exists 2; omega.
+  - exists 4. omega.
+  - exists 4. omega.
+  - exists 16. omega.
+  - destr. exists 2; omega. exists 4; omega.
 Qed.
 
 
