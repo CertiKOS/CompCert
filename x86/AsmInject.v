@@ -245,4 +245,120 @@ Proof.
   intros. red. intros. constructor.
 Qed.
 
+Lemma extcall_arg_match:
+  forall rs rs' m m' l v,
+  regset_lessdef rs rs' ->
+  Mem.extends m m' ->
+  extcall_arg rs m l v ->
+  exists v', extcall_arg rs' m' l v' /\ Val.lessdef v v'.
+Proof.
+  intros. inv H1.
+  exists (rs'#(preg_of r)); split. constructor. eauto. 
+  red in H. generalize (H RSP). intros.
+  edestruct Mem.loadv_extends as (v' & LOADV & VL).
+  exact H0. exact H3.
+  apply Val.offset_ptr_lessdef; eauto.
+  exists v'; split; auto.
+  econstructor. eauto. assumption.
+Qed.
+
+Lemma extcall_arg_pair_match:
+  forall rs rs' m m' p v,
+  regset_lessdef rs rs' ->
+  Mem.extends m m' ->
+  extcall_arg_pair rs m p v ->
+  exists v', Asm.extcall_arg_pair rs' m' p v' /\ Val.lessdef v v'.
+Proof.
+  intros. inv H1.
+- exploit extcall_arg_match; eauto. intros (v' & A & B). exists v'; split; auto. constructor; auto.
+- exploit extcall_arg_match. eauto. eauto. eexact H2. intros (v1 & A1 & B1).
+  exploit extcall_arg_match. eauto. eauto. eexact H3. intros (v2 & A2 & B2).
+  exists (Val.longofwords v1 v2); split. constructor; auto. apply Val.longofwords_lessdef; auto.
+Qed.
+
+Lemma extcall_args_match:
+  forall rs rs' m m', regset_lessdef rs rs' -> Mem.extends m m' ->
+  forall ll vl,
+  list_forall2 (extcall_arg_pair rs m) ll vl ->
+  exists vl', list_forall2 (extcall_arg_pair rs' m') ll vl' /\ Val.lessdef_list vl vl'.
+Proof.
+  induction 3; intros.
+  exists (@nil val); split. constructor. constructor.
+  exploit extcall_arg_pair_match; eauto. intros [v1' [A B]].
+  destruct IHlist_forall2 as [vl' [C D]].
+  exists (v1' :: vl'); split; constructor; auto.
+Qed.
+
+Lemma extcall_arguments_match: 
+  forall args rs rs' m m' sg,
+    regset_lessdef rs rs' ->
+    Mem.extends m m' ->
+    extcall_arguments rs m sg args ->
+    exists args',
+      extcall_arguments rs' m' sg args' /\ Val.lessdef_list args args'.
+Proof.
+  unfold extcall_arguments; intros.
+  eapply extcall_args_match; eauto.
+Qed.
+
+Lemma regset_lessdef_pregset: forall rs1 rs2 v1 v2 r,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef v1 v2 ->
+    regset_lessdef (Pregmap.set r v1 rs1) (Pregmap.set r v2 rs2).
+Proof.
+  intros rs1 rs2 v1 v2 r RSL VL.
+  red. intros. red in RSL.
+  destruct (preg_eq r r0).
+  - subst. repeat rewrite Pregmap.gss. auto.
+  - repeat rewrite Pregmap.gso; auto.
+Qed.
+
+Lemma val_lessdef_set: forall rs1 rs2 v1 v2,
+    (forall r, Val.lessdef (rs1 r) (rs2 r)) ->
+    Val.lessdef v1 v2 ->
+    (forall r1 r, Val.lessdef ((Pregmap.set r1 v1 rs1) r) ((Pregmap.set r1 v2 rs2) r)).
+Proof.
+  intros.
+  eapply regset_lessdef_pregset; eauto.
+Qed.
+
+
+Lemma undef_regs_pres_lessdef : forall regs rs rs',
+  regset_lessdef  rs rs' ->
+  regset_lessdef (undef_regs regs rs) (undef_regs regs rs').
+Proof.
+  unfold regset_lessdef. 
+  induction regs; cbn; auto.
+  intros rs rs' H.
+  eapply IHregs.
+  eapply val_lessdef_set; eauto.
+Qed.    
+
+Lemma set_res_pres_lessdef : forall res rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    forall vres1 vres2,
+    Val.lessdef vres1 vres2 ->
+    regset_lessdef (set_res res vres1 rs1) (set_res res vres2 rs2).
+Proof.
+  induction res; auto; simpl; unfold regset_inject; intros.
+  - eapply regset_lessdef_pregset; eauto.
+  - apply IHres2; auto.
+    apply IHres1; auto.
+    eapply Val.hiword_lessdef; eauto.
+    eapply Val.loword_lessdef; eauto.
+Qed.
+
+Lemma set_pair_pres_lessdef : forall rs1 rs2 v1 v2 loc,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef v1 v2 ->
+    regset_lessdef (set_pair loc v1 rs1) (set_pair loc v2 rs2).
+Proof.
+  intros. unfold set_pair, Asm.set_pair. destruct loc; simpl.
+  - apply regset_lessdef_pregset; eauto.
+  - apply regset_lessdef_pregset; eauto.
+    apply regset_lessdef_pregset; eauto.
+    apply Val.hiword_lessdef; auto.
+    apply Val.loword_lessdef; auto.
+Qed.
+
 End WITHMEMORYMODEL.

@@ -10,7 +10,6 @@ Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import LocalLib.
 Require Import AsmFacts AsmInject.
 Require Import PadInitData.
-Require Import Asmgenproof0.
 Import ListNotations.
 
 
@@ -240,6 +239,15 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma symbol_address_transf: forall id ofs,
+    Genv.symbol_address tge id ofs =
+    Genv.symbol_address ge id ofs.
+Proof.
+  intros. unfold Genv.symbol_address.
+  rewrite find_symbol_transf. auto.
+Qed.
+
+
 Lemma find_funct_ptr_transf: forall b,
     Genv.find_funct_ptr tge b =
     Genv.find_funct_ptr ge b.
@@ -346,6 +354,35 @@ Proof.
 Qed.
 
 
+Hint Resolve 
+     val_lessdef_set
+     set_res_pres_lessdef 
+     undef_regs_pres_lessdef 
+     Val.offset_ptr_lessdef
+     set_pair_pres_lessdef
+     regset_lessdef_pregset.
+
+Ltac solve_simple_exec :=
+  match goal with 
+  | [ |- exists _, _] => eexists; solve_simple_exec
+  | [ |- _ /\ _] => split; eauto; solve_simple_exec
+  | [ |- regset_lessdef _ _ ] =>
+    eapply regset_lessdef_pregset; eauto;
+    solve_simple_exec
+  | [ |- Val.lessdef (Val.offset_ptr _ _) (Val.offset_ptr _ _) ] =>
+    eapply Val.offset_ptr_lessdef; eauto;
+    solve_simple_exec
+  | [ |- Val.lessdef ((Pregmap.set _ _ _) ?r) ((Pregmap.set _ _ _) ?r) ] =>
+    eapply regset_lessdef_pregset; eauto;
+    solve_simple_exec
+  | [ |- Val.lessdef ((undef_regs _ _) ?r) ((undef_regs _ _) ?r) ] =>
+    eapply undef_regs_pres_lessdef; eauto;
+    solve_simple_exec
+  | _ => idtac
+  end.
+
+
+
 Lemma exec_instr_simulation: forall f i rs1 m1 rs2 m2 rs1' m1',
     exec_instr ge f i rs1 m1 = Next rs2 m2 ->
     regset_lessdef rs1 rs1' ->
@@ -354,7 +391,33 @@ Lemma exec_instr_simulation: forall f i rs1 m1 rs2 m2 rs1' m1',
     exists m2' rs2', exec_instr tge f i rs1' m1' = Next rs2' m2' 
            /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
 Proof.
+  intros f i rs1 m1 rs2 m2 rs1' m1' EXEC RSL EXT STKEQ.
+  destruct i; cbn in *; inv EXEC; try solve_simple_exec.
+  
+  
+  erewrite <- symbol_address_transf; eauto.
+  erewrite <- symbol_address_transf; eauto.
+        
+  (* solve_simple_exec. *)
+  (* solve_simple_exec. *)
+  (* solve_simple_exec. *)
+  (* solve_simple_exec. *)
+
+  (* match goal with *)
+  (* | [ |- Val.lessdef ((undef_regs _ _) ?r) ((undef_regs _ _) ?r) ] => *)
+  (*   eapply undef_regs_pres_lessdef; eauto *)
+  (* end. *)
+  (*     solve_simple_exec *)
+
+
+
+  (* eexists. eexists. split; eauto. split; eauto. split; eauto. *)
+  (* eapply regset_lessdef_pregset; eauto. *)
+  (* eapply regset_lessdef_pregset; eauto. *)
+  (* eapply Val.offset_ptr_lessdef; eauto. *)
+  (* eapply regset_lessdef_pregset; eauto. *)
 Admitted.
+    
 
 Theorem step_simulation:
   forall S1 t S2, step ge S1 t S2 ->
@@ -388,29 +451,44 @@ Proof.
     constructor; eauto.
     erewrite <- (external_call_stack_blocks _ _ _ m'0 _ _ m2'); eauto.
     erewrite <- (external_call_stack_blocks _ _ _ m _ _ m'); eauto.
+    (** Regset lessdef *)
     red. intros. unfold nextinstr_nf.
     unfold nextinstr.
-    destruct (preg_eq r PC).
-    + subst. repeat rewrite Pregmap.gss; auto.
-      eapply Val.offset_ptr_lessdef; eauto.
-      repeat erewrite Asmgenproof0.undef_regs_other; eauto.
-      repeat rewrite AsmRegs.set_res_other; eauto.
-      repeat erewrite Asmgenproof0.undef_regs_other_2; eauto.
-      eapply AsmRegs.pc_not_destroyed_builtin.
-      eapply AsmRegs.pc_not_destroyed_builtin.
-      admit.
-      admit.
-      intros. intros EQ. subst. red in H4. intuition congruence. 
-      intros. intros EQ. subst. red in H4. intuition congruence. 
-    + repeat rewrite Pregmap.gso; eauto.
-      repeat rewrite AsmRegs.undef_regs_eq; eauto.
-      admit.
+    eapply val_lessdef_set; eauto.
+    intros. eapply undef_regs_pres_lessdef.
+    eapply set_res_pres_lessdef; auto.
+    eapply Val.offset_ptr_lessdef; eauto.
+    eapply undef_regs_pres_lessdef; auto.
 
   - (* External Step *)
+    edestruct extcall_arguments_match as (args' & EXTARGS & VLE).
+    Focus 3. exact H1.
+    instantiate (1:= rs'0 # RSP <- (Val.offset_ptr (rs'0 RSP) (Ptrofs.repr (size_chunk Mptr)))).
+    eapply regset_lessdef_pregset; eauto.
+    eauto.
+    exploit external_call_mem_extends; eauto.
+    intros (vres' & m2' & EXTCALL & VLER & EXT2 & CHG).
+    eexists. split.
+    eapply exec_step_external; eauto.
+    red in H9. generalize (H9 PC). rewrite H.
+    inversion 1. eauto.
+    rewrite find_funct_ptr_transf. auto.
+    red in H9. generalize (H9 RSP). inversion 1; congruence.
+    edestruct Mem.loadv_extends as (ra' & LV & VLRA). 
+    exact H7. exact LOADRA. red in H9. eauto.
+    inv VLRA; congruence.
+    red in H9. generalize (H9 RSP).
+    intros VLRSP. inv VLRSP; congruence.
+    apply external_call_symbols_preserved with ge; eauto.
+    exact senv_equiv.
+    constructor; auto.
+    erewrite <- (external_call_stack_blocks _ _ _ m'0 _ _ m2'); eauto.
+    erewrite <- (external_call_stack_blocks _ _ _ m _ _ m'); eauto.
+    (** Regset lessdef *)
+    eapply regset_lessdef_pregset; eauto.
+    eapply regset_lessdef_pregset; eauto.
+Qed.
 
-Admitted.
-
-    
 
 Lemma transf_initial_states:
   forall st1 rs, initial_state prog rs st1 ->
