@@ -216,15 +216,16 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ time "Translation from RawAsm to RealAsm" RealAsmgen.transf_program
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
-Definition transf_c_program_bytes (more: bool)(p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
+
+Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
-  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program more)
-  @@@ time "Encoding of instructions and data" (RelocBingen.transf_program more)
+  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program false)
+  @@@ time "Encoding of instructions and data" (RelocBingen.transf_program false)
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@ time "Removing addendums" RemoveAddend.transf_program
   @@@ time "Encoding of tables" TablesEncode.transf_program
@@ -239,7 +240,7 @@ Definition transf_c_program_bytes_more (p: Csyntax.program) : res (list Integers
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
-  @@@ time "Generation of relocation table" Reloctablesgen2.transf_program
+  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program true)
   @@@ time "Encoding of instructions and data" (RelocBingen.transf_program true)
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@ time "Removing addendums" RemoveAddend.transf_program
