@@ -9362,6 +9362,93 @@ Proof.
   f_equal. destruct m. simpl. apply mkmem_ext; auto.
 Qed.
 
+Lemma drop_extends: forall m1 m2 b lo hi p m1',
+    extends m1 m2 ->
+    inject_perm_condition Freeable ->
+    drop_perm m1 b lo hi p = Some m1' ->
+    exists m2' : mem, drop_perm m2 b lo hi p = Some m2' /\ extends m1' m2'.
+Proof.
+  intros m1 m2 b lo hi p m1' EXT IJF DROP.
+  inversion EXT. 
+  exploit drop_mapped_inj; eauto.
+  eapply range_perm_inj; eauto with mem.
+  unfold inject_id. eauto.
+  red; intros. unfold inject_id in H0,H1. 
+  inv H0. inv H1. eauto.
+  auto.
+  intros (m2' & DPERM & MEMINJ).
+  exists m2'. split. 
+  rewrite <- DPERM. f_equal; omega.
+  constructor.
+  (* nextblock *)
+  rewrite (nextblock_drop _ _ _ _ _ _ DROP).
+  rewrite (nextblock_drop _ _ _ _ _ _ DPERM). auto.
+  (* inj *)
+  erewrite drop_perm_stack; eauto.
+  (* perm inv *)
+  repeat rewrite Z.add_0_r in DPERM.
+  intros. exploit mext_perm_inv0; eauto using perm_drop_4. 
+  intuition eauto using perm_drop_4.
+  destruct (eq_block b0 b). subst b0.
+  destruct (zle lo ofs). destruct (zlt ofs hi). 
+  assert (perm_order p p0). eapply perm_drop_2; eauto. 
+  assert (perm m1' b ofs k p). eapply perm_drop_1; eauto.
+  left. eauto with mem.
+  left. eapply perm_drop_3; eauto. right. right. omega.
+  left. eapply perm_drop_3; eauto. right. left. omega.
+  left. eapply perm_drop_3; eauto. 
+  (* stack lenght *)
+  erewrite (drop_perm_stack _ _ _ _ _ _ DROP); eauto.
+  erewrite (drop_perm_stack _ _ _ _ _ _ DPERM); eauto.
+Qed.
+
+Lemma drop_extended_extends:
+  forall (m1 m2 m1' : mem) b (lo1 hi1 lo2 hi2 : Z) (p : permission),
+  extends m1 m2 ->
+  inject_perm_condition Freeable ->
+  drop_perm m1 b lo1 hi1 p = Some m1' ->
+  (lo2 <= lo1)%Z ->
+  (hi1 <= hi2)%Z ->
+  Mem.range_perm m2 b lo2 hi2 Cur Freeable ->
+  (forall ofs k p0,
+   Mem.perm m1 b ofs k p0 ->
+   (lo2 <= ofs < lo1 \/ hi1 <= ofs < hi2)%Z -> False) ->
+  exists m2' : mem,
+    Mem.drop_perm m2 b lo2 hi2 p = Some m2' /\
+    Mem.extends m1' m2'.
+Proof.
+  intros. inversion H. 
+  exploit drop_partial_mapped_inj; eauto.
+  unfold inject_id. eauto.
+  repeat rewrite Z.add_0_r. auto.
+  red; intros. unfold inject_id in H7,H8. 
+  inv H7. inv H8. eauto.
+  intros. unfold inject_id in H6. inv H6.
+  eapply H5; eauto. omega.
+  repeat rewrite Z.add_0_r. 
+  intros (m2' & DPERM & MEMINJ).
+  exists m2'. split. auto. constructor.
+  (* nextblock *)
+  rewrite (nextblock_drop _ _ _ _ _ _ H1).
+  rewrite (nextblock_drop _ _ _ _ _ _ DPERM). auto.
+  (* inj *)
+  erewrite drop_perm_stack; eauto.
+  (* perm inv *)
+  intros. exploit mext_perm_inv0; eauto using perm_drop_4. 
+  intuition eauto using perm_drop_4.
+  destruct (eq_block b0 b). subst b0.
+  destruct (zle lo1 ofs). destruct (zlt ofs hi1). 
+  assert (perm_order p p0). eapply perm_drop_2; eauto. omega.
+  assert (perm m1' b ofs k p). eapply perm_drop_1; eauto.
+  left. eauto with mem.
+  left. eapply perm_drop_3; eauto. right. right. omega.
+  left. eapply perm_drop_3; eauto. right. left. omega.
+  left. eapply perm_drop_3; eauto.
+  (* stack lenght *)
+  erewrite (drop_perm_stack _ _ _ _ _ _ H1); eauto.
+  erewrite (drop_perm_stack _ _ _ _ _ _ DPERM); eauto.
+Qed.
+
 
 (* Lemma store_unchanged_on_1: *)
 (*     forall chunk m m' b ofs v m1 *)
@@ -9813,6 +9900,8 @@ Proof.
   intros; eapply valid_access_extends; eauto.
   intros; eapply valid_pointer_extends; eauto.
   intros; eapply weak_valid_pointer_extends; eauto.
+  intros; eapply drop_extends; eauto.
+  intros; eapply drop_extended_extends; eauto.
   intros; eapply ma_perm; eauto.
   intros; eapply magree_monotone; eauto.
   intros; eapply mextends_agree; eauto.

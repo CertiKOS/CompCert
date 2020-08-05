@@ -436,15 +436,26 @@ Proof.
   eapply PTree.gso. auto.
 Qed.
 
-Lemma add_global_find_def_eq: forall ge i o,
-    find_def (add_global ge (i,o)) (genv_next ge) = o.
+Lemma add_global_find_def_eq: forall ge def,
+    find_def (add_global ge def) (genv_next ge) = (snd def).
 Proof.
-  intros. unfold find_def, add_global. simpl.
+  intros. destruct def as (i, o). unfold find_def, add_global. simpl.
   destruct o.
   rewrite PTree.gss. auto.
   destruct (PTree.get (genv_next ge) (genv_defs ge)) eqn:EQ; auto.
   exploit genv_defs_range; eauto. intros.
   exfalso. eapply Plt_strict. eauto.
+Qed.
+
+Lemma add_global_find_def_neq: forall ge def b,
+    b <> (genv_next ge) ->
+    find_def (add_global ge def) b = find_def ge b.
+Proof.
+  intros. unfold find_def, add_global. simpl.
+  destruct def. cbn.
+  destruct o.
+  rewrite PTree.gso; auto.
+  auto.
 Qed.
 
 Lemma add_globals_find_symbol_def_inv : forall defs id b ge

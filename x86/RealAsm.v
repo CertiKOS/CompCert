@@ -348,6 +348,17 @@ Section WFASM.
     exists (a::aa), b; simpl; split; auto. omega.
   Qed.
 
+  Lemma find_instr_app_pres: forall f1 f2 ofs i, 
+      find_instr ofs f1 = Some i ->
+      find_instr ofs (f1 ++ f2) = Some i.
+  Proof.
+    induction f1 as [|i1 f1].
+    - cbn. intros; congruence.
+    - cbn. intros f2 i FI.
+      destr. eauto. 
+  Qed.
+
+
   Lemma code_size_app:
     forall c1 c2,
       code_size (c1 ++ c2) = code_size c1 + code_size c2.
@@ -1015,6 +1026,133 @@ End WITHGE.
 
 End INVARIANT.
 
+
+Section WITHGETGE.
+
+    Variable (ge tge: Genv.t Asm.fundef unit).
+    Hypothesis (SADDR_EQ: forall id ofs, Genv.symbol_address tge id ofs = Genv.symbol_address ge id ofs).
+    Hypothesis (FPTR_EQ: forall b, Genv.find_funct_ptr ge b = None <-> Genv.find_funct_ptr tge b = None).
+
+    Lemma fptr_some_eq: 
+      forall b f, Genv.find_funct_ptr ge b = Some f -> 
+             exists f', Genv.find_funct_ptr tge b = Some f'.
+    Proof.
+      intros.
+      destruct (Genv.find_funct_ptr tge b) eqn:EQ; eauto.
+      rewrite <- FPTR_EQ in EQ. congruence.
+    Qed.
+
+    Lemma funct_some_eq: 
+      forall b f, Genv.find_funct ge b = Some f -> 
+             exists f', Genv.find_funct tge b = Some f'.
+    Proof.
+      unfold Genv.find_funct.
+      intros. destruct b; auto; try congruence.
+      destr_in H; eauto.
+      subst.
+      eapply fptr_some_eq; eauto.
+    Qed.
+
+    Lemma funct_none_eq: forall b, Genv.find_funct ge b = None <-> Genv.find_funct tge b = None.
+    Proof.
+      intros. unfold Genv.find_funct.
+      destruct b; split; eauto.
+      destr; eauto.
+      subst. intros. rewrite <- FPTR_EQ. auto.
+      destr; eauto.
+      subst. intros. rewrite FPTR_EQ. auto.
+    Qed.
+
+    Lemma goto_ofs_eq: forall sz ofs rs m,
+        goto_ofs ge sz ofs rs m = goto_ofs tge sz ofs rs m.
+    Proof.
+      intros. unfold goto_ofs. destr; auto.
+      destr. 
+      exploit fptr_some_eq; eauto.
+      intros (f1 & FT). rewrite FT. auto.
+      rewrite FPTR_EQ in Heqo. rewrite Heqo. auto.
+    Qed.
+
+    Ltac unfold_loadstore :=
+      match goal with
+      | [ |- context[ exec_load _ _ _ _ _ _ _] ] =>
+        unfold exec_load
+      | [ |- context[ exec_store _ _ _ _ _ _ _ _] ] =>
+        unfold exec_store
+      end.
+
+    Ltac rewrite_eval_addrmode :=
+      match goal with
+      | [ |- context[ eval_addrmode _ _ _ ] ] =>
+        erewrite eval_addrmode_same; eauto
+      end.
+
+    Lemma exec_valid_instr_same : forall (i:instruction) f f' i rs m,
+        instr_valid i ->
+        exec_instr ge f i rs m = exec_instr tge f' i rs m.
+    Proof.
+      intros i f f' i0 rs m VI.
+      destruct i0; cbn; auto;
+        try (unfold_loadstore; rewrite_eval_addrmode);
+        try (red in VI; cbn in VI; contradiction).
+      - congruence.
+      - erewrite eval_addrmode32_same; eauto.
+      - erewrite eval_addrmode64_same; eauto.
+      - erewrite eval_ros_same; eauto.
+        destr. 
+        exploit funct_some_eq; eauto.
+        intros (f1 & FT). rewrite FT. auto.
+        rewrite funct_none_eq in Heqo. rewrite Heqo. auto.
+      - erewrite eval_ros_same; eauto.
+      - erewrite goto_ofs_eq; eauto.
+      - destr; auto. destr; auto.
+        erewrite goto_ofs_eq; eauto.
+      - destr; eauto.
+        destr; eauto.
+        destr; eauto.
+        destr; eauto.
+        erewrite goto_ofs_eq; eauto.
+      - destr; eauto.
+        destr; eauto.
+        erewrite goto_ofs_eq; eauto.
+    Qed.
+
+    Lemma goto_label_eq : forall (i:instruction) f f' l rs m,
+        (forall lbl ofs, label_pos lbl ofs (fn_code f) = label_pos lbl ofs (fn_code f')) ->
+        goto_label ge f l rs m = goto_label tge f' l rs m.
+    Proof.
+      intros.
+      unfold goto_label. destr.
+      - rewrite <- H. rewrite Heqo. 
+        destr; auto. 
+        destr. 
+        exploit fptr_some_eq; eauto.
+        intros (f1 & FT). rewrite FT. auto.
+        rewrite FPTR_EQ in Heqo0. rewrite Heqo0. auto.
+      - rewrite <- H. rewrite Heqo. auto.
+    Qed.
+
+    Lemma exec_instr_same : forall (i:instruction) f f' i rs m,
+        (forall lbl ofs, label_pos lbl ofs (fn_code f) = label_pos lbl ofs (fn_code f')) ->
+        exec_instr ge f i rs m = exec_instr tge f' i rs m.
+    Proof.
+      intros i f f' i0 rs m LP.
+      destruct (instr_valid_dec i0).
+      eapply exec_valid_instr_same; eauto.
+      unfold instr_valid in n.
+      destruct i0; cbn in n; try tauto.
+      - cbn. eapply goto_label_eq; eauto.
+      - cbn. destr; auto. destr; auto.
+        eapply goto_label_eq; eauto.
+      - cbn. destr; auto. destr; auto.
+        destr; auto. destr; auto.
+        eapply goto_label_eq; eauto.
+      - cbn. destr; auto. cbn. destr; auto.
+        eapply goto_label_eq; eauto.
+    Qed.
+
+End WITHGETGE.
+
 End WITHMEMORYMODEL.
 
 Section RECEPTIVEDET.
@@ -1081,3 +1219,6 @@ Section RECEPTIVEDET.
   Qed.
 
 End RECEPTIVEDET.
+
+
+

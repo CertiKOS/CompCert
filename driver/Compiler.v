@@ -248,20 +248,6 @@ Definition transf_c_program_bytes_more (p: Csyntax.program) : res (list Integers
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.  
 
-Definition transf_c_program_bytes' (more: bool) (p: Csyntax.program) :=
-  transf_c_program_real p
-  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
-  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
-  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
-  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program more)
-  @@@ time "Encoding of instructions and data" (RelocBingen.transf_program more)
-  @@ time "Removing addendums" RemoveAddend.transf_program
-  @@@ time "Encoding of tables" TablesEncode.transf_program
-  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
-  @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file
-.
-
 Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program.
@@ -553,10 +539,10 @@ Qed.
 
 Theorem transf_c_program_bytes_match :
   forall p tp,
-    transf_c_program_bytes' false p = OK tp ->
+    transf_c_program_bytes p = OK tp ->
     match_prog_bytes p tp.
 Proof.
-  intros p tp T. unfold transf_c_program_bytes' in T.
+  intros p tp T. unfold transf_c_program_bytes in T.
   destruct (transf_c_program_real p) as [p1|e] eqn:TP; simpl in T; try discriminate. 
   unfold time in T.
   destruct (Asmlabelgen.transf_program p1) eqn:RTP; simpl in T; try discriminate.
@@ -1238,7 +1224,7 @@ Qed.
 
 Theorem transf_c_program_correct_bytes:
   forall p b tp s,
-    transf_c_program_bytes' false p = OK (b, tp, s) ->
+    transf_c_program_bytes p = OK (b, tp, s) ->
     backward_simulation (Csem.semantics (elf_bytes_stack_requirements (b,tp,s)) p) (ElfBytesSemantics.semantics b tp s (Asm.Pregmap.init Values.Vundef)).
 Proof.
   intros. exploit c_semantic_preservation_bytes. apply transf_c_program_bytes_match; eauto.
@@ -1342,53 +1328,6 @@ Proof.
   destruct H2 as (asm_program & P & Q).
   exists asm_program; split; auto. apply c_semantic_preservation_reloc; auto.
 Qed.
-
-
-(*
-Theorem separate_transf_c_program_correct_flat:
-  forall c_units asm_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program_flatasm cu = OK tcu) c_units asm_units ->
-  link_list c_units = Some c_program ->
-  exists asm_program, 
-      link_list asm_units = Some asm_program
-      /\
-      let init_stk := mk_init_stk_flat asm_program in
-      backward_simulation (Csem.semantics (flat_fn_stack_requirements asm_program) c_program) (SegAsm.semantics asm_program
-                                                                                                           (Asm.Pregmap.init Values.Vundef)
-                                                                                         ).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog_flat c_units asm_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_flat_match; auto. }
-  assert (exists asm_program, link_list asm_units = Some asm_program /\ match_prog_flat c_program asm_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (asm_program & P & Q).
-  exists asm_program; split; auto. apply c_semantic_preservation_flat; auto.
-Qed.
-*)
-
-(*
-Theorem separate_transf_c_program_correct_bytes:
-  forall c_units reloc_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program_bytes' cu = OK tcu) c_units reloc_units ->
-  link_list c_units = Some c_program ->
-  exists reloc_program, 
-      link_list reloc_units = Some reloc_program
-      /\
-      let init_stk := mk_init_stk_reloc reloc_program in
-      backward_simulation 
-        (Csem.semantics (reloc_fn_stack_requirements reloc_program) c_program) 
-        (RelocProgSemantics1.semantics reloc_program (Asm.Pregmap.init Values.Vundef)).
-Proof.
-  intros. 
-  assert (nlist_forall2 match_prog_bytes c_units reloc_units).
-  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_bytes_match; auto. }
-  assert (exists reloc_program, link_list (LA:= Reloctablesgenproof.reloctablesgen_linker) reloc_units = Some reloc_program /\ match_prog_bytes c_program reloc_program).
-  { eapply link_list_compose_passes; eauto. }
-  destruct H2 as (reloc_program & P & Q).
-  exists reloc_program; split; auto. apply c_semantic_preservation_bytes; auto.
-Qed.
-*)
 
 
 End WITHEXTERNALCALLS.

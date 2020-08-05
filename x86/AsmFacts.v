@@ -35,6 +35,7 @@ Section WITHMEMORYMODEL.
   Context {mem} `{external_calls_props: ExternalCallsProps mem}
           `{enable_builtins_instance: !EnableBuiltins (memory_model_ops:=memory_model_ops) mem}.
 
+
   Definition stack_invar (i: instruction) :=
     match i with
       Pallocframe _ _ _
@@ -1151,5 +1152,50 @@ Section WITHMEMORYMODEL.
     pose proof inject_perm_all.
     repeat rewrite_stack_blocks. rewnb. reflexivity.
   Qed.
+
+
+  Section WITH_SAEQ.
+
+    Variable (ge tge: Genv.t Asm.fundef unit).
+    Hypothesis (SADDR_EQ: forall id ofs, Genv.symbol_address ge id ofs = Genv.symbol_address tge id ofs).
+
+    Lemma eval_ros_same: forall ros rs,
+        eval_ros tge ros rs = eval_ros ge ros rs.
+    Proof.
+      unfold eval_ros. intros.
+      destruct ros; auto.
+    Qed.
+
+    Lemma eval_addrmode32_same: forall a rs,
+        eval_addrmode32 ge a rs = eval_addrmode32 tge a rs.
+    Proof.
+      intros. unfold eval_addrmode32.
+      destruct a. destruct base, ofs, const; auto.
+      - destruct p, p0; congruence.
+      - destruct p; congruence.
+      - destruct p, p0; congruence.
+      - destruct p; congruence.
+    Qed.
+
+    Lemma eval_addrmode64_same: forall a rs,
+        eval_addrmode64 ge a rs = eval_addrmode64 tge a rs.
+    Proof.
+      intros. unfold eval_addrmode64.
+      destruct a. destruct base, ofs, const; auto.
+      - destruct p, p0; congruence.
+      - destruct p; congruence.
+      - destruct p, p0; congruence.
+      - destruct p; congruence.
+    Qed.
+
+    Lemma eval_addrmode_same: forall a rs,
+        eval_addrmode ge a rs = eval_addrmode tge a rs.
+    Proof.
+      intros. unfold eval_addrmode. destruct Archi.ptr64.
+      - eapply eval_addrmode64_same; eauto.
+      - eapply eval_addrmode32_same; eauto.
+    Qed.
+
+    End WITH_SAEQ.
 
 End WITHMEMORYMODEL.

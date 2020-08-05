@@ -37,10 +37,145 @@ Let tge := Genv.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
+Inductive match_states : Asm.state -> Asm.state -> Prop :=
+|match_states_intro m rs:
+   match_states (Asm.State rs m) (Asm.State rs m).
+
+Lemma transf_symbol_refl: forall id ofs,
+    (Genv.symbol_address tge id ofs) = (Genv.symbol_address ge id ofs).
+Proof.
+  intros id ofs.
+  unfold Genv.symbol_address.
+  red in TRANSF.
+  unfold ge, tge.
+  setoid_rewrite (Genv.find_symbol_transf TRANSF id). auto.
+Qed.
+
+Lemma find_funct_ptr_eq: forall b, Genv.find_funct_ptr ge b = None <-> Genv.find_funct_ptr tge b = None.
+Proof.
+  intros. red in TRANSF. unfold ge,tge.
+  split.
+  - intros. apply (Genv.find_funct_ptr_transf_none TRANSF); eauto.
+  - intros.
+    destruct (Genv.find_funct_ptr (Genv.globalenv prog) b) eqn:FP; auto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ FP).
+    intros. 
+    setoid_rewrite H0 in H. congruence.
+Qed.
+
+Lemma label_pos_nops: forall n i lbl ofs, label_pos lbl ofs (map (fun _ => Pnop) (seq i n))  = None.
+Proof.
+  induction n as [|n].
+  - cbn. auto.
+  - cbn. eauto.
+Qed.
+
+Lemma label_pos_eq: forall c lbl ofs sz, 
+    label_pos lbl ofs c = label_pos lbl ofs (c ++ compute_padding_nops sz).
+Proof.
+  induction c as [|i c].
+  - cbn. unfold compute_padding_nops.
+    unfold gen_nops. intros.
+    rewrite label_pos_nops. auto.
+  - intros lbl ofs sz.
+    cbn. destr; auto.
+Qed.
+
+
+Theorem step_simulation:
+  forall S1 t S2, step ge S1 t S2 ->
+                  forall S1' (MS: match_states S1 S1'),
+                    (exists S2', step tge S1' t S2' /\ match_states S2 S2').
+Proof.
+  destruct 1; intros; inv MS.
+  
+  - (* Internal Step *)
+    exists (State rs' m'). split; [|constructor].
+    eapply exec_step_internal with (f0:= transl_function f) (i0:=i); eauto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ H0); eauto.
+    unfold transl_function. cbn.
+    eapply find_instr_app_pres; eauto.
+    erewrite <- exec_instr_same; eauto.
+    intros.
+    rewrite transf_symbol_refl. auto.
+    intros. apply find_funct_ptr_eq.
+    unfold transl_function. cbn.
+    intros. eapply label_pos_eq.
+
+  - (* Builtin step *)
+    eexists; split; [|constructor].
+    eapply exec_step_builtin with (f0:= transl_function f); eauto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ H0); eauto.
+    unfold transl_function. cbn.
+    eapply find_instr_app_pres; eauto.
+    apply eval_builtin_args_preserved with (ge1:=ge); eauto.
+    intros.
+    unfold ge, tge.
+    setoid_rewrite (Genv.find_symbol_transf TRANSF id). auto.
+    eapply external_call_symbols_preserved; eauto.
+    eapply Genv.senv_transf; eauto.
+
+  - (* External Step *)
+    eexists; split; [|constructor].
+    eapply exec_step_external; eauto.
+    generalize (Genv.find_funct_ptr_transf TRANSF _ H0); eauto.
+    eapply external_call_symbols_preserved; eauto.
+    eapply Genv.senv_transf; eauto.
+Qed.
+
+Lemma transf_initial_states:
+  forall st1 rs, initial_state prog rs st1 ->
+         exists st2, initial_state tprog rs st2 /\ match_states st1 st2.
+Proof.
+  intros st1 rs HInit.
+  exists st1.
+  inv HInit.
+  split.
+  + econstructor.
+    generalize (Genv.init_mem_transf TRANSF H).
+    eauto.
+    inv H0.
+    econstructor; eauto.
+    setoid_rewrite (match_program_main TRANSF); eauto.
+    generalize (Genv.find_symbol_transf TRANSF (prog_main prog)).
+    intros HFind.
+    rewrite <- H1.
+    auto.
+  + destruct st1. constructor.
+Qed.
+
+
+Lemma transf_final_states:
+  forall st1 st2 r,
+  match_states st1 st2 -> final_state st1 r -> final_state st2 r.
+Proof.
+  intros st1 st2 r MS HFinal.
+  inversion HFinal.
+  inversion MS.
+  econstructor.
+  rewrite <- H1 in H3.
+  inversion H3. auto.
+  rewrite <- H1 in H3.
+  inversion H3.
+  auto.
+Qed.
+
 Lemma transf_program_correct:
   forall rs, forward_simulation (semantics prog rs) (semantics tprog rs).
 Proof.
-Admitted.
+  intro rs.
+  apply forward_simulation_step with match_states.
+  + intros id. unfold match_prog in TRANSF.
+    generalize (Genv.senv_match TRANSF). intros SENV_EQ.
+    red in SENV_EQ.
+    destruct SENV_EQ as (S1 & S2 & S3 & S4). auto.
+  + simpl. intros s1 Hinit.
+    exploit transf_initial_states; eauto.
+  + simpl. intros s1 s2 r MS HFinal. eapply transf_final_states; eauto.
+  + simpl. intros s1 t s1' STEP s2 MS.
+    edestruct step_simulation as (STEP' & MS' ); eauto.
+Qed.
+  
 
 Lemma transl_fun_pres_stacksize: forall f tf,
     transl_function f = tf -> 
