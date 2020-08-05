@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define STACKSIZE 256
+#define STACKSIZE 512
 
 enum wordcode_instruct {
   WCALL1, WCALL1_pop1, WCONST, WCONST_pop1, WBRANCHIF, WBRANCHIF_pop1,
@@ -63,28 +63,23 @@ long wordcode_interp(unsigned int* code)
   pc = code;
   while (1) {
     instr = *pc++;
-    switch (Opcode) {
-
-    case WCALL1: case WCALL1_pop1: {
+    if(Opcode == WCALL1 || Opcode == WCALL1_pop1){
       long arg = Op1;
       Adjust1;
       Push3((long)pc, extra_args, arg);
       pc += Imm16s;
       extra_args = 0;
-      break;
     }
-    case WCONST: case WCONST_pop1: {
+    else if(Opcode == WCONST || Opcode == WCONST_pop1) {
       Adjust1;
       Push1(Imm24s);
-      break;
     }
-    case WBRANCHIF: case WBRANCHIF_pop1: {
+    else if(Opcode == WBRANCHIF || Opcode == WBRANCHIF_pop1) {
       long arg = Op1;
       Adjust1;
       if (arg) pc += Imm16s;
-      break;
     }
-    case WCALL3: {
+    else if (Opcode == WCALL3) {
       unsigned int ext = *pc++;
       long arg1 = Extraop1(ext);
       long arg2 = Extraop2(ext);
@@ -93,9 +88,8 @@ long wordcode_interp(unsigned int* code)
       Push5((long)pc, extra_args, arg3, arg2, arg1);
       pc += Imm16s;
       extra_args = 2;
-      break;
     }
-    case WRETURN: {
+    else if (Opcode == WRETURN) {
       long res = Op1;
       Adjustbyte2;
       if (extra_args > 0) {
@@ -107,37 +101,31 @@ long wordcode_interp(unsigned int* code)
         sp += 1;
         *sp = res;
       }
-      break;
     }
-    case WBRANCH: {
+    else if (Opcode == WBRANCH) {
       Adjustbyte1;
       pc += Imm16s;
-      break;
     }
-    case WLTINT: {
+    else if (Opcode == WLTINT) {
       long arg1 = Op1, arg2 = Op2;
       Adjustbyte3;
       Push1(arg1 < arg2);
-      break;
     }
-    case WADDINT: {
+    else if (Opcode == WADDINT) {
       long arg1 = Op1, arg2 = Op2;
       Adjustbyte3;
       Push1(arg1 + arg2);
-      break;
     }
-    case WOFFSETINT: {
+    else if(Opcode == WOFFSETINT) {
       long arg = Op1;
       Adjustbyte2;
       Push1(arg + Imm8s);
-      break;
     }
-    case WDUP: {
+    else if(Opcode == WDUP) {
       long arg = Op1;
       Push1(arg);
-      break;
     }
-    case WGRAB: {
+    else if(Opcode == WGRAB) {
       int required = Byte1;
       if (extra_args >= required) {
         extra_args -= required;
@@ -145,15 +133,104 @@ long wordcode_interp(unsigned int* code)
         printf("Partial application.\n");
         exit(2);
       }
-      break;
     }
-    case WSTOP: {
+    else if(Opcode == WSTOP) {
       long res = Op1;
       Adjustbyte2;
       return res;
-      break;
     }
-    }
+    // }
+    // switch (Opcode) {
+
+    // case WCALL1: case WCALL1_pop1: {
+    //   long arg = Op1;
+    //   Adjust1;
+    //   Push3((long)pc, extra_args, arg);
+    //   pc += Imm16s;
+    //   extra_args = 0;
+    //   break;
+    // }
+    // case WCONST: case WCONST_pop1: {
+    //   Adjust1;
+    //   Push1(Imm24s);
+    //   break;
+    // }
+    // case WBRANCHIF: case WBRANCHIF_pop1: {
+    //   long arg = Op1;
+    //   Adjust1;
+    //   if (arg) pc += Imm16s;
+    //   break;
+    // }
+    // case WCALL3: {
+    //   unsigned int ext = *pc++;
+    //   long arg1 = Extraop1(ext);
+    //   long arg2 = Extraop2(ext);
+    //   long arg3 = Extraop3(ext);
+    //   Adjustbyte1;
+    //   Push5((long)pc, extra_args, arg3, arg2, arg1);
+    //   pc += Imm16s;
+    //   extra_args = 2;
+    //   break;
+    // }
+    // case WRETURN: {
+    //   long res = Op1;
+    //   Adjustbyte2;
+    //   if (extra_args > 0) {
+    //     printf("Over-application.\n");
+    //     exit(2);
+    //   } else {
+    //     extra_args = sp[0];
+    //     pc = (unsigned int *) sp[1];
+    //     sp += 1;
+    //     *sp = res;
+    //   }
+    //   break;
+    // }
+    // case WBRANCH: {
+    //   Adjustbyte1;
+    //   pc += Imm16s;
+    //   break;
+    // }
+    // case WLTINT: {
+    //   long arg1 = Op1, arg2 = Op2;
+    //   Adjustbyte3;
+    //   Push1(arg1 < arg2);
+    //   break;
+    // }
+    // case WADDINT: {
+    //   long arg1 = Op1, arg2 = Op2;
+    //   Adjustbyte3;
+    //   Push1(arg1 + arg2);
+    //   break;
+    // }
+    // case WOFFSETINT: {
+    //   long arg = Op1;
+    //   Adjustbyte2;
+    //   Push1(arg + Imm8s);
+    //   break;
+    // }
+    // case WDUP: {
+    //   long arg = Op1;
+    //   Push1(arg);
+    //   break;
+    // }
+    // case WGRAB: {
+    //   int required = Byte1;
+    //   if (extra_args >= required) {
+    //     extra_args -= required;
+    //   } else {
+    //     printf("Partial application.\n");
+    //     exit(2);
+    //   }
+    //   break;
+    // }
+    // case WSTOP: {
+    //   long res = Op1;
+    //   Adjustbyte2;
+    //   return res;
+    //   break;
+    // }
+    // }
   }
 }
 

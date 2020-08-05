@@ -32,23 +32,21 @@
 #include <math.h>
 #include <string.h>
 
-#define PI 3.14159265358979323846
-#define J2000 2451545.0
-#define JCENTURY 36525.0
-#define JMILLENIA 365250.0
-#define TWOPI (2.0 * PI)
-#define A2R (PI / 648000.0)
-#define R2H (12.0 / PI)
-#define R2D (180.0 / PI)
-#define GAUSSK 0.01720209895
-#define TEST_LOOPS 20
-#define TEST_LENGTH 36525
-#define sineps 0.3977771559319137
-#define coseps 0.9174820620691818
+double GLB_DB_2 = 2;
+double PI =  3.14159265358979323846;
+double J2000 =  2451545.0;
 
-const double amas [8] = { 6023600.0, 408523.5, 328900.5, 3098710.0, 1047.355, 3498.5, 22869.0, 19314.0 };
+double JMILLENIA =  365250.0;
 
-const double a [8][3] =
+double GAUSSK =  0.01720209895;
+
+double TEST_LENGTH =  36525;
+double sineps =  0.3977771559319137;
+double coseps =  0.9174820620691818;
+
+double amas [8] = { 6023600.0, 408523.5, 328900.5, 3098710.0, 1047.355, 3498.5, 22869.0, 19314.0 };
+
+double a [8][3] =
     { {   0.3870983098,             0,        0 },
       {   0.7233298200,             0,        0 },
       {   1.0000010178,             0,        0 },
@@ -58,7 +56,7 @@ const double a [8][3] =
       {  19.2184460618,     -3716e-10,  979e-10 },
       {  30.1103868694,    -16635e-10,  686e-10 } };
        
-const double dlm[8][3] = 
+double dlm[8][3] =
     { { 252.25090552, 5381016286.88982,  -1.92789 },
       { 181.97980085, 2106641364.33548,   0.59381 },
       { 100.46645683, 1295977422.83429,  -2.04411 },
@@ -68,7 +66,7 @@ const double dlm[8][3] =
       { 314.05500511,   15424811.93933,  -1.75083 },
       { 304.34866548,    7865503.20744,   0.21103 } };
 
-const double e[8][3] =
+double e[8][3] =
     { {   0.2056317526,  0.0002040653,    -28349e-10 },
       {   0.0067719164, -0.0004776521,     98127e-10 },
       {   0.0167086342, -0.0004203654, -0.0000126734 },
@@ -78,7 +76,7 @@ const double e[8][3] =
       {   0.0463812221, -0.0002729293,  0.0000078913 },
       {   0.0094557470,  0.0000603263,            0  } };
 
-const double pi[8][3] =
+double pi[8][3] =
     { {  77.45611904,  5719.11590,   -4.83016 },
       { 131.56370300,   175.48640, -498.48184 },
       { 102.93734808, 11612.35290,   53.27577 },
@@ -88,7 +86,7 @@ const double pi[8][3] =
       { 173.00529106,  3215.56238,  -34.09288 },
       {  48.12027554,  1050.71912,   27.39717 } };
 
-const double dinc[8][3] =
+double dinc[8][3] =
     { {   7.00498625, -214.25629,   0.28977 },
       {   3.39466189,  -30.84437, -11.67836 },
       {            0,  469.97289,  -3.35053 },
@@ -98,7 +96,7 @@ const double dinc[8][3] =
       {   0.77319689,  -60.72723,   1.25759 },
       {   1.76995259,    8.12333,   0.08135 } };
 
-const double omega[8][3] =
+double omega[8][3] =
     { {  48.33089304,  -4515.21727,  -31.79892 },
       {  76.67992019, -10008.48154,  -51.32614 },
       { 174.87317577,  -8679.27034,   15.34191 },
@@ -108,7 +106,7 @@ const double omega[8][3] =
       {  74.00595701,   2669.15033,  145.93964 },
       { 131.78405702,   -221.94322,   -0.78728 } };
 
-const double kp[8][9] =
+double kp[8][9] =
     { { 69613.0,  75645.0, 88306.0, 59899.0, 15746.0, 71087.0, 142173.0,  3086.0,    0.0 },
       { 21863.0,  32794.0, 26934.0, 10931.0, 26250.0, 43725.0,  53867.0, 28939.0,    0.0 },
       { 16002.0,  21863.0, 32004.0, 10931.0, 14529.0, 16368.0,  15318.0, 32794.0,    0.0 },
@@ -118,7 +116,7 @@ const double kp[8][9] =
       {   204.0,      0.0,   177.0,  1265.0,     4.0,   385.0,    200.0,   208.0,  204.0 },
       {     0.0,    102.0,   106.0,     4.0,    98.0,  1367.0,    487.0,   204.0,    0.0 } };
 
-const double ca[8][9] =
+double ca[8][9] =
     { {       4.0,    -13.0,    11.0,    -9.0,    -9.0,    -3.0,    -1.0,     4.0,    0.0 },
       {    -156.0,     59.0,   -42.0,     6.0,    19.0,   -20.0,   -10.0,   -12.0,    0.0 },
       {      64.0,   -152.0,    62.0,    -8.0,    32.0,   -41.0,    19.0,   -11.0,    0.0 },
@@ -128,7 +126,7 @@ const double ca[8][9] =
       {  389061.0,-262125.0,-44088.0,  8387.0,-22976.0, -2093.0,  -615.0, -9720.0, 6633.0 },
       { -412235.0,-157046.0,-31430.0, 37817.0, -9740.0,   -13.0, -7449.0,  9644.0,    0.0 } };
 
-const double sa[8][9] =
+double sa[8][9] =
     { {     -29.0,    -1.0,     9.0,     6.0,    -6.0,     5.0,     4.0,     0.0,    0.0 },
       {     -48.0,  -125.0,   -26.0,   -37.0,    18.0,   -13.0,   -20.0,    -2.0,    0.0 },
       {    -150.0,   -46.0,    68.0,    54.0,    14.0,    24.0,   -28.0,    22.0,    0.0 },
@@ -138,7 +136,7 @@ const double sa[8][9] =
       { -138081.0,     0.0, 37205.0,-49039.0,-41901.0,-33872.0,-27037.0,-12474.0,18797.0 },
       {       0.0, 28492.0,133236.0, 69654.0, 52322.0,-49577.0,-26430.0, -3593.0,    0.0 } };
 
-const double kq[8][10] =
+double kq[8][10] =
     { {  3086.0, 15746.0, 69613.0, 59899.0, 75645.0, 88306.0, 12661.0, 2658.0,  0.0,   0.0 },
       { 21863.0, 32794.0, 10931.0,    73.0,  4387.0, 26934.0,  1473.0, 2157.0,  0.0,   0.0 },
       {    10.0, 16002.0, 21863.0, 10931.0,  1473.0, 32004.0,  4387.0,   73.0,  0.0,   0.0 },
@@ -148,7 +146,7 @@ const double kq[8][10] =
       {     4.0,   204.0,   177.0,     8.0,    31.0,   200.0,  1265.0,  102.0,  4.0, 204.0 },
       {     4.0,   102.0,   106.0,     8.0,    98.0,  1367.0,   487.0,  204.0,  4.0, 102.0 } };
 
-const double cl[8][10] =
+double cl[8][10] =
     { {      21.0,   -95.0, -157.0,   41.0,   -5.0,   42.0,   23.0,   30.0,     0.0,    0.0 },
       {    -160.0,  -313.0, -235.0,   60.0,  -74.0,  -76.0,  -27.0,   34.0,     0.0,    0.0 },
       {    -325.0,  -322.0,  -79.0,  232.0,  -52.0,   97.0,   55.0,  -41.0,     0.0,    0.0 },
@@ -158,7 +156,7 @@ const double cl[8][10] =
       { -135245.0,-14594.0, 4197.0,-4030.0,-5630.0,-2898.0, 2540.0, -306.0,  2939.0, 1986.0 },
       {   89948.0,  2103.0, 8963.0, 2695.0, 3682.0, 1648.0,  866.0, -154.0, -1963.0, -283.0 } };
 
-const double sl[8][10] =
+double sl[8][10] =
     { {   -342.0,   136.0,  -23.0,   62.0,   66.0,  -52.0,  -33.0,   17.0,     0.0,    0.0 },
       {    524.0,  -149.0,  -35.0,  117.0,  151.0,  122.0,  -71.0,  -62.0,     0.0,    0.0 },
       {   -105.0,  -137.0,  258.0,   35.0, -116.0,  -88.0, -112.0,  -80.0,     0.0,    0.0 },
@@ -170,23 +168,37 @@ const double sl[8][10] =
 
 //---------------------------------------------------------------------------
 // Normalize angle into the range -pi <= A < +pi.
+double GLB_DB_M1 = -1;
 double anpm (double a)
 {
-    double w = fmod(a,TWOPI);
+    double tmp_local = 2 * PI;
+    double w = fmod(a, tmp_local);
     
     if (fabs(w) >= PI) 
-        w = w - ((a < 0) ? -TWOPI : TWOPI);
+        w = w - ((a < 0) ? GLB_DB_M1 * tmp_local : tmp_local);
         
     return w;
 }
 
-//---------------------------------------------------------------------------    
+double tmp_local_360 = 3600.0;
+double tmp_local_3595 = 0.35953620;
+double tmp_local_00000001 = 0.0000001;
+double tmp_local_648000 = 648000;
+double tmp_local_1 = 1.0;
+double tmp_local_1e_12 = 1e-12;
+double tmp_local_20 = 2.0;
+//---------------------------------------------------------------------------
 // The reference frame is equatorial and is with respect to the
 //    mean equator and equinox of epoch j2000.
 void planetpv (double epoch[2], int np, double pv[2][3])
 {
+
+    double tmp_local_a2r = PI / tmp_local_648000;
+
     // working storage
     int k;
+    double tmp_local_2pi = GLB_DB_2 * PI;
+
     double t, da, dl, de, dp, di, doh, dmu, arga, argl, am;
     double ae, dae, ae2, at, r, v, si2, xq, xp, tl, xsw;
     double xcw, xm2, xf, ci2, xms, xmc, xpxq2, x, y, z;
@@ -196,33 +208,33 @@ void planetpv (double epoch[2], int np, double pv[2][3])
 
     // compute the mean elements.
     da  = a[np][0] + (a[np][1] + a[np][2] * t ) * t;
-    dl  = (3600.0 * dlm[np][0] + (dlm[np][1] + dlm[np][2] * t ) * t ) * A2R;
+    dl  = (tmp_local_360 * dlm[np][0] + (dlm[np][1] + dlm[np][2] * t ) * t ) * tmp_local_a2r;
     de  = e[np][0] + (e[np][1] + e[np][2] * t ) * t;
-    dp  = anpm((3600.0 * pi[np][0] + (pi[np][1] + pi[np][2] * t ) * t ) * A2R );
-    di  = (3600.0 * dinc[np][0] + (dinc[np][1] + dinc[np][2] * t ) * t ) * A2R;
-    doh = anpm((3600.0 * omega[np][0] + (omega[np][1] + omega[np][2] * t ) * t ) * A2R );
-    
+    dp  = anpm((tmp_local_360 * pi[np][0] + (pi[np][1] + pi[np][2] * t ) * t ) * tmp_local_a2r);
+    di  = (tmp_local_360 * dinc[np][0] + (dinc[np][1] + dinc[np][2] * t ) * t ) * tmp_local_a2r;
+    doh = anpm((tmp_local_360 * omega[np][0] + (omega[np][1] + omega[np][2] * t ) * t ) * tmp_local_a2r);
+
     // apply the trigonometric terms.
-    dmu = 0.35953620 * t;
-    
+    dmu = tmp_local_3595 * t;
+
     for (k = 0; k < 8; ++k)
     {
         arga = kp[np][k] * dmu;
         argl = kq[np][k] * dmu;
-        da   = da + (ca[np][k] * cos(arga) + sa[np][k] * sin(arga)) * 0.0000001;
-        dl   = dl + (cl[np][k] * cos(argl) + sl[np][k] * sin(argl)) * 0.0000001;
+        da   = da + (ca[np][k] * cos(arga) + sa[np][k] * sin(arga)) * tmp_local_00000001;
+        dl   = dl + (cl[np][k] * cos(argl) + sl[np][k] * sin(argl)) * tmp_local_00000001;
     }
 
     arga = kp[np][8] * dmu;
-    da   = da + t * (ca[np][8] * cos(arga) + sa[np][8] * sin(arga)) * 0.0000001;
+    da   = da + t * (ca[np][8] * cos(arga) + sa[np][8] * sin(arga)) * tmp_local_00000001;
 
     for (k = 8; k <= 9; ++k)
     {
         argl = kq[np][k] * dmu;
-        dl   = dl + t * ( cl[np][k] * cos(argl) + sl[np][k] * sin(argl) ) * 0.0000001;
+        dl   = dl + t * ( cl[np][k] * cos(argl) + sl[np][k] * sin(argl) ) * tmp_local_00000001;
     }
 
-    dl = fmod(dl,TWOPI);
+    dl = fmod(dl,tmp_local_2pi);
 
     // iterative solution of kepler's equation to get eccentric anomaly.
     am = dl - dp;
@@ -231,39 +243,40 @@ void planetpv (double epoch[2], int np, double pv[2][3])
 
     while (1)
     {
-        dae = (am - ae + de * sin(ae)) / (1.0 - de * cos(ae));
+        dae = (am - ae + de * sin(ae)) / (tmp_local_1 - de * cos(ae));
         ae  = ae + dae;
         k   = k + 1;
-    
-        if ((k >= 10) || (fabs(dae) < 1e-12))
+
+        if ((k >= 10) || (fabs(dae) < tmp_local_1e_12)) {
             break;
+        }
     }
 
     // true anomaly.
-    ae2 = ae / 2.0;
-    at  = 2.0 * atan2(sqrt((1.0 + de)/(1.0 - de)) * sin(ae2), cos(ae2));
+    ae2 = ae / tmp_local_20;
+    at  = tmp_local_20 * atan2(sqrt((tmp_local_1 + de) / (tmp_local_1 - de)) * sin(ae2), cos(ae2));
 
     // distance (au) and speed (radians per day).
-    r = da * (1.0 - de * cos(ae));
-    v = GAUSSK * sqrt((1.0 + 1.0 / amas[np] ) / (da * da * da));
+    r = da * (tmp_local_1 - de * cos(ae));
+    v = GAUSSK * sqrt((tmp_local_1 + tmp_local_1 / amas[np] ) / (da * da * da));
 
-    si2   = sin(di / 2.0);
+    si2   = sin(di / tmp_local_20);
     xq    = si2 * cos(doh);
     xp    = si2 * sin(doh);
     tl    = at + dp;
     xsw   = sin(tl);
     xcw   = cos(tl);
-    xm2   = 2.0 * (xp * xcw - xq * xsw );
-    xf    = da / sqrt(1.0 - de*de);
-    ci2   = cos(di / 2.0);
+    xm2   = tmp_local_20 * (xp * xcw - xq * xsw );
+    xf    = da / sqrt(tmp_local_1 - de * de);
+    ci2   = cos(di / tmp_local_20);
     xms   = (de * sin(dp) + xsw) * xf;
     xmc   = (de * cos(dp) + xcw) * xf;
-    xpxq2 = 2.0 * xp * xq;
+    xpxq2 = tmp_local_20 * xp * xq;
 
     // position (j2000 ecliptic x,y,z in au).
     x = r * (xcw - xm2 * xp);
     y = r * (xsw + xm2 * xq);
-    z = r * (-xm2 * ci2);
+    z = r * (GLB_DB_M1*xm2 * ci2);
 
     // rotate to equatorial.
     pv[0][0] = x;
@@ -271,9 +284,9 @@ void planetpv (double epoch[2], int np, double pv[2][3])
     pv[0][2] = y * sineps + z * coseps;
 
     // velocity (j2000 ecliptic xdot,ydot,zdot in au/d).
-    x = v * ((-1.0 + 2.0 * xp * xp) * xms + xpxq2 * xmc);
-    y = v * (( 1.0 - 2.0 * xq * xq ) * xmc - xpxq2 * xms);
-    z = v * (2.0 * ci2 * (xp * xms + xq * xmc));
+    x = v * ((GLB_DB_M1*tmp_local_1 + tmp_local_20 * xp * xp) * xms + xpxq2 * xmc);
+    y = v * ((tmp_local_1 - tmp_local_20 * xq * xq ) * xmc - xpxq2 * xms);
+    z = v * (tmp_local_20 * ci2 * (xp * xms + xq * xmc));
 
     // rotate to equatorial.
     pv[1][0] = x;
@@ -284,17 +297,25 @@ void planetpv (double epoch[2], int np, double pv[2][3])
 //---------------------------------------------------------------------------
 // Computes RA, Declination, and distance from a state vector returned by
 // planetpv.
-void inline radecdist(double state[2][3], double rdd[3])
+double GLB_DB12 = 12;
+double GLB_DB180 = 180;
+double tmp_local_24 = 24.0;
+
+static void inline radecdist(double state[2][3], double rdd[3])
 {
+    double tmp_local_r2h = GLB_DB12 / PI;
+    double tmp_local_r2d = GLB_DB180/ PI;
     // distance
     rdd[2] = sqrt(state[0][0] * state[0][0] + state[0][1] * state[0][1] + state[0][2] * state[0][2]);
 
     // RA
-    rdd[0] = atan2(state[0][1], state[0][0]) * R2H;
-    if (rdd[0] < 0.0) rdd[0] += 24.0;
+    rdd[0] = atan2(state[0][1], state[0][0]) * tmp_local_r2h;
+    if (rdd[0] < 0) {
+        rdd[0] += tmp_local_24;
+    }
 
     // Declination
-    rdd[1] = asin(state[0][2] / rdd[2]) * R2D;
+    rdd[1] = asin(state[0][2] / rdd[2]) * tmp_local_r2d;
 }
 
 /* Test harness */
@@ -305,9 +326,9 @@ static void test(void)
     double jd[2];
     double pv[2][3];
     double position[3];
-    
+
     jd[0] = J2000;
-    jd[1] = 0.0;
+    jd[1] = 0;
     for (p = 0; p < 8; ++p)
       {
         planetpv(jd,p,pv);
@@ -317,7 +338,7 @@ static void test(void)
       }
 }
 
-
+double GLB_DB_1 = 1;
 static void bench(int nloops)
 {
     int i, n, p;
@@ -328,11 +349,11 @@ static void bench(int nloops)
     for (i = 0; i < nloops; ++i)
     {
         jd[0] = J2000;
-        jd[1] = 0.0;
+        jd[1] = 0;
 
         for (n = 0; n < TEST_LENGTH; ++n)
         {
-            jd[0] += 1.0;
+            jd[0] += GLB_DB_1;
             
             for (p = 0; p < 8; ++p)
             {

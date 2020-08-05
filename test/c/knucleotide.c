@@ -232,6 +232,7 @@ typedef struct ssorter
   int num;
 } sorter;
 
+float hundred = 100;
 void
 write_frequencies (int fl, char *buffer, long buflen)
 {
@@ -265,7 +266,7 @@ write_frequencies (int fl, char *buffer, long buflen)
 	  memcpy (&(s[j]), &tmp, sizeof (sorter));
 	}
   for (i = 0; i < size; i++)
-    printf ("%s %.3f\n", s[i].string, 100 * (float) s[i].num / total);
+    printf ("%s %.3f\n", s[i].string, hundred * (float) s[i].num / total);
   printf ("\n");
   ht_destroy (ht);
   free (s);
