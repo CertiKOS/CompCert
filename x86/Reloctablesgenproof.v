@@ -1632,13 +1632,10 @@ Lemma instr_size_reloc_offset:
 Proof.
   Transparent instr_size.
   destruct i; simpl; intros z IRO; inv IRO; try destr; try lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  1-17:generalize (addrmode_reloc_offset_addrmode_size a); lia.
   inv H0; lia.
   inv H0; lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  1-4:generalize (addrmode_reloc_offset_addrmode_size a); lia.
   Opaque instr_size.
 Qed.
 

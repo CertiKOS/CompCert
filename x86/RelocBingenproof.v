@@ -1586,129 +1586,130 @@ Proof.
     1-2: rewrite HInsEQ.
     1-2: generalize (eval_addrmode_refl (id_reloc_offset z i') a rs).
     1-2: intros HAddrmode; rewrite HAddrmode; auto.
+
+    Admitted.
+(*     (* lea *) *)
+(*     rewrite HInsEQ. *)
+(*     generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs). *)
+(*     intros HAddrmode. rewrite HAddrmode. auto. *)
+
+(*     (* sall *) *)
+(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
+(*     destruct HInsEQ as [Hrd Hn]. *)
+(*     rewrite Hrd. admit. *)
+
+(*     (* test *) *)
+(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
+(*     destruct HInsEQ as [[H10 H23] | [H13 H20]]. *)
+(*     rewrite H10. rewrite H23. auto. *)
+(*     rewrite H13. rewrite H20. *)
+(*     unfold exec_instr. *)
+(*     rewrite Val.and_commut. auto. *)
+
+(*     (* jmp *) *)
+(*     destruct ros; auto. *)
+(*     rewrite HInsEQ. *)
+(*     destruct (id_reloc_offset z i'). *)
+(*     f_equal. f_equal. *)
+
+
+(*     generalize (symbol_address_refl RELOC_CODE z0). *)
+(*     auto. auto. *)
     
-    (* lea *)
-    rewrite HInsEQ.
-    generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs).
-    intros HAddrmode. rewrite HAddrmode. auto.
+(*     (* Pcall *) *)
+(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
+(*     unfold exec_instr. *)
+(*     destruct (get_pc_offset rs);auto.     *)
+(*     rewrite HInsEQ. *)
+(*     destruct ros0. *)
+(*     replace (instr_size (Pcall (inl i) sg0)) with 1. *)
+(*     replace (instr_size (Pcall (inl i) sg)) with 1. *)
+(*     destruct (Mem.storev Mptr m *)
+(*       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) *)
+(*       (Val.offset_ptr (rs PC) (Ptrofs.repr 1))); auto. *)
+(*     (* about size *) *)
+(*     admit. admit. *)
+(*     replace (instr_size (Pcall (inr i) sg0)) with 5. *)
+(*     replace (instr_size (Pcall (inr i) sg)) with 5. *)
+(*     destruct (Mem.storev Mptr m *)
+(*       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) *)
+(*       (Val.offset_ptr (rs PC) (Ptrofs.repr 5))); auto. *)
+(*     unfold eval_ros. *)
+(*     unfold id_reloc_offset. unfold Reloctablesgen.instr_reloc_offset. *)
+(*     generalize (symbol_address_refl RELOC_CODE (z+1)). *)
+(*     intros HAddr. *)
+(*     rewrite HAddr. auto. *)
+(*     (* about size *) *)
+(*     admit. admit. *)
 
-    (* sall *)
-    destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ).
-    destruct HInsEQ as [Hrd Hn].
-    rewrite Hrd. admit.
+(*     (* Pmov_rm_a *) *)
+(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
+(*     destruct HInsEQ as [Hrd Ha]. *)
+(*     rewrite Hrd. rewrite Ha. *)
+(*     unfold exec_instr. *)
+(*     destruct (get_pc_offset rs);auto. *)
+(*     unfold exec_load. *)
+(*     destruct Archi.ptr64 eqn:EQW; inversion EQW. *)
+(*     generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_rm_a rd a0)) a0 rs). *)
+(*     intros HAddrmode. *)
+(*     rewrite HAddrmode. *)
+(*     unfold id_reloc_offset. *)
+(*     unfold Reloctablesgen.instr_reloc_offset. *)
+(*     unfold tge.  *)
+(*     (* int32 and any32 *) *)
+(*     replace Mint32 with Many32. *)
+(*     admit. *)
+(*     admit. *)
 
-    (* test *)
-    destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ).
-    destruct HInsEQ as [[H10 H23] | [H13 H20]].
-    rewrite H10. rewrite H23. auto.
-    rewrite H13. rewrite H20.
-    unfold exec_instr.
-    rewrite Val.and_commut. auto.
+(*     (* Pmov_mr_a , will have the same problem *) *)
+(*     admit. *)
+(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
+(*     unfold exec_instr. *)
+(*     destruct (get_pc_offset rs); auto. *)
+(*     unfold exec_instr. admit. *)
 
-    (* jmp *)
-    destruct ros; auto.
-    rewrite HInsEQ.
-    destruct (id_reloc_offset z i').
-    f_equal. f_equal.
+(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
+(*     admit. *)
+(*     unfold exec_instr. auto. *)
 
-
-    generalize (symbol_address_refl RELOC_CODE z0).
-    auto. auto.
+(*   + *)
+(*     (* exec_step_builtin *) *)
+(*     rewrite <- MS. *)
+(*     assert(HArgs: eval_builtin_args preg tge idofs rs (rs RSP) m args vargs) by admit. *)
+(*     econstructor; try eauto. *)
+(*     (* not found exfunc refl *) *)
+(*     generalize (not_find_ext_funct_refl _ _ H0). *)
+(*     auto. *)
+(*     (* built in refl *) *)
+(*     generalize (find_instr_refl _ _ _ H1). *)
+(*     intros (i & HFind & HEq). *)
+(*     inversion HEq. *)
+(*     rewrite HFind. *)
+(*     rewrite H6. *)
+(*     auto. *)
+(*     simpl in H4. simpl. *)
     
-    (* Pcall *)
-    destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ).
-    unfold exec_instr.
-    destruct (get_pc_offset rs);auto.    
-    rewrite HInsEQ.
-    destruct ros0.
-    replace (instr_size (Pcall (inl i) sg0)) with 1.
-    replace (instr_size (Pcall (inl i) sg)) with 1.
-    destruct (Mem.storev Mptr m
-      (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))
-      (Val.offset_ptr (rs PC) (Ptrofs.repr 1))); auto.
-    (* about size *)
-    admit. admit.
-    replace (instr_size (Pcall (inr i) sg0)) with 5.
-    replace (instr_size (Pcall (inr i) sg)) with 5.
-    destruct (Mem.storev Mptr m
-      (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))
-      (Val.offset_ptr (rs PC) (Ptrofs.repr 5))); auto.
-    unfold eval_ros.
-    unfold id_reloc_offset. unfold Reloctablesgen.instr_reloc_offset.
-    generalize (symbol_address_refl RELOC_CODE (z+1)).
-    intros HAddr.
-    rewrite HAddr. auto.
-    (* about size *)
-    admit. admit.
-
-    (* Pmov_rm_a *)
-    destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ).
-    destruct HInsEQ as [Hrd Ha].
-    rewrite Hrd. rewrite Ha.
-    unfold exec_instr.
-    destruct (get_pc_offset rs);auto.
-    unfold exec_load.
-    destruct Archi.ptr64 eqn:EQW; inversion EQW.
-    generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_rm_a rd a0)) a0 rs).
-    intros HAddrmode.
-    rewrite HAddrmode.
-    unfold id_reloc_offset.
-    unfold Reloctablesgen.instr_reloc_offset.
-    unfold tge. 
-    (* int32 and any32 *)
-    replace Mint32 with Many32.
-    admit.
-    admit.
-
-    (* Pmov_mr_a , will have the same problem *)
-    admit.
-    destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ).
-    unfold exec_instr.
-    destruct (get_pc_offset rs); auto.
-    unfold exec_instr. admit.
-
-    destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ).
-    admit.
-    unfold exec_instr. auto.
-
-  +
-    (* exec_step_builtin *)
-    rewrite <- MS.
-    assert(HArgs: eval_builtin_args preg tge idofs rs (rs RSP) m args vargs) by admit.
-    econstructor; try eauto.
-    (* not found exfunc refl *)
-    generalize (not_find_ext_funct_refl _ _ H0).
-    auto.
-    (* built in refl *)
-    generalize (find_instr_refl _ _ _ H1).
-    intros (i & HFind & HEq).
-    inversion HEq.
-    rewrite HFind.
-    rewrite H6.
-    auto.
-    simpl in H4. simpl.
-    
-    assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) vargs m t vres m') by admit.
-    auto.
-  +
-    (* exec_step_external *)
-    rewrite <- MS.
-    generalize (exec_step_external tge b ofs ef args res rs m t rs' m').
-    intros HExecStepExt.
-    generalize (HExecStepExt H).
-    clear HExecStepExt. intros HExecStepExt.
-    assert(HFoundExt: Genv.find_ext_funct tge (Vptr b ofs) = Some ef) by admit.
-    generalize (HExecStepExt HFoundExt).
-    clear HExecStepExt. intros HExecStepExt.
-    rewrite LOADRA in HExecStepExt.
-    generalize (HExecStepExt ra eq_refl RA_NOT_VUNDEF ARGS).
-    clear HExecStepExt. intros HExecStepExt.
-    assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) args m t res m') by admit.
-    generalize (HExecStepExt HExtCall).
-    clear HExecStepExt. intros HExecStepExt.
-    generalize (HExecStepExt H2).
-    auto.
-Admitted.
+(*     assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) vargs m t vres m') by admit. *)
+(*     auto. *)
+(*   + *)
+(*     (* exec_step_external *) *)
+(*     rewrite <- MS. *)
+(*     generalize (exec_step_external tge b ofs ef args res rs m t rs' m'). *)
+(*     intros HExecStepExt. *)
+(*     generalize (HExecStepExt H). *)
+(*     clear HExecStepExt. intros HExecStepExt. *)
+(*     assert(HFoundExt: Genv.find_ext_funct tge (Vptr b ofs) = Some ef) by admit. *)
+(*     generalize (HExecStepExt HFoundExt). *)
+(*     clear HExecStepExt. intros HExecStepExt. *)
+(*     rewrite LOADRA in HExecStepExt. *)
+(*     generalize (HExecStepExt ra eq_refl RA_NOT_VUNDEF ARGS). *)
+(*     clear HExecStepExt. intros HExecStepExt. *)
+(*     assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) args m t res m') by admit. *)
+(*     generalize (HExecStepExt HExtCall). *)
+(*     clear HExecStepExt. intros HExecStepExt. *)
+(*     generalize (HExecStepExt H2). *)
+(*     auto. *)
+(* Admitted. *)
 
 
     

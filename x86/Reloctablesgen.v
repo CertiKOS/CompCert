@@ -22,7 +22,7 @@ Local Open Scope error_monad_scope.
 Definition addrmode_reloc_offset (a:addrmode) : Z :=
   addrmode_size_aux a.
 
-
+(* 
 Definition instr_reloc_offset (i:instruction) : res Z :=
   match i with
   | Pmov_rs _ _ => OK 2
@@ -36,6 +36,77 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
     let aofs := addrmode_reloc_offset a in
     OK (1 + aofs)
   | _ => Error (msg "In reloctablesgen1: Calculation of relocation offset failed: Either there is no possible relocation location or the instruction is not supported yet by relocation")
+  end. *)
+
+  Definition instr_reloc_offset (i:instruction) : res Z :=
+  match i with
+  | Pmov_rs _ _ => OK 2
+  | Pcall (inr _) _ => OK 1
+  | Pjmp (inr _) _ => OK 1
+  | Pleal rd a =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmovl_rm _ a =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmovl_mr a _ =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmov_rm_a _ a =>
+    let aofs := addrmode_reloc_offset a in
+    OK (1 + aofs)
+  | Pmov_mr_a a _ =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pmovsd_fm_a frd a
+  | Pmovsd_fm frd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pmovsd_mf_a a fr1
+  | Pmovsd_mf a fr1 =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pmovss_fm frd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pmovss_mf a fr1 =>
+    let aofs := addrmode_reloc_offset a in
+      OK (3 + aofs)
+  | Pfldl_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pfstpl_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pflds_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pfstps_m a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pmovb_mr a rs =>
+    let aofs := addrmode_reloc_offset a in
+      OK (1 + aofs)
+  | Pmovw_mr a rs =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovzb_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovzw_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovsb_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)
+  | Pmovsw_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)   
+  (* | Pmovsb_rm rd a =>
+    let aofs := addrmode_reloc_offset a in
+      OK (2 + aofs)                    *)
+  | _ => Error [MSG "Calculation of relocation offset failed: Either there is no possible relocation location or the instruction ";
+              MSG (instr_to_string i); MSG " is not supported yet by relocation"]
   end.
 
 (** Calculate the addendum of an instruction *)
