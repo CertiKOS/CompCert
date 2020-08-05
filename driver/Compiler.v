@@ -223,7 +223,7 @@ Definition transf_c_program_bytes (more: bool)(p: Csyntax.program) : res (list I
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
-  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
+  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program more)
   @@@ time "Encoding of instructions and data" (RelocBingen.transf_program more)
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@ time "Removing addendums" RemoveAddend.transf_program
@@ -253,7 +253,7 @@ Definition transf_c_program_bytes' (more: bool) (p: Csyntax.program) :=
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  @@@ time "Generation of relocation table" Reloctablesgen.transf_program
+  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program more)
   @@@ time "Encoding of instructions and data" (RelocBingen.transf_program more)
   @@ time "Removing addendums" RemoveAddend.transf_program
   @@@ time "Encoding of tables" TablesEncode.transf_program
@@ -560,7 +560,7 @@ Proof.
   unfold time in T.
   destruct (Asmlabelgen.transf_program p1) eqn:RTP; simpl in T; try discriminate.
   destruct (Symbtablegen.transf_program (PadInitData.transf_program (PadNops.transf_program p0))) eqn:STG; simpl in T; try discriminate.
-  destruct (Reloctablesgen.transf_program p2) eqn: RTG; simpl in T; try discriminate.
+  destruct (Reloctablesgen.transf_program false p2) eqn: RTG; simpl in T; try discriminate.
   destruct (RelocBingen.transf_program false p3) eqn: RBG; simpl in T; try discriminate.
   destruct (TablesEncode.transf_program (RemoveAddend.transf_program p4)) eqn: TE; simpl in T; try discriminate.
   destruct (RelocElfgen.gen_reloc_elf p5) eqn:GRE; simpl in T; try discriminate.

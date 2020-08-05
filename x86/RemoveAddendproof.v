@@ -48,8 +48,8 @@ Section EXT.
     forall k, option_map remove_addend_relocentry (Maps.PTree.get k rtbl1) = Maps.PTree.get k rtbl2.
   
 Lemma decode_call_ext:
-  forall symt ofs bytes,
-    RelocBinDecode.decode_call rtbl1 symt ofs bytes = RelocBinDecode.decode_call rtbl2 symt ofs bytes.
+  forall ofs bytes,
+    RelocBinDecode.decode_call rtbl1  ofs bytes = RelocBinDecode.decode_call rtbl2 ofs bytes.
 Proof.
   intros. unfold RelocBinDecode.decode_call.
   unfold bind. destr. unfold RelocBinDecode.find_ofs_in_rtbl.
@@ -122,9 +122,9 @@ Qed.
 
 
 Lemma fmc_instr_decode_ext:
-  forall symt ofs bytes,
-    RelocBinDecode.fmc_instr_decode rtbl1 symt ofs bytes  =
-    RelocBinDecode.fmc_instr_decode rtbl2 symt ofs bytes.
+  forall ofs bytes,
+    RelocBinDecode.fmc_instr_decode rtbl1 ofs bytes  =
+    RelocBinDecode.fmc_instr_decode rtbl2 ofs bytes.
 Proof.
   unfold RelocBinDecode.fmc_instr_decode. intros.
   destruct bytes. auto.
@@ -148,20 +148,20 @@ Proof.
 Qed.
 
 Lemma decode_instrs_ext:
-  forall symt fuel ofs bytes instrs,
-    decode_instrs rtbl1 symt fuel ofs bytes instrs  =
-    decode_instrs rtbl2 symt fuel ofs bytes instrs.
+  forall fuel ofs bytes instrs,
+    decode_instrs rtbl1 fuel ofs bytes instrs  =
+    decode_instrs rtbl2 fuel ofs bytes instrs.
 Proof.
   induction fuel. simpl. auto.
   simpl. intros. destruct bytes. auto.
-  erewrite (fmc_instr_decode_ext symt ofs (i::bytes)). unfold bind.
+  erewrite (fmc_instr_decode_ext ofs (i::bytes)). unfold bind.
   destruct (RelocBinDecode.fmc_instr_decode). 2: auto.
   destruct p. apply IHfuel.
 Qed.
 
 Lemma decode_instrs'_ext:
-  forall symt s,
-    decode_instrs' rtbl1 symt s = decode_instrs' rtbl2 symt s.
+  forall s,
+    decode_instrs' rtbl1 s = decode_instrs' rtbl2 s.
 Proof.
   intros.
   unfold decode_instrs'.
@@ -169,8 +169,8 @@ Proof.
 Qed.
 
 Lemma decode_code_section_ext:
-  forall symt s,
-    decode_code_section rtbl1 symt s = decode_code_section rtbl2 symt s.
+  forall s,
+    decode_code_section rtbl1 s = decode_code_section rtbl2 s.
 Proof.
   unfold decode_code_section. intros.
   destruct s. auto. auto.

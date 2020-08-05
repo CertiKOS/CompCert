@@ -81,7 +81,7 @@ Fixpoint decode_instrs (fuel:nat) (ofs: Z) (bytes: list byte) (instrs: list inst
     match fuel with
     | O => Error (msg "instruction decoding failed: run out of fuel")
     | S fuel' =>
-      do r <- fmc_instr_decode rtbl_ofs_map symtbl ofs bytes;
+      do r <- fmc_instr_decode rtbl_ofs_map  ofs bytes;
       let '(instr, bytes') := r in
       decode_instrs fuel' (ofs + instr_size instr) bytes' (instr :: instrs)
     end
@@ -110,7 +110,7 @@ Definition decode_prog_code_section (p:program) : res program :=
     let rtbl :=  get_reloctable RELOC_CODE (prog_reloctables p) in
     let rofsmap := gen_reloc_ofs_map rtbl in
     let stbl := prog_symbtable p in
-    do sec' <- decode_code_section rofsmap stbl sec;
+    do sec' <- decode_code_section rofsmap  sec;
       match SecTable.set sec_code_id sec' t with
       | None => Error (msg "Cannot find a code section in the program")
       | Some t' =>
