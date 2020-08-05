@@ -22,7 +22,7 @@ Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.
 Require Import RelocBingen RelocProgram SeqTable Encode.
-Require Import Reloctablesgen.
+Require Import Reloctablesgen2.
 
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
@@ -232,11 +232,11 @@ Definition addrmode_parse_SIB (rofs: Z)(sib: byte)(mod_b: byte)(mc:list byte): r
      if Byte.eq_dec mod_b HB["0"]  then
        if Byte.eq_dec bs HB["5"] then
          do remains <- (remove_first_n mc 4);
-           OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),remains)
+           OK(Addrmode (fst base_offset) (index_s) (inr (xH, (snd base_offset))),remains)
        else
-         OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero)),mc)
+         OK(Addrmode (fst base_offset) (index_s) (inr (xH, (snd base_offset))),mc)
      else
-       OK(Addrmode (fst base_offset) (index_s) (inr (xH, Ptrofs.zero )),mc)
+       OK(Addrmode (fst base_offset) (index_s) (inr (xH, (snd base_offset) )),mc)
     end.
 
 
@@ -267,7 +267,7 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                         OK(reg, Addrmode None None (inl ofs),remains)
                        |Some relocEntry =>
                         do remains <- remove_first_n t 4;
-                          OK(reg, Addrmode None None (inr (xH ,Ptrofs.zero )), remains)                         
+                          OK(reg, Addrmode None None (inr (xH , Ptrofs.repr ofs )), remains)                         
                        end
                      else
                        OK(reg, Addrmode (Some ea_reg) None (inl 0), t)
@@ -303,7 +303,7 @@ Definition decode_addrmode (rofs:Z) (mc:list byte): res(ireg * addrmode * (list 
                                OK(reg, Addrmode (Some ea_reg) None (inl ofs), remains)
                             |Some relocEntry =>
                              do remains <- remove_first_n t 4;
-                               OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.zero)), remains)        
+                               OK(reg, Addrmode (Some ea_reg) None (inr (xH, Ptrofs.repr ofs)), remains)        
                             end                            
                       else
                         Error( msg "unknown address mode")
@@ -2072,6 +2072,31 @@ Ltac cal_byte_modulus :=
   |_ => auto
   end.
 
+Ltac resolve_enc_dec_ireg_refl x0 :=
+  match goal with
+  | [ H: encode_ireg ?rd = OK x0 |- _ ] =>
+    generalize(encode_decode_ireg_refl _ _ H);
+    intros Hrd; destruct Hrd as (?x & ?Hrd);
+    destruct Hrd as (?H10 & ?H11)
+  |_ => idtac
+  end.
+
+Ltac resolve_reloc iofs sofs :=
+  match goal with
+  |[ H1: instr_reloc_offset ?i = OK iofs,
+         H2: instr_reloc_offset ?i = OK ?x1,
+             HEQ: get_instr_reloc_addend' _ _ = OK _
+     |- _ ]=>
+   rewrite H1 in H2; inversion H2;
+   subst x1;
+   unfold get_instr_reloc_addend' in HEQ;
+   unfold get_reloc_addend in HEQ;
+   unfold find_ofs_in_rtbl;
+   destruct(ZTree.get (iofs+sofs) rtbl_ofs_map);
+   inversion HEQ
+  |_ => idtac
+  end.
+
 
 Lemma BbTruncate: forall l1 l2,
     (length l2 = 8)%nat
@@ -2826,7 +2851,6 @@ Proof.
            ++++
              destruct (ireg_eq i0 RSP); monadInv EQ2.
              destruct p eqn:EQP.
-             destruct (Ptrofs.eq_dec i3 Ptrofs.zero);inversion EQ1.
              destruct i2; try monadInv EQ1.
              unfold decode_addrmode.
              simpl.
@@ -2929,8 +2953,8 @@ Proof.
              rewrite HEQX3.
              generalize (encode_decode_ireg_refl _ _  EQ2).
              intros HRi.
-             destruct HRi. destruct H12.
-             rewrite H12. rewrite H13. simpl.
+             destruct HRi. destruct H11.
+             rewrite H11. rewrite H12. simpl.
              assert(HEQx2: (Byte.shru bB[ x2 ++ x3 ++ x4] (Byte.repr 6)) = bB[x2]) by admit.
              rewrite HEQx2.
              rewrite (encode_parse_scale_refl _ _ EQ).
@@ -2938,8 +2962,8 @@ Proof.
              assert(HEQx4: (Byte.and bB[ x2 ++ x3 ++ x4] (Byte.repr 7)) = bB[x4]) by admit.
              rewrite HEQx4.
              generalize(encode_decode_ireg_refl _ _ EQ3).
-             intros HRi0. destruct HRi0. destruct H14.
-             rewrite H14. rewrite H15. simpl.
+             intros HRi0. destruct HRi0. destruct H13.
+             rewrite H13. rewrite H14. simpl.
              unfold addrmode_SIB_parse_base.
              destruct (Byte.eq_dec bB[ x4] HB[ "5"]) eqn:EQx4.
              +++++
@@ -2947,14 +2971,16 @@ Proof.
              rewrite byte_eq_false.
              rewrite byte_eq_true.
              simpl.
-             rewrite HRelocOfs in H10.
-             simpl in H10.
-             unfold get_instr_reloc_addend' in H10.
+             rewrite HRelocOfs in EQ4.
+             inversion EQ4. subst x.
+             unfold get_instr_reloc_addend' in EQ1.
              unfold find_ofs_in_rtbl.
-             unfold get_reloc_addend in H10.
-             destruct (ZTree.get (iofs+sofs) rtbl_ofs_map) ; inversion H10.
-             assert (Hvalid: valid_int32 x0) by admit.
-             rewrite H17.
+             unfold get_reloc_addend in EQ1.
+             destruct (ZTree.get (iofs+sofs) rtbl_ofs_map) eqn:EQREloc ; inversion EQ1.
+             
+             
+             assert (Hvalid: valid_int32 (Ptrofs.unsigned i3)) by admit.
+             (* rewrite H17. *)
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
              rewrite Hint.
@@ -2967,17 +2993,18 @@ Proof.
              auto.
              unfold addrmode_SIB_parse_index.
              destruct (Byte.eq_dec bB[x3] HB["4"]).
-             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             generalize (encode_int32_4_exists (Ptrofs.unsigned i3) l ( encode_int32 (Ptrofs.unsigned i3) ++ l) eq_refl).
              intros (b1 & b2 & b3 & b4 & HEncInt).
              rewrite HEncInt.
              simpl.
              ++++++ admit. (* RSP *)
              ++++++
-               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+               generalize (encode_int32_4_exists (Ptrofs.unsigned i3) l ( encode_int32 (Ptrofs.unsigned i3) ++ l) eq_refl).
              intros (b1 & b2 & b3 & b4 & HEncInt).
              rewrite HEncInt.
-             simpl. rewrite e.
-             rewrite H11.
+             simpl. 
+             subst x0.
+             rewrite Ptrofs.repr_unsigned.
              auto.
              (* ++++++ auto. *)
              ++++++ intros HNot. inversion HNot.
@@ -2987,14 +3014,14 @@ Proof.
              +++++
                rewrite byte_eq_false. rewrite byte_eq_false. rewrite byte_eq_true.
              simpl.
-             rewrite HRelocOfs in H10.
-             simpl in H10.
-             unfold get_instr_reloc_addend' in H10.
+             rewrite HRelocOfs in EQ4.
+             inversion EQ4.
+             subst x.
+             unfold get_instr_reloc_addend' in EQ1.
              unfold find_ofs_in_rtbl.
-             unfold get_reloc_addend in H10.
-             destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion H10.
-             assert (Hvalid: valid_int32 x0) by admit.
-             rewrite H17.
+             unfold get_reloc_addend in EQ1.
+             destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion EQ1.
+             assert (Hvalid: valid_int32 (Ptrofs.unsigned i3)) by admit.
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
              rewrite Hint.
@@ -3005,24 +3032,25 @@ Proof.
              auto.
              unfold addrmode_SIB_parse_index.
              destruct(Byte.eq_dec bB[x3] HB["4"]).
-             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             generalize (encode_int32_4_exists (Ptrofs.unsigned i3) l (encode_int32 (Ptrofs.unsigned i3) ++ l) eq_refl).
              intros (b1 & b2 & b3 & b4 & HEncInt).
              rewrite HEncInt.
              simpl.             
              
              ++++++ admit. (* RSP *)
              ++++++
-               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+               generalize (encode_int32_4_exists (Ptrofs.unsigned i3) l (encode_int32 (Ptrofs.unsigned i3) ++ l) eq_refl).
              intros (b1 & b2 & b3 & b4 & HEncInt).
              rewrite HEncInt.
-             simpl.
-             rewrite e.
-             rewrite H11.
+             simpl. subst rd.
+             rewrite Ptrofs.repr_unsigned.
              auto.
+             
              (* ++++++ auto. *)
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
+             
            ++++
              destruct (ireg_eq i0 RSP); monadInv EQ2.
              unfold decode_addrmode. simpl.
@@ -3137,16 +3165,16 @@ Proof.
              rewrite byte_eq_true; auto.
              simpl.
              destruct p.
-             destruct (Ptrofs.eq_dec i2 Ptrofs.zero); inversion EQ1.
+             
              destruct i1; inversion EQ1.
-             rewrite HRelocOfs in EQ1.
-             simpl in EQ1.
+             monadInv EQ1.
+             rewrite HRelocOfs in EQ3. inversion EQ3.
+             subst x5.
              unfold get_instr_reloc_addend' in EQ1.
              unfold find_ofs_in_rtbl.
              unfold get_reloc_addend in EQ1.
              destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion EQ1.
-             assert (Hvalid: valid_int32 x0) by admit.
-             rewrite H16.
+             assert (Hvalid: valid_int32 (Ptrofs.unsigned i2)) by admit.
              generalize (encode_decode_int32_same_prefix _ l Hvalid).
              intros Hint.
              rewrite Hint.
@@ -3154,14 +3182,14 @@ Proof.
              rewrite byte_eq_true; auto.
              rewrite byte_eq_true; auto.
              simpl. repeat f_equal.
-             generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+             generalize (encode_int32_4_exists (Ptrofs.unsigned i2) l (encode_int32 (Ptrofs.unsigned i2) ++ l) eq_refl).
              intros (b1 & b2 & b3 & b4 & HEncInt).
              rewrite HEncInt.
              simpl.
-             rewrite H10.
+
              repeat f_equal.
              +++++ admit.
-             +++++ auto.
+             +++++ rewrite Ptrofs.repr_unsigned. auto.
              +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
@@ -3174,51 +3202,54 @@ Proof.
              
     ++
       destruct p.
-      destruct (Ptrofs.eq_dec i1 Ptrofs.zero);inversion EQ1.
-      destruct i0; inversion H10.
-      monadInv EQ.
+      destruct i0; inversion EQ1.
+      monadInv EQ1.
       destruct base eqn:EQB.
 
-      +++ monadInv EQ2.
-          destruct(ireg_eq i0 RSP).
-          ++++ monadInv EQ3.
-               unfold decode_addrmode.
-               simpl.
-               assert(HTurncate:
-                        (Byte.repr
-                           (bits_to_Z
-                              (char_to_bool "1"
-                                            :: char_to_bool "0"
-                                            :: x1 ++
-                                            char_to_bool "1"
-                                            :: char_to_bool "0"
-                                            :: char_to_bool "0"
-                                            :: char_to_bool "0"
-                                            :: char_to_bool "0"
-                                            :: char_to_bool "1"
-                                            :: char_to_bool "0"
-                                            ::
-                                            char_to_bool "0" :: x2) /
-                              256)) = bB[b["10"]++x1++b["100"]]) by admit.
-               rewrite HTurncate.
-               assert(HEQx1:(Byte.shru
-        (Byte.and bB[ b[ "10"] ++ x1 ++ b[ "100"]] (Byte.repr 56))
-        (Byte.repr 3)) = bB[x1]). {
-                 rewrite <- Byte.and_shru.
-                 rewrite shru563.
-                 replace ( b[ "10"] ++ x1 ++ b[ "100"])
-                   with
-                     ( (b[ "10"] ++ x1) ++ b[ "100"]).
-                 rewrite (shru_bits 3 _ _).
-                 setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
-                 all:auto.
+      +++
+        monadInv EQ.
+        destruct(ireg_eq i0 RSP).
+        ++++
+          unfold decode_addrmode.
+          inversion EQ4.
+          unfold encode_int_big.
+          simpl.
+          assert(HTurncate:
+                   (Byte.repr
+                      (bits_to_Z
+                         (char_to_bool "1"
+                                       :: char_to_bool "0"
+                                       :: x0 ++
+                                       char_to_bool "1"
+                                       :: char_to_bool "0"
+                                       :: char_to_bool "0"
+                                       :: char_to_bool "0"
+                                       :: char_to_bool "0"
+                                       :: char_to_bool "1"
+                                       :: char_to_bool "0"
+                                       ::
+                                       char_to_bool "0" :: x3) /
+                         256)) = bB[b["10"]++x0++b["100"]]) by admit.
+          rewrite HTurncate.
+          
+          assert(HEQx1:(Byte.shru
+                          (Byte.and bB[ b[ "10"] ++ x0 ++ b[ "100"]] (Byte.repr 56))
+                          (Byte.repr 3)) = bB[x0]). {
+            rewrite <- Byte.and_shru.
+            rewrite shru563.
+            replace ( b[ "10"] ++ x0 ++ b[ "100"])
+              with
+                ( (b[ "10"] ++ x0) ++ b[ "100"]).
+            rewrite (shru_bits 3 _ _).
+            setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x0).
+            all:auto.
 
                  1,3: repeat rewrite app_length; simpl.
-                 1,2,3:rewrite (encode_reg_length rd x1); try omega.
+                 1,2,3:rewrite (encode_reg_length rd x0); try omega.
                  1-8: auto.
                }
                rewrite HEQx1.
-               generalize (encode_decode_ireg_refl _ _ EQ0).
+               generalize (encode_decode_ireg_refl _ _ EQ2).
                intros Hrd.
                destruct Hrd.
                destruct H.
@@ -3226,7 +3257,7 @@ Proof.
                assert(HEQ2: (Byte.shru
                                bB[ char_to_bool "1"
                                                 :: char_to_bool "0"
-                                                :: x1 ++
+                                                :: x0 ++
                                                 [char_to_bool "1"; char_to_bool "0";
                                                  char_to_bool "0"]] (Byte.repr 6))=Byte.repr 2) by admit.
                rewrite HEQ2.
@@ -3236,7 +3267,7 @@ Proof.
                assert(HEQ4: (Byte.and
                                bB[ char_to_bool "1"
                                                 :: char_to_bool "0"
-                                                :: x1 ++
+                                                :: x0 ++
                                                 [char_to_bool "1"; char_to_bool "0";
                                                  char_to_bool "0"]] (Byte.repr 7)) = Byte.repr 4) by admit.
                rewrite HEQ4.
@@ -3247,24 +3278,25 @@ Proof.
                rewrite byte_eq_true.
                assert(Hmod:  bB[ char_to_bool "1"
                                               :: char_to_bool "0"
-                                              :: x1 ++
+                                              :: x0 ++
                                               char_to_bool "1"
                                               :: char_to_bool "0"
                                               :: char_to_bool "0"
                                               :: char_to_bool "0"
                                               :: char_to_bool "0"
                                               :: char_to_bool "1"
-                                              :: char_to_bool "0" :: char_to_bool "0" :: x2] = bB[b["00100"]++x2])by admit.
+                                              :: char_to_bool "0" :: char_to_bool "0" :: x3] = bB[b["00100"]++x3])by admit.
                rewrite Hmod.
                unfold addrmode_parse_SIB.
-               assert(HEQ4_2:(Byte.shru (Byte.and bB[ b[ "00100"] ++ x2] (Byte.repr 56)) (Byte.repr 3)) = Byte.repr 4). {
+               assert(HEQ4_2:(Byte.shru (Byte.and bB[ b[ "00100"] ++ x3] (Byte.repr 56)) (Byte.repr 3)) = Byte.repr 4). {
                  rewrite <- Byte.and_shru.
                  rewrite shru563.
                  rewrite (shru_bits 3 _ _).
                  setoid_rewrite (and7 b["00"] b["100"]).
                  all:auto.
                  rewrite app_length; simpl.
-                 all: rewrite (encode_reg_length RSP x2); try omega; auto.
+                 all: rewrite e in EQ.
+                 all: rewrite (encode_reg_length RSP x3); try omega; auto.
                }
                rewrite HEQ4_2.
                unfold addrmode_parse_reg.
@@ -3274,105 +3306,89 @@ Proof.
                assert(HEQ0: (Byte.shru
                                bB[ char_to_bool "0"
                                                 :: char_to_bool "0"
-                                                :: char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: x2](Byte.repr 6)) = Byte.repr 0) by admit.
+                                                :: char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: x3](Byte.repr 6)) = Byte.repr 0) by admit.
                rewrite HEQ0.
                unfold addrmode_SIB_parse_scale.
                rewrite byte_eq_true; auto.
                assert(HEQx2: (Byte.and
                                 bB[ char_to_bool "0"
                                                  :: char_to_bool "0"
-                                                 :: char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: x2](Byte.repr 7)) = bB[x2]) by admit.
+                                                 :: char_to_bool "1" :: char_to_bool "0" :: char_to_bool "0" :: x3](Byte.repr 7)) = bB[x3]) by admit.
                rewrite HEQx2.
                simpl.
-               fold (addrmode_parse_reg bB[x2]).
+               fold (addrmode_parse_reg bB[x3]).
                generalize (encode_decode_ireg_refl _ _ EQ).
                intros HEQRSP.
                destruct HEQRSP. destruct H13.
                rewrite H13. rewrite H14. simpl.
                unfold addrmode_SIB_parse_base.
+               rewrite e in EQ.
                unfold encode_ireg in EQ.
                inversion EQ.
                rewrite byte_eq_false.
                do 2 (try (rewrite byte_eq_false)).
                rewrite byte_eq_true; auto.
                simpl.
-               rewrite HRelocOfs in H11.
-               simpl in H11.
-               unfold get_instr_reloc_addend' in H11.
+               rewrite HRelocOfs in EQ0.
+               inversion EQ0. subst x1.
+               unfold get_instr_reloc_addend' in EQ1.
                unfold find_ofs_in_rtbl.
-               unfold get_reloc_addend in H11.
-               destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion H11.
-               assert (Hvalid: valid_int32 x0) by admit.
+               unfold get_reloc_addend in EQ1.
+               destruct (ZTree.get (iofs+sofs) rtbl_ofs_map); inversion EQ1.
+               assert (Hvalid: valid_int32 (Ptrofs.unsigned i1)) by admit.
                rewrite H16.
                generalize (encode_decode_int32_same_prefix _ l Hvalid).
                intros Hint.
-               rewrite H17.
                rewrite Hint.
                simpl.
 
                
                rewrite byte_eq_false. simpl.
-               generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+               generalize (encode_int32_4_exists (Ptrofs.unsigned i1) l (encode_int32 (Ptrofs.unsigned i1) ++ l) eq_refl).
                intros (b1 & b2 & b3 & b4 & HEncInt).
                rewrite HEncInt.
                simpl.
                repeat f_equal.
 
                
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               intros HNot. inversion HNot.
-               
-          ++++
-            inversion EQ3.
+               all: try(intros HNot; inversion HNot).
+               rewrite Ptrofs.repr_unsigned. auto.
+        ++++
+          inversion EQ4.
             unfold decode_addrmode.
             simpl.
             assert(HEQx1:(Byte.shru
-                            (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 56))(Byte.repr 3)) = bB[x1]). {
+                            (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x0 ++ x3] (Byte.repr 56))(Byte.repr 3)) = bB[x0]). {
               rewrite <- Byte.and_shru.
               rewrite shru563.
-              replace (char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2)
+              replace (char_to_bool "1" :: char_to_bool "0" :: x0 ++ x3)
                 with
-                  ((char_to_bool "1" :: char_to_bool "0" :: x1) ++ x2).
+                  ((char_to_bool "1" :: char_to_bool "0" :: x0) ++ x3).
               rewrite (shru_bits 3 _ _).
-              setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x1).
+              setoid_rewrite (and7 (char_to_bool "1" :: [char_to_bool "0"]) x0).
               auto.
 
               1,3,4: repeat rewrite app_length; simpl.
-              1,2,4:rewrite (encode_reg_length rd x1); try omega.
+              1,2,4:rewrite (encode_reg_length rd x0); try omega.
               1-8: auto.
-              all: rewrite (encode_reg_length i0 x2); try omega; auto.
+              all: rewrite (encode_reg_length i0 x3); try omega; auto.
             }
-              
+            
             rewrite HEQx1.
-            generalize(encode_decode_ireg_refl _ _ EQ0).
-            intros Hrd.
-            destruct Hrd. destruct H.
-            rewrite H. rewrite H13. simpl.
-            assert(HEQ2: (Byte.shru bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 6)) = Byte.repr 2) by admit.
+           
+            resolve_enc_dec_ireg_refl x0.
+            rewrite H12; rewrite H13. simpl.
+            assert(HEQ2: (Byte.shru bB[ char_to_bool "1" :: char_to_bool "0" :: x0 ++ x3] (Byte.repr 6)) = Byte.repr 2) by admit.
             rewrite HEQ2.
             rewrite byte_eq_false.
             rewrite byte_eq_false.
             rewrite byte_eq_true; auto.
-            assert(HEQx2: (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x1 ++ x2] (Byte.repr 7)) = bB[x2]) by admit.
+            assert(HEQx2: (Byte.and bB[ char_to_bool "1" :: char_to_bool "0" :: x0 ++ x3] (Byte.repr 7)) = bB[x3]) by admit.
             rewrite HEQx2.
-            generalize (encode_decode_ireg_refl _ _ EQ).
-            intros Hri. destruct Hri.
-            destruct H14.
+            resolve_enc_dec_ireg_refl x3.
             rewrite H14. rewrite H15.
             simpl.
-            assert(HNE4: bB[x2] <> Byte.repr 4). {
+            assert(HNE4: bB[x3] <> Byte.repr 4). {
               intros HNot.
               destruct i0;
               simpl in EQ;
@@ -3381,69 +3397,61 @@ Proof.
               auto.
             }
             rewrite byte_eq_false.
-            rewrite HRelocOfs in EQ1.
-            simpl in EQ1.
-            unfold get_instr_reloc_addend' in EQ1.
-            unfold get_reloc_addend in EQ1.
-            unfold find_ofs_in_rtbl.
-            destruct(ZTree.get (iofs+sofs) rtbl_ofs_map);inversion EQ1.
-            assert (Hvalid: valid_int32 x0) by admit.
-            rewrite H17.
+
+            assert (Hvalid: valid_int32 (Ptrofs.unsigned i1)) by admit.
             generalize (encode_decode_int32_same_prefix _ l Hvalid).
             intros Hint.
             rewrite Hint.
             simpl.
-            generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+            
+           
+            resolve_reloc iofs sofs.
+            generalize (encode_int32_4_exists (Ptrofs.unsigned i1) l (encode_int32 (Ptrofs.unsigned i1) ++ l) eq_refl).
             intros (b1 & b2 & b3 & b4 & HEncInt).
             rewrite HEncInt.
             simpl.
-
-            
             repeat f_equal.
-            auto.
-            auto.
+            rewrite Ptrofs.repr_unsigned. auto. auto.
             intros HNot. inversion HNot.
             intros HNot. inversion HNot.
       +++ unfold decode_addrmode.
-          inversion EQ2.
+          monadInv EQ.
           simpl.
           assert(HEQx1: (Byte.shru
                            (Byte.and
                               bB[ char_to_bool "0"
                                                :: char_to_bool "0"
-                                               :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3)) = bB[x1]). {
+                                               :: x0 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 56)) (Byte.repr 3)) = bB[x0]). {
             rewrite <- Byte.and_shru.
             rewrite shru563.
             replace (char_to_bool "0"
            :: char_to_bool "0"
-              :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])
+              :: x0 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])
               with
                 ((char_to_bool "0"
            :: char_to_bool "0"
-              :: x1) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
+              :: x0) ++ ([char_to_bool "1"; char_to_bool "0"; char_to_bool "1"])).
             rewrite (shru_bits 3 _ _).
-            setoid_rewrite (and7 (char_to_bool "0" :: [char_to_bool "0"]) x1).
+            setoid_rewrite (and7 (char_to_bool "0" :: [char_to_bool "0"]) x0).
             all: auto.
 
             1,3,4: repeat rewrite app_length; simpl.
-            all:rewrite (encode_reg_length rd x1); try omega.
+            all:rewrite (encode_reg_length rd x0); try omega.
             1-8: auto.
           }
           rewrite HEQx1.
-          generalize (encode_decode_ireg_refl _ _ EQ0).
-          intros Hrd.
-          destruct Hrd. destruct H. rewrite H.
-          rewrite H13. simpl.
+          resolve_enc_dec_ireg_refl x0.
+          rewrite H11. rewrite H12.
           assert(HEQ0:  (Byte.shru
                            bB[ char_to_bool "0"
                                             :: char_to_bool "0"
-                                            :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 6)) = Byte.repr 0) by admit.
-          rewrite HEQ0.
+                                            :: x0 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 6)) = Byte.repr 0) by admit.
+          rewrite HEQ0. simpl.
           rewrite byte_eq_true; auto.
           assert(HEQ5: (Byte.and
                           bB[ char_to_bool "0"
                                            :: char_to_bool "0"
-                                           :: x1 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 7)) = Byte.repr 5) by admit.
+                                           :: x0 ++ [char_to_bool "1"; char_to_bool "0"; char_to_bool "1"]](Byte.repr 7)) = Byte.repr 5) by admit.
           rewrite HEQ5.
           unfold addrmode_parse_reg.
           do 5(try(rewrite byte_eq_false)).
@@ -3451,25 +3459,20 @@ Proof.
           simpl.
           rewrite byte_eq_false.
           rewrite byte_eq_true; auto.
-          rewrite HRelocOfs in H11.
-          simpl in H11.
-          unfold get_instr_reloc_addend' in H11.
-          unfold get_reloc_addend in H11.
-          unfold find_ofs_in_rtbl.
-          destruct(ZTree.get (iofs+sofs) rtbl_ofs_map); inversion H11.
-          assert (Hvalid: valid_int32 x0) by admit.
-          rewrite H15.
+          resolve_reloc iofs sofs.
+          assert (Hvalid: valid_int32 (Ptrofs.unsigned i1)) by admit.
           generalize (encode_decode_int32_same_prefix _ l Hvalid).
           intros Hint.
           rewrite Hint.
           simpl.
-          generalize (encode_int32_4_exists x0 l (encode_int32 x0 ++ l) eq_refl).
+          generalize (encode_int32_4_exists (Ptrofs.unsigned i1) l (encode_int32 (Ptrofs.unsigned i1) ++ l) eq_refl).
           intros (b1 & b2 & b3 & b4 & HEncInt).
           rewrite HEncInt.
           simpl.
 
           repeat f_equal.
           auto.
+          rewrite Ptrofs.repr_unsigned. auto.
           1-6:
             intros HNot; inversion HNot.
 Admitted.
@@ -3765,36 +3768,36 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
         omega.
     }
     monadInv EQ.
-    destruct (Ptrofs.eq_dec Ptrofs.zero Ptrofs.zero); inversion EQ.
-    destruct id; inversion H11.
+    destruct id; inversion EQ.
+    monadInv EQ.
     generalize (encode_decode_addrmode_relf _ _ _ (ofs + 1 + 1) _ _ ofs HInstr_reloc EQ0 HOfs).
     intros HAddrmode.
     unfold encode_addrmode in EQ0.
-    unfold get_instr_reloc_addend' in H12.
-    unfold get_reloc_addend in H12.
-    destruct (ZTree.get (1+1+ofs)) eqn:HReloc;inversion H12.
-    rewrite <- H13 in H11.
-    monadInv H12.
+    unfold get_instr_reloc_addend' in EQ.
+    unfold get_reloc_addend in EQ.
+    simpl in EQ2. inversion EQ2.
+    subst x.
+    destruct (ZTree.get (2+ofs)) eqn:HReloc;inversion EQ.
+    monadInv H11.
+    (* rewrite <- H12 in H11. *)
+    (* monadInv H12. *)
+    (* monadInv EQ0. *)
+    (* destruct (Ptrofs.eq_dec Ptrofs.zero Ptrofs.zero); inversion EQ0. *)
     monadInv EQ0.
-    destruct (Ptrofs.eq_dec Ptrofs.zero Ptrofs.zero); inversion EQ0.
-    monadInv EQ0.
-    generalize(encode_decode_addr_size_relf _ _ _ EQ2 (encode_int32 x2 ++l)).
+    generalize(encode_decode_addr_size_relf _ _ _ EQ4 (encode_int32 x3 ++l)).
     intros HAddrsize.
     rewrite <- app_assoc.
     rewrite HAddrsize.
     simpl.
-    simpl in EQ3.
-    monadInv EQ3. 
-    setoid_rewrite H11 in EQ4.
-    monadInv EQ4.
-    generalize (app_inv_tail (encode_int32 (reloc_addend r)) x x1 H12 ).
-    intros Hxx1. rewrite Hxx1.
-    generalize (HAddrmode l ).
+    monadInv EQ0.
+    simpl in EQ5. inversion EQ5.
+    subst x4.
+    rewrite app_assoc.
+    rewrite H11.
+    generalize (HAddrmode l).
     intros HAddrmode1.
-    rewrite <- app_assoc in HAddrmode1.
     rewrite HAddrmode1.
-    simpl.
-    auto.
+    simpl. auto.
   + (* Pmovl_rm rd a *)
     exists (Pmovl_rm rd a).
     split; try (unfold instr_eq; auto).
@@ -3848,10 +3851,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       unfold encode_instr' in HEncode.
       monadInv HEncode.
       destruct p.
-      destruct (Ptrofs.eq_dec i0 Ptrofs.zero); inversion EQ.
       destruct i; inversion EQ.
       monadInv EQ.
-      generalize (encode_decode_addr_size_relf _ _ _ EQ0 (encode_int32 x2 ++ l)).
+      generalize (encode_decode_addr_size_relf _ _ _ EQ0 (encode_int32 (Ptrofs.unsigned i0) ++ l)).
       intros HAddrsize.      
       rewrite <- app_assoc.
       remember (addrmode_reloc_offset (Addrmode base ofs0 (inr (1%positive, i0)))) as a_size.      
@@ -4379,10 +4381,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     ++
       monadInv HEncode.
       destruct p.
-      destruct (Ptrofs.eq_dec i0 Ptrofs.zero); inversion EQ.
       destruct i; inversion EQ.
       monadInv EQ.
-      generalize (encode_decode_addr_size_relf _ _ _ EQ0 (encode_int32 x2 ++ l)).
+      generalize (encode_decode_addr_size_relf _ _ _ EQ0 (encode_int32 (Ptrofs.unsigned i0) ++ l)).
       intros HAddrsize.      
       rewrite <- app_assoc.
       remember (addrmode_reloc_offset (Addrmode base ofs0 (inr (1%positive, i0)))) as a_size.      
