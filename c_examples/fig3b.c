@@ -1,4 +1,5 @@
 extern void record (int);
+extern int main();
 
 int c = 0;
 
