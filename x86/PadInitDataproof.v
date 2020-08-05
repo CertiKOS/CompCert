@@ -19,6 +19,17 @@ Proof.
   unfold transf_globdef. destruct def. cbn. auto.
 Qed.
 
+Lemma genv_next_add_globals_eq: forall defs ge1 ge2,
+    Genv.genv_next ge1 = Genv.genv_next ge2 ->
+    Genv.genv_next (Genv.add_globals ge1 defs) = Genv.genv_next (Genv.add_globals ge2 (map transf_globdef defs)).
+Proof.
+  induction defs as [|def defs].
+  - cbn. auto.
+  - cbn. intros ge1 ge2 H.
+    eapply IHdefs.
+    unfold Genv.add_global; cbn. congruence.
+Qed.
+
 Lemma genv_symb_pres: forall defs (ge1 ge2: Genv.t fundef unit),
     Genv.genv_next ge1 = Genv.genv_next ge2 ->
     Genv.genv_symb ge1 = Genv.genv_symb ge2 ->
@@ -35,6 +46,94 @@ Proof.
     + unfold Genv.add_global; cbn.    
       rewrite <- transf_globdef_pres_id. 
       congruence.
+Qed.
+
+Lemma genv_find_def_add_global_none: forall def ge1 ge2,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
+  (forall b, Genv.find_def ge1 b = None -> Genv.find_def ge2 b = None) ->
+  (forall b, Genv.find_def (Genv.add_global ge1 def) b = None ->
+        Genv.find_def (Genv.add_global ge2 (transf_globdef def)) b = None).
+Proof.
+  intros def ge1 ge2 H H0 b H1.
+  destruct (peq b (Genv.genv_next ge1)); subst.
+  - rewrite H.
+    rewrite Genv.add_global_find_def_eq in *. 
+    destruct def. cbn in H1. destruct o; cbn; congruence.
+  - rewrite Genv.add_global_find_def_neq in *; eauto.
+    congruence.
+Qed.
+
+Lemma genv_find_def_pres_none: forall defs ge1 ge2,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
+  (forall b, Genv.find_def ge1 b = None -> Genv.find_def ge2 b = None) ->
+  (forall b, Genv.find_def (fold_left (Genv.add_global (V:=unit)) defs ge1) b = None ->
+        Genv.find_def (fold_left (Genv.add_global (V:=unit)) (map transf_globdef defs) ge2) b = None).
+Proof.
+  induction defs as [|def defs].
+  - cbn; eauto.
+  - cbn. intros ge1 ge2 H H0 b H1.
+    apply IHdefs with (Genv.add_global ge1 def); eauto.
+    unfold Genv.add_global; cbn. congruence.
+    intros. eapply genv_find_def_add_global_none; eauto.
+Qed.
+
+Lemma genv_find_def_add_global_some_fun: forall def ge1 ge2,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
+  (forall b f, Genv.find_def ge1 b = Some (Gfun f) -> Genv.find_def ge2 b = Some (Gfun f)) ->
+  (forall b f, Genv.find_def (Genv.add_global ge1 def) b = Some (Gfun f) ->
+          Genv.find_def (Genv.add_global ge2 (transf_globdef def)) b = Some (Gfun f)).
+Proof.
+  intros def ge1 ge2 H H0 b f H1.
+  destruct (peq b (Genv.genv_next ge1)); subst.
+  - rewrite H.
+    rewrite Genv.add_global_find_def_eq in *. 
+    destruct def. cbn in H1; inv H1. cbn; congruence.
+  - rewrite Genv.add_global_find_def_neq in *; eauto.
+    congruence.
+Qed.
+
+Lemma genv_find_def_pres_some_fun: forall defs ge1 ge2,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
+  (forall b f, Genv.find_def ge1 b = Some (Gfun f) -> Genv.find_def ge2 b = Some (Gfun f)) ->
+  (forall b f, Genv.find_def (fold_left (Genv.add_global (V:=unit)) defs ge1) b = Some (Gfun f) ->
+        Genv.find_def (fold_left (Genv.add_global (V:=unit)) (map transf_globdef defs) ge2) b = Some (Gfun f)).
+Proof.
+  induction defs as [|def defs].
+  - cbn; eauto.
+  - cbn. intros ge1 ge2 H H0 b f H1.
+    apply IHdefs with (Genv.add_global ge1 def); eauto.
+    unfold Genv.add_global; cbn. congruence.
+    intros. eapply genv_find_def_add_global_some_fun; eauto.
+Qed.
+
+
+Lemma genv_find_def_add_global_some_var: forall def ge1 ge2,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
+  (forall b v, Genv.find_def ge1 b = Some (Gvar v) -> Genv.find_def ge2 b = Some (Gvar (transl_globvar v))) ->
+  (forall b v, Genv.find_def (Genv.add_global ge1 def) b = Some (Gvar v) ->
+          Genv.find_def (Genv.add_global ge2 (transf_globdef def)) b = Some (Gvar (transl_globvar v))).
+Proof.
+  intros def ge1 ge2 H H0 b f H1.
+  destruct (peq b (Genv.genv_next ge1)); subst.
+  - rewrite H.
+    rewrite Genv.add_global_find_def_eq in *. 
+    destruct def. cbn in H1; inv H1. cbn; congruence.
+  - rewrite Genv.add_global_find_def_neq in *; eauto.
+    congruence.
+Qed.
+  
+Lemma genv_find_def_pres_some_var: forall defs ge1 ge2,
+  Genv.genv_next ge1 = Genv.genv_next ge2 ->
+  (forall b v, Genv.find_def ge1 b = Some (Gvar v) -> Genv.find_def ge2 b = Some (Gvar (transl_globvar v))) ->
+  (forall b v, Genv.find_def (fold_left (Genv.add_global (V:=unit)) defs ge1) b = Some (Gvar v) ->
+        Genv.find_def (fold_left (Genv.add_global (V:=unit)) (map transf_globdef defs) ge2) b = Some (Gvar (transl_globvar v))).
+Proof.
+  induction defs as [|def defs].
+  - cbn; eauto.
+  - cbn. intros ge1 ge2 H H0 b f H1.
+    apply IHdefs with (Genv.add_global ge1 def); eauto.
+    unfold Genv.add_global; cbn. congruence.
+    intros. eapply genv_find_def_add_global_some_var; eauto.
 Qed.
 
 
@@ -70,6 +169,17 @@ Proof.
     cbn. apply IHdefs.
     unfold Genv.add_global. cbn. congruence.
     apply genv_find_funct_ptr_add_global_pres; auto.
+Qed.
+
+Lemma genv_public_add_globals_eq: forall defs ge1 ge2,
+    Genv.genv_public ge1 = Genv.genv_public ge2 ->
+    Genv.genv_public (Genv.add_globals ge1 defs) = Genv.genv_public (Genv.add_globals ge2 (map transf_globdef defs)).
+Proof.
+  induction defs as [|def defs].
+  - cbn. auto.
+  - cbn. intros ge1 ge2 H.
+    eapply IHdefs.
+    unfold Genv.add_global; cbn. congruence.
 Qed.
 
 
@@ -224,6 +334,9 @@ Proof.
 Qed.
 
 
+
+
+
 Variable prog: Asm.program.
 Variable tprog: Asm.program.
 
@@ -289,12 +402,63 @@ Proof.
   rewrite find_funct_ptr_transf; eauto.
 Qed.
 
+Lemma find_def_none_transf: forall b,
+  Genv.find_def ge b = None -> Genv.find_def tge b = None.
+Proof.
+  unfold ge, tge. red in TRANSF.
+  unfold Genv.globalenv.
+  intros. subst.
+  eapply genv_find_def_pres_none; eauto.
+Qed.
+
+Lemma find_def_some_fun_transf: forall b f,
+  Genv.find_def ge b = Some (Gfun f) -> Genv.find_def tge b = Some (Gfun f).
+Proof.
+  unfold ge, tge. red in TRANSF.
+  unfold Genv.globalenv.
+  intros. subst.
+  eapply genv_find_def_pres_some_fun; eauto.
+Qed.
+
+Lemma find_def_some_var_transf: forall b v,
+  Genv.find_def ge b = Some (Gvar v) -> Genv.find_def tge b = Some (Gvar (transl_globvar v)).
+Proof.
+  unfold ge, tge. red in TRANSF.
+  unfold Genv.globalenv.
+  intros. subst.
+  eapply genv_find_def_pres_some_var; eauto.
+  intros.
+  unfold Genv.empty_genv, Genv.find_def in H0; cbn in H0.
+  rewrite PTree.gempty in H0. congruence.
+Qed.
+
+
 Lemma senv_equiv: Senv.equiv ge tge.
 Proof.
   red in TRANSF. unfold ge, tge.
-  subst.
-  red. split; cbn.
-Admitted.
+  red. repeat split.
+  - cbn. subst. setoid_rewrite <- genv_next_add_globals_eq; auto.
+    auto.
+  - intros. 
+    generalize find_symbol_transf. intros FS.
+    subst. cbn in *.
+    rewrite FS. auto.
+  - generalize find_symbol_transf. intros FS.
+    subst. cbn in *. intros.
+    unfold Genv.public_symbol.
+    rewrite FS. subst ge. destr; auto.
+    unfold Genv.globalenv.
+    rewrite (genv_public_add_globals_eq _ _ (Genv.empty_genv fundef unit (prog_public (transf_program prog)))); eauto.
+  - symmetry. cbn. intros.
+    unfold Genv.block_is_volatile.
+    unfold Genv.find_var_info.
+    destruct (Genv.find_def (Genv.globalenv prog) b) eqn:FDEF.
+    destruct g.
+    + erewrite find_def_some_fun_transf; eauto.
+    + erewrite find_def_some_var_transf; eauto.
+      unfold transl_globvar; cbn. auto.
+    + erewrite find_def_none_transf; eauto.
+Qed.
 
 Lemma init_mem_transf: forall m,
     Genv.init_mem prog = Some m ->
