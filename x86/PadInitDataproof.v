@@ -279,6 +279,16 @@ Proof.
   apply genv_find_funct_ptr_pres; reflexivity.
 Qed.
 
+Lemma find_funct_transf: forall v,
+    Genv.find_funct tge v =
+    Genv.find_funct ge v.
+Proof.
+  unfold Genv.find_funct.
+  intros. destruct v; auto.
+  destr; auto.
+  rewrite find_funct_ptr_transf; eauto.
+Qed.
+
 Lemma senv_equiv: Senv.equiv ge tge.
 Proof.
   red in TRANSF. unfold ge, tge.
@@ -500,31 +510,26 @@ Proof.
   + eapply eval_addrmode32_lessdef; eauto.
 Qed.
 
+Lemma goto_ofs_simulation: forall sz ofs rs1 m1 rs2 m2 rs1' m1',
+    goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      goto_ofs tge sz ofs rs1' m1' = Next rs2' m2'
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Admitted.
 
-Hint Resolve 
-     val_lessdef_set
-     set_res_pres_lessdef 
-     undef_regs_pres_lessdef 
-     set_pair_pres_lessdef
-     regset_lessdef_pregset
-     Val.zero_ext_lessdef Val.sign_ext_lessdef Val.longofintu_lessdef Val.longofint_lessdef
-     Val.singleoffloat_lessdef Val.loword_lessdef Val.floatofsingle_lessdef Val.intoffloat_lessdef Val.maketotal_lessdef
-     Val.intoffloat_lessdef Val.floatofint_lessdef Val.intofsingle_lessdef Val.singleofint_lessdef
-     Val.longoffloat_lessdef Val.floatoflong_lessdef Val.longofsingle_lessdef Val.singleoflong_lessdef
-     eval_addrmode32_lessdef eval_addrmode64_lessdef eval_addrmode_lessdef
-     Val.neg_lessdef Val.negl_lessdef Val.add_lessdef Val.addl_lessdef
-     Val.sub_lessdef  Val.subl_lessdef Val.mul_lessdef Val.mull_lessdef Val.mulhs_lessdef Val.mulhu_lessdef
-     Val.mullhs_lessdef  Val.mullhu_lessdef Val.shr_lessdef Val.shrl_lessdef Val.or_lessdef Val.orl_lessdef
-     Val.xor_lessdef Val.xorl_lessdef Val.and_lessdef Val.andl_lessdef Val.notl_lessdef
-     Val.shl_lessdef Val.shll_lessdef Val.vzero_lessdef Val.notint_lessdef
-     Val.shru_lessdef Val.shrlu_lessdef Val.ror_lessdef Val.rorl_lessdef
-     compare_ints_lessdef compare_longs_lessdef compare_floats_lessdef compare_floats32_lessdef
-     Val.addf_lessdef Val.subf_lessdef Val.mulf_lessdef Val.divf_lessdef Val.negf_lessdef Val.absf_lessdef
-     Val.addfs_lessdef Val.subfs_lessdef Val.mulfs_lessdef Val.divfs_lessdef Val.negfs_lessdef Val.absfs_lessdef
-     Val.of_optbool_lessdef  Val.offset_ptr_lessdef
-     eval_testcond_lessdef eval_testcond_lessdef_some
-     nextinstr_pres_lessdef
-     nextinstr_nf_pres_lessdef.
+Lemma goto_label_simulation: forall f l rs1 m1 rs2 m2 rs1' m1',
+    goto_label ge f l rs1 m1 = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      goto_label tge f l rs1' m1' = Next rs2' m2' 
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Admitted.
+
 
 Lemma exec_load_simulation: forall a chunk sz rd rs1 m1 rs2 m2 rs1' m1',
     exec_load ge chunk m1 a rs1 rd sz = Next rs2 m2 ->
@@ -547,6 +552,33 @@ Lemma exec_store_simulation: forall a chunk sz rd ls rs1 m1 rs2 m2 rs1' m1',
 Admitted.
 
 
+Hint Resolve 
+     val_lessdef_set
+     set_res_pres_lessdef 
+     undef_regs_pres_lessdef 
+     set_pair_pres_lessdef
+     regset_lessdef_pregset
+     regset_lessdef_expand_vundef_left
+     Val.zero_ext_lessdef Val.sign_ext_lessdef Val.longofintu_lessdef Val.longofint_lessdef
+     Val.singleoffloat_lessdef Val.loword_lessdef Val.floatofsingle_lessdef Val.intoffloat_lessdef Val.maketotal_lessdef
+     Val.intoffloat_lessdef Val.floatofint_lessdef Val.intofsingle_lessdef Val.singleofint_lessdef
+     Val.longoffloat_lessdef Val.floatoflong_lessdef Val.longofsingle_lessdef Val.singleoflong_lessdef
+     eval_addrmode32_lessdef eval_addrmode64_lessdef eval_addrmode_lessdef
+     Val.neg_lessdef Val.negl_lessdef Val.add_lessdef Val.addl_lessdef
+     Val.sub_lessdef  Val.subl_lessdef Val.mul_lessdef Val.mull_lessdef Val.mulhs_lessdef Val.mulhu_lessdef
+     Val.mullhs_lessdef  Val.mullhu_lessdef Val.shr_lessdef Val.shrl_lessdef Val.or_lessdef Val.orl_lessdef
+     Val.xor_lessdef Val.xorl_lessdef Val.and_lessdef Val.andl_lessdef Val.notl_lessdef
+     Val.shl_lessdef Val.shll_lessdef Val.vzero_lessdef Val.notint_lessdef
+     Val.shru_lessdef Val.shrlu_lessdef Val.ror_lessdef Val.rorl_lessdef
+     compare_ints_lessdef compare_longs_lessdef compare_floats_lessdef compare_floats32_lessdef
+     Val.addf_lessdef Val.subf_lessdef Val.mulf_lessdef Val.divf_lessdef Val.negf_lessdef Val.absf_lessdef
+     Val.addfs_lessdef Val.subfs_lessdef Val.mulfs_lessdef Val.divfs_lessdef Val.negfs_lessdef Val.absfs_lessdef
+     Val.of_optbool_lessdef  Val.offset_ptr_lessdef
+     eval_testcond_lessdef eval_testcond_lessdef_some
+     nextinstr_pres_lessdef
+     nextinstr_nf_pres_lessdef.
+
+
 Ltac solve_simple_exec :=
   match goal with
   | [ |- context [Genv.symbol_address _ _ _] ] =>
@@ -557,6 +589,10 @@ Ltac solve_simple_exec :=
     eapply exec_load_simulation; eauto
   | [ |- exists _ _, exec_store _ _ _ _ _ _ _ _ = Next _ _ /\ Mem.extends _ _ /\ regset_lessdef _ _ /\ Mem.stack _ = Mem.stack _ ] =>
     eapply exec_store_simulation; eauto
+  | [ |- exists _ _, goto_ofs _ _ _ _ _ = Next _ _ /\ Mem.extends _ _ /\ regset_lessdef _ _ /\ Mem.stack _ = Mem.stack _ ] =>
+    eapply goto_ofs_simulation; eauto
+  | [ |- exists _ _, goto_label _ _ _ _ _ = Next _ _ /\ Mem.extends _ _ /\ regset_lessdef _ _ /\ Mem.stack _ = Mem.stack _ ] =>
+    eapply goto_label_simulation; eauto
   | [ |- regset_lessdef (nextinstr_nf _ _) (nextinstr_nf _ _) ] =>
     eapply nextinstr_nf_pres_lessdef; eauto
   | _ => eauto
@@ -573,28 +609,136 @@ Lemma exec_instr_simulation: forall f i rs1 m1 rs2 m2 rs1' m1',
 Proof.
   intros f i rs1 m1 rs2 m2 rs1' m1' EXEC RSL EXT STKEQ.
   destruct i; cbn in *; inv EXEC; try solve_simple_exec. 
-  - (* Pdivl *) admit.
-  - (* Pdivq *) admit.
-  - (* Pidvil *) admit.
-  - (* Pidviq *) admit.
-  - admit. (* destr_in H0; try congruence.  *)
-    (* + destruct b; inv H0. *)
-    (*   generalize (eval_testcond_lessdef c _ _ RSL). intros LEF. *)
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - eapply nextinstr_pres_lessdef; eauto.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-
-Admitted.
-    
+  - (* Pdivl *)
+    repeat destr_in H0. red in RSL.
+    generalize (RSL RDX). rewrite Heqv. inversion 1; subst. 
+    generalize (RSL RAX). rewrite Heqv0. inversion 1; subst. 
+    generalize (RSL r1). rewrite Heqv1. inversion 1; subst.
+    rewrite Heqo. 
+    solve_simple_exec.
+  - (* Pdivq *)
+    repeat destr_in H0. red in RSL.
+    generalize (RSL RDX). rewrite Heqv. inversion 1; subst. 
+    generalize (RSL RAX). rewrite Heqv0. inversion 1; subst. 
+    generalize (RSL r1). rewrite Heqv1. inversion 1; subst.
+    rewrite Heqo. 
+    solve_simple_exec.
+  - (* Pidivl *)
+    repeat destr_in H0. red in RSL.
+    generalize (RSL RDX). rewrite Heqv. inversion 1; subst. 
+    generalize (RSL RAX). rewrite Heqv0. inversion 1; subst. 
+    generalize (RSL r1). rewrite Heqv1. inversion 1; subst.
+    rewrite Heqo. 
+    solve_simple_exec.
+  - (* Pidivq *)
+    repeat destr_in H0. red in RSL.
+    generalize (RSL RDX). rewrite Heqv. inversion 1; subst. 
+    generalize (RSL RAX). rewrite Heqv0. inversion 1; subst. 
+    generalize (RSL r1). rewrite Heqv1. inversion 1; subst.
+    rewrite Heqo. 
+    solve_simple_exec.
+  - (* Pcmov *)
+    destr_in H0; inv H0.
+    + erewrite eval_testcond_lessdef_some; eauto.
+      destruct b; inv H1; solve_simple_exec.
+    + destr. destruct b; solve_simple_exec.
+      solve_simple_exec.
+  - (* Pjmp *)
+    destr_in H0; inv H0.
+    destruct (eval_ros ge ros rs1) eqn:ROS; cbn in Heqo; inv Heqo.
+    destr_in H0; inv H0.
+    destruct ros; cbn in *.
+    + red in RSL. generalize (RSL i). rewrite ROS.
+      inversion 1; subst. cbn.
+      destruct Ptrofs.eq_dec; try congruence.
+      rewrite find_funct_ptr_transf. rewrite H1.
+      solve_simple_exec.
+    + rewrite symbol_address_transf.
+      rewrite ROS. cbn.
+      destruct Ptrofs.eq_dec; try congruence.
+      rewrite find_funct_ptr_transf. rewrite H1.
+      solve_simple_exec.
+  - (* Pjcc *)
+    destr_in H0; inv H0.
+    destr_in H1; inv H1.
+    + erewrite eval_testcond_lessdef_some; eauto.
+      cbn. solve_simple_exec.
+    + erewrite eval_testcond_lessdef_some; eauto. 
+      cbn. solve_simple_exec.
+  - (* Pjcc2 *) 
+    destr_in H0; inv H0.
+    destr_in H1; inv H1.
+    + destr_in H0; inv H0.
+      destr_in H1; inv H1.
+      * erewrite eval_testcond_lessdef_some; eauto. cbn.
+        erewrite eval_testcond_lessdef_some; eauto. cbn.
+        solve_simple_exec.
+      * erewrite eval_testcond_lessdef_some; eauto. cbn.
+        erewrite eval_testcond_lessdef_some; eauto. cbn.
+        solve_simple_exec.
+    + destr_in H0; inv H0.
+      erewrite eval_testcond_lessdef_some; eauto. cbn.
+      erewrite eval_testcond_lessdef_some; eauto. cbn.
+      solve_simple_exec.
+  - (* Pjmptbl *)
+    destr_in H0; inv H0.
+    destr_in H1; inv H1.
+    red in RSL.
+    generalize (RSL r). rewrite Heqv. inversion 1; subst.
+    rewrite Heqo.
+    solve_simple_exec.
+  - (* Pcall *)
+    destr_in H0; inv H0.
+    edestruct Mem.storev_extends as (m2' & SV & EXT1).
+    exact EXT. exact Heqo. 
+    instantiate (1:= (Val.offset_ptr (rs1' RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))); eauto.
+    instantiate (1:= (Val.offset_ptr (rs1' PC) (Ptrofs.repr (instr_size (Pcall ros sg))))); eauto.
+    rewrite SV.
+    solve_simple_exec.
+    repeat eapply regset_lessdef_pregset; eauto.
+    destruct ros; cbn; eauto.
+    rewrite symbol_address_transf. auto.
+    erewrite (Mem.storev_stack m1); eauto.
+    erewrite (Mem.storev_stack m1' _ _ _ m2'); eauto.
+  - (* Pfreeframe *) 
+    destr_in H0; inv H0.
+    edestruct Mem.loadv_extends as (m2' & SV & EXT1).
+    exact EXT. exact Heqo. 
+    instantiate (1:= (rs1' RSP)); eauto.
+    rewrite SV.
+    solve_simple_exec.
+  - (* Pallocframe *) 
+    eapply nextinstr_pres_lessdef; eauto.
+  - (* Pjcc_rel *)
+    destr_in H0; inv H0.
+    destr_in H1; inv H1.
+    + erewrite eval_testcond_lessdef_some; eauto.
+      cbn. solve_simple_exec.
+    + erewrite eval_testcond_lessdef_some; eauto. 
+      cbn. solve_simple_exec.
+  - (* Pjcc2_rel *) 
+    destr_in H0; inv H0.
+    destr_in H1; inv H1.
+    + destr_in H0; inv H0.
+      destr_in H1; inv H1.
+      * erewrite eval_testcond_lessdef_some; eauto. cbn.
+        erewrite eval_testcond_lessdef_some; eauto. cbn.
+        solve_simple_exec.
+      * erewrite eval_testcond_lessdef_some; eauto. cbn.
+        erewrite eval_testcond_lessdef_some; eauto. cbn.
+        solve_simple_exec.
+    + destr_in H0; inv H0.
+      erewrite eval_testcond_lessdef_some; eauto. cbn.
+      erewrite eval_testcond_lessdef_some; eauto. cbn.
+      solve_simple_exec.
+  - (* Pjmptbl_rel *)
+    destr_in H0; inv H0.
+    destr_in H1; inv H1.
+    red in RSL.
+    generalize (RSL r). rewrite Heqv. inversion 1; subst.
+    rewrite Heqo.
+    solve_simple_exec.
+Qed.    
 
 Theorem step_simulation:
   forall S1 t S2, step ge S1 t S2 ->

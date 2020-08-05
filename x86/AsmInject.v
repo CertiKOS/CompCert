@@ -378,6 +378,14 @@ Proof.
   eapply undef_regs_pres_lessdef; eauto.
 Qed.
 
+Lemma regset_lessdef_expand_vundef_left : forall rs1 rs2 r,
+  regset_lessdef rs1 rs2 ->
+  regset_lessdef (rs1 # r <- Vundef) rs2.
+Proof.
+  intros. unfold regset_lessdef. intros.
+  rewrite Pregmap_gsspec_alt. destruct (Pregmap.elt_eq r0 r); auto.
+Qed.
+
 
 Hint Resolve 
      val_lessdef_set
@@ -385,6 +393,7 @@ Hint Resolve
      undef_regs_pres_lessdef 
      set_pair_pres_lessdef
      regset_lessdef_pregset
+     regset_lessdef_expand_vundef_left
      Val.lessdef_refl
      Val.zero_ext_lessdef Val.sign_ext_lessdef Val.longofintu_lessdef Val.longofint_lessdef
      Val.singleoffloat_lessdef Val.loword_lessdef Val.floatofsingle_lessdef Val.intoffloat_lessdef Val.maketotal_lessdef
