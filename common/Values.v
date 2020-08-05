@@ -1958,6 +1958,442 @@ Proof.
   intros. destruct v; simpl; auto. f_equal. apply Ptrofs.add_assoc. 
 Qed.
 
+Lemma longofintu_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.longofintu v1) (Val.longofintu v2).
+Proof.
+  intros. unfold Val.longofintu. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma longofint_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (longofint v1) (longofint v2).
+Proof.
+  intros. unfold longofint. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma floatofsingle_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.floatofsingle v1) (Val.floatofsingle v2).
+Proof.
+  intros. unfold Val.floatofsingle. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Inductive opt_val_lessdef : option val -> option val -> Prop :=
+| opt_val_lessdef_none v : opt_val_lessdef None v
+| opt_val_lessdef_some v1 v2 : Val.lessdef v1 v2 -> 
+                                opt_val_lessdef (Some v1) (Some v2).
+
+Lemma maketotal_lessdef : forall v1 v2,
+    opt_val_lessdef v1 v2 -> Val.lessdef (Val.maketotal v1) (Val.maketotal v2).
+Proof.
+  intros. inversion H; simpl; subst; auto.
+Qed.
+
+Lemma intoffloat_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.intoffloat v1) (Val.intoffloat v2).
+Proof.
+  intros. unfold Val.intoffloat. destruct v1; try constructor.
+  inv H. destruct (Floats.Float.to_int f); simpl. 
+  - constructor. auto.
+  - constructor.
+Qed.
+
+Lemma floatofint_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.floatofint v1) (Val.floatofint v2).
+Proof.
+  intros. unfold Val.floatofint. destruct v1; try constructor.
+  inv H. constructor; auto.
+Qed.
+
+Lemma intofsingle_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.intofsingle v1) (Val.intofsingle v2).
+Proof.
+  intros. unfold Val.intofsingle. destruct v1; try constructor.
+  inv H. destruct (Floats.Float32.to_int f); simpl; constructor; auto.
+Qed.
+
+Lemma longoffloat_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.longoffloat v1) (Val.longoffloat v2).
+Proof.
+  intros. unfold Val.longoffloat. destruct v1; try constructor.
+  inv H. destruct (Floats.Float.to_long f) eqn:EQ; simpl; constructor; auto.
+Qed.
+
+Lemma floatoflong_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.floatoflong v1) (Val.floatoflong v2).
+Proof.
+  intros. unfold Val.floatoflong. destruct v1; try constructor.
+  inv H. constructor; auto. 
+Qed.
+
+Lemma longofsingle_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.longofsingle v1) (Val.longofsingle v2).
+Proof.
+  intros. unfold Val.longofsingle. destruct v1; try constructor.
+  inv H. destruct (Floats.Float32.to_long f) eqn:EQ; simpl; constructor; auto.
+Qed.
+
+Lemma singleoflong_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.singleoflong v1) (Val.singleoflong v2).
+Proof.
+  intros. unfold Val.singleoflong. destruct v1; try constructor.
+  inv H. constructor; auto.
+Qed.
+
+Lemma singleofint_lessdef : forall v1 v2,
+  lessdef v1 v2 -> opt_val_lessdef (Val.singleofint v1) (Val.singleofint v2).
+Proof.
+  intros. unfold Val.singleofint. destruct v1; try constructor.
+  inv H. constructor; auto.
+Qed.
+
+Lemma neg_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.neg v1) (Val.neg v2).
+Proof.
+  intros. unfold Val.neg. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma negl_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.negl v1) (Val.negl v2).
+Proof.
+  intros. unfold Val.negl. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Remark mul_lessdef:
+  forall v1 v1' v2 v2',
+  lessdef v1 v1' ->
+  lessdef v2 v2' ->
+  lessdef (mul v1 v2) (mul v1' v2').
+Proof.
+  intros. unfold Val.mul. destruct v1, v2; simpl; auto.
+  inversion H; inversion H0; subst. auto.
+Qed.
+
+Remark mull_lessdef:
+  forall v1 v1' v2 v2',
+  lessdef v1 v1' ->
+  lessdef v2 v2' ->
+  lessdef (mull v1 v2) (mull v1' v2').
+Proof.
+Proof.
+  intros. unfold Val.mull. destruct v1, v2; simpl; auto.
+  inversion H; inversion H0; subst. auto.
+Qed.
+
+Remark mulhs_lessdef:
+  forall v1 v1' v2 v2',
+  lessdef v1 v1' ->
+  lessdef v2 v2' ->
+  lessdef (mulhs v1 v2) (mulhs v1' v2').
+Proof.
+  intros. unfold Val.mulhs. destruct v1, v2; simpl; auto.
+  inversion H; inversion H0; subst. auto.
+Qed.
+
+Lemma mulhu_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.mulhu v1 v1') (Val.mulhu v2 v2').
+Proof.
+  intros. unfold Val.mulhu. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+
+Lemma shr_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.shr v1 v1') (Val.shr v2 v2').
+Proof.
+  intros. unfold Val.shr. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. 
+  destruct (Int.ltu i0 Int.iwordsize); auto.
+Qed.
+
+Lemma shrl_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.shrl v1 v1') (Val.shrl v2 v2').
+Proof.
+  intros. unfold Val.shrl. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. 
+  destruct (Int.ltu i0 Int64.iwordsize'); auto.
+Qed.
+
+Lemma shru_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.shru v1 v1') (Val.shru v2 v2').
+Proof.
+  intros. unfold Val.shru. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. 
+  destruct (Int.ltu i0 Int.iwordsize); auto.
+Qed.
+
+Lemma shrlu_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.shrlu v1 v1') (Val.shrlu v2 v2').
+Proof.
+  intros. unfold Val.shrlu. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. 
+  destruct (Int.ltu i0 Int64.iwordsize'); auto.
+Qed.
+
+Lemma or_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.or v1 v1') (Val.or v2 v2').
+Proof.
+  intros. unfold Val.or. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma orl_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.orl v1 v1') (Val.orl v2 v2').
+Proof.
+  intros. unfold Val.orl. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma ror_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.ror v1 v1') (Val.ror v2 v2').
+Proof.
+  intros. unfold Val.ror. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma rorl_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.rorl v1 v1') (Val.rorl v2 v2').
+Proof.
+  intros. unfold Val.rorl. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+
+Lemma xor_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.xor v1 v1') (Val.xor v2 v2').
+Proof.
+  intros. unfold Val.xor. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma xorl_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.xorl v1 v1') (Val.xorl v2 v2').
+Proof.
+  intros. unfold Val.xorl. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma and_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.and v1 v1') (Val.and v2 v2').
+Proof.
+  intros. unfold Val.and. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma andl_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.andl v1 v1') (Val.andl v2 v2').
+Proof.
+  intros. unfold Val.andl. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma notl_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.notl v1) (Val.notl v2).
+Proof.
+  intros. unfold Val.notl. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma notint_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.notint v1) (Val.notint v2).
+Proof.
+  intros. unfold Val.notint. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma shl_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.shl v1 v1') (Val.shl v2 v2').
+Proof.
+  intros. unfold Val.shl. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. 
+  destruct (Int.ltu i0 Int.iwordsize); auto.
+Qed.
+
+Lemma shll_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.shll v1 v1') (Val.shll v2 v2').
+Proof.
+  intros. unfold Val.shll. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. 
+  destruct (Int.ltu i0 Int64.iwordsize'); auto.
+Qed.
+
+Lemma addf_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.addf v1 v1') (Val.addf v2 v2').
+Proof.
+  intros. unfold Val.addf. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma subf_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.subf v1 v1') (Val.subf v2 v2').
+Proof.
+  intros. unfold Val.subf. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma mulf_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.mulf v1 v1') (Val.mulf v2 v2').
+Proof.
+  intros. unfold Val.mulf. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma divf_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.divf v1 v1') (Val.divf v2 v2').
+Proof.
+  intros. unfold Val.divf. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma negf_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.negf v1) (Val.negf v2).
+Proof.
+  intros. unfold Val.negf. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma absf_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.absf v1) (Val.absf v2).
+Proof.
+  intros. unfold Val.absf. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma addfs_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.addfs v1 v1') (Val.addfs v2 v2').
+Proof.
+  intros. unfold Val.addfs. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma subfs_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.subfs v1 v1') (Val.subfs v2 v2').
+Proof.
+  intros. unfold Val.subfs. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma mulfs_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.mulfs v1 v1') (Val.mulfs v2 v2').
+Proof.
+  intros. unfold Val.mulfs. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma divfs_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.divfs v1 v1') (Val.divfs v2 v2').
+Proof.
+  intros. unfold Val.divfs. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma negfs_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.negfs v1) (Val.negfs v2).
+Proof.
+  intros. unfold Val.negfs. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Lemma absfs_lessdef : forall v1 v2,
+    lessdef v1 v2 -> lessdef (Val.absfs v1) (Val.absfs v2).
+Proof.
+  intros. unfold Val.absfs. 
+  destruct v1; auto. inv H. auto.
+Qed.
+
+Remark subl_lessdef:
+  forall v1 v1' v2 v2',
+  lessdef v1 v1' ->
+  lessdef v2 v2' ->
+  lessdef (Val.subl v1 v2) (Val.subl v1' v2').
+Proof.
+  intros. unfold Val.subl. destruct Archi.ptr64 eqn:SF.
+- inv H; inv H0; simpl; auto.
++ destr; econstructor; eauto. 
+- inv H; inv H0; destr; constructor.
+Qed.
+
+Remark sub_lessdef:
+  forall v1 v1' v2 v2',
+  lessdef v1 v1' ->
+  lessdef v2 v2' ->
+  lessdef (Val.sub v1 v2) (Val.sub v1' v2').
+Proof.
+  intros. unfold Val.sub. destruct Archi.ptr64 eqn:SF.
+- inv H; inv H0; destr; constructor.
+- inv H; inv H0; simpl; auto.
+  destr; econstructor; eauto.
+Qed.
+
+Lemma mullhs_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.mullhs v1 v1') (Val.mullhs v2 v2').
+Proof.
+  intros. unfold Val.mullhs. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma mullhu_lessdef : forall v1 v2 v1' v2',
+    lessdef v1 v2 -> lessdef v1' v2' -> lessdef (Val.mullhu v1 v1') (Val.mullhu v2 v2').
+Proof.
+  intros. unfold Val.mullhu. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma vzero_lessdef : 
+  lessdef Vzero Vzero.
+Proof.
+  intros. unfold Vzero. auto.
+Qed.
+
+Lemma vtrue_lessdef : 
+  lessdef Vtrue Vtrue.
+Proof.
+  intros. unfold Vtrue. auto.
+Qed.
+
+Lemma vfalse_lessdef : 
+  lessdef Vfalse Vfalse.
+Proof.
+  intros. unfold Vfalse. auto.
+Qed.
+
+Lemma vofbool_lessdef : forall v,
+  lessdef (Val.of_bool v) (Val.of_bool v).
+Proof.
+  destruct v; simpl.
+  - apply vtrue_lessdef.
+  - apply vfalse_lessdef.
+Qed.
+
+
 (** * Values and memory injections *)
 
 (** A memory injection [f] is a function from addresses to either [None]

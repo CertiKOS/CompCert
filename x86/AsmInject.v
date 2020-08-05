@@ -361,4 +361,221 @@ Proof.
     apply Val.loword_lessdef; auto.
 Qed.
 
+Lemma nextinstr_pres_lessdef : forall rs1 rs2 sz,
+    regset_lessdef rs1 rs2 ->
+    regset_lessdef (nextinstr rs1 sz) (nextinstr rs2 sz).
+Proof.
+  intros. eapply regset_lessdef_pregset; eauto.
+  eapply Val.offset_ptr_lessdef; eauto.
+Qed.
+  
+Lemma nextinstr_nf_pres_lessdef : forall rs1 rs2 sz,
+    regset_lessdef rs1 rs2 ->
+    regset_lessdef (nextinstr_nf rs1 sz) (nextinstr_nf rs2 sz).
+Proof.
+  intros. unfold nextinstr_nf.
+  eapply nextinstr_pres_lessdef; eauto.
+  eapply undef_regs_pres_lessdef; eauto.
+Qed.
+
+
+Hint Resolve 
+     val_lessdef_set
+     set_res_pres_lessdef 
+     undef_regs_pres_lessdef 
+     set_pair_pres_lessdef
+     regset_lessdef_pregset
+     Val.lessdef_refl
+     Val.zero_ext_lessdef Val.sign_ext_lessdef Val.longofintu_lessdef Val.longofint_lessdef
+     Val.singleoffloat_lessdef Val.loword_lessdef Val.floatofsingle_lessdef Val.intoffloat_lessdef Val.maketotal_lessdef
+     Val.intoffloat_lessdef Val.floatofint_lessdef Val.intofsingle_lessdef Val.singleofint_lessdef
+     Val.longoffloat_lessdef Val.floatoflong_lessdef Val.longofsingle_lessdef Val.singleoflong_lessdef
+     Val.neg_lessdef Val.negl_lessdef Val.add_lessdef Val.addl_lessdef
+     Val.sub_lessdef  Val.subl_lessdef Val.mul_lessdef Val.mull_lessdef Val.mulhs_lessdef Val.mulhu_lessdef
+     Val.mullhs_lessdef  Val.mullhu_lessdef Val.shr_lessdef Val.shrl_lessdef Val.or_lessdef Val.orl_lessdef
+     Val.xor_lessdef Val.xorl_lessdef Val.and_lessdef Val.andl_lessdef Val.notl_lessdef
+     Val.shl_lessdef Val.shll_lessdef Val.vzero_lessdef Val.notint_lessdef
+     Val.shru_lessdef Val.shrlu_lessdef Val.ror_lessdef Val.rorl_lessdef
+     Val.addf_lessdef Val.subf_lessdef Val.mulf_lessdef Val.divf_lessdef Val.negf_lessdef Val.absf_lessdef
+     Val.addfs_lessdef Val.subfs_lessdef Val.mulfs_lessdef Val.divfs_lessdef Val.negfs_lessdef Val.absfs_lessdef
+     val_of_optbool_lessdef Val.offset_ptr_lessdef
+     nextinstr_pres_lessdef
+     nextinstr_nf_pres_lessdef.
+
+Lemma compare_floats_lessdef: forall v1 v2 v1' v2' rs rs',
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    regset_lessdef rs rs' -> 
+    regset_lessdef (compare_floats v1 v2 rs) (compare_floats v1' v2' rs').
+Proof.
+  intros. unfold compare_floats, Asm.compare_floats.
+  inv H; inv H0.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+Qed.
+
+Lemma compare_floats32_lessdef: forall v1 v2 v1' v2' rs rs',
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    regset_lessdef rs rs' -> 
+    regset_lessdef (compare_floats32 v1 v2 rs) (compare_floats32 v1' v2' rs').
+Proof.
+  intros. unfold compare_floats32, Asm.compare_floats32.
+  inv H; inv H0.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+  - destruct v1', v2'; eauto.
+    eapply regset_lessdef_pregset; eauto.
+Qed.
+
+
+Lemma cmplu_bool_lessdef : forall v1 v2 v1' v2' m m' c,
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    Val.opt_lessdef (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2)
+                (Val.cmplu_bool (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. destruct (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2) eqn:EQ.
+  - assert ((Val.cmplu_bool (Mem.valid_pointer m') c v1' v2') = Some b).
+    { eapply Val.cmplu_bool_lessdef; eauto. }
+    rewrite H1. constructor.
+  - constructor.
+Qed.
+
+Lemma cmpu_lessdef : forall v1 v2 v1' v2' m m' c,
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    Mem.extends m m' ->
+    Val.lessdef (Val.cmpu (Mem.valid_pointer m) c v1 v2)
+                (Val.cmpu (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. unfold Val.cmpu.
+  eapply Val.of_optbool_lessdef; eauto.
+  intros. apply Val.cmpu_bool_lessdef with (Mem.valid_pointer m) v1 v2; eauto.
+  intros. 
+  eapply Mem.valid_pointer_extends; eauto.
+Qed.
+
+Lemma cmplu_lessdef : forall v1 v2 v1' v2' m m' c,
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    Mem.extends m m' ->
+    Val.opt_val_lessdef (Val.cmplu (Mem.valid_pointer m) c v1 v2)
+                        (Val.cmplu (Mem.valid_pointer m') c v1' v2').
+Proof.
+  intros. unfold Val.cmplu.
+  destruct (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2) eqn:EQ.
+  cbn.
+  - assert ((Val.cmplu_bool (Mem.valid_pointer m') c v1' v2') = Some b).
+    { eapply Val.cmplu_bool_lessdef; eauto. }
+    rewrite H2. constructor. apply Val.lessdef_refl.
+  - cbn. constructor.
+Qed.
+
+Lemma val_negative_lessdef: forall v1 v2,
+  Val.lessdef v1 v2 -> Val.lessdef (Val.negative v1) (Val.negative v2).
+Proof.
+  intros. unfold Val.negative. destruct v1; auto.
+  inv H. auto.
+Qed.
+
+Lemma val_negativel_lessdef: forall v1 v2,
+  Val.lessdef v1 v2 -> Val.lessdef (Val.negativel v1) (Val.negativel v2).
+Proof.
+  intros. unfold Val.negativel. destruct v1; auto.
+  inv H. auto.
+Qed.
+
+Lemma sub_overflow_lessdef : forall v1 v2 v1' v2',
+    Val.lessdef v1 v2 -> Val.lessdef v1' v2' -> 
+    Val.lessdef (Val.sub_overflow v1 v1') (Val.sub_overflow v2 v2').
+Proof.
+  intros. unfold Val.sub_overflow. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Lemma subl_overflow_lessdef : forall v1 v2 v1' v2',
+    Val.lessdef v1 v2 -> Val.lessdef v1' v2' -> 
+    Val.lessdef (Val.subl_overflow v1 v1') (Val.subl_overflow v2 v2').
+Proof.
+  intros. unfold Val.subl_overflow. 
+  destruct v1; auto. inv H. 
+  destruct v1'; auto. inv H0. auto.
+Qed.
+
+Hint Resolve 
+     val_negativel_lessdef val_negativel_lessdef
+     sub_overflow_lessdef subl_overflow_lessdef.
+     
+
+Lemma compare_ints_lessdef: forall v1 v2 v1' v2' rs rs' m m',
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    Mem.extends m m' ->
+    regset_lessdef rs rs' -> 
+    regset_lessdef (compare_ints v1 v2 rs m) (compare_ints v1' v2' rs' m').
+Proof.
+  intros. unfold compare_ints, Asm.compare_ints.
+  repeat apply regset_lessdef_pregset; auto.
+  - apply cmpu_lessdef; auto.
+  - apply cmpu_lessdef; auto.
+  - apply val_negative_lessdef. apply Val.sub_lessdef; auto.
+Qed.
+
+Hint Resolve cmplu_lessdef.
+
+Lemma compare_longs_lessdef: forall v1 v2 v1' v2' rs rs' m m',
+    Val.lessdef v1 v1' -> Val.lessdef v2 v2' ->
+    Mem.extends m m' ->
+    regset_lessdef rs rs' -> 
+    regset_lessdef (compare_longs v1 v2 rs m) (compare_longs v1' v2' rs' m').
+Proof.
+  intros. unfold compare_longs, Asm.compare_longs. 
+  eapply regset_lessdef_pregset; eauto.
+  eapply regset_lessdef_pregset; eauto.
+  eapply regset_lessdef_pregset; eauto.
+  eapply regset_lessdef_pregset; eauto.
+Qed.
+
+Ltac solve_opt_lessdef1 := 
+  match goal with
+  | [ |- Val.opt_lessdef (match ?rs1 ?r with
+                     | _ => _
+                     end) _ ] =>
+    let EQ := fresh "EQ" in (destruct (rs1 r) eqn:EQ; solve_opt_lessdef1)
+  | [ |- Val.opt_lessdef None _ ] => constructor
+  | [ |- Val.opt_lessdef (Some _) (match ?rs2 ?r with
+                              | _ => _
+                              end) ] =>
+    let EQ := fresh "EQ" in (destruct (rs2 r) eqn:EQ; solve_opt_lessdef1)
+  | [ H1: regset_lessdef ?rs1 ?rs2, H2: ?rs1 ?r = _, H3: ?rs2 ?r = _ |- _ ] =>
+    generalize (H1 r); rewrite H2, H3; clear H2 H3; inversion 1; subst; solve_opt_lessdef1
+  | [ |- Val.opt_lessdef (Some ?v) (Some ?v) ] => constructor
+  end.
+
+Lemma eval_testcond_lessdef: forall c rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.opt_lessdef (Asm.eval_testcond c rs1) (Asm.eval_testcond c rs2).
+Proof.
+  intros. destruct c; simpl; try solve_opt_lessdef1.
+Qed.
+
+Lemma eval_testcond_lessdef_some: forall c rs1 rs2 b,
+    regset_lessdef rs1 rs2 ->
+    eval_testcond c rs1 = Some b ->
+    Asm.eval_testcond c rs2 = Some b.
+Proof.
+  intros.
+  generalize (eval_testcond_lessdef c _ _ H).
+  intros OL.
+  inv OL. congruence. congruence.
+Qed.
+
+
+
 End WITHMEMORYMODEL.

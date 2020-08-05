@@ -372,34 +372,195 @@ Proof.
     apply regset_lessdef_refl.
 Qed.
 
+Lemma eval_addrmode32_lessdef: forall a rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef (Asm.eval_addrmode32 ge a rs1) (eval_addrmode32 tge a rs2).
+Proof.
+(*   intros. unfold Asm.eval_addrmode32, eval_addrmode32. *)
+(*   destruct a.  *)
+(*   destruct base, ofs, const; simpl in *.  *)
+(*   - destruct p. repeat apply Val.add_inject; auto. *)
+(*     destr_pair_if; auto. *)
+(*     apply Val.mul_inject; auto. *)
+(*   - destruct p,p0. repeat apply Val.add_inject; auto. *)
+(*     destr_pair_if; auto. *)
+(*     apply Val.mul_inject; auto. *)
+(*     apply inject_symbol_address. auto. *)
+(*   - repeat apply Val.add_inject; auto. *)
+(*   - destruct p. apply Val.add_inject; auto.  *)
+(*     inject_match. apply inject_symbol_address; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     destr_pair_if. auto. *)
+(*     eapply Val.inject_ptr; eauto. *)
+(*     repeat unfold Ptrofs.of_int.  *)
+(*     repeat rewrite Int.unsigned_zero.  *)
+(*     repeat rewrite Ptrofs.add_zero. auto. *)
+(*   - destruct p. *)
+(*     inject_match. *)
+(*     apply Val.add_inject; auto. *)
+(*     destr_pair_if; auto. *)
+(*     apply Val.mul_inject; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     destr_pair_if. auto. *)
+(*     eapply Val.inject_ptr; eauto. *)
+(*     repeat unfold Ptrofs.of_int.  *)
+(*     repeat rewrite Int.unsigned_zero.  *)
+(*     repeat rewrite Ptrofs.add_zero. auto. *)
+(*   - destruct p,p0. *)
+(*     inject_match. *)
+(*     apply Val.add_inject; auto. *)
+(*     destr_pair_if; auto. *)
+(*     apply Val.mul_inject; auto. *)
+(*     apply inject_symbol_address; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     destr_pair_if. auto. *)
+(*     eapply Val.inject_ptr; eauto. *)
+(*     repeat unfold Ptrofs.of_int.  *)
+(*     repeat rewrite Int.unsigned_zero.  *)
+(*     repeat rewrite Ptrofs.add_zero. auto. *)
+(*   - repeat apply Val.add_inject; auto. *)
+(*   - destruct p.  *)
+(*     inject_match. inject_match. *)
+(*     apply inject_symbol_address; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     destr_pair_if. auto. *)
+(*     eapply Val.inject_ptr; eauto. *)
+(*     repeat unfold Ptrofs.of_int.  *)
+(*     repeat rewrite Int.unsigned_zero.  *)
+(*     repeat rewrite Ptrofs.add_zero. auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     destr_pair_if. auto. *)
+(*     eapply Val.inject_ptr; eauto. *)
+(*     repeat unfold Ptrofs.of_int.  *)
+(*     repeat rewrite Int.unsigned_zero.  *)
+(*     repeat rewrite Ptrofs.add_zero. auto. *)
+(* Qed.     *)
+Admitted.
+
+Lemma eval_addrmode64_lessdef: forall a rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef (Asm.eval_addrmode64 ge a rs1) (eval_addrmode64 tge a rs2).
+Proof.
+(*   intros. unfold Asm.eval_addrmode32, eval_addrmode32. *)
+(*   destruct a.  *)
+(*   destruct base, ofs, const; simpl in *. *)
+(*   - destruct p. repeat apply Val.addl_inject; auto. *)
+(*     destr_pair_if; auto. *)
+(*     apply Val.mull_inject; auto. *)
+(*   - destruct p,p0. repeat apply Val.addl_inject; auto. *)
+(*     destr_pair_if; auto. *)
+(*     apply Val.mull_inject; auto. *)
+(*     apply inject_symbol_address. auto. *)
+(*   - repeat apply Val.addl_inject; auto. *)
+(*   - destruct p. apply Val.addl_inject; auto.  *)
+(*     inject_match. apply inject_symbol_address; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     (* destr_pair_if; auto. *) *)
+(*     (* eapply Val.inject_ptr; eauto.  *) *)
+(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
+(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *) *)
+(*   - destruct p.  *)
+(*     inject_match. *)
+(*     apply Val.addl_inject; auto. *)
+(*     destr_pair_if; auto.  *)
+(*     apply Val.mull_inject; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     (* destr_pair_if; auto. *) *)
+(*     (* eapply Val.inject_ptr; eauto.  *) *)
+(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
+(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *) *)
+(*   - destruct p,p0. *)
+(*     inject_match. *)
+(*     apply Val.addl_inject; auto. *)
+(*     destr_pair_if; auto.  *)
+(*     apply Val.mull_inject; auto. *)
+(*     apply inject_symbol_address; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     (* destr_pair_if; auto. *) *)
+(*     (* eapply Val.inject_ptr; eauto.  *) *)
+(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
+(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *) *)
+(*   - repeat apply Val.addl_inject; auto. *)
+(*   - destruct p. inject_match. inject_match. *)
+(*     apply inject_symbol_address; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     destr_valinj_left H1; inv H1; auto. *)
+(*     (* eapply Val.inject_ptr; eauto.  *) *)
+(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
+(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *)     *)
+(* Qed. *)
+Admitted.
+
+Lemma eval_addrmode_lessdef: forall a rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef (Asm.eval_addrmode ge a rs1) (eval_addrmode tge a rs2).
+Proof.
+  intros. unfold Asm.eval_addrmode, eval_addrmode. destruct Archi.ptr64.
+  + eapply eval_addrmode64_lessdef; eauto.
+  + eapply eval_addrmode32_lessdef; eauto.
+Qed.
+
 
 Hint Resolve 
      val_lessdef_set
      set_res_pres_lessdef 
      undef_regs_pres_lessdef 
-     Val.offset_ptr_lessdef
      set_pair_pres_lessdef
-     regset_lessdef_pregset.
+     regset_lessdef_pregset
+     Val.zero_ext_lessdef Val.sign_ext_lessdef Val.longofintu_lessdef Val.longofint_lessdef
+     Val.singleoffloat_lessdef Val.loword_lessdef Val.floatofsingle_lessdef Val.intoffloat_lessdef Val.maketotal_lessdef
+     Val.intoffloat_lessdef Val.floatofint_lessdef Val.intofsingle_lessdef Val.singleofint_lessdef
+     Val.longoffloat_lessdef Val.floatoflong_lessdef Val.longofsingle_lessdef Val.singleoflong_lessdef
+     eval_addrmode32_lessdef eval_addrmode64_lessdef eval_addrmode_lessdef
+     Val.neg_lessdef Val.negl_lessdef Val.add_lessdef Val.addl_lessdef
+     Val.sub_lessdef  Val.subl_lessdef Val.mul_lessdef Val.mull_lessdef Val.mulhs_lessdef Val.mulhu_lessdef
+     Val.mullhs_lessdef  Val.mullhu_lessdef Val.shr_lessdef Val.shrl_lessdef Val.or_lessdef Val.orl_lessdef
+     Val.xor_lessdef Val.xorl_lessdef Val.and_lessdef Val.andl_lessdef Val.notl_lessdef
+     Val.shl_lessdef Val.shll_lessdef Val.vzero_lessdef Val.notint_lessdef
+     Val.shru_lessdef Val.shrlu_lessdef Val.ror_lessdef Val.rorl_lessdef
+     compare_ints_lessdef compare_longs_lessdef compare_floats_lessdef compare_floats32_lessdef
+     Val.addf_lessdef Val.subf_lessdef Val.mulf_lessdef Val.divf_lessdef Val.negf_lessdef Val.absf_lessdef
+     Val.addfs_lessdef Val.subfs_lessdef Val.mulfs_lessdef Val.divfs_lessdef Val.negfs_lessdef Val.absfs_lessdef
+     Val.of_optbool_lessdef  Val.offset_ptr_lessdef
+     eval_testcond_lessdef eval_testcond_lessdef_some
+     nextinstr_pres_lessdef
+     nextinstr_nf_pres_lessdef.
+
+Lemma exec_load_simulation: forall a chunk sz rd rs1 m1 rs2 m2 rs1' m1',
+    exec_load ge chunk m1 a rs1 rd sz = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      exec_load tge chunk m1' a rs1' rd sz = Next rs2' m2' 
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Admitted.
+
+Lemma exec_store_simulation: forall a chunk sz rd ls rs1 m1 rs2 m2 rs1' m1',
+    exec_store ge chunk m1 a rs1 rd ls sz = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      exec_store tge chunk m1' a rs1' rd ls sz = Next rs2' m2' 
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Admitted.
+
 
 Ltac solve_simple_exec :=
-  match goal with 
-  | [ |- exists _, _] => eexists; solve_simple_exec
-  | [ |- _ /\ _] => split; eauto; solve_simple_exec
-  | [ |- regset_lessdef _ _ ] =>
-    eapply regset_lessdef_pregset; eauto;
-    solve_simple_exec
-  | [ |- Val.lessdef (Val.offset_ptr _ _) (Val.offset_ptr _ _) ] =>
-    eapply Val.offset_ptr_lessdef; eauto;
-    solve_simple_exec
-  | [ |- Val.lessdef ((Pregmap.set _ _ _) ?r) ((Pregmap.set _ _ _) ?r) ] =>
-    eapply regset_lessdef_pregset; eauto;
-    solve_simple_exec
-  | [ |- Val.lessdef ((undef_regs _ _) ?r) ((undef_regs _ _) ?r) ] =>
-    eapply undef_regs_pres_lessdef; eauto;
-    solve_simple_exec
-  | _ => idtac
+  match goal with
+  | [ |- context [Genv.symbol_address _ _ _] ] =>
+    erewrite symbol_address_transf; solve_simple_exec
+  | [ |- exists _ _, Next _ _ = Next _ _ /\ Mem.extends _ _ /\ regset_lessdef _ _ /\ Mem.stack _ = Mem.stack _ ] =>
+    eexists; eexists; repeat (split; eauto); solve_simple_exec
+  | [ |- exists _ _, exec_load _ _ _ _ _ _ _ = Next _ _ /\ Mem.extends _ _ /\ regset_lessdef _ _ /\ Mem.stack _ = Mem.stack _ ] =>
+    eapply exec_load_simulation; eauto
+  | [ |- exists _ _, exec_store _ _ _ _ _ _ _ _ = Next _ _ /\ Mem.extends _ _ /\ regset_lessdef _ _ /\ Mem.stack _ = Mem.stack _ ] =>
+    eapply exec_store_simulation; eauto
+  | [ |- regset_lessdef (nextinstr_nf _ _) (nextinstr_nf _ _) ] =>
+    eapply nextinstr_nf_pres_lessdef; eauto
+  | _ => eauto
   end.
-
 
 
 Lemma exec_instr_simulation: forall f i rs1 m1 rs2 m2 rs1' m1',
@@ -411,30 +572,27 @@ Lemma exec_instr_simulation: forall f i rs1 m1 rs2 m2 rs1' m1',
            /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
 Proof.
   intros f i rs1 m1 rs2 m2 rs1' m1' EXEC RSL EXT STKEQ.
-  destruct i; cbn in *; inv EXEC; try solve_simple_exec.
-  
-  
-  erewrite <- symbol_address_transf; eauto.
-  erewrite <- symbol_address_transf; eauto.
-        
-  (* solve_simple_exec. *)
-  (* solve_simple_exec. *)
-  (* solve_simple_exec. *)
-  (* solve_simple_exec. *)
+  destruct i; cbn in *; inv EXEC; try solve_simple_exec. 
+  - (* Pdivl *) admit.
+  - (* Pdivq *) admit.
+  - (* Pidvil *) admit.
+  - (* Pidviq *) admit.
+  - admit. (* destr_in H0; try congruence.  *)
+    (* + destruct b; inv H0. *)
+    (*   generalize (eval_testcond_lessdef c _ _ RSL). intros LEF. *)
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - eapply nextinstr_pres_lessdef; eauto.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 
-  (* match goal with *)
-  (* | [ |- Val.lessdef ((undef_regs _ _) ?r) ((undef_regs _ _) ?r) ] => *)
-  (*   eapply undef_regs_pres_lessdef; eauto *)
-  (* end. *)
-  (*     solve_simple_exec *)
-
-
-
-  (* eexists. eexists. split; eauto. split; eauto. split; eauto. *)
-  (* eapply regset_lessdef_pregset; eauto. *)
-  (* eapply regset_lessdef_pregset; eauto. *)
-  (* eapply Val.offset_ptr_lessdef; eauto. *)
-  (* eapply regset_lessdef_pregset; eauto. *)
 Admitted.
     
 
@@ -470,14 +628,6 @@ Proof.
     constructor; eauto.
     erewrite <- (external_call_stack_blocks _ _ _ m'0 _ _ m2'); eauto.
     erewrite <- (external_call_stack_blocks _ _ _ m _ _ m'); eauto.
-    (** Regset lessdef *)
-    red. intros. unfold nextinstr_nf.
-    unfold nextinstr.
-    eapply val_lessdef_set; eauto.
-    intros. eapply undef_regs_pres_lessdef.
-    eapply set_res_pres_lessdef; auto.
-    eapply Val.offset_ptr_lessdef; eauto.
-    eapply undef_regs_pres_lessdef; auto.
 
   - (* External Step *)
     edestruct extcall_arguments_match as (args' & EXTARGS & VLE).
