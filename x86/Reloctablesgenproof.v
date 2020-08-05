@@ -15,7 +15,7 @@ Require Import Lia.
 
 Definition match_prog p tp :=
   exists tp',
-    transf_program p = OK tp' /\
+    transf_program false p = OK tp' /\
     prog_defs tp = prog_defs tp' /\
     prog_public tp = prog_public tp' /\
     prog_main tp = prog_main tp' /\
@@ -29,7 +29,7 @@ Definition match_prog p tp :=
     prog_senv tp = prog_senv tp'.
 
 Lemma transf_program_match:
-  forall p tp, transf_program p = OK tp -> match_prog p tp.
+  forall p tp, transf_program false p = OK tp -> match_prog p tp.
 Proof.
   unfold match_prog. intros. exists tp; intuition.
 Qed.
@@ -219,11 +219,11 @@ Qed.
 
 Lemma transl_sectable_ok:
   forall sim stbl creloc dreloc,
-    transl_sectable sim stbl = OK (creloc, dreloc) ->
+    transl_sectable sim false stbl = OK (creloc, dreloc) ->
     exists c l,
       SecTable.get sec_code_id stbl = Some (sec_text c) /\
       SecTable.get sec_data_id stbl = Some (sec_data l) /\
-      transl_code sim c = OK creloc /\
+      transl_code sim false c = OK creloc /\
       transl_init_data_list sim l = OK dreloc.
 Proof.
   unfold transl_sectable. intros sim stbl creloc dreloc TRANSL.
@@ -1011,8 +1011,8 @@ Qed.
 Lemma prog_sectable_eq:
   exists init c c' creloc dreloc,
     prog_sectable prog = [sec_data init; sec_text c] /\
-    transl_code' c = OK c' /\
-    transl_code (gen_symb_index_map (prog_symbtable prog)) c = OK creloc /\
+    transl_code' false c = OK c' /\
+    transl_code (gen_symb_index_map (prog_symbtable prog)) false c = OK creloc /\
     Permutation.Permutation creloc (reloctable_code (prog_reloctables tprog)) /\
     0 <= code_size c' < Ptrofs.max_unsigned /\
     prog_sectable tprog = [sec_data init; sec_text c'] /\
@@ -1070,37 +1070,43 @@ Qed.
 
 Lemma id_eliminate_size:
   forall i1 i2,
-    id_eliminate i1 = OK i2 ->
+    id_eliminate' i1 = OK i2 ->
     instr_size i1 = instr_size i2.
 Proof.
   intros i1 i2 IE.
-  unfold id_eliminate in IE.
+  unfold id_eliminate' in IE.
   repeat destr_in IE; simpl; auto.
 Qed.
 
 Lemma fold_acc_id_eliminate_error:
   forall c e,
-    fold_left acc_id_eliminate c (Error e) = Error e.
+    fold_left (acc_id_eliminate false) c (Error e) = Error e.
 Proof.
   induction c; simpl; intros; eauto.
 Qed.
 
 Lemma transl_code_fold_size:
   forall c r x,
-    fold_left acc_id_eliminate c (OK r) = OK x ->
+    fold_left (acc_id_eliminate false) c (OK r) = OK x ->
     code_size (rev x) = code_size (r) + code_size c.
 Proof.
   induction c; simpl; intros; eauto. inv H. rewrite <- code_size_rev. omega.
-  destruct (id_eliminate a) eqn:?.
+  destruct (ready_for_proof a).
+  destruct (id_eliminate' a) eqn:?.
   simpl in H.
   apply IHc in H. rewrite H. simpl.
   apply id_eliminate_size in Heqr0; rewrite Heqr0. omega.
   simpl in H. rewrite fold_acc_id_eliminate_error in H; congruence.
+  cbn [bind] in H.
+  generalize (fold_acc_id_eliminate_error c  ([MSG (instr_to_string a);
+                                               MSG " not ready for id_eliminate"])).
+  intros HError.
+  rewrite HError in H. inversion H.
 Qed.
 
 Lemma transl_code_size:
   forall c c',
-    transl_code' c = OK c' ->
+    transl_code' false c = OK c' ->
     code_size c' = code_size c.
 Proof.
   unfold transl_code'.
@@ -1256,18 +1262,22 @@ Qed.
 
 Lemma fold_acc_id_eliminate_app:
   forall c c0,
-    fold_left acc_id_eliminate c (OK c0) =
-    bind (fold_left acc_id_eliminate c (OK [])) (fun c1 => OK (c1 ++ c0)).
+    fold_left (acc_id_eliminate false) c (OK c0) =
+    bind (fold_left (acc_id_eliminate false) c (OK [])) (fun c1 => OK (c1 ++ c0)).
 Proof.
   induction c; simpl; intros; eauto.
-  destruct (id_eliminate a) eqn:?.
+  destruct (ready_for_proof a).
+  destruct (id_eliminate' a) eqn:?.
   simpl.
   rewrite (IHc (i::c0)).
   rewrite (IHc ([i])).
-  destruct (fold_left acc_id_eliminate c (OK [])) eqn:?.
+  destruct (fold_left (acc_id_eliminate false) c (OK [])) eqn:?.
   simpl. rewrite <- app_assoc. simpl. reflexivity.
   simpl. auto.
   simpl. rewrite ! fold_acc_id_eliminate_error. reflexivity.
+  destruct (id_eliminate' a) eqn:?.
+  simpl. rewrite ! fold_acc_id_eliminate_error. simpl. auto.
+  simpl. rewrite ! fold_acc_id_eliminate_error. simpl. auto.
 Qed.
 
 Lemma gen_instr_map_ok:
@@ -1275,14 +1285,14 @@ Lemma gen_instr_map_ok:
          (REC:
             forall iofs i,
               map0 iofs = Some i ->
-              exists i', map0' iofs = Some i' /\ id_eliminate i = OK i'
+              exists i', map0' iofs = Some i' /\ id_eliminate' i = OK i'
          )
          iofs i
          (GenInstrMap: fold_left acc_instr_map c (ofs0, map0) = (ofs1, map1))
          (SrcInstr: map1 iofs = Some i)
-         (TranslCode: fold_left acc_id_eliminate c (OK []) = OK (c1))
+         (TranslCode: fold_left (acc_id_eliminate false) c (OK []) = OK (c1))
          (TgtGenInstrMap: fold_left acc_instr_map (rev c1) (ofs0, map0') = (ofs1', map1')),
-  ofs1 = ofs1' /\ exists i', map1' iofs = Some i' /\ id_eliminate i = OK i'.
+  ofs1 = ofs1' /\ exists i', map1' iofs = Some i' /\ id_eliminate' i = OK i'.
 Proof.
   induction c; simpl; intros; eauto.
   - inv TranslCode. inv GenInstrMap.
@@ -1291,7 +1301,9 @@ Proof.
     (* assert (length c1 = O) by omega. destruct c1. simpl in H1. inv H1; auto. *)
     (* simpl in H. omega. *)
     eauto.
-  - destruct (id_eliminate a) eqn:?.
+  -
+    destruct (ready_for_proof a).
+    destruct (id_eliminate' a) eqn:?.
     + simpl in TranslCode.
       rewrite fold_acc_id_eliminate_app in TranslCode. monadInv TranslCode.
       subst.
@@ -1302,6 +1314,9 @@ Proof.
       intros. destr_in H. inv H. eauto. eauto.
     + simpl in TranslCode.
       rewrite fold_acc_id_eliminate_error in TranslCode. congruence.
+    +
+      cbn [bind] in TranslCode.
+      rewrite fold_acc_id_eliminate_error in TranslCode. inversion TranslCode.
 Qed.
 
 
@@ -1310,7 +1325,7 @@ Lemma find_instr_ok:
   RelocProgSemantics.Genv.find_instr ge v = Some i ->
   exists i',
     Genv.find_instr tge v = Some i' /\
-    id_eliminate i = OK i'.
+    id_eliminate' i = OK i'.
 Proof.
   unfold Genv.find_instr.
   unfold tge.
@@ -1363,11 +1378,14 @@ Lemma exec_instr_ok:
              Genv.symbol_address tge RELOC_CODE idofs ofs =
              RelocProgSemantics.Genv.symbol_address ge id ofs)
          (EI: RelocProgSemantics.exec_instr ge i rs m = Next rs' m')
-         (ELIM : id_eliminate i = OK i'),
+         (ELIM : id_eliminate false i = OK i'),
     exec_instr tge i' rs m = Next rs' m'.
 Proof.
   intros.
-  unfold id_eliminate in ELIM. destr_in ELIM.
+  unfold id_eliminate in ELIM.
+  destruct (ready_for_proof i) eqn:EQProof.
+  unfold id_eliminate' in ELIM.
+  destr_in ELIM.
   destruct i; simpl in *; inv EI; inv ELIM; simpl; eauto;
     try (unfold exec_instr, get_pc_offset; rewrite PC; auto; fail);
     try (intuition congruence).

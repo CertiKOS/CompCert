@@ -7,7 +7,7 @@ Require Import Coqlib Maps Integers Floats Values AST Errors.
 Require Import Globalenvs.
 Require Import Asm RelocProgram.
 Require Import Hex Bits Memdata Encode SeqTable.
-Require Import Reloctablesgen2.
+Require Import Reloctablesgen.
 Require Import SymbolString.
 Import Hex Bits.
 Import ListNotations.
@@ -857,7 +857,7 @@ Definition encode_instr' (ofs:Z) (i: instruction) : res (list byte) :=
 Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   if negb more_inst then
     if negb (ready_for_proof i)then
-      Error[MSG (instr_to_string i);MSG" not ready for proof"]
+      Error[MSG (instr_to_string i);MSG" not ready for encoding"]
     else
       encode_instr' ofs i
   else
