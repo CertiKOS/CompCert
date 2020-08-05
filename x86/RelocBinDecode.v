@@ -40,13 +40,13 @@ Section PRESERVATION.
   
   (* Variable relocTable : reloctable_map. *)
 
-  Variable symtbl : symbtable.
+  (* Variable symtbl : symbtable. *)
 
   Definition find_ofs_in_rtbl (ofs:Z): option (relocentry)
     := ZTree.get ofs rtbl_ofs_map.
 
-  Definition get_nth_symbol (n:N)
-    := SymbTable.get n symtbl.
+  (* Definition get_nth_symbol (n:N)
+    := SymbTable.get n symtbl. *)
 
   
       
@@ -378,13 +378,8 @@ Definition decode_call (rofs:Z) (mc: list byte): res(instruction * list byte):=
   match find_ofs_in_rtbl (rofs + 1) with
   |None => Error (msg"Call target not found")
   |Some relocEntry =>
-   match get_nth_symbol (reloc_symb relocEntry) with
-   |None => Error (msg"Call target not found!")
-   |Some symb =>
-    let id :=  symbentry_id symb in
-    do remains <- remove_first_n mc 4;
-    OK(Pcall (inr id) (mksignature [] None (mkcallconv false false false)),remains )
-   end     
+   do remains <- remove_first_n mc 4;
+     OK(Pcall (inr xH) (mksignature [] None (mkcallconv false false false)),remains )
   end.
 
 Definition decode_leal (rofs:Z) (mc: list byte): res(instruction * list byte):=
@@ -4326,7 +4321,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     split; try(unfold instr_eq; auto).
     destruct ros; inversion H10.
     destruct negb; inversion H10. clear H11.
-    cbn [negb] in HEncode.
+    destruct i; inversion H10.
+    clear H11.
     unfold fmc_instr_decode.
     monadInv HEncode. simpl.
     branch_byte_eq'.
@@ -4339,18 +4335,17 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     unfold find_ofs_in_rtbl. simpl.
     rewrite encode_decode_int32_same_prefix.
     simpl.
-    (** got a problem here **)
-    (* destruct (ZTree.get (ofs + 1) rtbl_ofs_map); inversion EQ1. *)
+    destruct (ZTree.get (ofs + 1) rtbl_ofs_map); inversion EQ1.
     
-    (* rewrite H11. *)
-    (* assert(Hvalid: valid_int32 x) by admit. *)
-    (* rewrite (encode_decode_int32_same_prefix _ _ Hvalid). *)
-    (* simpl. *)
-    (* there should be assumptions like id = 1 *)
-    (* f_equal. f_equal. *)
-    (* rewrite(encode_decode_int32_same_prefix). *)
-    (* rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range. *)
-    admit. admit.
+    rewrite H11.
+    assert(Hvalid: valid_int32 x) by admit.
+    generalize (encode_int32_4_exists x l (encode_int32 x ++ l)).
+    intros (b1 & b2 & b3 & b4 & HInt).
+    auto.
+    rewrite HInt.
+    simpl. auto.
+    assert(Hvalid: valid_int32 x) by admit.
+    auto.
   + (* Pret *)
     exists Pret.
     split;try(unfold instr_eq; auto).

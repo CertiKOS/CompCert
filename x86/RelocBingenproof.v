@@ -84,13 +84,13 @@ Proof.
   (* easy *)
 Admitted.
 
-Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map symbt: Prop :=
+Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map: Prop :=
   match code, bytes  with
   |nil, nil => True 
   |h::t, _ =>
-   exists h' t', RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes = OK (h',t')
+   exists h' t', RelocBinDecode.fmc_instr_decode rtbl_ofs_map ofs bytes = OK (h',t')
                  /\  RelocBinDecode.instr_eq h h'
-                 /\ transl_code_spec t t' (ofs+instr_size h) rtbl_ofs_map  symbt
+                 /\ transl_code_spec t t' (ofs+instr_size h) rtbl_ofs_map
   |_, _ => False
   end.
 
@@ -489,11 +489,11 @@ Qed.
 
   
 
-Lemma decode_app:forall x rtbl_ofs_map symbt ofs bytes h t,
-    RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs bytes =OK (h, t)                 
-    -> RelocBinDecode.fmc_instr_decode rtbl_ofs_map symbt ofs (bytes++x) = OK (h, t++x).
+Lemma decode_app:forall x rtbl_ofs_map  ofs bytes h t,
+    RelocBinDecode.fmc_instr_decode rtbl_ofs_map  ofs bytes =OK (h, t)                 
+    -> RelocBinDecode.fmc_instr_decode rtbl_ofs_map  ofs (bytes++x) = OK (h, t++x).
 Proof.
-  intros x rtbl_ofs_map symbt ofs bytes h t HDecode.
+  intros x rtbl_ofs_map  ofs bytes h t HDecode.
   unfold RelocBinDecode.fmc_instr_decode in HDecode.
   inversion HDecode.
   destruct bytes;inversion H0.
@@ -522,8 +522,8 @@ Proof.
   rewrite (decode_int_app x bytes x0 EQ).
   simpl.
   destruct RelocBinDecode.find_ofs_in_rtbl; inversion EQ0.
-  destruct RelocBinDecode.get_nth_symbol; inversion H3.
-  monadInv H4.
+  (* destruct RelocBinDecode.get_nth_symbol; inversion H3. *)
+  monadInv H3.
   do 4 (destruct bytes;inversion EQ1).
   simpl. auto.
   (* leal *)
@@ -672,31 +672,31 @@ Qed.
 
 
 
-Lemma transl_code_spec_inc: forall code ofs rtbl_ofs_map symbt bytes instr x,
+Lemma transl_code_spec_inc: forall code ofs rtbl_ofs_map bytes instr x,
     (* length code = n -> *)
-    transl_code_spec code bytes ofs rtbl_ofs_map symbt
+    transl_code_spec code bytes ofs rtbl_ofs_map
     -> encode_instr rtbl_ofs_map false (ofs+(instr_size_acc code)) instr = OK x
-    -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map symbt.
+    -> transl_code_spec (code++[instr]) (bytes++x) ofs rtbl_ofs_map.
 Proof.
   induction code as [|i code].
-  - intros ofs rtbl_ofs_map symbt bytes instr x TL EN.
+  - intros ofs rtbl_ofs_map  bytes instr x TL EN.
     cbn.
     unfold instr_size_acc in EN. rewrite Z.add_0_r in EN.
     cbn in TL. destruct bytes; try contradiction. cbn.
-    generalize (RelocBinDecode.encode_decode_instr_refl _ symbt _ _ _ nil EN).
+    generalize (RelocBinDecode.encode_decode_instr_refl _ _ _ _ nil EN).
     rewrite app_nil_r.
     intros (i' & DE & EQ).
     exists i', nil. split; auto.
-  - intros ofs rtbl_ofs_map symbt bytes instr x TL EN.
+  - intros ofs rtbl_ofs_map bytes instr x TL EN.
     cbn in TL.
     destruct TL as (h' & t' & DE & EQ & TL).
     cbn in EN. rewrite Z.add_assoc in EN.
     cbn.
-    generalize (IHcode _ _ _ _ _ _ TL EN).
+    generalize (IHcode _ _ _ _ _ TL EN).
     intros TL'.
     exists h', (t' ++ x).
     split; auto.
-    generalize(decode_app x _ _ _ _ _ _ DE).
+    generalize(decode_app x _ _ _ _ _ DE).
     auto.
 Qed.
 
@@ -808,13 +808,13 @@ Qed.
  * Then after translation code2 starting from code', we'll get the result 
  * that has `transl_code_spce` relation with (code++code2) 
  *)
-Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map symbt z n,
-    transl_code_spec code (rev code') ofs rtbl_ofs_map symbt
+Lemma transl_code_spec_prsv: forall code code' code2 l ofs rtbl_ofs_map z n,
+    transl_code_spec code (rev code') ofs rtbl_ofs_map
     -> length code2 = n
     -> fold_left (acc_instrs rtbl_ofs_map false) code2 (OK (ofs + (instr_size_acc code), code')) = OK (z, l)
-    -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map symbt.
+    -> transl_code_spec (code ++ code2) (rev l) ofs rtbl_ofs_map.
 Proof.
-  intros code code' code2 l ofs rtbl_ofs_map symbt z n HTransCode.
+  intros code code' code2 l ofs rtbl_ofs_map  z n HTransCode.
   revert dependent l.
   revert dependent z.
   revert dependent code2.
@@ -851,7 +851,7 @@ Proof.
   }
   rewrite <- Zplus_assoc in EQ.
   rewrite <- HInstrSize in EQ.
-  generalize (transl_code_spec_inc _ _ _ _ _ _ _ HSpecPrefix EQ).
+  generalize (transl_code_spec_inc _ _ _ _ _ _ HSpecPrefix EQ).
   rewrite app_assoc.
   intros HResult.
   rewrite rev_app_distr.
@@ -864,7 +864,7 @@ Admitted.
 Lemma decode_encode_refl: forall n prog z code l,
     length code = n ->
     fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) false) code (OK (0, [])) = OK (z, l)
-    -> transl_code_spec code (rev l) 0 (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) (prog_symbtable prog).
+    -> transl_code_spec code (rev l) 0 (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))).
 Proof.
   intros n.
   induction n.
@@ -892,7 +892,7 @@ Proof.
   generalize (fold_spec_length (length prefix) _ _ _ _ _ _ eq_refl HEncodePrefix).
   intros Hz'.
   rewrite Hz' in HEncode.
-  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _ _ 1 HPrefix eq_refl HEncode).
+  generalize (transl_code_spec_prsv prefix l' [lastInstr] _ _ _ _  1 HPrefix eq_refl HEncode).
   rewrite HTail.
   auto.
   rewrite HTail in HLength.
@@ -910,9 +910,9 @@ Fixpoint instr_eq_list code1 code2:=
   |_, _ => False
   end.
 
-Lemma decode_instrs_append': forall rtbl symtbl fuel ofs t l1 l2 code,
-    decode_instrs rtbl symtbl fuel ofs t l1 = OK code ->
-    decode_instrs rtbl symtbl fuel ofs t (l1 ++ l2) = OK (rev l2 ++ code).
+Lemma decode_instrs_append': forall rtbl  fuel ofs t l1 l2 code,
+    decode_instrs rtbl fuel ofs t l1 = OK code ->
+    decode_instrs rtbl fuel ofs t (l1 ++ l2) = OK (rev l2 ++ code).
 Proof.
   induction fuel as [|fuel].
   - (* base case *)
@@ -930,30 +930,30 @@ Proof.
       exact EQ0.
 Qed.
 
-Lemma decode_instrs_append: forall rtbl symtbl fuel ofs t l code,
-    decode_instrs rtbl symtbl fuel ofs t [] = OK code ->
-    decode_instrs rtbl symtbl fuel ofs t l = OK (rev l ++ code).
+Lemma decode_instrs_append: forall rtbl fuel ofs t l code,
+    decode_instrs rtbl  fuel ofs t [] = OK code ->
+    decode_instrs rtbl  fuel ofs t l = OK (rev l ++ code).
 Proof.
-  intros rtbl symtbl fuel ofs t l code DI.
-  apply (decode_instrs_append' _ _ _ _ _ _ l) in DI.
+  intros rtbl fuel ofs t l code DI.
+  apply (decode_instrs_append' _ _ _ _ _ l) in DI.
   cbn in DI. auto.
 Qed.
 
 
-Lemma spec_decode_ex: forall code ofs l rtbl symtbl,
-    transl_code_spec code l ofs rtbl symtbl ->
-    exists fuel code', decode_instrs rtbl symtbl fuel ofs l nil = OK code'
+Lemma spec_decode_ex: forall code ofs l rtbl,
+    transl_code_spec code l ofs rtbl ->
+    exists fuel code', decode_instrs rtbl fuel ofs l nil = OK code'
              /\ instr_eq_list code code'.
 Proof.
   induction code as [|i code].
   - (* base case *)
-    intros ofs l rtbl symtbl TL.
+    intros ofs l rtbl TL.
     cbn in TL. destruct l; try contradiction.
     cbn. exists O, nil. split; auto.
-  - intros ofs l rtbl symtbl TL.
+  - intros ofs l rtbl TL.
     cbn in TL.
     destruct TL as (h' & t' & DE & EQ & TL).
-    generalize (IHcode _ _ _ _ TL).
+    generalize (IHcode _ _ _ TL).
     intros (fuel & code' & DE' & EQ').
     exists (Datatypes.S fuel), (h'::code').
     split.
@@ -969,7 +969,7 @@ Proof.
       1-2: rewrite H; rewrite H0; auto.
     }      
     rewrite <- IEQ.
-    generalize (decode_instrs_append _ _ _ _ _ [h'] _ DE').
+    generalize (decode_instrs_append _ _ _ _ [h'] _ DE').
     intros HAppend.
     simpl in HAppend.
     auto.
@@ -1010,9 +1010,9 @@ Qed.
     
 
 
-Axiom spec_length: forall code l t ofs rtbl symtbl i,
-    transl_code_spec (i::code) l ofs rtbl symtbl
-    -> transl_code_spec code t (ofs+instr_size i) rtbl symtbl
+Axiom spec_length: forall code l t ofs rtbl  i,
+    transl_code_spec (i::code) l ofs rtbl 
+    -> transl_code_spec code t (ofs+instr_size i) rtbl 
     -> Z.of_nat (length l) = Z.of_nat (length t) + (instr_size i).
 (* Proof. *)
 (*   intros code l t ofs rtbl symtbl i HL HT. *)
@@ -1022,23 +1022,23 @@ Axiom spec_length: forall code l t ofs rtbl symtbl i,
 (*   (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *) *)
 (* Admitted. *)
 
-Lemma spec_decode_ex': forall code ofs l rtbl symtbl,
-    transl_code_spec code l ofs rtbl symtbl ->
-    exists fuel code', decode_instrs rtbl symtbl fuel ofs l nil = OK code'/\ instr_eq_list code code'
+Lemma spec_decode_ex': forall code ofs l rtbl ,
+    transl_code_spec code l ofs rtbl ->
+    exists fuel code', decode_instrs rtbl  fuel ofs l nil = OK code'/\ instr_eq_list code code'
                        /\ (fuel <= length(l))%nat.
 Proof.
   induction code as [|i code].
   - (* base case *)
-    intros ofs l rtbl symtbl TL.
+    intros ofs l rtbl  TL.
     cbn in TL. destruct l; try contradiction.
     cbn. exists O, nil. split; auto.
-  - intros ofs l rtbl symtbl TL.
+  - intros ofs l rtbl  TL.
     generalize TL. intros TL'.
     cbn in TL.
     destruct TL as (h' & t' & DE & EQ & TL).
-    generalize (IHcode _ _ _ _ TL).
+    generalize (IHcode  _ _ _ TL).
     intros (fuel & code' & DE' & EQ' & EQL).
-    generalize (spec_length code l t' ofs rtbl symtbl i TL' TL).
+    generalize (spec_length code l t' ofs rtbl i TL' TL).
     intros HLength.
     exists (Datatypes.S fuel), (h'::code').
     split.
@@ -1054,7 +1054,7 @@ Proof.
       1-2: rewrite H; rewrite H0; auto.
     }      
     rewrite <- IEQ.
-    generalize (decode_instrs_append _ _ _ _ _ [h'] _ DE').
+    generalize (decode_instrs_append _ _ _ _  [h'] _ DE').
     intros HAppend.
     simpl in HAppend.
     auto.
@@ -1066,12 +1066,12 @@ Proof.
     omega.
 Qed.
 
-Lemma decode_fuel_le: forall rtbl symtbl fuel fuel' ofs l instrs code,
-    decode_instrs rtbl symtbl fuel ofs l instrs = OK code
+Lemma decode_fuel_le: forall rtbl  fuel fuel' ofs l instrs code,
+    decode_instrs rtbl  fuel ofs l instrs = OK code
     -> (fuel' >= fuel)%nat
-    -> decode_instrs rtbl symtbl fuel' ofs l instrs = OK code.
+    -> decode_instrs rtbl fuel' ofs l instrs = OK code.
 Proof.
-  intros rtbl symtbl.
+  intros rtbl.
   induction fuel.
   (* bc *)
   intros fuel' ofs l instrs code HDecode HFGE.
@@ -1626,6 +1626,7 @@ Proof.
     destruct (Mem.storev Mptr m
       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr))))
       (Val.offset_ptr (rs PC) (Ptrofs.repr 1))); auto.
+    (* about size *)
     admit. admit.
     replace (instr_size (Pcall (inr i) sg0)) with 5.
     replace (instr_size (Pcall (inr i) sg)) with 5.
@@ -1637,6 +1638,7 @@ Proof.
     generalize (symbol_address_refl RELOC_CODE (z+1)).
     intros HAddr.
     rewrite HAddr. auto.
+    (* about size *)
     admit. admit.
 
     (* Pmov_rm_a *)

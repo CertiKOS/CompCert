@@ -455,7 +455,7 @@ Definition encode_instr' (ofs:Z) (i: instruction) : res (list byte) :=
   | Pjcc_rel c jofs =>
     let cbytes := encode_testcond c in
     OK (cbytes ++ encode_int32 jofs)
-  | Pcall (inr id) _ =>
+  | Pcall (inr xH) _ =>
     do addend <- get_instr_reloc_addend ofs i;
       OK (HB["E8"] :: encode_int32 addend)
   | Pcall (inl reg) _ =>
