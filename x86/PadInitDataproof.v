@@ -382,176 +382,6 @@ Proof.
     apply regset_lessdef_refl.
 Qed.
 
-Lemma eval_addrmode32_lessdef: forall a rs1 rs2,
-    regset_lessdef rs1 rs2 ->
-    Val.lessdef (Asm.eval_addrmode32 ge a rs1) (eval_addrmode32 tge a rs2).
-Proof.
-(*   intros. unfold Asm.eval_addrmode32, eval_addrmode32. *)
-(*   destruct a.  *)
-(*   destruct base, ofs, const; simpl in *.  *)
-(*   - destruct p. repeat apply Val.add_inject; auto. *)
-(*     destr_pair_if; auto. *)
-(*     apply Val.mul_inject; auto. *)
-(*   - destruct p,p0. repeat apply Val.add_inject; auto. *)
-(*     destr_pair_if; auto. *)
-(*     apply Val.mul_inject; auto. *)
-(*     apply inject_symbol_address. auto. *)
-(*   - repeat apply Val.add_inject; auto. *)
-(*   - destruct p. apply Val.add_inject; auto.  *)
-(*     inject_match. apply inject_symbol_address; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     destr_pair_if. auto. *)
-(*     eapply Val.inject_ptr; eauto. *)
-(*     repeat unfold Ptrofs.of_int.  *)
-(*     repeat rewrite Int.unsigned_zero.  *)
-(*     repeat rewrite Ptrofs.add_zero. auto. *)
-(*   - destruct p. *)
-(*     inject_match. *)
-(*     apply Val.add_inject; auto. *)
-(*     destr_pair_if; auto. *)
-(*     apply Val.mul_inject; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     destr_pair_if. auto. *)
-(*     eapply Val.inject_ptr; eauto. *)
-(*     repeat unfold Ptrofs.of_int.  *)
-(*     repeat rewrite Int.unsigned_zero.  *)
-(*     repeat rewrite Ptrofs.add_zero. auto. *)
-(*   - destruct p,p0. *)
-(*     inject_match. *)
-(*     apply Val.add_inject; auto. *)
-(*     destr_pair_if; auto. *)
-(*     apply Val.mul_inject; auto. *)
-(*     apply inject_symbol_address; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     destr_pair_if. auto. *)
-(*     eapply Val.inject_ptr; eauto. *)
-(*     repeat unfold Ptrofs.of_int.  *)
-(*     repeat rewrite Int.unsigned_zero.  *)
-(*     repeat rewrite Ptrofs.add_zero. auto. *)
-(*   - repeat apply Val.add_inject; auto. *)
-(*   - destruct p.  *)
-(*     inject_match. inject_match. *)
-(*     apply inject_symbol_address; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     destr_pair_if. auto. *)
-(*     eapply Val.inject_ptr; eauto. *)
-(*     repeat unfold Ptrofs.of_int.  *)
-(*     repeat rewrite Int.unsigned_zero.  *)
-(*     repeat rewrite Ptrofs.add_zero. auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     destr_pair_if. auto. *)
-(*     eapply Val.inject_ptr; eauto. *)
-(*     repeat unfold Ptrofs.of_int.  *)
-(*     repeat rewrite Int.unsigned_zero.  *)
-(*     repeat rewrite Ptrofs.add_zero. auto. *)
-(* Qed.     *)
-Admitted.
-
-Lemma eval_addrmode64_lessdef: forall a rs1 rs2,
-    regset_lessdef rs1 rs2 ->
-    Val.lessdef (Asm.eval_addrmode64 ge a rs1) (eval_addrmode64 tge a rs2).
-Proof.
-(*   intros. unfold Asm.eval_addrmode32, eval_addrmode32. *)
-(*   destruct a.  *)
-(*   destruct base, ofs, const; simpl in *. *)
-(*   - destruct p. repeat apply Val.addl_inject; auto. *)
-(*     destr_pair_if; auto. *)
-(*     apply Val.mull_inject; auto. *)
-(*   - destruct p,p0. repeat apply Val.addl_inject; auto. *)
-(*     destr_pair_if; auto. *)
-(*     apply Val.mull_inject; auto. *)
-(*     apply inject_symbol_address. auto. *)
-(*   - repeat apply Val.addl_inject; auto. *)
-(*   - destruct p. apply Val.addl_inject; auto.  *)
-(*     inject_match. apply inject_symbol_address; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     (* destr_pair_if; auto. *) *)
-(*     (* eapply Val.inject_ptr; eauto.  *) *)
-(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
-(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *) *)
-(*   - destruct p.  *)
-(*     inject_match. *)
-(*     apply Val.addl_inject; auto. *)
-(*     destr_pair_if; auto.  *)
-(*     apply Val.mull_inject; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     (* destr_pair_if; auto. *) *)
-(*     (* eapply Val.inject_ptr; eauto.  *) *)
-(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
-(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *) *)
-(*   - destruct p,p0. *)
-(*     inject_match. *)
-(*     apply Val.addl_inject; auto. *)
-(*     destr_pair_if; auto.  *)
-(*     apply Val.mull_inject; auto. *)
-(*     apply inject_symbol_address; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     (* destr_pair_if; auto. *) *)
-(*     (* eapply Val.inject_ptr; eauto.  *) *)
-(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
-(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *) *)
-(*   - repeat apply Val.addl_inject; auto. *)
-(*   - destruct p. inject_match. inject_match. *)
-(*     apply inject_symbol_address; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     destr_valinj_left H1; inv H1; auto. *)
-(*     (* eapply Val.inject_ptr; eauto.  *) *)
-(*     (* repeat rewrite Ptrofs.add_assoc.  *) *)
-(*     (* rewrite (Ptrofs.add_commut (Ptrofs.repr delta) (Ptrofs.of_int64 Int64.zero)). auto. *)     *)
-(* Qed. *)
-Admitted.
-
-Lemma eval_addrmode_lessdef: forall a rs1 rs2,
-    regset_lessdef rs1 rs2 ->
-    Val.lessdef (Asm.eval_addrmode ge a rs1) (eval_addrmode tge a rs2).
-Proof.
-  intros. unfold Asm.eval_addrmode, eval_addrmode. destruct Archi.ptr64.
-  + eapply eval_addrmode64_lessdef; eauto.
-  + eapply eval_addrmode32_lessdef; eauto.
-Qed.
-
-Lemma goto_ofs_simulation: forall sz ofs rs1 m1 rs2 m2 rs1' m1',
-    goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
-    regset_lessdef rs1 rs1' ->
-    Mem.extends m1 m1' ->
-    Mem.stack m1 = Mem.stack m1' ->
-    exists m2' rs2', 
-      goto_ofs tge sz ofs rs1' m1' = Next rs2' m2'
-      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
-Admitted.
-
-Lemma goto_label_simulation: forall f l rs1 m1 rs2 m2 rs1' m1',
-    goto_label ge f l rs1 m1 = Next rs2 m2 ->
-    regset_lessdef rs1 rs1' ->
-    Mem.extends m1 m1' ->
-    Mem.stack m1 = Mem.stack m1' ->
-    exists m2' rs2', 
-      goto_label tge f l rs1' m1' = Next rs2' m2' 
-      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
-Admitted.
-
-
-Lemma exec_load_simulation: forall a chunk sz rd rs1 m1 rs2 m2 rs1' m1',
-    exec_load ge chunk m1 a rs1 rd sz = Next rs2 m2 ->
-    regset_lessdef rs1 rs1' ->
-    Mem.extends m1 m1' ->
-    Mem.stack m1 = Mem.stack m1' ->
-    exists m2' rs2', 
-      exec_load tge chunk m1' a rs1' rd sz = Next rs2' m2' 
-      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
-Admitted.
-
-Lemma exec_store_simulation: forall a chunk sz rd ls rs1 m1 rs2 m2 rs1' m1',
-    exec_store ge chunk m1 a rs1 rd ls sz = Next rs2 m2 ->
-    regset_lessdef rs1 rs1' ->
-    Mem.extends m1 m1' ->
-    Mem.stack m1 = Mem.stack m1' ->
-    exists m2' rs2', 
-      exec_store tge chunk m1' a rs1' rd ls sz = Next rs2' m2' 
-      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
-Admitted.
-
-
 Hint Resolve 
      val_lessdef_set
      set_res_pres_lessdef 
@@ -563,7 +393,6 @@ Hint Resolve
      Val.singleoffloat_lessdef Val.loword_lessdef Val.floatofsingle_lessdef Val.intoffloat_lessdef Val.maketotal_lessdef
      Val.intoffloat_lessdef Val.floatofint_lessdef Val.intofsingle_lessdef Val.singleofint_lessdef
      Val.longoffloat_lessdef Val.floatoflong_lessdef Val.longofsingle_lessdef Val.singleoflong_lessdef
-     eval_addrmode32_lessdef eval_addrmode64_lessdef eval_addrmode_lessdef
      Val.neg_lessdef Val.negl_lessdef Val.add_lessdef Val.addl_lessdef
      Val.sub_lessdef  Val.subl_lessdef Val.mul_lessdef Val.mull_lessdef Val.mulhs_lessdef Val.mulhu_lessdef
      Val.mullhs_lessdef  Val.mullhu_lessdef Val.shr_lessdef Val.shrl_lessdef Val.or_lessdef Val.orl_lessdef
@@ -577,6 +406,218 @@ Hint Resolve
      eval_testcond_lessdef eval_testcond_lessdef_some
      nextinstr_pres_lessdef
      nextinstr_nf_pres_lessdef.
+
+Lemma eval_addrmode32_lessdef: forall a rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef (eval_addrmode32 ge a rs1) (eval_addrmode32 tge a rs2).
+Proof.
+  intros. unfold eval_addrmode32.
+  destruct a.
+  destruct base, ofs, const; simpl in *; eauto.
+  - repeat (destr; eauto).
+  - destruct p0. rewrite symbol_address_transf.
+    repeat (destr; eauto).
+  - destruct p. rewrite symbol_address_transf.
+    destr; eauto.
+  - destruct p. 
+    destruct zeq; subst; eauto.
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      * destruct Archi.ptr64; auto.
+        red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      * destruct Archi.ptr64; auto.
+        red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+  - destruct p, p0. rewrite symbol_address_transf.
+    destruct zeq; subst; eauto.
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      * destruct Archi.ptr64; auto.
+        red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      * destruct Archi.ptr64; auto.
+        red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+  - destruct p. rewrite symbol_address_transf.
+    destr; eauto.
+Qed.
+
+Lemma eval_addrmode64_lessdef: forall a rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef (Asm.eval_addrmode64 ge a rs1) (eval_addrmode64 tge a rs2).
+Proof.
+  intros. unfold eval_addrmode64.
+  destruct a.
+  destruct base, ofs, const; simpl in *; eauto.
+  - repeat (destr; eauto).
+  - destruct p, p0. rewrite symbol_address_transf.
+    repeat (destr; eauto).
+  - destruct p. rewrite symbol_address_transf.
+    destr; eauto.
+  - destruct p. 
+    destruct zeq; subst; eauto.
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      (* * destruct Archi.ptr64; auto. *)
+      (*   red in H. generalize (H i). *)
+      (*   inversion 1; subst. *)
+      (*   rewrite Heqv. auto. *)
+      (*   rewrite <- H2 in Heqv. cbn in Heqv. congruence. *)
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      (* * destruct Archi.ptr64; auto. *)
+      (*   red in H. generalize (H i). *)
+      (*   inversion 1; subst. *)
+      (*   rewrite Heqv. auto. *)
+      (*   rewrite <- H2 in Heqv. cbn in Heqv. congruence. *)
+  - destruct p, p0. rewrite symbol_address_transf.
+    destruct zeq; subst; eauto.
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      (* * destruct Archi.ptr64; auto. *)
+      (*   red in H. generalize (H i). *)
+      (*   inversion 1; subst. *)
+      (*   rewrite Heqv. auto. *)
+      (*   rewrite <- H2 in Heqv. cbn in Heqv. congruence. *)
+    + destr; eauto.
+      * red in H. generalize (H i).
+        inversion 1; subst.
+        rewrite Heqv. auto.
+        rewrite <- H2 in Heqv. cbn in Heqv. congruence.
+      (* * destruct Archi.ptr64; auto. *)
+      (*   red in H. generalize (H i). *)
+      (*   inversion 1; subst. *)
+      (*   rewrite Heqv. auto. *)
+      (*   rewrite <- H2 in Heqv. cbn in Heqv. congruence. *)
+  - destruct p. rewrite symbol_address_transf.
+    destr; eauto.
+Qed.
+
+Lemma eval_addrmode_lessdef: forall a rs1 rs2,
+    regset_lessdef rs1 rs2 ->
+    Val.lessdef (Asm.eval_addrmode ge a rs1) (eval_addrmode tge a rs2).
+Proof.
+  intros. unfold Asm.eval_addrmode, eval_addrmode. destruct Archi.ptr64.
+  + eapply eval_addrmode64_lessdef; eauto.
+  + eapply eval_addrmode32_lessdef; eauto.
+Qed.
+
+Hint Resolve eval_addrmode32_lessdef eval_addrmode64_lessdef eval_addrmode_lessdef.
+
+
+Lemma goto_ofs_simulation: forall sz ofs rs1 m1 rs2 m2 rs1' m1',
+    goto_ofs ge sz ofs rs1 m1 = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      goto_ofs tge sz ofs rs1' m1' = Next rs2' m2'
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Proof.
+  intros sz ofs rs1 m1 rs2 m2 rs1' m1' OFS RSL EXT STK.
+  unfold goto_ofs in OFS.
+  destr_in OFS; inv OFS. destr_in H0; inv H0.
+  unfold goto_ofs.
+  red in RSL. generalize (RSL PC). rewrite Heqv. inversion 1; subst.
+  rewrite find_funct_ptr_transf. rewrite Heqo.
+  do 2 eexists; repeat (split; eauto).
+Qed.
+
+Lemma goto_label_simulation: forall f l rs1 m1 rs2 m2 rs1' m1',
+    goto_label ge f l rs1 m1 = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      goto_label tge f l rs1' m1' = Next rs2' m2' 
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Proof.
+  intros f l rs1 m1 rs2 m2 rs1' m1' LBL RSL EXT STK.
+  unfold goto_label in LBL.
+  destr_in LBL; inv LBL. destr_in H0; inv H0. destr_in H1; inv H1.
+  unfold goto_label.
+  rewrite Heqo.
+  red in RSL. generalize (RSL PC). rewrite Heqv. inversion 1; subst.
+  rewrite find_funct_ptr_transf. rewrite Heqo0.
+  do 2 eexists; repeat (split; eauto).
+Qed.
+
+
+Lemma exec_load_simulation: forall a chunk sz rd rs1 m1 rs2 m2 rs1' m1',
+    exec_load ge chunk m1 a rs1 rd sz = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      exec_load tge chunk m1' a rs1' rd sz = Next rs2' m2' 
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Proof.
+  intros until m1'.
+  intros LOAD RSL EXT STK.
+  unfold exec_load in LOAD. destr_in LOAD; inv LOAD.
+  unfold exec_load.
+  edestruct Mem.loadv_extends as (v' & LOAD' & VL).
+  exact EXT. exact Heqo.
+  apply eval_addrmode_lessdef. eauto.
+  rewrite LOAD'.
+  do 2 eexists; repeat (split; eauto).
+Qed.
+
+Lemma exec_store_simulation: forall a chunk sz rd ls rs1 m1 rs2 m2 rs1' m1',
+    exec_store ge chunk m1 a rs1 rd ls sz = Next rs2 m2 ->
+    regset_lessdef rs1 rs1' ->
+    Mem.extends m1 m1' ->
+    Mem.stack m1 = Mem.stack m1' ->
+    exists m2' rs2', 
+      exec_store tge chunk m1' a rs1' rd ls sz = Next rs2' m2' 
+      /\ Mem.extends m2 m2' /\ regset_lessdef rs2 rs2' /\ Mem.stack m2 = Mem.stack m2'.
+Proof.
+  intros until m1'.
+  intros STORE RSL EXT STK.
+  unfold exec_store in STORE. destr_in STORE; inv STORE.
+  unfold exec_store.
+  edestruct Mem.storev_extends as (m2' & STORE' & EXT').
+  exact EXT. exact Heqo.
+  apply eval_addrmode_lessdef. eauto. eauto.
+  rewrite STORE'.
+  do 2 eexists; repeat (split; eauto).
+  erewrite (Mem.storev_stack m1); eauto.
+  erewrite (Mem.storev_stack m1' _ _ _ m2'); eauto.
+Qed.
 
 
 Ltac solve_simple_exec :=
