@@ -22,7 +22,7 @@ Require Import Hex Bits Memdata.
 Import ListNotations.
 Import Hex Bits.
 Require Import RelocBingen RelocProgram SeqTable Encode.
-Require Import Reloctablesgen2.
+Require Import Reloctablesgen.
 
 Local Open Scope error_monad_scope.
 Local Open Scope hex_scope.
@@ -3677,6 +3677,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     cbn [negb ready_for_proof negb] in H10.
     exists(Pmov_rr rd r1).
     split; try (unfold instr_eq; auto).
+    destruct negb;inversion H10.
     monadInv H10.
     unfold fmc_instr_decode.
     simpl.
@@ -3696,6 +3697,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pmovl_ri rd n *)
     exists (Pmovl_ri rd n).
     split; try(unfold instr_eq;auto).
+    destruct negb; inversion H10.
     monadInv H10.
     simpl.
     branch_byte_eq'.
@@ -3742,6 +3744,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pmov_rs rd id *)
     exists (Pmovl_rm rd (Addrmode None None (inr (id, Ptrofs.zero)))).
     split; try (unfold instr_eq; auto).
+    destruct negb; inversion H10.
     monadInv H10.
     unfold fmc_instr_decode. simpl.    
     branch_byte_eq'. unfold decode_8b.
@@ -3784,14 +3787,14 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     (* monadInv EQ0. *)
     (* destruct (Ptrofs.eq_dec Ptrofs.zero Ptrofs.zero); inversion EQ0. *)
     monadInv EQ0.
-    generalize(encode_decode_addr_size_relf _ _ _ EQ4 (encode_int32 x3 ++l)).
+    generalize(encode_decode_addr_size_relf _ _ _ EQ4 (encode_int32 x2 ++l)).
     intros HAddrsize.
     rewrite <- app_assoc.
     rewrite HAddrsize.
     simpl.
     monadInv EQ0.
     simpl in EQ5. inversion EQ5.
-    subst x4.
+    subst x3.
     rewrite app_assoc.
     rewrite H11.
     generalize (HAddrmode l).
@@ -3802,6 +3805,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pmovl_rm rd a).
     split; try (unfold instr_eq; auto).
     unfold fmc_instr_decode.
+    destruct negb; inversion H10.
+    clear H11.
     monadInv H10. simpl.
     branch_byte_eq'.
     unfold decode_8b.
@@ -3876,6 +3881,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pmovl_mr a rs) *)
     exists  (Pmovl_mr a rs).
     split;try(unfold instr_eq; auto).
+    destruct negb; inversion H10.
+    clear H11.
     monadInv HEncode.
     unfold fmc_instr_decode. simpl.
     branch_byte_eq'.
@@ -3941,6 +3948,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pleal rd a) *)
     exists (Pleal rd a).
     split; try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     unfold fmc_instr_decode. simpl.
     branch_byte_eq'.
@@ -4005,6 +4013,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Paddl_ri rd n) *)
     exists (Paddl_ri rd n).
     split; try(unfold instr_eq;auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     unfold fmc_instr_decode.
     simpl.
@@ -4080,6 +4089,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Psubl_rr rd r1).
     split;try(unfold instr_eq; auto).
     unfold fmc_instr_decode.
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl. 
     branch_byte_eq.
@@ -4117,6 +4127,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pimull_rr rd r1) *)
     exists (Pimull_rr rd r1).
     split;try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl. branch_byte_eq'.
     unfold decode_0f.
@@ -4134,6 +4145,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pimull_ri rd n) *)
     exists (Pimull_ri rd n).
     split;try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl.
     branch_byte_eq'.
@@ -4170,6 +4182,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pidivl r1) *)
     exists (Pidivl r1).
     split;try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl. branch_byte_eq'.
     unfold decode_idivl.
@@ -4184,6 +4197,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pxorl_r rd) *)
     exists (Pxorl_r rd).
     split; try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl. branch_byte_eq. unfold decode_xorl_r.
     simpl.
@@ -4197,6 +4211,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* PSall_ri rd n *)
     exists(Psall_ri rd (Int.repr (Int.unsigned n mod Byte.modulus))).
     split;try (unfold instr_eq;auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl.
     branch_byte_eq'.
@@ -4226,6 +4241,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pcmpl_rr r1 r2) *)
     exists (Pcmpl_rr r1 r2).
     split;try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl. branch_byte_eq'.
     unfold decode_cmpl_rr.
@@ -4240,6 +4256,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pcmpl_ri r1 n) *)
     exists (Pcmpl_ri r1 n).
     split; try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl. branch_byte_eq'.
     unfold decode_81.      
@@ -4290,6 +4307,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Ptestl_rr r1 r2) *)
     exists (Ptestl_rr r2 r1).
     split;try (unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     simpl.
     branch_byte_eq'.
@@ -4307,9 +4325,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pcall ros (mksignature [] None (mkcallconv false false false))).
     split; try(unfold instr_eq; auto).
     destruct ros; inversion H10.
-    cbn [negb] in H10.
+    destruct negb; inversion H10. clear H11.
     cbn [negb] in HEncode.
-    unfold fmc_instr_decode. monadInv HEncode. simpl.
+    unfold fmc_instr_decode.
+    monadInv HEncode. simpl.
     branch_byte_eq'.
     unfold decode_call.
     unfold get_instr_reloc_addend in EQ.
@@ -4317,17 +4336,21 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     simpl in EQ0.
     monadInv EQ0.
     unfold get_reloc_addend in EQ1.
-    unfold find_ofs_in_rtbl.
-    destruct (ZTree.get (ofs + 1) rtbl_ofs_map); inversion EQ1.
-    rewrite H12.
-    assert(Hvalid: valid_int32 x) by admit.
-    rewrite (encode_decode_int32_same_prefix _ _ Hvalid).
+    unfold find_ofs_in_rtbl. simpl.
+    rewrite encode_decode_int32_same_prefix.
     simpl.
+    (** got a problem here **)
+    (* destruct (ZTree.get (ofs + 1) rtbl_ofs_map); inversion EQ1. *)
+    
+    (* rewrite H11. *)
+    (* assert(Hvalid: valid_int32 x) by admit. *)
+    (* rewrite (encode_decode_int32_same_prefix _ _ Hvalid). *)
+    (* simpl. *)
     (* there should be assumptions like id = 1 *)
     (* f_equal. f_equal. *)
     (* rewrite(encode_decode_int32_same_prefix). *)
     (* rewrite (Ptrofs.repr_unsigned). auto. apply Ptrofs.unsigned_range. *)
-    admit.
+    admit. admit.
   + (* Pret *)
     exists Pret.
     split;try(unfold instr_eq; auto).
@@ -4335,6 +4358,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     
     exists (Pmovl_rm rd a).
     split; try (unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     unfold fmc_instr_decode.
     monadInv H10. simpl.
     branch_byte_eq'.
@@ -4407,6 +4431,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
 
     exists  (Pmovl_mr a rs).
     split;try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     unfold fmc_instr_decode. simpl.
     branch_byte_eq'.
@@ -4498,6 +4523,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Psubl_ri rd n *)
     exists (Psubl_ri rd n).
     split; try(unfold instr_eq; auto).
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
     unfold fmc_instr_decode. simpl.
     branch_byte_eq.
