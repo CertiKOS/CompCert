@@ -3406,8 +3406,8 @@ Proof.
   intros p p' PERM EQ WF.
   inv WF. constructor.
   - eapply Permutation_list_norepet_map; eauto.
-  - rewrite <- EQ.
-    eapply main_exists_perm; eauto.
+  (* - rewrite <- EQ. *)
+  (*   eapply main_exists_perm; eauto. *)
   - eapply def_aligned_perm; eauto.
   - eapply def_instrs_valid_perm; eauto.
   - eapply data_size_aligned_perm; eauto.
@@ -3605,8 +3605,8 @@ Proof.
   inv WF1. inv WF2.
   constructor; cbn.
   - apply PTree.elements_keys_norepet.
-  - rewrite e in *.
-    eapply main_exists_combine; eauto.
+  (* - rewrite e in *. *)
+  (*   eapply main_exists_combine; eauto. *)
   - eapply def_aligned_combine; eauto.
   - eapply def_instrs_valid_combine; eauto.
   - eapply data_size_aligned_combine; eauto.
