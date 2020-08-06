@@ -33,6 +33,51 @@ Lemma transf_program_match:
 Proof.
   unfold match_prog. intros. exists tp; intuition.
 Qed.
+Lemma fold_acc_instrs_error:
+  forall l sim e,
+    fold_left (acc_instrs sim false) l (Error e) = Error e.
+Proof.
+  induction l; simpl; intros; eauto.
+Qed.
+
+Lemma acc_instrs_instr_ready: forall map c init ofs tbl i,
+    fold_left (acc_instrs map false) c init = OK(ofs, tbl) ->
+    In i c -> 
+    ready_for_proof i = true.
+Proof.
+  induction c as [|i' c'].
+  - cbn. intros. auto.
+  - cbn. intros. inv H0; subst; eauto.
+    unfold acc_instrs in H at 2. cbn in H.
+    destr_in H. cbn in H.
+    destruct init; cbn in H.
+    + destruct p. rewrite fold_acc_instrs_error in H. congruence.
+    + rewrite fold_acc_instrs_error in H. congruence.
+Qed.
+
+
+Lemma transf_program_instr_ready: forall c i p p',
+    match_prog p p' ->
+    SecTable.get sec_code_id (prog_sectable p) = Some (sec_text c) ->
+    In i c ->
+    ready_for_proof i = true.
+Proof.
+  intros c i p p' TRANSF GET IN. 
+  red in TRANSF.
+  destruct TRANSF. destruct H. clear H0.
+  monadInv H.
+  destr_in EQ2. destr_in EQ2. inv EQ2.
+  unfold transl_sectable in EQ.
+  destr_in EQ; try congruence. 
+  destruct v; try congruence.
+  destr_in EQ; try congruence.
+  destr_in EQ; try congruence.
+  destruct v; try congruence.
+  destr_in EQ; try congruence. inv EQ.
+  monadInv Heqr. inv GET.
+  eapply acc_instrs_instr_ready; eauto.
+Qed.
+
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
@@ -1637,6 +1682,8 @@ Proof.
   Opaque instr_size.
 Qed.
 
+Axiom code_size_bound : forall c, code_size c < Ptrofs.max_unsigned.
+
 Lemma transl_instr_reloc_offset_range:
   forall sim ofs a l,
     transl_instr sim false ofs a = OK l ->
@@ -1667,13 +1714,6 @@ Proof.
            end.
 
   destruct a; simpl in TI; autoinv; simpl; try lia.
-Qed.
-
-Lemma fold_acc_instrs_error:
-  forall l sim e,
-    fold_left (acc_instrs sim false) l (Error e) = Error e.
-Proof.
-  induction l; simpl; intros; eauto.
 Qed.
 
 Lemma gen_instr_map_gen_reloc_ofs_symb_ok:
@@ -1980,6 +2020,7 @@ Proof.
 Qed.
 
 
+
 Lemma transf_program_correct:
   forall rs, forward_simulation (RelocProgSemantics.semantics prog rs)
                                 (RelocProgSemantics1.semantics tprog rs).
@@ -2008,13 +2049,10 @@ Proof.
       eauto.
       eapply exec_instr_ok; eauto.
       intros; symmetry; eapply symbol_address_code_transl; eauto.
+      exploit global_env_find_instr_inv; eauto.
+      intros (c & GETC & IN).
+      cbn. erewrite transf_program_instr_ready; eauto.
 
-      (* red in TRANSF. *)
-      (* cbn. destr; eauto. unfold id_eliminate' in ELIM. *)
-      (* destr_in ELIM; try congruence. *)
-      cbn.
-      admit.
-      
       intro STEP. eexists; split; eauto.
     + edestruct find_instr_ok as (i' & FI & ELIM); eauto.
       unfold id_eliminate' in ELIM. destr_in ELIM. inv ELIM. simpl in Heqb0.
@@ -2031,7 +2069,7 @@ Proof.
       reflexivity.
       intro STEP.
       eexists; split; eauto.
-Admitted.
+Qed.
 
 End PRESERVATION.
 
@@ -3457,8 +3495,8 @@ Proof.
   apply link_prog_inv in Heqo. intuition subst. simpl.
   apply Maps.PTree.elements_keys_norepet.
 
-
   exfalso.
-  admit.                        (* code_size (c1' ++ c2') >= Ptrofs.max_unsigned. *)
   
-Admitted.
+  generalize (code_size_bound (c1' ++ c2')).
+  intros. omega.
+Qed.
