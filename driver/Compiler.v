@@ -217,36 +217,20 @@ Definition transf_c_program_real p : res Asm.program :=
   @@@ PseudoInstructions.check_program
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 
-Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
+Definition transf_c_program_bytes (more: bool) (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
   transf_c_program_real p
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
   (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
-  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program false)
-  @@@ time "Encoding of instructions and data" (RelocBingen.transf_program false)
+  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program more)
+  @@@ time "Encoding of instructions and data" (RelocBingen.transf_program more)
   (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
   @@ time "Removing addendums" RemoveAddend.transf_program
   @@@ time "Encoding of tables" TablesEncode.transf_program
   @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
   @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.
-
-Definition transf_c_program_bytes_more (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
-  transf_c_program_real p
-  @@@ time "Psedoinstruction elimination" Asmpielim.transf_program
-  @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
-  @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
-  @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
-  @@@ time "Generation of the symbol table" Symbtablegen.transf_program
-  (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
-  @@@ time "Generation of relocation table" (Reloctablesgen.transf_program true)
-  @@@ time "Encoding of instructions and data" (RelocBingen.transf_program true)
-  (* @@@ time "Added the starting stub code" Stubgen.transf_program *)
-  @@ time "Removing addendums" RemoveAddend.transf_program
-  @@@ time "Encoding of tables" TablesEncode.transf_program
-  @@@ time "Generation of the reloctable Elf" RelocElfgen.gen_reloc_elf
-  @@@ time "Encoding of the reloctable Elf" EncodeRelocElf.encode_elf_file.  
 
 Definition transf_c_elim_label p: res Asm.program :=
   transf_c_program_real p
@@ -539,7 +523,7 @@ Qed.
 
 Theorem transf_c_program_bytes_match :
   forall p tp,
-    transf_c_program_bytes p = OK tp ->
+    transf_c_program_bytes false p = OK tp ->
     match_prog_bytes p tp.
 Proof.
   intros p tp T. unfold transf_c_program_bytes in T.
@@ -1224,7 +1208,7 @@ Qed.
 
 Theorem transf_c_program_correct_bytes:
   forall p b tp s,
-    transf_c_program_bytes p = OK (b, tp, s) ->
+    transf_c_program_bytes false p = OK (b, tp, s) ->
     backward_simulation (Csem.semantics (elf_bytes_stack_requirements (b,tp,s)) p) (ElfBytesSemantics.semantics b tp s (Asm.Pregmap.init Values.Vundef)).
 Proof.
   intros. exploit c_semantic_preservation_bytes. apply transf_c_program_bytes_match; eauto.

@@ -51,7 +51,7 @@ let compile_c_ast sourcename csyntax ofile =
   set_dest PrintMach.destination option_dmach ".mach";
   if !option_reloc_elf then
   begin
-    match Compiler.transf_c_program_bytes_more csyntax with
+    match Compiler.transf_c_program_bytes !option_more_instr csyntax with
      | Errors.OK ((bs, p), _) ->
         ElfFileOutput.write_elf ofile bs
      | Errors.Error msg ->
@@ -534,6 +534,7 @@ let cmdline_actions =
   Suffix ".h", Self (fun s ->
       push_action process_h_file s; incr num_source_files; incr num_input_files);
   Exact "-relf", Set option_reloc_elf;
+  Exact "-more", Set option_more_instr;
   ]
 
 let _ =

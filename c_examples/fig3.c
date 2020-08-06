@@ -9,5 +9,5 @@ void record(int c) { rcd[c] = c; }
 int main() { 
   int i = get(); 
   while (i < limit) { incr(); i = get();}
-return 0; 
+  return 0; 
 }
