@@ -837,11 +837,7 @@ Proof.
   repeat destr_in TRANSF. destruct p. inv Heqp0. monadInv TRANSF.
   cbn [prog_main].
   rewrite H0. clear H0.
-  inv w. auto.
-  red in wf_prog_main_exists. rewrite Exists_exists in wf_prog_main_exists.
-  destruct wf_prog_main_exists as (def & IN & P).
-  destruct def. destruct o; destruct P as [IDEQ P]; inv P.
-  cbn [prog_main].
+  inv w. 
   eapply symbol_address_inject; eauto.
 Qed.
 
