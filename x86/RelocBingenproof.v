@@ -1658,8 +1658,139 @@ Admitted.
 
 
 Lemma exec_instr_simulation: forall i i' rs m,
+    RelocBingen.ready_for_proof i = true ->
     RelocBinDecode.instr_eq i i' -> 
     exec_instr ge i rs m =  exec_instr tge i' rs m.
+Proof.
+  intros i i' rs m HReadyForProof HInstrEq.
+  destruct i; simpl in HReadyForProof; inversion HReadyForProof.
+  all:
+    try(unfold RelocBinDecode.instr_eq in HInstrEq;
+    rewrite HInstrEq;
+    unfold exec_instr; simpl;
+    destruct (get_pc_offset rs); [rewrite <- HInstrEq|auto]);auto.
+  (* Pmov_rs rd id *)
+  simpl in HInstrEq.
+  rewrite<- HInstrEq.
+
+  unfold exec_instr.
+  unfold id_reloc_offset.
+  cbn [Reloctablesgen.instr_reloc_offset].
+  unfold Reloctablesgen.addrmode_reloc_offset.
+  unfold addrmode_size_aux.
+  replace (1+1) with 2 by omega.
+  unfold eval_addrmode32.
+  destruct get_pc_offset; auto.
+  unfold tge.
+  rewrite (symbol_address_refl RELOC_CODE (z+2)).
+  unfold instr_size. cbn [Asm.instr_size'].
+  unfold addrmode_size.
+  cbn [addrmode_size_aux].
+  replace (1+(1+4)) with 6 by omega.
+  (* nextinstr_nf and nextinstr !
+     consider to change the encoder *)
+  admit.
+  
+  
+  1:unfold exec_load.
+  2:unfold exec_store.
+  1-2: rewrite HInstrEq.
+  1-2: generalize (eval_addrmode_refl (id_reloc_offset z i') a rs).
+  1-2: intros HAddrmode; rewrite HAddrmode; auto.
+  
+  
+  (* lea *)
+  rewrite HInstrEq.
+    generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs).
+    intros HAddrmode. rewrite HAddrmode. auto.
+
+    (* sall *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [Hrd Hn].
+    rewrite Hrd.
+    rewrite Zmod_small in Hn.
+    Focus 2.
+    (* this is guaranteed by the decoder *)
+    admit.
+    rewrite Int.repr_unsigned in Hn. subst n.
+    unfold exec_instr.
+    destruct get_pc_offset; auto.
+
+    (* test *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [[H10 H23] | [H13 H20]].
+    rewrite H10. rewrite H23. auto.
+    rewrite H13. rewrite H20.
+    unfold exec_instr.
+    rewrite Val.and_commut. auto.
+
+    (* jmp *)
+    destruct ros; inversion HReadyForProof.
+    simpl in HInstrEq. destruct i'; inversion HInstrEq.
+    unfold exec_instr.
+    unfold instr_size.
+    cbn [Asm.instr_size'].
+    unfold id_reloc_offset.
+    cbn [Reloctablesgen.instr_reloc_offset].
+    destruct get_pc_offset; auto.
+    destruct Mem.storev; auto.
+    unfold eval_ros.
+    unfold tge.
+    rewrite (symbol_address_refl RELOC_CODE (z+1)).
+    auto.
+    
+    (* Pmov_rm_a *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [Hrd Ha].
+    rewrite Hrd. rewrite Ha.
+    unfold exec_instr.
+    destruct (get_pc_offset rs);auto.
+    unfold exec_load.
+    destruct Archi.ptr64 eqn:EQW; inversion EQW.
+    generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_rm_a rd a0)) a0 rs).
+    intros HAddrmode.
+    rewrite HAddrmode.
+    unfold id_reloc_offset.
+    unfold Reloctablesgen.instr_reloc_offset.
+    unfold tge. 
+    (* int32 and any32 *)
+    replace Mint32 with Many32.
+    auto.
+    admit.
+
+    (* Pmov_mr_a , will have the same problem *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [Hrd Ha].
+    rewrite Hrd. rewrite Ha.
+    unfold exec_instr.
+    destruct (get_pc_offset rs);auto.
+    unfold exec_store.
+    destruct Archi.ptr64 eqn:EQW; inversion EQW.
+    generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_mr_a a0 rs1)) a0 rs).
+    intros HAddrmode.
+    rewrite HAddrmode.
+    unfold id_reloc_offset.
+    unfold Reloctablesgen.instr_reloc_offset.
+    unfold tge.
+    replace Many32 with Mint32.
+    auto.
+    admit.
+
+    (* Plabel *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    unfold exec_instr.
+    destruct (get_pc_offset rs); auto.
+    unfold exec_instr.
+    destruct get_pc_offset; auto.
+    
+    (* Pnop *)
+    simpl in HInstrEq.
+    destruct i'; inversion HInstrEq.
+    unfold exec_instr.
+    cbn [instr_size].
+    cbn [Asm.instr_size']. auto.
+
+    unfold exec_instr. auto.
 Admitted.
 
 Lemma eval_builtin_args_pres: forall idofs e sp m al vl,
@@ -1669,6 +1800,19 @@ Admitted.
 
 Lemma senv_equiv: Senv.equiv (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv ge))
                              (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv tge)).
+Admitted.
+
+Lemma find_instr_ready_for_proof vptr i:
+  Genv.find_instr ge vptr = Some i
+  -> ready_for_proof i = true.
+Proof.
+  intros HFind.
+  unfold Genv.find_instr in HFind.
+  simpl in HFind.
+  unfold RelocProgSemantics.Genv.find_instr in HFind.
+  destruct vptr; inversion HFind. clear H0.
+  unfold RelocProgSemantics.Genv.genv_instrs in HFind.
+  destruct (RelocProgSemantics.globalenv prog) eqn:EQGenv.  
 Admitted.
 
 Theorem step_simulation:
@@ -1681,6 +1825,7 @@ Proof.
     eapply exec_step_internal; eauto.
     eapply not_find_ext_funct_refl; eauto.
     erewrite <- exec_instr_simulation; eauto.
+    apply (find_instr_ready_for_proof _ _ H1).
 
   - (* Builtin Step *)
     generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].

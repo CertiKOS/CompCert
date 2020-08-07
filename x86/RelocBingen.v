@@ -509,7 +509,7 @@ Definition encode_instr' (ofs:Z) (i: instruction) : res (list byte) :=
       OK (HB["89"] :: abytes)
   | Pmov_rs rd id =>
     do abytes <- encode_addrmode ofs i (Addrmode None None (inr (id,Ptrofs.zero))) rd;
-      OK (HB["8B"] :: abytes)
+      OK (HB["8D"] :: abytes)
   | Pmovsd_ff frd fr1 =>
     do bfrd <- encode_freg frd;
       do bfr1 <- encode_freg fr1;

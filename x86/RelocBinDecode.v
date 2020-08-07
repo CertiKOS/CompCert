@@ -583,7 +583,7 @@ Definition instr_eq (ins1 ins2: instruction): Prop :=
            |Pnop => True
            |_ => False
            end
-  |Pmov_rs rd id => (Pmovl_rm rd (Addrmode None None (inr (id,Ptrofs.zero)))) = ins2                    
+  |Pmov_rs rd id => (Pleal rd (Addrmode None None (inr (id,Ptrofs.zero)))) = ins2                    
   |_ => ins1 = ins2
   end.
 
@@ -4718,96 +4718,30 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     rewrite (encode_reg_length rd);auto.
     
   + (* Pmov_rs rd id *)
-    exists (Pmovl_rm rd (Addrmode None None (inr (id, Ptrofs.zero)))).
+    exists (Pleal rd (Addrmode None None (inr (id, Ptrofs.zero)))).
     split; try (unfold instr_eq; auto).
-    destruct negb; inversion H10.
-    monadInv H10.
-    unfold fmc_instr_decode. simpl.    
-    branch_byte_eq'. unfold decode_8b.
-    unfold encode_instr in HEncode.    
-    unfold encode_addrmode in EQ.
-    assert (HmodrmExists: exists modrm, get_n (x ++ l) 0 = OK modrm). {
-      monadInv EQ.
-      simpl in EQ0.
-      inversion EQ0.
-      monadInv H10.
-      simpl.
-      eauto.
-    }
-    destruct HmodrmExists.
-    rewrite H. simpl.
-    assert (HModrmPrefix : (Byte.and x0 HB[ "C0"]) <> HB["C0"] ). {
-      monadInv EQ.
-      simpl in EQ0.
-      inversion EQ0.
-      monadInv H12.
-      simpl in H.
-      inversion H.
-      replace (char_to_bool "0"
-            :: char_to_bool "0"
-               :: x ++
-                  [char_to_bool "1"; char_to_bool "0";
-                   char_to_bool "1"])
-        with ((char_to_bool "0"
-            :: char_to_bool "0"
-               ::[])++ (x ++
-                  [char_to_bool "1"; char_to_bool "0";
-                  char_to_bool "1"])).
-      rewrite byte_and_C0.
-      simpl. intros HNot. inversion HNot.
-      simpl. 2:simpl.
-      omega.
-      rewrite app_length.
-      simpl.
-      resolve_reg_length x. omega.
-      auto.
-    }
-    rewrite byte_eq_false; auto.
-    unfold decode_movl_rm.
-    cbn [negb ready_for_proof negb] in HEncode.
-    unfold encode_instr' in HEncode.
+    destruct negb; inversion H10. clear H11.
     monadInv HEncode.
-    assert (exists irofs, instr_reloc_offset (Pmov_rs rd 1%positive)= OK irofs) as HInstr_reloc . {
-      unfold instr_reloc_offset.
-      eauto.
-    }
-    destruct HInstr_reloc as [irofs HInstr_reloc].
-    assert(HOfs: ofs + 1 + 1 = irofs + ofs). {
-        unfold instr_reloc_offset in HInstr_reloc.
-        replace (ofs+1+1)with (1 + 1 + ofs) by omega.
-        monadInv HInstr_reloc.        
-        omega.
-    }
+    unfold fmc_instr_decode. simpl.
+    branch_byte_eq'.
+    unfold decode_leal.
+    unfold encode_addrmode in EQ.
     monadInv EQ.
-    destruct id; inversion EQ.
-    monadInv EQ.
-    generalize (encode_decode_addrmode_relf _ _ _ (ofs + 1 + 1) _ _ ofs HInstr_reloc EQ0 HOfs).
-    intros HAddrmode.
-    unfold encode_addrmode in EQ0.
-    unfold get_instr_reloc_addend' in EQ.
-    unfold get_reloc_addend in EQ.
-    simpl in EQ2. inversion EQ2.
-    subst x.
-    destruct (ZTree.get (2+ofs)) eqn:HReloc;inversion EQ.
-    monadInv H11.
-    (* rewrite <- H12 in H11. *)
-    (* monadInv H12. *)
-    (* monadInv EQ0. *)
-    (* destruct (Ptrofs.eq_dec Ptrofs.zero Ptrofs.zero); inversion EQ0. *)
-    monadInv EQ0.
-    generalize(encode_decode_addr_size_relf _ _ _ EQ4 (encode_int32 x2 ++l)).
-    intros HAddrsize.
-    rewrite <- app_assoc.
-    rewrite HAddrsize.
+    rewrite<- app_assoc.
+    rewrite (encode_decode_addr_size_relf _ _ _ EQ0).
     simpl.
-    monadInv EQ0.
-    simpl in EQ5. inversion EQ5.
-    subst x3.
+    remember (Pmov_rs rd id) as i.
+    remember (Pleal rd (Addrmode None None (inr (id, Ptrofs.zero)))) as i'.
+    assert(HRelocIEq: instr_reloc_offset i = instr_reloc_offset i'). {
+      subst i. subst i'. simpl. auto.
+    }
+    assert(HInstrReloc: instr_reloc_offset i = OK 2). {
+      subst i. auto.
+    }
+    monadInv H10.
+    assert(HOfs: ofs+1+1 = 2+ ofs) by omega.
     rewrite app_assoc.
-    rewrite H11.
-    generalize (HAddrmode l).
-    intros HAddrmode1.
-    rewrite HAddrmode1.
+    rewrite  (encode_decode_addrmode_relf _ _ _ (ofs + 1 + 1) _ _ _ HInstrReloc EQ1 HOfs).
     simpl. auto.
   + (* Pmovl_rm rd a *)
     exists (Pmovl_rm rd a).
