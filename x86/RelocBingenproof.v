@@ -61,28 +61,30 @@ Lemma instr_size_app: forall n a b,
 Proof.
   induction n.
   (* base case *)
-  admit.
-  intros a b HLa.
-  generalize (list_has_tail _ _ HLa).
-  intros [tail [prefix Ha]].
-  rewrite Ha.
-  cut(length prefix = n).
-  intros HLPrefix.
-  generalize(IHn prefix ([tail]++b) HLPrefix).
-  intros HApp.
-  rewrite <- app_assoc.
-  rewrite HApp.
-  generalize(IHn prefix [tail] HLPrefix).
-  intros HPrefixTail.
-  rewrite HPrefixTail.
-  assert(HTailB: instr_size_acc ([tail]++b) = instr_size_acc [tail] + instr_size_acc b). {
-    unfold instr_size_acc.
-    simpl. omega.
-  }
-  rewrite HTailB. omega.
-  admit.
-  (* easy *)
-Admitted.
+  - intros.
+    erewrite length_zero_iff_nil in H; eauto. 
+    subst. cbn. auto.
+  - intros a b HLa.
+    generalize (list_has_tail _ _ HLa).
+    intros [tail [prefix Ha]].
+    rewrite Ha.
+    cut(length prefix = n).
+    intros HLPrefix.
+    generalize(IHn prefix ([tail]++b) HLPrefix).
+    intros HApp.
+    rewrite <- app_assoc.
+    rewrite HApp.
+    generalize(IHn prefix [tail] HLPrefix).
+    intros HPrefixTail.
+    rewrite HPrefixTail.
+    assert(HTailB: instr_size_acc ([tail]++b) = instr_size_acc [tail] + instr_size_acc b). {
+      unfold instr_size_acc.
+      simpl. omega.
+    }
+    rewrite HTailB. omega.
+    subst. rewrite app_length in HLa.
+    cbn in HLa. omega.
+Qed.
 
 Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map: Prop :=
   match code, bytes  with
@@ -1332,137 +1334,67 @@ Lemma decode_prog_code_section_eq:
 Admitted.
 
 
-Lemma genv_find_symbol: forall prog tprog sym,
-    prog_eq prog tprog
-    -> (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) 
-                                               sym Ptrofs.zero) = (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym Ptrofs.zero).
+Lemma symbol_address_transf: forall prog tprog sym ofs,
+    prog_eq prog tprog ->
+    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) sym ofs) = 
+    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym ofs).
+clear.
+Admitted.
+
+Definition code_section_eq (t1 t2: option section) := 
+  match t1, t2 with
+  | Some (sec_text c1), Some (sec_text c2) => instr_eq_list c1 c2
+  | _, _ => False
+  end.
+
+Lemma transf_program_decode_eq : forall p tp,
+    transf_program false p = OK tp -> 
+    exists tp', decode_prog_code_section tp = OK tp' /\
+           code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable tp')) /\
+           (SecTable.get sec_data_id (prog_sectable tp) = SecTable.get sec_data_id (prog_sectable tp')) /\
+           prog_eq p tp'.
+Admitted.
+
+
+Lemma init_mem_pres: forall p p' m,
+    code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable p')) ->
+    SecTable.get sec_data_id (prog_sectable p) = SecTable.get sec_data_id (prog_sectable p') ->
+    prog_eq p p' ->
+    RelocProgSemantics1.init_mem p = Some m -> 
+    init_mem p' = Some m.
+Admitted.
+
+
+Lemma transf_program_pres_data_section : forall p p',
+    transf_program false p = OK p' ->
+    SecTable.get sec_data_id (prog_sectable p) = SecTable.get sec_data_id (prog_sectable p').
+Admitted.
+
+Lemma prog_eq_initial_state_gen : forall p p' rs m st,
+    prog_eq p p' ->
+    initial_state_gen p rs m st -> initial_state_gen p' rs m st.
 Admitted.
 
 Lemma transf_initial_states:
-  forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
-         exists st2, initial_state tprog rs st2 /\  st1 = st2.
+  forall st rs, RelocProgSemantics1.initial_state prog rs st ->
+           initial_state tprog rs st.
 Proof.
-  intros st1 rs HInit.
-  exists st1.
+  intros st rs HInit.
   inv HInit.
-  split.
-  +
-    generalize decode_prog_code_section_eq.
-    intros (prog' & c & c' & HDecodeEx & HCode' & HCode & HInstr_eq & HProgEq & HMemEq).
-    generalize (initial_state_intro tprog rs st1 m prog' HDecodeEx).
-    intros HInitState.
-    rewrite HMemEq in HInitState.
-    generalize (init_mem_eq m H).
-    intros HInitMem.
-    generalize (HInitState HInitMem).
-    clear HInitState.
-    intros HInitState.
-    inversion H0.
-    generalize (prog_tprog_eq).
-    intros HTProgEq.
-    generalize (prog_eq_symm _ _ HProgEq).
-    clear HProgEq.
-    intros HProgEq.
-    generalize (prog_eq_transitivity _ _ _ HProgEq HTProgEq).
-    intros HProgEq'.
-    generalize HProgEq.
-    unfold prog_eq in HProgEq.
-    destruct HProgEq as (HDefsEq & HMainEq & HPublicEq & HSymEq & HRelocEq & HSenvEq & HStrEq).
-    intros HProgEq.
-    generalize (initial_state_gen_intro prog' rs _ _ _ _ _ _ MALLOC MDROP MRSB MST).
-    rewrite HMainEq.
+  edestruct transf_program_decode_eq as (tporg' & DEC & CEQ & DEQ & PEQ).
+  red in TRANSF. eauto.
+  econstructor; eauto.
+  eapply init_mem_pres; eauto.
+  erewrite transf_program_pres_data_section; eauto.
+  apply prog_eq_initial_state_gen with prog; eauto.
+Qed.  
 
-    generalize (prog_eq_symm _ _ HProgEq).
-    intros HProgEq_rev.
-    generalize (genv_find_symbol prog prog' (prog_main prog) HProgEq_rev).
-    intros HSymbolFind.
-    simpl. rewrite<- HSymbolFind.
-    rewrite H1.
-    unfold rs0 in H1. unfold ge0 in H1. simpl in H1. rewrite H1.
-    intros HInitStateGen.
-    generalize (HInitState HInitStateGen).
-    auto.
-
-
-    
-    (* (* unfold RelocProgSemantics.Genv.symbol_address. *) *)
-    (* (* unfold RelocProgSemantics.globalenv. *) *)
-    (* (* unfold RelocProgSemantics.Genv.find_symbol. *) *)
-    (* (* rewrite HSymEq. *) *)
-
-    (* rewrite rs0. *)
-    (* (* match goal with *) *)
-    (* (* | [|- (_  rs1 := ?x)] => rewrite x *) *)
-    (* (* end. *) *)
-     
-    (* rewrite  HTMainEq in rs0. *)
-    
-
-    (* apply(initial_state_gen_intro). *)
-    
-
-
-    (* assert(HInitMem: init_mem prog' = Some m). { *)
-    (*   unfold init_mem. *)
-
-    
-
-
-
-    
-    (* unfold match_prog in TRANSF. *)
-    (* unfold transf_program in TRANSF. *)
-    (* monadInv TRANSF. *)
-    (* repeat destr_in EQ2. *)
-    (* unfold transl_sectable in EQ. *)
-    (* destruct (prog_sectable prog);inversion EQ. *)
-    (* repeat (destruct v; inversion EQ; *)
-    (*         destruct s; inversion EQ). *)
-    (* monadInv EQ. *)
-    (* simpl. *)
-    (* unfold transl_code in EQ0. *)
-    (* monadInv  EQ0. *)
-    (* destruct x. monadInv EQ3. *)
-    (* generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ2). *)
-    (* intros HTranslSpec. *)
-    (* generalize (spec_decode_ex' code 0 (rev l0) _ _ HTranslSpec). *)
-    (* intros (c' & code' & HEncodeDecode). *)
-    (* destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]]. *)
-    (* match goal with *)
-    (* | [|- initial_state ?tp _ _] => *)
-    (*   set (tprog := tp) in * *)
-    (* end. *)
-    (* assert(HDecodeTprogEx: exists prog', decode_prog_code_section tprog = OK prog') by admit. *)
-    
-    (* destruct HDecodeTprog as (prog' & HDecodeTprog). *)
-
-    (* (* (* destruct prog. simpl. *) *) *)
-    (* apply (initial_state_intro tprog rs st1 m prog'). *)
-    (* auto. *)
-    (* econstructor. *)
-    
-    (* unfold decode_prog_code_section. *)
-    (* simpl. *)
-    (* cut(((length(rev l0)) >= c')%nat). *)
-    (* intros HGE. *)
-    (* generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE). *)
-    (* intros HDecode'. *)
-    (* unfold decode_instrs'. *)
-    (* simpl in HDecode'. *)
-    (* rewrite HDecode'. *)
-    (* simpl. *)
-    (* eauto. *)
-    (* omega. *)
-
-  + reflexivity.
-Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r,
-    st1 = st2 -> RelocProgSemantics1.final_state st1 r -> final_state st2 r.
+  forall st r,
+    RelocProgSemantics1.final_state st r -> final_state st r.
 Proof.
-  intros st1 st2 r MS HFinal.
-  rewrite <-  MS.
+  intros st r MS.
   auto.
 Qed.
 
@@ -1486,6 +1418,13 @@ Proof.
   (* unfold RelocProgSemantics.add_external_globals. *)
   (* inversion Hge. *)  
 Admitted.
+
+Lemma find_ext_funct_refl: forall b ofs f,
+    Genv.find_ext_funct ge (Vptr b ofs) = Some f
+    -> Genv.find_ext_funct (globalenv tprog) (Vptr b ofs) = Some f.
+Proof.
+Admitted.
+
 
 Definition ge_eq (ge1 ge2: RelocProgSemantics.Genv.t) : Prop :=
   ge1.(RelocProgSemantics.Genv.genv_symb) = ge2.(RelocProgSemantics.Genv.genv_symb) /\
@@ -1546,178 +1485,48 @@ Lemma eval_addrmode_refl: forall idofs a rs,
 Admitted.
 
 
+Lemma exec_instr_simulation: forall i i' rs m,
+    RelocBinDecode.instr_eq i i' -> 
+    exec_instr ge i rs m =  exec_instr tge i' rs m.
+Admitted.
+
+Lemma eval_builtin_args_pres: forall idofs e sp m al vl,
+    eval_builtin_args preg ge idofs e sp m al vl ->
+    eval_builtin_args preg tge idofs e sp m al vl.
+Admitted.
+
+Lemma senv_equiv: Senv.equiv (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv ge))
+                             (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv tge)).
+Admitted.
+
 Theorem step_simulation:
-  forall s1 t s2, step ge s1 t s2 ->
-                  forall s1' (MS: s1=s1'),
-                    (exists s2', step tge s1' t s2' /\ s2 = s2').
+  forall s1 t s2, step ge s1 t s2 -> step tge s1 t s2.
 Proof.
-  intros s1 t s2 HStep s1' MS.
-  exists s2.
-  split;auto.
-  induction HStep.
-  +
-    (* exec_step_internal *)
-    rewrite <- MS.
-    unfold tge.
-    (* not find def *)
-    generalize (not_find_ext_funct_refl _ _ H0). auto.
-
-    (* find instr *)
+  intros s1 t s2 STEP. inv STEP.
+  - (* Internal Step *)
     generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].
-    unfold tge in HInsEx.
-    econstructor.
-    eauto. auto. eauto.
 
-    (* "step simulation" *)
-    rename H2 into HExec.
-    rewrite <- HExec.
-    destruct i;
-    try(unfold RelocBinDecode.instr_eq in HInsEQ;
-    rewrite HInsEQ;
-    unfold exec_instr; simpl;
-    destruct (get_pc_offset rs); [rewrite <- HInsEQ|auto]);auto. 
-    unfold RelocBinDecode.instr_eq in HInsEQ.
-    rewrite <- HInsEQ. admit.
-    
+    eapply exec_step_internal; eauto.
+    eapply not_find_ext_funct_refl; eauto.
+    erewrite <- exec_instr_simulation; eauto.
 
-    
-    1:unfold exec_load.
-    2:unfold exec_store.
-    1-2: rewrite HInsEQ.
-    1-2: generalize (eval_addrmode_refl (id_reloc_offset z i') a rs).
-    1-2: intros HAddrmode; rewrite HAddrmode; auto.
+  - (* Builtin Step *)
+    generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].
 
-    Admitted.
-(*     (* lea *) *)
-(*     rewrite HInsEQ. *)
-(*     generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs). *)
-(*     intros HAddrmode. rewrite HAddrmode. auto. *)
+    eapply exec_step_builtin; eauto.
+    eapply not_find_ext_funct_refl; eauto.
+    unfold RelocBinDecode.instr_eq in HInsEQ. subst.
+    eauto.
+    eapply eval_builtin_args_pres; eauto. 
+    eapply external_call_symbols_preserved; eauto.
+    eapply senv_equiv.
 
-(*     (* sall *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     destruct HInsEQ as [Hrd Hn]. *)
-(*     rewrite Hrd. admit. *)
-
-(*     (* test *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     destruct HInsEQ as [[H10 H23] | [H13 H20]]. *)
-(*     rewrite H10. rewrite H23. auto. *)
-(*     rewrite H13. rewrite H20. *)
-(*     unfold exec_instr. *)
-(*     rewrite Val.and_commut. auto. *)
-
-(*     (* jmp *) *)
-(*     destruct ros; auto. *)
-(*     rewrite HInsEQ. *)
-(*     destruct (id_reloc_offset z i'). *)
-(*     f_equal. f_equal. *)
-
-
-(*     generalize (symbol_address_refl RELOC_CODE z0). *)
-(*     auto. auto. *)
-    
-(*     (* Pcall *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     unfold exec_instr. *)
-(*     destruct (get_pc_offset rs);auto.     *)
-(*     rewrite HInsEQ. *)
-(*     destruct ros0. *)
-(*     replace (instr_size (Pcall (inl i) sg0)) with 1. *)
-(*     replace (instr_size (Pcall (inl i) sg)) with 1. *)
-(*     destruct (Mem.storev Mptr m *)
-(*       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) *)
-(*       (Val.offset_ptr (rs PC) (Ptrofs.repr 1))); auto. *)
-(*     (* about size *) *)
-(*     admit. admit. *)
-(*     replace (instr_size (Pcall (inr i) sg0)) with 5. *)
-(*     replace (instr_size (Pcall (inr i) sg)) with 5. *)
-(*     destruct (Mem.storev Mptr m *)
-(*       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) *)
-(*       (Val.offset_ptr (rs PC) (Ptrofs.repr 5))); auto. *)
-(*     unfold eval_ros. *)
-(*     unfold id_reloc_offset. unfold Reloctablesgen.instr_reloc_offset. *)
-(*     generalize (symbol_address_refl RELOC_CODE (z+1)). *)
-(*     intros HAddr. *)
-(*     rewrite HAddr. auto. *)
-(*     (* about size *) *)
-(*     admit. admit. *)
-
-(*     (* Pmov_rm_a *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     destruct HInsEQ as [Hrd Ha]. *)
-(*     rewrite Hrd. rewrite Ha. *)
-(*     unfold exec_instr. *)
-(*     destruct (get_pc_offset rs);auto. *)
-(*     unfold exec_load. *)
-(*     destruct Archi.ptr64 eqn:EQW; inversion EQW. *)
-(*     generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_rm_a rd a0)) a0 rs). *)
-(*     intros HAddrmode. *)
-(*     rewrite HAddrmode. *)
-(*     unfold id_reloc_offset. *)
-(*     unfold Reloctablesgen.instr_reloc_offset. *)
-(*     unfold tge.  *)
-(*     (* int32 and any32 *) *)
-(*     replace Mint32 with Many32. *)
-(*     admit. *)
-(*     admit. *)
-
-(*     (* Pmov_mr_a , will have the same problem *) *)
-(*     admit. *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     unfold exec_instr. *)
-(*     destruct (get_pc_offset rs); auto. *)
-(*     unfold exec_instr. admit. *)
-
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     admit. *)
-(*     unfold exec_instr. auto. *)
-
-(*   + *)
-(*     (* exec_step_builtin *) *)
-(*     rewrite <- MS. *)
-(*     assert(HArgs: eval_builtin_args preg tge idofs rs (rs RSP) m args vargs) by admit. *)
-(*     econstructor; try eauto. *)
-(*     (* not found exfunc refl *) *)
-(*     generalize (not_find_ext_funct_refl _ _ H0). *)
-(*     auto. *)
-(*     (* built in refl *) *)
-(*     generalize (find_instr_refl _ _ _ H1). *)
-(*     intros (i & HFind & HEq). *)
-(*     inversion HEq. *)
-(*     rewrite HFind. *)
-(*     rewrite H6. *)
-(*     auto. *)
-(*     simpl in H4. simpl. *)
-    
-(*     assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) vargs m t vres m') by admit. *)
-(*     auto. *)
-(*   + *)
-(*     (* exec_step_external *) *)
-(*     rewrite <- MS. *)
-(*     generalize (exec_step_external tge b ofs ef args res rs m t rs' m'). *)
-(*     intros HExecStepExt. *)
-(*     generalize (HExecStepExt H). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     assert(HFoundExt: Genv.find_ext_funct tge (Vptr b ofs) = Some ef) by admit. *)
-(*     generalize (HExecStepExt HFoundExt). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     rewrite LOADRA in HExecStepExt. *)
-(*     generalize (HExecStepExt ra eq_refl RA_NOT_VUNDEF ARGS). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) args m t res m') by admit. *)
-(*     generalize (HExecStepExt HExtCall). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     generalize (HExecStepExt H2). *)
-(*     auto. *)
-(* Admitted. *)
-
-
-    
-    
-    
-
-  
-  
+  - (* External Step *)
+    eapply exec_step_external; eauto.
+    eapply find_ext_funct_refl; eauto.
+    eapply external_call_symbols_preserved; eauto.
+    apply senv_equiv.
+Qed.
 
 
 Lemma transf_program_correct:
@@ -1730,17 +1539,15 @@ Proof.
     unfold globalenv, genv_senv. simpl.
     unfold RelocProgSemantics.globalenv. simpl. intro id.
     rewrite ! RelocProgSemantics.genv_senv_add_external_globals. simpl. auto.
-  + simpl. intros s1 IS.
-    inversion IS.
-    generalize (transf_initial_states _ _ IS).
-    auto.
+  + simpl. intros s1 IS. exists s1. split; eauto.
+    eapply transf_initial_states; eauto.
   +  (* final state *)
-    intros s1 s2 r HState HFinal.
+    intros s1 s2 r HState HFinal. inv HState.
     eapply transf_final_states; eauto.
   + simpl. intros s1 t s1' HStep s2 HState.
-    fold ge in HStep.
-    generalize(step_simulation _ _ _ HStep s2 HState).
-    auto.
+    inv HState.
+    exists s1'. split; eauto.
+    eapply step_simulation; eauto.
 Qed.
     
 
