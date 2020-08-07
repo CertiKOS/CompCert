@@ -13,6 +13,19 @@ Require Import RelocProgram RelocProgSemantics1 RelocProgSemantics2.
 Import ListNotations.
 Require AsmFacts.
 
+Lemma instr_eq_size_eq: forall i1 i2,
+    RelocBinDecode.instr_eq i1 i2 -> instr_size i1 = instr_size i2.
+Proof.
+  intros.
+  destruct i1; try (inv H; cbn; auto).
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+Qed.
 
 
 Lemma list_has_tail: forall {A:Type} (l:list A) n,
@@ -1060,6 +1073,17 @@ Fixpoint instr_eq_list code1 code2:=
   |_, _ => False
   end.
 
+Lemma instr_eq_list_size_eq: forall c1 c2, 
+    instr_eq_list c1 c2 -> code_size c1 = code_size c2.
+Proof.
+  induction c1 as [|i1 c1].
+  - cbn. intros. destr_in H; eauto.
+  - cbn. intros. destr_in H; subst; eauto.
+    destr_in H.
+    apply instr_eq_size_eq in H0.
+    cbn. erewrite IHc1; eauto. congruence.
+Qed.
+
 Lemma decode_instrs_append': forall rtbl  fuel ofs t l1 l2 code,
     decode_instrs rtbl fuel ofs t l1 = OK code ->
     decode_instrs rtbl fuel ofs t (l1 ++ l2) = OK (rev l2 ++ code).
@@ -1330,10 +1354,40 @@ Definition data_section_eq rtbl (t1 t2: option section) :=
   | _, _ => False
   end.
 
-Lemma transl_code_spec_decode_refl: forall c bs rtbl,
-    transl_code_spec c bs 0 rtbl ->
-    exists c', decode_instrs rtbl (length bs) 0 bs [] = OK c' /\ instr_eq_list c c'.
+Lemma decode_length: forall bs rtbl ofs i bs',
+    RelocBinDecode.fmc_instr_decode rtbl ofs bs = OK (i, bs') ->
+    (length bs = length bs' + Z.to_nat (instr_size i))%nat.
+Proof.
 Admitted.
+
+Lemma transl_code_spec_decode_refl: forall c bs rtbl c1 ofs,
+    transl_code_spec c bs ofs rtbl ->
+    exists c', decode_instrs rtbl (length bs) ofs bs c1 = OK (rev c1 ++ c') /\ instr_eq_list c c'.
+Proof.
+  induction c as [|i c].
+  - intros bs rtbl c1 ofs H. cbn in H. destr_in H. subst. 
+    cbn. exists nil. split; eauto. rewrite app_nil_r. auto.
+  - intros bs rtbl c1 ofs H. cbn in H.
+    destruct H as (i' & bs' & DEC & EQ & TL).              
+    assert ((length bs > length bs')%nat). 
+    { generalize (decode_length _ _ _ _ _ DEC).
+      intros. generalize (instr_size_positive i').
+      rewrite Z2Nat.inj_lt. omega.
+      omega.
+      generalize (instr_size_positive i'). omega.
+    }
+    destruct bs. cbn in H. omega.
+    cbn [length decode_instrs].
+    rewrite DEC. cbn.
+    generalize (IHc bs' _ (i'::c1) _ TL).
+    intros (c' & DIS & IEQ).
+    erewrite <- instr_eq_size_eq; eauto.
+    assert (length bs >= length bs')%nat. cbn in H. omega.
+    erewrite decode_fuel_le; eauto.
+    eexists. split. cbn. rewrite <- app_assoc. auto.
+    cbn. split; auto.
+Qed.
+
 
 Lemma transl_code_decode_instrs_refl: forall rtbl code bytes,
     transl_code rtbl false code = OK bytes ->
@@ -1371,31 +1425,6 @@ Proof.
   repeat (split; auto).
 Qed.
   
-Lemma instr_eq_size_eq: forall i1 i2,
-    RelocBinDecode.instr_eq i1 i2 -> instr_size i1 = instr_size i2.
-Proof.
-  intros.
-  destruct i1; try (inv H; cbn; auto).
-  destruct i2; inv H; cbn; auto.
-  destruct i2; inv H; cbn; auto.
-  destruct i2; inv H; cbn; auto.
-  destruct i2; inv H; cbn; auto.
-  destruct i2; inv H; cbn; auto.
-  destruct i2; inv H; cbn; auto.
-  destruct i2; inv H; cbn; auto.
-Qed.
-
-Lemma instr_eq_list_size_eq: forall c1 c2, 
-    instr_eq_list c1 c2 -> code_size c1 = code_size c2.
-Proof.
-  induction c1 as [|i1 c1].
-  - cbn. intros. destr_in H; eauto.
-  - cbn. intros. destr_in H; subst; eauto.
-    destr_in H.
-    apply instr_eq_size_eq in H0.
-    cbn. erewrite IHc1; eauto. congruence.
-Qed.
-
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
