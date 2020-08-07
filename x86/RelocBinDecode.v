@@ -5841,7 +5841,15 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc in HAddrmode.
       rewrite HAddrmode.
       simpl. auto.
-  + admit.
+  +
+    exists Pnop.
+    destruct negb. inversion HEncode.
+    split.
+    unfold fmc_instr_decode.
+    simpl.
+    branch_byte_eq'.
+    auto.
+    unfold instr_eq. auto.
   + (*  (Pjmp_l_rel ofs0) *)
     exists  (Pjmp_l_rel ofs0).
     split;try(unfold instr_eq; auto).
@@ -5864,7 +5872,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     1-12: rewrite (encode_decode_int32_same_prefix (ofs0) l); simpl.
     1-24: try(generalize (encode_int32_4_exists _ l (encode_int32 ofs0 ++ l) eq_refl); intros (b1 & b2 & b3 & b4 & HEncInt); rewrite HEncInt; simpl).
     1-24: try(branch_byte_eq'; auto).
-    1-12: admit.
+    1-12:
+      (* valid_int32 ofs0 *)
+      admit.
   + (* Pnop *)
     exists Pnop.
     split; try(unfold instr_eq; auto).
