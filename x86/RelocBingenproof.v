@@ -1318,16 +1318,8 @@ Local Existing Instance mem_accessors_default.
 
 
 
-
-Lemma init_data_list_relf': forall init m b ofs ofs' result bytes prog dbytes,
-    store_init_data_list (globalenv prog) m b ofs init = Some result
-    -> fold_left (acc_init_data (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog)))) init (OK (ofs,bytes)) = OK (ofs', rev dbytes++bytes)
-    -> store_init_data_bytes m b ofs (rev dbytes) = Some result.
-Admitted.
-
-
-(** this lemma is not correct.
-ofs must be zero here since transl_init_data_list always begins from zero **)
+(** This lemma is not correct.
+    ofs must be zero here since transl_init_data_list always begins from zero **)
 
 Lemma init_data_list_relf: forall init m b ofs result bytes prog,
     store_init_data_list (globalenv prog) m b ofs init = Some result
@@ -1459,15 +1451,19 @@ Proof.
 Qed.
 
 
-Lemma transf_program_pres_data_section : forall p p',
-    transf_program false p = OK p' ->
-    SecTable.get sec_data_id (prog_sectable p) = SecTable.get sec_data_id (prog_sectable p').
-Admitted.
-
 Lemma prog_eq_initial_state_gen : forall p p' rs m st,
     prog_eq p p' ->
     initial_state_gen p rs m st -> initial_state_gen p' rs m st.
-Admitted.
+Proof.
+  intros p p' rs m st PEQ INIT.
+  inv INIT.
+  generalize (initial_state_gen_intro p' rs _ _ _ _ _ _ MALLOC MDROP MRSB MST).
+  cbn. intros.
+  unfold rs0, ge0. cbn.
+  erewrite symbol_address_transf; eauto.
+  red in PEQ. destruct PEQ. destruct H1. congruence.
+Qed.
+
 
 Lemma transf_initial_states:
   forall st rs, RelocProgSemantics1.initial_state prog rs st ->
