@@ -61,7 +61,14 @@ Lemma instr_size_app: forall n a b,
 Proof.
   induction n.
   (* base case *)
-  admit.
+  intros a b H.
+  generalize (length_zero_iff_nil a).
+  intros (H1 & H2).
+  generalize(H1 H).
+  intros H0.
+  rewrite H0.
+  simpl. auto.
+  
   intros a b HLa.
   generalize (list_has_tail _ _ HLa).
   intros [tail [prefix Ha]].
@@ -80,9 +87,11 @@ Proof.
     simpl. omega.
   }
   rewrite HTailB. omega.
-  admit.
-  (* easy *)
-Admitted.
+  rewrite Ha in HLa.
+  rewrite app_length in HLa.
+  simpl in HLa.
+  omega.
+Qed.
 
 Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map: Prop :=
   match code, bytes  with
@@ -115,15 +124,28 @@ Lemma fold_spec_length: forall n rtbl code ofs r z l,
     -> z = ofs + instr_size_acc code.
 Proof.
   induction n.
-  (* base case *)
-  admit.
+  intros rtbl code ofs r z l H H0.
+  generalize (length_zero_iff_nil code).
+  intros (HLCode & HNCode).
+  generalize(HLCode H).
+  intros HCode.
+  subst code.
+  simpl.
+  simpl in H0. inversion H0.
+  omega.
+  
   intros rtbl code ofs r z l HLCode HFoldAll.
   generalize (list_has_tail code n HLCode).
   intros [tail [prefix HCode]].
   rewrite HCode in HFoldAll.
   generalize (prefix_success _ _ _ _ _ _ _ HFoldAll).
   intros [z' [l' HFoldPrefix]].
-  assert(HLPrefix: length prefix = n) by admit. 
+  assert(HLPrefix: length prefix = n). {
+    rewrite HCode in HLCode.
+    rewrite app_length in HLCode.
+    simpl in HLCode.
+    omega.
+  }
   generalize(IHn rtbl prefix _ _ _ _ HLPrefix HFoldPrefix).
   intros Hz'.
   rewrite fold_left_app in HFoldAll.
@@ -134,8 +156,7 @@ Proof.
   simpl.
   omega.
   auto.
-  (* easy *)
-Admitted.
+Qed.
 
 Lemma decode_int_app: forall l bytes x,
     RelocBinDecode.decode_int_n bytes 4 = OK x
@@ -754,8 +775,116 @@ Qed.
 Lemma encode_addrmode_size_refl: forall rmap o i a rd x,
     encode_addrmode rmap o i a rd = OK x
     -> addrmode_size a = Z.of_nat (length x).
-  (* easy *)
-Admitted.
+Proof.
+  Transparent addrmode_size.
+  intros rmap o i a rd x HEncode.
+  unfold encode_addrmode in HEncode.
+  destruct a.
+  monadInv HEncode.
+  destruct const.
+  destruct (Reloctablesgen.instr_reloc_offset i).
+  destruct get_instr_reloc_addend'; inversion EQ1.
+  unfold encode_addrmode_aux in EQ.
+  destruct ofs.
+  destruct base.
+  monadInv EQ. destruct p.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1.
+  simpl.
+  rewrite encode_int32_size. simpl.
+  unfold addrmode_size.
+  unfold addrmode_size_aux. omega.
+  
+  monadInv EQ. destruct p.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1.
+  simpl. unfold addrmode_size. simpl.
+  rewrite encode_int32_size.
+  simpl. omega.
+
+  monadInv EQ. destruct base.
+  monadInv EQ2.
+  destruct ireg_eq eqn:EQR.
+  inversion EQ3.
+  simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size.
+  simpl. rewrite EQR. omega.
+  inversion EQ3.
+  simpl. rewrite encode_int32_size.
+  simpl. unfold addrmode_size.
+  simpl. rewrite EQR. omega.
+
+  inversion EQ2.
+  simpl.
+  rewrite encode_int32_size.
+  simpl.
+  unfold addrmode_size.
+  simpl. omega.
+
+  unfold encode_addrmode_aux in EQ.
+  monadInv EQ.
+  destruct ofs.
+  destruct p.
+  destruct base.
+  destruct ireg_eq; inversion EQ2.
+  monadInv EQ2.
+  simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size. simpl. omega.
+
+  destruct ireg_eq; inversion EQ2.
+  monadInv EQ2.
+  simpl. unfold addrmode_size. simpl.
+  rewrite encode_int32_size. simpl. omega.
+
+  destruct base.
+  monadInv EQ2.
+  destruct ireg_eq eqn:EQR. inversion EQ3.
+  simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size.
+  simpl. rewrite e0. simpl. auto.
+  inversion EQ3. simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size. simpl.
+  rewrite EQR.
+  omega.
+
+  inversion EQ2.
+  simpl. rewrite encode_int32_size.
+  simpl. unfold addrmode_size. simpl. auto.
+
+  destruct p. destruct i0; inversion EQ1.
+  simpl in EQ.
+  monadInv EQ. destruct ofs.
+  destruct p.
+  destruct base.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1.
+  simpl. rewrite encode_int32_size.
+  unfold addrmode_size. simpl. omega.
+  unfold addrmode_size. simpl.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1. simpl. rewrite encode_int32_size. simpl. auto.
+
+  destruct base.
+  monadInv EQ2.
+  destruct ireg_eq eqn:EQR.
+  1-2: inversion EQ3.
+  1-2: simpl.
+  1-2: rewrite encode_int32_size.
+  1-2: unfold addrmode_size.
+  1-2: simpl.
+  1-2: rewrite EQR.
+  1-2: omega.
+
+  inversion EQ2.
+  simpl. rewrite encode_int32_size.
+  unfold addrmode_size.
+  simpl. omega.
+    
+Qed.
 
 Lemma encode_instrs_size:
   forall rmap o i bl,
@@ -821,7 +950,20 @@ Proof.
   revert dependent n.
   induction n.
   (* base case *)
-  admit.
+  intros code2 z l H H0.
+  assert(HCode2: code2=[]). {
+    apply length_zero_iff_nil.
+    auto.
+  }
+  subst code2.
+  simpl in H0.
+  inversion H0.
+  subst code'.
+  replace (code++[]) with code.
+  auto.
+  rewrite app_nil_r.
+  auto.
+
   intros code2 z l HLCode2 HFoldCode2.
   generalize (list_has_tail code2 n HLCode2).
   intros [tail [prefix HCode2]].
@@ -857,9 +999,7 @@ Proof.
   rewrite rev_app_distr.
   rewrite rev_involutive.
   auto.
-  (* easy *)
-Admitted.
-
+Qed.
 
 Lemma decode_encode_refl: forall n prog z code l,
     length code = n ->
@@ -869,7 +1009,18 @@ Proof.
   intros n.
   induction n.
   (* n is O *)
-  admit.
+  intros prog z code l H H0.
+  assert(HCode: code = []). {
+    apply length_zero_iff_nil.
+    auto.
+  }
+  subst code.
+  simpl in H0.
+  inversion H0.
+  subst z.
+  subst l.
+  simpl.
+  auto.
   (* n is S n *)
   intros prog z code l HLength HEncode.
   generalize (list_has_tail code _ HLength).
@@ -899,8 +1050,7 @@ Proof.
   rewrite app_length in HLength.
   simpl in HLength.
   omega.
-  (* easy *)
-Admitted.
+Qed.
 
 
 Fixpoint instr_eq_list code1 code2:=
