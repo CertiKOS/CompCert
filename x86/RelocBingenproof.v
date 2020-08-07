@@ -1369,118 +1369,6 @@ Let tge := RelocProgSemantics1.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-(* Lemma reverse_decode_prog_code_section: decode_prog_code_section tprog = OK prog. *)
-(* Proof. *)
-(*   unfold match_prog, transf_program in TRANSF. monadInv TRANSF. *)
-(*   unfold decode_prog_code_section. simpl. *)
-(*   unfold transl_sectable in EQ. repeat destr_in EQ. *)
-(*   monadInv H0. simpl. unfold decode_instrs'. *)
-  
-(*   (* help *) *)
-(*   (* I don't think this lemma is correct because the decoder  *)
-(*      could not generate exactly the same instruction as the pre-encoded one. *)
-(*      The relation instr_eq should be used here. *) *)
-(* Admitted. *)
-Lemma prog_tprog_eq:
-  prog_eq prog tprog.
-Proof.
-  unfold match_prog in TRANSF.
-  unfold transf_program in TRANSF.
-  monadInv TRANSF.
-  repeat destr_in EQ2.
-  unfold prog_eq.
-  simpl.
-  repeat (split; auto).
-Qed.
-
-Lemma init_mem_eq: forall m,
-  RelocProgSemantics1.init_mem prog = Some m
-  -> init_mem tprog = Some m.
-Proof.
-  intros m HInit.
-  unfold RelocProgSemantics1.init_mem in HInit.
-  destruct (RelocProgSemantics1.alloc_data_section (globalenv prog) (prog_sectable prog) Mem.empty) eqn:EQData;
-    inversion HInit.
-  clear H0.
-  destruct (alloc_code_section (prog_sectable prog) m0) eqn:EQCode;
-    inversion HInit.
-  clear H0.
-  unfold init_mem.
-  (* data section *)
-  unfold alloc_data_section.
-  unfold match_prog in TRANSF.
-  unfold transf_program in TRANSF.
-  monadInv TRANSF.
-  destruct zlt; inversion EQ2.
-  simpl.
-  unfold transl_sectable in EQ.
-  destruct (prog_sectable prog);inversion EQ.
-  destruct v;inversion EQ. clear H1.
-  destruct s; inversion H2.
-  clear H2.
-  destruct v; inversion H1.
-  destruct s; inversion H2.
-  clear H2. clear H3.
-  monadInv H1.
-  simpl.
-  unfold RelocProgSemantics1.alloc_data_section in EQData.
-  simpl in EQData.
-  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length x2)). {
-    generalize (transl_init_data_list_size _ _ _  EQ4).
-    auto.
-  }
-  rewrite <- HSizeEQ.
-  destruct (Mem.alloc Mem.empty 0 (init_data_list_size init)) eqn:EQM.
-  destruct (store_zeros m2 b 0 (init_data_list_size init)) eqn:EQZeros;inversion EQData.
-  clear H0.
-  assert(HStoreInitBytes: forall m4, store_init_data_list (globalenv prog) m3 b 0 init = Some m4-> store_init_data_bytes m3 b 0 x2 = Some m4). {
-    destruct (store_init_data_list (globalenv prog) m3 b 0 init) eqn:EQInitData; inversion EQData.
-    generalize (init_data_list_relf _ _ _ _ _ _ _ EQInitData EQ4).
-    intros HStoreInitBytes m5 EQM5.
-    rewrite <- EQM5.
-    auto.
-  }
-
-  destruct (store_init_data_list (globalenv prog) m3 b 0 init); inversion EQData.
-  rewrite (HStoreInitBytes m4 eq_refl).
-  rewrite H0.
-  
-  clear H0.
-  clear EQData.
-  clear HStoreInitBytes.
-  clear HSizeEQ.
-  clear EQ4.
-  clear EQ1.
-  clear EQM.
-  clear EQZeros.
-  
-  
-  (* code section *)
-  unfold alloc_code_section.
-  simpl.
-  unfold alloc_code_section in EQCode.
-  simpl in EQCode.
-  assert(HSizeEQ: code_size code = Z.of_nat(length x1)). {
-    generalize (transl_code_size _ _ _ EQ0).
-    auto.
-  }
-    
-  rewrite <- HSizeEQ.
-  destruct ( Mem.alloc m0 0 (code_size code)) eqn:EQM.
-  rewrite EQCode.
-  auto.
-Qed.
-
-
-Lemma decode_prog_code_section_eq:
-  exists prog' c c',(decode_prog_code_section tprog = OK prog'
-                     /\ get_prog_code prog' = Some c'
-                     /\ get_prog_code prog = Some c
-                     /\ instr_eq_list c c'
-                     /\ prog_eq prog prog'
-                     /\ init_mem prog' = init_mem tprog).
-Admitted.
-
 
 Lemma symbol_address_transf: forall prog tprog sym ofs,
     prog_eq prog tprog ->
@@ -1495,22 +1383,80 @@ Definition code_section_eq (t1 t2: option section) :=
   | _, _ => False
   end.
 
+Definition data_section_eq rtbl (t1 t2: option section) :=
+  match t1, t2 with
+  | Some (sec_data l), Some (sec_bytes bs) =>
+    transl_init_data_list (gen_reloc_ofs_map (reloctable_data rtbl)) l = OK bs
+  | _, _ => False
+  end.
+
+
 Lemma transf_program_decode_eq : forall p tp,
     transf_program false p = OK tp -> 
     exists tp', decode_prog_code_section tp = OK tp' /\
            code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable tp')) /\
-           (SecTable.get sec_data_id (prog_sectable tp) = SecTable.get sec_data_id (prog_sectable tp')) /\
+           data_section_eq (prog_reloctables p) (SecTable.get sec_data_id (prog_sectable p)) (SecTable.get sec_data_id (prog_sectable tp')) /\
            prog_eq p tp'.
+Admitted.
+
+Lemma instr_eq_list_size_eq: forall c1 c2, 
+    instr_eq_list c1 c2 -> code_size c1 = code_size c2.
 Admitted.
 
 
 Lemma init_mem_pres: forall p p' m,
     code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable p')) ->
-    SecTable.get sec_data_id (prog_sectable p) = SecTable.get sec_data_id (prog_sectable p') ->
+    data_section_eq (prog_reloctables p) (SecTable.get sec_data_id (prog_sectable p)) (SecTable.get sec_data_id (prog_sectable p')) ->
     prog_eq p p' ->
     RelocProgSemantics1.init_mem p = Some m -> 
     init_mem p' = Some m.
-Admitted.
+Proof.
+  intros p p' m CEQ DEQ PEQ HInit.
+  unfold RelocProgSemantics1.init_mem in HInit.
+  destruct (RelocProgSemantics1.alloc_data_section (globalenv p) (prog_sectable p) Mem.empty) eqn:EQData;
+    inversion HInit.
+  clear H0.
+  destruct (alloc_code_section (prog_sectable p) m0) eqn:EQCode;
+    inversion HInit.
+  clear H0.
+  unfold init_mem.
+  red in CEQ. destr_in CEQ. 
+  destruct v; try contradiction.
+  destr_in CEQ; try contradiction.
+  destruct v; try contradiction.
+  red in DEQ. 
+  destr_in DEQ; try contradiction.
+  destruct v; try contradiction.
+  destr_in DEQ; try contradiction.
+  destruct v; try contradiction.
+  red in PEQ. destruct PEQ. destruct H0. destruct H1. destruct H2. destruct H3. destruct H4.
+
+  (* data section *)
+  unfold alloc_data_section.
+  rewrite Heqo2.
+  unfold RelocProgSemantics1.alloc_data_section in EQData.
+  rewrite Heqo1 in EQData.
+  repeat destr_in EQData.
+  cbn.
+  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length bs)). {
+    generalize (transl_init_data_list_size _ _ _  DEQ).
+    auto.
+  }
+  rewrite <- HSizeEQ in *.
+  setoid_rewrite Heqp0.
+  setoid_rewrite Heqo3.
+  erewrite init_data_list_relf; eauto.
+  rewrite H7.
+  
+  (* code section *)
+  unfold alloc_code_section.
+  unfold alloc_code_section in EQCode.
+  rewrite Heqo0. rewrite Heqo in EQCode.
+  destr_in EQCode.
+  cbn. erewrite <- instr_eq_list_size_eq; eauto.
+  setoid_rewrite Heqp1.
+  setoid_rewrite EQCode. congruence.
+Qed.
 
 
 Lemma transf_program_pres_data_section : forall p p',
@@ -1533,7 +1479,6 @@ Proof.
   red in TRANSF. eauto.
   econstructor; eauto.
   eapply init_mem_pres; eauto.
-  erewrite transf_program_pres_data_section; eauto.
   apply prog_eq_initial_state_gen with prog; eauto.
 Qed.  
 
