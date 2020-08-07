@@ -1001,10 +1001,10 @@ Proof.
   auto.
 Qed.
 
-Lemma decode_encode_refl: forall n prog z code l,
+Lemma decode_encode_refl: forall n rtbl z code l,
     length code = n ->
-    fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) false) code (OK (0, [])) = OK (z, l)
-    -> transl_code_spec code (rev l) 0 (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))).
+    fold_left (acc_instrs rtbl false) code (OK (0, [])) = OK (z, l)
+    -> transl_code_spec code (rev l) 0 rtbl.
 Proof.
   intros n.
   induction n.
@@ -1330,11 +1330,21 @@ Definition data_section_eq rtbl (t1 t2: option section) :=
   | _, _ => False
   end.
 
+Lemma transl_code_spec_decode_refl: forall c bs rtbl,
+    transl_code_spec c bs 0 rtbl ->
+    exists c', decode_instrs rtbl (length bs) 0 bs [] = OK c' /\ instr_eq_list c c'.
+Admitted.
+
 Lemma transl_code_decode_instrs_refl: forall rtbl code bytes,
     transl_code rtbl false code = OK bytes ->
     exists code', decode_instrs rtbl (length bytes) 0 bytes [] = OK code' /\ instr_eq_list code code'.
 Proof.
-Admitted.
+  intros.
+  monadInv H. destruct x. inv EQ0.
+  generalize (decode_encode_refl _ _ _ _ _ eq_refl EQ).
+  intros SPEC.
+  eapply transl_code_spec_decode_refl; eauto.
+Qed.
 
 Lemma transf_program_decode_eq : forall p tp,
     transf_program false p = OK tp -> 
