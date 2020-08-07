@@ -1310,6 +1310,83 @@ Definition get_prog_code prog :=
   end.
 
 
+Lemma symbol_address_transf: forall prog tprog sym ofs,
+    prog_eq prog tprog ->
+    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) sym ofs) = 
+    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym ofs).
+clear.
+Admitted.
+
+Definition code_section_eq (t1 t2: option section) := 
+  match t1, t2 with
+  | Some (sec_text c1), Some (sec_text c2) => instr_eq_list c1 c2
+  | _, _ => False
+  end.
+
+Definition data_section_eq rtbl (t1 t2: option section) :=
+  match t1, t2 with
+  | Some (sec_data l), Some (sec_bytes bs) =>
+    transl_init_data_list (gen_reloc_ofs_map (reloctable_data rtbl)) l = OK bs
+  | _, _ => False
+  end.
+
+Lemma transl_code_decode_instrs_refl: forall rtbl code bytes,
+    transl_code rtbl false code = OK bytes ->
+    exists code', decode_instrs rtbl (length bytes) 0 bytes [] = OK code' /\ instr_eq_list code code'.
+Proof.
+Admitted.
+
+Lemma transf_program_decode_eq : forall p tp,
+    transf_program false p = OK tp -> 
+    exists tp', decode_prog_code_section tp = OK tp' /\
+           code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable tp')) /\
+           data_section_eq (prog_reloctables p) (SecTable.get sec_data_id (prog_sectable p)) (SecTable.get sec_data_id (prog_sectable tp')) /\
+           prog_eq p tp'.
+Proof.
+  intros p tp TRANSF.
+  monadInv TRANSF. destr_in EQ2. inv EQ2.
+  unfold transl_sectable in EQ. repeat destr_in EQ. 
+  monadInv H0.
+  unfold decode_prog_code_section; cbn. 
+  replace (Pos.to_nat 1) with (1%nat) by xomega. cbn.
+  unfold decode_instrs'; cbn.  
+  exploit transl_code_decode_instrs_refl; eauto.
+  intros (code' & DEC & CEQ).
+  setoid_rewrite DEC.
+  cbn. 
+  eexists; split; eauto; cbn.
+  split; auto.
+  split; auto.
+  red; cbn; auto.
+  repeat (split; auto).
+Qed.
+  
+Lemma instr_eq_size_eq: forall i1 i2,
+    RelocBinDecode.instr_eq i1 i2 -> instr_size i1 = instr_size i2.
+Proof.
+  intros.
+  destruct i1; try (inv H; cbn; auto).
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+Qed.
+
+Lemma instr_eq_list_size_eq: forall c1 c2, 
+    instr_eq_list c1 c2 -> code_size c1 = code_size c2.
+Proof.
+  induction c1 as [|i1 c1].
+  - cbn. intros. destr_in H; eauto.
+  - cbn. intros. destr_in H; subst; eauto.
+    destr_in H.
+    apply instr_eq_size_eq in H0.
+    cbn. erewrite IHc1; eauto. congruence.
+Qed.
+
+
 Section PRESERVATION.
   Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
@@ -1361,39 +1438,6 @@ Let tge := RelocProgSemantics1.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-
-Lemma symbol_address_transf: forall prog tprog sym ofs,
-    prog_eq prog tprog ->
-    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) sym ofs) = 
-    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym ofs).
-clear.
-Admitted.
-
-Definition code_section_eq (t1 t2: option section) := 
-  match t1, t2 with
-  | Some (sec_text c1), Some (sec_text c2) => instr_eq_list c1 c2
-  | _, _ => False
-  end.
-
-Definition data_section_eq rtbl (t1 t2: option section) :=
-  match t1, t2 with
-  | Some (sec_data l), Some (sec_bytes bs) =>
-    transl_init_data_list (gen_reloc_ofs_map (reloctable_data rtbl)) l = OK bs
-  | _, _ => False
-  end.
-
-
-Lemma transf_program_decode_eq : forall p tp,
-    transf_program false p = OK tp -> 
-    exists tp', decode_prog_code_section tp = OK tp' /\
-           code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable tp')) /\
-           data_section_eq (prog_reloctables p) (SecTable.get sec_data_id (prog_sectable p)) (SecTable.get sec_data_id (prog_sectable tp')) /\
-           prog_eq p tp'.
-Admitted.
-
-Lemma instr_eq_list_size_eq: forall c1 c2, 
-    instr_eq_list c1 c2 -> code_size c1 = code_size c2.
-Admitted.
 
 
 Lemma init_mem_pres: forall p p' m,
