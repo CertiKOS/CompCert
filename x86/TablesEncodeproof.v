@@ -7,8 +7,9 @@ Require Import SymbtableEncode SymbtableDecode.
 Require Import ShstrtableEncode ShstrtableDecode.
 Require Import ReloctablesEncode ReloctablesDecode.
 Require Import RelocProgSemantics2 RelocProgSemantics3.
-Require Import RelocBingenproof.
+Require Import RelocBingenproof Reloctablesgenproof.
 Require Import TablesEncode.
+Require SymbolString.
 
 Import ListNotations.
 
@@ -29,6 +30,18 @@ Context `{external_calls_prf: ExternalCalls}.
 Variables prog tprog: RelocProgram.program.
 
 Hypothesis transf_encode: TablesEncode.transf_program prog = OK tprog.
+
+
+Axiom shift_relocentry_offset_bound: forall sz x, 
+    0 <= reloc_offset (RelocLinking1.shift_relocentry_offset sz x) < Z.pow_pos 2 32.
+
+Axiom reloc_symbol_value_bound: forall o a s1,
+          RelocLinking.reloc_symbol o a = Some s1 ->
+          0 <= symbentry_value s1 < two_power_pos 32.
+
+Axiom symb_index_bound: forall i n p, 
+    Maps.PTree.get i (gen_symb_index_map (prog_symbtable p)) = Some n -> Z.of_N n < two_p 24.
+
 
 Lemma valid_reloctables:
   forall id, Forall valid_relocentry (get_reloctable id (prog_reloctables prog)).
@@ -370,6 +383,7 @@ Proof.
   rewrite app_length. rewrite map_length. simpl. lia.
 Qed.
 
+
 Lemma get_strings_map_bytes_exists':
   forall l z,
     fold_right (fun id acc =>
@@ -577,9 +591,10 @@ Proof.
   destruct H as (x0 & SHIFT & IN).
   exploit update_reloctable_valid. apply F2. eauto. eauto. rewrite Forall_forall.
   intro A; specialize (A _ IN). subst.
-  inv A; constructor; simpl; auto.
-  admit.                    (* reloc offset could overflow *)
-Admitted.
+  generalize (shift_relocentry_offset_bound sz x0).
+  intros.
+  inv A; constructor; simpl in *; auto.
+Qed.
 
 Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
                           linker2
@@ -609,7 +624,9 @@ Proof.
     unfold RelocLinking.link_reloc_prog in Heqo. autoinv. simpl. exists s0, v, v0; repeat split; eauto.
   }
 
-  exploit (get_strings_map_bytes_exists (prog_symbtable p)); eauto. admit. admit.
+  generalize (SymbolString.string_bounds (fold_right acc_symbols [] (prog_symbtable p))).
+  intros (z & POS & BND).
+  exploit (get_strings_map_bytes_exists (prog_symbtable p)); eauto.
   intros (idbytes & strmap & sbytes & smb). rewrite smb. simpl.
   destruct H0 as (s0 & v & v0 & GETdata & GETcode & RELOCsym & EQsym).
 
@@ -669,9 +686,12 @@ Proof.
       unfold RelocLinking.reloc_iter at 1 in RELOCsym.
       autoinv.
       constructor; eauto.
+
+
+      generalize (reloc_symbol_value_bound _ _ _ Heqo1).
+      intros.
       unfold RelocLinking.reloc_symbol in Heqo1. autoinv.
       inv H1. rewrite Heqs0 in *. constructor; simpl in *; auto.
-      admit.                    (* symbentry_value relocated could overflow... *)
     }
     unfold RelocLinking.link_symb_merge. destr.
 
@@ -742,8 +762,8 @@ Proof.
     intros.
     specialize (f id). specialize (f0 id).
     destruct id; simpl in *; eapply link_reloctable_valid. 4,8: eauto. all: eauto.
-    admit.
-    admit.                      (* sim gives values < 2 ^ 24 *)
+    intros. eapply symb_index_bound; eauto.
+    intros. eapply symb_index_bound; eauto.
   }
   rewrite pred_dec_true by auto.
 
@@ -763,4 +783,4 @@ Proof.
   rewrite dump_reloctables_error in H1. congruence.
   rewrite dump_reloctables_error in H1. congruence.
   rewrite dump_reloctables_error in H1. congruence.
-Admitted.
+Qed.
