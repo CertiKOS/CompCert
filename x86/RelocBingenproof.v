@@ -1618,6 +1618,34 @@ Admitted.
 Lemma find_instr_refl: forall b ofs i,
     Genv.find_instr ge (Vptr b ofs) = Some i ->
     exists i', Genv.find_instr tge (Vptr b ofs) = Some i' /\ RelocBinDecode.instr_eq i i'.
+Proof.
+  (* intros b ofs i HFind. *)
+  (* generalize (RelocProgSemantics.global_env_find_instr_inv _ b _ _  HFind). *)
+  (* intros (c & HCodeSecFind & HCodeIn). *)
+  
+  unfold Genv.find_instr.
+  unfold RelocProgSemantics.Genv.find_instr.
+  unfold RelocProgSemantics.Genv.genv_instrs.
+  unfold Genv.genv_genv.
+  destruct tge eqn:EQTge.
+  unfold tge in EQTge.
+  unfold globalenv in EQTge. inversion EQTge.
+  unfold RelocProgSemantics.globalenv.
+  unfold match_prog in TRANSF.
+  unfold transf_program in TRANSF.
+  monadInv TRANSF.
+  destruct zlt; inversion EQ2.
+  simpl.
+  unfold transl_sectable in EQ.
+  destruct (prog_sectable prog); inversion EQ.
+  destruct v; inversion H3.
+  destruct s; inversion H3.
+  destruct v; inversion H3.
+  destruct s; inversion H3.
+  clear H4. clear H5. clear H6. clear H7.
+  monadInv H3.
+  simpl.
+  
 Admitted.
 
 
