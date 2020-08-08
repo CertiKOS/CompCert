@@ -528,6 +528,19 @@ Definition id_eliminate' (i:instruction):res (instruction):=
     | Pmov_mr_a (Addrmode rb ss (inr disp)) rs =>   (**r like [Pmov_mr], using [Many64] chunk *)
       let '(id, ptrofs) := disp in
       OK (Pmov_mr_a (Addrmode rb ss (inr (xH, ptrofs))) rs)
+    | Pmovsd_fm_a rd (Addrmode rb ss (inr disp)) => (**r like [Pmovsd_fm], using [Many64] chunk *)
+      let '(id, ptrofs) := disp in
+      OK (Pmovsd_fm_a rd (Addrmode rb ss (inr (xH, ptrofs))))
+    | Pmovsd_mf_a (Addrmode rb ss (inr disp)) r1 =>  (**r like [Pmovsd_mf], using [Many64] chunk *)
+      let '(id, ptrofs) := disp in
+      OK (Pmovsd_mf_a (Addrmode rb ss (inr (xH, ptrofs))) r1)
+    | Pmovzw_rm rd (Addrmode rb ss (inr disp)) =>
+      let '(id, ptrofs) := disp in
+      OK (Pmovzw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
+
+    | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
+      let '(id, ptrofs) := disp in
+      OK (Pmovsw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
     | _ =>
       OK i
     end.
