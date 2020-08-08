@@ -1520,7 +1520,38 @@ Proof.
   red; cbn; auto.
   repeat (split; auto).
 Qed.
+
+Lemma fold_acc_instrs_error:
+  forall c e rtbl,
+    fold_left (acc_instrs rtbl false) c (Error e) = Error e.
+Proof.
+  induction c; simpl; intros; eauto.
+Qed.
   
+Lemma acc_instrs_ready_for_proof: forall rtbl code ofs l x,
+    fold_left (acc_instrs rtbl false) code (OK(ofs,l)) = OK x
+    -> forallb ready_for_proof code = true.
+Proof.
+  induction code.
+  auto.
+  intros ofs l x H.
+  simpl in H.
+  unfold encode_instr in H.
+  simpl in H.
+  destruct negb eqn:EQPA.
+  simpl in H.
+  rewrite ! fold_acc_instrs_error in H. inversion H.
+  destruct (encode_instr' rtbl ofs a).
+  simpl.
+  unfold andb.
+  unfold negb in EQPA.
+  destruct ready_for_proof; inversion EQPA.
+  simpl in H.
+  generalize (IHcode _ _ _ H). auto.
+  simpl in H.
+  rewrite ! fold_acc_instrs_error in H. inversion H.
+Qed.
+
 
 Section PRESERVATION.
   Existing Instance inject_perm_all.
@@ -1530,13 +1561,66 @@ Local Existing Instance mem_accessors_default.
 
 
 
-(** This lemma is not correct.
-    ofs must be zero here since transl_init_data_list always begins from zero **)
 
 Axiom init_data_list_relf: forall init m b ofs result bytes prog,
     store_init_data_list (globalenv prog) m b ofs init = Some result
     -> transl_init_data_list (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog))) init = OK bytes
     -> store_init_data_bytes m b ofs bytes = Some result.
+
+
+Lemma ge_tge_genv_eq': forall prog tprog,
+    transf_program false prog = OK tprog
+    -> genv_eq (RelocProgSemantics.globalenv prog)  (RelocProgSemantics.globalenv tprog).
+Proof.
+  intros prog tprog TRANSF.
+  unfold match_prog in TRANSF.
+  monadInv TRANSF.
+  destruct zlt; inversion EQ2.
+  unfold RelocProgSemantics.globalenv.
+  simpl.
+  remember {|
+      RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
+                                             (prog_symbtable prog);
+      RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
+                                                 external_function;
+      RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
+                                               (SecTable.get
+                                                  sec_code_id
+                                                  (prog_sectable prog));
+      RelocProgSemantics.Genv.genv_next := 3%positive;
+      RelocProgSemantics.Genv.genv_senv := prog_senv prog |} as env1.
+  remember {|
+      RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
+                                             (prog_symbtable prog);
+      RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
+                                                 external_function;
+      RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
+                                               (SecTable.get
+                                                  sec_code_id x);
+      RelocProgSemantics.Genv.genv_next := 3%positive;
+      RelocProgSemantics.Genv.genv_senv := prog_senv prog |} as env2.
+  assert(HGenv_eq': genv_eq env1 env2). {
+    unfold genv_eq. subst env1. subst env2.
+    simpl. repeat split; auto.
+  }
+  
+  generalize  (add_ext_genv_eq_pre (prog_symbtable prog) (RelocProgSemantics.gen_extfuns (prog_defs prog)) env1 env2 HGenv_eq').
+  clear HGenv_eq'.
+  intros HGenv_eq'.
+  destr_genv_eq HGenv_eq'.
+  unfold genv_eq.
+  rewrite HSymb.
+  rewrite HExtF.
+  rewrite HNext.
+  rewrite HSenv.
+  repeat split; auto.
+Qed.
+
+
+Axiom find_instr_refl':forall prog tprog ofs i,
+    transf_program false prog = OK tprog
+    -> (RelocProgSemantics.globalenv prog).(RelocProgSemantics.Genv.genv_instrs) ofs = Some i
+   ->exists i', (RelocProgSemantics.globalenv tprog).(RelocProgSemantics.Genv.genv_instrs) ofs = Some i' /\ RelocBinDecode.instr_eq i i'.
 
 Variables prog tprog: program.
 
@@ -1550,47 +1634,7 @@ Hypothesis TRANSF: match_prog prog tprog.
 Lemma ge_tge_genv_eq:
   genv_eq (RelocProgSemantics.globalenv prog)  (RelocProgSemantics.globalenv tprog).
 Proof.
-   unfold match_prog in TRANSF.
-    monadInv TRANSF.
-    destruct zlt; inversion EQ2.
-    unfold RelocProgSemantics.globalenv.
-    simpl.
-    remember {|
-       RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
-                                          (prog_symbtable prog);
-       RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
-                                          external_function;
-       RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
-                                          (SecTable.get
-                                          sec_code_id
-                                          (prog_sectable prog));
-       RelocProgSemantics.Genv.genv_next := 3%positive;
-       RelocProgSemantics.Genv.genv_senv := prog_senv prog |} as env1.
-    remember {|
-       RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
-                                          (prog_symbtable prog);
-       RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
-                                          external_function;
-       RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
-                                          (SecTable.get
-                                          sec_code_id x);
-       RelocProgSemantics.Genv.genv_next := 3%positive;
-       RelocProgSemantics.Genv.genv_senv := prog_senv prog |} as env2.
-    assert(HGenv_eq': genv_eq env1 env2). {
-      unfold genv_eq. subst env1. subst env2.
-      simpl. repeat split; auto.
-    }
-    
-    generalize  (add_ext_genv_eq_pre (prog_symbtable prog) (RelocProgSemantics.gen_extfuns (prog_defs prog)) env1 env2 HGenv_eq').
-    clear HGenv_eq'.
-    intros HGenv_eq'.
-    destr_genv_eq HGenv_eq'.
-    unfold genv_eq.
-    rewrite HSymb.
-    rewrite HExtF.
-    rewrite HNext.
-    rewrite HSenv.
-    repeat split; auto.
+  apply ge_tge_genv_eq'. auto.
 Qed.
 
 
@@ -1713,6 +1757,17 @@ Proof.
 Qed.
 
 
+Lemma find_instr_refl: forall b ofs i,
+    Genv.find_instr ge (Vptr b ofs) = Some i ->
+    exists i', Genv.find_instr tge (Vptr b ofs) = Some i' /\ RelocBinDecode.instr_eq i i'.
+Proof.
+  intros b ofs i HFind.
+  simpl in HFind.
+  simpl.
+  apply (find_instr_refl' prog tprog).
+  auto. auto.
+Qed.
+
 Definition ge_eq (ge1 ge2: RelocProgSemantics.Genv.t) : Prop :=
   ge1.(RelocProgSemantics.Genv.genv_symb) = ge2.(RelocProgSemantics.Genv.genv_symb) /\
   ge1.(RelocProgSemantics.Genv.genv_ext_funs) = ge2.(RelocProgSemantics.Genv.genv_ext_funs) /\
@@ -1731,49 +1786,26 @@ Lemma transf_program_pres_genv: forall p1 p2,
     ge_eq1 (globalenv p1) (globalenv p2).
 Proof.
   intros p1 p2 H.
+  generalize (ge_tge_genv_eq' p1 p2 H).
+  intros HGenvEq.
   unfold ge_eq1.
+  split.
   unfold transf_program in H.
   monadInv H.
   destruct zlt; inversion EQ2.
   simpl.
   unfold gen_reloc_ofs_symbs.
-  simpl. split. auto.
+  simpl. auto.
+  simpl.
+
   unfold ge_eq.
-
-Admitted.
-
-Lemma find_instr_refl: forall b ofs i,
-    Genv.find_instr ge (Vptr b ofs) = Some i ->
-    exists i', Genv.find_instr tge (Vptr b ofs) = Some i' /\ RelocBinDecode.instr_eq i i'.
-Proof.
-  (* intros b ofs i HFind. *)
-  (* generalize (RelocProgSemantics.global_env_find_instr_inv _ b _ _  HFind). *)
-  (* intros (c & HCodeSecFind & HCodeIn). *)
-  
-  unfold Genv.find_instr.
-  unfold RelocProgSemantics.Genv.find_instr.
-  unfold RelocProgSemantics.Genv.genv_instrs.
-  unfold Genv.genv_genv.
-  destruct tge eqn:EQTge.
-  unfold tge in EQTge.
-  unfold globalenv in EQTge. inversion EQTge.
-  unfold RelocProgSemantics.globalenv.
-  unfold match_prog in TRANSF.
-  unfold transf_program in TRANSF.
-  monadInv TRANSF.
-  destruct zlt; inversion EQ2.
-  simpl.
-  unfold transl_sectable in EQ.
-  destruct (prog_sectable prog); inversion EQ.
-  destruct v; inversion H3.
-  destruct s; inversion H3.
-  destruct v; inversion H3.
-  destruct s; inversion H3.
-  clear H4. clear H5. clear H6. clear H7.
-  monadInv H3.
-  simpl.
-  
-Admitted.
+  destr_genv_eq HGenvEq.
+  rewrite HSymb. rewrite HExtF. rewrite HNext. rewrite HSenv.
+  repeat split; auto.
+  intros ofs i H0.
+  apply (find_instr_refl' p1 p2). auto.
+  auto.
+Qed.
 
 
 Lemma symbol_address_refl: forall RELOC_CODE z ofs,
@@ -2042,17 +2074,44 @@ Proof.
   intros HFind.
   unfold Genv.find_instr in HFind.
   simpl in HFind.
-  unfold RelocProgSemantics.Genv.find_instr in HFind.
-  destruct vptr; inversion HFind. clear H0.
-  unfold RelocProgSemantics.Genv.genv_instrs in HFind.
-  destruct (RelocProgSemantics.globalenv prog) eqn:EQGenv.  
-Admitted.
+  destruct vptr eqn:EQPTR.
+  1-5: simpl in HFind; inversion HFind.
+  generalize (RelocProgSemantics.global_env_find_instr_inv _ _ _ _ HFind).
+  intros (c & HCodeSec & HIn).
+  assert (HReadyForAll: forallb ready_for_proof c = true). {
+    unfold match_prog in TRANSF.
+    monadInv TRANSF.
+    destruct zlt; inversion EQ2.
+    unfold transl_sectable in EQ.
+    simpl in EQ.
+    destruct prog_sectable; inversion EQ.
+    destruct v; inversion H1.
+    destruct s; inversion H2.
+    destruct v; inversion H3.
+    destruct s; inversion H4.
+    clear H2. clear H3. clear H4. clear H5.
+    monadInv H1.
+    inversion HCodeSec.
+    subst c.
+    unfold transl_code in EQ0.
+    monadInv EQ0.
+
+    generalize (acc_instrs_ready_for_proof (gen_reloc_ofs_map
+                                              (reloctable_code (prog_reloctables prog))) code 0 [] _ EQ3).
+    auto.
+  }
+  generalize (forallb_forall ready_for_proof c).
+  intros (H1 & H2).
+  generalize (H1 HReadyForAll i HIn).
+  auto.
+Qed.
 
 Theorem step_simulation:
   forall s1 t s2, step ge s1 t s2 -> step tge s1 t s2.
 Proof.
   intros s1 t s2 STEP. inv STEP.
   - (* Internal Step *)
+    simpl.
     generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].
 
     eapply exec_step_internal; eauto.
