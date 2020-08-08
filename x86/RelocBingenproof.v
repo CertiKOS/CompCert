@@ -1183,18 +1183,38 @@ Qed.
 (* Admitted. *)
     
 
+Lemma transl_code_spec_length: forall code l ofs rtbl,
+    transl_code_spec code l ofs rtbl ->
+    code_size code = Z.of_nat (length l).
+Proof.
+  induction code as [|i code].
+  - intros l ofs rtbl H. cbn in H.
+    destr_in H; congruence.
+  - intros l ofs rtbl H.
+    cbn in H.
+    destruct H as (h' & t' & DEC & IEQ & SPEC).
+    cbn.
+    apply RelocBinDecode.decode_length in DEC. rewrite DEC.
+    rewrite Nat2Z.inj_add.
+    rewrite Z2Nat.id.
+    assert (code_size code = Z.of_nat (length t')).
+    { eapply IHcode; eauto. }
+    apply instr_eq_size_eq in IEQ.
+    omega.
+    generalize (instr_size_positive h').
+    omega.
+Qed.
 
-Axiom spec_length: forall code l t ofs rtbl  i,
+Lemma spec_length: forall code l t ofs rtbl  i,
     transl_code_spec (i::code) l ofs rtbl 
     -> transl_code_spec code t (ofs+instr_size i) rtbl 
     -> Z.of_nat (length l) = Z.of_nat (length t) + (instr_size i).
-(* Proof. *)
-(*   intros code l t ofs rtbl symtbl i HL HT. *)
-(*   simpl in HL. *)
-(*   (* HELP *) *)
-(*   (* describe the relation between `bytes` and `t` in *) *)
-(*   (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *) *)
-(* Admitted. *)
+Proof.
+  intros code l t ofs rtbl i H H0.
+  apply transl_code_spec_length in H.
+  apply transl_code_spec_length in H0.
+  cbn in H. omega.
+Qed.
 
 Lemma spec_decode_ex': forall code ofs l rtbl ,
     transl_code_spec code l ofs rtbl ->
@@ -1354,11 +1374,6 @@ Definition data_section_eq rtbl (t1 t2: option section) :=
   | _, _ => False
   end.
 
-Lemma decode_length: forall bs rtbl ofs i bs',
-    RelocBinDecode.fmc_instr_decode rtbl ofs bs = OK (i, bs') ->
-    (length bs = length bs' + Z.to_nat (instr_size i))%nat.
-Proof.
-Admitted.
 
 Lemma transl_code_spec_decode_refl: forall c bs rtbl c1 ofs,
     transl_code_spec c bs ofs rtbl ->
@@ -1370,7 +1385,7 @@ Proof.
   - intros bs rtbl c1 ofs H. cbn in H.
     destruct H as (i' & bs' & DEC & EQ & TL).              
     assert ((length bs > length bs')%nat). 
-    { generalize (decode_length _ _ _ _ _ DEC).
+    { generalize (RelocBinDecode.decode_length _ _ _ _ _ DEC).
       intros. generalize (instr_size_positive i').
       rewrite Z2Nat.inj_lt. omega.
       omega.

@@ -672,6 +672,10 @@ Proof.
   rewrite sublist_id. auto.
 Qed.
 
+Axiom decode_length: forall bs ofs i bs',
+    fmc_instr_decode ofs bs = OK (i, bs') ->
+    (length bs = length bs' + Z.to_nat (instr_size i))%nat.
+
 (* Lemma encode_decode_int32_int2Z : forall x, *)
 (*     Int.repr decode_int(encode_int 4 x) = Int.repr x. *)
 (* Proof. *)
