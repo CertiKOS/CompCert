@@ -1320,7 +1320,7 @@ Qed.
 
 Theorem separate_transf_c_program_correct_bytes:
   forall c_units elf_units c_program,
-  nlist_forall2 (fun cu tcu => transf_c_program_bytes cu = OK tcu) c_units elf_units ->
+  nlist_forall2 (fun cu tcu => transf_c_program_bytes false cu = OK tcu) c_units elf_units ->
   link_list c_units = Some c_program ->
   exists elf_program, 
       link_list elf_units = Some elf_program /\
