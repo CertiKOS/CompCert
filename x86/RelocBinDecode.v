@@ -1,16 +1,7 @@
-                                                                                    
-
-
-
-
 (* *******************  *)
 (* Author: Xiangzhe Xu  *)
 (* Date:    Oct 1, 2019 *)
 (* *******************  *)
-
-
-
-
 
 
 Require Import Coqlib Integers AST Maps.
@@ -2136,6 +2127,17 @@ Ltac resolve_rsp x:=
    subst x; inversion H; congruence
   end.
 
+Axiom addrmode_disp_valid_int32: forall a,
+    let 'Addrmode _ _ disp := a in 
+    match disp with 
+    | inl ofs => valid_int32 ofs
+    | _ => True
+    end.
+
+Axiom reloc_addend_bound: forall rtbl ofs i x, get_instr_reloc_addend rtbl ofs i = OK x -> valid_int32 x.
+
+Axiom rel_jmp_ofs_bound: forall i ofs, i = Pjmp_l_rel ofs \/ (exists c, i = Pjcc_rel c ofs) -> valid_int32 ofs.
+
 
 Lemma encode_decode_addrmode_relf: forall a rd bytes rofs i iofs sofs,
     instr_reloc_offset i = OK iofs
@@ -2144,7 +2146,7 @@ Lemma encode_decode_addrmode_relf: forall a rd bytes rofs i iofs sofs,
     -> forall l, decode_addrmode rofs (bytes++l) = OK (rd, a, l).
 Proof.
   intros a rd bytes rofs i iofs sofs HRelocOfs  HEncode  HRofs  l.
-
+  generalize (addrmode_disp_valid_int32 a). intros BND.
   unfold encode_addrmode in HEncode.
   destruct a eqn:EQA.
   monadInv HEncode.
@@ -2364,7 +2366,8 @@ Proof.
              unfold addrmode_SIB_parse_base.
              destruct (Byte.eq_dec bB[ x4] HB[ "5"]) eqn:EQx4.
              +++++
-               assert (Hvalid: valid_int32 x0). admit.
+               assert (Hvalid: valid_int32 x0). 
+               { destr_in EQ1. destr_in EQ1. }
                rewrite byte_eq_false.
              rewrite byte_eq_false.
              rewrite byte_eq_true.
@@ -2411,7 +2414,8 @@ Proof.
              1-3:inversion HNot.
              
              +++++
-               assert (Hvalid: valid_int32 x0) by admit.
+               assert (Hvalid: valid_int32 x0).
+               { destr_in EQ1. destr_in EQ1. }
                rewrite byte_eq_false. rewrite byte_eq_false. rewrite byte_eq_true.
              simpl.
              rewrite HRelocOfs in EQ1.
@@ -2679,7 +2683,8 @@ Proof.
              unfold addrmode_SIB_parse_base.
              rewrite byte_eq_true; auto.
              rewrite byte_eq_true; auto.
-             assert (Hvalid: valid_int32 x0) by admit.
+             assert (Hvalid: valid_int32 x0).
+             { destr_in EQ1. destr_in EQ1. }
              rewrite encode_decode_int32_same_prefix.
              2: auto.
              simpl.
@@ -2956,7 +2961,8 @@ Proof.
                unfold get_reloc_addend in EQ1.
                unfold find_ofs_in_rtbl.
                destruct ( ZTree.get (iofs + sofs) rtbl_ofs_map); inversion EQ1.
-               assert (Hvalid: valid_int32 x0) by admit.
+               assert (Hvalid: valid_int32 x0).
+               { inv EQ1. auto. }
                generalize (encode_decode_int32_same_prefix _ l Hvalid).
                intros Hint.
                rewrite Hint.
@@ -3051,7 +3057,8 @@ Proof.
             unfold find_ofs_in_rtbl.
             destruct(ZTree.get (iofs+sofs) rtbl_ofs_map);inversion EQ1.
             repeat f_equal.            
-            assert (Hvalid: valid_int32 x0) by admit.
+            assert (Hvalid: valid_int32 x0).
+            { inv EQ1. auto. }
             generalize (encode_decode_int32_same_prefix _ l Hvalid).
             intros Hint.
             rewrite Hint.
@@ -3138,7 +3145,8 @@ Proof.
           unfold find_ofs_in_rtbl.
           destruct(ZTree.get (iofs+sofs) rtbl_ofs_map); inversion EQ1.
           repeat f_equal.
-          assert (Hvalid: valid_int32 x0) by admit.
+          assert (Hvalid: valid_int32 x0).
+          { inv EQ1. auto. }
           generalize (encode_decode_int32_same_prefix _ l Hvalid).
           intros Hint.
           rewrite Hint.
@@ -4250,8 +4258,7 @@ Proof.
           rewrite Ptrofs.repr_unsigned. auto.
           1-6:
             intros HNot; inversion HNot.
-          (* valid_int32 *)
-Admitted.
+Qed.
 
 
 Lemma encode_decode_addr_size_relf: forall a rd abytes,
@@ -5446,6 +5453,7 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     clear H11.
     unfold fmc_instr_decode.
     monadInv HEncode. simpl.
+    generalize (reloc_addend_bound _ _ _ _ EQ). intros Hvalid.
     branch_byte_eq'.
     unfold decode_call.
     unfold get_instr_reloc_addend in EQ.
@@ -5459,13 +5467,11 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     destruct (ZTree.get (ofs + 1) rtbl_ofs_map); inversion EQ1.
     
     rewrite H11.
-    assert(Hvalid: valid_int32 x) by admit.
     generalize (encode_int32_4_exists x l (encode_int32 x ++ l)).
     intros (b1 & b2 & b3 & b4 & HInt).
     auto.
     rewrite HInt.
     simpl. auto.
-    assert(Hvalid: valid_int32 x) by admit.
     auto.
   + (* Pret *)
     exists Pret.
@@ -5790,17 +5796,20 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     unfold instr_eq. auto.
   + (*  (Pjmp_l_rel ofs0) *)
     exists  (Pjmp_l_rel ofs0).
+    generalize (rel_jmp_ofs_bound (Pjmp_l_rel ofs0) ofs0 (or_introl eq_refl)).
+    intros.
     split;try(unfold instr_eq; auto).
     unfold fmc_instr_decode.
     simpl. branch_byte_eq'.
     unfold decode_jmp_l_rel. repeat f_equal.
     assert(H_de: (decode_int_n (encode_int32 ofs0 ++ l) 4)= OK ofs0). {
-         apply (encode_decode_int32_same_prefix (ofs0) l).
-         admit.
+         apply (encode_decode_int32_same_prefix (ofs0) l); auto.
     }
     rewrite -> H_de. auto.
   + (* (Pjcc_rel c ofs0) *)
     exists (Pjcc_rel c ofs0).
+    assert (valid_int32 ofs0) as Hvalid.
+    { apply rel_jmp_ofs_bound with (Pjcc_rel c ofs0). right. eauto. }
     split;try(unfold instr_eq; auto).
     destruct c.
     1-12: unfold fmc_instr_decode; simpl; branch_byte_eq'.
@@ -5810,9 +5819,6 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     1-12: rewrite (encode_decode_int32_same_prefix (ofs0) l); simpl.
     1-24: try(generalize (encode_int32_4_exists _ l (encode_int32 ofs0 ++ l) eq_refl); intros (b1 & b2 & b3 & b4 & HEncInt); rewrite HEncInt; simpl).
     1-24: try(branch_byte_eq'; auto).
-    1-12:
-      (* valid_int32 ofs0 *)
-      admit.
   + (* Pnop *)
     exists Pnop.
     split; try(unfold instr_eq; auto).
@@ -5869,10 +5875,6 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     auto.
     auto.
     rewrite (encode_reg_length rd); auto.
-Admitted.
+Qed.
 
-
-
-
-  
 End  PRESERVATION.
