@@ -537,7 +537,9 @@ Definition id_eliminate' (i:instruction):res (instruction):=
     | Pmovzw_rm rd (Addrmode rb ss (inr disp)) =>
       let '(id, ptrofs) := disp in
       OK (Pmovzw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
-
+    | Pmovw_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (16-bit int) *)
+      let '(id, ptrofs) := disp in
+      OK (Pmovw_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
     | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
       let '(id, ptrofs) := disp in
       OK (Pmovsw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
