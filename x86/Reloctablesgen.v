@@ -208,8 +208,9 @@ Definition transl_instr' (sofs:Z) (i: instruction) : res (list relocentry) :=
   | Pmovb_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (8-bit int) *)
     do e <- compute_instr_disp_relocentry sofs i disp;
       OK [e]
-  | Pmovw_mr a rs =>    (**r [mov] (16-bit int) *)
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
+  | Pmovw_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (16-bit int) *)
+    do e <- compute_instr_disp_relocentry sofs i disp;
+      OK [e]
   | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
     do e <- compute_instr_disp_relocentry sofs i disp;
       OK [e]
@@ -454,7 +455,6 @@ Definition unsupported i :=
   | Pmovq_mr _ _
   | Pmovsd_fm_a _ _
   | Pmovsd_mf_a _ _
-  | Pmovw_mr _ _
   (* | Pmovsb_rm _ _ *)
   | Pmovzw_rm _ _
   | Pmovsw_rm _ _
