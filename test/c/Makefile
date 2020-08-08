@@ -65,7 +65,7 @@ bench:
 	   echo -n "$$i with CompcertELF   : "; $(TIME) ./$$i.compcert; \
          done
 	@for i in $(PROGS); do \
-	   echo -n "$$i with CompcertELF   : "; $(TIME) ./$$i.norm.compcert; \
+	   echo -n "$$i with Compcert baseline  : "; $(TIME) ./$$i.norm.compcert; \
          done
 
 cminor_roundtrip:
