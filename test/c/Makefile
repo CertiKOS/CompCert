@@ -57,7 +57,6 @@ bench_gcc:
 bench:
 	@for i in $(PROGS); do \
 	   echo -n "$$i with inlining   : "; $(TIME) ./$$i.compcert; \
-	   echo -n "$$i without inlining: "; $(TIME) ./$$i.compcert.noinline; \
          done
 
 cminor_roundtrip:
