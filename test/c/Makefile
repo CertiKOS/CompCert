@@ -2,6 +2,7 @@ include ../../Makefile.config
 
 CCOMP=../../ccomp
 CCOMPFLAGS=$(CCOMPOPTS) -stdlib ../../runtime -dc -dclight -dasm -relf -more
+CCOMPFLAGS_NELF=$(CCOMPOPTS) -stdlib ../../runtime -dc -dclight -dasm
 
 CFLAGS=-O1 -Wall
 
@@ -15,7 +16,8 @@ PROGS=fib integr qsort fft fftsp fftw sha1 sha3 aes almabench \
   nsieve nsievebits spectral vmach \
   bisect chomp perlin siphash24
 
-all: $(PROGS:%=%.compcert) $(PROGS:%=%.compcert.noinline)
+all: $(PROGS:%=%.compcert)
+all_nelf: $(PROGS:%=%.norm.compcert)
 
 all_s: $(PROGS:%=%.s)
 
@@ -23,6 +25,10 @@ all_gcc: $(PROGS:%=%.gcc)
 
 %.compcert: %.c $(CCOMP)
 	$(CCOMP) $(CCOMPFLAGS) -o $*.compcert $*.c $(LIBS)
+
+%.norm.compcert: %.c $(CCOMP)
+	$(CCOMP) $(CCOMPFLAGS_NELF) -o $*.norm.compcert $*.c $(LIBS)
+
 
 %.compcert.noinline: %.c $(CCOMP)
 	$(CCOMP) $(CCOMPFLAGS) -fno-inlining -o $*.compcert.noinline $*.c $(LIBS)
@@ -56,7 +62,10 @@ bench_gcc:
 
 bench:
 	@for i in $(PROGS); do \
-	   echo -n "$$i with inlining   : "; $(TIME) ./$$i.compcert; \
+	   echo -n "$$i with CompcertELF   : "; $(TIME) ./$$i.compcert; \
+         done
+	@for i in $(PROGS); do \
+	   echo -n "$$i with CompcertELF   : "; $(TIME) ./$$i.norm.compcert; \
          done
 
 cminor_roundtrip:
