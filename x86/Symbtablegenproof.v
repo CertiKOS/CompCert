@@ -636,104 +636,10 @@ Definition globs_meminj : meminj :=
         end
       end.
 
-
-
-Lemma init_mem_pres_inject : 
+Axiom init_mem_pres_inject : 
   forall m
     (INITMEM: Genv.init_mem prog = Some m),
     exists m', init_mem tprog = Some m' /\ Mem.inject globs_meminj (def_frame_inj m) m m'.
-Proof.
-  unfold Genv.init_mem, init_mem. intros.
-  unfold match_prog, transf_program in TRANSF.
-  destr_in TRANSF. inv w.
-  destr_in TRANSF. destruct p. 
-  destr_in TRANSF. inv TRANSF. cbn.
-  destruct (Mem.alloc Mem.empty 0 (init_data_list_size (fold_right acc_init_data [] (AST.prog_defs prog)))) eqn:IALLOC.
-  set (idata := (fold_right acc_init_data [] (AST.prog_defs prog))) in *.
-  generalize (alloc_perm_range _ _ _ _ _ Cur Freeable IALLOC).
-  intros RPERM.
-  assert (exists m1, store_zeros m0 b 0 (init_data_list_size idata) = Some m1) as STZ.
-  { 
-    eapply Genv.store_zeros_exists; eauto.
-    eapply Mem.range_perm_implies; eauto. constructor.
-    cbn. erewrite Mem.alloc_stack_blocks; eauto.
-    rewrite Mem.empty_stack. 
-    eapply stack_access_nil.
-    erewrite Mem.alloc_stack_blocks; eauto.
-    rewrite Mem.empty_stack. cbn. auto.
-  }
-  destruct STZ as (m1 & STZ).
-  rewrite STZ.
-  generalize (store_zeros_pres_range_perm _ _ _ _ _ _ _ STZ RPERM).
-  intros RPERM1.
-  
-  assert (exists m' : mem, store_init_data_list tge m1 b 0 idata = Some m') as SL.
-  {
-    eapply store_init_data_list_exists; eauto. cbn.
-    eapply Mem.range_perm_implies; eauto. constructor.
-    erewrite Genv.store_zeros_stack_access; eauto.
-    erewrite Mem.alloc_stack_blocks; eauto.
-    rewrite Mem.empty_stack.
-    apply stack_access_nil.
-    eapply acc_init_data_list_aligned; eauto.
-    eapply init_mem_data_aligned; eauto.
-    apply Z.divide_0_r.
-  }
-  destruct SL as (m2 & SL).
-  generalize SL. intros SL'.
-  unfold tge in SL'. cbn in SL'.
-  rewrite SL'. clear SL'.
-
-(*   destr. *)
-(*   destr. destr. *)
-
-(*   destruct (Mem.alloc Mem.empty 0 0) eqn:IALLOC. *)
-(*   exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK. *)
-(*   rewrite Mem.nextblock_empty in NEXTBLOCK. simpl in NEXTBLOCK. *)
-(*   exploit alloc_globals_segments_weak_inject; eauto. *)
-(*   erewrite Mem.alloc_stack_blocks; eauto. *)
-(*   erewrite Mem.empty_stack; eauto. *)
-(*   intros (m' & GALLOC & SINJ). *)
-(*   set (m1 := alloc_segments m0 (list_of_segments tprog)) in *. *)
-(*   rewrite GALLOC. *)
-(*   generalize (store_all_globals_inject). intro AAGI. *)
-(*   generalize TRANSF. intros TRANSF'. unfold match_prog in TRANSF'. *)
-(*   unfold transf_program in TRANSF'. *)
-(*   destruct (check_wellformedness prog) eqn:WF; try congruence. repeat destr_in TRANSF'. *)
-(*   unfold transl_prog_with_map in H0.  *)
-(*   destruct (transl_globdefs g (AST.prog_defs prog)) eqn: TLGLB; inversion H0.  *)
-(*   clear H0. simpl. *)
-(*   inversion UPDATE. subst g l z0 z. *)
-(*   exploit AAGI; eauto using INITMEM, SINJ, Mem.inject_ext. *)
-(*   - inv w. auto. *)
-(*   - erewrite alloc_globals_nextblock; eauto. *)
-(*     subst m1. *)
-(*     erewrite alloc_segments_nextblock; eauto. *)
-(*     erewrite Mem.nextblock_alloc; eauto.  *)
-(*     erewrite Mem.nextblock_empty. simpl.     *)
-(*     subst tprog. simpl. *)
-(*     erewrite transl_globdefs_pres_len; eauto. *)
-(*   - erewrite <- alloc_globals_stack; eauto. *)
-(*     subst m1. erewrite alloc_segments_stack; eauto. *)
-(*     erewrite Mem.alloc_stack_blocks; eauto. *)
-(*     erewrite Mem.empty_stack; eauto. *)
-(*   - eapply alloc_globals_perm_ofs; eauto. subst m1. *)
-(*     eapply alloc_segments_perm_ofs; eauto.  *)
-(*     intros b0 ofs k p PERM. erewrite alloc_perm in PERM; eauto. *)
-(*     destruct peq. omega. apply Mem.perm_empty in PERM. contradiction. *)
-(*   - intros id odef b' delta IN FSYM ofs k p OFS. *)
-(*     destruct (vit_dec _ _ odef). *)
-(*     + eapply alloc_globals_pres_perm; eauto. *)
-(*       subst m1. eapply alloc_segments_init_perm; eauto. *)
-(*     + eapply alloc_globals_init_perm; eauto. *)
-(*       subst m1. erewrite alloc_segments_nextblock; eauto. simpl. *)
-(*       rewrite NEXTBLOCK. auto. *)
-(*   - intros (m1' & ALLOC' & MINJ). *)
-(*     exists m1'. split. subst. simpl. *)
-(*     unfold tge in ALLOC'. auto. *)
-(*     auto. *)
-(* Qed. *)
-Admitted.
 
 
 (** Inversion of initial memory injection on genv_next *)
