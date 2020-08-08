@@ -82,7 +82,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "bitfile.h"
-
+#define XXZ
 /***************************************************************************
 *                            TYPE DEFINITIONS
 ***************************************************************************/
@@ -553,6 +553,7 @@ int BitFilePutBit(const int c, bit_file_t *stream)
         stream->bitCount = 0;
         stream->bitBuffer = 0;
     }
+    
 
     return returnValue;
 }
