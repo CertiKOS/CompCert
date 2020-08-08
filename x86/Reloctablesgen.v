@@ -525,6 +525,9 @@ Definition id_eliminate' (i:instruction):res (instruction):=
     | Pmov_rm_a rd (Addrmode rb ss (inr disp)) =>  (**r like [Pmov_rm], using [Many64] chunk *)
       let '(id, ptrofs) := disp in
       OK (Pmov_rm_a rd (Addrmode rb ss (inr (xH, ptrofs))))
+    | Pmovsb_rm rd (Addrmode rb ss (inr disp)) =>
+      let '(id, ptrofs) := disp in
+      OK (Pmovsb_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
     | Pmov_mr_a (Addrmode rb ss (inr disp)) rs =>   (**r like [Pmov_mr], using [Many64] chunk *)
       let '(id, ptrofs) := disp in
       OK (Pmov_mr_a (Addrmode rb ss (inr (xH, ptrofs))) rs)
