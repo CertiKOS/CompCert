@@ -19,6 +19,7 @@ Require Import Permutation.
 Require Import LocalLib.
 Require Import Symbtablegenproof1.
 Require Import AsmFacts.
+Require Import SizeBoundAxioms.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -654,8 +655,6 @@ Qed.
 
 End WithFunVar.
 (** *)
-
-Axiom defs_size_inbound: forall defs, sections_size (create_sec_table defs) <= Ptrofs.max_unsigned.
 
 (** Preparation for proofs of linking code and data sections *)
 

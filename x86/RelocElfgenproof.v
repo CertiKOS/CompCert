@@ -11,6 +11,7 @@ Require Import RelocProgram RelocProgSemantics3.
 Require Import RelocElf RelocElfSemantics.
 Require Import TablesEncodeproof.
 Require Import RelocElfgen.
+Require Import SizeBoundAxioms.
 Import ListNotations.
 
 Definition match_prog p tp :=
@@ -187,8 +188,6 @@ Proof.
   intros x IN. rewrite in_app in IN. intuition eauto.
 Qed.
 
-Axiom SIZE_BOUND: forall s, elf_header_size + get_sections_size s < two_power_pos 32.
-
 Instance tl : @TransfLink _ _ TablesEncodeproof.linker2
                           linker2
                           match_prog.
@@ -247,7 +246,7 @@ Proof.
   unfold acc_sections in GS. autoinv. simpl.
   rewrite pred_dec_true. eauto.
   unfold get_elf_shoff. cbn [prog_sectable].
-  eapply SIZE_BOUND.
+  eapply sections_size_bound.
   eapply VALID_STR. eauto.
   eapply prog_strings_eq; eauto.
   generalize (f RELOC_CODE). simpl. auto.

@@ -1038,8 +1038,6 @@ Proof.
   erewrite <- Genv.store_zeros_perm; eauto.
 Qed.
 
-Axiom unsigned_repr: forall n, Ptrofs.unsigned (Ptrofs.repr n) = n.
-
 Axiom store_zeros_extend: forall m1 m1' b lo hi lo' hi' m2,
     Mem.extends m1 m1' ->
     store_zeros m1 b lo hi = Some m2 ->

@@ -126,7 +126,7 @@ BACKEND=\
   TablesEncodeproof.v Reloctablesgenproof.v \
 	RemoveAddend.v RemoveAddendproof.v \
   RelocBinDecode.v \
-  LocalLib.v AsmInject.v
+  LocalLib.v AsmInject.v SizeBoundAxioms.v
 
 # Encoding of data into bytes
 

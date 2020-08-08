@@ -12,6 +12,7 @@ Require Import CheckDef.
 Require Import RealAsm AsmFacts.
 Require Import LocalLib.
 Require Import Linking.
+Require Import SizeBoundAxioms.
 Require Globalenvs.
 Import ListNotations.
 
