@@ -1318,6 +1318,24 @@ Proof.
   exists asm_program; split; auto. apply c_semantic_preservation_reloc; auto.
 Qed.
 
+Theorem separate_transf_c_program_correct_bytes:
+  forall c_units elf_units c_program,
+  nlist_forall2 (fun cu tcu => transf_c_program_bytes cu = OK tcu) c_units elf_units ->
+  link_list c_units = Some c_program ->
+  exists elf_program, 
+      link_list elf_units = Some elf_program /\
+      let '(b, tp, s) := elf_program in
+      backward_simulation (Csem.semantics (elf_bytes_stack_requirements elf_program) c_program) (ElfBytesSemantics.semantics b tp s (Asm.Pregmap.init Values.Vundef)).
+Proof.
+  intros. 
+  assert (nlist_forall2 match_prog_bytes c_units elf_units).
+  { eapply nlist_forall2_imply. eauto. simpl; intros. apply transf_c_program_bytes_match; auto. }
+  assert (exists elf, link_list elf_units = Some elf /\ match_prog_bytes c_program elf).
+  { eapply link_list_compose_passes; eauto. }
+  destruct H2 as (elf & P & Q).
+  exists elf; split; auto. apply c_semantic_preservation_bytes; auto.
+Qed.
 
 End WITHEXTERNALCALLS.
+
 
