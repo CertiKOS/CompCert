@@ -4728,32 +4728,6 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     auto. auto.
     rewrite (encode_reg_length rd);auto.
     
-  + (* Pmov_rs rd id *)
-    exists (Pleal rd (Addrmode None None (inr (id, Ptrofs.zero)))).
-    split; try (unfold instr_eq; auto).
-    destruct negb; inversion H10. clear H11.
-    monadInv HEncode.
-    unfold fmc_instr_decode. simpl.
-    branch_byte_eq'.
-    unfold decode_leal.
-    unfold encode_addrmode in EQ.
-    monadInv EQ.
-    rewrite<- app_assoc.
-    rewrite (encode_decode_addr_size_relf _ _ _ EQ0).
-    simpl.
-    remember (Pmov_rs rd id) as i.
-    remember (Pleal rd (Addrmode None None (inr (id, Ptrofs.zero)))) as i'.
-    assert(HRelocIEq: instr_reloc_offset i = instr_reloc_offset i'). {
-      subst i. subst i'. simpl. auto.
-    }
-    assert(HInstrReloc: instr_reloc_offset i = OK 2). {
-      subst i. auto.
-    }
-    monadInv H10.
-    assert(HOfs: ofs+1+1 = 2+ ofs) by omega.
-    rewrite app_assoc.
-    rewrite  (encode_decode_addrmode_relf _ _ _ (ofs + 1 + 1) _ _ _ HInstrReloc EQ1 HOfs).
-    simpl. auto.
   + (* Pmovl_rm rd a *)
     exists (Pmovl_rm rd a).
     split; try (unfold instr_eq; auto).

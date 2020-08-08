@@ -1913,30 +1913,7 @@ Proof.
     try(unfold RelocBinDecode.instr_eq in HInstrEq;
     rewrite HInstrEq;
     unfold exec_instr; simpl;
-    destruct (get_pc_offset rs); [rewrite <- HInstrEq|auto]);auto.
-  (* Pmov_rs rd id *)
-  simpl in HInstrEq.
-  rewrite<- HInstrEq.
-
-  unfold exec_instr.
-  unfold id_reloc_offset.
-  cbn [Reloctablesgen.instr_reloc_offset].
-  unfold Reloctablesgen.addrmode_reloc_offset.
-  unfold addrmode_size_aux.
-  replace (1+1) with 2 by omega.
-  unfold eval_addrmode32.
-  destruct get_pc_offset; auto.
-  unfold tge.
-  rewrite (symbol_address_refl RELOC_CODE (z+2)).
-  unfold instr_size. cbn [Asm.instr_size'].
-  unfold addrmode_size.
-  cbn [addrmode_size_aux].
-  replace (1+(1+4)) with 6 by omega.
-  (* nextinstr_nf and nextinstr !
-     consider to change the encoder *)
-  admit.
-  
-  
+    destruct (get_pc_offset rs); [rewrite <- HInstrEq|auto]);auto.  
   1:unfold exec_load.
   2:unfold exec_store.
   1-2: rewrite HInstrEq.

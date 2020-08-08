@@ -424,7 +424,6 @@ Definition ready_for_proof (i: instruction) : bool :=
   | Pmovl_mr a rs => true
   | Pmov_rm_a rd a => true
   | Pmov_mr_a a rs => true
-  | Pmov_rs rd id => true
   | Ptestl_rr r1 r2 => true
   | Pret => true
   | Pimull_rr rd r1 => true
