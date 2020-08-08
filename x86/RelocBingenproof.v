@@ -1483,7 +1483,52 @@ Proof.
 
 Admitted.
 
+Definition genv_eq ge ge' :=
+  ge.(RelocProgSemantics.Genv.genv_symb) = ge'.(RelocProgSemantics.Genv.genv_symb)
+  /\ge.(RelocProgSemantics.Genv.genv_ext_funs) = ge'.(RelocProgSemantics.Genv.genv_ext_funs)
+  /\ge.(RelocProgSemantics.Genv.genv_next) = ge'.(RelocProgSemantics.Genv.genv_next)
+  /\ge.(RelocProgSemantics.Genv.genv_senv) = ge'.(RelocProgSemantics.Genv.genv_senv).
 
+Ltac destr_genv_eq H:=
+    match goal with
+    |[H: genv_eq _ _ |- _ ] =>
+     unfold genv_eq in H;
+     destruct H as (?HSymb & ?HExtF & ?HNext & ?HSenv)
+    end.
+
+
+Lemma add_ext_genv_eq_pre': forall ge ge' extfuns symbol,
+    genv_eq ge ge'
+    ->  genv_eq (RelocProgSemantics.add_external_global extfuns ge symbol) (RelocProgSemantics.add_external_global extfuns ge' symbol).
+Proof.
+  intros ge ge' extfuns symbol HEq.
+  unfold RelocProgSemantics.add_external_global.
+  unfold genv_eq. simpl.
+
+  generalize HEq. intros H.
+  destr_genv_eq H.
+  rewrite HSymb.
+  rewrite HExtF.
+  rewrite HNext.
+  rewrite HSenv.
+  repeat split; auto.
+Qed.
+
+Lemma add_ext_genv_eq_pre: forall symbt extfuns ge ge',
+   genv_eq ge ge'
+    ->  genv_eq (RelocProgSemantics.add_external_globals extfuns ge symbt) (RelocProgSemantics.add_external_globals extfuns ge' symbt).
+Proof.
+  induction symbt.
+  intros extfuns ge ge' H.
+  simpl.
+  auto.
+  
+  intros extfuns ge ge' H.
+  simpl.
+  generalize (add_ext_genv_eq_pre' ge ge' extfuns a H).
+  intros HAddEq.
+  apply(IHsymbt extfuns _ _ HAddEq).
+Qed.
 
 Variables prog tprog: program.
 
@@ -1669,26 +1714,69 @@ Lemma symbol_address_refl: forall RELOC_CODE z,
     Genv.symbol_address ge RELOC_CODE z Ptrofs.zero.
 Proof.
   intros RELOC_CODE z.
-  unfold Genv.symbol_address. unfold Genv.find_symbol.
+  unfold Genv.symbol_address.
+  unfold Genv.find_symbol.
   unfold Genv.genv_reloc_ofs_symb.
-  unfold match_prog in TRANSF. monadInv TRANSF. simpl.
-  unfold gen_reloc_ofs_symbs. simpl. 
-  destruct ( Maps.ZTree.get z
-                            (add_reloc_ofs_symb (prog_symbtable prog) RELOC_CODE 
-                                                (prog_reloctables prog)
-                                                (add_reloc_ofs_symb (prog_symbtable prog) RELOC_DATA 
-                                                                    (prog_reloctables prog) (fun _ : reloctable_id => Maps.ZTree.empty ident))
-                                                RELOC_CODE)); auto.
-  unfold RelocProgSemantics.Genv.find_symbol.
+  unfold match_prog in TRANSF. monadInv TRANSF.
+  unfold ge.
+  unfold globalenv.
+  simpl.
+  unfold gen_reloc_ofs_symbs.
+  assert(HSymTable: prog_symbtable tprog = prog_symbtable prog). {
+    destruct zlt; inversion EQ2.
+    simpl.
+    auto.
+  }
+  rewrite HSymTable.
+  simpl.
+  assert(HReloctable: prog_reloctables tprog = prog_reloctables prog). {
+    destruct zlt; inversion EQ2. simpl. auto.
+  }
+  rewrite HReloctable.
+  destruct Maps.ZTree.get; auto.
   unfold RelocProgSemantics.globalenv.
-  unfold RelocProgSemantics.Genv.genv_symb.
+  assert(HProgDef: (prog_defs tprog) = (prog_defs prog)). {
+    destruct zlt; inversion EQ2. simpl. auto.
+  }
+  rewrite HProgDef.
   simpl.
-  unfold RelocProgSemantics.add_external_globals.
-  simpl.
-  induction  (prog_symbtable prog).
+  rewrite HSymTable.
+  unfold  RelocProgSemantics.Genv.find_symbol.
+  remember {|
+            RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
+                                          (prog_symbtable prog);
+            RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
+                                          external_function;
+            RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
+                                          (SecTable.get
+                                          sec_code_id
+                                          (prog_sectable prog));
+            RelocProgSemantics.Genv.genv_next := 3%positive;
+            RelocProgSemantics.Genv.genv_senv := prog_senv prog |} as ge'.
+  remember {|
+            RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
+                                          (prog_symbtable prog);
+            RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
+                                          external_function;
+            RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
+                                          (SecTable.get
+                                          sec_code_id
+                                          (prog_sectable tprog));
+            RelocProgSemantics.Genv.genv_next := 3%positive;
+            RelocProgSemantics.Genv.genv_senv := prog_senv tprog |} as anotherGe.
+  assert(HGenvEq: genv_eq ge' anotherGe). {
+    unfold genv_eq.
+    subst ge'. subst anotherGe.
+    simpl. repeat split; auto.
+    destruct zlt; inversion EQ2.
+    simpl. auto.
+  }
+  generalize (add_ext_genv_eq_pre (prog_symbtable prog) (RelocProgSemantics.gen_extfuns (prog_defs prog)) ge' anotherGe HGenvEq).
+  intros HGenvEq'.
+  destr_genv_eq HGenvEq'.
+  rewrite HSymb.
   auto.
-  simpl.
-Admitted.
+Qed.
 
     
 Lemma eval_addrmode32_refl: forall idofs a rs,
