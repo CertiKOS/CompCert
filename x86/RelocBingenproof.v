@@ -13,6 +13,19 @@ Require Import RelocProgram RelocProgSemantics1 RelocProgSemantics2.
 Import ListNotations.
 Require AsmFacts.
 
+Lemma instr_eq_size_eq: forall i1 i2,
+    RelocBinDecode.instr_eq i1 i2 -> instr_size i1 = instr_size i2.
+Proof.
+  intros.
+  destruct i1; try (inv H; cbn; auto).
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+  destruct i2; inv H; cbn; auto.
+Qed.
 
 
 Lemma list_has_tail: forall {A:Type} (l:list A) n,
@@ -61,7 +74,14 @@ Lemma instr_size_app: forall n a b,
 Proof.
   induction n.
   (* base case *)
-  admit.
+  intros a b H.
+  generalize (length_zero_iff_nil a).
+  intros (H1 & H2).
+  generalize(H1 H).
+  intros H0.
+  rewrite H0.
+  simpl. auto.
+  
   intros a b HLa.
   generalize (list_has_tail _ _ HLa).
   intros [tail [prefix Ha]].
@@ -80,9 +100,11 @@ Proof.
     simpl. omega.
   }
   rewrite HTailB. omega.
-  admit.
-  (* easy *)
-Admitted.
+  rewrite Ha in HLa.
+  rewrite app_length in HLa.
+  simpl in HLa.
+  omega.
+Qed.
 
 Fixpoint transl_code_spec code bytes ofs rtbl_ofs_map: Prop :=
   match code, bytes  with
@@ -115,15 +137,28 @@ Lemma fold_spec_length: forall n rtbl code ofs r z l,
     -> z = ofs + instr_size_acc code.
 Proof.
   induction n.
-  (* base case *)
-  admit.
+  intros rtbl code ofs r z l H H0.
+  generalize (length_zero_iff_nil code).
+  intros (HLCode & HNCode).
+  generalize(HLCode H).
+  intros HCode.
+  subst code.
+  simpl.
+  simpl in H0. inversion H0.
+  omega.
+  
   intros rtbl code ofs r z l HLCode HFoldAll.
   generalize (list_has_tail code n HLCode).
   intros [tail [prefix HCode]].
   rewrite HCode in HFoldAll.
   generalize (prefix_success _ _ _ _ _ _ _ HFoldAll).
   intros [z' [l' HFoldPrefix]].
-  assert(HLPrefix: length prefix = n) by admit. 
+  assert(HLPrefix: length prefix = n). {
+    rewrite HCode in HLCode.
+    rewrite app_length in HLCode.
+    simpl in HLCode.
+    omega.
+  }
   generalize(IHn rtbl prefix _ _ _ _ HLPrefix HFoldPrefix).
   intros Hz'.
   rewrite fold_left_app in HFoldAll.
@@ -134,8 +169,7 @@ Proof.
   simpl.
   omega.
   auto.
-  (* easy *)
-Admitted.
+Qed.
 
 Lemma decode_int_app: forall l bytes x,
     RelocBinDecode.decode_int_n bytes 4 = OK x
@@ -754,8 +788,116 @@ Qed.
 Lemma encode_addrmode_size_refl: forall rmap o i a rd x,
     encode_addrmode rmap o i a rd = OK x
     -> addrmode_size a = Z.of_nat (length x).
-  (* easy *)
-Admitted.
+Proof.
+  Transparent addrmode_size.
+  intros rmap o i a rd x HEncode.
+  unfold encode_addrmode in HEncode.
+  destruct a.
+  monadInv HEncode.
+  destruct const.
+  destruct (Reloctablesgen.instr_reloc_offset i).
+  destruct get_instr_reloc_addend'; inversion EQ1.
+  unfold encode_addrmode_aux in EQ.
+  destruct ofs.
+  destruct base.
+  monadInv EQ. destruct p.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1.
+  simpl.
+  rewrite encode_int32_size. simpl.
+  unfold addrmode_size.
+  unfold addrmode_size_aux. omega.
+  
+  monadInv EQ. destruct p.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1.
+  simpl. unfold addrmode_size. simpl.
+  rewrite encode_int32_size.
+  simpl. omega.
+
+  monadInv EQ. destruct base.
+  monadInv EQ2.
+  destruct ireg_eq eqn:EQR.
+  inversion EQ3.
+  simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size.
+  simpl. rewrite EQR. omega.
+  inversion EQ3.
+  simpl. rewrite encode_int32_size.
+  simpl. unfold addrmode_size.
+  simpl. rewrite EQR. omega.
+
+  inversion EQ2.
+  simpl.
+  rewrite encode_int32_size.
+  simpl.
+  unfold addrmode_size.
+  simpl. omega.
+
+  unfold encode_addrmode_aux in EQ.
+  monadInv EQ.
+  destruct ofs.
+  destruct p.
+  destruct base.
+  destruct ireg_eq; inversion EQ2.
+  monadInv EQ2.
+  simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size. simpl. omega.
+
+  destruct ireg_eq; inversion EQ2.
+  monadInv EQ2.
+  simpl. unfold addrmode_size. simpl.
+  rewrite encode_int32_size. simpl. omega.
+
+  destruct base.
+  monadInv EQ2.
+  destruct ireg_eq eqn:EQR. inversion EQ3.
+  simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size.
+  simpl. rewrite e0. simpl. auto.
+  inversion EQ3. simpl.
+  rewrite encode_int32_size.
+  simpl. unfold addrmode_size. simpl.
+  rewrite EQR.
+  omega.
+
+  inversion EQ2.
+  simpl. rewrite encode_int32_size.
+  simpl. unfold addrmode_size. simpl. auto.
+
+  destruct p. destruct i0; inversion EQ1.
+  simpl in EQ.
+  monadInv EQ. destruct ofs.
+  destruct p.
+  destruct base.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1.
+  simpl. rewrite encode_int32_size.
+  unfold addrmode_size. simpl. omega.
+  unfold addrmode_size. simpl.
+  destruct ireg_eq; inversion EQ2.
+  monadInv H1. simpl. rewrite encode_int32_size. simpl. auto.
+
+  destruct base.
+  monadInv EQ2.
+  destruct ireg_eq eqn:EQR.
+  1-2: inversion EQ3.
+  1-2: simpl.
+  1-2: rewrite encode_int32_size.
+  1-2: unfold addrmode_size.
+  1-2: simpl.
+  1-2: rewrite EQR.
+  1-2: omega.
+
+  inversion EQ2.
+  simpl. rewrite encode_int32_size.
+  unfold addrmode_size.
+  simpl. omega.
+    
+Qed.
 
 Lemma encode_instrs_size:
   forall rmap o i bl,
@@ -821,7 +963,20 @@ Proof.
   revert dependent n.
   induction n.
   (* base case *)
-  admit.
+  intros code2 z l H H0.
+  assert(HCode2: code2=[]). {
+    apply length_zero_iff_nil.
+    auto.
+  }
+  subst code2.
+  simpl in H0.
+  inversion H0.
+  subst code'.
+  replace (code++[]) with code.
+  auto.
+  rewrite app_nil_r.
+  auto.
+
   intros code2 z l HLCode2 HFoldCode2.
   generalize (list_has_tail code2 n HLCode2).
   intros [tail [prefix HCode2]].
@@ -857,19 +1012,28 @@ Proof.
   rewrite rev_app_distr.
   rewrite rev_involutive.
   auto.
-  (* easy *)
-Admitted.
+Qed.
 
-
-Lemma decode_encode_refl: forall n prog z code l,
+Lemma decode_encode_refl: forall n rtbl z code l,
     length code = n ->
-    fold_left (acc_instrs (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))) false) code (OK (0, [])) = OK (z, l)
-    -> transl_code_spec code (rev l) 0 (gen_reloc_ofs_map (reloctable_code (prog_reloctables prog))).
+    fold_left (acc_instrs rtbl false) code (OK (0, [])) = OK (z, l)
+    -> transl_code_spec code (rev l) 0 rtbl.
 Proof.
   intros n.
   induction n.
   (* n is O *)
-  admit.
+  intros prog z code l H H0.
+  assert(HCode: code = []). {
+    apply length_zero_iff_nil.
+    auto.
+  }
+  subst code.
+  simpl in H0.
+  inversion H0.
+  subst z.
+  subst l.
+  simpl.
+  auto.
   (* n is S n *)
   intros prog z code l HLength HEncode.
   generalize (list_has_tail code _ HLength).
@@ -899,8 +1063,7 @@ Proof.
   rewrite app_length in HLength.
   simpl in HLength.
   omega.
-  (* easy *)
-Admitted.
+Qed.
 
 
 Fixpoint instr_eq_list code1 code2:=
@@ -909,6 +1072,17 @@ Fixpoint instr_eq_list code1 code2:=
   |h::t, h'::t' => RelocBinDecode.instr_eq h h' /\ instr_eq_list t t'
   |_, _ => False
   end.
+
+Lemma instr_eq_list_size_eq: forall c1 c2, 
+    instr_eq_list c1 c2 -> code_size c1 = code_size c2.
+Proof.
+  induction c1 as [|i1 c1].
+  - cbn. intros. destr_in H; eauto.
+  - cbn. intros. destr_in H; subst; eauto.
+    destr_in H.
+    apply instr_eq_size_eq in H0.
+    cbn. erewrite IHc1; eauto. congruence.
+Qed.
 
 Lemma decode_instrs_append': forall rtbl  fuel ofs t l1 l2 code,
     decode_instrs rtbl fuel ofs t l1 = OK code ->
@@ -1009,18 +1183,38 @@ Qed.
 (* Admitted. *)
     
 
+Lemma transl_code_spec_length: forall code l ofs rtbl,
+    transl_code_spec code l ofs rtbl ->
+    code_size code = Z.of_nat (length l).
+Proof.
+  induction code as [|i code].
+  - intros l ofs rtbl H. cbn in H.
+    destr_in H; congruence.
+  - intros l ofs rtbl H.
+    cbn in H.
+    destruct H as (h' & t' & DEC & IEQ & SPEC).
+    cbn.
+    apply RelocBinDecode.decode_length in DEC. rewrite DEC.
+    rewrite Nat2Z.inj_add.
+    rewrite Z2Nat.id.
+    assert (code_size code = Z.of_nat (length t')).
+    { eapply IHcode; eauto. }
+    apply instr_eq_size_eq in IEQ.
+    omega.
+    generalize (instr_size_positive h').
+    omega.
+Qed.
 
-Axiom spec_length: forall code l t ofs rtbl  i,
+Lemma spec_length: forall code l t ofs rtbl  i,
     transl_code_spec (i::code) l ofs rtbl 
     -> transl_code_spec code t (ofs+instr_size i) rtbl 
     -> Z.of_nat (length l) = Z.of_nat (length t) + (instr_size i).
-(* Proof. *)
-(*   intros code l t ofs rtbl symtbl i HL HT. *)
-(*   simpl in HL. *)
-(*   (* HELP *) *)
-(*   (* describe the relation between `bytes` and `t` in *) *)
-(*   (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *) *)
-(* Admitted. *)
+Proof.
+  intros code l t ofs rtbl i H H0.
+  apply transl_code_spec_length in H.
+  apply transl_code_spec_length in H0.
+  cbn in H. omega.
+Qed.
 
 Lemma spec_decode_ex': forall code ofs l rtbl ,
     transl_code_spec code l ofs rtbl ->
@@ -1160,6 +1354,93 @@ Definition get_prog_code prog :=
   end.
 
 
+Lemma symbol_address_transf: forall prog tprog sym ofs,
+    prog_eq prog tprog ->
+    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) sym ofs) = 
+    (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym ofs).
+clear.
+Admitted.
+
+Definition code_section_eq (t1 t2: option section) := 
+  match t1, t2 with
+  | Some (sec_text c1), Some (sec_text c2) => instr_eq_list c1 c2
+  | _, _ => False
+  end.
+
+Definition data_section_eq rtbl (t1 t2: option section) :=
+  match t1, t2 with
+  | Some (sec_data l), Some (sec_bytes bs) =>
+    transl_init_data_list (gen_reloc_ofs_map (reloctable_data rtbl)) l = OK bs
+  | _, _ => False
+  end.
+
+
+Lemma transl_code_spec_decode_refl: forall c bs rtbl c1 ofs,
+    transl_code_spec c bs ofs rtbl ->
+    exists c', decode_instrs rtbl (length bs) ofs bs c1 = OK (rev c1 ++ c') /\ instr_eq_list c c'.
+Proof.
+  induction c as [|i c].
+  - intros bs rtbl c1 ofs H. cbn in H. destr_in H. subst. 
+    cbn. exists nil. split; eauto. rewrite app_nil_r. auto.
+  - intros bs rtbl c1 ofs H. cbn in H.
+    destruct H as (i' & bs' & DEC & EQ & TL).              
+    assert ((length bs > length bs')%nat). 
+    { generalize (RelocBinDecode.decode_length _ _ _ _ _ DEC).
+      intros. generalize (instr_size_positive i').
+      rewrite Z2Nat.inj_lt. omega.
+      omega.
+      generalize (instr_size_positive i'). omega.
+    }
+    destruct bs. cbn in H. omega.
+    cbn [length decode_instrs].
+    rewrite DEC. cbn.
+    generalize (IHc bs' _ (i'::c1) _ TL).
+    intros (c' & DIS & IEQ).
+    erewrite <- instr_eq_size_eq; eauto.
+    assert (length bs >= length bs')%nat. cbn in H. omega.
+    erewrite decode_fuel_le; eauto.
+    eexists. split. cbn. rewrite <- app_assoc. auto.
+    cbn. split; auto.
+Qed.
+
+
+Lemma transl_code_decode_instrs_refl: forall rtbl code bytes,
+    transl_code rtbl false code = OK bytes ->
+    exists code', decode_instrs rtbl (length bytes) 0 bytes [] = OK code' /\ instr_eq_list code code'.
+Proof.
+  intros.
+  monadInv H. destruct x. inv EQ0.
+  generalize (decode_encode_refl _ _ _ _ _ eq_refl EQ).
+  intros SPEC.
+  eapply transl_code_spec_decode_refl; eauto.
+Qed.
+
+Lemma transf_program_decode_eq : forall p tp,
+    transf_program false p = OK tp -> 
+    exists tp', decode_prog_code_section tp = OK tp' /\
+           code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable tp')) /\
+           data_section_eq (prog_reloctables p) (SecTable.get sec_data_id (prog_sectable p)) (SecTable.get sec_data_id (prog_sectable tp')) /\
+           prog_eq p tp'.
+Proof.
+  intros p tp TRANSF.
+  monadInv TRANSF. destr_in EQ2. inv EQ2.
+  unfold transl_sectable in EQ. repeat destr_in EQ. 
+  monadInv H0.
+  unfold decode_prog_code_section; cbn. 
+  replace (Pos.to_nat 1) with (1%nat) by xomega. cbn.
+  unfold decode_instrs'; cbn.  
+  exploit transl_code_decode_instrs_refl; eauto.
+  intros (code' & DEC & CEQ).
+  setoid_rewrite DEC.
+  cbn. 
+  eexists; split; eauto; cbn.
+  split; auto.
+  split; auto.
+  red; cbn; auto.
+  repeat (split; auto).
+Qed.
+  
+
 Section PRESERVATION.
   Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.
@@ -1168,16 +1449,8 @@ Local Existing Instance mem_accessors_default.
 
 
 
-
-Lemma init_data_list_relf': forall init m b ofs ofs' result bytes prog dbytes,
-    store_init_data_list (globalenv prog) m b ofs init = Some result
-    -> fold_left (acc_init_data (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog)))) init (OK (ofs,bytes)) = OK (ofs', rev dbytes++bytes)
-    -> store_init_data_bytes m b ofs (rev dbytes) = Some result.
-Admitted.
-
-
-(** this lemma is not correct.
-ofs must be zero here since transl_init_data_list always begins from zero **)
+(** This lemma is not correct.
+    ofs must be zero here since transl_init_data_list always begins from zero **)
 
 Lemma init_data_list_relf: forall init m b ofs result bytes prog,
     store_init_data_list (globalenv prog) m b ofs init = Some result
@@ -1219,250 +1492,96 @@ Let tge := RelocProgSemantics1.globalenv tprog.
 
 Hypothesis TRANSF: match_prog prog tprog.
 
-(* Lemma reverse_decode_prog_code_section: decode_prog_code_section tprog = OK prog. *)
-(* Proof. *)
-(*   unfold match_prog, transf_program in TRANSF. monadInv TRANSF. *)
-(*   unfold decode_prog_code_section. simpl. *)
-(*   unfold transl_sectable in EQ. repeat destr_in EQ. *)
-(*   monadInv H0. simpl. unfold decode_instrs'. *)
-  
-(*   (* help *) *)
-(*   (* I don't think this lemma is correct because the decoder  *)
-(*      could not generate exactly the same instruction as the pre-encoded one. *)
-(*      The relation instr_eq should be used here. *) *)
-(* Admitted. *)
-Lemma prog_tprog_eq:
-  prog_eq prog tprog.
-Proof.
-  unfold match_prog in TRANSF.
-  unfold transf_program in TRANSF.
-  monadInv TRANSF.
-  repeat destr_in EQ2.
-  unfold prog_eq.
-  simpl.
-  repeat (split; auto).
-Qed.
 
-Lemma init_mem_eq: forall m,
-  RelocProgSemantics1.init_mem prog = Some m
-  -> init_mem tprog = Some m.
+
+Lemma init_mem_pres: forall p p' m,
+    code_section_eq (SecTable.get sec_code_id (prog_sectable p)) (SecTable.get sec_code_id (prog_sectable p')) ->
+    data_section_eq (prog_reloctables p) (SecTable.get sec_data_id (prog_sectable p)) (SecTable.get sec_data_id (prog_sectable p')) ->
+    prog_eq p p' ->
+    RelocProgSemantics1.init_mem p = Some m -> 
+    init_mem p' = Some m.
 Proof.
-  intros m HInit.
+  intros p p' m CEQ DEQ PEQ HInit.
   unfold RelocProgSemantics1.init_mem in HInit.
-  destruct (RelocProgSemantics1.alloc_data_section (globalenv prog) (prog_sectable prog) Mem.empty) eqn:EQData;
+  destruct (RelocProgSemantics1.alloc_data_section (globalenv p) (prog_sectable p) Mem.empty) eqn:EQData;
     inversion HInit.
   clear H0.
-  destruct (alloc_code_section (prog_sectable prog) m0) eqn:EQCode;
+  destruct (alloc_code_section (prog_sectable p) m0) eqn:EQCode;
     inversion HInit.
   clear H0.
   unfold init_mem.
+  red in CEQ. destr_in CEQ. 
+  destruct v; try contradiction.
+  destr_in CEQ; try contradiction.
+  destruct v; try contradiction.
+  red in DEQ. 
+  destr_in DEQ; try contradiction.
+  destruct v; try contradiction.
+  destr_in DEQ; try contradiction.
+  destruct v; try contradiction.
+  red in PEQ. destruct PEQ. destruct H0. destruct H1. destruct H2. destruct H3. destruct H4.
+
   (* data section *)
   unfold alloc_data_section.
-  unfold match_prog in TRANSF.
-  unfold transf_program in TRANSF.
-  monadInv TRANSF.
-  destruct zlt; inversion EQ2.
-  simpl.
-  unfold transl_sectable in EQ.
-  destruct (prog_sectable prog);inversion EQ.
-  destruct v;inversion EQ. clear H1.
-  destruct s; inversion H2.
-  clear H2.
-  destruct v; inversion H1.
-  destruct s; inversion H2.
-  clear H2. clear H3.
-  monadInv H1.
-  simpl.
+  rewrite Heqo2.
   unfold RelocProgSemantics1.alloc_data_section in EQData.
-  simpl in EQData.
-  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length x2)). {
-    generalize (transl_init_data_list_size _ _ _  EQ4).
+  rewrite Heqo1 in EQData.
+  repeat destr_in EQData.
+  cbn.
+  assert(HSizeEQ: init_data_list_size init = Z.of_nat(length bs)). {
+    generalize (transl_init_data_list_size _ _ _  DEQ).
     auto.
   }
-  rewrite <- HSizeEQ.
-  destruct (Mem.alloc Mem.empty 0 (init_data_list_size init)) eqn:EQM.
-  destruct (store_zeros m2 b 0 (init_data_list_size init)) eqn:EQZeros;inversion EQData.
-  clear H0.
-  assert(HStoreInitBytes: forall m4, store_init_data_list (globalenv prog) m3 b 0 init = Some m4-> store_init_data_bytes m3 b 0 x2 = Some m4). {
-    destruct (store_init_data_list (globalenv prog) m3 b 0 init) eqn:EQInitData; inversion EQData.
-    generalize (init_data_list_relf _ _ _ _ _ _ _ EQInitData EQ4).
-    intros HStoreInitBytes m5 EQM5.
-    rewrite <- EQM5.
-    auto.
-  }
-
-  destruct (store_init_data_list (globalenv prog) m3 b 0 init); inversion EQData.
-  rewrite (HStoreInitBytes m4 eq_refl).
-  rewrite H0.
-  
-  clear H0.
-  clear EQData.
-  clear HStoreInitBytes.
-  clear HSizeEQ.
-  clear EQ4.
-  clear EQ1.
-  clear EQM.
-  clear EQZeros.
-  
+  rewrite <- HSizeEQ in *.
+  setoid_rewrite Heqp0.
+  setoid_rewrite Heqo3.
+  erewrite init_data_list_relf; eauto.
+  rewrite H7.
   
   (* code section *)
   unfold alloc_code_section.
-  simpl.
   unfold alloc_code_section in EQCode.
-  simpl in EQCode.
-  assert(HSizeEQ: code_size code = Z.of_nat(length x1)). {
-    generalize (transl_code_size _ _ _ EQ0).
-    auto.
-  }
-    
-  rewrite <- HSizeEQ.
-  destruct ( Mem.alloc m0 0 (code_size code)) eqn:EQM.
-  rewrite EQCode.
-  auto.
+  rewrite Heqo0. rewrite Heqo in EQCode.
+  destr_in EQCode.
+  cbn. erewrite <- instr_eq_list_size_eq; eauto.
+  setoid_rewrite Heqp1.
+  setoid_rewrite EQCode. congruence.
 Qed.
 
 
-Lemma decode_prog_code_section_eq:
-  exists prog' c c',(decode_prog_code_section tprog = OK prog'
-                     /\ get_prog_code prog' = Some c'
-                     /\ get_prog_code prog = Some c
-                     /\ instr_eq_list c c'
-                     /\ prog_eq prog prog'
-                     /\ init_mem prog' = init_mem tprog).
-Admitted.
+Lemma prog_eq_initial_state_gen : forall p p' rs m st,
+    prog_eq p p' ->
+    initial_state_gen p rs m st -> initial_state_gen p' rs m st.
+Proof.
+  intros p p' rs m st PEQ INIT.
+  inv INIT.
+  generalize (initial_state_gen_intro p' rs _ _ _ _ _ _ MALLOC MDROP MRSB MST).
+  cbn. intros.
+  unfold rs0, ge0. cbn.
+  erewrite symbol_address_transf; eauto.
+  red in PEQ. destruct PEQ. destruct H1. congruence.
+Qed.
 
-
-Lemma genv_find_symbol: forall prog tprog sym,
-    prog_eq prog tprog
-    -> (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) 
-                                               sym Ptrofs.zero) = (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym Ptrofs.zero).
-Admitted.
 
 Lemma transf_initial_states:
-  forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
-         exists st2, initial_state tprog rs st2 /\  st1 = st2.
+  forall st rs, RelocProgSemantics1.initial_state prog rs st ->
+           initial_state tprog rs st.
 Proof.
-  intros st1 rs HInit.
-  exists st1.
+  intros st rs HInit.
   inv HInit.
-  split.
-  +
-    generalize decode_prog_code_section_eq.
-    intros (prog' & c & c' & HDecodeEx & HCode' & HCode & HInstr_eq & HProgEq & HMemEq).
-    generalize (initial_state_intro tprog rs st1 m prog' HDecodeEx).
-    intros HInitState.
-    rewrite HMemEq in HInitState.
-    generalize (init_mem_eq m H).
-    intros HInitMem.
-    generalize (HInitState HInitMem).
-    clear HInitState.
-    intros HInitState.
-    inversion H0.
-    generalize (prog_tprog_eq).
-    intros HTProgEq.
-    generalize (prog_eq_symm _ _ HProgEq).
-    clear HProgEq.
-    intros HProgEq.
-    generalize (prog_eq_transitivity _ _ _ HProgEq HTProgEq).
-    intros HProgEq'.
-    generalize HProgEq.
-    unfold prog_eq in HProgEq.
-    destruct HProgEq as (HDefsEq & HMainEq & HPublicEq & HSymEq & HRelocEq & HSenvEq & HStrEq).
-    intros HProgEq.
-    generalize (initial_state_gen_intro prog' rs _ _ _ _ _ _ MALLOC MDROP MRSB MST).
-    rewrite HMainEq.
+  edestruct transf_program_decode_eq as (tporg' & DEC & CEQ & DEQ & PEQ).
+  red in TRANSF. eauto.
+  econstructor; eauto.
+  eapply init_mem_pres; eauto.
+  apply prog_eq_initial_state_gen with prog; eauto.
+Qed.  
 
-    generalize (prog_eq_symm _ _ HProgEq).
-    intros HProgEq_rev.
-    generalize (genv_find_symbol prog prog' (prog_main prog) HProgEq_rev).
-    intros HSymbolFind.
-    simpl. rewrite<- HSymbolFind.
-    rewrite H1.
-    unfold rs0 in H1. unfold ge0 in H1. simpl in H1. rewrite H1.
-    intros HInitStateGen.
-    generalize (HInitState HInitStateGen).
-    auto.
-
-
-    
-    (* (* unfold RelocProgSemantics.Genv.symbol_address. *) *)
-    (* (* unfold RelocProgSemantics.globalenv. *) *)
-    (* (* unfold RelocProgSemantics.Genv.find_symbol. *) *)
-    (* (* rewrite HSymEq. *) *)
-
-    (* rewrite rs0. *)
-    (* (* match goal with *) *)
-    (* (* | [|- (_  rs1 := ?x)] => rewrite x *) *)
-    (* (* end. *) *)
-     
-    (* rewrite  HTMainEq in rs0. *)
-    
-
-    (* apply(initial_state_gen_intro). *)
-    
-
-
-    (* assert(HInitMem: init_mem prog' = Some m). { *)
-    (*   unfold init_mem. *)
-
-    
-
-
-
-    
-    (* unfold match_prog in TRANSF. *)
-    (* unfold transf_program in TRANSF. *)
-    (* monadInv TRANSF. *)
-    (* repeat destr_in EQ2. *)
-    (* unfold transl_sectable in EQ. *)
-    (* destruct (prog_sectable prog);inversion EQ. *)
-    (* repeat (destruct v; inversion EQ; *)
-    (*         destruct s; inversion EQ). *)
-    (* monadInv EQ. *)
-    (* simpl. *)
-    (* unfold transl_code in EQ0. *)
-    (* monadInv  EQ0. *)
-    (* destruct x. monadInv EQ3. *)
-    (* generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ2). *)
-    (* intros HTranslSpec. *)
-    (* generalize (spec_decode_ex' code 0 (rev l0) _ _ HTranslSpec). *)
-    (* intros (c' & code' & HEncodeDecode). *)
-    (* destruct HEncodeDecode as [HDecode [HDecodeEQ HLE]]. *)
-    (* match goal with *)
-    (* | [|- initial_state ?tp _ _] => *)
-    (*   set (tprog := tp) in * *)
-    (* end. *)
-    (* assert(HDecodeTprogEx: exists prog', decode_prog_code_section tprog = OK prog') by admit. *)
-    
-    (* destruct HDecodeTprog as (prog' & HDecodeTprog). *)
-
-    (* (* (* destruct prog. simpl. *) *) *)
-    (* apply (initial_state_intro tprog rs st1 m prog'). *)
-    (* auto. *)
-    (* econstructor. *)
-    
-    (* unfold decode_prog_code_section. *)
-    (* simpl. *)
-    (* cut(((length(rev l0)) >= c')%nat). *)
-    (* intros HGE. *)
-    (* generalize (decode_fuel_le _ _ _ _ _ _ _ _ HDecode HGE). *)
-    (* intros HDecode'. *)
-    (* unfold decode_instrs'. *)
-    (* simpl in HDecode'. *)
-    (* rewrite HDecode'. *)
-    (* simpl. *)
-    (* eauto. *)
-    (* omega. *)
-
-  + reflexivity.
-Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r,
-    st1 = st2 -> RelocProgSemantics1.final_state st1 r -> final_state st2 r.
+  forall st r,
+    RelocProgSemantics1.final_state st r -> final_state st r.
 Proof.
-  intros st1 st2 r MS HFinal.
-  rewrite <-  MS.
+  intros st r MS.
   auto.
 Qed.
 
@@ -1487,6 +1606,13 @@ Proof.
   (* inversion Hge. *)  
 Admitted.
 
+Lemma find_ext_funct_refl: forall b ofs f,
+    Genv.find_ext_funct ge (Vptr b ofs) = Some f
+    -> Genv.find_ext_funct (globalenv tprog) (Vptr b ofs) = Some f.
+Proof.
+Admitted.
+
+
 Definition ge_eq (ge1 ge2: RelocProgSemantics.Genv.t) : Prop :=
   ge1.(RelocProgSemantics.Genv.genv_symb) = ge2.(RelocProgSemantics.Genv.genv_symb) /\
   ge1.(RelocProgSemantics.Genv.genv_ext_funs) = ge2.(RelocProgSemantics.Genv.genv_ext_funs) /\
@@ -1507,6 +1633,34 @@ Admitted.
 Lemma find_instr_refl: forall b ofs i,
     Genv.find_instr ge (Vptr b ofs) = Some i ->
     exists i', Genv.find_instr tge (Vptr b ofs) = Some i' /\ RelocBinDecode.instr_eq i i'.
+Proof.
+  (* intros b ofs i HFind. *)
+  (* generalize (RelocProgSemantics.global_env_find_instr_inv _ b _ _  HFind). *)
+  (* intros (c & HCodeSecFind & HCodeIn). *)
+  
+  unfold Genv.find_instr.
+  unfold RelocProgSemantics.Genv.find_instr.
+  unfold RelocProgSemantics.Genv.genv_instrs.
+  unfold Genv.genv_genv.
+  destruct tge eqn:EQTge.
+  unfold tge in EQTge.
+  unfold globalenv in EQTge. inversion EQTge.
+  unfold RelocProgSemantics.globalenv.
+  unfold match_prog in TRANSF.
+  unfold transf_program in TRANSF.
+  monadInv TRANSF.
+  destruct zlt; inversion EQ2.
+  simpl.
+  unfold transl_sectable in EQ.
+  destruct (prog_sectable prog); inversion EQ.
+  destruct v; inversion H3.
+  destruct s; inversion H3.
+  destruct v; inversion H3.
+  destruct s; inversion H3.
+  clear H4. clear H5. clear H6. clear H7.
+  monadInv H3.
+  simpl.
+  
 Admitted.
 
 
@@ -1546,178 +1700,193 @@ Lemma eval_addrmode_refl: forall idofs a rs,
 Admitted.
 
 
-Theorem step_simulation:
-  forall s1 t s2, step ge s1 t s2 ->
-                  forall s1' (MS: s1=s1'),
-                    (exists s2', step tge s1' t s2' /\ s2 = s2').
+Lemma exec_instr_simulation: forall i i' rs m,
+    RelocBingen.ready_for_proof i = true ->
+    RelocBinDecode.instr_eq i i' -> 
+    exec_instr ge i rs m =  exec_instr tge i' rs m.
 Proof.
-  intros s1 t s2 HStep s1' MS.
-  exists s2.
-  split;auto.
-  induction HStep.
-  +
-    (* exec_step_internal *)
-    rewrite <- MS.
-    unfold tge.
-    (* not find def *)
-    generalize (not_find_ext_funct_refl _ _ H0). auto.
-
-    (* find instr *)
-    generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].
-    unfold tge in HInsEx.
-    econstructor.
-    eauto. auto. eauto.
-
-    (* "step simulation" *)
-    rename H2 into HExec.
-    rewrite <- HExec.
-    destruct i;
-    try(unfold RelocBinDecode.instr_eq in HInsEQ;
-    rewrite HInsEQ;
+  intros i i' rs m HReadyForProof HInstrEq.
+  destruct i; simpl in HReadyForProof; inversion HReadyForProof.
+  all:
+    try(unfold RelocBinDecode.instr_eq in HInstrEq;
+    rewrite HInstrEq;
     unfold exec_instr; simpl;
-    destruct (get_pc_offset rs); [rewrite <- HInsEQ|auto]);auto. 
-    unfold RelocBinDecode.instr_eq in HInsEQ.
-    rewrite <- HInsEQ. admit.
-    
+    destruct (get_pc_offset rs); [rewrite <- HInstrEq|auto]);auto.
+  (* Pmov_rs rd id *)
+  simpl in HInstrEq.
+  rewrite<- HInstrEq.
 
-    
-    1:unfold exec_load.
-    2:unfold exec_store.
-    1-2: rewrite HInsEQ.
-    1-2: generalize (eval_addrmode_refl (id_reloc_offset z i') a rs).
-    1-2: intros HAddrmode; rewrite HAddrmode; auto.
-
-    Admitted.
-(*     (* lea *) *)
-(*     rewrite HInsEQ. *)
-(*     generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs). *)
-(*     intros HAddrmode. rewrite HAddrmode. auto. *)
-
-(*     (* sall *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     destruct HInsEQ as [Hrd Hn]. *)
-(*     rewrite Hrd. admit. *)
-
-(*     (* test *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     destruct HInsEQ as [[H10 H23] | [H13 H20]]. *)
-(*     rewrite H10. rewrite H23. auto. *)
-(*     rewrite H13. rewrite H20. *)
-(*     unfold exec_instr. *)
-(*     rewrite Val.and_commut. auto. *)
-
-(*     (* jmp *) *)
-(*     destruct ros; auto. *)
-(*     rewrite HInsEQ. *)
-(*     destruct (id_reloc_offset z i'). *)
-(*     f_equal. f_equal. *)
-
-
-(*     generalize (symbol_address_refl RELOC_CODE z0). *)
-(*     auto. auto. *)
-    
-(*     (* Pcall *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     unfold exec_instr. *)
-(*     destruct (get_pc_offset rs);auto.     *)
-(*     rewrite HInsEQ. *)
-(*     destruct ros0. *)
-(*     replace (instr_size (Pcall (inl i) sg0)) with 1. *)
-(*     replace (instr_size (Pcall (inl i) sg)) with 1. *)
-(*     destruct (Mem.storev Mptr m *)
-(*       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) *)
-(*       (Val.offset_ptr (rs PC) (Ptrofs.repr 1))); auto. *)
-(*     (* about size *) *)
-(*     admit. admit. *)
-(*     replace (instr_size (Pcall (inr i) sg0)) with 5. *)
-(*     replace (instr_size (Pcall (inr i) sg)) with 5. *)
-(*     destruct (Mem.storev Mptr m *)
-(*       (Val.offset_ptr (rs RSP) (Ptrofs.neg (Ptrofs.repr (size_chunk Mptr)))) *)
-(*       (Val.offset_ptr (rs PC) (Ptrofs.repr 5))); auto. *)
-(*     unfold eval_ros. *)
-(*     unfold id_reloc_offset. unfold Reloctablesgen.instr_reloc_offset. *)
-(*     generalize (symbol_address_refl RELOC_CODE (z+1)). *)
-(*     intros HAddr. *)
-(*     rewrite HAddr. auto. *)
-(*     (* about size *) *)
-(*     admit. admit. *)
-
-(*     (* Pmov_rm_a *) *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     destruct HInsEQ as [Hrd Ha]. *)
-(*     rewrite Hrd. rewrite Ha. *)
-(*     unfold exec_instr. *)
-(*     destruct (get_pc_offset rs);auto. *)
-(*     unfold exec_load. *)
-(*     destruct Archi.ptr64 eqn:EQW; inversion EQW. *)
-(*     generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_rm_a rd a0)) a0 rs). *)
-(*     intros HAddrmode. *)
-(*     rewrite HAddrmode. *)
-(*     unfold id_reloc_offset. *)
-(*     unfold Reloctablesgen.instr_reloc_offset. *)
-(*     unfold tge.  *)
-(*     (* int32 and any32 *) *)
-(*     replace Mint32 with Many32. *)
-(*     admit. *)
-(*     admit. *)
-
-(*     (* Pmov_mr_a , will have the same problem *) *)
-(*     admit. *)
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     unfold exec_instr. *)
-(*     destruct (get_pc_offset rs); auto. *)
-(*     unfold exec_instr. admit. *)
-
-(*     destruct i';unfold RelocBinDecode.instr_eq in HInsEQ; try(exfalso; apply HInsEQ). *)
-(*     admit. *)
-(*     unfold exec_instr. auto. *)
-
-(*   + *)
-(*     (* exec_step_builtin *) *)
-(*     rewrite <- MS. *)
-(*     assert(HArgs: eval_builtin_args preg tge idofs rs (rs RSP) m args vargs) by admit. *)
-(*     econstructor; try eauto. *)
-(*     (* not found exfunc refl *) *)
-(*     generalize (not_find_ext_funct_refl _ _ H0). *)
-(*     auto. *)
-(*     (* built in refl *) *)
-(*     generalize (find_instr_refl _ _ _ H1). *)
-(*     intros (i & HFind & HEq). *)
-(*     inversion HEq. *)
-(*     rewrite HFind. *)
-(*     rewrite H6. *)
-(*     auto. *)
-(*     simpl in H4. simpl. *)
-    
-(*     assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) vargs m t vres m') by admit. *)
-(*     auto. *)
-(*   + *)
-(*     (* exec_step_external *) *)
-(*     rewrite <- MS. *)
-(*     generalize (exec_step_external tge b ofs ef args res rs m t rs' m'). *)
-(*     intros HExecStepExt. *)
-(*     generalize (HExecStepExt H). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     assert(HFoundExt: Genv.find_ext_funct tge (Vptr b ofs) = Some ef) by admit. *)
-(*     generalize (HExecStepExt HFoundExt). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     rewrite LOADRA in HExecStepExt. *)
-(*     generalize (HExecStepExt ra eq_refl RA_NOT_VUNDEF ARGS). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     assert(HExtCall: external_call ef (RelocProgSemantics.Genv.genv_senv (RelocProgSemantics.globalenv tprog)) args m t res m') by admit. *)
-(*     generalize (HExecStepExt HExtCall). *)
-(*     clear HExecStepExt. intros HExecStepExt. *)
-(*     generalize (HExecStepExt H2). *)
-(*     auto. *)
-(* Admitted. *)
-
-
-    
-    
-    
-
+  unfold exec_instr.
+  unfold id_reloc_offset.
+  cbn [Reloctablesgen.instr_reloc_offset].
+  unfold Reloctablesgen.addrmode_reloc_offset.
+  unfold addrmode_size_aux.
+  replace (1+1) with 2 by omega.
+  unfold eval_addrmode32.
+  destruct get_pc_offset; auto.
+  unfold tge.
+  rewrite (symbol_address_refl RELOC_CODE (z+2)).
+  unfold instr_size. cbn [Asm.instr_size'].
+  unfold addrmode_size.
+  cbn [addrmode_size_aux].
+  replace (1+(1+4)) with 6 by omega.
+  (* nextinstr_nf and nextinstr !
+     consider to change the encoder *)
+  admit.
   
   
+  1:unfold exec_load.
+  2:unfold exec_store.
+  1-2: rewrite HInstrEq.
+  1-2: generalize (eval_addrmode_refl (id_reloc_offset z i') a rs).
+  1-2: intros HAddrmode; rewrite HAddrmode; auto.
+  
+  
+  (* lea *)
+  rewrite HInstrEq.
+    generalize (eval_addrmode32_refl (id_reloc_offset z i') a rs).
+    intros HAddrmode. rewrite HAddrmode. auto.
+
+    (* sall *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [Hrd Hn].
+    rewrite Hrd.
+    rewrite Zmod_small in Hn.
+    Focus 2.
+    (* this is guaranteed by the decoder *)
+    admit.
+    rewrite Int.repr_unsigned in Hn. subst n.
+    unfold exec_instr.
+    destruct get_pc_offset; auto.
+
+    (* test *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [[H10 H23] | [H13 H20]].
+    rewrite H10. rewrite H23. auto.
+    rewrite H13. rewrite H20.
+    unfold exec_instr.
+    rewrite Val.and_commut. auto.
+
+    (* jmp *)
+    destruct ros; inversion HReadyForProof.
+    simpl in HInstrEq. destruct i'; inversion HInstrEq.
+    unfold exec_instr.
+    unfold instr_size.
+    cbn [Asm.instr_size'].
+    unfold id_reloc_offset.
+    cbn [Reloctablesgen.instr_reloc_offset].
+    destruct get_pc_offset; auto.
+    destruct Mem.storev; auto.
+    unfold eval_ros.
+    unfold tge.
+    rewrite (symbol_address_refl RELOC_CODE (z+1)).
+    auto.
+    
+    (* Pmov_rm_a *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [Hrd Ha].
+    rewrite Hrd. rewrite Ha.
+    unfold exec_instr.
+    destruct (get_pc_offset rs);auto.
+    unfold exec_load.
+    destruct Archi.ptr64 eqn:EQW; inversion EQW.
+    generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_rm_a rd a0)) a0 rs).
+    intros HAddrmode.
+    rewrite HAddrmode.
+    unfold id_reloc_offset.
+    unfold Reloctablesgen.instr_reloc_offset.
+    unfold tge. 
+    (* int32 and any32 *)
+    replace Mint32 with Many32.
+    auto.
+    admit.
+
+    (* Pmov_mr_a , will have the same problem *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    destruct HInstrEq as [Hrd Ha].
+    rewrite Hrd. rewrite Ha.
+    unfold exec_instr.
+    destruct (get_pc_offset rs);auto.
+    unfold exec_store.
+    destruct Archi.ptr64 eqn:EQW; inversion EQW.
+    generalize (eval_addrmode_refl  (id_reloc_offset z (Pmov_mr_a a0 rs1)) a0 rs).
+    intros HAddrmode.
+    rewrite HAddrmode.
+    unfold id_reloc_offset.
+    unfold Reloctablesgen.instr_reloc_offset.
+    unfold tge.
+    replace Many32 with Mint32.
+    auto.
+    admit.
+
+    (* Plabel *)
+    destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
+    unfold exec_instr.
+    destruct (get_pc_offset rs); auto.
+    unfold exec_instr.
+    destruct get_pc_offset; auto.
+    
+    (* Pnop *)
+    simpl in HInstrEq.
+    destruct i'; inversion HInstrEq.
+    unfold exec_instr.
+    cbn [instr_size].
+    cbn [Asm.instr_size']. auto.
+
+    unfold exec_instr. auto.
+Admitted.
+
+Lemma eval_builtin_args_pres: forall idofs e sp m al vl,
+    eval_builtin_args preg ge idofs e sp m al vl ->
+    eval_builtin_args preg tge idofs e sp m al vl.
+Admitted.
+
+Lemma senv_equiv: Senv.equiv (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv ge))
+                             (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv tge)).
+Admitted.
+
+Lemma find_instr_ready_for_proof vptr i:
+  Genv.find_instr ge vptr = Some i
+  -> ready_for_proof i = true.
+Proof.
+  intros HFind.
+  unfold Genv.find_instr in HFind.
+  simpl in HFind.
+  unfold RelocProgSemantics.Genv.find_instr in HFind.
+  destruct vptr; inversion HFind. clear H0.
+  unfold RelocProgSemantics.Genv.genv_instrs in HFind.
+  destruct (RelocProgSemantics.globalenv prog) eqn:EQGenv.  
+Admitted.
+
+Theorem step_simulation:
+  forall s1 t s2, step ge s1 t s2 -> step tge s1 t s2.
+Proof.
+  intros s1 t s2 STEP. inv STEP.
+  - (* Internal Step *)
+    generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].
+
+    eapply exec_step_internal; eauto.
+    eapply not_find_ext_funct_refl; eauto.
+    erewrite <- exec_instr_simulation; eauto.
+    apply (find_instr_ready_for_proof _ _ H1).
+
+  - (* Builtin Step *)
+    generalize (find_instr_refl _ _ _ H1). intros [i' [HInsEx  HInsEQ]].
+
+    eapply exec_step_builtin; eauto.
+    eapply not_find_ext_funct_refl; eauto.
+    unfold RelocBinDecode.instr_eq in HInsEQ. subst.
+    eauto.
+    eapply eval_builtin_args_pres; eauto. 
+    eapply external_call_symbols_preserved; eauto.
+    eapply senv_equiv.
+
+  - (* External Step *)
+    eapply exec_step_external; eauto.
+    eapply find_ext_funct_refl; eauto.
+    eapply external_call_symbols_preserved; eauto.
+    apply senv_equiv.
+Qed.
 
 
 Lemma transf_program_correct:
@@ -1730,17 +1899,15 @@ Proof.
     unfold globalenv, genv_senv. simpl.
     unfold RelocProgSemantics.globalenv. simpl. intro id.
     rewrite ! RelocProgSemantics.genv_senv_add_external_globals. simpl. auto.
-  + simpl. intros s1 IS.
-    inversion IS.
-    generalize (transf_initial_states _ _ IS).
-    auto.
+  + simpl. intros s1 IS. exists s1. split; eauto.
+    eapply transf_initial_states; eauto.
   +  (* final state *)
-    intros s1 s2 r HState HFinal.
+    intros s1 s2 r HState HFinal. inv HState.
     eapply transf_final_states; eauto.
   + simpl. intros s1 t s1' HStep s2 HState.
-    fold ge in HStep.
-    generalize(step_simulation _ _ _ HStep s2 HState).
-    auto.
+    inv HState.
+    exists s1'. split; eauto.
+    eapply step_simulation; eauto.
 Qed.
     
 

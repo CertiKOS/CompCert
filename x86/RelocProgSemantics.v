@@ -912,6 +912,31 @@ Definition globalenv (p: program) : Genv.t :=
   let extfuns := gen_extfuns p.(prog_defs) in
   add_external_globals extfuns genv p.(prog_symbtable).
 
+Lemma acc_instr_map_inv: forall c ofs map ofs' map' i o,
+      fold_left acc_instr_map c (ofs, map) = (ofs', map') ->
+      map' o = Some i -> In i c \/ map o = Some i.
+Proof.
+  induction c as [|i' c'].
+  - cbn. intros. right. inv H. auto.
+  - intros ofs map ofs' map' i o ACC MAP.
+    cbn in ACC.
+    exploit IHc'; eauto.
+    intros [IN | MP]; eauto.
+    destr_in MP; auto. inv MP. auto.
+Qed.
+
+Lemma global_env_find_instr_inv: forall prog b ofs i,
+    Genv.find_instr (globalenv prog) (Vptr b ofs) = Some i ->
+    exists c, SecTable.get sec_code_id (prog_sectable prog) = Some (sec_text c) /\ In i c.
+Proof.
+  intros prog b ofs i FI.
+  unfold Genv.find_instr, globalenv in FI. cbn in FI.
+  erewrite add_external_globals_pres_instrs in FI; eauto. cbn in FI.
+  cbn. unfold gen_instr_map' in FI. repeat destr_in FI.
+  unfold gen_instr_map in H0. destr_in H0.
+  exploit acc_instr_map_inv; eauto.
+  intros [IN | MP]; eauto. congruence.
+Qed.
 
 
 (** Initialization of memory *)

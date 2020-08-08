@@ -70,3 +70,7 @@ doc/html/
 c_examples/*.out
 c_examples/comp_result.txt
 c_examples/gcc_result.txt
+*.noinline
+extraction/*.ml
+extraction/*.mli
+extraction/STAMP
