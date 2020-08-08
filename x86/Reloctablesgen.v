@@ -218,10 +218,12 @@ Definition transl_instr' (sofs:Z) (i: instruction) : res (list relocentry) :=
     do e <- compute_instr_disp_relocentry sofs i disp;
       OK [e]
   (* Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"] *)
-  | Pmovzw_rm rd a =>
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
-  | Pmovsw_rm rd a =>
-    Error [MSG "Relocation failed: "; MSG (instr_to_string i); MSG " not supported yet"]
+  | Pmovzw_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+      OK [e]    
+  | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+      OK [e]
   (** Integer arithmetic *)
   | Pleal rd (Addrmode rb ss (inr disp))  =>
     do e <- compute_instr_disp_relocentry sofs i disp;
@@ -235,10 +237,12 @@ Definition transl_instr' (sofs:Z) (i: instruction) : res (list relocentry) :=
   | Pmov_mr_a (Addrmode rb ss (inr disp)) rs =>   (**r like [Pmov_mr], using [Many64] chunk *)
     do e <- compute_instr_disp_relocentry sofs i disp;
       OK [e]
-  | Pmovsd_fm_a rd a => (**r like [Pmovsd_fm], using [Many64] chunk *)
-    Error [MSG "Relocation failed:"; MSG (instr_to_string i); MSG "not supported yet"]
-  | Pmovsd_mf_a a r1 =>  (**r like [Pmovsd_mf], using [Many64] chunk *)
-    Error [MSG "Relocation failed:"; MSG (instr_to_string i); MSG "not supported yet"]
+  | Pmovsd_fm_a rd (Addrmode rb ss (inr disp)) => (**r like [Pmovsd_fm], using [Many64] chunk *)
+    do e <- compute_instr_disp_relocentry sofs i disp;
+      OK [e]
+  | Pmovsd_mf_a (Addrmode rb ss (inr disp)) r1 =>  (**r like [Pmovsd_mf], using [Many64] chunk *)
+    do e <- compute_instr_disp_relocentry sofs i disp;
+      OK [e]
   | _ =>
     OK []
   end.
@@ -453,11 +457,11 @@ Definition unsupported i :=
   match i with
   | Pmovq_rm _ _
   | Pmovq_mr _ _
-  | Pmovsd_fm_a _ _
-  | Pmovsd_mf_a _ _
+  (* | Pmovsd_fm_a _ _
+  | Pmovsd_mf_a _ _ *)
   (* | Pmovsb_rm _ _ *)
-  | Pmovzw_rm _ _
-  | Pmovsw_rm _ _
+  (* | Pmovzw_rm _ _
+  | Pmovsw_rm _ _ *)
   | Pleaq _ _
     => true
   | Pbuiltin _ args _ =>
