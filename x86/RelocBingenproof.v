@@ -1150,37 +1150,6 @@ Proof.
     simpl. auto.
 Qed.
 
-(* Lemma spec_inj: forall code l l' ofs rtbl symtbl, *)
-(*     transl_code_spec code l ofs rtbl symtbl *)
-(*     ->transl_code_spec code l' ofs rtbl symtbl *)
-(*     -> l = l'. *)
-(* Proof. *)
-(*   induction code. *)
-(*   (* bc *) *)
-(*   admit. *)
-(*   intros l l' ofs rtbl symtbl HL HL'. *)
-(*   simpl in HL, HL'. *)
-(*   (* HELP *) *)
-(*   (* describe the relation between `bytes` and `t` in *) *)
-(*   (* fmc_instr_decode rtbl symbt ofs bytes = OK(i, t) *) *)
-(* Admitted.   *)
-
-
-(* Lemma spec_length_rel: forall code l  ofs rtbl symtbl, *)
-(*     transl_code_spec code l ofs rtbl symtbl *)
-(*     -> instr_size_acc code = Z.of_nat (length l). *)
-(* Proof. *)
-(*   induction code. *)
-(*   (* bc *) *)
-(*   admit. *)
-(*   intros l ofs rtbl symtbl HSpec. *)
-(*   cbn [ transl_code_spec] in HSpec. *)
-(*   destruct HSpec as (h' &  t' & HDecode & HInstrEq & HTransl). *)
-(*   assert(HLength: Z.of_nat(length l) = Z.of_nat(length t') + instr_size h'). { *)
-    
-(*   generalize (IHcode _ _ _ _ HTransl). *)
-(*   intros H. *)
-(* Admitted. *)
     
 
 Lemma transl_code_spec_length: forall code l ofs rtbl,
@@ -1311,6 +1280,69 @@ Definition prog_eq prog tprog:=
   /\ prog.(prog_senv) = tprog.(prog_senv)
   /\ prog.(prog_strtable) = tprog.(prog_strtable).
 (* sectable is not equal!! globalenv prog = globalenv tprog *)
+Ltac destr_prog_eq H :=
+    match goal with
+    | [H: prog_eq _ _ |- _]=>
+      unfold prog_eq in H;
+      destruct H as (?HDef & ?HMain & ?HPub & ?HSym & ?HREloc & ?HSenv & ?HStr);
+      try rewrite HDef;
+      try rewrite HMain;
+      try rewrite HPub;
+      try rewrite HSym;
+      try rewrite HREloc;
+      try rewrite HSenv;
+      try rewrite HStr
+    end.
+
+Definition genv_eq ge ge' :=
+  ge.(RelocProgSemantics.Genv.genv_symb) = ge'.(RelocProgSemantics.Genv.genv_symb)
+  /\ge.(RelocProgSemantics.Genv.genv_ext_funs) = ge'.(RelocProgSemantics.Genv.genv_ext_funs)
+  /\ge.(RelocProgSemantics.Genv.genv_next) = ge'.(RelocProgSemantics.Genv.genv_next)
+  /\ge.(RelocProgSemantics.Genv.genv_senv) = ge'.(RelocProgSemantics.Genv.genv_senv).
+
+Ltac destr_genv_eq H:=
+    match goal with
+    |[H: genv_eq _ _ |- _ ] =>
+     unfold genv_eq in H;
+     destruct H as (?HSymb & ?HExtF & ?HNext & ?HSenv)
+    end.
+
+
+Lemma add_ext_genv_eq_pre': forall ge ge' extfuns symbol,
+    genv_eq ge ge'
+    ->  genv_eq (RelocProgSemantics.add_external_global extfuns ge symbol) (RelocProgSemantics.add_external_global extfuns ge' symbol).
+Proof.
+  intros ge ge' extfuns symbol HEq.
+  unfold RelocProgSemantics.add_external_global.
+  unfold genv_eq. simpl.
+
+  generalize HEq. intros H.
+  destr_genv_eq H.
+  rewrite HSymb.
+  rewrite HExtF.
+  rewrite HNext.
+  rewrite HSenv.
+  repeat split; auto.
+Qed.
+
+Lemma add_ext_genv_eq_pre: forall symbt extfuns ge ge',
+   genv_eq ge ge'
+    ->  genv_eq (RelocProgSemantics.add_external_globals extfuns ge symbt) (RelocProgSemantics.add_external_globals extfuns ge' symbt).
+Proof.
+  induction symbt.
+  intros extfuns ge ge' H.
+  simpl.
+  auto.
+  
+  intros extfuns ge ge' H.
+  simpl.
+  generalize (add_ext_genv_eq_pre' ge ge' extfuns a H).
+  intros HAddEq.
+  apply(IHsymbt extfuns _ _ HAddEq).
+Qed.
+
+
+
 
 Lemma prog_eq_transitivity: forall a b c,
     prog_eq a b
@@ -1353,13 +1385,62 @@ Definition get_prog_code prog :=
       end
   end.
 
+Lemma prog_eq_to_genv_eq: forall prog tprog,
+    prog_eq prog tprog ->
+    genv_eq (RelocProgSemantics.globalenv prog)
+            (RelocProgSemantics.globalenv tprog).
+Proof.
+  intros prog tprog HProgEq.
+  unfold RelocProgSemantics.globalenv.
+  remember {|
+       RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
+                                          (prog_symbtable prog);
+       RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
+                                          external_function;
+       RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
+                                          (SecTable.get
+                                          sec_code_id
+                                          (prog_sectable prog));
+       RelocProgSemantics.Genv.genv_next := 3%positive;
+       RelocProgSemantics.Genv.genv_senv := prog_senv prog |} as env1.
+  remember {|
+       RelocProgSemantics.Genv.genv_symb := RelocProgSemantics.gen_symb_map
+                                          (prog_symbtable tprog);
+       RelocProgSemantics.Genv.genv_ext_funs := Maps.PTree.empty
+                                          external_function;
+       RelocProgSemantics.Genv.genv_instrs := RelocProgSemantics.gen_instr_map'
+                                          (SecTable.get
+                                          sec_code_id
+                                          (prog_sectable tprog));
+       RelocProgSemantics.Genv.genv_next := 3%positive;
+       RelocProgSemantics.Genv.genv_senv := prog_senv tprog |} as env2.
+  assert(Heqenv12: genv_eq env1 env2). {
+    subst env1. subst env2.
+    destr_prog_eq HProgEq.
+    unfold genv_eq. simpl.
+    auto.
+  }
+  destr_prog_eq HProgEq.
+  generalize (add_ext_genv_eq_pre (prog_symbtable tprog) (RelocProgSemantics.gen_extfuns (prog_defs tprog)) _ _ Heqenv12).
+  intros HgenvEq.
+  auto.
+Qed.
 
 Lemma symbol_address_transf: forall prog tprog sym ofs,
     prog_eq prog tprog ->
     (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv prog) sym ofs) = 
     (RelocProgSemantics.Genv.symbol_address (RelocProgSemantics.globalenv tprog) sym ofs).
-clear.
-Admitted.
+Proof.
+  intros prog tprog sym ofs HProgEq.
+
+  generalize (prog_eq_to_genv_eq _ _ HProgEq).
+  intros HGenvEq.
+  unfold RelocProgSemantics.Genv.symbol_address.
+  destr_genv_eq HGenvEq.
+  unfold RelocProgSemantics.Genv.find_symbol.
+  rewrite HSymb.
+  auto.
+Qed.
 
 Definition code_section_eq (t1 t2: option section) := 
   match t1, t2 with
@@ -1452,83 +1533,10 @@ Local Existing Instance mem_accessors_default.
 (** This lemma is not correct.
     ofs must be zero here since transl_init_data_list always begins from zero **)
 
-Lemma init_data_list_relf: forall init m b ofs result bytes prog,
+Axiom init_data_list_relf: forall init m b ofs result bytes prog,
     store_init_data_list (globalenv prog) m b ofs init = Some result
     -> transl_init_data_list (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog))) init = OK bytes
     -> store_init_data_bytes m b ofs bytes = Some result.
-Proof.
-  (* unfold transl_init_data_list. *)
-  induction init.
-  (* bc *)
-  admit.
-
-  intros m b ofs result bytes prog HInit HTransl.
-  simpl in HInit.
-  set (rofs := (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog)))) in *.
-  assert(exists l dbytes,
-            transl_init_data rofs 0 a = OK dbytes
-            /\ bytes = dbytes ++ l) by admit.
-  destruct H as (l & dbytes & HDB & HBytes).
-  unfold transl_init_data_list in HTransl. simpl in HTransl. monadInv HTransl.
-  
-  
-  (* Lemma xxxx:forall, *)
-  (*     store_init_data_list env m b ofs  *)
-  (*     fold_left (acc_init_data romap) init (OK (rofs, bytes)) = OK (ofs',rev dbytes++bytes) *)
-  (*     ->store      *)
-    
-  (* (** got a problem here *) *)
-  
-  
-
-Admitted.
-
-Definition genv_eq ge ge' :=
-  ge.(RelocProgSemantics.Genv.genv_symb) = ge'.(RelocProgSemantics.Genv.genv_symb)
-  /\ge.(RelocProgSemantics.Genv.genv_ext_funs) = ge'.(RelocProgSemantics.Genv.genv_ext_funs)
-  /\ge.(RelocProgSemantics.Genv.genv_next) = ge'.(RelocProgSemantics.Genv.genv_next)
-  /\ge.(RelocProgSemantics.Genv.genv_senv) = ge'.(RelocProgSemantics.Genv.genv_senv).
-
-Ltac destr_genv_eq H:=
-    match goal with
-    |[H: genv_eq _ _ |- _ ] =>
-     unfold genv_eq in H;
-     destruct H as (?HSymb & ?HExtF & ?HNext & ?HSenv)
-    end.
-
-
-Lemma add_ext_genv_eq_pre': forall ge ge' extfuns symbol,
-    genv_eq ge ge'
-    ->  genv_eq (RelocProgSemantics.add_external_global extfuns ge symbol) (RelocProgSemantics.add_external_global extfuns ge' symbol).
-Proof.
-  intros ge ge' extfuns symbol HEq.
-  unfold RelocProgSemantics.add_external_global.
-  unfold genv_eq. simpl.
-
-  generalize HEq. intros H.
-  destr_genv_eq H.
-  rewrite HSymb.
-  rewrite HExtF.
-  rewrite HNext.
-  rewrite HSenv.
-  repeat split; auto.
-Qed.
-
-Lemma add_ext_genv_eq_pre: forall symbt extfuns ge ge',
-   genv_eq ge ge'
-    ->  genv_eq (RelocProgSemantics.add_external_globals extfuns ge symbt) (RelocProgSemantics.add_external_globals extfuns ge' symbt).
-Proof.
-  induction symbt.
-  intros extfuns ge ge' H.
-  simpl.
-  auto.
-  
-  intros extfuns ge ge' H.
-  simpl.
-  generalize (add_ext_genv_eq_pre' ge ge' extfuns a H).
-  intros HAddEq.
-  apply(IHsymbt extfuns _ _ HAddEq).
-Qed.
 
 Variables prog tprog: program.
 
@@ -2001,7 +2009,19 @@ Admitted.
 Lemma eval_builtin_args_pres: forall idofs e sp m al vl,
     eval_builtin_args preg ge idofs e sp m al vl ->
     eval_builtin_args preg tge idofs e sp m al vl.
-Admitted.
+Proof.
+  induction 1; simpl; intros; eauto. constructor.
+  unfold eval_builtin_args.
+  assert(HEvalHead: eval_builtin_arg preg tge idofs e sp m a1 b1). {
+    induction H;
+      try econstructor; try auto; try eauto.
+
+    rewrite symbol_address_refl. auto.
+    rewrite<- symbol_address_refl. fold tge. econstructor.
+    auto.
+  }
+  apply list_forall2_cons; auto.
+Qed.
 
 Lemma senv_equiv: Senv.equiv (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv ge))
                              (RelocProgSemantics.Genv.genv_senv (Genv.genv_genv tge)).
