@@ -3313,10 +3313,10 @@ Qed.
 
 Lemma match_prog_perm: forall p tp,
     match_prog p tp ->
-    match_prog p 
-               {| AST.prog_defs := prog_defs tp;
-                  AST.prog_public := prog_public tp;
-                  AST.prog_main := prog_main tp |}.
+    PermuteProgSep.match_prog p 
+                              {| AST.prog_defs := prog_defs tp;
+                                 AST.prog_public := prog_public tp;
+                                 AST.prog_main := prog_main tp |}.
 Proof.
   intros p tp MATCH.
   red in MATCH.

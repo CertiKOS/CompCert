@@ -366,7 +366,7 @@ Definition match_prog_reloc :=
   pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) reloc_asm_passes)).
 
 Definition test_symbtablegen_passes :=
-  (mkpass PermuteProgproof.match_prog ::: mkpass SymbtablegenSep.match_prog ::: pass_nil _).
+  (mkpass PermuteProgSep.match_prog ::: mkpass SymbtablegenSep.match_prog ::: pass_nil _).
 
 Definition match_prog_test_symbtablegen :=
   pass_match (compose_passes (passes_app (passes_app CompCert's_passes real_asm_passes) test_symbtablegen_passes)).
@@ -382,7 +382,7 @@ Definition bytes_passes :=
   mkpass Asmlabelgenproof.match_prog
   ::: mkpass PadNopsproof.match_prog
   ::: mkpass PadInitDataproof.match_prog
-  ::: mkpass PermuteProgproof.match_prog
+  ::: mkpass PermuteProgSep.match_prog
   ::: mkpass SymbtablegenSep.match_prog
   ::: mkpass Reloctablesgenproof.match_prog
   ::: mkpass RelocBingenproof.match_prog
@@ -1026,7 +1026,7 @@ Qed.
 
 Axiom Perm_fn_stack_requirements_match: 
   forall p tp
-    (FM: PermuteProgproof.match_prog p tp),
+    (FM: PermuteProgSep.match_prog p tp),
     fn_stack_requirements p = fn_stack_requirements tp.
 
 
@@ -1123,7 +1123,7 @@ Proof.
   eapply compose_forward_simulations.
   eapply PadInitDataproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.
-  eapply PermuteProgproof.transf_program_correct; eauto.
+  eapply PermuteProgSep.transf_program_correct; eauto.
   red in SG. destruct SG as (p11 & SG & SYNEQ).
   eapply compose_forward_simulations.
   eapply Symbtablegenproof.transf_program_correct; eauto.

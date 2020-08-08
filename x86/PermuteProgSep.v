@@ -13,6 +13,12 @@ Require Import LocalLib.
 
 Local Transparent Linker_prog_ordered.
 
+(** matching modulo the permutation of definitions *)
+
+Definition match_prog {F V} (p tp: AST.program F V) :=
+  Permutation (prog_defs p) (prog_defs tp) 
+  /\ prog_main p = prog_main tp
+  /\ prog_public p = prog_public tp.
 
 Lemma prog_option_defmap_perm: 
   forall {F V} {LF: Linker F} {LV: Linker V}
@@ -178,12 +184,6 @@ Qed.
 
 Require Import Asm RealAsm.
 
-(** matching modulo the permutation of definitions *)
-
-Definition match_prog {F V} (p tp: AST.program F V) :=
-  Permutation (prog_defs p) (prog_defs tp) 
-  /\ prog_main p = prog_main tp
-  /\ prog_public p = prog_public tp.
 
 Lemma transf_program_match:
   forall F V (p: AST.program F V), match_prog p p.
