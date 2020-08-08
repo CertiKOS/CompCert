@@ -7,8 +7,8 @@
 Require Import Coqlib Errors Maps.
 Require Import Integers Floats AST.
 Require Import Values Memory Events Linking OrderedLinking.
-Require Import Permutation.
-Require Import PermuteProgproof.
+Require Import Permutation Smallstep.
+Require Import PermuteProgproof Globalenvs.
 Require Import LocalLib.
 
 Local Transparent Linker_prog_ordered.
@@ -174,3 +174,38 @@ Proof.
   congruence.
   congruence.
 Qed.
+
+
+Require Import Asm RealAsm.
+
+(** matching modulo the permutation of definitions *)
+
+Definition match_prog {F V} (p tp: AST.program F V) :=
+  Permutation (prog_defs p) (prog_defs tp) 
+  /\ prog_main p = prog_main tp
+  /\ prog_public p = prog_public tp.
+
+Lemma transf_program_match:
+  forall F V (p: AST.program F V), match_prog p p.
+Proof.
+  intros. red. 
+  repeat (split; auto).
+Qed.
+
+(** Preservation of semantics under permutation *)
+Section PRESERVATION.
+
+Context `{external_calls_prf: ExternalCalls}.
+
+Variable prog: Asm.program.
+Variable tprog: Asm.program.
+Hypothesis TRANSF: match_prog prog tprog.
+
+Let ge := Genv.globalenv prog.
+Let tge := Genv.globalenv tprog.
+
+Axiom transf_program_correct:
+  forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef))
+                     (RealAsm.semantics tprog (Pregmap.init Vundef)).
+
+End PRESERVATION.

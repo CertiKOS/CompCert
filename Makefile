@@ -121,10 +121,8 @@ BACKEND=\
   ShstrtableEncode.v RelocElfgen.v RelocElfgenproof.v \
 	SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v RelocProgSyneqproof.v \
-  SymbtablegenSep.v Symbtablegenproof.v Symbtablegenproof1.v\
-  PermuteProgproof.v PermuteProgSep.v \
-  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
+  RelocProgSyneq.v SymbtablegenSep.v Symbtablegenproof.v Symbtablegenproof1.v\
+  PermuteProgSep.v RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
   TablesEncodeproof.v Reloctablesgenproof.v \
 	RemoveAddend.v RemoveAddendproof.v \
   RelocBinDecode.v \
