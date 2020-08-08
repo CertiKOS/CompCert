@@ -77,3 +77,39 @@ Proof.
   eapply Permutation_trans; eauto.
   eapply symbtable_syneq_trans; eauto.
 Qed.
+
+
+Definition match_prog p tp :=
+  reloc_prog_syneq p tp.
+
+Lemma transf_program_match:
+  forall p tp, reloc_prog_syneq p tp -> match_prog p tp.
+Proof.
+  intros. subst. red. 
+  auto.
+Qed.
+
+Require Import Values Memory Events Smallstep.
+Require Import RealAsm RelocProgram RelocProgSemantics.
+
+Section PRESERVATION.
+
+Existing Instance inject_perm_all.
+Context `{external_calls_prf: ExternalCalls}.
+
+Local Existing Instance mem_accessors_default.
+
+
+Variable p: program.
+Variable tp: program.
+
+Let ge := globalenv p.
+Let tge := globalenv tp.
+
+Hypothesis TRANSF: match_prog p tp.
+
+Axiom transf_program_correct:
+  forall rs, forward_simulation (semantics p rs) (semantics tp rs).
+Proof.
+
+End PRESERVATION.

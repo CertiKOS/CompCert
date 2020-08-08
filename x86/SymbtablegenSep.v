@@ -19,6 +19,7 @@ Require Import Permutation.
 Require Import LocalLib.
 Require Import Symbtablegenproof1.
 Require Import AsmFacts.
+Require Import SizeBoundAxioms.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -654,8 +655,6 @@ Qed.
 
 End WithFunVar.
 (** *)
-
-Axiom defs_size_inbound: forall defs, sections_size (create_sec_table defs) <= Ptrofs.max_unsigned.
 
 (** Preparation for proofs of linking code and data sections *)
 
@@ -3395,7 +3394,17 @@ Lemma data_size_aligned_perm: forall p p',
     Forall data_size_aligned (map snd (AST.prog_defs p)) ->
     Forall data_size_aligned (map snd (AST.prog_defs p')).
 Proof.
-Admitted.
+  intros p p' PERM ALIGN.
+  rewrite Forall_forall in *.
+  intros x IN.
+  eapply ALIGN; eauto.
+  apply list_in_map_inv in IN.
+  destruct IN as (x' & EQ & IN').
+  subst.
+  apply in_map.
+  apply Permutation_sym in PERM. 
+  eapply Permutation_in; eauto.
+Qed.
 
 Lemma wf_prog_perm: forall p p',
     Permutation (AST.prog_defs p) (AST.prog_defs p') ->
@@ -3573,6 +3582,114 @@ Proof.
     eauto.
 Qed.
 
+Lemma eq_gvar_init_pres_data_size_aligned : forall v1 v2,
+    gvar_init v1 = gvar_init v2 
+    -> data_size_aligned (Some (Gvar v1))
+    -> data_size_aligned (Some (Gvar v2)).
+Proof.
+  intros. red in H0. red.
+  cbn in *. rewrite <- H. auto.
+Qed.
+
+Hint Resolve alignw0.
+
+Lemma link_varinit_internal_external_pres_data_size_aligned:
+  forall (v1 v2: globvar unit) l inf rd vl,
+    is_var_internal v2 = false
+    -> data_size_aligned (Some (Gvar v1))
+    -> link_varinit (gvar_init v1) (gvar_init v2) = Some l
+    -> data_size_aligned (Some (Gvar (mkglobvar inf l rd vl))).
+Proof.
+  intros v1 v2 l inf rd vl INT2 ALIGN LINK.
+  destruct (is_var_internal v1) eqn:INT1.
+  - generalize (link_internal_external_varinit _ _ _ INT1 INT2 LINK).
+    destruct 1 as (EQ & CLS). subst.   
+    apply eq_gvar_init_pres_data_size_aligned with v1; auto.
+  - generalize (link_external_varinit _ _ _ INT1 INT2 LINK).
+    intros CLS.
+    destruct l. red. cbn. auto.
+    cbn in *. destruct i; try congruence.
+    destruct l; try congruence. 
+    red. cbn. auto.
+Qed.
+
+
+Lemma link_vardef_internal_external_pres_data_size_aligned:
+  forall v1 v2 v,
+    is_var_internal v2 = false
+    -> data_size_aligned (Some (Gvar v1))
+    -> link_vardef v1 v2 = Some v
+    -> data_size_aligned (Some (Gvar v)).
+Proof.
+  intros v1 v2 v INT ALIGN LINK.
+  unfold link_vardef in LINK. 
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  destr_in LINK; try congruence.
+  inv LINK. unfold is_var_internal in INT.
+  eapply link_varinit_internal_external_pres_data_size_aligned; eauto.
+Qed.
+  
+
+Lemma external_var_data_size_aligned: forall v,
+    is_var_internal v = false -> data_size_aligned (Some (Gvar v)).
+Proof.
+  intros v INT. red. cbn.
+  unfold is_var_internal in INT.
+  cbn. destruct (gvar_init v); cbn in *; try congruence.
+  auto.
+  destruct i; cbn in *; try congruence.
+  destruct l; cbn in *; try congruence.
+  auto.
+Qed.
+
+
+Lemma link_option_internal_external_pres_data_size_aligned: forall def1 def2 def,
+    is_def_internal is_fundef_internal def2 = false
+    -> data_size_aligned def1
+    -> link_option def1 def2 = Some def
+    -> data_size_aligned def.
+Proof.
+  intros def1 def2 def INT ALIGN LINK.
+  destruct def2. destruct g. destruct f; cbn in *; try congruence.
+  - destruct def1. destruct g. destruct f. 
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destruct e; try congruence. 
+    + cbn in LINK. destr_in LINK; try congruence. inv LINK.
+      destr_in Heqo; try congruence; inv Heqo.
+      destr_in Heqo0; try congruence. 
+    + cbn in LINK. congruence.
+    + cbn in LINK. inv LINK. auto.
+  - destruct def1. destruct g.
+    + cbn in *. congruence.
+    + cbn in LINK. destr_in LINK; try congruence.
+      destr_in Heqo; try congruence. inv Heqo. inv LINK.
+      cbn in INT.
+      eapply link_vardef_internal_external_pres_data_size_aligned; eauto.
+    + cbn in *. inv LINK.       
+      eapply external_var_data_size_aligned; eauto.
+  - destruct def1. cbn in LINK. inv LINK. auto.
+    cbn in *. inv LINK. auto.
+Qed.
+
+Lemma link_pres_data_size_aligned :
+  forall def1 def2 def : option (globdef fundef unit),
+    data_size_aligned def1 -> data_size_aligned def2 -> 
+    link def1 def2 = Some def -> data_size_aligned def.
+Proof.
+  intros def1 def2 def AL1 AL2 LINK.
+  cbn in LINK.
+  destruct (is_def_internal is_fundef_internal def1) eqn:INT1.
+  - generalize (link_int_defs_some_inv _ _ INT1 LINK).
+    intros INT2.
+    apply link_option_internal_external_pres_data_size_aligned
+      with (def1 := def1) (def2 := def2); eauto.
+  - setoid_rewrite link_option_symm in LINK; eauto.
+    apply link_option_internal_external_pres_data_size_aligned
+      with (def1 := def2) (def2 := def1); eauto.
+Qed.
+
 Lemma data_size_aligned_combine: 
   forall defs1 defs2,
     Forall data_size_aligned (map snd defs1) ->
@@ -3583,7 +3700,30 @@ Lemma data_size_aligned_combine:
                                       (PTree_Properties.of_list defs1)
                                       (PTree_Properties.of_list defs2)))).
 Proof.
-Admitted.
+  intros defs1 defs2 AL1 AL2.
+  rewrite Forall_forall in *.
+  intros def IN.
+  rewrite in_map_iff in IN.
+  destruct IN as ((id, def') & EQ & IN). cbn in EQ. subst def'.
+  apply PTree.elements_complete in IN.
+  erewrite PTree.gcombine in IN; eauto.
+  unfold link_prog_merge in IN.
+  destr_in IN. destr_in IN.
+  - apply PTree_Properties.in_of_list in Heqo.
+    apply PTree_Properties.in_of_list in Heqo0.
+    apply (in_map snd) in Heqo. cbn in Heqo.
+    apply (in_map snd) in Heqo0. cbn in Heqo0.
+    apply AL1 in Heqo.
+    apply AL2 in Heqo0.    
+    apply link_pres_data_size_aligned with (def1:= o) (def2 := o0); eauto.
+  - inv IN.
+    apply PTree_Properties.in_of_list in Heqo.
+    apply (in_map snd) in Heqo. cbn in Heqo.
+    eauto.
+  - apply PTree_Properties.in_of_list in IN.
+    apply (in_map snd) in IN. cbn in IN.
+    eauto.
+Qed.
 
 
 Lemma link_prog_pres_wf_prog: forall p1 p2 p,

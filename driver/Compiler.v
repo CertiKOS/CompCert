@@ -82,17 +82,14 @@ Require PadNops.
 Require PadNopsproof.
 Require PadInitData.
 Require PadInitDataproof.
-Require PadInitDataSep.
 Require Symbtablegen.
 Require SymbtablegenSep.
 Require Symbtablegenproof.
 (* Require NormalizeSymb. *)
 Require Asmpielim.
 Require Reloctablesgen.
-Require Reloctablesgen2.
 Require Reloctablesgenproof.
 Require RelocBingen.
-Require RelocBingen2.
 (* Require RelocBingenproof. *)
 Require Stubgen.
 Require StrtableEncode.
@@ -106,10 +103,8 @@ Require ShstrtableEncode.
 Require TablesEncodeproof.
 Require OrderedLinking.
 Require SymbtablegenSep.
-Require PermuteProgproof.
 Require PermuteProgSep.
 Require RelocProgSyneq.
-Require RelocProgSyneqproof.
 Require EncodeElfCorrect.
 Require RemoveAddend RemoveAddendproof.
 (** Command-line flags. *)
@@ -1029,56 +1024,41 @@ Proof.
   erewrite <- PadInitDataproof.find_funct_ptr_transf; eauto.
 Qed.
 
-Lemma Perm_fn_stack_requirements_match: 
+Axiom Perm_fn_stack_requirements_match: 
   forall p tp
     (FM: PermuteProgproof.match_prog p tp),
     fn_stack_requirements p = fn_stack_requirements tp.
-Proof.
-Admitted.
 
-Lemma Symbtablegen_fn_stack_requirements_match: 
+
+Axiom Symbtablegen_fn_stack_requirements_match: 
   forall p tp
     (FM: SymbtablegenSep.match_prog p tp),
     fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
 
-Lemma Reloctablesgen_fn_stack_requirements_match: 
+Axiom Reloctablesgen_fn_stack_requirements_match: 
   forall p tp
     (FM: Reloctablesgenproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
 
-
-Lemma RelocBingen_fn_stack_requirements_match: 
+Axiom RelocBingen_fn_stack_requirements_match: 
   forall p tp
     (FM: RelocBingenproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
 
-Lemma RemoveAddend_fn_stack_requirements_match: 
+Axiom RemoveAddend_fn_stack_requirements_match: 
   forall p tp
     (FM: RemoveAddendproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
 
-Lemma TablesEncode_fn_stack_requirements_match: 
+Axiom TablesEncode_fn_stack_requirements_match: 
   forall p tp
     (FM: TablesEncodeproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-Proof.
-Admitted.
 
-
-Lemma RelocElfGen_fn_stack_requirements_match: 
+Axiom RelocElfGen_fn_stack_requirements_match: 
   forall p tp
     (FM: RelocElfgenproof.match_prog p tp),
     reloc_fn_stack_requirements p = elf_fn_stack_requirements tp.
-Proof.
-Admitted.
 
 Lemma ElfEncode_fn_stack_requirements_match: 
   forall p tp
@@ -1148,7 +1128,7 @@ Proof.
   eapply compose_forward_simulations.
   eapply Symbtablegenproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.
-  apply RelocProgSyneqproof.transf_program_correct; eauto.
+  apply RelocProgSyneq.transf_program_correct; eauto.
   eapply compose_forward_simulations.
   eapply Reloctablesgenproof.transf_program_correct; eauto.
   eapply compose_forward_simulations.

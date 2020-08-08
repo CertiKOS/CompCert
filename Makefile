@@ -112,23 +112,21 @@ BACKEND=\
   RelocProgram.v \
   Asmpielim.v\
   Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
-  PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
-  Symbtablegen.v  Reloctablesgen.v Reloctablesgen2.v  Reloctablesgenproof.v \
-	RelocBingen.v RelocBingen2.v RelocBinDecode.v RelocBingenproof.v \
+  PadNopsproof.v PadInitDataproof.v \
+  Symbtablegen.v  Reloctablesgen.v  Reloctablesgenproof.v \
+	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
 	TablesEncode.v \
 	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
   ShstrtableEncode.v RelocElfgen.v RelocElfgenproof.v \
 	SeqTable.v SymbolString.v \
   CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
-  RelocProgSyneq.v RelocProgSyneqproof.v \
-  SymbtablegenSep.v Symbtablegenproof.v Symbtablegenproof1.v\
-  PermuteProgproof.v PermuteProgSep.v \
-  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
+  RelocProgSyneq.v SymbtablegenSep.v Symbtablegenproof.v Symbtablegenproof1.v\
+  PermuteProgSep.v RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
   TablesEncodeproof.v Reloctablesgenproof.v \
 	RemoveAddend.v RemoveAddendproof.v \
   RelocBinDecode.v \
-  LocalLib.v AsmInject.v
+  LocalLib.v AsmInject.v SizeBoundAxioms.v
 
 # Encoding of data into bytes
 

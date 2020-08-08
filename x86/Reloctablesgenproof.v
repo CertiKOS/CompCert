@@ -10,6 +10,7 @@ Require Import Op Locations Mach Conventions Asm RealAsm.
 Require Import RelocProgram RelocProgSemantics RelocProgSemantics1.
 Require Import Symbtablegen.
 Require Import Reloctablesgen.
+Require Import SizeBoundAxioms.
 Import ListNotations.
 Require Import Lia.
 
@@ -1681,8 +1682,6 @@ Proof.
   1-4:generalize (addrmode_reloc_offset_addrmode_size a); lia.
   Opaque instr_size.
 Qed.
-
-Axiom code_size_bound : forall c, code_size c < Ptrofs.max_unsigned.
 
 Lemma transl_instr_reloc_offset_range:
   forall sim ofs a l,

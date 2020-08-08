@@ -11,6 +11,7 @@ Require Import RelocProgram RelocProgSemantics3.
 Require Import RelocElf RelocElfSemantics.
 Require Import TablesEncodeproof.
 Require Import RelocElfgen.
+Require Import SizeBoundAxioms.
 Import ListNotations.
 
 Definition match_prog p tp :=
@@ -244,10 +245,11 @@ Proof.
   4-5: eauto. simpl.
   unfold acc_sections in GS. autoinv. simpl.
   rewrite pred_dec_true. eauto.
-  admit.                        (* get_elf_shoff < 2 ^ 32 *)
+  unfold get_elf_shoff. cbn [prog_sectable].
+  eapply sections_size_bound.
   eapply VALID_STR. eauto.
   eapply prog_strings_eq; eauto.
   generalize (f RELOC_CODE). simpl. auto.
   generalize (f RELOC_DATA). simpl. auto.
   rewrite TablesEncode.dump_reloctables_error in H0; congruence.
-Admitted.
+Qed.

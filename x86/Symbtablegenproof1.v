@@ -12,6 +12,7 @@ Require Import CheckDef.
 Require Import RealAsm AsmFacts.
 Require Import LocalLib.
 Require Import Linking.
+Require Import SizeBoundAxioms.
 Require Globalenvs.
 Import ListNotations.
 
@@ -832,17 +833,14 @@ Proof.
     assert (Ptrofs.unsigned ofs < Ptrofs.unsigned (Ptrofs.add ofs' (Ptrofs.repr (instr_size i)))) as LE'.
     { 
       rewrite Ptrofs.add_unsigned.
-      repeat rewrite Ptrofs.unsigned_repr. 
+      repeat rewrite unsigned_repr.
       generalize (instr_size_positive i). omega.
-      apply instr_size_repr.
-      admit.
-      apply instr_size_repr.
     }
     generalize (IHc _ _ _ _ _ ACC LE').
     intros MAP'.
     rewrite MAP'.
     destr. subst. omega.
-Admitted.
+Qed.
 
 Lemma acc_instr_map_pres_find : forall c i ofs ofs' map map' cz,
     find_instr ofs c = Some i ->
@@ -859,25 +857,17 @@ Proof.
       erewrite acc_instr_map_no_effect; eauto.
       cbn. destruct Ptrofs.eq_dec; congruence.
       rewrite Ptrofs.add_unsigned.
-      rewrite Ptrofs.unsigned_repr. 
-      generalize (Ptrofs.unsigned_range (Ptrofs.repr (instr_size i1))).
-      rewrite Ptrofs.unsigned_repr. 
+      repeat rewrite unsigned_repr.
       generalize (instr_size_positive i1). omega.
-      apply instr_size_repr.
-      admit.
     + cbn in ACC.
       exploit IHc; eauto.
       intros MAP.
       rewrite Ptrofs.add_assoc in MAP.
       rewrite <- MAP. f_equal. f_equal.
       rewrite Ptrofs.add_unsigned. 
-      rewrite Ptrofs.unsigned_repr. 
-      rewrite Ptrofs.unsigned_repr. 
+      repeat rewrite unsigned_repr. 
       f_equal. omega.
-      admit.
-      apply instr_size_repr.
-Admitted.
-
+Qed.
 
 Lemma acc_symb_map_size: forall c ofs map cz map',
     fold_left acc_instr_map c (ofs, map) = (cz, map') -> 
@@ -891,12 +881,9 @@ Proof.
     rewrite Ptrofs.add_assoc.
     f_equal.
     rewrite Ptrofs.add_unsigned. 
-    rewrite Ptrofs.unsigned_repr. 
-    rewrite Ptrofs.unsigned_repr. auto.
-    admit.
-    apply instr_size_repr.
-Admitted.
-
+    repeat rewrite unsigned_repr. 
+    cbn. auto.
+Qed.
 
 Lemma code_size_bound: forall defs (id:ident) f,
     In (id, Some (Gfun (Internal f))) defs ->
@@ -937,25 +924,10 @@ Proof.
   - intros.
     cbn in *. contradiction.
   - intros id f ofs i cz t ofs' t' NORPT IN FIND ACC.
-    assert (Ptrofs.unsigned ofs' + odefs_size (map snd (def::defs)) <= Ptrofs.max_unsigned) as SZ. 
-    { admit. }
     inv NORPT.
     generalize (code_size_bound _ _ _ IN). intros CBN.
-    assert (Ptrofs.unsigned ofs' + code_size (fn_code f) <= Ptrofs.max_unsigned) as CBN1.
-    { etransitivity; eauto. 
-      rewrite <- Z.add_le_mono_l. auto. }
-    assert (0 <= code_size (fn_code f) <= Ptrofs.max_unsigned) as CRNG.
-    { split. generalize (code_size_non_neg (fn_code f)). omega.
-      generalize (Ptrofs.unsigned_range ofs'). intros. inv H.
-      etransitivity. exact CBN.
-      apply Z_le_add_l_inv with (Ptrofs.unsigned ofs'); auto. }
     generalize (find_instr_bound _ _ _ FIND). intros IBND.
     generalize (instr_size_positive i). intros IPOS. 
-    assert (0 <= Ptrofs.unsigned ofs + Ptrofs.unsigned ofs' <= Ptrofs.max_unsigned).
-    { split.
-      generalize (Ptrofs.unsigned_range ofs'). 
-      generalize (Ptrofs.unsigned_range ofs); omega. omega.
-    }
     inv IN.
     + cbn in ACC.
       rewrite fold_left_app in ACC.
@@ -971,14 +943,10 @@ Proof.
       exploit acc_symb_map_size; eauto.
       intros. subst. 
       rewrite Ptrofs.add_unsigned.
-      rewrite Ptrofs.unsigned_repr.
+      repeat rewrite unsigned_repr.
       rewrite Ptrofs.add_unsigned.
-      rewrite Ptrofs.unsigned_repr.
-      rewrite Ptrofs.unsigned_repr; auto.
+      repeat rewrite unsigned_repr.
       generalize (code_size_non_neg (fn_code f)). intros. omega.
-      rewrite Ptrofs.unsigned_repr; auto.
-      generalize (Ptrofs.unsigned_range ofs'). omega.
-      auto.
       
     + destruct def as (id', def).
       rewrite defs_before_tail.
@@ -994,13 +962,11 @@ Proof.
       subst. rewrite <- IHR. f_equal. f_equal.
       rewrite Ptrofs.add_assoc. f_equal.
       rewrite Ptrofs.add_unsigned. f_equal.
-      repeat rewrite Ptrofs.unsigned_repr. auto.
-      admit.
-      admit.
+      repeat rewrite unsigned_repr. auto.
       intros ID. subst. apply H1.
       rewrite in_map_iff. cbn. 
       eexists; split; eauto. cbn. auto.
-Admitted.        
+Qed.
 
 Lemma pres_find_instr: forall defs id f ofs i,
     list_norepet (map fst defs) ->
