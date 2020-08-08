@@ -2204,6 +2204,37 @@ Lemma link_sectable_ok:
       RelocLinking.link_sectable sect1' sect2' = Some s' /\
       transl_sectable false s {| reloctable_code := rcode; reloctable_data := rdata |} = OK s'.
 Proof.
+  intros sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim H HTransSec1 HTransSec2 HLinkData HLinkCode.
+  unfold transl_sectable.
+  unfold RelocLinking.link_sectable in H.
+  unfold transl_sectable in HTransSec1.
+  destruct sect1 eqn:EQSect1; inversion HTransSec1.
+  destruct v eqn:EQV; inversion HTransSec1.
+  destruct s0 eqn:EQS0; inversion HTransSec1.
+  destruct v0 eqn:EQV0; inversion HTransSec1.
+  clear H4. clear H3. clear H2.
+  
+  simpl in H.
+  unfold transl_sectable in HTransSec2.
+  destruct sect2 eqn:EQSect2; inversion HTransSec2.
+  destruct v1 eqn:EQV1; inversion HTransSec2.
+  destruct s1 eqn:EQS1; inversion HTransSec2.
+  destruct v2 eqn:EQV2; inversion HTransSec2.
+  simpl in H.
+  clear H5. clear H4. clear H3.
+  inversion H. simpl.
+  destruct l;inversion H1. destruct l0; inversion H2.
+  clear H4. clear H5.
+  monadInv H1.
+  monadInv H2.
+  unfold RelocLinking.link_sectable. simpl.
+  econstructor.
+  split. eauto.
+  unfold bind.
+  destr. destr.
+
+    
+
 Admitted.
 
 
@@ -2229,5 +2260,10 @@ Proof.
   rewrite Heqo0. rewrite Heqo1.
   eexists; split; eauto.
   red. unfold transf_program. simpl.
-  rewrite TS. simpl. unfold bind. destr. destr. admit. admit.
+  rewrite TS. simpl. unfold bind.
+  destr. destr.
+  (* range of z *)
+  admit.
+  
+  admit.
 Admitted.
