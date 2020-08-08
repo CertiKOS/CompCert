@@ -193,6 +193,7 @@ Proof.
   auto.
 Qed.
 
+Axiom Instance TransfPermuteOrderedLink2 : TransfLink match_prog.
 
 Section PRESERVATION.
 

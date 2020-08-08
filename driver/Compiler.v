@@ -82,7 +82,6 @@ Require PadNops.
 Require PadNopsproof.
 Require PadInitData.
 Require PadInitDataproof.
-Require PadInitDataSep.
 Require Symbtablegen.
 Require SymbtablegenSep.
 Require Symbtablegenproof.
