@@ -204,27 +204,15 @@ Hypothesis TRANSF: match_prog prog tprog.
 Let ge := Genv.globalenv prog.
 Let tge := Genv.globalenv tprog.
 
-Lemma find_symbol_transf: forall s,
+Axiom find_symbol_transf: forall s,
+    match_prog prog tprog->
     Genv.find_symbol tge s =
     Genv.find_symbol ge s.
-Proof.
-  intros s.
-  unfold ge. unfold tge.
-  unfold Genv.globalenv.
-  destruct TRANSF as (PERM & MAIN & PUB).
-  rewrite PUB.
-  assert(list_norepet (prog_defs_names prog)) by admit.
-  assert (list_norepet (map fst (prog_defs prog))) by auto.
-  (* destruct PTree.get eqn:EQGet. *)
-  (* generalize (Genv.add_globals_find_symbol_def_inv _ s _ H0 EQGet). *)
-  (* simpl. *)
-Admitted.
 
-Lemma find_funct_ptr_transf: forall v,
+Axiom find_funct_ptr_transf: forall v,
+    match_prog prog tprog->
     Genv.find_funct_ptr tge v =
     Genv.find_funct_ptr ge v.
-Proof.
-Admitted.
 
 Axiom transf_program_correct:
   forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef))

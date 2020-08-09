@@ -1032,9 +1032,9 @@ Proof.
   intros p tp MATCH.
   unfold fn_stack_requirements.
   apply Axioms.extensionality. intro i.
-  rewrite (PermuteProgSep.find_symbol_transf p tp MATCH).
+  rewrite (PermuteProgSep.find_symbol_transf p tp _ MATCH).
   destruct Globalenvs.Genv.find_symbol; auto.
-  rewrite (PermuteProgSep.find_funct_ptr_transf p tp MATCH).
+  rewrite (PermuteProgSep.find_funct_ptr_transf p tp _ MATCH).
   auto.
 Qed.
 
