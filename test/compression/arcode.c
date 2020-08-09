@@ -60,6 +60,7 @@
 #include <limits.h>
 #include "arcode.h"
 #include "bitfile.h"
+#undef XXZ
 
 /* compile-time options */
 #undef BUILD_DEBUG_OUTPUT                   /* debugging output */
@@ -198,6 +199,7 @@ int ArEncodeFile(char *inFile, char *outFile, char staticModel)
     lower = 0;
     upper = ~0;                     /* all ones */
     underflowBits = 0;
+    
 
     /* encode symbols one at a time */
     while ((c = fgetc(fpIn)) != EOF)
@@ -531,11 +533,15 @@ void WriteEncodedBits(bit_file_t *bfpOut)
 {
     for (;;)
     {
+
+        
         if ((upper & MASK_BIT(0)) == (lower & MASK_BIT(0)))
         {
             /* MSBs match, write them to output file */
             BitFilePutBit((upper & MASK_BIT(0)) != 0, bfpOut);
-
+            #ifdef XXZ
+                printf("Hello %x\n",(upper & MASK_BIT(0)) != 0);
+            #endif
             /* we can write out underflow bits too */
             while (underflowBits > 0)
             {
@@ -609,10 +615,15 @@ void WriteRemaining(bit_file_t *bfpOut)
 ***************************************************************************/
 int ArDecodeFile(char *inFile, char *outFile, char staticModel)
 {
+    int debug_i = 0;
     int c;
     probability_t unscaled;
     bit_file_t *bfpIn;
     FILE *fpOut;
+
+    #ifdef XXZ
+            printf("hello here %d\n", debug_i++);
+        #endif
 
     /* open input and output files */
     if ((bfpIn = BitFileOpen(inFile, BF_READ)) == NULL)
@@ -649,18 +660,22 @@ int ArDecodeFile(char *inFile, char *outFile, char staticModel)
     /* read start of code and initialize bounds, and adaptive ranges */
     InitializeDecoder(bfpIn, staticModel);
 
+    
+    
     /* decode one symbol at a time */
     for (;;)
     {
+        
         /* get the unscaled probability of the current symbol */
         unscaled = GetUnscaledCode();
-
+        
         /* figure out which symbol has the above probability */
         if((c = GetSymbolFromProbability(unscaled)) == -1)
         {
             /* error: unknown symbol */
             break;
         }
+
 
         if (c == EOF_CHAR)
         {
@@ -757,6 +772,9 @@ void InitializeDecoder(bit_file_t *bfpIn, char staticModel)
 {
     int i;
 
+    #ifdef XXZ
+            printf("bfpIn:%x\n",bfpIn);
+    #endif
     if (!staticModel)
     {
         /* initialize ranges for adaptive model */
@@ -772,7 +790,7 @@ void InitializeDecoder(bit_file_t *bfpIn, char staticModel)
 
         /* treat EOF like 0 */
         if(BitFileGetBit(bfpIn) == 1)
-        {
+        {        
             code |= 1;
         }
     }
@@ -801,8 +819,8 @@ probability_t GetUnscaledCode(void)
     /* reverse the scaling operations from ApplySymbolRange */
     unscaled = (unsigned long)(code - lower) + 1;
     unscaled = unscaled * (unsigned long)cumulativeProb - 1;
-    unscaled /= range;
-
+    unscaled /= range;  
+    
     return ((probability_t)unscaled);
 }
 
