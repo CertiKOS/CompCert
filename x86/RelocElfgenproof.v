@@ -23,6 +23,27 @@ Proof.
   unfold match_prog; intuition.
 Qed.
 
+Definition prog_eq prog tprog:=
+  prog.(RelocProgram.prog_defs) = tprog.(prog_defs)
+  /\ prog.(RelocProgram.prog_main) = tprog.(prog_main)
+  /\ prog.(RelocProgram.prog_public) = tprog.(prog_public)
+  /\ prog.(RelocProgram.prog_senv) = tprog.(prog_senv).
+
+Lemma prog_tprog_prog_eq: forall prog tprog,
+    match_prog prog tprog
+    ->prog_eq prog tprog.
+Proof.
+  intros prog tprog TRANSF.
+  unfold prog_eq.
+  unfold match_prog in TRANSF.
+  monadInv TRANSF.
+  destruct zlt; inversion EQ2.
+  destruct ((length x =? 7)%nat); inversion EQ2.
+  simpl.
+  repeat split; auto.
+  destruct ((length x =? 7)%nat); inversion EQ2.
+Qed.
+  
 Section PRESERVATION.
   Existing Instance inject_perm_all.
 Context `{external_calls_prf: ExternalCalls}.

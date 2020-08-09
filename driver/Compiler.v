@@ -1035,30 +1035,74 @@ Axiom Symbtablegen_fn_stack_requirements_match:
     (FM: SymbtablegenSep.match_prog p tp),
     fn_stack_requirements p = reloc_fn_stack_requirements tp.
 
+
 Axiom Reloctablesgen_fn_stack_requirements_match: 
   forall p tp
     (FM: Reloctablesgenproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
 
-Axiom RelocBingen_fn_stack_requirements_match: 
+Lemma RelocBingen_fn_stack_requirements_match: 
   forall p tp
     (FM: RelocBingenproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
-
-Axiom RemoveAddend_fn_stack_requirements_match: 
+Proof.
+  intros p tp MATCH.
+  unfold reloc_fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  (* generalize (RelocBingenproof.ge_tge_genv_eq _ _ MATCH). *)
+  (* unfold RelocBingenproof.match_prog in MATCH. *)
+  generalize (RelocBingenproof.prog_tprog_prog_eq _ _ MATCH).
+  intros H.
+  RelocBingenproof.destr_prog_eq H.
+  auto.
+Qed.
+  
+Lemma RemoveAddend_fn_stack_requirements_match: 
   forall p tp
     (FM: RemoveAddendproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
+Proof.
+  intros p tp MATCH.
+  unfold reloc_fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  unfold RemoveAddendproof.match_prog in MATCH.
+  generalize (RemoveAddendproof.prog_tprog_prog_eq _ _ MATCH).
+  intros H.
+  unfold RemoveAddendproof.prog_eq in H.
+  destruct H as (DEF & MAIN & PUB & SYMB & SENV & STR).
+  rewrite DEF. auto.
+Qed.
 
-Axiom TablesEncode_fn_stack_requirements_match: 
+
+Lemma TablesEncode_fn_stack_requirements_match: 
   forall p tp
     (FM: TablesEncodeproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
+Proof.
+    intros p tp MATCH.
+    unfold reloc_fn_stack_requirements.
+    apply Axioms.extensionality. intro i.
+    generalize (TablesEncodeproof.prog_tprog_prog_eq _ _ MATCH).
+    intros HEq.
+    unfold TablesEncodeproof.prog_eq in HEq.
+    destruct HEq as (DEF & MAIN & PUB & SYM & SENV).
+    rewrite DEF. auto.
+Qed.
 
-Axiom RelocElfGen_fn_stack_requirements_match: 
+Lemma RelocElfGen_fn_stack_requirements_match: 
   forall p tp
     (FM: RelocElfgenproof.match_prog p tp),
     reloc_fn_stack_requirements p = elf_fn_stack_requirements tp.
+Proof.
+   intros p tp MATCH.
+    unfold reloc_fn_stack_requirements.
+    apply Axioms.extensionality. intro i.
+    generalize (RelocElfgenproof.prog_tprog_prog_eq _ _ MATCH).
+    intros HEq.
+    destruct HEq as (DEF & MAIN & PUB & SENV).
+    rewrite DEF.
+    auto.
+Qed.
 
 Lemma ElfEncode_fn_stack_requirements_match: 
   forall p tp

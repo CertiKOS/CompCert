@@ -22,6 +22,55 @@ Proof.
   intros. red. auto.
 Qed.
 
+
+Definition prog_eq prog tprog:=
+  prog.(prog_defs) = tprog.(prog_defs)
+  /\  prog.(prog_main) = tprog.(prog_main)
+  /\ prog.(prog_public) = tprog.(prog_public)
+  /\ prog.(prog_symbtable) = tprog.(prog_symbtable)
+  /\ prog.(prog_senv) = tprog.(prog_senv).
+
+Lemma prog_tprog_prog_eq: forall prog tprog,
+    transf_program  prog = OK tprog
+    ->prog_eq prog tprog.
+Proof.
+  intros prog tprog TRANSF.
+  unfold prog_eq.
+  monadInv TRANSF.
+  destruct x. destruct p.
+  destruct forall_valid_symbentry_dec; inversion EQ0.
+  destruct strtable_empty_dec; inversion EQ0.
+  destruct norepet_symbs_dec; inversion EQ0.
+  rewrite dump_reloctables_error in EQ0.
+  destruct reloctables_ok_dec; inversion EQ0.
+  clear H0. clear H1. clear H2. clear H3.
+  monadInv EQ0.
+  destruct ((length
+             (prog_sectable
+                {|
+                prog_defs := prog_defs prog;
+                prog_public := prog_public prog;
+                prog_main := prog_main prog;
+                prog_sectable := prog_sectable prog ++
+                                 [create_strtab_section l; x;
+                                 create_reloctable_section
+                                   (reloctable_data
+                                      (prog_reloctables prog));
+                                 create_reloctable_section
+                                   (reloctable_code
+                                      (prog_reloctables prog));
+                                 create_shstrtab_section];
+                prog_symbtable := prog_symbtable prog;
+                prog_strtable := t;
+                prog_reloctables := prog_reloctables prog;
+                prog_senv := prog_senv prog |}) =? 7)%nat);
+    inversion EQ2.
+  simpl. 
+  repeat split; auto.
+Qed.
+  
+
+
 (** Preservation of semantics under permutation *)
 Section PRESERVATION.
 

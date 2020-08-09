@@ -17,6 +17,27 @@ Proof.
   intros. red. auto.
 Qed.
 
+Definition prog_eq prog tprog:=
+  prog.(prog_defs) = tprog.(prog_defs)
+  /\  prog.(prog_main) = tprog.(prog_main)
+  /\ prog.(prog_public) = tprog.(prog_public)
+  /\ prog.(prog_symbtable) = tprog.(prog_symbtable)
+  /\ prog.(prog_senv) = tprog.(prog_senv)
+  /\ prog.(prog_strtable) = tprog.(prog_strtable).
+
+Lemma prog_tprog_prog_eq: forall prog tprog,
+    transf_program  prog = tprog
+    ->prog_eq prog tprog.
+Proof.
+  intros prog tprog TRANSF.
+  unfold prog_eq.
+  unfold transf_program in TRANSF.
+  inversion TRANSF.
+  simpl.
+  repeat split; auto.
+Qed.
+  
+
 (** Preservation of semantics under permutation *)
 Section PRESERVATION.
 

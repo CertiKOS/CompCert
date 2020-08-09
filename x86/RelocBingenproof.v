@@ -1571,6 +1571,19 @@ Axiom init_data_list_relf: forall init m b ofs result bytes prog,
     -> transl_init_data_list (gen_reloc_ofs_map (reloctable_data (prog_reloctables prog))) init = OK bytes
     -> store_init_data_bytes m b ofs bytes = Some result.
 
+Lemma prog_tprog_prog_eq: forall prog tprog,
+    transf_program false prog = OK tprog
+    ->prog_eq prog tprog.
+Proof.
+  intros prog tprog TRANSF.
+  unfold prog_eq.
+  monadInv TRANSF.
+  destruct zlt; inversion EQ2.
+  simpl.
+  repeat split; auto.
+Qed.
+  
+
 
 Lemma ge_tge_genv_eq': forall prog tprog,
     transf_program false prog = OK tprog
