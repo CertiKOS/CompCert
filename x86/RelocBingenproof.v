@@ -12,6 +12,7 @@ Require Import RelocBingen.
 Require Import RelocProgram RelocProgSemantics1 RelocProgSemantics2.
 Import ListNotations.
 Require AsmFacts.
+Require SymbolString.
 
 Lemma instr_eq_size_eq: forall i1 i2,
     RelocBinDecode.instr_eq i1 i2 -> instr_size i1 = instr_size i2.
@@ -2208,78 +2209,166 @@ Qed.
 
 
 
-
-Lemma link_sectable_ok:
-  forall sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim,
-    RelocLinking.link_sectable sect1 sect2 = Some s ->
-    transl_sectable false sect1 rmap1 = OK sect1' ->
-    transl_sectable false sect2 rmap2 = OK sect2' ->
-    link_reloctable z symt1 symt2 sim (reloctable_data rmap1) (reloctable_data rmap2) = Some rdata ->
-    link_reloctable z' symt1 symt2 sim (reloctable_code rmap1) (reloctable_code rmap2) = Some rcode ->
-    exists s',
-      RelocLinking.link_sectable sect1' sect2' = Some s' /\
-      transl_sectable false s {| reloctable_code := rcode; reloctable_data := rdata |} = OK s'.
+Lemma transf_program_eq: forall p p',
+  transf_program false p = OK p' -> prog_eq p p'.
 Proof.
-  intros sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim H HTransSec1 HTransSec2 HLinkData HLinkCode.
-  unfold transl_sectable.
-  unfold RelocLinking.link_sectable in H.
-  unfold transl_sectable in HTransSec1.
-  destruct sect1 eqn:EQSect1; inversion HTransSec1.
-  destruct v eqn:EQV; inversion HTransSec1.
-  destruct s0 eqn:EQS0; inversion HTransSec1.
-  destruct v0 eqn:EQV0; inversion HTransSec1.
-  clear H4. clear H3. clear H2.
-  
-  simpl in H.
-  unfold transl_sectable in HTransSec2.
-  destruct sect2 eqn:EQSect2; inversion HTransSec2.
-  destruct v1 eqn:EQV1; inversion HTransSec2.
-  destruct s1 eqn:EQS1; inversion HTransSec2.
-  destruct v2 eqn:EQV2; inversion HTransSec2.
-  simpl in H.
-  clear H5. clear H4. clear H3.
-  inversion H. simpl.
-  destruct l;inversion H1. destruct l0; inversion H2.
-  clear H4. clear H5.
-  monadInv H1.
-  monadInv H2.
-  unfold RelocLinking.link_sectable. simpl.
-  econstructor.
-  split. eauto.
-  unfold bind.
-  destr. destr.
+  intros. monadInv H.
+  destr_in EQ2. inv EQ2.
+  red; cbn. tauto.
+Qed.
 
-    
+Lemma match_prog_pres_symbtable: forall p p',
+    match_prog p p' -> prog_symbtable p = prog_symbtable p'.
+Proof.
+  intros p p' H.
+  red in H. monadInv H.
+  destr_in EQ2. inv EQ2. cbn. auto.
+Qed.
 
+Lemma match_prog_pres_reloctables: forall p p',
+    match_prog p p' -> prog_reloctables p = prog_reloctables p'.
+Proof.
+  intros p p' H.
+  red in H. monadInv H.
+  destr_in EQ2. inv EQ2. cbn. auto.
+Qed.
+
+Lemma match_prog_pres_link_data_reloctable: forall p1 p2 p p',
+    match_prog p p' -> 
+    link_data_reloctable p1 p2 p = link_data_reloctable p1 p2 p'.
+Proof.
+  intros.
+  unfold link_data_reloctable.
+  erewrite (match_prog_pres_symbtable _ _ H); eauto.
+Qed.
+
+Lemma match_prog_pres_link_code_reloctable: forall p1 p2 p p',
+    match_prog p p' -> 
+    link_code_reloctable p1 p2 p = link_code_reloctable p1 p2 p'.
+Proof.
+  intros.
+  unfold link_code_reloctable.
+  erewrite (match_prog_pres_symbtable _ _ H); eauto.
+Qed.
+
+Lemma prog_eq_pres_symbtable: forall p p',
+    prog_eq p p' -> prog_symbtable p = prog_symbtable p'.
+Proof.
+  intros p p' H.
+  red in H. intuition.
+Qed.
+
+
+Lemma link_data_reloctable_prog_eq:
+  forall p1 p2 p p',
+    prog_eq p p' ->
+    link_data_reloctable p1 p2 p' = link_data_reloctable p1 p2 p.
+Proof.
+  intros.
+  unfold link_data_reloctable.
+  rewrite (prog_eq_pres_symbtable p p'); auto.
+Qed.
+
+Lemma link_code_reloctable_prog_eq:
+  forall p1 p2 p p',
+    prog_eq p p' ->
+    link_code_reloctable p1 p2 p' = link_code_reloctable p1 p2 p.
+Proof.
+  intros.
+  unfold link_code_reloctable.
+  rewrite (prog_eq_pres_symbtable p p'); auto.
+Qed.
+
+
+Lemma transf_link_data_reloctable:
+  forall p1 p2 tp1 tp2 p t,
+    link_data_reloctable p1 p2 p = Some t ->
+    match_prog p1 tp1 ->
+    match_prog p2 tp2 ->
+    link_data_reloctable tp1 tp2 p = Some t.
+Admitted.
+
+Lemma transf_link_code_reloctable:
+  forall p1 p2 tp1 tp2 p t,
+    link_code_reloctable p1 p2 p = Some t ->
+    match_prog p1 tp1 ->
+    match_prog p2 tp2 ->
+    link_code_reloctable tp1 tp2 p = Some t.
 Admitted.
 
 
-Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
+Lemma transl_sectable_link_comm: forall p1 p2 p rd rc t1 t2,
+    RelocLinking.link_reloc_prog p1 p2 = Some p ->
+    link_data_reloctable p1 p2 p = Some rd ->
+    link_code_reloctable p1 p2 p = Some rc ->
+    transl_sectable false (prog_sectable p1) (prog_reloctables p1) = OK t1 ->
+    transl_sectable false (prog_sectable p2) (prog_reloctables p2) = OK t2 ->
+    exists t, RelocLinking.link_sectable t1 t2 = Some t /\ 
+         transl_sectable false (prog_sectable p) {| reloctable_code := rc; reloctable_data := rd |} = OK t.
+Admitted.
+
+Lemma link_reloc_prog_eq: forall p1 p2 p p1' p2' t,
+    RelocLinking.link_reloc_prog p1 p2 = Some p ->
+    RelocLinking.link_sectable (prog_sectable p1') (prog_sectable p2') = Some t ->
+    prog_eq p1 p1' ->
+    prog_eq p2 p2' ->
+    exists p', RelocLinking.link_reloc_prog p1' p2' = Some p' /\
+          prog_eq p p' /\ (prog_sectable p' = t).
+Admitted.
+
+
+Instance transf_link : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
                           RelocLinking1.Linker_reloc_prog
                           match_prog.
 Proof.  
   red. simpl. unfold link_reloc_prog.
-  intros. unfold match_prog in H0, H1. unfold transf_program in H0, H1.
-  monadInv H0. repeat destr_in EQ2.
-  monadInv H1. repeat destr_in EQ4.
-  autoinv. unfold RelocLinking.link_reloc_prog in *.
-  simpl. autoinv. simpl.
-  edestruct transl_sectable_get_data as (data0 & data1 & EQdata0 & TIDL & GETdata). apply EQ. eauto.
-  edestruct transl_sectable_get_code as (code0 & code1 & EQcode0 & TC & GETcode). apply EQ. eauto.
-  rewrite GETdata, GETcode. simpl. subst. simpl in *.
-  unfold link_code_reloctable, link_data_reloctable in *. simpl in *.
-  rewrite ? GETdata, ?GETcode, ?Heqo3, ?Heqo4 in *. simpl in *.
-  erewrite (transl_init_data_list_size _ _ _ TIDL) in *.
-  erewrite (transl_code_size _ _ _ TC) in *.
-  edestruct link_sectable_ok as (s' & LS & TS). eauto. eauto. eauto. eauto. eauto.
-  rewrite LS. rewrite Heqo6. rewrite Heqo7. simpl.
-  rewrite Heqo0. rewrite Heqo1.
-  eexists; split; eauto.
-  red. unfold transf_program. simpl.
-  rewrite TS. simpl. unfold bind.
-  destr. destr.
-  (* range of z *)
-  admit.
-  
-  admit.
-Admitted.
+  intros p1 p2 tp1 tp2 p LINK MATCH1 MATCH2.
+  repeat destr_in LINK. 
+  exploit transf_link_data_reloctable; eauto. intros LINKDS.
+  exploit transf_link_code_reloctable; eauto. intros LINKCS.
+  red in MATCH1.
+  red in MATCH2.
+  monadInv MATCH1. destr_in EQ2. inv EQ2; cbn in *.
+  monadInv MATCH2. destr_in EQ4. inv EQ4; cbn in *.
+  exploit transl_sectable_link_comm; eauto.
+  intros (sec_tbl & LINKSTBL & TL).
+  unfold match_prog. unfold transf_program; cbn.
+  rewrite TL. cbn.
+  generalize (SymbolString.string_bounds (symbentry_id ## (prog_symbtable p0))).
+  intros (z & STR & BND). rewrite STR. cbn.
+  destruct zlt; try omega.
+  eexists; split; eauto. 
+
+  (* Prove linking *)
+  set (p1' := {| prog_defs := prog_defs p1;
+                       prog_public := prog_public p1;
+                       prog_main := prog_main p1;
+                       prog_sectable := x;
+                       prog_symbtable := prog_symbtable p1;
+                       prog_strtable := prog_strtable p1;
+                       prog_reloctables := prog_reloctables p1;
+                       prog_senv := prog_senv p1 |}) in *.
+  set (p2' := {| prog_defs := prog_defs p2;
+                 prog_public := prog_public p2;
+                 prog_main := prog_main p2;
+                 prog_sectable := x1;
+                 prog_symbtable := prog_symbtable p2;
+                 prog_strtable := prog_strtable p2;
+                 prog_reloctables := prog_reloctables p2;
+                 prog_senv := prog_senv p2 |}) in *.
+  assert (prog_eq p1 p1') as PEQ1.
+  { red. subst p1'; cbn. tauto. }
+  assert (prog_eq p2 p2') as PEQ2.
+  { red. subst p2'; cbn. tauto. }
+  generalize (link_reloc_prog_eq _ _ _ p1' p2' _ Heqo LINKSTBL PEQ1 PEQ2).
+  intros (p' & LINK & PEQ & STBL).
+  rewrite LINK.
+  erewrite link_data_reloctable_prog_eq; eauto.
+  rewrite LINKDS.
+  erewrite link_code_reloctable_prog_eq; eauto.
+  rewrite LINKCS. 
+  f_equal. 
+  red in PEQ.
+  inv PEQ. inv H0. inv H2. inv H3. inv H4. inv H5.
+  congruence.
+Qed.
