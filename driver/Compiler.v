@@ -1032,11 +1032,32 @@ Proof.
   intros p tp MATCH.
   unfold fn_stack_requirements.
   apply Axioms.extensionality. intro i.
-  rewrite (PermuteProgSep.find_symbol_transf p tp _ MATCH).
-  destruct Globalenvs.Genv.find_symbol; auto.
-  rewrite (PermuteProgSep.find_funct_ptr_transf p tp _ MATCH).
+  destruct  Globalenvs.Genv.find_symbol eqn:EQSym.
+  destruct Globalenvs.Genv.find_funct_ptr eqn:EQFunc.
+  generalize (Globalenvs.Genv.find_symbol_funct_ptr_inversion
+                p i eq_refl EQSym EQFunc).
+  intros HInP.
+  generalize (PermuteProgSep.find_symbol_transf' _ _ MATCH _ _ HInP).
+  intros HInTP.
+  unfold Globalenvs.Genv.globalenv.
+  generalize (PermuteProgSep.add_global_find_symbol _ _ MATCH
+                                                    _ _ _ (prog_public tp) HInTP).
+  intros H.
+  destruct H as (b' & HSym & HFunc).
+  unfold  Globalenvs.Genv.find_symbol.
+  rewrite HSym.
+  unfold  Globalenvs.Genv.find_funct_ptr.
+  unfold  Globalenvs.Genv.find_def.
+  rewrite HFunc.
   auto.
-Qed.
+  (* generalize (Globalenvs.Genv.find_symbol_funct_ptr_inversion *)
+  (*               p i eq_refl EQSym EQFunc). *)
+  admit.
+  generalize (PermuteProgSep.not_find_symbol_transf _ _ _ MATCH EQSym).
+  intros H.
+  rewrite H.
+  auto.
+Admitted.
 
 Axiom Symbtablegen_fn_stack_requirements_match: 
   forall p tp
