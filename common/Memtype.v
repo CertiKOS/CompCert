@@ -545,6 +545,9 @@ Class MemoryModel mem `{memory_model_ops: MemoryModelOps mem}
   /\ loadbytes m b (ofs + n1) n2 = Some bytes2
   /\ bytes = bytes1 ++ bytes2;
 
+ loadv_many_mint_32: forall m v, loadv Mint32 m v = loadv Many32 m v;
+ storev_many_mint_32: forall m v v', storev Mint32 m v v' = storev Many32 m v v';
+
 (** ** Properties of [store]. *)
 
 (** [store] preserves block validity, permissions, access validity, and bounds.

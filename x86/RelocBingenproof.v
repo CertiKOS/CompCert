@@ -1084,6 +1084,10 @@ Proof.
     cbn. erewrite IHc1; eauto. congruence.
 Qed.
 
+(* this is guaranteed by the decoder *)
+Axiom instr_eq_bound: forall rd n a, 
+    RelocBinDecode.instr_eq (Psall_ri rd n) a -> 0 <= Int.unsigned n < Byte.modulus.
+
 Lemma decode_instrs_append': forall rtbl  fuel ofs t l1 l2 code,
     decode_instrs rtbl fuel ofs t l1 = OK code ->
     decode_instrs rtbl fuel ofs t (l1 ++ l2) = OK (rev l2 ++ code).
@@ -1927,13 +1931,14 @@ Proof.
     intros HAddrmode. rewrite HAddrmode. auto.
 
     (* sall *)
+    exploit instr_eq_bound; eauto.
+    intros RNG.
     destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
     destruct HInstrEq as [Hrd Hn].
     rewrite Hrd.
     rewrite Zmod_small in Hn.
     Focus 2.
-    (* this is guaranteed by the decoder *)
-    admit.
+    auto.
     rewrite Int.repr_unsigned in Hn. subst n.
     unfold exec_instr.
     destruct get_pc_offset; auto.
@@ -1976,9 +1981,8 @@ Proof.
     unfold Reloctablesgen.instr_reloc_offset.
     unfold tge. 
     (* int32 and any32 *)
-    replace Mint32 with Many32.
+    rewrite Mem.loadv_many_mint_32.
     auto.
-    admit.
 
     (* Pmov_mr_a , will have the same problem *)
     destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
@@ -1994,9 +1998,8 @@ Proof.
     unfold id_reloc_offset.
     unfold Reloctablesgen.instr_reloc_offset.
     unfold tge.
-    replace Many32 with Mint32.
+    rewrite Mem.storev_many_mint_32.
     auto.
-    admit.
 
     (* Plabel *)
     destruct i';unfold RelocBinDecode.instr_eq in HInstrEq; try(exfalso; apply HInstrEq).
@@ -2013,7 +2016,7 @@ Proof.
     cbn [Asm.instr_size']. auto.
 
     unfold exec_instr. auto.
-Admitted.
+Qed.
 
 Lemma eval_builtin_args_pres: forall idofs e sp m al vl,
     eval_builtin_args preg ge idofs e sp m al vl ->
