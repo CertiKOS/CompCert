@@ -206,50 +206,6 @@ Let tge := Genv.globalenv tprog.
 
 
 
-
-
-Lemma add_global_find_symbol: forall defs id g pubs,
-    In (id, Some g) defs
-    ->let genv' := (Genv.add_globals
-                     (Genv.empty_genv fundef unit pubs)
-                     defs) in 
-     exists b, (Genv.genv_symb genv') ! id = Some b /\
-          (Genv.genv_defs genv') ! b = Some g.
-Admitted.
-
-Lemma find_symbol_transf': forall id g,
-    In (id, Some g) (prog_defs prog)
-    -> In (id, Some g) (prog_defs tprog).
-Admitted.
-(* Lemma find_symbol_transf': forall s, *)
-(*     Genv.find_symbol tge s = *)
-(*     Genv.find_symbol ge s. *)
-(* Proof. *)
-(*   intros s. *)
-(*   unfold ge. unfold tge. *)
-(*   unfold Genv.globalenv. *)
-(*   unfold Genv.find_symbol. *)
-  
-
-(* Admitted. *)
-
-
-Axiom not_find_symbol_transf: forall s,
-    match_prog prog tprog->
-    Genv.find_symbol ge s = None
-    -> Genv.find_symbol tge s = None.
-
-
-Axiom find_symbol_transf: forall s,
-    match_prog prog tprog->
-    Genv.find_symbol tge s =
-    Genv.find_symbol ge s.
-
-Axiom find_funct_ptr_transf: forall v,
-    match_prog prog tprog->
-    Genv.find_funct_ptr tge v =
-    Genv.find_funct_ptr ge v.
-
 Axiom transf_program_correct:
   forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef))
                      (RealAsm.semantics tprog (Pregmap.init Vundef)).
