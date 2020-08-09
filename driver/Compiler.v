@@ -1024,11 +1024,19 @@ Proof.
   erewrite <- PadInitDataproof.find_funct_ptr_transf; eauto.
 Qed.
 
-Axiom Perm_fn_stack_requirements_match: 
+Lemma Perm_fn_stack_requirements_match: 
   forall p tp
     (FM: PermuteProgSep.match_prog p tp),
     fn_stack_requirements p = fn_stack_requirements tp.
-
+Proof.
+  intros p tp MATCH.
+  unfold fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  rewrite (PermuteProgSep.find_symbol_transf p tp MATCH).
+  destruct Globalenvs.Genv.find_symbol; auto.
+  rewrite (PermuteProgSep.find_funct_ptr_transf p tp MATCH).
+  auto.
+Qed.
 
 Axiom Symbtablegen_fn_stack_requirements_match: 
   forall p tp
@@ -1036,10 +1044,22 @@ Axiom Symbtablegen_fn_stack_requirements_match:
     fn_stack_requirements p = reloc_fn_stack_requirements tp.
 
 
-Axiom Reloctablesgen_fn_stack_requirements_match: 
+Lemma Reloctablesgen_fn_stack_requirements_match: 
   forall p tp
     (FM: Reloctablesgenproof.match_prog p tp),
     reloc_fn_stack_requirements p = reloc_fn_stack_requirements tp.
+Proof.
+  intros p tp MATCH.
+  unfold reloc_fn_stack_requirements.
+  apply Axioms.extensionality. intro i.
+  unfold Reloctablesgenproof.match_prog in MATCH.
+  destruct MATCH as (tp' & TRANSF & DEF & OTHERS).
+  generalize (Reloctablesgenproof.prog_tprog_prog_eq _ _ TRANSF).
+  intros HEq.
+  destruct HEq as (DEF' & MAIN & PUB & SYMB & SENV & STR).
+  rewrite DEF. rewrite DEF'. auto.
+Qed.
+  
 
 Lemma RelocBingen_fn_stack_requirements_match: 
   forall p tp

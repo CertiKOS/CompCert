@@ -34,6 +34,32 @@ Lemma transf_program_match:
 Proof.
   unfold match_prog. intros. exists tp; intuition.
 Qed.
+
+
+Definition prog_eq prog tprog:=
+  prog.(prog_defs) = tprog.(prog_defs)
+  /\  prog.(prog_main) = tprog.(prog_main)
+  /\ prog.(prog_public) = tprog.(prog_public)
+  /\ prog.(prog_symbtable) = tprog.(prog_symbtable)
+  /\ prog.(prog_senv) = tprog.(prog_senv)
+  /\ prog.(prog_strtable) = tprog.(prog_strtable).
+
+Lemma prog_tprog_prog_eq: forall prog tprog,
+    transf_program false prog = OK tprog
+    ->prog_eq prog tprog.
+Proof.
+  intros prog tprog TRANSF.
+  unfold prog_eq.
+  monadInv TRANSF.
+  destruct list_norepet_dec; inversion EQ2.
+  destruct list_norepet_dec; inversion H0.
+  simpl.
+  repeat split; auto.
+Qed.
+
+
+
+
 Lemma fold_acc_instrs_error:
   forall l sim e,
     fold_left (acc_instrs sim false) l (Error e) = Error e.
