@@ -847,6 +847,8 @@ Proof.
   exact  Mem.loadbytes_empty.
   exact  Mem.loadbytes_concat.
   exact  Mem.loadbytes_split.
+  exact  Mem.loadv_many_mint_32.
+  exact  Mem.storev_many_mint_32.
   exact  Mem.nextblock_store.
   exact  Mem.store_valid_block_1.
   exact  Mem.store_valid_block_2.

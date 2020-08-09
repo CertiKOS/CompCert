@@ -311,6 +311,16 @@ Definition valid_access (m: mem) (chunk: memory_chunk) (b: block) (ofs: Z) (p: p
   /\ (align_chunk chunk | ofs)
   /\ (perm_order p Writable -> stack_access (stack m) b ofs (ofs + size_chunk chunk)).
 
+Lemma valid_access_many_mint_32: forall m b ofs p, 
+      valid_access m Mint32 b ofs p <-> valid_access m Many32 b ofs p.
+Proof.
+  split. 
+  - unfold valid_access.
+    cbn. tauto.
+  - unfold valid_access.
+    cbn. tauto.
+Qed.
+
 Theorem valid_access_implies:
   forall m chunk b ofs p1 p2,
   valid_access m chunk b ofs p1 -> perm_order p1 p2 ->
@@ -829,6 +839,53 @@ Qed.
 Next Obligation.
   eapply mem_bounds_perm; eauto.
 Qed.
+
+(** This Axiom is necessary to match with behaviour of TargetPrinter.ml .
+    For example, in 32-bit x86, the following two instrutions are both treated 
+    as movl:
+
+      | Pmovl_rm(rd, a) ->
+          fprintf oc "	movl	%a, %a\n" addressing a ireg32 rd
+      | Pmov_rm_a(rd, a) ->
+          if Archi.ptr64
+          then fprintf oc "	movq	%a, %a\n" addressing a ireg64 rd
+          else fprintf oc "	movl	%a, %a\n" addressing a ireg32 rd
+
+    However, their semantics in CompCert uses different types of chunks,
+    one is Mint32 and the other is Many32.
+    In the future, the decoder or the pretty printer should be redesigned 
+    to be consistent with each other.
+ *)
+Axiom decode_val_many_mint_32: forall l, 
+      decode_val Mint32 l = decode_val Many32 l.
+
+Lemma load_many_mint_32: forall m b ofs, load Mint32 m b ofs = load Many32 m b ofs.
+Proof.
+  intros. unfold load.
+  destr. rewrite valid_access_many_mint_32 in v.
+  destr; auto. 
+  rewrite decode_val_many_mint_32. auto.
+  destr; tauto.
+Qed.
+
+Lemma loadv_many_mint_32: forall m v, loadv Mint32 m v = loadv Many32 m v.
+Proof.
+  destruct v; eauto.
+  cbn. apply load_many_mint_32.
+Qed.
+
+(* Sam reason as decode_val_many_mint_32 *)
+Axiom store_many_mint_32: forall m b ofs v, 
+      store Mint32 m b ofs v = store Many32 m b ofs v.
+
+Lemma storev_many_mint_32: forall m v v', storev Mint32 m v v' = storev Many32 m v v'.
+Proof.
+  intros. destruct v; auto.
+  cbn.  
+  rewrite store_many_mint_32.
+  auto.
+Qed.
+
 
 (** [drop_perm m b lo hi p] sets the max permissions of the byte range
     [(b, lo) ... (b, hi - 1)] to [p].  These bytes must have current permissions
@@ -9786,6 +9843,8 @@ Proof.
   exact loadbytes_empty.
   exact loadbytes_concat.
   exact loadbytes_split.
+  exact loadv_many_mint_32.
+  exact storev_many_mint_32.
   exact nextblock_store.
   exact store_valid_block_1.
   exact store_valid_block_2.
