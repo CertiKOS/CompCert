@@ -2280,13 +2280,44 @@ Proof.
 Qed.
 
 
+Lemma transl_sectable_res_not_nil: forall t1 m t2,
+    transl_sectable false t1 m = OK t2 -> t2 <> nil.
+Proof.
+  intros. unfold transl_sectable in H.
+  destruct t1; auto; try congruence.
+  destruct v; auto; try congruence.
+  destruct t1; auto; try congruence.
+  destruct v; auto; try congruence.
+  destruct t1; auto; try congruence.
+  monadInv H. intro E. congruence.
+Qed.
+
 Lemma transf_link_data_reloctable:
   forall p1 p2 tp1 tp2 p t,
     link_data_reloctable p1 p2 p = Some t ->
     match_prog p1 tp1 ->
     match_prog p2 tp2 ->
     link_data_reloctable tp1 tp2 p = Some t.
-Admitted.
+Proof.
+  intros p1 p2 tp1 tp2 p t LINK MATCH1 MATCH2.
+  red in MATCH1. red in MATCH2.
+  monadInv MATCH1. destr_in EQ2. inv EQ2.
+  monadInv MATCH2. destr_in EQ4. inv EQ4.
+  unfold link_data_reloctable in LINK.
+  destr_in LINK.
+  unfold link_data_reloctable; cbn.
+  assert (x <> nil).
+  { eapply transl_sectable_res_not_nil; eauto. }
+  destruct x; try congruence.
+  rewrite <- LINK.
+  f_equal.
+  (* sec_size v0 = sec_size v *)
+  unfold transl_sectable in EQ.
+  repeat destr_in EQ. monadInv H1.
+  cbn in Heqo. inv Heqo.
+  cbn.
+  erewrite transl_init_data_list_size; eauto.
+Qed.
 
 Lemma transf_link_code_reloctable:
   forall p1 p2 tp1 tp2 p t,
@@ -2294,7 +2325,26 @@ Lemma transf_link_code_reloctable:
     match_prog p1 tp1 ->
     match_prog p2 tp2 ->
     link_code_reloctable tp1 tp2 p = Some t.
-Admitted.
+Proof.
+  intros p1 p2 tp1 tp2 p t LINK MATCH1 MATCH2.
+  red in MATCH1. red in MATCH2.
+  monadInv MATCH1. destr_in EQ2. inv EQ2.
+  monadInv MATCH2. destr_in EQ4. inv EQ4.
+  unfold link_code_reloctable in LINK.
+  destr_in LINK.
+  unfold link_code_reloctable; cbn.
+  unfold transl_sectable in EQ.
+  repeat destr_in EQ.
+  monadInv H0. 
+  replace (Pos.to_nat 1) with 1%nat by xomega.
+  cbn.
+  rewrite <- LINK.
+  f_equal.
+  cbn in Heqo. 
+  replace (Pos.to_nat 1) with 1%nat in Heqo by xomega.
+  inv Heqo. cbn.
+  erewrite transl_code_size; eauto.
+Qed.
 
 
 Lemma transl_sectable_link_comm: forall p1 p2 p rd rc t1 t2,
