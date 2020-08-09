@@ -11,3 +11,8 @@ fig3a.o: fig3a.c
 
 fig3b.o: fig3b.c
 	../../ccomp -c -relf fig3b.c
+
+.PHONY: clean
+
+clean:
+	rm *.o fig3

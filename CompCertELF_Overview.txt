@@ -1,0 +1,84 @@
+This directory contains the source code of CompCertELF,
+an extension of CompCert that supports verified separate
+compilation of C programs to relocatable ELF files.
+
+Consult the following CompCertELF paper for details:
+
+   CompCertELF: Verified Separate Compilation of C Programs into ELF Object Files
+
+The structure of the source code is as follows.
+
+--- Axioms ---
+x86/SizeBoundAxioms.v
+
+--- Utility Libraries ---
+x86/AsmInject.v
+x86/CheckDef.v
+x86/LocalLib.v
+x86/SeqTable.v
+x86/LinkingProp.v
+x86/SymbolString.v
+
+
+--- New Languages ---
+x86/RelocProgram.v
+elf/RelocElf.v
+
+
+--- Semantics of the New Languages --- 
+x86/RelocProgSemantics.v
+x86/RelocProgSemantics1.v
+x86/RelocProgSemantics2.v
+x86/RelocProgSemantics3.v
+elf/RelocElfSemantics.v
+elf/ElfBytesSemantics.v
+
+x86/RelocBinDecode.v
+x86/ReloctablesDecode.v
+x86/ShstrtableDecode.v
+x86/SymbtableDecode.v
+x86/StrtableDecode.v
+elf/DecodeRelocElf.v
+
+
+--- New Compiler Passes ---
+x86/Asmpielim.v
+x86/Asmlabelgen.v
+x86/PadNops.v
+x86/PadInitData.v
+x86/Symbtablegen.v
+x86/Reloctablesgen.v
+x86/RelocBingen.v
+x86/RemoveAddend.v
+x86/TablesEncode.v
+x86/StrtableEncode.v
+x86/SymbtableEncode.v
+x86/ReloctablesEncode.v
+x86/ShstrtableEncode.v
+x86/RelocElfgen.v
+elf/EncodeRelocElf.v
+
+--- Proofs of the New Compiler Passes ---
+x86/Asmlabelgenproof.v
+x86/PadNopsproof.v
+x86/PadInitDataproof.v
+x86/Symbtablegenproof1.v
+x86/Symbtablegenproof.v
+x86/Reloctablesgenproof.v
+x86/RelocBingenproof.v
+x86/RemoveAddendproof.v
+x86/TablesEncodeproof.v
+x86/RelocElfgenproof.v
+elf/EncodeElfCorrect.v
+
+--- Linking Framework ---
+x86/RelocLinking.v
+x86/RelocLinking1.v
+x86/OrderedLinking.v
+
+--- Syntactic Equivalence ---
+x86/PermuteProgSep.v
+x86/RelocProgSyneq.v
+
+--- Separate Compilation ---
+x86/SymbtablegenSep.v
