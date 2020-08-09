@@ -2357,14 +2357,80 @@ Lemma transl_sectable_link_comm: forall p1 p2 p rd rc t1 t2,
          transl_sectable false (prog_sectable p) {| reloctable_code := rc; reloctable_data := rd |} = OK t.
 Admitted.
 
+Definition sec_size_eq n t1 t2 := 
+  match SecTable.get n t1, SecTable.get n t2 with
+  | Some v1, Some v2 => sec_size v1 = sec_size v2
+  | _, _ => True
+  end.
+
 Lemma link_reloc_prog_eq: forall p1 p2 p p1' p2' t,
     RelocLinking.link_reloc_prog p1 p2 = Some p ->
     RelocLinking.link_sectable (prog_sectable p1') (prog_sectable p2') = Some t ->
+    sec_size_eq sec_data_id (prog_sectable p1) (prog_sectable p1') ->
+    sec_size_eq sec_code_id (prog_sectable p1) (prog_sectable p1') ->
     prog_eq p1 p1' ->
     prog_eq p2 p2' ->
     exists p', RelocLinking.link_reloc_prog p1' p2' = Some p' /\
           prog_eq p p' /\ (prog_sectable p' = t).
-Admitted.
+Proof.
+  intros p1 p2 p p1' p2' t LINK LINKTBL SEQ1 SEQ2 PEQ1 PEQ2.
+  unfold RelocLinking.link_reloc_prog in LINK.
+  repeat destr_in LINK.
+  red in PEQ1. 
+  inv PEQ1. inv H0. inv H2. inv H3. inv H4. inv H5.
+  red in PEQ2. 
+  inv PEQ2. inv H7. inv H9. inv H10. inv H11. inv H12.
+  unfold RelocLinking.link_reloc_prog.
+  rewrite <- H. rewrite <- H1. rewrite <- H0.
+  rewrite <- H5. rewrite <- H8. rewrite <- H7.
+  rewrite Heqo.
+  rewrite LINKTBL.
+  unfold RelocLinking.link_sectable in LINKTBL.
+  repeat destr_in LINKTBL.
+  exists {|
+      prog_defs := AST.prog_defs p0;
+      prog_public := AST.prog_public p0;
+      prog_main := AST.prog_main p0;
+      prog_sectable := [s3; s2];
+      prog_symbtable := s1;
+      prog_strtable := prog_strtable p1;
+      prog_reloctables := prog_reloctables p1;
+      prog_senv := Genv.globalenv p0 |}; cbn.
+  split.
+  Focus 2.
+  split; auto.
+  red; cbn; tauto.
+  rewrite <- H9.
+  assert (sec_size v1 = sec_size v) as SZEQ1.
+  { red in SEQ1.
+    rewrite Heqo0 in SEQ1.
+    rewrite Heqo5 in SEQ1. congruence.
+  }
+  rewrite SZEQ1.
+  assert (sec_size v2 = sec_size v0) as SZEQ2.
+  { red in SEQ2.
+    rewrite Heqo1 in SEQ2.
+    rewrite Heqo6 in SEQ2. congruence.
+  }
+  rewrite SZEQ2.
+  rewrite Heqo3.
+  rewrite <- H2. rewrite Heqo4.
+  congruence.
+Qed.
+
+Lemma transl_sectable_size_eq: forall t1 rt t2,
+  transl_sectable false t1 rt = OK t2 ->
+  sec_size_eq sec_code_id t1 t2 /\ sec_size_eq sec_data_id t1 t2.
+Proof.
+  intros.
+  unfold transl_sectable in H. 
+  repeat destr_in H. monadInv H1.
+  cbn. unfold sec_size_eq. cbn.
+  replace (Pos.to_nat 1) with 1%nat by xomega. cbn.
+  split.
+  erewrite transl_code_size; eauto.
+  erewrite transl_init_data_list_size; eauto.
+Qed.
 
 
 Instance transf_link : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
@@ -2410,7 +2476,9 @@ Proof.
   { red. subst p1'; cbn. tauto. }
   assert (prog_eq p2 p2') as PEQ2.
   { red. subst p2'; cbn. tauto. }
-  generalize (link_reloc_prog_eq _ _ _ p1' p2' _ Heqo LINKSTBL PEQ1 PEQ2).
+  generalize (transl_sectable_size_eq _ _ _ EQ).
+  intros (SEQ1 & SEQ2).
+  generalize (link_reloc_prog_eq _ _ _ p1' p2' _ Heqo LINKSTBL SEQ2 SEQ1 PEQ1 PEQ2).
   intros (p' & LINK & PEQ & STBL).
   rewrite LINK.
   erewrite link_data_reloctable_prog_eq; eauto.
