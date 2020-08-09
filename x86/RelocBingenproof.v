@@ -2157,25 +2157,6 @@ Qed.
 End PRESERVATION.
 
 Require Import RelocLinking1.
-(* Definition link_reloc_bingen (p1 p2: RelocProgram.program) : option RelocProgram.program := *)
-(*   match RelocProgSemantics2.decode_prog_code_section p1, RelocProgSemantics2.decode_prog_code_section p2 with *)
-(*     | OK pp1, OK pp2 => *)
-(*       match RelocLinking1.link_reloc_prog pp1 pp2 with *)
-(*         Some pp => *)
-(*         match RelocBingen.transf_program pp with *)
-(*         | OK tp => Some tp *)
-(*         | _ => None *)
-(*         end *)
-(*       | _ => None *)
-(*       end *)
-(*     | _, _ => None *)
-(*   end. *)
-
-(* Instance linker2 : Linker RelocProgram.program. *)
-(* Proof. *)
-(*   eapply Build_Linker with (link := link_reloc_bingen) (linkorder := fun _ _ => True). *)
-(*   auto. auto. auto. *)
-(* Defined. *)
 
 Lemma transl_sectable_get_code:
   forall rmap sect sect',
@@ -2346,6 +2327,60 @@ Proof.
   erewrite transl_code_size; eauto.
 Qed.
 
+Lemma reloc_tbl_pres_acc_instrs: forall rtbl1 rtbl2 c1 ofs1 c2 ofs2 c3,
+    (forall ofs i l, encode_instr' rtbl1 ofs i = OK l -> encode_instr' rtbl2 ofs i = OK l) ->
+    fold_left (acc_instrs rtbl1 false) c1 (OK (ofs1, c2)) = OK (ofs2, c3) ->
+    fold_left (acc_instrs rtbl2 false) c1 (OK (ofs1, c2)) = OK (ofs2, c3).
+Proof.
+  induction c1 as [|i1 c1].
+  - cbn. inversion 2; subst. inv H0. auto.
+  - intros ofs1 c2 ofs2 c3 ECI ACC.
+    cbn in ACC. destr_in ACC. cbn in ACC.
+    rewrite fold_acc_instrs_error in ACC. congruence.
+    destruct (encode_instr' rtbl1 ofs1 i1) eqn:EI; cbn in ACC.
+    Focus 2.
+    rewrite fold_acc_instrs_error in ACC. congruence.
+    cbn. rewrite Heqb. 
+    erewrite ECI; eauto.
+Qed.
+
+Lemma transl_code_rtbl: forall c1 c2 rtbl1 rtbl2, 
+    (forall ofs i l, encode_instr' rtbl1 ofs i = OK l -> encode_instr' rtbl2 ofs i = OK l) ->
+    transl_code rtbl1 false c1 = OK c2 ->
+    transl_code rtbl2 false c1 = OK c2.
+Proof.
+  unfold transl_code.
+  intros. monadInv H0. destruct x. inv EQ0.
+  erewrite reloc_tbl_pres_acc_instrs; eauto. cbn. auto.
+Qed.
+
+
+(* Lemma transl_code_app : forall c1 c1' c2 c2' rtbl1 rtbl2 rtbl3, *)
+(*     (forall ofs i l, encode_instr' rtbl1 ofs i = OK l -> encode_instr' rtbl3 ofs i = OK l) -> *)
+(*     (forall ofs i l, encode_instr' rtbl2 ofs i = OK l -> encode_instr' rtbl3 ofs i = OK l) -> *)
+(*     transl_code rtbl1 false c1 = OK c1' -> *)
+(*     transl_code rtbl2 false c2 = OK c2' -> *)
+(*     transl_code rtbl3 false (c1 ++ c2) = OK (c1' ++ c2'). *)
+(* Proof. *)
+(*   intros. *)
+(*   monadInv H1. destruct x. inv EQ0. *)
+(*   monadInv H2. destruct x. inv EQ1. *)
+(*   generalize (acc_instrs_app _ _ _ _ _ _ _ _ _ _ _ 0 H H0 EQ EQ0). *)
+(*   intros (ofs4 & ACC). *)
+(*   unfold transl_code.  *)
+(*   rewrite ACC. cbn. rewrite rev_app_distr. auto. *)
+(* Qed. *)
+
+Axiom transl_code_app : forall c1 c1' c2 c2' rtbl1 rtbl2 rtbl3,
+    transl_code rtbl1 false c1 = OK c1' ->
+    transl_code rtbl2 false c2 = OK c2' ->
+    transl_code rtbl3 false (c1 ++ c2) = OK (c1' ++ c2').
+
+Axiom transl_init_data_list_app : forall d1 d1' d2 d2' rtbl1 rtbl2 rtbl3,
+    transl_init_data_list rtbl1 d1 = OK d1' ->
+    transl_init_data_list rtbl2 d2 = OK d2' ->
+    transl_init_data_list rtbl3 (d1 ++ d2) = OK (d1' ++ d2') .
+
 
 Lemma transl_sectable_link_comm: forall p1 p2 p rd rc t1 t2,
     RelocLinking.link_reloc_prog p1 p2 = Some p ->
@@ -2355,7 +2390,35 @@ Lemma transl_sectable_link_comm: forall p1 p2 p rd rc t1 t2,
     transl_sectable false (prog_sectable p2) (prog_reloctables p2) = OK t2 ->
     exists t, RelocLinking.link_sectable t1 t2 = Some t /\ 
          transl_sectable false (prog_sectable p) {| reloctable_code := rc; reloctable_data := rd |} = OK t.
-Admitted.
+Proof.
+  intros p1 p2 p rd rc t1 t2 LINK LINKD LINKC TL1 TL2.
+  unfold transl_sectable in TL1.
+  repeat destr_in TL1. monadInv H0.
+  unfold transl_sectable in TL2.
+  repeat destr_in TL2. monadInv H0.
+  cbn. replace (Pos.to_nat 1) with 1%nat by xomega. cbn.
+  eexists; split; eauto.
+  unfold RelocLinking.link_reloc_prog in LINK.
+  repeat destr_in LINK. cbn.
+  rewrite Heqs in *.
+  rewrite Heqs0 in *.
+  cbn in *.
+  replace (Pos.to_nat 1) with 1%nat in * by xomega. cbn in *.
+  inv Heqo2. inv Heqo0. inv Heqo1. cbn.
+  unfold link_data_reloctable in LINKD.
+  repeat destr_in LINKD.
+  unfold link_code_reloctable in LINKC.
+  repeat destr_in LINKC.
+  assert (transl_code (fold_right acc_reloc_ofs_map (Maps.ZTree.empty relocentry) rc) 
+                      false (code ++ code0) = OK (x ++ x1)) as TLC.
+  { eapply transl_code_app; eauto. } 
+  rewrite TLC. cbn.
+  assert (transl_init_data_list (fold_right acc_reloc_ofs_map (Maps.ZTree.empty relocentry) rd) 
+                                (init ++ init0) = OK (x0 ++ x2)) as TLD.
+  { eapply transl_init_data_list_app; eauto. }
+  rewrite TLD. auto.
+Qed.
+
 
 Definition sec_size_eq n t1 t2 := 
   match SecTable.get n t1, SecTable.get n t2 with
