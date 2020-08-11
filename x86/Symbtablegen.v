@@ -302,7 +302,8 @@ Definition instr_invalid (i: instruction) :=
   | Pjmp_l _ 
   | Pjcc _ _ 
   | Pjcc2 _ _ _ 
-  | Pjmptbl _ _ 
+  (*Remove this instr after symbol table gen*)
+  (* | Pjmptbl _ _  *)
   | Pallocframe _ _ _ 
   | Pfreeframe _ _ 
   | Pload_parent_pointer _ _ => True

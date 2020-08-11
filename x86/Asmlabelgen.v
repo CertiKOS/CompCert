@@ -16,17 +16,17 @@ Import ListNotations.
 
 Local Open Scope error_monad_scope.
 
-Fixpoint findAllLabel (l: list label)(all:list instruction): res (list Z) :=
-  match l with
-  |[] => OK []
-  |h :: t =>
-   match label_pos h 0 all with
-   |None => Error (msg"Label not found")
-   |Some pos =>
-    do tail <-  (findAllLabel t all);
-      OK (pos::tail)
-   end
-  end.
+(* Fixpoint findAllLabel (l: list label)(all:list instruction): res (list Z) := *)
+(*   match l with *)
+(*   |[] => OK [] *)
+(*   |h :: t => *)
+(*    match label_pos h 0 all with *)
+(*    |None => Error (msg"Label not found") *)
+(*    |Some pos => *)
+(*     do tail <-  (findAllLabel t all); *)
+(*       OK (pos::tail) *)
+(*    end *)
+(*   end. *)
 
 Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res instruction :=
   let sz := instr_size i in
@@ -58,10 +58,11 @@ Definition transl_instr (i: instruction) (ofs:Z) (code:code) : res instruction :
     OK (Pjcc2_rel cond1 cond2 relOfs)
    end
 
-  |Pjmptbl r tbl =>
-   do lst <-  findAllLabel tbl code;
-   let ofsLst := map (Zplus (-( sz + ofs))) lst in
-   OK (Pjmptbl_rel r ofsLst)
+  (* Do this after symbol table generation*)
+  (* |Pjmptbl r tbl => *)
+  (*  do lst <-  findAllLabel tbl code; *)
+  (*  let ofsLst := map (Zplus (-( sz + ofs))) lst in *)
+  (*  OK (Pjmptbl_rel r ofsLst) *)
           
   |_ =>
    OK i 

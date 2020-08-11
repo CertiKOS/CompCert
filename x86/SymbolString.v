@@ -17,6 +17,10 @@ Parameter create_float_literal_ident : unit -> ident.
 
 Parameter create_float_mask_ident : unit -> ((ident*ident)*(ident*ident)).
 
+Parameter create_jump_table_ident : unit -> ident.
+
+Parameter create_label_ident : unit -> ident.
+
 Axiom string_to_ident_symbol_to_pos:
   forall s lb, find_symbol_pos s = Some lb ->
                string_to_ident (map (fun p => Byte.repr (Zpos p)) lb) = Some s.

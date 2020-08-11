@@ -29,6 +29,7 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmov_rs _ _ => OK 2
   | Pcall (inr _) _ => OK 1
   | Pjmp (inr _) _ => OK 1
+  | Pjmp_m a
   | Pleal _ a
   | Pmovl_rm _ a
   | Pmovl_mr a _
@@ -115,6 +116,9 @@ Definition transl_instr (sofs:Z) (i: instruction) : res (list relocentry) :=
   | Pjmptbl _ _ => Error (msg "Source program contains jumps to labels")
   | Pjmp (inr id) sg => 
     do e <- compute_instr_rel_relocentry sofs i id;
+    OK [e]
+  | Pjmp_m (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
   | Pcall (inr id) sg =>
     do e <- compute_instr_rel_relocentry sofs i id;
@@ -312,6 +316,9 @@ Definition id_eliminate (i:instruction):res (instruction):=
     match i with
   | Pjmp (inr id) sg =>
     OK (Pjmp (inr xH) sg)
+  | Pjmp_m (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pjmp_m (Addrmode rb ss (inr (xH,ptrofs))))
   | Pcall (inr id) sg =>
     OK (Pcall (inr xH) sg)
   | Pmov_rs rd id =>

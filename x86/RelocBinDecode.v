@@ -4062,6 +4062,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pandps_fm rd a). admit.
   + (* Pjmp ros sg*)
     exists (Pjmp ros sg). admit.
+  + (* Pjmp_m a*)
+    exists (Pjmp_m a). admit.
   + (*  (Pcall ros sg) *)
     exists (Pcall ros (mksignature [] None (mkcallconv false false false))).
 (***** Remove Proofs By Chris Start ******) 

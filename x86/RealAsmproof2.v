@@ -467,6 +467,9 @@ Section WITHMEMORYMODEL.
       real_asm_inv prog s2 ->
       (exists r : int, final_state s2 r) \/ (exists (t : trace) (s2' : state), step (Genv.globalenv prog) s2 t s2').
   Proof.
+  Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*    
     intros s1 s2 MS SAFE SPAL.
     destruct (SAFE _  (star_refl _ _ _)) as [(r & FS)|(t & s2' & STEP)].
     {
@@ -611,9 +614,11 @@ Section WITHMEMORYMODEL.
         eapply wf_asm_builtin_not_PC; eauto.
 
       + inv STEP; repeat destr_in Heqo.
-    - inv STEP; simpl in *; repeat destr_in PCnone. 
+    - inv STEP; simpl in *; repeat destr_in PCnone.
   Qed.
-
+*)
+(***** Remove Proofs By Chris End ******)
+  
   Lemma ptrofs_cancel i f s:
     i =
     Ptrofs.add

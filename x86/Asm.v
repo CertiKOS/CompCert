@@ -240,6 +240,7 @@ Inductive instruction: Type :=
   (** Branches and calls *)
   | Pjmp_l (l: label)
   | Pjmp (ros: ireg + ident) (sg: signature)
+  | Pjmp_m (a: addrmode)
   (* | Pjmp_s (symb: ident) (sg: signature) *)
   (* | Pjmp_r (r: ireg) (sg: signature) *)
   | Pjcc (c: testcond)(l: label)
@@ -355,6 +356,10 @@ Global Opaque addrmode_size.
 Let instr_size' (i: instruction) : Z :=
   match i with
   | Pjmp_l _ => 5
+  (* Pseduo Instruction: Pjmptbl will be transf as Pjmp_m (size: 7)*)
+  | Pjmptbl r tbl => 7
+  | Pjmptbl_rel r tbl => 7  
+  | Pjmp_m a => 1 + addrmode_size a
   | Pjcc _ _ => 6
   | Pjmp_l_rel _ => 5
   | Pjcc_rel _ _ => 6
@@ -1569,7 +1574,15 @@ Definition exec_instr
     Next (nextinstr_nf (rs#rd <- (Val.and rs#rd val_a)) sz) m
   (** Branches and calls *)
   | Pjmp_l lbl =>
-      goto_label ge f lbl rs m
+    goto_label ge f lbl rs m
+  | Pjmp_m a =>
+    match Mem.loadv (if Archi.ptr64 then Many64 else Many32) m (eval_addrmode ge a rs) with
+    | Some addr => match Genv.find_funct ge addr with
+                  | Some _ => Next (rs#PC <- addr) m
+                  | _ => Stuck
+                  end
+    | None => Stuck
+    end
   (* | Pjmp_s id sg => *)
   (*   match Genv.find_funct ge (Genv.symbol_address ge id Ptrofs.zero) with *)
   (*   | Some _ => *)
@@ -2108,6 +2121,7 @@ Definition instr_to_string (i:instruction) : string :=
   | Pandps_fm  rd r1  => "Pandps_fm"
   (* (** Branches and calls *) *)
   | Pjmp_l l  => "Pjmp_l"
+  | Pjmp_m a => "Pjmp_m"
   | Pjmp ros sg => "Pjmp"
   | Pjcc c l => "Pjcc"
   | Pjcc2 c1 c2 l => "Pjcc2"  (**r pseudo *)

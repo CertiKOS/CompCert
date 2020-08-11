@@ -203,6 +203,9 @@ Lemma transf_refl:
        \/(exists condition1 condition2 l, i = Pjcc2 condition1 condition2 l /\ (exists relOfs cond1' cond2', i' = Pjcc2_rel cond1' cond2' relOfs))
        \/(exists reg tl, i = Pjmptbl reg tl /\ (exists r' ofsLst, i' = Pjmptbl_rel r' ofsLst))). 
 Proof.
+Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*
   intros f f' ofs i Htrans HfindInstr.
   
   destruct i eqn:EQI;
@@ -220,10 +223,10 @@ Proof.
          rewrite HtFind;
          rewrite EQI in HElim;
          unfold transl_code in HElim;
-         simpl in HElim;      
+         simpl in HElim;
          monadInv HElim;
          rewrite <- EQI;
-         auto) | inversion Htrans | try (left; repeat split; try (intros HN;inversion HN); auto) | inversion Htrans]). 
+         auto) | inversion Htrans | try (left; repeat split; try (intros HN;inversion HN); auto) | inversion Htrans]).
   +
     set (I := i) in EQI.
     unfold trans_function in Htrans.
@@ -236,7 +239,7 @@ Proof.
     rewrite EQI in HTransI'.
     simpl in HTransI'.
     destruct (label_pos l 0 (fn_code f)) eqn: EQFL.
-    ++    
+    ++
     exists ( Pjmp_l_rel (z - (ofs + instr_size (Pjmp_l l)))).
     split.
     simpl. rewrite HTfindInstr. f_equal. inversion HTransI'. auto.
@@ -272,7 +275,7 @@ Proof.
     destruct (label_pos l 0 (fn_code f)) eqn: EQFL.
     ++ inversion HTransI'. exists i'. simpl. split. auto. right.
        right. right. left. exists c1, c2, l. split. auto. eauto.
-    ++ inversion HTransI'. ++ inversion Htrans.                              
+    ++ inversion HTransI'. ++ inversion Htrans.
   + set (I := i) in EQI.
     unfold trans_function in Htrans.
     destruct (func_no_jmp_rel_dec f) eqn:EQF.
@@ -289,6 +292,8 @@ Proof.
     ++ inversion HTransI'.
     ++ inversion Htrans.
 Qed.
+ *)
+(***** Remove Proofs By Chris End ******)
 
 
 Lemma transf_symbol_refl: forall id,
@@ -514,6 +519,9 @@ Proof.
       admit.
 
     +++
+      (* Pjmp_m a *)
+      admit.
+    +++
       (* Pjcc c l *)
       rewrite <- H8.
       destruct (eval_testcond c rs0) eqn:EQC;inversion H4.
@@ -585,7 +593,10 @@ Proof.
           auto.
       ++++ auto.
     +++
-    (* pjmptbl *)
+      admit.
+(***** Remove Proofs By Chris Start ******)
+(*      
+      (* pjmptbl *)
       rewrite <- H8. rewrite <- H9. rewrite H4.
       monadInv H5.
       simpl.
@@ -606,7 +617,7 @@ Proof.
           n < list_length_z l
           ->exists a, list_nth_z l n = Some a.
       Admitted.
-      assert (Int.unsigned i < list_length_z x) as HxLen. {        
+      assert (Int.unsigned i < list_length_z x) as HxLen. {
         setoid_rewrite <- EQLen.
         omega.
       }
@@ -651,7 +662,8 @@ Proof.
       repeat rewrite Z.add_assoc.
       omega.
       admit. admit. admit. admit. admit.
-
+ *)
+(***** Remove Proofs By Chris End ******)
     +++ admit.
     (* +++ subst. rewrite H4. *)
 

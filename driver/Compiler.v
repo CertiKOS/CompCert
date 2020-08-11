@@ -110,6 +110,7 @@ Require RelocProgSyneqproof.
 Require EncodeElfCorrect.
 Require RemoveAddend RemoveAddendproof.
 Require Floatliteralgen.
+Require Jumptablegen.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -221,6 +222,7 @@ Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program
   @@@ time "Generation of the symbol table" Symbtablegen.transf_program
+  @@@ time "Generation of the jump table" Jumptablegen.transf_program
   (* @@@ time "Normalize the symbol table indexes" NormalizeSymb.transf_program *)
   @@@ time "Generation of relocation table" Reloctablesgen.transf_program
   @@@ time "Encoding of instructions and data" RelocBingen.transf_program

@@ -631,6 +631,9 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
     (* reg field must be 4 *)
       let modrm := bB[b["11"] ++ b["100"] ++ rm] in
       OK(HB["FF"] :: modrm :: nil)
+  | Pjmp_m a =>
+    do abytes <- encode_addrmode ofs i a RSP;
+    OK(HB["FF"] :: abytes)
   | Ptestl_rr r1 r2 =>
     do r1bits <- encode_ireg r1;
     do r2bits <- encode_ireg r2;

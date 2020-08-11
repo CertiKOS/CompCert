@@ -122,6 +122,10 @@ Extract Constant SymbolString.string_to_ident => "FindSymbolString.string_to_ide
 Extract Constant SymbolString.create_float_literal_ident => "FloatliteralString.create_float_literal_ident".
 Extract Constant SymbolString.create_float_mask_ident => "FloatliteralString.create_float_mask_ident".
 
+Extract Constant SymbolString.create_jump_table_ident => "JumptableString.create_jump_table_ident".
+
+Extract Constant SymbolString.create_label_ident => "JumptableString.create_label_ident".
+
 Extract Constant TablesEncode.dump_reloctables => "DumpReloctables.dump_reloctables".
 
 (* CheckDef *)
