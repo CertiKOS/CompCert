@@ -1,7 +1,7 @@
-include ../Makefile.config
+include ../../Makefile.config
 
-CCOMP=../ccomp
-CCOMPFLAGS=-stdlib ../runtime -relf -static
+CCOMP=../../ccomp
+CCOMPFLAGS=-stdlib ../../runtime -relf -static
 
 CFLAGS=-O1 -Wall
 

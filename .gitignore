@@ -67,8 +67,8 @@ doc/html
 doc/html/
 # MacOS metadata
 .DS_Store
-c_examples/*.out
-c_examples/*.asm
-c_examples/*.hdr
-c_examples/comp_result.txt
-c_examples/gcc_result.txt
+c_examples/**/*.out
+c_examples/**/*.asm
+c_examples/**/*.hdr
+c_examples/**/comp_result.txt
+c_examples/**/gcc_result.txt
