@@ -67,13 +67,13 @@ Inductive match_states : Asm.state -> Asm.state -> Prop :=
    (MATCH_INJ: match_inj j) ,
    match_states (Asm.State rs m) (Asm.State rs' m').
 
-(* Definition shift_inj n (j: positive -> option positive) : positive -> option positive := *)
-(*   fun b => if plt n b then None *)
-(*         else  *)
-(*           match j (Pos.sub b n) with *)
-(*           | None => None *)
-(*           | Some m => Some (Pos.add n m) *)
-(*           end. *)
+Definition shift_inj n (j: positive -> option positive) : positive -> option positive :=
+  fun b => 
+    if Pos.leb b n then None
+    else match j (Pos.sub b n) with
+         | None => None
+         | Some m => Some (Pos.add n m)
+         end.
 
 (* Eval compute in (Pos.sub 1%positive 3%positive). *)
 
