@@ -328,7 +328,8 @@ Hypothesis TRANSF: match_prog prog tprog.
 Definition glob_block_valid (m:mem) := 
   forall b g, Globalenvs.Genv.find_def ge b = Some g -> Mem.valid_block m b.
 
-(** Properties about the memory injection from RealAsm to Relocatable Programs *)   Record match_inj (j: meminj) : Type :=
+(** Properties about the memory injection from RealAsm to Relocatable Programs *)   
+Record match_inj (j: meminj) : Type :=
   {
     (** Preservation of finding of instruction *)
     agree_inj_instrs:
