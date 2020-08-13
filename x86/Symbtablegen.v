@@ -404,7 +404,7 @@ Qed.
 Record wf_prog (p:Asm.program) : Prop :=
   {
     wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
-    wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
+    (* wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p); *)
     wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
     wf_prog_no_local_jmps: Forall def_instrs_valid (map snd (AST.prog_defs p));
     wf_prog_data_size_aligned: Forall data_size_aligned (map snd (AST.prog_defs p));
@@ -413,7 +413,7 @@ Record wf_prog (p:Asm.program) : Prop :=
 Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
 Proof.
   destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
-  destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
+  (* destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)). *)
   destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
   destruct (Forall_dec _ def_instrs_valid_dec (map snd (AST.prog_defs p))).
   destruct (Forall_dec _ data_size_aligned_dec (map snd (AST.prog_defs p))).
@@ -422,7 +422,7 @@ Proof.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
-  right. inversion 1. apply n. auto.
+  (* right. inversion 1. apply n. auto. *)
 Qed.
 
 
