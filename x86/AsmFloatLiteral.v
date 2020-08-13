@@ -107,12 +107,12 @@ Definition gen_float_literal iddef :=
 
 End FLOAT_MASK.
 
-Definition transf_program (p: Asm.program) : res program :=
+Definition transf_program (p: Asm.program) : program :=
   let (mask_defs, mask_idl) := gen_float_mask in
   let '(negd, negs, absd, abss) := mask_idl in
   let defs_mask := (AST.prog_defs p) ++ mask_defs in
   let defs := gen_float_literal negd negs absd abss (defs_mask) in
-  OK {| prog_defs := defs;
-        prog_public := AST.prog_public p;
-        prog_main := AST.prog_main p |}.
+  {| prog_defs := defs;
+     prog_public := AST.prog_public p;
+     prog_main := AST.prog_main p |}.
   

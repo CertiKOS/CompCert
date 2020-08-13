@@ -685,6 +685,18 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
   | Plabel _
   | Pnop =>
     OK (HB["90"] :: nil)
+  | Pbuiltin ef args res =>
+    match ef with
+    | EF_annot name _ =>
+      Error [MSG "Unsupported annot ef "; MSG (name)]
+    | EF_debug _ _ _ =>
+      Error [MSG "Unsupported debug info "]
+    | EF_inline_asm name _ _ =>
+      Error [MSG "Unsupported inline asm "; MSG (name)]
+    | EF_builtin name _  =>
+      Error [MSG "Unsupported builtins "; MSG (name)]
+    | _ => Error [MSG "Encoding of the builins is not supported yet"]
+    end
   | _ =>
     Error [MSG "Encoding of the instruction is not supported yet: ";
            MSG (instr_to_string i)]

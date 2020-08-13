@@ -11,10 +11,9 @@ OBJDUMP=objdump
 READELF=readelf
 
 PROGS=fib integr qsort fft fftsp fftw sha1 sha3 aes almabench \
-  lists binarytrees fannkuch knucleotide mandelbrot nbody\
-  nsieve nsievebits spectral \
-  bisect chomp perlin
-# unsupported: vmach siphash24
+  lists binarytrees fannkuch knucleotide mandelbrot nbody \
+  nsieve nsievebits spectral vmach \
+  bisect chomp perlin siphash24
 
 all: ccomp gcc
 ccomp: $(PROGS:%=%.ccomp.out) 

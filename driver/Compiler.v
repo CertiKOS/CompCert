@@ -51,6 +51,10 @@ Require Stacking.
 Require Mach2Mach2.
 Require Asmgen.
 Require PseudoInstructions.
+Require AsmBuiltinInline.
+Require AsmFloatLiteral.
+Require AsmPseudoInstr.
+Require Jumptablegen.
 (** Proofs of semantic preservation. *)
 Require SimplExprproof.
 Require SimplLocalsproof.
@@ -109,8 +113,6 @@ Require RelocProgSyneq.
 Require RelocProgSyneqproof.
 Require EncodeElfCorrect.
 Require RemoveAddend RemoveAddendproof.
-Require Floatliteralgen.
-Require Jumptablegen.
 (** Command-line flags. *)
 Require Import Compopts.
 
@@ -217,7 +219,9 @@ Definition transf_c_program_real p : res Asm.program :=
   @@ time "Elimination of pseudo instruction" PseudoInstructions.transf_program.
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
   transf_c_program_real p
-  @@@ time "Generation of the float literal" Floatliteralgen.transf_program
+  @@@ time "Expand builtin inline assembly" AsmBuiltinInline.transf_program
+  @@ time "Generation of the float literal" AsmFloatLiteral.transf_program
+  @@@ time "Elimination of other pseudo instructions" AsmPseudoInstr.transf_program
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
   @@ time "Pad Nops to make the alignment of functions correct" PadNops.transf_program
   @@ time "Pad space to make the alignment of data correct" PadInitData.transf_program

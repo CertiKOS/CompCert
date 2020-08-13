@@ -4238,7 +4238,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (*  (Pmovsd_mf_a a r1) *)
     admit.
   + (*  (Plabel l0) *)
-    admit. 
+    admit.
+  + (* (Pbuiltin) *)
+    admit.
   + (*  (Pjmp_l_rel ofs0) *)
     exists  (Pjmp_l_rel ofs0).
     split;try(unfold instr_eq; auto).
