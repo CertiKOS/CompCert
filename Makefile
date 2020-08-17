@@ -113,7 +113,7 @@ BACKEND=\
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v Jumptablegen.v PadNops.v PadInitData.v \
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
-  Symbtablegen.v  Reloctablesgen.v Reloctablesgenproof.v \
+  Symbtablegen.v SymbtableSort.v Reloctablesgen.v Reloctablesgenproof.v \
 	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
 	TablesEncode.v \

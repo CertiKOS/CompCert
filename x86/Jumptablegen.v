@@ -34,7 +34,7 @@ Fixpoint findAllLabel (l: list label)(all:list instruction): res (list Z) :=
 Definition labelofstoSymbol (ofsLst: Z) : symbentry :=
   let id := create_label_ident tt in
   {|symbentry_id := id;
-    symbentry_bind := bind_global;
+    symbentry_bind := bind_local;
     symbentry_type := symb_notype;
     symbentry_value := ofsLst;
     symbentry_secindex := secindex_normal sec_code_id;
@@ -75,7 +75,7 @@ Definition acc_instrs (r: res(Z * list instruction * list init_data * list symbe
     let jmp_data' := acc_jmp_data ++ tbl_data in
     let tbl_e :=
         {|symbentry_id := tbl_id;
-          symbentry_bind := bind_global;
+          symbentry_bind := bind_local;
           symbentry_type := symb_data;
           symbentry_value := init_data_list_size rodata;
           symbentry_secindex := secindex_normal sec_rodata_id;

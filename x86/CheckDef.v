@@ -14,5 +14,7 @@ Parameter is_def_builtin: ident -> bool.
 
 Parameter is_def_string_literal: ident -> bool.
 
+Parameter is_def_float_literal : ident -> bool.
+
 Definition is_def_local id :=
-  is_def_builtin id || is_def_string_literal id.
+  is_def_builtin id || is_def_string_literal id || is_def_float_literal id.
