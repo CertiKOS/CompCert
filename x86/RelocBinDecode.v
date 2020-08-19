@@ -4271,6 +4271,10 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Padcl_rr rd r2). admit.
   + (* Paddl_rr rd r2 *)
     exists (Paddl_rr rd r2). admit.
+  + (* Pmovsq_mr a frs *)
+    exists (Pmovsq_mr a frs). admit.
+  + (* Pmovsq_rm frd a *)
+    exists (Pmovsq_rm frd a). admit.
   + (* Psubl_ri rd n *)
     exists (Psubl_ri rd n).
     split; try(unfold instr_eq; auto).

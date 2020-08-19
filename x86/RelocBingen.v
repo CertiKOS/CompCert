@@ -408,7 +408,13 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
       OK (HB["0F"] :: HB["BF"] :: modrm ::nil)
   | Pmovsw_rm rd a =>
     do abytes <- encode_addrmode ofs i a rd;
-      OK (HB["0F"] :: HB["BF"] :: abytes)
+    OK (HB["0F"] :: HB["BF"] :: abytes)
+  | Pmovsq_rm frd a =>
+    do abytes <- encode_addrmode_f ofs i a frd;
+    OK (HB["F3"] :: HB["03"] :: HB["71"] :: abytes)
+  | Pmovsq_mr a frs =>
+    do abytes <- encode_addrmode_f ofs i a frs;
+    OK (HB["66"] :: HB["0F"] :: HB["D6"] :: abytes)
   | Pcvtsd2ss_ff frd fr1 =>
     do reg <- encode_freg frd;
       do rm <- encode_freg fr1;

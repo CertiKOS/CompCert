@@ -53,6 +53,8 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmovsd_mf a _
   | Pmovss_fm _ a
   | Pmovss_mf a _
+  | Pmovsq_rm _ a
+  | Pmovsq_mr a _              
   | Pxorpd_fm _ a
   | Pxorps_fm _ a
   | Pandpd_fm _ a
@@ -189,6 +191,12 @@ Definition transl_instr (sofs:Z) (i: instruction) : res (list relocentry) :=
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
   | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pmovsq_rm frd (Addrmode rb ss (inr disp)) =>
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pmovsq_mr (Addrmode rb ss (inr disp)) frs =>
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
   (** Integer arithmetic *)
@@ -384,6 +392,12 @@ Definition id_eliminate (i:instruction):res (instruction):=
   | Pmovsw_rm rd (Addrmode rb ss (inr disp)) =>
     let '(id, ptrofs) := disp in
     OK (Pmovsw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovsq_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovsq_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
+  | Pmovsq_mr (Addrmode rb ss (inr disp)) rs =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovsq_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
   (** Integer arithmetic *)
   | Pleal rd (Addrmode rb ss (inr disp))  =>
     let '(id, ptrofs) := disp in
