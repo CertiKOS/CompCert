@@ -131,7 +131,11 @@ Extract Constant TablesEncode.dump_reloctables => "DumpReloctables.dump_reloctab
 (* CheckDef *)
 Extract Constant CheckDef.is_def_builtin => "CheckDefImpl.is_def_builtin".
 Extract Constant CheckDef.is_def_string_literal => "CheckDefImpl.is_def_string_literal".
+Extract Constant CheckDef.is_def_static => "CheckDefImpl.is_def_static".
 Extract Constant CheckDef.is_def_float_literal => "FloatliteralString.is_def_float_literal".
+
+(* Label *)
+Extract Constant AsmLabelNew.new_label => "Asmexpandaux.new_label".
 
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".

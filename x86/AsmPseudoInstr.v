@@ -8,15 +8,38 @@ Require Import Events.
 Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
-Require Import Globalenvs .
+Require Import Globalenvs.
+Require Import AsmLabelNew.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
 
+Definition neg_cond (cond:testcond) :=
+  match cond with
+  | Cond_e => Cond_ne
+  | Cond_ne => Cond_e
+  | Cond_b => Cond_ae
+  | Cond_be => Cond_a
+  | Cond_ae => Cond_b
+  | Cond_a => Cond_be
+  | Cond_l => Cond_ge
+  | Cond_le => Cond_g
+  | Cond_ge => Cond_l
+  | Cond_g => Cond_le
+  | Cond_p => Cond_np
+  | Cond_np => Cond_p
+  end.
+  
 Definition transf_instr (i: instruction) : res (list instruction) :=
   match i with
-  |Psetcc c rd =>
+  | Psetcc c rd =>
    OK [Pmovzb_rr rd rd; Psetcc c rd]
+  | Pjcc2 cond1 cond2 lbl =>
+    let lbl' := new_label tt in
+    let i1 := Pjcc (neg_cond cond1) lbl' in
+    let i2 := Pjcc cond2 lbl in
+    let i3 :=  Plabel lbl' in
+    OK ([i1]++[i2]++[i3])
   |_ => OK [i] 
   end.
 
