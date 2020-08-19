@@ -27,3 +27,6 @@ let is_def_string_literal (id: ident) : bool =
   with
   | Not_found ->
      false
+
+let is_def_static (id: ident) : bool =
+  atom_is_static id
