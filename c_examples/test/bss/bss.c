@@ -5,7 +5,7 @@ static int static_init = 1;
 int local_uninit;
 int local_init = 3;
 extern int extern_declare;
-int extern_undeclare;
+extern int extern_undeclare;
 
 void link();
 
