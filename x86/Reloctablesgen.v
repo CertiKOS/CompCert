@@ -284,7 +284,15 @@ Definition transl_sectable (stbl: sectable) :=
             match transl_init_data_list l' with
             | Error e => Error e
             | OK rodatareloctable =>
-              OK (codereloctable, datareloctable, rodatareloctable)
+              match SecTable.get sec_bss_id stbl with
+              | Some (sec_bss l'') =>
+                match transl_init_data_list l'' with
+                | Error e => Error e
+                | OK bssreloctable =>
+                  OK (codereloctable, datareloctable, rodatareloctable, bssreloctable)
+                end
+              |_ => Error (msg "Expected bss section to be a sec_bss")
+              end
             end
           |_ => Error (msg "Expected rodata section to be a sec_rodata")
           end
@@ -428,6 +436,7 @@ Definition print_section (s: section) :=
   | sec_text _ => "text"
   | sec_data _ => "data"
   | sec_rodata _ => "rodata"
+  | sec_bss _ => "bss"
   | sec_bytes _ => "bytes"
   end.
 
@@ -439,10 +448,10 @@ Fixpoint print_sectable (stbl: sectable) :=
 
 Definition transl_sectable' (stbl: sectable): res sectable :=
   match stbl with
-    [sec_rodata l'; sec_data l; sec_text code] =>
+    [sec_bss l''; sec_rodata l'; sec_data l; sec_text code] =>
     do code' <- transl_code' code;
     if zlt (code_size code') Ptrofs.max_unsigned
-    then OK [sec_rodata l'; sec_data l; sec_text code']
+    then OK [sec_bss l''; sec_rodata l'; sec_data l; sec_text code']
     else Error (msg "code_size transl_sectable'")
   | _ => Error (msg "Expected section table to be [text; data], got " ++ msg (print_sectable stbl))
   end.
@@ -454,7 +463,7 @@ End WITH_SYMB_INDEX_MAP.
 Definition transf_program (p:program) : res program :=
   let map := gen_symb_index_map (p.(prog_symbtable)) in
   do r <- transl_sectable map (prog_sectable p);
-  let '(codereloc, datareloc, rodatareloc) := r in
+  let '(codereloc, datareloc, rodatareloc, bssreloc) := r in
   do sec' <- transl_sectable' (prog_sectable p);
   if list_norepet_dec ident_eq (List.map fst (prog_defs p))
   then
@@ -466,7 +475,7 @@ Definition transf_program (p:program) : res program :=
           prog_sectable := sec';
           prog_strtable := prog_strtable p;
           prog_symbtable := prog_symbtable p;
-          prog_reloctables := Build_reloctable_map codereloc datareloc rodatareloc;
+          prog_reloctables := Build_reloctable_map codereloc datareloc rodatareloc bssreloc;
           prog_senv := prog_senv p;
        |}
     else

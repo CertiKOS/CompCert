@@ -109,7 +109,7 @@ BACKEND=\
   Tailcall.v Tailcallproof.v \
 	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
 	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
-  AsmBuiltinInline.v AsmFloatLiteral.v AsmPseudoInstr.v AsmLabelNew.v\
+  AsmBuiltinInline.v AsmFloatLiteral.v AsmPseudoInstr.v \
   RelocProgram.v \
   Asmlabelgen.v Asmlabelgenproof.v Jumptablegen.v PadNops.v PadInitData.v \
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \

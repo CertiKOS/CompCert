@@ -33,6 +33,7 @@ Definition reloc_program_of_elf_program (p:RelocElf.elf_file) : RelocProgram.pro
       prog_reloctables := {| reloctable_code := nil;
                              reloctable_data := nil;
                              reloctable_rodata := nil;
+                             reloctable_bss := nil;
                           |};
 
     |}.

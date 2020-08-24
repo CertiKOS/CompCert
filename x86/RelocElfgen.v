@@ -109,6 +109,20 @@ Definition get_section_size id (t:sectable) :=
   end.
 
 (** Create section headers *)
+Definition gen_bss_sec_header p :=
+  let t := (prog_sectable p) in
+  {| sh_name     := bss_str_ofs;
+     sh_type     := SHT_NOBITS;
+     sh_flags    := [SHF_ALLOC; SHF_WRITE];     
+     sh_addr     := 0;
+     sh_offset   := get_sh_offset sec_bss_id t;
+     sh_size     := get_section_size sec_bss_id t;
+     sh_link     := 0;
+     sh_info     := 0;
+     sh_addralign := 16;
+     sh_entsize  := 0;
+  |}.
+
 Definition gen_rodata_sec_header p :=
   let t := (prog_sectable p) in
   {| sh_name     := rodata_str_ofs;
@@ -174,6 +188,20 @@ Definition gen_symtab_sec_header p :=
      sh_info     := one_greater_last_local_symb_index p;
      sh_addralign := 1;
      sh_entsize  := symb_entry_size;
+  |}.
+
+Definition gen_relbss_sec_header p :=
+  let t := (prog_sectable p) in
+  {| sh_name     := relabss_str_ofs;
+     sh_type     := SHT_REL;
+     sh_flags    := [];
+     sh_addr     := 0;
+     sh_offset   := get_sh_offset sec_rel_bss_id t;
+     sh_size     := get_section_size sec_rel_bss_id t;
+     sh_link     := Z.of_N sec_symbtbl_id;
+     sh_info     := Z.of_N sec_bss_id;
+     sh_addralign := 1;
+     sh_entsize  := reloc_entry_size;
   |}.
 
 Definition gen_relrodata_sec_header p :=
@@ -266,15 +294,17 @@ Definition gen_sections (t:sectable) : res (list section) :=
 Definition gen_reloc_elf (p:program) : res elf_file :=
   do secs <- gen_sections (prog_sectable p);
   do _ <- RelocProgSemantics3.decode_tables p;
-    if (beq_nat (length secs) 9) then
+    if (beq_nat (length secs) 11) then
       if zlt (get_elf_shoff p) (two_p 32)
       then 
         let headers := [null_section_header;
+                       gen_bss_sec_header p;
                        gen_rodata_sec_header p;
                        gen_data_sec_header p;
                        gen_text_sec_header p;
                        gen_strtab_sec_header p;
                        gen_symtab_sec_header p;
+                       gen_relbss_sec_header p;
                        gen_relrodata_sec_header p;
                        gen_reldata_sec_header p;
                        gen_reltext_sec_header p;
@@ -290,7 +320,7 @@ Definition gen_reloc_elf (p:program) : res elf_file :=
       else
         Error (msg "Sections too big (get_elf_shoff above bounds)")
     else
-      Error [MSG "Number of sections is incorrect (not 7): "; POS (Pos.of_nat (length secs))].
+      Error [MSG "Number of sections is incorrect (not 11): "; POS (Pos.of_nat (length secs))].
 
 Require Import Lia.
 

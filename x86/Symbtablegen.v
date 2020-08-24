@@ -69,11 +69,11 @@ Qed.
 
 Section WITH_PROG_SECS.
 
-Variables (rdsec dsec csec:N).
+Variables (bsssec rdsec dsec csec:N).
 
 Section WITH_SECS_SIZE.
 
-Variables (rdsize dsize csize: Z).
+Variables (bsssize rdsize dsize csize: Z).
 
 Definition get_bind_ty id :=
   if is_def_local id then bind_local else bind_global.
@@ -104,14 +104,24 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
         symbentry_size := 0;
       |}
     | [Init_space sz] =>
-      (** This is an external data symbol in the COMM section *)
-      {|symbentry_id := id;
-        symbentry_bind := bindty;
-        symbentry_type := symb_data;
-        symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
-        symbentry_secindex := secindex_comm;
-        symbentry_size := Z.max sz 0;
+      if is_def_static id then
+        (** This is an internal data symbol in the BSS section *)
+        {|symbentry_id := id;
+          symbentry_bind := bindty;
+          symbentry_type := symb_data;
+          symbentry_value := bsssize; (* 8 is a safe alignment for any data *)
+          symbentry_secindex := secindex_normal bsssec;
+          symbentry_size := Z.max sz 0;
       |}
+      else
+        (** This is an external data symbol in the COMM section *)
+        {|symbentry_id := id;
+          symbentry_bind := bindty;
+          symbentry_type := symb_data;
+          symbentry_value := 8 ; (* 8 is a safe alignment for any data *)
+          symbentry_secindex := secindex_comm;
+          symbentry_size := Z.max sz 0;
+        |}
     | _ => match gvar.(gvar_readonly) with
          | true =>
            (** This is an internal read-only data symbol *)
@@ -155,43 +165,49 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
 (** update_code_data_size takes the current sizes of data and text
     sections and a global definition as input, and updates these sizes
     accordingly *) 
-Definition update_section_size (def: option (AST.globdef Asm.fundef unit)) : (Z * Z * Z) :=
+Definition update_section_size (iddef: ident * option (AST.globdef Asm.fundef unit))
+  : (Z * Z * Z * Z) :=
+  let (id, def) := iddef in
   match def with
-  | None => (rdsize, dsize, csize)
+  | None => (bsssize, rdsize, dsize, csize)
   | Some (Gvar gvar) =>
     match gvar_init gvar with
-    | nil
-    | [Init_space _] => (rdsize, dsize, csize)
+    | nil => (bsssize, rdsize, dsize, csize)
+    | [Init_space sz] =>
+      if is_def_static id then
+        (bsssize + sz, rdsize, dsize, csize)
+      else
+        (bsssize, rdsize, dsize, csize)
     | l => match gvar.(gvar_readonly) with
           | true => let sz := AST.init_data_list_size l in
-                   (rdsize + sz, dsize, csize)
+                   (bsssize, rdsize + sz, dsize, csize)
           | false => let sz := AST.init_data_list_size l in
-                    (rdsize, dsize + sz, csize)
+                    (bsssize, rdsize, dsize + sz, csize)
           end
     end
-  | Some (Gfun (External ef)) => (rdsize, dsize, csize)
+  | Some (Gfun (External ef)) => (bsssize, rdsize, dsize, csize)
   | Some (Gfun (Internal f)) =>
     let sz := Asm.code_size (Asm.fn_code f) in
-    (rdsize, dsize, csize+sz)
+    (bsssize, rdsize, dsize, csize+sz)
   end.
 
 End WITH_SECS_SIZE.
 
-Definition acc_symb (ssize: symbtable * Z * Z *Z) 
+Definition acc_symb (ssize: symbtable * Z * Z * Z * Z) 
            (iddef: ident * option (AST.globdef Asm.fundef unit)) :=
-  let '(stbl, rdsize, dsize, csize) := ssize in
+  let '(stbl, bsssize, rdsize, dsize, csize) := ssize in
   let (id, def) := iddef in
-  let e := get_symbentry rdsize dsize csize id def in
+  let e := get_symbentry bsssize rdsize dsize csize id def in
   let stbl' := e :: stbl in
-  let '(rdsize', dsize', csize') := update_section_size rdsize dsize csize def in
-  (stbl', rdsize', dsize', csize').
+  let '(bsssize', rdsize', dsize', csize') := update_section_size bsssize rdsize dsize csize iddef in
+  (stbl', bsssize', rdsize', dsize', csize').
 
 
 (** Generate the symbol and section table *)
 Definition gen_symb_table defs :=
-  let '(rstbl, rdsize, dsize, csize) := 
-      fold_left acc_symb  defs (nil,0, 0, 0) in
-  (rev rstbl, rdsize, dsize, csize).
+  let '(rstbl, bsssize, rdsize, dsize, csize) := 
+      fold_left acc_symb  defs (nil, 0, 0, 0, 0) in
+  (rev rstbl, bsssize, rdsize, dsize, csize).
 
 End WITH_PROG_SECS.
 
@@ -347,12 +363,20 @@ Definition create_rodata_section (defs: list (ident * option (globdef fundef uni
                          [] defs in
   sec_rodata rodata.
 
+Definition acc_init_bss (iddef: ident * option (globdef fundef unit)) dinit :=
+  (get_def_uninit_bss iddef) ++ dinit.
+
+Definition create_bss_section (defs: list (ident * option (globdef fundef unit))) : section :=
+  let bss := fold_right acc_init_bss
+                         [] defs in
+  sec_bss bss.
+
 Definition create_sec_table defs : sectable :=
+  let bss_sec := create_bss_section defs in
   let rodata_sec := create_rodata_section defs in
   let data_sec := create_data_section defs in
   let code_sec := create_code_section defs in
-  [rodata_sec; data_sec; code_sec].
-
+  [bss_sec; rodata_sec; data_sec; code_sec].
 
 Definition instr_valid i := ~instr_invalid i.
 
@@ -429,7 +453,7 @@ Qed.
 (** The full translation *)
 Definition transf_program (p:Asm.program) : res program :=
   if check_wellformedness p then
-    let '(symb_tbl, rdsize, dsize, csize) := gen_symb_table sec_rodata_id sec_data_id sec_code_id (AST.prog_defs p) in
+    let '(symb_tbl, bsssize, rdsize, dsize, csize) := gen_symb_table sec_bss_id sec_rodata_id sec_data_id sec_code_id (AST.prog_defs p) in
     let sec_tbl := create_sec_table (AST.prog_defs p) in
     if zle (sections_size sec_tbl) Ptrofs.max_unsigned then
       OK {| prog_defs := AST.prog_defs p;
@@ -438,7 +462,7 @@ Definition transf_program (p:Asm.program) : res program :=
             prog_sectable := sec_tbl;
             prog_strtable := PTree.empty Z;
             prog_symbtable := symb_tbl;
-            prog_reloctables := Build_reloctable_map nil nil nil;
+            prog_reloctables := Build_reloctable_map nil nil nil nil;
             prog_senv := Globalenvs.Genv.to_senv (Globalenvs.Genv.globalenv p)
          |}
     else 

@@ -56,6 +56,7 @@ Inductive section : Type :=
 | sec_text (code: list instruction)
 | sec_data (init: list init_data)
 | sec_rodata (init: list init_data)
+| sec_bss (uninit: list init_data)
 | sec_bytes (bs: list byte).
 
 Definition sec_size (s: section) : Z :=
@@ -63,6 +64,7 @@ Definition sec_size (s: section) : Z :=
   | sec_text c => code_size c
   | sec_data d => AST.init_data_list_size d
   | sec_rodata d => AST.init_data_list_size d
+  | sec_bss d => AST.init_data_list_size d
   | sec_bytes bs => Z.of_nat (length bs)
   end.
 
@@ -155,7 +157,7 @@ Definition strtable := PTree.t Z.
 (** ** Definition of program constructs *)
 Definition gdef := AST.globdef fundef unit.
 
-Inductive reloctable_id := RELOC_CODE | RELOC_DATA | RELOC_RODATA.
+Inductive reloctable_id := RELOC_CODE | RELOC_DATA | RELOC_RODATA | RELOC_BSS.
 
 Definition reloctable_id_eq: forall (x y: reloctable_id), {x = y} + { x <> y}.
 Proof.
@@ -167,13 +169,20 @@ Record reloctable_map :=
     reloctable_code: reloctable;
     reloctable_data: reloctable;
     reloctable_rodata: reloctable;
+    reloctable_bss: reloctable;
   }.
 
 Definition set_reloctable (i: reloctable_id) (rtbl:reloctable) (rmap:reloctable_map) :=
   match i with
-  | RELOC_CODE => {| reloctable_code := rtbl; reloctable_data := reloctable_data rmap; reloctable_rodata := reloctable_rodata rmap |}
-  | RELOC_DATA => {| reloctable_data := rtbl; reloctable_rodata := reloctable_rodata rmap; reloctable_code := reloctable_code rmap |}
-  | RELOC_RODATA => {| reloctable_rodata := rtbl; reloctable_data := reloctable_data rmap; reloctable_code := reloctable_code rmap |}
+  | RELOC_CODE => {| reloctable_code := rtbl; reloctable_data := reloctable_data rmap;
+                     reloctable_rodata := reloctable_rodata rmap; reloctable_bss := reloctable_bss rmap |}
+  | RELOC_DATA => {| reloctable_data := rtbl; reloctable_rodata := reloctable_rodata rmap;
+                     reloctable_bss := reloctable_bss rmap; reloctable_code := reloctable_code rmap |}
+  | RELOC_RODATA => {| reloctable_rodata := rtbl; reloctable_bss := reloctable_bss rmap;
+                       reloctable_code := reloctable_code rmap; reloctable_data := reloctable_data rmap |}
+  | RELOC_BSS => {| reloctable_bss := rtbl; reloctable_code := reloctable_code rmap;
+                    reloctable_data := reloctable_data rmap; reloctable_rodata := reloctable_rodata rmap |}
+                      
   end.
 
 Definition get_reloctable (i:reloctable_id) (rmap: reloctable_map) :=
@@ -181,6 +190,7 @@ Definition get_reloctable (i:reloctable_id) (rmap: reloctable_map) :=
   | RELOC_CODE => reloctable_code rmap
   | RELOC_DATA => reloctable_data rmap
   | RELOC_RODATA => reloctable_rodata rmap
+  | RELOC_BSS => reloctable_bss rmap
   end.
 
 Record program : Type := {
@@ -225,15 +235,17 @@ Definition gen_reloc_ofs_map (rtbl: reloctable) :  reloc_ofs_map_type :=
 (* Coercion prog_to_prog : program >-> AST.program. *)
 
 (** Section table ids *)
-Definition sec_rodata_id   := 1%N.
-Definition sec_data_id     := 2%N.
-Definition sec_code_id     := 3%N.
-Definition sec_strtbl_id   := 4%N.
-Definition sec_symbtbl_id  := 5%N.
-Definition sec_rel_rodata_id := 6%N.
-Definition sec_rel_data_id := 7%N.
-Definition sec_rel_code_id := 8%N.
-Definition sec_shstrtbl_id := 9%N.
+Definition sec_bss_id      := 1%N.
+Definition sec_rodata_id   := 2%N.
+Definition sec_data_id     := 3%N.
+Definition sec_code_id     := 4%N.
+Definition sec_strtbl_id   := 5%N.
+Definition sec_symbtbl_id  := 6%N.
+Definition sec_rel_bss_id := 7%N.
+Definition sec_rel_rodata_id := 8%N.
+Definition sec_rel_data_id := 9%N.
+Definition sec_rel_code_id := 10%N.
+Definition sec_shstrtbl_id := 11%N.
 
 (** Ultility function s*)
 (* Definition add_symb_to_list (t: list (ident * symbentry)) (s:symbentry) := *)

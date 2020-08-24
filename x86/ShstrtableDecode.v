@@ -21,7 +21,7 @@ Local Open Scope bits_scope.
 
 
 Definition transf_program_inv p :=
-  do (sectable, _) <- take_drop 9 (prog_sectable p);
+  do (sectable, _) <- take_drop 11 (prog_sectable p);
     OK {|
         prog_defs := prog_defs p;
         prog_public := prog_public p;
@@ -42,6 +42,8 @@ Proof.
   unfold transf_program_inv. simpl.
   apply beq_nat_true in Heqb.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
   destruct s; simpl in *; try congruence.
   destruct s; simpl in *; try congruence.
   destruct s; simpl in *; try congruence.

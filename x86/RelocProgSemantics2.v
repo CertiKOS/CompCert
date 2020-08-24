@@ -33,6 +33,26 @@ Definition store_init_data_bytes (m: mem) (b: block) (p: Z) (bytes: list byte)
   let memvals := List.map Byte bytes in
   Mem.storebytes m b p memvals.
 
+Definition alloc_bss_section (t:sectable) (m:mem) : option mem :=
+  match SecTable.get sec_bss_id t with
+  | None => None
+  | Some sec =>
+    let sz := (sec_size sec) in
+    match sec with
+    | sec_bytes init =>
+      let '(m1, b) := Mem.alloc m 0 sz in
+      match store_zeros m1 b 0 sz with
+      | None => None
+      | Some m2 =>
+        match store_init_data_bytes m2 b 0 init with
+        | None => None
+        | Some m3 => Mem.drop_perm m3 b 0 sz Writable
+        end
+      end
+    | _ => None
+    end
+  end.
+
 Definition alloc_rodata_section (t:sectable) (m:mem) : option mem :=
   match SecTable.get sec_rodata_id t with
   | None => None
@@ -78,16 +98,20 @@ End WITHGE.
 Definition init_mem (p: program) :=
   let ge := RelocProgSemantics1.globalenv p in
   let stbl := prog_sectable p in
-  match alloc_rodata_section stbl Mem.empty with
+  match alloc_bss_section stbl Mem.empty with
   | None => None
   | Some m1 =>
-    match alloc_data_section stbl m1 with
+    match alloc_rodata_section stbl m1 with
     | None => None
     | Some m2 =>
-      match RelocProgSemantics1.alloc_code_section stbl m2 with
+      match alloc_data_section stbl m2 with
       | None => None
       | Some m3 =>
-        RelocProgSemantics1.alloc_external_symbols m3 (prog_symbtable p)
+        match RelocProgSemantics1.alloc_code_section stbl m3 with
+        | None => None
+        | Some m4 =>
+          RelocProgSemantics1.alloc_external_symbols m4 (prog_symbtable p)
+        end
       end
     end
   end.
