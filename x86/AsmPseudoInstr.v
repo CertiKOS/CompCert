@@ -9,7 +9,6 @@ Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
 Require Import Globalenvs.
-Require Import AsmLabelNew.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
@@ -29,13 +28,35 @@ Definition neg_cond (cond:testcond) :=
   | Cond_p => Cond_np
   | Cond_np => Cond_p
   end.
-  
-Definition transf_instr (i: instruction) : res (list instruction) :=
+
+Definition get_label (i: instruction) :=
+  match i with
+  | Plabel l => [l]
+  | _ => []
+  end.
+
+Definition get_all_label (code: code) :=
+  concat (map get_label code).
+
+Fixpoint max_label (lbl:label) (lbll: list label) :=
+  match lbll with
+  | nil => lbl
+  | h::l => if (Pos.ltb lbl h) then
+            max_label h l
+          else
+            max_label lbl l
+  end.
+
+Definition new_label (code: code) :=
+  let lbll := get_all_label code in
+  Psucc (max_label 1%positive lbll).
+
+Definition transf_instr (i: instruction) (code: code) : res (list instruction) :=
   match i with
   | Psetcc c rd =>
-   OK [Pmovzb_rr rd rd; Psetcc c rd]
+   OK [Psetcc c rd; Pmovzb_rr rd rd]
   | Pjcc2 cond1 cond2 lbl =>
-    let lbl' := new_label tt in
+    let lbl' := new_label code in
     let i1 := Pjcc (neg_cond cond1) lbl' in
     let i2 := Pjcc cond2 lbl in
     let i3 :=  Plabel lbl' in
@@ -43,13 +64,13 @@ Definition transf_instr (i: instruction) : res (list instruction) :=
   |_ => OK [i] 
   end.
 
-Definition acc_transl_instr (r:res code) (i:instruction) :=
+Definition acc_transl_instr (c: code) (r:res code) (i:instruction) :=
   do acc_i <- r;
-  do i' <- transf_instr i;
+  do i' <- transf_instr i c;
   OK (acc_i ++ i').
   
-Definition transl_code (c:code) : res code :=
-  do code <- fold_left acc_transl_instr c (OK []);
+Definition transl_code (c: code) : res code :=
+  do code <- fold_left (acc_transl_instr c) c (OK []);
   OK (code).
 
 Definition transf_function (f: function) : res function :=

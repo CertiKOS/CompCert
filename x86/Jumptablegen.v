@@ -19,18 +19,6 @@ Local Open Scope error_monad_scope.
 
 Definition jumptable : Type := (ident * option gdef) * list symbentry.
 
-Fixpoint findAllLabel (l: list label)(all:list instruction): res (list Z) :=
-  match l with
-  |[] => OK []
-  |h :: t =>
-   match label_pos h 0 all with
-   |None => Error (msg"Label not found")
-   |Some pos =>
-    do tail <-  (findAllLabel t all);
-      OK (pos::tail)
-   end
-  end.
-
 Definition labelofstoSymbol (ofsLst: Z) : symbentry :=
   let id := create_label_ident tt in
   {|symbentry_id := id;
@@ -42,16 +30,15 @@ Definition labelofstoSymbol (ofsLst: Z) : symbentry :=
   |}.
 
 Section WITH_SECS_SIZE.
-  Variables (text: code).
   Variables (rodata: list init_data).
   
 Definition transl_instr (i: instruction) (ofs:Z) :
   res (instruction * option (ident * list init_data * list symbentry)) :=
   let sz := instr_size i in
   match i with
-  | Pjmptbl r tbl =>
+  | Pjmptbl_rel r ofsLst =>
     let id := create_jump_table_ident tt in
-    do addrLst <-  findAllLabel tbl text;
+    let addrLst := map (Zplus ((sz + ofs))) ofsLst in
     let symbLst := map labelofstoSymbol addrLst in
     let idLst := map (fun e => symbentry_id e) symbLst in
     let dataLst := map (fun id => Init_addrof id Ptrofs.zero) idLst in
@@ -72,15 +59,16 @@ Definition acc_instrs (r: res(Z * list instruction * list init_data * list symbe
   match res with
   | Some jmp_tbl =>
     let '(tbl_id, tbl_data, lbl_symbl) := jmp_tbl in
-    let jmp_data' := acc_jmp_data ++ tbl_data in
     let tbl_e :=
         {|symbentry_id := tbl_id;
           symbentry_bind := bind_local;
           symbentry_type := symb_data;
-          symbentry_value := init_data_list_size rodata;
+          symbentry_value := init_data_list_size rodata +
+                             init_data_list_size acc_jmp_data;
           symbentry_secindex := secindex_normal sec_rodata_id;
           symbentry_size := init_data_list_size tbl_data;
         |} in
+    let jmp_data' := acc_jmp_data ++ tbl_data in
     let jmp_symbl' := acc_jmp_symbl ++ [tbl_e] ++ lbl_symbl in
     OK (ofs', code', jmp_data', jmp_symbl')
   | None =>
@@ -103,9 +91,9 @@ Definition compute_pad_size initd :=
 Definition gen_jump_table (sctbl: sectable) (sytbl: symbtable)
   : res (sectable*symbtable) :=
   match sctbl with
-  | [sec_rodata rdl; sec_data dl; sec_text code] =>
+  | [sec_bss bl; sec_rodata rdl; sec_data dl; sec_text code] =>
     (* translation of code to generate defs*)
-    do r <- transl_code code rdl code;
+    do r <- transl_code rdl code;
     let '(code', jmp_dl, jmp_syl) := r in
     (* pad jmpdl *)
     let psz := compute_pad_size jmp_dl in
@@ -116,7 +104,7 @@ Definition gen_jump_table (sctbl: sectable) (sytbl: symbtable)
           jmp_dl in
     let rdl' := rdl ++ jmp_dl_pad in
     let sytbl' := sytbl ++ jmp_syl in
-    OK ([sec_rodata rdl'; sec_data dl; sec_text code'], sytbl')
+    OK ([sec_bss bl; sec_rodata rdl'; sec_data dl; sec_text code'], sytbl')
   | _ => Error (msg "Expected the section table to be [sec_rodata; sec_data; sec_text]")
   end.
   
@@ -127,8 +115,8 @@ Definition transf_program (p: program) : res program :=
         prog_public := prog_public p;
         prog_main := prog_main p;
         prog_sectable := sctabl;
-        prog_strtable := PTree.empty Z;
+        prog_strtable := prog_strtable p;
         prog_symbtable := sytabl;
-        prog_reloctables := Build_reloctable_map nil nil nil;
+        prog_reloctables := prog_reloctables p;
         prog_senv := prog_senv p
      |}.
