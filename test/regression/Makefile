@@ -1,7 +1,8 @@
 include ../../Makefile.config
 
 CCOMP=../../ccomp
-CCOMPFLAGS=-stdlib ../../runtime -dparse -dc -dclight -dasm -fall
+#CCOMPFLAGS=-stdlib ../../runtime -dparse -dc -dclight -dasm -fall
+CCOMPFLAGS=-stdlib ../../runtime -relf -fall
 
 LIBS=$(LIBMATH)
 
