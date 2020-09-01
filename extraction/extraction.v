@@ -134,6 +134,10 @@ Extract Constant CheckDef.is_def_string_literal => "CheckDefImpl.is_def_string_l
 Extract Constant CheckDef.is_def_static => "CheckDefImpl.is_def_static".
 Extract Constant CheckDef.is_def_float_literal => "FloatliteralString.is_def_float_literal".
 
+(* LabelNew *)
+Extract Constant AsmLabelNew.set_current_function => "LabelNew.set_current_function".
+Extract Constant AsmLabelNew.new_label => "LabelNew.new_label".
+
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".
 Extract Constant Compiler.print_Cminor => "PrintCminor.print_if".

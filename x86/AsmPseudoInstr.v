@@ -9,6 +9,7 @@ Require Import Asm.
 Require Import Errors.
 Require Import Memtype.
 Require Import Globalenvs.
+Require Import AsmLabelNew.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
@@ -29,38 +30,18 @@ Definition neg_cond (cond:testcond) :=
   | Cond_np => Cond_p
   end.
 
-Definition get_label (i: instruction) :=
-  match i with
-  | Plabel l => [l]
-  | _ => []
-  end.
-
-Definition get_all_label (code: code) :=
-  concat (map get_label code).
-
-Fixpoint max_label (lbl:label) (lbll: list label) :=
-  match lbll with
-  | nil => lbl
-  | h::l => if (Pos.ltb lbl h) then
-            max_label h l
-          else
-            max_label lbl l
-  end.
-
-Definition new_label (code: code) :=
-  let lbll := get_all_label code in
-  Psucc (max_label 1%positive lbll).
-
 Definition transf_instr (i: instruction) (code: code) : res (list instruction) :=
   match i with
   | Psetcc c rd =>
    OK [Psetcc c rd; Pmovzb_rr rd rd]
   | Pjcc2 cond1 cond2 lbl =>
-    let lbl' := new_label code in
+    let lbl' := new_label tt in
     let i1 := Pjcc (neg_cond cond1) lbl' in
     let i2 := Pjcc cond2 lbl in
-    let i3 :=  Plabel lbl' in
+    let i3 := Plabel lbl' in
     OK ([i1]++[i2]++[i3])
+  | Pbswap16 rd =>
+    OK [Prolw_ri rd (Int.repr 8)]
   |_ => OK [i] 
   end.
 
@@ -76,6 +57,7 @@ Definition transl_code (c: code) : res code :=
 Definition transf_function (f: function) : res function :=
   (* make sure that code can not have relative jumps*)
   if func_no_jmp_rel_dec f then
+    do tt <-  set_current_function f;
     do fn_code' <- transl_code (fn_code f);
     OK {|
         fn_sig := fn_sig f;
