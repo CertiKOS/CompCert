@@ -52,6 +52,7 @@ Require Mach2Mach2.
 Require Asmgen.
 Require PseudoInstructions.
 Require AsmBuiltinInline.
+Require AsmStructRet.
 Require AsmFloatLiteral.
 Require AsmPseudoInstr.
 Require Jumptablegen.
@@ -221,6 +222,7 @@ Definition transf_c_program_real p : res Asm.program :=
 Definition transf_c_program_bytes (p: Csyntax.program) : res (list Integers.byte * Asm.program * Globalenvs.Senv.t) :=
   transf_c_program_real p
   @@@ time "Expand builtin inline assembly" AsmBuiltinInline.transf_program
+  @@@ time "Pad Instructions with struct return" AsmStructRet.transf_program
   @@ time "Generation of the float literal" AsmFloatLiteral.transf_program
   @@@ time "Elimination of other pseudo instructions" AsmPseudoInstr.transf_program
   @@@ time "Make local jumps use offsets instead of labels" Asmlabelgen.transf_program
