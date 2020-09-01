@@ -10,6 +10,7 @@ Require Import Errors.
 Require Import Memtype.
 Require Import Globalenvs.
 Require Import String.
+Require Import AsmLabelNew.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
@@ -49,7 +50,7 @@ Definition offset_addressing a delta :=
 
 Fixpoint copy (fuel:nat) (src dst:addrmode) (sz:Z) : res (list instruction) :=
   match fuel with
-  | O => Error (msg "Error in copy: run out of fuel")
+  | O => OK []
   | S fuel' =>
     if zle 8 sz && Archi.ptr64 then 
       do instrs <- copy fuel' (offset_addressing src 8) (offset_addressing dst 8) (sz - 8);
@@ -118,10 +119,187 @@ Definition expand_builtin_memcpy (sz al:Z) (args: list (builtin_arg preg)) : res
   then expand_builtin_memcpy_small sz al src dst
   else expand_builtin_memcpy_big sz al src dst.
 
+Definition expand_builtin_vload_common chunk addr res :=
+  match chunk, res with
+  | Mint8unsigned, BR(IR res) =>
+     OK [Pmovzb_rm res addr]
+  | Mint8signed, BR(IR res) =>
+     OK [Pmovsb_rm res addr]
+  | Mint16unsigned, BR(IR res) =>
+     OK [Pmovzw_rm res addr]
+  | Mint16signed, BR(IR res) =>
+     OK [Pmovsw_rm res addr]
+  | Mint32, BR(IR res) =>
+     OK [Pmovl_rm res addr]
+  | Mint64, BR(IR res) =>
+     OK [Pmovq_rm res addr]
+  | Mint64, BR_splitlong (BR(IR res1)) (BR(IR res2)) =>
+     let addr' := offset_addressing addr 4 in
+     if negb (Asmgen.addressing_mentions addr res2) then
+       OK [Pmovl_rm res2 addr; Pmovl_rm res1 addr']
+     else
+       OK [Pmovl_rm res1 addr'; Pmovl_rm res2 addr] 
+  | Mfloat32, BR(FR res) =>
+     OK [Pmovss_fm res addr]
+  | Mfloat64, BR(FR res) =>
+     OK [Pmovsd_fm res addr]
+  | _, _ =>
+    Error [MSG "Error in expand_builtin_vload_common"]
+  end.
+
+Definition expand_builtin_vload chunk args res :=
+  match args with
+  | [addr] =>
+    do addr' <- addressing_of_builtin_arg addr;
+    expand_builtin_vload_common chunk addr' res
+  | _ => Error [MSG "Error in expand_builtin_vload"]
+  end.
+
+Definition expand_builtin_vstore_common chunk addr src tmp:=
+  match chunk, src with
+  | (Mint8signed | Mint8unsigned), BA(IR src) =>
+    if Archi.ptr64 || Asmgen.low_ireg src then
+      OK [Pmovb_mr addr src]
+    else
+      OK [Pmov_rr tmp src; Pmovb_mr addr tmp]
+  | (Mint16signed | Mint16unsigned), BA(IR src) =>
+    OK [Pmovw_mr addr src]
+  | Mint32, BA(IR src) =>
+    OK [Pmovl_mr addr src]
+  | Mint64, BA(IR src) =>
+    OK [Pmovq_mr addr src]
+  | Mint64, BA_splitlong (BA(IR src1)) (BA(IR src2)) =>
+    let addr' := offset_addressing addr 4 in
+    OK [Pmovl_mr addr src2; Pmovl_mr addr' src1]
+  | Mfloat32, BA(FR src) =>
+    OK [Pmovss_mf addr src]
+  | Mfloat64, BA(FR src) =>
+    OK [Pmovsd_mf addr src]
+  | _, _ =>
+    Error [MSG "Error in expand_builtin_vstore_common"]
+  end.
+
+Definition expand_builtin_vstore chunk args :=
+  match args with
+  | [addr; src] =>
+    do addr' <- addressing_of_builtin_arg addr;
+    let tmp := if Asmgen.addressing_mentions addr' RAX
+               then RCX
+               else RAX in
+     expand_builtin_vstore_common chunk addr' src tmp
+  | _ => Error [MSG "Error in expand_builtin_vstore"]
+  end.
+
+Definition expand_fma args result i132 i213 i231 :=
+  match args, result with
+  | [BA(FR a1); BA(FR a2); BA(FR a3)], BR(FR result) =>
+    if freg_eq result a1 then
+      OK [i132 a1 a3 a2] (* a1 * a2 + a3 *) else
+      if freg_eq result a2 then
+        OK [i213 a2 a1 a3] (* a1 * a2 + a3 *) else
+        if freg_eq result a3 then
+          OK [i231 a3 a1 a2] (* a1 * a2 + a3 *) else
+          (* a1 * a2 + res *)
+          OK [Pmovsd_ff result a3; i231 result a1 a2]
+  | _, _ => Error [MSG "ill-formed fma builtin"]
+  end.
+                
 (* Expand builtin inline assembly *)
 Definition expand_builtin_inline name args res :=
   match name,args,res with
-  | "__builtin_addl"%string , [BA_splitlong (BA(IR ah)) (BA(IR al));
+  (* Integer arithmetic *)
+  | ("__builtin_bswap"%string | "__builtin_bswap32"%string), [BA(IR a1)], BR(IR a2) =>
+    let i:= if negb (ireg_eq a1 a2) then
+              [Pmov_rr a2 a1] else
+              [] in
+    OK (i++[Pbswap32 a2])
+  | "__builtin_bswap64"%string, [BA(IR a1)], BR(IR a2) =>
+    let i:= if negb (ireg_eq a1 a2) then
+              [Pmov_rr a2 a1] else
+              [] in
+    OK (i++[Pbswap64 a2])
+  | "__builtin_bswap64"%string, [BA_splitlong (BA(IR ah)) (BA(IR al))],
+    BR_splitlong (BR(IR rh)) (BR(IR rl)) =>
+    if (ireg_eq ah RAX && ireg_eq al RDX && ireg_eq rh RDX &&
+        ireg_eq rl RAX) then
+      OK [Pbswap32 RAX; Pbswap32 RDX]
+    else
+      Error (msg "Error in expanding of builtin: __builtin_bswap64 arguments incorrect")
+  | "__builtin_bswap16"%string, [BA(IR a1)], BR(IR a2) =>
+    let i:= if negb (ireg_eq a1 a2) then
+              [Pmov_rr a2 a1] else
+              [] in
+    OK (i++[Pbswap16 a2])
+  | ("__builtin_clz"%string|"__builtin_clzl"%string), [BA(IR a1)], BR(IR a2) =>
+     OK [Pbsrl a2 a1; Pxorl_ri a2 (Int.repr 31)]
+  | "__builtin_clzll"%string, [BA(IR a1)], BR(IR a2) =>
+    OK [Pbsrq a2 a1; Pxorl_ri a2 (Int.repr 63)]
+  | "__builtin_clzll"%string, [BA_splitlong (BA (IR ah)) (BA (IR al))], BR(IR ar) =>
+    let lbl1 := new_label tt in
+    let lbl2 := new_label tt in
+    OK [Ptestl_rr ah ah; Pjcc Cond_e lbl1; Pbsrl ar ah; Pxorl_ri ar (Int.repr 31);
+       Pjmp_l lbl2; Plabel lbl1; Pbsrl ar al; Pxorl_ri ar (Int.repr 63); Plabel lbl2]
+  | ("__builtin_ctz"%string | "__builtin_ctzl"%string), [BA(IR a1)], BR(IR a2) =>
+    OK [Pbsfl a2 a1]
+  | "__builtin_ctzll"%string, [BA(IR a1)], BR(IR a2) =>
+    OK [Pbsfq a2 a1]
+  | "__builtin_ctzll"%string, [BA_splitlong (BA (IR ah)) (BA (IR al))], BR(IR ar) =>
+    let lbl1 := new_label tt in
+    let lbl2 := new_label tt in
+    OK [Ptestl_rr al al; Pjcc Cond_e lbl1; Pbsfl ar al; Pjmp_l lbl2; Plabel lbl1;
+       Pbsfl ar ah; Paddl_ri ar (Int.repr 32); Plabel lbl2]
+  (* Float arithmetic *)
+  | "__builtin_fabs"%string, [BA(FR a1)], BR(FR ar) =>
+    let i:= if negb (freg_eq a1 ar) then
+              [Pmovsd_ff ar a1] else
+              [] in
+    OK (i++[Pabsd ar])
+  (* This ensuar that need_masks is set to true *)
+  | "__builtin_fsqrt"%string, [BA(FR a1)], BR(FR ar) =>
+    OK [Psqrtsd ar a1]
+  | "__builtin_fmax"%string, [BA(FR a1); BA(FR a2)], BR(FR ar) =>
+    let i := [Pmovsd_ff ar a1; Pmaxsd ar a2] in
+    if freg_eq ar a1 then
+      OK ([Pmaxsd ar a2]++i) else
+      if freg_eq ar a2 then
+        OK ([Pmaxsd ar a1]++i) else
+	OK i
+  | "__builtin_fmin"%string, [BA(FR a1); BA(FR a2)], BR(FR ar) =>
+    let i := [Pmovsd_ff ar a1; Pminsd ar a2] in
+    if freg_eq ar a1 then
+      OK ([Pminsd ar a2]++i) else
+      if freg_eq ar a2 then
+        OK ([Pminsd ar a1]++i) else
+	OK i
+  | "__builtin_fmadd"%string,  _, _ =>
+      expand_fma args res
+        (fun r1 r2 r3 => Pfmadd132 r1 r2 r3)
+        (fun r1 r2 r3 => Pfmadd213 r1 r2 r3)
+        (fun r1 r2 r3 => Pfmadd231 r1 r2 r3)
+  | "__builtin_fmsub"%string,  _, _ =>
+      expand_fma args res
+        (fun r1 r2 r3 => Pfmsub132 r1 r2 r3)
+        (fun r1 r2 r3 => Pfmsub213 r1 r2 r3)
+        (fun r1 r2 r3 => Pfmsub231 r1 r2 r3)
+  | "__builtin_fnmadd"%string,  _, _ =>
+      expand_fma args res
+        (fun r1 r2 r3 => Pfnmadd132 r1 r2 r3)
+        (fun r1 r2 r3 => Pfnmadd213 r1 r2 r3)
+        (fun r1 r2 r3 => Pfnmadd231 r1 r2 r3)
+  | "__builtin_fnmsub"%string,  _, _ =>
+      expand_fma args res
+        (fun r1 r2 r3 => Pfnmsub132 r1 r2 r3)
+        (fun r1 r2 r3 => Pfnmsub213 r1 r2 r3)
+        (fun r1 r2 r3 => Pfnmsub231 r1 r2 r3)
+  (* 64-bit integer arithmetic *)
+  | "__builtin_negl"%string, [BA_splitlong (BA(IR ah)) (BA(IR al))],
+    BR_splitlong (BR(IR rh)) (BR(IR rl)) =>
+    if (ireg_eq ah RDX && ireg_eq al RAX && ireg_eq rh RDX &&
+        ireg_eq rl RAX) then
+      OK [Pnegl RAX; Padcl_ri RDX Int.zero; Pnegl RDX]
+    else
+      Error (msg "Error in expanding of builtin: __builtin_negl arguments incorrect")  
+  | "__builtin_addl"%string, [BA_splitlong (BA(IR ah)) (BA(IR al));
                               BA_splitlong (BA(IR bh)) (BA(IR bl))],
     BR_splitlong (BR(IR rh)) (BR(IR rl)) =>
     if (ireg_eq ah RDX && ireg_eq al RAX && ireg_eq bh RCX &&
@@ -129,6 +307,41 @@ Definition expand_builtin_inline name args res :=
       OK [Paddl_rr RAX RBX; Padcl_rr RDX RCX]
     else
       Error (msg "Error in expanding of builtin: __builtin_addl arguments incorrect")             
+  | "__builtin_subl"%string, [BA_splitlong (BA(IR ah)) (BA(IR al));
+                              BA_splitlong (BA(IR bh)) (BA(IR bl))],
+    BR_splitlong (BR(IR rh)) (BR(IR rl)) =>
+    if (ireg_eq ah RDX && ireg_eq al RAX && ireg_eq bh RCX &&
+        ireg_eq bl RBX && ireg_eq rh RDX && ireg_eq rl RAX) then
+      OK [Psubl_rr RAX RBX; Psbbl_rr RDX RCX]
+    else
+      Error (msg "Error in expanding of builtin: __builtin_subl arguments incorrect")
+  | "__builtin_mull"%string, [BA(IR a); BA(IR b)],
+    BR_splitlong (BR(IR rh)) (BR(IR rl)) =>
+    if (ireg_eq a RAX && ireg_eq b RDX && ireg_eq rh RDX &&
+        ireg_eq rl RAX) then
+      OK [Pmull_r RDX]
+    else
+      Error (msg "Error in expanding of builtin: __builtin_mull arguments incorrect")
+  (* Memory accesses *)
+  | "__builtin_read16_reversed"%string, [BA(IR a1)], BR(IR ar) =>
+     OK [Pmovzw_rm ar (linear_addr a1 0); Pbswap16 ar]
+  | "__builtin_read32_reversed"%string, [BA(IR a1)], BR(IR ar)  =>
+     OK [Pmovl_rm ar (linear_addr a1 0); Pbswap32 ar]
+  | "__builtin_write16_reversed"%string, [BA(IR a1); BA(IR a2)], _  =>
+    let tmp := if ireg_eq a1 RCX then RDX else RCX in
+    let i := if negb (ireg_eq a2 tmp) then
+               [Pmov_rr tmp a2] else
+               [] in
+    OK (i++[Pbswap16 tmp; Pmovw_mr (linear_addr a1 0) tmp])
+  | "__builtin_write32_reversed"%string, [BA(IR a1); BA(IR a2)], _  =>
+    let tmp := if ireg_eq a1 RCX then RDX else RCX in
+    let i := if negb (ireg_eq a2 tmp) then
+               [Pmov_rr tmp a2] else
+               [] in
+    OK (i++[Pbswap32 tmp; Pmovl_mr (linear_addr a1 0) tmp])
+  (* no operation *)
+  | "__builtin_nop"%string, [], _  =>
+     OK [Pmov_rr RAX RAX]
   | _ ,_ ,_  =>  Error [MSG "Error in expanding of builtin: " ; MSG name]
   end.
 
@@ -141,7 +354,19 @@ Definition transf_instr (i: instruction): res (list instruction) :=
     | EF_builtin name sg =>
       do i <- expand_builtin_inline name args res;
       OK i
-    | _ => OK [i]
+    | EF_vload chunk =>
+      expand_builtin_vload chunk args res
+    | EF_vstore chunk =>
+      expand_builtin_vstore chunk args
+    | EF_annot text targs =>
+      Error [MSG "Unsupported Builtin Elimination: annot"]
+    | EF_annot_val text targ =>
+      Error [MSG "Unsupported Builtin Elimination: annot_val"]
+    | EF_inline_asm text sg clob =>
+      Error [MSG "Unsupported Builtin Elimination: inline_asm"]
+    | EF_debug kind text targs =>
+      Error [MSG "Unsupported Builtin Elimination: debug"]
+    | _ => Error [MSG "Unsupported Builtin Elimination: unknown"]
     end
   | _ => OK [i]
   end.
@@ -158,6 +383,7 @@ Definition transl_code (c:code) : res code :=
 Definition transf_function (f: function) : res function :=
   (* make sure that code can not have relative jumps*)
   if func_no_jmp_rel_dec f then
+    do tt <-  set_current_function f;
     do fn_code' <- transl_code (fn_code f);
     OK {|
         fn_sig := fn_sig f;
