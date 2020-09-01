@@ -3557,16 +3557,16 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
       rewrite <- app_assoc in HAddrmode.
       rewrite HAddrmode.
       simpl. auto.
-  + (* (Pmovsd_ff rd r1) *)
-    exists (Pmovsd_ff rd r1). admit.
-  + (* (Pmovsd_fm rd a) *)
-    exists (Pmovsd_fm rd a). admit.
+  + (* (Pmovsd_ff frd fr1) *)
+    exists (Pmovsd_ff frd fr1). admit.
+  + (* (Pmovsd_fm frd a) *)
+    exists (Pmovsd_fm frd a). admit.
   + (* (Pmovsd_mf a r1) *)
-    exists (Pmovsd_mf a r1). admit.
+    exists (Pmovsd_mf a fr1). admit.
   + (* (Pmovss_fm rd a) *)
-    exists (Pmovss_fm rd a). admit.
+    exists (Pmovss_fm frd a). admit.
   + (* (Pmovsd_mf a r1) *)
-    exists (Pmovsd_mf a r1). admit.
+    exists (Pmovsd_mf a fr1). admit.
   + (* (Pfldl_m a) *)
     exists (Pfldl_m a). admit.
   + (* (Pfstpl_m a) *)
@@ -3598,17 +3598,17 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* (Pmovsw_rm rd a) *)
     exists (Pmovsw_rm rd a). admit. 
   + (* (Pcvtsd2ss_ff rd r1) *)
-    exists (Pcvtsd2ss_ff rd r1). admit.    
+    exists (Pcvtsd2ss_ff frd fr1). admit.    
   + (* (Pcvtss2sd_ff rd r1) *)
-    exists (Pcvtss2sd_ff rd r1). admit.
+    exists (Pcvtss2sd_ff frd fr1). admit.
   + (* (Pcvttsd2si_rf rd r1) *)
-    exists (Pcvttsd2si_rf rd r1). admit.
+    exists (Pcvttsd2si_rf frd fr1). admit.
   + (* (Pcvtsi2sd_fr rd r1) *)
-    exists (Pcvtsi2sd_fr rd r1). admit.
+    exists (Pcvtsi2sd_fr frd fr1). admit.
   + (* (Pcvttss2si_rf rd r1) *)
-    exists (Pcvttss2si_rf rd r1). admit.
+    exists (Pcvttss2si_rf frd fr1). admit.
   + (* (Pcvtsi2ss_fr rd r1) *)
-    exists (Pcvtsi2ss_fr rd r1). admit.
+    exists (Pcvtsi2ss_fr frd fr1). admit.
   + (* (Pleal rd a) *)
     exists (Pleal rd a).
     split; try(unfold instr_eq; auto).
@@ -3942,6 +3942,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
     exists (Pshld_ri rd r1 n). admit.
   + (* (Prorl_ri rd n)*)
     exists (Prorl_ri rd n). admit.
+  + (* (Prolw_ri rd n)*)
+    exists (Prolw_ri rd n). admit.    
   + (* (Pcmpl_rr r1 r2) *)
     exists (Pcmpl_rr r1 r2).
     split;try(unfold instr_eq; auto).
@@ -4029,37 +4031,37 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Psetcc c rd*)
     exists (Psetcc c rd). admit.
   + (* Paddd_ff rd r1*)
-    exists (Paddd_ff rd r1). admit.
+    exists (Paddd_ff frd fr1). admit.
   + (* Psubd_ff rd r1*)
-    exists (Psubd_ff rd r1). admit.
+    exists (Psubd_ff frd fr1). admit.
   + (* Pmuld_ff rd r1*)
-    exists (Pmuld_ff rd r1). admit.
+    exists (Pmuld_ff frd fr1). admit.
   + (* Pdivd_ff rd r1*)
-    exists (Pdivd_ff rd r1). admit.
+    exists (Pdivd_ff frd fr1). admit.
   + (* Pcomisd_ff r1 r2*)
-    exists (Pcomisd_ff r1 r2). admit.
+    exists (Pcomisd_ff fr1 fr2). admit.
   + (* Pxorpd_f rd*)
-    exists (Pxorpd_f rd). admit.
+    exists (Pxorpd_f frd). admit.
   + (* Pxorpd_fm rd*)
-    exists (Pxorpd_fm rd a). admit.
+    exists (Pxorpd_fm frd a). admit.
   + (* Pandpd_fm rd*)
-    exists (Pandpd_fm rd a). admit.
+    exists (Pandpd_fm frd a). admit.
   + (* Padds_ff rd r1*)
-    exists (Padds_ff rd r1). admit.
+    exists (Padds_ff frd fr1). admit.
   + (* Psubs_ff rd r1*)
-    exists (Psubs_ff rd r1). admit.
+    exists (Psubs_ff frd fr1). admit.
   + (* Pmuls_ff rd r1*)
-    exists (Pmuls_ff rd r1). admit.
+    exists (Pmuls_ff frd fr1). admit.
   + (* Pdivs_ff rd r1*)
-    exists (Pdivs_ff rd r1). admit.
+    exists (Pdivs_ff frd fr1). admit.
   + (* Pcomiss_ff r1 r2*)
-    exists (Pcomiss_ff r1 r2). admit.
+    exists (Pcomiss_ff fr1 fr2). admit.
   + (* Pxorps_f rd*)
-    exists (Pxorps_f rd). admit.
+    exists (Pxorps_f frd). admit.
   + (* Pxorps_fm rd*)
-    exists (Pxorps_fm rd a). admit.
+    exists (Pxorps_fm frd a). admit.
   + (* Pandps_fm rd*)
-    exists (Pandps_fm rd a). admit.
+    exists (Pandps_fm frd a). admit.
   + (* Pjmp ros sg*)
     exists (Pjmp ros sg). admit.
   + (* Pjmp_m a*)
@@ -4094,6 +4096,8 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pret *)
     exists Pret.
     split;try(unfold instr_eq; auto).
+  + (* Pret_iw n *)
+    exists (Pret_iw n). admit.
   + (* (Pmov_rm_a rd a) *)
     
     exists (Pmovl_rm rd a).
@@ -4267,14 +4271,36 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pnop *)
     exists Pnop.
     split; try(unfold instr_eq; auto).
+  + (* Padcl_ri rd n *)
+    exists (Padcl_ri rd n). admit.
   + (* Padcl_rr rd r2 *)
     exists (Padcl_rr rd r2). admit.
   + (* Paddl_rr rd r2 *)
     exists (Paddl_rr rd r2). admit.
+  + (* Pbsfl rd r1 *)
+    exists (Pbsfl rd r1). admit.
+  + (* Pbsrl rd r1 *)
+    exists (Pbsrl rd r1). admit.
+  + (* Pbswap32 rd *)
+    exists (Pbswap32 rd). admit.
+  + (* Pmaxsd frd fr2 *)
+    exists (Pmaxsd frd fr2). admit.
+  + (* Pminsd frd fr2 *)
+    exists (Pminsd frd fr2). admit.
+  + (* Pmovb_rm rd a*)
+    exists (Pmovb_rm rd a). admit.
   + (* Pmovsq_mr a frs *)
     exists (Pmovsq_mr a frs). admit.
   + (* Pmovsq_rm frd a *)
     exists (Pmovsq_rm frd a). admit.
+  + (* Pmovw_rm rd a *)
+    exists (Pmovw_rm rd a). admit.
+  + (* Prep_movsl *)
+    exists (Prep_movsl). admit.
+  + (* Psbbl_rr rd r2 *)
+    exists (Psbbl_rr rd r2). admit.
+  + (*Psqrtsd frd fr1 *)
+    exists (Psqrtsd frd fr1). admit.
   + (* Psubl_ri rd n *)
     exists (Psubl_ri rd n).
     split; try(unfold instr_eq; auto).

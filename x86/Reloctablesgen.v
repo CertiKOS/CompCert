@@ -39,10 +39,12 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pfstpl_m a
   | Pflds_m a
   | Pfstps_m a
-  | Pmovb_mr a _ =>
+  | Pmovb_mr a _
+  | Pmovb_rm _ a =>
     let aofs := addrmode_reloc_offset a in
     OK (1 + aofs)
   | Pmovw_mr a _
+  | Pmovw_rm _ a
   | Pmovzb_rm _ a
   | Pmovsb_rm _ a
   | Pmovzw_rm _ a
@@ -178,7 +180,13 @@ Definition transl_instr (sofs:Z) (i: instruction) : res (list relocentry) :=
   | Pmovb_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (8-bit int) *)
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
+  | Pmovb_rm rd (Addrmode rb ss (inr disp)) =>    (**r [mov] (8-bit int) *)
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]       
   | Pmovw_mr (Addrmode rb ss (inr disp)) rs =>    (**r [mov] (16-bit int) *)
+    do e <- compute_instr_disp_relocentry sofs i disp;
+    OK [e]
+  | Pmovw_rm rd (Addrmode rb ss (inr disp)) =>    (**r [mov] (16-bit int) *)
     do e <- compute_instr_disp_relocentry sofs i disp;
     OK [e]
   | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
@@ -327,7 +335,7 @@ Definition unsupported i :=
 
 Definition id_eliminate (i:instruction):res (instruction):=
   if unsupported i
-  then Error (msg "unsupported instruction in id_eliminate")
+  then Error [MSG "unsupported instruction: "; MSG (instr_to_string i); MSG " in id_eliminate"]
   else 
     match i with
   | Pjmp (inr id) sg =>
@@ -385,9 +393,15 @@ Definition id_eliminate (i:instruction):res (instruction):=
   | Pmovb_mr (Addrmode rb ss (inr disp)) rs =>
     let '(id, ptrofs) := disp in
     OK (Pmovb_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pmovb_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovb_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
   | Pmovw_mr (Addrmode rb ss (inr disp)) rs =>
     let '(id, ptrofs) := disp in
     OK (Pmovw_mr (Addrmode rb ss (inr (xH, ptrofs))) rs)
+  | Pmovw_rm rd (Addrmode rb ss (inr disp)) =>
+    let '(id, ptrofs) := disp in
+    OK (Pmovw_rm rd (Addrmode rb ss (inr (xH, ptrofs))))
   | Pmovzb_rm rd (Addrmode rb ss (inr disp)) =>
     let '(id, ptrofs) := disp in
     OK (Pmovzb_rm rd (Addrmode rb ss (inr (xH, ptrofs))))

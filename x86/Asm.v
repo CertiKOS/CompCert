@@ -116,13 +116,13 @@ Inductive instruction: Type :=
   | Pmovq_rm (rd: ireg) (a: addrmode)
   | Pmovl_mr (a: addrmode) (rs: ireg)
   | Pmovq_mr (a: addrmode) (rs: ireg)
-  | Pmovsd_ff (rd: freg) (r1: freg)     (**r [movsd] (single 64-bit float) *)
-  | Pmovsd_fi (rd: freg) (n: float)     (**r (pseudo-instruction) *)
-  | Pmovsd_fm (rd: freg) (a: addrmode)
-  | Pmovsd_mf (a: addrmode) (r1: freg)
-  | Pmovss_fi (rd: freg) (n: float32)   (**r [movss] (single 32-bit float) *)
-  | Pmovss_fm (rd: freg) (a: addrmode)
-  | Pmovss_mf (a: addrmode) (r1: freg)
+  | Pmovsd_ff (frd: freg) (fr1: freg)     (**r [movsd] (single 64-bit float) *)
+  | Pmovsd_fi (frd: freg) (n: float)     (**r (pseudo-instruction) *)
+  | Pmovsd_fm (frd: freg) (a: addrmode)
+  | Pmovsd_mf (a: addrmode) (fr1: freg)
+  | Pmovss_fi (frd: freg) (n: float32)   (**r [movss] (single 32-bit float) *)
+  | Pmovss_fm (frd: freg) (a: addrmode)
+  | Pmovss_mf (a: addrmode) (fr1: freg)
   | Pfldl_m (a: addrmode)               (**r [fld] double precision *)
   | Pfstpl_m (a: addrmode)              (**r [fstp] double precision *)
   | Pflds_m (a: addrmode)               (**r [fld] simple precision *)
@@ -142,16 +142,16 @@ Inductive instruction: Type :=
   | Pmovzl_rr (rd: ireg) (rs: ireg)     (**r [movzl] (32-bit zero-extension) *)
   | Pmovsl_rr (rd: ireg) (rs: ireg)     (**r [movsl] (32-bit sign-extension) *)
   | Pmovls_rr (rd: ireg)                (** 64 to 32 bit conversion (pseudo) *)
-  | Pcvtsd2ss_ff (rd: freg) (r1: freg)  (**r conversion to single float *)
-  | Pcvtss2sd_ff (rd: freg) (r1: freg)  (**r conversion to double float *)
-  | Pcvttsd2si_rf (rd: ireg) (r1: freg) (**r double to signed int *)
-  | Pcvtsi2sd_fr (rd: freg) (r1: ireg)  (**r signed int to double *)
-  | Pcvttss2si_rf (rd: ireg) (r1: freg) (**r single to signed int *)
-  | Pcvtsi2ss_fr (rd: freg) (r1: ireg)  (**r signed int to single *)
-  | Pcvttsd2sl_rf (rd: ireg) (r1: freg) (**r double to signed long *)
-  | Pcvtsl2sd_fr (rd: freg) (r1: ireg)  (**r signed long to double *)
-  | Pcvttss2sl_rf (rd: ireg) (r1: freg) (**r single to signed long *)
-  | Pcvtsl2ss_fr (rd: freg) (r1: ireg)  (**r signed long to single *)
+  | Pcvtsd2ss_ff (frd: freg) (fr1: freg)  (**r conversion to single float *)
+  | Pcvtss2sd_ff (frd: freg) (fr1: freg)  (**r conversion to double float *)
+  | Pcvttsd2si_rf (frd: ireg) (fr1: freg) (**r double to signed int *)
+  | Pcvtsi2sd_fr (frd: freg) (fr1: ireg)  (**r signed int to double *)
+  | Pcvttss2si_rf (frd: ireg) (fr1: freg) (**r single to signed int *)
+  | Pcvtsi2ss_fr (frd: freg) (fr1: ireg)  (**r signed int to single *)
+  | Pcvttsd2sl_rf (frd: ireg) (fr1: freg) (**r double to signed long *)
+  | Pcvtsl2sd_fr (frd: freg) (fr1: ireg)  (**r signed long to double *)
+  | Pcvttss2sl_rf (frd: ireg) (fr1: freg) (**r single to signed long *)
+  | Pcvtsl2ss_fr (frd: freg) (fr1: ireg)  (**r signed long to single *)
   (** Integer arithmetic *)
   | Pleal (rd: ireg) (a: addrmode)
   | Pleaq (rd: ireg) (a: addrmode)
@@ -206,6 +206,7 @@ Inductive instruction: Type :=
   | Pshld_ri (rd: ireg) (r1: ireg) (n: int)
   | Prorl_ri (rd: ireg) (n: int)
   | Prorq_ri (rd: ireg) (n: int)
+  | Prolw_ri (rd: ireg) (n: int)
   | Pcmpl_rr (r1 r2: ireg)
   | Pcmpq_rr (r1 r2: ireg)
   | Pcmpl_ri (r1: ireg) (n: int)
@@ -217,26 +218,26 @@ Inductive instruction: Type :=
   | Pcmov (c: testcond) (rd: ireg) (r1: ireg)
   | Psetcc (c: testcond) (rd: ireg)
   (** Floating-point arithmetic *)
-  | Paddd_ff (rd: freg) (r1: freg)
-  | Psubd_ff (rd: freg) (r1: freg)
-  | Pmuld_ff (rd: freg) (r1: freg)
-  | Pdivd_ff (rd: freg) (r1: freg)
-  | Pnegd (rd: freg)
-  | Pabsd (rd: freg)
-  | Pcomisd_ff (r1 r2: freg)
-  | Pxorpd_f (rd: freg)	              (**r [xor] with self = set to zero *)
-  | Pxorpd_fm (rd: freg) (a: addrmode)
-  | Pandpd_fm (rd: freg) (a: addrmode)
-  | Padds_ff (rd: freg) (r1: freg)
-  | Psubs_ff (rd: freg) (r1: freg)
-  | Pmuls_ff (rd: freg) (r1: freg)
-  | Pdivs_ff (rd: freg) (r1: freg)
-  | Pnegs (rd: freg)
-  | Pabss (rd: freg)
-  | Pcomiss_ff (r1 r2: freg)
-  | Pxorps_f (rd: freg)	              (**r [xor] with self = set to zero *)
-  | Pxorps_fm (rd: freg) (a: addrmode)
-  | Pandps_fm (rd: freg) (a: addrmode)
+  | Paddd_ff (frd: freg) (fr1: freg)
+  | Psubd_ff (frd: freg) (fr1: freg)
+  | Pmuld_ff (frd: freg) (fr1: freg)
+  | Pdivd_ff (frd: freg) (fr1: freg)
+  | Pnegd (frd: freg)
+  | Pabsd (frd: freg)
+  | Pcomisd_ff (fr1 fr2: freg)
+  | Pxorpd_f (frd: freg)	              (**r [xor] with self = set to zero *)
+  | Pxorpd_fm (frd: freg) (a: addrmode)
+  | Pandpd_fm (frd: freg) (a: addrmode)
+  | Padds_ff (frd: freg) (fr1: freg)
+  | Psubs_ff (frd: freg) (fr1: freg)
+  | Pmuls_ff (frd: freg) (fr1: freg)
+  | Pdivs_ff (frd: freg) (fr1: freg)
+  | Pnegs (frd: freg)
+  | Pabss (frd: freg)
+  | Pcomiss_ff (fr1 fr2: freg)
+  | Pxorps_f (frd: freg)	              (**r [xor] with self = set to zero *)
+  | Pxorps_fm (frd: freg) (a: addrmode)
+  | Pandps_fm (frd: freg) (a: addrmode)
   (** Branches and calls *)
   | Pjmp_l (l: label)
   | Pjmp (ros: ireg + ident) (sg: signature)
@@ -250,11 +251,12 @@ Inductive instruction: Type :=
   (* | Pcall_r (r: ireg) (sg: signature) *)
   | Pcall (ros: ireg + ident) (sg: signature)
   | Pret
+  | Pret_iw (n: int)
   (** Saving and restoring registers *)
   | Pmov_rm_a (rd: ireg) (a: addrmode)  (**r like [Pmov_rm], using [Many64] chunk *)
   | Pmov_mr_a (a: addrmode) (rs: ireg)  (**r like [Pmov_mr], using [Many64] chunk *)
-  | Pmovsd_fm_a (rd: freg) (a: addrmode) (**r like [Pmovsd_fm], using [Many64] chunk *)
-  | Pmovsd_mf_a (a: addrmode) (r1: freg) (**r like [Pmovsd_mf], using [Many64] chunk *)
+  | Pmovsd_fm_a (frd: freg) (a: addrmode) (**r like [Pmovsd_fm], using [Many64] chunk *)
+  | Pmovsd_mf_a (a: addrmode) (fr1: freg) (**r like [Pmovsd_mf], using [Many64] chunk *)
   (** Pseudo-instructions *)
   | Plabel(l: label)
   | Pallocframe (sz: Z) (pubrange: Z * Z) (ofs_ra: ptrofs)
@@ -281,29 +283,29 @@ Inductive instruction: Type :=
   | Pbswap32 (rd: ireg)
   | Pbswap16 (rd: ireg)
   | Pcfi_adjust (n: int)
-  | Pfmadd132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmadd213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmadd231 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmsub132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmsub213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmsub231 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmadd132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmadd213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmadd231 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmsub132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmsub213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmsub231 (rd: freg) (r2: freg) (r3: freg)
-  | Pmaxsd (rd: freg) (r2: freg)
-  | Pminsd (rd: freg) (r2: freg)
+  | Pfmadd132 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmadd213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmadd231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmsub132 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmsub213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmsub231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmadd132 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmadd213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmadd231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmsub132 (rd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmsub213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmsub231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pmaxsd (frd: freg) (fr2: freg)
+  | Pminsd (frd: freg) (fr2: freg)
   | Pmovb_rm (rd: ireg) (a: addrmode)
   | Pmovsq_mr (a: addrmode) (frs: freg)
   | Pmovsq_rm (frd: freg) (a: addrmode)
   | Pmovsb
   | Pmovsw
-  | Pmovw_rm (rd: ireg) (ad: addrmode)
+  | Pmovw_rm (rd: ireg) (a: addrmode)
   | Prep_movsl
   | Psbbl_rr (rd: ireg) (r2: ireg)
-  | Psqrtsd (rd: freg) (r1: freg)
+  | Psqrtsd (frd: freg) (fr1: freg)
   | Psubl_ri (rd: ireg) (n: int)
   | Psubq_ri (rd: ireg) (n: int64).
 
@@ -379,6 +381,7 @@ Let instr_size' (i: instruction) : Z :=
   | Pmov_mr_a a _ => 1 + addrmode_size a
   | Ptestl_rr _ _ => 2
   | Pret => 1
+  | Pret_iw _ => 3
   | Pimull_rr _ _ => 3
   | Pcmpl_rr _ _ => 2
   | Pcmpl_ri _ _ => 6
@@ -401,7 +404,9 @@ Let instr_size' (i: instruction) : Z :=
   | Pfstps_m a => 1 + addrmode_size a
   | Pxchg_rr r1 r2 => 2
   | Pmovb_mr a rs => 1 + addrmode_size a
+  | Pmovb_rm rd a => 1 + addrmode_size a
   | Pmovw_mr a rs => 2 + addrmode_size a
+  | Pmovw_rm rd a => 2 + addrmode_size a
   | Pmovzb_rr rd rs => 3
   | Pmovzb_rm rd a => 2 + addrmode_size a
   | Pmovzw_rr rd rs => 3
@@ -436,6 +441,7 @@ Let instr_size' (i: instruction) : Z :=
   | Psarl_ri rd n => 3
   | Pshld_ri rd r1 n => 4
   | Prorl_ri rd n => 3
+  | Prolw_ri rd n => 4
   | Ptestl_ri r1 n => 6
   | Pcmov c rd r1 => 3
   | Psetcc c rd => 3
@@ -458,6 +464,15 @@ Let instr_size' (i: instruction) : Z :=
   | Pimull_ri rd n => 6
   | Paddl_rr _ _ => 2
   | Padcl_rr _ _ => 2
+  | Padcl_ri _ _ => 3
+  | Psbbl_rr _ _ => 2
+  | Prep_movsl => 2
+  | Pbswap32 _ => 2
+  | Pbsfl _ _ => 3
+  | Pbsrl _ _ => 3
+  | Psqrtsd _ _ => 4
+  | Pmaxsd _ _ => 4
+  | Pminsd _ _ => 4
   | _ => 1
   end.
 
@@ -1751,6 +1766,8 @@ Definition exec_instr
   | Prep_movsl
   | Psbbl_rr _ _
   | Psqrtsd _ _
+  | Pret_iw _
+  | Prolw_ri _ _
     => Stuck
   end.
 
@@ -2089,7 +2106,8 @@ Definition instr_to_string (i:instruction) : string :=
   | Psarq_ri  rd n     => "Psarq_ri"
   | Pshld_ri  rd r1 n  => "Pshld_ri"
   | Prorl_ri  rd n     => "Prorl_ri" 
-  | Prorq_ri  rd n     => "Prorq_ri" 
+  | Prorq_ri  rd n     => "Prorq_ri"
+  | Prolw_ri  rd n     => "Prolw_ri" 
   | Pcmpl_rr  r1 r2    => "Pcmpl_rr" 
   | Pcmpq_rr  r1 r2    => "Pcmpq_rr" 
   | Pcmpl_ri  r1 n     => "Pcmpl_ri"
@@ -2130,6 +2148,7 @@ Definition instr_to_string (i:instruction) : string :=
   | Pjmptbl r tbl => "Pjmptbl"  (**r pseudo *)
   | Pcall ros sg => "Pcall"
   | Pret => "Pret"
+  | Pret_iw _ => "Pret_iw"
   (* (** Saving and restoring registers *) *)
   | Pmov_rm_a rd a   => "Pmov_rm_a"  (**r like [Pmov_rm], using [Many64] chunk *)
   | Pmov_mr_a a rs   => "Pmov_mr_a"  (**r like [Pmov_mr], using [Many64] chunk *)
@@ -2157,7 +2176,7 @@ Definition instr_to_string (i:instruction) : string :=
   | Pbsrq rd r1 => "Pbsrq"
   | Pbswap64 rd => "Pbswap64"
   | Pbswap32 rd => "Pbswap32"
-  | Pbswap16 rd => "Pbswap16e"
+  | Pbswap16 rd => "Pbswap16"
   | Pcfi_adjust n => "Pcfi_adjust"
   | Pfmadd132 rd r2 r3
   | Pfmadd213 rd r2 r3

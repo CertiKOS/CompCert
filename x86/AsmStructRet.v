@@ -23,8 +23,8 @@ Definition transf_instr (i: instruction) (cur_sg: signature) : res (list instruc
   | Pret =>
     if (negb Archi.ptr64) && cc_structret (sig_cc cur_sg) then
       let i1 := Pmovl_rm RAX (Addrmode (Some RSP) None (inl 0)) in
-      let i2 := Paddl_ri RSP (Int.repr 4) in
-      OK ([i1]++[i2]++[i]) else
+      let i2 := Pret_iw (Int.repr 4) in
+      OK ([i1]++[i2]) else
       OK [i]
   |_ => OK [i] 
   end.
