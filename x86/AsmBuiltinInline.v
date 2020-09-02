@@ -11,10 +11,15 @@ Require Import Memtype.
 Require Import Globalenvs.
 Require Import String.
 Require Import AsmLabelNew.
+Require Import Conventions1.
 Import ListNotations.
 
 Local Open Scope error_monad_scope.
 
+Section FUNCTION_SG.
+
+Variables (cur_func: function).
+  
 Definition option_ffpu := true.
 
 Definition _Plea r addr :=
@@ -203,7 +208,17 @@ Definition expand_fma args result i132 i213 i231 :=
           OK [Pmovsd_ff result a3; i231 result a1 a2]
   | _, _ => Error [MSG "ill-formed fma builtin"]
   end.
-                
+
+Definition expand_builtin_va_start_32 r :=
+  if cc_vararg (sig_cc (fn_sig cur_func)) then
+    let t0 := Z.add (fn_stacksize cur_func) 4 in
+    let t1 := Z.mul 4 (size_arguments (fn_sig cur_func)) in
+    let ofs := Z.add t0 t1 in
+    OK [Pleal RAX (linear_addr RSP ofs);
+       Pmovl_mr (linear_addr r 0) RAX]
+  else
+    Error [MSG "Fatal error: va_start used in non-vararg function"].
+         
 (* Expand builtin inline assembly *)
 Definition expand_builtin_inline name args res :=
   match name,args,res with
@@ -339,6 +354,14 @@ Definition expand_builtin_inline name args res :=
                [Pmov_rr tmp a2] else
                [] in
     OK (i++[Pbswap32 tmp; Pmovl_mr (linear_addr a1 0) tmp])
+  (* Vararg stuff *)
+  | "__builtin_va_start"%string, [BA(IR a)], _ =>
+    if (ireg_eq a RDX) then
+      if Archi.ptr64
+      then Error (msg "Error vaarg in x86_64")
+      else expand_builtin_va_start_32 a       
+    else
+      Error (msg "Error in expanding of builtin: __builtin_va_start arguments incorrect")
   (* no operation *)
   | "__builtin_nop"%string, [], _  =>
      OK [Pmov_rr RAX RAX]
@@ -380,11 +403,13 @@ Definition transl_code (c:code) : res code :=
   do code <- fold_left acc_transl_instr c (OK []);
   OK (code).
 
+End FUNCTION_SG.
+
 Definition transf_function (f: function) : res function :=
   (* make sure that code can not have relative jumps*)
   if func_no_jmp_rel_dec f then
     do tt <-  set_current_function f;
-    do fn_code' <- transl_code (fn_code f);
+    do fn_code' <- transl_code f (fn_code f);
     OK {|
         fn_sig := fn_sig f;
         fn_code := fn_code';
