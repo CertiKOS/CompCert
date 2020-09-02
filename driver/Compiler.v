@@ -919,48 +919,50 @@ Theorem c_semantic_preservation_real:
     match_prog_real p tp ->
     backward_simulation (Csem.semantics (fn_stack_requirements tp) p) (RealAsm.semantics tp (Asm.Pregmap.init Values.Vundef)).
 Proof.
-  intros.
-  unfold match_prog_real in H.
-  rewrite compose_passes_app in H.
-  fold match_prog in H.
-  destruct H as (pi & MP & P).
-  simpl in P. destruct P as (p2 & P & p3 & P' & p4 & P'' & EQ); inv EQ.
-  exploit RealAsmproof2.match_prog_inv; eauto. intros (EQ & NJ). subst.
-  eapply compose_backward_simulation.
-  apply RealAsm.real_asm_single_events.
-  replace (fn_stack_requirements tp) with (fn_stack_requirements p2).
-  eapply compose_backward_simulation.
-  apply RealAsm.real_asm_single_events.  
-  apply c_semantic_preservation_raw. auto.
-  apply RealAsmproof2.real_asm_correct'; eauto.
-  eapply PseudoInstructions.check_wf; eauto.
-  red; intros.
-  eapply AsmFacts.check_asm_code_no_rsp_correct.
-  eapply PseudoInstructions.check_no_rsp; eauto.
-  {
-    unfold fn_stack_requirements.
-    apply Axioms.extensionality. intro i.
-    erewrite (PseudoInstructions.globalenv_eq _ _ P'); eauto.
-    rewrite (PseudoInstructionsproof.symbols_preserved _ _ P''). destr.
-    destr.
-    erewrite (PseudoInstructionsproof.functions_translated _ _ P''); eauto.
-    destr.
-    erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P''); eauto.
-  }
-  eapply forward_to_backward_simulation.
-  eapply compose_forward_simulations.
-  eapply PseudoInstructions.check_simulation. eauto.
-  eapply PseudoInstructionsproof.pseudo_instructions_correct. eauto.
-  erewrite <- PseudoInstructions.globalenv_eq; eauto.
-  eapply PseudoInstructions.check_wf; eauto.
-  erewrite <- PseudoInstructions.globalenv_eq; eauto.
-  red; intros.
-  eapply AsmFacts.check_asm_code_no_rsp_correct.
-  eapply PseudoInstructions.check_no_rsp; eauto.
-  eapply RealAsm.real_asm_receptive.
-  eapply RealAsm.real_asm_determinate.
-Qed.
-
+  Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*   intros. *)
+(*   unfold match_prog_real in H. *)
+(*   rewrite compose_passes_app in H. *)
+(*   fold match_prog in H. *)
+(*   destruct H as (pi & MP & P). *)
+(*   simpl in P. destruct P as (p2 & P & p3 & P' & p4 & P'' & EQ); inv EQ. *)
+(*   exploit RealAsmproof2.match_prog_inv; eauto. intros (EQ & NJ). subst. *)
+(*   eapply compose_backward_simulation. *)
+(*   apply RealAsm.real_asm_single_events. *)
+(*   replace (fn_stack_requirements tp) with (fn_stack_requirements p2). *)
+(*   eapply compose_backward_simulation. *)
+(*   apply RealAsm.real_asm_single_events.   *)
+(*   apply c_semantic_preservation_raw. auto. *)
+(*   apply RealAsmproof2.real_asm_correct'; eauto. *)
+(*   eapply PseudoInstructions.check_wf; eauto. *)
+(*   red; intros. *)
+(*   eapply AsmFacts.check_asm_code_no_rsp_correct. *)
+(*   eapply PseudoInstructions.check_no_rsp; eauto. *)
+(*   { *)
+(*     unfold fn_stack_requirements. *)
+(*     apply Axioms.extensionality. intro i. *)
+(*     erewrite (PseudoInstructions.globalenv_eq _ _ P'); eauto. *)
+(*     rewrite (PseudoInstructionsproof.symbols_preserved _ _ P''). destr. *)
+(*     destr. *)
+(*     erewrite (PseudoInstructionsproof.functions_translated _ _ P''); eauto. *)
+(*     destr. *)
+(*     erewrite (Globalenvs.Genv.find_funct_ptr_transf_none P''); eauto. *)
+(*   } *)
+(*   eapply forward_to_backward_simulation. *)
+(*   eapply compose_forward_simulations. *)
+(*   eapply PseudoInstructions.check_simulation. eauto. *)
+(*   eapply PseudoInstructionsproof.pseudo_instructions_correct. eauto. *)
+(*   erewrite <- PseudoInstructions.globalenv_eq; eauto. *)
+(*   eapply PseudoInstructions.check_wf; eauto. *)
+(*   erewrite <- PseudoInstructions.globalenv_eq; eauto. *)
+(*   red; intros. *)
+(*   eapply AsmFacts.check_asm_code_no_rsp_correct. *)
+(*   eapply PseudoInstructions.check_no_rsp; eauto. *)
+(*   eapply RealAsm.real_asm_receptive. *)
+(*   eapply RealAsm.real_asm_determinate. *)
+(* Qed. *)
+(***** Remove Proofs By Chris End ******)
 
 (** To be moved to Asmlabelgenproof *)
 
