@@ -362,9 +362,12 @@ Definition expand_builtin_inline name args res :=
       else expand_builtin_va_start_32 a       
     else
       Error (msg "Error in expanding of builtin: __builtin_va_start arguments incorrect")
+  (* Synchronization *)
+  | "__builtin_membar"%string, [], _ =>
+    OK []
   (* no operation *)
   | "__builtin_nop"%string, [], _  =>
-     OK [Pmov_rr RAX RAX]
+    OK [Pmov_rr RAX RAX]
   | _ ,_ ,_  =>  Error [MSG "Error in expanding of builtin: " ; MSG name]
   end.
 
@@ -382,9 +385,9 @@ Definition transf_instr (i: instruction): res (list instruction) :=
     | EF_vstore chunk =>
       expand_builtin_vstore chunk args
     | EF_annot text targs =>
-      Error [MSG "Unsupported Builtin Elimination: annot"]
+      OK [Pnop]
     | EF_annot_val text targ =>
-      Error [MSG "Unsupported Builtin Elimination: annot_val"]
+      OK [Pnop]
     | EF_inline_asm text sg clob =>
       Error [MSG "Unsupported Builtin Elimination: inline_asm"]
     | EF_debug kind text targs =>

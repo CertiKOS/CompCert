@@ -19,5 +19,6 @@ Parameter is_def_static: ident -> bool.
 Parameter is_def_float_literal : ident -> bool.
 
 Definition is_def_local id :=
-  is_def_builtin id || is_def_string_literal id ||
-  is_def_static id || is_def_float_literal id.
+  is_def_static id || 
+  is_def_string_literal id ||
+  is_def_float_literal id.
