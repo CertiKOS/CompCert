@@ -62,6 +62,9 @@ bench_gcc:
 
 bench:
 	@for i in $(PROGS); do \
+	   echo -n "$$i with GCC   : "; $(TIME) ./$$i.gcc; \
+         done
+	@for i in $(PROGS); do \
 	   echo -n "$$i with CompcertELF   : "; $(TIME) ./$$i.compcert; \
          done
 	@for i in $(PROGS); do \
