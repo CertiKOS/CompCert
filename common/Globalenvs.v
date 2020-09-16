@@ -532,9 +532,8 @@ Proof.
 Qed.
 
 Lemma add_globals_norepet_ensures:
-  (*SACC: forall (A : Type), *)
   forall id g gl ge,
-  (forall ge id1 g1 (*SACC: : list (ident * A *), 
+  (forall ge id1 g1, 
   P ge -> In (id1, g1) gl -> id1 <> id -> P (add_global ge (id1, g1))) ->
   (forall ge, P (add_global ge (id, g))) ->
   In (id, g) gl -> list_norepet (map fst gl) -> P (add_globals ge gl).
@@ -1644,19 +1643,6 @@ Proof.
   exploit init_mem_characterization_gen; eauto.
 Qed.
 
-(*SACC:
-Lemma genv_next_find_funct_ptr_absurd : forall (p:AST_old.program F V) ge gdef,
-  ge = (globalenv p) -> find_funct_ptr ge (genv_next ge) = Some gdef -> False.
-Proof.
-  intros p ge gdef GE FINDPTR. subst ge.
-  unfold find_funct_ptr in FINDPTR. 
-  destruct (find_def (globalenv p) (genv_next (globalenv p))) eqn:EQ; inv FINDPTR.
-  destruct g; inv H0. unfold find_def in EQ.
-  apply genv_defs_range in EQ.
-  apply Plt_strict in EQ. contradiction.
-Qed.
-*)
-
 (*SACC:*)
 Section INITMEM_STACK.
 
@@ -2215,48 +2201,6 @@ Proof.
   destruct H as (tg & P & Q). inv Q. 
   exists ctx', f2; intuition auto. apply find_funct_ptr_iff; auto.
 Qed.
-
-(*SACC:
-Lemma find_funct_ptr_match_none:
-  forall b,
-    find_funct_ptr (globalenv p) b = None ->
-    find_funct_ptr (globalenv tp) b = None.
-Proof.
-  destruct progmatch as (AA & BB & CC).
-  unfold find_funct_ptr, find_def.
-  unfold globalenv.
-  assert (REC:   forall b : block,
-             match (genv_defs (empty_genv F1 V1 (prog_public p))) ! b with
-             | Some (Gfun f) => Some f
-             | Some (Gvar _) => None
-             | None => None
-             end = None ->
-             match (genv_defs (empty_genv F2 V2 (prog_public tp))) ! b with
-             | Some (Gfun f) => Some f
-             | Some (Gvar _) => None
-             | None => None
-             end = None).
-  {
-    simpl. intros b; rewrite ! PTree.gempty. auto.
-  }
-  assert (NEXT: genv_next (empty_genv F1 V1 (prog_public p)) =
-                genv_next (empty_genv F2 V2 (prog_public tp))).
-  {
-    reflexivity.
-  }
-  revert REC NEXT.
-  generalize (empty_genv F1 V1 (prog_public p)) (empty_genv F2 V2 (prog_public tp)).
-  revert AA.
-  simpl.
-  generalize (prog_defs p) (prog_defs tp).
-  induction 1; simpl. eauto.
-  intros t t0 REC NEXT. apply IHAA.
-  simpl. intro b. inv H. inv H1. auto.
-  rewrite ! Maps.PTree.gsspec.
-  rewrite NEXT. destruct (peq b (Genv.genv_next t0)). inv H3. congruence. auto. auto.
-  simpl. congruence.
-Qed.
-*)
 
 Theorem find_funct_match:
   forall v f,
