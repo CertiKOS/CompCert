@@ -519,9 +519,6 @@ Proof.
       admit.
 
     +++
-      (* Pjmp_m a *)
-      admit.
-    +++
       (* Pjcc c l *)
       rewrite <- H8.
       destruct (eval_testcond c rs0) eqn:EQC;inversion H4.

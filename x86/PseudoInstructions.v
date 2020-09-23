@@ -7,42 +7,28 @@ Import ListNotations.
 Local Open Scope error_monad_scope.
 Close Scope nat_scope.
 
-Definition transf_instr (i: instruction):
-  (list instruction * option Z) :=
+Definition transf_instr (i: instruction): list instruction :=
   match i with
   | Pallocframe sz pubrange ofs_ra =>
     let sz := align sz 8 - size_chunk Mptr in
     let addr1 := linear_addr RSP (size_chunk Mptr) in
-    ([ Padd RAX RSP (size_chunk Mptr); Psub RSP RSP sz ], Some sz)
+    [ Padd RAX RSP (size_chunk Mptr); Psub RSP RSP sz ]
   | Pfreeframe fsz ofs_ra =>
     let sz := align fsz 8 - size_chunk Mptr in
-    ([ Padd RSP RSP sz ], None)
+    [ Padd RSP RSP sz ]
   | Pload_parent_pointer rd z =>
-    ([ Padd rd RSP (align (Z.max 0 z) 8) ], None)
-  | _ => ([ i ], None)
+    [ Padd rd RSP (align (Z.max 0 z) 8) ]
+  | _ => [ i ]
   end.
 
-Definition acc_transl_instr (r: code*option Z) (i:instruction) :=
-  let (acc_i, szr) := r in
-  let (i', szr') := transf_instr i in
-  match szr' with
-  | Some sz' => (acc_i ++ i', szr')
-  | None => (acc_i ++ i', szr)
-  end.
-
-Definition transf_code (c: code) : code*option Z :=
-  fold_left acc_transl_instr c ([],None).
+Definition transf_code (c: code) : code :=
+  concat (map transf_instr c).
 
 Definition transf_function (f: function) : function :=
-  let (code, szr) := transf_code (fn_code f) in
-  let sz' := match szr with
-             | Some sz => sz
-             | None => fn_stacksize f
-             end in
   {|
     fn_sig := fn_sig f;
-    fn_code := code;
-    fn_stacksize := sz';
+    fn_code := transf_code (fn_code f);
+    fn_stacksize := fn_stacksize f;
     fn_pubrange := fn_pubrange f;
   |}.
 

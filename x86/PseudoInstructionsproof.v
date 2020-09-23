@@ -77,8 +77,7 @@ Section WITHMEMORYMODEL.
   Proof.
     apply senv_preserved.
   Qed.
-(***** Remove Proofs By Chris Start ******)
-(*  
+  
   Lemma transf_instr_size:
     forall i,
       instr_size i = code_size (transf_instr i).
@@ -434,114 +433,111 @@ Section WITHMEMORYMODEL.
     destr. destr. eapply goto_ofs_eq; eauto.
     
   Qed.
-*)
-(***** Remove Proofs By Chris End ******)
+  
   Lemma pseudo_instructions_step:
     forall s1 t s2
            (STEP : step (Genv.globalenv prog) s1 t s2)
            (INV: real_asm_inv prog s1),
       plus step (Genv.globalenv tprog) s1 t s2.
   Proof.
-    Admitted.
-  (*   intros s1 t s2 STEP INV. *)
-  (*   inv STEP. *)
-  (*   - exploit functions_transl. eauto. intros FFP. *)
-  (*     exploit find_instr_transl; eauto. intro CA. *)
-  (*     destruct (id_instr i) eqn:ID; [| destruct i; simpl in ID; try congruence]. *)
-  (*     + pose proof (id_instr_transf _ ID) as NORMAL. *)
-  (*       rewrite NORMAL in CA. inv CA.  inv H8. eapply plus_one. *)
-  (*       econstructor. eauto. eapply FFP. eauto. *)
-  (*       erewrite <- exec_instr_senv_equiv; eauto. *)
-  (*     + subst; simpl in *. inv H2. inv CA. inv H7. inv H9. *)
-  (*       eapply plus_two. *)
-  (*       econstructor. eauto. eapply FFP. eauto. *)
-  (*       unfold Padd. apply exec_instr_Plea. *)
-  (*       econstructor. rewrite Asmgenproof0.nextinstr_pc. repeat rewrite Pregmap.gso by congruence. *)
-  (*       rewrite H. simpl. eauto. *)
-  (*       eauto. erewrite wf_asm_pc_repr'; eauto. *)
-  (*       erewrite (instr_size_alloc sz pubrange ofs_ra (align sz 8 - size_chunk Mptr) *)
-  (*                                  (size_chunk Mptr)). *)
-  (*       generalize (instr_size_positive (Psub RSP RSP (align sz 8 - size_chunk Mptr))). *)
-  (*       unfold Padd. *)
-  (*       generalize (instr_size_positive (Plea RAX (linear_addr RSP (size_chunk Mptr)))). *)
-  (*       omega. *)
-  (*       unfold Psub, Padd. rewrite exec_instr_Plea. f_equal. *)
-  (*       apply Axioms.extensionality. intro r. *)
-  (*       destruct (preg_eq r PC). *)
-  (*       * subst. simpl_regs. rewrite H. simpl. f_equal. *)
-  (*         generalize (wf_asm_pc_repr' _ (WF _ _ H0) _ _ H1). intro REPR. *)
-  (*         apply ptrofs_eq_unsigned.  *)
-  (*         rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_unsigned (Ptrofs.repr _)). *)
-  (*         erewrite Ptrofs.unsigned_repr by apply instr_size_repr. *)
-  (*         erewrite Ptrofs.unsigned_repr by apply instr_size_repr. *)
-  (*         repeat rewrite ! REPR. *)
-  (*         erewrite instr_size_alloc. unfold Psub, Padd; eauto. *)
-  (*         generalize (instr_size_positive (Pallocframe sz pubrange ofs_ra)); omega. *)
-  (*         setoid_rewrite <- (instr_size_alloc sz pubrange ofs_ra). *)
-  (*         generalize (instr_size_positive (Pallocframe sz pubrange ofs_ra)); omega. *)
-  (*       * simpl_regs. regs_eq. repeat rewrite Asmgenproof0.nextinstr_inv by auto. *)
-  (*         regs_eq. auto. *)
-  (*         apply eval_addrmode_offset_ptr. inv INV. edestruct RSPPTR as ( bb & oo & EQ & _); eauto. *)
-  (*         rewrite eval_addrmode_offset_ptr; simpl_regs. *)
-  (*         2: inv INV; edestruct RSPPTR as ( bb & oo & EQ & _); eauto. *)
-  (*         f_equal. *)
-  (*         unfold Ptrofs.neg. f_equal. f_equal. *)
-  (*         eapply wf_allocframe_repr; eauto. *)
-  (*       * traceEq. *)
-  (*     + subst; simpl in *. inv H2. inv CA. inv H7. *)
-  (*       eapply plus_one. *)
-  (*       econstructor. eauto. eapply FFP. eauto. *)
-  (*       unfold Padd. rewrite exec_instr_Plea. *)
-  (*       f_equal. apply Axioms.extensionality. intro r. *)
-  (*       erewrite (instr_size_free). unfold Padd. *)
-  (*       regs_eq. auto. *)
-  (*       rewrite eval_addrmode_offset_ptr. *)
-  (*       2: inv INV; edestruct RSPPTR as ( bb & oo & EQ & _); eauto. *)
-  (*       f_equal. *)
-  (*       eapply wf_freeframe_repr; eauto. *)
-  (*     + subst; simpl in *. inv H2. inv CA. inv H7. *)
-  (*       eapply plus_one. *)
-  (*       econstructor. eauto. eapply FFP. eauto. *)
-  (*       unfold Padd. rewrite exec_instr_Plea. *)
-  (*       f_equal. apply Axioms.extensionality. intro r. *)
-  (*       setoid_rewrite Pregmap.gsspec. destr. repeat rewrite Pregmap.gso by congruence. *)
-  (*       (* setoid_rewrite <- instr_size_load_parent_pointer. eauto. *) *)
-  (*       setoid_rewrite Pregmap.gsspec. destr. *)
-  (*       apply eval_addrmode_offset_ptr. *)
-  (*       inv INV. edestruct RSPPTR as ( bb & oo & EQ & _); eauto. *)
-  (*   - exploit functions_transl. eauto. intros FFP. *)
-  (*     exploit find_instr_transl; eauto. intro CA. *)
-  (*     apply plus_one. *)
-  (*     inv CA. inv H9. *)
-  (*     eapply exec_step_builtin; eauto. *)
-  (*     eapply eval_builtin_args_preserved. apply senv_preserved. eauto. *)
-  (*     eapply external_call_symbols_preserved. apply senv_preserved. eauto. *)
-  (*   - exploit functions_translated. eauto. intros FFP. *)
-  (*     apply plus_one. *)
-  (*     eapply exec_step_external; eauto. *)
-  (*     eapply external_call_symbols_preserved. apply senv_preserved. eauto. *)
-  (* Qed. *)
+    intros s1 t s2 STEP INV.
+    inv STEP.
+    - exploit functions_transl. eauto. intros FFP.
+      exploit find_instr_transl; eauto. intro CA.
+      destruct (id_instr i) eqn:ID; [| destruct i; simpl in ID; try congruence].
+      + pose proof (id_instr_transf _ ID) as NORMAL.
+        rewrite NORMAL in CA. inv CA.  inv H8. eapply plus_one.
+        econstructor. eauto. eapply FFP. eauto.
+        erewrite <- exec_instr_senv_equiv; eauto.
+      + subst; simpl in *. inv H2. inv CA. inv H7. inv H9.
+        eapply plus_two.
+        econstructor. eauto. eapply FFP. eauto.
+        unfold Padd. apply exec_instr_Plea.
+        econstructor. rewrite Asmgenproof0.nextinstr_pc. repeat rewrite Pregmap.gso by congruence.
+        rewrite H. simpl. eauto.
+        eauto. erewrite wf_asm_pc_repr'; eauto.
+        erewrite (instr_size_alloc sz pubrange ofs_ra (align sz 8 - size_chunk Mptr)
+                                   (size_chunk Mptr)).
+        generalize (instr_size_positive (Psub RSP RSP (align sz 8 - size_chunk Mptr))).
+        unfold Padd.
+        generalize (instr_size_positive (Plea RAX (linear_addr RSP (size_chunk Mptr)))).
+        omega.
+        unfold Psub, Padd. rewrite exec_instr_Plea. f_equal.
+        apply Axioms.extensionality. intro r.
+        destruct (preg_eq r PC).
+        * subst. simpl_regs. rewrite H. simpl. f_equal.
+          generalize (wf_asm_pc_repr' _ (WF _ _ H0) _ _ H1). intro REPR.
+          apply ptrofs_eq_unsigned. 
+          rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_unsigned (Ptrofs.repr _)).
+          erewrite Ptrofs.unsigned_repr by apply instr_size_repr.
+          erewrite Ptrofs.unsigned_repr by apply instr_size_repr.
+          repeat rewrite ! REPR.
+          erewrite instr_size_alloc. unfold Psub, Padd; eauto.
+          generalize (instr_size_positive (Pallocframe sz pubrange ofs_ra)); omega.
+          setoid_rewrite <- (instr_size_alloc sz pubrange ofs_ra).
+          generalize (instr_size_positive (Pallocframe sz pubrange ofs_ra)); omega.
+        * simpl_regs. regs_eq. repeat rewrite Asmgenproof0.nextinstr_inv by auto.
+          regs_eq. auto.
+          apply eval_addrmode_offset_ptr. inv INV. edestruct RSPPTR as ( bb & oo & EQ & _); eauto.
+          rewrite eval_addrmode_offset_ptr; simpl_regs.
+          2: inv INV; edestruct RSPPTR as ( bb & oo & EQ & _); eauto.
+          f_equal.
+          unfold Ptrofs.neg. f_equal. f_equal.
+          eapply wf_allocframe_repr; eauto.
+        * traceEq.
+      + subst; simpl in *. inv H2. inv CA. inv H7.
+        eapply plus_one.
+        econstructor. eauto. eapply FFP. eauto.
+        unfold Padd. rewrite exec_instr_Plea.
+        f_equal. apply Axioms.extensionality. intro r.
+        erewrite (instr_size_free). unfold Padd.
+        regs_eq. auto.
+        rewrite eval_addrmode_offset_ptr.
+        2: inv INV; edestruct RSPPTR as ( bb & oo & EQ & _); eauto.
+        f_equal.
+        eapply wf_freeframe_repr; eauto.
+      + subst; simpl in *. inv H2. inv CA. inv H7.
+        eapply plus_one.
+        econstructor. eauto. eapply FFP. eauto.
+        unfold Padd. rewrite exec_instr_Plea.
+        f_equal. apply Axioms.extensionality. intro r.
+        setoid_rewrite Pregmap.gsspec. destr. repeat rewrite Pregmap.gso by congruence.
+        (* setoid_rewrite <- instr_size_load_parent_pointer. eauto. *)
+        setoid_rewrite Pregmap.gsspec. destr.
+        apply eval_addrmode_offset_ptr.
+        inv INV. edestruct RSPPTR as ( bb & oo & EQ & _); eauto.
+    - exploit functions_transl. eauto. intros FFP.
+      exploit find_instr_transl; eauto. intro CA.
+      apply plus_one.
+      inv CA. inv H9.
+      eapply exec_step_builtin; eauto.
+      eapply eval_builtin_args_preserved. apply senv_preserved. eauto.
+      eapply external_call_symbols_preserved. apply senv_preserved. eauto.
+    - exploit functions_translated. eauto. intros FFP.
+      apply plus_one.
+      eapply exec_step_external; eauto.
+      eapply external_call_symbols_preserved. apply senv_preserved. eauto.
+  Qed.
   
   Theorem pseudo_instructions_correct rs:
     forward_simulation (RealAsm.semantics prog rs) (RealAsm.semantics tprog rs).
   Proof.
-    Admitted.
-  (*   eapply forward_simulation_plus with (match_states := fun s1 s2 : Asm.state => s1 = s2 /\ real_asm_inv prog s1). *)
-  (*   - simpl. apply public_preserved. *)
-  (*   - simpl; intros s1 IS1. inversion IS1. *)
-  (*     eapply Genv.init_mem_transf in H; eauto. eexists; split;[|split]; eauto. *)
-  (*     econstructor. eauto. *)
-  (*     inv H0. unfold rs0. unfold ge0. *)
-  (*     rewrite <- symbols_preserved in H1. *)
-  (*     erewrite <- (Linking.match_program_main) in H1 by eauto. *)
-  (*     econstructor; eauto. *)
-  (*     eapply real_initial_inv; eauto. *)
-  (*   - simpl; intros s1 s2 r (MS & INV) FS. subst. auto. *)
-  (*   - simpl. intros s1 t s2 STEP s1' (MS & INV). subst. *)
-  (*     eexists; split; [|split]; eauto. *)
-  (*     eapply pseudo_instructions_step; eauto. *)
-  (*     eapply real_asm_inv_inv; eauto. *)
-  (* Qed. *)
+    eapply forward_simulation_plus with (match_states := fun s1 s2 : Asm.state => s1 = s2 /\ real_asm_inv prog s1).
+    - simpl. apply public_preserved.
+    - simpl; intros s1 IS1. inversion IS1.
+      eapply Genv.init_mem_transf in H; eauto. eexists; split;[|split]; eauto.
+      econstructor. eauto.
+      inv H0. unfold rs0. unfold ge0.
+      rewrite <- symbols_preserved in H1.
+      erewrite <- (Linking.match_program_main) in H1 by eauto.
+      econstructor; eauto.
+      eapply real_initial_inv; eauto.
+    - simpl; intros s1 s2 r (MS & INV) FS. subst. auto.
+    - simpl. intros s1 t s2 STEP s1' (MS & INV). subst.
+      eexists; split; [|split]; eauto.
+      eapply pseudo_instructions_step; eauto.
+      eapply real_asm_inv_inv; eauto.
+  Qed.
 
        
 End WITHMEMORYMODEL.

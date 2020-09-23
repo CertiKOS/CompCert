@@ -1560,12 +1560,6 @@ Definition exec_instr
       Next (nextinstr (compare_floats (rs r1) (rs r2) rs) sz) m
   | Pxorpd_f rd =>
       Next (nextinstr_nf (rs#rd <- (Vfloat Float.zero)) sz) m
-  | Pxorpd_fm rd a =>
-    let val_a := (eval_addrmode64 ge a rs) in
-    Next (nextinstr_nf (rs#rd <- (Val.xorl rs#rd val_a)) sz) m
-  | Pandpd_fm rd a =>
-    let val_a := (eval_addrmode64 ge a rs) in
-    Next (nextinstr_nf (rs#rd <- (Val.andl rs#rd val_a)) sz) m 
   (** Arithmetic operations over single-precision floats *)
   | Padds_ff rd r1 =>
       Next (nextinstr (rs#rd <- (Val.addfs rs#rd rs#r1)) sz) m
@@ -1583,23 +1577,9 @@ Definition exec_instr
       Next (nextinstr (compare_floats32 (rs r1) (rs r2) rs) sz) m
   | Pxorps_f rd =>
     Next (nextinstr_nf (rs#rd <- (Vsingle Float32.zero)) sz) m
-  | Pxorps_fm rd a =>
-    let val_a := (eval_addrmode32 ge a rs) in
-    Next (nextinstr_nf (rs#rd <- (Val.xor rs#rd val_a)) sz) m
-  | Pandps_fm rd a =>
-    let val_a := (eval_addrmode32 ge a rs) in
-    Next (nextinstr_nf (rs#rd <- (Val.and rs#rd val_a)) sz) m
   (** Branches and calls *)
   | Pjmp_l lbl =>
     goto_label ge f lbl rs m
-  | Pjmp_m a =>
-    match Mem.loadv (if Archi.ptr64 then Many64 else Many32) m (eval_addrmode ge a rs) with
-    | Some addr => match Genv.find_funct ge addr with
-                  | Some _ => Next (rs#PC <- addr) m
-                  | _ => Stuck
-                  end
-    | None => Stuck
-    end
   (* | Pjmp_s id sg => *)
   (*   match Genv.find_funct ge (Genv.symbol_address ge id Ptrofs.zero) with *)
   (*   | Some _ => *)
@@ -1768,6 +1748,11 @@ Definition exec_instr
   | Psqrtsd _ _
   | Pret_iw _
   | Prolw_ri _ _
+  | Pxorpd_fm _ _
+  | Pandpd_fm _ _ 
+  | Pxorps_fm _ _
+  | Pandps_fm _ _
+  | Pjmp_m _
     => Stuck
   end.
 
