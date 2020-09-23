@@ -1565,15 +1565,6 @@ Axiom free_top_tframe_no_perm':
   frame_size bi = sz ->
   top_frame_no_perm m'.
 
-(** Pointer integrity properties *)
-
-(* Axiom store_same_ptr:
-  forall m1 b o v m2,
-  v <> Vundef ->
-  Val.has_type v Tptr ->
-  loadbytes m1 b o (size_chunk Mptr) = Some (encode_val Mptr v) ->
-  store Mptr m1 b o v = Some m2 -> m1 = m2. *)
-
 (** [store] is insensitive to the signedness or the high bits of
   small integer quantities. *)
 
@@ -1595,20 +1586,6 @@ Axiom store_is_stack_top:
    forall chunk m1 b o v m2, 
    store chunk m1 b o v = Some m2 ->
    forall b', is_stack_top (stack m2) b' <-> is_stack_top (stack m1) b'.
-
-(* Properties of [storev] *)
-
-Axiom storev_nextblock :
-  forall m chunk addr v m',
-  storev chunk m addr v = Some m' ->
-  nextblock m' = nextblock m.
-
-Axiom storev_perm_inv:
-  forall m chunk addr v m',
-  storev chunk m addr v = Some m' ->
-  forall b o k p,
-  perm m' b o k p ->
-  perm m b o k p.
 
 (* Properties of [storebytes] *)
 
@@ -1677,17 +1654,7 @@ Axiom is_stack_top_extends:
   is_stack_top (stack m1) b ->
   is_stack_top (stack m2) b.
 
-(** Weak Memory injections *)
-
-Parameter weak_inject: meminj -> frameinj -> mem -> mem -> Prop.
-
 (** Properties of [inject]*)
-
-Axiom inject_delta_pos:
-  forall f g m1 m2 b1 b2 delta,
-  inject f g m1 m2 ->
-  f b1 = Some (b2, delta) ->
-  delta >= 0.
 
 Axiom inject_ext:
   forall f f' g m1 m2,
@@ -1702,22 +1669,6 @@ Axiom range_perm_inject:
   inject f g m1 m2 ->
   range_perm m1 b1 lo hi k p ->
   range_perm m2 b2 (lo + delta) (hi + delta) k p.
-
-(*X* SACC:*)
-Axiom valid_pointer_inject': 
-  forall f g m1 m2 b1 ofs b2 delta,
-  f b1 = Some(b2, delta) ->
-  inject f g m1 m2 ->
-  valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
-  valid_pointer m2 b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true.
-
-(*X* SACC:*)
-Axiom weak_valid_pointer_inject': 
-  forall f g m1 m2 b1 ofs b2 delta,
-  f b1 = Some(b2, delta) ->
-  inject f g m1 m2 ->
-  weak_valid_pointer m1 b1 (Ptrofs.unsigned ofs) = true ->
-  weak_valid_pointer m2 b2 (Ptrofs.unsigned (Ptrofs.add ofs (Ptrofs.repr delta))) = true.
 
 (*X* SACC: The following is needed by Separation, to prove storev_parallel_rule *)
 Axiom address_inject':
@@ -1777,66 +1728,7 @@ Axiom free_right_inject:
   inject f g m1 m2'.
 
 (*X* SACC:*)
-Axiom store_right_inject:
-  forall f g m1 m2 chunk b ofs v m2',
-  inject f g m1 m2 ->
-  (forall b' delta ofs',
-   f b' = Some(b, delta) ->
-   ofs' + delta = ofs ->
-   exists vl, loadbytes m1 b' ofs' (size_chunk chunk) = Some vl /\
-              list_forall2 (memval_inject f) vl (encode_val chunk v)) ->
-  store chunk m2 b ofs v = Some m2' ->
-  inject f g m1 m2'.
 
-(*X* SACC:*)
-Axiom drop_parallel_inject:
-  forall f g m1 m2 b1 b2 delta lo hi p m1',
-  inject f g m1 m2 ->
-  drop_perm m1 b1 lo hi p = Some m1' ->
-  f b1 = Some(b2, delta) ->
-  exists m2',
-      drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2'
-   /\ inject f g m1' m2'.
-
-(*X* SACC:*)
-Axiom drop_right_inject: 
-  forall f g m1 m2 b lo hi p m2',
-  inject f g m1 m2 ->
-  drop_perm m2 b lo hi p = Some m2' ->
-  (forall b' delta ofs' k p',
-   f b' = Some(b, delta) ->
-   perm m1 b' ofs' k p' ->
-   lo <= ofs' + delta < hi -> p' = p) ->
-   inject f g m1 m2'.
-
-(*X* SACC:*)
-Axiom drop_extended_parallel_inject:
-  forall f g m1 m2 b1 b2 delta lo1 hi1 lo2 hi2 p m1',
-  inject f g m1 m2 ->
-  drop_perm m1 b1 lo1 hi1 p = Some m1' ->
-  f b1 = Some(b2, delta) ->
-  lo2 <= lo1 -> hi1 <= hi2 ->
-  range_perm m2 b2 (lo2 + delta) (hi2 + delta) Cur Freeable ->
-  (* no source memory location with non-empty permision 
-     injects into the following region in b2 in the target memory: 
-     [lo2, lo1)
-     and
-     [hi1, hi2)
-  *)
-  (forall b' delta' ofs' k p,
-    f b' = Some(b2, delta') ->
-    perm m1 b' ofs' k p ->
-    ((lo2 + delta <= ofs' + delta' < lo1 + delta )
-     \/ (hi1 + delta <= ofs' + delta' < hi2 + delta)) -> False) ->
-  exists m2',
-      drop_perm m2 b2 (lo2 + delta) (hi2 + delta) p = Some m2'
-   /\ inject f g m1' m2'.
-
-(*X* SACC: Needed by Stackingproof, with Linear2 to Mach,
-   to compose extends (in Linear2) and inject. *)
-Axiom extends_inject_compose:
-  forall f g m1 m2 m3,
-  extends m1 m2 -> inject f g m2 m3 -> inject f g m1 m3.
 
 (*X* SACC:*)
 Axiom inject_stack_inj_wf:
@@ -1851,21 +1743,6 @@ Axiom is_stack_top_inject:
   (exists (o : Z) (k : perm_kind) (p : permission), perm m1 b1 o k p) ->
   is_stack_top ( (stack m1)) b1 -> is_stack_top ( (stack m2)) b2.
 
-Axiom record_stack_block_inject_left_zero:
-  forall m1 m1' m2 j g f1 f2,
-  inject j g m1 m2 ->
-  frame_at_pos (stack m2) O f2 ->
-  tframe_inject j (perm m1) (Some f1,nil) f2 ->
-  record_stack_blocks m1 f1 = Some m1' ->
-  inject j g m1' m2.
-
-Axiom unrecord_stack_block_inject_left_zero:
-  forall (m1 m1' m2 : mem) (j : meminj) n g,
-  inject j (S n :: g) m1 m2 ->
-  unrecord_stack_block m1 = Some m1' ->
-  (1 <= n)%nat ->
-  inject j (n :: g) m1' m2.
-
 Axiom self_inject:
   forall f m,
   (forall b, f b = None \/ f b = Some (b, 0)) ->
@@ -1876,95 +1753,6 @@ Axiom self_inject:
        loadbytes m b o 1 = Some (Fragment (Vptr b' o') q n :: nil) ->
        f b' <> None) ->
   inject f (flat_frameinj (length (stack m))) m m.
-
-Axiom frame_inject_flat:
-  forall thr f,
-  Forall (fun bfi => Plt (fst bfi) thr) (frame_adt_blocks f) ->
-  frame_inject (flat_inj thr) f f.
-
-(** ** Properties of [weak_inject]. *)
-
-(*X* SACC:*)
-Axiom empty_weak_inject: forall f m, 
-  stack m = nil ->
-  (forall b b' delta, f b = Some(b', delta) -> delta >= 0) ->
-  (forall b b' delta, f b = Some(b', delta) -> valid_block m b') ->
-  weak_inject f nil empty m.
-
-(*X* SACC:*)
-Axiom weak_inject_to_inject: forall f g m1 m2,
-  weak_inject f g m1 m2 -> 
-  (forall b p, f b = Some p -> valid_block m1 b) ->
-  inject f g m1 m2.
-
-(*X* SACC:*)
-Axiom store_mapped_weak_inject:
-  forall f g chunk m1 b1 ofs v1 n1 m2 b2 delta v2,
-  weak_inject f g m1 m2 ->
-  store chunk m1 b1 ofs v1 = Some n1 ->
-  f b1 = Some (b2, delta) ->
-  Val.inject f v1 v2 ->
-  exists n2,
-    store chunk m2 b2 (ofs + delta) v2 = Some n2
-    /\ weak_inject f g n1 n2.
-
-(*X* SACC:*)
-Axiom alloc_left_mapped_weak_inject:
-  forall f g m1 m2 lo hi m1' b1 b2 delta,
-  f b1 = Some(b2, delta) ->
-  weak_inject f g m1 m2 ->
-  alloc m1 lo hi = (m1', b1) ->
-  valid_block m2 b2 ->
-  0 <= delta <= Ptrofs.max_unsigned ->
-  (forall ofs k p, perm m2 b2 ofs k p -> delta = 0 \/ 0 <= ofs < Ptrofs.max_unsigned) ->
-  (forall ofs k p, lo <= ofs < hi -> perm m2 b2 (ofs + delta) k p) ->
-  inj_offset_aligned delta (hi-lo) ->
-  (forall b delta' ofs k p,
-   f b = Some (b2, delta') ->
-   perm m1 b ofs k p ->
-   lo + delta <= ofs + delta' < hi + delta -> False) ->
-  weak_inject f g m1' m2.
-
-(*X* SACC:*)
-Axiom alloc_left_unmapped_weak_inject:
-  forall f g m1 m2 lo hi m1' b1,
-  f b1 = None ->
-  weak_inject f g m1 m2 ->
-  alloc m1 lo hi = (m1', b1) ->
-  weak_inject f g m1' m2.
-
-(*X* SACC:*)
-Axiom drop_parallel_weak_inject:
-  forall f g m1 m2 b1 b2 delta lo hi p m1',
-  weak_inject f g m1 m2 ->
-  drop_perm m1 b1 lo hi p = Some m1' ->
-  f b1 = Some(b2, delta) ->
-  exists m2',
-      drop_perm m2 b2 (lo + delta) (hi + delta) p = Some m2'
-   /\ weak_inject f g m1' m2'.
-
-(*X* SACC:*)
-Axiom drop_extended_parallel_weak_inject:
-  forall f g m1 m2 b1 b2 delta lo1 hi1 lo2 hi2 p m1',
-  weak_inject f g m1 m2 ->
-  drop_perm m1 b1 lo1 hi1 p = Some m1' ->
-  f b1 = Some(b2, delta) ->
-  lo2 <= lo1 -> hi1 <= hi2 ->
-  range_perm m2 b2 (lo2 + delta) (hi2 + delta) Cur Freeable ->
-  (* no source memory location with non-empty permision 
-     injects into the following region in b2 in the target memory: 
-     [lo2, lo1)
-     and
-     [hi1, hi2)
-  *)
-  (forall b' delta' ofs' k p,
-    f b' = Some(b2, delta') ->
-    perm m1 b' ofs' k p ->
-    ((lo2 + delta <= ofs' + delta' < lo1 + delta )
-     \/ (hi1 + delta <= ofs' + delta' < hi2 + delta)) -> False) ->
-  exists m2',
-      drop_perm m2 b2 (lo2 + delta) (hi2 + delta) p = Some m2'
-   /\ weak_inject f g m1' m2'.
 
 (** ** Properties of [inject_neutral] *)
 
@@ -2054,8 +1842,7 @@ Axiom drop_perm_unchanged_on:
   unchanged_on P m m'.
 
 (** The following property is needed by Separation, to prove
-minjection. HINT: it can be used only for [strong_unchanged_on], not
-for [unchanged_on]. *)
+minjection. *)
 
 Axiom inject_unchanged_on:
    forall j g m0 m m',
@@ -2105,12 +1892,6 @@ Axiom unrecord_perm:
   unrecord_stack_block m = Some m' ->
   forall b o k p,
   perm m' b o k p <-> perm m b o k p.
-
-Axiom drop_perm_perm:
-  forall m b lo hi p m',
-  drop_perm m b lo hi p = Some m' ->
-  forall b' o k p',
-  perm m' b' o k p' <-> (perm m b' o k p' /\( b = b' -> lo <= o < hi -> perm_order p p')).
 
 (* Original operations don't modify the stack. *)
 Axiom store_stack_unchanged:
@@ -2162,6 +1943,9 @@ Definition mem_unchanged (T: mem -> mem -> Prop) :=
 
 (* Properties of [push_new_stage] *)
 
+Axiom push_new_stage_loadv:
+  forall chunk m v,
+  loadv chunk (push_new_stage m) v = loadv chunk m v.
 
 Axiom push_new_stage_nextblock: 
   forall m, 
@@ -2212,10 +1996,6 @@ Axiom extends_push:
 Axiom push_new_stage_unchanged_on:
   forall P m,
   unchanged_on P m (push_new_stage m).
-
-Axiom push_new_stage_loadv:
-  forall chunk m v,
-  loadv chunk (push_new_stage m) v = loadv chunk m v.
 
 Axiom storebytes_push:
   forall m b o bytes m',
@@ -2386,27 +2166,6 @@ Axiom record_stack_blocks_inject_neutral:
   Forall (fun b => Plt b thr) (map fst (frame_adt_blocks fi)) ->
   inject_neutral thr m'.
 
-Axiom record_stack_block_inject_flat:
- forall m1 m1' m2 j  f1 f2,
- inject j (flat_frameinj (length (stack m1))) m1 m2 ->
- frame_inject j f1 f2 ->
- (forall b, in_stack (stack m2) b -> ~ in_frame f2 b) ->
- valid_frame f2 m2 ->
- frame_agree_perms (perm m2) f2 ->
- (forall (b1 b2 : block) (delta : Z), j b1 = Some (b2, delta) -> in_frame f1 b1 <-> in_frame f2 b2) ->
- frame_adt_size f1 = frame_adt_size f2 ->
- record_stack_blocks m1 f1 = Some m1' ->
- top_tframe_tc (stack m2) ->
- size_stack (tl (stack m2)) <= size_stack (tl (stack m1)) ->
- exists m2',
-   record_stack_blocks m2 f2 = Some m2' /\
-   inject j (flat_frameinj (length (stack m1'))) m1' m2'.
-
-Axiom record_stack_blocks_top_tframe_no_perm:
-  forall m1 f m2,
-  record_stack_blocks m1 f = Some m2 ->
-  top_tframe_tc (stack m1).
-
 Axiom record_stack_block_unchanged_on:
   forall m bfi m' (P: block -> Z -> Prop),
   record_stack_blocks m bfi = Some m' ->
@@ -2482,22 +2241,6 @@ Axiom record_push_inject_flat:
   exists m2', 
        record_stack_blocks m2 fi2 = Some m2' 
     /\ inject j (flat_frameinj (length (stack m1'))) m1' m2'.
-
-Axiom record_stack_blocks_inject_parallel_flat:
-   forall m1 m1' m2 j fi1 fi2,
-   inject j (flat_frameinj (length (stack m1))) m1 m2 ->
-   frame_inject j fi1 fi2 ->
-   (forall b : block, in_stack (stack m2) b -> ~ in_frame fi2 b) ->
-   (valid_frame fi2 m2) ->
-   frame_agree_perms (perm m2) fi2 ->
-   (forall (b1 b2 : block) (delta : Z), j b1 = Some (b2, delta) -> in_frame fi1 b1 <-> in_frame fi2 b2) ->
-   frame_adt_size fi1 = frame_adt_size fi2 ->
-   record_stack_blocks m1 fi1 = Some m1' ->
-   top_tframe_tc (stack m2) ->
-   size_stack (tl (stack m2)) <= size_stack (tl (stack m1)) ->
-   exists m2',
-     record_stack_blocks m2 fi2 = Some m2' /\
-     inject j (flat_frameinj (length (stack m1'))) m1' m2'.
 
 Axiom record_push_inject_alloc: 
   forall m01 m02 m1 m2 j0 j g fsz b1 b2 sz m1',
@@ -2615,12 +2358,6 @@ Axiom unrecord_stack_block_nextblock:
   unrecord_stack_block m = Some m' ->
   nextblock m' = nextblock m.
 
-Axiom unrecord_stack_block_get_frame_info:
-  forall m m' b,
-  unrecord_stack_block m = Some m' ->
-  ~ is_stack_top (stack m) b ->
-  get_frame_info (stack m') b = get_frame_info (stack m) b.
-
 (* Interaction of [unrecord_stack] with [push_new_stage] *)
 
 Axiom unrecord_push:
@@ -2658,14 +2395,13 @@ Axiom inject_tailcall_left_new_stage_right:
   tailcall_stage m1 = Some m1' ->
   inject j (1%nat:: n :: g) m1' (push_new_stage m2).
 
-(* [loadbytesv] properties *)
+Axiom drop_perm_perm:
+  forall m b lo hi p m',
+  drop_perm m b lo hi p = Some m' ->
+  forall b' o k p',
+  perm m' b' o k p' <-> (perm m b' o k p' /\( b = b' -> lo <= o < hi -> perm_order p p')).
 
-Axiom loadbytesv_inject:
-  forall j g chunk m m' v v' ra,
-  inject j g m m' ->
-  Val.inject j v v' ->
-  loadbytesv chunk m v = Some ra ->
-  exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.inject j ra ra'.
+(* [loadbytesv] properties *)
 
 Axiom loadbytesv_extends:
   forall chunk m m' v v' ra,

@@ -11,16 +11,6 @@ Section ASSOC.
     | (k,v)::r => if Aeq k b then Some v else get_assoc r b
     end.
 
-  Lemma get_assoc_in_fst:
-    forall (l: list (A*B)) b r,
-      get_assoc l b = Some r ->
-      In b (map fst l).
-  Proof.
-    induction l; simpl; intros; eauto. inv H.
-    repeat destr_in H. simpl. right.
-    eauto.
-  Qed.
-
   Lemma get_assoc_in:
     forall (l: list (A*B)) b r,
       get_assoc l b = Some r ->

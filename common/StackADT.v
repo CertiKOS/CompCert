@@ -8,21 +8,6 @@ Require Intv.
 
 Local Open Scope nat_scope.
 
-(* To be moved to Coqlib *)
-Definition option_prop {A} (P: A -> Prop) (oa: option A): Prop :=
-  match oa with
-    Some a => P a
-  | None => True
-  end.
-
-Definition option_prop2 {A} (P: A -> A -> Prop) (oa ob: option A): Prop :=
-  match oa, ob with
-    Some a, Some b => P a b
-  | Some a, None => False
-  | _, _ => True
-  end.
-
-
 (** This file holds definitions related to our stack abstract data type (ADT).   *)
 
 (** * Block information  *)
@@ -415,41 +400,6 @@ Inductive frame_at_pos (s: stack) n f :=
 
 Notation "f '@' s ':' i" := (frame_at_pos s i f) (at level 30, s at next level, i at next level, no associativity).
 
-Lemma frame_at_pos_lt:
-  forall s n f,
-    f @ s : n ->
-    n < length s.
-Proof.
-  intros s n f FAP; inv FAP.
-  apply nth_error_Some. congruence.
-Qed.
-
-Lemma in_frame_at_pos:
-  forall s f,
-    In f s ->
-    exists n, f @ s : n.
-Proof.
-  intros s f IN; apply In_nth_error in IN; destruct IN as (n & NTH).
-  exists n; econstructor; eauto.
-Qed.
-
-Lemma frame_at_pos_In:
-  forall s f n,
-    f @ s : n ->
-    In f s.
-Proof.
-  intros s f n FAP; inv FAP. eapply nth_error_In; eauto. 
-Qed.
-
-Lemma frame_at_same_pos:
-  forall s n f1 f2,
-    f1 @ s : n ->
-    f2 @ s : n ->
-    f1 = f2.
-Proof.
-  intros s n f1 f2 FAP1 FAP2; inv FAP1; inv FAP2; congruence.
-Qed.
-
 (** * Stack injection  *)
 
 Definition frameinj := list nat.
@@ -525,29 +475,6 @@ Section TAKEDROP.
     repeat destr_in H. simpl. erewrite IHn; eauto.
   Qed.
 
-  Variable P: A -> Prop.
-
-  Lemma take_forall:
-    forall n l t,
-      Forall P l ->
-      take n l = Some t ->
-      Forall P t.
-  Proof.
-    intros.
-    rewrite (take_drop _ _ _ H0) in H.
-    rewrite Forall_forall in H.
-    rewrite Forall_forall. intros; apply H. rewrite in_app. auto.
-  Qed.
-
-  Lemma drop_forall:
-    forall n l,
-      Forall P l ->
-      Forall P (drop n l).
-  Proof.
-    induction n; simpl; intros; eauto.
-    apply IHn. inv H; simpl; auto.
-  Qed.
-
 End TAKEDROP.
 
 Definition sum_list (l: list nat) : nat :=
@@ -613,15 +540,6 @@ Proof.
   inv H1. simpl; auto.
 Qed.
 
-Lemma is_stack_top_in_stack:
-  forall s b,
-    is_stack_top s b -> in_stack s b.
-Proof.
-  intros s b IS.
-  destruct s; simpl in *. easy. red in IS; simpl in IS.
-  rewrite in_stack_cons; left. eauto.
-Qed.
-
 (** * Specifying tailcalled frames.  *)
 (** A tframe is a non-empty list of frames (a::l). It must be the case that all
     blocks in l have no permission.
@@ -639,9 +557,6 @@ Definition wf_stack (m: perm_type) (s: stack) : Prop :=
   Forall (wf_tframe m) s.
 
 Section INJ.
-   Definition has_perm (m: perm_type) (j: meminj) (f: tframe_adt) : Prop :=
-     exists b o k p, j b <> None /\ in_frames f b /\ m b o k p.
-
    Definition has_perm_frame (m: perm_type) (j: meminj) (f: frame_adt) : Prop :=
      exists b o k p, j b <> None /\ in_frame f b /\ m b o k p.
 
@@ -787,16 +702,6 @@ Section INJ.
     intros. red in H. eapply in_map with (f:= fst) in H. auto.
   Qed.
 
-  Lemma wf_stack_drop:
-    forall P n s,
-      wf_stack P s ->
-      wf_stack P (drop n s).
-  Proof.
-    induction n; simpl; intros; eauto.
-    apply IHn.
-    inv H; simpl. constructor. auto.
-  Qed.
-
   Lemma stack_inject_compat:
     forall f g P s1 s2,
       stack_inject f P g s1 s2 ->
@@ -906,17 +811,6 @@ Section INJ.
     edestruct IHs as (x & A & B); eauto.
   Qed.
 
-  Lemma frame_at_pos_ex:
-    forall i s,
-      i < length s ->
-      exists f,
-        f @ s : i.
-  Proof.
-    intros.
-    rewrite <- nth_error_Some in H.
-    destruct (nth_error s i) eqn:?; try congruence.
-    repeat econstructor; eauto.
-  Qed.
 
   Inductive nodup: stack -> Prop :=
   | nodup_nil:
@@ -951,15 +845,6 @@ Section INJ.
       inv H.
       exfalso; eapply H6. eauto. eapply in_frames_in_stack; eauto.
       inv H. eapply IHl; eauto.
-  Qed.
-
-  Lemma in_frames_in_frame_ex:
-    forall tf b,
-      in_frames tf b ->
-      exists f,
-        fst tf = Some f /\ in_frame f b.
-  Proof.
-    intros; rewrite <- in_frames_cons. erewrite <- surjective_pairing; eauto.
   Qed.
 
   Lemma get_assoc_tframes_in :
@@ -1071,19 +956,7 @@ Section INJ.
     elim H1. apply in_map_iff; eexists; split; eauto. reflexivity.
   Qed.
 
-  Lemma in_stack'_stack_agree_perms:
-    forall m2 l2 b2 bi2,
-      in_stack' l2 (b2, bi2) ->
-      stack_agree_perms m2 l2 ->
-      forall o k p, m2 b2 o k p -> (0 <= o < frame_size bi2)%Z.
-  Proof.
-    intros.
-    rewrite in_stack'_rew in H.
-    destruct H as (tf & IFR & IN).
-    rewrite in_frames'_rew in IFR.
-    destruct IFR as (fr & IFR & INTF).
-    eapply H0; eauto.
-  Qed.
+
 
   Lemma in_frame'_norepet:
     forall b bi1 bi2 f,
@@ -1142,27 +1015,6 @@ Section INJ.
       eapply in_frame'_norepet; eauto.
     + edestruct H; eauto using in_frames'_in_frames, in_stack'_in_stack.
     + edestruct H; eauto using in_frames'_in_frames, in_stack'_in_stack.
-  Qed.
-
-  Lemma stack_inject_inject_frame_info:
-    forall f g m l1 l2,
-      stack_inject f m g l1 l2 ->
-      nodup l1 ->
-      nodup l2 ->
-      forall b1 bi1 b2 bi2,
-        in_stack' l1 (b1, bi1) ->
-        in_stack' l2 (b2, bi2) ->
-        forall delta, 
-          f b1 = Some (b2, delta) ->
-          forall o k p,
-            m b1 o k p ->
-        inject_frame_info delta bi1 bi2.
-  Proof.
-    intros f g m l1 l2 SI ND1 ND2 b1 bi1 b2 bi2 INS1 INS2 delta FB o k p PERM IPC.
-    edestruct (stack_inject_compat _ _ _ _ _ SI _ _ _ _ FB INS1) as (bi2' & INS2' & IFI).
-    do 3 eexists; eauto.
-    cut (bi2 = bi2'). intro; subst; auto.
-    eapply in_stack'_norepet; eauto.
   Qed.
 
   Lemma take_sumlist:
@@ -1325,20 +1177,6 @@ Section INJ.
     apply eq_block.
   Qed.
 
-  Lemma is_stack_top_stack_blocks:
-    forall s b,
-      is_stack_top s b <-> (exists f r, in_frames f b /\ s = f::r).
-  Proof.
-    unfold is_stack_top, get_stack_top_blocks.
-    intros.
-    destruct s eqn:?; intuition.
-    - decompose [ex and] H; intuition congruence.
-    - repeat eexists. eauto.
-    - subst.    
-      decompose [ex and] H; intuition. inv H2.
-      eauto. 
-  Qed.
-
   Lemma not_in_frames_no_frame_info:
     forall (tf : tframe_adt) (b : block), 
       ~ in_frames tf b -> 
@@ -1351,14 +1189,6 @@ Section INJ.
     exfalso; apply H.
     eapply in_frame_in_frames; eauto.
     eapply in_frame_blocks_in_frame; eauto.
-  Qed.
-
-  Lemma get_frame_info_in_frames:
-    forall tf b f, get_assoc_tframes tf b = Some f -> in_frames tf b.
-  Proof.
-    intros.
-    destruct (in_frames_dec tf b); auto.
-    rewrite not_in_frames_no_frame_info in H; auto. congruence.
   Qed.
 
   Lemma get_frame_info_in_stack:
@@ -1433,45 +1263,6 @@ Section INJ.
     eapply IHs; eauto. intuition.
   Qed.
 
-  Lemma get_frame_info_inj_gen:
-    forall f g m1 s1 s2 b1 b2 delta
-      (SI: stack_inject f m1 g s1 s2)
-      (ND1: nodup s1)
-      (ND2: nodup s2)
-      (FB : f b1 = Some (b2, delta))
-      (PERM: exists o k p, m1 b1 o k p),
-      option_le_stack (fun fi => True)
-                (inject_frame_info delta)
-                (get_frame_info s1 b1)
-                (get_frame_info s2 b2).
-  Proof.
-    intros.
-    unfold get_frame_info.
-    destruct (in_stack_dec s1 b1).
-    edestruct in_stack_in_frames_ex as (ff & INS & INF); eauto.
-    destruct (get_assoc_stack s1 b1) eqn:STK1.
-    - destruct PERM as (o & k & p & PERM).
-      eapply (wf_stack_in_frames_in_frame) in INF; eauto.
-      destruct INF as (vf1 & VF1 & INF).
-      edestruct in_frame_info as (fi2 & INF2); eauto.
-      erewrite get_assoc_stack_lnr in STK1; eauto. inv STK1.
-      edestruct (stack_inject_compat _ _ _ _ _ SI) as (bi2 & INS2 & IFI); eauto.
-      setoid_rewrite in_stack'_rew.
-      setoid_rewrite in_frames'_rew.
-      exists ff; split; auto. exists vf1; split; eauto.
-      revert INS2. setoid_rewrite in_stack'_rew.
-      setoid_rewrite in_frames'_rew.
-      intros (tf & (fr & INFR & INFRS) & INS2).
-      erewrite get_assoc_stack_lnr; eauto.
-      constructor. auto.
-    - edestruct (in_stack_get_assoc_stack s1 b1); congruence.
-    - rewrite not_in_stack_get_assoc; auto.
-      destruct (get_assoc_stack s2 b2) eqn:FI2.
-      + apply option_le_none_some.
-        edestruct get_assoc_spec as (fr & tfr & IN & AIN & INR); eauto.
-      + apply option_le_none_none.
-  Qed.
-
   Lemma is_stack_top_inj_gen:
     forall P f g s1 s2 b1 b2 delta
       (MINJ: stack_inject f P g s1 s2)
@@ -1516,26 +1307,6 @@ Lemma wf_stack_tl p s:
   wf_stack p (tl s).
 Proof.
   eapply Forall_tl; eauto.
-Qed.
-
-Lemma tframe_inject_invariant:
-  forall (m m': perm_type) f f1 f2 thr,
-    (forall b ofs k p b' delta,
-        f b = Some (b', delta) ->
-        Plt b thr ->
-        m' b ofs k p -> m b ofs k p) ->
-    (forall b, in_frames f1 b -> Plt b thr) ->
-    tframe_inject f m f1 f2 ->
-    tframe_inject f m' f1 f2.
-Proof.
-  intros m m' f f1 f2 thr PERMS PLT TFI ff1 INf1 HP.
-  specialize (TFI _ INf1).
-  trim TFI. destruct HP as (b & o & k & p & FB & IFR & PERM).
-  destruct (f b) eqn:?; try congruence. destruct p0.
-  repeat eexists; eauto. congruence. eapply PERMS; eauto.
-  eapply PLT; eauto. eapply in_frame_in_frames; eauto.
-  destruct TFI as (f3 & EQ & FI).
-  repeat eexists; eauto.
 Qed.
 
 Lemma tframe_inject_invariant_strong:
@@ -1617,7 +1388,7 @@ Proof.
   destruct H0; subst; eauto.
 Qed.
 
-Lemma tframe_inject_invariant':
+Lemma tframe_inject_invariant:
   forall (m m': perm_type) f f1 f2 ,
     (forall b ofs k p,
         in_frames_all f1 b ->
@@ -1648,7 +1419,7 @@ Proof.
     intros; eapply PERM; eauto using in_stack_all_drop.
   - eapply Forall_impl. 2: apply FI.
     simpl.
-    intros; eapply tframe_inject_invariant'. 2: eauto.
+    intros; eapply tframe_inject_invariant. 2: eauto.
     intros; eapply PERM; eauto.
     eapply in_frames_all_in_stack_all; eauto.
     eapply in_take; eauto.
@@ -1699,21 +1470,6 @@ Qed.
     repeat constructor.
   Qed.
 
-  Lemma stack_inject_length_stack:
-    forall j g P s1 s2,
-      stack_inject j g P s1 s2 ->
-      (length s2 <= length s1)%nat.
-  Proof.
-    intros j g P s1 s2 SI.
-    revert SI. clear.
-    revert g s1 s2.
-    induction 1; simpl; intros; eauto.
-    simpl in *. repeat destr_in TAKE. simpl.
-    simpl in *. apply le_n_S. etransitivity. apply IHSI.
-    rewrite drop_length. omega.
-    eapply take_succeeds_inv; eauto.
-  Qed.
-
   Fixpoint list_nats n :=
     match n with
       O => nil
@@ -1731,22 +1487,6 @@ Qed.
     - destruct (Nat.eq_dec m n); auto. right; rewrite IHn. omega.
   Qed.
 
-  Lemma option_eq_true:
-    forall {A} Aeq (o1 o2: option A),
-      proj_sumbool (option_eq Aeq o1 o2) = true <-> o1 = o2.
-  Proof.
-    intros.
-    destruct (option_eq Aeq o1 o2); try congruence.
-    subst; tauto. split; inversion 1. congruence.
-  Qed.
-
-  Fixpoint filteri {A} (f: nat -> A -> bool) (l: list (nat * A)) : list (A) :=
-    match l with
-      nil => nil
-    | (i,a)::r => let r' := filteri f r in
-             if f i a then a :: r' else r'
-    end.
-
   Lemma le_add_pos:
     (forall a b,
         0 <= b ->
@@ -1755,51 +1495,9 @@ Qed.
     intros; omega.
   Qed.
 
-  Fixpoint pairi {A} (l: list A) i : list (nat * A) :=
-    match l with
-      nil => nil
-    | a::r => (i,a)::(pairi r (S i))
-    end.
-
-
 
 Definition maxl (l: list Z) : option Z :=
   match l with nil => None | _ => Some (fold_right Z.max Z0 l) end.
-
-Lemma maxl_is_max:
-  forall l m,
-    maxl l = Some m ->
-    Forall (fun n => (n <= m)%Z) l.
-Proof.
-  destruct l. constructor.
-  intros. unfold maxl in H.
-  revert H. generalize (z :: l). inversion 1; subst.
-  clear.
-  induction l0; simpl; intros. constructor.
-  constructor; auto.
-  apply Z.le_max_l.
-  eapply Forall_impl. 2: eauto. intros.
-  simpl in H0.
-  apply Zmax_bound_r. auto.
-Qed.
-
-Lemma maxl_in:
-  forall l (F: Forall (fun n => 0 <= n)%Z l) m,
-    maxl l = Some m ->
-    In m l.
-Proof.
-  destruct l. inversion 2. unfold maxl. simpl. inversion 2; subst. clear H.
-  revert z F.
-  induction l; simpl; intros; eauto. inv F. rewrite Z.max_l; auto.
-  rewrite Z.max_assoc.
-  specialize (IHl (Z.max z a)). trim IHl.
-  inv F. inv H2.
-  constructor. apply Z.max_le_iff. auto.
-  auto.
-  destruct IHl. rewrite <- H.
-  rewrite Zmax_spec. destr.
-  auto.
-Qed.
 
 Definition size_frame (f: frame_adt) : Z := 
   align (frame_adt_size f) 8.
@@ -1885,6 +1583,7 @@ Qed.
   
 
   Open Scope Z_scope.
+
   Lemma align_ge1:
     forall sz al,
       al > 0 ->
@@ -1922,31 +1621,6 @@ Qed.
       omega.
     }
   Qed.
-  
-  Lemma align_mono:
-    forall al sz sz',
-      al > 0 ->
-      0 <= sz <= sz' ->
-      align sz al <= align sz' al.
-  Proof.
-    intros.
-    generalize (align_ge1 sz al H)
-               (align_ge1 sz' al H).
-    intros [b [A [B C]]] [c [D [E F]]].
-    destruct (zlt (sz'-sz) al); try intuition omega.
-    assert (exists d, 0 <= d < al /\ sz' = sz + d).
-    {
-      clear - H0 H l.
-      exists (sz'-sz). intuition try omega.
-    }
-    destruct H1 as [d [ENC EQ]]. rewrite EQ in *.
-    clear EQ.
-    rewrite B; rewrite E.
-    cut (      al * ((sz - 1) / al) <=
-               (   al * ((sz + d - 1) / al))); intros; try omega.  
-    apply Z.mul_le_mono_nonneg_l; try  omega.
-    apply Z.div_le_mono; try omega.
-  Qed.
 
   Lemma stack_inject_aux_id:
     forall p s,
@@ -1955,12 +1629,6 @@ Qed.
     induction s; simpl; intros; econstructor; simpl; eauto.
     repeat constructor.
     eapply tframe_inject_id; eauto.
-  Qed.
-
-  Lemma flat_frameinj_pos s:
-    Forall (lt 0) (flat_frameinj s).
-  Proof.
-    induction s; simpl; intros; constructor; auto.
   Qed.
 
   Lemma stack_inject_id:
@@ -2159,37 +1827,6 @@ Proof.
   intros l a f H. inv H. simpl in H0. congruence.
 Qed.
 
-Lemma frame_at_pos_same_frame:
-  forall s i1 i2 f b,
-    frame_at_pos s i1 f ->
-    frame_at_pos s i2 f ->
-    in_frames f b ->
-    nodup s ->
-    i1 = i2.
-Proof.
-  induction s; simpl; intros; eauto.
-  - inv H.  rewrite nth_error_nil in H3. easy.
-  - inv H; inv H0.
-    destruct (Nat.eq_dec i1 i2); auto.
-    exfalso.
-    destruct (Nat.eq_dec i1 O).
-    + subst. simpl in H3. inv H3.
-      destruct i2. congruence. simpl in H. apply nth_error_In in H.
-      inv H2. specialize (H5 _ H1). apply H5.
-      eapply in_frames_in_stack; eauto.
-    + destruct (Nat.eq_dec i2 0).
-      * subst.
-        simpl in H. inv H.
-        destruct i1. congruence. simpl in H3. apply nth_error_In in H3.
-        inv H2. specialize (H5 _ H1). apply H5.
-        eapply in_frames_in_stack; eauto.
-      * destruct i1, i2; try congruence. simpl in *.
-        apply n. f_equal. eapply IHs; eauto.
-        constructor; auto. constructor; auto.
-        apply nodup_tl in H2.
-        simpl in *; auto.
-Qed.
-
 Local Open Scope nat_scope.
 
 
@@ -2203,16 +1840,6 @@ Inductive top_tframe_prop (P: tframe_adt -> Prop) : stack -> Prop :=
 
 Definition top_tframe_tc (s: stack) : Prop :=
   top_tframe_prop (fun tf => fst tf = None) s.
-
-Lemma check_top_tc s : { top_tframe_tc s } + { ~ top_tframe_tc s }.
-Proof.
-  unfold top_tframe_tc.
-  destruct s eqn:STK. right; intro A; inv A.
-  destruct t.
-  destruct o.
-  right. intro A. inv A. inv H0.
-  left; constructor. auto.
-Defined.
 
 Lemma stack_inject_push_new_stage_right:
   forall j n g P s1 s2,
@@ -2254,20 +1881,6 @@ Lemma stack_inject_unrecord_parallel:
 Proof.
   intros. subst.
   inv SI. simpl in *; auto.
-Qed.
-
-Lemma stack_inject_unrecord_parallel_frameinj_flat_on:
-  forall j m1 s1 s2
-    (SI: stack_inject j m1 (flat_frameinj (length s2)) s1 s2)
-    (ND2: nodup s2)
-    fr2 l2
-    (STK2 : s2 = fr2 :: l2)
-    fr1 l1
-    (STK1 : s1 = fr1 :: l1),
-    stack_inject j m1 (flat_frameinj (length l2)) l1 l2.
-Proof.
-  intros. subst.
-  eapply stack_inject_unrecord_parallel; eauto.
 Qed.
 
 Definition same_sizes_frame f1 f2 := frame_adt_size f1 = frame_adt_size f2.
@@ -2379,28 +1992,6 @@ Proof.
 Qed.
 End INJ.
 
-Lemma has_perm_frame_impl:
-  forall (P1 P2: perm_type) j f tf,
-    has_perm_frame P1 j f ->
-    frame_inject j f tf ->
-    (forall b1 b2 delta o k p, j b1 = Some (b2, delta) -> P1 b1 o k p -> P2 b2 (o + delta)%Z k p) ->
-    has_perm_frame P2 inject_id tf.
-Proof.
-  intros P1 P2 j f tf (b & o & k & p & NONE & IFR & PERM1) FI PERMS.
-  red in FI.
-  apply in_frame_info in IFR. destruct IFR as (fi & IFR).
-  rewrite Forall_forall in FI; specialize (FI _ IFR).
-  simpl in FI.
-  destruct (j b) eqn:?; try congruence. destruct p0.
-  specialize (FI _ _ eq_refl).
-  destruct FI as (fi' & IN' & IFI).
-  exists b0, (o + z)%Z, k, p. split. unfold inject_id. congruence.
-  split. eapply in_frame'_in_frame; eauto. eauto.
-Qed.
-
-Definition stack_top_is_new s :=
-  top_tframe_prop (fun tf => tf = (None,nil)) s.
-
 Lemma max_in_le:
   forall l a i,
     In a l ->
@@ -2409,19 +2000,6 @@ Proof.
   induction l; simpl; intros; eauto.
   easy. destruct H; eauto. subst. apply Z.le_max_l.
   apply Z.max_le_iff. right; eauto.
-Qed.
-
-Lemma max_sublist:
-  forall l1 l2 i,
-    (forall x, In x l1 -> In x l2) ->
-    (fold_right Z.max i l1 <= fold_right Z.max i l2)%Z.
-Proof.
-  induction l1; simpl; intros; eauto.
-  induction l2; simpl; intros; eauto. omega.
-  apply Z.max_le_iff. right. apply IHl2. easy.
-  apply Z.max_lub_iff. split.
-  apply max_in_le; auto.
-  apply IHl1. auto.
 Qed.
 
 (* For use in Mach and Asm, the parent_sp pointer is now computed on the stack
@@ -2510,421 +2088,3 @@ Proof.
   rewrite Z.max_le_iff. left. destruct f; simpl. destruct o; simpl.
   apply size_frame_pos. omega.    
 Qed.
-
-(* (** SACC: The following property is needed by ValueDomain, to prove mmatch_inj. *)
-Definition record_init_sp m :=
-  let (m1, b1) := alloc (push_new_stage m) 0 0 in
-  record_stack_blocks m1 (make_singleton_frame_adt b1 0 0). 
-
-  Lemma record_init_sp_inject:
-    forall j g m1 m1' m2,
-      Mem.inject j g m1 m1' ->
-      size_stack (stack m1') <= size_stack (stack m1) ->
-      record_init_sp m1 = Some m2 ->
-      exists m2', record_init_sp m1' = Some m2' /\ inject (fun b => if peq b (nextblock (push_new_stage m1))
-                                                           then Some (nextblock (push_new_stage m1'), 0)
-                                                           else j b) (1%nat::g) m2 m2'.
-  Proof.
-    intros j g m1 m1' m2 INJ SZ RIS.
-    unfold record_init_sp in *; destr_in RIS.
-    exploit Mem.push_new_stage_inject. apply INJ. intro INJ0.
-    edestruct Mem.alloc_parallel_inject as (f' & m2' & b2 & ALLOC & INJ1 & INCR & JNEW & JOLD).
-    apply INJ0. eauto. reflexivity. reflexivity.
-    rewrite ALLOC.
-    edestruct record_push_inject_alloc as (m2'' & RSB & INJ'). 7: apply RIS.
-    2: apply Heqp. 2: apply ALLOC. all: eauto.
-    rewrite push_new_stage_stack. constructor; reflexivity.
-    rewrite ! push_new_stage_stack. simpl. auto.
-    eexists; split. eauto.
-    eapply inject_ext. eauto.
-    intros. erewrite <- ! alloc_result by eauto.
-    destr. eauto.
-  Qed.
-
-  Lemma record_init_sp_extends:
-    forall m1 m1' m2,
-      Mem.extends m1 m1' ->
-      size_stack (stack m1') <= size_stack (stack m1) ->
-      record_init_sp m1 = Some m2 ->
-      exists m2', record_init_sp m1' = Some m2' /\ extends m2 m2'.
-  Proof.
-    intros m1 m1' m2 INJ SZ RIS.
-    unfold record_init_sp in *; destr_in RIS.
-    apply extends_push in INJ.
-    edestruct alloc_extends as (m2' & ALLOC & INJ1).
-    apply INJ. eauto. reflexivity. reflexivity.
-    rewrite ALLOC.
-    edestruct record_push_extends_flat_alloc as (m2'' & RSB & INJ'). 4: apply RIS.
-    apply Heqp. apply ALLOC. all: eauto.
-    rewrite push_new_stage_stack. constructor; reflexivity.
-    rewrite ! push_new_stage_stack. simpl. auto.
-  Qed.
-
-  Lemma record_init_sp_flat_inject
-    : forall (m1 m1' m2 : mem),
-      Mem.inject (Mem.flat_inj (Mem.nextblock m1)) (flat_frameinj (length (Mem.stack m1))) m1 m1' ->
-      size_stack (Mem.stack m1') <= size_stack (Mem.stack m1) ->
-      Mem.record_init_sp m1 = Some m2 ->
-      Mem.nextblock m1 = Mem.nextblock m1' ->
-      exists m2' : mem,
-        Mem.record_init_sp m1' = Some m2' /\
-        Mem.inject
-          (Mem.flat_inj (Mem.nextblock m2))
-          (flat_frameinj (length (Mem.stack m2))) m2 m2'.
-  Proof.
-    intros m1 m1' m2 INJ SZ RIS EQNB.
-    edestruct record_init_sp_inject as (m2' & RIS' & INJ'); eauto.
-    eexists; split; eauto.
-    unfold record_init_sp in RIS; destr_in RIS.
-    erewrite (record_stack_block_nextblock _ _ _ RIS).
-    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
-    rewrite push_new_stage_nextblock.
-    destruct (record_stack_blocks_stack_eq _ _ _ RIS) as (tf & r & EQ1 & EQ2).
-    rewrite EQ2. 
-    erewrite (alloc_stack_blocks _ _ _ _ _ Heqp) in EQ1.
-    rewrite push_new_stage_stack in EQ1. inv EQ1.
-    simpl. rewrite frameinj_push_flat.
-    eapply inject_ext; eauto.
-    simpl; intros. unfold flat_inj.
-    rewrite ! push_new_stage_nextblock. rewrite EQNB.
-    repeat (destr; subst); xomega.
-  Qed.
-
-  Lemma record_init_sp_nextblock:
-    forall m1 m2,
-      record_init_sp m1 = Some m2 ->
-      Ple (nextblock m1) (nextblock m2).
-  Proof.
-    intros m1 m2 RIS.
-    unfold record_init_sp in RIS. destr_in RIS.
-    erewrite (record_stack_block_nextblock _ _ _ RIS).
-    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
-    rewrite push_new_stage_nextblock. xomega.
-  Qed.
-
-  Lemma record_init_sp_nextblock_eq:
-    forall m1 m2,
-      record_init_sp m1 = Some m2 ->
-      (nextblock m2) = Pos.succ (nextblock m1).
-  Proof.
-    intros m1 m2 RIS.
-    unfold record_init_sp in RIS. destr_in RIS.
-    erewrite (record_stack_block_nextblock _ _ _ RIS).
-    erewrite (nextblock_alloc _ _ _ _ _ Heqp).
-    rewrite push_new_stage_nextblock. reflexivity.
-  Qed.
-  
-  Lemma record_init_sp_stack:
-    forall m1 m2,
-      Mem.record_init_sp m1 = Some m2 ->
-      Mem.stack m2 = (Some (make_singleton_frame_adt (Mem.nextblock (Mem.push_new_stage m1)) 0 0),nil)::Mem.stack m1.
-  Proof.
-    unfold Mem.record_init_sp. intros m1 m2 RIS; destr_in RIS.
-    destruct (record_stack_blocks_stack_eq _ _ _ RIS) as (tf & r & EQ1 & EQ2).
-    rewrite EQ2. 
-    erewrite (alloc_stack_blocks _ _ _ _ _ Heqp) in EQ1.
-    rewrite push_new_stage_stack in EQ1. inv EQ1.
-    exploit Mem.alloc_result; eauto. intros; subst. reflexivity.
-  Qed.
-  
-  Lemma record_init_sp_perm:
-    forall m1 m2,
-      Mem.record_init_sp m1 = Some m2 ->
-      forall b o k p,
-        perm m2 b o k p <-> perm m1 b o k p.
-  Proof.
-    unfold Mem.record_init_sp. intros m1 m2 RIS; destr_in RIS.
-    intros.
-    split; intro P.
-    - eapply push_new_stage_perm.
-      eapply record_stack_block_perm in P. 2: eauto.
-      eapply perm_alloc_inv in P; eauto.
-      destr_in P. omega.
-    - eapply record_stack_block_perm'. eauto.
-      eapply perm_alloc_1. eauto.
-      eapply push_new_stage_perm. auto.
-  Qed.
-*)
-
-(*   Definition is_ptr (v: val) :=
-    match v with Vptr _ _ => Some v | _ => None end.
-  
-  Definition encoded_ra (l: list memval) : option val :=
-    match proj_bytes l with
-    | Some bl => Some (Vptrofs (Ptrofs.repr (decode_int bl)))
-    | None => is_ptr (Val.load_result Mptr (proj_value (quantity_chunk Mptr) l))
-    end.
-
-  Definition loadbytesv chunk m addr :=
-    match addr with
-      Vptr b o =>
-      match Mem.loadbytes m b (Ptrofs.unsigned o) (size_chunk chunk) with
-      | Some bytes => encoded_ra bytes
-      | None => None
-      end
-    | _ => None
-    end.
-
-  Lemma loadbytesv_inject:
-    forall j g chunk m m' v v' ra,
-      Mem.inject j g m m' ->
-      Val.inject j v v' ->
-      loadbytesv chunk m v = Some ra ->
-      exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.inject j ra ra'.
-  Proof.
-    intros j g chunk m m' v v' ra MINJ VINJ L.
-    unfold loadbytesv in *.
-    destr_in L. inv VINJ.
-    destr_in L.
-    edestruct Mem.loadbytes_inject as (l' & L' & INJ); eauto.
-    erewrite Mem.address_inject; eauto.
-    rewrite L'.
-    - unfold encoded_ra in L |- *.
-      repeat destr_in L.
-      erewrite proj_bytes_inject; eauto.
-      destr. eapply proj_bytes_not_inject in Heqo0; eauto. 2: congruence.
-      erewrite proj_value_undef in H0; eauto.
-      contradict H0. unfold Mptr. destr; simpl; congruence.
-      generalize (proj_value_inject _ (quantity_chunk Mptr) _ _ INJ). intro VINJ.
-      generalize (Val.load_result_inject _ Mptr _ _ VINJ). intro VINJ'.
-      unfold is_ptr in H0. destr_in H0. inv H0. inv VINJ'.
-      eexists; split. simpl. eauto.
-      econstructor; eauto.
-    - eapply Mem.loadbytes_range_perm; eauto. generalize (size_chunk_pos chunk); omega.
-  Qed.
-
-  Lemma loadbytesv_extends:
-    forall chunk m m' v v' ra,
-      Mem.extends m m' ->
-      Val.lessdef v v' ->
-      loadbytesv chunk m v = Some ra ->
-      exists ra', loadbytesv chunk m' v' = Some ra' /\ Val.lessdef ra ra'.
-  Proof.
-    intros chunk m m' v v' ra MEXT VLD L.
-    unfold loadbytesv in *.
-    destr_in L. inv VLD.
-    destr_in L.
-    edestruct Mem.loadbytes_extends as (l' & L' & EXT); eauto.
-    rewrite L'.
-    - unfold encoded_ra in L |- *.
-      repeat destr_in L.
-      erewrite proj_bytes_inject; eauto.
-      destr. eapply proj_bytes_not_inject in Heqo0; eauto. 2: congruence.
-      erewrite proj_value_undef in H0; eauto.
-      contradict H0. unfold Mptr. destr; simpl; congruence.
-      generalize (proj_value_inject _ (quantity_chunk Mptr) _ _ EXT). intro VEXT.
-      generalize (Val.load_result_inject _ Mptr _ _ VEXT). intro VEXT'.
-      unfold is_ptr in H0. destr_in H0. inv H0. inv VEXT'. inv H2.
-      eexists; split. simpl. eauto.
-      rewrite Ptrofs.add_zero. econstructor; eauto.
-  Qed.
-
-  
-  Lemma proj_value_inj_value:
-    forall q v l,
-      proj_value q l = v ->
-      v <> Vundef ->
-      inj_value q v = l.
-  Proof.
-    unfold proj_value.
-    intros q v l PROJ NU.
-    subst. destr. destr. destr.
-    destruct q; simpl in Heqb;
-      repeat match goal with
-             | H: andb _ _ = true |- _ => rewrite andb_true_iff in H; destruct H
-             | H: proj_sumbool (quantity_eq ?q1 ?q2) = true |- _ =>
-               destruct (quantity_eq q1 q2); simpl in H; try congruence; subst
-             | H: proj_sumbool (Val.eq ?q1 ?q2) = true |- _ =>
-               destruct (Val.eq q1 q2); simpl in H; try congruence; subst
-             | H: context [match ?a with _ => _ end] |- _ => destruct a eqn:?; simpl in *; intuition try congruence
-             end.
-  Qed.
-
-  Lemma long_unsigned_ptrofs_repr_eq:
-    Archi.ptr64 = true -> forall a, Int64.unsigned (Ptrofs.to_int64 (Ptrofs.repr a)) = Ptrofs.unsigned (Ptrofs.repr a).
-  Proof.
-    intros.
-    unfold Ptrofs.to_int64.
-    rewrite <- Ptrofs.agree64_repr; auto.
-    rewrite Ptrofs.repr_unsigned. auto.
-  Qed.
-
-  Lemma int_unsigned_ptrofs_repr_eq:
-    Archi.ptr64 = false -> forall a, Int.unsigned (Ptrofs.to_int (Ptrofs.repr a)) = Ptrofs.unsigned (Ptrofs.repr a).
-  Proof.
-    intros.
-    unfold Ptrofs.to_int.
-    rewrite <- Ptrofs.agree32_repr; auto.
-    rewrite Ptrofs.repr_unsigned. auto.
-  Qed.
-
-  Lemma byte_decompose: forall i x, (Byte.unsigned i + x * 256) / 256 = x.
-  Proof.
-    intros.
-    rewrite Z_div_plus_full.
-    rewrite Zdiv_small. omega. apply Byte.unsigned_range. omega.
-  Qed.
-
-  Lemma ptrofs_wordsize: Ptrofs.zwordsize = 8 * size_chunk Mptr.
-  Proof.
-    unfold Ptrofs.zwordsize, Ptrofs.wordsize.
-    unfold Wordsize_Ptrofs.wordsize. unfold Mptr.
-    destr; omega.
-  Qed.
-  
-  Lemma ptrofs_byte_modulus_ptr64:
-    Archi.ptr64 = true ->
-    Byte.modulus ^ 8 - 1 = Ptrofs.max_unsigned.
-  Proof.
-    unfold Ptrofs.max_unsigned. rewrite Ptrofs.modulus_power.
-    rewrite ptrofs_wordsize.
-    intros. unfold Mptr; rewrite H. simpl. reflexivity.
-  Qed.
-
-  Lemma ptrofs_byte_modulus_ptr32:
-    Archi.ptr64 = false ->
-    Byte.modulus ^ 4 - 1 = Ptrofs.max_unsigned.
-  Proof.
-    unfold Ptrofs.max_unsigned. rewrite Ptrofs.modulus_power.
-    rewrite ptrofs_wordsize.
-    intros. unfold Mptr; rewrite H. simpl. reflexivity.
-  Qed.
-
-  Lemma byte_compose_range:
-    forall i x n,
-      0 < n ->
-      0 <= x < Byte.modulus ^ (n - 1) ->
-      0 <= Byte.unsigned i + x * 256 < Byte.modulus ^ n.
-  Proof.
-    intros i x n POS RNG.
-    split.
-    generalize (Byte.unsigned_range i). omega.
-    generalize (Byte.unsigned_range i). 
-    change Byte.modulus with 256 in *. 
-    replace n with ((n-1)+1) by omega. rewrite Zpower_exp by omega.
-    change (256 ^ 1) with 256.
-    assert (0 <= x * 256 < 256 ^ (n - 1) * 256).
-    split. omega.
-    apply Z.mul_lt_mono_pos_r. omega. omega.
-    omega.
-  Qed.
-
-  Lemma le_m1_lt:
-    forall a b,
-      0 <= a < b ->
-      0 <= a <= b - 1.
-  Proof.
-    intros; omega.
-  Qed.
-
-  Lemma byte_repr_plus i0 i:
-    Byte.repr (Byte.unsigned i0 + i * 256) = i0.
-  Proof.
-    apply Byte.eqm_repr_eq.
-    red. red. exists i.
-    change Byte.modulus with 256 in *. omega.
-  Qed.
-  
-  Lemma encode_decode_long:
-    forall l,
-      length l = 8%nat ->
-      Archi.ptr64 = true ->
-      encode_int 8 (Int64.unsigned (Ptrofs.to_int64 (Ptrofs.repr (decode_int l)))) = l.
-  Proof.
-    intros.
-    repeat match goal with
-           | H : length ?l = _ |- _ =>
-             destruct l; simpl in H; inv H
-           end. simpl.
-    unfold encode_int, decode_int.
-    unfold rev_if_be. destr.
-    - simpl.
-      rewrite Z.add_0_r.
-      rewrite ! long_unsigned_ptrofs_repr_eq; auto.
-      f_equal; rewrite ! Ptrofs.unsigned_repr.
-      rewrite ! byte_decompose; apply Byte.repr_unsigned.
-      rewrite <- ptrofs_byte_modulus_ptr64; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. apply byte_repr_plus.
-      rewrite <- ptrofs_byte_modulus_ptr64; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-    - simpl.
-      rewrite Z.add_0_r.
-      rewrite ! long_unsigned_ptrofs_repr_eq; auto.
-      f_equal; rewrite ! Ptrofs.unsigned_repr.
-      apply byte_repr_plus.
-      rewrite <- ptrofs_byte_modulus_ptr64; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply Byte.repr_unsigned.
-      rewrite <- ptrofs_byte_modulus_ptr64; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-  Qed.
-
-  Lemma encode_decode_int:
-    forall l,
-      length l = 4%nat ->
-      Archi.ptr64 = false ->
-      encode_int 4 (Int.unsigned (Ptrofs.to_int (Ptrofs.repr (decode_int l)))) = l.
-  Proof.
-    intros.
-    repeat match goal with
-           | H : length ?l = _ |- _ =>
-             destruct l; simpl in H; inv H
-           end. simpl.
-    unfold encode_int, decode_int.
-    unfold rev_if_be. destr.
-    - simpl.
-      rewrite Z.add_0_r.
-      rewrite ! int_unsigned_ptrofs_repr_eq; auto.
-      f_equal; rewrite ! Ptrofs.unsigned_repr.
-      rewrite ! byte_decompose; apply Byte.repr_unsigned.
-      rewrite <- ptrofs_byte_modulus_ptr32; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. apply byte_repr_plus.
-      rewrite <- ptrofs_byte_modulus_ptr32; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-    - simpl.
-      rewrite Z.add_0_r.
-      rewrite ! int_unsigned_ptrofs_repr_eq; auto.
-      f_equal; rewrite ! Ptrofs.unsigned_repr.
-      apply byte_repr_plus.
-      rewrite <- ptrofs_byte_modulus_ptr32; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply byte_repr_plus.
-      f_equal. rewrite ! byte_decompose. apply Byte.repr_unsigned.
-      rewrite <- ptrofs_byte_modulus_ptr32; auto.
-      apply le_m1_lt.
-      repeat (apply byte_compose_range; [omega |]).
-      simpl Z.sub. apply Byte.unsigned_range.
-  Qed.
-
-*)
