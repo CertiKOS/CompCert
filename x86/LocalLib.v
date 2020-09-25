@@ -1103,19 +1103,6 @@ Definition get_def_init_rodata {F V} (def: option (globdef F V)) : list init_dat
   | _ => []
   end.
 
-Definition get_def_uninit_bss {F V} (iddef: ident * option (globdef F V)) : list init_data :=
-  let (id, def) := iddef in
-  match def with
-  | Some (Gvar v) => 
-    match (gvar_init v) with
-    | nil
-    | [Init_space _] => if is_def_static id then
-                         (gvar_init v) else
-                         []
-    | _ => []
-    end
-  | _ => []
-  end.
 
 Lemma init_data_alignment_div_alignw: forall id,
         (Globalenvs.Genv.init_data_alignment id | alignw).

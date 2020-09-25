@@ -34,7 +34,6 @@ Definition remove_addend_reloctable_map rtblmap :=
     reloctable_code := remove_addend_reloctable (reloctable_code rtblmap);
     reloctable_data := remove_addend_reloctable (reloctable_data rtblmap);
     reloctable_rodata := remove_addend_reloctable (reloctable_rodata rtblmap);
-    reloctable_bss := remove_addend_reloctable (reloctable_bss rtblmap);
   |}.
 
 Definition transf_program (p: program) : program :=

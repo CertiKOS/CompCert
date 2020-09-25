@@ -91,7 +91,7 @@ Definition compute_pad_size initd :=
 Definition gen_jump_table (sctbl: sectable) (sytbl: symbtable)
   : res (sectable*symbtable) :=
   match sctbl with
-  | [sec_bss bl; sec_rodata rdl; sec_data dl; sec_text code] =>
+  | [sec_rodata rdl; sec_data dl; sec_text code] =>
     (* translation of code to generate defs*)
     do r <- transl_code rdl code;
     let '(code', jmp_dl, jmp_syl) := r in
@@ -104,7 +104,7 @@ Definition gen_jump_table (sctbl: sectable) (sytbl: symbtable)
           jmp_dl in
     let rdl' := rdl ++ jmp_dl_pad in
     let sytbl' := sytbl ++ jmp_syl in
-    OK ([sec_bss bl; sec_rodata rdl'; sec_data dl; sec_text code'], sytbl')
+    OK ([sec_rodata rdl'; sec_data dl; sec_text code'], sytbl')
   | _ => Error (msg "Expected the section table to be [sec_rodata; sec_data; sec_text]")
   end.
   

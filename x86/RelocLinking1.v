@@ -60,20 +60,6 @@ Definition link_reloctable
   | _, _ => None
   end.
 
-Definition link_bss_reloctable (p1 p2 p: program) : option reloctable :=
-  let sidxmap := gen_symb_index_map (prog_symbtable p) in
-  let stbl1   := prog_symbtable p1 in
-  let stbl2   := prog_symbtable p2 in
-  match SecTable.get sec_bss_id (prog_sectable p1)
-  with
-  | Some bss_sec1=>
-    let t1 := reloctable_bss (prog_reloctables p1) in
-    let t2 := reloctable_bss (prog_reloctables p2) in
-    let rdsz := sec_size bss_sec1 in
-    link_reloctable rdsz stbl1 stbl2 sidxmap t1 t2
-  | _ => None
-  end.
-
 Definition link_rodata_reloctable (p1 p2 p: program) : option reloctable :=
   let sidxmap := gen_symb_index_map (prog_symbtable p) in
   let stbl1   := prog_symbtable p1 in
@@ -120,22 +106,21 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
   match RelocLinking.link_reloc_prog p1 p2 with
   | None => None
   | Some p =>
-    match link_bss_reloctable p1 p2 p,
-          link_rodata_reloctable p1 p2 p,
+    match link_rodata_reloctable p1 p2 p,
           link_data_reloctable p1 p2 p,
           link_code_reloctable p1 p2 p
     with
-    | Some bsstbl, Some rdtbl, Some dtbl, Some ctbl =>
+    | Some rdtbl, Some dtbl, Some ctbl =>
       Some {| prog_defs   := prog_defs p;
               prog_public := prog_public p;
               prog_main   := prog_main p;
               prog_sectable  := prog_sectable p;
               prog_symbtable := prog_symbtable p;
               prog_strtable  := prog_strtable p;
-              prog_reloctables := Build_reloctable_map ctbl dtbl rdtbl bsstbl;
+              prog_reloctables := Build_reloctable_map ctbl dtbl rdtbl;
               prog_senv := prog_senv p;
            |}
-    | _, _, _, _ => None
+    | _, _, _ => None
     end
   end.
 
