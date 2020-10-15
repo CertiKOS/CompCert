@@ -31,8 +31,7 @@ Local Transparent Linker_prog_ordered.
 
 Hint Resolve link_prog_merge_symm.
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
+Lemma elements_in_partition_prop: forall A f (l l1 l2: list A),
     partition f l = (l1, l2) -> 
     (forall x, In x l1 -> f x = true) /\ (forall x, In x l2 -> f x = false).
 Proof.
@@ -133,9 +132,10 @@ Proof.
 Qed.
 
 
-Lemma get_internal_var_entry : forall dsec csec dsz csz id v,
+Lemma get_internal_var_entry : forall rdsec dsec csec rdsz dsz csz id v,
     is_var_internal v = true ->
-    get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
+    gvar_readonly v = false ->
+    get_symbentry rdsec dsec csec rdsz dsz csz id (Some (Gvar v)) = 
     {|symbentry_id := id;
       symbentry_bind := get_bind_ty id;
       symbentry_type := symb_data;
@@ -144,26 +144,26 @@ Lemma get_internal_var_entry : forall dsec csec dsz csz id v,
       symbentry_size := AST.init_data_list_size (AST.gvar_init v);
     |}.
 Proof.
-  intros dsec csec dsz csz id v INT.
+  intros rdsec dsec csec rdsz dsz csz id v INT RD.
   unfold is_var_internal in INT.
   cbn.
-  destruct (gvar_init v); cbn in INT; try congruence.
+  destruct (gvar_init v); destruct (gvar_readonly v); cbn in INT; try congruence.
   destruct i; cbn in INT; try congruence.
   destruct l; cbn in INT; try congruence.
 Qed.
 
-Lemma get_comm_var_entry : forall dsec csec dsz csz id v,
+Lemma get_comm_var_entry : forall rdsec dsec csec rdsz dsz csz id v,
     is_var_comm v = true ->
-    get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
+    get_symbentry rdsec dsec csec rdsz dsz csz id (Some (Gvar v)) = 
     {|symbentry_id := id;
-      symbentry_bind := get_bind_ty id;
+      symbentry_bind := bind_global;
       symbentry_type := symb_data;
       symbentry_value := 8 ; 
       symbentry_secindex := secindex_comm;
       symbentry_size := Z.max (AST.init_data_list_size (gvar_init v)) 0;
     |}.
 Proof.
-  intros dsec csec dsz csz id v INT.
+  intros rdsec dsec csec rdsz dsz csz id v INT.
   unfold is_var_comm in INT.
   cbn.
   destruct (gvar_init v); cbn in INT; try congruence.
@@ -176,9 +176,9 @@ Proof.
   apply Z.le_max_r.
 Qed.
 
-Lemma get_external_var_entry : forall dsec csec dsz csz id v,
+Lemma get_external_var_entry : forall rdsec dsec csec rdsz dsz csz id v,
     is_var_extern v = true ->
-    get_symbentry dsec csec dsz csz id (Some (Gvar v)) =       
+    get_symbentry rdsec dsec csec rdsz dsz csz id (Some (Gvar v)) =    
     {|symbentry_id := id;
       symbentry_bind := get_bind_ty id;
       symbentry_type := symb_data;
@@ -187,7 +187,7 @@ Lemma get_external_var_entry : forall dsec csec dsz csz id v,
       symbentry_size := 0;
     |}.
 Proof.
-  intros dsec csec dsz csz id v INT.
+  intros rdsec dsec csec rdsz dsz csz id v INT.
   unfold is_var_extern in INT.
   cbn.
   destruct (gvar_init v); cbn in INT; try congruence.
@@ -195,13 +195,10 @@ Proof.
   destruct l; cbn in INT; try congruence.
 Qed.
 
-
-
 (** * Commutativity of linking and Symbtablgen *)
 
 Definition match_prog (p: Asm.program) (tp: program) :=
   exists tp', transf_program p = OK tp' /\ reloc_prog_syneq tp' tp.
-
 
 Lemma match_prog_pres_prog_defs : forall p tp,
   match_prog p tp -> Permutation (AST.prog_defs p) (prog_defs tp).
@@ -210,8 +207,8 @@ Proof.
   destruct MATCH as (tp' & MATCH & SEQ).
   unfold transf_program in MATCH.
   destruct check_wellformedness; try monadInv MATCH.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0.
+  destruct (gen_symb_table sec_rodata_id sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0. destruct p0.
   destruct zle; try monadInv MATCH.
   red in SEQ; cbn in SEQ. 
   tauto.
@@ -224,8 +221,8 @@ Proof.
   destruct MATCH as (tp' & MATCH & SEQ).
   unfold transf_program in MATCH.
   destruct check_wellformedness; try monadInv MATCH.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0.
+  destruct (gen_symb_table sec_rodata_id sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0. destruct p0.
   destruct zle; try monadInv MATCH. 
   red in SEQ; cbn in SEQ. 
   tauto.
@@ -238,8 +235,8 @@ Proof.
   destruct MATCH as (tp' & MATCH & SEQ).
   unfold transf_program in MATCH.
   destruct check_wellformedness; try monadInv MATCH.
-  destruct (gen_symb_table sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
-  destruct p0.
+  destruct (gen_symb_table sec_rodata_id sec_data_id sec_code_id (AST.prog_defs p)) eqn:EQ.
+  destruct p0. destruct p0.
   destruct zle; try monadInv MATCH. 
   red in SEQ; cbn in SEQ.
   tauto.
@@ -493,6 +490,9 @@ Section WithFunVar.
 
 Context {F V:Type}.
 
+(***** Remove Proofs By Chris Start ******)
+(* How to define def_eq: add gvar_readonly equality
+
 (** Equality between internal definitions *)
 Definition def_internal (def: option (AST.globdef (AST.fundef F) V)) :=
   is_def_internal is_fundef_internal def.
@@ -650,9 +650,11 @@ Proof.
   eapply link_internal_external_defs; eauto.
   eapply link_int_defs_some_inv; eauto.
 Qed.
-  
-
+*)
+(***** Remove Proofs By Chris End ******)
 End WithFunVar.
+(***** Remove Proofs By Chris Start ******)
+(* 
 (** *)
 
 Axiom defs_size_inbound: forall defs, sections_size (create_sec_table defs) <= Ptrofs.max_unsigned.
@@ -3799,12 +3801,17 @@ Proof.
   eapply link_symbtable_permutation; eauto.
 Qed.
 
+**)
+(***** Remove Proofs By Chris End ******)
 
 (** ** Main linking theorem *)
 Lemma link_transf_symbtablegen : forall (p1 p2 : Asm.program) (tp1 tp2 : program) (p : Asm.program),
     link p1 p2 = Some p -> match_prog p1 tp1 -> match_prog p2 tp2 ->
     exists tp : program, link tp1 tp2 = Some tp /\ match_prog p tp.
 Proof.
+Admitted.
+(***** Remove Proofs By Chris Start ******)
+(**
   intros p1 p2 tp1 tp2 p LINK MATCH1 MATCH2.
   unfold link in LINK.
   unfold Linker_prog_ordered in LINK.
@@ -3892,8 +3899,7 @@ Proof.
   intros; omega.
 Qed.
 
-
-Instance TransfLinkSymbtablegen : TransfLink match_prog :=
-  link_transf_symbtablegen.
 **)
 (***** Remove Proofs By Chris End ******)
+Instance TransfLinkSymbtablegen : TransfLink match_prog :=
+  link_transf_symbtablegen.

@@ -2069,9 +2069,6 @@ Lemma encode_decode_addrmode_relf: forall a rd bytes rofs i iofs sofs,
     -> rofs = iofs + sofs
     -> forall l, decode_addrmode rofs (bytes++l) = OK (rd, a, l).
 Proof.
-Admitted.
-(***** Remove Proofs By Chris Start ******)
-(*
   intros a rd bytes rofs i iofs sofs HRelocOfs  HEncode  HRofs  l.
 
   unfold encode_addrmode in HEncode.
@@ -2738,7 +2735,8 @@ Admitted.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
              ++++++ intros HNot. inversion HNot.
-           ++++
+             +++++ admit.
+           ++++ 
              destruct (ireg_eq i0 RSP); monadInv EQ2.
              unfold decode_addrmode. simpl.
              assert(Hdiv256:  (bits_to_Z
@@ -2846,6 +2844,7 @@ Admitted.
              repeat f_equal.
              +++++ admit.
              +++++ auto.
+             +++++ admit.
              +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
              +++++ intros HNot; inversion HNot.
@@ -3104,8 +3103,6 @@ Admitted.
           1-6:
           intros HNot; inversion HNot.
 Admitted.
-*)
-(***** Remove Proofs By Chris End ******)
 
 
 Lemma encode_decode_addr_size_relf: forall a rd abytes,
@@ -3847,73 +3844,21 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pdivl r1 *)
     exists (Pdivl r1). admit.
   + (* (Pidivl r1) *)
-    exists (Pidivl r1). admit.
-(***** Remove Proofs By Chris Start ******)
-(*
+    exists (Pidivl r1). 
     split;try(unfold instr_eq; auto).
     monadInv HEncode.
     simpl. branch_byte_eq'.
     unfold decode_idivl.
     simpl.
-    setoid_rewrite(and7 (b["11"]++b["110"]) x).
+    setoid_rewrite(and7 (b["11"]++b["111"]) x).
     rewrite (encode_parse_reg_refl r1).
     simpl.
     1-4: auto.
     repeat rewrite app_length.
     simpl.
-    1-2: rewrite(encode_reg_length r1);auto. 
-*)
-(***** Remove Proofs By Chris End ******)
-  + (* (Pxorl_r rd) *) 
-    exists (Pxorl_r rd). admit.
-(***** Remove Proofs By Chris Start ******) 
-(*    
-    split; try(unfold instr_eq; auto).
-    monadInv HEncode.
-    simpl. branch_byte_eq. unfold decode_xorl_r.
-    simpl.
-    setoid_rewrite(and7 (b["11"] ++ x) x).
-    rewrite (encode_parse_reg_refl rd x EQ).
-    simpl.
-    auto.
-    repeat rewrite app_length.
-    simpl.
-    1-2:  repeat rewrite (encode_reg_length rd); auto. 
-*)
-(***** Remove Proofs By Chris End ******)
-  + (* PSall_ri rd n *)
-    exists(Psall_ri rd (Int.repr (Int.unsigned n mod Byte.modulus))). admit.
-(***** Remove Proofs By Chris Start ******)
-(*    
-    split;try (unfold instr_eq;auto).
-    monadInv HEncode.
-    simpl.
-    branch_byte_eq'.
-    unfold decode_sall_ri.
-    simpl.
-    setoid_rewrite(and7 ( b[ "11"] ++ b[ "100"]) x).
-    rewrite (encode_parse_reg_refl rd).
-    simpl.
-    repeat f_equal.
-    unfold decode_int_n.
-    setoid_rewrite (sublist_prefix [(Byte.repr (Int.unsigned n))] l).
-    
-    unfold decode_int.
-    unfold int_of_bytes.
-    assert (rev_if_be [Byte.repr (Int.unsigned n)] = [Byte.repr (Int.unsigned n)]) as rid. {
-      unfold rev_if_be.
-      destruct Archi.big_endian; simpl; auto.
-    }
-    simpl.
-    rewrite rid.
-    rewrite Byte.unsigned_repr_eq.
-    simpl.
-    rewrite <- (Zplus_0_r_reverse (Int.unsigned n mod Byte.modulus)).
-    1-4: auto.
-    repeat rewrite length_app. simpl.
-    1-2: rewrite (encode_reg_length rd);auto. 
-*)
-(***** Remove Proofs By Chris End ******)
+    1-2: rewrite(encode_reg_length r1);auto.
+  + admit.
+  + admit.
   + (* (Porl_rr rd r1)*)
     exists (Porl_rr rd r1). admit.
   + (* (Porl_ri rd n)*)
@@ -4067,9 +4012,9 @@ Lemma encode_decode_instr_refl: forall ofs i s l,
   + (* Pjmp_m a*)
     exists (Pjmp_m a). admit.
   + (*  (Pcall ros sg) *)
+(***** Remove Proofs By Chris Start ******)
+(* add Pcall (inl reg) _ /  need update proof
     exists (Pcall ros (mksignature [] None (mkcallconv false false false))).
-(***** Remove Proofs By Chris Start ******) 
-(* 
     split; try(unfold instr_eq; auto).
     destruct ros; inversion H10.
     unfold fmc_instr_decode. monadInv HEncode. simpl.

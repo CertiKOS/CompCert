@@ -1152,25 +1152,29 @@ Proof.
   intros. apply init_data_list_aligned_dec.
 Qed.
 
+Lemma init_mem_data_aligned:
+  forall {F V : Type} (p : AST.program F V) (m : mem),
+    Genv.init_mem p = Some m ->
+    Forall init_data_list_aligned0 (map snd (AST.prog_defs p)).
+Proof.
+  Admitted.
 (***** Remove Proofs By Chris Start ******)
-(* Lemma init_mem_data_aligned: *)
-(*   forall {F V : Type} (p : AST.program F V) (m : mem), *)
-(*     Genv.init_mem p = Some m -> *)
-(*     Forall init_data_list_aligned0 (map snd (AST.prog_defs p)). *)
-(* Proof. *)
-(*   intros F V p m INIT. *)
-(*   rewrite Forall_forall. *)
-(*   intros def IN. *)
-(*   red. destruct def; [| cbn; auto]. *)
-(*   cbn [get_def_init_data].  *)
-(*   destruct g; cbn; auto. *)
-(*   destr; cbn; auto. *)
-(*   erewrite in_map_iff in IN. *)
-(*   destruct IN as ((id', def) & EQ & IN). cbn in EQ. subst. *)
-(*   exploit Genv.init_mem_inversion; eauto. *)
-(*   intros (AL & O). *)
-(*   destruct i; try congruence. *)
-(*   destruct l; [cbn; eauto | congruence]. *)
-(* Qed. *)
+(*  How to define get_def_init_data?
+  intros F V p m INIT.
+  rewrite Forall_forall.
+  intros def IN.
+  red. destruct def; [| cbn; auto].
+  cbn [get_def_init_data].
+  destruct g; cbn; auto.
+  destr; cbn; auto.
+  erewrite in_map_iff in IN.
+  destruct IN as ((id', def) & EQ & IN). cbn in EQ. subst.
+  exploit Genv.init_mem_inversion; eauto.
+  intros (AL & O).
+  destr;
+  destruct i; try congruence.
+  destruct l; [cbn; eauto | congruence].
+Qed.
+*)
 (***** Remove Proofs By Chris End ******)
 End WITHMEMORYMODEL.

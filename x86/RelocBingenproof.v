@@ -1026,8 +1026,7 @@ Hypothesis TRANSF: match_prog prog tprog.
 (*      The relation instr_eq should be used here. *) *)
 (* Admitted. *)
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma transf_initial_states:
+Lemma transf_initial_states:
   forall st1 rs, RelocProgSemantics1.initial_state prog rs st1 ->
          exists st2, initial_state tprog rs st2 /\  st1 = st2.
 Proof.
@@ -1047,8 +1046,8 @@ Proof.
     simpl.
     unfold transl_code in EQ0.
     monadInv  EQ0.
-    destruct x. monadInv EQ3.
-    generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ2).
+    destruct x. monadInv EQ4.
+    generalize (decode_encode_refl (length code) prog _ _ _  eq_refl EQ3).
     intros HTranslSpec.
     generalize (spec_decode_ex' code 0 (rev l0) _ _ HTranslSpec).
     intros (c' & code' & HEncodeDecode).
@@ -1066,9 +1065,12 @@ Proof.
     rewrite HDecode'.
     simpl.
     eauto.
-    omega.    
+    omega.
+    Admitted.
     (* init_mem *)
     (* unfold RelocProgSemantics1.init_mem in H. *)
+(***** Remove Proofs By Chris Start ******)
+(* prove mem inject of alloc_rodata_section    
     unfold init_mem.
     simpl.
     unfold alloc_data_section.
@@ -1376,8 +1378,7 @@ Admitted.
   
   
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma transf_program_correct:
+Lemma transf_program_correct:
   forall rs, forward_simulation (RelocProgSemantics1.semantics prog rs) (RelocProgSemantics2.semantics tprog rs).
 Proof.
   intro rs.
@@ -1398,8 +1399,7 @@ Proof.
     fold ge in HStep.
     generalize(step_simulation _ _ _ HStep s2 HState).
     auto.
-Qed. *)
-(***** Remove Proofs By Chris End ******)
+Qed. 
 
 End PRESERVATION.
 
@@ -1424,8 +1424,7 @@ Require Import RelocLinking1.
 (*   auto. auto. auto. *)
 (* Defined. *)
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma transl_sectable_get_code:
+Lemma transl_sectable_get_code:
   forall rmap sect sect',
     transl_sectable sect rmap = OK sect' ->
     forall s,
@@ -1452,7 +1451,22 @@ Lemma transl_sectable_get_data:
 Proof.
   unfold transl_sectable. intros. autoinv.
   vm_compute in H0. inv H0.
-  exists init, x0. split; auto.
+  exists init0, x0. split; auto.
+Qed.
+
+Lemma transl_sectable_get_rodata:
+  forall rmap sect sect',
+    transl_sectable sect rmap = OK sect' ->
+    forall s,
+      SecTable.get sec_rodata_id sect = Some s ->
+      exists rodata x,
+        s = sec_rodata rodata /\
+        transl_init_data_list (gen_reloc_ofs_map (reloctable_rodata rmap)) rodata = OK x /\
+        SecTable.get sec_rodata_id sect' = Some (sec_bytes x).
+Proof.
+  unfold transl_sectable. intros. autoinv.
+  vm_compute in H0. inv H0.
+  exists init, x1. split; auto.
 Qed.
 
 Lemma transl_init_data_size:
@@ -1530,18 +1544,18 @@ Proof.
 Qed.
 
 Lemma link_sectable_ok:
-  forall sect1 sect2 s rmap1 rmap2 sect1' sect2' rdata rcode z z' symt1 symt2 sim,
+  forall sect1 sect2 s rmap1 rmap2 sect1' sect2' rrodata rdata rcode z z' z'' symt1 symt2 sim,
     RelocLinking.link_sectable sect1 sect2 = Some s ->
     transl_sectable sect1 rmap1 = OK sect1' ->
     transl_sectable sect2 rmap2 = OK sect2' ->
     link_reloctable z symt1 symt2 sim (reloctable_data rmap1) (reloctable_data rmap2) = Some rdata ->
     link_reloctable z' symt1 symt2 sim (reloctable_code rmap1) (reloctable_code rmap2) = Some rcode ->
+    link_reloctable z'' symt1 symt2 sim (reloctable_rodata rmap1) (reloctable_rodata rmap2) = Some rrodata->
     exists s',
       RelocLinking.link_sectable sect1' sect2' = Some s' /\
-      transl_sectable s {| reloctable_code := rcode; reloctable_data := rdata |} = OK s'.
+      transl_sectable s {| reloctable_code := rcode; reloctable_data := rdata; reloctable_rodata := rrodata |} = OK s'.
 Proof.
 Admitted.
-
 
 Instance tl : @TransfLink _ _ RelocLinking1.Linker_reloc_prog
                           RelocLinking1.Linker_reloc_prog
@@ -1553,18 +1567,19 @@ Proof.
   monadInv H1. repeat destr_in EQ4.
   autoinv. unfold RelocLinking.link_reloc_prog in *.
   simpl. autoinv. simpl.
+  edestruct transl_sectable_get_rodata as (rodata0 & rodata1 & EQrodata0 & TIRDL & GETrodata). apply EQ. eauto.
   edestruct transl_sectable_get_data as (data0 & data1 & EQdata0 & TIDL & GETdata). apply EQ. eauto.
   edestruct transl_sectable_get_code as (code0 & code1 & EQcode0 & TC & GETcode). apply EQ. eauto.
-  rewrite GETdata, GETcode. simpl. subst. simpl in *.
-  unfold link_code_reloctable, link_data_reloctable in *. simpl in *.
-  rewrite ? GETdata, ?GETcode, ?Heqo3, ?Heqo4 in *. simpl in *.
+  rewrite GETrodata, GETdata, GETcode. simpl. subst. simpl in *.
+  unfold link_code_reloctable, link_data_reloctable, link_rodata_reloctable in *. simpl in *.
+  rewrite ?GETrodata, ?GETdata, ?GETcode, ?Heqo4, ?Heqo5, ?Heqo6 in *. simpl in *.
   erewrite (transl_init_data_list_size _ _ _ TIDL) in *.
+  erewrite (transl_init_data_list_size _ _ _ TIRDL) in *.
   erewrite (transl_code_size _ _ _ TC) in *.
-  edestruct link_sectable_ok as (s' & LS & TS). eauto. eauto. eauto. eauto. eauto.
-  rewrite LS. rewrite Heqo6. rewrite Heqo7. simpl.
-  rewrite Heqo0. rewrite Heqo1.
+  edestruct link_sectable_ok as (s' & LS & TS). eauto. eauto. eauto. eauto. eauto. eauto. 
+  rewrite LS. rewrite Heqo8. rewrite Heqo9. simpl.
+  rewrite Heqo0. rewrite Heqo1. rewrite Heqo2.
   eexists; split; eauto.
   red. unfold transf_program. simpl.
   rewrite TS. simpl. unfold bind. destr. destr. admit. admit.
-Admitted. *)
-(***** Remove Proofs By Chris End ******)
+Admitted.

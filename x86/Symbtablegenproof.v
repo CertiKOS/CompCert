@@ -18,8 +18,6 @@ Open Scope Z_scope.
 
 Hint Resolve in_eq in_cons.
 
-(***** Remove Proofs By Chris Start ******)
-(*
 Ltac monadInvX1 H :=
   let monadInvX H :=  
       monadInvX1 H ||
@@ -134,8 +132,8 @@ Proof.
 Qed.
 
 Lemma fold_left_acc_symb_acc:
-  forall defs stbl dofs cofs stbl' dofs' cofs',
-    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl, dofs, cofs) = (stbl', dofs', cofs') ->
+  forall defs stbl rodofs dofs cofs stbl' rodofs' dofs' cofs',
+    fold_left (acc_symb sec_rodata_id sec_data_id sec_code_id) defs (stbl, rodofs, dofs, cofs) = (stbl', rodofs', dofs', cofs') ->
     forall se,
       In se stbl -> In se stbl'.
 Proof.
@@ -145,15 +143,15 @@ Proof.
 Qed.
 
 Lemma gen_symb_table_ok:
-  forall id d defs defs1 defs2 stbl dofs cofs stbl' dofs' cofs',
+  forall id d defs defs1 defs2 stbl rodofs dofs cofs stbl' rodofs' dofs' cofs',
     defs = defs1 ++ (id, d) :: defs2 ->
     list_norepet (map fst defs) ->
-    fold_left (acc_symb sec_data_id sec_code_id) defs (stbl, dofs, cofs) = (stbl', dofs', cofs') ->
-    exists dofs1 cofs1 stbl1,
-      fold_left (acc_symb sec_data_id sec_code_id) defs1 (stbl, dofs, cofs) = (stbl1, dofs1, cofs1) /\
-      In (get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) stbl'.
+    fold_left (acc_symb sec_rodata_id sec_data_id sec_code_id) defs (stbl, rodofs, dofs, cofs) = (stbl', rodofs', dofs', cofs') ->
+    exists rodofs1 dofs1 cofs1 stbl1,
+      fold_left (acc_symb sec_rodata_id sec_data_id sec_code_id) defs1 (stbl, rodofs, dofs, cofs) = (stbl1, rodofs1, dofs1, cofs1) /\
+      In (get_symbentry sec_rodata_id sec_data_id sec_code_id rodofs1 dofs1 cofs1 id d) stbl'.
 Proof.
-  induction defs; simpl; intros defs1 defs2 stbl dofs cofs stbl' dofs' cofs' SPLIT NR FL; eauto.
+  induction defs; simpl; intros defs1 defs2 stbl rodofs dofs cofs stbl' rodofs' dofs' cofs' SPLIT NR FL; eauto.
   - apply (f_equal (@length _)) in SPLIT.
     rewrite app_length in SPLIT. simpl in SPLIT. omega.
   - repeat destr_in FL.
@@ -164,46 +162,33 @@ Proof.
       inv NR.
       exfalso; apply H2. rewrite map_app. rewrite in_app. right. simpl. auto. subst.
       simpl in *. inv SPLIT.
-      (do 3 eexists); split; eauto.
+      (do 4 eexists); split; eauto.
       eapply fold_left_acc_symb_acc. eauto. left; auto.
     + destruct defs1. simpl in SPLIT. inv SPLIT. congruence.
       simpl in SPLIT. inv SPLIT.
-      edestruct IHdefs as (dofs1 & cofs1 & stbl1 & FL1 & IN1). eauto.
+      edestruct IHdefs as (rodofs1 & dofs1 & cofs1 & stbl1 & FL1 & IN1). eauto.
       inv NR. auto. eauto.
       simpl. rewrite Heqp0.
       setoid_rewrite FL1.
-      (do 3 eexists); split; eauto.
+      (do 4 eexists); split; eauto.
 Qed.
 
 Lemma symb_table_ok:
-  forall id d defs dofs cofs stbl defs1 defs2,
+  forall id d defs rodofs dofs cofs stbl defs1 defs2,
     defs = defs1 ++ (id, d) :: defs2 ->
     list_norepet (map fst defs) ->
-    gen_symb_table sec_data_id sec_code_id defs = (stbl, dofs, cofs) ->
-    exists stbl1 dofs1 cofs1,
-      gen_symb_table sec_data_id sec_code_id defs1 = (stbl1, dofs1, cofs1) /\
-      In (get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) stbl.
+    gen_symb_table sec_rodata_id sec_data_id sec_code_id defs = (stbl, rodofs, dofs, cofs) ->
+    exists stbl1 rodofs1 dofs1 cofs1,
+      gen_symb_table sec_rodata_id sec_data_id sec_code_id defs1 = (stbl1, rodofs1, dofs1, cofs1) /\
+      In (get_symbentry sec_rodata_id sec_data_id sec_code_id rodofs1 dofs1 cofs1 id d) stbl.
 Proof.
   intros.
   unfold gen_symb_table in H1. repeat destr_in H1.
   setoid_rewrite <- in_rev.
   eapply gen_symb_table_ok in Heqp; eauto.
-  destruct Heqp as (dofs1 & cofs1 & stbl1 & FL1 & IN1).
+  destruct Heqp as (rodofs1 & dofs1 & cofs1 & stbl1 & FL1 & IN1).
   unfold gen_symb_table. setoid_rewrite FL1.
-  (do 3 eexists); split; eauto.
-Qed.
-
-Lemma symb_table_ok':
-  forall id d defs dofs cofs stbl,
-    list_norepet (map fst defs) ->
-    In (id, d) defs ->
-    gen_symb_table sec_data_id sec_code_id defs = (stbl, dofs, cofs) ->
-    exists dofs1 cofs1,
-      In (get_symbentry sec_data_id sec_code_id dofs1 cofs1 id d) stbl.
-Proof.
-  intros.
-  edestruct in_split as (defs1 & defs2 & SPLIT); eauto.
-  edestruct symb_table_ok as (stbl1 & cofs1 & dofs1 & DST & IN); eauto.
+  (do 4 eexists); split; eauto.
 Qed.
 
 (** Properties about Symbol Environments *)
@@ -230,16 +215,13 @@ Lemma transf_prog_pres_senv: forall p tp,
 Proof.
   intros p tp TF.
   unfold transf_program in TF.
-  destr_in TF. destr_in TF.
+  destr_in TF. destr_in TF. destr_in TF. destr_in TF.
   destruct p0.
   destr_in TF.
   inv TF. cbn.
   rewrite add_external_globals_pres_senv.
   cbn. auto.
 Qed.
-
-
-
 
 (** * Main Preservaiton Proofs *)
 Section PRESERVATION.
@@ -443,7 +425,7 @@ Proof.
     replace (Pos.to_nat 1) with 1%nat by xomega.
     cbn.
     unfold gen_symb_table in Heqp.
-    destr_in Heqp. destruct p. inv Heqp.
+    destr_in Heqp. destruct p. destruct p. inv Heqp.
     exploit acc_symb_tree_entry_some; eauto.
     { inv w. auto. }
     { eapply PTree_Properties.of_list_norepet; eauto.
@@ -477,7 +459,8 @@ Proof.
       apply PTree_Properties.of_list_dom in INSYM.
       destruct INSYM as (def & GET).
       inversion w.
-      unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. inv Heqp.
+      unfold gen_symb_table in Heqp. destr_in Heqp.
+      destruct p. destruct p. inv Heqp.
       exploit acc_symb_tree_entry_some; eauto.
       intros GET'.
       unfold globalenv in tge; cbn in tge.
@@ -485,7 +468,8 @@ Proof.
       unfold tge.
       unfold symbtable_to_tree in GET'.
       apply PTree_Properties.in_of_list in GET'.
-      set (e:= get_symbentry sec_data_id sec_code_id
+      set (e:= get_symbentry sec_rodata_id sec_data_id sec_code_id
+                             (defs_rodata_size (defs_before id (AST.prog_defs prog)))
                              (defs_data_size (defs_before id (AST.prog_defs prog)))
                              (defs_code_size (defs_before id (AST.prog_defs prog))) id def) in GET'.
       destruct (is_def_internal is_fundef_internal def) eqn:INT.
@@ -534,7 +518,8 @@ Proof.
     inversion w.
     exploit PTree_Properties.of_list_norepet; eauto.
     intros GET.
-    unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. 
+    unfold gen_symb_table in Heqp. destr_in Heqp.
+    destruct p. destruct p.
     inversion Heqp. subst l z0 z.
     exploit acc_symb_tree_entry_some; eauto.
     intros GET'.     
@@ -588,8 +573,9 @@ Proof.
     exploit PTree_Properties.of_list_norepet; eauto.
     intros GET.
     generalize Heqp. intros GENSYM.
-    unfold gen_symb_table in Heqp. destr_in Heqp. destruct p. 
-    inversion Heqp. subst l z0 z.
+    unfold gen_symb_table in Heqp. destr_in Heqp.
+    destruct p. destruct p.
+    inversion Heqp. subst l z0 z z1.
     exploit acc_symb_tree_entry_some; eauto.
     intros GET'.     
     cbn in GET'.
@@ -644,10 +630,13 @@ Lemma init_mem_pres_inject :
     (INITMEM: Genv.init_mem prog = Some m),
     exists m', init_mem tprog = Some m' /\ Mem.inject globs_meminj (def_frame_inj m) m m'.
 Proof.
+  Admitted.
+(***** Remove Proofs By Chris Start ******)
+(*  
   unfold Genv.init_mem, init_mem. intros.
   unfold match_prog, transf_program in TRANSF.
   destr_in TRANSF. inv w.
-  destr_in TRANSF. destruct p. 
+  destr_in TRANSF. destruct p. destruct p.
   destr_in TRANSF. inv TRANSF. cbn.
   destruct (Mem.alloc Mem.empty 0 (init_data_list_size (fold_right acc_init_data [] (AST.prog_defs prog)))) eqn:IALLOC.
   set (idata := (fold_right acc_init_data [] (AST.prog_defs prog))) in *.
@@ -735,7 +724,8 @@ Proof.
 (*     auto. *)
 (* Qed. *)
 Admitted.
-
+*)
+(***** Remove Proofs By Chris End ******)
 
 (** Inversion of initial memory injection on genv_next *)
 Lemma acc_symb_maps_inv : forall stbl t id b ofs,
@@ -770,20 +760,20 @@ Proof.
       exists e'. split; eauto.
 Qed.        
 
-Lemma gen_symb_table_index_range: forall did cid p stbl dz cz e i,
-    gen_symb_table did cid p = (stbl, dz, cz) ->
+Lemma gen_symb_table_index_range: forall rdid did cid p stbl rdz dz cz e i,
+    gen_symb_table rdid did cid p = (stbl, rdz, dz, cz) ->
     In e stbl -> 
     symbentry_secindex e = secindex_normal i ->
-    i = did \/ i = cid.
+    i = rdid \/ i = did \/ i = cid.
 Proof.
-  intros did cid p stbl dz cz e i GEN IN SI.
+  intros rdid did cid p stbl rdz dz cz e i GEN IN SI.
   unfold gen_symb_table in GEN.
-  destr_in GEN. destruct p0. inv GEN.
+  destr_in GEN. destruct p0. destruct p0. inv GEN.
   exploit acc_symb_index_in_range; eauto.
   intros RNG. red in RNG.
   rewrite Forall_forall in RNG. 
   apply RNG in IN. red in IN. 
-  rewrite SI in IN. inv IN; auto. inv H; auto. inv H0.
+  rewrite SI in IN. inv IN; auto. inv H; auto. inv H0; auto. inv H.
 Qed.
 
 
@@ -802,7 +792,8 @@ Proof.
   apply PTree.gempty.
   intros (e & IN & ID & (i & SI & BL) & OFS). subst.
   exploit gen_symb_table_index_range; eauto.
-  intros [I | I]; subst; cbn; xomega. 
+  intros [I | I]; subst; cbn. xomega.
+  destruct I; subst; cbn; xomega.
 Qed.
 
 Lemma init_meminj_genv_next_inv : forall b delta
@@ -984,7 +975,6 @@ Proof.
       revert FD. red. rewnb.
       fold ge. intros. xomega.
 Qed.
-
 
 (** ** Simulation of Single Step Execution *)
 
@@ -1646,10 +1636,14 @@ Proof.
     red in NJ. cbn in NJ. contradiction.
 
   - (* Pjmptbl *)
+    admit.
+(***** Remove Proofs By Chris Start ******)
+(*      
     assert (instr_valid (Pjmptbl r tbl)) as NJ.
     { eapply instr_is_valid; eauto. }
     red in NJ. cbn in NJ. contradiction.
-
+*)
+(***** Remove Proofs By Chris End ******)
   - (* Pcall *)    
     repeat destr_in H4.
     generalize (RSINJ PC).
@@ -1735,6 +1729,9 @@ Proof.
     eapply match_states_intro; eauto.
 
   - (* Pjmptbl_rel *)
+    admit.
+(***** Remove Proofs By Chris Start ******)
+(*      
     destruct (rs1 r) eqn:REQ; inv H4.
     destruct (list_nth_z tbl (Int.unsigned i)) eqn:LEQ; inv H3.
     assert (rs2 r = Vint i) by
@@ -1745,8 +1742,9 @@ Proof.
     exists rs2', m2. rewrite H2. rewrite LEQ.
     split; auto.
     eapply match_states_intro; eauto.
-
-Qed.
+*)
+(***** Remove Proofs By Chris End ******)
+Admitted.
 
 
 Theorem step_simulation:
@@ -1859,7 +1857,6 @@ Proof.
     inversion 1. auto.
 Qed.
 
-
 (** ** The Main Correctness Theorem *)
 Lemma transf_program_correct:
   forward_simulation (RealAsm.semantics prog (Pregmap.init Vundef)) 
@@ -1881,5 +1878,3 @@ Qed.
 
 
 End PRESERVATION.
-*)
-(***** Remove Proofs By Chris End ******)

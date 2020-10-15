@@ -137,8 +137,11 @@ Definition encode_addrmode (sofs: Z) i (a: addrmode) (rd: ireg) : res (list byte
               |Error _ => OK ofs
               end
             | inr (id, ofs) =>
-             (* Remove ofs Check By Chris *)
-             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
+             (***** Remove Proofs By Chris Start ******)
+             (*
+             if Ptrofs.eq_dec ofs Ptrofs.zero then
+              *)
+             (***** Remove Proofs By Chris End ******)
               match id with
               |xH => 
                (do iofs <- instr_reloc_offset i;
@@ -209,8 +212,11 @@ Definition encode_addrmode_f (sofs: Z) i (a: addrmode) (frd: freg) : res (list b
               |Error _ => OK ofs
               end
            | inr (id, ofs) =>
-             (* Remove ofs Check By Chris *)
-             (* if Ptrofs.eq_dec ofs Ptrofs.zero then *)
+             (***** Remove Proofs By Chris Start ******)
+             (*
+             if Ptrofs.eq_dec ofs Ptrofs.zero then
+             *)
+             (***** Remove Proofs By Chris End ******)
                match id with
                |xH => (do iofs <- instr_reloc_offset i;
                       get_instr_reloc_addend' (iofs + sofs))

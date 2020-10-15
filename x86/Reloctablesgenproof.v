@@ -13,8 +13,6 @@ Require Import Reloctablesgen.
 Import ListNotations.
 Require Import Lia.
 
-(***** Remove Proofs By Chris Start ******)
-(*
 Definition match_prog p tp :=
   exists tp',
     transf_program p = OK tp' /\
@@ -28,6 +26,8 @@ Definition match_prog p tp :=
       (reloctable_code (prog_reloctables tp)) (reloctable_code (prog_reloctables tp')) /\
     Permutation.Permutation
       (reloctable_data (prog_reloctables tp)) (reloctable_data (prog_reloctables tp')) /\
+    Permutation.Permutation
+      (reloctable_rodata (prog_reloctables tp)) (reloctable_rodata (prog_reloctables tp')) /\
     prog_senv tp = prog_senv tp'.
 
 Lemma transf_program_match:
@@ -175,6 +175,9 @@ Proof.
   - eapply add_reloc_ofs_symb_same_rtbl_id_in; eauto.
   - rewrite add_reloc_ofs_symb_diff_rtbl_id; eauto. 2: congruence.
     eapply add_reloc_ofs_symb_same_rtbl_id_in; eauto.
+  - rewrite add_reloc_ofs_symb_diff_rtbl_id; eauto. 2: congruence.
+    rewrite add_reloc_ofs_symb_diff_rtbl_id; eauto. 2: congruence.
+    eapply add_reloc_ofs_symb_same_rtbl_id_in; eauto.
 Qed.
 
 Lemma gen_reloc_ofs_symbs_not_in:
@@ -187,6 +190,9 @@ Proof.
   destruct rtbl_id.
   - eapply add_reloc_ofs_symb_same_rtbl_id_not_in; eauto.
   - rewrite add_reloc_ofs_symb_diff_rtbl_id; eauto. 2: congruence.
+    eapply add_reloc_ofs_symb_same_rtbl_id_not_in; eauto.
+  - rewrite add_reloc_ofs_symb_diff_rtbl_id; eauto. 2: congruence.
+    rewrite add_reloc_ofs_symb_diff_rtbl_id; eauto. 2: congruence.
     eapply add_reloc_ofs_symb_same_rtbl_id_not_in; eauto.
 Qed.
 
@@ -220,16 +226,18 @@ Proof.
 Qed.
 
 Lemma transl_sectable_ok:
-  forall sim stbl creloc dreloc,
-    transl_sectable sim stbl = OK (creloc, dreloc) ->
-    exists c l,
+  forall sim stbl creloc dreloc rdreloc,
+    transl_sectable sim stbl = OK (creloc, dreloc, rdreloc) ->
+    exists c l l0,
       SecTable.get sec_code_id stbl = Some (sec_text c) /\
       SecTable.get sec_data_id stbl = Some (sec_data l) /\
+      SecTable.get sec_rodata_id stbl = Some (sec_rodata l0) /\
       transl_code sim c = OK creloc /\
-      transl_init_data_list sim l = OK dreloc.
+      transl_init_data_list sim l = OK dreloc /\
+      transl_init_data_list sim l0 = OK rdreloc.
 Proof.
-  unfold transl_sectable. intros sim stbl creloc dreloc TRANSL.
-  repeat destr_in TRANSL. do 2 eexists; eauto.
+  unfold transl_sectable. intros sim stbl creloc dreloc rdreloc TRANSL.
+  repeat destr_in TRANSL. do 6 eexists; eauto.
 Qed.
 
 Lemma transl_init_data_ok:
@@ -405,6 +413,8 @@ Proof.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
   monadInv H0.
+  destruct x0. destruct p.
+  monadInv EQ0.
   repeat destr_in EQ2.
   unfold RelocProgSemantics.globalenv. simpl. simpl in *.
   rewrite H, H4, H3.
@@ -441,7 +451,7 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
-  monadInv H0.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
   repeat destr_in EQ2.
   rewrite H. simpl; auto.
 Qed.
@@ -548,7 +558,7 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
-  monadInv H0.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
   repeat destr_in EQ2.
   rewrite H4. simpl; auto.
 Qed.
@@ -846,7 +856,7 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
-  monadInv H0.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
   repeat destr_in EQ2.
   rewrite H4. simpl; auto.
 Qed.
@@ -1011,32 +1021,51 @@ Proof.
 Qed.
 
 Lemma prog_sectable_eq:
-  exists init c c' creloc dreloc,
-    prog_sectable prog = [sec_data init; sec_text c] /\
+  exists roinit init c c' creloc dreloc rdreloc,
+    prog_sectable prog = [sec_rodata roinit; sec_data init; sec_text c] /\
     transl_code' c = OK c' /\
     transl_code (gen_symb_index_map (prog_symbtable prog)) c = OK creloc /\
     Permutation.Permutation creloc (reloctable_code (prog_reloctables tprog)) /\
     0 <= code_size c' < Ptrofs.max_unsigned /\
-    prog_sectable tprog = [sec_data init; sec_text c'] /\
+    prog_sectable tprog = [sec_rodata roinit; sec_data init; sec_text c'] /\
+    transl_init_data_list (gen_symb_index_map (prog_symbtable prog)) roinit = OK rdreloc /\
+    Permutation.Permutation rdreloc (reloctable_rodata (prog_reloctables tprog)) /\
     transl_init_data_list (gen_symb_index_map (prog_symbtable prog)) init = OK dreloc /\
     Permutation.Permutation dreloc (reloctable_data (prog_reloctables tprog)).
 Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF.
   unfold transf_program in H0.
-  monadInv H0. simpl in *.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
+  simpl in *.
   repeat destr_in EQ2.
   exploit transl_sectable_ok. eauto.
-  intros (c & ll & CODE & DATA & TCODE & TDATA).
-  unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H8.
+  intros (c & ll & ll0 & CODE & DATA & RODATA & TCODE & TDATA & TRODATA).
+  unfold transl_sectable' in EQ1. repeat destr_in EQ1. monadInv H9.
   repeat destr_in EQ1. simpl.
-  (do 5 eexists). split. eauto. split. eauto.
+  (do 7 eexists). split. eauto. split. eauto.
   split. vm_compute in CODE. inv CODE. eauto.
   split. apply Permutation.Permutation_sym. auto.
   split. split. generalize (code_size_non_neg x); lia. auto.
   split. eauto.
   split. vm_compute in DATA. inv DATA. eauto.
+  vm_compute in RODATA. inv RODATA. eauto.
+  split. apply Permutation.Permutation_sym. auto.
+  split. vm_compute in DATA. inv DATA. eauto.
   apply Permutation.Permutation_sym. auto.
+Qed.
+
+Lemma alloc_rodata_section_ok:
+  forall m0 m,
+    RelocProgSemantics.alloc_rodata_section ge (prog_sectable prog) m0 = Some m ->
+    alloc_rodata_section tge (prog_sectable tprog) m0 = Some m.
+Proof.
+  intros m0 m ADS.
+  unfold RelocProgSemantics.alloc_rodata_section, alloc_rodata_section in *.
+  repeat destr_in ADS.
+  destruct (prog_sectable_eq) as (roinit' & init' & c & c' & creloc & dreloc & rdreloc & PS1 & TC & TC' & PERMc & CodeRng &PS2 & TIRDL & PERMrd & TIDL & PERMd).
+  rewrite PS2. simpl.
+  rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
 Qed.
 
 Lemma alloc_data_section_ok:
@@ -1047,12 +1076,13 @@ Proof.
   intros m0 m ADS.
   unfold RelocProgSemantics.alloc_data_section, alloc_data_section in *.
   repeat destr_in ADS.
-  destruct (prog_sectable_eq) as (init' & c & c' & creloc & dreloc & PS1 & TC & TC' & PERMc & CodeRng &PS2 & TIDL & PERMd).
+  destruct (prog_sectable_eq) as (roinit' & init' & c & c' & creloc & dreloc & rdreloc & PS1 & TC & TC' & PERMc & CodeRng &PS2 & TIRDL & PERMrd & TIDL & PERMd).
   rewrite PS2. simpl.
   rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
   simpl in *.
   rewrite Heqp. rewrite Heqo0.
-  erewrite store_init_data_list_ok; eauto. rewrite app_nil_l. auto. reflexivity.
+  erewrite store_init_data_list_ok; eauto. rewrite app_nil_l.
+  auto. reflexivity.
 Qed.
 
 Lemma code_size_app:
@@ -1119,8 +1149,8 @@ Proof.
   intros m0 m ACS.
   unfold RelocProgSemantics.alloc_code_section, alloc_code_section in *.
   repeat destr_in ACS.
-  destruct (prog_sectable_eq) as (init' & c & c' & dreloc & creloc & PS1 & TC & TC' &
-                                  PERMc & CodeRng & PS2 & TIDL & PERMd).
+  destruct (prog_sectable_eq) as (roinit' & init' & c & c' & rdreloc & dreloc & creloc & PS1 & TC & TC' &
+  PERMc & CodeRng & PS2 & TIRDL & PERMrd & TIDL & PERMd ).
   rewrite PS2. simpl.
   rewrite PS1 in Heqo. vm_compute in Heqo. inv Heqo.
   erewrite transl_code_size; eauto.
@@ -1159,6 +1189,7 @@ Proof.
   intros m IM.
   unfold RelocProgSemantics.init_mem, init_mem in *.
   repeat destr_in IM.
+  erewrite alloc_rodata_section_ok; eauto.
   erewrite alloc_data_section_ok; eauto.
   erewrite alloc_code_section_ok; eauto.
   rewrite H0.
@@ -1171,7 +1202,8 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF. clear TRANSF.
   unfold transf_program in H0.
-  monadInv H0. simpl in *. repeat destr_in EQ2. simpl in *. congruence.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
+  simpl in *. repeat destr_in EQ2. simpl in *. congruence.
 Qed.
 
 Lemma main_ok:
@@ -1193,7 +1225,8 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF. clear TRANSF.
   unfold transf_program in H0.
-  monadInv H0. repeat destr_in EQ2. simpl in *. congruence.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
+  repeat destr_in EQ2. simpl in *. congruence.
 Qed.
 
 Lemma ext_funs_add_external_global:
@@ -1322,8 +1355,7 @@ Proof.
   unfold ge in H.
   unfold RelocProgSemantics.globalenv in *.
   rewrite instrs_add_external_globals in *. simpl in *.
-  destruct (prog_sectable_eq) as (init & c & c' & creloc & dreloc & PS1 & TC & TC' &
-                                  PERMc & CodeRng & PS2 & TIDL & PERMd).
+  destruct (prog_sectable_eq) as (roinit & init & c & c' & creloc & dreloc & rdreloc & PS1 & TC & TC' & PERMc & CodeRng & PS2 & TIRDL & PERMrd & TIDL & PERMd).
   rewrite PS1, PS2 in *.
   simpl in *.
   unfold gen_instr_map, transl_code' in *.
@@ -1429,6 +1461,20 @@ Proof.
       f_equal. f_equal. apply  SYMBS. reflexivity. reflexivity.
     }
     repeat destr.
+  - admit. (* Pmovsd_fm *)
+  - admit. (* Pmovsd_mf *)
+  - admit. (* Pmovss_fm *)
+  - admit. (* Pmovss_mf *)
+  - admit. (* Pfldl_m *)   
+  - admit. (* Pfstpl_m *)
+  - admit. (* Pflds_m *)
+  - admit. (* Pfstps_m *)
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
   - assert (i' =  Pleal rd match a with
                            | Addrmode rb ss (inl _) => a
                            | Addrmode rb ss (inr (_, ptrofs)) =>
@@ -1509,7 +1555,7 @@ Proof.
       f_equal. f_equal. simpl. apply  SYMBS. reflexivity. reflexivity.
     }
     destr. f_equal. f_equal. simpl. f_equal. repeat destr.
-Qed.
+Admitted.
 
 Lemma transl_instr_gen_reloc_ofs_symb:
   forall stbl ofs0 i0 l l' id0 idofs0
@@ -1614,14 +1660,10 @@ Lemma instr_size_reloc_offset:
     0 <= z < instr_size i.
 Proof.
   Transparent instr_size.
-  destruct i; simpl; intros z IRO; inv IRO; try destr; try lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
+  destruct i; simpl; intros z IRO; inv IRO; try destr; try lia;
+  try (generalize (addrmode_reloc_offset_addrmode_size a); lia).
   inv H0; lia.
   inv H0; lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
-  generalize (addrmode_reloc_offset_addrmode_size a); lia.
   Opaque instr_size.
 Qed.
 
@@ -1791,23 +1833,15 @@ Lemma transl_instr_norepet:
 Proof.
   unfold transl_instr.
   intros.
-  repeat destr_in H; simpl; try constructor.
+  repeat destr_in H; simpl; try constructor;
+    try (unfold compute_instr_disp_relocentry in *;
+    destr_in H1; monadInv H1; repeat constructor; simpl; auto).
   - unfold compute_instr_abs_relocentry in *.
     monadInv H1. repeat constructor. simpl. auto.
-  - unfold compute_instr_disp_relocentry in *.
-    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
-  - unfold compute_instr_disp_relocentry in *.
-    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
-  - unfold compute_instr_disp_relocentry in *.
-    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
   - unfold compute_instr_rel_relocentry in *.
     monadInv H1. repeat constructor; simpl; auto.
   - unfold compute_instr_rel_relocentry in *.
-    monadInv H1. repeat constructor; simpl; auto.
-  - unfold compute_instr_disp_relocentry in *.
-    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
-  - unfold compute_instr_disp_relocentry in *.
-    destr_in H1. monadInv H1. repeat constructor; simpl; auto.
+    monadInv H1. repeat constructor; simpl; auto. 
 Qed.
 
 Lemma transl_code_norepet:
@@ -1846,8 +1880,7 @@ Proof.
   intros ofs i id idofs GIM IRI IRO.
   unfold gen_reloc_ofs_symbs.
   unfold add_reloc_ofs_symb at 1. destr.
-  destruct (prog_sectable_eq) as (init & c & c' & creloc & dreloc & PS1 & TC & TC' &
-                                  PERMc & CodeRng & PS2 & TIDL & PERMd).
+  destruct (prog_sectable_eq) as (roinit & init & c & c' & creloc & dreloc & rdreloc & PS1 & TC & TC' & PERMc & CodeRng & PS2 & TIRDL & PERMrd & TIDL & PERMd).
   unfold transl_code in TC'. monadInv TC'.
   unfold get_reloctable.
   erewrite <- gen_reloc_ofs_symb_permut. 2: eauto.
@@ -1946,7 +1979,8 @@ Proof.
   unfold match_prog in TRANSF.
   decompose [ex and] TRANSF. clear TRANSF.
   unfold transf_program in H0.
-  monadInv H0. repeat destr_in EQ2. simpl in *. congruence.
+  monadInv H0. destruct x0. destruct p. monadInv EQ0.
+  repeat destr_in EQ2. simpl in *. congruence.
 Qed.
 
 Lemma external_call_ok:
@@ -1956,7 +1990,6 @@ Lemma external_call_ok:
 Proof.
   intros. rewrite <- senv_preserved. eauto.
 Qed.
-
 
 Lemma transf_program_correct:
   forall rs, forward_simulation (RelocProgSemantics.semantics prog rs)
@@ -2008,7 +2041,6 @@ End PRESERVATION.
 
 Require Import RelocLinking RelocLinking1.
 
-
 Lemma transl_sectable'_code:
   forall stbl stbl' v,
     transl_sectable' stbl = OK stbl' ->
@@ -2020,6 +2052,16 @@ Proof.
   unfold transl_sectable'; intros. repeat destr_in H.
   monadInv H2. repeat destr_in EQ0. eauto.
   vm_compute in H0. inv H0. unfold SecTable.get. simpl. eauto.
+Qed.
+
+Lemma transl_sectable'_rodata:
+  forall stbl stbl' v,
+    transl_sectable' stbl = OK stbl' ->
+    SecTable.get sec_rodata_id stbl = Some v ->
+    SecTable.get sec_rodata_id stbl' = Some v.
+Proof.
+  unfold transl_sectable'; intros. repeat destr_in H.
+  monadInv H2. repeat destr_in EQ0. eauto.
 Qed.
 
 Lemma transl_sectable'_data:
@@ -2066,11 +2108,30 @@ Proof.
     unfold compute_instr_abs_relocentry in *.
     monadInv EQ. rewrite EQ0. destr_in EQ1.
     erewrite H; eauto.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
   - repeat destr_in H0.
     unfold compute_instr_rel_relocentry in *.
     monadInv H2. monadInv EQ. rewrite EQ0. rewrite EQ. simpl.
     destr_in EQ2.
     erewrite H; eauto.
+  - admit.    
   - repeat destr_in H0.
     unfold compute_instr_rel_relocentry in *.
     monadInv H2. monadInv EQ. rewrite EQ0. rewrite EQ. simpl.
@@ -2088,7 +2149,11 @@ Proof.
     unfold compute_instr_abs_relocentry in *.
     monadInv EQ. rewrite EQ0. destr_in EQ1.
     erewrite H; eauto.
-Qed.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+Admitted.
 
 Lemma fold_acc_instrs_acc:
   forall sim sim' c1 z l z1 l1,
@@ -2118,12 +2183,12 @@ Lemma link_sectable_ok:
     link_sectable stbl1 stbl2 = Some s ->
     transl_sectable' stbl1 = OK stbl1' ->
     transl_sectable' stbl2 = OK stbl2' ->
-    exists init1 init2 c1 c2 c1' c2',
-      stbl1 = [sec_data init1; sec_text c1] /\
-      stbl2 = [sec_data init2; sec_text c2] /\
+    exists roinit1 roinit2 init1 init2 c1 c2 c1' c2',
+      stbl1 = [sec_rodata roinit1; sec_data init1; sec_text c1] /\
+      stbl2 = [sec_rodata roinit2; sec_data init2; sec_text c2] /\
       transl_code' c1 = OK c1' /\
       transl_code' c2 = OK c2' /\
-      link_sectable stbl1' stbl2' = Some [sec_data (init1 ++ init2); sec_text (c1' ++ c2')].
+      link_sectable stbl1' stbl2' = Some [sec_rodata (roinit1 ++ roinit2); sec_data (init1 ++ init2); sec_text (c1' ++ c2')].
 Proof.
   intros.
   unfold link_sectable in *. repeat destr_in H.
@@ -2133,7 +2198,7 @@ Proof.
   repeat destr_in EQ0; repeat destr_in EQ2.
   unfold SecTable.get in *; simpl in *. inv Heqo. inv Heqo0. inv Heqo1. inv Heqo2.
   simpl in *. inv Heqo3. inv Heqo4.
-  (do 6 eexists); repeat split; eauto.
+  (do 8 eexists); repeat split; eauto.
 Qed.
 
 Lemma transl_init_data_list_gets:
@@ -2628,9 +2693,9 @@ Proof.
 Qed.
 
 Lemma update_reloc_reloc:
-  forall dsize csize stbl stbl'
+  forall rdsize dsize csize stbl stbl'
          (RS : list_forall2
-                 (fun se se' : symbentry => reloc_symbol (reloc_offset_fun dsize csize) se = Some se') stbl
+                 (fun se se' : symbentry => reloc_symbol (reloc_offset_fun rdsize dsize csize) se = Some se') stbl
                  stbl')
          sim a r0
          (URS: update_reloc_symb stbl sim a = Some r0),
@@ -2645,13 +2710,13 @@ Proof.
 Qed.
 
 Lemma update_reloctable_reloc:
-  forall stbl sim x x' dsize csize stbl',
+  forall stbl sim x x' rdsize dsize csize stbl',
     update_reloctable_symb stbl sim x = Some x' ->
-    reloc_symbtable (reloc_offset_fun dsize csize) stbl = Some stbl' ->
+    reloc_symbtable (reloc_offset_fun rdsize dsize csize) stbl = Some stbl' ->
     exists x'', update_reloctable_symb stbl' sim x = Some x''.
 Proof.
   unfold update_reloctable_symb.
-  intros stbl sim x x' dsize csize stbl' URS RS.
+  intros stbl sim x x' rdsize dsize csize stbl' URS RS.
   apply reloc_symbtable_eq in RS.
   revert x x' URS.
   induction x; simpl; intros; eauto.
@@ -2801,9 +2866,9 @@ Proof.
 Qed.
 
 Lemma tidl_link_reloctable:
-  forall stbl1 stbl2 csize s0 s1 l l' x0 x3,
+  forall stbl1 stbl2 csize s0 s1 l0 l l' x0 x3,
     link_symbtable stbl1 s0 = Some s1 ->
-    reloc_symbtable (reloc_offset_fun (sec_size (sec_data l)) csize)
+    reloc_symbtable (reloc_offset_fun (sec_size (sec_rodata l0)) (sec_size (sec_data l)) csize)
                     stbl2 = Some s0 ->
     transl_init_data_list (gen_symb_index_map stbl1) l = OK x0 ->
     transl_init_data_list (gen_symb_index_map stbl2) l' = OK x3 ->
@@ -2897,11 +2962,30 @@ Proof.
         destruct INr as [EQ|[]]. subst. simpl.
         exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
         (do 2 eexists); split. eauto. subst. eauto.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.        
       + monadInv H2. unfold compute_instr_rel_relocentry in EQ.
         monadInv EQ. repeat destr_in EQ2.
         destruct INr as [EQr|[]]. subst. simpl.
         exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
         (do 2 eexists); split. eauto. subst. eauto.
+      + admit.
       + monadInv H2. unfold compute_instr_rel_relocentry in EQ.
         monadInv EQ. repeat destr_in EQ2.
         destruct INr as [EQr|[]]. subst. simpl.
@@ -2919,10 +3003,14 @@ Proof.
         destruct INr as [EQ|[]]. subst. simpl.
         exploit in_sim_in_stbl_nth. eauto. intros (s & GET & ID).
         (do 2 eexists); split. eauto. subst. eauto.
+      + admit.
+      + admit.
+      + admit.
+      + admit.        
       + auto.
   }
   intros. eapply H. eauto. constructor.
-Qed.
+Admitted.
 
 
 Lemma fold_acc_instrs_split:
@@ -3042,12 +3130,31 @@ Proof.
     unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
     edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
     rewrite Heqo2. simpl. auto.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.    
   - monadInv H2. unfold compute_instr_rel_relocentry in *. monadInv EQ.
     repeat destr_in EQ2.
     rewrite EQ0. rewrite EQ. simpl. simpl in *. repeat destr_in H1.
     unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
     edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
     rewrite Heqo2. simpl. auto.
+  - admit.
   - monadInv H2. unfold compute_instr_rel_relocentry in *. monadInv EQ.
     repeat destr_in EQ2.
     rewrite EQ0. rewrite EQ. simpl. simpl in *. repeat destr_in H1.
@@ -3068,7 +3175,11 @@ Proof.
     unfold update_reloc_symb in Heqo0. simpl in *. repeat destr_in Heqo0.
     edestruct in_sim_in_stbl_nth as (se & GET & ID). apply Heqo. rewrite Heqo1 in GET. inv GET.
     rewrite Heqo2. simpl. auto.
-Qed.
+  - admit.
+  - admit. 
+  - admit.
+  - admit.   
+Admitted.
 
 
 Lemma transl_instr_translate:
@@ -3094,9 +3205,28 @@ Proof.
     unfold compute_instr_abs_relocentry in *.
     monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
     rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.    
   - monadInv H1. unfold compute_instr_rel_relocentry in *.
     monadInv EQ. repeat destr_in EQ2. unfold shift_relocentry_offset.
     rewrite EQ0, EQ; simpl. f_equal. f_equal. f_equal. omega.
+  - admit.
   - monadInv H1. unfold compute_instr_rel_relocentry in *.
     monadInv EQ. repeat destr_in EQ2. unfold shift_relocentry_offset.
     rewrite EQ0, EQ; simpl. f_equal. f_equal. f_equal. omega.
@@ -3108,7 +3238,11 @@ Proof.
     unfold compute_instr_abs_relocentry in *.
     monadInv EQ. repeat destr_in EQ1. unfold shift_relocentry_offset.
     rewrite EQ0; simpl. f_equal. f_equal. f_equal. omega.
-Qed.
+  - admit.
+  - admit. 
+  - admit.
+  - admit.   
+Admitted.
 
 Lemma fold_acc_instrs_translate:
   forall sim c z0 z1 l1 l2 n,
@@ -3168,8 +3302,8 @@ Proof.
 Qed.
 
 Lemma transl_code_app:
-  forall stbl1 stbl2 stbl2' s1 c1 c2 c1' c2' dsize,
-    reloc_symbtable (reloc_offset_fun dsize (code_size c1)) stbl2 = Some stbl2' ->
+  forall stbl1 stbl2 stbl2' s1 c1 c2 c1' c2' rdsize dsize,
+    reloc_symbtable (reloc_offset_fun rdsize dsize (code_size c1)) stbl2 = Some stbl2' ->
     link_symbtable stbl1 stbl2' = Some s1 ->
     transl_code (gen_symb_index_map stbl1) c1 = OK c1' ->
     transl_code (gen_symb_index_map stbl2) c2 = OK c2' ->
@@ -3311,47 +3445,54 @@ Proof.
   unfold RelocLinking.link_reloc_prog in *.
   simpl in *.
   repeat destr_in H. simpl in *.
-  destruct H0 as (tp1' & TP1 & defs1 & public1 & main1 & sectable1 & symbtable1 & strtable1
-                  & creloc1 & dreloc1 & senv1).
-  destruct H1 as (tp2' & TP2 & defs2 & public2 & main2 & sectable2 & symbtable2 & strtable2
-                  & creloc2 & dreloc2 & senv2).
+  destruct H0 as (tp1' & TP1 & defs1 & public1 & main1 & sectable1 & symbtable1 & strtable1 & creloc1 & dreloc1 & rdreloc1 & senv1).
+  destruct H1 as (tp2' & TP2 & defs2 & public2 & main2 & sectable2 & symbtable2 & strtable2 & creloc2 & dreloc2 & rdreloc2 & senv2).
   unfold transf_program in TP1, TP2.
-  monadInv TP1; monadInv TP2. simpl in *.
+  monadInv TP1; monadInv TP2. destruct x. destruct p. monadInv EQ0.
+  destruct x0. destruct p. monadInv EQ2.
+  simpl in *. rename EQ4 into EQ2. 
   repeat destr_in EQ2. repeat destr_in EQ5. simpl in *.
   repeat rewrite ? defs1, ? public1, ? main1, ? sectable1, ? symbtable1, ? strtable1, ? senv1 in *.
   repeat rewrite ? defs2, ? public2, ? main2, ? sectable2, ? symbtable2, ? strtable2, ? senv2 in *.
   rewrite Heqo.
-  edestruct transl_sectable'_code as (code1 & code1' & EQcode1 & TC1 & EQcode1'). apply EQ1. eauto.
-  erewrite transl_sectable'_data. 2: apply EQ1. 2: eauto.
+  edestruct transl_sectable'_code as (code1 & code1' & EQcode1 & TC1 & EQcode1'). apply EQ3. eauto.
+  erewrite transl_sectable'_rodata. 2: apply EQ3. 2: eauto.
+  erewrite transl_sectable'_data. 2: apply EQ3. 2: eauto.
   rewrite EQcode1'.
   exploit link_sectable_ok. eauto. eauto. eauto.
-  intros (init1 & init2 & c1 & c2 & c1' & c2' & PS1 & PS2 & TC1' & TC2 & LINK).
+  intros (roinit1 & roinit2 & init1 & init2 & c1 & c2 & c1' & c2' & PS1 & PS2 & TC1' & TC2 & LINK).
   rewrite LINK. simpl.
-  rewrite PS1 in Heqo1. vm_compute in Heqo1. inv Heqo1. simpl in Heqo3.
-  erewrite transl_code_size. 2: eauto. rewrite Heqo3. rewrite Heqo4. simpl.
+  rewrite PS1 in Heqo2. vm_compute in Heqo2. inv Heqo2. simpl in Heqo4.
+  erewrite transl_code_size. 2: eauto. rewrite Heqo4. rewrite Heqo5. simpl.
   unfold link_data_reloctable. simpl.
   erewrite transl_sectable'_data. 2: eauto. 2: eauto.
+  rewrite PS1 in Heqo1. vm_compute in Heqo1. inv Heqo1. simpl.
   rewrite PS1 in Heqo0. vm_compute in Heqo0. inv Heqo0. simpl.
   exploit transl_sectable_ok. apply EQ. rewrite PS1. cbn. simpl.
-  intros (c & ll & EQ10 & EQ11 & TC & TIDL). inv EQ10; inv EQ11. inv H0.
-  exploit transl_sectable_ok. apply EQ0. rewrite PS2. cbn. simpl.
-  intros (c' & l' & EQ10 & EQ11 & TC' & TIDL'). inv EQ10; inv EQ11.
+  intros (c & ll & llr & EQ10 & EQ11 & EQ12 & TC & TIDL & TIRDL). inv EQ10; inv EQ11. inv EQ12. inv H0.
+  exploit transl_sectable_ok. apply EQ1. rewrite PS2. cbn. simpl.
+  intros (c' & l' & l'' & EQ10 & EQ11 & EQ12 & TC' & TIDL' & TIRDL'). inv EQ10; inv EQ11; inv EQ12.
   unfold link_code_reloctable. simpl.
   rewrite EQcode1'.
   unfold transf_program. simpl.
   unfold transl_sectable.
 
-  rewrite PS1, PS2 in Heqo2. simpl in Heqo2.
-  unfold link_sectable in Heqo2. repeat destr_in Heqo2.
+  rewrite PS1, PS2 in Heqo3. simpl in Heqo3.
+  unfold link_sectable in Heqo3. repeat destr_in Heqo3.
   vm_compute in Heqo0; inv Heqo0.
-  vm_compute in Heqo1; inv Heqo1.
-  vm_compute in Heqo5; inv Heqo5.
+  vm_compute in Heqo2; inv Heqo2.
   vm_compute in Heqo6; inv Heqo6.
+  vm_compute in Heqo7; inv Heqo7.
+  vm_compute in Heqo8; inv Heqo8.
+  vm_compute in Heqo9; inv Heqo9.
   unfold SecTable.get. simpl.
-  simpl in Heqo7. inv Heqo7.
-  simpl in Heqo8; inv Heqo8.
-
-  exploit tidl_link_reloctable. eauto. eauto. eauto. eauto.
+  simpl in Heqo10. inv Heqo10.
+  simpl in Heqo11. inv Heqo11.
+Admitted.
+(***** Remove Proofs By Chris Start ******)
+(* how to link rodata section?
+  exploit tidl_link_reloctable. eauto. eauto. eauto.
+  eauto. 
   intros (t1' & t2' & URS1 & URS2 & LR' & TIDLtp).
   rewrite symbtable1, symbtable2.
 
