@@ -40,12 +40,21 @@ Definition transf_symbtable (symbt:symbtable)
 (** The full translation *)
 Definition transf_program (p: program) : res program :=
   let symb_tbl := transf_symbtable (prog_symbtable p) in
-  OK {| prog_defs := prog_defs p;
-        prog_public := prog_public p;
-        prog_main := prog_main p;
-        prog_sectable := prog_sectable p;
-        prog_strtable := prog_strtable p;
-        prog_symbtable := symb_tbl;
-        prog_reloctables := prog_reloctables p;
-        prog_senv := prog_senv p;
-     |}.
+  if list_norepet_dec ident_eq (List.map fst (prog_defs p))
+  then
+    if list_norepet_dec ident_eq (List.map symbentry_id (prog_symbtable p))
+    then
+      OK {| prog_defs := prog_defs p;
+            prog_public := prog_public p;
+            prog_main := prog_main p;
+            prog_sectable := prog_sectable p;
+            prog_strtable := prog_strtable p;
+            prog_symbtable := symb_tbl;
+            prog_reloctables := prog_reloctables p;
+            prog_senv := prog_senv p;
+         |}
+             else
+      Error (msg "Symbol entry identifiers repeat in symbol table")
+  else
+    Error (msg "Identifiers repeat in program definitions")
+.

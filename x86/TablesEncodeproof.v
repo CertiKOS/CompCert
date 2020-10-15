@@ -15,8 +15,7 @@ Import ListNotations.
 Definition match_prog (p tp:RelocProgram.program) :=
   transf_program p = OK tp.
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma transf_program_match:
+Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
 Proof.
   intros. red. auto.
@@ -192,7 +191,7 @@ Lemma tables_encode_spec:
     prog_symbtable prog = prog_symbtable tprog /\
     prog_reloctables prog = prog_reloctables tprog /\
     prog_senv prog = prog_senv tprog /\
-    length (prog_sectable prog) = 2%nat /\
+    length (prog_sectable prog) = 3%nat /\
     exists (strmap : Maps.PTree.t Z) (sbytes : list byte) idbytes symt,
       get_strings_map_bytes (fold_right acc_symbols nil (prog_symbtable prog)) =
       OK (idbytes, strmap, sbytes) /\
@@ -202,6 +201,7 @@ Lemma tables_encode_spec:
       prog_sectable prog ++
                     [create_strtab_section sbytes;
                        symt;
+                       create_reloctable_section (reloctable_rodata (prog_reloctables prog));
                        create_reloctable_section (reloctable_data (prog_reloctables prog));
                        create_reloctable_section (reloctable_code (prog_reloctables prog));
                        create_shstrtab_section].
@@ -286,7 +286,9 @@ Proof.
   destruct (prog_sectable prog) eqn:?; simpl in LEN; try omega.
   destruct s eqn:?; simpl in LEN; try omega.
   destruct l eqn:?; simpl in LEN; try omega.
+  destruct l0 eqn:?; simpl in LEN; try omega.
   simpl.
+  rewrite decode_encode_reloctable. simpl.
   rewrite decode_encode_reloctable. simpl.
   rewrite decode_encode_reloctable. simpl.
   erewrite decode_string_map_correct'. 2: eauto. simpl.
@@ -299,6 +301,7 @@ Proof.
   eapply valid_symbentries_p; eauto.
   apply valid_reloctables with (id := RELOC_CODE).
   apply valid_reloctables with (id := RELOC_DATA).
+  apply valid_reloctables with (id := RELOC_RODATA).
 Qed.
 
 (* Require RemoveAddendproof. *)
@@ -319,8 +322,6 @@ Proof.
 Qed.
 
 End PRESERVATION.
-*)
-(***** Remove Proofs By Chris End ******)
 
 Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option RelocProgram.program :=
   match RelocProgSemantics3.decode_tables p1, RelocProgSemantics3.decode_tables p2 with
@@ -336,8 +337,6 @@ Definition link_reloc_decode_tables (p1 p2: RelocProgram.program) : option Reloc
     | _, _ => None
   end.
 
-(***** Remove Proofs By Chris Start ******)
-(*
 Instance linker2 : Linker RelocProgram.program.
 Proof.
   eapply Build_Linker with (link := link_reloc_decode_tables) (linkorder := fun _ _ => True).
@@ -654,13 +653,12 @@ Qed.
 Lemma link_reloc_bingen_sectable:
   forall p1 p2 p,
     RelocLinking1.link_reloc_prog p1 p2 = Some p ->
-    length (prog_sectable p) = 2%nat.
+    length (prog_sectable p) = 3%nat.
 Proof.
   unfold RelocLinking1.link_reloc_prog, RelocLinking.link_reloc_prog.
-  intros. autoinv. simpl. clear - Heqo5.
-  unfold RelocLinking.link_sectable in Heqo5. autoinv. reflexivity.
+  intros. autoinv. simpl. clear - Heqo7.
+  unfold RelocLinking.link_sectable in Heqo7. autoinv. reflexivity.
 Qed.
-
 
 Lemma get_symbtable_to_tree:
   forall stbl,
@@ -850,22 +848,24 @@ Proof.
   unfold transf_program in *. autoinv. simpl in *.
 
   assert (
-      exists s0 v v0,
-        SecTable.get sec_data_id (prog_sectable p1) = Some v /\
-        SecTable.get sec_code_id (prog_sectable p1) = Some v0 /\
-        RelocLinking.reloc_symbtable (RelocLinking.reloc_offset_fun (sec_size v) (sec_size v0))
+      exists s0 v v0 v1,
+        SecTable.get sec_rodata_id (prog_sectable p1) = Some v /\
+        SecTable.get sec_data_id (prog_sectable p1) = Some v0 /\
+        SecTable.get sec_code_id (prog_sectable p1) = Some v1 /\
+        RelocLinking.reloc_symbtable (RelocLinking.reloc_offset_fun (sec_size v) (sec_size v0) (sec_size v1))
             (prog_symbtable p2) = Some s0 /\
       Some (prog_symbtable p) = RelocLinking.link_symbtable (prog_symbtable p1) s0).
   {
     clear - H.
     unfold RelocLinking1.link_reloc_prog in H. autoinv.
     simpl.
-    unfold RelocLinking.link_reloc_prog in Heqo. autoinv. simpl. exists s0, v, v0; repeat split; eauto.
+    unfold RelocLinking.link_reloc_prog in Heqo. autoinv. simpl.
+    exists s0, v, v0, v1; repeat split; eauto.
   }
 
   exploit (get_strings_map_bytes_exists (prog_symbtable p)); eauto. admit. admit.
   intros (idbytes & strmap & sbytes & smb). rewrite smb. simpl.
-  destruct H0 as (s0 & v & v0 & GETdata & GETcode & RELOCsym & EQsym).
+  destruct H0 as (s0 & v & v0 & v1 & GETrodata & GETdata & GETcode & RELOCsym & EQsym).
 
   assert (NRsymb_id:   list_norepet (map symbentry_id (prog_symbtable p))).
   {
@@ -989,8 +989,9 @@ Proof.
   {
     clear - f0 f H.
     unfold RelocLinking1.link_reloc_prog in H. autoinv. simpl.
-    unfold RelocLinking1.link_data_reloctable in Heqo0. autoinv.
-    unfold RelocLinking1.link_code_reloctable in Heqo1. autoinv.
+    unfold RelocLinking1.link_rodata_reloctable in Heqo0. autoinv.
+    unfold RelocLinking1.link_data_reloctable in Heqo1. autoinv.
+    unfold RelocLinking1.link_code_reloctable in Heqo2. autoinv.
     simpl in *.
     clear - H0 H1 f f0.
     intros.
@@ -998,6 +999,9 @@ Proof.
     destruct id; simpl in *; eapply link_reloctable_valid. 4,8: eauto. all: eauto.
     admit.
     admit.                      (* sim gives values < 2 ^ 24 *)
+    admit.
+    admit.
+    admit.
   }
   rewrite pred_dec_true by auto.
 
@@ -1017,5 +1021,4 @@ Proof.
   rewrite dump_reloctables_error in H1. congruence.
   rewrite dump_reloctables_error in H1. congruence.
   rewrite dump_reloctables_error in H1. congruence.
-Admitted. *)
-(***** Remove Proofs By Chris End ******)
+Admitted.

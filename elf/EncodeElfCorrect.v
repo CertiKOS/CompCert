@@ -55,8 +55,7 @@ Proof.
   auto. auto. auto.
 Defined.
 
-(***** Remove Proofs By Chris Start ******)
-(* Instance tl : Linking.TransfLink match_prog.
+Instance tl : Linking.TransfLink match_prog.
 Proof.
   red. simpl.
   unfold match_prog.
@@ -74,6 +73,5 @@ Proof.
   eapply RelocElfgen.gen_reloc_elf_valid; eauto.
   simpl. rewrite in_app. right. simpl. auto.
   rewrite TablesEncode.dump_reloctables_error in H0; congruence.
-Defined. *)
-(***** Remove Proofs By Chris End ******)
+Defined.
 

@@ -56,14 +56,15 @@ Definition create_reloctable_section (t:reloctable) : section :=
   
 
 Definition create_reloctables_sections p : list section :=
-  [create_reloctable_section (reloctable_data (prog_reloctables p));
-     create_reloctable_section (reloctable_code (prog_reloctables p))].
+  [create_reloctable_section (reloctable_rodata (prog_reloctables p));
+  create_reloctable_section (reloctable_data (prog_reloctables p));
+  create_reloctable_section (reloctable_code (prog_reloctables p))].
 
 (** Transforma the program *)
 Definition transf_program p : res program :=
   let s := create_reloctables_sections p in
   let sect := prog_sectable p ++ s in
-  if beq_nat (length sect) 7 then
+  if beq_nat (length sect) 9 then
     OK {| prog_defs := prog_defs p;
           prog_public := prog_public p;
           prog_main := prog_main p;

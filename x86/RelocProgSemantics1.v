@@ -724,9 +724,10 @@ Definition gen_reloc_ofs_symbs (p:program) :=
   let stbl := p.(prog_symbtable) in
   let rmap := p.(prog_reloctables) in
   let ofsmap := fun i => ZTree.empty ident in
-  let ofsmap1 := add_reloc_ofs_symb stbl RELOC_DATA rmap ofsmap in
-  let ofsmap2 := add_reloc_ofs_symb stbl RELOC_CODE rmap ofsmap1 in
-  ofsmap2.
+  let ofsmap1 := add_reloc_ofs_symb stbl RELOC_RODATA rmap ofsmap in
+  let ofsmap2 := add_reloc_ofs_symb stbl RELOC_DATA rmap ofsmap1 in
+  let ofsmap3 := add_reloc_ofs_symb stbl RELOC_CODE rmap ofsmap2 in
+  ofsmap3.
 
 Definition globalenv (p: program) : Genv.t :=
   let ofsmap := gen_reloc_ofs_symbs p in
@@ -841,6 +842,25 @@ Fixpoint alloc_external_symbols (m: mem) (t: symbtable)
 (*   | Some (m',_) => Some m' *)
 (*   end. *)
 
+Definition alloc_rodata_section (t:sectable) (m:mem) : option mem :=
+  match SecTable.get sec_rodata_id t with
+  | None => None
+  | Some sec =>
+    let sz := (sec_size sec) in
+    match sec with
+    | sec_rodata init =>
+      let '(m1, b) := Mem.alloc m 0 sz in
+      match store_zeros m1 b 0 sz with
+      | None => None
+      | Some m2 =>
+        match store_init_data_list m2 b 0 init with
+        | None => None
+        | Some m3 => Mem.drop_perm m3 b 0 sz Readable
+        end
+      end
+    | _ => None
+    end
+  end.
 
 Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
   match SecTable.get sec_data_id t with
@@ -877,14 +897,18 @@ End WITHGE.
 Definition init_mem (p: program) :=
   let ge := globalenv p in
   let stbl := prog_sectable p in
-  match alloc_data_section ge stbl Mem.empty with
+  match alloc_rodata_section ge stbl Mem.empty with
   | None => None
   | Some m1 =>
-    match alloc_code_section stbl m1 with
+    match alloc_data_section ge stbl m1 with
     | None => None
     | Some m2 =>
-      alloc_external_symbols m2 (prog_symbtable p)
-    end
+      match alloc_code_section stbl m2 with
+      | None => None
+      | Some m3 =>
+        alloc_external_symbols m3 (prog_symbtable p)
+      end
+    end      
   end.
 
 (** Execution of whole programs. *)

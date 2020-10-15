@@ -294,9 +294,9 @@ Definition gen_reloc_elf (p:program) : res elf_file :=
 
 Require Import Lia.
 
-(* Lemma gen_elf_header_valid p:
+Lemma gen_elf_header_valid p:
   0 <= get_elf_shoff p < two_p 32 ->
-  length (prog_sectable p) = 7%nat ->
+  length (prog_sectable p) = 9%nat ->
   valid_elf_header (gen_elf_header p).
 Proof.
   unfold gen_elf_header. intros.
@@ -318,6 +318,7 @@ Lemma sec_size_pos a:
   0 <= sec_size a.
 Proof.
   destruct a; simpl. generalize (code_size_non_neg code); omega.
+  generalize (init_data_list_size_pos init). omega.
   generalize (init_data_list_size_pos init). omega.
   omega.
 Qed.
@@ -581,6 +582,17 @@ Proof.
     apply get_sh_offset_range; auto.
     apply get_section_size_range; auto.
     vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+        constructor.
+    constructor; simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
     eapply one_greater_last_local_symb_range; eauto.
     vm_compute; try intuition congruence.
     vm_compute; try intuition congruence.
@@ -619,6 +631,17 @@ Proof.
     vm_compute; try intuition congruence.
     constructor.
     constructor.
+    constructor;simpl.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    apply get_sh_offset_range; auto.
+    apply get_section_size_range; auto.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    vm_compute; try intuition congruence.
+    constructor.
+    constructor.    
   - unfold get_elf_shoff.
     f_equal.
     clear -EQ. revert x EQ. generalize (prog_sectable p).
@@ -650,6 +673,8 @@ Proof.
     destruct s; simpl in H11; try congruence.
     destruct s; simpl in H11; try congruence.
     destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.
+    destruct s; simpl in H11; try congruence.    
     simpl in H10. monadInv H10.
     monadInv EQ.
     monadInv EQ0.
@@ -657,6 +682,8 @@ Proof.
     monadInv EQ4.
     monadInv EQ5.
     monadInv EQ6.
+    monadInv EQ7.
+    monadInv EQ8.
     cbn.
     rewrite Heqs.
     unfold check_sizes.
@@ -670,4 +697,4 @@ Proof.
     change elf_header_size with 52.
     rewrite !  (proj2 (Z.eqb_eq _ _)) by omega; auto.
   - reflexivity.
-Qed. *)
+Qed.

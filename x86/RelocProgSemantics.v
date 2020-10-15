@@ -903,7 +903,7 @@ Qed.
 Definition globalenv (p: program) : Genv.t :=
   let symbmap := gen_symb_map (prog_symbtable p) in
   let imap := gen_instr_map' (SecTable.get sec_code_id (prog_sectable p)) in
-  let nextblock := 3%positive in
+  let nextblock := 4%positive in
   let genv := Genv.mkgenv symbmap 
                           (PTree.empty external_function) 
                           imap 
@@ -1026,6 +1026,26 @@ Fixpoint alloc_external_symbols (m: mem) (t: symbtable)
 (*   end. *)
 
 
+Definition alloc_rodata_section (t:sectable) (m:mem) : option mem :=
+  match SecTable.get sec_rodata_id t with
+  | None => None
+  | Some sec =>
+    let sz := (sec_size sec) in
+    match sec with
+    | sec_data init =>
+      let '(m1, b) := Mem.alloc m 0 sz in
+      match store_zeros m1 b 0 sz with
+      | None => None
+      | Some m2 =>
+        match store_init_data_list m2 b 0 init with
+        | None => None
+        | Some m3 => Mem.drop_perm m3 b 0 sz Readable
+        end
+      end
+    | _ => None
+    end
+  end.
+
 Definition alloc_data_section (t:sectable) (m:mem) : option mem :=
   match SecTable.get sec_data_id t with
   | None => None
@@ -1061,13 +1081,17 @@ End WITHGE.
 Definition init_mem (p: program) :=
   let ge := globalenv p in
   let stbl := prog_sectable p in
-  match alloc_data_section ge stbl Mem.empty with
+  match alloc_rodata_section ge stbl Mem.empty with
   | None => None
   | Some m1 =>
-    match alloc_code_section stbl m1 with
+    match alloc_data_section ge stbl m1 with
     | None => None
     | Some m2 =>
-      alloc_external_symbols m2 (prog_symbtable p)
+      match alloc_code_section stbl m2 with
+      | None => None
+      | Some m3 =>
+        alloc_external_symbols m3 (prog_symbtable p)
+      end
     end
   end.
 
@@ -1090,6 +1114,23 @@ Proof.
   - inv H. destr_match_in H1; inv H1.
     exploit store_init_data_nextblock; eauto.
     exploit IHl; eauto. intros. congruence.
+Qed.
+
+Lemma alloc_rodata_section_nextblock: forall ge stbl m m',
+  alloc_rodata_section ge stbl m = Some m' -> Mem.nextblock m' = Pos.succ (Mem.nextblock m).
+Proof.
+  intros ge stbl m m' ALLOC.
+  unfold alloc_rodata_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.nextblock_alloc; eauto.
+  intros NB1.
+  exploit Globalenvs.Genv.store_zeros_nextblock; eauto.
+  intros NB2.
+  exploit store_init_data_list_nextblock; eauto.
+  intros NB3.
+  exploit Mem.nextblock_drop; eauto.
+  intros NB4. 
+  congruence.
 Qed.
 
 Lemma alloc_data_section_nextblock: forall ge stbl m m',
@@ -1227,14 +1268,15 @@ Lemma init_mem_genv_next: forall (p: program) m,
 Proof.
   unfold init_mem; intros.
   destruct (Mem.alloc Mem.empty 0 0) eqn:ALLOC.
-  destr_match_in H; inv H. destr_in H1.
-  exploit alloc_data_section_nextblock; eauto. intros NB1.
+  destr_match_in H; inv H. destr_in H1. destr_in H1. 
+  exploit alloc_rodata_section_nextblock; eauto. intros NB1.
   rewrite Mem.nextblock_empty in NB1. cbn in NB1.
-  exploit alloc_code_section_nextblock; eauto. intros NB2.
-  exploit alloc_external_symbols_nextblock; eauto. intros NB3.
+  exploit alloc_data_section_nextblock; eauto. intros NB2.
+  exploit alloc_code_section_nextblock; eauto. intros NB3.
+  exploit alloc_external_symbols_nextblock; eauto. intros NB4.
   unfold globalenv.
   erewrite add_external_globals_nextblock. cbn.
-  rewrite NB1 in NB2. cbn in NB2. congruence.
+  rewrite NB1 in NB2. rewrite NB2 in NB3. cbn in NB3. congruence.
 Qed.
 
 
@@ -1289,7 +1331,21 @@ Proof.
     intros STKEQ. rewrite STKEQ.
     erewrite IHstbl; eauto.
 Qed.
-    
+
+Lemma alloc_rodata_section_stack: forall ge stbl m m',
+    alloc_rodata_section ge stbl m = Some m' -> 
+    Mem.stack m = Mem.stack m'.
+Proof.
+  intros ge stbl m m' ALLOC.
+  unfold alloc_rodata_section in ALLOC.
+  repeat destr_in ALLOC.
+  exploit Mem.drop_perm_stack; eauto.
+  exploit store_init_data_list_stack; eauto.
+  exploit Genv.store_zeros_stack; eauto.
+  exploit Mem.alloc_stack_blocks; eauto. intros.
+  congruence.
+Qed.
+
 Lemma alloc_data_section_stack: forall ge stbl m m',
     alloc_data_section ge stbl m = Some m' -> 
     Mem.stack m = Mem.stack m'.
@@ -1326,6 +1382,7 @@ Proof.
   erewrite <- alloc_external_symbols_stack; eauto.
   erewrite <- alloc_code_section_stack; eauto.
   erewrite <- alloc_data_section_stack; eauto.
+  erewrite <- alloc_rodata_section_stack; eauto.
   erewrite Mem.empty_stack; eauto.
 Qed.
 

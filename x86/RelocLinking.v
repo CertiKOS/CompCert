@@ -175,6 +175,8 @@ Definition link_symbtable (t1 t2: symbtable) : option symbtable :=
 
 Definition link_section (s1 s2: section) : option section :=
   match s1, s2 with
+  | sec_rodata d1, sec_rodata d2 => 
+    Some (sec_rodata (d1 ++ d2))
   | sec_data d1, sec_data d2 => 
     Some (sec_data (d1 ++ d2))
   | sec_text c1, sec_text c2 =>
@@ -185,26 +187,31 @@ Definition link_section (s1 s2: section) : option section :=
   end.
 
 Definition link_sectable (s1 s2: sectable) : option sectable :=
+  let sec_rodata1 := SecTable.get sec_rodata_id s1 in
   let sec_data1 := SecTable.get sec_data_id s1 in
   let sec_text1 := SecTable.get sec_code_id s1 in
+  let sec_rodata2 := SecTable.get sec_rodata_id s2 in
   let sec_data2 := SecTable.get sec_data_id s2 in
   let sec_text2 := SecTable.get sec_code_id s2 in
-  match sec_data1, sec_text1, sec_data2, sec_text2 with
-  | Some sec_data1', Some sec_text1', Some sec_data2', Some sec_text2' =>
+  match sec_rodata1, sec_data1, sec_text1, sec_rodata2, sec_data2, sec_text2 with
+  | Some sec_rodata1', Some sec_data1', Some sec_text1', Some sec_rodata2', Some sec_data2', Some sec_text2' =>
     let res_sec_text := link_section sec_text1' sec_text2' in
     let res_sec_data := link_section sec_data1' sec_data2' in
-    match res_sec_text, res_sec_data with
-    | Some sec_text3, Some sec_data3 =>
-      Some [sec_data3; sec_text3]
-    | _, _ => 
+    let res_sec_rodata := link_section sec_rodata1' sec_rodata2' in
+    match res_sec_text, res_sec_data, res_sec_rodata with
+    | Some sec_text3, Some sec_data3, Some sec_rodata3 =>
+      Some [sec_rodata3; sec_data3; sec_text3]
+    | _, _ , _=> 
       None
     end
-  | _, _, _, _ =>
+  | _, _, _, _, _, _ =>
     None
   end.
 
-Definition reloc_offset_fun (dsz csz: Z): N -> option Z :=
-  (fun i => if N.eq_dec i sec_data_id then
+Definition reloc_offset_fun (rdsz dsz csz: Z): N -> option Z :=
+  (fun i => if N.eq_dec i sec_rodata_id then
+           Some rdsz
+         else if N.eq_dec i sec_data_id then
            Some dsz
          else if N.eq_dec i sec_code_id then
            Some csz
@@ -225,15 +232,16 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
   | Some ap =>
     let stbl1 := prog_sectable p1 in
     let stbl2 := prog_sectable p2 in
+    let rodata_sec1 := SecTable.get sec_rodata_id stbl1 in
     let data_sec1 := SecTable.get sec_data_id stbl1 in
     let code_sec1 := SecTable.get sec_code_id stbl1 in
-    match data_sec1, code_sec1 with
-    | Some data_sec1', Some code_sec1' =>
+    match rodata_sec1, data_sec1, code_sec1 with
+    | Some rodata_sec1', Some data_sec1', Some code_sec1' =>
       match link_sectable stbl1 stbl2 with
       | None => None
       | Some sectbl =>
         let t1 := (prog_symbtable p1) in
-        let f_rofs := reloc_offset_fun (sec_size data_sec1') (sec_size code_sec1') in
+        let f_rofs := reloc_offset_fun (sec_size rodata_sec1') (sec_size data_sec1') (sec_size code_sec1') in
         match reloc_symbtable f_rofs (prog_symbtable p2) with
         | None => None
         | Some t2 =>
@@ -251,7 +259,7 @@ Definition link_reloc_prog (p1 p2: program) : option program :=
           end
         end
       end
-    | _, _ => None
+    | _, _, _ => None
     end
   end.
   

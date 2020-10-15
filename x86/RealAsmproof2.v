@@ -467,9 +467,6 @@ Section WITHMEMORYMODEL.
       real_asm_inv prog s2 ->
       (exists r : int, final_state s2 r) \/ (exists (t : trace) (s2' : state), step (Genv.globalenv prog) s2 t s2').
   Proof.
-  Admitted.
-(***** Remove Proofs By Chris Start ******)
-(*    
     intros s1 s2 MS SAFE SPAL.
     destruct (SAFE _  (star_refl _ _ _)) as [(r & FS)|(t & s2' & STEP)].
     {
@@ -616,8 +613,6 @@ Section WITHMEMORYMODEL.
       + inv STEP; repeat destr_in Heqo.
     - inv STEP; simpl in *; repeat destr_in PCnone.
   Qed.
-*)
-(***** Remove Proofs By Chris End ******)
   
   Lemma ptrofs_cancel i f s:
     i =
@@ -735,9 +730,6 @@ Section WITHMEMORYMODEL.
         | None => True
         end.
   Proof.
-  Admitted.
-(***** Remove Proofs By Chris Start ******)
-(*
     intros rs1 rs2 m1 m2 b ofs f i rs2' m2' SEQ PC2 FFP FI EI NII NIC NIF.
     simpl.
     inv SEQ.
@@ -827,8 +819,6 @@ Section WITHMEMORYMODEL.
 
     rewrite PC2, FFP, FI. intro A. inv A. inv H. destruct H as [H|H]; inv H.
   Qed.
-*)
-(***** Remove Proofs By Chris End ******)
   
   Lemma loadbytesv_storev:
     forall m' (rs2 rs1 : regset),

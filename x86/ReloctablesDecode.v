@@ -193,21 +193,24 @@ Proof.
   apply decode_encode_reloctable; auto.
 Qed.
 
-Definition decode_reloctables_sections (ls: list section) : res (reloctable * reloctable) :=
+Definition decode_reloctables_sections (ls: list section) : res (reloctable * reloctable * reloctable) :=
   match ls with
-    [dsec; csec] =>
+    [rdsec; dsec; csec] =>
+    do rds <- decode_reloctable_section rdsec;
     do ds <- decode_reloctable_section dsec;
-      do cs <- decode_reloctable_section csec;
-      OK (cs, ds)
+    do cs <- decode_reloctable_section csec;
+      OK (cs, ds, rds)
   | _ => Error nil
   end.
 
 Lemma decode_create_reloctables_sections p:
   Forall valid_relocentry (reloctable_code (prog_reloctables p)) ->
   Forall valid_relocentry (reloctable_data (prog_reloctables p)) ->
+  Forall valid_relocentry (reloctable_rodata (prog_reloctables p)) ->
   decode_reloctables_sections (create_reloctables_sections p) =
   OK ((reloctable_code (prog_reloctables p)),
-      (reloctable_data (prog_reloctables p))).
+      (reloctable_data (prog_reloctables p)),
+      (reloctable_rodata (prog_reloctables p))).
 Proof.
   unfold create_reloctables_sections, decode_reloctables_sections.
   intros.
@@ -219,8 +222,10 @@ Definition transf_program_inv p : res program :=
   | Some relcode =>
     match nth_error (prog_sectable p) (N.to_nat sec_rel_data_id) with
     | Some reldata =>
-      do rmap <- decode_reloctables_sections [reldata; relcode];
-        do (sect, _) <- take_drop 5 (prog_sectable p);
+      match nth_error (prog_sectable p) (N.to_nat sec_rel_rodata_id) with
+      | Some relrodata =>
+        do rmap <- decode_reloctables_sections [relrodata; reldata; relcode];
+        do (sect, _) <- take_drop 6 (prog_sectable p);
         OK {| prog_defs := prog_defs p;
               prog_public := prog_public p;
               prog_main := prog_main p;
@@ -230,6 +235,8 @@ Definition transf_program_inv p : res program :=
               prog_reloctables := prog_reloctables p;
               prog_senv := prog_senv p;
            |}
+      | None => Error (msg "No relrodata section")
+      end
     | None => Error (msg "No reldata section")
     end
   | None => Error (msg "No relcode section")
@@ -237,21 +244,21 @@ Definition transf_program_inv p : res program :=
 
 Lemma length_create_reloctables_sections m ls:
   create_reloctables_sections m = ls ->
-  length ls = 2%nat.
+  length ls = 3%nat.
 Proof.
   unfold create_reloctables_sections.
   repeat destr. intro A; inv A. reflexivity.
 Qed.
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma transf_program_inv_correct p p':
+Lemma transf_program_inv_correct p p':
   Forall valid_relocentry (reloctable_code (prog_reloctables p)) ->
   Forall valid_relocentry (reloctable_data (prog_reloctables p)) ->
+  Forall valid_relocentry (reloctable_rodata (prog_reloctables p)) ->
   transf_program p = OK p' ->
   transf_program_inv p' = OK p.
 Proof.
   unfold transf_program, transf_program_inv.
-  intros Vdata Vcode TF. repeat destr_in TF. simpl.
+  intros Vrodata Vdata Vcode TF. repeat destr_in TF. simpl.
   apply beq_nat_true in Heqb.
   rewrite app_length in Heqb. erewrite (length_create_reloctables_sections eq_refl) in Heqb; eauto.
   destruct (prog_sectable p) eqn:?; simpl in *; try congruence.
@@ -260,9 +267,10 @@ Proof.
   destruct s; simpl in *; try congruence.
   destruct s; simpl in *; try congruence.
   destruct s; simpl in *; try congruence.
+  destruct s; simpl in *; try congruence.
   2: destruct s; simpl in *; omega.
+  rewrite decode_encode_reloctable; auto.
   rewrite decode_encode_reloctable; auto.
   rewrite decode_encode_reloctable; auto. simpl.
   Transparent take_drop. simpl. f_equal. destruct p; f_equal; simpl in *; auto.
-Qed. *)
-(***** Remove Proofs By Chris End ******)
+Qed. 

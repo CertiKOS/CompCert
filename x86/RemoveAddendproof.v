@@ -7,8 +7,7 @@ Require Import RelocProgSemantics2.
 Require Import RelocBingenproof.
 
 Import ListNotations.
-(***** Remove Proofs By Chris Start ******)
-(*
+
 Definition match_prog (p tp:RelocProgram.program) :=
   transf_program p = tp.
 
@@ -174,7 +173,7 @@ Lemma decode_code_section_ext:
     decode_code_section rtbl1 symt s = decode_code_section rtbl2 symt s.
 Proof.
   unfold decode_code_section. intros.
-  destruct s. auto. auto.
+  destruct s. auto. auto. auto.
   erewrite decode_instrs'_ext. auto.
 Qed.
 
@@ -308,22 +307,23 @@ Proof.
   unfold remove_addend_relocentry. simpl. unfold RelocLinking1.shift_relocentry_offset. simpl. reflexivity.
 Qed.
 
-
 Instance tl' : @TransfLink _ _ RelocLinking1.Linker_reloc_prog RelocLinking1.Linker_reloc_prog match_prog.
 Proof.
   red. unfold link. simpl.
   unfold RelocLinking1.link_reloc_prog. unfold match_prog. intros. autoinv.
   unfold transf_program. simpl.
   unfold RelocLinking.link_reloc_prog in *. simpl in *. autoinv. simpl in *.
-  unfold RelocLinking1.link_data_reloctable in *. autoinv. simpl in *.
+  unfold RelocLinking1.link_rodata_reloctable in *. autoinv. simpl in *.
   rewrite Heqo.
   erewrite link_reloctable_remove_addend; eauto.
-  unfold RelocLinking1.link_code_reloctable in *. autoinv. simpl in *.
+  unfold RelocLinking1.link_data_reloctable in *. autoinv. simpl in *.
   rewrite Heqo0.
   erewrite link_reloctable_remove_addend; eauto.
+  unfold RelocLinking1.link_code_reloctable in *. autoinv. simpl in *.
+  rewrite Heqo1.
+  erewrite link_reloctable_remove_addend; eauto.
   eexists; split; eauto.
-Defined. *)
-(***** Remove Proofs By Chris End ******)
+Defined. 
 
 (*
   

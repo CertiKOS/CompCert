@@ -203,9 +203,6 @@ Lemma transf_refl:
        \/(exists condition1 condition2 l, i = Pjcc2 condition1 condition2 l /\ (exists relOfs cond1' cond2', i' = Pjcc2_rel cond1' cond2' relOfs))
        \/(exists reg tl, i = Pjmptbl reg tl /\ (exists r' ofsLst, i' = Pjmptbl_rel r' ofsLst))). 
 Proof.
-Admitted.
-(***** Remove Proofs By Chris Start ******)
-(*
   intros f f' ofs i Htrans HfindInstr.
   
   destruct i eqn:EQI;
@@ -292,9 +289,6 @@ Admitted.
     ++ inversion HTransI'.
     ++ inversion Htrans.
 Qed.
- *)
-(***** Remove Proofs By Chris End ******)
-
 
 Lemma transf_symbol_refl: forall id,
     (Genv.symbol_address tge id Ptrofs.zero) = (Genv.symbol_address ge id Ptrofs.zero).
@@ -590,9 +584,6 @@ Proof.
           auto.
       ++++ auto.
     +++
-      admit.
-(***** Remove Proofs By Chris Start ******)
-(*      
       (* pjmptbl *)
       rewrite <- H8. rewrite <- H9. rewrite H4.
       monadInv H5.
@@ -659,8 +650,6 @@ Proof.
       repeat rewrite Z.add_assoc.
       omega.
       admit. admit. admit. admit. admit.
- *)
-(***** Remove Proofs By Chris End ******)
     +++ admit.
     (* +++ subst. rewrite H4. *)
 

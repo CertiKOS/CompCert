@@ -156,14 +156,15 @@ Definition get_symbentry (id:ident) (def: option (AST.globdef Asm.fundef unit)) 
 (** update_code_data_size takes the current sizes of data and text
     sections and a global definition as input, and updates these sizes
     accordingly *) 
-Definition update_section_size (def: option (AST.globdef Asm.fundef unit)) : (Z * Z * Z) :=
+Definition update_section_size (id: ident) (def: option (AST.globdef Asm.fundef unit))
+ : (Z * Z * Z) :=
   match def with
   | None => (rdsize, dsize, csize)
   | Some (Gvar gvar) =>
     match gvar_init gvar with
     | nil
     | [Init_space _] => (rdsize, dsize, csize)
-    | l => match gvar.(gvar_readonly) with
+    | l => match gvar_readonly gvar with
           | true => let sz := AST.init_data_list_size l in
                    (rdsize + sz, dsize, csize)
           | false => let sz := AST.init_data_list_size l in
@@ -184,7 +185,7 @@ Definition acc_symb (ssize: symbtable * Z * Z * Z)
   let (id, def) := iddef in
   let e := get_symbentry rdsize dsize csize id def in
   let stbl' := e :: stbl in
-  let '(rdsize', dsize', csize') := update_section_size rdsize dsize csize def in
+  let '(rdsize', dsize', csize') := update_section_size rdsize dsize csize id def in
   (stbl', rdsize', dsize', csize').
 
 
@@ -404,7 +405,7 @@ Qed.
 Record wf_prog (p:Asm.program) : Prop :=
   {
     wf_prog_norepet_defs: list_norepet (map fst (AST.prog_defs p));
-    (* wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p); *)
+    wf_prog_main_exists: main_exists (AST.prog_main p) (AST.prog_defs p);
     wf_prog_defs_aligned: Forall def_aligned (map snd (AST.prog_defs p));
     wf_prog_no_local_jmps: Forall def_instrs_valid (map snd (AST.prog_defs p));
     wf_prog_data_size_aligned: Forall data_size_aligned (map snd (AST.prog_defs p));
@@ -413,7 +414,7 @@ Record wf_prog (p:Asm.program) : Prop :=
 Definition check_wellformedness p : { wf_prog p } + { ~ wf_prog p }.
 Proof.
   destruct (list_norepet_dec ident_eq (map fst (AST.prog_defs p))).
-  (* destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)). *)
+  destruct (main_exists_dec (AST.prog_main p) (AST.prog_defs p)).
   destruct (Forall_dec _ def_aligned_dec (map snd (AST.prog_defs p))).
   destruct (Forall_dec _ def_instrs_valid_dec (map snd (AST.prog_defs p))).
   destruct (Forall_dec _ data_size_aligned_dec (map snd (AST.prog_defs p))).
@@ -422,7 +423,7 @@ Proof.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
   right. inversion 1. apply n. auto.
-  (* right. inversion 1. apply n. auto. *)
+  right. inversion 1. apply n. auto.
 Qed.
 
 

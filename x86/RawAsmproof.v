@@ -612,9 +612,6 @@ Qed.
         /\ Mem.inject j g m1' m2'
         /\ (forall r, Val.inject j (rs1' # r) (rs2' # r)).
   Proof.
-  Admitted.
-(***** Remove Proofs By Chris Start ******)
-(*    
     intros j g m1 m2 rs1 rs2 f i rs1' m1' GLOBFUN_INJ MINJ RINJ IU MPG istk1 istk2 EXEC.
     destruct i; (simpl in *; repeat destr_in EXEC;
                  try congruence;
@@ -736,8 +733,6 @@ Qed.
     repeat simpl_inject.
 
   Qed.
-*)
-(***** Remove Proofs By Chris End ******)
   
   (* should be proved already somewhere *)
   

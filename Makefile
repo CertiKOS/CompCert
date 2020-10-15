@@ -109,11 +109,13 @@ BACKEND=\
   Tailcall.v Tailcallproof.v \
 	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
 	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
-  AsmLabelNew.v AsmBuiltinInline.v AsmStructRet.v AsmFloatLiteral.v AsmPseudoInstr.v \
+  AsmLabelNew.v AsmBuiltinInline.v AsmBuiltinInlineproof.v AsmStructRet.v AsmStructRetproof.v \
+  AsmFloatLiteral.v AsmFloatLiteralproof.v AsmFloatLiteralSep.v AsmPseudoInstr.v AsmPseudoInstrproof.v\
   RelocProgram.v \
-  Asmlabelgen.v Asmlabelgenproof.v Jumptablegen.v PadNops.v PadInitData.v \
+  Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
   PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
-  Symbtablegen.v SymbtableSort.v Reloctablesgen.v Reloctablesgenproof.v \
+  Symbtablegen.v Jumptablegen.v Jumptablegenproof.v SymbtableSort.v SymbtableSortproof.v \
+  Reloctablesgen.v Reloctablesgenproof.v \
 	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
   Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
 	TablesEncode.v \

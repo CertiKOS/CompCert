@@ -16,8 +16,7 @@ Import ListNotations.
 Definition match_prog p tp :=
   gen_reloc_elf p = OK tp.
 
-(***** Remove Proofs By Chris Start ******)
-(* Lemma transf_program_match:
+Lemma transf_program_match:
   forall p tp, gen_reloc_elf p = OK tp -> match_prog p tp.
 Proof.
   unfold match_prog; intuition.
@@ -143,8 +142,6 @@ Proof.
 Qed.
 
 End PRESERVATION.
-*)
-(***** Remove Proofs By Chris End ******)
 
 Definition link_reloc_elf_gen (p1 p2: RelocElf.elf_file) : option RelocElf.elf_file :=
   match link_reloc_decode_tables (reloc_program_of_elf_program p1) (reloc_program_of_elf_program p2) with
@@ -156,8 +153,6 @@ Definition link_reloc_elf_gen (p1 p2: RelocElf.elf_file) : option RelocElf.elf_f
   | _ => None
   end.
 
-(***** Remove Proofs By Chris Start ******)
-(*
 Instance linker2 : Linker RelocElf.elf_file.
 Proof.
   eapply Build_Linker with (link := link_reloc_elf_gen) (linkorder := fun _ _ => True).
@@ -211,22 +206,26 @@ Proof.
   {
     unfold RelocLinking1.link_reloc_prog in Heqo. autoinv. simpl in *.
     unfold RelocLinking.link_reloc_prog in Heqo0. autoinv. simpl in *.
-    unfold RelocLinking.link_sectable in Heqo5. autoinv. simpl in *.
-    unfold RelocLinking1.link_code_reloctable, RelocLinking1.link_data_reloctable in *.
-    rewrite Heqo8 in Heqo2.
-    rewrite Heqo0 in Heqo1. simpl in *.
+    unfold RelocLinking.link_sectable in Heqo7. autoinv. simpl in *.
+    unfold RelocLinking1.link_code_reloctable, RelocLinking1.link_data_reloctable, RelocLinking1.link_rodata_reloctable in *.
+    rewrite Heqo0 in Heqo1.
+    rewrite Heqo10 in Heqo2.
+    rewrite Heqo11 in Heqo3. simpl in *.
     rewrite EQ1 in Heqr; inv Heqr.
     rewrite EQ3 in Heqr0; inv Heqr0.
     unfold decode_tables in EQ1, EQ3. autoinv.
     unfold gen_sections in EQ0, EQ. simpl in *. unfold acc_sections in *. autoinv.
     unfold transl_section in *. autoinv. simpl in *.
-    vm_compute in Heqo0, Heqo8, Heqo9, Heqo10.
-    inv Heqo0; inv Heqo3; inv Heqo8; inv Heqo4; inv Heqo9; inv Heqo10; inv Heqo11.
-    simpl in Heqo12. inv Heqo12. repeat constructor; eauto.
+    vm_compute in Heqo0, Heqo10, Heqo11, Heqo12, Heqo13, Heqo14.
+    inv Heqo0; inv Heqo4; inv Heqo5; inv Heqo6; inv Heqo10; inv Heqo11; inv Heqo12; inv Heqo13; inv Heqo14. 
+    simpl in Heqo15. inv Heqo15. repeat constructor; eauto.
+    simpl in Heqo17. inv Heqo17. repeat constructor; eauto.
+    simpl in Heqo16. inv Heqo16. repeat constructor; eauto.
   }
   {
     constructor. eauto.
     constructor. unfold SymbtableEncode.create_symbtable_section in EQ4. autoinv. eauto.
+    constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
     constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
     constructor. unfold ReloctablesEncode.create_reloctable_section. eauto.
     constructor. unfold ShstrtableEncode.create_shstrtab_section. eauto.
@@ -240,7 +239,7 @@ Proof.
   unfold gen_sections in GS. simpl in *.
   unfold RelocLinking1.link_reloc_prog in Heqo. autoinv. simpl in *.
   unfold RelocLinking.link_reloc_prog in Heqo0. autoinv. simpl in *.
-  unfold RelocLinking.link_sectable in Heqo5. autoinv. simpl in *.
+  unfold RelocLinking.link_sectable in Heqo7. autoinv. simpl in *.
   rewrite ReloctablesDecode.decode_encode_reloctable.
   rewrite ReloctablesDecode.decode_encode_reloctable. simpl.
   erewrite StrtableDecode.decode_string_map_correct'. 2: eauto; fail. simpl.
@@ -249,10 +248,11 @@ Proof.
   unfold acc_sections in GS. autoinv. simpl.
   rewrite pred_dec_true. eauto.
   admit.                        (* get_elf_shoff < 2 ^ 32 *)
+  admit.
   eapply VALID_STR. eauto.
   eapply prog_strings_eq; eauto.
   generalize (f RELOC_CODE). simpl. auto.
   generalize (f RELOC_DATA). simpl. auto.
+  generalize (f RELOC_RODATA). simpl. auto.
   rewrite TablesEncode.dump_reloctables_error in H0; congruence.
-Admitted. *)
-(***** Remove Proofs By Chris End ******)
+Admitted.

@@ -589,15 +589,12 @@ Ltac solve_n_le_ptrofs_max :=
 Ltac solve_amod_le_ptrofs_max :=
   match goal with
   | [ |- ?n + addrmode_size ?a <= Ptrofs.max_unsigned ] =>
-    apply Z.le_trans with (1 + amod_size_ub);
+    apply Z.le_trans with (n + amod_size_ub);
     [ generalize (addrmode_size_upper_bound a); omega | solve_n_le_ptrofs_max ]
   end.
 
 Lemma instr_size'_repr: forall i, 0 <= instr_size' i <= Ptrofs.max_unsigned.
 Proof.
-  Admitted.
-(***** Remove Proofs By Chris Start ******)
-(*
   intros. unfold instr_size'. 
   destruct i; split; try omega; 
   try solve_n_le_ptrofs_max;
@@ -608,8 +605,6 @@ Proof.
   destr; omega.
   destr; try solve_n_le_ptrofs_max.
 Qed.
-*)
-(***** Remove Proofs By Chris End ******)
 
 Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
 Proof.
