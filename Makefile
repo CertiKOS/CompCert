@@ -23,9 +23,9 @@ endif
 
 DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
-  cparser cparser/validator
+  cparser cparser/validator encode elf
 
-RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
+RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser encode elf
 
 COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d))
 
@@ -100,7 +100,41 @@ BACKEND=\
   Mach.v \
   Mach2Mach2.v \
   Bounds.v Stacklayout.v Stacking.v Stackingproof.v \
-  Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v
+  Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v \
+  Inlining.v Inliningspec.v Inliningproof.v \
+  Tailcall.v Tailcallproof.v \
+	Num.v AsmFacts.v RawAsm.v RawAsmproof.v \
+	AsmRegs.v RealAsm.v RealAsmgen.v RealAsmproof2.v PseudoInstructions.v PseudoInstructionsproof.v \
+  AsmLabelNew.v AsmBuiltinInline.v AsmBuiltinInlineproof.v AsmStructRet.v AsmStructRetproof.v \
+  AsmFloatLiteral.v AsmFloatLiteralproof.v AsmFloatLiteralSep.v AsmPseudoInstr.v AsmPseudoInstrproof.v\
+  RelocProgram.v \
+  Asmlabelgen.v Asmlabelgenproof.v PadNops.v PadInitData.v \
+  PadNopsproof.v PadInitDataproof.v PadInitDataSep.v \
+  Symbtablegen.v Jumptablegen.v Jumptablegenproof.v SymbtableSort.v SymbtableSortproof.v \
+  Reloctablesgen.v Reloctablesgenproof.v \
+	RelocBingen.v RelocBinDecode.v RelocBingenproof.v \
+  Stubgen.v StrtableEncode.v SymbtableEncode.v ReloctablesEncode.v \
+	TablesEncode.v \
+	StrtableDecode.v SymbtableDecode.v ShstrtableDecode.v ReloctablesDecode.v \
+  ShstrtableEncode.v RelocElfgen.v RelocElfgenproof.v \
+	SeqTable.v SymbolString.v \
+  CheckDef.v OrderedLinking.v RelocLinking.v RelocLinking1.v SymbtablegenSep.v LinkingProp.v \
+  RelocProgSyneq.v RelocProgSyneqproof.v \
+  SymbtablegenSep.v Symbtablegenproof.v Symbtablegenproof1.v\
+  PermuteProgproof.v PermuteProgSep.v \
+  RelocProgSemantics.v RelocProgSemantics1.v RelocProgSemantics2.v RelocProgSemantics3.v \
+  TablesEncodeproof.v Reloctablesgenproof.v \
+	RemoveAddend.v RemoveAddendproof.v \
+  RelocBinDecode.v \
+  LocalLib.v AsmInject.v
+
+
+# Encoding of data into bytes
+
+ENCODE=Encode.v Bits.v Hex.v
+
+# ELF files
+ELF=RelocElf.v EncodeRelocElf.v RelocElfSemantics.v DecodeRelocElf.v ElfBytesSemantics.v EncodeElfCorrect.v
 
 # C front-end modules (in cfrontend/)
 
@@ -128,7 +162,7 @@ DRIVER=Compopts.v Compiler.v Complements.v
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(PARSERVALIDATOR) $(PARSER)
+  $(PARSERVALIDATOR) $(PARSER) $(ENCODE) $(ELF)
 
 # Generated source files
 

@@ -113,6 +113,29 @@ Extract Constant Compopts.thumb =>
 Extract Constant Compopts.debug =>
   "fun _ -> !Clflags.option_g".
 
+(* Strtablegen *)
+Extract Constant SymbolString.find_symbol_pos => "FindSymbolString.find_symbol_pos".
+Extract Constant SymbolString.string_to_ident => "FindSymbolString.string_to_ident".
+
+Extract Constant SymbolString.create_float_literal_ident => "FloatliteralString.create_float_literal_ident".
+Extract Constant SymbolString.create_float_mask_ident => "FloatliteralString.create_float_mask_ident".
+
+Extract Constant SymbolString.create_jump_table_ident => "JumptableString.create_jump_table_ident".
+
+Extract Constant SymbolString.create_label_ident => "JumptableString.create_label_ident".
+
+Extract Constant TablesEncode.dump_reloctables => "DumpReloctables.dump_reloctables".
+
+(* CheckDef *)
+Extract Constant CheckDef.is_def_builtin => "CheckDefImpl.is_def_builtin".
+Extract Constant CheckDef.is_def_string_literal => "CheckDefImpl.is_def_string_literal".
+Extract Constant CheckDef.is_def_static => "CheckDefImpl.is_def_static".
+Extract Constant CheckDef.is_def_float_literal => "FloatliteralString.is_def_float_literal".
+
+(* LabelNew *)
+Extract Constant AsmLabelNew.set_current_function => "LabelNew.set_current_function".
+Extract Constant AsmLabelNew.new_label => "LabelNew.new_label".
+
 (* Compiler *)
 Extract Constant Compiler.print_Clight => "PrintClight.print_if".
 Extract Constant Compiler.print_Cminor => "PrintCminor.print_if".
@@ -166,6 +189,7 @@ Cd "extraction".
 
 Separate Extraction
    Compiler.transf_c_program Compiler.transf_cminor_program
+   Compiler.transf_c_program_bytes
    Cexec.do_initial_state Cexec.do_step Cexec.at_final_state
    Ctypes.merge_attributes Ctypes.remove_attributes Ctypes.build_composite_env
    Initializers.transl_init Initializers.constval

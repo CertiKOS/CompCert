@@ -149,14 +149,16 @@ Remark mk_intconv_label:
   (forall r r', nolabel (f r r')) ->
   tail_nolabel k c.
 Proof.
-  unfold mk_intconv; intros. TailNoLabel.
+  unfold mk_intconv; unfold Asmgen.mk_intconv; intros.
+  destruct Archi.ptr64; destruct (low_ireg r2); TailNoLabel.
 Qed.
 Hint Resolve mk_intconv_label: labels.
 
 Remark mk_storebyte_label:
   forall addr r k c, mk_storebyte addr r k = OK c -> tail_nolabel k c.
 Proof.
-  unfold mk_storebyte; intros. TailNoLabel.
+  unfold mk_storebyte; unfold Asmgen.mk_storebyte; intros. 
+  destruct Archi.ptr64; destruct (low_ireg r); destruct (addressing_mentions addr RAX); TailNoLabel.
 Qed.
 Hint Resolve mk_storebyte_label: labels.
 
@@ -939,6 +941,9 @@ Opaque loadind.
   eapply eval_builtin_args_preserved with (ge1 := ge); eauto. exact symbols_preserved.
   eapply external_call_symbols_preserved; eauto. apply senv_preserved.
   eauto. auto.
+  clear. induction res; simpl; intros; eauto. intro; subst.
+  eapply preg_of_not_SP in H. congruence.
+  eauto.
   econstructor; eauto.
   instantiate (2 := tf); instantiate (1 := x).
   unfold nextinstr_nf, nextinstr. rewrite Pregmap.gss.
@@ -1273,7 +1278,7 @@ Hypothesis frame_correct:
     0 < Mach.fn_stacksize f.
 
 Theorem transf_program_correct:
-  forward_simulation (Mach.semantics2 return_address_offset prog) (Asm.semantics init_stk tprog).
+  forward_simulation (Mach.semantics2 return_address_offset prog) (Asm.semantics tprog (*SACC*)init_stk).
 Proof.
   eapply forward_simulation_star 
     with (measure := measure)

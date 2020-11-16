@@ -12,7 +12,7 @@
 
 (** Abstract syntax and semantics for IA32 assembly language *)
 
-Require Import Coqlib Maps.
+Require Import String Coqlib Maps.
 Require Import AST Integers Floats Values Memory Events Globalenvs Smallstep.
 Require Import Locations Stacklayout Conventions.
 
@@ -115,13 +115,13 @@ Inductive instruction: Type :=
   | Pmovq_rm (rd: ireg) (a: addrmode)
   | Pmovl_mr (a: addrmode) (rs: ireg)
   | Pmovq_mr (a: addrmode) (rs: ireg)
-  | Pmovsd_ff (rd: freg) (r1: freg)     (**r [movsd] (single 64-bit float) *)
-  | Pmovsd_fi (rd: freg) (n: float)     (**r (pseudo-instruction) *)
-  | Pmovsd_fm (rd: freg) (a: addrmode)
-  | Pmovsd_mf (a: addrmode) (r1: freg)
-  | Pmovss_fi (rd: freg) (n: float32)   (**r [movss] (single 32-bit float) *)
-  | Pmovss_fm (rd: freg) (a: addrmode)
-  | Pmovss_mf (a: addrmode) (r1: freg)
+  | Pmovsd_ff (frd: freg) (fr1: freg)     (**r [movsd] (single 64-bit float) *)
+  | Pmovsd_fi (frd: freg) (n: float)     (**r (pseudo-instruction) *)
+  | Pmovsd_fm (frd: freg) (a: addrmode)
+  | Pmovsd_mf (a: addrmode) (fr1: freg)
+  | Pmovss_fi (frd: freg) (n: float32)   (**r [movss] (single 32-bit float) *)
+  | Pmovss_fm (frd: freg) (a: addrmode)
+  | Pmovss_mf (a: addrmode) (fr1: freg)
   | Pfldl_m (a: addrmode)               (**r [fld] double precision *)
   | Pfstpl_m (a: addrmode)              (**r [fstp] double precision *)
   | Pflds_m (a: addrmode)               (**r [fld] simple precision *)
@@ -142,16 +142,16 @@ Inductive instruction: Type :=
   | Pmovzl_rr (rd: ireg) (rs: ireg)     (**r [movzl] (32-bit zero-extension) *)
   | Pmovsl_rr (rd: ireg) (rs: ireg)     (**r [movsl] (32-bit sign-extension) *)
   | Pmovls_rr (rd: ireg)                (** 64 to 32 bit conversion (pseudo) *)
-  | Pcvtsd2ss_ff (rd: freg) (r1: freg)  (**r conversion to single float *)
-  | Pcvtss2sd_ff (rd: freg) (r1: freg)  (**r conversion to double float *)
-  | Pcvttsd2si_rf (rd: ireg) (r1: freg) (**r double to signed int *)
-  | Pcvtsi2sd_fr (rd: freg) (r1: ireg)  (**r signed int to double *)
-  | Pcvttss2si_rf (rd: ireg) (r1: freg) (**r single to signed int *)
-  | Pcvtsi2ss_fr (rd: freg) (r1: ireg)  (**r signed int to single *)
-  | Pcvttsd2sl_rf (rd: ireg) (r1: freg) (**r double to signed long *)
-  | Pcvtsl2sd_fr (rd: freg) (r1: ireg)  (**r signed long to double *)
-  | Pcvttss2sl_rf (rd: ireg) (r1: freg) (**r single to signed long *)
-  | Pcvtsl2ss_fr (rd: freg) (r1: ireg)  (**r signed long to single *)
+  | Pcvtsd2ss_ff (frd: freg) (fr1: freg)  (**r conversion to single float *)
+  | Pcvtss2sd_ff (frd: freg) (fr1: freg)  (**r conversion to double float *)
+  | Pcvttsd2si_rf (frd: ireg) (fr1: freg) (**r double to signed int *)
+  | Pcvtsi2sd_fr (frd: freg) (fr1: ireg)  (**r signed int to double *)
+  | Pcvttss2si_rf (frd: ireg) (fr1: freg) (**r single to signed int *)
+  | Pcvtsi2ss_fr (frd: freg) (fr1: ireg)  (**r signed int to single *)
+  | Pcvttsd2sl_rf (frd: ireg) (fr1: freg) (**r double to signed long *)
+  | Pcvtsl2sd_fr (frd: freg) (fr1: ireg)  (**r signed long to double *)
+  | Pcvttss2sl_rf (frd: ireg) (fr1: freg) (**r single to signed long *)
+  | Pcvtsl2ss_fr (frd: freg) (fr1: ireg)  (**r signed long to single *)
   (** Integer arithmetic *)
   | Pleal (rd: ireg) (a: addrmode)
   | Pleaq (rd: ireg) (a: addrmode)
@@ -206,6 +206,7 @@ Inductive instruction: Type :=
   | Pshld_ri (rd: ireg) (r1: ireg) (n: int)
   | Prorl_ri (rd: ireg) (n: int)
   | Prorq_ri (rd: ireg) (n: int)
+  | Prolw_ri (rd: ireg) (n: int)
   | Pcmpl_rr (r1 r2: ireg)
   | Pcmpq_rr (r1 r2: ireg)
   | Pcmpl_ri (r1: ireg) (n: int)
@@ -217,29 +218,33 @@ Inductive instruction: Type :=
   | Pcmov (c: testcond) (rd: ireg) (r1: ireg)
   | Psetcc (c: testcond) (rd: ireg)
   (** Floating-point arithmetic *)
-  | Paddd_ff (rd: freg) (r1: freg)
-  | Psubd_ff (rd: freg) (r1: freg)
-  | Pmuld_ff (rd: freg) (r1: freg)
-  | Pdivd_ff (rd: freg) (r1: freg)
-  | Pnegd (rd: freg)
-  | Pabsd (rd: freg)
-  | Pcomisd_ff (r1 r2: freg)
-  | Pxorpd_f (rd: freg)	              (**r [xor] with self = set to zero *)
-  | Padds_ff (rd: freg) (r1: freg)
-  | Psubs_ff (rd: freg) (r1: freg)
-  | Pmuls_ff (rd: freg) (r1: freg)
-  | Pdivs_ff (rd: freg) (r1: freg)
-  | Pnegs (rd: freg)
-  | Pabss (rd: freg)
-  | Pcomiss_ff (r1 r2: freg)
-  | Pxorps_f (rd: freg)	              (**r [xor] with self = set to zero *)
+  | Paddd_ff (frd: freg) (fr1: freg)
+  | Psubd_ff (frd: freg) (fr1: freg)
+  | Pmuld_ff (frd: freg) (fr1: freg)
+  | Pdivd_ff (frd: freg) (fr1: freg)
+  | Pnegd (frd: freg)
+  | Pabsd (frd: freg)
+  | Pcomisd_ff (fr1 fr2: freg)
+  | Pxorpd_f (frd: freg)	              (**r [xor] with self = set to zero *)
+  | Pxorpd_fm (frd: freg) (a: addrmode)
+  | Pandpd_fm (frd: freg) (a: addrmode)
+  | Padds_ff (frd: freg) (fr1: freg)
+  | Psubs_ff (frd: freg) (fr1: freg)
+  | Pmuls_ff (frd: freg) (fr1: freg)
+  | Pdivs_ff (frd: freg) (fr1: freg)
+  | Pnegs (frd: freg)
+  | Pabss (frd: freg)
+  | Pcomiss_ff (fr1 fr2: freg)
+  | Pxorps_f (frd: freg)	              (**r [xor] with self = set to zero *)
+  | Pxorps_fm (frd: freg) (a: addrmode)
+  | Pandps_fm (frd: freg) (a: addrmode)
   (** Branches and calls *)
   | Pjmp_l (l: label)
   (*SACC:*)
   | Pjmp (ros: ireg + ident) (sg: signature)
-  (*SACC: uses Pjmp instead*)(*
-  | Pjmp_s (symb: ident) (sg: signature)
-  | Pjmp_r (r: ireg) (sg: signature)*)
+  | Pjmp_m (a: addrmode)
+  (* | Pjmp_s (symb: ident) (sg: signature) *)
+  (* | Pjmp_r (r: ireg) (sg: signature) *)
   | Pjcc (c: testcond)(l: label)
   | Pjcc2 (c1 c2: testcond)(l: label)   (**r pseudo *)
   | Pjmptbl (r: ireg) (tbl: list label) (**r pseudo *)
@@ -249,11 +254,12 @@ Inductive instruction: Type :=
   | Pcall_s (symb: ident) (sg: signature)
   | Pcall_r (r: ireg) (sg: signature)*)
   | Pret
+  | Pret_iw (n: int)
   (** Saving and restoring registers *)
   | Pmov_rm_a (rd: ireg) (a: addrmode)  (**r like [Pmov_rm], using [Many64] chunk *)
   | Pmov_mr_a (a: addrmode) (rs: ireg)  (**r like [Pmov_mr], using [Many64] chunk *)
-  | Pmovsd_fm_a (rd: freg) (a: addrmode) (**r like [Pmovsd_fm], using [Many64] chunk *)
-  | Pmovsd_mf_a (a: addrmode) (r1: freg) (**r like [Pmovsd_mf], using [Many64] chunk *)
+  | Pmovsd_fm_a (frd: freg) (a: addrmode) (**r like [Pmovsd_fm], using [Many64] chunk *)
+  | Pmovsd_mf_a (a: addrmode) (fr1: freg) (**r like [Pmovsd_mf], using [Many64] chunk *)
   (** Pseudo-instructions *)
   | Plabel(l: label)
   | Pallocframe(sz: Z)(ofs_ra (*SACC:*)(*ofs_link*): ptrofs)
@@ -281,29 +287,29 @@ Inductive instruction: Type :=
   | Pbswap32 (rd: ireg)
   | Pbswap16 (rd: ireg)
   | Pcfi_adjust (n: int)
-  | Pfmadd132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmadd213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmadd231 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmsub132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmsub213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfmsub231 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmadd132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmadd213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmadd231 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmsub132 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmsub213 (rd: freg) (r2: freg) (r3: freg)
-  | Pfnmsub231 (rd: freg) (r2: freg) (r3: freg)
-  | Pmaxsd (rd: freg) (r2: freg)
-  | Pminsd (rd: freg) (r2: freg)
+  | Pfmadd132 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmadd213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmadd231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmsub132 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmsub213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfmsub231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmadd132 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmadd213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmadd231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmsub132 (rd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmsub213 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pfnmsub231 (frd: freg) (fr2: freg) (fr3: freg)
+  | Pmaxsd (frd: freg) (fr2: freg)
+  | Pminsd (frd: freg) (fr2: freg)
   | Pmovb_rm (rd: ireg) (a: addrmode)
-  | Pmovsq_mr  (a: addrmode) (rs: freg)
-  | Pmovsq_rm (rd: freg) (a: addrmode)
+  | Pmovsq_mr (a: addrmode) (frs: freg)
+  | Pmovsq_rm (frd: freg) (a: addrmode)
   | Pmovsb
   | Pmovsw
-  | Pmovw_rm (rd: ireg) (ad: addrmode)
+  | Pmovw_rm (rd: ireg) (a: addrmode)
   | Prep_movsl
   | Psbbl_rr (rd: ireg) (r2: ireg)
-  | Psqrtsd (rd: freg) (r1: freg)
+  | Psqrtsd (frd: freg) (fr1: freg)
   | Psubl_ri (rd: ireg) (n: int)
   | Psubq_ri (rd: ireg) (n: int64).
 
@@ -360,15 +366,18 @@ Qed.
 
 Global Opaque addrmode_size.
 
-(* [instr_size] definition *)
-
-Definition instr_size (i: instruction) : Z :=
+Let instr_size' (i: instruction) : Z :=
   match i with
   | Pjmp_l _ => 5
+  (* Pseduo Instruction: Pjmptbl will be transf as Pjmp_m (size: 7)*)
+  | Pjmptbl r tbl => 7
+  | Pjmptbl_rel r tbl => 7  
+  | Pjmp_m a => 1 + addrmode_size a
   | Pjcc _ _ => 6
   | Pjmp_l_rel _ => 5
   | Pjcc_rel _ _ => 6
   | Pcall (inr _) _ => 5
+  | Pcall (inl _) _ => 2
   | Pjmp (inr _) _ => 5
   | Pleal _ a => 1 + addrmode_size a
   | Pxorl_r _ => 2
@@ -383,6 +392,7 @@ Definition instr_size (i: instruction) : Z :=
   | Pmov_mr_a a _ => 1 + addrmode_size a
   | Ptestl_rr _ _ => 2
   | Pret => 1
+  | Pret_iw _ => 3
   | Pimull_rr _ _ => 3
   | Pcmpl_rr _ _ => 2
   | Pcmpl_ri _ _ => 6
@@ -392,16 +402,136 @@ Definition instr_size (i: instruction) : Z :=
   | Plabel _ => 1
   | Pmov_rs _ _ => 6
   | Pnop => 1
+  | Pmovsd_ff frd fr1 => 4
+  | Pmovsd_fm_a frd a => 3 + addrmode_size a
+  | Pmovsd_fm frd a => 3 + addrmode_size a
+  | Pmovsd_mf_a a fr1 => 3 + addrmode_size a
+  | Pmovsd_mf a fr1 => 3 + addrmode_size a
+  | Pmovss_fm frd a => 3 + addrmode_size a
+  | Pmovss_mf a fr1 => 3 + addrmode_size a
+  | Pfldl_m a 
+  | Pfstpl_m a 
+  | Pflds_m a 
+  | Pfstps_m a => 1 + addrmode_size a
+  | Pxchg_rr r1 r2 => 2
+  | Pmovb_mr a rs => 1 + addrmode_size a
+  | Pmovb_rm rd a => 1 + addrmode_size a
+  | Pmovw_mr a rs => 2 + addrmode_size a
+  | Pmovw_rm rd a => 2 + addrmode_size a
+  | Pmovzb_rr rd rs => 3
+  | Pmovzb_rm rd a => 2 + addrmode_size a
+  | Pmovzw_rr rd rs => 3
+  | Pmovzw_rm rd a => 2 + addrmode_size a
+  | Pmovsb_rr rd rs => 3
+  | Pmovsb_rm rd a => 2 + addrmode_size a
+  | Pmovsw_rr rd rs => 3
+  | Pmovsw_rm rd a => 2 + addrmode_size a
+  | Pmovsq_rm frd a => 3 + addrmode_size a
+  | Pmovsq_mr a frs => 3 + addrmode_size a
+  | Pcvtsd2ss_ff _ _ 
+  | Pcvtss2sd_ff _ _ 
+  | Pcvttsd2si_rf _ _ 
+  | Pcvtsi2sd_fr _ _
+  | Pcvttss2si_rf _ _ 
+  | Pcvtsi2ss_fr _ _ => 4
+  | Pnegl rd => 2
+  | Pimull_r r1 => 2
+  | Pmull_r r1 => 2
+  | Pdivl r1 => 2
+  | Pandl_rr rd r1  => 2
+  | Pandl_ri rd n => 6
+  | Porl_rr rd r1 => 2
+  | Porl_ri rd n => 6
+  | Pxorl_rr rd r1 => 2
+  | Pxorl_ri rd n => 6
+  | Pnotl rd => 2
+  | Psall_rcl rd => 2
+  | Pshrl_rcl rd => 2
+  | Pshrl_ri rd n => 3
+  | Psarl_rcl rd => 2
+  | Psarl_ri rd n => 3
+  | Pshld_ri rd r1 n => 4
+  | Prorl_ri rd n => 3
+  | Prolw_ri rd n => 4
+  | Ptestl_ri r1 n => 6
+  | Pcmov c rd r1 => 3
+  | Psetcc c rd => 3
+  | Paddd_ff frd fr1 => 4
+  | Padds_ff frd fr1 => 4
+  | Psubd_ff frd fr1 => 4
+  | Psubs_ff frd fr1 => 4
+  | Pmuld_ff frd fr1 => 4
+  | Pmuls_ff frd fr1 => 4
+  | Pdivd_ff frd fr1 => 4
+  | Pdivs_ff frd fr1 => 4
+  | Pcomisd_ff fr1 fr2 => 4
+  | Pcomiss_ff fr1 fr2 => 3
+  | Pxorpd_f frd => 4
+  | Pxorpd_fm frd a => 3 + addrmode_size a
+  | Pandpd_fm frd a => 3 + addrmode_size a
+  | Pxorps_f frd => 4
+  | Pxorps_fm frd a => 3 + addrmode_size a
+  | Pandps_fm frd a => 3 + addrmode_size a
+  | Pimull_ri rd n => 6
+  | Paddl_rr _ _ => 2
+  | Padcl_rr _ _ => 2
+  | Padcl_ri _ _ => 3
+  | Psbbl_rr _ _ => 2
+  | Prep_movsl => 2
+  | Pbswap32 _ => 2
+  | Pbsfl _ _ => 3
+  | Pbsrl _ _ => 3
+  | Psqrtsd _ _ => 4
+  | Pmaxsd _ _ => 4
+  | Pminsd _ _ => 4
   | _ => 1
   end.
 
-Fixpoint code_size (c:code) : Z :=
-  match c with
-  | nil => 0
-  | i::c' => instr_size i + (code_size c')
+Definition linear_addr reg ofs :=
+  Addrmode (Some reg) None (inl ofs).
+
+Definition Plea := if Archi.ptr64 then Pleaq else Pleal.
+Definition Padd dst src z := Plea dst (linear_addr src z).
+Definition Psub dst src z := Padd dst src (- z).
+
+
+Definition instr_size (i: instruction) : Z :=
+  match i with
+  | Pallocframe sz _ =>
+    instr_size' (Padd RAX RSP (size_chunk Mptr)) +
+    instr_size' (Psub RSP RSP (align sz 8 - size_chunk Mptr))
+  | Pfreeframe sz _ =>
+    instr_size' (Padd RSP RSP (align sz 8 - size_chunk Mptr))
+  | Pload_parent_pointer rd z =>
+    instr_size' (Padd rd RSP (align (Z.max 0 z) 8))
+  | _ => instr_size' i
   end.
 
-(* Properties of [instr_size] *)
+  Lemma instr_size_alloc:
+    forall sz ora i z,
+      instr_size (Pallocframe sz ora) = instr_size (Padd RAX RSP z) + (instr_size (Psub RSP RSP i)).
+  Proof.
+    simpl.
+    unfold Psub, Padd, Plea. simpl.
+    intros.
+    unfold linear_addr.
+    destr.
+  Qed.
+
+  Lemma instr_size_free:
+    forall sz ora s,
+      instr_size (Pfreeframe sz ora) = instr_size (Padd RSP RSP s).
+  Proof.
+    simpl. unfold Padd, Plea. simpl.
+    destr.
+  Qed.
+
+  Lemma instr_size_load_parent_pointer:
+    forall r s a,
+      instr_size (Pload_parent_pointer r s) = instr_size (Padd r RSP a).
+  Proof.
+    simpl. unfold Padd, Plea. destr.
+  Qed.
 
 Lemma Pjmp_rel_size_eq : forall ofs l,
     instr_size (Pjmp_l_rel ofs) = instr_size (Pjmp_l l).
@@ -427,16 +557,23 @@ Proof.
   simpl. auto.
 Qed.
 
-Lemma instr_size_positive : forall i, 0 < instr_size i.
+Lemma instr_size'_positive : forall i, 0 < instr_size' i.
 Proof.
-  intros. unfold instr_size. 
+  intros. unfold instr_size'.
   destruct i; try omega;
     try (generalize (addrmode_size_pos a); omega);
     try (destr; omega).
-Qed.  
+Qed.
 
-Lemma z_le_ptrofs_max: forall n, 
-    n < two_power_nat (if Archi.ptr64 then 64 else 32) -> 
+Lemma instr_size_positive : forall i, 0 < instr_size i.
+Proof.
+  intros. unfold instr_size.
+  generalize (instr_size'_positive i).
+  destruct i; auto.
+Qed.
+
+Lemma z_le_ptrofs_max: forall n,
+    n < two_power_nat (if Archi.ptr64 then 64 else 32) ->
     n <= Ptrofs.max_unsigned.
 Proof.
   intros. unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
@@ -462,13 +599,13 @@ Ltac solve_n_le_ptrofs_max :=
 Ltac solve_amod_le_ptrofs_max :=
   match goal with
   | [ |- ?n + addrmode_size ?a <= Ptrofs.max_unsigned ] =>
-    apply Z.le_trans with (1 + amod_size_ub);
+    apply Z.le_trans with (n + amod_size_ub);
     [ generalize (addrmode_size_upper_bound a); omega | solve_n_le_ptrofs_max ]
   end.
 
-Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
+Lemma instr_size'_repr: forall i, 0 <= instr_size' i <= Ptrofs.max_unsigned.
 Proof.
-  intros. unfold instr_size. 
+  intros. unfold instr_size'. 
   destruct i; split; try omega; 
   try solve_n_le_ptrofs_max;
   try (generalize (addrmode_size_pos a); omega);
@@ -478,10 +615,22 @@ Proof.
   destr; omega.
   destr; try solve_n_le_ptrofs_max.
 Qed.
-  
+
+Lemma instr_size_repr: forall i, 0 <= instr_size i <= Ptrofs.max_unsigned.
+Proof.
+  intros.
+  generalize (instr_size'_repr i).
+  unfold instr_size.
+  destruct i; auto.
+Qed.
+
 Global Opaque instr_size.
 
-(* Properties of [code_size] *)
+Fixpoint code_size (c:code) : Z :=
+  match c with
+  | nil => 0
+  | i::c' => instr_size i + (code_size c')
+  end.
 
 Lemma code_size_non_neg : forall c,
   code_size c >= 0.
@@ -1431,6 +1580,17 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Pjmp_r r sg =>
       Next (rs#PC <- (rs r)) m*)
   (*SACC:*)
+  (* | Pjmp_s id sg => *)
+  (*   match Genv.find_funct ge (Genv.symbol_address ge id Ptrofs.zero) with *)
+  (*   | Some _ => *)
+  (*     Next (rs#PC <- (Genv.symbol_address ge id Ptrofs.zero)) m *)
+  (*   | _ => Stuck *)
+  (*   end *)
+  (* | Pjmp_r r sg => *)
+  (*   match Genv.find_funct ge (rs r) with *)
+  (*   | Some _ => Next (rs#PC <- (rs r)) m *)
+  (*   | _ => Stuck *)
+  (*   end *)
   | Pjmp ros sg =>
     let addr := eval_ros ge ros rs in
     match Genv.find_funct ge addr with
@@ -1579,7 +1739,14 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Prep_movsl
   | Psbbl_rr _ _
   | Psqrtsd _ _
-                       => Stuck
+  | Pret_iw _
+  | Prolw_ri _ _
+  | Pxorpd_fm _ _
+  | Pandpd_fm _ _ 
+  | Pxorps_fm _ _
+  | Pandps_fm _ _
+  | Pjmp_m _
+    => Stuck
   end.
 
 (** Translation of the LTL/Linear/Mach view of machine registers
@@ -1655,6 +1822,13 @@ Definition loc_external_result (sg: signature) : rpair preg :=
 Inductive state: Type :=
   | State: regset -> mem -> state.
 
+Fixpoint in_builtin_res (b: builtin_res preg) (r:preg) :=
+  match b with
+  | BR b => b = r
+  | BR_none => False
+  | BR_splitlong hi lo => in_builtin_res hi r \/ in_builtin_res lo r
+  end.
+
 Inductive step: state -> trace -> state -> Prop :=
   | exec_step_internal:
       forall b ofs f i rs m rs' m',
@@ -1671,7 +1845,7 @@ Inductive step: state -> trace -> state -> Prop :=
       eval_builtin_args ge rs (rs RSP) m args vargs ->
       external_call ef ge vargs ((*SACC:*)Mem.push_new_stage m) t vres m' ->
   (*SACC:*)Mem.unrecord_stack_block m' = Some m'' ->
-  (*SACC:*)(*no_rsp_builtin_preg res ->*)
+  (*SACC:*)no_rsp_builtin_preg res ->
       rs' = nextinstr_nf
              (set_res res vres
                (undef_regs (map preg_of (destroyed_by_builtin ef)) rs))
@@ -1722,7 +1896,7 @@ Inductive final_state: state -> int -> Prop :=
       rs#RAX = Vint r ->
       final_state (State rs m) r.
 
-Definition semantics ((*SACC:*)init_stk: stack) (p: program) :=
+Definition semantics (p: program) ((*SACC:*)init_stk: stack):=
   Semantics (step (*SACC:*)init_stk) (initial_state p) final_state (Genv.globalenv p).
 
 (** Determinacy of the [Asm] semantics. *)
@@ -1764,7 +1938,7 @@ Ltac Equalities :=
 + discriminate.
 + discriminate.
 + assert (vargs0 = vargs) by (eapply eval_builtin_args_determ; eauto). subst vargs0.
-  exploit external_call_determ. eexact H5. eexact H12. intros [A B].
+  exploit external_call_determ. eexact H5. eexact H13. intros [A B].
   split. auto. intros. destruct B; auto. subst. auto. congruence.
 + assert (args0 = args) by (eapply extcall_arguments_determ; eauto). subst args0.
   exploit external_call_determ. eexact H4. eexact H10. intros [A B].
@@ -1798,3 +1972,201 @@ Definition data_preg (r: preg) : bool :=
   | RA => false
   end.
 
+(* Intructions to string *)
+Definition instr_to_string (i:instruction) : string :=
+  match i with 
+  (** Moves *)
+  | Pmov_rr rd r1 => "Pmov_rr"
+  | Pmovl_ri rd n => "Pmovl_ri"
+  | Pmovq_ri rd n => "Pmovq_ri"
+  | Pmov_rs rd id => "Pmov_rs"
+  | Pmovl_rm rd a => "Pmovl_rm"
+  | Pmovq_rm rd a => "Pmovq_rm"
+  | Pmovl_mr a rs => "Pmovl_mr"
+  | Pmovq_mr a rs => "Pmovq_mr"
+  | Pmovsd_ff rd r1 => "Pmovsd_ff"     (**r [movsd] (single 64-bit float) *)
+  | Pmovsd_fi rd n => "Pmovsd_fi"    (**r (pseudo-instruction) *)
+  | Pmovsd_fm rd a => "Pmovsd_fm"
+  | Pmovsd_mf a r1 => "Pmovsd_mf"
+  | Pmovss_fi rd n => "Pmovss_fi"  (**r [movss] (single 32-bit float) *)
+  | Pmovss_fm rd a => "Pmovss_fm"
+  | Pmovss_mf a r1 => "Pmovss_mf"
+  | Pfldl_m a  => "Pfldl_m"               (**r [fld] double precision *)
+  | Pfstpl_m a => "Pfstpl_m"             (**r [fstp] double precision *)
+  | Pflds_m a => "Pflds_m"               (**r [fld] simple precision *)
+  | Pfstps_m a => "Pfstps_m"             (**r [fstp] simple precision *)
+  | Pxchg_rr r1 r2 => "Pxchg_rr"      (**r register-register exchange *)
+  (** Moves with conversion *)
+  | Pmovb_mr a rs => "Pmovb_mr" (**r [mov] (8-bit int) *)
+  | Pmovw_mr a rs => "Pmovw_mr"  (**r [mov] (16-bit int) *)
+  | Pmovzb_rr rd rs => "Pmovzb_rr"    (**r [movzb] (8-bit zero-extension) *)
+  | Pmovzb_rm rd a  => "Pmovzb_rm"
+  | Pmovsb_rr rd rs => "Pmovsb_rr"    (**r [movsb] (8-bit sign-extension) *)
+  | Pmovsb_rm rd a  => "Pmovsb_rm"
+  | Pmovzw_rr rd rs => "Pmovzw_rr"    (**r [movzw] (16-bit zero-extension) *)
+  | Pmovzw_rm rd a  => "Pmovzw_rm"
+  | Pmovsw_rr rd rs => "Pmovsw_rr"    (**r [movsw] (16-bit sign-extension) *)
+  | Pmovsw_rm rd a  => "Pmovsw_rm"
+  | Pmovzl_rr rd rs => "Pmovzl_rr"    (**r [movzl] (32-bit zero-extension) *)
+  | Pmovsl_rr rd rs => "Pmovsl_rr"    (**r [movsl] (32-bit sign-extension) *)
+  | Pmovls_rr rd    => "Pmovls_rr"            (** 64 to 32 bit conversion (pseudo) *)
+  | Pcvtsd2ss_ff rd r1  => "Pcvtsd2ss_ff" (**r conversion to single float *)
+  | Pcvtss2sd_ff rd r1  => "Pcvtss2sd_ff" (**r conversion to double float *)
+  | Pcvttsd2si_rf rd r1 => "Pcvttsd2si_rf" (**r double to signed int *)
+  | Pcvtsi2sd_fr rd r1  => "Pcvtsi2sd_fr" (**r signed int to double *)
+  | Pcvttss2si_rf rd r1 => "Pcvttss2si_rf" (**r single to signed int *)
+  | Pcvtsi2ss_fr rd r1  => "Pcvtsi2ss_fr" (**r signed int to single *)
+  | Pcvttsd2sl_rf rd r1 => "Pcvttsd2sl_rf" (**r double to signed long *)
+  | Pcvtsl2sd_fr rd r1  => "Pcvtsl2sd_fr" (**r signed long to double *)
+  | Pcvttss2sl_rf rd r1 => "Pcvttss2sl_rf" (**r single to signed long *)
+  | Pcvtsl2ss_fr rd r1  => "Pcvtsl2ss_fr" (**r signed long to single *)
+  (* (** Integer arithmetic *) *)
+  | Pleal rd a => "Pleal"
+  | Pleaq rd a => "Pleaq"
+  | Pnegl rd   => "Pnegl"
+  | Pnegq rd   => "Pnegq"
+  | Paddl_ri rd n    => "Paddl_ri"
+  | Paddq_ri rd n    => "Paddq_ri"
+  | Psubl_rr rd r1   => "Psubl_rr"
+  | Psubq_rr rd r1   => "Psubq_rr"
+  | Pimull_rr rd r1  => "Pimull_rr"
+  | Pimulq_rr rd r1  => "Pimulq_rr"
+  | Pimull_ri rd n   => "Pimull_ri"
+  | Pimulq_ri rd n   => "Pimulq_ri"
+  | Pimull_r r1 => "Pimull_r"
+  | Pimulq_r r1 => "Pimulq_r"
+  | Pmull_r r1  => "Pmull_r"
+  | Pmulq_r r1  => "Pmulq_r"
+  | Pcltd => "Pcltd"
+  | Pcqto => "Pcqto"
+  | Pdivl r1  => "Pdivl"
+  | Pdivq r1  => "Pdivq"
+  | Pidivl r1 => "Pidivl"
+  | Pidivq r1 => "Pidivq"
+  | Pandl_rr rd r1 => "Pandl_rr"
+  | Pandq_rr rd r1 => "Pandq_rr"
+  | Pandl_ri rd n => "Pandl_ri"
+  | Pandq_ri rd n => "Pandq_ri"
+  | Porl_rr rd r1 => "Porl_rr"
+  | Porq_rr rd r1 => "Porq_rr"
+  | Porl_ri rd n  => "Porl_ri"
+  | Porq_ri rd n  => "Porq_ri"
+  | Pxorl_r rd    => "Pxorl_r"                (**r [xor] with self = set to zero *)
+  | Pxorq_r rd    => "Pxorq_r"
+  | Pxorl_rr rd r1 => "Pxorl_rr"
+  | Pxorq_rr rd r1 => "Pxorq_rr"
+  | Pxorl_ri rd n  => "Pxorl_ri"
+  | Pxorq_ri rd n  => "Pxorq_ri"
+  | Pnotl rd => "Pnotl"
+  | Pnotq rd => "Pnotq"
+  | Psall_rcl rd       => "Psall_rcl"
+  | Psalq_rcl rd       => "Psalq_rcl"
+  | Psall_ri  rd n     => "Psall_ri"
+  | Psalq_ri  rd n     => "Psalq_ri"
+  | Pshrl_rcl rd       => "Pshrl_rcl"
+  | Pshrq_rcl rd       => "Pshrq_rcl"
+  | Pshrl_ri  rd n     => "Pshrl_ri"
+  | Pshrq_ri  rd n     => "Pshrq_ri"
+  | Psarl_rcl rd       => "Psarl_rcl"
+  | Psarq_rcl rd       => "Psarq_rcl"
+  | Psarl_ri  rd n     => "Psarl_ri"
+  | Psarq_ri  rd n     => "Psarq_ri"
+  | Pshld_ri  rd r1 n  => "Pshld_ri"
+  | Prorl_ri  rd n     => "Prorl_ri" 
+  | Prorq_ri  rd n     => "Prorq_ri"
+  | Prolw_ri  rd n     => "Prolw_ri" 
+  | Pcmpl_rr  r1 r2    => "Pcmpl_rr" 
+  | Pcmpq_rr  r1 r2    => "Pcmpq_rr" 
+  | Pcmpl_ri  r1 n     => "Pcmpl_ri"
+  | Pcmpq_ri  r1 n     => "Pcmpq_ri" 
+  | Ptestl_rr r1 r2    => "Ptestl_rr"
+  | Ptestq_rr r1 r2    => "Ptestq_rr"
+  | Ptestl_ri r1 n     => "Ptestl_ri"
+  | Ptestq_ri r1 n     => "Ptestq_ri"
+  | Pcmov     c rd r1  => "Pcmov"
+  | Psetcc    c rd     => "Psetcc"      
+  (* (** Floating-point arithmetic *) *)
+  | Paddd_ff   rd r1  => "Paddd_ff"
+  | Psubd_ff   rd r1  => "Psubd_ff"
+  | Pmuld_ff   rd r1  => "Pmuld_ff"
+  | Pdivd_ff   rd r1  => "Pdivd_ff"
+  | Pnegd rd          => "Pnegd rd"
+  | Pabsd rd          => "Pabsd rd"
+  | Pcomisd_ff r1 r2  => "Pcomisd_ff"
+  | Pxorpd_f   rd     => "Pxorpd_f"       (**r [xor] with self = set to zero *)
+  | Pxorpd_fm  rd r1  => "Pxorpd_fm"
+  | Pandpd_fm  rd r1  => "Pandpd_fm"
+  | Padds_ff   rd r1  => "Padds_ff"
+  | Psubs_ff   rd r1  => "Psubs_ff"
+  | Pmuls_ff   rd r1  => "Pmuls_ff"
+  | Pdivs_ff   rd r1  => "Pdivs_ff"
+  | Pnegs rd          => "Pnegs rd"
+  | Pabss rd          => "Pabss rd"
+  | Pcomiss_ff r1 r2  => "Pcomiss_ff"
+  | Pxorps_f   rd     => "Pxorps_f"      (**r [xor] with self = set to zero *)
+  | Pxorps_fm  rd r1  => "Pxorps_fm"
+  | Pandps_fm  rd r1  => "Pandps_fm"
+  (* (** Branches and calls *) *)
+  | Pjmp_l l  => "Pjmp_l"
+  | Pjmp_m a => "Pjmp_m"
+  | Pjmp ros sg => "Pjmp"
+  | Pjcc c l => "Pjcc"
+  | Pjcc2 c1 c2 l => "Pjcc2"  (**r pseudo *)
+  | Pjmptbl r tbl => "Pjmptbl"  (**r pseudo *)
+  | Pcall ros sg => "Pcall"
+  | Pret => "Pret"
+  | Pret_iw _ => "Pret_iw"
+  (* (** Saving and restoring registers *) *)
+  | Pmov_rm_a rd a   => "Pmov_rm_a"  (**r like [Pmov_rm], using [Many64] chunk *)
+  | Pmov_mr_a a rs   => "Pmov_mr_a"  (**r like [Pmov_mr], using [Many64] chunk *)
+  | Pmovsd_fm_a rd a => "Pmovsd_fm_a" (**r like [Pmovsd_fm], using [Many64] chunk *)
+  | Pmovsd_mf_a a r1 => "Pmovsd_mf_a" (**r like [Pmovsd_mf], using [Many64] chunk *)
+  (* (** Pseudo-instructions *) *)
+  | Plabel l => "Plabel"
+  | Pallocframe sz ofs_ra (* ofs_link *) => "Pallocframe"
+  | Pfreeframe sz ofs_ra (* ofs_link *) => "Pfreeframe"
+  | Pload_parent_pointer rd sz => "Pload_parent_pointer"
+  | Pbuiltin ef args res => "Pbuiltin"
+  | Pjmp_l_rel ofs => "Pjmp_l_rel"
+  | Pjcc_rel cond ofs => "Pjcc_rel"
+  | Pjcc2_rel cond1 cond2 ofs => "Pjcc2_rel"
+  | Pjmptbl_rel r tbl => "Pjmptbl_rel"
+  | Pnop => "Pnop"
+  (* (** Instructions not generated by [Asmgen] -- TO CHECK *) *)
+  | Padcl_ri rd n => "Padcl_ri"
+  | Padcl_rr rd r2 => "Padcl_rr"
+  | Paddl_mi a n => "Paddl_mi"
+  | Paddl_rr rd r2 => "Paddl_rr"
+  | Pbsfl rd r1 => "Pbsfl"
+  | Pbsfq rd r1 => "Pbsfq"
+  | Pbsrl rd r1 => "Pbsrl"
+  | Pbsrq rd r1 => "Pbsrq"
+  | Pbswap64 rd => "Pbswap64"
+  | Pbswap32 rd => "Pbswap32"
+  | Pbswap16 rd => "Pbswap16"
+  | Pcfi_adjust n => "Pcfi_adjust"
+  | Pfmadd132 rd r2 r3
+  | Pfmadd213 rd r2 r3
+  | Pfmadd231 rd r2 r3 => "Pfmadd"
+  | Pfmsub132 rd r2 r3
+  | Pfmsub213 rd r2 r3
+  | Pfmsub231 rd r2 r3 => "Pfmsub"
+  | Pfnmadd132 rd r2 r3
+  | Pfnmadd213 rd r2 r3
+  | Pfnmadd231 rd r2 r3 => "Pfnmadd"
+  | Pfnmsub132 rd r2 r3
+  | Pfnmsub213 rd r2 r3
+  | Pfnmsub231 rd r2 r3 => "Pfnmsub"
+  | Pmaxsd rd r2 => "Pmaxsd"
+  | Pminsd rd r2 => "Pminsd"
+  | Pmovb_rm rd a => "Pmovb_rm"
+  | Pmovsq_mr a frs => "Pmovsq_mr"
+  | Pmovsq_rm frd a => "Pmovsq_rm"
+  | Pmovw_rm rd a => "Pmovw_rm"
+  | Prep_movsl => "Prep_movsl"
+  | Psbbl_rr rd r2 => "Psbbl_rr"
+  | Psqrtsd rd r1 => "Psqrtsd"
+  | Psubl_ri rd n => "Psubl_ri"
+  | Psubq_ri rd n => "Psubq_ri"
+  | _ => "Unknown instruction"
+  end.

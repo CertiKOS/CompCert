@@ -1,7 +1,8 @@
 include ../../Makefile.config
 
 CC=../../ccomp 
-CFLAGS=-U__GNUC__ -stdlib ../../runtime -dclight -dasm
+#CFLAGS=-U__GNUC__ -stdlib ../../runtime -dclight -dasm
+CFLAGS=-U__GNUC__ -stdlib ../../runtime -relf
 LIBS=
 TIME=xtime -o /dev/null -mintime 1.0
 

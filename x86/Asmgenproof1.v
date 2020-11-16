@@ -394,8 +394,8 @@ Proof.
   assert (eval_addrmode ge addr rs = Val.offset_ptr rs#base ofs).
   { apply eval_addrmode_indexed. destruct (rs base); auto || discriminate. }
   rewrite <- H1 in H0.
-  destruct c. loadind_correct_solve.
-  exists (nextinstr_nf (rs#(preg_of dst) <- v) (instr_size_in_ptrofs i)); split.
+  monadInv H.
+  eexists (nextinstr_nf (rs#(preg_of dst) <- v) (instr_size_in_ptrofs x)); split.
 - loadind_correct_solve; apply exec_straight_one; auto; simpl in *; unfold exec_load; rewrite ?Heqb, ?H0; auto.
 - intuition Simplifs.
 Qed.
@@ -413,6 +413,7 @@ Proof.
   assert (eval_addrmode ge addr rs = Val.offset_ptr rs#base ofs).
   { apply eval_addrmode_indexed. destruct (rs base); auto || discriminate. }
   rewrite <- H1 in H0.
+  monadInv H.
   loadind_correct_solve; simpl in H0;
   (econstructor; split;
   [apply exec_straight_one; [simpl; unfold exec_store; rewrite ?Heqb, H0;eauto|auto]
@@ -1424,15 +1425,15 @@ Lemma transl_load_correct:
   /\ rs'#(preg_of dest) = v
   /\ forall r, data_preg r = true -> r <> preg_of dest -> rs'#r = rs#r.
 Proof.
-  unfold transl_load; intros. monadInv H. destruct c.
-  destruct chunk; monadInv EQ0.
+  unfold transl_load; unfold Asmgen.transl_load;
+  intros. monadInv H. monadInv EQ.
   exploit transl_addressing_mode_correct; eauto. intro EA.
-  assert (EA': eval_addrmode ge x rs = a). destruct a; simpl in H1; try discriminate; inv EA; auto.
-  set (rs2 := nextinstr_nf (rs#(preg_of dest) <- v) (instr_size_in_ptrofs i)).
-  assert (exec_load ge chunk m x rs (preg_of dest) (instr_size_in_ptrofs i) = Next rs2 m).
+  assert (EA': eval_addrmode ge x0 rs = a). destruct a; simpl in H1; try discriminate; inv EA; auto.
+  set (rs2 := nextinstr_nf (rs#(preg_of dest) <- v) (instr_size_in_ptrofs x)).
+  assert (exec_load ge chunk m x0 rs (preg_of dest) (instr_size_in_ptrofs x) = Next rs2 m).
     unfold exec_load. rewrite EA'. rewrite H1. auto.
-  assert (rs2 PC = Val.offset_ptr (rs PC) (instr_size_in_ptrofs i)).
-    transitivity (Val.offset_ptr ((rs#(preg_of dest) <- v) PC) (instr_size_in_ptrofs i)).
+  assert (rs2 PC = Val.offset_ptr (rs PC) (instr_size_in_ptrofs x)).
+    transitivity (Val.offset_ptr ((rs#(preg_of dest) <- v) PC) (instr_size_in_ptrofs x)).
     auto. decEq. apply Pregmap.gso; auto with asmgen.
   exists rs2. split.
   destruct chunk; ArgsInv; apply exec_straight_one; auto.

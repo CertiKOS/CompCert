@@ -42,7 +42,7 @@ Theorem transf_c_program_preservation:
   forall p tp beh,
   transf_c_program p = OK tp ->
   (*SACC:*)let init_stk := mk_init_stk tp in
-  program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh ->
+  program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh ->
   exists beh', program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh' /\ behavior_improves beh' beh.
 Proof.
   intros. eapply backward_simulation_behavior_improves; eauto.
@@ -57,7 +57,7 @@ Theorem transf_c_program_is_refinement:
   transf_c_program p = OK tp ->
   (forall beh, program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh -> not_wrong beh) ->
 (*SACC:*)let init_stk := mk_init_stk tp in
-  (forall beh, program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh -> program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh).
+  (forall beh, program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh -> program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh).
 Proof.
   intros. eapply backward_simulation_same_safe_behavior; eauto.
   apply transf_c_program_correct; auto.
@@ -71,14 +71,14 @@ Theorem transf_cstrategy_program_preservation:
   transf_c_program p = OK tp ->
   (*SACC:*)let init_stk := mk_init_stk tp in
   (forall beh, program_behaves (Cstrategy.semantics ((*SACC:*)fn_stack_requirements tp) p) beh ->
-     exists beh', program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh' /\ behavior_improves beh beh')
-/\(forall beh, program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh ->
+     exists beh', program_behaves (Asm.semantics tp (*SACC:*)init_stk ) beh' /\ behavior_improves beh beh')
+/\(forall beh, program_behaves (Asm.semantics tp (*SACC:*)init_stk ) beh ->
      exists beh', program_behaves (Cstrategy.semantics ((*SACC:*)fn_stack_requirements tp) p) beh' /\ behavior_improves beh' beh)
 /\(forall beh, not_wrong beh ->
-     program_behaves (Cstrategy.semantics ((*SACC:*)fn_stack_requirements tp) p) beh -> program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh)
+     program_behaves (Cstrategy.semantics ((*SACC:*)fn_stack_requirements tp) p) beh -> program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh)
 /\(forall beh,
      (forall beh', program_behaves (Cstrategy.semantics ((*SACC:*)fn_stack_requirements tp) p) beh' -> not_wrong beh') ->
-     program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh ->
+     program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh ->
      program_behaves (Cstrategy.semantics ((*SACC:*)fn_stack_requirements tp) p) beh).
 Proof.
   intros p tp.
@@ -110,11 +110,11 @@ Theorem bigstep_cstrategy_preservation:
   (*SACC:*)let init_stk := mk_init_stk tp in
   (forall t r,
      Cstrategy.bigstep_program_terminates ((*SACC:*)fn_stack_requirements tp) p t r ->
-     program_behaves (Asm.semantics (*SACC:*)init_stk tp) (Terminates t r))
+     program_behaves (Asm.semantics tp (*SACC:*)init_stk) (Terminates t r))
 /\(forall T,
      Cstrategy.bigstep_program_diverges ((*SACC:*)fn_stack_requirements tp) p T ->
-       program_behaves (Asm.semantics (*SACC:*)init_stk tp) (Reacts T)
-    \/ exists t, program_behaves (Asm.semantics (*SACC:*)init_stk tp) (Diverges t) /\ traceinf_prefix t T).
+       program_behaves (Asm.semantics tp (*SACC:*)init_stk) (Reacts T)
+    \/ exists t, program_behaves (Asm.semantics tp (*SACC:*)init_stk) (Diverges t) /\ traceinf_prefix t T).
 Proof.
   intros p tp TP init_sp.
   split.
@@ -152,7 +152,7 @@ Theorem transf_c_program_preserves_spec:
   transf_c_program p = OK tp ->
   (*SACC:*)let init_stk := mk_init_stk tp in
   (forall beh, program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh -> spec beh) ->
-  (forall beh, program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh -> spec beh).
+  (forall beh, program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh -> spec beh).
 Proof.
   intros.
   exploit transf_c_program_preservation; eauto. intros [beh' [A B]].
@@ -176,7 +176,7 @@ Theorem transf_c_program_preserves_safety_spec:
   transf_c_program p = OK tp ->
   (*SACC:*)let init_stk := mk_init_stk tp in
   (forall beh, program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh -> spec beh) ->
-  (forall beh, program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh -> spec beh).
+  (forall beh, program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh -> spec beh).
 Proof.
   intros. eapply transf_c_program_preserves_spec; eauto.
   intros. destruct H2. congruence. destruct H2 as [t [EQ1 EQ2]].
@@ -201,7 +201,7 @@ Theorem transf_c_program_preserves_liveness_spec:
   transf_c_program p = OK tp ->
   (*SACC:*)let init_stk := mk_init_stk tp in
   (forall beh, program_behaves (Csem.semantics ((*SACC:*)fn_stack_requirements tp) p) beh -> liveness_spec_satisfied beh) ->
-  (forall beh, program_behaves (Asm.semantics (*SACC:*)init_stk tp) beh -> liveness_spec_satisfied beh).
+  (forall beh, program_behaves (Asm.semantics tp (*SACC:*)init_stk) beh -> liveness_spec_satisfied beh).
 Proof.
   intros. eapply transf_c_program_preserves_spec; eauto.
   intros. destruct H3 as [t1 [A B]]. destruct H2.

@@ -31,7 +31,7 @@ void  *allocvector(size_t size)
   return V;
 }
 
-inline void dallocvector(int n, double **V)
+void dallocvector(int n, double **V)
 {
   *V = (double *) allocvector((size_t) n*sizeof(double));
 }
