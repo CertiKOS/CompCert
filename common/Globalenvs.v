@@ -278,7 +278,7 @@ Qed.
 Definition globalenv (p: program F V) :=
   add_globals (empty_genv p.(prog_public)) p.(prog_defs).
 
-(*SACC:
+(* SACC Start *)
 Lemma find_symbol_empty_genv_absurd : forall (p: program F V) ge id b,
     ge = empty_genv p.(prog_public) ->
     find_symbol ge id = Some b -> False.
@@ -289,18 +289,15 @@ Proof.
 Qed.
 
 Lemma find_def_last : forall (ge:t) a d,
-    find_def (add_global ge a) (genv_next ge) = Some d -> a#2 = Some d.
+    find_def (add_global ge a) (genv_next ge) = Some d -> a#2 = d.
 Proof.
   intros ge a d H.
   unfold find_def in H. unfold add_global in H. destruct a. simpl in H.
-  destruct o.
   - rewrite PTree.gss in H. inv H. auto.
-  - exploit genv_defs_range; eauto. intros. 
-    generalize (Plt_strict (genv_next ge)). congruence.
 Qed.
 
 Lemma find_funct_ptr_last : forall (ge:t) a (f:F),
-    find_funct_ptr (add_global ge a) (genv_next ge) = Some f -> a#2 = Some (Gfun f).
+    find_funct_ptr (add_global ge a) (genv_next ge) = Some f -> a#2 = (Gfun f).
 Proof.
   intros ge a f H.
   unfold find_funct_ptr in H. 
@@ -316,11 +313,9 @@ Lemma find_def_not_last : forall (ge:t) id b a d,
 Proof.
   intros ge id b a d GSYM FDEF.
   unfold find_def, add_global in FDEF. destruct a. simpl in FDEF.
-  destruct o.
   - rewrite PTree.gso in FDEF.
     unfold find_def. auto.
     exploit genv_symb_range; eauto. intros. apply Plt_ne. auto.
-  - unfold find_def. auto.
 Qed.
 
 Lemma find_funct_ptr_not_last : forall (ge:t) id b a (f:F),
@@ -339,7 +334,7 @@ Qed.
 Lemma  add_global_find_ptr_symbol : forall ge a b f id,
     find_funct_ptr (add_global ge a) b = Some f ->
     find_symbol (add_global ge a) id = Some b ->
-    a = (id, Some (Gfun f)) \/ 
+    a = (id, (Gfun f)) \/ 
     (find_funct_ptr ge b = Some f /\ find_symbol ge id = Some b).
 Proof.
   intros ge a b f id FPTR FSYM.
@@ -357,11 +352,11 @@ Lemma find_symbol_funct_ptr_inversion' :
                    (empty_genv p.(prog_public)) gl ->
   find_symbol ge id = Some b ->
   find_funct_ptr ge b = Some f ->
-  In (id, Some (Gfun f)) gl.
+  In (id, (Gfun f)) gl.
 Proof.
   induction gl; simpl; intros.
   - eapply (find_symbol_empty_genv_absurd p); eauto.     
-  - set (ge' := (fold_right (fun (d : ident * option (globdef F V)) (ge : t) => add_global ge d) (empty_genv (prog_public p)) gl)) in *.
+  - set (ge' := (fold_right (fun (d : ident * (globdef F V)) (ge : t) => add_global ge d) (empty_genv (prog_public p)) gl)) in *.
     subst ge.    
     exploit add_global_find_ptr_symbol; eauto. 
     intros [EQ | [FPTR FSYM]]. auto.
@@ -373,7 +368,7 @@ Lemma find_symbol_funct_ptr_inversion :
   ge = globalenv p ->
   find_symbol ge id = Some b ->
   find_funct_ptr ge b = Some f ->
-  In (id, Some (Gfun f)) (AST.prog_defs p).
+  In (id, (Gfun f)) (AST.prog_defs p).
 Proof.
   unfold globalenv. unfold add_globals.
   intros p id b f ge H H0 H1.
@@ -381,8 +376,9 @@ Proof.
   exploit find_symbol_funct_ptr_inversion'; eauto.
   rewrite <- in_rev. auto.
 Qed.
+(* SACC End *)
 
-
+(* SACC
 Lemma add_global_find_symbol_eq : forall ge id o,
     find_symbol (add_global ge (id, o)) id = Some (genv_next ge).
 Proof.
@@ -420,21 +416,17 @@ Proof.
   unfold add_global. simpl. eapply Plt_trans; eauto. 
   apply Plt_succ.
   unfold find_def, add_global. simpl. 
-  destruct a. simpl. destruct o; simpl; auto.
+  destruct a. simpl. auto.
   destruct (peq b (genv_next ge)). subst.
   exfalso. eapply Plt_strict. eauto.
   eapply PTree.gso. auto.
 Qed.
 
 Lemma add_global_find_def_eq: forall ge i o,
-    find_def (add_global ge (i,o)) (genv_next ge) = o.
+    find_def (add_global ge (i,o)) (genv_next ge) = Some o.
 Proof.
   intros. unfold find_def, add_global. simpl.
-  destruct o.
   rewrite PTree.gss. auto.
-  destruct (PTree.get (genv_next ge) (genv_defs ge)) eqn:EQ; auto.
-  exploit genv_defs_range; eauto. intros.
-  exfalso. eapply Plt_strict. eauto.
 Qed.
 
 Lemma add_globals_find_symbol_def_inv : forall defs id b ge
@@ -720,7 +712,9 @@ Proof.
   unfold prog_defs_names in H. apply map_fst_inversion in H. destruct H.
   eapply find_symbol_exists; eauto.
 Qed.
+*)
 
+(* SACC Start *)
 Lemma find_symbol_genv_next_absurd: forall id ge, 
     find_symbol ge id = Some (genv_next ge) -> False.
 Proof. 
@@ -730,7 +724,7 @@ Proof.
   generalize (Plt_strict (genv_next ge)). 
   congruence.
 Qed.
-*)
+(* SACC End *)
 
 Theorem find_symbol_inversion : forall p x b,
   find_symbol (globalenv p) x = Some b ->
@@ -809,6 +803,19 @@ Theorem find_funct_prop:
 Proof.
   intros. exploit find_funct_inversion; eauto. intros [id IN]. eauto.
 Qed.
+
+(* SACC Start*)
+Lemma genv_next_find_funct_ptr_absurd : forall (p:AST.program F V) ge gdef,
+  ge = (globalenv p) -> find_funct_ptr ge (genv_next ge) = Some gdef -> False.
+Proof.
+  intros p ge gdef GE FINDPTR. subst ge.
+  unfold find_funct_ptr in FINDPTR. 
+  destruct (find_def (globalenv p) (genv_next (globalenv p))) eqn:EQ; inv FINDPTR.
+  destruct g; inv H0. unfold find_def in EQ.
+  apply genv_defs_range in EQ.
+  apply Plt_strict in EQ. contradiction.
+Qed.
+(* SACC End*)
 
 Theorem global_addresses_distinct:
   forall ge id1 id2 b1 b2,
@@ -2202,6 +2209,50 @@ Proof.
   exists ctx', f2; intuition auto. apply find_funct_ptr_iff; auto.
 Qed.
 
+(* SACC Start*)
+Lemma find_funct_ptr_match_none:
+  forall b,
+    find_funct_ptr (globalenv p) b = None ->
+    find_funct_ptr (globalenv tp) b = None.
+Proof.
+  destruct progmatch as (AA & BB & CC).
+  unfold find_funct_ptr, find_def.
+  unfold globalenv.
+  assert (REC:   forall b : block,
+             match (genv_defs (empty_genv F1 V1 (prog_public p))) ! b with
+             | Some (Gfun f) => Some f
+             | Some (Gvar _) => None
+             | None => None
+             end = None ->
+             match (genv_defs (empty_genv F2 V2 (prog_public tp))) ! b with
+             | Some (Gfun f) => Some f
+             | Some (Gvar _) => None
+             | None => None
+             end = None).
+  {
+    simpl. intros b; rewrite ! PTree.gempty. auto.
+  }
+  assert (NEXT: genv_next (empty_genv F1 V1 (prog_public p)) =
+                genv_next (empty_genv F2 V2 (prog_public tp))).
+  {
+    reflexivity.
+  }
+  revert REC NEXT.
+  generalize (empty_genv F1 V1 (prog_public p)) (empty_genv F2 V2 (prog_public tp)).
+  revert AA.
+  simpl.
+  generalize (prog_defs p) (prog_defs tp).
+  induction 1; simpl. eauto.
+  intros t t0 REC NEXT. apply IHAA.
+  simpl. intro b. inv H. inv H1. auto.
+  rewrite ! Maps.PTree.gsspec.
+  rewrite NEXT. destruct (peq b (Genv.genv_next t0)). congruence. auto.
+  rewrite ! Maps.PTree.gsspec.
+  rewrite NEXT. destruct (peq b (Genv.genv_next t0)). congruence. auto.
+  auto. simpl. congruence.
+Qed.
+(* SACC End *)
+
 Theorem find_funct_match:
   forall v f,
   find_funct (globalenv p) v = Some f ->
@@ -2331,7 +2382,7 @@ Proof.
   intros (cu & tf & P & Q & R); exists tf; auto.
 Qed.
 
-(*SACC:
+(* SACC Start*)
 Lemma find_funct_ptr_transf_none_partial:
   forall b,
     find_funct_ptr (globalenv p) b = None ->
@@ -2339,7 +2390,7 @@ Lemma find_funct_ptr_transf_none_partial:
 Proof.
   eapply (find_funct_ptr_match_none progmatch).
 Qed.
-*)
+(* SACC End*)
 
 Theorem find_symbol_transf_partial:
   forall (s : ident),
@@ -2379,7 +2430,7 @@ Proof.
   intros (cu & tf & P & Q & R). congruence.
 Qed.
 
-(*SACC:
+(* SACC Start*)
 Lemma find_funct_ptr_transf_none:
   forall b,
     find_funct_ptr (globalenv p) b = None ->
@@ -2387,7 +2438,7 @@ Lemma find_funct_ptr_transf_none:
 Proof.
   eapply (find_funct_ptr_match_none progmatch).
 Qed.
-*)
+(* SACC End*)
 
 Theorem find_funct_transf:
   forall v f,

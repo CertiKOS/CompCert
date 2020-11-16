@@ -615,7 +615,7 @@ Definition inject_separated (f f': meminj) (m1 m2: mem): Prop :=
   f b1 = None -> f' b1 = Some(b2, delta) ->
   ~Mem.valid_block m1 b1 /\ ~Mem.valid_block m2 b2.
 
-(*SACC:
+(* SACC Start *)
 Definition meminj_preserves_globals' (ge: Senv.t) (f: block -> option (block * Z)) : Prop :=
      (forall id b, Senv.find_symbol ge id = Some b -> f b = Some(b, 0)) /\
      (forall b1 b2 delta, f b1 = Some (b2, delta) -> Senv.block_is_volatile ge b2 = Senv.block_is_volatile ge b1).
@@ -668,7 +668,7 @@ Next Obligation.
 Qed.
 
 Context `{symbols_inject'_instance: SymbolsInject}.
-*)
+(* SACC End *)
 
 Record extcall_properties (sem: extcall_sem) (sg: signature) : Prop :=
   mk_extcall_properties {

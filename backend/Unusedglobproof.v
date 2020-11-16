@@ -1489,7 +1489,7 @@ Local Transparent Linker_def Linker_fundef Linker_varinit Linker_vardef Linker_u
   assert (EITHER: init = init1 \/ init = init2).
   { revert LI. unfold link_varinit. 
     destruct (classify_init init1), (classify_init init2); intro EQ; inv EQ; auto.
-    destruct (zeq sz (Z.max sz0 0 + 0)); inv H0; auto.
+    destruct (zeq sz sz0); inv H0; auto.
     destruct (zeq sz (init_data_list_size il)); inv H0; auto.
     destruct (zeq sz (init_data_list_size il)); inv H0; auto. }
   apply eqb_prop in RO. apply eqb_prop in VO. 
@@ -1527,7 +1527,7 @@ Lemma link_valid_used_set:
   valid_used_set p (IS.union used1 used2).
 Proof.
   intros until used2; intros L V1 V2.
-  destruct (link_prog_inv _ _ _ L) as (X & Y & Z).
+  destruct (link_prog_inv_strong _ _ _ L) as (X & NORPT1 & NORPT2 & Y & Z).
   rewrite Z; clear Z; constructor.
 - intros. rewrite ISF.union_iff in H. rewrite ISF.union_iff.
   rewrite prog_defmap_elements, PTree.gcombine in H0.
@@ -1584,10 +1584,12 @@ Theorem link_match_program:
   exists tp, link tp1 tp2 = Some tp /\ match_prog p tp.
 Proof.
   intros. destruct H0 as (used1 & A1 & B1). destruct H1 as (used2 & A2 & B2).
-  destruct (link_prog_inv _ _ _ H) as (U & V & W).
+  destruct (link_prog_inv _ _ _ H) as (U & NORPT1 & NORPT2 & V & W).
   econstructor; split. 
 - apply link_prog_succeeds.
 + rewrite (match_prog_main _ _ _ B1), (match_prog_main _ _ _ B2). auto.
++ inv B1. auto.
++ inv B2. auto.    
 + intros. 
   rewrite (match_prog_def _ _ _ B1) in H0.
   rewrite (match_prog_def _ _ _ B2) in H1.
