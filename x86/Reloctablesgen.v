@@ -48,7 +48,9 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmovzb_rm _ a
   | Pmovsb_rm _ a
   | Pmovzw_rm _ a
-  | Pmovsw_rm _ a =>
+  | Pmovsw_rm _ a
+  | Pxorps_fm _ a
+  | Pandps_fm _ a =>
     let aofs := addrmode_reloc_offset a in
     OK (2 + aofs)
   | Pmovsd_fm _ a
@@ -58,9 +60,7 @@ Definition instr_reloc_offset (i:instruction) : res Z :=
   | Pmovsq_rm _ a
   | Pmovsq_mr a _              
   | Pxorpd_fm _ a
-  | Pxorps_fm _ a
-  | Pandpd_fm _ a
-  | Pandps_fm _ a =>
+  | Pandpd_fm _ a =>
     let aofs := addrmode_reloc_offset a in
     OK (3 + aofs)
   | _ => Error [MSG "Calculation of relocation offset failed: Either there is no possible relocation location or the instruction ";

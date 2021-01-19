@@ -639,13 +639,13 @@ Definition encode_instr (ofs:Z) (i: instruction) : res (list byte) :=
     do reg <- encode_freg frd;
     do rm <- encode_freg frd;
     let modrm := bB[b["11"] ++ reg ++ rm] in
-    OK(HB["90"] :: HB["0F"] :: HB["57"] :: modrm :: nil)
+    OK(HB["0F"] :: HB["57"] :: modrm :: nil)
   | Pxorps_fm frd a =>
     do abytes <- encode_addrmode_f ofs i a frd;
-    OK(HB["90"] :: HB["0F"] :: HB["57"] :: abytes)
+    OK(HB["0F"] :: HB["57"] :: abytes)
   | Pandps_fm frd a =>
     do abytes <- encode_addrmode_f ofs i a frd;
-    OK(HB["90"] :: HB["0F"] :: HB["58"] :: abytes)
+    OK(HB["0F"] :: HB["58"] :: abytes)
   | Pjmp (inr id) sg =>
     do addend <- get_instr_reloc_addend ofs i;
       OK (HB["E9"] :: encode_int32 addend)
