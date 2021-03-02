@@ -1,0 +1,249 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Validator_safe</title>
+<meta name="description" content="Documentation of Coq module Validator_safe" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Validator_safe</h1>
+<div class="coq">
+<br/>
+<span class="id">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span> <span class="kwd">Syntax</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.derive.Derive.html">Derive</a></span>.<br/>
+<span class="id">From</span> <span class="id">Coq.ssr</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ssr.ssreflect.html">ssreflect</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="compcert.MenhirLib.Automaton.html">Automaton</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html">Alphabet</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html">Validator_classes</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="Make">Make</a></span>(<span class="kwd">Import</span> <span class="id">A</span>:<span class="id"><a href="compcert.MenhirLib.Automaton.html#T">Automaton.T</a></span>).<br/>
+<br/>
+<div class="doc">The singleton predicate for states *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.singleton_state_pred">singleton_state_pred</a></span> (<span class="id">state</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>) :=<br/>
+&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">state</span>' =&gt; <span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span> <span class="id">state</span>' <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> |<span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> <span class="kwd">end</span>).<br/>
+<br/>
+<div class="doc"><span class="bracket"><span class="id">past_state_of_non_init_state</span></span>, extended for all states. *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.past_state_of_state">past_state_of_state</a></span> (<span class="id">state</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Init">Init</a></span> <span class="id">_</span> =&gt; []<br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Ninit">Ninit</a></span> <span class="id">nis</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.past_state_of_non_init_state">past_state_of_non_init_state</a></span> <span class="id">nis</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">Concatenations of last and past *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.head_symbs_of_state">head_symbs_of_state</a></span> (<span class="id">state</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Init">Init</a></span> <span class="id">_</span> =&gt; []<br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Ninit">Ninit</a></span> <span class="id">s</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.last_symb_of_non_init_state">last_symb_of_non_init_state</a></span> <span class="id">s</span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.past_symb_of_non_init_state">past_symb_of_non_init_state</a></span> <span class="id">s</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.head_states_of_state">head_states_of_state</a></span> (<span class="id">state</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.singleton_state_pred">singleton_state_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.past_state_of_state">past_state_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span>.<br/>
+<br/>
+<h1> Validation for correctness *</h1>
+<br/>
+<div class="doc">Prefix predicate between two lists of symbols. *</div>
+<span class="kwd">Inductive</span> <span class="id"><a name="Make.prefix">prefix</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.symbol">symbol</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.symbol">symbol</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+| <span class="id"><a name="Make.prefix_nil">prefix_nil</a></span>: <span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prefix">prefix</a></span> [] <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l">l</a></span><br/>
+| <span class="id"><a name="Make.prefix_cons">prefix_cons</a></span>: <span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">x</span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prefix">prefix</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prefix">prefix</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#x">x</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#x">x</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span>).<br/>
+<br/>
+<div class="doc"><span class="bracket"><span class="id">prefix</span></span> is transitive *</div>
+<span class="kwd">Lemma</span> <span class="id"><a name="Make.prefix_trans">prefix_trans</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">l1</span> <span class="id">l2</span> <span class="id">l3</span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.symbol">symbol</a></span>), <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l3">l3</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l3">l3</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6511')">Proof.</div>
+<div class="proofscript" id="proof6511">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">l3</span> <span class="id">H1</span> <span class="id">H2</span>. <span class="id">revert</span> <span class="id">l3</span> <span class="id">H2</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">H1</span>; [<span class="id">now</span> <span class="id">constructor</span>|]. <span class="tactic">inversion</span> 1. <span class="tactic">subst</span>. <span class="id">constructor</span>. <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="Make.is_prefix">is_prefix</a></span> (<span class="id">l1</span> <span class="id">l2</span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.symbol">symbol</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [], <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
+&nbsp;&nbsp;| <span class="id">t1</span>::<span class="id">q1</span>, <span class="id">t2</span>::<span class="id">q2</span> =&gt; (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb">compare_eqb</a></span> <span class="id">t1</span> <span class="id">t2</span> &amp;&amp; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#is_prefix">is_prefix</a></span> <span class="id">q1</span> <span class="id">q2</span>)%<span class="id">bool</span><br/>
+&nbsp;&nbsp;| <span class="id">_</span>::<span class="id">_</span>, [] =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="Make.prefix_is_validator">prefix_is_validator</a></span> <span class="id">l1</span> <span class="id">l2</span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.is_prefix">is_prefix</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6512')">Proof.</div>
+<div class="proofscript" id="proof6512">
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">l2</span>. <span class="tactic">induction</span> <span class="id">l1</span> <span class="kwd">as</span> [|<span class="id">x1</span> <span class="id">l1</span> <span class="id">IH</span>]=&gt;<span class="id">l2</span> <span class="id">Hpref</span>.<br/>
+&nbsp;&nbsp;- <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">l2</span> <span class="kwd">as</span> [|<span class="id">x2</span> <span class="id">l2</span>]=&gt;//.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">move</span>: <span class="id">Hpref</span>=&gt; /<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#andb_prop">andb_prop</a></span> [/<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb_iff">compare_eqb_iff</a></span> -&gt; /<span class="id">IH</span> ?]. <span class="tactic">by</span> <span class="id">constructor</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">If we shift, then the known top symbols of the destination state is
+    a prefix of the known top symbols of the source state, with the new
+    symbol added. *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.shift_head_symbs">shift_head_symbs</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.action_table">action_table</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Lookahead_act">Lookahead_act</a></span> <span class="id">awp</span> =&gt; <span class="kwd">forall</span> <span class="id">t</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">awp</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#t">t</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Shift_act">Shift_act</a></span> <span class="id">s2</span> <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.past_symb_of_non_init_state">past_symb_of_non_init_state</a></span> <span class="id">s2</span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.head_symbs_of_state">head_symbs_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">When a goto happens, then the known top symbols of the destination state
+    is a prefix of the known top symbols of the source state, with the new
+    symbol added. *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.goto_head_symbs">goto_head_symbs</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">nt</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.goto_table">goto_table</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#nt">nt</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#exist">exist</a></span> <span class="id">_</span> <span class="id">s2</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.past_symb_of_non_init_state">past_symb_of_non_init_state</a></span> <span class="id">s2</span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.head_symbs_of_state">head_symbs_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">We have to say the same kind of checks for the assumptions about the
+    states stack. However, theses assumptions are predicates. So we define
+    a notion of "prefix" over predicates lists, that means, basically, that
+    an assumption entails another *</div>
+<span class="kwd">Inductive</span> <span class="id"><a name="Make.prefix_pred">prefix_pred</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>-&gt;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>-&gt;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Make.prefix_pred_nil">prefix_pred_nil</a></span>: <span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prefix_pred">prefix_pred</a></span> [] <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l">l</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Make.prefix_pred_cons">prefix_pred_cons</a></span>: <span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">f1</span> <span class="id">f2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#implb">implb</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#f2">f2</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#x">x</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#f1">f1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#x">x</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prefix_pred">prefix_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prefix_pred">prefix_pred</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#f1">f1</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#f2">f2</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span>).<br/>
+<br/>
+<div class="doc"><span class="bracket"><span class="id">prefix_pred</span></span> is transitive *</div>
+<span class="kwd">Lemma</span> <span class="id"><a name="Make.prefix_pred_trans">prefix_pred_trans</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">l1</span> <span class="id">l2</span> <span class="id">l3</span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>-&gt;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>)),<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix_pred">prefix_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix_pred">prefix_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l3">l3</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix_pred">prefix_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l3">l3</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6513')">Proof.</div>
+<div class="proofscript" id="proof6513">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">l3</span> <span class="id">H1</span> <span class="id">H2</span>. <span class="id">revert</span> <span class="id">l3</span> <span class="id">H2</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">H1</span> <span class="kwd">as</span> [|<span class="id">l1</span> <span class="id">l2</span> <span class="id">f1</span> <span class="id">f2</span> <span class="id">Hf2f1</span>]; [<span class="id">now</span> <span class="id">constructor</span>|].<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">l3</span>. <span class="tactic">inversion</span> 1 <span class="kwd">as</span> [|??? <span class="id">f3</span> <span class="id">Hf3f2</span>]. <span class="tactic">subst</span>. <span class="id">constructor</span>; [|<span class="id">now</span> <span class="tactic">eauto</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span>. <span class="id">specialize</span> (<span class="id">Hf3f2</span> <span class="id">x</span>). <span class="id">specialize</span> (<span class="id">Hf2f1</span> <span class="id">x</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">destruct</span> (<span class="id">_</span> <span class="id">x</span>); <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="Make.is_prefix_pred">is_prefix_pred</a></span> (<span class="id">l1</span> <span class="id">l2</span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>-&gt;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>)) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [], <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
+&nbsp;&nbsp;| <span class="id">f1</span>::<span class="id">q1</span>, <span class="id">f2</span>::<span class="id">q2</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#forallb">forallb</a></span> (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#implb">implb</a></span> (<span class="id">f2</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#x">x</a></span>) (<span class="id">f1</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#x">x</a></span>)) <span class="id"><a href="compcert.MenhirLib.Alphabet.html#all_list">all_list</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&amp; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#is_prefix_pred">is_prefix_pred</a></span> <span class="id">q1</span> <span class="id">q2</span>)%<span class="id">bool</span><br/>
+&nbsp;&nbsp;| <span class="id">_</span>::<span class="id">_</span>, [] =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="Make.prefix_pred_is_validator">prefix_pred_is_validator</a></span> <span class="id">l1</span> <span class="id">l2</span> :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix_pred">prefix_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.is_prefix_pred">is_prefix_pred</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l1">l1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#l2">l2</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6514')">Proof.</div>
+<div class="proofscript" id="proof6514">
+&nbsp;&nbsp;<span class="id">revert</span> <span class="id">l2</span>. <span class="tactic">induction</span> <span class="id">l1</span> <span class="kwd">as</span> [|<span class="id">x1</span> <span class="id">l1</span> <span class="id">IH</span>]=&gt;<span class="id">l2</span> <span class="id">Hpref</span>.<br/>
+&nbsp;&nbsp;- <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">l2</span> <span class="kwd">as</span> [|<span class="id">x2</span> <span class="id">l2</span>]=&gt;//.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">move</span>: <span class="id">Hpref</span>=&gt; /<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#andb_prop">andb_prop</a></span> [/<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#forallb_forall">forallb_forall</a></span> ? /<span class="id">IH</span> ?].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#all_list_forall">all_list_forall</a></span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">The assumptions about state stack is conserved when we shift *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.shift_past_state">shift_past_state</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.action_table">action_table</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Lookahead_act">Lookahead_act</a></span> <span class="id">awp</span> =&gt; <span class="kwd">forall</span> <span class="id">t</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">awp</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#t">t</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Shift_act">Shift_act</a></span> <span class="id">s2</span> <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix_pred">prefix_pred</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.past_state_of_non_init_state">past_state_of_non_init_state</a></span> <span class="id">s2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.head_states_of_state">head_states_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">The assumptions about state stack is conserved when we do a goto *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.goto_past_state">goto_past_state</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">nt</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.goto_table">goto_table</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#nt">nt</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#exist">exist</a></span> <span class="id">_</span> <span class="id">s2</span> <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix_pred">prefix_pred</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.past_state_of_non_init_state">past_state_of_non_init_state</a></span> <span class="id">s2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.head_states_of_state">head_states_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">What states are possible after having popped these symbols from the
+    stack, given the annotation of the current state ? *</div>
+<span class="kwd">Inductive</span> <span class="id"><a name="Make.state_valid_after_pop">state_valid_after_pop</a></span> (<span class="id">s</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>):<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.symbol">symbol</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Make.state_valid_after_pop_nil1">state_valid_after_pop_nil1</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">pl</span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#p">p</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_valid_after_pop">state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> [] (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#p">p</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#pl">pl</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Make.state_valid_after_pop_nil2">state_valid_after_pop_nil2</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sl</span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_valid_after_pop">state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#sl">sl</a></span> []<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Make.state_valid_after_pop_cons">state_valid_after_pop_cons</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">sq</span> <span class="id">p</span> <span class="id">pl</span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_valid_after_pop">state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#sq">sq</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#pl">pl</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_valid_after_pop">state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#st">st</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#sq">sq</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#p">p</a></span>::<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#pl">pl</a></span>).<br/>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="Make.is_state_valid_after_pop">is_state_valid_after_pop</a></span> (<span class="id">state</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>) (<span class="id">to_pop</span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.symbol">symbol</a></span>) <span class="id">annot</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#annot">annot</a></span>, <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#to_pop">to_pop</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [], <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
+&nbsp;&nbsp;| <span class="id">p</span>::<span class="id">_</span>, [] =&gt; <span class="id">p</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span><br/>
+&nbsp;&nbsp;| <span class="id">p</span>::<span class="id">pl</span>, <span class="id">s</span>::<span class="id">sl</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#is_state_valid_after_pop">is_state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span> <span class="id">sl</span> <span class="id">pl</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="Make.impl_is_state_valid_after_pop_is_validator">impl_is_state_valid_after_pop_is_validator</a></span> <span class="id">state</span> <span class="id">sl</span> <span class="id">pl</span> <span class="id">P</span> <span class="id">b</span> :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#P">P</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#b">b</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.state_valid_after_pop">state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#sl">sl</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#pl">pl</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#P">P</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">if</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.is_state_valid_after_pop">is_state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#sl">sl</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#pl">pl</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#b">b</a></span> <span class="kwd">else</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6515')">Proof.</div>
+<div class="proofscript" id="proof6515">
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.is_state_valid_after_pop">is_state_valid_after_pop</a></span> <span class="id">_</span> <span class="id">sl</span> <span class="id">pl</span>) <span class="id">eqn</span>:<span class="id">EQ</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> ???. <span class="tactic">by</span> <span class="tactic">eapply</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#is_validator">is_validator</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hsvap</span>. <span class="id">exfalso</span>. <span class="tactic">induction</span> <span class="id">Hsvap</span>=&gt;//; [<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">EQ</span>; <span class="tactic">congruence</span>|].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">by</span> <span class="tactic">destruct</span> <span class="id">sl</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">A state is valid for reducing a production when :
+      - The assumptions on the state are such that we will find the right hand
+        side of the production on the stack.
+      - We will be able to do a goto after having popped the right hand side.
+*</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.valid_for_reduce">valid_for_reduce</a></span> (<span class="id">state</span>:<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.state">state</a></span>) <span class="id">prod</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.prefix">prefix</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.prod_rhs_rev">prod_rhs_rev</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prod">prod</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.head_symbs_of_state">head_symbs_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">state_new</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.state_valid_after_pop">state_valid_after_pop</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_new">state_new</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.prod_rhs_rev">prod_rhs_rev</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prod">prod</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.head_states_of_state">head_states_of_state</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state">state</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.goto_table">goto_table</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_new">state_new</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.prod_lhs">prod_lhs</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prod">prod</a></span>) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#state_new">state_new</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Init">Init</a></span> <span class="id">i</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Gram.prod_lhs">prod_lhs</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#prod">prod</a></span> = <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.start_nt">start_nt</a></span> <span class="id">i</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Ninit">Ninit</a></span> <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">All the states that does a reduce are valid for reduction *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.reduce_ok">reduce_ok</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.action_table">action_table</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Lookahead_act">Lookahead_act</a></span> <span class="id">awp</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">t</span>, <span class="kwd">match</span> <span class="id">awp</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#t">t</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Reduce_act">Reduce_act</a></span> <span class="id">p</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.valid_for_reduce">valid_for_reduce</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="id">p</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#A.Default_reduce_act">Default_reduce_act</a></span> <span class="id">p</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.valid_for_reduce">valid_for_reduce</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#s">s</a></span> <span class="id">p</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">The automaton is safe *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.safe">safe</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.shift_head_symbs">shift_head_symbs</a></span> /\ <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.goto_head_symbs">goto_head_symbs</a></span> /\ <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.shift_past_state">shift_past_state</a></span> /\<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.goto_past_state">goto_past_state</a></span> /\ <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.reduce_ok">reduce_ok</a></span>.<br/>
+<br/>
+<span class="id">Derive</span> <span class="id">is_safe</span><br/>
+<span class="id">SuchThat</span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make.safe">safe</a></span> (<span class="id">is_safe</span> ()))<br/>
+<span class="id">As</span> <span class="id">safe_is_validator</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6516')">Proof.</div>
+<div class="proofscript" id="proof6516">
+ <span class="tactic">subst</span> <span class="id">is_safe</span>. <span class="id">instantiate</span> (1:=<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id">_</span>). <span class="tactic">apply</span> <span class="id">_</span>. Qed.</div>
+<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.MenhirLib.Validator_safe.html#Make">Make</a></span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

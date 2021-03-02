@@ -74,14 +74,14 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">STKSIZE</span>: <span class="id"><a href="compcert.backend.Inlining.html#s1">s1</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>) &lt;= <span class="id"><a href="compcert.backend.Inlining.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>)).<br/>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="sincr_refl">sincr_refl</a></span>: <span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Inlining.html#sincr">sincr</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3132')">Proof.</div>
-<div class="proofscript" id="proof3132">
+<div class="toggleproof" onclick="toggleDisplay('proof3326')">Proof.</div>
+<div class="proofscript" id="proof3326">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sincr_trans">sincr_trans</a></span>: <span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">s3</span>, <span class="id"><a href="compcert.backend.Inlining.html#sincr">sincr</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.Inlining.html#sincr">sincr</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s3">s3</a></span> -&gt; <span class="id"><a href="compcert.backend.Inlining.html#sincr">sincr</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s3">s3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3133')">Proof.</div>
-<div class="proofscript" id="proof3133">
+<div class="toggleproof" onclick="toggleDisplay('proof3327')">Proof.</div>
+<div class="proofscript" id="proof3327">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="id">constructor</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -116,8 +116,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Inlining.html#mkstate">mkstate</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextreg">st_nextreg</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextnode">st_nextnode</a></span>) (<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id"><a href="compcert.backend.Inlining.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Inlining.html#i">i</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_code">st_code</a></span>)) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">_</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3134')">Next Obligation.</div>
-<div class="proofscript" id="proof3134">
+<div class="toggleproof" onclick="toggleDisplay('proof3328')">Next Obligation.</div>
+<div class="proofscript" id="proof3328">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -127,8 +127,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id"><a href="compcert.backend.Inlining.html#pc">pc</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Inlining.html#mkstate">mkstate</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextreg">st_nextreg</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.backend.Inlining.html#pc">pc</a></span>) (<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id"><a href="compcert.backend.Inlining.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Inlining.html#i">i</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_code">st_code</a></span>)) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">_</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3135')">Next Obligation.</div>
-<div class="proofscript" id="proof3135">
+<div class="toggleproof" onclick="toggleDisplay('proof3329')">Next Obligation.</div>
+<div class="proofscript" id="proof3329">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -137,8 +137,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextnode">st_nextnode</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Inlining.html#mkstate">mkstate</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextreg">st_nextreg</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.add">Pos.add</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextnode">st_nextnode</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#numnodes">numnodes</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">_</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3136')">Next Obligation.</div>
-<div class="proofscript" id="proof3136">
+<div class="toggleproof" onclick="toggleDisplay('proof3330')">Next Obligation.</div>
+<div class="proofscript" id="proof3330">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -147,8 +147,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextreg">st_nextreg</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Inlining.html#mkstate">mkstate</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.add">Pos.add</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextreg">st_nextreg</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#numregs">numregs</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextnode">st_nextnode</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">_</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3137')">Next Obligation.</div>
-<div class="proofscript" id="proof3137">
+<div class="toggleproof" onclick="toggleDisplay('proof3331')">Next Obligation.</div>
+<div class="proofscript" id="proof3331">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -157,8 +157,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Inlining.html#mkstate">mkstate</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextreg">st_nextreg</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_nextnode">st_nextnode</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_code">st_code</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max">Z.max</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.Inlining.html#st_stksize">st_stksize</a></span>) <span class="id"><a href="compcert.backend.Inlining.html#sz">sz</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">_</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3138')">Next Obligation.</div>
-<div class="proofscript" id="proof3138">
+<div class="toggleproof" onclick="toggleDisplay('proof3332')">Next Obligation.</div>
+<div class="proofscript" id="proof3332">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -167,8 +167,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Maps.html#PTree.fold">PTree.fold</a></span> (<span class="kwd">fun</span> <span class="id">s1</span> <span class="id">k</span> <span class="id">v</span> =&gt; <span class="kwd">match</span> <span class="id"><a href="compcert.backend.Inlining.html#f">f</a></span> <span class="id"><a href="compcert.backend.Inlining.html#k">k</a></span> <span class="id"><a href="compcert.backend.Inlining.html#v">v</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s1">s1</a></span> <span class="kwd">return</span> <span class="id">_</span> <span class="kwd">with</span> <span class="id"><a href="compcert.backend.Inlining.html#R">R</a></span> <span class="id">_</span> <span class="id">s2</span> <span class="id">_</span> =&gt; <span class="id">s2</span> <span class="kwd">end</span>) <span class="id"><a href="compcert.backend.Inlining.html#t">t</a></span> <span class="id"><a href="compcert.backend.Inlining.html#s">s</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">_</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3139')">Next Obligation.</div>
-<div class="proofscript" id="proof3139">
+<div class="toggleproof" onclick="toggleDisplay('proof3333')">Next Obligation.</div>
+<div class="proofscript" id="proof3333">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.fold_rec">PTree_Properties.fold_rec</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Inlining.html#sincr_refl">sincr_refl</a></span>.<br/>

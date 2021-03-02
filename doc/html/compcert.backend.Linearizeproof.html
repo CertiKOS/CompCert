@@ -30,8 +30,8 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_program_match">transf_program_match</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>, <span class="id"><a href="compcert.backend.Linearize.html#transf_program">transf_program</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tp">tp</a></span> -&gt; <span class="id"><a href="compcert.backend.Linearizeproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#p">p</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4181')">Proof.</div>
-<div class="proofscript" id="proof4181">
+<div class="toggleproof" onclick="toggleDisplay('proof4335')">Proof.</div>
+<div class="proofscript" id="proof4335">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_partial_program">match_transform_partial_program</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -51,8 +51,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> /\ <span class="id"><a href="compcert.backend.Linearize.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4182')">Proof.</div>
-<div class="proofscript" id="proof4182">
+<div class="toggleproof" onclick="toggleDisplay('proof4336')">Proof.</div>
+<div class="proofscript" id="proof4336">
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_transf_partial_id">Genv.find_funct_transf_partial_id</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.TRANSF">TRANSF</a></span>).<br/>
 Qed.</div>
 <br/>
@@ -60,8 +60,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearize.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#funsig">Linear.funsig</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> = <span class="id"><a href="compcert.backend.LTL.html#funsig">LTL.funsig</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4183')">Proof.</div>
-<div class="proofscript" id="proof4183">
+<div class="toggleproof" onclick="toggleDisplay('proof4337')">Proof.</div>
+<div class="proofscript" id="proof4337">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#transf_fundef">transf_fundef</a></span>, <span class="id"><a href="compcert.common.AST.html#transf_partial_fundef">transf_partial_fundef</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">f</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="id">monadInv</span> <span class="id">EQ</span>. <span class="tactic">reflexivity</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>. <span class="tactic">reflexivity</span>.<br/>
@@ -71,8 +71,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearize.html#transf_function">transf_function</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#fn_stacksize">Linear.fn_stacksize</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> = <span class="id"><a href="compcert.backend.LTL.html#fn_stacksize">LTL.fn_stacksize</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4184')">Proof.</div>
-<div class="proofscript" id="proof4184">
+<div class="toggleproof" onclick="toggleDisplay('proof4338')">Proof.</div>
+<div class="proofscript" id="proof4338">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -82,8 +82,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="reachable_entrypoint">reachable_entrypoint</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span>, (<span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>)!!(<span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.LTL.html#fn_entrypoint">fn_entrypoint</a></span>)) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4185')">Proof.</div>
-<div class="proofscript" id="proof4185">
+<div class="toggleproof" onclick="toggleDisplay('proof4339')">Proof.</div>
+<div class="proofscript" id="proof4339">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.Linearize.html#reachable_aux">reachable_aux</a></span> <span class="id">f</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#reachable_aux">reachable_aux</a></span>; <span class="tactic">intros</span> <span class="id">reach</span> <span class="id">A</span>.<br/>
@@ -100,8 +100,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.LTL.html#fn_code">LTL.fn_code</a></span>)!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id">pc</span>' (<span class="id"><a href="compcert.backend.LTL.html#successors_block">successors_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>)!!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>)!!<span class="id">pc</span>' = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4186')">Proof.</div>
-<div class="proofscript" id="proof4186">
+<div class="toggleproof" onclick="toggleDisplay('proof4340')">Proof.</div>
+<div class="proofscript" id="proof4340">
 &nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">f</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.Linearize.html#reachable_aux">reachable_aux</a></span> <span class="id">f</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#reachable_aux">reachable_aux</a></span>. <span class="tactic">intro</span> <span class="id">reach</span>; <span class="tactic">intros</span>.<br/>
@@ -132,8 +132,8 @@ conditions. </div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_norepet">list_norepet</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#l">l</a></span><br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">pc</span>, <span class="id"><a href="compcert.backend.Linearize.html#Nodeset.In">Nodeset.In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id">s</span>' &lt;-&gt; <span class="id"><a href="compcert.backend.Linearize.html#Nodeset.In">Nodeset.In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> \/ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#l">l</a></span>)<br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">pc</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#l">l</a></span> -&gt; ~<span class="id"><a href="compcert.backend.Linearize.html#Nodeset.In">Nodeset.In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4187')">Proof.</div>
-<div class="proofscript" id="proof4187">
+<div class="toggleproof" onclick="toggleDisplay('proof4341')">Proof.</div>
+<div class="proofscript" id="proof4341">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>. <span class="tactic">split</span>. <span class="id">constructor</span>. <span class="tactic">split</span>. <span class="tactic">intro</span>; <span class="tactic">tauto</span>. <span class="tactic">intros</span>; <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id">H</span>; <span class="tactic">clear</span> <span class="id">H</span>; <span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.Linearize.html#Nodeset.mem">Nodeset.mem</a></span> <span class="id">a</span> <span class="id">s</span>); <span class="tactic">intros</span>.<br/>
@@ -152,8 +152,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.LTL.html#fn_code">LTL.fn_code</a></span>)!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#reach">reach</a></span>!!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearize.html#Nodeset.In">Nodeset.In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4188')">Proof.</div>
-<div class="proofscript" id="proof4188">
+<div class="toggleproof" onclick="toggleDisplay('proof4342')">Proof.</div>
+<div class="proofscript" id="proof4342">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f</span> <span class="id">reach</span> <span class="id">s</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ok</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">List.fold_left</a></span> (<span class="kwd">fun</span> <span class="id">a</span> <span class="id">p</span> =&gt; <span class="id"><a href="compcert.backend.Linearize.html#check_reachable_aux">check_reachable_aux</a></span> <span class="id">reach</span> <span class="id">s</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#a">a</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#p">p</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#p">p</a></span>)) <span class="id"><a href="compcert.backend.Linearizeproof.html#l">l</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ok">ok</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
@@ -183,8 +183,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.LTL.html#fn_code">LTL.fn_code</a></span>)!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>)!!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4189')">Proof.</div>
-<div class="proofscript" id="proof4189">
+<div class="toggleproof" onclick="toggleDisplay('proof4343')">Proof.</div>
+<div class="proofscript" id="proof4343">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">i</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#enumerate">enumerate</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">reach</span> := <span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id">f</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
@@ -198,8 +198,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">enum</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearize.html#enumerate">enumerate</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_norepet">list_norepet</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4190')">Proof.</div>
-<div class="proofscript" id="proof4190">
+<div class="toggleproof" onclick="toggleDisplay('proof4344')">Proof.</div>
+<div class="proofscript" id="proof4344">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">enum</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#enumerate">enumerate</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">reach</span> := <span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id">f</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
@@ -226,8 +226,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c3">c3</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span> = <span class="id"><a href="compcert.backend.Linearizeproof.html#c3">c3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4191')">Proof.</div>
-<div class="proofscript" id="proof4191">
+<div class="toggleproof" onclick="toggleDisplay('proof4345')">Proof.</div>
+<div class="proofscript" id="proof4345">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c2</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">c3</span> <span class="id">TAIL</span> <span class="id">UNIQ</span>. <span class="tactic">simpl</span>.<br/>
@@ -248,8 +248,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c3">c3</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#plus">plus</a></span> <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#m">m</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c3">c3</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#m">m</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4192')">Proof.</div>
-<div class="proofscript" id="proof4192">
+<div class="toggleproof" onclick="toggleDisplay('proof4346')">Proof.</div>
+<div class="proofscript" id="proof4346">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c1</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="id">starts_with</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">try</span> (<span class="tactic">intros</span>; <span class="tactic">discriminate</span>).<br/>
@@ -269,16 +269,16 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="find_label_add_branch">find_label_add_branch</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">k</span> <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>) = <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4193')">Proof.</div>
-<div class="proofscript" id="proof4193">
+<div class="toggleproof" onclick="toggleDisplay('proof4347')">Proof.</div>
+<div class="proofscript" id="proof4347">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">s</span> <span class="id">k</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="find_label_lin_block">find_label_lin_block</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">k</span> <span class="id">b</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>) = <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4194')">Proof.</div>
-<div class="proofscript" id="proof4194">
+<div class="toggleproof" onclick="toggleDisplay('proof4348')">Proof.</div>
+<div class="proofscript" id="proof4348">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">lbl</span> <span class="id">k</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.Linearizeproof.html#find_label_add_branch">find_label_add_branch</a></span> <span class="id">lbl</span> <span class="id">k</span>); <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">b</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">s1</span> <span class="id">k</span>); <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -291,8 +291,8 @@ Qed.</div>
 &nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="compcert.backend.Linearize.html#linearize_body">linearize_body</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span><br/>
 &nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">b</span> =&gt; <span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> :: <span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id">b</span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_body">linearize_body</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>)<br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4195')">Proof.</div>
-<div class="proofscript" id="proof4195">
+<div class="toggleproof" onclick="toggleDisplay('proof4349')">Proof.</div>
+<div class="proofscript" id="proof4349">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#linearize_body">linearize_body</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#list_fold_right_eq">list_fold_right_eq</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#linearize_node">linearize_node</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.LTL.html#fn_code">LTL.fn_code</a></span> <span class="id">f</span>)!<span class="id">pc</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -302,8 +302,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.LTL.html#fn_code">LTL.fn_code</a></span>)!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">k</span>, <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_body">linearize_body</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4196')">Proof.</div>
-<div class="proofscript" id="proof4196">
+<div class="toggleproof" onclick="toggleDisplay('proof4350')">Proof.</div>
+<div class="proofscript" id="proof4350">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">enum</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#linearize_body_cons">linearize_body_cons</a></span>.<br/>
@@ -324,8 +324,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>)!!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">k</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4197')">Proof.</div>
-<div class="proofscript" id="proof4197">
+<div class="toggleproof" onclick="toggleDisplay('proof4351')">Proof.</div>
+<div class="proofscript" id="proof4351">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#find_label_add_branch">find_label_add_branch</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#find_label_lin_rec">find_label_lin_rec</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enumerate_complete">enumerate_complete</a></span>; <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
@@ -338,8 +338,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linearize.html#reachable">reachable</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span>)!!<span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#pc">pc</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">k</span>', <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span> = <span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id">k</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4198')">Proof.</div>
-<div class="proofscript" id="proof4198">
+<div class="toggleproof" onclick="toggleDisplay('proof4352')">Proof.</div>
+<div class="proofscript" id="proof4352">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#find_label_lin">find_label_lin</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">k</span>' <span class="id">FIND</span>].<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">k</span>'. <span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -349,8 +349,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="label_in_add_branch">label_in_add_branch</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">s</span> <span class="id">k</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span>) (<span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span>) <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4199')">Proof.</div>
-<div class="proofscript" id="proof4199">
+<div class="toggleproof" onclick="toggleDisplay('proof4353')">Proof.</div>
+<div class="proofscript" id="proof4353">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">k</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">s</span> <span class="id">k</span>); <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -358,8 +358,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="label_in_lin_block">label_in_lin_block</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">k</span> <span class="id">b</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span>) (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span>) <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4200')">Proof.</div>
-<div class="proofscript" id="proof4200">
+<div class="toggleproof" onclick="toggleDisplay('proof4354')">Proof.</div>
+<div class="proofscript" id="proof4354">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">b</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">try</span> (<span class="tactic">intuition</span> <span class="tactic">congruence</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#label_in_add_branch">label_in_add_branch</a></span> <span class="kwd">with</span> <span class="id">s</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
@@ -371,8 +371,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="label_in_lin_rec">label_in_lin_rec</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">lbl</span> <span class="id">enum</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Llabel">Llabel</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span>) (<span class="id"><a href="compcert.backend.Linearize.html#linearize_body">linearize_body</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4201')">Proof.</div>
-<div class="proofscript" id="proof4201">
+<div class="toggleproof" onclick="toggleDisplay('proof4355')">Proof.</div>
+<div class="proofscript" id="proof4355">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">enum</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#linearize_body_cons">linearize_body_cons</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.LTL.html#fn_code">LTL.fn_code</a></span> <span class="id">f</span>)!<span class="id">a</span>.<br/>
@@ -384,8 +384,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="unique_labels_add_branch">unique_labels_add_branch</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">k</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span> -&gt; <span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4202')">Proof.</div>
-<div class="proofscript" id="proof4202">
+<div class="toggleproof" onclick="toggleDisplay('proof4356')">Proof.</div>
+<div class="proofscript" id="proof4356">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">lbl</span> <span class="id">k</span>); <span class="tactic">simpl</span>; <span class="tactic">intuition</span>.<br/>
 Qed.</div>
@@ -393,8 +393,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="unique_labels_lin_block">unique_labels_lin_block</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">k</span> <span class="id">b</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span> -&gt; <span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4203')">Proof.</div>
-<div class="proofscript" id="proof4203">
+<div class="toggleproof" onclick="toggleDisplay('proof4357')">Proof.</div>
+<div class="proofscript" id="proof4357">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">b</span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">auto</span>; <span class="tactic">try</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels_add_branch">unique_labels_add_branch</a></span>; <span class="tactic">auto</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">s1</span> <span class="id">k</span>); <span class="tactic">simpl</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels_add_branch">unique_labels_add_branch</a></span>; <span class="tactic">auto</span>.<br/>
@@ -404,8 +404,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">enum</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_norepet">list_norepet</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_body">linearize_body</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enum">enum</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4204')">Proof.</div>
-<div class="proofscript" id="proof4204">
+<div class="toggleproof" onclick="toggleDisplay('proof4358')">Proof.</div>
+<div class="proofscript" id="proof4358">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">enum</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#linearize_body_cons">linearize_body_cons</a></span>.<br/>
@@ -421,8 +421,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearize.html#transf_function">transf_function</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels">unique_labels</a></span> (<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4205')">Proof.</div>
-<div class="proofscript" id="proof4205">
+<div class="toggleproof" onclick="toggleDisplay('proof4359')">Proof.</div>
+<div class="proofscript" id="proof4359">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels_add_branch">unique_labels_add_branch</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#unique_labels_lin_rec">unique_labels_lin_rec</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#enumerate_norepet">enumerate_norepet</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -433,8 +433,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="is_tail_find_label">is_tail_find_label</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">c2</span> <span class="id">c1</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#is_tail">is_tail</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4206')">Proof.</div>
-<div class="proofscript" id="proof4206">
+<div class="toggleproof" onclick="toggleDisplay('proof4360')">Proof.</div>
+<div class="proofscript" id="proof4360">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">c1</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> (<span class="id"><a href="compcert.backend.Linear.html#is_label">is_label</a></span> <span class="id">lbl</span> <span class="id">a</span>). <span class="tactic">intro</span>. <span class="tactic">injection</span> <span class="id">H</span>; <span class="tactic">intro</span>. <span class="tactic">subst</span> <span class="id">c2</span>.<br/>
@@ -444,8 +444,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="is_tail_add_branch">is_tail_add_branch</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">c1</span> <span class="id">c2</span>, <span class="id"><a href="compcert.lib.Coqlib.html#is_tail">is_tail</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span>) <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#is_tail">is_tail</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4207')">Proof.</div>
-<div class="proofscript" id="proof4207">
+<div class="toggleproof" onclick="toggleDisplay('proof4361')">Proof.</div>
+<div class="proofscript" id="proof4361">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">c2</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">lbl</span> <span class="id">c1</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
 Qed.</div>
@@ -453,8 +453,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="is_tail_lin_block">is_tail_lin_block</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">b</span> <span class="id">c1</span> <span class="id">c2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#is_tail">is_tail</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#b">b</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span>) <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#is_tail">is_tail</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c1">c1</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c2">c2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4208')">Proof.</div>
-<div class="proofscript" id="proof4208">
+<div class="toggleproof" onclick="toggleDisplay('proof4362')">Proof.</div>
+<div class="proofscript" id="proof4362">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">b</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
@@ -469,8 +469,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c">c</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#plus">plus</a></span> <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sp">sp</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#k">k</a></span>) <span class="id"><a href="compcert.backend.Linearizeproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#m">m</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#m">m</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4209')">Proof.</div>
-<div class="proofscript" id="proof4209">
+<div class="toggleproof" onclick="toggleDisplay('proof4363')">Proof.</div>
+<div class="proofscript" id="proof4363">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Linearize.html#add_branch">add_branch</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.Linearize.html#starts_with">starts_with</a></span> <span class="id">lbl</span> <span class="id">k</span>); <span class="tactic">intro</span> <span class="id">SW</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#starts_with_correct">starts_with_correct</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -505,10 +505,10 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.LTL.html#Stackframe">LTL.Stackframe</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ls">ls</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#bb">bb</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackframe">Linear.Stackframe</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tf">tf</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ls">ls</a></span> (<span class="id"><a href="compcert.backend.Linearize.html#linearize_block">linearize_block</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#bb">bb</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#c">c</a></span>))<br/>
 &nbsp;&nbsp;| <span class="id"><a name="match_stackframe_top">match_stackframe_top</a></span>:<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sg</span> <span class="id">rs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">rs</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#match_stackframes">match_stackframes</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.LTL.html#Stackbase">LTL.Stackbase</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#rs">rs</a></span>)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Linear.Stackbase</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#sg">sg</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#rs">rs</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Linear.Stackbase</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#rs">rs</a></span>).<br/>
 <br/>
 <span class="kwd">Inductive</span> <span class="id"><a name="match_states">match_states</a></span>: <span class="id"><a href="compcert.backend.LTL.html#state">LTL.state</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#state">Linear.state</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
 &nbsp;&nbsp;| <span class="id"><a name="match_states_add_branch">match_states_add_branch</a></span>:<br/>
@@ -564,8 +564,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="match_parent_locset">match_parent_locset</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">ts</span>, <span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#match_stackframes">match_stackframes</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ts">ts</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#parent_locset">parent_locset</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#ts">ts</a></span> = <span class="id"><a href="compcert.backend.LTL.html#parent_locset">LTL.parent_locset</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4210')">Proof.</div>
-<div class="proofscript" id="proof4210">
+<div class="toggleproof" onclick="toggleDisplay('proof4364')">Proof.</div>
+<div class="proofscript" id="proof4364">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>. <span class="tactic">auto</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -574,8 +574,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span>' (<span class="id">MS</span>: <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s1">s1</a></span> <span class="id">s1</span>'),<br/>
 &nbsp;&nbsp;(<span class="id">exists</span> <span class="id">s2</span>', <span class="id"><a href="compcert.common.Smallstep.html#plus">plus</a></span> <span class="id"><a href="compcert.backend.Linear.html#step">Linear.step</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> <span class="id">s1</span>' <span class="id"><a href="compcert.backend.Linearizeproof.html#t">t</a></span> <span class="id">s2</span>' /\ <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s2">s2</a></span> <span class="id">s2</span>')<br/>
 &nbsp;&nbsp;\/ (<span class="kwd">measure</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s2">s2</a></span> &lt; <span class="kwd">measure</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s1">s1</a></span> /\ <span class="id"><a href="compcert.backend.Linearizeproof.html#t">t</a></span> = <span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> /\ <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#s2">s2</a></span> <span class="id">s1</span>')%<span class="id">nat</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4211')">Proof.</div>
-<div class="proofscript" id="proof4211">
+<div class="toggleproof" onclick="toggleDisplay('proof4365')">Proof.</div>
+<div class="proofscript" id="proof4365">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="tactic">try</span> (<span class="id">inv</span> <span class="id">MS</span>).<br/>
 <br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;start&nbsp;of&nbsp;block,&nbsp;at&nbsp;an&nbsp;[add_branch]&nbsp;*)</span><br/>
@@ -716,11 +716,11 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_initial_states">transf_initial_states</a></span> <span class="id">q</span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span>, <span class="id"><a href="compcert.backend.LTL.html#initial_state">LTL.initial_state</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#q">q</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st1">st1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">st2</span>, <span class="id"><a href="compcert.backend.Linear.html#initial_state">Linear.initial_state</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#q">q</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st2">st2</a></span> /\ <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st2">st2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4212')">Proof.</div>
-<div class="proofscript" id="proof4212">
-&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">inversion</span> <span class="id">H</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4366')">Proof.</div>
+<div class="proofscript" id="proof4366">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">inversion</span> <span class="id">H</span>. <span class="tactic">subst</span> <span class="id">rs0</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#functions_translated">functions_translated</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">tf</span> [<span class="id">A</span> <span class="id">B</span>]].<br/>
-&nbsp;&nbsp;<span class="tactic">setoid_rewrite</span> &lt;- (<span class="id"><a href="compcert.backend.Linearizeproof.html#sig_preserved">sig_preserved</a></span> (<span class="id"><a href="compcert.common.AST.html#Internal">Internal</a></span> <span class="id">f</span>)); <span class="tactic">eauto</span>. <span class="id">monadInv</span> <span class="id">B</span>.<br/>
+&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.backend.Linearizeproof.html#sig_preserved">sig_preserved</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">B</span>) <span class="kwd">as</span> <span class="id">SIG</span>. <span class="id">monadInv</span> <span class="id">B</span>. <span class="id">cbn</span> <span class="kwd">in</span> <span class="id">SIG</span>. <span class="tactic">rewrite</span> &lt;- <span class="id">SIG</span>.<br/>
 &nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -728,21 +728,21 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_external">transf_external</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">S</span> <span class="id">R</span> <span class="id">q</span>, <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.backend.LTL.html#at_external">LTL.at_external</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#q">q</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#at_external">Linear.at_external</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#q">q</a></span> /\<br/>
-&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">S</span>', <span class="id"><a href="compcert.backend.LTL.html#after_external">LTL.after_external</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#r">r</a></span> <span class="id">S</span>' -&gt;<br/>
-&nbsp;&nbsp;<span class="id">exists</span> <span class="id">R</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">Linear.after_external</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#r">r</a></span> <span class="id">R</span>' /\ <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id">S</span>' <span class="id">R</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4213')">Proof.</div>
-<div class="proofscript" id="proof4213">
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">S</span>', <span class="id"><a href="compcert.backend.LTL.html#after_external">LTL.after_external</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#r">r</a></span> <span class="id">S</span>' -&gt;<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">R</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">Linear.after_external</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#LINEARIZATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#r">r</a></span> <span class="id">R</span>' /\ <span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id">S</span>' <span class="id">R</span>'.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4367')">Proof.</div>
+<div class="proofscript" id="proof4367">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">S</span> <span class="id">R</span> <span class="id">q</span> <span class="id">HSR</span> <span class="id">Hq</span>. <span class="tactic">destruct</span> <span class="id">Hq</span>; <span class="id">inv</span> <span class="id">HSR</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#functions_translated">functions_translated</a></span> <span class="kwd">in</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">tf</span> &amp; <span class="id">FIND</span> &amp; <span class="id">TF</span>). <span class="id">monadInv</span> <span class="id">TF</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">r</span> <span class="id">S</span>' <span class="id">HS</span>'. <span class="id">inv</span> <span class="id">HS</span>'.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.backend.Linearizeproof.html#functions_translated">functions_translated</a></span> <span class="kwd">as</span> (<span class="id">tf</span> &amp; <span class="id">FIND</span> &amp; <span class="id">TF</span>); <span class="tactic">eauto</span>. <span class="id">monadInv</span> <span class="id">TF</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">r</span> <span class="id">S</span>' <span class="id">HS</span>'. <span class="id">inv</span> <span class="id">HS</span>'. <span class="tactic">rewrite</span> <span class="id">H7</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">split</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_final_states">transf_final_states</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span> <span class="id">st2</span> <span class="id">r</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st2">st2</a></span> -&gt; <span class="id"><a href="compcert.backend.LTL.html#final_state">LTL.final_state</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#final_state">Linear.final_state</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#st2">st2</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4214')">Proof.</div>
-<div class="proofscript" id="proof4214">
+<div class="toggleproof" onclick="toggleDisplay('proof4368')">Proof.</div>
+<div class="proofscript" id="proof4368">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H4</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -751,8 +751,8 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="transf_program_correct">transf_program_correct</a></span> <span class="id">prog</span> <span class="id">tprog</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linearizeproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#prog">prog</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tprog">tprog</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> (<span class="id"><a href="compcert.backend.LTL.html#semantics">LTL.semantics</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#prog">prog</a></span>) (<span class="id"><a href="compcert.backend.Linear.html#semantics">Linear.semantics</a></span> <span class="id"><a href="compcert.backend.Linearizeproof.html#tprog">tprog</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4215')">Proof.</div>
-<div class="proofscript" id="proof4215">
+<div class="toggleproof" onclick="toggleDisplay('proof4369')">Proof.</div>
+<div class="proofscript" id="proof4369">
 &nbsp;&nbsp;<span class="id">fsim</span> <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_star">forward_simulation_star</a></span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">subst</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q</span> <span class="id">_</span> [ ]. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.is_internal_transf_partial_id">Genv.is_internal_transf_partial_id</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> [|] ? <span class="id">Hf</span>; <span class="id">monadInv</span> <span class="id">Hf</span>; <span class="tactic">auto</span>.<br/>

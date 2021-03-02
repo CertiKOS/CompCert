@@ -548,8 +548,8 @@
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">v</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#le">le</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span> -&gt; (<span class="id"><a href="compcert.backend.CminorSel.html#p">p</a></span> &gt; <span class="id"><a href="compcert.backend.CminorSel.html#n">n</a></span>)%<span class="id">nat</span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">le</span>' <span class="id"><a href="compcert.backend.CminorSel.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2737')">Proof.</div>
-<div class="proofscript" id="proof2737">
+<div class="toggleproof" onclick="toggleDisplay('proof2913')">Proof.</div>
+<div class="proofscript" id="proof2913">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">omegaContradiction</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">n</span>; <span class="tactic">simpl</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>. <span class="tactic">auto</span>.<br/>
@@ -562,8 +562,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">v</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#le">le</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span> -&gt; (<span class="id"><a href="compcert.backend.CminorSel.html#p">p</a></span> &lt;= <span class="id"><a href="compcert.backend.CminorSel.html#n">n</a></span>)%<span class="id">nat</span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">le</span>' (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#n">n</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2738')">Proof.</div>
-<div class="proofscript" id="proof2738">
+<div class="toggleproof" onclick="toggleDisplay('proof2914')">Proof.</div>
+<div class="proofscript" id="proof2914">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">assumption</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">destruct</span> <span class="id">n</span>. <span class="id">omegaContradiction</span>.<br/>
@@ -575,8 +575,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#e">e</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#m">m</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#le">le</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#a">a</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">le</span>', <span class="id"><a href="compcert.backend.CminorSel.html#insert_lenv">insert_lenv</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#le">le</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#p">p</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#w">w</a></span> <span class="id">le</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#e">e</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#m">m</a></span> <span class="id">le</span>' (<span class="id"><a href="compcert.backend.CminorSel.html#lift_expr">lift_expr</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#p">p</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#a">a</a></span>) <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2739')">Proof.</div>
-<div class="proofscript" id="proof2739">
+<div class="toggleproof" onclick="toggleDisplay('proof2915')">Proof.</div>
+<div class="proofscript" id="proof2915">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">w</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr_ind3">eval_expr_ind3</a></span> <span class="id">ge</span> <span class="id">sp</span> <span class="id">e</span> <span class="id">m</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">le</span> <span class="id">a</span> <span class="id">v</span> =&gt;<br/>
@@ -606,8 +606,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ge</span> <span class="id">sp</span> <span class="id">e</span> <span class="id">m</span> <span class="id">le</span> <span class="id">a</span> <span class="id">v</span> <span class="id">w</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#e">e</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#m">m</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#le">le</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#a">a</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#e">e</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#m">m</a></span> (<span class="id"><a href="compcert.backend.CminorSel.html#w">w</a></span>::<span class="id"><a href="compcert.backend.CminorSel.html#le">le</a></span>) (<span class="id"><a href="compcert.backend.CminorSel.html#lift">lift</a></span> <span class="id"><a href="compcert.backend.CminorSel.html#a">a</a></span>) <span class="id"><a href="compcert.backend.CminorSel.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2740')">Proof.</div>
-<div class="proofscript" id="proof2740">
+<div class="toggleproof" onclick="toggleDisplay('proof2916')">Proof.</div>
+<div class="proofscript" id="proof2916">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.CminorSel.html#lift">lift</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.CminorSel.html#eval_lift_expr">eval_lift_expr</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">eexact</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CminorSel.html#insert_lenv_0">insert_lenv_0</a></span>.<br/>
 Qed.</div>

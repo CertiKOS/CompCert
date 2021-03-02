@@ -150,8 +150,8 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.le_lt_trans">le_lt_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x1</span> <span class="id">x2</span> <span class="id">x3</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x1">x1</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x2">x2</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x2">x2</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x3">x3</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x1">x1</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x3">x3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof250')">Proof.</div>
-<div class="proofscript" id="proof250">
+<div class="toggleproof" onclick="toggleDisplay('proof242')">Proof.</div>
+<div class="proofscript" id="proof242">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span>; <span class="tactic">intros</span>; <span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Heaps.html#E.compare">E.compare</a></span> <span class="id">x1</span> <span class="id">x3</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -162,8 +162,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.lt_le_trans">lt_le_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x1</span> <span class="id">x2</span> <span class="id">x3</span>, <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x1">x1</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x2">x2</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x2">x2</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x3">x3</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x1">x1</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x3">x3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof251')">Proof.</div>
-<div class="proofscript" id="proof251">
+<div class="toggleproof" onclick="toggleDisplay('proof243')">Proof.</div>
+<div class="proofscript" id="proof243">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span>; <span class="tactic">intros</span>; <span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Heaps.html#E.compare">E.compare</a></span> <span class="id">x1</span> <span class="id">x3</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -174,8 +174,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.le_trans">le_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x1</span> <span class="id">x2</span> <span class="id">x3</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x1">x1</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x2">x2</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x2">x2</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x3">x3</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x1">x1</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x3">x3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof252')">Proof.</div>
-<div class="proofscript" id="proof252">
+<div class="toggleproof" onclick="toggleDisplay('proof244')">Proof.</div>
+<div class="proofscript" id="proof244">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">H0</span>. <span class="tactic">red</span>; <span class="id">left</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#E.eq_trans">E.eq_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="id">right</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le_lt_trans">le_lt_trans</a></span>; <span class="tactic">eauto</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="id">right</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_le_trans">lt_le_trans</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -184,8 +184,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.lt_heap_trans">lt_heap_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof253')">Proof.</div>
-<div class="proofscript" id="proof253">
+<div class="toggleproof" onclick="toggleDisplay('proof245')">Proof.</div>
+<div class="proofscript" id="proof245">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_le_trans">lt_le_trans</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -194,8 +194,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.gt_heap_trans">gt_heap_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof254')">Proof.</div>
-<div class="proofscript" id="proof254">
+<div class="toggleproof" onclick="toggleDisplay('proof246')">Proof.</div>
+<div class="proofscript" id="proof246">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le_lt_trans">le_lt_trans</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -206,8 +206,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.In_partition">In_partition</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">pivot</span>, ~<span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof255')">Proof.</div>
-<div class="proofscript" id="proof255">
+<div class="toggleproof" onclick="toggleDisplay('proof247')">Proof.</div>
+<div class="proofscript" id="proof247">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span> <span class="id">pivot</span> <span class="id">NEQ</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">pivot</span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">tauto</span>.<br/>
@@ -224,8 +224,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.partition_lt">partition_lt</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">pivot</span> <span class="id">h</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> /\ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof256')">Proof.</div>
-<div class="proofscript" id="proof256">
+<div class="toggleproof" onclick="toggleDisplay('proof248')">Proof.</div>
+<div class="proofscript" id="proof248">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span> <span class="id">pivot</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">pivot</span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id">e3</span> <span class="kwd">in</span> *; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id">e3</span> <span class="kwd">in</span> *; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">tauto</span>.<br/>
@@ -236,8 +236,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.partition_gt">partition_gt</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">pivot</span> <span class="id">h</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> /\ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof257')">Proof.</div>
-<div class="proofscript" id="proof257">
+<div class="toggleproof" onclick="toggleDisplay('proof249')">Proof.</div>
+<div class="proofscript" id="proof249">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span> <span class="id">pivot</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">pivot</span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id">e3</span> <span class="kwd">in</span> *; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id">e3</span> <span class="kwd">in</span> *; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">tauto</span>.<br/>
@@ -248,8 +248,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.partition_split">partition_split</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pivot</span> <span class="id">h</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> /\ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof258')">Proof.</div>
-<div class="proofscript" id="proof258">
+<div class="toggleproof" onclick="toggleDisplay('proof250')">Proof.</div>
+<div class="proofscript" id="proof250">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">pivot</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">pivot</span> <span class="id">h0</span>); <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">intuition</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap_trans">lt_heap_trans</a></span>; <span class="tactic">eauto</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
@@ -283,8 +283,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pivot</span> <span class="id">h</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)) /\ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id"><a href="compcert.lib.Heaps.html#pivot">pivot</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof259')">Proof.</div>
-<div class="proofscript" id="proof259">
+<div class="toggleproof" onclick="toggleDisplay('proof251')">Proof.</div>
+<div class="proofscript" id="proof251">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">pivot</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">pivot</span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id">e3</span> <span class="kwd">in</span> *; <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap_trans">lt_heap_trans</a></span> <span class="kwd">with</span> <span class="id">x</span>; <span class="tactic">auto</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
@@ -304,8 +304,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.insert_bst">insert_bst</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.insert">insert</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof260')">Proof.</div>
-<div class="proofscript" id="proof260">
+<div class="toggleproof" onclick="toggleDisplay('proof252')">Proof.</div>
+<div class="proofscript" id="proof252">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.insert">insert</a></span>. <span class="id">case_eq</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">x</span> <span class="id">h</span>). <span class="tactic">intros</span> <span class="id">a</span> <span class="id">b</span> <span class="id">EQ</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition_bst">partition_bst</a></span> <span class="id">x</span> <span class="id">h</span> <span class="id">H</span>).<br/>
@@ -315,8 +315,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.In_insert">In_insert</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.insert">insert</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof261')">Proof.</div>
-<div class="proofscript" id="proof261">
+<div class="toggleproof" onclick="toggleDisplay('proof253')">Proof.</div>
+<div class="proofscript" id="proof253">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.insert">insert</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">case_eq</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.partition">partition</a></span> <span class="id">x</span> <span class="id">h</span>). <span class="tactic">intros</span> <span class="id">a</span> <span class="id">b</span> <span class="id">EQ</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id">y</span> <span class="id">x</span> \/ ~<span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id">y</span> <span class="id">x</span>).<br/>
@@ -331,8 +331,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.deleteMin_lt">deleteMin_lt</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>) <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof262')">Proof.</div>
-<div class="proofscript" id="proof262">
+<div class="toggleproof" onclick="toggleDisplay('proof254')">Proof.</div>
+<div class="proofscript" id="proof254">
 <span class="id">Opaque</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span> <span class="id">h0</span>) ; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -343,8 +343,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.deleteMin_bst">deleteMin_bst</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof263')">Proof.</div>
-<div class="proofscript" id="proof263">
+<div class="toggleproof" onclick="toggleDisplay('proof255')">Proof.</div>
+<div class="proofscript" id="proof255">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
@@ -359,8 +359,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">y</span> <span class="id">x</span> <span class="id">h</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.findMin">findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof264')">Proof.</div>
-<div class="proofscript" id="proof264">
+<div class="toggleproof" onclick="toggleDisplay('proof256')">Proof.</div>
+<div class="proofscript" id="proof256">
 <span class="id">Transparent</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">y</span> <span class="id">x</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMin">deleteMin</a></span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">discriminate</span>.<br/>
@@ -371,8 +371,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.gt_heap_In">gt_heap_In</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof265')">Proof.</div>
-<div class="proofscript" id="proof265">
+<div class="toggleproof" onclick="toggleDisplay('proof257')">Proof.</div>
+<div class="proofscript" id="proof257">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_le_trans">lt_le_trans</a></span> <span class="kwd">with</span> <span class="id">x0</span>; <span class="tactic">auto</span>. <span class="tactic">red</span>. <span class="id">left</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#E.eq_sym">E.eq_sym</a></span>; <span class="tactic">auto</span>.<br/>
@@ -380,8 +380,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.findMin_min">findMin_min</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.findMin">findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="kwd">forall</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof266')">Proof.</div>
-<div class="proofscript" id="proof266">
+<div class="toggleproof" onclick="toggleDisplay('proof258')">Proof.</div>
+<div class="proofscript" id="proof258">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">h1</span>.<br/>
@@ -399,8 +399,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.findMin_empty">findMin_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.Empty">Empty</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.findMin">findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof267')">Proof.</div>
-<div class="proofscript" id="proof267">
+<div class="toggleproof" onclick="toggleDisplay('proof259')">Proof.</div>
+<div class="proofscript" id="proof259">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">h1</span>. <span class="tactic">congruence</span>. <span class="tactic">apply</span> <span class="id">IHh1</span>. <span class="tactic">congruence</span>.<br/>
@@ -410,8 +410,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.deleteMax_gt">deleteMax_gt</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.gt_heap">gt_heap</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>) <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof268')">Proof.</div>
-<div class="proofscript" id="proof268">
+<div class="toggleproof" onclick="toggleDisplay('proof260')">Proof.</div>
+<div class="proofscript" id="proof260">
 <span class="id">Opaque</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -422,8 +422,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.deleteMax_bst">deleteMax_bst</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof269')">Proof.</div>
-<div class="proofscript" id="proof269">
+<div class="toggleproof" onclick="toggleDisplay('proof261')">Proof.</div>
+<div class="proofscript" id="proof261">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
@@ -438,8 +438,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">y</span> <span class="id">x</span> <span class="id">h</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.findMax">findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof270')">Proof.</div>
-<div class="proofscript" id="proof270">
+<div class="toggleproof" onclick="toggleDisplay('proof262')">Proof.</div>
+<div class="proofscript" id="proof262">
 <span class="id">Transparent</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">y</span> <span class="id">x</span> <span class="id">h0</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.deleteMax">deleteMax</a></span> <span class="id">h0</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
@@ -450,17 +450,17 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.lt_heap_In">lt_heap_In</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.lt_heap">lt_heap</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof271')">Proof.</div>
-<div class="proofscript" id="proof271">
+<div class="toggleproof" onclick="toggleDisplay('proof263')">Proof.</div>
+<div class="proofscript" id="proof263">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">intuition</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le_lt_trans">le_lt_trans</a></span> <span class="kwd">with</span> <span class="id">x0</span>; <span class="tactic">auto</span>. <span class="tactic">red</span>. <span class="id">left</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#E.eq_sym">E.eq_sym</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intuition</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le_lt_trans">le_lt_trans</a></span> <span class="kwd">with</span> <span class="id">x0</span>; <span class="tactic">auto</span>. <span class="tactic">red</span>. <span class="id">left</span>. <span class="tactic">assumption</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.findMax_max">findMax_max</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.findMax">findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.bst">bst</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="kwd">forall</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.le">le</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof272')">Proof.</div>
-<div class="proofscript" id="proof272">
+<div class="toggleproof" onclick="toggleDisplay('proof264')">Proof.</div>
+<div class="proofscript" id="proof264">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">h2</span>.<br/>
@@ -480,8 +480,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.R.findMax_empty">findMax_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.Empty">Empty</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.R.findMax">findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof273')">Proof.</div>
-<div class="proofscript" id="proof273">
+<div class="toggleproof" onclick="toggleDisplay('proof265')">Proof.</div>
+<div class="proofscript" id="proof265">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">h</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">h2</span>. <span class="tactic">congruence</span>. <span class="tactic">apply</span> <span class="id">IHh2</span>. <span class="tactic">congruence</span>.<br/>
@@ -498,22 +498,22 @@ Qed.</div>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="SplayHeapSet.empty">empty</a></span> : <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span> := <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.Empty">R.Empty</a></span>.<br/>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="SplayHeapSet.insert">insert</a></span> (<span class="id">x</span>: <span class="id"><a href="compcert.lib.Heaps.html#E.t">E.t</a></span>) (<span class="id">h</span>: <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span>) : <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span> := <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.insert">R.insert</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof274')">Next Obligation.</div>
-<div class="proofscript" id="proof274">
+<div class="toggleproof" onclick="toggleDisplay('proof266')">Next Obligation.</div>
+<div class="proofscript" id="proof266">
  <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.insert_bst">R.insert_bst</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>. Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="SplayHeapSet.findMin">findMin</a></span> (<span class="id">h</span>: <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="compcert.lib.Heaps.html#E.t">E.t</a></span> := <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">R.findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="SplayHeapSet.deleteMin">deleteMin</a></span> (<span class="id">h</span>: <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span>) : <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span> := <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.deleteMin">R.deleteMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof275')">Next Obligation.</div>
-<div class="proofscript" id="proof275">
+<div class="toggleproof" onclick="toggleDisplay('proof267')">Next Obligation.</div>
+<div class="proofscript" id="proof267">
  <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.deleteMin_bst">R.deleteMin_bst</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>. Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="SplayHeapSet.findMax">findMax</a></span> (<span class="id">h</span>: <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="compcert.lib.Heaps.html#E.t">E.t</a></span> := <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">R.findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="SplayHeapSet.deleteMax">deleteMax</a></span> (<span class="id">h</span>: <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span>) : <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.t">t</a></span> := <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.deleteMax">R.deleteMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof276')">Next Obligation.</div>
-<div class="proofscript" id="proof276">
+<div class="toggleproof" onclick="toggleDisplay('proof268')">Next Obligation.</div>
+<div class="proofscript" id="proof268">
  <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.deleteMax_bst">R.deleteMax_bst</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>. Qed.</div>
 <br/>
 <div class="doc">Membership (for specification) </div>
@@ -523,8 +523,8 @@ Qed.</div>
 <div class="doc">Properties of <span class="bracket"><span class="id">empty</span></span> </div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.In_empty">In_empty</a></span>: <span class="kwd">forall</span> <span class="id">x</span>, ~<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.empty">empty</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof277')">Proof.</div>
-<div class="proofscript" id="proof277">
+<div class="toggleproof" onclick="toggleDisplay('proof269')">Proof.</div>
+<div class="proofscript" id="proof269">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
@@ -534,8 +534,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.In_insert">In_insert</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">h</span> <span class="id">y</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.insert">insert</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof278')">Proof.</div>
-<div class="proofscript" id="proof278">
+<div class="toggleproof" onclick="toggleDisplay('proof270')">Proof.</div>
+<div class="proofscript" id="proof270">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.insert">insert</a></span>; <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In_insert">R.In_insert</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -543,8 +543,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.findMin_empty">findMin_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt; ~<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof279')">Proof.</div>
-<div class="proofscript" id="proof279">
+<div class="toggleproof" onclick="toggleDisplay('proof271')">Proof.</div>
+<div class="proofscript" id="proof271">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">findMin</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj1_sig">proj1_sig</a></span> <span class="id">h</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">tauto</span>.<br/>
@@ -553,8 +553,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.findMin_min">findMin_min</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof280')">Proof.</div>
-<div class="proofscript" id="proof280">
+<div class="toggleproof" onclick="toggleDisplay('proof272')">Proof.</div>
+<div class="proofscript" id="proof272">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">findMin</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>; <span class="tactic">simpl</span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">change</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.le">R.le</a></span> <span class="id">x</span> <span class="id">y</span>). <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin_min">R.findMin_min</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
@@ -565,8 +565,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span> <span class="id">x</span> <span class="id">y</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">findMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.deleteMin">deleteMin</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof281')">Proof.</div>
-<div class="proofscript" id="proof281">
+<div class="toggleproof" onclick="toggleDisplay('proof273')">Proof.</div>
+<div class="proofscript" id="proof273">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMin">findMin</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In_deleteMin">R.In_deleteMin</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -575,8 +575,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.findMax_empty">findMax_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt; ~<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof282')">Proof.</div>
-<div class="proofscript" id="proof282">
+<div class="toggleproof" onclick="toggleDisplay('proof274')">Proof.</div>
+<div class="proofscript" id="proof274">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">findMax</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj1_sig">proj1_sig</a></span> <span class="id">h</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">tauto</span>.<br/>
@@ -585,8 +585,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="SplayHeapSet.findMax_max">findMax_max</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#E.lt">E.lt</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof283')">Proof.</div>
-<div class="proofscript" id="proof283">
+<div class="toggleproof" onclick="toggleDisplay('proof275')">Proof.</div>
+<div class="proofscript" id="proof275">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">findMax</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>; <span class="tactic">simpl</span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">change</span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.le">R.le</a></span> <span class="id">y</span> <span class="id">x</span>). <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax_max">R.findMax_max</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
@@ -597,8 +597,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">h</span> <span class="id">x</span> <span class="id">y</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">findMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.Heaps.html#E.eq">E.eq</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> <span class="id"><a href="compcert.lib.Heaps.html#x">x</a></span> \/ <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span> <span class="id"><a href="compcert.lib.Heaps.html#y">y</a></span> (<span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.deleteMax">deleteMax</a></span> <span class="id"><a href="compcert.lib.Heaps.html#h">h</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof284')">Proof.</div>
-<div class="proofscript" id="proof284">
+<div class="toggleproof" onclick="toggleDisplay('proof276')">Proof.</div>
+<div class="proofscript" id="proof276">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.findMax">findMax</a></span>, <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In">In</a></span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Heaps.html#SplayHeapSet.In_deleteMax">R.In_deleteMax</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>

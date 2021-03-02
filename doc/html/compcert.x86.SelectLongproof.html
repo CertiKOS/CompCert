@@ -66,8 +66,8 @@
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_longconst">eval_longconst</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">n</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#longconst">longconst</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2903')">Proof.</div>
-<div class="proofscript" id="proof2903">
+<div class="toggleproof" onclick="toggleDisplay('proof3081')">Proof.</div>
+<div class="proofscript" id="proof3081">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#longconst">longconst</a></span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_longconst">SplitLongproof.eval_longconst</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">EvalOp</span>.<br/>
@@ -76,8 +76,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="is_longconst_sound">is_longconst_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">a</span> <span class="id">n</span> <span class="id">le</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.x86.SelectLong.html#is_longconst">is_longconst</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span> -&gt; <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> -&gt; <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> = <span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2904')">Proof with</div>
-<div class="proofscript" id="proof2904">
+<div class="toggleproof" onclick="toggleDisplay('proof3082')">Proof with</div>
+<div class="proofscript" id="proof3082">
  (<span class="tactic">try</span> <span class="tactic">discriminate</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#is_longconst">is_longconst</a></span> <span class="kwd">in</span> *. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#is_longconst_sound">SplitLongproof.is_longconst_sound</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -87,8 +87,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_intoflong">eval_intoflong</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#intoflong">intoflong</a></span> <span class="id"><a href="compcert.common.Values.html#Val.loword">Val.loword</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2905')">Proof.</div>
-<div class="proofscript" id="proof2905">
+<div class="toggleproof" onclick="toggleDisplay('proof3083')">Proof.</div>
+<div class="proofscript" id="proof3083">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#intoflong">intoflong</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_intoflong">SplitLongproof.eval_intoflong</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#is_longconst">is_longconst</a></span> <span class="id">a</span>) <span class="kwd">as</span> [<span class="id">n</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">TrivialExists</span>. <span class="tactic">simpl</span>. <span class="id">erewrite</span> (<span class="id"><a href="compcert.x86.SelectLongproof.html#is_longconst_sound">is_longconst_sound</a></span> <span class="id">x</span>) <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
@@ -96,8 +96,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_longofintu">eval_longofintu</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#longofintu">longofintu</a></span> <span class="id"><a href="compcert.common.Values.html#Val.longofintu">Val.longofintu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2906')">Proof.</div>
-<div class="proofscript" id="proof2906">
+<div class="toggleproof" onclick="toggleDisplay('proof3084')">Proof.</div>
+<div class="proofscript" id="proof3084">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#longofintu">longofintu</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_longofintu">SplitLongproof.eval_longofintu</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.SplitLong.html#is_intconst">is_intconst</a></span> <span class="id">a</span>) <span class="kwd">as</span> [<span class="id">n</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">econstructor</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_longconst">eval_longconst</a></span>.<br/>
@@ -106,8 +106,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_longofint">eval_longofint</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#longofint">longofint</a></span> <span class="id"><a href="compcert.common.Values.html#Val.longofint">Val.longofint</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2907')">Proof.</div>
-<div class="proofscript" id="proof2907">
+<div class="toggleproof" onclick="toggleDisplay('proof3085')">Proof.</div>
+<div class="proofscript" id="proof3085">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#longofint">longofint</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_longofint">SplitLongproof.eval_longofint</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.SplitLong.html#is_intconst">is_intconst</a></span> <span class="id">a</span>) <span class="kwd">as</span> [<span class="id">n</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">econstructor</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_longconst">eval_longconst</a></span>.<br/>
@@ -116,8 +116,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_notl">eval_notl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#notl">notl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.notl">Val.notl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2908')">Proof.</div>
-<div class="proofscript" id="proof2908">
+<div class="toggleproof" onclick="toggleDisplay('proof3086')">Proof.</div>
+<div class="proofscript" id="proof3086">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#notl">notl</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_notl">SplitLongproof.eval_notl</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#notl_match">notl_match</a></span> <span class="id">a</span>).<br/>
 - <span class="id">InvEval</span>. <span class="id">econstructor</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_longconst">eval_longconst</a></span>. <span class="tactic">auto</span>.<br/>
@@ -126,8 +126,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_andlimm">eval_andlimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#andlimm">andlimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.andl">Val.andl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2909')">Proof.</div>
-<div class="proofscript" id="proof2909">
+<div class="toggleproof" onclick="toggleDisplay('proof3087')">Proof.</div>
+<div class="proofscript" id="proof3087">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#andlimm">andlimm</a></span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq">Int64.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq_spec">Int64.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.zero">Int64.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int64.zero">Int64.zero</a></span>); <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_longconst">eval_longconst</a></span>.<br/>
@@ -142,8 +142,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_andl">eval_andl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#andl">andl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.andl">Val.andl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2910')">Proof.</div>
-<div class="proofscript" id="proof2910">
+<div class="toggleproof" onclick="toggleDisplay('proof3088')">Proof.</div>
+<div class="proofscript" id="proof3088">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#andl">andl</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_andl">SplitLongproof.eval_andl</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#andl_match">andl_match</a></span> <span class="id">a</span> <span class="id">b</span>).<br/>
 - <span class="id">InvEval</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.andl_commut">Val.andl_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_andlimm">eval_andlimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -152,8 +152,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_orlimm">eval_orlimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#orlimm">orlimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.orl">Val.orl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2911')">Proof.</div>
-<div class="proofscript" id="proof2911">
+<div class="toggleproof" onclick="toggleDisplay('proof3089')">Proof.</div>
+<div class="proofscript" id="proof3089">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#orlimm">orlimm</a></span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq">Int64.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq_spec">Int64.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.zero">Int64.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">subst</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.or_zero">Int64.or_zero</a></span>; <span class="tactic">auto</span>.<br/>
@@ -166,8 +166,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_orl">eval_orl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#orl">orl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.orl">Val.orl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2912')">Proof.</div>
-<div class="proofscript" id="proof2912">
+<div class="toggleproof" onclick="toggleDisplay('proof3090')">Proof.</div>
+<div class="proofscript" id="proof3090">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#orl">orl</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_orl">SplitLongproof.eval_orl</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">DEFAULT</span>: <span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id">le</span> (<span class="id"><a href="compcert.backend.CminorSel.html#Eop">Eop</a></span> <span class="id"><a href="compcert.x86.Op.html#Oorl">Oorl</a></span> (<span class="id">a</span>:::<span class="id">b</span>:::<span class="id"><a href="compcert.backend.CminorSel.html#Enil">Enil</a></span>)) <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.orl">Val.orl</a></span> <span class="id">x</span> <span class="id">y</span>) <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span>) <span class="tactic">by</span> <span class="id">TrivialExists</span>.<br/>
@@ -194,8 +194,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_xorlimm">eval_xorlimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#xorlimm">xorlimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.xorl">Val.xorl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2913')">Proof.</div>
-<div class="proofscript" id="proof2913">
+<div class="toggleproof" onclick="toggleDisplay('proof3091')">Proof.</div>
+<div class="proofscript" id="proof3091">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#xorlimm">xorlimm</a></span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq">Int64.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq_spec">Int64.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.zero">Int64.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">subst</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.xor_zero">Int64.xor_zero</a></span>; <span class="tactic">auto</span>.<br/>
@@ -212,8 +212,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_xorl">eval_xorl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#xorl">xorl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.xorl">Val.xorl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2914')">Proof.</div>
-<div class="proofscript" id="proof2914">
+<div class="toggleproof" onclick="toggleDisplay('proof3092')">Proof.</div>
+<div class="proofscript" id="proof3092">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#xorl">xorl</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_xorl">SplitLongproof.eval_xorl</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#xorl_match">xorl_match</a></span> <span class="id">a</span> <span class="id">b</span>).<br/>
 - <span class="id">InvEval</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.xorl_commut">Val.xorl_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_xorlimm">eval_xorlimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -222,8 +222,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shllimm">eval_shllimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">e</span> =&gt; <span class="id"><a href="compcert.x86.SelectLong.html#shllimm">shllimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.shll">Val.shll</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2915')">Proof.</div>
-<div class="proofscript" id="proof2915">
+<div class="toggleproof" onclick="toggleDisplay('proof3093')">Proof.</div>
+<div class="proofscript" id="proof3093">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shllimm">shllimm</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shllimm">SplitLongproof.eval_shllimm</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
@@ -252,8 +252,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shrluimm">eval_shrluimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">e</span> =&gt; <span class="id"><a href="compcert.x86.SelectLong.html#shrluimm">shrluimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.shrlu">Val.shrlu</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2916')">Proof.</div>
-<div class="proofscript" id="proof2916">
+<div class="toggleproof" onclick="toggleDisplay('proof3094')">Proof.</div>
+<div class="proofscript" id="proof3094">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shrluimm">shrluimm</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shrluimm">SplitLongproof.eval_shrluimm</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
@@ -275,8 +275,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shrlimm">eval_shrlimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">e</span> =&gt; <span class="id"><a href="compcert.x86.SelectLong.html#shrlimm">shrlimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.shrl">Val.shrl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2917')">Proof.</div>
-<div class="proofscript" id="proof2917">
+<div class="toggleproof" onclick="toggleDisplay('proof3095')">Proof.</div>
+<div class="proofscript" id="proof3095">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shrlimm">shrlimm</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shrlimm">SplitLongproof.eval_shrlimm</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
@@ -298,8 +298,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shll">eval_shll</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#shll">shll</a></span> <span class="id"><a href="compcert.common.Values.html#Val.shll">Val.shll</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2918')">Proof.</div>
-<div class="proofscript" id="proof2918">
+<div class="toggleproof" onclick="toggleDisplay('proof3096')">Proof.</div>
+<div class="proofscript" id="proof3096">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shll">shll</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shll">SplitLongproof.eval_shll</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.SplitLong.html#is_intconst">is_intconst</a></span> <span class="id">b</span>) <span class="kwd">as</span> [<span class="id">n2</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">exploit</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#is_intconst_sound">is_intconst_sound</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">EQ</span>; <span class="tactic">subst</span> <span class="id">y</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_shllimm">eval_shllimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -307,8 +307,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shrlu">eval_shrlu</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#shrlu">shrlu</a></span> <span class="id"><a href="compcert.common.Values.html#Val.shrlu">Val.shrlu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2919')">Proof.</div>
-<div class="proofscript" id="proof2919">
+<div class="toggleproof" onclick="toggleDisplay('proof3097')">Proof.</div>
+<div class="proofscript" id="proof3097">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shrlu">shrlu</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shrlu">SplitLongproof.eval_shrlu</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.SplitLong.html#is_intconst">is_intconst</a></span> <span class="id">b</span>) <span class="kwd">as</span> [<span class="id">n2</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">exploit</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#is_intconst_sound">is_intconst_sound</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">EQ</span>; <span class="tactic">subst</span> <span class="id">y</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_shrluimm">eval_shrluimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -316,8 +316,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shrl">eval_shrl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#shrl">shrl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.shrl">Val.shrl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2920')">Proof.</div>
-<div class="proofscript" id="proof2920">
+<div class="toggleproof" onclick="toggleDisplay('proof3098')">Proof.</div>
+<div class="proofscript" id="proof3098">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shrl">shrl</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shrl">SplitLongproof.eval_shrl</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.SplitLong.html#is_intconst">is_intconst</a></span> <span class="id">b</span>) <span class="kwd">as</span> [<span class="id">n2</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">exploit</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#is_intconst_sound">is_intconst_sound</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">EQ</span>; <span class="tactic">subst</span> <span class="id">y</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_shrlimm">eval_shrlimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -325,8 +325,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_negl">eval_negl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#negl">negl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.negl">Val.negl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2921')">Proof.</div>
-<div class="proofscript" id="proof2921">
+<div class="toggleproof" onclick="toggleDisplay('proof3099')">Proof.</div>
+<div class="proofscript" id="proof3099">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#negl">negl</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_negl">SplitLongproof.eval_negl</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#is_longconst">is_longconst</a></span> <span class="id">a</span>) <span class="kwd">as</span> [<span class="id">n</span>|] <span class="id">eqn</span>:<span class="id">C</span>.<br/>
 - <span class="id">exploit</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#is_longconst_sound">is_longconst_sound</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">EQ</span>; <span class="tactic">subst</span> <span class="id">x</span>.<br/>
@@ -335,8 +335,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addlimm">eval_addlimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#addlimm">addlimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.addl">Val.addl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2922')">Proof.</div>
-<div class="proofscript" id="proof2922">
+<div class="toggleproof" onclick="toggleDisplay('proof3100')">Proof.</div>
+<div class="proofscript" id="proof3100">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#addlimm">addlimm</a></span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq">Int64.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq_spec">Int64.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.zero">Int64.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
@@ -349,8 +349,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addl">eval_addl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#addl">addl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.addl">Val.addl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2923')">Proof.</div>
-<div class="proofscript" id="proof2923">
+<div class="toggleproof" onclick="toggleDisplay('proof3101')">Proof.</div>
+<div class="proofscript" id="proof3101">
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">A</span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> (<span class="id"><a href="compcert.x86.SelectLongproof.html#x">x</a></span> + <span class="id"><a href="compcert.x86.SelectLongproof.html#y">y</a></span>) = <span class="id"><a href="compcert.lib.Integers.html#Int64.add">Int64.add</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#x">x</a></span>) (<span class="id"><a href="compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#y">y</a></span>)).<br/>
 &nbsp;&nbsp;{ <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eqm_samerepr">Int64.eqm_samerepr</a></span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">ints</span>. }<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">B</span>: <span class="kwd">forall</span> <span class="id">id</span> <span class="id">ofs</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
@@ -379,8 +379,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_subl">eval_subl</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#subl">subl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.subl">Val.subl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2924')">Proof.</div>
-<div class="proofscript" id="proof2924">
+<div class="toggleproof" onclick="toggleDisplay('proof3102')">Proof.</div>
+<div class="proofscript" id="proof3102">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#subl">subl</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_subl">SplitLongproof.eval_subl</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong_ptr32">Archi.splitlong_ptr32</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#subl_match">subl_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="id">InvEval</span>.<br/>
@@ -399,8 +399,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mullimm_base">eval_mullimm_base</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#mullimm_base">mullimm_base</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.mull">Val.mull</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2925')">Proof.</div>
-<div class="proofscript" id="proof2925">
+<div class="toggleproof" onclick="toggleDisplay('proof3103')">Proof.</div>
+<div class="proofscript" id="proof3103">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#mullimm_base">mullimm_base</a></span>. <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id">Int64.one_bits</span>'<span class="id">_decomp</span> <span class="id">n</span>); <span class="tactic">intros</span> <span class="id">D</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">Int64.one_bits</span>' <span class="id">n</span>) <span class="kwd">as</span> [ | <span class="id">i</span> [ | <span class="id">j</span> [ | ? ? ]]] <span class="id">eqn</span>:<span class="id">B</span>.<br/>
@@ -426,8 +426,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mullimm">eval_mullimm</a></span>: <span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#mullimm">mullimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.mull">Val.mull</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2926')">Proof.</div>
-<div class="proofscript" id="proof2926">
+<div class="toggleproof" onclick="toggleDisplay('proof3104')">Proof.</div>
+<div class="proofscript" id="proof3104">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#mullimm">mullimm</a></span>. <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_mullimm">SplitLongproof.eval_mullimm</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -449,8 +449,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mull">eval_mull</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#mull">mull</a></span> <span class="id"><a href="compcert.common.Values.html#Val.mull">Val.mull</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2927')">Proof.</div>
-<div class="proofscript" id="proof2927">
+<div class="toggleproof" onclick="toggleDisplay('proof3105')">Proof.</div>
+<div class="proofscript" id="proof3105">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#mull">mull</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_mull">SplitLongproof.eval_mull</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectLong.html#mull_match">mull_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="id">InvEval</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.mull_commut">Val.mull_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_mullimm">eval_mullimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -460,16 +460,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mullhu">eval_mullhu</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">a</span> =&gt; <span class="id"><a href="compcert.x86.SelectLong.html#mullhu">mullhu</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.mullhu">Val.mullhu</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2928')">Proof.</div>
-<div class="proofscript" id="proof2928">
+<div class="toggleproof" onclick="toggleDisplay('proof3106')">Proof.</div>
+<div class="proofscript" id="proof3106">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#mullhu">mullhu</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_mullhu">SplitLongproof.eval_mullhu</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">TrivialExists</span>. <span class="id">constructor</span>. <span class="tactic">eauto</span>. <span class="id">constructor</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_longconst">eval_longconst</a></span>. <span class="id">constructor</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mullhs">eval_mullhs</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectLongproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">a</span> =&gt; <span class="id"><a href="compcert.x86.SelectLong.html#mullhs">mullhs</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.mullhs">Val.mullhs</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> (<span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2929')">Proof.</div>
-<div class="proofscript" id="proof2929">
+<div class="toggleproof" onclick="toggleDisplay('proof3107')">Proof.</div>
+<div class="proofscript" id="proof3107">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#mullhs">mullhs</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_mullhs">SplitLongproof.eval_mullhs</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">TrivialExists</span>. <span class="id">constructor</span>. <span class="tactic">eauto</span>. <span class="id">constructor</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectLongproof.html#eval_longconst">eval_longconst</a></span>. <span class="id">constructor</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -479,8 +479,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.shrxl">Val.shrxl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#z">z</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#shrxlimm">shrxlimm</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#n">n</a></span>) <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2930')">Proof.</div>
-<div class="proofscript" id="proof2930">
+<div class="toggleproof" onclick="toggleDisplay('proof3108')">Proof.</div>
+<div class="proofscript" id="proof3108">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#shrxlimm">shrxlimm</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 + <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_shrxlimm">SplitLongproof.eval_shrxlimm</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong_ptr32">Archi.splitlong_ptr32</a></span>.<br/>
 + <span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
@@ -490,32 +490,32 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_divls_base">eval_divls_base</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_binary_constructor_sound">partial_binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#divls_base">divls_base</a></span> <span class="id"><a href="compcert.common.Values.html#Val.divls">Val.divls</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2931')">Proof.</div>
-<div class="proofscript" id="proof2931">
+<div class="toggleproof" onclick="toggleDisplay('proof3109')">Proof.</div>
+<div class="proofscript" id="proof3109">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#divls_base">divls_base</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_divls_base">SplitLongproof.eval_divls_base</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_modls_base">eval_modls_base</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_binary_constructor_sound">partial_binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#modls_base">modls_base</a></span> <span class="id"><a href="compcert.common.Values.html#Val.modls">Val.modls</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2932')">Proof.</div>
-<div class="proofscript" id="proof2932">
+<div class="toggleproof" onclick="toggleDisplay('proof3110')">Proof.</div>
+<div class="proofscript" id="proof3110">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#modls_base">modls_base</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_modls_base">SplitLongproof.eval_modls_base</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_divlu_base">eval_divlu_base</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_binary_constructor_sound">partial_binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#divlu_base">divlu_base</a></span> <span class="id"><a href="compcert.common.Values.html#Val.divlu">Val.divlu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2933')">Proof.</div>
-<div class="proofscript" id="proof2933">
+<div class="toggleproof" onclick="toggleDisplay('proof3111')">Proof.</div>
+<div class="proofscript" id="proof3111">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#divlu_base">divlu_base</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_divlu_base">SplitLongproof.eval_divlu_base</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_modlu_base">eval_modlu_base</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_binary_constructor_sound">partial_binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#modlu_base">modlu_base</a></span> <span class="id"><a href="compcert.common.Values.html#Val.modlu">Val.modlu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2934')">Proof.</div>
-<div class="proofscript" id="proof2934">
+<div class="toggleproof" onclick="toggleDisplay('proof3112')">Proof.</div>
+<div class="proofscript" id="proof3112">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#modlu_base">modlu_base</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_modlu_base">SplitLongproof.eval_modlu_base</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
@@ -527,8 +527,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#b">b</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.cmplu">Val.cmplu</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span>) <span class="id"><a href="compcert.x86.SelectLongproof.html#c">c</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#cmplu">cmplu</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#c">c</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2935')">Proof.</div>
-<div class="proofscript" id="proof2935">
+<div class="toggleproof" onclick="toggleDisplay('proof3113')">Proof.</div>
+<div class="proofscript" id="proof3113">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#cmplu">cmplu</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_cmplu">SplitLongproof.eval_cmplu</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong_ptr32">Archi.splitlong_ptr32</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.cmplu">Val.cmplu</a></span> <span class="kwd">in</span> <span class="id">H1</span>.<br/>
@@ -549,8 +549,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#b">b</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.cmpl">Val.cmpl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#c">c</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectLong.html#cmpl">cmpl</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#c">c</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectLongproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectLongproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2936')">Proof.</div>
-<div class="proofscript" id="proof2936">
+<div class="toggleproof" onclick="toggleDisplay('proof3114')">Proof.</div>
+<div class="proofscript" id="proof3114">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#cmpl">cmpl</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_cmpl">SplitLongproof.eval_cmpl</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.cmpl">Val.cmpl</a></span> <span class="kwd">in</span> <span class="id">H1</span>.<br/>
@@ -566,32 +566,32 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_longoffloat">eval_longoffloat</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_unary_constructor_sound">partial_unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#longoffloat">longoffloat</a></span> <span class="id"><a href="compcert.common.Values.html#Val.longoffloat">Val.longoffloat</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2937')">Proof.</div>
-<div class="proofscript" id="proof2937">
+<div class="toggleproof" onclick="toggleDisplay('proof3115')">Proof.</div>
+<div class="proofscript" id="proof3115">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#longoffloat">longoffloat</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_longoffloat">SplitLongproof.eval_longoffloat</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_floatoflong">eval_floatoflong</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_unary_constructor_sound">partial_unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#floatoflong">floatoflong</a></span> <span class="id"><a href="compcert.common.Values.html#Val.floatoflong">Val.floatoflong</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2938')">Proof.</div>
-<div class="proofscript" id="proof2938">
+<div class="toggleproof" onclick="toggleDisplay('proof3116')">Proof.</div>
+<div class="proofscript" id="proof3116">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#floatoflong">floatoflong</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_floatoflong">SplitLongproof.eval_floatoflong</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_longofsingle">eval_longofsingle</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_unary_constructor_sound">partial_unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#longofsingle">longofsingle</a></span> <span class="id"><a href="compcert.common.Values.html#Val.longofsingle">Val.longofsingle</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2939')">Proof.</div>
-<div class="proofscript" id="proof2939">
+<div class="toggleproof" onclick="toggleDisplay('proof3117')">Proof.</div>
+<div class="proofscript" id="proof3117">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#longofsingle">longofsingle</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_longofsingle">SplitLongproof.eval_longofsingle</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_singleoflong">eval_singleoflong</a></span>: <span class="id"><a href="compcert.x86.SelectLongproof.html#partial_unary_constructor_sound">partial_unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectLong.html#singleoflong">singleoflong</a></span> <span class="id"><a href="compcert.common.Values.html#Val.singleoflong">Val.singleoflong</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2940')">Proof.</div>
-<div class="proofscript" id="proof2940">
+<div class="toggleproof" onclick="toggleDisplay('proof3118')">Proof.</div>
+<div class="proofscript" id="proof3118">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectLong.html#singleoflong">singleoflong</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span> <span class="id">eqn</span>:<span class="id">SL</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.SplitLongproof.html#eval_singleoflong">SplitLongproof.eval_singleoflong</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>

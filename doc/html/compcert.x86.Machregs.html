@@ -51,8 +51,8 @@
 &nbsp;&nbsp;| <span class="id"><a name="FP0">FP0</a></span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mreg_eq">mreg_eq</a></span>: <span class="kwd">forall</span> (<span class="id">r1</span> <span class="id">r2</span>: <span class="id"><a href="compcert.x86.Machregs.html#mreg">mreg</a></span>), {<span class="id"><a href="compcert.x86.Machregs.html#r1">r1</a></span> = <span class="id"><a href="compcert.x86.Machregs.html#r2">r2</a></span>} + {<span class="id"><a href="compcert.x86.Machregs.html#r1">r1</a></span> &lt;&gt; <span class="id"><a href="compcert.x86.Machregs.html#r2">r2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3958')">Proof.</div>
-<div class="proofscript" id="proof3958">
+<div class="toggleproof" onclick="toggleDisplay('proof4099')">Proof.</div>
+<div class="proofscript" id="proof4099">
  <span class="id">decide</span> <span class="id">equality</span>. Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.x86.Machregs.html#mreg_eq">mreg_eq</a></span>.<br/>
 <br/>
@@ -65,8 +65,8 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="all_mregs_complete">all_mregs_complete</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">r</span>: <span class="id"><a href="compcert.x86.Machregs.html#mreg">mreg</a></span>), <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.x86.Machregs.html#r">r</a></span> <span class="id"><a href="compcert.x86.Machregs.html#all_mregs">all_mregs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3959')">Proof.</div>
-<div class="proofscript" id="proof3959">
+<div class="toggleproof" onclick="toggleDisplay('proof4100')">Proof.</div>
+<div class="proofscript" id="proof4100">
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="compcert.lib.Coqlib.html#proj_sumbool">proj_sumbool</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In_dec">In_dec</a></span> <span class="id"><a href="compcert.x86.Machregs.html#mreg_eq">mreg_eq</a></span> <span class="id"><a href="compcert.x86.Machregs.html#r">r</a></span> <span class="id"><a href="compcert.x86.Machregs.html#all_mregs">all_mregs</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) <span class="tactic">by</span> (<span class="tactic">destruct</span> <span class="id">r</span>; <span class="tactic">reflexivity</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">specialize</span> (<span class="id">H</span> <span class="id">r</span>). <span class="id">InvBooleans</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -102,8 +102,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="IndexedMreg.index_inj">index_inj</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">r2</span>, <span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">index</a></span> <span class="id"><a href="compcert.x86.Machregs.html#r1">r1</a></span> = <span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">index</a></span> <span class="id"><a href="compcert.x86.Machregs.html#r2">r2</a></span> -&gt; <span class="id"><a href="compcert.x86.Machregs.html#r1">r1</a></span> = <span class="id"><a href="compcert.x86.Machregs.html#r2">r2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3960')">Proof.</div>
-<div class="proofscript" id="proof3960">
+<div class="toggleproof" onclick="toggleDisplay('proof4101')">Proof.</div>
+<div class="proofscript" id="proof4101">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">decide_goal</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <span class="kwd">End</span> <span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg">IndexedMreg</a></span>.<br/>
@@ -365,6 +365,7 @@ Qed.</div>
 &nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Op.html#Olongofsingle">Olongofsingle</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
 &nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Op.html#Osingleoflong">Osingleoflong</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
 &nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Op.html#Ocmp">Ocmp</a></span> <span class="id">c</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Op.html#Osel">Osel</a></span> <span class="id">c</span> <span class="id">op</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <br/>

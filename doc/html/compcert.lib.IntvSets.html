@@ -53,8 +53,8 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.mem_In">mem_In</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> -&gt; (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.mem">mem</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1137')">Proof.</div>
-<div class="proofscript" id="proof1137">
+<div class="toggleproof" onclick="toggleDisplay('proof1174')">Proof.</div>
+<div class="proofscript" id="proof1174">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">x</span> <span class="id">h</span>).<br/>
@@ -74,8 +74,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.contains_In">contains_In</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l0</span> <span class="id">h0</span>, <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.contains">contains</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> -&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1138')">Proof.</div>
-<div class="proofscript" id="proof1138">
+<div class="toggleproof" onclick="toggleDisplay('proof1175')">Proof.</div>
+<div class="proofscript" id="proof1175">
 &nbsp;&nbsp;<span class="tactic">induction</span> 2; <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">intuition</span>. <span class="tactic">elim</span> (<span class="id">H0</span> <span class="id">l0</span>); <span class="tactic">omega</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zle">zle</a></span> <span class="id">h0</span> <span class="id">h</span>); <span class="tactic">simpl</span>.<br/>
@@ -98,8 +98,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.In_add">In_add</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> -&gt; <span class="kwd">forall</span> <span class="id">l0</span> <span class="id">h0</span>, (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.add">add</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> \/ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1139')">Proof.</div>
-<div class="proofscript" id="proof1139">
+<div class="toggleproof" onclick="toggleDisplay('proof1176')">Proof.</div>
+<div class="proofscript" id="proof1176">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">h</span> <span class="id">l0</span>).<br/>
@@ -114,8 +114,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.add_ok">add_ok</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> -&gt; <span class="kwd">forall</span> <span class="id">l0</span> <span class="id">h0</span>, <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> -&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.add">add</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1140')">Proof.</div>
-<div class="proofscript" id="proof1140">
+<div class="toggleproof" onclick="toggleDisplay('proof1177')">Proof.</div>
+<div class="proofscript" id="proof1177">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">auto</span>. <span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">h</span> <span class="id">l0</span>).<br/>
@@ -142,8 +142,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.In_remove">In_remove</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">l0</span> <span class="id">h0</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.remove">remove</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>) &lt;-&gt; ~(<span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span>) /\ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1141')">Proof.</div>
-<div class="proofscript" id="proof1141">
+<div class="toggleproof" onclick="toggleDisplay('proof1178')">Proof.</div>
+<div class="proofscript" id="proof1178">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">h</span> <span class="id">l0</span>).<br/>
@@ -167,8 +167,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.remove_ok">remove_ok</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l0</span> <span class="id">h0</span>, <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.remove">remove</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l0">l0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h0">h0</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1142')">Proof.</div>
-<div class="proofscript" id="proof1142">
+<div class="toggleproof" onclick="toggleDisplay('proof1179')">Proof.</div>
+<div class="proofscript" id="proof1179">
 &nbsp;&nbsp;<span class="tactic">induction</span> 2; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">h</span> <span class="id">l0</span>).<br/>
@@ -203,8 +203,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.In_inter">In_inter</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">s1</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.inter">inter</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> /\ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1143')">Proof.</div>
-<div class="proofscript" id="proof1143">
+<div class="toggleproof" onclick="toggleDisplay('proof1180')">Proof.</div>
+<div class="proofscript" id="proof1180">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">induction</span> 1; <span class="tactic">simpl</span>. <span class="tactic">tauto</span>. <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.Cons">Cons</a></span> <span class="id">l</span> <span class="id">h</span> <span class="id">s</span>)) <span class="tactic">by</span> (<span class="id">constructor</span>; <span class="tactic">auto</span>).<br/>
@@ -229,8 +229,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.inter_ok">inter_ok</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.inter">inter</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1144')">Proof.</div>
-<div class="proofscript" id="proof1144">
+<div class="toggleproof" onclick="toggleDisplay('proof1181')">Proof.</div>
+<div class="proofscript" id="proof1181">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">destruct</span> <span class="id">s2</span>; <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.Cons">Cons</a></span> <span class="id">l</span> <span class="id">h</span> <span class="id">s</span>)). <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
@@ -267,8 +267,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.In_ok_union">In_ok_union</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.union">union</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>) /\ (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> \/ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.union">union</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1145')">Proof.</div>
-<div class="proofscript" id="proof1145">
+<div class="toggleproof" onclick="toggleDisplay('proof1182')">Proof.</div>
+<div class="proofscript" id="proof1182">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">destruct</span> 1; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">constructor</span>. <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="tactic">tauto</span>.<br/>
@@ -288,8 +288,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="ISet.R.beq_spec">beq_spec</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.ok">ok</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.beq">beq</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.R.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1146')">Proof.</div>
-<div class="proofscript" id="proof1146">
+<div class="toggleproof" onclick="toggleDisplay('proof1183')">Proof.</div>
+<div class="proofscript" id="proof1183">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">destruct</span> 1; <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">split</span>; <span class="tactic">intros</span>. <span class="tactic">discriminate</span>. <span class="id">exfalso</span>. <span class="tactic">apply</span> (<span class="id">H0</span> <span class="id">l</span>). <span class="id">left</span>; <span class="tactic">omega</span>.<br/>
@@ -317,30 +317,30 @@ Qed.</div>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.In">In</a></span> (<span class="id">x</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) (<span class="id">s</span>: <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span>) := <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">R.In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.empty">empty</a></span> : <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span> := <span class="id"><a href="compcert.lib.IntvSets.html#ISet.Nil">R.Nil</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1147')">Next Obligation.</div>
-<div class="proofscript" id="proof1147">
+<div class="toggleproof" onclick="toggleDisplay('proof1184')">Next Obligation.</div>
+<div class="proofscript" id="proof1184">
  <span class="id">constructor</span>. Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.In_empty">In_empty</a></span>: <span class="kwd">forall</span> <span class="id">x</span>, ~(<span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.empty">empty</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1148')">Proof.</div>
-<div class="proofscript" id="proof1148">
+<div class="toggleproof" onclick="toggleDisplay('proof1185')">Proof.</div>
+<div class="proofscript" id="proof1185">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.interval">interval</a></span> (<span class="id">l</span> <span class="id">h</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) : <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span> :=<br/>
 &nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.Cons">R.Cons</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.Nil">R.Nil</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.Nil">R.Nil</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1149')">Next Obligation.</div>
-<div class="proofscript" id="proof1149">
+<div class="toggleproof" onclick="toggleDisplay('proof1186')">Next Obligation.</div>
+<div class="proofscript" id="proof1186">
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="tactic">simpl</span>; <span class="tactic">tauto</span>. <span class="id">constructor</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1150')">Next Obligation.</div>
-<div class="proofscript" id="proof1150">
+<div class="toggleproof" onclick="toggleDisplay('proof1187')">Next Obligation.</div>
+<div class="proofscript" id="proof1187">
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.In_interval">In_interval</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">l</span> <span class="id">h</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.interval">interval</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1151')">Proof.</div>
-<div class="proofscript" id="proof1151">
+<div class="toggleproof" onclick="toggleDisplay('proof1188')">Proof.</div>
+<div class="proofscript" id="proof1188">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.interval">interval</a></span>; <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">l</span> <span class="id">h</span>); <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>.<br/>
@@ -348,14 +348,14 @@ Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.add">add</a></span> (<span class="id">l</span> <span class="id">h</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) (<span class="id">s</span>: <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span>) : <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span> :=<br/>
 &nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.add">R.add</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1152')">Next Obligation.</div>
-<div class="proofscript" id="proof1152">
+<div class="toggleproof" onclick="toggleDisplay('proof1189')">Next Obligation.</div>
+<div class="proofscript" id="proof1189">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.add_ok">R.add_ok</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.In_add">In_add</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">l</span> <span class="id">h</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.add">add</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> \/ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1153')">Proof.</div>
-<div class="proofscript" id="proof1153">
+<div class="toggleproof" onclick="toggleDisplay('proof1190')">Proof.</div>
+<div class="proofscript" id="proof1190">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.add">add</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">l</span> <span class="id">h</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In_add">R.In_add</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
@@ -364,14 +364,14 @@ Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.remove">remove</a></span> (<span class="id">l</span> <span class="id">h</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) (<span class="id">s</span>: <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span>) : <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span> :=<br/>
 &nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.remove">R.remove</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1154')">Next Obligation.</div>
-<div class="proofscript" id="proof1154">
+<div class="toggleproof" onclick="toggleDisplay('proof1191')">Next Obligation.</div>
+<div class="proofscript" id="proof1191">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.remove_ok">R.remove_ok</a></span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.In_remove">In_remove</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">l</span> <span class="id">h</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.remove">remove</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>) &lt;-&gt; ~(<span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span>) /\ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1155')">Proof.</div>
-<div class="proofscript" id="proof1155">
+<div class="toggleproof" onclick="toggleDisplay('proof1192')">Proof.</div>
+<div class="proofscript" id="proof1192">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.remove">remove</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">l</span> <span class="id">h</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In_remove">R.In_remove</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
@@ -379,25 +379,25 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.inter">inter</a></span> (<span class="id">s1</span> <span class="id">s2</span>: <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span>) : <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span> := <span class="id"><a href="compcert.lib.IntvSets.html#ISet.inter">R.inter</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1156')">Next Obligation.</div>
-<div class="proofscript" id="proof1156">
+<div class="toggleproof" onclick="toggleDisplay('proof1193')">Next Obligation.</div>
+<div class="proofscript" id="proof1193">
  <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.inter_ok">R.inter_ok</a></span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>. Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.In_inter">In_inter</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">s1</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.inter">inter</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> /\ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1157')">Proof.</div>
-<div class="proofscript" id="proof1157">
+<div class="toggleproof" onclick="toggleDisplay('proof1194')">Proof.</div>
+<div class="proofscript" id="proof1194">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.inter">inter</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In_inter">R.In_inter</a></span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.union">union</a></span> (<span class="id">s1</span> <span class="id">s2</span>: <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span>) : <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span> := <span class="id"><a href="compcert.lib.IntvSets.html#ISet.union">R.union</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1158')">Next Obligation.</div>
-<div class="proofscript" id="proof1158">
+<div class="toggleproof" onclick="toggleDisplay('proof1195')">Next Obligation.</div>
+<div class="proofscript" id="proof1195">
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.In_ok_union">R.In_ok_union</a></span> <span class="id">_</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span> <span class="id">s1</span>) <span class="id">_</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span> <span class="id">s2</span>)). <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.In_union">In_union</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">s1</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.union">union</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> \/ <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1159')">Proof.</div>
-<div class="proofscript" id="proof1159">
+<div class="toggleproof" onclick="toggleDisplay('proof1196')">Proof.</div>
+<div class="proofscript" id="proof1196">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.union">union</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.IntvSets.html#ISet.In_ok_union">R.In_ok_union</a></span> <span class="id">_</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span> <span class="id">s1</span>) <span class="id">_</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span> <span class="id">s2</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id">H0</span> <span class="id">x</span>); <span class="tactic">tauto</span>.<br/>
@@ -406,8 +406,8 @@ Qed.</div>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="ISet.mem">mem</a></span> (<span class="id">x</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) (<span class="id">s</span>: <span class="id"><a href="compcert.lib.IntvSets.html#ISet.t">t</a></span>) := <span class="id"><a href="compcert.lib.IntvSets.html#ISet.mem">R.mem</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.mem_spec">mem_spec</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.mem">mem</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1160')">Proof.</div>
-<div class="proofscript" id="proof1160">
+<div class="toggleproof" onclick="toggleDisplay('proof1197')">Proof.</div>
+<div class="proofscript" id="proof1197">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.mem">mem</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.mem_In">R.mem_In</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -416,8 +416,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.contains_spec">contains_spec</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">h</span> <span class="id">s</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.contains">contains</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.IntvSets.html#l">l</a></span> &lt;= <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> &lt; <span class="id"><a href="compcert.lib.IntvSets.html#h">h</a></span> -&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1161')">Proof.</div>
-<div class="proofscript" id="proof1161">
+<div class="toggleproof" onclick="toggleDisplay('proof1198')">Proof.</div>
+<div class="proofscript" id="proof1198">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.contains">contains</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zlt">zlt</a></span> <span class="id">l</span> <span class="id">h</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.contains_In">R.contains_In</a></span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intros</span>. <span class="id">omegaContradiction</span>. <span class="tactic">auto</span>.<br/>
@@ -427,8 +427,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="ISet.beq_spec">beq_spec</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.beq">beq</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s1">s1</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#x">x</a></span> <span class="id"><a href="compcert.lib.IntvSets.html#s2">s2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1162')">Proof.</div>
-<div class="proofscript" id="proof1162">
+<div class="toggleproof" onclick="toggleDisplay('proof1199')">Proof.</div>
+<div class="proofscript" id="proof1199">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.mem">mem</a></span>, <span class="id"><a href="compcert.lib.IntvSets.html#ISet.In">In</a></span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.IntvSets.html#ISet.beq_spec">R.beq_spec</a></span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj2_sig">proj2_sig</a></span>.<br/>
 Qed.</div>
 <br/>

@@ -17,15 +17,9 @@
 <div class="doc">Correctness of instruction selection for operators </div>
 <br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Floats.html">Floats</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Memory.html">Memory</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.Cminor.html">Cminor</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.x86.Op.html">Op</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.CminorSel.html">CminorSel</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="compcert.lib.Floats.html">Floats</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span> <span class="id"><a href="compcert.common.Memory.html">Memory</a></span> <span class="id"><a href="compcert.common.Builtins.html">Builtins</a></span> <span class="id"><a href="compcert.common.Globalenvs.html">Globalenvs</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.Cminor.html">Cminor</a></span> <span class="id"><a href="compcert.x86.Op.html">Op</a></span> <span class="id"><a href="compcert.backend.CminorSel.html">CminorSel</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.x86.SelectOp.html">SelectOp</a></span>.<br/>
 <br/>
 <span class="kwd">Local</span> <span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">cminorsel_scope</span>.<br/>
@@ -127,16 +121,16 @@
 <span class="kwd">Lemma</span> <span class="id"><a name="eval_Olea_ptr">eval_Olea_ptr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">el</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.x86.Op.html#eval_operation">eval_operation</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#Olea_ptr">Olea_ptr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#el">el</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#m">m</a></span> = <span class="id"><a href="compcert.x86.Op.html#eval_addressing">eval_addressing</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#el">el</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2741')">Proof.</div>
-<div class="proofscript" id="proof2741">
+<div class="toggleproof" onclick="toggleDisplay('proof2917')">Proof.</div>
+<div class="proofscript" id="proof2917">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#Olea_ptr">Olea_ptr</a></span>, <span class="id"><a href="compcert.x86.Op.html#eval_addressing">eval_addressing</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addrsymbol">eval_addrsymbol</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">id</span> <span class="id">ofs</span>,<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#addrsymbol">addrsymbol</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#id">id</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#ofs">ofs</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.symbol_address">Genv.symbol_address</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#id">id</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#ofs">ofs</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2742')">Proof.</div>
-<div class="proofscript" id="proof2742">
+<div class="toggleproof" onclick="toggleDisplay('proof2918')">Proof.</div>
+<div class="proofscript" id="proof2918">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#addrsymbol">addrsymbol</a></span>. <span class="id">exists</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.symbol_address">Genv.symbol_address</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id">id</span> <span class="id">ofs</span>); <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectOp.html#symbol_is_external">symbol_is_external</a></span> <span class="id">id</span>).<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.eq">Ptrofs.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.eq_spec">Ptrofs.eq_spec</a></span> <span class="id">ofs</span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span>.<br/>
@@ -154,14 +148,14 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addrstack">eval_addrstack</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">ofs</span>,<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#addrstack">addrstack</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#ofs">ofs</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.offset_ptr">Val.offset_ptr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#ofs">ofs</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2743')">Proof.</div>
-<div class="proofscript" id="proof2743">
+<div class="toggleproof" onclick="toggleDisplay('proof2919')">Proof.</div>
+<div class="proofscript" id="proof2919">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#addrstack">addrstack</a></span>. <span class="id">TrivialExists</span>. <span class="comment">(*rewrite&nbsp;eval_Olea_ptr.&nbsp;apply&nbsp;eval_addressing_Ainstack.*)</span><br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_notint">eval_notint</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#notint">notint</a></span> <span class="id"><a href="compcert.common.Values.html#Val.notint">Val.notint</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2744')">Proof.</div>
-<div class="proofscript" id="proof2744">
+<div class="toggleproof" onclick="toggleDisplay('proof2920')">Proof.</div>
+<div class="proofscript" id="proof2920">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#notint">notint</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#notint_match">notint_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.not_xor">Val.not_xor</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.xor_assoc">Val.xor_assoc</a></span>. <span class="id">TrivialExists</span>.<br/>
@@ -170,8 +164,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addimm">eval_addimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#addimm">addimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.add">Val.add</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2745')">Proof.</div>
-<div class="proofscript" id="proof2745">
+<div class="toggleproof" onclick="toggleDisplay('proof2921')">Proof.</div>
+<div class="proofscript" id="proof2921">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#addimm">addimm</a></span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 - <span class="tactic">subst</span> <span class="id">n</span>. <span class="tactic">intros</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
@@ -184,8 +178,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_add">eval_add</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#add">add</a></span> <span class="id"><a href="compcert.common.Values.html#Val.add">Val.add</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2746')">Proof.</div>
-<div class="proofscript" id="proof2746">
+<div class="toggleproof" onclick="toggleDisplay('proof2922')">Proof.</div>
+<div class="proofscript" id="proof2922">
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">A</span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> + <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span>) = <span class="id"><a href="compcert.lib.Integers.html#Int.add">Int.add</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span>) (<span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span>)).<br/>
 &nbsp;&nbsp;{ <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eqm_samerepr">Int.eqm_samerepr</a></span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">ints</span>. }<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">B</span>: <span class="kwd">forall</span> <span class="id">id</span> <span class="id">ofs</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> -&gt;<br/>
@@ -221,8 +215,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_sub">eval_sub</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#sub">sub</a></span> <span class="id"><a href="compcert.common.Values.html#Val.sub">Val.sub</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2747')">Proof.</div>
-<div class="proofscript" id="proof2747">
+<div class="toggleproof" onclick="toggleDisplay('proof2923')">Proof.</div>
+<div class="proofscript" id="proof2923">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#sub">sub</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#sub_match">sub_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.sub_add_opp">Val.sub_add_opp</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_addimm">eval_addimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -238,8 +232,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_negint">eval_negint</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#negint">negint</a></span> <span class="id"><a href="compcert.common.Values.html#Val.neg">Val.neg</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2748')">Proof.</div>
-<div class="proofscript" id="proof2748">
+<div class="toggleproof" onclick="toggleDisplay('proof2924')">Proof.</div>
+<div class="proofscript" id="proof2924">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#negint">negint</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#negint_match">negint_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
@@ -248,8 +242,8 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shlimm">eval_shlimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">a</span> =&gt; <span class="id"><a href="compcert.x86.SelectOp.html#shlimm">shlimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.shl">Val.shl</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2749')">Proof.</div>
-<div class="proofscript" id="proof2749">
+<div class="toggleproof" onclick="toggleDisplay('proof2925')">Proof.</div>
+<div class="proofscript" id="proof2925">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>.  <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shlimm">shlimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">subst</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.shl_zero">Int.shl_zero</a></span>; <span class="tactic">auto</span>.<br/>
@@ -284,8 +278,8 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shruimm">eval_shruimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">a</span> =&gt; <span class="id"><a href="compcert.x86.SelectOp.html#shruimm">shruimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.shru">Val.shru</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2750')">Proof.</div>
-<div class="proofscript" id="proof2750">
+<div class="toggleproof" onclick="toggleDisplay('proof2926')">Proof.</div>
+<div class="proofscript" id="proof2926">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>.  <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shruimm">shruimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">subst</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.shru_zero">Int.shru_zero</a></span>; <span class="tactic">auto</span>.<br/>
@@ -309,8 +303,8 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shrimm">eval_shrimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="kwd">fun</span> <span class="id">a</span> =&gt; <span class="id"><a href="compcert.x86.SelectOp.html#shrimm">shrimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.shr">Val.shr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2751')">Proof.</div>
-<div class="proofscript" id="proof2751">
+<div class="toggleproof" onclick="toggleDisplay('proof2927')">Proof.</div>
+<div class="proofscript" id="proof2927">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>.  <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shrimm">shrimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">subst</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.shr_zero">Int.shr_zero</a></span>; <span class="tactic">auto</span>.<br/>
@@ -334,8 +328,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="eval_mulimm_base">eval_mulimm_base</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#mulimm_base">mulimm_base</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.mul">Val.mul</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2752')">Proof.</div>
-<div class="proofscript" id="proof2752">
+<div class="toggleproof" onclick="toggleDisplay('proof2928')">Proof.</div>
+<div class="proofscript" id="proof2928">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#mulimm_base">mulimm_base</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Integers.html#Int.one_bits_decomp">Int.one_bits_decomp</a></span> <span class="id">n</span>) (<span class="id"><a href="compcert.lib.Integers.html#Int.one_bits_range">Int.one_bits_range</a></span> <span class="id">n</span>); <span class="tactic">intros</span> <span class="id">D</span> <span class="id">R</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Integers.html#Int.one_bits">Int.one_bits</a></span> <span class="id">n</span>) <span class="kwd">as</span> [ | <span class="id">i</span> <span class="id">l</span>].<br/>
@@ -361,8 +355,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mulimm">eval_mulimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#mulimm">mulimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.mul">Val.mul</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2753')">Proof.</div>
-<div class="proofscript" id="proof2753">
+<div class="toggleproof" onclick="toggleDisplay('proof2929')">Proof.</div>
+<div class="proofscript" id="proof2929">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#mulimm">mulimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>); <span class="tactic">split</span>. <span class="id">EvalOp</span>.<br/>
@@ -381,8 +375,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mul">eval_mul</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#mul">mul</a></span> <span class="id"><a href="compcert.common.Values.html#Val.mul">Val.mul</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2754')">Proof.</div>
-<div class="proofscript" id="proof2754">
+<div class="toggleproof" onclick="toggleDisplay('proof2930')">Proof.</div>
+<div class="proofscript" id="proof2930">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#mul">mul</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#mul_match">mul_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.mul_commut">Val.mul_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_mulimm">eval_mulimm</a></span>. <span class="tactic">auto</span>.<br/>
@@ -391,21 +385,21 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mulhs">eval_mulhs</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#mulhs">mulhs</a></span> <span class="id"><a href="compcert.common.Values.html#Val.mulhs">Val.mulhs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2755')">Proof.</div>
-<div class="proofscript" id="proof2755">
+<div class="toggleproof" onclick="toggleDisplay('proof2931')">Proof.</div>
+<div class="proofscript" id="proof2931">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#mulhs">mulhs</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 &nbsp;&nbsp;<br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mulhu">eval_mulhu</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#mulhu">mulhu</a></span> <span class="id"><a href="compcert.common.Values.html#Val.mulhu">Val.mulhu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2756')">Proof.</div>
-<div class="proofscript" id="proof2756">
+<div class="toggleproof" onclick="toggleDisplay('proof2932')">Proof.</div>
+<div class="proofscript" id="proof2932">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#mulhu">mulhu</a></span>; <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 &nbsp;&nbsp;<br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_andimm">eval_andimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#andimm">andimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.and">Val.and</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2757')">Proof.</div>
-<div class="proofscript" id="proof2757">
+<div class="toggleproof" onclick="toggleDisplay('proof2933')">Proof.</div>
+<div class="proofscript" id="proof2933">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#andimm">andimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>); <span class="tactic">split</span>. <span class="id">EvalOp</span>.<br/>
@@ -417,15 +411,15 @@ Qed.</div>
 - <span class="id">TrivialExists</span>. <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">TrivialExists</span>. <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.and_assoc">Val.and_assoc</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">auto</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.zero_ext_and">Val.zero_ext_and</a></span>. <span class="id">TrivialExists</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.and_assoc">Val.and_assoc</a></span>.<br/>
-&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">auto</span>. <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">auto</span>. <span class="tactic">omega</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.zero_ext_and">Val.zero_ext_and</a></span>. <span class="id">TrivialExists</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.and_assoc">Val.and_assoc</a></span>.<br/>
-&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">auto</span>. <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">auto</span>. <span class="tactic">omega</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_and">eval_and</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#and">and</a></span> <span class="id"><a href="compcert.common.Values.html#Val.and">Val.and</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2758')">Proof.</div>
-<div class="proofscript" id="proof2758">
+<div class="toggleproof" onclick="toggleDisplay('proof2934')">Proof.</div>
+<div class="proofscript" id="proof2934">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#and">and</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#and_match">and_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.and_commut">Val.and_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_andimm">eval_andimm</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_andimm">eval_andimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -434,8 +428,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_orimm">eval_orimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#orimm">orimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.or">Val.or</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2759')">Proof.</div>
-<div class="proofscript" id="proof2759">
+<div class="toggleproof" onclick="toggleDisplay('proof2935')">Proof.</div>
+<div class="proofscript" id="proof2935">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#orimm">orimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>. <span class="tactic">auto</span>.<br/>
@@ -455,8 +449,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a1">a1</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v1">v1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a2">a2</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v2">v2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.x86.SelectOpproof.html#a1">a1</a></span> = <span class="id"><a href="compcert.x86.SelectOpproof.html#a2">a2</a></span> /\ <span class="id"><a href="compcert.x86.SelectOpproof.html#v1">v1</a></span> = <span class="id"><a href="compcert.x86.SelectOpproof.html#v2">v2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2760')">Proof.</div>
-<div class="proofscript" id="proof2760">
+<div class="toggleproof" onclick="toggleDisplay('proof2936')">Proof.</div>
+<div class="proofscript" id="proof2936">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">v2</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a1</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> (<span class="tactic">intros</span>; <span class="tactic">discriminate</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a2</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> (<span class="tactic">intros</span>; <span class="tactic">discriminate</span>).<br/>
@@ -467,14 +461,14 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="int_add_sub_eq">int_add_sub_eq</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> <span class="id">z</span>, <span class="id"><a href="compcert.lib.Integers.html#Int.add">Int.add</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> = <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> -&gt; <span class="id"><a href="compcert.lib.Integers.html#Int.sub">Int.sub</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2761')">Proof.</div>
-<div class="proofscript" id="proof2761">
+<div class="toggleproof" onclick="toggleDisplay('proof2937')">Proof.</div>
+<div class="proofscript" id="proof2937">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">z</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.sub_add_l">Int.sub_add_l</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.sub_idem">Int.sub_idem</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.add_zero_l">Int.add_zero_l</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="eval_or">eval_or</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#or">or</a></span> <span class="id"><a href="compcert.common.Values.html#Val.or">Val.or</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2762')">Proof.</div>
-<div class="proofscript" id="proof2762">
+<div class="toggleproof" onclick="toggleDisplay('proof2938')">Proof.</div>
+<div class="proofscript" id="proof2938">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#or">or</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#or_match">or_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;intconst&nbsp;*)</span><br/>
 - <span class="id">InvEval</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.or_commut">Val.or_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_orimm">eval_orimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -510,8 +504,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_xorimm">eval_xorimm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#xorimm">xorimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) (<span class="kwd">fun</span> <span class="id">x</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.xor">Val.xor</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2763')">Proof.</div>
-<div class="proofscript" id="proof2763">
+<div class="toggleproof" onclick="toggleDisplay('proof2939')">Proof.</div>
+<div class="proofscript" id="proof2939">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#xorimm">xorimm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>. <span class="tactic">auto</span>.<br/>
@@ -525,8 +519,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_xor">eval_xor</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#xor">xor</a></span> <span class="id"><a href="compcert.common.Values.html#Val.xor">Val.xor</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2764')">Proof.</div>
-<div class="proofscript" id="proof2764">
+<div class="toggleproof" onclick="toggleDisplay('proof2940')">Proof.</div>
+<div class="proofscript" id="proof2940">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#xor">xor</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#xor_match">xor_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.xor_commut">Val.xor_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_xorimm">eval_xorimm</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_xorimm">eval_xorimm</a></span>; <span class="tactic">auto</span>.<br/>
@@ -539,8 +533,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.divs">Val.divs</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#divs_base">divs_base</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2765')">Proof.</div>
-<div class="proofscript" id="proof2765">
+<div class="toggleproof" onclick="toggleDisplay('proof2941')">Proof.</div>
+<div class="proofscript" id="proof2941">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#divs_base">divs_base</a></span>. <span class="id">exists</span> <span class="id">z</span>; <span class="tactic">split</span>. <span class="id">EvalOp</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -550,8 +544,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.divu">Val.divu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#divu_base">divu_base</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2766')">Proof.</div>
-<div class="proofscript" id="proof2766">
+<div class="toggleproof" onclick="toggleDisplay('proof2942')">Proof.</div>
+<div class="proofscript" id="proof2942">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#divu_base">divu_base</a></span>. <span class="id">exists</span> <span class="id">z</span>; <span class="tactic">split</span>. <span class="id">EvalOp</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -561,8 +555,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.mods">Val.mods</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#mods_base">mods_base</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2767')">Proof.</div>
-<div class="proofscript" id="proof2767">
+<div class="toggleproof" onclick="toggleDisplay('proof2943')">Proof.</div>
+<div class="proofscript" id="proof2943">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#mods_base">mods_base</a></span>. <span class="id">exists</span> <span class="id">z</span>; <span class="tactic">split</span>. <span class="id">EvalOp</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -572,8 +566,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.modu">Val.modu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#modu_base">modu_base</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2768')">Proof.</div>
-<div class="proofscript" id="proof2768">
+<div class="toggleproof" onclick="toggleDisplay('proof2944')">Proof.</div>
+<div class="proofscript" id="proof2944">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#modu_base">modu_base</a></span>. <span class="id">exists</span> <span class="id">z</span>; <span class="tactic">split</span>. <span class="id">EvalOp</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -582,8 +576,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.shrx">Val.shrx</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#shrximm">shrximm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n">n</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#z">z</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2769')">Proof.</div>
-<div class="proofscript" id="proof2769">
+<div class="toggleproof" onclick="toggleDisplay('proof2945')">Proof.</div>
+<div class="proofscript" id="proof2945">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shrximm">shrximm</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">predSpec</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_spec">Int.eq_spec</a></span> <span class="id">n</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero">Int.zero</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">n</span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
@@ -596,86 +590,86 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shl">eval_shl</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#shl">shl</a></span> <span class="id"><a href="compcert.common.Values.html#Val.shl">Val.shl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2770')">Proof.</div>
-<div class="proofscript" id="proof2770">
+<div class="toggleproof" onclick="toggleDisplay('proof2946')">Proof.</div>
+<div class="proofscript" id="proof2946">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shl">shl</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#shl_match">shl_match</a></span> <span class="id">b</span>); <span class="tactic">intros</span>.<br/>
 - <span class="id">InvEval</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_shlimm">eval_shlimm</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shr">eval_shr</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#shr">shr</a></span> <span class="id"><a href="compcert.common.Values.html#Val.shr">Val.shr</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2771')">Proof.</div>
-<div class="proofscript" id="proof2771">
+<div class="toggleproof" onclick="toggleDisplay('proof2947')">Proof.</div>
+<div class="proofscript" id="proof2947">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shr">shr</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#shr_match">shr_match</a></span> <span class="id">b</span>); <span class="tactic">intros</span>.<br/>
 - <span class="id">InvEval</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_shrimm">eval_shrimm</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_shru">eval_shru</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#shru">shru</a></span> <span class="id"><a href="compcert.common.Values.html#Val.shru">Val.shru</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2772')">Proof.</div>
-<div class="proofscript" id="proof2772">
+<div class="toggleproof" onclick="toggleDisplay('proof2948')">Proof.</div>
+<div class="proofscript" id="proof2948">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#shru">shru</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#shru_match">shru_match</a></span> <span class="id">b</span>); <span class="tactic">intros</span>.<br/>
 - <span class="id">InvEval</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_shruimm">eval_shruimm</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_negf">eval_negf</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#negf">negf</a></span> <span class="id"><a href="compcert.common.Values.html#Val.negf">Val.negf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2773')">Proof.</div>
-<div class="proofscript" id="proof2773">
+<div class="toggleproof" onclick="toggleDisplay('proof2949')">Proof.</div>
+<div class="proofscript" id="proof2949">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_absf">eval_absf</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#absf">absf</a></span> <span class="id"><a href="compcert.common.Values.html#Val.absf">Val.absf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2774')">Proof.</div>
-<div class="proofscript" id="proof2774">
+<div class="toggleproof" onclick="toggleDisplay('proof2950')">Proof.</div>
+<div class="proofscript" id="proof2950">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addf">eval_addf</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#addf">addf</a></span> <span class="id"><a href="compcert.common.Values.html#Val.addf">Val.addf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2775')">Proof.</div>
-<div class="proofscript" id="proof2775">
+<div class="toggleproof" onclick="toggleDisplay('proof2951')">Proof.</div>
+<div class="proofscript" id="proof2951">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_subf">eval_subf</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#subf">subf</a></span> <span class="id"><a href="compcert.common.Values.html#Val.subf">Val.subf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2776')">Proof.</div>
-<div class="proofscript" id="proof2776">
+<div class="toggleproof" onclick="toggleDisplay('proof2952')">Proof.</div>
+<div class="proofscript" id="proof2952">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mulf">eval_mulf</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#mulf">mulf</a></span> <span class="id"><a href="compcert.common.Values.html#Val.mulf">Val.mulf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2777')">Proof.</div>
-<div class="proofscript" id="proof2777">
+<div class="toggleproof" onclick="toggleDisplay('proof2953')">Proof.</div>
+<div class="proofscript" id="proof2953">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_negfs">eval_negfs</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#negfs">negfs</a></span> <span class="id"><a href="compcert.common.Values.html#Val.negfs">Val.negfs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2778')">Proof.</div>
-<div class="proofscript" id="proof2778">
+<div class="toggleproof" onclick="toggleDisplay('proof2954')">Proof.</div>
+<div class="proofscript" id="proof2954">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_absfs">eval_absfs</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#absfs">absfs</a></span> <span class="id"><a href="compcert.common.Values.html#Val.absfs">Val.absfs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2779')">Proof.</div>
-<div class="proofscript" id="proof2779">
+<div class="toggleproof" onclick="toggleDisplay('proof2955')">Proof.</div>
+<div class="proofscript" id="proof2955">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_addfs">eval_addfs</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#addfs">addfs</a></span> <span class="id"><a href="compcert.common.Values.html#Val.addfs">Val.addfs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2780')">Proof.</div>
-<div class="proofscript" id="proof2780">
+<div class="toggleproof" onclick="toggleDisplay('proof2956')">Proof.</div>
+<div class="proofscript" id="proof2956">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_subfs">eval_subfs</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#subfs">subfs</a></span> <span class="id"><a href="compcert.common.Values.html#Val.subfs">Val.subfs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2781')">Proof.</div>
-<div class="proofscript" id="proof2781">
+<div class="toggleproof" onclick="toggleDisplay('proof2957')">Proof.</div>
+<div class="proofscript" id="proof2957">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_mulfs">eval_mulfs</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#mulfs">mulfs</a></span> <span class="id"><a href="compcert.common.Values.html#Val.mulfs">Val.mulfs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2782')">Proof.</div>
-<div class="proofscript" id="proof2782">
+<div class="toggleproof" onclick="toggleDisplay('proof2958')">Proof.</div>
+<div class="proofscript" id="proof2958">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
@@ -696,8 +690,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#compimm">compimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.default">default</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.intsem">intsem</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n2">n2</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> (<span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.sem">sem</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n2">n2</a></span>)) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2783')">Proof.</div>
-<div class="proofscript" id="proof2783">
+<div class="toggleproof" onclick="toggleDisplay('proof2959')">Proof.</div>
+<div class="proofscript" id="proof2959">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#compimm">compimm</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#compimm_match">compimm_match</a></span> <span class="id">c</span> <span class="id">a</span>); <span class="tactic">intros</span>.<br/>
 - <span class="comment">(*&nbsp;constant&nbsp;*)</span><br/>
@@ -755,8 +749,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#compimm">compimm</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.default">default</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.intsem">intsem</a></span> (<span class="id"><a href="compcert.lib.Integers.html#swap_comparison">swap_comparison</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n2">n2</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> (<span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.sem">sem</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#n2">n2</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2784')">Proof.</div>
-<div class="proofscript" id="proof2784">
+<div class="toggleproof" onclick="toggleDisplay('proof2960')">Proof.</div>
+<div class="proofscript" id="proof2960">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.COMP_IMM.sem_swap">sem_swap</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_compimm">eval_compimm</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -764,8 +758,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_comp">eval_comp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#comp">comp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>) (<span class="id"><a href="compcert.common.Values.html#Val.cmp">Val.cmp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2785')">Proof.</div>
-<div class="proofscript" id="proof2785">
+<div class="toggleproof" onclick="toggleDisplay('proof2961')">Proof.</div>
+<div class="proofscript" id="proof2961">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#comp">comp</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#comp_match">comp_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_compimm_swap">eval_compimm_swap</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.cmp">Val.cmp</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.swap_cmp_bool">Val.swap_cmp_bool</a></span>; <span class="tactic">auto</span>.<br/>
@@ -775,8 +769,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_compu">eval_compu</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#compu">compu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>) (<span class="id"><a href="compcert.common.Values.html#Val.cmpu">Val.cmpu</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2786')">Proof.</div>
-<div class="proofscript" id="proof2786">
+<div class="toggleproof" onclick="toggleDisplay('proof2962')">Proof.</div>
+<div class="proofscript" id="proof2962">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#compu">compu</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#compu_match">compu_match</a></span> <span class="id">a</span> <span class="id">b</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_compimm_swap">eval_compimm_swap</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.cmpu">Val.cmpu</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.swap_cmpu_bool">Val.swap_cmpu_bool</a></span>; <span class="tactic">auto</span>.<br/>
@@ -786,63 +780,90 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_compf">eval_compf</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#compf">compf</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>) (<span class="id"><a href="compcert.common.Values.html#Val.cmpf">Val.cmpf</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2787')">Proof.</div>
-<div class="proofscript" id="proof2787">
+<div class="toggleproof" onclick="toggleDisplay('proof2963')">Proof.</div>
+<div class="proofscript" id="proof2963">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#compf">compf</a></span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_compfs">eval_compfs</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span>, <span class="id"><a href="compcert.x86.SelectOpproof.html#binary_constructor_sound">binary_constructor_sound</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#compfs">compfs</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>) (<span class="id"><a href="compcert.common.Values.html#Val.cmpfs">Val.cmpfs</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#c">c</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2788')">Proof.</div>
-<div class="proofscript" id="proof2788">
+<div class="toggleproof" onclick="toggleDisplay('proof2964')">Proof.</div>
+<div class="proofscript" id="proof2964">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#compfs">compfs</a></span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_cast8signed">eval_cast8signed</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#cast8signed">cast8signed</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.sign_ext">Val.sign_ext</a></span> 8).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2789')">Proof.</div>
-<div class="proofscript" id="proof2789">
+<div class="toggleproof" onclick="toggleDisplay('proof2965')">Proof.</div>
+<div class="proofscript" id="proof2965">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#cast8signed">cast8signed</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#cast8signed_match">cast8signed_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_cast8unsigned">eval_cast8unsigned</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#cast8unsigned">cast8unsigned</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.zero_ext">Val.zero_ext</a></span> 8).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2790')">Proof.</div>
-<div class="proofscript" id="proof2790">
+<div class="toggleproof" onclick="toggleDisplay('proof2966')">Proof.</div>
+<div class="proofscript" id="proof2966">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#cast8unsigned">cast8unsigned</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectOp.html#cast8unsigned_match">cast8unsigned_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.zero_ext_and">Val.zero_ext_and</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.and_assoc">Val.and_assoc</a></span>.<br/>
-&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_andimm">eval_andimm</a></span>; <span class="tactic">auto</span>. <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_andimm">eval_andimm</a></span>; <span class="tactic">auto</span>. <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_cast16signed">eval_cast16signed</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#cast16signed">cast16signed</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.sign_ext">Val.sign_ext</a></span> 16).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2791')">Proof.</div>
-<div class="proofscript" id="proof2791">
+<div class="toggleproof" onclick="toggleDisplay('proof2967')">Proof.</div>
+<div class="proofscript" id="proof2967">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#cast16signed">cast16signed</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#cast16signed_match">cast16signed_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_cast16unsigned">eval_cast16unsigned</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#cast16unsigned">cast16unsigned</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.zero_ext">Val.zero_ext</a></span> 16).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2792')">Proof.</div>
-<div class="proofscript" id="proof2792">
+<div class="toggleproof" onclick="toggleDisplay('proof2968')">Proof.</div>
+<div class="proofscript" id="proof2968">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#cast16unsigned">cast16unsigned</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectOp.html#cast16unsigned_match">cast16unsigned_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.zero_ext_and">Val.zero_ext_and</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Values.html#Val.and_assoc">Val.and_assoc</a></span>.<br/>
-&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_andimm">eval_andimm</a></span>; <span class="tactic">auto</span>. <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.and_commut">Int.and_commut</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_andimm">eval_andimm</a></span>; <span class="tactic">auto</span>. <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="eval_select">eval_select</a></span>: <br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">ty</span> <span class="id">cond</span> <span class="id">al</span> <span class="id">vl</span> <span class="id">a1</span> <span class="id">v1</span> <span class="id">a2</span> <span class="id">v2</span> <span class="id">a</span> <span class="id">b</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.x86.SelectOp.html#select">select</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#ty">ty</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#cond">cond</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#al">al</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a1">a1</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a2">a2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_exprlist">eval_exprlist</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#al">al</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a1">a1</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v1">v1</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a2">a2</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v2">v2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.x86.Op.html#eval_condition">eval_condition</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#cond">cond</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span><br/>
+&nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.select">Val.select</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#b">b</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v1">v1</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v2">v2</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#ty">ty</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2969')">Proof.</div>
+<div class="proofscript" id="proof2969">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#select">select</a></span>; <span class="tactic">intros</span>. <br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectOp.html#select_supported">select_supported</a></span> <span class="id">ty</span>); <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.SelectOp.html#select_swap">select_swap</a></span> <span class="id">cond</span>); <span class="id">inv</span> <span class="id">H</span>.<br/>
+- <span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Val.select">Val.select</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#negb">negb</a></span> <span class="id">b</span>)) <span class="id">v2</span> <span class="id">v1</span> <span class="id">ty</span>); <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CminorSel.html#eval_Eop">eval_Eop</a></span> <span class="kwd">with</span> (<span class="id">v2</span> :: <span class="id">v1</span> :: <span class="id">vl</span>).<br/>
+&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.x86.Op.html#eval_negate_condition">eval_negate_condition</a></span>, <span class="id">H3</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">b</span>; <span class="tactic">auto</span>.<br/>
+- <span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Val.select">Val.select</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">b</span>) <span class="id">v1</span> <span class="id">v2</span> <span class="id">ty</span>); <span class="tactic">split</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CminorSel.html#eval_Eop">eval_Eop</a></span> <span class="kwd">with</span> (<span class="id">v1</span> :: <span class="id">v2</span> :: <span class="id">vl</span>).<br/>
+&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id">H3</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_singleoffloat">eval_singleoffloat</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#singleoffloat">singleoffloat</a></span> <span class="id"><a href="compcert.common.Values.html#Val.singleoffloat">Val.singleoffloat</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2793')">Proof.</div>
-<div class="proofscript" id="proof2793">
+<div class="toggleproof" onclick="toggleDisplay('proof2970')">Proof.</div>
+<div class="proofscript" id="proof2970">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#singleoffloat">singleoffloat</a></span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_floatofsingle">eval_floatofsingle</a></span>: <span class="id"><a href="compcert.x86.SelectOpproof.html#unary_constructor_sound">unary_constructor_sound</a></span> <span class="id"><a href="compcert.x86.SelectOp.html#floatofsingle">floatofsingle</a></span> <span class="id"><a href="compcert.common.Values.html#Val.floatofsingle">Val.floatofsingle</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2794')">Proof.</div>
-<div class="proofscript" id="proof2794">
+<div class="toggleproof" onclick="toggleDisplay('proof2971')">Proof.</div>
+<div class="proofscript" id="proof2971">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#floatofsingle">floatofsingle</a></span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
@@ -851,8 +872,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.intoffloat">Val.intoffloat</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#intoffloat">intoffloat</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2795')">Proof.</div>
-<div class="proofscript" id="proof2795">
+<div class="toggleproof" onclick="toggleDisplay('proof2972')">Proof.</div>
+<div class="proofscript" id="proof2972">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#intoffloat">intoffloat</a></span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
@@ -861,8 +882,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.floatofint">Val.floatofint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#floatofint">floatofint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2796')">Proof.</div>
-<div class="proofscript" id="proof2796">
+<div class="toggleproof" onclick="toggleDisplay('proof2973')">Proof.</div>
+<div class="proofscript" id="proof2973">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#floatofint">floatofint</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#floatofint_match">floatofint_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
@@ -873,12 +894,13 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.intuoffloat">Val.intuoffloat</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#intuoffloat">intuoffloat</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2797')">Proof.</div>
-<div class="proofscript" id="proof2797">
+<div class="toggleproof" onclick="toggleDisplay('proof2974')">Proof.</div>
+<div class="proofscript" id="proof2974">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Floats.html#Float.to_intu">Float.to_intu</a></span> <span class="id">f</span>) <span class="kwd">as</span> [<span class="id">n</span>|] <span class="id">eqn</span>:?; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="id">inv</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id">n</span>); <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#intuoffloat">intuoffloat</a></span>.<br/>
-&nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">im</span> := <span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.half_modulus">Int.half_modulus</a></span>).<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>.<br/>
+- <span class="tactic">set</span> (<span class="id">im</span> := <span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.half_modulus">Int.half_modulus</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">fm</span> := <span class="id"><a href="compcert.lib.Floats.html#Float.of_intu">Float.of_intu</a></span> <span class="id">im</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> (<span class="id"><a href="compcert.common.Values.html#Vfloat">Vfloat</a></span> <span class="id">fm</span> :: <span class="id"><a href="compcert.common.Values.html#Vfloat">Vfloat</a></span> <span class="id">f</span> :: <span class="id">le</span>) (<span class="id"><a href="compcert.backend.CminorSel.html#Eletvar">Eletvar</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span>)) (<span class="id"><a href="compcert.common.Values.html#Vfloat">Vfloat</a></span> <span class="id">f</span>)).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">auto</span>.<br/>
@@ -905,6 +927,11 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.add_neg_zero">Int.add_neg_zero</a></span> <span class="kwd">in</span> <span class="id">A4</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.add_zero">Int.add_zero</a></span> <span class="kwd">in</span> <span class="id">A4</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+- <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Floats.html#Float.to_intu_to_long">Float.to_intu_to_long</a></span> <span class="kwd">in</span> <span class="id">Heqo</span>. <span class="tactic">repeat</span> <span class="id">econstructor</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id">Heqo</span>; <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.loword">Int64.loword</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned_repr">Int64.unsigned_repr</a></span>, <span class="id"><a href="compcert.lib.Integers.html#Int.repr_unsigned">Int.repr_unsigned</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.Integers.html#Int.modulus">Int.modulus</a></span> &lt; <span class="id"><a href="compcert.lib.Integers.html#Int64.max_unsigned">Int64.max_unsigned</a></span>) <span class="tactic">by</span> <span class="tactic">reflexivity</span>. <br/>
+&nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned_range">Int.unsigned_range</a></span> <span class="id">n</span>); <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_floatofintu">eval_floatofintu</a></span>:<br/>
@@ -912,13 +939,14 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.floatofintu">Val.floatofintu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#floatofintu">floatofintu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2798')">Proof.</div>
-<div class="proofscript" id="proof2798">
+<div class="toggleproof" onclick="toggleDisplay('proof2975')">Proof.</div>
+<div class="proofscript" id="proof2975">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#floatofintu">floatofintu</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#floatofintu_match">floatofintu_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>.<br/>
-&nbsp;&nbsp;<span class="id">InvEval</span>. <span class="id">TrivialExists</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="id">inv</span> <span class="id">H0</span>.<br/>
+- <span class="id">InvEval</span>. <span class="id">TrivialExists</span>.<br/>
+- <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="id">inv</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.common.Values.html#Vfloat">Vfloat</a></span> (<span class="id"><a href="compcert.lib.Floats.html#Float.of_intu">Float.of_intu</a></span> <span class="id">i</span>)); <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
-&nbsp;&nbsp;<span class="id">econstructor</span>. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">Archi.splitlong</a></span>.<br/>
++ <span class="id">econstructor</span>. <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">fm</span> := <span class="id"><a href="compcert.lib.Floats.html#Float.of_intu">Float.of_intu</a></span> <span class="id"><a href="compcert.lib.Floats.html#Float.ox8000_0000">Float.ox8000_0000</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id">i</span> :: <span class="id">le</span>) (<span class="id"><a href="compcert.backend.CminorSel.html#Eletvar">Eletvar</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span>) (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id">i</span>)).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">auto</span>.<br/>
@@ -934,6 +962,7 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="id">EvalOp</span>. <span class="tactic">simpl</span>; <span class="tactic">eauto</span>. <span class="id">constructor</span>. <span class="tactic">simpl</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">fold</span> <span class="id">fm</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Floats.html#Float.of_intu_of_int_2">Float.of_intu_of_int_2</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.sub_add_opp">Int.sub_add_opp</a></span>. <span class="tactic">auto</span>.<br/>
++ <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Floats.html#Float.of_intu_of_long">Float.of_intu_of_long</a></span>. <span class="tactic">repeat</span> <span class="id">econstructor</span>. <span class="tactic">eauto</span>. <span class="tactic">reflexivity</span>. <br/>
 Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="eval_intofsingle">eval_intofsingle</a></span>:<br/>
@@ -941,8 +970,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.intofsingle">Val.intofsingle</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#intofsingle">intofsingle</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2799')">Proof.</div>
-<div class="proofscript" id="proof2799">
+<div class="toggleproof" onclick="toggleDisplay('proof2976')">Proof.</div>
+<div class="proofscript" id="proof2976">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#intofsingle">intofsingle</a></span>. <span class="id">TrivialExists</span>.<br/>
 Qed.</div>
 <br/>
@@ -951,8 +980,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.singleofint">Val.singleofint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#singleofint">singleofint</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2800')">Proof.</div>
-<div class="proofscript" id="proof2800">
+<div class="toggleproof" onclick="toggleDisplay('proof2977')">Proof.</div>
+<div class="proofscript" id="proof2977">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#singleofint">singleofint</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#singleofint_match">singleofint_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="id">TrivialExists</span>.<br/>
@@ -963,8 +992,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.intuofsingle">Val.intuofsingle</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#intuofsingle">intuofsingle</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2801')">Proof.</div>
-<div class="proofscript" id="proof2801">
+<div class="toggleproof" onclick="toggleDisplay('proof2978')">Proof.</div>
+<div class="proofscript" id="proof2978">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Floats.html#Float32.to_intu">Float32.to_intu</a></span> <span class="id">f</span>) <span class="kwd">as</span> [<span class="id">n</span>|] <span class="id">eqn</span>:?; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="id">inv</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#intuofsingle">intuofsingle</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#eval_intuoffloat">eval_intuoffloat</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.common.Values.html#Vfloat">Vfloat</a></span> (<span class="id"><a href="compcert.lib.Floats.html#Float.of_single">Float.of_single</a></span> <span class="id">f</span>)).<br/>
@@ -978,8 +1007,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.singleofintu">Val.singleofintu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#singleofintu">singleofintu</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#y">y</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2802')">Proof.</div>
-<div class="proofscript" id="proof2802">
+<div class="toggleproof" onclick="toggleDisplay('proof2979')">Proof.</div>
+<div class="proofscript" id="proof2979">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#singleofintu">singleofintu</a></span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#singleofintu_match">singleofintu_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvEval</span>. <span class="id">TrivialExists</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="id">inv</span> <span class="id">H0</span>.<br/>
@@ -999,8 +1028,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_exprlist">eval_exprlist</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id">args</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> /\<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.x86.Op.html#eval_addressing">eval_addressing</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id">mode</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2803')">Proof.</div>
-<div class="proofscript" id="proof2803">
+<div class="toggleproof" onclick="toggleDisplay('proof2980')">Proof.</div>
+<div class="proofscript" id="proof2980">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">ofs</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">A</span>: <span class="id">v</span> = <span class="id"><a href="compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id">b</span> <span class="id">ofs</span> -&gt; <span class="id"><a href="compcert.x86.Op.html#eval_addressing">eval_addressing</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> (<span class="id"><a href="compcert.x86.Op.html#Aindexed">Aindexed</a></span> 0) (<span class="id">v</span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">v</span>).<br/>
 &nbsp;&nbsp;{ <span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">v</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.Op.html#eval_addressing">eval_addressing</a></span>.<br/>
@@ -1028,8 +1057,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_exprlist">eval_exprlist</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#al">al</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.x86.Op.html#eval_addressing">Op.eval_addressing</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#addr">addr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_builtin_arg">CminorSel.eval_builtin_arg</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#builtin_arg_addr">builtin_arg_addr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#addr">addr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#al">al</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2804')">Proof.</div>
-<div class="proofscript" id="proof2804">
+<div class="toggleproof" onclick="toggleDisplay('proof2981')">Proof.</div>
+<div class="proofscript" id="proof2981">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">v</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#builtin_arg_addr">builtin_arg_addr</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#builtin_arg_addr_match">builtin_arg_addr_match</a></span> <span class="id">addr</span> <span class="id">al</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="tactic">set</span> (<span class="id">v2</span> := <span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.common.Values.html#Vlong">Vlong</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> <span class="id">n</span>) <span class="kwd">else</span> <span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> <span class="id">n</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">EQ</span>: <span class="id">v</span> = <span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.common.Values.html#Val.addl">Val.addl</a></span> <span class="id">v1</span> <span class="id">v2</span> <span class="kwd">else</span> <span class="id"><a href="compcert.common.Values.html#Val.add">Val.add</a></span> <span class="id">v1</span> <span class="id">v2</span>).<br/>
@@ -1044,8 +1073,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">v</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_builtin_arg">CminorSel.eval_builtin_arg</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> (<span class="id"><a href="compcert.x86.SelectOp.html#builtin_arg">builtin_arg</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span>) <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2805')">Proof.</div>
-<div class="proofscript" id="proof2805">
+<div class="toggleproof" onclick="toggleDisplay('proof2982')">Proof.</div>
+<div class="proofscript" id="proof2982">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">v</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.SelectOp.html#builtin_arg">builtin_arg</a></span>; <span class="tactic">case</span> (<span class="id"><a href="compcert.x86.SelectOp.html#builtin_arg_match">builtin_arg_match</a></span> <span class="id">a</span>); <span class="tactic">intros</span>; <span class="id">InvEval</span>.<br/>
 - <span class="id">constructor</span>.<br/>
 - <span class="id">constructor</span>.<br/>
@@ -1060,6 +1089,19 @@ Qed.</div>
 - <span class="id">inv</span> <span class="id">H</span>. <span class="id">InvEval</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.x86.Op.html#eval_addressing_Aglobal">eval_addressing_Aglobal</a></span> <span class="kwd">in</span> <span class="id">H6</span>. <span class="id">inv</span> <span class="id">H6</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">inv</span> <span class="id">H</span>. <span class="id">InvEval</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.x86.Op.html#eval_addressing_Ainstack">eval_addressing_Ainstack</a></span> <span class="kwd">in</span> <span class="id">H6</span>. <span class="id">inv</span> <span class="id">H6</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Platform-specific known builtins </div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="eval_platform_builtin">eval_platform_builtin</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bf</span> <span class="id">al</span> <span class="id">a</span> <span class="id">vl</span> <span class="id">v</span> <span class="id">le</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.x86.SelectOp.html#platform_builtin">platform_builtin</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#bf">bf</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#al">al</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CminorSel.html#eval_exprlist">eval_exprlist</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#al">al</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.x86.Builtins1.html#platform_builtin_sem">platform_builtin_sem</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#bf">bf</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>', <span class="id"><a href="compcert.backend.CminorSel.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.ge">ge</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.sp">sp</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.e">e</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR.m">m</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#le">le</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#a">a</a></span> <span class="id">v</span>' /\ <span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.x86.SelectOpproof.html#v">v</a></span> <span class="id">v</span>'.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2983')">Proof.</div>
+<div class="proofscript" id="proof2983">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">discriminate</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">End</span> <span class="id"><a href="compcert.x86.SelectOpproof.html#CMCONSTR">CMCONSTR</a></span>.<br/>

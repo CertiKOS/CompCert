@@ -1,0 +1,91 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Main</title>
+<meta name="description" content="Documentation of Coq module Main" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Main</h1>
+<div class="coq">
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Grammar</span> <span class="id"><a href="compcert.MenhirLib.Automaton.html">Automaton</a></span> <span class="id"><a href="compcert.MenhirLib.Interpreter_correct.html">Interpreter_correct</a></span> <span class="id"><a href="compcert.MenhirLib.Interpreter_complete.html">Interpreter_complete</a></span>.<br/>
+<span class="id">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="kwd">Syntax</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Arith.html">Arith</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="Make">Make</a></span>(<span class="kwd">Export</span> <span class="id">Aut</span>:<span class="id"><a href="compcert.MenhirLib.Automaton.html#T">Automaton.T</a></span>).<br/>
+<span class="kwd">Export</span> <span class="id">Aut.Gram</span>.<br/>
+<span class="kwd">Export</span> <span class="id">Aut.GramDefs</span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="kwd">Import</span> <span class="id"><a name="Make.Inter">Inter</a></span> := <span class="id"><a href="compcert.MenhirLib.Interpreter.html#Make">Interpreter.Make</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#Aut">Aut</a></span>.<br/>
+<span class="kwd">Module</span> <span class="id"><a name="Make.Correct">Correct</a></span> := <span class="id"><a href="compcert.MenhirLib.Interpreter_correct.html#Make">Interpreter_correct.Make</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#Aut">Aut</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.Inter">Inter</a></span>.<br/>
+<span class="kwd">Module</span> <span class="id"><a name="Make.Complete">Complete</a></span> := <span class="id"><a href="compcert.MenhirLib.Interpreter_complete.html#Make">Interpreter_complete.Make</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#Aut">Aut</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.Inter">Inter</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.complete_validator">complete_validator</a></span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>-&gt;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> := <span class="id"><a href="compcert.MenhirLib.Main.html#Make.is_complete">Complete.Valid.is_complete</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.safe_validator">safe_validator</a></span>:<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>-&gt;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> := <span class="id"><a href="compcert.MenhirLib.Main.html#Make.is_safe">ValidSafe.is_safe</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="Make.parse">parse</a></span> (<span class="id">safe</span>:<span class="id"><a href="compcert.MenhirLib.Main.html#Make.safe_validator">safe_validator</a></span> ()=<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) <span class="id">init</span> <span class="id">log_n_steps</span> <span class="id">buffer</span> :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse_result">parse_result</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.Gram.symbol_semantic_type">symbol_semantic_type</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.Gram.NT">NT</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.start_nt">start_nt</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span>))):=<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse">parse</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Make.safe_is_validator">ValidSafe.safe_is_validator</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#safe">safe</a></span>) <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#buffer">buffer</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#log_n_steps">log_n_steps</a></span>.<br/>
+<br/>
+<div class="doc">Correction theorem. *</div>
+<span class="kwd">Theorem</span> <span class="id"><a name="Make.parse_correct">parse_correct</a></span><br/>
+&nbsp;&nbsp;(<span class="id">safe</span>:<span class="id"><a href="compcert.MenhirLib.Main.html#Make.safe_validator">safe_validator</a></span> ()= <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) <span class="id">init</span> <span class="id">log_n_steps</span> <span class="id">buffer</span>:<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse">parse</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#safe">safe</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#log_n_steps">log_n_steps</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#buffer">buffer</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Main.html#Make.Parsed_pr">Parsed_pr</a></span> <span class="id">sem</span> <span class="id">buffer_new</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">word</span> (<span class="id">pt</span> : <span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.parse_tree">parse_tree</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.Gram.NT">NT</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.start_nt">start_nt</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span>)) <span class="id"><a href="compcert.MenhirLib.Main.html#word">word</a></span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#buffer">buffer</a></span> = (<span class="id"><a href="compcert.MenhirLib.Main.html#word">word</a></span> ++ <span class="id">buffer_new</span>)%<span class="id">buf</span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_sem">pt_sem</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#pt">pt</a></span> = <span class="id">sem</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6500')">Proof.</div>
+<div class="proofscript" id="proof6500">
+ <span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse_correct">Correct.parse_correct</a></span>. Qed.</div>
+<br/>
+<div class="doc">Completeness theorem. *</div>
+<span class="kwd">Theorem</span> <span class="id"><a name="Make.parse_complete">parse_complete</a></span><br/>
+&nbsp;&nbsp;(<span class="id">safe</span>:<span class="id"><a href="compcert.MenhirLib.Main.html#Make.safe_validator">safe_validator</a></span> () = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) <span class="id">init</span> <span class="id">log_n_steps</span> <span class="id">word</span> <span class="id">buffer_end</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Make.complete_validator">complete_validator</a></span> () = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">tree</span>:<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.parse_tree">parse_tree</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.Gram.NT">NT</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.start_nt">start_nt</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span>)) <span class="id"><a href="compcert.MenhirLib.Main.html#word">word</a></span>,<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse">parse</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#safe">safe</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#log_n_steps">log_n_steps</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#word">word</a></span> ++ <span class="id"><a href="compcert.MenhirLib.Main.html#buffer_end">buffer_end</a></span>) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Main.html#Make.Fail_pr">Fail_pr</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Main.html#Make.Parsed_pr">Parsed_pr</a></span> <span class="id">sem_res</span> <span class="id">buffer_end_res</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">sem_res</span> = <span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_sem">pt_sem</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#tree">tree</a></span> /\ <span class="id">buffer_end_res</span> = <span class="id"><a href="compcert.MenhirLib.Main.html#buffer_end">buffer_end</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_size">pt_size</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#tree">tree</a></span> &lt;= 2^<span class="id"><a href="compcert.MenhirLib.Main.html#log_n_steps">log_n_steps</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.MenhirLib.Main.html#Make.Timeout_pr">Timeout_pr</a></span> =&gt; 2^<span class="id"><a href="compcert.MenhirLib.Main.html#log_n_steps">log_n_steps</a></span> &lt; <span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_size">pt_size</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#tree">tree</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6501')">Proof.</div>
+<div class="proofscript" id="proof6501">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">now</span> <span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse_complete">Complete.parse_complete</a></span>, <span class="id"><a href="compcert.MenhirLib.Main.html#Make.complete_is_validator">Complete.Valid.complete_is_validator</a></span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Unambiguity theorem. *</div>
+<span class="kwd">Theorem</span> <span class="id"><a name="Make.unambiguity">unambiguity</a></span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Make.safe_validator">safe_validator</a></span> () = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Main.html#Make.complete_validator">complete_validator</a></span> () = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#inhabited">inhabited</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#Aut.Gram.token">token</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">init</span> <span class="id">word</span>,<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">tree1</span> <span class="id">tree2</span>:<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.parse_tree">parse_tree</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.Gram.NT">NT</a></span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.start_nt">start_nt</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#init">init</a></span>)) <span class="id"><a href="compcert.MenhirLib.Main.html#word">word</a></span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_sem">pt_sem</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#tree1">tree1</a></span> = <span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_sem">pt_sem</a></span> <span class="id"><a href="compcert.MenhirLib.Main.html#tree2">tree2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6502')">Proof.</div>
+<div class="proofscript" id="proof6502">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hsafe</span> <span class="id">Hcomp</span> [<span class="id">tok</span>] <span class="id">init</span> <span class="id">word</span> <span class="id">tree1</span> <span class="id">tree2</span>.<br/>
+&nbsp;&nbsp;<span class="id">pose</span> (<span class="id">buf_end</span> := <span class="id">cofix</span> <span class="id">buf_end</span> := (<span class="id">tok</span> :: <span class="id"><a href="compcert.MenhirLib.Main.html#buf_end">buf_end</a></span>)%<span class="id">buf</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hcomp1</span> := <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse_complete">parse_complete</a></span> <span class="id">Hsafe</span> <span class="id">init</span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_size">pt_size</a></span> <span class="id">tree1</span>) <span class="id">word</span> <span class="id">buf_end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Hcomp</span> <span class="id">tree1</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hcomp2</span> := <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse_complete">parse_complete</a></span> <span class="id">Hsafe</span> <span class="id">init</span> (<span class="id"><a href="compcert.MenhirLib.Main.html#Aut.GramDefs.pt_size">pt_size</a></span> <span class="id">tree1</span>) <span class="id">word</span> <span class="id">buf_end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Hcomp</span> <span class="id">tree2</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make.parse">parse</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">Hcomp1</span>.<br/>
+&nbsp;&nbsp;- <span class="id">exfalso</span>. <span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.lt_irrefl">PeanoNat.Nat.lt_irrefl</a></span>. <span class="id">etransitivity</span>; [|<span class="tactic">apply</span> <span class="id">Hcomp1</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.pow_gt_lin_r">Nat.pow_gt_lin_r</a></span>. <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">Hcomp1</span> <span class="kwd">as</span> [-&gt; <span class="id">_</span>], <span class="id">Hcomp2</span> <span class="kwd">as</span> [-&gt; <span class="id">_</span>]. <span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.MenhirLib.Main.html#Make">Make</a></span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

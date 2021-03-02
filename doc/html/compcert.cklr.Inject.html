@@ -33,55 +33,60 @@
 &nbsp;&nbsp;}.<br/>
 <br/>
 <span class="id">Variant</span> <span class="id"><a name="inj_incr">inj_incr</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Definitions.html#relation">relation</a></span> <span class="id"><a href="compcert.cklr.Inject.html#inj_world">inj_world</a></span> :=<br/>
-&nbsp;&nbsp;<span class="id"><a name="inj_incr_intro">inj_incr_intro</a></span> <span class="id">f</span> <span class="id">f</span>' <span class="id">nb1</span> <span class="id">nb2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a name="inj_incr_intro">inj_incr_intro</a></span> <span class="id">f</span> <span class="id">f</span>' <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">nb1</span>' <span class="id">nb2</span>':<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id">f</span>' -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span>, <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt; <span class="id">f</span>' <span class="id"><a href="compcert.cklr.Inject.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#b2">b2</a></span>, <span class="id"><a href="compcert.cklr.Inject.html#delta">delta</a></span>) -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b1">b1</a></span> /\ <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b2">b2</a></span>) -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span>) (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> <span class="id">nb1</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span> <span class="id">nb2</span>' -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span>) (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id">f</span>' <span class="id">nb1</span>' <span class="id">nb2</span>').<br/>
 <br/>
-<span class="id">Variant</span> <span class="id"><a name="inj_stbls">inj_stbls</a></span>: <span class="id">klr</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_world">inj_world</a></span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span> :=<br/>
-&nbsp;&nbsp;<span class="id"><a name="inj_stbls_intro">inj_stbls_intro</a></span> <span class="id">f</span> <span class="id">se1</span> <span class="id">se2</span>:<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se2">se2</a></span> -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_stbls">inj_stbls</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span>) (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se2">se2</a></span>)) <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se2">se2</a></span>.<br/>
+<span class="kwd">Record</span> <span class="id"><a name="inj_stbls">inj_stbls</a></span> (<span class="id">w</span>: <span class="id"><a href="compcert.cklr.Inject.html#inj_world">inj_world</a></span>) (<span class="id">se1</span> <span class="id">se2</span>: <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span>): <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="inj_stbls_match">inj_stbls_match</a></span>: <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw_meminj">injw_meminj</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se2">se2</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="inj_stbls_next_l">inj_stbls_next_l</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span>) (<span class="id"><a href="compcert.cklr.Inject.html#injw_next_l">injw_next_l</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a name="inj_stbls_next_r">inj_stbls_next_r</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se2">se2</a></span>) (<span class="id"><a href="compcert.cklr.Inject.html#injw_next_r">injw_next_r</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span>);<br/>
+&nbsp;&nbsp;}.<br/>
 <br/>
 <span class="id">Variant</span> <span class="id"><a name="inj_mem">inj_mem</a></span>: <span class="id">klr</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_world">inj_world</a></span> <span class="id"><a href="compcert.common.Memory.html#mem">mem</a></span> <span class="id"><a href="compcert.common.Memory.html#mem">mem</a></span> :=<br/>
-&nbsp;&nbsp;<span class="id"><a name="inj_mem_intro">inj_mem_intro</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a name="inj_mem_intro">inj_mem_intro</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span>) -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>) -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb1">nb1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb2">nb2</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>)) <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>.<br/>
 <br/>
 <h2> Properties </h2>
 <br/>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="inj_incr_preo">inj_incr_preo</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#PreOrder">PreOrder</a></span> <span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2363')">Proof.</div>
-<div class="proofscript" id="proof2363">
+<div class="toggleproof" onclick="toggleDisplay('proof2443')">Proof.</div>
+<div class="proofscript" id="proof2443">
 &nbsp;&nbsp;<span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>].<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Values.html#inject_incr_refl">inject_incr_refl</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Values.html#inject_incr_refl">inject_incr_refl</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_refl">Pos.le_refl</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">w</span> <span class="id">w</span>' <span class="id">w</span>'' <span class="id">H</span> <span class="id">H</span>'. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H</span>'.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Values.html#inject_incr_trans">inject_incr_trans</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Values.html#inject_incr_trans">inject_incr_trans</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_trans">Pos.le_trans</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hb</span> <span class="id">Hb</span>''.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span>' <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>'; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> (<span class="id">H5</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hb</span>') <span class="kwd">in</span> <span class="id">Hb</span>''. <span class="id">inv</span> <span class="id">Hb</span>''. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span>' <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>'.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">rewrite</span> (<span class="id">H6</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hb</span>') <span class="kwd">in</span> <span class="id">Hb</span>''. <span class="id">inv</span> <span class="id">Hb</span>''. <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">edestruct</span> <span class="id">H7</span>; <span class="tactic">eauto</span>. <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="inj_stbls_subrel">inj_stbls_subrel</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_stbls">inj_stbls</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span> ++&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2364')">Proof.</div>
-<div class="proofscript" id="proof2364">
+<div class="toggleproof" onclick="toggleDisplay('proof2444')">Proof.</div>
+<div class="proofscript" id="proof2444">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">w</span>' <span class="id">Hw</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">Hse</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse</span>; <span class="id">inv</span> <span class="id">Hw</span>.<br/>
-&nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls_incr">Genv.match_stbls_incr</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse</span>; <span class="id">inv</span> <span class="id">Hw</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="id">constructor</span>; <span class="id">cbn</span>; <span class="tactic">try</span> <span class="id">xomega</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls_incr">Genv.match_stbls_incr</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">edestruct</span> <span class="id">H0</span>; <span class="tactic">eauto</span>. <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Instance</span> <span class="id"><a name="inj_proj_incr">inj_proj_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> <span class="id"><a href="compcert.cklr.Inject.html#injw_meminj">injw_meminj</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2365')">Proof.</div>
-<div class="proofscript" id="proof2365">
+<div class="toggleproof" onclick="toggleDisplay('proof2445')">Proof.</div>
+<div class="proofscript" id="proof2445">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -90,24 +95,24 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_mem_inject">inj_mem_inject</a></span> <span class="id">w</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2366')">Proof.</div>
-<div class="proofscript" id="proof2366">
+<div class="toggleproof" onclick="toggleDisplay('proof2446')">Proof.</div>
+<div class="proofscript" id="proof2446">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_mem_next_l">inj_mem_next_l</a></span> <span class="id">w</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
-&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw_next_l">injw_next_l</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2367')">Proof.</div>
-<div class="proofscript" id="proof2367">
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#injw_next_l">injw_next_l</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> = <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2447')">Proof.</div>
+<div class="proofscript" id="proof2447">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_mem_next_r">inj_mem_next_r</a></span> <span class="id">w</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
-&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#injw_next_r">injw_next_r</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2368')">Proof.</div>
-<div class="proofscript" id="proof2368">
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#injw_next_r">injw_next_r</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> = <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2448')">Proof.</div>
+<div class="proofscript" id="proof2448">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -115,6 +120,10 @@ Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">inj_mem_inject</span> <span class="id">inj_mem_next_l</span> <span class="id">inj_mem_next_r</span>.<br/>
 <br/>
 <h2> CKLR definition </h2>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="inj_cklr_kf">inj_cklr_kf</a></span>: <span class="id">KripkeFrame</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> <span class="id"><a href="compcert.cklr.Inject.html#inj_world">inj_world</a></span>.<br/>
+<span class="tactic">split</span>. <span class="tactic">intro</span>. <span class="tactic">exact</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span>.<br/>
+Defined.</div>
 <br/>
 <span class="kwd">Program</span> <span class="kwd">Definition</span> <span class="id"><a name="inj">inj</a></span> : <span class="id"><a href="compcert.cklr.CKLR.html#cklr">cklr</a></span> :=<br/>
 &nbsp;&nbsp;{|<br/>
@@ -125,26 +134,46 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_mem</span> := <span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span>;<br/>
 &nbsp;&nbsp;|}.<br/>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2369')">Next Obligation.</div>
-<div class="proofscript" id="proof2369">
+<span class="kwd">Lemma</span> <span class="id"><a name="inj_acc_separated">inj_acc_separated</a></span> <span class="id">w</span> <span class="id">w</span>' <span class="id">m1</span> <span class="id">m2</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#inj_incr">inj_incr</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id">w</span>' -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#inject_separated">inject_separated</a></span> <span class="id"><a href="compcert.cklr.Inject.html#w">w</a></span> <span class="id">w</span>' <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2449')">Proof.</div>
+<div class="proofscript" id="proof2449">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hm</span> <span class="id">Hw</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hnone</span> <span class="id">Hsome</span>.<br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hm</span>. <span class="id">inv</span> <span class="id">Hw</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">do</span> 2 <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_nlt">Pos.le_nlt</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">H4</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2450')">Next Obligation.</div>
+<div class="proofscript" id="proof2450">
+ <span class="comment">(*&nbsp;mi_acc_separated&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_acc_separated">inj_acc_separated</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2451')">Next Obligation.</div>
+<div class="proofscript" id="proof2451">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1. <span class="id">cbn</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2370')">Next Obligation.</div>
-<div class="proofscript" id="proof2370">
-&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">eauto</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2452')">Next Obligation.</div>
+<div class="proofscript" id="proof2452">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H0</span>; <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2371')">Next Obligation.</div>
-<div class="proofscript" id="proof2371">
- <span class="comment">(*&nbsp;Mem.alloc&nbsp;*)</span><br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="inj_cklr_alloc">inj_cklr_alloc</a></span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> <span class="id"><a href="compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> (|= <span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> ++&gt; - ==&gt; - ==&gt; (&lt;&gt; <span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> * <span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> @@ [<span class="id"><a href="compcert.cklr.Inject.html#injw_meminj">injw_meminj</a></span>])).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2453')">Proof.</div>
+<div class="proofscript" id="proof2453">
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">lo</span> <span class="id">hi</span>. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Hm</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">m1</span> <span class="id">lo</span> <span class="id">hi</span>) <span class="kwd">as</span> [<span class="id">m1</span>' <span class="id">b1</span>] <span class="id">eqn</span>:<span class="id">Hm1</span>'.<br/>
 &nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.common.Memory.html#Mem.alloc_parallel_inject">Mem.alloc_parallel_inject</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">as</span> (<span class="id">f</span>' &amp; <span class="id">m2</span>' &amp; <span class="id">b2</span> &amp; <span class="id">Hm2</span>' &amp; <span class="id">Hm</span>' &amp; <span class="id">Hf</span>'1 &amp; <span class="id">Hb2</span> &amp; <span class="id">Hf</span>'2);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_refl">Z.le_refl</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hm2</span>'.<br/>
-&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id">f</span>' <span class="id">nb1</span> <span class="id">nb2</span>); <span class="tactic">split</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id">f</span>' (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m1</span>') (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m2</span>')); <span class="tactic">split</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
 &nbsp;&nbsp;- <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">b1</span>' <span class="id">b2</span>' <span class="id">delta</span>' <span class="id">Hb</span> <span class="id">Hb</span>'.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span> <span class="id">b1</span>' <span class="id">b1</span>); <span class="tactic">subst</span>.<br/>
@@ -153,12 +182,20 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.alloc_result">Mem.alloc_result</a></span> <span class="kwd">in</span> <span class="id">Hm2</span>'; <span class="tactic">subst</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">xomega</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">specialize</span> (<span class="id">Hf</span>'2 <span class="id">_</span> <span class="id">n</span>). <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">erewrite</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_alloc">Mem.nextblock_alloc</a></span> <span class="id">m1</span> <span class="id">_</span> <span class="id">_</span> <span class="id">m1</span>'); <span class="tactic">eauto</span>. <span class="id">xomega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">erewrite</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_alloc">Mem.nextblock_alloc</a></span> <span class="id">m2</span> <span class="id">_</span> <span class="id">_</span> <span class="id">m2</span>'); <span class="tactic">eauto</span>. <span class="id">xomega</span>.<br/>
 &nbsp;&nbsp;- <span class="id">econstructor</span>; <span class="tactic">eauto</span>; <span class="id">erewrite</span> <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_alloc">Mem.nextblock_alloc</a></span> <span class="tactic">by</span> <span class="tactic">eauto</span>; <span class="id">xomega</span>.<br/>
 &nbsp;&nbsp;- <span class="id">cbn</span>. <span class="tactic">red</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2372')">Next Obligation.</div>
-<div class="proofscript" id="proof2372">
+<div class="toggleproof" onclick="toggleDisplay('proof2454')">Next Obligation.</div>
+<div class="proofscript" id="proof2454">
+ <span class="comment">(*&nbsp;Mem.alloc&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">exact</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_cklr_alloc">inj_cklr_alloc</a></span>.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2455')">Next Obligation.</div>
+<div class="proofscript" id="proof2455">
  <span class="comment">(*&nbsp;Mem.free&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> [[<span class="id">b1</span> <span class="id">lo1</span>] <span class="id">hi1</span>] [[<span class="id">b2</span> <span class="id">lo2</span>] <span class="id">hi2</span>] <span class="id">Hr</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">red</span>.<br/>
@@ -168,11 +205,11 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">replace</span> (<span class="id">lo1</span> + <span class="id">delta</span> + <span class="id">sz</span>) <span class="kwd">with</span> (<span class="id">lo1</span> + <span class="id">sz</span> + <span class="id">delta</span>) <span class="tactic">by</span> <span class="id">xomega</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hm2</span>'.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>); <span class="tactic">try</span> <span class="tactic">congruence</span>;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_free">Mem.nextblock_free</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> &lt;- <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_free">Mem.nextblock_free</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_refl">Pos.le_refl</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2373')">Next Obligation.</div>
-<div class="proofscript" id="proof2373">
+<div class="toggleproof" onclick="toggleDisplay('proof2456')">Next Obligation.</div>
+<div class="proofscript" id="proof2456">
  <span class="comment">(*&nbsp;Mem.load&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">chunk</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hptr</span>].<br/>
 &nbsp;&nbsp;<span class="id">cbn</span> <span class="kwd">in</span> *. <span class="tactic">red</span>. <span class="id">inv</span> <span class="id">Hm</span>.<br/>
@@ -181,8 +218,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hv2</span>. <span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>).<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2374')">Next Obligation.</div>
-<div class="proofscript" id="proof2374">
+<div class="toggleproof" onclick="toggleDisplay('proof2457')">Next Obligation.</div>
+<div class="proofscript" id="proof2457">
  <span class="comment">(*&nbsp;Mem.store&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">chunk</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hptr</span>] <span class="id">v1</span> <span class="id">v2</span> <span class="id">Hv</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">Hv</span> |- *. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Hm</span>.<br/>
@@ -190,11 +227,11 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.common.Memory.html#Mem.store_mapped_inject">Mem.store_mapped_inject</a></span> <span class="kwd">as</span> (<span class="id">m2</span>' &amp; <span class="id">Hm2</span>' &amp; <span class="id">Hm</span>'); <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hm2</span>'.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>); <span class="tactic">try</span> <span class="tactic">congruence</span>;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_store">Mem.nextblock_store</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> &lt;- <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_store">Mem.nextblock_store</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_refl">Pos.le_refl</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2375')">Next Obligation.</div>
-<div class="proofscript" id="proof2375">
+<div class="toggleproof" onclick="toggleDisplay('proof2458')">Next Obligation.</div>
+<div class="proofscript" id="proof2458">
  <span class="comment">(*&nbsp;Mem.loadbytes&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hptr</span>] <span class="id">sz</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Hm</span>.<br/>
@@ -203,8 +240,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hvs2</span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2376')">Next Obligation.</div>
-<div class="proofscript" id="proof2376">
+<div class="toggleproof" onclick="toggleDisplay('proof2459')">Next Obligation.</div>
+<div class="proofscript" id="proof2459">
  <span class="comment">(*&nbsp;Mem.storebytes&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> [<span class="id">b1</span> <span class="id">ofs1</span>] [<span class="id">b2</span> <span class="id">ofs2</span>] <span class="id">Hptr</span> <span class="id">vs1</span> <span class="id">vs2</span> <span class="id">Hvs</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">Hvs</span> |- *. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Hm</span>.<br/>
@@ -218,10 +255,11 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hm2</span>'.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.storebytes_empty_inject">Mem.storebytes_empty_inject</a></span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">erewrite</span> <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_storebytes">Mem.nextblock_storebytes</a></span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">erewrite</span> <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_storebytes">Mem.nextblock_storebytes</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> &lt;- (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_storebytes">Mem.nextblock_storebytes</a></span> <span class="id">m1</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> &lt;- (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_storebytes">Mem.nextblock_storebytes</a></span> <span class="id">m2</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.storebytes_empty_inject">Mem.storebytes_empty_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">assert</span> (<span class="id"><a href="compcert.cklr.Valuesrel.html#ptr_inject">ptr_inject</a></span> <span class="id">f</span> (<span class="id">b1</span>, <span class="id">ofs1</span>) (<span class="id">b2</span>, <span class="id">ofs2</span>)) <span class="kwd">as</span> <span class="id">Hptr</span>'.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;{<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hptr</span> <span class="kwd">as</span> [<span class="id">Hptr</span>|<span class="id">Hptr</span>]; <span class="tactic">eauto</span>.<br/>
@@ -237,18 +275,18 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.common.Memory.html#Mem.storebytes_mapped_inject">Mem.storebytes_mapped_inject</a></span> <span class="kwd">as</span> (<span class="id">m2</span>' &amp; <span class="id">Hm2</span>' &amp; <span class="id">Hm</span>'); <span class="tactic">eauto</span>. <span class="id">rauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hm2</span>'.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>); <span class="tactic">try</span> <span class="tactic">congruence</span>;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_storebytes">Mem.nextblock_storebytes</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> &lt;- <span class="id"><a href="compcert.common.Memory.html#Mem.nextblock_storebytes">Mem.nextblock_storebytes</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_refl">Pos.le_refl</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2377')">Next Obligation.</div>
-<div class="proofscript" id="proof2377">
+<div class="toggleproof" onclick="toggleDisplay('proof2460')">Next Obligation.</div>
+<div class="proofscript" id="proof2460">
  <span class="comment">(*&nbsp;Mem.perm&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hb</span>] <span class="id">p</span> <span class="id">k</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_inject">Mem.perm_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2378')">Next Obligation.</div>
-<div class="proofscript" id="proof2378">
+<div class="toggleproof" onclick="toggleDisplay('proof2461')">Next Obligation.</div>
+<div class="proofscript" id="proof2461">
  <span class="comment">(*&nbsp;Mem.valid_block&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">b1</span> <span class="id">b2</span> [<span class="id">delta</span> <span class="id">Hb</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intro</span>.<br/>
@@ -256,15 +294,15 @@ Qed.</div>
 &nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block_inject_1">Mem.valid_block_inject_1</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2379')">Next Obligation.</div>
-<div class="proofscript" id="proof2379">
+<div class="toggleproof" onclick="toggleDisplay('proof2462')">Next Obligation.</div>
+<div class="proofscript" id="proof2462">
  <span class="comment">(*&nbsp;Mem.meminj_no_overlap&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">Hm</span> <span class="id">Hnb1</span> <span class="id">Hnb2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.mi_no_overlap">Mem.mi_no_overlap</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2380')">Next Obligation.</div>
-<div class="proofscript" id="proof2380">
+<div class="toggleproof" onclick="toggleDisplay('proof2463')">Next Obligation.</div>
+<div class="proofscript" id="proof2463">
  <span class="comment">(*&nbsp;representable&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">Hm</span> <span class="id">Hnb1</span> <span class="id">Hnb2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned_repr">Ptrofs.unsigned_repr</a></span> <span class="id">ofs1</span>) <span class="tactic">by</span> <span class="id">xomega</span>.<br/>
@@ -273,18 +311,49 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">assumption</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2381')">Next Obligation.</div>
-<div class="proofscript" id="proof2381">
+<div class="toggleproof" onclick="toggleDisplay('proof2464')">Next Obligation.</div>
+<div class="proofscript" id="proof2464">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">Hm</span> <span class="id">Hnb1</span> <span class="id">Hnb2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.aligned_area_inject">Mem.aligned_area_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2382')">Next Obligation.</div>
-<div class="proofscript" id="proof2382">
+<div class="toggleproof" onclick="toggleDisplay('proof2465')">Next Obligation.</div>
+<div class="proofscript" id="proof2465">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">Hm</span> <span class="id">Hnb1</span> <span class="id">Hnb2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.disjoint_or_equal_inject">Mem.disjoint_or_equal_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2466')">Next Obligation.</div>
+<div class="proofscript" id="proof2466">
+ <span class="comment">(*&nbsp;perm_inv&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">Hm</span> <span class="id">Hnb1</span> <span class="id">Hnb2</span>].<br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_inject_inv">Mem.perm_inject_inv</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="nextblock_inject">nextblock_inject</a></span>:<br/>
+&nbsp;&nbsp;<span class="id">Monotonic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.Inject.html#inj_mem">inj_mem</a></span> ++&gt; (&lt;&gt; <span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject_sameofs">block_inject_sameofs</a></span> @@ [<span class="id"><a href="compcert.cklr.Inject.html#injw_meminj">injw_meminj</a></span>])).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2467')">Proof.</div>
+<div class="proofscript" id="proof2467">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>.<br/>
+&nbsp;&nbsp;<span class="id">remember</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">m1</span> 0 0) <span class="kwd">as</span> <span class="id">mb</span> <span class="id">eqn</span>: <span class="id">Hmb1</span>. <span class="tactic">destruct</span> <span class="id">mb</span> <span class="kwd">as</span> [<span class="id">m1</span>' <span class="id">b1</span>].<br/>
+&nbsp;&nbsp;<span class="id">remember</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">m2</span> 0 0) <span class="kwd">as</span> <span class="id">mb</span> <span class="id">eqn</span>: <span class="id">Hmb2</span>. <span class="tactic">destruct</span> <span class="id">mb</span> <span class="kwd">as</span> [<span class="id">m2</span>' <span class="id">b2</span>].<br/>
+&nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.common.Memory.html#Mem.alloc_result">Mem.alloc_result</a></span>. <span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id">Hmb1</span>. <span class="tactic">intros</span> &lt;-.<br/>
+&nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.common.Memory.html#Mem.alloc_result">Mem.alloc_result</a></span>. <span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id">Hmb2</span>. <span class="tactic">intros</span> &lt;-.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_cklr_alloc">inj_cklr_alloc</a></span> <span class="kwd">as</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hm</span>'). <span class="tactic">apply</span> <span class="id">Hm</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">Hmb1</span> <span class="kwd">in</span> <span class="id">Hm</span>'. <span class="tactic">rewrite</span> &lt;- <span class="id">Hmb2</span> <span class="kwd">in</span> <span class="id">Hm</span>'.<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">w</span>'. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id">Hm</span>'.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2468')">Next Obligation.</div>
+<div class="proofscript" id="proof2468">
+ <span class="comment">(*&nbsp;nextblock&nbsp;incr&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span> <span class="kwd">as</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hm</span>').<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">Hm</span>'. <span class="id">inv</span> <span class="id">Hw</span>'.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
 <br/>
 <h1> Useful theorems </h1>
 <br/>
@@ -292,8 +361,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="compose_meminj_incr">compose_meminj_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span>) <span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2383')">Proof.</div>
-<div class="proofscript" id="proof2383">
+<div class="toggleproof" onclick="toggleDisplay('proof2469')">Proof.</div>
+<div class="proofscript" id="proof2469">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f1</span> <span class="id">f2</span> <span class="id">Hf</span> <span class="id">g1</span> <span class="id">g2</span> <span class="id">Hg</span> <span class="id">b</span> <span class="id">xb</span> <span class="id">xdelta</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f1</span> <span class="id">b</span>) <span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">delta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>'; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -318,8 +387,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="meminj_dom_incr">meminj_dom_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>) (<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2384')">Proof.</div>
-<div class="proofscript" id="proof2384">
+<div class="toggleproof" onclick="toggleDisplay('proof2470')">Proof.</div>
+<div class="proofscript" id="proof2470">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f</span> <span class="id">g</span> <span class="id">Hfg</span> <span class="id">b</span> <span class="id">b</span>' <span class="id">delta</span> <span class="id">Hb</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b</span>) <span class="kwd">as</span> [[? ?] | ] <span class="id">eqn</span>:<span class="id">Hb</span>'; <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="id">inv</span> <span class="id">Hb</span>.<br/>
@@ -328,8 +397,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="meminj_dom_compose">meminj_dom_compose</a></span> <span class="id">f</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> = <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2385')">Proof.</div>
-<div class="proofscript" id="proof2385">
+<div class="toggleproof" onclick="toggleDisplay('proof2471')">Proof.</div>
+<div class="proofscript" id="proof2471">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Axioms.html#functional_extensionality">functional_extensionality</a></span>; <span class="tactic">intros</span> <span class="id">b</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span>, <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b</span>) <span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">ofs</span>] | ] <span class="id">eqn</span>:<span class="id">Hfb</span>; <span class="tactic">eauto</span>.<br/>
@@ -340,8 +409,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="meminj_dom_idemp">meminj_dom_idemp</a></span> <span class="id">f</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) = <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2386')">Proof.</div>
-<div class="proofscript" id="proof2386">
+<div class="toggleproof" onclick="toggleDisplay('proof2472')">Proof.</div>
+<div class="proofscript" id="proof2472">
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Axioms.html#functional_extensionality">functional_extensionality</a></span>; <span class="tactic">intro</span> <span class="id">b</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b</span>); <span class="tactic">eauto</span>.<br/>
@@ -349,8 +418,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="meminj_dom_flat_inj">meminj_dom_flat_inj</a></span> <span class="id">nb</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.flat_inj">Mem.flat_inj</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb">nb</a></span>) = <span class="id"><a href="compcert.common.Memory.html#Mem.flat_inj">Mem.flat_inj</a></span> <span class="id"><a href="compcert.cklr.Inject.html#nb">nb</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2387')">Proof.</div>
-<div class="proofscript" id="proof2387">
+<div class="toggleproof" onclick="toggleDisplay('proof2473')">Proof.</div>
+<div class="proofscript" id="proof2473">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Axioms.html#functional_extensionality">functional_extensionality</a></span>; <span class="tactic">intros</span> <span class="id">b</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>, <span class="id"><a href="compcert.common.Memory.html#Mem.flat_inj">Mem.flat_inj</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.lib.Coqlib.html#plt">plt</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -360,8 +429,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="block_inject_dom">block_inject_dom</a></span> <span class="id">f</span> <span class="id">b1</span> <span class="id">b2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject">block_inject</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b1">b1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b2">b2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Valuesrel.html#block_inject">block_inject</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#b1">b1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b1">b1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2388')">Proof.</div>
-<div class="proofscript" id="proof2388">
+<div class="toggleproof" onclick="toggleDisplay('proof2474')">Proof.</div>
+<div class="proofscript" id="proof2474">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> (<span class="id">delta</span> &amp; <span class="id">Hb</span>).<br/>
 &nbsp;&nbsp;<span class="id">exists</span> 0.<br/>
@@ -371,8 +440,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="val_inject_dom">val_inject_dom</a></span> <span class="id">f</span> <span class="id">v1</span> <span class="id">v2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#v1">v1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#v2">v2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#v1">v1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#v1">v1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2389')">Proof.</div>
-<div class="proofscript" id="proof2389">
+<div class="toggleproof" onclick="toggleDisplay('proof2475')">Proof.</div>
+<div class="proofscript" id="proof2475">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="id">econstructor</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H</span>.<br/>
@@ -384,8 +453,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="memval_inject_dom">memval_inject_dom</a></span> <span class="id">f</span> <span class="id">v1</span> <span class="id">v2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#v1">v1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#v2">v2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#v1">v1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#v1">v1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2390')">Proof.</div>
-<div class="proofscript" id="proof2390">
+<div class="toggleproof" onclick="toggleDisplay('proof2476')">Proof.</div>
+<div class="proofscript" id="proof2476">
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="id">econstructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Inject.html#val_inject_dom">val_inject_dom</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -393,16 +462,16 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="val_inject_list_dom">val_inject_list_dom</a></span> <span class="id">f</span> <span class="id">vs1</span> <span class="id">vs2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#vs1">vs1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#vs2">vs2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#vs1">vs1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#vs1">vs1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2391')">Proof.</div>
-<div class="proofscript" id="proof2391">
+<div class="toggleproof" onclick="toggleDisplay('proof2477')">Proof.</div>
+<div class="proofscript" id="proof2477">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="id">constructor</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.cklr.Inject.html#val_inject_dom">val_inject_dom</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mem_mem_inj_dom">mem_mem_inj_dom</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.mem_inj">Mem.mem_inj</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.mem_inj">Mem.mem_inj</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2392')">Proof.</div>
-<div class="proofscript" id="proof2392">
+<div class="toggleproof" onclick="toggleDisplay('proof2478')">Proof.</div>
+<div class="proofscript" id="proof2478">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>. <span class="tactic">intros</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">ofs</span> <span class="id">k</span> <span class="id">p</span> <span class="id">Hb1</span> <span class="id">Hp</span>.<br/>
@@ -422,8 +491,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="mem_inject_dom">mem_inject_dom</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m2">m2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#m1">m1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2393')">Proof.</div>
-<div class="proofscript" id="proof2393">
+<div class="toggleproof" onclick="toggleDisplay('proof2479')">Proof.</div>
+<div class="proofscript" id="proof2479">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Inject.html#mem_mem_inj_dom">mem_mem_inj_dom</a></span>.<br/>
@@ -450,11 +519,11 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="match_stbls_dom">match_stbls_dom</a></span> <span class="id">f</span> <span class="id">se1</span> <span class="id">se2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se2">se2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span> <span class="id"><a href="compcert.cklr.Inject.html#se1">se1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2394')">Proof.</div>
-<div class="proofscript" id="proof2394">
+<div class="toggleproof" onclick="toggleDisplay('proof2480')">Proof.</div>
+<div class="proofscript" id="proof2480">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hse</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>. <span class="tactic">split</span>; <span class="tactic">eauto</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;- <span class="id">edestruct</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.mge_dom">Genv.mge_dom</a></span> <span class="kwd">as</span> (<span class="id">b2</span> &amp; <span class="id">Hb2</span>); <span class="tactic">eauto</span>. <span class="tactic">rewrite</span> <span class="id">Hb2</span>. <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;- <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="id">edestruct</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.mge_dom">Genv.mge_dom</a></span> <span class="kwd">as</span> (<span class="id">b3</span> &amp; <span class="id">Hb3</span>); <span class="tactic">eauto</span>. <span class="id">exists</span> <span class="id">b2</span>. <span class="tactic">rewrite</span> <span class="id">Hb3</span>. <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">reflexivity</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">reflexivity</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta</span>] | ] <span class="id">eqn</span>:<span class="id">Hb</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">reflexivity</span>.<br/>
@@ -463,8 +532,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="loc_unmapped_dom">loc_unmapped_dom</a></span> <span class="id">f</span> <span class="id">b</span> <span class="id">ofs</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#loc_unmapped">loc_unmapped</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span>) <span class="id"><a href="compcert.cklr.Inject.html#b">b</a></span> <span class="id"><a href="compcert.cklr.Inject.html#ofs">ofs</a></span> &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#loc_unmapped">loc_unmapped</a></span> <span class="id"><a href="compcert.cklr.Inject.html#f">f</a></span> <span class="id"><a href="compcert.cklr.Inject.html#b">b</a></span> <span class="id"><a href="compcert.cklr.Inject.html#ofs">ofs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2395')">Proof.</div>
-<div class="proofscript" id="proof2395">
+<div class="toggleproof" onclick="toggleDisplay('proof2481')">Proof.</div>
+<div class="proofscript" id="proof2481">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>, <span class="id"><a href="compcert.common.Events.html#loc_unmapped">loc_unmapped</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">b</span>) <span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">delta</span>] | ].<br/>
 &nbsp;&nbsp;- <span class="tactic">split</span>; <span class="tactic">discriminate</span>.<br/>
@@ -475,61 +544,39 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_inj">inj_inj</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLRAlgebra.html#subcklr">subcklr</a></span> <span class="id"><a href="compcert.cklr.Inject.html#inj">inj</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#inj">inj</a></span> @ <span class="id"><a href="compcert.cklr.Inject.html#inj">inj</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2396')">Proof.</div>
-<div class="proofscript" id="proof2396">
-&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hse</span> <span class="id">Hm</span>. <span class="tactic">destruct</span> <span class="id">Hm</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">nb1</span> <span class="id">nb2</span> <span class="id">Hm</span>].<br/>
-&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id">f</span>) <span class="id">nb1</span> <span class="id">nb1</span>, <span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>); <span class="tactic">simpl</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2482')">Proof.</div>
+<div class="proofscript" id="proof2482">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hse</span> <span class="id">Hm</span>. <span class="tactic">destruct</span> <span class="id">Hm</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>].<br/>
+&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span> <span class="id">f</span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m1</span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m1</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> <span class="id">f</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m1</span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m2</span>)); <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
 &nbsp;&nbsp;- <span class="id">exists</span> <span class="id">se1</span>. <span class="tactic">split</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hse</span>. <span class="id">econstructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Inject.html#match_stbls_dom">match_stbls_dom</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hse</span>. <span class="id">econstructor</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cklr.Inject.html#match_stbls_dom">match_stbls_dom</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;- <span class="id">exists</span> <span class="id">m1</span>; <span class="tactic">split</span>; <span class="tactic">repeat</span> <span class="id">rstep</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.cklr.Inject.html#inj_mem_intro">inj_mem_intro</a></span>, <span class="id"><a href="compcert.cklr.Inject.html#mem_inject_dom">mem_inject_dom</a></span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom_compose">meminj_dom_compose</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Values.html#inject_incr_refl">inject_incr_refl</a></span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">intros</span> [<span class="id">w12</span>' <span class="id">w23</span>'] <span class="id">m1</span>' <span class="id">m3</span>' (<span class="id">m2</span>' &amp; <span class="id">H12</span>' &amp; <span class="id">H23</span>') [<span class="id">Hw12</span>' <span class="id">Hw23</span>']. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H12</span>' <span class="kwd">as</span> [<span class="id">f12</span>' <span class="id">m1</span>' <span class="id">m2</span>' ? ? ? <span class="id">Hm12</span>'].<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H23</span>' <span class="kwd">as</span> [<span class="id">f23</span>' <span class="id">xm2</span>' <span class="id">xm3</span>' ? ? ? <span class="id">Hm23</span>']. <span class="tactic">clear</span> <span class="id">H23</span>'; <span class="tactic">subst</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hw12</span>' <span class="kwd">as</span> [? ? ? ? <span class="id">Hf12</span>' <span class="id">SEP12</span>']. <span class="tactic">clear</span> <span class="id">Hw12</span>'; <span class="tactic">subst</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hw23</span>' <span class="kwd">as</span> [? ? ? ? <span class="id">Hf23</span>' <span class="id">SEP23</span>']. <span class="tactic">clear</span> <span class="id">Hw23</span>'; <span class="tactic">subst</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> (<span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span> <span class="id">f12</span>' <span class="id">f23</span>') <span class="id">nb4</span> <span class="id">nb5</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H12</span>' <span class="kwd">as</span> [<span class="id">f12</span>' <span class="id">m1</span>' <span class="id">m2</span>' <span class="id">Hm12</span>'].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H23</span>' <span class="kwd">as</span> [<span class="id">f23</span>' <span class="id">xm2</span>' <span class="id">xm3</span>' <span class="id">Hm23</span>']. <span class="tactic">clear</span> <span class="id">H23</span>'; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hw12</span>' <span class="kwd">as</span> [? ? ? ? ? ? <span class="id">Hf12</span>' <span class="id">SEP12</span>']. <span class="tactic">clear</span> <span class="id">Hw12</span>'; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hw23</span>' <span class="kwd">as</span> [? ? ? ? ? ? <span class="id">Hf23</span>' <span class="id">SEP23</span>']. <span class="tactic">clear</span> <span class="id">Hw23</span>'; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span> (<span class="id"><a href="compcert.cklr.Inject.html#injw">injw</a></span> (<span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span> <span class="id">f12</span>' <span class="id">f23</span>') <span class="id">_</span> <span class="id">_</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.inject_compose">Mem.inject_compose</a></span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.cklr.Inject.html#meminj_dom_compose">meminj_dom_compose</a></span> <span class="id">f</span>). <span class="id">rauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">intros</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hb</span> <span class="id">Hb</span>'. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span> <span class="kwd">in</span> <span class="id">Hb</span>'.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f12</span>' <span class="id">b1</span>) <span class="kwd">as</span> [[<span class="id">bi</span> <span class="id">delta12</span>] | ] <span class="id">eqn</span>:<span class="id">Hb1</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f23</span>' <span class="id">bi</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">delta23</span>] | ] <span class="id">eqn</span>:<span class="id">Hb2</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hb</span>'. <span class="id">inv</span> <span class="id">Hse</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hb</span>'.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">SEP12</span>'; <span class="tactic">eauto</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.Inject.html#meminj_dom">meminj_dom</a></span>. <span class="tactic">rewrite</span> <span class="id">Hb</span>. <span class="tactic">auto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">bi</span>) <span class="kwd">as</span> [[<span class="id">xb2</span> <span class="id">xdelta23</span>] | ] <span class="id">eqn</span>:<span class="id">Hbi</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- <span class="tactic">rewrite</span> (<span class="id">Hf23</span>' <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hbi</span>) <span class="kwd">in</span> <span class="id">Hb2</span>. <span class="id">inv</span> <span class="id">Hb2</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.mge_separated">Genv.mge_separated</a></span> <span class="id">H10</span> <span class="id">_</span> <span class="id">Hbi</span>). <span class="tactic">auto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- <span class="id">edestruct</span> (<span class="id">SEP23</span>' <span class="id">bi</span> <span class="id">b2</span>); <span class="tactic">eauto</span>. <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">bi</span>) <span class="kwd">as</span> [[? ?] | ] <span class="id">eqn</span>:<span class="id">Hfbi</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block_inject_1">Mem.valid_block_inject_1</a></span> <span class="kwd">in</span> <span class="id">Hfbi</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">red</span> <span class="kwd">in</span> <span class="id">Hfbi</span>. <span class="id">xomega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id">SEP23</span>'; <span class="tactic">eauto</span>. <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="id">rstep</span>; <span class="tactic">auto</span>.<br/>
-Qed.</div>
-<br/>
-<br/>
-<h1> Connection to <span class="bracket"><span class="id">cc_inj</span></span> </h1>
-<br/>
-<span class="kwd">Lemma</span> <span class="id"><a name="cc_c_inj">cc_c_inj</a></span>:<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.Inject.html#inj">inj</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#cc_inj">cc_inj</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2397')">Proof.</div>
-<div class="proofscript" id="proof2397">
-&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
-&nbsp;&nbsp;- <span class="tactic">red</span>. <span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hse</span>. <span class="id">inv</span> <span class="id">Hq</span>. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">H1</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span> (<span class="id"><a href="compcert.common.LanguageInterface.html#mit">mit</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>). <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r2</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">split</span>; <span class="tactic">repeat</span> (<span class="id">constructor</span>; <span class="tactic">eauto</span>).<br/>
-&nbsp;&nbsp;- <span class="tactic">red</span>. <span class="tactic">intros</span> [<span class="id">f</span> <span class="id">nb1</span> <span class="id">nb2</span>] <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">Hse</span>. <span class="id">inv</span> <span class="id">Hq</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r2</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hr</span>). <span class="id">inv</span> <span class="id">Hw</span>'. <span class="id">inv</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">H7</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">eauto</span>. <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 
 </div>

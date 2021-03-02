@@ -43,8 +43,8 @@
 &nbsp;&nbsp;| <span class="id"><a name="Tany64">Tany64</a></span>.             <span class="docright">(* any 64-bit value, i.e. any value  *)</span><br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="typ_eq">typ_eq</a></span>: <span class="kwd">forall</span> (<span class="id">t1</span> <span class="id">t2</span>: <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span>), {<span class="id"><a href="compcert.common.AST.html#t1">t1</a></span>=<span class="id"><a href="compcert.common.AST.html#t2">t2</a></span>} + {<span class="id"><a href="compcert.common.AST.html#t1">t1</a></span>&lt;&gt;<span class="id"><a href="compcert.common.AST.html#t2">t2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1192')">Proof.</div>
-<div class="proofscript" id="proof1192">
+<div class="toggleproof" onclick="toggleDisplay('proof1229')">Proof.</div>
+<div class="proofscript" id="proof1229">
  <span class="id">decide</span> <span class="id">equality</span>. Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.common.AST.html#typ_eq">typ_eq</a></span>.<br/>
 <br/>
@@ -67,13 +67,13 @@
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="typesize_pos">typesize_pos</a></span>: <span class="kwd">forall</span> <span class="id">ty</span>, <span class="id"><a href="compcert.common.AST.html#typesize">typesize</a></span> <span class="id"><a href="compcert.common.AST.html#ty">ty</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1193')">Proof.</div>
-<div class="proofscript" id="proof1193">
+<div class="toggleproof" onclick="toggleDisplay('proof1230')">Proof.</div>
+<div class="proofscript" id="proof1230">
  <span class="tactic">destruct</span> <span class="id">ty</span>; <span class="tactic">simpl</span>; <span class="tactic">omega</span>. Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="typesize_Tptr">typesize_Tptr</a></span>: <span class="id"><a href="compcert.common.AST.html#typesize">typesize</a></span> <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span> = <span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> <span class="kwd">then</span> 8 <span class="kwd">else</span> 4.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1194')">Proof.</div>
-<div class="proofscript" id="proof1194">
+<div class="toggleproof" onclick="toggleDisplay('proof1231')">Proof.</div>
+<div class="proofscript" id="proof1231">
  <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>. Qed.</div>
 <br/>
 <div class="doc">All values of size 32 bits are also of type <span class="bracket"><span class="id">Tany32</span></span>.  All values
@@ -124,8 +124,8 @@ calling conventions for the function. </div>
 &nbsp;&nbsp;{| <span class="id"><a href="compcert.common.AST.html#mkcallconv">cc_vararg</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>; <span class="id">cc_unproto</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>; <span class="id">cc_structret</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> |}.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="calling_convention_eq">calling_convention_eq</a></span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.common.AST.html#calling_convention">calling_convention</a></span>) : {<span class="id"><a href="compcert.common.AST.html#x">x</a></span>=<span class="id"><a href="compcert.common.AST.html#y">y</a></span>} + {<span class="id"><a href="compcert.common.AST.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.common.AST.html#y">y</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1195')">Proof.</div>
-<div class="proofscript" id="proof1195">
+<div class="toggleproof" onclick="toggleDisplay('proof1232')">Proof.</div>
+<div class="proofscript" id="proof1232">
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Bool.Bool.html#bool_dec">bool_dec</a></span>.<br/>
 Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.common.AST.html#calling_convention_eq">calling_convention_eq</a></span>.<br/>
@@ -143,8 +143,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="signature_eq">signature_eq</a></span>: <span class="kwd">forall</span> (<span class="id">s1</span> <span class="id">s2</span>: <span class="id"><a href="compcert.common.AST.html#signature">signature</a></span>), {<span class="id"><a href="compcert.common.AST.html#s1">s1</a></span>=<span class="id"><a href="compcert.common.AST.html#s2">s2</a></span>} + {<span class="id"><a href="compcert.common.AST.html#s1">s1</a></span>&lt;&gt;<span class="id"><a href="compcert.common.AST.html#s2">s2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1196')">Proof.</div>
-<div class="proofscript" id="proof1196">
+<div class="toggleproof" onclick="toggleDisplay('proof1233')">Proof.</div>
+<div class="proofscript" id="proof1233">
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.common.AST.html#opt_typ_eq">opt_typ_eq</a></span>, <span class="id"><a href="compcert.common.AST.html#list_typ_eq">list_typ_eq</a></span>, <span class="id"><a href="compcert.common.AST.html#calling_convention_eq">calling_convention_eq</a></span>; <span class="id">decide</span> <span class="id">equality</span>.<br/>
 Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.common.AST.html#signature_eq">signature_eq</a></span>.<br/>
@@ -169,8 +169,8 @@ Defined.</div>
 &nbsp;&nbsp;| <span class="id"><a name="Many64">Many64</a></span>.         <span class="docright">(* any value  *)</span><br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="chunk_eq">chunk_eq</a></span>: <span class="kwd">forall</span> (<span class="id">c1</span> <span class="id">c2</span>: <span class="id"><a href="compcert.common.AST.html#memory_chunk">memory_chunk</a></span>), {<span class="id"><a href="compcert.common.AST.html#c1">c1</a></span>=<span class="id"><a href="compcert.common.AST.html#c2">c2</a></span>} + {<span class="id"><a href="compcert.common.AST.html#c1">c1</a></span>&lt;&gt;<span class="id"><a href="compcert.common.AST.html#c2">c2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1197')">Proof.</div>
-<div class="proofscript" id="proof1197">
+<div class="toggleproof" onclick="toggleDisplay('proof1234')">Proof.</div>
+<div class="proofscript" id="proof1234">
  <span class="id">decide</span> <span class="id">equality</span>. Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.common.AST.html#chunk_eq">chunk_eq</a></span>.<br/>
 <br/>
@@ -193,8 +193,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_of_Mptr">type_of_Mptr</a></span>: <span class="id"><a href="compcert.common.AST.html#type_of_chunk">type_of_chunk</a></span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span> = <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1198')">Proof.</div>
-<div class="proofscript" id="proof1198">
+<div class="toggleproof" onclick="toggleDisplay('proof1235')">Proof.</div>
+<div class="proofscript" id="proof1235">
  <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span>, <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>. Qed.</div>
 <br/>
 <div class="doc">The chunk that is appropriate to store and reload a value of
@@ -211,8 +211,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="chunk_of_Tptr">chunk_of_Tptr</a></span>: <span class="id"><a href="compcert.common.AST.html#chunk_of_type">chunk_of_type</a></span> <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span> = <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1199')">Proof.</div>
-<div class="proofscript" id="proof1199">
+<div class="toggleproof" onclick="toggleDisplay('proof1236')">Proof.</div>
+<div class="proofscript" id="proof1236">
  <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span>, <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>. Qed.</div>
 <br/>
 <div class="doc">Initialization data for global variables. </div>
@@ -247,15 +247,15 @@ Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="init_data_size_pos">init_data_size_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span>, <span class="id"><a href="compcert.common.AST.html#init_data_size">init_data_size</a></span> <span class="id"><a href="compcert.common.AST.html#i">i</a></span> &gt;= 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1200')">Proof.</div>
-<div class="proofscript" id="proof1200">
+<div class="toggleproof" onclick="toggleDisplay('proof1237')">Proof.</div>
+<div class="proofscript" id="proof1237">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="id">xomega</span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="init_data_list_size_pos">init_data_list_size_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">il</span>, <span class="id"><a href="compcert.common.AST.html#init_data_list_size">init_data_list_size</a></span> <span class="id"><a href="compcert.common.AST.html#il">il</a></span> &gt;= 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1201')">Proof.</div>
-<div class="proofscript" id="proof1201">
+<div class="toggleproof" onclick="toggleDisplay('proof1238')">Proof.</div>
+<div class="proofscript" id="proof1238">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">il</span>; <span class="tactic">simpl</span>. <span class="tactic">omega</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.common.AST.html#init_data_size_pos">init_data_size_pos</a></span> <span class="id">a</span>); <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
@@ -319,15 +319,15 @@ programs are common to all languages. </div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="in_prog_defmap">in_prog_defmap</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">id</span> <span class="id">g</span>, (<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>)!<span class="id"><a href="compcert.common.AST.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.AST.html#g">g</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.common.AST.html#id">id</a></span>, <span class="id"><a href="compcert.common.AST.html#g">g</a></span>) (<span class="id"><a href="compcert.common.AST.html#prog_defs">prog_defs</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1202')">Proof.</div>
-<div class="proofscript" id="proof1202">
+<div class="toggleproof" onclick="toggleDisplay('proof1239')">Proof.</div>
+<div class="proofscript" id="proof1239">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.in_of_list">PTree_Properties.in_of_list</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="prog_defmap_dom">prog_defmap_dom</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">id</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#id">id</a></span> (<span class="id"><a href="compcert.common.AST.html#prog_defs_names">prog_defs_names</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>) -&gt; <span class="id">exists</span> <span class="id">g</span>, (<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>)!<span class="id"><a href="compcert.common.AST.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.AST.html#g">g</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1203')">Proof.</div>
-<div class="proofscript" id="proof1203">
+<div class="toggleproof" onclick="toggleDisplay('proof1240')">Proof.</div>
+<div class="proofscript" id="proof1240">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.of_list_dom">PTree_Properties.of_list_dom</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -336,8 +336,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#prog_defs">prog_defs</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span> = <span class="id"><a href="compcert.common.AST.html#defs1">defs1</a></span> ++ (<span class="id"><a href="compcert.common.AST.html#id">id</a></span>, <span class="id"><a href="compcert.common.AST.html#g">g</a></span>) :: <span class="id"><a href="compcert.common.AST.html#defs2">defs2</a></span> -&gt;<br/>
 &nbsp;&nbsp;~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#id">id</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">map</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> <span class="id"><a href="compcert.common.AST.html#defs2">defs2</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>)!<span class="id"><a href="compcert.common.AST.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.AST.html#g">g</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1204')">Proof.</div>
-<div class="proofscript" id="proof1204">
+<div class="toggleproof" onclick="toggleDisplay('proof1241')">Proof.</div>
+<div class="proofscript" id="proof1241">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.of_list_unique">PTree_Properties.of_list_unique</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -346,8 +346,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_norepet">list_norepet</a></span> (<span class="id"><a href="compcert.common.AST.html#prog_defs_names">prog_defs_names</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.common.AST.html#id">id</a></span>, <span class="id"><a href="compcert.common.AST.html#g">g</a></span>) (<span class="id"><a href="compcert.common.AST.html#prog_defs">prog_defs</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.AST.html#DEFMAP.p">p</a></span>)!<span class="id"><a href="compcert.common.AST.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.AST.html#g">g</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1205')">Proof.</div>
-<div class="proofscript" id="proof1205">
+<div class="toggleproof" onclick="toggleDisplay('proof1242')">Proof.</div>
+<div class="proofscript" id="proof1242">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.of_list_norepet">PTree_Properties.of_list_norepet</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -449,8 +449,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="transform_program_partial_program">transform_program_partial_program</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span> <span class="id">B</span> <span class="id">V</span>: <span class="kwd">Type</span>) (<span class="id">transf_fun</span>: <span class="id"><a href="compcert.common.AST.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.common.AST.html#B">B</a></span>) (<span class="id">p</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.AST.html#A">A</a></span> <span class="id"><a href="compcert.common.AST.html#V">V</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#transform_partial_program">transform_partial_program</a></span> (<span class="kwd">fun</span> <span class="id">f</span> =&gt; <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> (<span class="id"><a href="compcert.common.AST.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.AST.html#f">f</a></span>)) <span class="id"><a href="compcert.common.AST.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> (<span class="id"><a href="compcert.common.AST.html#transform_program">transform_program</a></span> <span class="id"><a href="compcert.common.AST.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1206')">Proof.</div>
-<div class="proofscript" id="proof1206">
+<div class="toggleproof" onclick="toggleDisplay('proof1243')">Proof.</div>
+<div class="proofscript" id="proof1243">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#transform_partial_program">transform_partial_program</a></span>, <span class="id"><a href="compcert.common.AST.html#transform_partial_program2">transform_partial_program2</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">EQ</span>: <span class="kwd">forall</span> <span class="id">l</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#transf_globdefs">transf_globdefs</a></span> (<span class="kwd">fun</span> <span class="id">i</span> <span class="id">f</span> =&gt; <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> (<span class="id">transf_fun</span> <span class="id"><a href="compcert.common.AST.html#f">f</a></span>)) (<span class="kwd">fun</span> <span class="id">i</span> (<span class="id">v</span>: <span class="id">V</span>) =&gt; <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.AST.html#v">v</a></span>) <span class="id"><a href="compcert.common.AST.html#l">l</a></span> =<br/>
@@ -481,12 +481,12 @@ Qed.</div>
 <div class="doc">A function from the run-time library.  Behaves like an
          external, but must not be redefined. </div>
 &nbsp;&nbsp;| <span class="id"><a name="EF_vload">EF_vload</a></span> (<span class="id">chunk</span>: <span class="id"><a href="compcert.common.AST.html#memory_chunk">memory_chunk</a></span>)<br/>
-<div class="doc">A volatile read operation.  If the adress given as first argument
+<div class="doc">A volatile read operation.  If the address given as first argument
          points within a volatile global variable, generate an
          event and return the value found in this event.  Otherwise,
          produce no event and behave like a regular memory load. </div>
 &nbsp;&nbsp;| <span class="id"><a name="EF_vstore">EF_vstore</a></span> (<span class="id">chunk</span>: <span class="id"><a href="compcert.common.AST.html#memory_chunk">memory_chunk</a></span>)<br/>
-<div class="doc">A volatile store operation.   If the adress given as first argument
+<div class="doc">A volatile store operation.   If the address given as first argument
          points within a volatile global variable, generate an event.
          Otherwise, produce no event and behave like a regular memory store. </div>
 &nbsp;&nbsp;| <span class="id"><a name="EF_malloc">EF_malloc</a></span><br/>
@@ -567,8 +567,8 @@ Qed.</div>
 <div class="doc">Equality between external functions.  Used in module <span class="bracket"><span class="id">Allocation</span></span>. </div>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="external_function_eq">external_function_eq</a></span>: <span class="kwd">forall</span> (<span class="id">ef1</span> <span class="id">ef2</span>: <span class="id"><a href="compcert.common.AST.html#external_function">external_function</a></span>), {<span class="id"><a href="compcert.common.AST.html#ef1">ef1</a></span>=<span class="id"><a href="compcert.common.AST.html#ef2">ef2</a></span>} + {<span class="id"><a href="compcert.common.AST.html#ef1">ef1</a></span>&lt;&gt;<span class="id"><a href="compcert.common.AST.html#ef2">ef2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1207')">Proof.</div>
-<div class="proofscript" id="proof1207">
+<div class="toggleproof" onclick="toggleDisplay('proof1244')">Proof.</div>
+<div class="proofscript" id="proof1244">
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Strings.String.html#string_dec">string_dec</a></span> <span class="id"><a href="compcert.common.AST.html#signature_eq">signature_eq</a></span> <span class="id"><a href="compcert.common.AST.html#chunk_eq">chunk_eq</a></span> <span class="id"><a href="compcert.common.AST.html#typ_eq">typ_eq</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#list_eq_dec">list_eq_dec</a></span> <span class="id"><a href="compcert.lib.Coqlib.html#zeq">zeq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_dec">Int.eq_dec</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 Defined.</div>
@@ -656,15 +656,15 @@ Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="in_regs_of_rpairs">in_regs_of_rpairs</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">x</span>: <span class="id"><a href="compcert.common.AST.html#A">A</a></span>) <span class="id">p</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#x">x</a></span> (<span class="id"><a href="compcert.common.AST.html#regs_of_rpair">regs_of_rpair</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span>) -&gt; <span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span> <span class="id"><a href="compcert.common.AST.html#l">l</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#x">x</a></span> (<span class="id"><a href="compcert.common.AST.html#regs_of_rpairs">regs_of_rpairs</a></span> <span class="id"><a href="compcert.common.AST.html#l">l</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1208')">Proof.</div>
-<div class="proofscript" id="proof1208">
+<div class="toggleproof" onclick="toggleDisplay('proof1245')">Proof.</div>
+<div class="proofscript" id="proof1245">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#in_app">in_app</a></span>. <span class="tactic">destruct</span> <span class="id">H0</span>; <span class="tactic">auto</span>. <span class="tactic">subst</span> <span class="id">a</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="in_regs_of_rpairs_inv">in_regs_of_rpairs_inv</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">x</span>: <span class="id"><a href="compcert.common.AST.html#A">A</a></span>) <span class="id">l</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#x">x</a></span> (<span class="id"><a href="compcert.common.AST.html#regs_of_rpairs">regs_of_rpairs</a></span> <span class="id"><a href="compcert.common.AST.html#l">l</a></span>) -&gt; <span class="id">exists</span> <span class="id">p</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span> <span class="id"><a href="compcert.common.AST.html#l">l</a></span> /\ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.AST.html#x">x</a></span> (<span class="id"><a href="compcert.common.AST.html#regs_of_rpair">regs_of_rpair</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1209')">Proof.</div>
-<div class="proofscript" id="proof1209">
+<div class="toggleproof" onclick="toggleDisplay('proof1246')">Proof.</div>
+<div class="proofscript" id="proof1246">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="id">contradiction</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_app_iff">in_app_iff</a></span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">destruct</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">a</span>; <span class="tactic">auto</span>.<br/>
@@ -706,8 +706,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="erase_program_defmap">erase_program_defmap</a></span> <span class="id">p</span> <span class="id">id</span>:<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> (<span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span>)) ! <span class="id"><a href="compcert.common.AST.html#id">id</a></span> =<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#option_map">option_map</a></span> <span class="id"><a href="compcert.common.AST.html#erase_globdef">erase_globdef</a></span> (<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.AST.html#p">p</a></span>) ! <span class="id"><a href="compcert.common.AST.html#id">id</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1210')">Proof.</div>
-<div class="proofscript" id="proof1210">
+<div class="toggleproof" onclick="toggleDisplay('proof1247')">Proof.</div>
+<div class="proofscript" id="proof1247">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span>, <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.of_list">PTree_Properties.of_list</a></span>. <span class="id">cbn</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">pattern</span> (<span class="id"><a href="compcert.common.AST.html#prog_defs">prog_defs</a></span> <span class="id">p</span>). <span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev_ind">rev_ind</a></span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">rewrite</span> !<span class="id"><a href="compcert.lib.Maps.html#PTree.gempty">PTree.gempty</a></span>. <span class="tactic">reflexivity</span>.<br/>

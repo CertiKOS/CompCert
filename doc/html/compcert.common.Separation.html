@@ -71,32 +71,32 @@ notion of splitting a memory state into two disjoint halves).  </div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="massert_imp_refl">massert_imp_refl</a></span>: <span class="kwd">forall</span> <span class="id">p</span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2103')">Proof.</div>
-<div class="proofscript" id="proof2103">
+<div class="toggleproof" onclick="toggleDisplay('proof2118')">Proof.</div>
+<div class="proofscript" id="proof2118">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="massert_imp_trans">massert_imp_trans</a></span>: <span class="kwd">forall</span> <span class="id">p</span> <span class="id">q</span> <span class="id">r</span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#q">q</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#q">q</a></span> <span class="id"><a href="compcert.common.Separation.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2104')">Proof.</div>
-<div class="proofscript" id="proof2104">
+<div class="toggleproof" onclick="toggleDisplay('proof2119')">Proof.</div>
+<div class="proofscript" id="proof2119">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>; <span class="tactic">intros</span>; <span class="tactic">firstorder</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="massert_eqv_refl">massert_eqv_refl</a></span>: <span class="kwd">forall</span> <span class="id">p</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2105')">Proof.</div>
-<div class="proofscript" id="proof2105">
+<div class="toggleproof" onclick="toggleDisplay('proof2120')">Proof.</div>
+<div class="proofscript" id="proof2120">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>; <span class="tactic">intros</span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="massert_eqv_sym">massert_eqv_sym</a></span>: <span class="kwd">forall</span> <span class="id">p</span> <span class="id">q</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#q">q</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> <span class="id"><a href="compcert.common.Separation.html#q">q</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2106')">Proof.</div>
-<div class="proofscript" id="proof2106">
+<div class="toggleproof" onclick="toggleDisplay('proof2121')">Proof.</div>
+<div class="proofscript" id="proof2121">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>; <span class="tactic">intros</span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="massert_eqv_trans">massert_eqv_trans</a></span>: <span class="kwd">forall</span> <span class="id">p</span> <span class="id">q</span> <span class="id">r</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#q">q</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> <span class="id"><a href="compcert.common.Separation.html#q">q</a></span> <span class="id"><a href="compcert.common.Separation.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> <span class="id"><a href="compcert.common.Separation.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2107')">Proof.</div>
-<div class="proofscript" id="proof2107">
+<div class="toggleproof" onclick="toggleDisplay('proof2122')">Proof.</div>
+<div class="proofscript" id="proof2122">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>; <span class="tactic">intros</span>. <span class="tactic">firstorder</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -115,20 +115,20 @@ Qed.</div>
 <span class="kwd">Add</span> <span class="id">Morphism</span> <span class="id"><a href="compcert.common.Separation.html#m_pred">m_pred</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">with</span> <span class="id">signature</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> ==&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> ==&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Program.Basics.html#impl">impl</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">as</span> <span class="id">m_pred_morph_1</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2108')">Proof.</div>
-<div class="proofscript" id="proof2108">
+<div class="toggleproof" onclick="toggleDisplay('proof2123')">Proof.</div>
+<div class="proofscript" id="proof2123">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">P</span> <span class="id">Q</span> [<span class="id">A</span> <span class="id">B</span>]. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Add</span> <span class="id">Morphism</span> <span class="id"><a href="compcert.common.Separation.html#m_pred">m_pred</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">with</span> <span class="id">signature</span> <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> ==&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> ==&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#iff">iff</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">as</span> <span class="id">m_pred_morph_2</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2109')">Proof.</div>
-<div class="proofscript" id="proof2109">
+<div class="toggleproof" onclick="toggleDisplay('proof2124')">Proof.</div>
+<div class="proofscript" id="proof2124">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">P</span> <span class="id">Q</span> [[<span class="id">A</span> <span class="id">B</span>] [<span class="id">C</span> <span class="id">D</span>]]. <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">massert_imp_refl</span> <span class="id">massert_eqv_refl</span>.<br/>
+<span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">massert_imp_refl</span> <span class="id">massert_eqv_refl</span> : <span class="id">core</span>.<br/>
 <br/>
 <h1> Separating conjunction </h1>
 <br/>
@@ -139,22 +139,22 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#Build_massert">m_pred</a></span> := <span class="kwd">fun</span> <span class="id">m</span> =&gt; <span class="id"><a href="compcert.common.Separation.html#m_pred">m_pred</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#m_pred">m_pred</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#disjoint_footprint">disjoint_footprint</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>;<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span> <span class="id">ofs</span> =&gt; <span class="id"><a href="compcert.common.Separation.html#m_footprint">m_footprint</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> \/ <span class="id"><a href="compcert.common.Separation.html#m_footprint">m_footprint</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2110')">Next Obligation.</div>
-<div class="proofscript" id="proof2110">
+<div class="toggleproof" onclick="toggleDisplay('proof2125')">Next Obligation.</div>
+<div class="proofscript" id="proof2125">
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Separation.html#m_invar">m_invar</a></span> <span class="id">P</span>) <span class="kwd">with</span> <span class="id">m</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_implies">Mem.unchanged_on_implies</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Separation.html#m_invar">m_invar</a></span> <span class="id">Q</span>) <span class="kwd">with</span> <span class="id">m</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_implies">Mem.unchanged_on_implies</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof2111')">Next Obligation.</div>
-<div class="proofscript" id="proof2111">
+<div class="toggleproof" onclick="toggleDisplay('proof2126')">Next Obligation.</div>
+<div class="proofscript" id="proof2126">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>; [<span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Separation.html#m_valid">m_valid</a></span> <span class="id">P</span>) | <span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Separation.html#m_valid">m_valid</a></span> <span class="id">Q</span>)]; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Add</span> <span class="id">Morphism</span> <span class="id"><a href="compcert.common.Separation.html#sepconj">sepconj</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">with</span> <span class="id">signature</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">as</span> <span class="id">sepconj_morph_1</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2112')">Proof.</div>
-<div class="proofscript" id="proof2112">
+<div class="toggleproof" onclick="toggleDisplay('proof2127')">Proof.</div>
+<div class="proofscript" id="proof2127">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">P1</span> <span class="id">P2</span> [<span class="id">A</span> <span class="id">B</span>] <span class="id">Q1</span> <span class="id">Q2</span> [<span class="id">C</span> <span class="id">D</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">auto</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> (<span class="id">H2</span> <span class="id">b</span> <span class="id">ofs</span>); <span class="tactic">auto</span>.<br/>
@@ -164,8 +164,8 @@ Qed.</div>
 <span class="kwd">Add</span> <span class="id">Morphism</span> <span class="id"><a href="compcert.common.Separation.html#sepconj">sepconj</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">with</span> <span class="id">signature</span> <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">as</span> <span class="id">sepconj_morph_2</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2113')">Proof.</div>
-<div class="proofscript" id="proof2113">
+<div class="toggleproof" onclick="toggleDisplay('proof2128')">Proof.</div>
+<div class="proofscript" id="proof2128">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>, <span class="id">H0</span>. <span class="tactic">split</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#sepconj_morph_1">sepconj_morph_1</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -176,15 +176,15 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_imp">sep_imp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">P</span>' <span class="id">Q</span> <span class="id">Q</span>' <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id">P</span>' -&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> <span class="id">Q</span>' -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id">P</span>' ** <span class="id">Q</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2114')">Proof.</div>
-<div class="proofscript" id="proof2114">
+<div class="toggleproof" onclick="toggleDisplay('proof2129')">Proof.</div>
+<div class="proofscript" id="proof2129">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- <span class="id">H0</span>, &lt;- <span class="id">H1</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_comm_1">sep_comm_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span>,  <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>) (<span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2115')">Proof.</div>
-<div class="proofscript" id="proof2115">
+<div class="toggleproof" onclick="toggleDisplay('proof2130')">Proof.</div>
+<div class="proofscript" id="proof2130">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>; <span class="tactic">simpl</span>; <span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">auto</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id">H2</span>; <span class="tactic">eauto</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
@@ -192,36 +192,36 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_comm">sep_comm</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>) (<span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2116')">Proof.</div>
-<div class="proofscript" id="proof2116">
+<div class="toggleproof" onclick="toggleDisplay('proof2131')">Proof.</div>
+<div class="proofscript" id="proof2131">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">split</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#sep_comm_1">sep_comm_1</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_assoc_1">sep_assoc_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> ((<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>) (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** (<span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2117')">Proof.</div>
-<div class="proofscript" id="proof2117">
+<div class="toggleproof" onclick="toggleDisplay('proof2132')">Proof.</div>
+<div class="proofscript" id="proof2132">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>, <span class="id"><a href="compcert.common.Separation.html#sepconj">sepconj</a></span>, <span class="id"><a href="compcert.common.Separation.html#disjoint_footprint">disjoint_footprint</a></span>; <span class="tactic">simpl</span>; <span class="tactic">firstorder</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_assoc_2">sep_assoc_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span>, <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** (<span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>)) ((<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2118')">Proof.</div>
-<div class="proofscript" id="proof2118">
+<div class="toggleproof" onclick="toggleDisplay('proof2133')">Proof.</div>
+<div class="proofscript" id="proof2133">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span>, <span class="id"><a href="compcert.common.Separation.html#sepconj">sepconj</a></span>, <span class="id"><a href="compcert.common.Separation.html#disjoint_footprint">disjoint_footprint</a></span>; <span class="tactic">simpl</span>; <span class="tactic">firstorder</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_assoc">sep_assoc</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> ((<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>) (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** (<span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2119')">Proof.</div>
-<div class="proofscript" id="proof2119">
+<div class="toggleproof" onclick="toggleDisplay('proof2134')">Proof.</div>
+<div class="proofscript" id="proof2134">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#sep_assoc_1">sep_assoc_1</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#sep_assoc_2">sep_assoc_2</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap">sep_swap</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>) (<span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2120')">Proof.</div>
-<div class="proofscript" id="proof2120">
+<div class="toggleproof" onclick="toggleDisplay('proof2135')">Proof.</div>
+<div class="proofscript" id="proof2135">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.Separation.html#sep_assoc">sep_assoc</a></span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_comm">sep_comm</a></span> <span class="id">P</span>). <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_assoc">sep_assoc</a></span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
@@ -229,22 +229,22 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap23">sep_swap23</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span>) (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2121')">Proof.</div>
-<div class="proofscript" id="proof2121">
+<div class="toggleproof" onclick="toggleDisplay('proof2136')">Proof.</div>
+<div class="proofscript" id="proof2136">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span> <span class="id">Q</span>). <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap34">sep_swap34</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">T</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span>) (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2122')">Proof.</div>
-<div class="proofscript" id="proof2122">
+<div class="toggleproof" onclick="toggleDisplay('proof2137')">Proof.</div>
+<div class="proofscript" id="proof2137">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span> <span class="id">R</span>). <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap45">sep_swap45</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">T</span> <span class="id">U</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span> ** <span class="id"><a href="compcert.common.Separation.html#U">U</a></span>) (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#U">U</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2123')">Proof.</div>
-<div class="proofscript" id="proof2123">
+<div class="toggleproof" onclick="toggleDisplay('proof2138')">Proof.</div>
+<div class="proofscript" id="proof2138">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span> <span class="id">S</span>). <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
@@ -252,43 +252,43 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap3">sep_swap3</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span>) (<span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2124')">Proof.</div>
-<div class="proofscript" id="proof2124">
+<div class="toggleproof" onclick="toggleDisplay('proof2139')">Proof.</div>
+<div class="proofscript" id="proof2139">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span> <span class="id">P</span>). <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap4">sep_swap4</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">T</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span>) (<span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2125')">Proof.</div>
-<div class="proofscript" id="proof2125">
+<div class="toggleproof" onclick="toggleDisplay('proof2140')">Proof.</div>
+<div class="proofscript" id="proof2140">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_swap3">sep_swap3</a></span> <span class="id">P</span>). <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_swap5">sep_swap5</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">T</span> <span class="id">U</span>, <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> (<span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span> ** <span class="id"><a href="compcert.common.Separation.html#U">U</a></span>) (<span class="id"><a href="compcert.common.Separation.html#T">T</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#U">U</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2126')">Proof.</div>
-<div class="proofscript" id="proof2126">
+<div class="toggleproof" onclick="toggleDisplay('proof2141')">Proof.</div>
+<div class="proofscript" id="proof2141">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span>. <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.common.Separation.html#sep_swap4">sep_swap4</a></span> <span class="id">P</span>). <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_drop">sep_drop</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2127')">Proof.</div>
-<div class="proofscript" id="proof2127">
+<div class="toggleproof" onclick="toggleDisplay('proof2142')">Proof.</div>
+<div class="proofscript" id="proof2142">
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_drop2">sep_drop2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2128')">Proof.</div>
-<div class="proofscript" id="proof2128">
+<div class="toggleproof" onclick="toggleDisplay('proof2143')">Proof.</div>
+<div class="proofscript" id="proof2143">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Separation.html#sep_swap">sep_swap</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_drop">sep_drop</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_proj1">sep_proj1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">Q</span> <span class="id">P</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2129')">Proof.</div>
-<div class="proofscript" id="proof2129">
+<div class="toggleproof" onclick="toggleDisplay('proof2144')">Proof.</div>
+<div class="proofscript" id="proof2144">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -300,29 +300,29 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_pick2">sep_pick2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2130')">Proof.</div>
-<div class="proofscript" id="proof2130">
+<div class="toggleproof" onclick="toggleDisplay('proof2145')">Proof.</div>
+<div class="proofscript" id="proof2145">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_proj1">sep_proj1</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_proj2">sep_proj2</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_pick3">sep_pick3</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2131')">Proof.</div>
-<div class="proofscript" id="proof2131">
+<div class="toggleproof" onclick="toggleDisplay('proof2146')">Proof.</div>
+<div class="proofscript" id="proof2146">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_pick2">sep_pick2</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_proj2">sep_proj2</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_pick4">sep_pick4</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">T</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#S">S</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2132')">Proof.</div>
-<div class="proofscript" id="proof2132">
+<div class="toggleproof" onclick="toggleDisplay('proof2147')">Proof.</div>
+<div class="proofscript" id="proof2147">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_pick3">sep_pick3</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_proj2">sep_proj2</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_pick5">sep_pick5</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">S</span> <span class="id">T</span> <span class="id">U</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> ** <span class="id"><a href="compcert.common.Separation.html#S">S</a></span> ** <span class="id"><a href="compcert.common.Separation.html#T">T</a></span> ** <span class="id"><a href="compcert.common.Separation.html#U">U</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#T">T</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2133')">Proof.</div>
-<div class="proofscript" id="proof2133">
+<div class="toggleproof" onclick="toggleDisplay('proof2148')">Proof.</div>
+<div class="proofscript" id="proof2148">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_pick4">sep_pick4</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_proj2">sep_proj2</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -332,8 +332,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt; <span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> -&gt; <span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2134')">Proof.</div>
-<div class="proofscript" id="proof2134">
+<div class="toggleproof" onclick="toggleDisplay('proof2149')">Proof.</div>
+<div class="proofscript" id="proof2149">
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -345,15 +345,15 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#Build_massert">m_pred</a></span> := <span class="kwd">fun</span> <span class="id">m</span> =&gt; <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>;<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span> <span class="id">ofs</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2135')">Next Obligation.</div>
-<div class="proofscript" id="proof2135">
+<div class="toggleproof" onclick="toggleDisplay('proof2150')">Next Obligation.</div>
+<div class="proofscript" id="proof2150">
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sep_pure">sep_pure</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#pure">pure</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> &lt;-&gt; <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2136')">Proof.</div>
-<div class="proofscript" id="proof2136">
+<div class="toggleproof" onclick="toggleDisplay('proof2151')">Proof.</div>
+<div class="proofscript" id="proof2151">
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>. <span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -365,12 +365,12 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">i</span> <span class="id">k</span> <span class="id">p</span>, <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#i">i</a></span> &lt; <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#i">i</a></span> <span class="id"><a href="compcert.common.Separation.html#k">k</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span>);<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span>' <span class="id">ofs</span>' =&gt; <span class="id">b</span>' = <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> &lt;= <span class="id">ofs</span>' &lt; <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2137')">Next Obligation.</div>
-<div class="proofscript" id="proof2137">
+<div class="toggleproof" onclick="toggleDisplay('proof2152')">Next Obligation.</div>
+<div class="proofscript" id="proof2152">
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_unchanged_on">Mem.perm_unchanged_on</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof2138')">Next Obligation.</div>
-<div class="proofscript" id="proof2138">
+<div class="toggleproof" onclick="toggleDisplay('proof2153')">Next Obligation.</div>
+<div class="proofscript" id="proof2153">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_valid_block">Mem.perm_valid_block</a></span> <span class="kwd">with</span> <span class="id">ofs</span> <span class="id"><a href="compcert.common.Memtype.html#Cur">Cur</a></span> <span class="id"><a href="compcert.common.Memtype.html#Freeable">Freeable</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -380,8 +380,8 @@ Qed.</div>
 &nbsp;&nbsp;0 &lt;= <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> &lt;= <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.modulus">Ptrofs.modulus</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2139')">Proof.</div>
-<div class="proofscript" id="proof2139">
+<div class="toggleproof" onclick="toggleDisplay('proof2154')">Proof.</div>
+<div class="proofscript" id="proof2154">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">split</span>; [|<span class="tactic">split</span>].<br/>
 - <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_implies">Mem.perm_implies</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.common.Memtype.html#Freeable">Freeable</a></span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">mem</span>.<br/>
@@ -396,8 +396,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> ** <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2140')">Proof.</div>
-<div class="proofscript" id="proof2140">
+<div class="toggleproof" onclick="toggleDisplay('proof2155')">Proof.</div>
+<div class="proofscript" id="proof2155">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.Separation.html#sep_assoc">sep_assoc</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_imp">sep_imp</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
@@ -414,8 +414,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2141')">Proof.</div>
-<div class="proofscript" id="proof2141">
+<div class="toggleproof" onclick="toggleDisplay('proof2156')">Proof.</div>
+<div class="proofscript" id="proof2156">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#sep_drop">sep_drop</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id">b</span> <span class="id">lo</span> <span class="id">mid</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#range_split">range_split</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -424,8 +424,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2142')">Proof.</div>
-<div class="proofscript" id="proof2142">
+<div class="toggleproof" onclick="toggleDisplay('proof2157')">Proof.</div>
+<div class="proofscript" id="proof2157">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#sep_drop2">sep_drop2</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id">b</span> <span class="id">mid</span> <span class="id">hi</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#range_split">range_split</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -435,8 +435,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#al">al</a></span> &gt; 0 -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> ** <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> (<span class="id"><a href="compcert.lib.Coqlib.html#align">align</a></span> <span class="id"><a href="compcert.common.Separation.html#mid">mid</a></span> <span class="id"><a href="compcert.common.Separation.html#al">al</a></span>) <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2143')">Proof.</div>
-<div class="proofscript" id="proof2143">
+<div class="toggleproof" onclick="toggleDisplay('proof2158')">Proof.</div>
+<div class="proofscript" id="proof2158">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.common.Separation.html#sep_assoc">sep_assoc</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_imp">sep_imp</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">mid</span> &lt;= <span class="id"><a href="compcert.lib.Coqlib.html#align">align</a></span> <span class="id">mid</span> <span class="id">al</span>) <span class="tactic">by</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#align_le">align_le</a></span>; <span class="tactic">auto</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
@@ -454,8 +454,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">i</span> <span class="id">k</span> <span class="id">p</span>, <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> &lt;= <span class="id"><a href="compcert.common.Separation.html#i">i</a></span> &lt; <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#i">i</a></span> <span class="id"><a href="compcert.common.Separation.html#k">k</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id">m</span>' <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#i">i</a></span> <span class="id"><a href="compcert.common.Separation.html#k">k</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#lo">lo</a></span> <span class="id"><a href="compcert.common.Separation.html#hi">hi</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2144')">Proof.</div>
-<div class="proofscript" id="proof2144">
+<div class="toggleproof" onclick="toggleDisplay('proof2159')">Proof.</div>
+<div class="proofscript" id="proof2159">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -468,15 +468,15 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;/\ <span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memory.html#Mem.load">Mem.load</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>;<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span>' <span class="id">ofs</span>' =&gt; <span class="id">b</span>' = <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> &lt;= <span class="id">ofs</span>' &lt; <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2145')">Next Obligation.</div>
-<div class="proofscript" id="proof2145">
+<div class="toggleproof" onclick="toggleDisplay('proof2160')">Next Obligation.</div>
+<div class="proofscript" id="proof2160">
 &nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H2</span> <span class="id">into</span> <span class="id">v</span>. <span class="tactic">split</span>;[|<span class="tactic">split</span>].<br/>
 - <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">H1</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_unchanged_on">Mem.perm_unchanged_on</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 - <span class="id">exists</span> <span class="id">v</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.load_unchanged_on">Mem.load_unchanged_on</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof2146')">Next Obligation.</div>
-<div class="proofscript" id="proof2146">
+<div class="toggleproof" onclick="toggleDisplay('proof2161')">Next Obligation.</div>
+<div class="proofscript" id="proof2161">
 &nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">mem</span>.<br/>
 Qed.</div>
 <br/>
@@ -484,8 +484,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">spec</span> <span class="id">m</span> <span class="id">chunk</span> <span class="id">b</span> <span class="id">ofs</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> -&gt;<br/>
 &nbsp;&nbsp;0 &lt;= <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> &lt;= <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.max_unsigned">Ptrofs.max_unsigned</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2147')">Proof.</div>
-<div class="proofscript" id="proof2147">
+<div class="toggleproof" onclick="toggleDisplay('proof2162')">Proof.</div>
+<div class="proofscript" id="proof2162">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -493,8 +493,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">spec</span> <span class="id">m</span> <span class="id">chunk</span> <span class="id">b</span> <span class="id">ofs</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memory.html#Mem.load">Mem.load</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2148')">Proof.</div>
-<div class="proofscript" id="proof2148">
+<div class="toggleproof" onclick="toggleDisplay('proof2163')">Proof.</div>
+<div class="proofscript" id="proof2163">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">D</span> &amp; <span class="id">E</span> &amp; <span class="id">v</span> &amp; <span class="id">F</span> &amp; <span class="id">G</span>).<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -503,8 +503,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">spec</span> <span class="id">m</span> <span class="id">chunk</span> <span class="id">b</span> <span class="id">ofs</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> (<span class="id"><a href="compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.repr">Ptrofs.repr</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span>)) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2149')">Proof.</div>
-<div class="proofscript" id="proof2149">
+<div class="toggleproof" onclick="toggleDisplay('proof2164')">Proof.</div>
+<div class="proofscript" id="proof2164">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.common.Separation.html#load_rule">load_rule</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">v</span> &amp; <span class="id">A</span> &amp; <span class="id">B</span>). <span class="id">exists</span> <span class="id">v</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned_repr">Ptrofs.unsigned_repr</a></span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#contains_no_overflow">contains_no_overflow</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -515,8 +515,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.load_result">Val.load_result</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">m</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.store">Mem.store</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m</span>' /\ <span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2150')">Proof.</div>
-<div class="proofscript" id="proof2150">
+<div class="toggleproof" onclick="toggleDisplay('proof2165')">Proof.</div>
+<div class="proofscript" id="proof2165">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">destruct</span> <span class="id">A</span> <span class="kwd">as</span> (<span class="id">D</span> &amp; <span class="id">E</span> &amp; <span class="id">v0</span> &amp; <span class="id">F</span> &amp; <span class="id">G</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">H</span>: <span class="id"><a href="compcert.common.Memory.html#Mem.valid_access">Mem.valid_access</a></span> <span class="id">m</span> <span class="id">chunk</span> <span class="id">b</span> <span class="id">ofs</span> <span class="id"><a href="compcert.common.Memtype.html#Writable">Writable</a></span>) <span class="tactic">by</span> <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">mem</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.valid_access_store">Mem.valid_access_store</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">v</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">m</span>' <span class="id">STORE</span>].<br/>
@@ -534,8 +534,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.load_result">Val.load_result</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">m</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.storev">Mem.storev</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> (<span class="id"><a href="compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.repr">Ptrofs.repr</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span>)) <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m</span>' /\ <span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec">spec</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2151')">Proof.</div>
-<div class="proofscript" id="proof2151">
+<div class="toggleproof" onclick="toggleDisplay('proof2166')">Proof.</div>
+<div class="proofscript" id="proof2166">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.common.Separation.html#store_rule">store_rule</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">m</span>' &amp; <span class="id">A</span> &amp; <span class="id">B</span>). <span class="id">exists</span> <span class="id">m</span>'; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned_repr">Ptrofs.unsigned_repr</a></span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#contains_no_overflow">contains_no_overflow</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#sep_pick1">sep_pick1</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -545,8 +545,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#range">range</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> (<span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> | <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> (<span class="kwd">fun</span> <span class="id">v</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2152')">Proof.</div>
-<div class="proofscript" id="proof2152">
+<div class="toggleproof" onclick="toggleDisplay('proof2167')">Proof.</div>
+<div class="proofscript" id="proof2167">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">destruct</span> <span class="id">A</span> <span class="kwd">as</span> (<span class="id">D</span> &amp; <span class="id">E</span> &amp; <span class="id">F</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; [|<span class="tactic">split</span>].<br/>
 - <span class="tactic">assert</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.valid_access">Mem.valid_access</a></span> <span class="id">m</span> <span class="id">chunk</span> <span class="id">b</span> <span class="id">ofs</span> <span class="id"><a href="compcert.common.Memtype.html#Freeable">Freeable</a></span>).<br/>
@@ -564,8 +564,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">spec1</span> <span class="id">spec2</span>: <span class="id"><a href="compcert.common.Values.html#val">val</a></span> -&gt; <span class="kwd">Prop</span>) <span class="id">chunk</span> <span class="id">b</span> <span class="id">ofs</span>,<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Separation.html#spec1">spec1</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#spec2">spec2</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> (<span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec1">spec1</a></span>) (<span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec2">spec2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2153')">Proof.</div>
-<div class="proofscript" id="proof2153">
+<div class="toggleproof" onclick="toggleDisplay('proof2168')">Proof.</div>
+<div class="proofscript" id="proof2168">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">split</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">H4</span> <span class="kwd">as</span> (<span class="id">v</span> &amp; <span class="id">A</span> &amp; <span class="id">B</span>). <span class="id">exists</span> <span class="id">v</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">auto</span>.<br/>
@@ -581,8 +581,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec1">spec1</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">m</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.store">Mem.store</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m</span>' /\ <span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#hasvalue">hasvalue</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.load_result">Val.load_result</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2154')">Proof.</div>
-<div class="proofscript" id="proof2154">
+<div class="toggleproof" onclick="toggleDisplay('proof2169')">Proof.</div>
+<div class="proofscript" id="proof2169">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#store_rule">store_rule</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -591,8 +591,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#contains">contains</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#spec1">spec1</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">m</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.storev">Mem.storev</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> (<span class="id"><a href="compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.repr">Ptrofs.repr</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span>)) <span class="id"><a href="compcert.common.Separation.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m</span>' /\ <span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#hasvalue">hasvalue</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> (<span class="id"><a href="compcert.common.Values.html#Val.load_result">Val.load_result</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#v">v</a></span>) ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2155')">Proof.</div>
-<div class="proofscript" id="proof2155">
+<div class="toggleproof" onclick="toggleDisplay('proof2170')">Proof.</div>
+<div class="proofscript" id="proof2170">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Separation.html#storev_rule">storev_rule</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -602,22 +602,22 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#Build_massert">m_pred</a></span> := <span class="kwd">fun</span> <span class="id">m</span> =&gt; <span class="id"><a href="compcert.common.Separation.html#m_pred">m_pred</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> /\ <span class="id"><a href="compcert.common.Separation.html#m_pred">m_pred</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span>;<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span> <span class="id">ofs</span> =&gt; <span class="id"><a href="compcert.common.Separation.html#m_footprint">m_footprint</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> \/ <span class="id"><a href="compcert.common.Separation.html#m_footprint">m_footprint</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2156')">Next Obligation.</div>
-<div class="proofscript" id="proof2156">
+<div class="toggleproof" onclick="toggleDisplay('proof2171')">Next Obligation.</div>
+<div class="proofscript" id="proof2171">
 &nbsp;&nbsp;<span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Separation.html#m_invar">m_invar</a></span> <span class="id">P</span>) <span class="kwd">with</span> <span class="id">m</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_implies">Mem.unchanged_on_implies</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Separation.html#m_invar">m_invar</a></span> <span class="id">Q</span>) <span class="kwd">with</span> <span class="id">m</span>; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_implies">Mem.unchanged_on_implies</a></span>; <span class="tactic">eauto</span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof2157')">Next Obligation.</div>
-<div class="proofscript" id="proof2157">
+<div class="toggleproof" onclick="toggleDisplay('proof2172')">Next Obligation.</div>
+<div class="proofscript" id="proof2172">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>; [<span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Separation.html#m_valid">m_valid</a></span> <span class="id">P</span>) | <span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Separation.html#m_valid">m_valid</a></span> <span class="id">Q</span>)]; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mconj_intro">mconj_intro</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#mconj">mconj</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2158')">Proof.</div>
-<div class="proofscript" id="proof2158">
+<div class="toggleproof" onclick="toggleDisplay('proof2173')">Proof.</div>
+<div class="proofscript" id="proof2173">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">destruct</span> <span class="id">H0</span> <span class="kwd">as</span> (<span class="id">D</span> &amp; <span class="id">E</span> &amp; <span class="id">F</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; [|<span class="tactic">split</span>].<br/>
 - <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -627,8 +627,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mconj_proj1">mconj_proj1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#mconj">mconj</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2159')">Proof.</div>
-<div class="proofscript" id="proof2159">
+<div class="toggleproof" onclick="toggleDisplay('proof2174')">Proof.</div>
+<div class="proofscript" id="proof2174">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id">C</span>; <span class="tactic">eauto</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -636,8 +636,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mconj_proj2">mconj_proj2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">P</span> <span class="id">Q</span> <span class="id">R</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#mconj">mconj</a></span> <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.common.Separation.html#m">m</a></span> |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2160')">Proof.</div>
-<div class="proofscript" id="proof2160">
+<div class="toggleproof" onclick="toggleDisplay('proof2175')">Proof.</div>
+<div class="proofscript" id="proof2175">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id">C</span>; <span class="tactic">eauto</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -649,8 +649,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">m</span>' |= <span class="id">P</span>' ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">m</span>' |= <span class="id"><a href="compcert.common.Separation.html#mconj">mconj</a></span> <span class="id">P</span>' <span class="id"><a href="compcert.common.Separation.html#Q">Q</a></span> ** <span class="id"><a href="compcert.common.Separation.html#R">R</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2161')">Proof.</div>
-<div class="proofscript" id="proof2161">
+<div class="toggleproof" onclick="toggleDisplay('proof2176')">Proof.</div>
+<div class="proofscript" id="proof2176">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span> <span class="kwd">as</span> (<span class="id">D</span> &amp; <span class="id">E</span> &amp; <span class="id">F</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
@@ -660,8 +660,8 @@ Qed.</div>
 <span class="kwd">Add</span> <span class="id">Morphism</span> <span class="id"><a href="compcert.common.Separation.html#mconj">mconj</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">with</span> <span class="id">signature</span> <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">as</span> <span class="id">mconj_morph_1</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2162')">Proof.</div>
-<div class="proofscript" id="proof2162">
+<div class="toggleproof" onclick="toggleDisplay('proof2177')">Proof.</div>
+<div class="proofscript" id="proof2177">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">P1</span> <span class="id">P2</span> [<span class="id">A</span> <span class="id">B</span>] <span class="id">Q1</span> <span class="id">Q2</span> [<span class="id">C</span> <span class="id">D</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -669,8 +669,8 @@ Qed.</div>
 <span class="kwd">Add</span> <span class="id">Morphism</span> <span class="id"><a href="compcert.common.Separation.html#mconj">mconj</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">with</span> <span class="id">signature</span> <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span> ==&gt; <span class="id"><a href="compcert.common.Separation.html#massert_eqv">massert_eqv</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">as</span> <span class="id">mconj_morph_2</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2163')">Proof.</div>
-<div class="proofscript" id="proof2163">
+<div class="toggleproof" onclick="toggleDisplay('proof2178')">Proof.</div>
+<div class="proofscript" id="proof2178">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>, <span class="id">H0</span>. <span class="tactic">split</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Separation.html#mconj_morph_1">mconj_morph_1</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -680,8 +680,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#Build_massert">m_pred</a></span> := <span class="kwd">fun</span> <span class="id">m</span> =&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.inject">Mem.inject</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#m0">m0</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span>;<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span> <span class="id">ofs</span> =&gt; <span class="id">exists</span> <span class="id">b0</span> <span class="id">delta</span>, <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#b0">b0</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span>(<span class="id"><a href="compcert.common.Separation.html#b">b</a></span>, <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>) /\ <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id"><a href="compcert.common.Separation.html#m0">m0</a></span> <span class="id"><a href="compcert.common.Separation.html#b0">b0</a></span> (<span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> - <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>) <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.Memtype.html#Nonempty">Nonempty</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2164')">Next Obligation.</div>
-<div class="proofscript" id="proof2164">
+<div class="toggleproof" onclick="toggleDisplay('proof2179')">Next Obligation.</div>
+<div class="proofscript" id="proof2179">
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">img</span> := <span class="kwd">fun</span> <span class="id">b</span>' <span class="id">ofs</span> =&gt; <span class="id">exists</span> <span class="id">b</span> <span class="id">delta</span>, <span class="id">j</span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span>(<span class="id">b</span>', <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>) /\ <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id">m0</span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> (<span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> - <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>) <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.Memtype.html#Nonempty">Nonempty</a></span>) <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">IMG</span>: <span class="kwd">forall</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">ofs</span> <span class="id">k</span> <span class="id">p</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">j</span> <span class="id"><a href="compcert.common.Separation.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.common.Separation.html#b2">b2</a></span>, <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>) -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id">m0</span> <span class="id"><a href="compcert.common.Separation.html#b1">b1</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Separation.html#k">k</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> -&gt; <span class="id">img</span> <span class="id"><a href="compcert.common.Separation.html#b2">b2</a></span> (<span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>)).<br/>
@@ -701,8 +701,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">mi_perm_inv</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_unchanged_on_2">Mem.perm_unchanged_on_2</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof2165')">Next Obligation.</div>
-<div class="proofscript" id="proof2165">
+<div class="toggleproof" onclick="toggleDisplay('proof2180')">Next Obligation.</div>
+<div class="proofscript" id="proof2180">
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block_inject_2">Mem.valid_block_inject_2</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -718,8 +718,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id">m1</span>' <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.perm">Mem.perm</a></span> <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id"><a href="compcert.common.Separation.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#Max">Max</a></span> <span class="id"><a href="compcert.common.Separation.html#p">p</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id">m2</span>' |= <span class="id"><a href="compcert.common.Separation.html#minjection">minjection</a></span> <span class="id">j</span>' <span class="id">m1</span>' ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2166')">Proof.</div>
-<div class="proofscript" id="proof2166">
+<div class="toggleproof" onclick="toggleDisplay('proof2181')">Proof.</div>
+<div class="proofscript" id="proof2181">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">SEP</span> <span class="id">INJ</span>' <span class="id">UNCH1</span> <span class="id">UNCH2</span> <span class="id">INCR</span> <span class="id">ISEP</span> <span class="id">MAXPERMS</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">SEP</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; [|<span class="tactic">split</span>].<br/>
@@ -743,8 +743,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span> <span class="id"><a href="compcert.common.Separation.html#addr1">addr1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Separation.html#v1">v1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#addr1">addr1</a></span> <span class="id"><a href="compcert.common.Separation.html#addr2">addr2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">v2</span>, <span class="id"><a href="compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span> <span class="id"><a href="compcert.common.Separation.html#addr2">addr2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Separation.html#v2">v2</a></span> /\ <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Separation.html#v2">v2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2167')">Proof.</div>
-<div class="proofscript" id="proof2167">
+<div class="toggleproof" onclick="toggleDisplay('proof2182')">Proof.</div>
+<div class="proofscript" id="proof2182">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.loadv_inject">Mem.loadv_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -755,8 +755,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#addr1">addr1</a></span> <span class="id"><a href="compcert.common.Separation.html#addr2">addr2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Separation.html#v2">v2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">m2</span>', <span class="id"><a href="compcert.common.Memory.html#Mem.storev">Mem.storev</a></span> <span class="id"><a href="compcert.common.Separation.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span> <span class="id"><a href="compcert.common.Separation.html#addr2">addr2</a></span> <span class="id"><a href="compcert.common.Separation.html#v2">v2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m2</span>' /\ <span class="id">m2</span>' |= <span class="id"><a href="compcert.common.Separation.html#minjection">minjection</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">m1</span>' ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2168')">Proof.</div>
-<div class="proofscript" id="proof2168">
+<div class="toggleproof" onclick="toggleDisplay('proof2183')">Proof.</div>
+<div class="proofscript" id="proof2183">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.common.Memory.html#Mem.storev_mapped_inject">Mem.storev_mapped_inject</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">m2</span>' &amp; <span class="id">STORE</span> &amp; <span class="id">INJ</span>).<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H1</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">STORE</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -792,8 +792,8 @@ Qed.</div>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">j</span>'<br/>
 &nbsp;&nbsp;/\ <span class="id">j</span>' <span class="id"><a href="compcert.common.Separation.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span>(<span class="id"><a href="compcert.common.Separation.html#b2">b2</a></span>, <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>)<br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">b</span>, <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Separation.html#b1">b1</a></span> -&gt; <span class="id">j</span>' <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> = <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2169')">Proof.</div>
-<div class="proofscript" id="proof2169">
+<div class="toggleproof" onclick="toggleDisplay('proof2184')">Proof.</div>
+<div class="proofscript" id="proof2184">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">delta</span>; <span class="tactic">intros</span> <span class="id">SEP</span> <span class="id">ALLOC1</span> <span class="id">ALLOC2</span> <span class="id">ALIGN</span> <span class="id">LO</span> <span class="id">HI</span> <span class="id">RANGE1</span> <span class="id">RANGE2</span> <span class="id">RANGE3</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">RANGE4</span>: <span class="id">lo</span> &lt;= <span class="id">hi</span>) <span class="tactic">by</span> <span class="id">xomega</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">FRESH1</span>: ~<span class="id"><a href="compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m1</span> <span class="id">b1</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.fresh_block_alloc">Mem.fresh_block_alloc</a></span>; <span class="tactic">eauto</span>).<br/>
@@ -807,7 +807,7 @@ Qed.</div>
 - <span class="tactic">intros</span>. <span class="tactic">assert</span> (0 &lt;= <span class="id">ofs</span> &lt; <span class="id">sz2</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_alloc_3">Mem.perm_alloc_3</a></span>; <span class="tactic">eauto</span>). <span class="tactic">omega</span>.<br/>
 - <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_implies">Mem.perm_implies</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.common.Memtype.html#Freeable">Freeable</a></span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">mem</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_alloc_2">Mem.perm_alloc_2</a></span>; <span class="tactic">eauto</span>. <span class="id">xomega</span>.<br/>
-- <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Zdivides_trans">Zdivides_trans</a></span> <span class="kwd">with</span> 8; <span class="tactic">auto</span>.<br/>
+- <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_trans">Z.divide_trans</a></span> <span class="kwd">with</span> 8; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (8 / <span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id">chunk</span>). <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">reflexivity</span>.<br/>
 - <span class="tactic">intros</span>. <span class="tactic">elim</span> <span class="id">FRESH2</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block_inject_2">Mem.valid_block_inject_2</a></span>; <span class="tactic">eauto</span>.<br/>
 - <span class="tactic">intros</span> (<span class="id">j</span>' &amp; <span class="id">INJ</span>' &amp; <span class="id">J1</span> &amp; <span class="id">J2</span> &amp; <span class="id">J3</span>).<br/>
@@ -849,8 +849,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">m2</span>',<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.free">Mem.free</a></span> <span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span> <span class="id"><a href="compcert.common.Separation.html#b2">b2</a></span> 0 <span class="id"><a href="compcert.common.Separation.html#sz2">sz2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m2</span>'<br/>
 &nbsp;&nbsp;/\ <span class="id">m2</span>' |= <span class="id"><a href="compcert.common.Separation.html#minjection">minjection</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">m1</span>' ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2170')">Proof.</div>
-<div class="proofscript" id="proof2170">
+<div class="toggleproof" onclick="toggleDisplay('proof2185')">Proof.</div>
+<div class="proofscript" id="proof2185">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- ! <span class="id"><a href="compcert.common.Separation.html#sep_assoc">sep_assoc</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">A</span> <span class="kwd">as</span> (<span class="id">D</span> &amp; <span class="id">E</span> &amp; <span class="id">F</span>).<br/>
@@ -909,12 +909,12 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Ple">Ple</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.genv_next">Genv.genv_next</a></span> <span class="id"><a href="compcert.common.Separation.html#ge2">ge2</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.Separation.html#m">m</a></span>);<br/>
 &nbsp;&nbsp;<span class="id">m_footprint</span> := <span class="kwd">fun</span> <span class="id">b</span> <span class="id">ofs</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2171')">Next Obligation.</div>
-<div class="proofscript" id="proof2171">
+<div class="toggleproof" onclick="toggleDisplay('proof2186')">Next Obligation.</div>
+<div class="proofscript" id="proof2186">
 &nbsp;&nbsp;<span class="tactic">intuition</span> <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_trans">Ple_trans</a></span>; <span class="tactic">eauto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_nextblock">Mem.unchanged_on_nextblock</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof2172')">Next Obligation.</div>
-<div class="proofscript" id="proof2172">
+<div class="toggleproof" onclick="toggleDisplay('proof2187')">Next Obligation.</div>
+<div class="proofscript" id="proof2187">
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -922,8 +922,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">j</span> <span class="id">m1</span> <span class="id">m1</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m1</span>') -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#massert_imp">massert_imp</a></span> (<span class="id"><a href="compcert.common.Separation.html#globalenv_inject">globalenv_inject</a></span> <span class="id"><a href="compcert.common.Separation.html#ge1">ge1</a></span> <span class="id"><a href="compcert.common.Separation.html#ge2">ge2</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.Separation.html#globalenv_inject">globalenv_inject</a></span> <span class="id"><a href="compcert.common.Separation.html#ge1">ge1</a></span> <span class="id"><a href="compcert.common.Separation.html#ge2">ge2</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">m1</span>').<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2173')">Proof.</div>
-<div class="proofscript" id="proof2173">
+<div class="toggleproof" onclick="toggleDisplay('proof2188')">Proof.</div>
+<div class="proofscript" id="proof2188">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">intros</span> <span class="id">m2</span> (? &amp; ? &amp; ?).<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">xomega</span>.<br/>
 Qed.</div>
@@ -935,8 +935,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span> |= <span class="id"><a href="compcert.common.Separation.html#globalenv_inject">globalenv_inject</a></span> <span class="id"><a href="compcert.common.Separation.html#ge1">ge1</a></span> <span class="id"><a href="compcert.common.Separation.html#ge2">ge2</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span> ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le">Pos.le</a></span> (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span>) (<span class="id"><a href="compcert.common.Memory.html#Mem.nextblock">Mem.nextblock</a></span> <span class="id">m1</span>') -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span> |= <span class="id"><a href="compcert.common.Separation.html#globalenv_inject">globalenv_inject</a></span> <span class="id"><a href="compcert.common.Separation.html#ge1">ge1</a></span> <span class="id"><a href="compcert.common.Separation.html#ge2">ge2</a></span> <span class="id">j</span>' <span class="id">m1</span>' ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2174')">Proof.</div>
-<div class="proofscript" id="proof2174">
+<div class="toggleproof" onclick="toggleDisplay('proof2189')">Proof.</div>
+<div class="proofscript" id="proof2189">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H1</span> <span class="kwd">as</span> ((<span class="id">D</span> &amp; <span class="id">E</span>) &amp; <span class="id">B</span> &amp; <span class="id">C</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls_incr">Genv.match_stbls_incr</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -958,8 +958,8 @@ Qed.</div>
 &nbsp;&nbsp;/\ <span class="id">m2</span>' |= <span class="id"><a href="compcert.common.Separation.html#minjection">minjection</a></span> <span class="id">j</span>' <span class="id">m1</span>' ** <span class="id"><a href="compcert.common.Separation.html#globalenv_inject">globalenv_inject</a></span> <span class="id"><a href="compcert.common.Separation.html#ge1">ge1</a></span> <span class="id"><a href="compcert.common.Separation.html#ge2">ge2</a></span> <span class="id">j</span>' <span class="id">m1</span>' ** <span class="id"><a href="compcert.common.Separation.html#P">P</a></span><br/>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">j</span>'<br/>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Events.html#inject_separated">inject_separated</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">j</span>' <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span> <span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2175')">Proof.</div>
-<div class="proofscript" id="proof2175">
+<div class="toggleproof" onclick="toggleDisplay('proof2190')">Proof.</div>
+<div class="proofscript" id="proof2190">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">vargs2</span>; <span class="tactic">intros</span> <span class="id">CALL</span> <span class="id">SEP</span> <span class="id">ARGS</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">SEP</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>). <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.common.Events.html#external_call_mem_inject">external_call_mem_inject</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id">B</span>.<br/>
@@ -999,8 +999,8 @@ Qed.</div>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">j</span>'<br/>
 &nbsp;&nbsp;/\ <span class="id">j</span>' <span class="id"><a href="compcert.common.Separation.html#b1">b1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span>(<span class="id"><a href="compcert.common.Separation.html#b2">b2</a></span>, <span class="id"><a href="compcert.common.Separation.html#delta">delta</a></span>)<br/>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Events.html#inject_separated">inject_separated</a></span> <span class="id"><a href="compcert.common.Separation.html#j">j</a></span> <span class="id">j</span>' <span class="id"><a href="compcert.common.Separation.html#m1">m1</a></span> <span class="id"><a href="compcert.common.Separation.html#m2">m2</a></span> .<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2176')">Proof.</div>
-<div class="proofscript" id="proof2176">
+<div class="toggleproof" onclick="toggleDisplay('proof2191')">Proof.</div>
+<div class="proofscript" id="proof2191">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">j1</span> := <span class="kwd">fun</span> <span class="id">b</span> =&gt; <span class="kwd">if</span> <span class="id"><a href="compcert.common.Values.html#eq_block">eq_block</a></span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span> <span class="id">b1</span> <span class="kwd">then</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span>(<span class="id">b2</span>, <span class="id">delta</span>) <span class="kwd">else</span> <span class="id">j</span> <span class="id"><a href="compcert.common.Separation.html#b">b</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">X</span>: <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id">j</span> <span class="id">j1</span>).<br/>

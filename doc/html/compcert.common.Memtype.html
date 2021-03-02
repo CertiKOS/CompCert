@@ -86,8 +86,8 @@ Being empty is represented by the absence of any permission.
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="perm_order_trans">perm_order_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p1</span> <span class="id">p2</span> <span class="id">p3</span>, <span class="id"><a href="compcert.common.Memtype.html#perm_order">perm_order</a></span> <span class="id"><a href="compcert.common.Memtype.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Memtype.html#p2">p2</a></span> -&gt; <span class="id"><a href="compcert.common.Memtype.html#perm_order">perm_order</a></span> <span class="id"><a href="compcert.common.Memtype.html#p2">p2</a></span> <span class="id"><a href="compcert.common.Memtype.html#p3">p3</a></span> -&gt; <span class="id"><a href="compcert.common.Memtype.html#perm_order">perm_order</a></span> <span class="id"><a href="compcert.common.Memtype.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Memtype.html#p3">p3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1487')">Proof.</div>
-<div class="proofscript" id="proof1487">
+<div class="toggleproof" onclick="toggleDisplay('proof1526')">Proof.</div>
+<div class="proofscript" id="proof1526">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="id">constructor</span>.<br/>
 Qed.</div>
 <br/>
@@ -127,7 +127,7 @@ Qed.</div>
 <br/>
 <div class="doc"><span class="bracket"><span class="id">free</span> <span class="id">m</span> <span class="id">b</span> <span class="id">lo</span> <span class="id">hi</span></span> frees (deallocates) the range of offsets from <span class="bracket"><span class="id">lo</span></span>
   included to <span class="bracket"><span class="id">hi</span></span> excluded in block <span class="bracket"><span class="id">b</span></span>.  Returns the updated memory
-  state, or <span class="bracket"><span class="id">None</span></span> if the freed addresses are not writable. </div>
+  state, or <span class="bracket"><span class="id">None</span></span> if the freed addresses are not freeable. </div>
 <span class="kwd">Parameter</span> <span class="id"><a name="MEM.free">free</a></span>: <span class="kwd">forall</span> (<span class="id">m</span>: <span class="id"><a href="compcert.common.Memtype.html#MEM.mem">mem</a></span>) (<span class="id">b</span>: <span class="id"><a href="compcert.common.Values.html#block">block</a></span>) (<span class="id">lo</span> <span class="id">hi</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>), <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="compcert.common.Memtype.html#MEM.mem">mem</a></span>.<br/>
 <br/>
 <div class="doc"><span class="bracket"><span class="id">load</span> <span class="id">chunk</span> <span class="id">m</span> <span class="id">b</span> <span class="id">ofs</span></span> reads a memory quantity <span class="bracket"><span class="id">chunk</span></span> from
@@ -376,7 +376,7 @@ Qed.</div>
 <span class="kwd">Axiom</span> <span class="id"><a name="MEM.loadbytes_length">loadbytes_length</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span> <span class="id">b</span> <span class="id">ofs</span> <span class="id">n</span> <span class="id">bytes</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memtype.html#MEM.loadbytes">loadbytes</a></span> <span class="id"><a href="compcert.common.Memtype.html#m">m</a></span> <span class="id"><a href="compcert.common.Memtype.html#b">b</a></span> <span class="id"><a href="compcert.common.Memtype.html#ofs">ofs</a></span> <span class="id"><a href="compcert.common.Memtype.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memtype.html#bytes">bytes</a></span> -&gt;<br/>
-&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memtype.html#bytes">bytes</a></span> = <span class="id"><a href="compcert.lib.Coqlib.html#nat_of_Z">nat_of_Z</a></span> <span class="id"><a href="compcert.common.Memtype.html#n">n</a></span>.<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memtype.html#bytes">bytes</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.to_nat">Z.to_nat</a></span> <span class="id"><a href="compcert.common.Memtype.html#n">n</a></span>.<br/>
 <br/>
 <span class="kwd">Axiom</span> <span class="id"><a name="MEM.loadbytes_empty">loadbytes_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span> <span class="id">b</span> <span class="id">ofs</span> <span class="id">n</span>,<br/>

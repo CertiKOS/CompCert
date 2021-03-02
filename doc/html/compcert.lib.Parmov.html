@@ -105,22 +105,22 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="update_s">update_s</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">v</span> <span class="id">e</span>, <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v">v</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof965')">Proof.</div>
-<div class="proofscript" id="proof965">
+<div class="toggleproof" onclick="toggleDisplay('proof1002')">Proof.</div>
+<div class="proofscript" id="proof1002">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">r</span> <span class="id">r</span>). <span class="tactic">auto</span>. <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="update_o">update_o</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">v</span> <span class="id">e</span> <span class="id">r</span>', <span class="id">r</span>' &lt;&gt; <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v">v</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id">r</span>' =  <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id">r</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof966')">Proof.</div>
-<div class="proofscript" id="proof966">
+<div class="toggleproof" onclick="toggleDisplay('proof1003')">Proof.</div>
+<div class="proofscript" id="proof1003">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">r</span>' <span class="id">r</span>). <span class="tactic">congruence</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="update_ident">update_ident</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">e</span>, <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof967')">Proof.</div>
-<div class="proofscript" id="proof967">
+<div class="toggleproof" onclick="toggleDisplay('proof1004')">Proof.</div>
+<div class="proofscript" id="proof1004">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#env_ext">env_ext</a></span>; <span class="tactic">intro</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">r0</span> <span class="id">r</span>); <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
@@ -128,8 +128,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">v1</span> <span class="id">r2</span> <span class="id">v2</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v1">v1</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v2">v2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v2">v2</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v1">v1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof968')">Proof.</div>
-<div class="proofscript" id="proof968">
+<div class="toggleproof" onclick="toggleDisplay('proof1005')">Proof.</div>
+<div class="proofscript" id="proof1005">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#env_ext">env_ext</a></span>; <span class="tactic">intro</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">r</span> <span class="id">r1</span>); <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">r</span> <span class="id">r2</span>); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
@@ -138,8 +138,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="update_twice">update_twice</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">v</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v">v</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v">v</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#v">v</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof969')">Proof.</div>
-<div class="proofscript" id="proof969">
+<div class="toggleproof" onclick="toggleDisplay('proof1006')">Proof.</div>
+<div class="proofscript" id="proof1006">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#env_ext">env_ext</a></span>; <span class="tactic">intro</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">r0</span> <span class="id">r</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -281,29 +281,29 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="dests_append">dests_append</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>, <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof970')">Proof.</div>
-<div class="proofscript" id="proof970">
+<div class="toggleproof" onclick="toggleDisplay('proof1007')">Proof.</div>
+<div class="proofscript" id="proof1007">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map_app">map_app</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="dests_decomp">dests_decomp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m2</span>, <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> :: <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof971')">Proof.</div>
-<div class="proofscript" id="proof971">
+<div class="toggleproof" onclick="toggleDisplay('proof1008')">Proof.</div>
+<div class="proofscript" id="proof1008">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map_app">map_app</a></span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="srcs_append">srcs_append</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>, <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof972')">Proof.</div>
-<div class="proofscript" id="proof972">
+<div class="toggleproof" onclick="toggleDisplay('proof1009')">Proof.</div>
+<div class="proofscript" id="proof1009">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map_app">map_app</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="srcs_decomp">srcs_decomp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m2</span>, <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> :: <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof973')">Proof.</div>
-<div class="proofscript" id="proof973">
+<div class="toggleproof" onclick="toggleDisplay('proof1010')">Proof.</div>
+<div class="proofscript" id="proof1010">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map_app">map_app</a></span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
@@ -312,8 +312,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#combine">List.combine</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> /\<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#combine">List.combine</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) = <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof974')">Proof.</div>
-<div class="proofscript" id="proof974">
+<div class="toggleproof" onclick="toggleDisplay('proof1011')">Proof.</div>
+<div class="proofscript" id="proof1011">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">s</span>; <span class="tactic">destruct</span> <span class="id">d</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">discriminate</span>.<br/>
@@ -329,8 +329,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="dests_disjoint_sym">dests_disjoint_sym</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof975')">Proof.</div>
-<div class="proofscript" id="proof975">
+<div class="toggleproof" onclick="toggleDisplay('proof1012')">Proof.</div>
+<div class="proofscript" id="proof1012">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#list_disjoint_sym">list_disjoint_sym</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -339,8 +339,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> /\ ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof976')">Proof.</div>
-<div class="proofscript" id="proof976">
+<div class="toggleproof" onclick="toggleDisplay('proof1013')">Proof.</div>
+<div class="proofscript" id="proof1013">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span>, <span class="id"><a href="compcert.lib.Coqlib.html#list_disjoint">list_disjoint</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">auto</span>. <span class="tactic">firstorder</span>.<br/>
@@ -353,8 +353,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> /\ ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof977')">Proof.</div>
-<div class="proofscript" id="proof977">
+<div class="toggleproof" onclick="toggleDisplay('proof1014')">Proof.</div>
+<div class="proofscript" id="proof1014">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint_sym">dests_disjoint_sym</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint_cons_left">dests_disjoint_cons_left</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint_sym">dests_disjoint_sym</a></span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
@@ -363,8 +363,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">m3</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span> &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span> /\ <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof978')">Proof.</div>
-<div class="proofscript" id="proof978">
+<div class="toggleproof" onclick="toggleDisplay('proof1015')">Proof.</div>
+<div class="proofscript" id="proof1015">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span>, <span class="id"><a href="compcert.lib.Coqlib.html#list_disjoint">list_disjoint</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">split</span>; <span class="tactic">intros</span>. <span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">eauto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_append">dests_append</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_or_app">in_or_app</a></span>. <span class="tactic">auto</span>.<br/>
@@ -377,8 +377,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">m3</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span>) &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> /\ <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof979')">Proof.</div>
-<div class="proofscript" id="proof979">
+<div class="toggleproof" onclick="toggleDisplay('proof1016')">Proof.</div>
+<div class="proofscript" id="proof1016">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint_sym">dests_disjoint_sym</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint_append_left">dests_disjoint_append_left</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>; <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint_sym">dests_disjoint_sym</a></span>; <span class="tactic">assumption</span>.<br/>
 Qed.</div>
@@ -387,8 +387,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> /\ ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof980')">Proof.</div>
-<div class="proofscript" id="proof980">
+<div class="toggleproof" onclick="toggleDisplay('proof1017')">Proof.</div>
+<div class="proofscript" id="proof1017">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span>; <span class="tactic">intros</span>. <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H</span>; <span class="tactic">tauto</span>.<br/>
@@ -399,8 +399,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> /\ <span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> /\ <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof981')">Proof.</div>
-<div class="proofscript" id="proof981">
+<div class="toggleproof" onclick="toggleDisplay('proof1018')">Proof.</div>
+<div class="proofscript" id="proof1018">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#dests_disjoint">dests_disjoint</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_append">dests_append</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#list_norepet_app">list_norepet_app</a></span>.<br/>
 Qed.</div>
@@ -410,16 +410,16 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="move_no_temp_append">move_no_temp_append</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof982')">Proof.</div>
-<div class="proofscript" id="proof982">
+<div class="toggleproof" onclick="toggleDisplay('proof1019')">Proof.</div>
+<div class="proofscript" id="proof1019">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">elim</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_app_or">in_app_or</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H1</span>); <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id">H0</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="move_no_temp_rev">move_no_temp_rev</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span>, <span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">List.rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) -&gt; <span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof983')">Proof.</div>
-<div class="proofscript" id="proof983">
+<div class="toggleproof" onclick="toggleDisplay('proof1020')">Proof.</div>
+<div class="proofscript" id="proof1020">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H</span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In_rev">List.In_rev</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -429,8 +429,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">d</span> <span class="id">s</span>' <span class="id">sigma</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id">s</span>', <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof984')">Proof.</div>
-<div class="proofscript" id="proof984">
+<div class="toggleproof" onclick="toggleDisplay('proof1021')">Proof.</div>
+<div class="proofscript" id="proof1021">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">sigma</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev_unit">rev_unit</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -440,8 +440,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s2">s2</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d2">d2</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_not_temp">is_not_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s1">s1</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#is_not_temp">is_not_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d1">d1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s1">s1</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d1">d1</a></span>) :: (<span class="id"><a href="compcert.lib.Parmov.html#s2">s2</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d2">d2</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof985')">Proof.</div>
-<div class="proofscript" id="proof985">
+<div class="toggleproof" onclick="toggleDisplay('proof1022')">Proof.</div>
+<div class="proofscript" id="proof1022">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span>; <span class="tactic">intros</span>. <span class="tactic">simpl</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">rev</a></span> <span class="id">sigma</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span>. <span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
@@ -456,8 +456,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">d1</span> <span class="id">sigma</span> <span class="id">s2</span> <span class="id">d2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s1">s1</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d1">d1</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s2">s2</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d2">d2</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#temp_last">temp_last</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s2">s2</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d2">d2</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof986')">Proof.</div>
-<div class="proofscript" id="proof986">
+<div class="toggleproof" onclick="toggleDisplay('proof1023')">Proof.</div>
+<div class="proofscript" id="proof1023">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">d2</span>.<br/>
 &nbsp;&nbsp;<span class="id">change</span> ((<span class="id">s1</span>, <span class="id">d1</span>) :: <span class="id">sigma</span> ++ (<span class="id">s2</span>, <span class="id">d2</span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">with</span> ((((<span class="id">s1</span>, <span class="id">d1</span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) ++ <span class="id">sigma</span>) ++ ((<span class="id">s2</span>, <span class="id">d2</span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>)).<br/>
@@ -471,8 +471,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="is_path_pop">is_path_pop</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_path">is_path</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) -&gt; <span class="id"><a href="compcert.lib.Parmov.html#is_path">is_path</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof987')">Proof.</div>
-<div class="proofscript" id="proof987">
+<div class="toggleproof" onclick="toggleDisplay('proof1024')">Proof.</div>
+<div class="proofscript" id="proof1024">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">inversion</span> <span class="id">H</span>; <span class="tactic">subst</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -480,8 +480,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">s</span>' <span class="id">d</span> <span class="id">sigma</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_path">is_path</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_path">is_path</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id">s</span>', <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof988')">Proof.</div>
-<div class="proofscript" id="proof988">
+<div class="toggleproof" onclick="toggleDisplay('proof1025')">Proof.</div>
+<div class="proofscript" id="proof1025">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">sigma</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H</span>; <span class="tactic">subst</span>; <span class="tactic">clear</span> <span class="id">H</span>.<br/>
@@ -495,8 +495,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_path">is_path</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d0">d0</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">List.incl</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d0">d0</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span> :: <span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d0">d0</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof989')">Proof.</div>
-<div class="proofscript" id="proof989">
+<div class="toggleproof" onclick="toggleDisplay('proof1026')">Proof.</div>
+<div class="proofscript" id="proof1026">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">sigma</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H</span>; <span class="tactic">subst</span>; <span class="tactic">clear</span> <span class="id">H</span>. <span class="tactic">simpl</span>.<br/>
@@ -514,8 +514,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_path">is_path</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d0">d0</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) -&gt;<br/>
 &nbsp;&nbsp;~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d1">d1</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d0">d0</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>)) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#no_read">no_read</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#sigma">sigma</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s0">s0</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d0">d0</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#d1">d1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof990')">Proof.</div>
-<div class="proofscript" id="proof990">
+<div class="toggleproof" onclick="toggleDisplay('proof1027')">Proof.</div>
+<div class="proofscript" id="proof1027">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Parmov.html#path_sources_dests">path_sources_dests</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H0</span>). <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intro</span>. <span class="tactic">elim</span> <span class="id">H1</span>. <span class="tactic">elim</span> (<span class="id">H2</span> <span class="id">_</span> <span class="id">H3</span>); <span class="tactic">intro</span>. <span class="tactic">congruence</span>. <span class="tactic">auto</span>.<br/>
@@ -527,16 +527,16 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="notin_dests_cons">notin_dests_cons</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#x">x</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>)) &lt;-&gt; <span class="id"><a href="compcert.lib.Parmov.html#x">x</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> /\ ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#x">x</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof991')">Proof.</div>
-<div class="proofscript" id="proof991">
+<div class="toggleproof" onclick="toggleDisplay('proof1028')">Proof.</div>
+<div class="proofscript" id="proof1028">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="notin_dests_append">notin_dests_append</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">d</span> <span class="id">m1</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>)) &lt;-&gt; ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span>) /\ ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof992')">Proof.</div>
-<div class="proofscript" id="proof992">
+<div class="toggleproof" onclick="toggleDisplay('proof1029')">Proof.</div>
+<div class="proofscript" id="proof1029">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#dests_append">dests_append</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#in_app">in_app</a></span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -550,8 +550,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="transition_preserves_wf">transition_preserves_wf</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#transition">transition</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id">st</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof993')">Proof.</div>
-<div class="proofscript" id="proof993">
+<div class="toggleproof" onclick="toggleDisplay('proof1030')">Proof.</div>
+<div class="proofscript" id="proof1030">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intro</span> <span class="id">WF</span>; <span class="tactic">inversion</span> <span class="id">WF</span> <span class="kwd">as</span> [<span class="id">mu0</span> <span class="id">sigma0</span> <span class="id">tau0</span> <span class="id">A</span> <span class="id">B</span> <span class="id">C</span> <span class="id">D</span>];<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span>;<br/>
 &nbsp;&nbsp;<span class="id">autorewrite</span> <span class="kwd">with</span> <span class="id">pmov</span> <span class="kwd">in</span> <span class="id">A</span>; <span class="id">constructor</span>; <span class="id">autorewrite</span> <span class="kwd">with</span> <span class="id">pmov</span>.<br/>
@@ -597,8 +597,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transitions_preserve_wf">transitions_preserve_wf</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>', <span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id">st</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof994')">Proof.</div>
-<div class="proofscript" id="proof994">
+<div class="toggleproof" onclick="toggleDisplay('proof1031')">Proof.</div>
+<div class="proofscript" id="proof1031">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Parmov.html#transition_preserves_wf">transition_preserves_wf</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -620,8 +620,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="exec_par_outside">exec_par_outside</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span> <span class="id">e</span> <span class="id">r</span>, ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) -&gt; <span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof995')">Proof.</div>
-<div class="proofscript" id="proof995">
+<div class="toggleproof" onclick="toggleDisplay('proof1032')">Proof.</div>
+<div class="proofscript" id="proof1032">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#update_o">update_o</a></span>. <span class="tactic">apply</span> <span class="id">IHm</span>. <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">intuition</span>.<br/>
@@ -631,8 +631,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m2</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof996')">Proof.</div>
-<div class="proofscript" id="proof996">
+<div class="toggleproof" onclick="toggleDisplay('proof1033')">Proof.</div>
+<div class="proofscript" id="proof1033">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m1</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s0</span> <span class="id">d0</span>]. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">rewrite</span> <span class="id">IHm1</span>. <span class="tactic">simpl</span>.<br/>
@@ -643,8 +643,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">r</span> <span class="id">m2</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof997')">Proof.</div>
-<div class="proofscript" id="proof997">
+<div class="toggleproof" onclick="toggleDisplay('proof1034')">Proof.</div>
+<div class="proofscript" id="proof1034">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">autorewrite</span> <span class="kwd">with</span> <span class="id">pmov</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#exec_par_lift">exec_par_lift</a></span>. <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">replace</span> (<span class="id">e</span> <span class="id">r</span>) <span class="kwd">with</span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id">m1</span> ++ <span class="id">m2</span>) <span class="id">e</span> <span class="id">r</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#update_ident">update_ident</a></span>.<br/>
@@ -654,8 +654,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="exec_seq_app">exec_seq_app</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof998')">Proof.</div>
-<div class="proofscript" id="proof998">
+<div class="toggleproof" onclick="toggleDisplay('proof1035')">Proof.</div>
+<div class="proofscript" id="proof1035">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m1</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">rewrite</span> <span class="id">IHm1</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -663,8 +663,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="exec_seq_rev_app">exec_seq_rev_app</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_seq_rev">exec_seq_rev</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_seq_rev">exec_seq_rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq_rev">exec_seq_rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof999')">Proof.</div>
-<div class="proofscript" id="proof999">
+<div class="toggleproof" onclick="toggleDisplay('proof1036')">Proof.</div>
+<div class="proofscript" id="proof1036">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m1</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">rewrite</span> <span class="id">IHm1</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -672,8 +672,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="exec_seq_exec_seq_rev">exec_seq_exec_seq_rev</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_seq_rev">exec_seq_rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">List.rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1000')">Proof.</div>
-<div class="proofscript" id="proof1000">
+<div class="toggleproof" onclick="toggleDisplay('proof1037')">Proof.</div>
+<div class="proofscript" id="proof1037">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Parmov.html#exec_seq_app">exec_seq_app</a></span>. <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id">IHm</span>. <span class="tactic">auto</span>.<br/>
@@ -682,8 +682,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="exec_seq_rev_exec_seq">exec_seq_rev_exec_seq</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_seq_rev">exec_seq_rev</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">List.rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1001')">Proof.</div>
-<div class="proofscript" id="proof1001">
+<div class="toggleproof" onclick="toggleDisplay('proof1038')">Proof.</div>
+<div class="proofscript" id="proof1038">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq_exec_seq_rev">exec_seq_exec_seq_rev</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">List.rev</a></span> <span class="id">m</span>) <span class="id">e</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev_involutive">List.rev_involutive</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -694,8 +694,8 @@ Qed.</div>
 &nbsp;&nbsp;~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) =<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1002')">Proof.</div>
-<div class="proofscript" id="proof1002">
+<div class="toggleproof" onclick="toggleDisplay('proof1039')">Proof.</div>
+<div class="proofscript" id="proof1039">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#no_read">no_read</a></span>; <span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s0</span> <span class="id">d0</span>]; <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">rewrite</span> <span class="id">IHm</span>.<br/>
@@ -708,8 +708,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e3">e3</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span>) -&gt; <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e3">e3</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m3">m3</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e3">e3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1003')">Proof.</div>
-<div class="proofscript" id="proof1003">
+<div class="toggleproof" onclick="toggleDisplay('proof1040')">Proof.</div>
+<div class="proofscript" id="proof1040">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m1</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">f_equal</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -721,8 +721,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">let</span> <span class="id">e</span>' := <span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#combine">combine</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="kwd">in</span><br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id">e</span>' <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> /\<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">l</span>, ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span> -&gt; <span class="id">e</span>' <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1004')">Proof.</div>
-<div class="proofscript" id="proof1004">
+<div class="toggleproof" onclick="toggleDisplay('proof1041')">Proof.</div>
+<div class="proofscript" id="proof1041">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">sl</span>; <span class="tactic">destruct</span> <span class="id">dl</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H0</span>; <span class="tactic">subst</span>; <span class="tactic">clear</span> <span class="id">H0</span>.<br/>
@@ -746,29 +746,29 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="env_equiv_refl">env_equiv_refl</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span>, <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1005')">Proof.</div>
-<div class="proofscript" id="proof1005">
+<div class="toggleproof" onclick="toggleDisplay('proof1042')">Proof.</div>
+<div class="proofscript" id="proof1042">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id">env_equiv_refl</span>':<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e1</span> <span class="id">e2</span>, <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1006')">Proof.</div>
-<div class="proofscript" id="proof1006">
+<div class="toggleproof" onclick="toggleDisplay('proof1043')">Proof.</div>
+<div class="proofscript" id="proof1043">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="env_equiv_sym">env_equiv_sym</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e1</span> <span class="id">e2</span>, <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1007')">Proof.</div>
-<div class="proofscript" id="proof1007">
+<div class="toggleproof" onclick="toggleDisplay('proof1044')">Proof.</div>
+<div class="proofscript" id="proof1044">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span>; <span class="tactic">intros</span>. <span class="tactic">symmetry</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="env_equiv_trans">env_equiv_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e1</span> <span class="id">e2</span> <span class="id">e3</span>, <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e3">e3</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e3">e3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1008')">Proof.</div>
-<div class="proofscript" id="proof1008">
+<div class="toggleproof" onclick="toggleDisplay('proof1045')">Proof.</div>
+<div class="proofscript" id="proof1045">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span>; <span class="tactic">intros</span>. <span class="tactic">transitivity</span> (<span class="id">e2</span> <span class="id">r</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -777,8 +777,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1009')">Proof.</div>
-<div class="proofscript" id="proof1009">
+<div class="toggleproof" onclick="toggleDisplay('proof1046')">Proof.</div>
+<div class="proofscript" id="proof1046">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span>; <span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>].<br/>
@@ -794,8 +794,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>' <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#transition">transition</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#statemove">statemove</a></span> <span class="id">st</span>' <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#statemove">statemove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1010')">Proof.</div>
-<div class="proofscript" id="proof1010">
+<div class="toggleproof" onclick="toggleDisplay('proof1047')">Proof.</div>
+<div class="proofscript" id="proof1047">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intro</span> <span class="id">WF</span>; <span class="tactic">inversion</span> <span class="id">WF</span> <span class="kwd">as</span> [<span class="id">mu0</span> <span class="id">sigma0</span> <span class="id">tau0</span> <span class="id">A</span> <span class="id">B</span> <span class="id">C</span> <span class="id">D</span>]; <span class="tactic">subst</span>; <span class="tactic">simpl</span>.<br/>
 <br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;nop&nbsp;*)</span><br/>
@@ -862,8 +862,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>' <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#statemove">statemove</a></span> <span class="id">st</span>' <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#statemove">statemove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1011')">Proof.</div>
-<div class="proofscript" id="proof1011">
+<div class="toggleproof" onclick="toggleDisplay('proof1048')">Proof.</div>
+<div class="proofscript" id="proof1048">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Parmov.html#transition_preserves_semantics">transition_preserves_semantics</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#env_equiv_refl">env_equiv_refl</a></span>.<br/>
@@ -876,8 +876,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1012')">Proof.</div>
-<div class="proofscript" id="proof1012">
+<div class="toggleproof" onclick="toggleDisplay('proof1049')">Proof.</div>
+<div class="proofscript" id="proof1049">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">constructor</span>. <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#app_nil_end">app_nil_end</a></span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
@@ -896,8 +896,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.lib.Parmov.html#tau">tau</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span>, <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">List.rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#tau">tau</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1013')">Proof.</div>
-<div class="proofscript" id="proof1013">
+<div class="toggleproof" onclick="toggleDisplay('proof1050')">Proof.</div>
+<div class="proofscript" id="proof1050">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Parmov.html#transitions_preserve_semantics">transitions_preserve_semantics</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">e</span> <span class="id">H1</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Parmov.html#state_wf_start">state_wf_start</a></span> <span class="id">_</span> <span class="id">H</span> <span class="id">H0</span>)).<br/>
@@ -947,8 +947,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransition">dtransition</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1014')">Proof.</div>
-<div class="proofscript" id="proof1014">
+<div class="toggleproof" onclick="toggleDisplay('proof1051')">Proof.</div>
+<div class="proofscript" id="proof1051">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intro</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#rt_step">rt_step</a></span>. <span class="tactic">exact</span> (<span class="id"><a href="compcert.lib.Parmov.html#tr_nop">tr_nop</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id">r</span> <span class="id">mu</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id">tau</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#rt_step">rt_step</a></span>. <span class="tactic">exact</span> (<span class="id"><a href="compcert.lib.Parmov.html#tr_start">tr_start</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id">s</span> <span class="id">d</span> <span class="id">mu</span> <span class="id">tau</span>).<br/>
@@ -974,8 +974,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransitions">dtransitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#state_wf">state_wf</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1015')">Proof.</div>
-<div class="proofscript" id="proof1015">
+<div class="toggleproof" onclick="toggleDisplay('proof1052')">Proof.</div>
+<div class="proofscript" id="proof1052">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#transitions">transitions</a></span>; <span class="tactic">induction</span> 1; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Parmov.html#transition_determ">transition_determ</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#rt_refl">rt_refl</a></span>.<br/>
@@ -992,8 +992,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransitions">dtransitions</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.lib.Parmov.html#tau">tau</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span>, <span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev">List.rev</a></span> <span class="id"><a href="compcert.lib.Parmov.html#tau">tau</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1016')">Proof.</div>
-<div class="proofscript" id="proof1016">
+<div class="toggleproof" onclick="toggleDisplay('proof1053')">Proof.</div>
+<div class="proofscript" id="proof1053">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Parmov.html#transitions_correctness">transitions_correctness</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#transitions_determ">transitions_determ</a></span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#state_wf_start">state_wf_start</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1069,8 +1069,8 @@ Qed.</div>
 &nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">before</span>, <span class="id">d</span>, <span class="id">after</span>) =&gt; <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> = <span class="id">before</span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>, <span class="id">d</span>) :: <span class="id">after</span> /\ <span class="id"><a href="compcert.lib.Parmov.html#no_read">no_read</a></span> <span class="id">before</span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span><br/>
 &nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="compcert.lib.Parmov.html#no_read">no_read</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1017')">Proof.</div>
-<div class="proofscript" id="proof1017">
+<div class="toggleproof" onclick="toggleDisplay('proof1054')">Proof.</div>
+<div class="proofscript" id="proof1054">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#no_read">no_read</a></span>. <span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">tauto</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">s</span> <span class="id">r</span>).<br/>
@@ -1085,8 +1085,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.lib.Parmov.html#is_last_source">is_last_source</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>)<br/>
 &nbsp;&nbsp;<span class="kwd">then</span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">else</span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1018')">Proof.</div>
-<div class="proofscript" id="proof1018">
+<div class="toggleproof" onclick="toggleDisplay('proof1055')">Proof.</div>
+<div class="proofscript" id="proof1055">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg_eq">reg_eq</a></span> <span class="id">s</span> <span class="id">r</span>); <span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s0</span> <span class="id">d0</span>]. <span class="id">case_eq</span> (<span class="id">m</span> ++ (<span class="id">s</span>, <span class="id">d</span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>); <span class="tactic">intros</span>.<br/>
@@ -1098,8 +1098,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">d</span> <span class="id">s</span>' <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#replace_last_source">replace_last_source</a></span> <span class="id">s</span>' (<span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> ++ (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) =<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> ++ (<span class="id">s</span>', <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1019')">Proof.</div>
-<div class="proofscript" id="proof1019">
+<div class="toggleproof" onclick="toggleDisplay('proof1056')">Proof.</div>
+<div class="proofscript" id="proof1056">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s0</span> <span class="id">d0</span>]. <span class="id">case_eq</span> (<span class="id">m</span> ++ (<span class="id">s</span>, <span class="id">d</span>) :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>); <span class="tactic">intros</span>.<br/>
@@ -1111,8 +1111,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#final_state">final_state</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransition">dtransition</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_step">parmove_step</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1020')">Proof.</div>
-<div class="proofscript" id="proof1020">
+<div class="toggleproof" onclick="toggleDisplay('proof1057')">Proof.</div>
+<div class="proofscript" id="proof1057">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">st</span> <span class="id">NOTFINAL</span>. <span class="tactic">destruct</span> <span class="id">st</span> <span class="kwd">as</span> [<span class="id">mu</span> <span class="id">sigma</span> <span class="id">tau</span>]. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_step">parmove_step</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">case_eq</span> <span class="id">mu</span>; [<span class="tactic">intros</span> <span class="id">MEQ</span> | <span class="tactic">intros</span> [<span class="id">ms</span> <span class="id">md</span>] <span class="id">mtl</span> <span class="id">MEQ</span>].<br/>
 &nbsp;&nbsp;<span class="id">case_eq</span> <span class="id">sigma</span>; [<span class="tactic">intros</span> <span class="id">SEQ</span> | <span class="tactic">intros</span> [<span class="id">ss</span> <span class="id">sd</span>] <span class="id">stl</span> <span class="id">SEQ</span>].<br/>
@@ -1164,8 +1164,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="measure_decreasing_1">measure_decreasing_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransition">dtransition</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="kwd">measure</span> <span class="id">st</span>' &lt; <span class="kwd">measure</span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1021')">Proof.</div>
-<div class="proofscript" id="proof1021">
+<div class="toggleproof" onclick="toggleDisplay('proof1058')">Proof.</div>
+<div class="proofscript" id="proof1058">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">repeat</span> (<span class="tactic">simpl</span>; <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#app_length">List.app_length</a></span>); <span class="tactic">simpl</span>; <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
@@ -1173,8 +1173,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#final_state">final_state</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">measure</span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_step">parmove_step</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span>) &lt; <span class="kwd">measure</span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1022')">Proof.</div>
-<div class="proofscript" id="proof1022">
+<div class="toggleproof" onclick="toggleDisplay('proof1059')">Proof.</div>
+<div class="proofscript" id="proof1059">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#measure_decreasing_1">measure_decreasing_1</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_step_compatible">parmove_step_compatible</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -1184,16 +1184,16 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="compcert.lib.Parmov.html#final_state">final_state</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">then</span> <span class="kwd">match</span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">tau</span> =&gt; <span class="id">tau</span> <span class="kwd">end</span><br/>
 &nbsp;&nbsp;<span class="kwd">else</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_aux">parmove_aux</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_step">parmove_step</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1023')">Proof.</div>
-<div class="proofscript" id="proof1023">
+<div class="toggleproof" onclick="toggleDisplay('proof1060')">Proof.</div>
+<div class="proofscript" id="proof1060">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#measure_decreasing_2">measure_decreasing_2</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="parmove_aux_transitions">parmove_aux_transitions</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransitions">dtransitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_aux">parmove_aux</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1024')">Proof.</div>
-<div class="proofscript" id="proof1024">
+<div class="toggleproof" onclick="toggleDisplay('proof1061')">Proof.</div>
+<div class="proofscript" id="proof1061">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#dtransitions">dtransitions</a></span>. <span class="tactic">intro</span> <span class="id">st</span>. <span class="id">functional</span> <span class="tactic">induction</span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_aux">parmove_aux</a></span> <span class="id">st</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">_x</span>; <span class="tactic">destruct</span> <span class="id">_x0</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">e</span>; <span class="tactic">discriminate</span> || <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#rt_refl">rt_refl</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#rt_trans">rt_trans</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Operators.html#rt_step">rt_step</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_step_compatible">parmove_step_compatible</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -1212,8 +1212,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1025')">Proof.</div>
-<div class="proofscript" id="proof1025">
+<div class="toggleproof" onclick="toggleDisplay('proof1062')">Proof.</div>
+<div class="proofscript" id="proof1062">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#dtransitions_correctness">dtransitions_correctness</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_aux_transitions">parmove_aux_transitions</a></span>.<br/>
 Qed.</div>
@@ -1235,8 +1235,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">let</span> <span class="id">e</span>' := <span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove2">parmove2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="kwd">in</span><br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id">e</span>' <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> /\<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>, ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#is_not_temp">is_not_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> -&gt; <span class="id">e</span>' <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1026')">Proof.</div>
-<div class="proofscript" id="proof1026">
+<div class="toggleproof" onclick="toggleDisplay('proof1063')">Proof.</div>
+<div class="proofscript" id="proof1063">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs_dests_combine">srcs_dests_combine</a></span> <span class="id">sl</span> <span class="id">dl</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">A</span> <span class="id">B</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.Parmov.html#env_equiv">env_equiv</a></span> <span class="id">e</span>' (<span class="id"><a href="compcert.lib.Parmov.html#exec_par">exec_par</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#combine">List.combine</a></span> <span class="id">sl</span> <span class="id">dl</span>) <span class="id">e</span>)).<br/>
@@ -1277,16 +1277,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wf_moves_cons">wf_moves_cons</a></span>: <span class="kwd">forall</span> <span class="id">s</span> <span class="id">d</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> ((<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) :: <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.Parmov.html#wf_move">wf_move</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> /\ <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1027')">Proof.</div>
-<div class="proofscript" id="proof1027">
+<div class="toggleproof" onclick="toggleDisplay('proof1064')">Proof.</div>
+<div class="proofscript" id="proof1064">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">firstorder</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H0</span>; <span class="tactic">subst</span> <span class="id">s0</span> <span class="id">d0</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wf_moves_append">wf_moves_append</a></span>: <span class="kwd">forall</span> <span class="id">m1</span> <span class="id">m2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> ++ <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>) &lt;-&gt; <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m1">m1</a></span> /\ <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1028')">Proof.</div>
-<div class="proofscript" id="proof1028">
+<div class="toggleproof" onclick="toggleDisplay('proof1065')">Proof.</div>
+<div class="proofscript" id="proof1065">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span>; <span class="tactic">intros</span>. <span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_or_app">in_or_app</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">elim</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_app_or">in_app_or</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H0</span>); <span class="tactic">intro</span>; <span class="tactic">auto</span>.<br/>
@@ -1302,8 +1302,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="dtransition_preserves_wf_state">dtransition_preserves_wf_state</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransition">dtransition</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="id"><a href="compcert.lib.Parmov.html#wf_state">wf_state</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#wf_state">wf_state</a></span> <span class="id">st</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1029')">Proof.</div>
-<div class="proofscript" id="proof1029">
+<div class="toggleproof" onclick="toggleDisplay('proof1066')">Proof.</div>
+<div class="proofscript" id="proof1066">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intro</span> <span class="id">WF</span>; <span class="id">inv</span> <span class="id">WF</span>; <span class="id">constructor</span>; <span class="id">autorewrite</span> <span class="kwd">with</span> <span class="id">pmov</span> <span class="kwd">in</span> *; <span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#wf_move_temp_left">wf_move_temp_left</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Parmov.html#wf_move_temp_right">wf_move_temp_right</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -1312,8 +1312,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="dtransitions_preserve_wf_state">dtransitions_preserve_wf_state</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st</span> <span class="id">st</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#dtransitions">dtransitions</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> <span class="id">st</span>' -&gt; <span class="id"><a href="compcert.lib.Parmov.html#wf_state">wf_state</a></span> <span class="id"><a href="compcert.lib.Parmov.html#st">st</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#wf_state">wf_state</a></span> <span class="id">st</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1030')">Proof.</div>
-<div class="proofscript" id="proof1030">
+<div class="toggleproof" onclick="toggleDisplay('proof1067')">Proof.</div>
+<div class="proofscript" id="proof1067">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Parmov.html#dtransition_preserves_wf_state">dtransition_preserves_wf_state</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -1322,8 +1322,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="parmove_wf_moves">parmove_wf_moves</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span>, <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1031')">Proof.</div>
-<div class="proofscript" id="proof1031">
+<div class="toggleproof" onclick="toggleDisplay('proof1068')">Proof.</div>
+<div class="proofscript" id="proof1068">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.Parmov.html#wf_state">wf_state</a></span> <span class="id">mu</span> (<span class="id"><a href="compcert.lib.Parmov.html#State">State</a></span> <span class="id">mu</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>)).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#wf_move_same">wf_move_same</a></span>. <span class="tactic">auto</span>.<br/>
@@ -1338,8 +1338,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="parmove2_wf_moves">parmove2_wf_moves</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sl</span> <span class="id">dl</span>, <span class="id"><a href="compcert.lib.Parmov.html#wf_moves">wf_moves</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#combine">List.combine</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#parmove2">parmove2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1032')">Proof.</div>
-<div class="proofscript" id="proof1032">
+<div class="toggleproof" onclick="toggleDisplay('proof1069')">Proof.</div>
+<div class="proofscript" id="proof1069">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove2">parmove2</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_wf_moves">parmove_wf_moves</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -1352,8 +1352,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span> <span class="id">s</span> <span class="id">d</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#wf_move">wf_move</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>) /\ (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1033')">Proof.</div>
-<div class="proofscript" id="proof1033">
+<div class="toggleproof" onclick="toggleDisplay('proof1070')">Proof.</div>
+<div class="proofscript" id="proof1070">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="id">left</span>.<br/>
 &nbsp;&nbsp;<span class="id">change</span> <span class="id">s</span> <span class="kwd">with</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id">s</span>, <span class="id">d</span>)). <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_map">List.in_map</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1366,23 +1366,23 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span> <span class="id">s</span> <span class="id">d</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>) /\ (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1034')">Proof.</div>
-<div class="proofscript" id="proof1034">
+<div class="toggleproof" onclick="toggleDisplay('proof1071')">Proof.</div>
+<div class="proofscript" id="proof1071">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#wf_move_initial_reg_or_temp">wf_move_initial_reg_or_temp</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#parmove_wf_moves">parmove_wf_moves</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="in_srcs">in_srcs</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span> <span class="id">s</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) -&gt; <span class="id">exists</span> <span class="id">d</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1035')">Proof.</div>
-<div class="proofscript" id="proof1035">
+<div class="toggleproof" onclick="toggleDisplay('proof1072')">Proof.</div>
+<div class="proofscript" id="proof1072">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#list_in_map_inv">list_in_map_inv</a></span> (@<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg">reg</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg">reg</a></span>) <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [[<span class="id">s</span>' <span class="id">d</span>'] [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>. <span class="id">exists</span> <span class="id">d</span>'; <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="in_dests">in_dests</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span> <span class="id">d</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) -&gt; <span class="id">exists</span> <span class="id">s</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>, <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1036')">Proof.</div>
-<div class="proofscript" id="proof1036">
+<div class="toggleproof" onclick="toggleDisplay('proof1073')">Proof.</div>
+<div class="proofscript" id="proof1073">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#list_in_map_inv">list_in_map_inv</a></span> (@<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg">reg</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.reg">reg</a></span>) <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [[<span class="id">s</span>' <span class="id">d</span>'] [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>. <span class="id">exists</span> <span class="id">s</span>'; <span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -1390,8 +1390,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="parmove_srcs_initial_reg_or_temp">parmove_srcs_initial_reg_or_temp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span> <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>)) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1037')">Proof.</div>
-<div class="proofscript" id="proof1037">
+<div class="toggleproof" onclick="toggleDisplay('proof1074')">Proof.</div>
+<div class="proofscript" id="proof1074">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#in_srcs">in_srcs</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">d</span> <span class="id">A</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_initial_reg_or_temp">parmove_initial_reg_or_temp</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">A</span>). <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -1399,8 +1399,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="parmove_dests_initial_reg_or_temp">parmove_dests_initial_reg_or_temp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span> <span class="id">d</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>)) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1038')">Proof.</div>
-<div class="proofscript" id="proof1038">
+<div class="toggleproof" onclick="toggleDisplay('proof1075')">Proof.</div>
+<div class="proofscript" id="proof1075">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#in_dests">in_dests</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">s</span> <span class="id">A</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove_initial_reg_or_temp">parmove_initial_reg_or_temp</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">A</span>). <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -1421,8 +1421,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mu</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_class_compatible">is_class_compatible</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_class_compatible">is_class_compatible</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove">parmove</a></span> <span class="id"><a href="compcert.lib.Parmov.html#mu">mu</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1039')">Proof.</div>
-<div class="proofscript" id="proof1039">
+<div class="toggleproof" onclick="toggleDisplay('proof1076')">Proof.</div>
+<div class="proofscript" id="proof1076">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">s</span> <span class="id">d</span>, <span class="id"><a href="compcert.lib.Parmov.html#wf_move">wf_move</a></span> <span class="id">mu</span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.REGISTER_CLASSES.regclass">regclass</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.REGISTER_CLASSES.regclass">regclass</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
@@ -1458,8 +1458,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="no_overlap_sym">no_overlap_sym</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">r2</span>, <span class="id"><a href="compcert.lib.Parmov.html#no_overlap">no_overlap</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#no_overlap">no_overlap</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1040')">Proof.</div>
-<div class="proofscript" id="proof1040">
+<div class="toggleproof" onclick="toggleDisplay('proof1077')">Proof.</div>
+<div class="proofscript" id="proof1077">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="id">left</span>; <span class="tactic">auto</span>. <span class="id">right</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -1533,8 +1533,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="disjoint_list_notin">disjoint_list_notin</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">l</span>, <span class="id"><a href="compcert.lib.Parmov.html#disjoint_list">disjoint_list</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span> -&gt; ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1041')">Proof.</div>
-<div class="proofscript" id="proof1041">
+<div class="toggleproof" onclick="toggleDisplay('proof1078')">Proof.</div>
+<div class="proofscript" id="proof1078">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span>; <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">r</span> &lt;&gt; <span class="id">r</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.disjoint_not_equal">disjoint_not_equal</a></span>. <span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
@@ -1542,8 +1542,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="pairwise_disjoint_norepet">pairwise_disjoint_norepet</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="compcert.lib.Parmov.html#pairwise_disjoint">pairwise_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#list_norepet">list_norepet</a></span> <span class="id"><a href="compcert.lib.Parmov.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1042')">Proof.</div>
-<div class="proofscript" id="proof1042">
+<div class="toggleproof" onclick="toggleDisplay('proof1079')">Proof.</div>
+<div class="proofscript" id="proof1079">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#disjoint_list_notin">disjoint_list_notin</a></span>; <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
@@ -1551,22 +1551,22 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="disjoint_temps_not_temp">disjoint_temps_not_temp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="compcert.lib.Parmov.html#disjoint_temps">disjoint_temps</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#is_not_temp">is_not_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1043')">Proof.</div>
-<div class="proofscript" id="proof1043">
+<div class="toggleproof" onclick="toggleDisplay('proof1080')">Proof.</div>
+<div class="proofscript" id="proof1080">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.disjoint_not_equal">disjoint_not_equal</a></span>. <span class="tactic">apply</span> <span class="id">H</span>. <span class="id">exists</span> <span class="id">d</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mu_is_mill">mu_is_mill</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#is_mill">is_mill</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu">mu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1044')">Proof.</div>
-<div class="proofscript" id="proof1044">
+<div class="toggleproof" onclick="toggleDisplay('proof1081')">Proof.</div>
+<div class="proofscript" id="proof1081">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#pairwise_disjoint_norepet">pairwise_disjoint_norepet</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="mu_move_no_temp">mu_move_no_temp</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#move_no_temp">move_no_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu">mu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1045')">Proof.</div>
-<div class="proofscript" id="proof1045">
+<div class="toggleproof" onclick="toggleDisplay('proof1082')">Proof.</div>
+<div class="proofscript" id="proof1082">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#disjoint_temps_not_temp">disjoint_temps_not_temp</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu_no_temporaries_src">mu_no_temporaries_src</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1589,8 +1589,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="no_overlap_pairwise">no_overlap_pairwise</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">r2</span> <span class="id">m</span>, <span class="id"><a href="compcert.lib.Parmov.html#pairwise_disjoint">pairwise_disjoint</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#no_overlap">no_overlap</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r1">r1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r2">r2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1046')">Proof.</div>
-<div class="proofscript" id="proof1046">
+<div class="toggleproof" onclick="toggleDisplay('proof1083')">Proof.</div>
+<div class="proofscript" id="proof1083">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">destruct</span> <span class="id">H1</span>; <span class="tactic">destruct</span> <span class="id">H2</span>.<br/>
@@ -1602,8 +1602,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="no_adherence_dst">no_adherence_dst</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">d</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu">mu</a></span>) -&gt; <span class="id"><a href="compcert.lib.Parmov.html#no_adherence">no_adherence</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1047')">Proof.</div>
-<div class="proofscript" id="proof1047">
+<div class="toggleproof" onclick="toggleDisplay('proof1084')">Proof.</div>
+<div class="proofscript" id="proof1084">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#no_overlap_pairwise">no_overlap_pairwise</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu">mu</a></span>); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.disjoint_sym">disjoint_sym</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu_no_temporaries_dst">mu_no_temporaries_dst</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1611,8 +1611,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="no_adherence_src">no_adherence_src</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#srcs">srcs</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu">mu</a></span>) -&gt; <span class="id"><a href="compcert.lib.Parmov.html#no_adherence">no_adherence</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1048')">Proof.</div>
-<div class="proofscript" id="proof1048">
+<div class="toggleproof" onclick="toggleDisplay('proof1085')">Proof.</div>
+<div class="proofscript" id="proof1085">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#no_overlap_sym">no_overlap_sym</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu_src_dst_no_overlap">mu_src_dst_no_overlap</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1621,8 +1621,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="no_adherence_tmp">no_adherence_tmp</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">t</span>, <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#t">t</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#no_adherence">no_adherence</a></span> <span class="id"><a href="compcert.lib.Parmov.html#t">t</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1049')">Proof.</div>
-<div class="proofscript" id="proof1049">
+<div class="toggleproof" onclick="toggleDisplay('proof1086')">Proof.</div>
+<div class="proofscript" id="proof1086">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu_no_temporaries_dst">mu_no_temporaries_dst</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1645,8 +1645,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_match">env_match</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_match">env_match</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#update">update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Parmov.html#PARMOV.weak_update">weak_update</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#s">s</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1050')">Proof.</div>
-<div class="proofscript" id="proof1050">
+<div class="toggleproof" onclick="toggleDisplay('proof1087')">Proof.</div>
+<div class="proofscript" id="proof1087">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.Parmov.html#no_overlap">no_overlap</a></span> <span class="id">d</span> <span class="id">r</span>). <span class="tactic">apply</span> <span class="id">H2</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H3</span>.<br/>
@@ -1662,8 +1662,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">d</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#dests">dests</a></span> <span class="id"><a href="compcert.lib.Parmov.html#PARMOV.OVERLAP.mu">mu</a></span>) \/ <span class="id"><a href="compcert.lib.Parmov.html#is_temp">is_temp</a></span> <span class="id"><a href="compcert.lib.Parmov.html#d">d</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_match">env_match</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Parmov.html#env_match">env_match</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#exec_seq">exec_seq</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e1">e1</a></span>) (<span class="id"><a href="compcert.lib.Parmov.html#weak_exec_seq">weak_exec_seq</a></span> <span class="id"><a href="compcert.lib.Parmov.html#m">m</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e2">e2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1051')">Proof.</div>
-<div class="proofscript" id="proof1051">
+<div class="toggleproof" onclick="toggleDisplay('proof1088')">Proof.</div>
+<div class="proofscript" id="proof1088">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span> <span class="kwd">as</span> [<span class="id">s</span> <span class="id">d</span>]. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>.<br/>
@@ -1688,8 +1688,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">let</span> <span class="id">e</span>' := <span class="id"><a href="compcert.lib.Parmov.html#weak_exec_seq">weak_exec_seq</a></span> (<span class="id"><a href="compcert.lib.Parmov.html#parmove2">parmove2</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span>) <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="kwd">in</span><br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id">e</span>' <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#sl">sl</a></span> /\<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="compcert.lib.Parmov.html#disjoint_list">disjoint_list</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> <span class="id"><a href="compcert.lib.Parmov.html#dl">dl</a></span> -&gt; <span class="id"><a href="compcert.lib.Parmov.html#disjoint_temps">disjoint_temps</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> -&gt; <span class="id">e</span>' <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span> = <span class="id"><a href="compcert.lib.Parmov.html#e">e</a></span> <span class="id"><a href="compcert.lib.Parmov.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1052')">Proof.</div>
-<div class="proofscript" id="proof1052">
+<div class="toggleproof" onclick="toggleDisplay('proof1089')">Proof.</div>
+<div class="proofscript" id="proof1089">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.Coqlib.html#list_norepet">list_norepet</a></span> <span class="id">dl</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Parmov.html#pairwise_disjoint_norepet">pairwise_disjoint_norepet</a></span>; <span class="tactic">auto</span>.<br/>

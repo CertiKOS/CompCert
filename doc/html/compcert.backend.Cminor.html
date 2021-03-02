@@ -598,8 +598,8 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="semantics_receptive">semantics_receptive</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">p</span>: <span class="id"><a href="compcert.backend.Cminor.html#program">program</a></span>), <span class="id"><a href="compcert.common.Smallstep.html#receptive">receptive</a></span> (<span class="id"><a href="compcert.backend.Cminor.html#semantics">semantics</a></span> <span class="id"><a href="compcert.backend.Cminor.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2695')">Proof.</div>
-<div class="proofscript" id="proof2695">
+<div class="toggleproof" onclick="toggleDisplay('proof2833')">Proof.</div>
+<div class="proofscript" id="proof2833">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">p</span> <span class="id">se</span>. <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 <span class="comment">(*&nbsp;receptiveness&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">t1</span> = <span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> -&gt; <span class="id">exists</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.Cminor.html#step">step</a></span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.globalenv">Genv.globalenv</a></span> <span class="id">se</span> <span class="id">p</span>) <span class="id">s</span> <span class="id">t2</span> <span class="id"><a href="compcert.backend.Cminor.html#s2">s2</a></span>).<br/>
@@ -611,6 +611,83 @@
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.backend.Cminor.html#Returnstate">Returnstate</a></span> <span class="id">vres2</span> <span class="id">k</span> <span class="id">m2</span>). <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 <span class="comment">(*&nbsp;trace&nbsp;length&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">omega</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Events.html#external_call_trace_length">external_call_trace_length</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">This semantics is determinate. </div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="eval_expr_determ">eval_expr_determ</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ge</span> <span class="id">sp</span> <span class="id">e</span> <span class="id">m</span> <span class="id">a</span> <span class="id">v</span>, <span class="id"><a href="compcert.backend.Cminor.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.backend.Cminor.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.Cminor.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Cminor.html#e">e</a></span> <span class="id"><a href="compcert.backend.Cminor.html#m">m</a></span> <span class="id"><a href="compcert.backend.Cminor.html#a">a</a></span> <span class="id"><a href="compcert.backend.Cminor.html#v">v</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span>', <span class="id"><a href="compcert.backend.Cminor.html#eval_expr">eval_expr</a></span> <span class="id"><a href="compcert.backend.Cminor.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.Cminor.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Cminor.html#e">e</a></span> <span class="id"><a href="compcert.backend.Cminor.html#m">m</a></span> <span class="id"><a href="compcert.backend.Cminor.html#a">a</a></span> <span class="id">v</span>' -&gt; <span class="id">v</span>' = <span class="id"><a href="compcert.backend.Cminor.html#v">v</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2834')">Proof.</div>
+<div class="proofscript" id="proof2834">
+&nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span> <span class="id">v</span>' <span class="id">E</span>'; <span class="id">inv</span> <span class="id">E</span>'.<br/>
+- <span class="tactic">congruence</span>.<br/>
+- <span class="tactic">congruence</span>.<br/>
+- <span class="tactic">assert</span> (<span class="id">v0</span> = <span class="id">v1</span>) <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">congruence</span>.<br/>
+- <span class="tactic">assert</span> (<span class="id">v0</span> = <span class="id">v1</span>) <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">assert</span> (<span class="id">v3</span> = <span class="id">v2</span>) <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">congruence</span>.<br/>
+- <span class="tactic">assert</span> (<span class="id">vaddr0</span> = <span class="id">vaddr</span>) <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="eval_exprlist_determ">eval_exprlist_determ</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ge</span> <span class="id">sp</span> <span class="id">e</span> <span class="id">m</span> <span class="id">al</span> <span class="id">vl</span>, <span class="id"><a href="compcert.backend.Cminor.html#eval_exprlist">eval_exprlist</a></span> <span class="id"><a href="compcert.backend.Cminor.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.Cminor.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Cminor.html#e">e</a></span> <span class="id"><a href="compcert.backend.Cminor.html#m">m</a></span> <span class="id"><a href="compcert.backend.Cminor.html#al">al</a></span> <span class="id"><a href="compcert.backend.Cminor.html#vl">vl</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">vl</span>', <span class="id"><a href="compcert.backend.Cminor.html#eval_exprlist">eval_exprlist</a></span> <span class="id"><a href="compcert.backend.Cminor.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.Cminor.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Cminor.html#e">e</a></span> <span class="id"><a href="compcert.backend.Cminor.html#m">m</a></span> <span class="id"><a href="compcert.backend.Cminor.html#al">al</a></span> <span class="id">vl</span>' -&gt; <span class="id">vl</span>' = <span class="id"><a href="compcert.backend.Cminor.html#vl">vl</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2835')">Proof.</div>
+<div class="proofscript" id="proof2835">
+&nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span> <span class="id">vl</span>' <span class="id">E</span>'; <span class="id">inv</span> <span class="id">E</span>'.<br/>
+&nbsp;&nbsp;- <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">f_equal</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Cminor.html#eval_expr_determ">eval_expr_determ</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Ltac</span> <span class="id">Determ</span> :=<br/>
+&nbsp;&nbsp;<span class="tactic">try</span> <span class="tactic">congruence</span>;<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">goal</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id"><a href="compcert.common.Events.html#match_traces">match_traces</a></span> <span class="id">_</span> <span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> <span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> /\ (<span class="id">_</span> -&gt; <span class="id">_</span>) ]  =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; [<span class="id">constructor</span>|<span class="tactic">intros</span> <span class="id">_</span>; <span class="id">Determ</span>]<br/>
+&nbsp;&nbsp;| [ <span class="id">H</span>: <span class="id"><a href="compcert.backend.Cminor.html#is_call_cont">is_call_cont</a></span> ?<span class="id">k</span> |- <span class="id">_</span> ] =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">contradiction</span> || (<span class="tactic">clear</span> <span class="id">H</span>; <span class="id">Determ</span>)<br/>
+&nbsp;&nbsp;| [ <span class="id">H1</span>: <span class="id"><a href="compcert.backend.Cminor.html#eval_expr">eval_expr</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> ?<span class="id">a</span> ?<span class="id">v1</span>, <span class="id">H2</span>: <span class="id"><a href="compcert.backend.Cminor.html#eval_expr">eval_expr</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> ?<span class="id">a</span> ?<span class="id">v2</span> |- <span class="id">_</span> ] =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">v1</span> = <span class="id">v2</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Cminor.html#eval_expr_determ">eval_expr_determ</a></span>; <span class="tactic">eauto</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> <span class="id">H1</span> <span class="id">H2</span>; <span class="id">Determ</span><br/>
+&nbsp;&nbsp;| [ <span class="id">H1</span>: <span class="id"><a href="compcert.backend.Cminor.html#eval_exprlist">eval_exprlist</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> ?<span class="id">a</span> ?<span class="id">v1</span>, <span class="id">H2</span>: <span class="id"><a href="compcert.backend.Cminor.html#eval_exprlist">eval_exprlist</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> ?<span class="id">a</span> ?<span class="id">v2</span> |- <span class="id">_</span> ] =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">v1</span> = <span class="id">v2</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Cminor.html#eval_exprlist_determ">eval_exprlist_determ</a></span>; <span class="tactic">eauto</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> <span class="id">H1</span> <span class="id">H2</span>; <span class="id">Determ</span><br/>
+&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id">idtac</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="semantics_determinate">semantics_determinate</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">p</span>: <span class="id"><a href="compcert.backend.Cminor.html#program">program</a></span>), <span class="id"><a href="compcert.common.Smallstep.html#determinate">determinate</a></span> (<span class="id"><a href="compcert.backend.Cminor.html#semantics">semantics</a></span> <span class="id"><a href="compcert.backend.Cminor.html#p">p</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2836')">Proof.</div>
+<div class="proofscript" id="proof2836">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">p</span> <span class="id">se</span>. <span class="id">constructor</span>; <span class="tactic">set</span> (<span class="id">ge</span> := <span class="id"><a href="compcert.common.Globalenvs.html#Genv.globalenv">Genv.globalenv</a></span> <span class="id">se</span> <span class="id">p</span>); <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+- <span class="comment">(*&nbsp;determ&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="id">Determ</span>.<br/>
+&nbsp;&nbsp;+ <span class="tactic">subst</span> <span class="id">vargs0</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.common.Events.html#external_call_determ">external_call_determ</a></span>. <span class="id">eexact</span> <span class="id">H2</span>. <span class="id">eexact</span> <span class="id">H13</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> (<span class="id">A</span> &amp; <span class="id">B</span>). <span class="tactic">split</span>; <span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">B</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;+ <span class="tactic">subst</span> <span class="id">v0</span>. <span class="tactic">assert</span> (<span class="id">b0</span> = <span class="id">b</span>) <span class="tactic">by</span> (<span class="id">inv</span> <span class="id">H2</span>; <span class="id">inv</span> <span class="id">H13</span>; <span class="tactic">auto</span>). <span class="tactic">subst</span> <span class="id">b0</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;+ <span class="tactic">assert</span> (<span class="id">n0</span> = <span class="id">n</span>) <span class="tactic">by</span> (<span class="id">inv</span> <span class="id">H2</span>; <span class="id">inv</span> <span class="id">H14</span>; <span class="tactic">auto</span>). <span class="tactic">subst</span> <span class="id">n0</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;+ <span class="id">exploit</span> <span class="id"><a href="compcert.common.Events.html#external_call_determ">external_call_determ</a></span>. <span class="id">eexact</span> <span class="id">H1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">replace</span> <span class="id">ef</span> <span class="kwd">with</span> <span class="id">ef0</span> <span class="tactic">by</span> <span class="tactic">congruence</span>. <span class="id">eexact</span> <span class="id">H7</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> (<span class="id">A</span> &amp; <span class="id">B</span>). <span class="tactic">split</span>; <span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">B</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">congruence</span>.<br/>
+- <span class="comment">(*&nbsp;single&nbsp;event&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">simpl</span>. <span class="tactic">destruct</span> 1; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">omega</span>;<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Events.html#external_call_trace_length">external_call_trace_length</a></span>; <span class="tactic">eauto</span>.<br/>
+- <span class="comment">(*&nbsp;initial&nbsp;states&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">congruence</span>.<br/>
+- <span class="comment">(*&nbsp;nostep&nbsp;external&nbsp;state&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">replace</span> <span class="id">ef</span> <span class="kwd">with</span> (<span class="id"><a href="compcert.common.AST.html#EF_external">EF_external</a></span> <span class="id">name</span> <span class="id">sg</span>) <span class="kwd">in</span> <span class="id">H7</span> <span class="tactic">by</span> <span class="tactic">congruence</span>. <span class="tactic">auto</span>.<br/>
+- <span class="comment">(*&nbsp;at&nbsp;external&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">congruence</span>.<br/>
+- <span class="comment">(*&nbsp;after&nbsp;external&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">congruence</span>.<br/>
+- <span class="comment">(*&nbsp;nostep&nbsp;final&nbsp;state&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>.<br/>
+- <span class="comment">(*&nbsp;external/final&nbsp;state&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="tactic">auto</span>.<br/>
+- <span class="comment">(*&nbsp;final&nbsp;states&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <h1> Alternate operational semantics (big-step) </h1>

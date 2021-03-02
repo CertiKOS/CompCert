@@ -86,15 +86,15 @@
 &nbsp;&nbsp;| <span class="id"><a name="Tcons">Tcons</a></span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#type">type</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#typelist">typelist</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#typelist">typelist</a></span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="intsize_eq">intsize_eq</a></span>: <span class="kwd">forall</span> (<span class="id">s1</span> <span class="id">s2</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#intsize">intsize</a></span>), {<span class="id"><a href="compcert.cfrontend.Ctypes.html#s1">s1</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#s2">s2</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#s1">s1</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#s2">s2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4608')">Proof.</div>
-<div class="proofscript" id="proof4608">
+<div class="toggleproof" onclick="toggleDisplay('proof4823')">Proof.</div>
+<div class="proofscript" id="proof4823">
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_eq">type_eq</a></span>: <span class="kwd">forall</span> (<span class="id">ty1</span> <span class="id">ty2</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#type">type</a></span>), {<span class="id"><a href="compcert.cfrontend.Ctypes.html#ty1">ty1</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#ty2">ty2</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#ty1">ty1</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#ty2">ty2</a></span>}<br/>
 <span class="kwd">with</span> <span class="id"><a name="typelist_eq">typelist_eq</a></span>: <span class="kwd">forall</span> (<span class="id">tyl1</span> <span class="id">tyl2</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#typelist">typelist</a></span>), {<span class="id"><a href="compcert.cfrontend.Ctypes.html#tyl1">tyl1</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#tyl2">tyl2</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#tyl1">tyl1</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#tyl2">tyl2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4609')">Proof.</div>
-<div class="proofscript" id="proof4609">
+<div class="toggleproof" onclick="toggleDisplay('proof4824')">Proof.</div>
+<div class="proofscript" id="proof4824">
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#signedness">signedness</a></span>), {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>}) <span class="tactic">by</span> <span class="id">decide</span> <span class="id">equality</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#floatsize">floatsize</a></span>), {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>}) <span class="tactic">by</span> <span class="id">decide</span> <span class="id">equality</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#attr">attr</a></span>), {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>}).<br/>
@@ -172,8 +172,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#c">c</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#Composite">Composite</a></span> <span class="id">id</span> <span class="id">su</span> <span class="id">m</span> <span class="id">a</span> =&gt; <span class="id">id</span> <span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="composite_def_eq">composite_def_eq</a></span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_definition">composite_definition</a></span>): {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>=<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>} + {<span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.cfrontend.Ctypes.html#y">y</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4610')">Proof.</div>
-<div class="proofscript" id="proof4610">
+<div class="toggleproof" onclick="toggleDisplay('proof4825')">Proof.</div>
+<div class="proofscript" id="proof4825">
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 - <span class="id">decide</span> <span class="id">equality</span>. <span class="id">decide</span> <span class="id">equality</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.NArith.BinNat.html#N.eq_dec">N.eq_dec</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Bool.Bool.html#bool_dec">bool_dec</a></span>.<br/>
 - <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#list_eq_dec">list_eq_dec</a></span>. <span class="id">decide</span> <span class="id">equality</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#type_eq">type_eq</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span>.<br/>
@@ -297,8 +297,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">al</span> <span class="id">a</span>,<br/>
 &nbsp;&nbsp;(<span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#al">al</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_power_nat">two_power_nat</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#n">n</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr">align_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#al">al</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_power_nat">two_power_nat</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#n">n</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4611')">Proof.</div>
-<div class="proofscript" id="proof4611">
+<div class="toggleproof" onclick="toggleDisplay('proof4826')">Proof.</div>
+<div class="proofscript" id="proof4826">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr">align_attr</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#attr_alignas">attr_alignas</a></span> <span class="id">a</span>).<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.NArith.BinNat.html#N.to_nat">N.to_nat</a></span> <span class="id">n</span>). <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#two_power_nat_two_p">two_power_nat_two_p</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#N_nat_Z">N_nat_Z</a></span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -306,8 +306,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_two_p">alignof_two_p</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">t</span>, <span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_power_nat">two_power_nat</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4612')">Proof.</div>
-<div class="proofscript" id="proof4612">
+<div class="toggleproof" onclick="toggleDisplay('proof4827')">Proof.</div>
+<div class="proofscript" id="proof4827">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr_two_p">align_attr_two_p</a></span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> 0%<span class="id">nat</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">i</span>.<br/>
@@ -328,8 +328,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_pos">alignof_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4613')">Proof.</div>
-<div class="proofscript" id="proof4613">
+<div class="toggleproof" onclick="toggleDisplay('proof4828')">Proof.</div>
+<div class="proofscript" id="proof4828">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_two_p">alignof_two_p</a></span> <span class="id">env</span> <span class="id">t</span>) <span class="kwd">as</span> [<span class="id">n</span> <span class="id">EQ</span>]. <span class="tactic">rewrite</span> <span class="id">EQ</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#two_power_nat_pos">two_power_nat_pos</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -361,8 +361,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_pos">sizeof_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> &gt;= 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4614')">Proof.</div>
-<div class="proofscript" id="proof4614">
+<div class="toggleproof" onclick="toggleDisplay('proof4829')">Proof.</div>
+<div class="proofscript" id="proof4829">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">f</span>; <span class="tactic">omega</span>.<br/>
@@ -385,8 +385,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_alignof_compat">sizeof_alignof_compat</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#naturally_aligned">naturally_aligned</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> -&gt; (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> | <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4615')">Proof.</div>
-<div class="proofscript" id="proof4615">
+<div class="toggleproof" onclick="toggleDisplay('proof4830')">Proof.</div>
+<div class="proofscript" id="proof4830">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">intros</span> [<span class="id">A</span> <span class="id">B</span>]; <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr">align_attr</a></span>; <span class="tactic">rewrite</span> <span class="id">A</span>; <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_refl">Z.divide_refl</a></span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_refl">Z.divide_refl</a></span>.<br/>
@@ -430,8 +430,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_composite_two_p">alignof_composite_two_p</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">m</span>, <span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite">alignof_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_power_nat">two_power_nat</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4616')">Proof.</div>
-<div class="proofscript" id="proof4616">
+<div class="toggleproof" onclick="toggleDisplay('proof4831')">Proof.</div>
+<div class="proofscript" id="proof4831">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>.<br/>
 - <span class="id">exists</span> 0%<span class="id">nat</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max_case">Z.max_case</a></span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_two_p">alignof_two_p</a></span>.<br/>
@@ -439,8 +439,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_composite_pos">alignof_composite_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">m</span> <span class="id">a</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr">align_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite">alignof_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>) &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4617')">Proof.</div>
-<div class="proofscript" id="proof4617">
+<div class="toggleproof" onclick="toggleDisplay('proof4832')">Proof.</div>
+<div class="proofscript" id="proof4832">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr_two_p">align_attr_two_p</a></span>. <span class="tactic">apply</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite_two_p">alignof_composite_two_p</a></span> <span class="id">env</span> <span class="id">m</span>).<br/>
 &nbsp;&nbsp;<span class="id">instantiate</span> (1 := <span class="id">a</span>). <span class="tactic">intros</span> [<span class="id">n</span> <span class="id">EQ</span>].<br/>
@@ -449,8 +449,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_struct_incr">sizeof_struct_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">m</span> <span class="id">cur</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#cur">cur</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct">sizeof_struct</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#cur">cur</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4618')">Proof.</div>
-<div class="proofscript" id="proof4618">
+<div class="toggleproof" onclick="toggleDisplay('proof4833')">Proof.</div>
+<div class="proofscript" id="proof4833">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">omega</span>.<br/>
 - <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_trans">Z.le_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.lib.Coqlib.html#align">align</a></span> <span class="id">cur</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id">env</span> <span class="id">t</span>)).<br/>
@@ -462,8 +462,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_union_pos">sizeof_union_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">m</span>, 0 &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_union">sizeof_union</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4619')">Proof.</div>
-<div class="proofscript" id="proof4619">
+<div class="toggleproof" onclick="toggleDisplay('proof4834')">Proof.</div>
+<div class="proofscript" id="proof4834">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
@@ -500,8 +500,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">id</span> <span class="id">ofs</span> <span class="id">ty</span> <span class="id">fld</span> <span class="id">pos</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset_rec">field_offset_rec</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#pos">pos</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_type">field_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#pos">pos</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct">sizeof_struct</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#pos">pos</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4620')">Proof.</div>
-<div class="proofscript" id="proof4620">
+<div class="toggleproof" onclick="toggleDisplay('proof4835')">Proof.</div>
+<div class="proofscript" id="proof4835">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">ty</span>. <span class="tactic">induction</span> <span class="id">fld</span> <span class="kwd">as</span> [|[<span class="id">i</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">discriminate</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span> <span class="id">id</span> <span class="id">i</span>); <span class="tactic">intros</span>.<br/>
@@ -516,8 +516,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">fld</span> <span class="id">id</span> <span class="id">ofs</span> <span class="id">ty</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_type">field_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> -&gt;<br/>
 &nbsp;&nbsp;0 &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct">sizeof_struct</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> 0 <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4621')">Proof.</div>
-<div class="proofscript" id="proof4621">
+<div class="toggleproof" onclick="toggleDisplay('proof4836')">Proof.</div>
+<div class="proofscript" id="proof4836">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset_rec_in_range">field_offset_rec_in_range</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -529,8 +529,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id2">id2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs2">ofs2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_type">field_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id2">id2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty2">ty2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#id1">id1</a></span> &lt;&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#id2">id2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs1">ofs1</a></span> + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty1">ty1</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs2">ofs2</a></span> \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs2">ofs2</a></span> + <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty2">ty2</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs1">ofs1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4622')">Proof.</div>
-<div class="proofscript" id="proof4622">
+<div class="toggleproof" onclick="toggleDisplay('proof4837')">Proof.</div>
+<div class="proofscript" id="proof4837">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">fld</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span>. <span class="tactic">generalize</span> 0 <span class="kwd">as</span> <span class="id">pos</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">fld</span> <span class="kwd">as</span> [|[<span class="id">i</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">discriminate</span>.<br/>
@@ -550,8 +550,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">id</span> <span class="id">ofs</span> <span class="id">fld2</span> <span class="id">fld1</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld1">fld1</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#fld1">fld1</a></span> ++ <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld2">fld2</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4623')">Proof.</div>
-<div class="proofscript" id="proof4623">
+<div class="toggleproof" onclick="toggleDisplay('proof4838')">Proof.</div>
+<div class="proofscript" id="proof4838">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">fld1</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span>. <span class="tactic">generalize</span> 0 <span class="kwd">as</span> <span class="id">pos</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">fld1</span> <span class="kwd">as</span> [|[<span class="id">i</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">discriminate</span>.<br/>
@@ -564,8 +564,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">id</span> <span class="id">fld</span> <span class="id">ofs</span> <span class="id">ty</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_type">field_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#fld">fld</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> | <span class="id"><a href="compcert.cfrontend.Ctypes.html#ofs">ofs</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4624')">Proof.</div>
-<div class="proofscript" id="proof4624">
+<div class="toggleproof" onclick="toggleDisplay('proof4839')">Proof.</div>
+<div class="proofscript" id="proof4839">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">ty</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#field_offset">field_offset</a></span>. <span class="tactic">generalize</span> 0 <span class="kwd">as</span> <span class="id">pos</span>. <span class="id">revert</span> <span class="id">fld</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">fld</span> <span class="kwd">as</span> [|[<span class="id">i</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">discriminate</span>.<br/>
@@ -660,8 +660,8 @@ type must be accessed:
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_blockcopy_1248">alignof_blockcopy_1248</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">ty</span>, <span class="kwd">let</span> <span class="id">a</span> := <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy">alignof_blockcopy</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> <span class="kwd">in</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 1 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 2 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 4 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 8.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4625')">Proof.</div>
-<div class="proofscript" id="proof4625">
+<div class="toggleproof" onclick="toggleDisplay('proof4840')">Proof.</div>
+<div class="proofscript" id="proof4840">
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">X</span>: <span class="kwd">forall</span> <span class="id">co</span>, <span class="kwd">let</span> <span class="id">a</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.min">Z.min</a></span> 8 (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_alignof">co_alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) <span class="kwd">in</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 1 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 2 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 4 \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = 8).<br/>
 &nbsp;&nbsp;{<br/>
@@ -687,15 +687,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_blockcopy_pos">alignof_blockcopy_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">ty</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy">alignof_blockcopy</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4626')">Proof.</div>
-<div class="proofscript" id="proof4626">
+<div class="toggleproof" onclick="toggleDisplay('proof4841')">Proof.</div>
+<div class="proofscript" id="proof4841">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy_1248">alignof_blockcopy_1248</a></span> <span class="id">env</span> <span class="id">ty</span>). <span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_alignof_blockcopy_compat">sizeof_alignof_blockcopy_compat</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">ty</span>, (<span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_blockcopy">alignof_blockcopy</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span> | <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ty">ty</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4627')">Proof.</div>
-<div class="proofscript" id="proof4627">
+<div class="toggleproof" onclick="toggleDisplay('proof4842')">Proof.</div>
+<div class="proofscript" id="proof4842">
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">X</span>: <span class="kwd">forall</span> <span class="id">co</span>, (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.min">Z.min</a></span> 8 (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_alignof">co_alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) | <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_sizeof">co_sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>)).<br/>
 &nbsp;&nbsp;{<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_trans">Z.divide_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_alignof">co_alignof</a></span> <span class="id">co</span>). 2: <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_sizeof_alignof">co_sizeof_alignof</a></span>.<br/>
@@ -791,8 +791,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_composite_pos">sizeof_composite_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">su</span> <span class="id">m</span>, 0 &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_composite">sizeof_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4628')">Proof.</div>
-<div class="proofscript" id="proof4628">
+<div class="toggleproof" onclick="toggleDisplay('proof4843')">Proof.</div>
+<div class="proofscript" id="proof4843">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">su</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct_incr">sizeof_struct_incr</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_union_pos">sizeof_union_pos</a></span>.<br/>
@@ -807,8 +807,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="complete_member">complete_member</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">id</span> <span class="id">t</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span>) <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type">complete_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4629')">Proof.</div>
-<div class="proofscript" id="proof4629">
+<div class="toggleproof" onclick="toggleDisplay('proof4844')">Proof.</div>
+<div class="proofscript" id="proof4844">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id1</span> <span class="id">t1</span>] <span class="id">m</span>]; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>; <span class="id">inv</span> <span class="id">H1</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>; <span class="tactic">eauto</span>.<br/>
@@ -853,17 +853,17 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">co_alignof_two_p</span> := <span class="id">_</span>;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">co_sizeof_alignof</span> := <span class="id">_</span> |}<br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4630')">Next Obligation.</div>
-<div class="proofscript" id="proof4630">
+<div class="toggleproof" onclick="toggleDisplay('proof4845')">Next Obligation.</div>
+<div class="proofscript" id="proof4845">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_ge">Z.le_ge</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_trans">Z.le_trans</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_composite_pos">sizeof_composite_pos</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#align_le">align_le</a></span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite_pos">alignof_composite_pos</a></span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4631')">Next Obligation.</div>
-<div class="proofscript" id="proof4631">
+<div class="toggleproof" onclick="toggleDisplay('proof4846')">Next Obligation.</div>
+<div class="proofscript" id="proof4846">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#align_attr_two_p">align_attr_two_p</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite_two_p">alignof_composite_two_p</a></span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4632')">Next Obligation.</div>
-<div class="proofscript" id="proof4632">
+<div class="toggleproof" onclick="toggleDisplay('proof4847')">Next Obligation.</div>
+<div class="proofscript" id="proof4847">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#align_divides">align_divides</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite_pos">alignof_composite_pos</a></span>.<br/>
 Defined.</div>
 <br/>
@@ -897,8 +897,8 @@ Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_stable">alignof_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type">complete_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof">alignof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4633')">Proof.</div>
-<div class="proofscript" id="proof4633">
+<div class="toggleproof" onclick="toggleDisplay('proof4848')">Proof.</div>
+<div class="proofscript" id="proof4848">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">f_equal</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span>!<span class="id">i</span>) <span class="kwd">as</span> [<span class="id">co</span>|] <span class="id">eqn</span>:<span class="id">E</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.extends">extends</a></span> <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
@@ -908,8 +908,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_stable">sizeof_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type">complete_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof">sizeof</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4634')">Proof.</div>
-<div class="proofscript" id="proof4634">
+<div class="toggleproof" onclick="toggleDisplay('proof4849')">Proof.</div>
+<div class="proofscript" id="proof4849">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">IHt</span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span>!<span class="id">i</span>) <span class="kwd">as</span> [<span class="id">co</span>|] <span class="id">eqn</span>:<span class="id">E</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -920,8 +920,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="complete_type_stable">complete_type_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type">complete_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type">complete_type</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4635')">Proof.</div>
-<div class="proofscript" id="proof4635">
+<div class="toggleproof" onclick="toggleDisplay('proof4850')">Proof.</div>
+<div class="proofscript" id="proof4850">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span>!<span class="id">i</span>) <span class="kwd">as</span> [<span class="id">co</span>|] <span class="id">eqn</span>:<span class="id">E</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.extends">extends</a></span> <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
@@ -931,8 +931,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="rank_type_stable">rank_type_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">t</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type">complete_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4636')">Proof.</div>
-<div class="proofscript" id="proof4636">
+<div class="toggleproof" onclick="toggleDisplay('proof4851')">Proof.</div>
+<div class="proofscript" id="proof4851">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">t</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span>!<span class="id">i</span>) <span class="kwd">as</span> [<span class="id">co</span>|] <span class="id">eqn</span>:<span class="id">E</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.extends">extends</a></span> <span class="tactic">by</span> <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
@@ -942,8 +942,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="alignof_composite_stable">alignof_composite_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite">alignof_composite</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite">alignof_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4637')">Proof.</div>
-<div class="proofscript" id="proof4637">
+<div class="toggleproof" onclick="toggleDisplay('proof4852')">Proof.</div>
+<div class="proofscript" id="proof4852">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_stable">alignof_stable</a></span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">IHm</span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
@@ -951,8 +951,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_struct_stable">sizeof_struct_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span> <span class="id">pos</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct">sizeof_struct</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#pos">pos</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct">sizeof_struct</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#pos">pos</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4638')">Proof.</div>
-<div class="proofscript" id="proof4638">
+<div class="toggleproof" onclick="toggleDisplay('proof4853')">Proof.</div>
+<div class="proofscript" id="proof4853">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_stable">alignof_stable</a></span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_stable">sizeof_stable</a></span> <span class="tactic">by</span> <span class="tactic">auto</span>.<br/>
@@ -961,8 +961,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_union_stable">sizeof_union_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_union">sizeof_union</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_union">sizeof_union</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4639')">Proof.</div>
-<div class="proofscript" id="proof4639">
+<div class="toggleproof" onclick="toggleDisplay('proof4854')">Proof.</div>
+<div class="proofscript" id="proof4854">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_stable">sizeof_stable</a></span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">IHm</span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
@@ -970,8 +970,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sizeof_composite_stable">sizeof_composite_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">su</span> <span class="id">m</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_composite">sizeof_composite</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_composite">sizeof_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4640')">Proof.</div>
-<div class="proofscript" id="proof4640">
+<div class="toggleproof" onclick="toggleDisplay('proof4855')">Proof.</div>
+<div class="proofscript" id="proof4855">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">su</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_struct_stable">sizeof_struct_stable</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sizeof_union_stable">sizeof_union_stable</a></span>; <span class="tactic">auto</span>.<br/>
@@ -979,8 +979,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="complete_members_stable">complete_members_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4641')">Proof.</div>
-<div class="proofscript" id="proof4641">
+<div class="toggleproof" onclick="toggleDisplay('proof4856')">Proof.</div>
+<div class="proofscript" id="proof4856">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_type_stable">complete_type_stable</a></span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">IHm</span> <span class="tactic">by</span> <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
@@ -988,8 +988,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="rank_members_stable">rank_members_stable</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">m</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_members">rank_members</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_members">rank_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#STABILITY.env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4642')">Proof.</div>
-<div class="proofscript" id="proof4642">
+<div class="toggleproof" onclick="toggleDisplay('proof4857')">Proof.</div>
+<div class="proofscript" id="proof4857">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span> <span class="kwd">as</span> [|[<span class="id">id</span> <span class="id">t</span>]]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>. <span class="tactic">f_equal</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type_stable">rank_type_stable</a></span>; <span class="tactic">auto</span>.<br/>
@@ -1001,8 +1001,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">id</span> <span class="id">co</span> <span class="id">defs</span> <span class="id">env1</span> <span class="id">env2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env1">env1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env2">env2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#env1">env1</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#env2">env2</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4643')">Proof.</div>
-<div class="proofscript" id="proof4643">
+<div class="toggleproof" onclick="toggleDisplay('proof4858')">Proof.</div>
+<div class="proofscript" id="proof4858">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">defs</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">a</span>; <span class="id">monadInv</span> <span class="id">H</span>.<br/>
@@ -1033,8 +1033,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">EXTENDS</span>: <span class="kwd">forall</span> <span class="id">id</span> <span class="id">co</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id">env</span>'!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">co</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_consistent">composite_consistent</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_consistent">composite_consistent</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4644')">Proof.</div>
-<div class="proofscript" id="proof4644">
+<div class="toggleproof" onclick="toggleDisplay('proof4859')">Proof.</div>
+<div class="proofscript" id="proof4859">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">A</span> <span class="id">B</span> <span class="id">C</span> <span class="id">D</span>]. <span class="id">constructor</span>. <br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members_stable">complete_members_stable</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">symmetry</span>; <span class="tactic">rewrite</span> <span class="id">B</span>. <span class="tactic">f_equal</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#alignof_composite_stable">alignof_composite_stable</a></span>; <span class="tactic">auto</span>. <br/>
@@ -1046,8 +1046,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">id</span> <span class="id">su</span> <span class="id">m</span> <span class="id">a</span> <span class="id">co</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_consistent">composite_consistent</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4645')">Proof.</div>
-<div class="proofscript" id="proof4645">
+<div class="toggleproof" onclick="toggleDisplay('proof4860')">Proof.</div>
+<div class="proofscript" id="proof4860">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span>; <span class="tactic">intros</span>. <br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">env</span>!<span class="id">id</span>); <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#complete_members">complete_members</a></span> <span class="id">env</span> <span class="id">m</span>) <span class="id">eqn</span>:<span class="id">C</span>; <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
@@ -1055,8 +1055,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="build_composite_env_consistent">build_composite_env_consistent</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">defs</span> <span class="id">env</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#build_composite_env">build_composite_env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_env_consistent">composite_env_consistent</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4646')">Proof.</div>
-<div class="proofscript" id="proof4646">
+<div class="toggleproof" onclick="toggleDisplay('proof4861')">Proof.</div>
+<div class="proofscript" id="proof4861">
 &nbsp;&nbsp;<span class="tactic">cut</span> (<span class="kwd">forall</span> <span class="id">defs</span> <span class="id">env0</span> <span class="id">env</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env0">env0</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_env_consistent">composite_env_consistent</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env0">env0</a></span> -&gt;<br/>
@@ -1085,8 +1085,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#build_composite_env">build_composite_env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#Composite">Composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span>) <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">co</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_attr">co_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_su">co_su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4647')">Proof.</div>
-<div class="proofscript" id="proof4647">
+<div class="toggleproof" onclick="toggleDisplay('proof4862')">Proof.</div>
+<div class="proofscript" id="proof4862">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">defs</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#build_composite_env">build_composite_env</a></span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.lib.Maps.html#PTree.empty">PTree.empty</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite">composite</a></span>) <span class="kwd">as</span> <span class="id">env0</span>.<br/>
 &nbsp;&nbsp;<span class="id">revert</span> <span class="id">defs</span>. <span class="tactic">induction</span> <span class="id">defs</span> <span class="kwd">as</span> [|<span class="id">d1</span> <span class="id">defs</span>]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">contradiction</span>.<br/>
@@ -1105,8 +1105,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#build_composite_env">build_composite_env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#Composite">Composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_su">co_su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_attr">co_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>)) <span class="id"><a href="compcert.cfrontend.Ctypes.html#defs">defs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4648')">Proof.</div>
-<div class="proofscript" id="proof4648">
+<div class="toggleproof" onclick="toggleDisplay('proof4863')">Proof.</div>
+<div class="proofscript" id="proof4863">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">env0</span> <span class="id">defs0</span> <span class="id">id</span> <span class="id">co</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">REC</span>: <span class="kwd">forall</span> <span class="id">l</span> <span class="id">env</span> <span class="id">env</span>',<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l">l</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">env</span>' -&gt;<br/>
@@ -1129,8 +1129,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="rank_type_members">rank_type_members</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ce</span> <span class="id">id</span> <span class="id">t</span> <span class="id">m</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span>) <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> -&gt; (<span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t">t</a></span> &lt;= <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_members">rank_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span>)%<span class="id">nat</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4649')">Proof.</div>
-<div class="proofscript" id="proof4649">
+<div class="toggleproof" onclick="toggleDisplay('proof4864')">Proof.</div>
+<div class="proofscript" id="proof4864">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">m</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">a</span>. <span class="id">xomega</span>.<br/>
 &nbsp;&nbsp;<span class="id">xomega</span>.<br/>
@@ -1142,8 +1142,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#id1">id1</a></span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span> &lt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#Tstruct">Tstruct</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span>))%<span class="id">nat</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4650')">Proof.</div>
-<div class="proofscript" id="proof4650">
+<div class="toggleproof" onclick="toggleDisplay('proof4865')">Proof.</div>
+<div class="proofscript" id="proof4865">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_consistent_rank">co_consistent_rank</a></span> <span class="tactic">by</span> <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type_members">rank_type_members</a></span> <span class="id">ce</span>); <span class="tactic">eauto</span>.<br/>
@@ -1156,8 +1156,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#id1">id1</a></span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span> &lt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type">rank_type</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#ce">ce</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#Tunion">Tunion</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span>))%<span class="id">nat</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4651')">Proof.</div>
-<div class="proofscript" id="proof4651">
+<div class="toggleproof" onclick="toggleDisplay('proof4866')">Proof.</div>
+<div class="proofscript" id="proof4866">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_consistent_rank">co_consistent_rank</a></span> <span class="tactic">by</span> <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#rank_type_members">rank_type_members</a></span> <span class="id">ce</span>); <span class="tactic">eauto</span>.<br/>
@@ -1256,8 +1256,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="kwd">fun</span> <span class="id">t1</span> <span class="id">t2</span> =&gt; <span class="kwd">if</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#type_eq">type_eq</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t2">t2</a></span> <span class="kwd">then</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span> <span class="kwd">else</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="kwd">fun</span> <span class="id">t1</span> <span class="id">t2</span> =&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#t1">t1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#t2">t2</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4652')">Next Obligation.</div>
-<div class="proofscript" id="proof4652">
+<div class="toggleproof" onclick="toggleDisplay('proof4867')">Next Obligation.</div>
+<div class="proofscript" id="proof4867">
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#type_eq">type_eq</a></span> <span class="id">x</span> <span class="id">y</span>); <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Defined.</div>
 <br/>
@@ -1286,8 +1286,8 @@ Defined.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">cd1</span> <span class="id">cd2</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#cd1">cd1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l1">l1</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#cd2">cd2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#name_composite_def">name_composite_def</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#cd2">cd2</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#name_composite_def">name_composite_def</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#cd1">cd1</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#cd2">cd2</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#cd1">cd1</a></span>)<br/>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#l">l</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#l1">l1</a></span> ++ <span class="id"><a href="compcert.cfrontend.Ctypes.html#filter_redefs">filter_redefs</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l1">l1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l2">l2</a></span><br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l">l</a></span> &lt;-&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l1">l1</a></span> \/ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l2">l2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4653')">Proof.</div>
-<div class="proofscript" id="proof4653">
+<div class="toggleproof" onclick="toggleDisplay('proof4868')">Proof.</div>
+<div class="proofscript" id="proof4868">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_composite_defs">link_composite_defs</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#forallb">forallb</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#check_compat_composite">check_compat_composite</a></span> <span class="id">l2</span>) <span class="id">l1</span>) <span class="id">eqn</span>:<span class="id">C</span>; <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">A</span>: <br/>
@@ -1307,16 +1307,16 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_composite_defs">link_composite_defs</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := @<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">List.incl</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_definition">composite_definition</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4654')">Next Obligation.</div>
-<div class="proofscript" id="proof4654">
+<div class="toggleproof" onclick="toggleDisplay('proof4869')">Next Obligation.</div>
+<div class="proofscript" id="proof4869">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl_refl">incl_refl</a></span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4655')">Next Obligation.</div>
-<div class="proofscript" id="proof4655">
+<div class="toggleproof" onclick="toggleDisplay('proof4870')">Next Obligation.</div>
+<div class="proofscript" id="proof4870">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">eauto</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4656')">Next Obligation.</div>
-<div class="proofscript" id="proof4656">
+<div class="toggleproof" onclick="toggleDisplay('proof4871')">Next Obligation.</div>
+<div class="proofscript" id="proof4871">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_composite_def_inv">link_composite_def_inv</a></span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id">C</span>; <span class="tactic">auto</span>.<br/>
 Defined.</div>
@@ -1327,8 +1327,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">env</span> <span class="id">env</span>'',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#l1">l1</a></span> ++ <span class="id"><a href="compcert.cfrontend.Ctypes.html#l2">l2</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">env</span>'' &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">env</span>', <span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l1">l1</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">env</span>' /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#l2">l2</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">env</span>''.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4657')">Proof.</div>
-<div class="proofscript" id="proof4657">
+<div class="toggleproof" onclick="toggleDisplay('proof4872')">Proof.</div>
+<div class="proofscript" id="proof4872">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l1</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">split</span>; <span class="tactic">intros</span>. <span class="id">exists</span> <span class="id">env</span>; <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">env</span>' &amp; <span class="id">A</span> &amp; <span class="id">B</span>). <span class="tactic">congruence</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="id">env</span> <span class="id">id</span> <span class="id">su</span> <span class="id">m</span> <span class="id">a</span>); <span class="tactic">simpl</span>.<br/>
@@ -1341,8 +1341,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">su2</span> <span class="id">m2</span> <span class="id">a2</span> <span class="id">sz2</span> <span class="id">al2</span> <span class="id">r2</span> <span class="id">pos2</span> <span class="id">al2p2</span> <span class="id">szal2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#su1">su1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#su2">su2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#m1">m1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#m2">m2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#a1">a1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#a2">a2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#sz1">sz1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#sz2">sz2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#al1">al1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#al2">al2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#r1">r1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#r2">r2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#Build_composite">Build_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su1">su1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m1">m1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a1">a1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sz1">sz1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#al1">al1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#r1">r1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#pos1">pos1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#al2p1">al2p1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#szal1">szal1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#Build_composite">Build_composite</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su2">su2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m2">m2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a2">a2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#sz2">sz2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#al2">al2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#r2">r2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#pos2">pos2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#al2p2">al2p2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#szal2">szal2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4658')">Proof.</div>
-<div class="proofscript" id="proof4658">
+<div class="toggleproof" onclick="toggleDisplay('proof4873')">Proof.</div>
+<div class="proofscript" id="proof4873">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">subst</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">pos1</span> = <span class="id">pos2</span>) <span class="tactic">by</span> <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Axioms.html#proof_irr">proof_irr</a></span>. <br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">al2p1</span> = <span class="id">al2p2</span>) <span class="tactic">by</span> <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Axioms.html#proof_irr">proof_irr</a></span>.<br/>
@@ -1355,8 +1355,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_consistent">composite_consistent</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_su">co_su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_attr">co_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4659')">Proof.</div>
-<div class="proofscript" id="proof4659">
+<div class="toggleproof" onclick="toggleDisplay('proof4874')">Proof.</div>
+<div class="proofscript" id="proof4874">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">A</span> <span class="id">B</span> <span class="id">C</span> <span class="id">D</span>]. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span>. <span class="tactic">rewrite</span> <span class="id">H0</span>, <span class="id">A</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">co</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">f_equal</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_eq">composite_eq</a></span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">C</span>, <span class="id">B</span>; <span class="tactic">auto</span>. <br/>
 Qed.</div>
@@ -1369,8 +1369,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co1">co1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_members">co_members</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co2">co2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#co_attr">co_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co1">co1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#co_attr">co_attr</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co2">co2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#co1">co1</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#co2">co2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4660')">Proof.</div>
-<div class="proofscript" id="proof4660">
+<div class="toggleproof" onclick="toggleDisplay('proof4875')">Proof.</div>
+<div class="proofscript" id="proof4875">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>, <span class="id">H0</span>. <span class="tactic">destruct</span> <span class="id">co1</span>, <span class="id">co2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_eq">composite_eq</a></span>; <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
@@ -1381,8 +1381,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">env</span>'!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="id">env</span>' <span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#su">su</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#m">m</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#a">a</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4661')">Proof.</div>
-<div class="proofscript" id="proof4661">
+<div class="toggleproof" onclick="toggleDisplay('proof4876')">Proof.</div>
+<div class="proofscript" id="proof4876">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="kwd">in</span> <span class="id">H0</span>. <br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">env</span>!<span class="id">id</span>) <span class="id">eqn</span>:<span class="id">E</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -1407,8 +1407,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#add_composite_definitions">add_composite_definitions</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env2">env2</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#filter_redefs">filter_redefs</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l0">l0</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l">l</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">env2</span>'<br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">id</span> <span class="id">co</span>, <span class="id">env1</span>'!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id">env2</span>'!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>)<br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">id</span> <span class="id">co</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#env0">env0</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id">env2</span>'!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4662')">Proof.</div>
-<div class="proofscript" id="proof4662">
+<div class="toggleproof" onclick="toggleDisplay('proof4877')">Proof.</div>
+<div class="proofscript" id="proof4877">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">env2</span>; <span class="tactic">intros</span> <span class="id">ACD</span> <span class="id">AGREE1</span> <span class="id">AGREE0</span> <span class="id">AGREE2</span> <span class="id">UNIQUE</span>.<br/>
 - <span class="id">inv</span> <span class="id">ACD</span>. <span class="id">exists</span> <span class="id">env2</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">a</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#composite_of_def">composite_of_def</a></span> <span class="id">env1</span> <span class="id">id</span> <span class="id">su</span> <span class="id">m</span> <span class="id">a</span>) <span class="kwd">as</span> [<span class="id">x</span>|<span class="id">e</span>] <span class="id">eqn</span>:<span class="id">EQ</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -1459,8 +1459,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Ctypes.html#build_composite_env">build_composite_env</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#l">l</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span><br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">id</span> <span class="id">co</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#env1">env1</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>)<br/>
 &nbsp;&nbsp;/\ (<span class="kwd">forall</span> <span class="id">id</span> <span class="id">co</span>, <span class="id"><a href="compcert.cfrontend.Ctypes.html#env2">env2</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#env">env</a></span>!<span class="id"><a href="compcert.cfrontend.Ctypes.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#co">co</a></span>) }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4663')">Proof.</div>
-<div class="proofscript" id="proof4663">
+<div class="toggleproof" onclick="toggleDisplay('proof4878')">Proof.</div>
+<div class="proofscript" id="proof4878">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">edestruct</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_composite_def_inv">link_composite_def_inv</a></span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>); <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_add_composite_definitions">link_add_composite_definitions</a></span> <span class="kwd">as</span> (<span class="id">env</span> &amp; <span class="id">P</span> &amp; <span class="id">Q</span> &amp; <span class="id">R</span>).<br/>
 &nbsp;&nbsp;<span class="id">eexact</span> <span class="id">H</span>.<br/>
@@ -1503,16 +1503,16 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_fundef">link_fundef</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="id"><a href="compcert.cfrontend.Ctypes.html#linkorder_fundef">linkorder_fundef</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4664')">Next Obligation.</div>
-<div class="proofscript" id="proof4664">
+<div class="toggleproof" onclick="toggleDisplay('proof4879')">Next Obligation.</div>
+<div class="proofscript" id="proof4879">
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4665')">Next Obligation.</div>
-<div class="proofscript" id="proof4665">
+<div class="toggleproof" onclick="toggleDisplay('proof4880')">Next Obligation.</div>
+<div class="proofscript" id="proof4880">
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="id">constructor</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4666')">Next Obligation.</div>
-<div class="proofscript" id="proof4666">
+<div class="toggleproof" onclick="toggleDisplay('proof4881')">Next Obligation.</div>
+<div class="proofscript" id="proof4881">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 + <span class="tactic">discriminate</span>.<br/>
 + <span class="tactic">destruct</span> <span class="id">e</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">split</span>; <span class="id">constructor</span>.<br/>
@@ -1523,8 +1523,8 @@ Defined.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="link_fundef_either">link_fundef_either</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">F</span>: <span class="kwd">Type</span>) (<span class="id">f1</span> <span class="id">f2</span> <span class="id">f</span>: <span class="id"><a href="compcert.cfrontend.Ctypes.html#fundef">fundef</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#F">F</a></span>), <span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#f1">f1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#f2">f2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#f">f</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#f">f</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#f1">f1</a></span> \/ <span class="id"><a href="compcert.cfrontend.Ctypes.html#f">f</a></span> = <span class="id"><a href="compcert.cfrontend.Ctypes.html#f2">f2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4667')">Proof.</div>
-<div class="proofscript" id="proof4667">
+<div class="toggleproof" onclick="toggleDisplay('proof4882')">Proof.</div>
+<div class="proofscript" id="proof4882">
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_fundef">link_fundef</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">f1</span>, <span class="id">f2</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">e</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">e</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
@@ -1536,8 +1536,8 @@ Qed.</div>
 <h2> Linking programs </h2>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="lift_option">lift_option</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>} (<span class="id">opt</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#A">A</a></span>) : { <span class="id">x</span> | <span class="id"><a href="compcert.cfrontend.Ctypes.html#opt">opt</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#x">x</a></span> } + { <span class="id"><a href="compcert.cfrontend.Ctypes.html#opt">opt</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4668')">Proof.</div>
-<div class="proofscript" id="proof4668">
+<div class="toggleproof" onclick="toggleDisplay('proof4883')">Proof.</div>
+<div class="proofscript" id="proof4883">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">opt</span>. <span class="id">left</span>; <span class="id">exists</span> <span class="id">a</span>; <span class="tactic">auto</span>. <span class="id">right</span>; <span class="tactic">auto</span>. <br/>
 Defined.</div>
 <br/>
@@ -1571,17 +1571,17 @@ Defined.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_program">link_program</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="id"><a href="compcert.cfrontend.Ctypes.html#linkorder_program">linkorder_program</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4669')">Next Obligation.</div>
-<div class="proofscript" id="proof4669">
+<div class="toggleproof" onclick="toggleDisplay('proof4884')">Next Obligation.</div>
+<div class="proofscript" id="proof4884">
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>. <span class="tactic">auto</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4670')">Next Obligation.</div>
-<div class="proofscript" id="proof4670">
+<div class="toggleproof" onclick="toggleDisplay('proof4885')">Next Obligation.</div>
+<div class="proofscript" id="proof4885">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>, <span class="id">H0</span>. <span class="tactic">split</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_trans">linkorder_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4671')">Next Obligation.</div>
-<div class="proofscript" id="proof4671">
+<div class="toggleproof" onclick="toggleDisplay('proof4886')">Next Obligation.</div>
+<div class="proofscript" id="proof4886">
 &nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_program">link_program</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#program_of_program">program_of_program</a></span> <span class="id">x</span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#program_of_program">program_of_program</a></span> <span class="id">y</span>)) <span class="kwd">as</span> [<span class="id">p</span>|] <span class="id">eqn</span>:<span class="id">LP</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#lift_option">lift_option</a></span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#prog_types">prog_types</a></span> <span class="id">x</span>) (<span class="id"><a href="compcert.cfrontend.Ctypes.html#prog_types">prog_types</a></span> <span class="id">y</span>))) <span class="kwd">as</span> [[<span class="id">typs</span> <span class="id">EQ</span>]|<span class="id">EQ</span>]; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -1616,8 +1616,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p1</span> <span class="id">p2</span> <span class="id">tp1</span> <span class="id">tp2</span> <span class="id">p</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#p1">p1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#p2">p2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#p">p</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#LINK_MATCH_PROGRAM.match_program">match_program</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#p1">p1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#tp1">tp1</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.Ctypes.html#LINK_MATCH_PROGRAM.match_program">match_program</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#p2">p2</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#tp2">tp2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tp</span>, <span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#tp1">tp1</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#tp2">tp2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#tp">tp</a></span> /\ <span class="id"><a href="compcert.cfrontend.Ctypes.html#LINK_MATCH_PROGRAM.match_program">match_program</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#p">p</a></span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4672')">Proof.</div>
-<div class="proofscript" id="proof4672">
+<div class="toggleproof" onclick="toggleDisplay('proof4887')">Proof.</div>
+<div class="proofscript" id="proof4887">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H0</span>, <span class="id">H1</span>. <br/>
 <span class="kwd">Local</span> <span class="id">Transparent</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#Linker_program">Linker_program</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Ctypes.html#link_program">link_program</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>

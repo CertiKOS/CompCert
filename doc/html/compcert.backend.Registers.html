@@ -78,16 +78,16 @@
 <span class="kwd">Lemma</span> <span class="id"><a name="regs_lessdef_regs">regs_lessdef_regs</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">rs1</span> <span class="id">rs2</span>, <span class="id"><a href="compcert.backend.Registers.html#regs_lessdef">regs_lessdef</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs1">rs1</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs2">rs2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">rl</span>, <span class="id"><a href="compcert.common.Values.html#Val.lessdef_list">Val.lessdef_list</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs1">rs1</a></span>##<span class="id"><a href="compcert.backend.Registers.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs2">rs2</a></span>##<span class="id"><a href="compcert.backend.Registers.html#rl">rl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2985')">Proof.</div>
-<div class="proofscript" id="proof2985">
+<div class="toggleproof" onclick="toggleDisplay('proof3178')">Proof.</div>
+<div class="proofscript" id="proof3178">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">rl</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="set_reg_lessdef">set_reg_lessdef</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">v1</span> <span class="id">v2</span> <span class="id">rs1</span> <span class="id">rs2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.backend.Registers.html#v1">v1</a></span> <span class="id"><a href="compcert.backend.Registers.html#v2">v2</a></span> -&gt; <span class="id"><a href="compcert.backend.Registers.html#regs_lessdef">regs_lessdef</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs1">rs1</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs2">rs2</a></span> -&gt; <span class="id"><a href="compcert.backend.Registers.html#regs_lessdef">regs_lessdef</a></span> (<span class="id"><a href="compcert.backend.Registers.html#rs1">rs1</a></span>#<span class="id"><a href="compcert.backend.Registers.html#r">r</a></span> &lt;- <span class="id"><a href="compcert.backend.Registers.html#v1">v1</a></span>) (<span class="id"><a href="compcert.backend.Registers.html#rs2">rs2</a></span>#<span class="id"><a href="compcert.backend.Registers.html#r">r</a></span> &lt;- <span class="id"><a href="compcert.backend.Registers.html#v2">v2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2986')">Proof.</div>
-<div class="proofscript" id="proof2986">
+<div class="toggleproof" onclick="toggleDisplay('proof3179')">Proof.</div>
+<div class="proofscript" id="proof3179">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">repeat</span> <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Registers.html#gsspec">Regmap.gsspec</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span> <span class="id">r0</span> <span class="id">r</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -96,8 +96,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">res</span> <span class="id">v1</span> <span class="id">v2</span> <span class="id">rs1</span> <span class="id">rs2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.lessdef">Val.lessdef</a></span> <span class="id"><a href="compcert.backend.Registers.html#v1">v1</a></span> <span class="id"><a href="compcert.backend.Registers.html#v2">v2</a></span> -&gt; <span class="id"><a href="compcert.backend.Registers.html#regs_lessdef">regs_lessdef</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs1">rs1</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs2">rs2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Registers.html#regs_lessdef">regs_lessdef</a></span> (<span class="id"><a href="compcert.backend.Registers.html#regmap_setres">regmap_setres</a></span> <span class="id"><a href="compcert.backend.Registers.html#res">res</a></span> <span class="id"><a href="compcert.backend.Registers.html#v1">v1</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs1">rs1</a></span>) (<span class="id"><a href="compcert.backend.Registers.html#regmap_setres">regmap_setres</a></span> <span class="id"><a href="compcert.backend.Registers.html#res">res</a></span> <span class="id"><a href="compcert.backend.Registers.html#v2">v2</a></span> <span class="id"><a href="compcert.backend.Registers.html#rs2">rs2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2987')">Proof.</div>
-<div class="proofscript" id="proof2987">
+<div class="toggleproof" onclick="toggleDisplay('proof3180')">Proof.</div>
+<div class="proofscript" id="proof3180">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">res</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Registers.html#set_reg_lessdef">set_reg_lessdef</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>

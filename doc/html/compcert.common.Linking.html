@@ -70,16 +70,16 @@
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.common.Linking.html#link_fundef">link_fundef</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="id"><a href="compcert.common.Linking.html#linkorder_fundef">linkorder_fundef</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1211')">Next Obligation.</div>
-<div class="proofscript" id="proof1211">
+<div class="toggleproof" onclick="toggleDisplay('proof1248')">Next Obligation.</div>
+<div class="proofscript" id="proof1248">
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1212')">Next Obligation.</div>
-<div class="proofscript" id="proof1212">
+<div class="toggleproof" onclick="toggleDisplay('proof1249')">Next Obligation.</div>
+<div class="proofscript" id="proof1249">
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="id">constructor</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1213')">Next Obligation.</div>
-<div class="proofscript" id="proof1213">
+<div class="toggleproof" onclick="toggleDisplay('proof1250')">Next Obligation.</div>
+<div class="proofscript" id="proof1250">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 + <span class="tactic">discriminate</span>.<br/>
 + <span class="tactic">destruct</span> <span class="id">e</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">split</span>; <span class="id">constructor</span>.<br/>
@@ -135,18 +135,18 @@ Defined.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.common.Linking.html#link_varinit">link_varinit</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="id"><a href="compcert.common.Linking.html#linkorder_varinit">linkorder_varinit</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1214')">Next Obligation.</div>
-<div class="proofscript" id="proof1214">
+<div class="toggleproof" onclick="toggleDisplay('proof1251')">Next Obligation.</div>
+<div class="proofscript" id="proof1251">
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1215')">Next Obligation.</div>
-<div class="proofscript" id="proof1215">
+<div class="toggleproof" onclick="toggleDisplay('proof1252')">Next Obligation.</div>
+<div class="proofscript" id="proof1252">
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.common.AST.html#init_data_list_size_pos">init_data_list_size_pos</a></span> <span class="id">z</span>). <span class="id">xomega</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1216')">Next Obligation.</div>
-<div class="proofscript" id="proof1216">
+<div class="toggleproof" onclick="toggleDisplay('proof1253')">Next Obligation.</div>
+<div class="proofscript" id="proof1253">
 &nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_varinit">link_varinit</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#classify_init">classify_init</a></span> <span class="id">x</span>) <span class="id">eqn</span>:<span class="id">Cx</span>, (<span class="id"><a href="compcert.common.Linking.html#classify_init">classify_init</a></span> <span class="id">y</span>) <span class="id">eqn</span>:<span class="id">Cy</span>; <span class="tactic">intros</span> <span class="id">E</span>; <span class="id">inv</span> <span class="id">E</span>; <span class="tactic">try</span> (<span class="tactic">split</span>; <span class="id">constructor</span>; <span class="tactic">fail</span>).<br/>
 + <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#zeq">zeq</a></span> <span class="id">sz</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max">Z.max</a></span> <span class="id">sz0</span> 0 + 0)); <span class="id">inv</span> <span class="id">H0</span>.<br/>
@@ -187,16 +187,16 @@ Defined.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.common.Linking.html#link_vardef">link_vardef</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="id"><a href="compcert.common.Linking.html#linkorder_vardef">linkorder_vardef</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1217')">Next Obligation.</div>
-<div class="proofscript" id="proof1217">
+<div class="toggleproof" onclick="toggleDisplay('proof1254')">Next Obligation.</div>
+<div class="proofscript" id="proof1254">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>; <span class="id">constructor</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1218')">Next Obligation.</div>
-<div class="proofscript" id="proof1218">
+<div class="toggleproof" onclick="toggleDisplay('proof1255')">Next Obligation.</div>
+<div class="proofscript" id="proof1255">
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="id">constructor</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_trans">linkorder_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1219')">Next Obligation.</div>
-<div class="proofscript" id="proof1219">
+<div class="toggleproof" onclick="toggleDisplay('proof1256')">Next Obligation.</div>
+<div class="proofscript" id="proof1256">
 &nbsp;&nbsp;<span class="id">revert</span> <span class="id">H</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_vardef">link_vardef</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span> <span class="kwd">as</span> [<span class="id">f1</span> <span class="id">i1</span> <span class="id">r1</span> <span class="id">v1</span>], <span class="id">y</span> <span class="kwd">as</span> [<span class="id">f2</span> <span class="id">i2</span> <span class="id">r2</span> <span class="id">v2</span>]; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id">f1</span> <span class="id">f2</span>) <span class="kwd">as</span> [<span class="id">f</span>|] <span class="id">eqn</span>:<span class="id">LF</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -242,16 +242,16 @@ Defined.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> := <span class="id"><a href="compcert.common.Linking.html#link_def">link_def</a></span>;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> := <span class="id"><a href="compcert.common.Linking.html#linkorder_def">linkorder_def</a></span><br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1220')">Next Obligation.</div>
-<div class="proofscript" id="proof1220">
+<div class="toggleproof" onclick="toggleDisplay('proof1257')">Next Obligation.</div>
+<div class="proofscript" id="proof1257">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>; <span class="id">constructor</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1221')">Next Obligation.</div>
-<div class="proofscript" id="proof1221">
+<div class="toggleproof" onclick="toggleDisplay('proof1258')">Next Obligation.</div>
+<div class="proofscript" id="proof1258">
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>; <span class="id">constructor</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_trans">linkorder_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1222')">Next Obligation.</div>
-<div class="proofscript" id="proof1222">
+<div class="toggleproof" onclick="toggleDisplay('proof1259')">Next Obligation.</div>
+<div class="proofscript" id="proof1259">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_def">link_def</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span> <span class="kwd">as</span> [<span class="id">f1</span>|<span class="id">v1</span>], <span class="id">y</span> <span class="kwd">as</span> [<span class="id">f2</span>|<span class="id">v2</span>]; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 + <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id">f1</span> <span class="id">f2</span>) <span class="kwd">as</span> [<span class="id">f</span>|] <span class="id">eqn</span>:<span class="id">L</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#link_linkorder">link_linkorder</a></span> <span class="kwd">in</span> <span class="id">L</span>.<br/>
@@ -317,8 +317,8 @@ Defined.</div>
 &nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> = {| <span class="id"><a href="compcert.common.AST.html#mkprogram">prog_main</a></span> := <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">prog_public</span> := <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>) ++ <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p2">p2</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">prog_defs</span> := <span class="id"><a href="compcert.lib.Maps.html#PTree.elements">PTree.elements</a></span> (<span class="id"><a href="compcert.lib.Maps.html#PTree.combine">PTree.combine</a></span> <span class="id"><a href="compcert.common.Linking.html#link_prog_merge">link_prog_merge</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.dm1">dm1</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.dm2">dm2</a></span>) |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1223')">Proof.</div>
-<div class="proofscript" id="proof1223">
+<div class="toggleproof" onclick="toggleDisplay('proof1260')">Proof.</div>
+<div class="proofscript" id="proof1260">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_prog">link_prog</a></span>; <span class="tactic">intros</span> <span class="id">p</span> <span class="id">E</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span> (<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p1">p1</a></span>) (<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p2">p2</a></span>)); <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.for_all">PTree_Properties.for_all</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.dm1">dm1</a></span> <span class="id"><a href="compcert.common.Linking.html#link_prog_check">link_prog_check</a></span>) <span class="id">eqn</span>:<span class="id">C</span>; <span class="id">inv</span> <span class="id">E</span>.<br/>
@@ -340,8 +340,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> {| <span class="id"><a href="compcert.common.AST.html#mkprogram">prog_main</a></span> := <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">prog_public</span> := <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>) ++ <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.p2">p2</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">prog_defs</span> := <span class="id"><a href="compcert.lib.Maps.html#PTree.elements">PTree.elements</a></span> (<span class="id"><a href="compcert.lib.Maps.html#PTree.combine">PTree.combine</a></span> <span class="id"><a href="compcert.common.Linking.html#link_prog_merge">link_prog_merge</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.dm1">dm1</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.dm2">dm2</a></span>) |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1224')">Proof.</div>
-<div class="proofscript" id="proof1224">
+<div class="toggleproof" onclick="toggleDisplay('proof1261')">Proof.</div>
+<div class="proofscript" id="proof1261">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_prog">link_prog</a></span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Coqlib.html#proj_sumbool">proj_sumbool</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>, <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>. <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">replace</span> (<span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.for_all">PTree_Properties.for_all</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.dm1">dm1</a></span> <span class="id"><a href="compcert.common.Linking.html#link_prog_check">link_prog_check</a></span>) <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.for_all_correct">PTree_Properties.for_all_correct</a></span>; <span class="tactic">intros</span>. <span class="tactic">rename</span> <span class="id">a</span> <span class="id">into</span> <span class="id">gd1</span>.<br/>
@@ -353,8 +353,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="prog_defmap_elements">prog_defmap_elements</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">m</span>: <span class="id"><a href="compcert.lib.Maps.html#PTree.t">PTree.t</a></span> (<span class="id"><a href="compcert.common.AST.html#globdef">globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.F">F</a></span> <span class="id"><a href="compcert.common.Linking.html#LINKER_PROG.V">V</a></span>)) <span class="id">pub</span> <span class="id">mn</span> <span class="id">x</span>,<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> {| <span class="id"><a href="compcert.common.AST.html#mkprogram">prog_defs</a></span> := <span class="id"><a href="compcert.lib.Maps.html#PTree.elements">PTree.elements</a></span> <span class="id"><a href="compcert.common.Linking.html#m">m</a></span>; <span class="id">prog_public</span> := <span class="id"><a href="compcert.common.Linking.html#pub">pub</a></span>; <span class="id">prog_main</span> := <span class="id"><a href="compcert.common.Linking.html#mn">mn</a></span> |})!<span class="id"><a href="compcert.common.Linking.html#x">x</a></span> = <span class="id"><a href="compcert.common.Linking.html#m">m</a></span>!<span class="id"><a href="compcert.common.Linking.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1225')">Proof.</div>
-<div class="proofscript" id="proof1225">
+<div class="toggleproof" onclick="toggleDisplay('proof1262')">Proof.</div>
+<div class="proofscript" id="proof1262">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span>; <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.of_list_elements">PTree_Properties.of_list_elements</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -372,21 +372,21 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/\ <span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#gd1">gd1</a></span> <span class="id"><a href="compcert.common.Linking.html#gd2">gd2</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/\ (~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.Linking.html#id">id</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>) -&gt; <span class="id"><a href="compcert.common.Linking.html#gd2">gd2</a></span> = <span class="id"><a href="compcert.common.Linking.html#gd1">gd1</a></span>)<br/>
 }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1226')">Next Obligation.</div>
-<div class="proofscript" id="proof1226">
+<div class="toggleproof" onclick="toggleDisplay('proof1263')">Next Obligation.</div>
+<div class="proofscript" id="proof1263">
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl_refl">incl_refl</a></span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">gd1</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1227')">Next Obligation.</div>
-<div class="proofscript" id="proof1227">
+<div class="toggleproof" onclick="toggleDisplay('proof1264')">Next Obligation.</div>
+<div class="proofscript" id="proof1264">
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">congruence</span>. <span class="tactic">split</span>. <span class="tactic">red</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id">H4</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">gd2</span> &amp; <span class="id">P</span> &amp; <span class="id">Q</span> &amp; <span class="id">R</span>).<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id">H2</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">gd3</span> &amp; <span class="id">U</span> &amp; <span class="id">X</span> &amp; <span class="id">Y</span>).<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">gd3</span>. <span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">split</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_trans">linkorder_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">transitivity</span> <span class="id">gd2</span>. <span class="tactic">apply</span> <span class="id">Y</span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id">R</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">elim</span> <span class="id">H0</span>; <span class="tactic">auto</span>.<br/>
 Defined.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1228')">Next Obligation.</div>
-<div class="proofscript" id="proof1228">
+<div class="toggleproof" onclick="toggleDisplay('proof1265')">Next Obligation.</div>
+<div class="proofscript" id="proof1265">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#link_prog_inv">link_prog_inv</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">L1</span> &amp; <span class="id">L2</span> &amp; <span class="id">L3</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">z</span>; <span class="tactic">simpl</span>. <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
 + <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_app_iff">in_app_iff</a></span>; <span class="tactic">auto</span>.<br/>
@@ -410,8 +410,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span>)!<span class="id"><a href="compcert.common.Linking.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#gd1">gd1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">gd2</span>, (<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>)!<span class="id"><a href="compcert.common.Linking.html#id">id</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#gd2">gd2</a></span> /\ <span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#gd1">gd1</a></span> <span class="id"><a href="compcert.common.Linking.html#gd2">gd2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1229')">Proof.</div>
-<div class="proofscript" id="proof1229">
+<div class="toggleproof" onclick="toggleDisplay('proof1266')">Proof.</div>
+<div class="proofscript" id="proof1266">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">A</span> &amp; <span class="id">B</span> &amp; <span class="id">C</span>).<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id">C</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">gd2</span> &amp; <span class="id">P</span> &amp; <span class="id">Q</span> &amp; <span class="id">R</span>). <span class="id">exists</span> <span class="id">gd2</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -428,8 +428,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="link_erase_globdef">link_erase_globdef</a></span> (<span class="id">gd1</span> <span class="id">gd2</span> <span class="id">gd</span>: <span class="id"><a href="compcert.common.AST.html#globdef">globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_ERASE.F">F</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_ERASE.V">V</a></span>):<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#gd1">gd1</a></span> <span class="id"><a href="compcert.common.Linking.html#gd2">gd2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#gd">gd</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> (<span class="id"><a href="compcert.common.AST.html#erase_globdef">erase_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#gd1">gd1</a></span>) (<span class="id"><a href="compcert.common.AST.html#erase_globdef">erase_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#gd2">gd2</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.common.AST.html#erase_globdef">erase_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#gd">gd</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1230')">Proof.</div>
-<div class="proofscript" id="proof1230">
+<div class="toggleproof" onclick="toggleDisplay('proof1267')">Proof.</div>
+<div class="proofscript" id="proof1267">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hgd</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#erase_globdef">erase_globdef</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">change</span> <span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="kwd">with</span> (@<span class="id"><a href="compcert.common.Linking.html#link_def">link_def</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_ERASE.F">F</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_ERASE.V">V</a></span> <span class="id">_</span> <span class="id">_</span>) <span class="kwd">in</span> <span class="id">Hgd</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">gd1</span> <span class="kwd">as</span> [|[]], <span class="id">gd2</span> <span class="kwd">as</span> [|[]], <span class="id">gd</span> <span class="kwd">as</span> [|[]]; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -450,8 +450,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="link_erase_program">link_erase_program</a></span> (<span class="id">p1</span> <span class="id">p2</span> <span class="id">p</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_ERASE.F">F</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_ERASE.V">V</a></span>):<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> (<span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span>) (<span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1231')">Proof.</div>
-<div class="proofscript" id="proof1231">
+<div class="toggleproof" onclick="toggleDisplay('proof1268')">Proof.</div>
+<div class="proofscript" id="proof1268">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hp</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#link_prog_inv">link_prog_inv</a></span> <span class="kwd">in</span> <span class="id">Hp</span> <span class="kwd">as</span> (<span class="id">MAIN</span> &amp; <span class="id">DEFMAP</span> &amp; <span class="id">Hp</span>). <span class="tactic">subst</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">setoid_rewrite</span> <span class="id"><a href="compcert.common.Linking.html#link_prog_succeeds">link_prog_succeeds</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="tactic">at</span> 3 4 5 6; <span class="id">cbn</span>. <span class="tactic">f_equal</span>. <span class="tactic">f_equal</span>.<br/>
@@ -530,30 +530,30 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="match_program_defmap">match_program_defmap</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ctx</span> <span class="id">p1</span> <span class="id">p2</span>, <span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">id</span>, <span class="id"><a href="compcert.lib.Coqlib.html#option_rel">option_rel</a></span> (<span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span>) (<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span>)!<span class="id"><a href="compcert.common.Linking.html#id">id</a></span> (<span class="id"><a href="compcert.common.AST.html#prog_defmap">prog_defmap</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>)!<span class="id"><a href="compcert.common.Linking.html#id">id</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1232')">Proof.</div>
-<div class="proofscript" id="proof1232">
+<div class="toggleproof" onclick="toggleDisplay('proof1269')">Proof.</div>
+<div class="proofscript" id="proof1269">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree_Properties.of_list_related">PTree_Properties.of_list_related</a></span>. <span class="tactic">apply</span> <span class="id">H</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="match_program_gen_main">match_program_gen_main</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ctx</span> <span class="id">p1</span> <span class="id">p2</span>, <span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span>) = <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1233')">Proof.</div>
-<div class="proofscript" id="proof1233">
+<div class="toggleproof" onclick="toggleDisplay('proof1270')">Proof.</div>
+<div class="proofscript" id="proof1270">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="match_program_public">match_program_public</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ctx</span> <span class="id">p1</span> <span class="id">p2</span>, <span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>) = <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_public">prog_public</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1234')">Proof.</div>
-<div class="proofscript" id="proof1234">
+<div class="toggleproof" onclick="toggleDisplay('proof1271')">Proof.</div>
+<div class="proofscript" id="proof1271">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="match_program_skel">match_program_skel</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ctx</span> <span class="id">p1</span> <span class="id">p2</span>, <span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> = <span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1235')">Proof.</div>
-<div class="proofscript" id="proof1235">
+<div class="toggleproof" onclick="toggleDisplay('proof1272')">Proof.</div>
+<div class="proofscript" id="proof1272">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ctx</span> [<span class="id">defs1</span> <span class="id">main1</span> <span class="id">pub1</span>] [<span class="id">defs2</span> <span class="id">main2</span> <span class="id">pub2</span>] (<span class="id">DEFS</span> &amp; <span class="id">MAIN</span> &amp; <span class="id">PUB</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#erase_program">erase_program</a></span>. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="tactic">f_equal</span>; <span class="tactic">auto</span>. <span class="tactic">clear</span> - <span class="id">DEFS</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">DEFS</span> <span class="kwd">as</span> [ | [<span class="id">id1</span> <span class="id">g1</span>] <span class="id">l1</span> [<span class="id">id2</span> <span class="id">g2</span>] <span class="id">l2</span> <span class="id">H</span> <span class="id">H</span>' <span class="id">IH</span>']; <span class="id">cbn</span>; <span class="tactic">f_equal</span>; <span class="tactic">auto</span>.<br/>
@@ -579,8 +579,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id">match_varinfo</span>: <span class="id"><a href="compcert.common.Linking.html#V1">V1</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#V2">V2</a></span> -&gt; <span class="kwd">Prop</span>}<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id">p1</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#F1">F1</a></span> <span class="id"><a href="compcert.common.Linking.html#V1">V1</a></span>} {<span class="id">p2</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#F2">F2</a></span> <span class="id"><a href="compcert.common.Linking.html#V2">V2</a></span>},<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span> <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span>) = <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span>.(<span class="id"><a href="compcert.common.AST.html#prog_main">prog_main</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1236')">Proof.</div>
-<div class="proofscript" id="proof1236">
+<div class="toggleproof" onclick="toggleDisplay('proof1273')">Proof.</div>
+<div class="proofscript" id="proof1273">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H</span>.<br/>
 Qed.</div>
 <br/>
@@ -599,8 +599,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">i</span> <span class="id">f</span> <span class="id">tf</span>, <span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#i">i</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">i</span> <span class="id">v</span> <span class="id">tv</span>, <span class="id"><a href="compcert.common.Linking.html#transf_var">transf_var</a></span> <span class="id"><a href="compcert.common.Linking.html#i">i</a></span> <span class="id"><a href="compcert.common.Linking.html#v">v</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tv">tv</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#v">v</a></span> <span class="id"><a href="compcert.common.Linking.html#tv">tv</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1237')">Proof.</div>
-<div class="proofscript" id="proof1237">
+<div class="toggleproof" onclick="toggleDisplay('proof1274')">Proof.</div>
+<div class="proofscript" id="proof1274">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#transform_partial_program2">transform_partial_program2</a></span>; <span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">revert</span> <span class="id">x</span> <span class="id">EQ</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.common.AST.html#prog_defs">prog_defs</a></span> <span class="id">p</span>).<br/>
@@ -622,8 +622,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#transform_partial_program">transform_partial_program</a></span> <span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span> -&gt;<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>, <span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span> <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1238')">Proof.</div>
-<div class="proofscript" id="proof1238">
+<div class="toggleproof" onclick="toggleDisplay('proof1275')">Proof.</div>
+<div class="proofscript" id="proof1275">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_partial_program2">match_transform_partial_program2</a></span>. <span class="id">eexact</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -637,8 +637,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">p</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#A">A</a></span> <span class="id"><a href="compcert.common.Linking.html#V">V</a></span>),<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">f</span>, <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> (<span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span>)) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span> <span class="id"><a href="compcert.common.Linking.html#match_fundef">match_fundef</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> (<span class="id"><a href="compcert.common.AST.html#transform_program">transform_program</a></span> <span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1239')">Proof.</div>
-<div class="proofscript" id="proof1239">
+<div class="toggleproof" onclick="toggleDisplay('proof1276')">Proof.</div>
+<div class="proofscript" id="proof1276">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_partial_program_contextual">match_transform_partial_program_contextual</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.AST.html#transform_program_partial_program">transform_program_partial_program</a></span> <span class="kwd">with</span> (<span class="id">transf_fun</span> := <span class="id">transf_fun</span>).<br/>
@@ -654,8 +654,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">p</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#A">A</a></span> <span class="id"><a href="compcert.common.Linking.html#V">V</a></span>) (<span class="id">tp</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#B">B</a></span> <span class="id"><a href="compcert.common.Linking.html#V">V</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#transform_partial_program">transform_partial_program</a></span> <span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span> (<span class="kwd">fun</span> <span class="id">cu</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.common.Linking.html#transf_fun">transf_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span>) <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1240')">Proof.</div>
-<div class="proofscript" id="proof1240">
+<div class="toggleproof" onclick="toggleDisplay('proof1277')">Proof.</div>
+<div class="proofscript" id="proof1277">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_partial_program2">match_transform_partial_program2</a></span>. <span class="id">eexact</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -667,8 +667,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">transf</span>: <span class="id"><a href="compcert.common.Linking.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#B">B</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">p</span>: <span class="id"><a href="compcert.common.AST.html#program">program</a></span> <span class="id"><a href="compcert.common.Linking.html#A">A</a></span> <span class="id"><a href="compcert.common.Linking.html#V">V</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span> (<span class="kwd">fun</span> <span class="id">cu</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span> = <span class="id"><a href="compcert.common.Linking.html#transf">transf</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span>) <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> (<span class="id"><a href="compcert.common.AST.html#transform_program">transform_program</a></span> <span class="id"><a href="compcert.common.Linking.html#transf">transf</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1241')">Proof.</div>
-<div class="proofscript" id="proof1241">
+<div class="toggleproof" onclick="toggleDisplay('proof1278')">Proof.</div>
+<div class="proofscript" id="proof1278">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_program_contextual">match_transform_program_contextual</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -699,8 +699,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Linking.html#v2">v2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_globvar">match_globvar</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Linking.html#tv1">tv1</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#match_globvar">match_globvar</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#v2">v2</a></span> <span class="id"><a href="compcert.common.Linking.html#tv2">tv2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tv</span>, <span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#tv1">tv1</a></span> <span class="id"><a href="compcert.common.Linking.html#tv2">tv2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#tv">tv</a></span> /\ <span class="id"><a href="compcert.common.Linking.html#match_globvar">match_globvar</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#v">v</a></span> <span class="id"><a href="compcert.common.Linking.html#tv">tv</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1242')">Proof.</div>
-<div class="proofscript" id="proof1242">
+<div class="toggleproof" onclick="toggleDisplay('proof1279')">Proof.</div>
+<div class="proofscript" id="proof1279">
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_vardef">link_vardef</a></span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">H0</span>; <span class="id">inv</span> <span class="id">H1</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id">i1</span> <span class="id">i0</span>) <span class="kwd">as</span> [<span class="id">info</span>'|] <span class="id">eqn</span>:<span class="id">LINFO</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id">init</span> <span class="id">init0</span>) <span class="kwd">as</span> [<span class="id">init</span>'|] <span class="id">eqn</span>:<span class="id">LINIT</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -716,8 +716,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx1">ctx1</a></span> <span class="id"><a href="compcert.common.Linking.html#g1">g1</a></span> <span class="id"><a href="compcert.common.Linking.html#tg1">tg1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx2">ctx2</a></span> <span class="id"><a href="compcert.common.Linking.html#g2">g2</a></span> <span class="id"><a href="compcert.common.Linking.html#tg2">tg2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tg</span>, <span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#tg1">tg1</a></span> <span class="id"><a href="compcert.common.Linking.html#tg2">tg2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#tg">tg</a></span> /\ <span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#g">g</a></span> <span class="id"><a href="compcert.common.Linking.html#tg">tg</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1243')">Proof.</div>
-<div class="proofscript" id="proof1243">
+<div class="toggleproof" onclick="toggleDisplay('proof1280')">Proof.</div>
+<div class="proofscript" id="proof1280">
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="id">link</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Linking.html#link_def">link_def</a></span>. <span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H2</span>; <span class="id">inv</span> <span class="id">H3</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id">f1</span> <span class="id">f0</span>) <span class="kwd">as</span> [<span class="id">f</span>|] <span class="id">eqn</span>:<span class="id">LF</span>; <span class="id">inv</span> <span class="id">H1</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.link_match_fundef">link_match_fundef</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> (<span class="id">tf</span> &amp; <span class="id">P</span> &amp; <span class="id">Q</span>).<br/>
@@ -737,8 +737,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#g">g</a></span> <span class="id"><a href="compcert.common.Linking.html#tg">tg</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id">ctx</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_globdef">match_globdef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id">ctx</span>' <span class="id"><a href="compcert.common.Linking.html#g">g</a></span> <span class="id"><a href="compcert.common.Linking.html#tg">tg</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1244')">Proof.</div>
-<div class="proofscript" id="proof1244">
+<div class="toggleproof" onclick="toggleDisplay('proof1281')">Proof.</div>
+<div class="proofscript" id="proof1281">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
 - <span class="id">econstructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_trans">linkorder_trans</a></span>; <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
 - <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
@@ -751,8 +751,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx2">ctx2</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span> <span class="id"><a href="compcert.common.Linking.html#tp2">tp2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx1">ctx1</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx2">ctx2</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tp</span>, <span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#tp1">tp1</a></span> <span class="id"><a href="compcert.common.Linking.html#tp2">tp2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span> /\ <span class="id"><a href="compcert.common.Linking.html#match_program_gen">match_program_gen</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_fundef">match_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_MATCH_PROGRAM.match_varinfo">match_varinfo</a></span> <span class="id"><a href="compcert.common.Linking.html#ctx">ctx</a></span> <span class="id"><a href="compcert.common.Linking.html#p">p</a></span> <span class="id"><a href="compcert.common.Linking.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1245')">Proof.</div>
-<div class="proofscript" id="proof1245">
+<div class="toggleproof" onclick="toggleDisplay('proof1282')">Proof.</div>
+<div class="proofscript" id="proof1282">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_prog_inv">link_prog_inv</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> (<span class="id">P</span> &amp; <span class="id">Q</span> &amp; <span class="id">R</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id">H0</span>; <span class="tactic">intros</span> (<span class="id">A1</span> &amp; <span class="id">B1</span> &amp; <span class="id">C1</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id">H1</span>; <span class="tactic">intros</span> (<span class="id">A2</span> &amp; <span class="id">B2</span> &amp; <span class="id">C2</span>).<br/>
@@ -799,8 +799,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> <span class="id"><a href="compcert.common.Linking.html#tf1">tf1</a></span> <span class="id"><a href="compcert.common.Linking.html#tf2">tf2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span><br/>
 &nbsp;&nbsp;/\ (<span class="id"><a href="compcert.common.AST.html#transf_partial_fundef">transf_partial_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#tr1">tr1</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span> \/ <span class="id"><a href="compcert.common.AST.html#transf_partial_fundef">transf_partial_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#tr2">tr2</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1246')">Proof.</div>
-<div class="proofscript" id="proof1246">
+<div class="toggleproof" onclick="toggleDisplay('proof1283')">Proof.</div>
+<div class="proofscript" id="proof1283">
 <span class="kwd">Local</span> <span class="id">Transparent</span> <span class="id"><a href="compcert.common.Linking.html#Linker_fundef">Linker_fundef</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">f1</span> <span class="kwd">as</span> [<span class="id">f1</span>|<span class="id">ef1</span>], <span class="id">f2</span> <span class="kwd">as</span> [<span class="id">f2</span>|<span class="id">ef2</span>]; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="id">monadInv</span> <span class="id">H0</span>; <span class="id">monadInv</span> <span class="id">H1</span>.<br/>
 - <span class="tactic">discriminate</span>.<br/>
@@ -817,8 +817,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">cu</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.common.AST.html#transf_partial_fundef">AST.transf_partial_fundef</a></span> (<span class="id"><a href="compcert.common.Linking.html#tr_fun">tr_fun</a></span> (<span class="id"><a href="compcert.common.Linking.html#ctx_for">ctx_for</a></span> <span class="id"><a href="compcert.common.Linking.html#cu">cu</a></span>)) <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1247')">Proof.</div>
-<div class="proofscript" id="proof1247">
+<div class="toggleproof" onclick="toggleDisplay('proof1284')">Proof.</div>
+<div class="proofscript" id="proof1284">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_linkorder">link_linkorder</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">LO1</span> <span class="id">LO2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#link_match_program">link_match_program</a></span>; <span class="tactic">eauto</span>.<br/>
 - <span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#link_transf_partial_fundef">link_transf_partial_fundef</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -832,8 +832,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">cu</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.common.AST.html#transf_partial_fundef">AST.transf_partial_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#tr_fun">tr_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1248')">Proof.</div>
-<div class="proofscript" id="proof1248">
+<div class="toggleproof" onclick="toggleDisplay('proof1285')">Proof.</div>
+<div class="proofscript" id="proof1285">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_linkorder">link_linkorder</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">LO1</span> <span class="id">LO2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#link_match_program">link_match_program</a></span>; <span class="tactic">eauto</span>.<br/>
 - <span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#link_transf_partial_fundef">link_transf_partial_fundef</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -848,8 +848,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">cu</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span> = <span class="id"><a href="compcert.common.AST.html#transf_fundef">AST.transf_fundef</a></span> (<span class="id"><a href="compcert.common.Linking.html#tr_fun">tr_fun</a></span> (<span class="id"><a href="compcert.common.Linking.html#ctx_for">ctx_for</a></span> <span class="id"><a href="compcert.common.Linking.html#cu">cu</a></span>)) <span class="id"><a href="compcert.common.Linking.html#f">f</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1249')">Proof.</div>
-<div class="proofscript" id="proof1249">
+<div class="toggleproof" onclick="toggleDisplay('proof1286')">Proof.</div>
+<div class="proofscript" id="proof1286">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_linkorder">link_linkorder</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">LO1</span> <span class="id">LO2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#link_match_program">link_match_program</a></span>; <span class="tactic">eauto</span>.<br/>
 - <span class="tactic">intros</span>. <span class="tactic">subst</span>. <span class="tactic">destruct</span> <span class="id">f1</span>, <span class="id">f2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
@@ -867,8 +867,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program">match_program</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">cu</span> <span class="id">f</span> <span class="id">tf</span> =&gt; <span class="id"><a href="compcert.common.Linking.html#tf">tf</a></span> = <span class="id"><a href="compcert.common.AST.html#transf_fundef">AST.transf_fundef</a></span> <span class="id"><a href="compcert.common.Linking.html#tr_fun">tr_fun</a></span> <span class="id"><a href="compcert.common.Linking.html#f">f</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.common.Linking.html#p1">p1</a></span> <span class="id"><a href="compcert.common.Linking.html#p2">p2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1250')">Proof.</div>
-<div class="proofscript" id="proof1250">
+<div class="toggleproof" onclick="toggleDisplay('proof1287')">Proof.</div>
+<div class="proofscript" id="proof1287">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_linkorder">link_linkorder</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span>) <span class="kwd">as</span> [<span class="id">LO1</span> <span class="id">LO2</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#link_match_program">link_match_program</a></span>; <span class="tactic">eauto</span>.<br/>
 - <span class="tactic">intros</span>. <span class="tactic">subst</span>. <span class="tactic">destruct</span> <span class="id">f1</span>, <span class="id">f2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
@@ -897,8 +897,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="link_list_linkorder">link_list_linkorder</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">l</span> <span class="id">b</span>, <span class="id"><a href="compcert.common.Linking.html#link_list">link_list</a></span> <span class="id"><a href="compcert.common.Linking.html#l">l</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#nIn">nIn</a></span> <span class="id"><a href="compcert.common.Linking.html#a">a</a></span> <span class="id"><a href="compcert.common.Linking.html#l">l</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#linkorder">linkorder</a></span> <span class="id"><a href="compcert.common.Linking.html#a">a</a></span> <span class="id"><a href="compcert.common.Linking.html#b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1251')">Proof.</div>
-<div class="proofscript" id="proof1251">
+<div class="toggleproof" onclick="toggleDisplay('proof1288')">Proof.</div>
+<div class="proofscript" id="proof1288">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">subst</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Linking.html#linkorder_refl">linkorder_refl</a></span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_list">link_list</a></span> <span class="id">l</span>) <span class="kwd">as</span> [<span class="id">b</span>'|]; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -920,8 +920,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">al</span> <span class="id">bl</span>, <span class="id"><a href="compcert.lib.Coqlib.html#nlist_forall2">nlist_forall2</a></span> <span class="id"><a href="compcert.common.Linking.html#LINK_LIST_MATCH.prog_match">prog_match</a></span> <span class="id"><a href="compcert.common.Linking.html#al">al</a></span> <span class="id"><a href="compcert.common.Linking.html#bl">bl</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.common.Linking.html#link_list">link_list</a></span> <span class="id"><a href="compcert.common.Linking.html#al">al</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#a">a</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">b</span>, <span class="id"><a href="compcert.common.Linking.html#link_list">link_list</a></span> <span class="id"><a href="compcert.common.Linking.html#bl">bl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Linking.html#b">b</a></span> /\ <span class="id"><a href="compcert.common.Linking.html#LINK_LIST_MATCH.prog_match">prog_match</a></span> <span class="id"><a href="compcert.common.Linking.html#a">a</a></span> <span class="id"><a href="compcert.common.Linking.html#b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1252')">Proof.</div>
-<div class="proofscript" id="proof1252">
+<div class="toggleproof" onclick="toggleDisplay('proof1289')">Proof.</div>
+<div class="proofscript" id="proof1289">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span> <span class="id">a</span>' <span class="id">L</span>.<br/>
 - <span class="id">inv</span> <span class="id">L</span>. <span class="id">exists</span> <span class="id">b</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Linking.html#link_list">link_list</a></span> <span class="id">l</span>) <span class="kwd">as</span> [<span class="id">a1</span>|] <span class="id">eqn</span>:<span class="id">LL</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -982,8 +982,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="nlist_forall2_identity">nlist_forall2_identity</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">la</span> <span class="id">lb</span>: <span class="id"><a href="compcert.lib.Coqlib.html#nlist">nlist</a></span> <span class="id"><a href="compcert.common.Linking.html#A">A</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#nlist_forall2">nlist_forall2</a></span> (<span class="kwd">fun</span> <span class="id">a</span> <span class="id">b</span> =&gt; <span class="id"><a href="compcert.common.Linking.html#a">a</a></span> = <span class="id"><a href="compcert.common.Linking.html#b">b</a></span>) <span class="id"><a href="compcert.common.Linking.html#la">la</a></span> <span class="id"><a href="compcert.common.Linking.html#lb">lb</a></span> -&gt; <span class="id"><a href="compcert.common.Linking.html#la">la</a></span> = <span class="id"><a href="compcert.common.Linking.html#lb">lb</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1253')">Proof.</div>
-<div class="proofscript" id="proof1253">
+<div class="toggleproof" onclick="toggleDisplay('proof1290')">Proof.</div>
+<div class="proofscript" id="proof1290">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
@@ -992,8 +992,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">la</span>: <span class="id"><a href="compcert.lib.Coqlib.html#nlist">nlist</a></span> <span class="id"><a href="compcert.common.Linking.html#A">A</a></span>) (<span class="id">lc</span>: <span class="id"><a href="compcert.lib.Coqlib.html#nlist">nlist</a></span> <span class="id"><a href="compcert.common.Linking.html#C">C</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#nlist_forall2">nlist_forall2</a></span> (<span class="kwd">fun</span> <span class="id">a</span> <span class="id">c</span> =&gt; <span class="id">exists</span> <span class="id">b</span>, <span class="id"><a href="compcert.common.Linking.html#R1">R1</a></span> <span class="id"><a href="compcert.common.Linking.html#a">a</a></span> <span class="id"><a href="compcert.common.Linking.html#b">b</a></span> /\ <span class="id"><a href="compcert.common.Linking.html#R2">R2</a></span> <span class="id"><a href="compcert.common.Linking.html#b">b</a></span> <span class="id"><a href="compcert.common.Linking.html#c">c</a></span>) <span class="id"><a href="compcert.common.Linking.html#la">la</a></span> <span class="id"><a href="compcert.common.Linking.html#lc">lc</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">lb</span>: <span class="id"><a href="compcert.lib.Coqlib.html#nlist">nlist</a></span> <span class="id"><a href="compcert.common.Linking.html#B">B</a></span>, <span class="id"><a href="compcert.lib.Coqlib.html#nlist_forall2">nlist_forall2</a></span> <span class="id"><a href="compcert.common.Linking.html#R1">R1</a></span> <span class="id"><a href="compcert.common.Linking.html#la">la</a></span> <span class="id"><a href="compcert.common.Linking.html#lb">lb</a></span> /\ <span class="id"><a href="compcert.lib.Coqlib.html#nlist_forall2">nlist_forall2</a></span> <span class="id"><a href="compcert.common.Linking.html#R2">R2</a></span> <span class="id"><a href="compcert.common.Linking.html#lb">lb</a></span> <span class="id"><a href="compcert.common.Linking.html#lc">lc</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1254')">Proof.</div>
-<div class="proofscript" id="proof1254">
+<div class="toggleproof" onclick="toggleDisplay('proof1291')">Proof.</div>
+<div class="proofscript" id="proof1291">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
 - <span class="tactic">rename</span> <span class="id">b</span> <span class="id">into</span> <span class="id">c</span>. <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">b</span> &amp; <span class="id">P</span> &amp; <span class="id">Q</span>).<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.lib.Coqlib.html#nbase">nbase</a></span> <span class="id">b</span>); <span class="tactic">split</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>

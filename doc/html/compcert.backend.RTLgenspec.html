@@ -52,8 +52,8 @@
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#bind">bind</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#g">g</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#y">y</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s3">s3</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">x</span>, <span class="id">exists</span> <span class="id">s2</span>, <span class="id">exists</span> <span class="id">i1</span>, <span class="id">exists</span> <span class="id">i2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#x">x</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i1">i1</a></span> /\ <span class="id"><a href="compcert.backend.RTLgenspec.html#g">g</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#x">x</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#y">y</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s3">s3</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i2">i2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3009')">Proof.</div>
-<div class="proofscript" id="proof3009">
+<div class="toggleproof" onclick="toggleDisplay('proof3202')">Proof.</div>
+<div class="proofscript" id="proof3202">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">i</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#bind">bind</a></span>. <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">s1</span>); <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">a</span>; <span class="id">exists</span> <span class="id">s</span>'; <span class="id">exists</span> <span class="id">s</span>.<br/>
@@ -67,8 +67,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#bind2">bind2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#g">g</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#z">z</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s3">s3</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">x</span>, <span class="id">exists</span> <span class="id">y</span>, <span class="id">exists</span> <span class="id">s2</span>, <span class="id">exists</span> <span class="id">i1</span>, <span class="id">exists</span> <span class="id">i2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#x">x</a></span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#y">y</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i1">i1</a></span> /\ <span class="id"><a href="compcert.backend.RTLgenspec.html#g">g</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#x">x</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#y">y</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#z">z</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s3">s3</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i2">i2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3010')">Proof.</div>
-<div class="proofscript" id="proof3010">
+<div class="toggleproof" onclick="toggleDisplay('proof3203')">Proof.</div>
+<div class="proofscript" id="proof3203">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#bind2">bind2</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#bind_inversion">bind_inversion</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [[<span class="id">x</span> <span class="id">y</span>] [<span class="id">s2</span> [<span class="id">i1</span> [<span class="id">i2</span> [<span class="id">P</span> <span class="id">Q</span>]]]]]. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Q</span>.<br/>
@@ -139,8 +139,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="instr_at_incr">instr_at_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">n</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3011')">Proof.</div>
-<div class="proofscript" id="proof3011">
+<div class="toggleproof" onclick="toggleDisplay('proof3204')">Proof.</div>
+<div class="proofscript" id="proof3204">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">H3</span> <span class="id">n</span>); <span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -178,24 +178,24 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="valid_fresh_absurd">valid_fresh_absurd</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3012')">Proof.</div>
-<div class="proofscript" id="proof3012">
+<div class="toggleproof" onclick="toggleDisplay('proof3205')">Proof.</div>
+<div class="proofscript" id="proof3205">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r</span> <span class="id">s</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span>; <span class="tactic">case</span> <span class="id">r</span>; <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">valid_fresh_absurd</span>: <span class="id">rtlg</span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="valid_fresh_different">valid_fresh_different</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">r2</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r1">r1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r2">r2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#r1">r1</a></span> &lt;&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#r2">r2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3013')">Proof.</div>
-<div class="proofscript" id="proof3013">
+<div class="toggleproof" onclick="toggleDisplay('proof3206')">Proof.</div>
+<div class="proofscript" id="proof3206">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#not">not</a></span>; <span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">r2</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">valid_fresh_different</span>: <span class="id">rtlg</span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="reg_valid_incr">reg_valid_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">s1</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3014')">Proof.</div>
-<div class="proofscript" id="proof3014">
+<div class="toggleproof" onclick="toggleDisplay('proof3207')">Proof.</div>
+<div class="proofscript" id="proof3207">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">INCR</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">INCR</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span>. <span class="tactic">intros</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.RTLgen.html#st_nextreg">st_nextreg</a></span> <span class="id">s1</span>); <span class="tactic">auto</span>.<br/>
@@ -204,8 +204,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="reg_fresh_decr">reg_fresh_decr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">s1</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3015')">Proof.</div>
-<div class="proofscript" id="proof3015">
+<div class="toggleproof" onclick="toggleDisplay('proof3208')">Proof.</div>
+<div class="proofscript" id="proof3208">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">INCR</span>. <span class="tactic">inversion</span> <span class="id">INCR</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span>; <span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#not">not</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H4</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.RTLgen.html#st_nextreg">st_nextreg</a></span> <span class="id">s1</span>); <span class="tactic">auto</span>.<br/>
@@ -219,8 +219,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="regs_valid_nil">regs_valid_nil</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3016')">Proof.</div>
-<div class="proofscript" id="proof3016">
+<div class="toggleproof" onclick="toggleDisplay('proof3209')">Proof.</div>
+<div class="proofscript" id="proof3209">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">elim</span> <span class="id">H</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">regs_valid_nil</span>: <span class="id">rtlg</span>.<br/>
@@ -228,23 +228,23 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="regs_valid_cons">regs_valid_cons</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r1</span> <span class="id">rl</span> <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r1">r1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#r1">r1</a></span> :: <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3017')">Proof.</div>
-<div class="proofscript" id="proof3017">
+<div class="toggleproof" onclick="toggleDisplay('proof3210')">Proof.</div>
+<div class="proofscript" id="proof3210">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">elim</span> <span class="id">H1</span>; <span class="tactic">intro</span>. <span class="tactic">subst</span> <span class="id">r1</span>; <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="regs_valid_app">regs_valid_app</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">rl1</span> <span class="id">rl2</span> <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl1">rl1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl2">rl2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#rl1">rl1</a></span> ++ <span class="id"><a href="compcert.backend.RTLgenspec.html#rl2">rl2</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3018')">Proof.</div>
-<div class="proofscript" id="proof3018">
+<div class="toggleproof" onclick="toggleDisplay('proof3211')">Proof.</div>
+<div class="proofscript" id="proof3211">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_app_iff">in_app_iff</a></span> <span class="kwd">in</span> <span class="id">H1</span>. <span class="tactic">destruct</span> <span class="id">H1</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="regs_valid_incr">regs_valid_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">rl</span>, <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3019')">Proof.</div>
-<div class="proofscript" id="proof3019">
+<div class="toggleproof" onclick="toggleDisplay('proof3212')">Proof.</div>
+<div class="proofscript" id="proof3212">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span>; <span class="tactic">intros</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">regs_valid_incr</span>: <span class="id">rtlg</span>.<br/>
@@ -265,8 +265,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="map_valid_incr">map_valid_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#m">m</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#m">m</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3020')">Proof.</div>
-<div class="proofscript" id="proof3020">
+<div class="toggleproof" onclick="toggleDisplay('proof3213')">Proof.</div>
+<div class="proofscript" id="proof3213">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span>; <span class="tactic">intros</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">map_valid_incr</span>: <span class="id">rtlg</span>.<br/>
@@ -278,8 +278,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="add_instr_at">add_instr_at</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">incr</span> <span class="id">i</span> <span class="id">n</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_instr">add_instr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#incr">incr</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3021')">Proof.</div>
-<div class="proofscript" id="proof3021">
+<div class="toggleproof" onclick="toggleDisplay('proof3214')">Proof.</div>
+<div class="proofscript" id="proof3214">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree.gss">PTree.gss</a></span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">add_instr_at</span>: <span class="id">rtlg</span>.<br/>
@@ -289,8 +289,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="update_instr_at">update_instr_at</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">i</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">incr</span> <span class="id">u</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#update_instr">update_instr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#u">u</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#incr">incr</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3022')">Proof.</div>
-<div class="proofscript" id="proof3022">
+<div class="toggleproof" onclick="toggleDisplay('proof3215')">Proof.</div>
+<div class="proofscript" id="proof3215">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#update_instr">update_instr</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Coqlib.html#plt">plt</a></span> <span class="id">n</span> (<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span> <span class="id">s1</span>)); <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLgen.html#check_empty_node">check_empty_node</a></span> <span class="id">s1</span> <span class="id">n</span>); <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -303,8 +303,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="new_reg_valid">new_reg_valid</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#new_reg">new_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3023')">Proof.</div>
-<div class="proofscript" id="proof3023">
+<div class="toggleproof" onclick="toggleDisplay('proof3216')">Proof.</div>
+<div class="proofscript" id="proof3216">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span>; <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_succ">Plt_succ</a></span>.<br/>
 Qed.</div>
@@ -313,8 +313,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="new_reg_fresh">new_reg_fresh</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#new_reg">new_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3024')">Proof.</div>
-<div class="proofscript" id="proof3024">
+<div class="toggleproof" onclick="toggleDisplay('proof3217')">Proof.</div>
+<div class="proofscript" id="proof3217">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">exact</span> (<span class="id"><a href="compcert.lib.Coqlib.html#Plt_strict">Plt_strict</a></span> <span class="id">_</span>).<br/>
@@ -324,8 +324,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="new_reg_not_in_map">new_reg_not_in_map</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">m</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#new_reg">new_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#m">m</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt; ~(<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#m">m</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3025')">Proof.</div>
-<div class="proofscript" id="proof3025">
+<div class="toggleproof" onclick="toggleDisplay('proof3218')">Proof.</div>
+<div class="proofscript" id="proof3218">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#not">not</a></span>; <span class="tactic">intros</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">new_reg_not_in_map</span>: <span class="id">rtlg</span>.<br/>
@@ -334,8 +334,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="init_mapping_valid">init_mapping_valid</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#init_mapping">init_mapping</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3026')">Proof.</div>
-<div class="proofscript" id="proof3026">
+<div class="toggleproof" onclick="toggleDisplay('proof3219')">Proof.</div>
+<div class="proofscript" id="proof3219">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span>, <span class="id"><a href="compcert.backend.RTLgen.html#init_mapping">init_mapping</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">s</span> <span class="id">r</span> [[<span class="id">id</span> <span class="id">A</span>] | <span class="id">B</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Maps.html#PTree.gempty">PTree.gempty</a></span> <span class="kwd">in</span> <span class="id">A</span>; <span class="tactic">discriminate</span>.<br/>
@@ -347,8 +347,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="find_var_in_map">find_var_in_map</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">name</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#name">name</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3027')">Proof.</div>
-<div class="proofscript" id="proof3027">
+<div class="toggleproof" onclick="toggleDisplay('proof3220')">Proof.</div>
+<div class="proofscript" id="proof3220">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">r</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span>; <span class="id">caseEq</span> (<span class="id">map</span>.(<span class="id"><a href="compcert.backend.RTLgen.html#map_vars">map_vars</a></span>)!<span class="id">name</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">left</span>; <span class="id">exists</span> <span class="id">name</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>.<br/>
@@ -358,8 +358,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="find_var_valid">find_var_valid</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">name</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#name">name</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3028')">Proof.</div>
-<div class="proofscript" id="proof3028">
+<div class="toggleproof" onclick="toggleDisplay('proof3221')">Proof.</div>
+<div class="proofscript" id="proof3221">
 &nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">find_var_valid</span>: <span class="id">rtlg</span>.<br/>
@@ -369,8 +369,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="find_letvar_in_map">find_letvar_in_map</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">idx</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#find_letvar">find_letvar</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#idx">idx</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3029')">Proof.</div>
-<div class="proofscript" id="proof3029">
+<div class="toggleproof" onclick="toggleDisplay('proof3222')">Proof.</div>
+<div class="proofscript" id="proof3222">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">r</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#find_letvar">find_letvar</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">caseEq</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> (<span class="id"><a href="compcert.backend.RTLgen.html#map_letvars">map_letvars</a></span> <span class="id">map</span>) <span class="id">idx</span>); <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#nth_error_in">nth_error_in</a></span> <span class="kwd">with</span> <span class="id">idx</span>; <span class="tactic">auto</span>.<br/>
@@ -380,8 +380,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="find_letvar_valid">find_letvar_valid</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">idx</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#find_letvar">find_letvar</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#idx">idx</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3030')">Proof.</div>
-<div class="proofscript" id="proof3030">
+<div class="toggleproof" onclick="toggleDisplay('proof3223')">Proof.</div>
+<div class="proofscript" id="proof3223">
 &nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">find_letvar_valid</span>: <span class="id">rtlg</span>.<br/>
@@ -393,8 +393,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_var">add_var</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#name">name</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> /\ <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3031')">Proof.</div>
-<div class="proofscript" id="proof3031">
+<div class="toggleproof" onclick="toggleDisplay('proof3224')">Proof.</div>
+<div class="proofscript" id="proof3224">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">EQ</span>. <span class="tactic">subst</span>. <span class="tactic">red</span>. <span class="tactic">intros</span> <span class="id">r</span>' [[<span class="id">id</span> <span class="id">A</span>] | <span class="id">B</span>].<br/>
@@ -409,8 +409,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="add_var_find">add_var_find</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">name</span> <span class="id">r</span> <span class="id">map</span>' <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_var">add_var</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#name">name</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>,<span class="id">map</span>') <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id">map</span>'.(<span class="id"><a href="compcert.backend.RTLgen.html#map_vars">map_vars</a></span>)!<span class="id"><a href="compcert.backend.RTLgenspec.html#name">name</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3032')">Proof.</div>
-<div class="proofscript" id="proof3032">
+<div class="toggleproof" onclick="toggleDisplay('proof3225')">Proof.</div>
+<div class="proofscript" id="proof3225">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree.gss">PTree.gss</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -419,8 +419,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_vars">add_vars</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#namel">namel</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> /\ <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3033')">Proof.</div>
-<div class="proofscript" id="proof3033">
+<div class="toggleproof" onclick="toggleDisplay('proof3226')">Proof.</div>
+<div class="proofscript" id="proof3226">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">namel</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">tauto</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id">IHnamel</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">A</span> <span class="id">B</span>].<br/>
@@ -433,8 +433,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">map1</span> <span class="id">id</span> <span class="id">s1</span> <span class="id">r</span> <span class="id">map2</span> <span class="id">s2</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_var">add_var</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#id">id</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#map_letvars">map_letvars</a></span>) = <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#map_letvars">map_letvars</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3034')">Proof.</div>
-<div class="proofscript" id="proof3034">
+<div class="toggleproof" onclick="toggleDisplay('proof3227')">Proof.</div>
+<div class="proofscript" id="proof3227">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
@@ -442,8 +442,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">il</span> <span class="id">map1</span> <span class="id">s1</span> <span class="id">rl</span> <span class="id">map2</span> <span class="id">s2</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_vars">add_vars</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#il">il</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> (<span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map2">map2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#map_letvars">map_letvars</a></span>) = <span class="id"><a href="compcert.backend.RTLgenspec.html#map1">map1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#map_letvars">map_letvars</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3035')">Proof.</div>
-<div class="proofscript" id="proof3035">
+<div class="toggleproof" onclick="toggleDisplay('proof3228')">Proof.</div>
+<div class="proofscript" id="proof3228">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">il</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">transitivity</span> (<span class="id"><a href="compcert.backend.RTLgen.html#map_letvars">map_letvars</a></span> <span class="id">x0</span>).<br/>
@@ -458,8 +458,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> (<span class="id"><a href="compcert.backend.RTLgen.html#add_letvar">add_letvar</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3036')">Proof.</div>
-<div class="proofscript" id="proof3036">
+<div class="toggleproof" onclick="toggleDisplay('proof3229')">Proof.</div>
+<div class="proofscript" id="proof3229">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H1</span> <span class="kwd">as</span> [[<span class="id">id</span> <span class="id">A</span>]|<span class="id">B</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">A</span>. <span class="tactic">apply</span> <span class="id">H</span>. <span class="id">left</span>; <span class="id">exists</span> <span class="id">id</span>; <span class="tactic">auto</span>.<br/>
@@ -473,8 +473,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3037')">Proof.</div>
-<div class="proofscript" id="proof3037">
+<div class="toggleproof" onclick="toggleDisplay('proof3230')">Proof.</div>
+<div class="proofscript" id="proof3230">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">r</span>.  <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> <span class="id">a</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
@@ -485,8 +485,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> \/ <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3038')">Proof.</div>
-<div class="proofscript" id="proof3038">
+<div class="toggleproof" onclick="toggleDisplay('proof3231')">Proof.</div>
+<div class="proofscript" id="proof3231">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">s</span>'. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> (<span class="id">right</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>; <span class="tactic">fail</span>).<br/>
 &nbsp;&nbsp;<span class="id">left</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
@@ -498,8 +498,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_regs">alloc_regs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3039')">Proof.</div>
-<div class="proofscript" id="proof3039">
+<div class="toggleproof" onclick="toggleDisplay('proof3232')">Proof.</div>
+<div class="proofscript" id="proof3232">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">al</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid_nil">regs_valid_nil</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid_cons">regs_valid_cons</a></span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
@@ -511,8 +511,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_regs">alloc_regs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> \/ <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3040')">Proof.</div>
-<div class="proofscript" id="proof3040">
+<div class="toggleproof" onclick="toggleDisplay('proof3233')">Proof.</div>
+<div class="proofscript" id="proof3233">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">al</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> <span class="id">H1</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> <span class="id">H1</span>; <span class="tactic">intro</span>.<br/>
@@ -526,8 +526,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="kwd">dest</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">map</span> <span class="id">r</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_optreg">alloc_optreg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="kwd">dest</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_valid">reg_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3041')">Proof.</div>
-<div class="proofscript" id="proof3041">
+<div class="toggleproof" onclick="toggleDisplay('proof3234')">Proof.</div>
+<div class="proofscript" id="proof3234">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">r</span>.  <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> <span class="kwd">dest</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
@@ -538,8 +538,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_optreg">alloc_optreg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="kwd">dest</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> \/ <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_fresh">reg_fresh</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3042')">Proof.</div>
-<div class="proofscript" id="proof3042">
+<div class="toggleproof" onclick="toggleDisplay('proof3235')">Proof.</div>
+<div class="proofscript" id="proof3235">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">s</span>'. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#alloc_optreg">alloc_optreg</a></span>. <span class="tactic">destruct</span> <span class="kwd">dest</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">left</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
@@ -586,8 +586,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pr</span>',<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">r</span>', <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id">r</span>' <span class="id">pr</span>' -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id">r</span>' \/ <span class="id">r</span>' &lt;&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#target_reg_ok">target_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> (<span class="id">pr</span>' ++ <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3043')">Proof.</div>
-<div class="proofscript" id="proof3043">
+<div class="toggleproof" onclick="toggleDisplay('proof3236')">Proof.</div>
+<div class="proofscript" id="proof3236">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
@@ -602,8 +602,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_in_map">reg_in_map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id">r</span>' \/ <span class="id">r</span>' &lt;&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#target_reg_ok">target_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> (<span class="id">r</span>' :: <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3044')">Proof.</div>
-<div class="proofscript" id="proof3044">
+<div class="toggleproof" onclick="toggleDisplay('proof3237')">Proof.</div>
+<div class="proofscript" id="proof3237">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">change</span> (<span class="id">r</span>' :: <span class="id">pr</span>) <span class="kwd">with</span> ((<span class="id">r</span>' :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) ++ <span class="id">pr</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#target_reg_ok_append">target_reg_ok_append</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r</span>'' [<span class="id">A</span>|<span class="id">B</span>]. <span class="tactic">subst</span> <span class="id">r</span>''; <span class="tactic">auto</span>. <span class="id">contradiction</span>.<br/>
@@ -615,8 +615,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#new_reg">new_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#target_reg_ok">target_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3045')">Proof.</div>
-<div class="proofscript" id="proof3045">
+<div class="toggleproof" onclick="toggleDisplay('proof3238')">Proof.</div>
+<div class="proofscript" id="proof3238">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intro</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#valid_fresh_absurd">valid_fresh_absurd</a></span> <span class="kwd">with</span> <span class="id">r</span> <span class="id">s1</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
@@ -630,8 +630,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#target_reg_ok">target_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3046')">Proof.</div>
-<div class="proofscript" id="proof3046">
+<div class="toggleproof" onclick="toggleDisplay('proof3239')">Proof.</div>
+<div class="proofscript" id="proof3239">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#alloc_reg">alloc_reg</a></span> <span class="kwd">in</span> <span class="id">H1</span>. <span class="tactic">destruct</span> <span class="id">a</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">try</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#new_reg_target_ok">new_reg_target_ok</a></span>; <span class="tactic">eauto</span>; <span class="tactic">fail</span>).<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;Evar&nbsp;*)</span><br/>
@@ -648,8 +648,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_regs">alloc_regs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#target_regs_ok">target_regs_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3047')">Proof.</div>
-<div class="proofscript" id="proof3047">
+<div class="toggleproof" onclick="toggleDisplay('proof3240')">Proof.</div>
+<div class="proofscript" id="proof3240">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">al</span>; <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">H1</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
@@ -677,8 +677,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="return_reg_ok_incr">return_reg_ok_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">map</span> <span class="id">rret</span>, <span class="id"><a href="compcert.backend.RTLgenspec.html#return_reg_ok">return_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rret">rret</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>', <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> <span class="id">s</span>' -&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#return_reg_ok">return_reg_ok</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rret">rret</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3048')">Proof.</div>
-<div class="proofscript" id="proof3048">
+<div class="toggleproof" onclick="toggleDisplay('proof3241')">Proof.</div>
+<div class="proofscript" id="proof3241">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">return_reg_ok_incr</span>: <span class="id">rtlg</span>.<br/>
@@ -688,8 +688,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#new_reg">new_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#return_reg_ok">return_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> (<span class="id"><a href="compcert.backend.RTLgen.html#ret_reg">ret_reg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#sig">sig</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3049')">Proof.</div>
-<div class="proofscript" id="proof3049">
+<div class="toggleproof" onclick="toggleDisplay('proof3242')">Proof.</div>
+<div class="proofscript" id="proof3242">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#ret_reg">ret_reg</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span> <span class="id">sig</span>); <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
@@ -982,8 +982,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ns</span> <span class="id">rs</span> <span class="id">nd</span> <span class="id">rd</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_move">tr_move</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rd">rd</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_move">tr_move</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rd">rd</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3050')">Proof.</div>
-<div class="proofscript" id="proof3050">
+<div class="toggleproof" onclick="toggleDisplay('proof3243')">Proof.</div>
+<div class="proofscript" id="proof3243">
 &nbsp;&nbsp;<span class="tactic">induction</span> 2; <span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
 Qed.</div>
 <br/>
@@ -1002,8 +1002,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">map</span> <span class="id">pr</span> <span class="id">al</span> <span class="id">ns</span> <span class="id">nd</span> <span class="id">rl</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rl">rl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3051')">Proof.</div>
-<div class="proofscript" id="proof3051">
+<div class="toggleproof" onclick="toggleDisplay('proof3244')">Proof.</div>
+<div class="proofscript" id="proof3244">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">EXT</span>.<br/>
 &nbsp;&nbsp;<span class="id">pose</span> (<span class="id">AT</span> := <span class="kwd">fun</span> <span class="id">pc</span> <span class="id">i</span> =&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#instr_at_incr">instr_at_incr</a></span> <span class="id">s1</span> <span class="id">s2</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> <span class="id">EXT</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
@@ -1021,8 +1021,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">ns</span> <span class="id">rs</span> <span class="id">nd</span> <span class="id">rd</span> <span class="id">s</span>' <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#add_move">add_move</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rd">rd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_move">tr_move</a></span> <span class="id">s</span>'.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rd">rd</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3052')">Proof.</div>
-<div class="proofscript" id="proof3052">
+<div class="toggleproof" onclick="toggleDisplay('proof3245')">Proof.</div>
+<div class="proofscript" id="proof3245">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#add_move">add_move</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Registers.html#Reg.eq">Reg.eq</a></span> <span class="id">rs</span> <span class="id">rd</span>).<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>. <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
@@ -1053,8 +1053,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">VALID</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#regs_valid">regs_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>),<br/>
 &nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_condition">tr_condition</a></span> <span class="id">s</span>'.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pr">pr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ntrue">ntrue</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nfalse">nfalse</a></span>.<br/>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3053')">Proof.</div>
-<div class="proofscript" id="proof3053">
+<div class="toggleproof" onclick="toggleDisplay('proof3246')">Proof.</div>
+<div class="proofscript" id="proof3246">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">a</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> (<span class="id">monadInv</span> <span class="id">TR</span>); <span class="id">saturateTrans</span>.<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;Evar&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id">EQ</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span>. <span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.RTLgen.html#map_vars">map_vars</a></span> <span class="id">map</span>)!<span class="id">i</span>; <span class="tactic">intros</span>; <span class="id">inv</span> <span class="id">EQ1</span>.<br/>
@@ -1148,8 +1148,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WF</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">OK</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#reg_map_ok">reg_map_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rd">rd</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#id">id</a></span>)),<br/>
 &nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_expr">tr_expr</a></span> <span class="id">s</span>'.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rd">rd</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#id">id</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3054')">Proof.</div>
-<div class="proofscript" id="proof3054">
+<div class="toggleproof" onclick="toggleDisplay('proof3247')">Proof.</div>
+<div class="proofscript" id="proof3247">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">a</span>; <span class="tactic">intros</span>; <span class="id">monadInv</span> <span class="id">TR</span>; <span class="id">saturateTrans</span>.<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;Evar&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id">EQ</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span>. <span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.RTLgen.html#map_vars">map_vars</a></span> <span class="id">map</span>)!<span class="id">i</span>; <span class="tactic">intros</span>; <span class="id">inv</span> <span class="id">EQ1</span>.<br/>
@@ -1194,8 +1194,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#alloc_optreg">alloc_optreg</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#optid">optid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#reg_map_ok">reg_map_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#r">r</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#optid">optid</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3055')">Proof.</div>
-<div class="proofscript" id="proof3055">
+<div class="toggleproof" onclick="toggleDisplay('proof3248')">Proof.</div>
+<div class="proofscript" id="proof3248">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#alloc_optreg">alloc_optreg</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">optid</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span> <span class="kwd">in</span> <span class="id">H0</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLgen.html#map_vars">map_vars</a></span> <span class="id">map</span>)!<span class="id">i0</span>; <span class="id">monadInv</span> <span class="id">H0</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#new_reg_not_in_map">new_reg_not_in_map</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -1206,8 +1206,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">map</span> <span class="id">a</span> <span class="id">ns</span> <span class="id">nexits</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exitexpr">tr_exitexpr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exitexpr">tr_exitexpr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3056')">Proof.</div>
-<div class="proofscript" id="proof3056">
+<div class="toggleproof" onclick="toggleDisplay('proof3249')">Proof.</div>
+<div class="proofscript" id="proof3249">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">EXT</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tr_expr_incr">tr_expr_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tr_condition_incr">tr_condition_incr</a></span>; <span class="tactic">intros</span> <span class="id">I1</span> <span class="id">I2</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">rtlg</span>.<br/>
@@ -1218,8 +1218,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">map</span> <span class="id">s</span> <span class="id">ns</span> <span class="id">nd</span> <span class="id">nexits</span> <span class="id">ngoto</span> <span class="id">nret</span> <span class="id">rret</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_stmt">tr_stmt</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s1">s1</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ngoto">ngoto</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nret">nret</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rret">rret</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_stmt">tr_stmt</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s2">s2</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ngoto">ngoto</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nret">nret</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rret">rret</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3057')">Proof.</div>
-<div class="proofscript" id="proof3057">
+<div class="toggleproof" onclick="toggleDisplay('proof3250')">Proof.</div>
+<div class="proofscript" id="proof3250">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">EXT</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tr_expr_incr">tr_expr_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tr_condition_incr">tr_condition_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exprlist_incr">tr_exprlist_incr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exitexpr_incr">tr_exitexpr_incr</a></span>; <span class="tactic">intros</span> <span class="id">I1</span> <span class="id">I2</span> <span class="id">I3</span> <span class="id">I4</span>.<br/>
 &nbsp;&nbsp;<span class="id">pose</span> (<span class="id">AT</span> := <span class="kwd">fun</span> <span class="id">pc</span> <span class="id">i</span> =&gt; <span class="id"><a href="compcert.backend.RTLgenspec.html#instr_at_incr">instr_at_incr</a></span> <span class="id">s1</span> <span class="id">s2</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#i">i</a></span> <span class="id">EXT</span>).<br/>
@@ -1230,8 +1230,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">nexits</span> <span class="id">n</span> <span class="id">s</span> <span class="id">ne</span> <span class="id">s</span>' <span class="id">incr</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#transl_exit">transl_exit</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ne">ne</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#incr">incr</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ne">ne</a></span> /\ <span class="id">s</span>' = <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3058')">Proof.</div>
-<div class="proofscript" id="proof3058">
+<div class="toggleproof" onclick="toggleDisplay('proof3251')">Proof.</div>
+<div class="proofscript" id="proof3251">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">incr</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#transl_exit">transl_exit</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">nexits</span> <span class="id">n</span>); <span class="tactic">intro</span>; <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -1240,8 +1240,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">nexits</span> <span class="id">tbl</span> <span class="id">s</span> <span class="id">nl</span> <span class="id">s</span>' <span class="id">incr</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#transl_jumptable">transl_jumptable</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tbl">tbl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nl">nl</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#incr">incr</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_jumptable">tr_jumptable</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tbl">tbl</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nl">nl</a></span> /\ <span class="id">s</span>' = <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3059')">Proof.</div>
-<div class="proofscript" id="proof3059">
+<div class="toggleproof" onclick="toggleDisplay('proof3252')">Proof.</div>
+<div class="proofscript" id="proof3252">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">tbl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">split</span>. <span class="tactic">red</span>. <span class="tactic">simpl</span>. <span class="tactic">intros</span>. <span class="tactic">discriminate</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">monadInv</span> <span class="id">H</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#transl_exit_charact">transl_exit_charact</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">A</span> <span class="id">B</span>].<br/>
@@ -1255,8 +1255,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">TR</span>: <span class="id"><a href="compcert.backend.RTLgen.html#transl_exitexpr">transl_exitexpr</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#INCR">INCR</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WF</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_exitexpr">tr_exitexpr</a></span> <span class="id">s</span>'.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3060')">Proof.</div>
-<div class="proofscript" id="proof3060">
+<div class="toggleproof" onclick="toggleDisplay('proof3253')">Proof.</div>
+<div class="proofscript" id="proof3253">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">a</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> (<span class="id">monadInv</span> <span class="id">TR</span>); <span class="id">saturateTrans</span>.<br/>
 - <span class="comment">(*&nbsp;XEexit&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.RTLgenspec.html#transl_exit_charact">transl_exit_charact</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">A</span> <span class="id">B</span>].<br/>
@@ -1283,8 +1283,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">TR</span>: <span class="id"><a href="compcert.backend.RTLgen.html#convert_builtin_res">convert_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#oty">oty</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#res">res</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> = <span class="id"><a href="compcert.backend.RTLgen.html#OK">OK</a></span> <span class="id">res</span>' <span class="id">s</span>' <span class="id"><a href="compcert.backend.RTLgenspec.html#INCR">INCR</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WF</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_builtin_res">tr_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#res">res</a></span> <span class="id">res</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3061')">Proof.</div>
-<div class="proofscript" id="proof3061">
+<div class="toggleproof" onclick="toggleDisplay('proof3254')">Proof.</div>
+<div class="proofscript" id="proof3254">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">res</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">monadInv</span> <span class="id">TR</span>. <span class="id">constructor</span>.  <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#find_var">find_var</a></span> <span class="kwd">in</span> <span class="id">EQ</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLgen.html#map_vars">map_vars</a></span> <span class="id">map</span>)!<span class="id">x</span>; <span class="id">inv</span> <span class="id">EQ</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> <span class="id">oty</span>; <span class="id">monadInv</span> <span class="id">TR</span>.<br/>
@@ -1299,8 +1299,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WF</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#map_valid">map_valid</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">OK</span>: <span class="id"><a href="compcert.backend.RTLgenspec.html#return_reg_ok">return_reg_ok</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rret">rret</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_stmt">tr_stmt</a></span> <span class="id">s</span>'.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgenspec.html#map">map</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#stmt">stmt</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ns">ns</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nd">nd</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nexits">nexits</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#ngoto">ngoto</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#nret">nret</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#rret">rret</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3062')">Proof.</div>
-<div class="proofscript" id="proof3062">
+<div class="toggleproof" onclick="toggleDisplay('proof3255')">Proof.</div>
+<div class="proofscript" id="proof3255">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">stmt</span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">TR</span>; <span class="tactic">try</span> (<span class="id">monadInv</span> <span class="id">TR</span>); <span class="id">saturateTrans</span>.<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;Sskip&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id">constructor</span>.<br/>
@@ -1401,8 +1401,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#transl_function">transl_function</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">Errors.OK</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgenspec.html#tr_function">tr_function</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLgenspec.html#tf">tf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3063')">Proof.</div>
-<div class="proofscript" id="proof3063">
+<div class="toggleproof" onclick="toggleDisplay('proof3256')">Proof.</div>
+<div class="proofscript" id="proof3256">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">tf</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLgen.html#transl_function">transl_function</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">caseEq</span> (<span class="id"><a href="compcert.backend.RTLgen.html#reserve_labels">reserve_labels</a></span> (<span class="id"><a href="compcert.backend.CminorSel.html#fn_body">fn_body</a></span> <span class="id">f</span>) (<span class="id"><a href="compcert.lib.Maps.html#PTree.empty">PTree.empty</a></span> <span class="id"><a href="compcert.backend.RTL.html#node">node</a></span>, <span class="id"><a href="compcert.backend.RTLgen.html#init_state">init_state</a></span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ngoto</span> <span class="id">s0</span> <span class="id">RESERVE</span>.<br/>

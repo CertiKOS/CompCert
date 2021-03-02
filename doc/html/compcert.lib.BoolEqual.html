@@ -102,8 +102,8 @@ The present tactics also have some restrictions:
 <span class="kwd">Lemma</span> <span class="id"><a name="BE.proj_sumbool_is_true">proj_sumbool_is_true</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">f</span>: <span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.lib.BoolEqual.html#A">A</a></span>), {<span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>=<span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>} + {<span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>}) (<span class="id">x</span>: <span class="id"><a href="compcert.lib.BoolEqual.html#A">A</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#proj_sumbool">proj_sumbool</a></span> (<span class="id"><a href="compcert.lib.BoolEqual.html#f">f</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1185')">Proof.</div>
-<div class="proofscript" id="proof1185">
+<div class="toggleproof" onclick="toggleDisplay('proof1222')">Proof.</div>
+<div class="proofscript" id="proof1222">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Coqlib.html#proj_sumbool">proj_sumbool</a></span>. <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">x</span> <span class="id">x</span>). <span class="tactic">auto</span>. <span class="tactic">elim</span> <span class="id">n</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -121,16 +121,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="BE.false_not_true">false_not_true</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">P</span>: <span class="kwd">Prop</span>), <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.lib.BoolEqual.html#P">P</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1186')">Proof.</div>
-<div class="proofscript" id="proof1186">
+<div class="toggleproof" onclick="toggleDisplay('proof1223')">Proof.</div>
+<div class="proofscript" id="proof1223">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">discriminate</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="BE.proj_sumbool_true">proj_sumbool_true</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.lib.BoolEqual.html#A">A</a></span>) (<span class="id">a</span>: {<span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>=<span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>} + {<span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>}),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#proj_sumbool">proj_sumbool</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#a">a</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span> = <span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1187')">Proof.</div>
-<div class="proofscript" id="proof1187">
+<div class="toggleproof" onclick="toggleDisplay('proof1224')">Proof.</div>
+<div class="proofscript" id="proof1224">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">a</span>. <span class="tactic">auto</span>. <span class="tactic">discriminate</span>.<br/>
 Qed.</div>
 <br/>
@@ -155,8 +155,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">f</span>: <span class="id"><a href="compcert.lib.BoolEqual.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.lib.BoolEqual.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">f_refl</span>: <span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.BoolEqual.html#f">f</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) (<span class="id">f_sound</span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.BoolEqual.html#f">f</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span> <span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span> = <span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>),<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.lib.BoolEqual.html#A">A</a></span>), {<span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>=<span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>} + {<span class="id"><a href="compcert.lib.BoolEqual.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.lib.BoolEqual.html#y">y</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1188')">Proof.</div>
-<div class="proofscript" id="proof1188">
+<div class="toggleproof" onclick="toggleDisplay('proof1225')">Proof.</div>
+<div class="proofscript" id="proof1225">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">x</span> <span class="id">y</span>) <span class="id">eqn</span>:<span class="id">E</span>.<br/>
 &nbsp;&nbsp;<span class="id">left</span>. <span class="tactic">apply</span> <span class="id">f_sound</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">y</span>. <span class="tactic">rewrite</span> <span class="id">f_refl</span> <span class="kwd">in</span> <span class="id">E</span>. <span class="tactic">discriminate</span>.<br/>

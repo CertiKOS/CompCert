@@ -73,16 +73,16 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="state_incr_refl">state_incr_refl</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2998')">Proof.</div>
-<div class="proofscript" id="proof2998">
+<div class="toggleproof" onclick="toggleDisplay('proof3191')">Proof.</div>
+<div class="proofscript" id="proof3191">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgen.html#state_incr_intro">state_incr_intro</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>. <span class="tactic">intros</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="state_incr_trans">state_incr_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">s3</span>, <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s3">s3</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s3">s3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2999')">Proof.</div>
-<div class="proofscript" id="proof2999">
+<div class="toggleproof" onclick="toggleDisplay('proof3192')">Proof.</div>
+<div class="proofscript" id="proof3192">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLgen.html#state_incr_intro">state_incr_intro</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_trans">Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span> <span class="id">s2</span>); <span class="tactic">assumption</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_trans">Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.RTLgen.html#st_nextreg">st_nextreg</a></span> <span class="id">s2</span>); <span class="tactic">assumption</span>.<br/>
@@ -155,8 +155,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="init_state_wf">init_state_wf</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pc</span>, <span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> 1%<span class="id">positive</span> \/ (<span class="id"><a href="compcert.lib.Maps.html#PTree.empty">PTree.empty</a></span> <span class="id"><a href="compcert.backend.RTL.html#instruction">instruction</a></span>)!<span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3000')">Proof.</div>
-<div class="proofscript" id="proof3000">
+<div class="toggleproof" onclick="toggleDisplay('proof3193')">Proof.</div>
+<div class="proofscript" id="proof3193">
  <span class="tactic">intros</span>; <span class="id">right</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Maps.html#PTree.gempty">PTree.gempty</a></span>. Qed.</div>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="init_state">init_state</a></span> : <span class="id"><a href="compcert.backend.RTLgen.html#state">state</a></span> :=<br/>
@@ -169,8 +169,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">i</span> <span class="id">pc</span>,<br/>
 &nbsp;&nbsp;<span class="kwd">let</span> <span class="id">n</span> := <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span>) <span class="kwd">in</span><br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span>) \/ (<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>))!<span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3001')">Proof.</div>
-<div class="proofscript" id="proof3001">
+<div class="toggleproof" onclick="toggleDisplay('proof3194')">Proof.</div>
+<div class="proofscript" id="proof3194">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">case</span> (<span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span> <span class="id">pc</span> <span class="id">n</span>); <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">pc</span>; <span class="id">left</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_succ">Plt_succ</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Maps.html#PTree.gso">PTree.gso</a></span>; <span class="tactic">auto</span>.<br/>
@@ -186,8 +186,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.RTLgen.html#add_instr_wf">add_instr_wf</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#i">i</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3002')">Proof.</div>
-<div class="proofscript" id="proof3002">
+<div class="toggleproof" onclick="toggleDisplay('proof3195')">Proof.</div>
+<div class="proofscript" id="proof3195">
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_succ">Ple_succ</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>.<br/>
@@ -209,8 +209,8 @@ Qed.</div>
 <span class="kwd">Remark</span> <span class="id"><a name="reserve_instr_wf">reserve_instr_wf</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">pc</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span>)) \/ <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3003')">Proof.</div>
-<div class="proofscript" id="proof3003">
+<div class="toggleproof" onclick="toggleDisplay('proof3196')">Proof.</div>
+<div class="proofscript" id="proof3196">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">elim</span> (<span class="id"><a href="compcert.backend.RTLgen.html#st_wf">st_wf</a></span> <span class="id">s</span> <span class="id">pc</span>); <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="id">left</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_trans_succ">Plt_trans_succ</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>; <span class="tactic">auto</span>.<br/>
@@ -223,8 +223,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.RTLgen.html#reserve_instr_wf">reserve_instr_wf</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3004')">Proof.</div>
-<div class="proofscript" id="proof3004">
+<div class="toggleproof" onclick="toggleDisplay('proof3197')">Proof.</div>
+<div class="proofscript" id="proof3197">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="id">constructor</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_succ">Ple_succ</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>.<br/>
@@ -243,8 +243,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pc</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span>) \/ (<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>))!<span class="id"><a href="compcert.backend.RTLgen.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3005')">Proof.</div>
-<div class="proofscript" id="proof3005">
+<div class="toggleproof" onclick="toggleDisplay('proof3198')">Proof.</div>
+<div class="proofscript" id="proof3198">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> (<span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span> <span class="id">pc</span> <span class="id">n</span>); <span class="tactic">intro</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">pc</span>; <span class="id">left</span>; <span class="tactic">assumption</span>.<br/>
@@ -257,8 +257,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.RTLgen.html#mkstate">mkstate</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextreg">st_nextreg</a></span>) <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span>) (<span class="id"><a href="compcert.lib.Maps.html#PTree.set">PTree.set</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.RTLgen.html#update_instr_wf">update_instr_wf</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#i">i</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#LT">LT</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3006')">Proof.</div>
-<div class="proofscript" id="proof3006">
+<div class="toggleproof" onclick="toggleDisplay('proof3199')">Proof.</div>
+<div class="proofscript" id="proof3199">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>.<br/>
@@ -268,8 +268,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="check_empty_node">check_empty_node</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">s</span>: <span class="id"><a href="compcert.backend.RTLgen.html#state">state</a></span>) (<span class="id">n</span>: <span class="id"><a href="compcert.backend.RTL.html#node">node</a></span>), { <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id"><a href="compcert.backend.RTLgen.html#n">n</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> } + { <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span> }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3007')">Proof.</div>
-<div class="proofscript" id="proof3007">
+<div class="toggleproof" onclick="toggleDisplay('proof3200')">Proof.</div>
+<div class="proofscript" id="proof3200">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">case</span> (<span class="id">s</span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>)!<span class="id">n</span>); <span class="tactic">intros</span>. <span class="id">right</span>; <span class="tactic">auto</span>. <span class="id">left</span>; <span class="tactic">auto</span>.<br/>
 Defined.</div>
 <br/>
@@ -291,8 +291,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#state_incr">state_incr</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTLgen.html#mkstate">mkstate</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextreg">st_nextreg</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_nextnode">st_nextnode</a></span>) <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_code">st_code</a></span>) <span class="id"><a href="compcert.backend.RTLgen.html#s">s</a></span>.(<span class="id"><a href="compcert.backend.RTLgen.html#st_wf">st_wf</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3008')">Proof.</div>
-<div class="proofscript" id="proof3008">
+<div class="toggleproof" onclick="toggleDisplay('proof3201')">Proof.</div>
+<div class="proofscript" id="proof3201">
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_succ">Ple_succ</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>

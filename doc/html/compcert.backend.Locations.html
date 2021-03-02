@@ -72,8 +72,8 @@ memory-allocated activation record.  Offsets are always positive.
 </div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="slot_eq">slot_eq</a></span>: <span class="kwd">forall</span> (<span class="id">p</span> <span class="id">q</span>: <span class="id"><a href="compcert.backend.Locations.html#slot">slot</a></span>), {<span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> = <span class="id"><a href="compcert.backend.Locations.html#q">q</a></span>} + {<span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> &lt;&gt; <span class="id"><a href="compcert.backend.Locations.html#q">q</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3961')">Proof.</div>
-<div class="proofscript" id="proof3961">
+<div class="toggleproof" onclick="toggleDisplay('proof4102')">Proof.</div>
+<div class="proofscript" id="proof4102">
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 Defined.</div>
 <br/>
@@ -91,8 +91,8 @@ Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="typesize_pos">typesize_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">ty</span>: <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span>), <span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id"><a href="compcert.backend.Locations.html#ty">ty</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3962')">Proof.</div>
-<div class="proofscript" id="proof3962">
+<div class="toggleproof" onclick="toggleDisplay('proof4103')">Proof.</div>
+<div class="proofscript" id="proof4103">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">ty</span>; <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -108,15 +108,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="typealign_pos">typealign_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">ty</span>: <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span>), <span class="id"><a href="compcert.backend.Locations.html#typealign">typealign</a></span> <span class="id"><a href="compcert.backend.Locations.html#ty">ty</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3963')">Proof.</div>
-<div class="proofscript" id="proof3963">
+<div class="toggleproof" onclick="toggleDisplay('proof4104')">Proof.</div>
+<div class="proofscript" id="proof4104">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">ty</span>; <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="typealign_typesize">typealign_typesize</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">ty</span>: <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span>), (<span class="id"><a href="compcert.backend.Locations.html#typealign">typealign</a></span> <span class="id"><a href="compcert.backend.Locations.html#ty">ty</a></span> | <span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id"><a href="compcert.backend.Locations.html#ty">ty</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3964')">Proof.</div>
-<div class="proofscript" id="proof3964">
+<div class="toggleproof" onclick="toggleDisplay('proof4105')">Proof.</div>
+<div class="proofscript" id="proof4105">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exists</span> (<span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id">ty</span> / <span class="id"><a href="compcert.backend.Locations.html#typealign">typealign</a></span> <span class="id">ty</span>); <span class="tactic">destruct</span> <span class="id">ty</span>; <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
@@ -138,8 +138,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.eq">eq</a></span>: <span class="kwd">forall</span> (<span class="id">p</span> <span class="id">q</span>: <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>), {<span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> = <span class="id"><a href="compcert.backend.Locations.html#q">q</a></span>} + {<span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> &lt;&gt; <span class="id"><a href="compcert.backend.Locations.html#q">q</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3965')">Proof.</div>
-<div class="proofscript" id="proof3965">
+<div class="toggleproof" onclick="toggleDisplay('proof4106')">Proof.</div>
+<div class="proofscript" id="proof4106">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.x86.Machregs.html#mreg_eq">mreg_eq</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.AST.html#typ_eq">typ_eq</a></span>.<br/>
@@ -177,30 +177,30 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.same_not_diff">same_not_diff</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span>, ~(<span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3966')">Proof.</div>
-<div class="proofscript" id="proof3966">
+<div class="toggleproof" onclick="toggleDisplay('proof4107')">Proof.</div>
+<div class="proofscript" id="proof4107">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">l</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">auto</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.Locations.html#typesize_pos">typesize_pos</a></span> <span class="id">ty</span>); <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.diff_not_eq">diff_not_eq</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> &lt;&gt; <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3967')">Proof.</div>
-<div class="proofscript" id="proof3967">
+<div class="toggleproof" onclick="toggleDisplay('proof4108')">Proof.</div>
+<div class="proofscript" id="proof4108">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#not">not</a></span>; <span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">l2</span>. <span class="tactic">elim</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.same_not_diff">same_not_diff</a></span> <span class="id">l1</span> <span class="id">H</span>).<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.diff_sym">diff_sym</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3968')">Proof.</div>
-<div class="proofscript" id="proof3968">
+<div class="toggleproof" onclick="toggleDisplay('proof4109')">Proof.</div>
+<div class="proofscript" id="proof4109">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">l1</span>; <span class="tactic">destruct</span> <span class="id">l2</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="Loc.diff_dec">diff_dec</a></span> (<span class="id">l1</span> <span class="id">l2</span>: <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>) : { <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> } + { ~<span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> }.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3969')">Proof.</div>
-<div class="proofscript" id="proof3969">
+<div class="toggleproof" onclick="toggleDisplay('proof4110')">Proof.</div>
+<div class="proofscript" id="proof4110">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">l1</span>; <span class="tactic">destruct</span> <span class="id">l2</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.Machregs.html#mreg_eq">mreg_eq</a></span> <span class="id">r</span> <span class="id">r0</span>). <span class="id">right</span>; <span class="tactic">tauto</span>. <span class="id">left</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;- <span class="id">left</span>; <span class="tactic">auto</span>.<br/>
@@ -227,8 +227,8 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.notin_iff">notin_iff</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ll</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> &lt;-&gt; (<span class="kwd">forall</span> <span class="id">l</span>', <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id">l</span>' <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id">l</span>').<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3970')">Proof.</div>
-<div class="proofscript" id="proof3970">
+<div class="toggleproof" onclick="toggleDisplay('proof4111')">Proof.</div>
+<div class="proofscript" id="proof4111">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">ll</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">IHll</span>. <span class="tactic">intuition</span>. <span class="tactic">subst</span> <span class="id">a</span>. <span class="tactic">auto</span>.<br/>
@@ -236,15 +236,15 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.notin_not_in">notin_not_in</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ll</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> -&gt; ~(<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3971')">Proof.</div>
-<div class="proofscript" id="proof3971">
+<div class="toggleproof" onclick="toggleDisplay('proof4112')">Proof.</div>
+<div class="proofscript" id="proof4112">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.notin_iff">notin_iff</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">elim</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.diff_not_eq">diff_not_eq</a></span> <span class="id">l</span> <span class="id">l</span>); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.notin_dec">notin_dec</a></span> (<span class="id">l</span>: <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>) (<span class="id">ll</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>) : {<span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span>} + {~<span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3972')">Proof.</div>
-<div class="proofscript" id="proof3972">
+<div class="toggleproof" onclick="toggleDisplay('proof4113')">Proof.</div>
+<div class="proofscript" id="proof4113">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">ll</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">left</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.diff_dec">diff_dec</a></span> <span class="id">l</span> <span class="id">a</span>).<br/>
@@ -263,44 +263,44 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.disjoint_cons_left">disjoint_cons_left</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">l1</span> <span class="id">l2</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> (<span class="id"><a href="compcert.backend.Locations.html#a">a</a></span> :: <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span>) <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3973')">Proof.</div>
-<div class="proofscript" id="proof3973">
+<div class="toggleproof" onclick="toggleDisplay('proof4114')">Proof.</div>
+<div class="proofscript" id="proof4114">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span>; <span class="tactic">intros</span>. <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.disjoint_cons_right">disjoint_cons_right</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">l1</span> <span class="id">l2</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> (<span class="id"><a href="compcert.backend.Locations.html#a">a</a></span> :: <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>) -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3974')">Proof.</div>
-<div class="proofscript" id="proof3974">
+<div class="toggleproof" onclick="toggleDisplay('proof4115')">Proof.</div>
+<div class="proofscript" id="proof4115">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span>; <span class="tactic">intros</span>. <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.disjoint_sym">disjoint_sym</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3975')">Proof.</div>
-<div class="proofscript" id="proof3975">
+<div class="toggleproof" onclick="toggleDisplay('proof4116')">Proof.</div>
+<div class="proofscript" id="proof4116">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.diff_sym">diff_sym</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.in_notin_diff">in_notin_diff</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">ll</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3976')">Proof.</div>
-<div class="proofscript" id="proof3976">
+<div class="toggleproof" onclick="toggleDisplay('proof4117')">Proof.</div>
+<div class="proofscript" id="proof4117">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.notin_iff">notin_iff</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.notin_disjoint">notin_disjoint</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>) -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3977')">Proof.</div>
-<div class="proofscript" id="proof3977">
+<div class="toggleproof" onclick="toggleDisplay('proof4118')">Proof.</div>
+<div class="proofscript" id="proof4118">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id">H</span>; <span class="tactic">eauto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.notin_iff">notin_iff</a></span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.disjoint_notin">disjoint_notin</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">x</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.disjoint">disjoint</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#l1">l1</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3978')">Proof.</div>
-<div class="proofscript" id="proof3978">
+<div class="toggleproof" onclick="toggleDisplay('proof4119')">Proof.</div>
+<div class="proofscript" id="proof4119">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.notin_iff">notin_iff</a></span>; <span class="tactic">intros</span>. <span class="tactic">red</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
@@ -314,8 +314,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">hd</span> <span class="id">tl</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#hd">hd</a></span> <span class="id"><a href="compcert.backend.Locations.html#tl">tl</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#norepet">norepet</a></span> <span class="id"><a href="compcert.backend.Locations.html#tl">tl</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#norepet">norepet</a></span> (<span class="id"><a href="compcert.backend.Locations.html#hd">hd</a></span> :: <span class="id"><a href="compcert.backend.Locations.html#tl">tl</a></span>).<br/>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Loc.norepet_dec">norepet_dec</a></span> (<span class="id">ll</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>) : {<span class="id"><a href="compcert.backend.Locations.html#Loc.norepet">norepet</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span>} + {~<span class="id"><a href="compcert.backend.Locations.html#Loc.norepet">norepet</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3979')">Proof.</div>
-<div class="proofscript" id="proof3979">
+<div class="toggleproof" onclick="toggleDisplay('proof4120')">Proof.</div>
+<div class="proofscript" id="proof4120">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">ll</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">left</span>; <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.notin_dec">notin_dec</a></span> <span class="id">a</span> <span class="id">ll</span>).<br/>
@@ -373,26 +373,26 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.gss">gss</a></span>: <span class="kwd">forall</span> <span class="id">l</span> <span class="id">v</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="tactic">set</span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> =<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="kwd">with</span> <span class="id"><a href="compcert.backend.Locations.html#R">R</a></span> <span class="id">r</span> =&gt; <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> | <span class="id"><a href="compcert.backend.Locations.html#S">S</a></span> <span class="id">sl</span> <span class="id">ofs</span> <span class="id">ty</span> =&gt; <span class="id"><a href="compcert.common.Values.html#Val.load_result">Val.load_result</a></span> (<span class="id"><a href="compcert.common.AST.html#chunk_of_type">chunk_of_type</a></span> <span class="id">ty</span>) <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> <span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3980')">Proof.</div>
-<div class="proofscript" id="proof3980">
+<div class="toggleproof" onclick="toggleDisplay('proof4121')">Proof.</div>
+<div class="proofscript" id="proof4121">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="tactic">set</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.gss_reg">gss_reg</a></span>: <span class="kwd">forall</span> <span class="id">r</span> <span class="id">v</span> <span class="id">m</span>, (<span class="tactic">set</span> (<span class="id"><a href="compcert.backend.Locations.html#R">R</a></span> <span class="id"><a href="compcert.backend.Locations.html#r">r</a></span>) <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) (<span class="id"><a href="compcert.backend.Locations.html#R">R</a></span> <span class="id"><a href="compcert.backend.Locations.html#r">r</a></span>) = <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3981')">Proof.</div>
-<div class="proofscript" id="proof3981">
+<div class="toggleproof" onclick="toggleDisplay('proof4122')">Proof.</div>
+<div class="proofscript" id="proof4122">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="tactic">set</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.gss_typed">gss_typed</a></span>: <span class="kwd">forall</span> <span class="id">l</span> <span class="id">v</span> <span class="id">m</span>, <span class="id"><a href="compcert.common.Values.html#Val.has_type">Val.has_type</a></span> <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.type">Loc.type</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>) -&gt; (<span class="tactic">set</span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3982')">Proof.</div>
-<div class="proofscript" id="proof3982">
+<div class="toggleproof" onclick="toggleDisplay('proof4123')">Proof.</div>
+<div class="proofscript" id="proof4123">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Locations.html#Locmap.gss">gss</a></span>. <span class="tactic">destruct</span> <span class="id">l</span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Values.html#Val.load_result_same">Val.load_result_same</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.gso">gso</a></span>: <span class="kwd">forall</span> <span class="id">l</span> <span class="id">v</span> <span class="id">m</span> <span class="id">p</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> -&gt; (<span class="tactic">set</span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> = <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span> <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3983')">Proof.</div>
-<div class="proofscript" id="proof3983">
+<div class="toggleproof" onclick="toggleDisplay('proof4124')">Proof.</div>
+<div class="proofscript" id="proof4124">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="tactic">set</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.eq">Loc.eq</a></span> <span class="id">l</span> <span class="id">p</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">p</span>. <span class="tactic">elim</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.same_not_diff">Loc.same_not_diff</a></span> <span class="id">_</span> <span class="id">H</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.diff_dec">Loc.diff_dec</a></span> <span class="id">l</span> <span class="id">p</span>).<br/>
@@ -407,15 +407,15 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.guo">guo</a></span>: <span class="kwd">forall</span> <span class="id">ll</span> <span class="id">l</span> <span class="id">m</span>, <span class="id"><a href="compcert.backend.Locations.html#Loc.notin">Loc.notin</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> -&gt; (<span class="id"><a href="compcert.backend.Locations.html#Locmap.undef">undef</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3984')">Proof.</div>
-<div class="proofscript" id="proof3984">
+<div class="toggleproof" onclick="toggleDisplay('proof4125')">Proof.</div>
+<div class="proofscript" id="proof4125">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">ll</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">rewrite</span> <span class="id">IHll</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Locations.html#Locmap.gso">gso</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.diff_sym">Loc.diff_sym</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.gus">gus</a></span>: <span class="kwd">forall</span> <span class="id">ll</span> <span class="id">l</span> <span class="id">m</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> -&gt; (<span class="id"><a href="compcert.backend.Locations.html#Locmap.undef">undef</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3985')">Proof.</div>
-<div class="proofscript" id="proof3985">
+<div class="toggleproof" onclick="toggleDisplay('proof4126')">Proof.</div>
+<div class="proofscript" id="proof4126">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">P</span>: <span class="kwd">forall</span> <span class="id">ll</span> <span class="id">l</span> <span class="id">m</span>, <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span> -&gt; (<span class="id"><a href="compcert.backend.Locations.html#Locmap.undef">undef</a></span> <span class="id"><a href="compcert.backend.Locations.html#ll">ll</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span>) <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">ll</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id">IHll</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="tactic">set</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Locations.html#Loc.eq">Loc.eq</a></span> <span class="id">a</span> <span class="id">l</span>).<br/>
@@ -442,8 +442,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">ls1</span> <span class="id">ls2</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> (<span class="id"><a href="compcert.common.AST.html#regs_of_rpair">regs_of_rpair</a></span> <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span>) -&gt; <span class="id"><a href="compcert.backend.Locations.html#ls2">ls2</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.backend.Locations.html#ls1">ls1</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>) -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Locations.html#Locmap.getpair">getpair</a></span> <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> <span class="id"><a href="compcert.backend.Locations.html#ls2">ls2</a></span> = <span class="id"><a href="compcert.backend.Locations.html#Locmap.getpair">getpair</a></span> <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> <span class="id"><a href="compcert.backend.Locations.html#ls1">ls1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3986')">Proof.</div>
-<div class="proofscript" id="proof3986">
+<div class="toggleproof" onclick="toggleDisplay('proof4127')">Proof.</div>
+<div class="proofscript" id="proof4127">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">p</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">f_equal</span>; <span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -452,8 +452,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Locmap.gpo">gpo</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">v</span> <span class="id">m</span> <span class="id">l</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#forall_rpair">forall_rpair</a></span> (<span class="kwd">fun</span> <span class="id">r</span> =&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> (<span class="id"><a href="compcert.backend.Locations.html#R">R</a></span> <span class="id"><a href="compcert.backend.Locations.html#r">r</a></span>)) <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#Locmap.setpair">setpair</a></span> <span class="id"><a href="compcert.backend.Locations.html#p">p</a></span> <span class="id"><a href="compcert.backend.Locations.html#v">v</a></span> <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> = <span class="id"><a href="compcert.backend.Locations.html#m">m</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3987')">Proof.</div>
-<div class="proofscript" id="proof3987">
+<div class="toggleproof" onclick="toggleDisplay('proof4128')">Proof.</div>
+<div class="proofscript" id="proof4128">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">p</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Locations.html#Locmap.gso">gso</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.diff_sym">Loc.diff_sym</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">rewrite</span> ! <span class="id"><a href="compcert.backend.Locations.html#Locmap.gso">gso</a></span> <span class="tactic">by</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.diff_sym">Loc.diff_sym</a></span>; <span class="tactic">auto</span>). <span class="tactic">auto</span>.<br/>
@@ -483,8 +483,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#Tlong">Tlong</a></span> =&gt; 6%<span class="id">positive</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="IndexedTyp.index_inj">index_inj</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.backend.Locations.html#IndexedTyp.index">index</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> = <span class="id"><a href="compcert.backend.Locations.html#IndexedTyp.index">index</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> = <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3988')">Proof.</div>
-<div class="proofscript" id="proof3988">
+<div class="toggleproof" onclick="toggleDisplay('proof4129')">Proof.</div>
+<div class="proofscript" id="proof4129">
  <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">destruct</span> <span class="id">y</span>; <span class="tactic">simpl</span>; <span class="tactic">congruence</span>. Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="IndexedTyp.eq">eq</a></span> := <span class="id"><a href="compcert.common.AST.html#typ_eq">typ_eq</a></span>.<br/>
 <span class="kwd">End</span> <span class="id"><a href="compcert.backend.Locations.html#IndexedTyp">IndexedTyp</a></span>.<br/>
@@ -496,8 +496,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="IndexedSlot.index">index</a></span> (<span class="id">x</span>: <span class="id"><a href="compcert.backend.Locations.html#IndexedSlot.t">t</a></span>) :=<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="kwd">with</span> <span class="kwd">Local</span> =&gt; 1%<span class="id">positive</span> | <span class="id"><a href="compcert.backend.Locations.html#Incoming">Incoming</a></span> =&gt; 2%<span class="id">positive</span> | <span class="id"><a href="compcert.backend.Locations.html#Outgoing">Outgoing</a></span> =&gt; 3%<span class="id">positive</span> <span class="kwd">end</span>.<br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="IndexedSlot.index_inj">index_inj</a></span>: <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.backend.Locations.html#IndexedSlot.index">index</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> = <span class="id"><a href="compcert.backend.Locations.html#IndexedSlot.index">index</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> = <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3989')">Proof.</div>
-<div class="proofscript" id="proof3989">
+<div class="toggleproof" onclick="toggleDisplay('proof4130')">Proof.</div>
+<div class="proofscript" id="proof4130">
  <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">destruct</span> <span class="id">y</span>; <span class="tactic">simpl</span>; <span class="tactic">congruence</span>. Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="IndexedSlot.eq">eq</a></span> := <span class="id"><a href="compcert.backend.Locations.html#slot_eq">slot_eq</a></span>.<br/>
 <span class="kwd">End</span> <span class="id"><a href="compcert.backend.Locations.html#IndexedSlot">IndexedSlot</a></span>.<br/>
@@ -523,8 +523,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedLoc.eq_trans">eq_trans</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> <span class="id">z</span> : <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.t">t</a></span>, <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.eq">eq</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.eq">eq</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> <span class="id"><a href="compcert.backend.Locations.html#z">z</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.eq">eq</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#z">z</a></span>.<br/>
 &nbsp;&nbsp;<span class="kwd">Proof</span> (@<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq_trans">eq_trans</a></span> <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.t">t</a></span>).<br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedLoc.lt_trans">lt_trans</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> <span class="id">z</span> : <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.t">t</a></span>, <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> <span class="id"><a href="compcert.backend.Locations.html#z">z</a></span> -&gt; <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#z">z</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3990')">Proof.</div>
-<div class="proofscript" id="proof3990">
+<div class="toggleproof" onclick="toggleDisplay('proof4131')">Proof.</div>
+<div class="proofscript" id="proof4131">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">destruct</span> <span class="id">y</span>; <span class="tactic">destruct</span> <span class="id">z</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_trans">Plt_trans</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -539,8 +539,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">right</span>; <span class="tactic">split</span>. <span class="tactic">congruence</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Locations.html#OrderedTyp.lt_trans">OrderedTyp.lt_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedLoc.lt_not_eq">lt_not_eq</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> : <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.t">t</a></span>, <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span> -&gt; ~ <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.eq">eq</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3991')">Proof.</div>
-<div class="proofscript" id="proof3991">
+<div class="toggleproof" onclick="toggleDisplay('proof4132')">Proof.</div>
+<div class="proofscript" id="proof4132">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span>, <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.eq">eq</a></span>; <span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">subst</span> <span class="id">y</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eelim</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_strict">Plt_strict</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -549,8 +549,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span>. <span class="id">eelim</span> <span class="id"><a href="compcert.backend.Locations.html#OrderedTyp.lt_not_eq">OrderedTyp.lt_not_eq</a></span>; <span class="tactic">eauto</span>. <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="OrderedLoc.compare">compare</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> : <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.t">t</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.OrderedType.html#Compare">Compare</a></span> <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.eq">eq</a></span> <span class="id"><a href="compcert.backend.Locations.html#x">x</a></span> <span class="id"><a href="compcert.backend.Locations.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3992')">Proof.</div>
-<div class="proofscript" id="proof3992">
+<div class="toggleproof" onclick="toggleDisplay('proof4133')">Proof.</div>
+<div class="proofscript" id="proof4133">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">destruct</span> <span class="id">y</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.Ordered.html#OrderedPositive.compare">OrderedPositive.compare</a></span> (<span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">IndexedMreg.index</a></span> <span class="id">r</span>) (<span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">IndexedMreg.index</a></span> <span class="id">r0</span>)).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.OrderedType.html#LT">LT</a></span>. <span class="tactic">red</span>. <span class="tactic">auto</span>.<br/>
@@ -587,8 +587,8 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedLoc.outside_interval_diff">outside_interval_diff</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">l</span>', <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id">l</span>' (<span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.diff_low_bound">diff_low_bound</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>) \/ <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> (<span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.diff_high_bound">diff_high_bound</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>) <span class="id">l</span>' -&gt; <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id">l</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3993')">Proof.</div>
-<div class="proofscript" id="proof3993">
+<div class="toggleproof" onclick="toggleDisplay('proof4134')">Proof.</div>
+<div class="proofscript" id="proof4134">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">l</span> <span class="kwd">as</span> [<span class="id">mr</span> | <span class="id">sl</span> <span class="id">ofs</span> <span class="id">ty</span>]; <span class="tactic">destruct</span> <span class="id">l</span>' <span class="kwd">as</span> [<span class="id">mr</span>' | <span class="id">sl</span>' <span class="id">ofs</span>' <span class="id">ty</span>']; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">assert</span> (<span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">IndexedMreg.index</a></span> <span class="id">mr</span> &lt;&gt; <span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">IndexedMreg.index</a></span> <span class="id">mr</span>').<br/>
@@ -612,8 +612,8 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedLoc.diff_outside_interval">diff_outside_interval</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">l</span>', <span class="id"><a href="compcert.backend.Locations.html#Loc.diff">Loc.diff</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span> <span class="id">l</span>' -&gt; <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> <span class="id">l</span>' (<span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.diff_low_bound">diff_low_bound</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>) \/ <span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.lt">lt</a></span> (<span class="id"><a href="compcert.backend.Locations.html#OrderedLoc.diff_high_bound">diff_high_bound</a></span> <span class="id"><a href="compcert.backend.Locations.html#l">l</a></span>) <span class="id">l</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3994')">Proof.</div>
-<div class="proofscript" id="proof3994">
+<div class="toggleproof" onclick="toggleDisplay('proof4135')">Proof.</div>
+<div class="proofscript" id="proof4135">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">l</span> <span class="kwd">as</span> [<span class="id">mr</span> | <span class="id">sl</span> <span class="id">ofs</span> <span class="id">ty</span>]; <span class="tactic">destruct</span> <span class="id">l</span>' <span class="kwd">as</span> [<span class="id">mr</span>' | <span class="id">sl</span>' <span class="id">ofs</span>' <span class="id">ty</span>']; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt">Plt</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.lt">Pos.lt</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare">Pos.compare</a></span> (<span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">IndexedMreg.index</a></span> <span class="id">mr</span>) (<span class="id"><a href="compcert.x86.Machregs.html#IndexedMreg.index">IndexedMreg.index</a></span> <span class="id">mr</span>')) <span class="id">eqn</span>:<span class="id">C</span>.<br/>

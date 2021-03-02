@@ -29,8 +29,8 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_program_match">transf_program_match</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">p</span> <span class="id">tp</span>, <span class="id"><a href="compcert.backend.Debugvar.html#transf_program">transf_program</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#p">p</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tp">tp</a></span> -&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#p">p</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tp">tp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4235')">Proof.</div>
-<div class="proofscript" id="proof4235">
+<div class="toggleproof" onclick="toggleDisplay('proof4389')">Proof.</div>
+<div class="proofscript" id="proof4389">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Linking.html#match_transform_partial_program">match_transform_partial_program</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -43,8 +43,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="diff_same">diff_same</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvar.html#diff">diff</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4236')">Proof.</div>
-<div class="proofscript" id="proof4236">
+<div class="toggleproof" onclick="toggleDisplay('proof4390')">Proof.</div>
+<div class="proofscript" id="proof4390">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">s</span> <span class="kwd">as</span> [ | [<span class="id">v</span> <span class="id">i</span>] <span class="id">s</span>]; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_refl">Pos.compare_refl</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>. <span class="tactic">auto</span>.<br/>
@@ -52,15 +52,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="delta_state_same">delta_state_same</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvar.html#delta_state">delta_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> = (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4237')">Proof.</div>
-<div class="proofscript" id="proof4237">
+<div class="toggleproof" onclick="toggleDisplay('proof4391')">Proof.</div>
+<div class="proofscript" id="proof4391">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">s</span>; <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> ! <span class="id"><a href="compcert.backend.Debugvarproof.html#diff_same">diff_same</a></span>; <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_code_match">transf_code_match</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lm</span> <span class="id">c</span> <span class="id">before</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#match_code">match_code</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#transf_code">transf_code</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lm">lm</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#before">before</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4238')">Proof.</div>
-<div class="proofscript" id="proof4238">
+<div class="toggleproof" onclick="toggleDisplay('proof4392')">Proof.</div>
+<div class="proofscript" id="proof4392">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">lm</span>. <span class="id">fix</span> <span class="id">REC</span> 1. <span class="tactic">destruct</span> <span class="id">c</span>; <span class="tactic">intros</span> <span class="id">before</span>; <span class="tactic">simpl</span>.<br/>
 - <span class="id">constructor</span>.<br/>
 - <span class="tactic">assert</span> (<span class="id">DEFAULT</span>: <span class="kwd">forall</span> <span class="id">before</span> <span class="id">after</span>,<br/>
@@ -82,8 +82,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_function_match">transf_function_match</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>, <span class="id"><a href="compcert.backend.Debugvar.html#transf_function">transf_function</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span> -&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#match_function">match_function</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4239')">Proof.</div>
-<div class="proofscript" id="proof4239">
+<div class="toggleproof" onclick="toggleDisplay('proof4393')">Proof.</div>
+<div class="proofscript" id="proof4393">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Debugvar.html#transf_function">transf_function</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Debugvar.html#ana_function">ana_function</a></span> <span class="id">f</span>) <span class="kwd">as</span> [<span class="id">lm</span>|]; <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#transf_code_match">transf_code_match</a></span>.<br/>
@@ -91,8 +91,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="find_label_add_delta_ranges">find_label_add_delta_ranges</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">lbl</span> <span class="id">c</span> <span class="id">before</span> <span class="id">after</span>, <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lbl">lbl</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#before">before</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#after">after</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span>) = <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4240')">Proof.</div>
-<div class="proofscript" id="proof4240">
+<div class="toggleproof" onclick="toggleDisplay('proof4394')">Proof.</div>
+<div class="proofscript" id="proof4394">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Debugvar.html#delta_state">delta_state</a></span> <span class="id">before</span> <span class="id">after</span>) <span class="kwd">as</span> [<span class="id">killed</span> <span class="id">born</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">killed</span> <span class="kwd">as</span> [ | [<span class="id">v</span> <span class="id">i</span>] <span class="id">l</span>]; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -104,8 +104,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvarproof.html#match_code">match_code</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tc">tc</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">c</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">before</span> <span class="id">after</span> <span class="id">tc</span>', <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tc">tc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#before">before</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#after">after</a></span> <span class="id">tc</span>') /\ <span class="id"><a href="compcert.backend.Debugvarproof.html#match_code">match_code</a></span> <span class="id">c</span>' <span class="id">tc</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4241')">Proof.</div>
-<div class="proofscript" id="proof4241">
+<div class="toggleproof" onclick="toggleDisplay('proof4395')">Proof.</div>
+<div class="proofscript" id="proof4395">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">discriminate</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Linear.html#is_label">is_label</a></span> <span class="id">lbl</span> <span class="id">i</span>).<br/>
@@ -118,8 +118,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvarproof.html#match_function">match_function</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">before</span> <span class="id">after</span> <span class="id">tc</span>, <span class="id"><a href="compcert.backend.Linear.html#find_label">find_label</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#lbl">lbl</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#before">before</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#after">after</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tc">tc</a></span>) /\ <span class="id"><a href="compcert.backend.Debugvarproof.html#match_code">match_code</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tc">tc</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4242')">Proof.</div>
-<div class="proofscript" id="proof4242">
+<div class="toggleproof" onclick="toggleDisplay('proof4396')">Proof.</div>
+<div class="proofscript" id="proof4396">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#find_label_match_rec">find_label_match_rec</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -141,8 +141,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="set_state_1">set_state_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">i</span> <span class="id">s</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) (<span class="id"><a href="compcert.backend.Debugvar.html#set_state">set_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4243')">Proof.</div>
-<div class="proofscript" id="proof4243">
+<div class="toggleproof" onclick="toggleDisplay('proof4397')">Proof.</div>
+<div class="proofscript" id="proof4397">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">s</span> <span class="kwd">as</span> [ | [<span class="id">v</span>' <span class="id">i</span>'] <span class="id">s</span>]; <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare">Pos.compare</a></span> <span class="id">v</span> <span class="id">v</span>'); <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -151,8 +151,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="set_state_2">set_state_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">i</span> <span class="id">v</span>' <span class="id">i</span>' <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id">v</span>' &lt;&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') (<span class="id"><a href="compcert.backend.Debugvar.html#set_state">set_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4244')">Proof.</div>
-<div class="proofscript" id="proof4244">
+<div class="toggleproof" onclick="toggleDisplay('proof4398')">Proof.</div>
+<div class="proofscript" id="proof4398">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">s</span> <span class="kwd">as</span> [ | [<span class="id">v1</span> <span class="id">i1</span>] <span class="id">s</span>]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">contradiction</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v1</span>); <span class="tactic">simpl</span>.<br/>
@@ -166,8 +166,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') (<span class="id"><a href="compcert.backend.Debugvar.html#set_state">set_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>) -&gt;<br/>
 &nbsp;&nbsp;(<span class="id">v</span>' = <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> /\ <span class="id">i</span>' = <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) \/ (<span class="id">v</span>' &lt;&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> /\ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4245')">Proof.</div>
-<div class="proofscript" id="proof4245">
+<div class="toggleproof" onclick="toggleDisplay('proof4399')">Proof.</div>
+<div class="proofscript" id="proof4399">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v0</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H1</span>.<br/>
@@ -183,8 +183,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wf_set_state">wf_set_state</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">i</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#set_state">set_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4246')">Proof.</div>
-<div class="proofscript" id="proof4246">
+<div class="toggleproof" onclick="toggleDisplay('proof4400')">Proof.</div>
+<div class="proofscript" id="proof4400">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>.<br/>
 - <span class="id">constructor</span>. <span class="tactic">red</span>; <span class="tactic">simpl</span>; <span class="tactic">tauto</span>. <span class="id">constructor</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v0</span>).<br/>
@@ -200,8 +200,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="remove_state_1">remove_state_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">i</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; ~ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) (<span class="id"><a href="compcert.backend.Debugvar.html#remove_state">remove_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4247')">Proof.</div>
-<div class="proofscript" id="proof4247">
+<div class="toggleproof" onclick="toggleDisplay('proof4401')">Proof.</div>
+<div class="proofscript" id="proof4401">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v0</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
@@ -213,8 +213,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="remove_state_2">remove_state_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">v</span>' <span class="id">i</span>' <span class="id">s</span>, <span class="id">v</span>' &lt;&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') (<span class="id"><a href="compcert.backend.Debugvar.html#remove_state">remove_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4248')">Proof.</div>
-<div class="proofscript" id="proof4248">
+<div class="toggleproof" onclick="toggleDisplay('proof4402')">Proof.</div>
+<div class="proofscript" id="proof4402">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">s</span> <span class="kwd">as</span> [ | [<span class="id">v1</span> <span class="id">i1</span>] <span class="id">s</span>]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v1</span>); <span class="tactic">simpl</span>.<br/>
@@ -225,8 +225,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="remove_state_3">remove_state_3</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">v</span>' <span class="id">i</span>' <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') (<span class="id"><a href="compcert.backend.Debugvar.html#remove_state">remove_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>) -&gt; <span class="id">v</span>' &lt;&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> /\ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id">v</span>', <span class="id">i</span>') <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4249')">Proof.</div>
-<div class="proofscript" id="proof4249">
+<div class="toggleproof" onclick="toggleDisplay('proof4403')">Proof.</div>
+<div class="proofscript" id="proof4403">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">contradiction</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v0</span>); <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H1</span>.<br/>
@@ -239,8 +239,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wf_remove_state">wf_remove_state</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#remove_state">remove_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4250')">Proof.</div>
-<div class="proofscript" id="proof4250">
+<div class="toggleproof" onclick="toggleDisplay('proof4404')">Proof.</div>
+<div class="proofscript" id="proof4404">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>.<br/>
 - <span class="id">constructor</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v0</span>).<br/>
@@ -252,8 +252,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wf_filter">wf_filter</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pred</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#filter">List.filter</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#pred">pred</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4251')">Proof.</div>
-<div class="proofscript" id="proof4251">
+<div class="toggleproof" onclick="toggleDisplay('proof4405')">Proof.</div>
+<div class="proofscript" id="proof4405">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>.<br/>
 - <span class="id">constructor</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id">pred</span> (<span class="id">v</span>, <span class="id">i</span>)) <span class="id">eqn</span>:<span class="id">P</span>; <span class="tactic">auto</span>.<br/>
@@ -264,8 +264,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="join_1">join_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">i</span> <span class="id">s1</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) (<span class="id"><a href="compcert.backend.Debugvar.html#join">join</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4252')">Proof.</div>
-<div class="proofscript" id="proof4252">
+<div class="toggleproof" onclick="toggleDisplay('proof4406')">Proof.</div>
+<div class="proofscript" id="proof4406">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>; <span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span> <span class="id">I1</span> <span class="id">I2</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">I1</span>, <span class="id">I2</span>.<br/>
 - <span class="id">inv</span> <span class="id">H3</span>; <span class="id">inv</span> <span class="id">H4</span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_refl">Pos.compare_refl</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
@@ -282,8 +282,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="join_2">join_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">i</span> <span class="id">s1</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) (<span class="id"><a href="compcert.backend.Debugvar.html#join">join</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> /\ <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#i">i</a></span>) <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4253')">Proof.</div>
-<div class="proofscript" id="proof4253">
+<div class="toggleproof" onclick="toggleDisplay('proof4407')">Proof.</div>
+<div class="proofscript" id="proof4407">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>; <span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span> <span class="id">I</span>; <span class="tactic">try</span> <span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v0</span> <span class="id">v1</span>).<br/>
 - <span class="tactic">subst</span> <span class="id">v1</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Debugvar.html#eq_debuginfo">eq_debuginfo</a></span> <span class="id">i0</span> <span class="id">i1</span>).<br/>
@@ -296,8 +296,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wf_join">wf_join</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span> -&gt; <span class="id"><a href="compcert.backend.Debugvarproof.html#wf_avail">wf_avail</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#join">join</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4254')">Proof.</div>
-<div class="proofscript" id="proof4254">
+<div class="toggleproof" onclick="toggleDisplay('proof4408')">Proof.</div>
+<div class="proofscript" id="proof4408">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_spec">Pos.compare_spec</a></span> <span class="id">v</span> <span class="id">v0</span>).<br/>
 - <span class="tactic">subst</span> <span class="id">v0</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Debugvar.html#eq_debuginfo">eq_debuginfo</a></span> <span class="id">i</span> <span class="id">i0</span>); <span class="tactic">auto</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
@@ -324,8 +324,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span> /\ <span class="id"><a href="compcert.backend.Debugvar.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4255')">Proof.</div>
-<div class="proofscript" id="proof4255">
+<div class="toggleproof" onclick="toggleDisplay('proof4409')">Proof.</div>
+<div class="proofscript" id="proof4409">
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_transf_partial_id">Genv.find_funct_transf_partial_id</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.TRANSF">TRANSF</a></span>).<br/>
 Qed.</div>
 <br/>
@@ -333,8 +333,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvar.html#transf_fundef">transf_fundef</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#funsig">funsig</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span> = <span class="id"><a href="compcert.backend.Linear.html#funsig">funsig</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4256')">Proof.</div>
-<div class="proofscript" id="proof4256">
+<div class="toggleproof" onclick="toggleDisplay('proof4410')">Proof.</div>
+<div class="proofscript" id="proof4410">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Debugvar.html#transf_fundef">transf_fundef</a></span>, <span class="id"><a href="compcert.common.AST.html#transf_partial_fundef">transf_partial_fundef</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">f</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#transf_function_match">transf_function_match</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">M</span>; <span class="id">inv</span> <span class="id">M</span>; <span class="tactic">auto</span>.<br/>
@@ -346,8 +346,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="can_eval_safe_arg">can_eval_safe_arg</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">rs</span>: <span class="id"><a href="compcert.backend.Linear.html#locset">locset</a></span>) <span class="id">sp</span> <span class="id">m</span> (<span class="id">a</span>: <span class="id"><a href="compcert.common.AST.html#builtin_arg">builtin_arg</a></span> <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvar.html#safe_builtin_arg">safe_builtin_arg</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#a">a</a></span> -&gt; <span class="id">exists</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Events.html#eval_builtin_arg">eval_builtin_arg</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.se">se</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#m">m</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#a">a</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4257')">Proof.</div>
-<div class="proofscript" id="proof4257">
+<div class="toggleproof" onclick="toggleDisplay('proof4411')">Proof.</div>
+<div class="proofscript" id="proof4411">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">a</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> <span class="id">contradiction</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">try</span> (<span class="id">econstructor</span>; <span class="id">now</span> <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">barg</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">S1</span> <span class="id">S2</span>].<br/>
@@ -359,8 +359,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">c</span> <span class="id">rs</span> <span class="id">m</span> <span class="id">before</span> <span class="id">after</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#star">star</a></span> <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.tge">tge</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sp">sp</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#before">before</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#after">after</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span>) <span class="id"><a href="compcert.backend.Debugvarproof.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#m">m</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#E0">E0</a></span> (<span class="id"><a href="compcert.backend.Linear.html#State">State</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#m">m</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4258')">Proof.</div>
-<div class="proofscript" id="proof4258">
+<div class="toggleproof" onclick="toggleDisplay('proof4412')">Proof.</div>
+<div class="proofscript" id="proof4412">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Debugvar.html#delta_state">delta_state</a></span> <span class="id">before</span> <span class="id">after</span>) <span class="kwd">as</span> [<span class="id">killed</span> <span class="id">born</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">killed</span> <span class="kwd">as</span> [ | [<span class="id">v</span> <span class="id">i</span>] <span class="id">l</span>]; <span class="tactic">simpl</span>.<br/>
@@ -393,10 +393,10 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackframe">Stackframe</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#f">f</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#c">c</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackframe">Stackframe</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tf">tf</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#rs">rs</a></span> (<span class="id"><a href="compcert.backend.Debugvar.html#add_delta_ranges">add_delta_ranges</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#before">before</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#after">after</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tc">tc</a></span>))<br/>
 &nbsp;&nbsp;| <span class="id"><a name="match_stackframe_top">match_stackframe_top</a></span>:<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sg</span> <span class="id">ls</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ls</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvarproof.html#match_stackframes">match_stackframes</a></span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Stackbase</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sg">sg</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ls">ls</a></span>)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Stackbase</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#sg">sg</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ls">ls</a></span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Stackbase</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ls">ls</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.backend.Linear.html#Stackbase">Stackbase</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ls">ls</a></span>).<br/>
 <br/>
 <span class="kwd">Inductive</span> <span class="id"><a name="match_states">match_states</a></span>: <span class="id"><a href="compcert.backend.Linear.html#state">Linear.state</a></span> -&gt;  <span class="id"><a href="compcert.backend.Linear.html#state">Linear.state</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
 &nbsp;&nbsp;| <span class="id"><a name="match_states_instr">match_states_instr</a></span>:<br/>
@@ -421,8 +421,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">ts</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#match_stackframes">match_stackframes</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ts">ts</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#parent_locset">parent_locset</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ts">ts</a></span> = <span class="id"><a href="compcert.backend.Linear.html#parent_locset">parent_locset</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4259')">Proof.</div>
-<div class="proofscript" id="proof4259">
+<div class="toggleproof" onclick="toggleDisplay('proof4413')">Proof.</div>
+<div class="proofscript" id="proof4413">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>. <span class="tactic">auto</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -432,8 +432,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s1</span> <span class="id">t</span> <span class="id">s2</span>, <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#t">t</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ts1</span> (<span class="id">MS</span>: <span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s1">s1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ts1">ts1</a></span>),<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">ts2</span>, <span class="id"><a href="compcert.common.Smallstep.html#plus">plus</a></span> <span class="id"><a href="compcert.backend.Linear.html#step">step</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ts1">ts1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#t">t</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ts2">ts2</a></span> /\ <span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#s2">s2</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#ts2">ts2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4260')">Proof.</div>
-<div class="proofscript" id="proof4260">
+<div class="toggleproof" onclick="toggleDisplay('proof4414')">Proof.</div>
+<div class="proofscript" id="proof4414">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span> <span class="id">ts1</span> <span class="id">MS</span>; <span class="id">inv</span> <span class="id">MS</span>; <span class="tactic">try</span> (<span class="id">inv</span> <span class="id">TRC</span>).<br/>
 - <span class="comment">(*&nbsp;getstack&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">split</span>.<br/>
@@ -533,11 +533,11 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_initial_states">transf_initial_states</a></span> <span class="id">q</span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span>, <span class="id"><a href="compcert.backend.Linear.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#q">q</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st1">st1</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">st2</span>, <span class="id"><a href="compcert.backend.Linear.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#q">q</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st2">st2</a></span> /\ <span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st2">st2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4261')">Proof.</div>
-<div class="proofscript" id="proof4261">
-&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">inversion</span> <span class="id">H</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4415')">Proof.</div>
+<div class="proofscript" id="proof4415">
+&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">inversion</span> <span class="id">H</span>. <span class="tactic">subst</span> <span class="id">rs0</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#functions_translated">functions_translated</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">tf</span> [<span class="id">A</span> <span class="id">B</span>]].<br/>
-&nbsp;&nbsp;<span class="tactic">setoid_rewrite</span> &lt;- (<span class="id"><a href="compcert.backend.Debugvarproof.html#sig_preserved">sig_preserved</a></span> (<span class="id"><a href="compcert.common.AST.html#Internal">Internal</a></span> <span class="id">f</span>)); <span class="tactic">eauto</span>. <span class="id">monadInv</span> <span class="id">B</span>.<br/>
+&nbsp;&nbsp;<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.backend.Debugvarproof.html#sig_preserved">sig_preserved</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">B</span>) <span class="kwd">as</span> <span class="id">SIG</span>. <span class="id">monadInv</span> <span class="id">B</span>. <span class="id">cbn</span> <span class="kwd">in</span> <span class="id">SIG</span>. <span class="tactic">rewrite</span> &lt;- <span class="id">SIG</span>.<br/>
 &nbsp;&nbsp;<span class="id">eexists</span>; <span class="tactic">split</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -545,21 +545,21 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_external">transf_external</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">S</span> <span class="id">R</span> <span class="id">q</span>, <span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#R">R</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#at_external">at_external</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#q">q</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Linear.html#at_external">at_external</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#q">q</a></span> /\<br/>
-&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">S</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#r">r</a></span> <span class="id">S</span>' -&gt;<br/>
-&nbsp;&nbsp;<span class="id">exists</span> <span class="id">R</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#r">r</a></span> <span class="id">R</span>' /\ <span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id">S</span>' <span class="id">R</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4262')">Proof.</div>
-<div class="proofscript" id="proof4262">
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">S</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.ge">ge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#S">S</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#r">r</a></span> <span class="id">S</span>' -&gt;<br/>
+&nbsp;&nbsp;<span class="id">exists</span> <span class="id">R</span>', <span class="id"><a href="compcert.backend.Linear.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#PRESERVATION.tge">tge</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#R">R</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#r">r</a></span> <span class="id">R</span>' /\ <span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id">S</span>' <span class="id">R</span>'.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4416')">Proof.</div>
+<div class="proofscript" id="proof4416">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">S</span> <span class="id">R</span> <span class="id">q</span> <span class="id">HSR</span> <span class="id">Hq</span>. <span class="tactic">destruct</span> <span class="id">Hq</span>; <span class="id">inv</span> <span class="id">HSR</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#functions_translated">functions_translated</a></span> <span class="kwd">in</span> <span class="id">H</span> <span class="kwd">as</span> (<span class="id">tf</span> &amp; <span class="id">FIND</span> &amp; <span class="id">TF</span>). <span class="id">monadInv</span> <span class="id">TF</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">r</span> <span class="id">S</span>' <span class="id">HS</span>'. <span class="id">inv</span> <span class="id">HS</span>'.<br/>
+&nbsp;&nbsp;<span class="id">edestruct</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#functions_translated">functions_translated</a></span> <span class="kwd">as</span> (<span class="id">tf</span> &amp; <span class="id">FIND</span> &amp; <span class="id">TF</span>); <span class="tactic">eauto</span>. <span class="id">monadInv</span> <span class="id">TF</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">r</span> <span class="id">S</span>' <span class="id">HS</span>'. <span class="id">inv</span> <span class="id">HS</span>'. <span class="tactic">rewrite</span> <span class="id">H7</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">eexists</span>. <span class="tactic">split</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="transf_final_states">transf_final_states</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span> <span class="id">st2</span> <span class="id">r</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvarproof.html#match_states">match_states</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st2">st2</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#final_state">final_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#r">r</a></span> -&gt; <span class="id"><a href="compcert.backend.Linear.html#final_state">final_state</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#st2">st2</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4263')">Proof.</div>
-<div class="proofscript" id="proof4263">
+<div class="toggleproof" onclick="toggleDisplay('proof4417')">Proof.</div>
+<div class="proofscript" id="proof4417">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H4</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -568,8 +568,8 @@ Qed.</div>
 <span class="kwd">Theorem</span> <span class="id"><a name="transf_program_correct">transf_program_correct</a></span> <span class="id">prog</span> <span class="id">tprog</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Debugvarproof.html#match_prog">match_prog</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#prog">prog</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tprog">tprog</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html#cc_id">cc_id</a></span> (<span class="id"><a href="compcert.backend.Linear.html#semantics">semantics</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#prog">prog</a></span>) (<span class="id"><a href="compcert.backend.Linear.html#semantics">semantics</a></span> <span class="id"><a href="compcert.backend.Debugvarproof.html#tprog">tprog</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4264')">Proof.</div>
-<div class="proofscript" id="proof4264">
+<div class="toggleproof" onclick="toggleDisplay('proof4418')">Proof.</div>
+<div class="proofscript" id="proof4418">
 &nbsp;&nbsp;<span class="id">fsim</span> <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_plus">forward_simulation_plus</a></span>; <span class="id">cbn</span> <span class="kwd">in</span> *; <span class="tactic">intros</span>; <span class="tactic">subst</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Globalenvs.html#Genv.is_internal_transf_partial_id">Genv.is_internal_transf_partial_id</a></span> <span class="id">MATCH</span>). <span class="tactic">intros</span> [|] ? <span class="id">Hf</span>; <span class="id">monadInv</span> <span class="id">Hf</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Debugvarproof.html#transf_initial_states">transf_initial_states</a></span>.<br/>

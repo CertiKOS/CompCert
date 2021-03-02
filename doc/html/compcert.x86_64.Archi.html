@@ -1,0 +1,74 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Archi</title>
+<meta name="description" content="Documentation of Coq module Archi" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Archi</h1>
+<div class="coq">
+<br/>
+<div class="doc">Architecture-dependent parameters for x86 in 64-bit mode </div>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.ZArith.html">ZArith</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.flocq.IEEE754.Binary.html">Binary</a></span> <span class="id"><a href="compcert.flocq.IEEE754.Bits.html">Bits</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ptr64">ptr64</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="big_endian">big_endian</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="align_int64">align_int64</a></span> := 8%<span class="id">Z</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="align_float64">align_float64</a></span> := 8%<span class="id">Z</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="splitlong">splitlong</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#negb">negb</a></span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">ptr64</a></span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="splitlong_ptr32">splitlong_ptr32</a></span>: <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">splitlong</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">ptr64</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof855')">Proof.</div>
+<div class="proofscript" id="proof855">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">splitlong</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">ptr64</a></span>; <span class="tactic">simpl</span>; <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="default_nan_64">default_nan_64</a></span> := (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Wf_nat.html#iter_nat">iter_nat</a></span> 51 <span class="id">_</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#xO">xO</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#xH">xH</a></span>).<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="default_nan_32">default_nan_32</a></span> := (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Wf_nat.html#iter_nat">iter_nat</a></span> 22 <span class="id">_</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#xO">xO</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#xH">xH</a></span>).<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="choose_nan_64">choose_nan_64</a></span> (<span class="id">l</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span>)) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.x86_64.Archi.html#l">l</a></span> <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> =&gt; <span class="id"><a href="compcert.x86_64.Archi.html#default_nan_64">default_nan_64</a></span> | <span class="id">n</span> :: <span class="id">_</span> =&gt; <span class="id">n</span> <span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="choose_nan_32">choose_nan_32</a></span> (<span class="id">l</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span>)) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.x86_64.Archi.html#l">l</a></span> <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> =&gt; <span class="id"><a href="compcert.x86_64.Archi.html#default_nan_32">default_nan_32</a></span> | <span class="id">n</span> :: <span class="id">_</span> =&gt; <span class="id">n</span> <span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="choose_nan_64_idem">choose_nan_64_idem</a></span>: <span class="kwd">forall</span> <span class="id">n</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.x86_64.Archi.html#choose_nan_64">choose_nan_64</a></span> (<span class="id"><a href="compcert.x86_64.Archi.html#n">n</a></span> :: <span class="id"><a href="compcert.x86_64.Archi.html#n">n</a></span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) = <span class="id"><a href="compcert.x86_64.Archi.html#choose_nan_64">choose_nan_64</a></span> (<span class="id"><a href="compcert.x86_64.Archi.html#n">n</a></span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof856')">Proof.</div>
+<div class="proofscript" id="proof856">
+ <span class="tactic">auto</span>. Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="choose_nan_32_idem">choose_nan_32_idem</a></span>: <span class="kwd">forall</span> <span class="id">n</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.x86_64.Archi.html#choose_nan_32">choose_nan_32</a></span> (<span class="id"><a href="compcert.x86_64.Archi.html#n">n</a></span> :: <span class="id"><a href="compcert.x86_64.Archi.html#n">n</a></span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) = <span class="id"><a href="compcert.x86_64.Archi.html#choose_nan_32">choose_nan_32</a></span> (<span class="id"><a href="compcert.x86_64.Archi.html#n">n</a></span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof857')">Proof.</div>
+<div class="proofscript" id="proof857">
+ <span class="tactic">auto</span>. Qed.</div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="fma_order">fma_order</a></span> {<span class="id">A</span>: <span class="kwd">Type</span>} (<span class="id">x</span> <span class="id">y</span> <span class="id">z</span>: <span class="id"><a href="compcert.x86_64.Archi.html#A">A</a></span>) := (<span class="id"><a href="compcert.x86_64.Archi.html#x">x</a></span>, <span class="id"><a href="compcert.x86_64.Archi.html#y">y</a></span>, <span class="id"><a href="compcert.x86_64.Archi.html#z">z</a></span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="fma_invalid_mul_is_nan">fma_invalid_mul_is_nan</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="float_of_single_preserves_sNaN">float_of_single_preserves_sNaN</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<br/>
+<span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">ptr64</a></span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">big_endian</a></span> <span class="id"><a href="compcert.x86_64.Archi.html#splitlong">splitlong</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.x86_64.Archi.html#default_nan_64">default_nan_64</a></span> <span class="id"><a href="compcert.x86_64.Archi.html#choose_nan_64">choose_nan_64</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.x86_64.Archi.html#default_nan_32">default_nan_32</a></span> <span class="id"><a href="compcert.x86_64.Archi.html#choose_nan_32">choose_nan_32</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.x86_64.Archi.html#fma_order">fma_order</a></span> <span class="id"><a href="compcert.x86_64.Archi.html#fma_invalid_mul_is_nan">fma_invalid_mul_is_nan</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.x86_64.Archi.html#float_of_single_preserves_sNaN">float_of_single_preserves_sNaN</a></span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

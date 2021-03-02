@@ -14,7 +14,7 @@
 <h1 class="title">Module RTLrel</h1>
 <div class="coq">
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html">Mapsrel</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="compcert.cklr.Valuesrel.html">Valuesrel</a></span> <span class="id"><a href="compcert.cklr.Eventsrel.html">Eventsrel</a></span> <span class="id"><a href="compcert.cklr.CKLR.html">CKLR</a></span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="compcert.cklr.Valuesrel.html">Valuesrel</a></span> <span class="id"><a href="compcert.cklr.Eventsrel.html">Eventsrel</a></span> <span class="id"><a href="compcert.cklr.CKLR.html">CKLR</a></span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span> <span class="id"><a href="compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.x86.Op.html">Op</a></span> <span class="id"><a href="compcert.cklr.Registersrel.html">Registersrel</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Export</span> <span class="id"><a href="compcert.backend.RTL.html">RTL</a></span>.<br/>
 <br/>
@@ -22,8 +22,8 @@
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="init_regs_inject">init_regs_inject</a></span> <span class="id">f</span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.backend.RTL.html#init_regs">init_regs</a></span>) (<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span> ++&gt; - ==&gt; <span class="id"><a href="compcert.cklr.RTLrel.html#regset_inject">regset_inject</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2677')">Proof.</div>
-<div class="proofscript" id="proof2677">
+<div class="toggleproof" onclick="toggleDisplay('proof2815')">Proof.</div>
+<div class="proofscript" id="proof2815">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">vl1</span> <span class="id">vl2</span> <span class="id">Hvl</span> <span class="id">rl</span>. <span class="id">revert</span> <span class="id">vl1</span> <span class="id">vl2</span> <span class="id">Hvl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">rl</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;- <span class="id">rauto</span>.<br/>
@@ -43,16 +43,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="sp_inject_incr">sp_inject_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.RTLrel.html#sp_inject">sp_inject</a></span>) (<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> ++&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2678')">Proof.</div>
-<div class="proofscript" id="proof2678">
+<div class="toggleproof" onclick="toggleDisplay('proof2816')">Proof.</div>
+<div class="proofscript" id="proof2816">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f</span> <span class="id">g</span> <span class="id">Hfg</span> <span class="id">x</span> <span class="id">y</span> <span class="id">Hxy</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hxy</span>; <span class="id">constructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="sp_val_inject_subrel">sp_val_inject_subrel</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Related</span> (@<span class="id"><a href="compcert.cklr.RTLrel.html#sp_inject">sp_inject</a></span>) (@<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span>) (<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> ++&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2679')">Proof.</div>
-<div class="proofscript" id="proof2679">
+<div class="toggleproof" onclick="toggleDisplay('proof2817')">Proof.</div>
+<div class="proofscript" id="proof2817">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f</span> <span class="id">g</span> <span class="id">Hfg</span> <span class="id">x</span> <span class="id">y</span> <span class="id">Hxy</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hxy</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.add_zero">Ptrofs.add_zero</a></span>. <span class="tactic">reflexivity</span>.<br/>
@@ -68,8 +68,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="stackframe_inject_incr">stackframe_inject_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.RTLrel.html#stackframe_inject">stackframe_inject</a></span>) (<span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> ++&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2680')">Proof.</div>
-<div class="proofscript" id="proof2680">
+<div class="toggleproof" onclick="toggleDisplay('proof2818')">Proof.</div>
+<div class="proofscript" id="proof2818">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f1</span> <span class="id">f2</span> <span class="id">Hf</span> <span class="id">sf1</span> <span class="id">sf2</span> <span class="id">Hsf</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hsf</span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
@@ -105,8 +105,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2681')">Proof.</div>
-<div class="proofscript" id="proof2681">
+<div class="toggleproof" onclick="toggleDisplay('proof2819')">Proof.</div>
+<div class="proofscript" id="proof2819">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.Op.html#eval_addressing32">eval_addressing32</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -117,8 +117,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2682')">Proof.</div>
-<div class="proofscript" id="proof2682">
+<div class="toggleproof" onclick="toggleDisplay('proof2820')">Proof.</div>
+<div class="proofscript" id="proof2820">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.Op.html#eval_addressing64">eval_addressing64</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -129,8 +129,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2683')">Proof.</div>
-<div class="proofscript" id="proof2683">
+<div class="toggleproof" onclick="toggleDisplay('proof2821')">Proof.</div>
+<div class="proofscript" id="proof2821">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.Op.html#eval_addressing">eval_addressing</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -138,8 +138,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">Monotonic</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.x86.Op.html#eval_condition">eval_condition</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span> ++&gt; <span class="id">option_le</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2684')">Proof.</div>
-<div class="proofscript" id="proof2684">
+<div class="toggleproof" onclick="toggleDisplay('proof2822')">Proof.</div>
+<div class="proofscript" id="proof2822">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.Op.html#eval_condition">eval_condition</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>; <span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -151,16 +151,16 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span> ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2685')">Proof.</div>
-<div class="proofscript" id="proof2685">
+<div class="toggleproof" onclick="toggleDisplay('proof2823')">Proof.</div>
+<div class="proofscript" id="proof2823">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">ge1</span> <span class="id">ge2</span> <span class="id">Hge</span> <span class="id">sp1</span> <span class="id">sp2</span> <span class="id">Hsp</span> <span class="id">op</span> <span class="id">vl1</span> <span class="id">vl2</span> <span class="id">Hvl</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.x86.Op.html#eval_operation">eval_operation</a></span>. <span class="tactic">destruct</span> <span class="id">op</span>; <span class="tactic">try</span> <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="map_inject_list">map_inject_list</a></span> {<span class="id">A</span>} <span class="id">R</span> <span class="id">f</span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">map</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#A">A</a></span> <span class="id"><a href="compcert.common.Values.html#val">val</a></span>) ((<span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span>) ++&gt; <span class="id">list_rel</span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject_list">Val.inject_list</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2686')">Proof.</div>
-<div class="proofscript" id="proof2686">
+<div class="toggleproof" onclick="toggleDisplay('proof2824')">Proof.</div>
+<div class="proofscript" id="proof2824">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">f1</span> <span class="id">f2</span> <span class="id">Hf</span> <span class="id">x</span> <span class="id">y</span> <span class="id">Hxy</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">Hxy</span>; <span class="tactic">simpl</span>; <span class="id">constructor</span>; <span class="id">rauto</span>.<br/>
 Qed.</div>
@@ -176,8 +176,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="option_impl_subrel">option_impl_subrel</a></span> <span class="id">A</span> <span class="id">B</span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.RTLrel.html#option_impl">option_impl</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#B">B</a></span>) (<span class="id">subrel</span> --&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2687')">Proof.</div>
-<div class="proofscript" id="proof2687">
+<div class="toggleproof" onclick="toggleDisplay('proof2825')">Proof.</div>
+<div class="proofscript" id="proof2825">
 &nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
 Qed.</div>
 <br/>
@@ -186,15 +186,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="option_impl_bot">option_impl_bot</a></span> {<span class="id">A</span> <span class="id">B</span>} (<span class="id">R</span>: <span class="id">rel</span> <span class="id"><a href="compcert.cklr.RTLrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#B">B</a></span>) <span class="id">y</span>:<br/>
 &nbsp;&nbsp;<span class="id">Related</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#y">y</a></span> (<span class="id"><a href="compcert.cklr.RTLrel.html#option_impl">option_impl</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2688')">Proof.</div>
-<div class="proofscript" id="proof2688">
+<div class="toggleproof" onclick="toggleDisplay('proof2826')">Proof.</div>
+<div class="proofscript" id="proof2826">
 &nbsp;&nbsp;<span class="tactic">discriminate</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="option_impl_transport">option_impl_transport</a></span> {<span class="id">A</span> <span class="id">B</span>} (<span class="id">R</span>: <span class="id">rel</span> <span class="id"><a href="compcert.cklr.RTLrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#B">B</a></span>) <span class="id">x</span> <span class="id">y</span> <span class="id">a</span> <span class="id">b</span>:<br/>
 &nbsp;&nbsp;<span class="id">Transport</span> (<span class="id"><a href="compcert.cklr.RTLrel.html#option_impl">option_impl</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> * <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>) (<span class="id"><a href="compcert.cklr.RTLrel.html#x">x</a></span>, <span class="id"><a href="compcert.cklr.RTLrel.html#a">a</a></span>) (<span class="id"><a href="compcert.cklr.RTLrel.html#y">y</a></span>, <span class="id"><a href="compcert.cklr.RTLrel.html#b">b</a></span>) (<span class="id"><a href="compcert.cklr.RTLrel.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#a">a</a></span>) (<span class="id"><a href="compcert.cklr.RTLrel.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#b">b</a></span>) | 5.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2689')">Proof.</div>
-<div class="proofscript" id="proof2689">
+<div class="toggleproof" onclick="toggleDisplay('proof2827')">Proof.</div>
+<div class="proofscript" id="proof2827">
 &nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
 Qed.</div>
 <br/>
@@ -202,8 +202,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">Monotonic</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.backend.RTL.html#ros_address">ros_address</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span> ++&gt; - ==&gt; <span class="id"><a href="compcert.cklr.RTLrel.html#regset_inject">regset_inject</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2690')">Proof.</div>
-<div class="proofscript" id="proof2690">
+<div class="toggleproof" onclick="toggleDisplay('proof2828')">Proof.</div>
+<div class="proofscript" id="proof2828">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTL.html#ros_address">ros_address</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -216,8 +216,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="match_prog">match_prog</a></span> {<span class="id">C</span>} `{!<span class="id"><a href="compcert.common.Linking.html#Linker">Linking.Linker</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#C">C</a></span>} (<span class="id">c</span>: <span class="id"><a href="compcert.cklr.RTLrel.html#C">C</a></span>):<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Linking.html#match_program_gen">Linking.match_program_gen</a></span> (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>) <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#c">c</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#PROG.p">p</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#PROG.p">p</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2691')">Proof.</div>
-<div class="proofscript" id="proof2691">
+<div class="toggleproof" onclick="toggleDisplay('proof2829')">Proof.</div>
+<div class="proofscript" id="proof2829">
 &nbsp;&nbsp;<span class="tactic">repeat</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#conj">conj</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> (<span class="id"><a href="compcert.common.AST.html#prog_defs">prog_defs</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#PROG.p">p</a></span>) <span class="kwd">as</span> [ | [<span class="id">id</span> [<span class="id">f</span>|<span class="id">v</span>]] <span class="id">defs</span> <span class="id">IHdefs</span>];<br/>
 &nbsp;&nbsp;<span class="tactic">repeat</span> (<span class="id">econstructor</span>; <span class="tactic">eauto</span>).<br/>
@@ -229,8 +229,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">Transport</span> (<span class="id"><a href="compcert.cklr.RTLrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span> * <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#w">w</a></span>)) (<span class="id"><a href="compcert.cklr.RTLrel.html#ge1">ge1</a></span>, <span class="id"><a href="compcert.cklr.RTLrel.html#v1">v1</a></span>) (<span class="id"><a href="compcert.cklr.RTLrel.html#ge2">ge2</a></span>, <span class="id"><a href="compcert.cklr.RTLrel.html#v2">v2</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#ge1">ge1</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#v1">v1</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#ge2">ge2</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#v2">v2</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#f">f</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2692')">Proof.</div>
-<div class="proofscript" id="proof2692">
+<div class="toggleproof" onclick="toggleDisplay('proof2830')">Proof.</div>
+<div class="proofscript" id="proof2830">
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">Hge</span> <span class="id">Hv</span>] <span class="id">Hf</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hge</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_proj">match_stbls_proj</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="id">cbn</span> <span class="kwd">in</span> <span class="id">Hf</span>.<br/>
 &nbsp;&nbsp;<span class="id">edestruct</span> @<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_match">Genv.find_funct_match</a></span> <span class="kwd">as</span> (?&amp;?&amp;?&amp;?&amp;?); <span class="tactic">eauto</span> <span class="kwd">using</span> (<span class="id"><a href="compcert.cklr.RTLrel.html#match_prog">match_prog</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>).<br/>
@@ -242,8 +242,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.backend.RTL.html#step">step</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(|= <span class="id"><a href="compcert.cklr.RTLrel.html#genv_match">genv_match</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.RTLrel.html#state_rel">state_rel</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span> ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">k1</span> <span class="id">set_le</span> (&lt;&gt; <span class="id"><a href="compcert.cklr.RTLrel.html#state_rel">state_rel</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2693')">Proof.</div>
-<div class="proofscript" id="proof2693">
+<div class="toggleproof" onclick="toggleDisplay('proof2831')">Proof.</div>
+<div class="proofscript" id="proof2831">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">ge</span> <span class="id">tge</span> <span class="id">Hge</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">Hs</span> <span class="id">t</span> <span class="id">s1</span>' <span class="id">H1</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hse</span>: <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls">match_stbls</a></span> <span class="id">R</span> <span class="id">w</span> <span class="id">ge</span> <span class="id">tge</span>) <span class="tactic">by</span> (<span class="tactic">destruct</span> <span class="id">Hge</span>; <span class="tactic">eauto</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hse</span>': <span class="id"><a href="compcert.common.Globalenvs.html#Genv.match_stbls">Genv.match_stbls</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id">R</span> <span class="id">w</span>) <span class="id">ge</span> <span class="id">tge</span>) <span class="tactic">by</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.cklr.CKLR.html#match_stbls_proj">match_stbls_proj</a></span>; <span class="tactic">eauto</span>).<br/>
@@ -287,9 +287,9 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">set_le_transport</span> @<span class="id"><a href="compcert.backend.RTL.html#step">step</a></span> : <span class="id">typeclass_instances</span>.<br/>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="semantics_rel">semantics_rel</a></span> <span class="id">R</span>:<br/>
-&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.backend.RTL.html#semantics">RTL.semantics</a></span>) (- ==&gt; <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>) (<span class="id"><a href="compcert.cklr.CKLR.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2694')">Proof.</div>
-<div class="proofscript" id="proof2694">
+&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.backend.RTL.html#semantics">RTL.semantics</a></span>) (- ==&gt; <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation">forward_simulation</a></span> (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>) (<span class="id"><a href="compcert.common.LanguageInterface.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.RTLrel.html#R">R</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2832')">Proof.</div>
+<div class="proofscript" id="proof2832">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">p</span>. <span class="id">constructor</span>. <span class="id">econstructor</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">w</span> <span class="id">Hse1</span> <span class="id">Hse</span>. <span class="id">cbn</span> -[<span class="id">semantics</span>] <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Smallstep.html#forward_simulation_step">forward_simulation_step</a></span> <span class="kwd">with</span> (<span class="id">match_states</span> := <span class="id">klr_diam</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span> (<span class="id"><a href="compcert.cklr.RTLrel.html#state_rel">state_rel</a></span> <span class="id">R</span>) <span class="id">w</span>).<br/>

@@ -85,7 +85,7 @@
 <h2> Statements </h2>
 <br/>
 <div class="doc">Clight statements are similar to those of Compcert C, with the addition
-  of assigment (of a rvalue to a lvalue), assignment to a temporary,
+  of assignment (of a rvalue to a lvalue), assignment to a temporary,
   and function call (with assignment of the result to a temporary).
   The three C loops are replaced by a single infinite loop <span class="bracket"><span class="id">Sloop</span> <span class="id">s1</span>
   <span class="id">s2</span></span> that executes <span class="bracket"><span class="id">s1</span></span> then <span class="bracket"><span class="id">s2</span></span> repeatedly.  A <span class="bracket"><span class="id">continue</span></span> in <span class="bracket"><span class="id">s1</span></span>
@@ -746,17 +746,17 @@
 <div class="doc">Wrapping up these definitions in two small-step semantics. </div>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="semantics1">semantics1</a></span> (<span class="id">p</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#program">program</a></span>) :=<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Semantics_gen">Semantics_gen</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#step1">step1</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#at_external">at_external</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#after_external">after_external</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#final_state">final_state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#p">p</a></span>.<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Semantics_gen">Semantics_gen</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#step1">step1</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#at_external">at_external</a></span> (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#after_external">after_external</a></span>) (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#final_state">final_state</a></span>) <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#p">p</a></span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="semantics2">semantics2</a></span> (<span class="id">p</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#program">program</a></span>) :=<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Semantics_gen">Semantics_gen</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#step2">step2</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#at_external">at_external</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#after_external">after_external</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#final_state">final_state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#p">p</a></span>.<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Smallstep.html#Semantics_gen">Semantics_gen</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#step2">step2</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#at_external">at_external</a></span> (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#after_external">after_external</a></span>) (<span class="kwd">fun</span> <span class="id">_</span> =&gt; <span class="id"><a href="compcert.cfrontend.Clight.html#final_state">final_state</a></span>) <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#p">p</a></span>.<br/>
 <br/>
 <div class="doc">This semantics is receptive to changes in events. </div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="semantics_receptive">semantics_receptive</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">p</span>: <span class="id"><a href="compcert.cfrontend.Clight.html#program">program</a></span>), <span class="id"><a href="compcert.common.Smallstep.html#receptive">receptive</a></span> (<span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">semantics1</a></span> <span class="id"><a href="compcert.cfrontend.Clight.html#p">p</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof5031')">Proof.</div>
-<div class="proofscript" id="proof5031">
+<div class="toggleproof" onclick="toggleDisplay('proof5062')">Proof.</div>
+<div class="proofscript" id="proof5062">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">p</span> <span class="id">se</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Clight.html#semantics1">semantics1</a></span>. <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">ge</span> := <span class="id"><a href="compcert.cfrontend.Clight.html#globalenv">globalenv</a></span> <span class="id">se</span> <span class="id">p</span>). <span class="id">constructor</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 <span class="comment">(*&nbsp;receptiveness&nbsp;*)</span><br/>

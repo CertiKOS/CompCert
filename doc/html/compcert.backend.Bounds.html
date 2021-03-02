@@ -163,8 +163,8 @@
 <span class="kwd">Lemma</span> <span class="id"><a name="max_over_list_pos">max_over_list_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">valu</span>: <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) (<span class="id">l</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#max_over_list">max_over_list</a></span> <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> &gt;= 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4275')">Proof.</div>
-<div class="proofscript" id="proof4275">
+<div class="toggleproof" onclick="toggleDisplay('proof4434')">Proof.</div>
+<div class="proofscript" id="proof4434">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">valu</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_list">max_over_list</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">l</span> <span class="id">z</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> (<span class="kwd">fun</span> <span class="id">x</span> <span class="id">y</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max">Z.max</a></span> <span class="id"><a href="compcert.backend.Bounds.html#x">x</a></span> (<span class="id">valu</span> <span class="id"><a href="compcert.backend.Bounds.html#y">y</a></span>)) <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> <span class="id"><a href="compcert.backend.Bounds.html#z">z</a></span> &gt;= <span class="id"><a href="compcert.backend.Bounds.html#z">z</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
@@ -174,8 +174,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="max_over_slots_of_funct_pos">max_over_slots_of_funct_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">valu</span>: <span class="id"><a href="compcert.backend.Locations.html#slot">slot</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span> * <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>), <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct">max_over_slots_of_funct</a></span> <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span> &gt;= 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4276')">Proof.</div>
-<div class="proofscript" id="proof4276">
+<div class="toggleproof" onclick="toggleDisplay('proof4435')">Proof.</div>
+<div class="proofscript" id="proof4435">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct">max_over_slots_of_funct</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_instrs">max_over_instrs</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_list_pos">max_over_list_pos</a></span>.<br/>
 Qed.</div>
@@ -185,8 +185,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span> <span class="id">B</span>: <span class="kwd">Type</span>) (<span class="id">f</span>: <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#B">B</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span>) (<span class="id">P</span>: <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span> -&gt; <span class="kwd">Prop</span>),<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#f">f</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span> <span class="id"><a href="compcert.backend.Bounds.html#b">b</a></span>)) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">a</span>, <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> <span class="id"><a href="compcert.backend.Bounds.html#f">f</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4277')">Proof.</div>
-<div class="proofscript" id="proof4277">
+<div class="toggleproof" onclick="toggleDisplay('proof4436')">Proof.</div>
+<div class="proofscript" id="proof4436">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -195,8 +195,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#f">f</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span> <span class="id"><a href="compcert.backend.Bounds.html#b">b</a></span>)) -&gt;<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#f">f</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span> <span class="id"><a href="compcert.backend.Bounds.html#b0">b0</a></span>)) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">a</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#b0">b0</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#P">P</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> <span class="id"><a href="compcert.backend.Bounds.html#f">f</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> <span class="id"><a href="compcert.backend.Bounds.html#a">a</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4278')">Proof.</div>
-<div class="proofscript" id="proof4278">
+<div class="toggleproof" onclick="toggleDisplay('proof4437')">Proof.</div>
+<div class="proofscript" id="proof4437">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="id">contradiction</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H1</span>. <span class="tactic">subst</span> <span class="id">a</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#fold_left_preserves">fold_left_preserves</a></span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id">IHl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -205,29 +205,29 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_reg_only">record_reg_only</a></span>: <span class="kwd">forall</span> <span class="id">u</span> <span class="id">r</span>, <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#record_reg">record_reg</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4279')">Proof.</div>
-<div class="proofscript" id="proof4279">
+<div class="toggleproof" onclick="toggleDisplay('proof4438')">Proof.</div>
+<div class="proofscript" id="proof4438">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#record_reg">record_reg</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id">r</span>) <span class="id">eqn</span>:<span class="id">CS</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.Machregs.html#mreg_eq">mreg_eq</a></span> <span class="id">r</span> <span class="id">r0</span>). <span class="tactic">congruence</span>. <span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Bounds.html#add_3">RegSet.add_3</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_only">record_regs_only</a></span>: <span class="kwd">forall</span> <span class="id">rl</span> <span class="id">u</span>, <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#record_regs">record_regs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#rl">rl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4280')">Proof.</div>
-<div class="proofscript" id="proof4280">
+<div class="toggleproof" onclick="toggleDisplay('proof4439')">Proof.</div>
+<div class="proofscript" id="proof4439">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs">record_regs</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#fold_left_preserves">fold_left_preserves</a></span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg_only">record_reg_only</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_of_instr_only">record_regs_of_instr_only</a></span>: <span class="kwd">forall</span> <span class="id">u</span> <span class="id">i</span>, <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_instr">record_regs_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4281')">Proof.</div>
-<div class="proofscript" id="proof4281">
+<div class="toggleproof" onclick="toggleDisplay('proof4440')">Proof.</div>
+<div class="proofscript" id="proof4440">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg_only">record_reg_only</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#record_regs_only">record_regs_only</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_of_function_only">record_regs_of_function_only</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#only_callee_saves">only_callee_saves</a></span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function">record_regs_of_function</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4282')">Proof.</div>
-<div class="proofscript" id="proof4282">
+<div class="toggleproof" onclick="toggleDisplay('proof4441')">Proof.</div>
+<div class="proofscript" id="proof4441">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function">record_regs_of_function</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#fold_left_preserves">fold_left_preserves</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_instr_only">record_regs_of_instr_only</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">eelim</span> <span class="id"><a href="compcert.backend.Bounds.html#empty_1">RegSet.empty_1</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -239,28 +239,28 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">bound_outgoing</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max">Z.max</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#max_over_instrs">max_over_instrs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#outgoing_space">outgoing_space</a></span>) (<span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct">max_over_slots_of_funct</a></span> <span class="id"><a href="compcert.backend.Bounds.html#outgoing_slot">outgoing_slot</a></span>);<br/>
 &nbsp;&nbsp;<span class="id">bound_stack_data</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max">Z.max</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_stacksize">fn_stacksize</a></span>) 0<br/>
 |}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4283')">Next Obligation.</div>
-<div class="proofscript" id="proof4283">
+<div class="toggleproof" onclick="toggleDisplay('proof4442')">Next Obligation.</div>
+<div class="proofscript" id="proof4442">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct_pos">max_over_slots_of_funct_pos</a></span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4284')">Next Obligation.</div>
-<div class="proofscript" id="proof4284">
+<div class="toggleproof" onclick="toggleDisplay('proof4443')">Next Obligation.</div>
+<div class="proofscript" id="proof4443">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_ge">Z.le_ge</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_trans">Z.le_trans</a></span>. 2: <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_max_r">Z.le_max_r</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.ge_le">Z.ge_le</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct_pos">max_over_slots_of_funct_pos</a></span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4285')">Next Obligation.</div>
-<div class="proofscript" id="proof4285">
+<div class="toggleproof" onclick="toggleDisplay('proof4444')">Next Obligation.</div>
+<div class="proofscript" id="proof4444">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_ge">Z.le_ge</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_max_r">Z.le_max_r</a></span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4286')">Next Obligation.</div>
-<div class="proofscript" id="proof4286">
+<div class="toggleproof" onclick="toggleDisplay('proof4445')">Next Obligation.</div>
+<div class="proofscript" id="proof4445">
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.Bounds.html#elements_3w">RegSet.elements_3w</a></span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function">record_regs_of_function</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.Bounds.html#elements">RegSet.elements</a></span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function">record_regs_of_function</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> 1. <span class="id">constructor</span>. <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="tactic">elim</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.SetoidList.html#InA_alt">InA_alt</a></span>. <span class="id">exists</span> <span class="id">x</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof4287')">Next Obligation.</div>
-<div class="proofscript" id="proof4287">
+<div class="toggleproof" onclick="toggleDisplay('proof4446')">Next Obligation.</div>
+<div class="proofscript" id="proof4446">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function_only">record_regs_of_function_only</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#elements_2">RegSet.elements_2</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.SetoidList.html#InA_alt">InA_alt</a></span>. <span class="id">exists</span> <span class="id">r</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -268,32 +268,32 @@ Qed.</div>
 <div class="doc">We now show the correctness of the inferred bounds. </div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_reg_incr">record_reg_incr</a></span>: <span class="kwd">forall</span> <span class="id">u</span> <span class="id">r</span> <span class="id">r</span>', <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' (<span class="id"><a href="compcert.backend.Bounds.html#record_reg">record_reg</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4288')">Proof.</div>
-<div class="proofscript" id="proof4288">
+<div class="toggleproof" onclick="toggleDisplay('proof4447')">Proof.</div>
+<div class="proofscript" id="proof4447">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg">record_reg</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id">r</span>); <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#add_2">RegSet.add_2</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_reg_ok">record_reg_ok</a></span>: <span class="kwd">forall</span> <span class="id">u</span> <span class="id">r</span>, <span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#record_reg">record_reg</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4289')">Proof.</div>
-<div class="proofscript" id="proof4289">
+<div class="toggleproof" onclick="toggleDisplay('proof4448')">Proof.</div>
+<div class="proofscript" id="proof4448">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg">record_reg</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#add_1">RegSet.add_1</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_incr">record_regs_incr</a></span>: <span class="kwd">forall</span> <span class="id">r</span>' <span class="id">rl</span> <span class="id">u</span>, <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' (<span class="id"><a href="compcert.backend.Bounds.html#record_regs">record_regs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#rl">rl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4290')">Proof.</div>
-<div class="proofscript" id="proof4290">
+<div class="toggleproof" onclick="toggleDisplay('proof4449')">Proof.</div>
+<div class="proofscript" id="proof4449">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs">record_regs</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#fold_left_preserves">fold_left_preserves</a></span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg_incr">record_reg_incr</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_ok">record_regs_ok</a></span>: <span class="kwd">forall</span> <span class="id">r</span> <span class="id">rl</span> <span class="id">u</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> <span class="id"><a href="compcert.backend.Bounds.html#rl">rl</a></span> -&gt; <span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#record_regs">record_regs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#rl">rl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4291')">Proof.</div>
-<div class="proofscript" id="proof4291">
+<div class="toggleproof" onclick="toggleDisplay('proof4450')">Proof.</div>
+<div class="proofscript" id="proof4450">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs">record_regs</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Bounds.html#fold_left_ensures">fold_left_ensures</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg_incr">record_reg_incr</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#record_reg_ok">record_reg_ok</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_of_instr_incr">record_regs_of_instr_incr</a></span>: <span class="kwd">forall</span> <span class="id">r</span>' <span class="id">u</span> <span class="id">i</span>, <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' (<span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_instr">record_regs_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4292')">Proof.</div>
-<div class="proofscript" id="proof4292">
+<div class="toggleproof" onclick="toggleDisplay('proof4451')">Proof.</div>
+<div class="proofscript" id="proof4451">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg_incr">record_reg_incr</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#record_regs_incr">record_regs_incr</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -307,16 +307,16 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_of_instr_ok">record_regs_of_instr_ok</a></span>: <span class="kwd">forall</span> <span class="id">r</span>' <span class="id">u</span> <span class="id">i</span>, <span class="id"><a href="compcert.backend.Bounds.html#defined_by_instr">defined_by_instr</a></span> <span class="id">r</span>' <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id">r</span>' = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id">r</span>' (<span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_instr">record_regs_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#u">u</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4293')">Proof.</div>
-<div class="proofscript" id="proof4293">
+<div class="toggleproof" onclick="toggleDisplay('proof4452')">Proof.</div>
+<div class="proofscript" id="proof4452">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">try</span> <span class="id">contradiction</span>; <span class="tactic">subst</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_reg_ok">record_reg_ok</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_incr">record_regs_incr</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#record_regs_ok">record_regs_ok</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="record_regs_of_function_ok">record_regs_of_function_ok</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">i</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt; <span class="id"><a href="compcert.backend.Bounds.html#defined_by_instr">defined_by_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.x86.Conventions1.html#is_callee_save">is_callee_save</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#In">RegSet.In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function">record_regs_of_function</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4294')">Proof.</div>
-<div class="proofscript" id="proof4294">
+<div class="toggleproof" onclick="toggleDisplay('proof4453')">Proof.</div>
+<div class="proofscript" id="proof4453">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function">record_regs_of_function</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Bounds.html#fold_left_ensures">fold_left_ensures</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_instr_incr">record_regs_of_instr_incr</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_instr_ok">record_regs_of_instr_ok</a></span>.<br/>
 Qed.</div>
@@ -324,8 +324,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="max_over_list_bound">max_over_list_bound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">A</span>: <span class="kwd">Type</span>) (<span class="id">valu</span>: <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) (<span class="id">l</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span>) (<span class="id">x</span>: <span class="id"><a href="compcert.backend.Bounds.html#A">A</a></span>),<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#x">x</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> -&gt; <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.Bounds.html#x">x</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#max_over_list">max_over_list</a></span> <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4295')">Proof.</div>
-<div class="proofscript" id="proof4295">
+<div class="toggleproof" onclick="toggleDisplay('proof4454')">Proof.</div>
+<div class="proofscript" id="proof4454">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">x</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_list">max_over_list</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="kwd">forall</span> <span class="id">c</span> <span class="id">z</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">f</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> (<span class="kwd">fun</span> <span class="id">x</span> <span class="id">y</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.max">Z.max</a></span> <span class="id"><a href="compcert.backend.Bounds.html#x">x</a></span> (<span class="id">valu</span> <span class="id"><a href="compcert.backend.Bounds.html#y">y</a></span>)) <span class="id"><a href="compcert.backend.Bounds.html#c">c</a></span> <span class="id"><a href="compcert.backend.Bounds.html#z">z</a></span> <span class="kwd">in</span><br/>
@@ -343,8 +343,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="max_over_instrs_bound">max_over_instrs_bound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">valu</span>: <span class="id"><a href="compcert.backend.Linear.html#instruction">instruction</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt; <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#max_over_instrs">max_over_instrs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4296')">Proof.</div>
-<div class="proofscript" id="proof4296">
+<div class="toggleproof" onclick="toggleDisplay('proof4455')">Proof.</div>
+<div class="proofscript" id="proof4455">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_instrs">max_over_instrs</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_list_bound">max_over_list_bound</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -352,8 +352,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">valu</span>: <span class="id"><a href="compcert.backend.Locations.html#slot">slot</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span> * <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) <span class="id">i</span> <span class="id">s</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#s">s</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#slots_of_instr">slots_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.Bounds.html#s">s</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct">max_over_slots_of_funct</a></span> <span class="id"><a href="compcert.backend.Bounds.html#valu">valu</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4297')">Proof.</div>
-<div class="proofscript" id="proof4297">
+<div class="toggleproof" onclick="toggleDisplay('proof4456')">Proof.</div>
+<div class="proofscript" id="proof4456">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct">max_over_slots_of_funct</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_trans">Z.le_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_instr">max_over_slots_of_instr</a></span> <span class="id">valu</span> <span class="id">i</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_instr">max_over_slots_of_instr</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_list_bound">max_over_list_bound</a></span>. <span class="tactic">auto</span>.<br/>
@@ -364,8 +364,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span> <span class="id">ofs</span> <span class="id">ty</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="kwd">Local</span>, <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span>) (<span class="id"><a href="compcert.backend.Bounds.html#slots_of_instr">slots_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#bound_local">bound_local</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4298')">Proof.</div>
-<div class="proofscript" id="proof4298">
+<div class="toggleproof" onclick="toggleDisplay('proof4457')">Proof.</div>
+<div class="proofscript" id="proof4457">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#bound_local">bound_local</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">change</span> (<span class="id">ofs</span> + <span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id">ty</span>) <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.Bounds.html#local_slot">local_slot</a></span> (<span class="kwd">Local</span>, <span class="id">ofs</span>, <span class="id">ty</span>)).<br/>
@@ -376,8 +376,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span> <span class="id">ofs</span> <span class="id">ty</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Locations.html#Outgoing">Outgoing</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span>) (<span class="id"><a href="compcert.backend.Bounds.html#slots_of_instr">slots_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span> + <span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#bound_outgoing">bound_outgoing</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4299')">Proof.</div>
-<div class="proofscript" id="proof4299">
+<div class="toggleproof" onclick="toggleDisplay('proof4458')">Proof.</div>
+<div class="proofscript" id="proof4458">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">change</span> (<span class="id">ofs</span> + <span class="id"><a href="compcert.backend.Locations.html#typesize">typesize</a></span> <span class="id">ty</span>) <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.Bounds.html#outgoing_slot">outgoing_slot</a></span> (<span class="id"><a href="compcert.backend.Locations.html#Outgoing">Outgoing</a></span>, <span class="id">ofs</span>, <span class="id">ty</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#bound_outgoing">bound_outgoing</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Zmax_bound_r">Zmax_bound_r</a></span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_slots_of_funct_bound">max_over_slots_of_funct_bound</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -387,8 +387,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sig</span> <span class="id">ros</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Lcall">Lcall</a></span> <span class="id"><a href="compcert.backend.Bounds.html#sig">sig</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ros">ros</a></span>) <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.x86.Conventions1.html#size_arguments">size_arguments</a></span> <span class="id"><a href="compcert.backend.Bounds.html#sig">sig</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#bound_outgoing">bound_outgoing</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4300')">Proof.</div>
-<div class="proofscript" id="proof4300">
+<div class="toggleproof" onclick="toggleDisplay('proof4459')">Proof.</div>
+<div class="proofscript" id="proof4459">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">change</span> (<span class="id"><a href="compcert.x86.Conventions1.html#size_arguments">size_arguments</a></span> <span class="id">sig</span>) <span class="kwd">with</span> (<span class="id"><a href="compcert.backend.Bounds.html#outgoing_space">outgoing_space</a></span> (<span class="id"><a href="compcert.backend.Linear.html#Lcall">Lcall</a></span> <span class="id">sig</span> <span class="id">ros</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#bound_outgoing">bound_outgoing</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Zmax_bound_l">Zmax_bound_l</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#max_over_instrs_bound">max_over_instrs_bound</a></span>; <span class="tactic">auto</span>.<br/>
@@ -401,8 +401,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span>, <span class="id"><a href="compcert.backend.Bounds.html#defined_by_instr">defined_by_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#mreg_within_bounds">mreg_within_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#r">r</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4301')">Proof.</div>
-<div class="proofscript" id="proof4301">
+<div class="toggleproof" onclick="toggleDisplay('proof4460')">Proof.</div>
+<div class="proofscript" id="proof4460">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#mreg_within_bounds">mreg_within_bounds</a></span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.Bounds.html#record_regs_of_function_ok">record_regs_of_function_ok</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#elements_1">RegSet.elements_1</a></span> <span class="kwd">in</span> <span class="id">H2</span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.SetoidList.html#InA_alt">InA_alt</a></span> <span class="kwd">in</span> <span class="id">H2</span>. <span class="tactic">destruct</span> <span class="id">H2</span> <span class="kwd">as</span> (<span class="id">r</span>' &amp; <span class="id">A</span> &amp; <span class="id">B</span>).<br/>
@@ -413,8 +413,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sl</span> <span class="id">ty</span> <span class="id">ofs</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#sl">sl</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span>) (<span class="id"><a href="compcert.backend.Bounds.html#slots_of_instr">slots_of_instr</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#slot_within_bounds">slot_within_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#sl">sl</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4302')">Proof.</div>
-<div class="proofscript" id="proof4302">
+<div class="toggleproof" onclick="toggleDisplay('proof4461')">Proof.</div>
+<div class="proofscript" id="proof4461">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Bounds.html#slot_within_bounds">slot_within_bounds</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">sl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.Bounds.html#local_slot_bound">local_slot_bound</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -424,8 +424,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="slots_of_locs_charact">slots_of_locs_charact</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sl</span> <span class="id">ofs</span> <span class="id">ty</span> <span class="id">l</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Bounds.html#sl">sl</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span>, <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span>) (<span class="id"><a href="compcert.backend.Bounds.html#slots_of_locs">slots_of_locs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span>) &lt;-&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.backend.Locations.html#S">S</a></span> <span class="id"><a href="compcert.backend.Bounds.html#sl">sl</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ty">ty</a></span>) <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4303')">Proof.</div>
-<div class="proofscript" id="proof4303">
+<div class="toggleproof" onclick="toggleDisplay('proof4462')">Proof.</div>
+<div class="proofscript" id="proof4462">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
@@ -438,8 +438,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span>.(<span class="id"><a href="compcert.backend.Linear.html#fn_code">fn_code</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#instr_within_bounds">instr_within_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4304')">Proof.</div>
-<div class="proofscript" id="proof4304">
+<div class="toggleproof" onclick="toggleDisplay('proof4463')">Proof.</div>
+<div class="proofscript" id="proof4463">
 &nbsp;&nbsp;<span class="tactic">intros</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">i</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.Bounds.html#mreg_is_within_bounds">mreg_is_within_bounds</a></span> <span class="id">_</span> <span class="id">H</span>); <span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.Bounds.html#slot_is_within_bounds">slot_is_within_bounds</a></span> <span class="id">_</span> <span class="id">H</span>);<br/>
@@ -454,8 +454,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="function_is_within_bounds">function_is_within_bounds</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.Bounds.html#function_within_bounds">function_within_bounds</a></span> <span class="id"><a href="compcert.backend.Bounds.html#BOUNDS.f">f</a></span> <span class="id"><a href="compcert.backend.Bounds.html#function_bounds">function_bounds</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4305')">Proof.</div>
-<div class="proofscript" id="proof4305">
+<div class="toggleproof" onclick="toggleDisplay('proof4464')">Proof.</div>
+<div class="proofscript" id="proof4464">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#instr_is_within_bounds">instr_is_within_bounds</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -477,8 +477,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_callee_save_area_rec_incr">size_callee_save_area_rec_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ofs</span>, <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#size_callee_save_area_rec">size_callee_save_area_rec</a></span> <span class="id"><a href="compcert.backend.Bounds.html#l">l</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4306')">Proof.</div>
-<div class="proofscript" id="proof4306">
+<div class="toggleproof" onclick="toggleDisplay('proof4465')">Proof.</div>
+<div class="proofscript" id="proof4465">
 <span class="kwd">Local</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.x86.Machregs.html#mreg_type">mreg_type</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span> <span class="kwd">as</span> [ | <span class="id">r</span> <span class="id">l</span>]; <span class="tactic">intros</span>; <span class="tactic">simpl</span>.<br/>
 - <span class="tactic">omega</span>.<br/>
@@ -491,8 +491,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_callee_save_area_incr">size_callee_save_area_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">b</span> <span class="id">ofs</span>, <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span> &lt;= <span class="id"><a href="compcert.backend.Bounds.html#size_callee_save_area">size_callee_save_area</a></span> <span class="id"><a href="compcert.backend.Bounds.html#b">b</a></span> <span class="id"><a href="compcert.backend.Bounds.html#ofs">ofs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4307')">Proof.</div>
-<div class="proofscript" id="proof4307">
+<div class="toggleproof" onclick="toggleDisplay('proof4466')">Proof.</div>
+<div class="proofscript" id="proof4466">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Bounds.html#size_callee_save_area_rec_incr">size_callee_save_area_rec_incr</a></span>.<br/>
 Qed.</div>
 <br/>

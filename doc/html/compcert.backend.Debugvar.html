@@ -138,16 +138,16 @@
     corresponding lists. </div>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="eq_arg">eq_arg</a></span> (<span class="id">a1</span> <span class="id">a2</span>: <span class="id"><a href="compcert.common.AST.html#builtin_arg">builtin_arg</a></span> <span class="id"><a href="compcert.backend.Locations.html#loc">loc</a></span>) : {<span class="id"><a href="compcert.backend.Debugvar.html#a1">a1</a></span>=<span class="id"><a href="compcert.backend.Debugvar.html#a2">a2</a></span>} + {<span class="id"><a href="compcert.backend.Debugvar.html#a1">a1</a></span>&lt;&gt;<span class="id"><a href="compcert.backend.Debugvar.html#a2">a2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4232')">Proof.</div>
-<div class="proofscript" id="proof4232">
+<div class="toggleproof" onclick="toggleDisplay('proof4386')">Proof.</div>
+<div class="proofscript" id="proof4386">
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.backend.Locations.html#Loc.eq">Loc.eq</a></span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int.eq_dec">Int.eq_dec</a></span> <span class="id"><a href="compcert.lib.Integers.html#Int64.eq_dec">Int64.eq_dec</a></span> <span class="id"><a href="compcert.lib.Integers.html#Ptrofs.eq_dec">Ptrofs.eq_dec</a></span> <span class="id"><a href="compcert.lib.Floats.html#Float.eq_dec">Float.eq_dec</a></span> <span class="id"><a href="compcert.lib.Floats.html#Float32.eq_dec">Float32.eq_dec</a></span> <span class="id"><a href="compcert.common.AST.html#chunk_eq">chunk_eq</a></span>;<br/>
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.backend.Debugvar.html#eq_arg">eq_arg</a></span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="eq_debuginfo">eq_debuginfo</a></span> (<span class="id">i1</span> <span class="id">i2</span>: <span class="id"><a href="compcert.backend.Debugvar.html#debuginfo">debuginfo</a></span>) : {<span class="id"><a href="compcert.backend.Debugvar.html#i1">i1</a></span>=<span class="id"><a href="compcert.backend.Debugvar.html#i2">i2</a></span>} + {<span class="id"><a href="compcert.backend.Debugvar.html#i1">i1</a></span> &lt;&gt; <span class="id"><a href="compcert.backend.Debugvar.html#i2">i2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4233')">Proof.</div>
-<div class="proofscript" id="proof4233">
+<div class="toggleproof" onclick="toggleDisplay('proof4387')">Proof.</div>
+<div class="proofscript" id="proof4387">
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.Debugvar.html#eq_arg">eq_arg</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj1_sig">proj1_sig</a></span> <span class="id">i1</span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Specif.html#proj1_sig">proj1_sig</a></span> <span class="id">i2</span>)).<br/>
 &nbsp;&nbsp;<span class="id">left</span>. <span class="tactic">destruct</span> <span class="id">i1</span>, <span class="id">i2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">subst</span> <span class="id">x0</span>. <span class="tactic">f_equal</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Axioms.html#proof_irr">proof_irr</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">right</span>. <span class="tactic">congruence</span>.<br/>
@@ -172,8 +172,8 @@ Defined.</div>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="eq_state">eq_state</a></span> (<span class="id">s1</span> <span class="id">s2</span>: <span class="id"><a href="compcert.backend.Debugvar.html#avail">avail</a></span>) : {<span class="id"><a href="compcert.backend.Debugvar.html#s1">s1</a></span>=<span class="id"><a href="compcert.backend.Debugvar.html#s2">s2</a></span>} + {<span class="id"><a href="compcert.backend.Debugvar.html#s1">s1</a></span>&lt;&gt;<span class="id"><a href="compcert.backend.Debugvar.html#s2">s2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4234')">Proof.</div>
-<div class="proofscript" id="proof4234">
+<div class="toggleproof" onclick="toggleDisplay('proof4388')">Proof.</div>
+<div class="proofscript" id="proof4388">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#list_eq_dec">list_eq_dec</a></span>. <span class="id">decide</span> <span class="id">equality</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Debugvar.html#eq_debuginfo">eq_debuginfo</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span>.<br/>
 Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.backend.Debugvar.html#eq_state">eq_state</a></span>.<br/>

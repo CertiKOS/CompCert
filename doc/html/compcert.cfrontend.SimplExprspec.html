@@ -345,8 +345,8 @@
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">rl</span> <span class="id">sl</span> <span class="id">al</span> <span class="id">tmps</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#rl">rl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#al">al</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span>', (<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x">x</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> -&gt; <span class="id">le</span>'!<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x">x</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span>!<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x">x</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id">le</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#rl">rl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#al">al</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4936')">Proof.</div>
-<div class="proofscript" id="proof4936">
+<div class="toggleproof" onclick="toggleDisplay('proof4968')">Proof.</div>
+<div class="proofscript" id="proof4968">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H0</span>. <span class="tactic">intros</span>. <span class="tactic">transitivity</span> (<span class="id">le</span>'!<span class="id">id</span>); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H0</span>. <span class="tactic">auto</span>. <span class="tactic">intros</span>. <span class="tactic">transitivity</span> (<span class="id">le</span>'!<span class="id">id</span>); <span class="tactic">auto</span>.<br/>
@@ -356,8 +356,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="tr_rvalof_monotone">tr_rvalof_monotone</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ty</span> <span class="id">a</span> <span class="id">sl</span> <span class="id">b</span> <span class="id">tmps</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_rvalof">tr_rvalof</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#b">b</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">tmps</span>', <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> <span class="id">tmps</span>' -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_rvalof">tr_rvalof</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#b">b</a></span> <span class="id">tmps</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4937')">Proof.</div>
-<div class="proofscript" id="proof4937">
+<div class="toggleproof" onclick="toggleDisplay('proof4969')">Proof.</div>
+<div class="proofscript" id="proof4969">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">econstructor</span>; <span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="kwd">in</span> *; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -367,8 +367,8 @@ Qed.</div>
 <span class="kwd">with</span> <span class="id"><a name="tr_exprlist_monotone">tr_exprlist_monotone</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">rl</span> <span class="id">sl</span> <span class="id">al</span> <span class="id">tmps</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#rl">rl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#al">al</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">tmps</span>', <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> <span class="id">tmps</span>' -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#rl">rl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#al">al</a></span> <span class="id">tmps</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4938')">Proof.</div>
-<div class="proofscript" id="proof4938">
+<div class="toggleproof" onclick="toggleDisplay('proof4970')">Proof.</div>
+<div class="proofscript" id="proof4970">
 &nbsp;&nbsp;<span class="id">specialize</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_rvalof_monotone">tr_rvalof_monotone</a></span>. <span class="tactic">intros</span> <span class="id">RVALOF</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">econstructor</span>; <span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="kwd">in</span> *; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">econstructor</span>; <span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="kwd">in</span> *; <span class="tactic">eauto</span>.<br/>
@@ -493,8 +493,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#bind">bind</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#f">f</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z1">z1</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#y">y</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z3">z3</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">x</span>, <span class="id">exists</span> <span class="id">z2</span>, <span class="id">exists</span> <span class="id">I1</span>, <span class="id">exists</span> <span class="id">I2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#f">f</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z1">z1</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x">x</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z2">z2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I1">I1</a></span> /\ <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x">x</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z2">z2</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#y">y</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z3">z3</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I2">I2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4939')">Proof.</div>
-<div class="proofscript" id="proof4939">
+<div class="toggleproof" onclick="toggleDisplay('proof4971')">Proof.</div>
+<div class="proofscript" id="proof4971">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">I</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#bind">bind</a></span>. <span class="tactic">destruct</span> (<span class="id">f</span> <span class="id">z1</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="id">caseEq</span> (<span class="id">g</span> <span class="id">a</span> <span class="id">g</span>'); <span class="tactic">intros</span>; <span class="id">inv</span> <span class="id">H0</span>.<br/>
@@ -506,8 +506,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#bind2">bind2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#f">f</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z1">z1</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#y">y</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z3">z3</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">x1</span>, <span class="id">exists</span> <span class="id">x2</span>, <span class="id">exists</span> <span class="id">z2</span>, <span class="id">exists</span> <span class="id">I1</span>, <span class="id">exists</span> <span class="id">I2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#f">f</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z1">z1</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x1">x1</a></span>,<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x2">x2</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z2">z2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I1">I1</a></span> /\ <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x1">x1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#x2">x2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z2">z2</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#y">y</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#z3">z3</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I2">I2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4940')">Proof.</div>
-<div class="proofscript" id="proof4940">
+<div class="toggleproof" onclick="toggleDisplay('proof4972')">Proof.</div>
+<div class="proofscript" id="proof4972">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#bind2">bind2</a></span>. <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#bind_inversion">bind_inversion</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [[<span class="id">x1</span> <span class="id">x2</span>] [<span class="id">z2</span> [<span class="id">I1</span> [<span class="id">I2</span> [<span class="id">P</span> <span class="id">Q</span>]]]]]. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Q</span>.<br/>
@@ -577,8 +577,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="gensym_within">gensym_within</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ty</span> <span class="id">g1</span> <span class="id">id</span> <span class="id">g2</span> <span class="id">I</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gensym">gensym</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4941')">Proof.</div>
-<div class="proofscript" id="proof4941">
+<div class="toggleproof" onclick="toggleDisplay('proof4973')">Proof.</div>
+<div class="proofscript" id="proof4973">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_refl">Ple_refl</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_succ">Plt_succ</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -588,8 +588,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Ple">Ple</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g1</span>') (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Ple">Ple</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>) (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g2</span>') -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> <span class="id">g1</span>' <span class="id">g2</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4942')">Proof.</div>
-<div class="proofscript" id="proof4942">
+<div class="toggleproof" onclick="toggleDisplay('proof4974')">Proof.</div>
+<div class="proofscript" id="proof4974">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Ple_trans">Ple_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -600,8 +600,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="contained_nil">contained_nil</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">g1</span> <span class="id">g2</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4943')">Proof.</div>
-<div class="proofscript" id="proof4943">
+<div class="toggleproof" onclick="toggleDisplay('proof4975')">Proof.</div>
+<div class="proofscript" id="proof4975">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>; <span class="id">contradiction</span>.<br/>
 Qed.</div>
 <br/>
@@ -611,32 +611,32 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Ple">Ple</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g1</span>') (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#Ple">Ple</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>) (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g2</span>') -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span> <span class="id">g1</span>' <span class="id">g2</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4944')">Proof.</div>
-<div class="proofscript" id="proof4944">
+<div class="toggleproof" onclick="toggleDisplay('proof4976')">Proof.</div>
+<div class="proofscript" id="proof4976">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within_widen">within_widen</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="contained_cons">contained_cons</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">id</span> <span class="id">l</span> <span class="id">g1</span> <span class="id">g2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> :: <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4945')">Proof.</div>
-<div class="proofscript" id="proof4945">
+<div class="toggleproof" onclick="toggleDisplay('proof4977')">Proof.</div>
+<div class="proofscript" id="proof4977">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H1</span>; <span class="tactic">destruct</span> <span class="id">H1</span>. <span class="tactic">subst</span> <span class="id">id0</span>. <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="contained_app">contained_app</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">g1</span> <span class="id">g2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l1">l1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l2">l2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l1">l1</a></span> ++ <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l2">l2</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4946')">Proof.</div>
-<div class="proofscript" id="proof4946">
+<div class="toggleproof" onclick="toggleDisplay('proof4978')">Proof.</div>
+<div class="proofscript" id="proof4978">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#in_app_or">in_app_or</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H1</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="contained_disjoint">contained_disjoint</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">g1</span> <span class="id">l1</span> <span class="id">g2</span> <span class="id">l2</span> <span class="id">g3</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l1">l1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l2">l2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g3">g3</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#list_disjoint">list_disjoint</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l1">l1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l2">l2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4947')">Proof.</div>
-<div class="proofscript" id="proof4947">
+<div class="toggleproof" onclick="toggleDisplay('proof4979')">Proof.</div>
+<div class="proofscript" id="proof4979">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">red</span>; <span class="tactic">intro</span>; <span class="tactic">subst</span> <span class="id">y</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id">H</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">A</span> <span class="id">B</span>]. <span class="id">exploit</span> <span class="id">H0</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">Csyntax</span> <span class="id">D</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> (<span class="id"><a href="compcert.lib.Coqlib.html#Plt_strict">Plt_strict</a></span> <span class="id">x</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g2</span>); <span class="tactic">auto</span>.<br/>
@@ -645,8 +645,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="contained_notin">contained_notin</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">g1</span> <span class="id">l</span> <span class="id">g2</span> <span class="id">id</span> <span class="id">g3</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g3">g3</a></span> -&gt; ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#id">id</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4948')">Proof.</div>
-<div class="proofscript" id="proof4948">
+<div class="toggleproof" onclick="toggleDisplay('proof4980')">Proof.</div>
+<div class="proofscript" id="proof4980">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id">H</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">Csyntax</span> <span class="id">D</span>]. <span class="tactic">destruct</span> <span class="id">H0</span> <span class="kwd">as</span> [<span class="id">A</span> <span class="id">B</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> (<span class="id"><a href="compcert.lib.Coqlib.html#Plt_strict">Plt_strict</a></span> <span class="id">id</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g2</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -658,48 +658,48 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="dest_for_val_below">dest_for_val_below</a></span>: <span class="kwd">forall</span> <span class="id">g</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_val">For_val</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4949')">Proof.</div>
-<div class="proofscript" id="proof4949">
+<div class="toggleproof" onclick="toggleDisplay('proof4981')">Proof.</div>
+<div class="proofscript" id="proof4981">
  <span class="tactic">intros</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="dest_for_effect_below">dest_for_effect_below</a></span>: <span class="kwd">forall</span> <span class="id">g</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_effects">For_effects</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4950')">Proof.</div>
-<div class="proofscript" id="proof4950">
+<div class="toggleproof" onclick="toggleDisplay('proof4982')">Proof.</div>
+<div class="proofscript" id="proof4982">
  <span class="tactic">intros</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>. Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="dest_for_set_seqbool_val">dest_for_set_seqbool_val</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">tmp</span> <span class="id">ty</span> <span class="id">g1</span> <span class="id">g2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmp">tmp</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#sd_seqbool_val">sd_seqbool_val</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmp">tmp</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span>)) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4951')">Proof.</div>
-<div class="proofscript" id="proof4951">
+<div class="toggleproof" onclick="toggleDisplay('proof4983')">Proof.</div>
+<div class="proofscript" id="proof4983">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="dest_for_set_seqbool_set">dest_for_set_seqbool_set</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sd</span> <span class="id">ty</span> <span class="id">g</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sd">sd</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#sd_seqbool_set">sd_seqbool_set</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sd">sd</a></span>)) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4952')">Proof.</div>
-<div class="proofscript" id="proof4952">
+<div class="toggleproof" onclick="toggleDisplay('proof4984')">Proof.</div>
+<div class="proofscript" id="proof4984">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">assumption</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="dest_for_set_condition_val">dest_for_set_condition_val</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">tmp</span> <span class="id">tycast</span> <span class="id">ty</span> <span class="id">g1</span> <span class="id">g2</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmp">tmp</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#SDbase">SDbase</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tycast">tycast</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmp">tmp</a></span>)) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4953')">Proof.</div>
-<div class="proofscript" id="proof4953">
+<div class="toggleproof" onclick="toggleDisplay('proof4985')">Proof.</div>
+<div class="proofscript" id="proof4985">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>. <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="dest_for_set_condition_set">dest_for_set_condition_set</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sd</span> <span class="id">tmp</span> <span class="id">tycast</span> <span class="id">ty</span> <span class="id">g1</span> <span class="id">g2</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sd">sd</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#within">within</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmp">tmp</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#SDcons">SDcons</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tycast">tycast</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmp">tmp</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sd">sd</a></span>)) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4954')">Proof.</div>
-<div class="proofscript" id="proof4954">
+<div class="toggleproof" onclick="toggleDisplay('proof4986')">Proof.</div>
+<div class="proofscript" id="proof4986">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H0</span>. <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="sd_temp_notin">sd_temp_notin</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sd</span> <span class="id">g1</span> <span class="id">g2</span> <span class="id">l</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#For_set">For_set</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sd">sd</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span> -&gt; ~<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#sd_temp">sd_temp</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sd">sd</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4955')">Proof.</div>
-<div class="proofscript" id="proof4955">
+<div class="toggleproof" onclick="toggleDisplay('proof4987')">Proof.</div>
+<div class="proofscript" id="proof4987">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">exploit</span> <span class="id">H0</span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">A</span> <span class="id">B</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">elim</span> (<span class="id"><a href="compcert.lib.Coqlib.html#Plt_strict">Plt_strict</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#sd_temp">sd_temp</a></span> <span class="id">sd</span>)). <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span> <span class="kwd">with</span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span> <span class="id">g1</span>); <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -707,8 +707,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="dest_below_le">dest_below_le</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">dst</span> <span class="id">g1</span> <span class="id">g2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#Ple">Ple</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g1">g1</a></span>.(<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span>) <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.(<span class="id"><a href="compcert.cfrontend.SimplExpr.html#gen_next">gen_next</a></span>) -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g2">g2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4956')">Proof.</div>
-<div class="proofscript" id="proof4956">
+<div class="toggleproof" onclick="toggleDisplay('proof4988')">Proof.</div>
+<div class="proofscript" id="proof4988">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">dst</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">auto</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Plt_Ple_trans">Plt_Ple_trans</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -722,23 +722,23 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">in_eq</span> <span class="id">in_cons</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Ple_trans</span> <span class="id">Ple_refl</span>: <span class="id">gensym</span>.<br/>
 <br/>
-<span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">dest_for_val_below</span> <span class="id">dest_for_effect_below</span>.<br/>
+<span class="kwd">Local</span> <span class="kwd">Hint</span> <span class="kwd">Resolve</span> <span class="id">dest_for_val_below</span> <span class="id">dest_for_effect_below</span> : <span class="id">core</span>.<br/>
 <br/>
 <h2> Correctness of the translation functions </h2>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="finish_meets_spec_1">finish_meets_spec_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">dst</span> <span class="id">sl</span> <span class="id">a</span> <span class="id">sl</span>' <span class="id">a</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#finish">finish</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> = (<span class="id">sl</span>', <span class="id">a</span>') -&gt; <span class="id">sl</span>' = <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> ++ <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#final">final</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4957')">Proof.</div>
-<div class="proofscript" id="proof4957">
+<div class="toggleproof" onclick="toggleDisplay('proof4989')">Proof.</div>
+<div class="proofscript" id="proof4989">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">dst</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#app_nil_end">app_nil_end</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#app_nil_end">app_nil_end</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="finish_meets_spec_2">finish_meets_spec_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">dst</span> <span class="id">sl</span> <span class="id">a</span> <span class="id">sl</span>' <span class="id">a</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#finish">finish</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> = (<span class="id">sl</span>', <span class="id">a</span>') -&gt; <span class="id">a</span>' = <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4958')">Proof.</div>
-<div class="proofscript" id="proof4958">
+<div class="toggleproof" onclick="toggleDisplay('proof4990')">Proof.</div>
+<div class="proofscript" id="proof4990">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">dst</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -759,8 +759,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="add_dest_incl">add_dest_incl</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">dst</span> <span class="id">tmps</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#incl">incl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#add_dest">add_dest</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4959')">Proof.</div>
-<div class="proofscript" id="proof4959">
+<div class="toggleproof" onclick="toggleDisplay('proof4991')">Proof.</div>
+<div class="proofscript" id="proof4991">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">dst</span>; <span class="tactic">simpl</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
 Qed.</div>
 <br/>
@@ -768,8 +768,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">le</span> <span class="id">dst</span> <span class="id">r</span> <span class="id">sl</span> <span class="id">a</span> <span class="id">tmps</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_expr">tr_expr</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_expr">tr_expr</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#add_dest">add_dest</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4960')">Proof.</div>
-<div class="proofscript" id="proof4960">
+<div class="toggleproof" onclick="toggleDisplay('proof4992')">Proof.</div>
+<div class="proofscript" id="proof4992">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_expr_monotone">tr_expr_monotone</a></span> <span class="kwd">with</span> <span class="id">tmps</span>; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#add_dest_incl">add_dest_incl</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -777,8 +777,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ty</span> <span class="id">a</span> <span class="id">g</span> <span class="id">sl</span> <span class="id">b</span> <span class="id">g</span>' <span class="id">I</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_valof">transl_valof</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#b">b</a></span>) <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">tmps</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_rvalof">tr_rvalof</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ty">ty</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#b">b</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> /\ <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> <span class="id">g</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4961')">Proof.</div>
-<div class="proofscript" id="proof4961">
+<div class="toggleproof" onclick="toggleDisplay('proof4993')">Proof.</div>
+<div class="proofscript" id="proof4993">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_valof">transl_valof</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.Ctypes.html#type_is_volatile">type_is_volatile</a></span> <span class="id">ty</span>) <span class="id">eqn</span>:?; <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id">x</span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>); <span class="tactic">split</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">gensym</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">coqlib</span>.<br/>
@@ -798,8 +798,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">rl</span> <span class="id">g</span> <span class="id">sl</span> <span class="id">al</span> <span class="id">g</span>' <span class="id">I</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_exprlist">transl_exprlist</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#rl">rl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#al">al</a></span>) <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">tmps</span>, (<span class="kwd">forall</span> <span class="id">le</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_exprlist">tr_exprlist</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#rl">rl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#al">al</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span>) /\ <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#contained">contained</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> <span class="id">g</span>').<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4962')">Proof.</div>
-<div class="proofscript" id="proof4962">
+<div class="toggleproof" onclick="toggleDisplay('proof4994')">Proof.</div>
+<div class="proofscript" id="proof4994">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#expr_exprlist_ind">expr_exprlist_ind</a></span>; <span class="tactic">simpl</span> <span class="id">add_dest</span>; <span class="tactic">intros</span>.<br/>
 <span class="comment">(*&nbsp;val&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">v</span>; <span class="id">monadInv</span> <span class="id">H</span>; <span class="id">exists</span> (@<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.common.AST.html#ident">ident</a></span>); <span class="tactic">split</span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">gensym</span>.<br/>
@@ -1053,8 +1053,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_expr">transl_expr</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span>) <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dest_below">dest_below</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">tmps</span>, <span class="kwd">forall</span> <span class="id">ge</span> <span class="id">e</span> <span class="id">le</span> <span class="id">m</span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_top">tr_top</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ge">ge</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#e">e</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#le">le</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#m">m</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#dst">dst</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#sl">sl</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tmps">tmps</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4963')">Proof.</div>
-<div class="proofscript" id="proof4963">
+<div class="toggleproof" onclick="toggleDisplay('proof4995')">Proof.</div>
+<div class="proofscript" id="proof4995">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">exploit</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#proj1">proj1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_meets_spec">transl_meets_spec</a></span>); <span class="tactic">eauto</span>. <span class="tactic">intros</span> [<span class="id">tmps</span> [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#add_dest">add_dest</a></span> <span class="id">dst</span> <span class="id">tmps</span>); <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_top_base">tr_top_base</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -1063,8 +1063,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">g</span> <span class="id">s</span> <span class="id">a</span> <span class="id">g</span>' <span class="id">I</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_expression">transl_expression</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> (<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span>, <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span>) <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_expression">tr_expression</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4964')">Proof.</div>
-<div class="proofscript" id="proof4964">
+<div class="toggleproof" onclick="toggleDisplay('proof4996')">Proof.</div>
+<div class="proofscript" id="proof4996">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_expr_meets_spec">transl_expr_meets_spec</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">tmps</span> <span class="id">A</span>]. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -1073,8 +1073,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">g</span> <span class="id">s</span> <span class="id">g</span>' <span class="id">I</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_expr_stmt">transl_expr_stmt</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_expr_stmt">tr_expr_stmt</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4965')">Proof.</div>
-<div class="proofscript" id="proof4965">
+<div class="toggleproof" onclick="toggleDisplay('proof4997')">Proof.</div>
+<div class="proofscript" id="proof4997">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_expr_meets_spec">transl_expr_meets_spec</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">tmps</span> <span class="id">A</span>]. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -1083,8 +1083,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">r</span> <span class="id">s1</span> <span class="id">s2</span> <span class="id">g</span> <span class="id">s</span> <span class="id">g</span>' <span class="id">I</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_if">transl_if</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s1">s1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s2">s2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_if">tr_if</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#r">r</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s1">s1</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s2">s2</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4966')">Proof.</div>
-<div class="proofscript" id="proof4966">
+<div class="toggleproof" onclick="toggleDisplay('proof4998')">Proof.</div>
+<div class="proofscript" id="proof4998">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>. <span class="id">exploit</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_expr_meets_spec">transl_expr_meets_spec</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> [<span class="id">tmps</span> <span class="id">A</span>]. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -1093,8 +1093,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">g</span> <span class="id">ts</span> <span class="id">g</span>' <span class="id">I</span>, <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_stmt">transl_stmt</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ts">ts</a></span> <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_stmt">tr_stmt</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ts">ts</a></span><br/>
 <span class="kwd">with</span> <span class="id"><a name="transl_lblstmt_meets_spec">transl_lblstmt_meets_spec</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">g</span> <span class="id">ts</span> <span class="id">g</span>' <span class="id">I</span>, <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_lblstmt">transl_lblstmt</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#g">g</a></span> = <span class="id"><a href="compcert.cfrontend.SimplExpr.html#Res">Res</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ts">ts</a></span> <span class="id">g</span>' <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#I">I</a></span> -&gt; <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_lblstmts">tr_lblstmts</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#s">s</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#ts">ts</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4967')">Proof.</div>
-<div class="proofscript" id="proof4967">
+<div class="toggleproof" onclick="toggleDisplay('proof4999')">Proof.</div>
+<div class="proofscript" id="proof4999">
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_expression_meets_spec">transl_expression_meets_spec</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_expr_stmt_meets_spec">transl_expr_stmt_meets_spec</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_if_meets_spec">transl_if_meets_spec</a></span>; <span class="tactic">intros</span> <span class="id">T1</span> <span class="id">T2</span> <span class="id">T3</span>.<br/>
 <span class="id">Opaque</span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_expression">transl_expression</a></span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_expr_stmt">transl_expr_stmt</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">clear</span> <span class="id">transl_stmt_meets_spec</span>.<br/>
@@ -1133,8 +1133,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">tf</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_function">transl_function</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#f">f</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tf">tf</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_function">tr_function</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#f">f</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tf">tf</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4968')">Proof.</div>
-<div class="proofscript" id="proof4968">
+<div class="toggleproof" onclick="toggleDisplay('proof5000')">Proof.</div>
+<div class="proofscript" id="proof5000">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_function">transl_function</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_stmt">transl_stmt</a></span> (<span class="id"><a href="compcert.cfrontend.Csyntax.html#fn_body">Csyntax.fn_body</a></span> <span class="id">f</span>) (<span class="id"><a href="compcert.cfrontend.SimplExpr.html#initial_generator">initial_generator</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>)) <span class="id">eqn</span>:<span class="id">T</span>; <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="tactic">simpl</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_stmt_meets_spec">transl_stmt_meets_spec</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -1144,8 +1144,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">fd</span> <span class="id">tfd</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_fundef">transl_fundef</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#fd">fd</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tfd">tfd</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tr_fundef">tr_fundef</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#fd">fd</a></span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#tfd">tfd</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof4969')">Proof.</div>
-<div class="proofscript" id="proof4969">
+<div class="toggleproof" onclick="toggleDisplay('proof5001')">Proof.</div>
+<div class="proofscript" id="proof5001">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.SimplExpr.html#transl_fundef">transl_fundef</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">fd</span>; <span class="id">Errors.monadInv</span> <span class="id">H</span>.<br/>
 + <span class="id">constructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.cfrontend.SimplExprspec.html#transl_function_spec">transl_function_spec</a></span>; <span class="tactic">eauto</span>.<br/>

@@ -18,7 +18,7 @@
   proceeds by value numbering over extended basic blocks. </div>
 <br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="compcert.lib.Maps.html">Maps</a></span> <span class="id"><a href="compcert.common.Errors.html">Errors</a></span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="compcert.lib.Floats.html">Floats</a></span> <span class="id"><a href="compcert.lib.Lattice.html">Lattice</a></span> <span class="id"><a href="compcert.backend.Kildall.html">Kildall</a></span>.<br/>
-<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.common.Linking.html">Linking</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.common.Linking.html">Linking</a></span> <span class="id"><a href="compcert.common.Builtins.html">Builtins</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Values.html">Values</a></span> <span class="id"><a href="compcert.common.Memory.html">Memory</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.x86.Op.html">Op</a></span> <span class="id"><a href="compcert.backend.Registers.html">Registers</a></span> <span class="id"><a href="compcert.backend.RTL.html">RTL</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.ValueDomain.html">ValueDomain</a></span> <span class="id"><a href="compcert.backend.ValueAnalysis.html">ValueAnalysis</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html">CSEdomain</a></span> <span class="id"><a href="compcert.x86.CombineOp.html">CombineOp</a></span>.<br/>
@@ -410,13 +410,13 @@
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CSEdomain.html#numbering_holds">numbering_holds</a></span> <span class="id"><a href="compcert.backend.CSE.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.CSE.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.CSE.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CSE.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.CSE.html#m">m</a></span> <span class="id"><a href="compcert.backend.CSE.html#n1">n1</a></span>.<br/>
 &nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="Numbering.top">top</a></span> := <span class="id"><a href="compcert.backend.CSEdomain.html#empty_numbering">empty_numbering</a></span>.<br/>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Numbering.top_ge">top_ge</a></span>: <span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.backend.CSE.html#Numbering.ge">ge</a></span> <span class="id"><a href="compcert.backend.CSE.html#Numbering.top">top</a></span> <span class="id"><a href="compcert.backend.CSE.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3691')">Proof.</div>
-<div class="proofscript" id="proof3691">
+<div class="toggleproof" onclick="toggleDisplay('proof3896')">Proof.</div>
+<div class="proofscript" id="proof3896">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.CSE.html#Numbering.top">top</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.CSEdomain.html#empty_numbering_holds">empty_numbering_holds</a></span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 &nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="Numbering.refl_ge">refl_ge</a></span>: <span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.backend.CSE.html#Numbering.ge">ge</a></span> <span class="id"><a href="compcert.backend.CSE.html#x">x</a></span> <span class="id"><a href="compcert.backend.CSE.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3692')">Proof.</div>
-<div class="proofscript" id="proof3692">
+<div class="toggleproof" onclick="toggleDisplay('proof3897')">Proof.</div>
+<div class="proofscript" id="proof3897">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <span class="kwd">End</span> <span class="id"><a href="compcert.backend.CSE.html#Numbering">Numbering</a></span>.<br/>
@@ -450,12 +450,12 @@
 <li>
  Forget equations involving loads but keep equations over registers.
   This is appropriate for builtins that can modify memory,
-  e.g. volatile stores, or <span class="bracket"><span class="id">EF_builtin</span></span>
+  e.g. volatile stores, or <span class="bracket"><span class="id">EF_builtin</span></span> for unknown builtin functions.
 </li>
 <li>
  Keep all equations, taking advantage of the fact that neither memory
-  nor registers are modified.  This is appropriate for annotations
-  and for volatile loads.
+  nor registers are modified.  This is appropriate for annotations,
+  volatile loads, and known builtin functions.
 </li>
 </ul>
 </div>
@@ -483,8 +483,13 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">ef</span> <span class="kwd">with</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#EF_external">EF_external</a></span> <span class="id">_</span> <span class="id">_</span> | <span class="id"><a href="compcert.common.AST.html#EF_runtime">EF_runtime</a></span> <span class="id">_</span> <span class="id">_</span> | <span class="id"><a href="compcert.common.AST.html#EF_malloc">EF_malloc</a></span> | <span class="id"><a href="compcert.common.AST.html#EF_free">EF_free</a></span> | <span class="id"><a href="compcert.common.AST.html#EF_inline_asm">EF_inline_asm</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CSEdomain.html#empty_numbering">empty_numbering</a></span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#EF_builtin">EF_builtin</a></span> <span class="id">_</span> <span class="id">_</span> | <span class="id"><a href="compcert.common.AST.html#EF_vstore">EF_vstore</a></span> <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#EF_vstore">EF_vstore</a></span> <span class="id">_</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.CSE.html#set_res_unknown">set_res_unknown</a></span> (<span class="id"><a href="compcert.backend.CSE.html#kill_all_loads">kill_all_loads</a></span> <span class="id"><a href="compcert.backend.CSE.html#before">before</a></span>) <span class="id">res</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#EF_builtin">EF_builtin</a></span> <span class="id">name</span> <span class="id">sg</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.common.Builtins.html#lookup_builtin_function">lookup_builtin_function</a></span> <span class="id">name</span> <span class="id">sg</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">bf</span> =&gt; <span class="id"><a href="compcert.backend.CSE.html#set_res_unknown">set_res_unknown</a></span> <span class="id"><a href="compcert.backend.CSE.html#before">before</a></span> <span class="id">res</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>    =&gt; <span class="id"><a href="compcert.backend.CSE.html#set_res_unknown">set_res_unknown</a></span> (<span class="id"><a href="compcert.backend.CSE.html#kill_all_loads">kill_all_loads</a></span> <span class="id"><a href="compcert.backend.CSE.html#before">before</a></span>) <span class="id">res</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#EF_memcpy">EF_memcpy</a></span> <span class="id">sz</span> <span class="id">al</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">args</span> <span class="kwd">with</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">dst</span> :: <span class="id">src</span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> =&gt;<br/>

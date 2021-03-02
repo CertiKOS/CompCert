@@ -31,8 +31,8 @@
 &nbsp;&nbsp;<span class="id">Monotonic</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Cop.html#bool_val">Cop.bool_val</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ++&gt; <span class="id">option_le</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2628')">Proof.</div>
-<div class="proofscript" id="proof2628">
+<div class="toggleproof" onclick="toggleDisplay('proof2766')">Proof.</div>
+<div class="proofscript" id="proof2766">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#bool_val">bool_val</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -40,8 +40,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id">Monotonic</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Cop.html#sem_switch_arg">Cop.sem_switch_arg</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#f">f</a></span> ++&gt; - ==&gt; <span class="id">option_le</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2629')">Proof.</div>
-<div class="proofscript" id="proof2629">
+<div class="toggleproof" onclick="toggleDisplay('proof2767')">Proof.</div>
+<div class="proofscript" id="proof2767">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_switch_arg">Cop.sem_switch_arg</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -50,8 +50,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Cop.html#sem_unary_operation">Cop.sem_unary_operation</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2630')">Proof.</div>
-<div class="proofscript" id="proof2630">
+<div class="toggleproof" onclick="toggleDisplay('proof2768')">Proof.</div>
+<div class="proofscript" id="proof2768">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_unary_operation">Cop.sem_unary_operation</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Cop.html#sem_notbool">Cop.sem_notbool</a></span>,<br/>
@@ -67,8 +67,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Cop.html#sem_cast">Cop.sem_cast</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt; - ==&gt; <span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2631')">Proof.</div>
-<div class="proofscript" id="proof2631">
+<div class="toggleproof" onclick="toggleDisplay('proof2769')">Proof.</div>
+<div class="proofscript" id="proof2769">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_cast">Cop.sem_cast</a></span>. <span class="tactic">repeat</span> <span class="id">rstep</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span>; <span class="id">rauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="compcert.common.AST.html#ident_eq">ident_eq</a></span>; <span class="id">rauto</span>.<br/>
@@ -85,8 +85,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2632')">Proof.</div>
-<div class="proofscript" id="proof2632">
+<div class="toggleproof" onclick="toggleDisplay('proof2770')">Proof.</div>
+<div class="proofscript" id="proof2770">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_binarith">Cop.sem_binarith</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -96,8 +96,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cfrontend.Cop.html#cmp_ptr">Cop.cmp_ptr</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ++&gt; - ==&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2633')">Proof.</div>
-<div class="proofscript" id="proof2633">
+<div class="toggleproof" onclick="toggleDisplay('proof2771')">Proof.</div>
+<div class="proofscript" id="proof2771">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#cmp_ptr">cmp_ptr</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -109,8 +109,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2634')">Proof.</div>
-<div class="proofscript" id="proof2634">
+<div class="toggleproof" onclick="toggleDisplay('proof2772')">Proof.</div>
+<div class="proofscript" id="proof2772">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_cmp">sem_cmp</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -122,8 +122,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2635')">Proof.</div>
-<div class="proofscript" id="proof2635">
+<div class="toggleproof" onclick="toggleDisplay('proof2773')">Proof.</div>
+<div class="proofscript" id="proof2773">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_shift">Cop.sem_shift</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -135,8 +135,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>) ++&gt; - ==&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.CKLR.html#match_mem">match_mem</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span> ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">option_le</span> (<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#mi">mi</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#R">R</a></span> <span class="id"><a href="compcert.cklr.Coprel.html#w">w</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2636')">Proof.</div>
-<div class="proofscript" id="proof2636">
+<div class="toggleproof" onclick="toggleDisplay('proof2774')">Proof.</div>
+<div class="proofscript" id="proof2774">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cfrontend.Cop.html#sem_binary_operation">Cop.sem_binary_operation</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cfrontend.Cop.html#sem_add">Cop.sem_add</a></span>,<br/>

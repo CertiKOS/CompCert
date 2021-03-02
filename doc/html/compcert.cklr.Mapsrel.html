@@ -33,8 +33,8 @@
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="TreeRel.r_subrel">r_subrel</a></span> <span class="id">A</span> <span class="id">B</span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#B">B</a></span>) (<span class="id">subrel</span> ++&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2433')">Proof.</div>
-<div class="proofscript" id="proof2433">
+<div class="toggleproof" onclick="toggleDisplay('proof2569')">Proof.</div>
+<div class="proofscript" id="proof2569">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
@@ -49,8 +49,8 @@
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="TreeRel.empty_rel">empty_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#T.empty">T.empty</a></span>) (<span class="id">forallr</span> <span class="id">A</span> <span class="id">B</span> : ⊤, <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> (<span class="id">option_rel</span> (@<span class="id">rel_bot</span> <span class="id"><a href="compcert.cklr.Mapsrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#B">B</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2434')">Proof.</div>
-<div class="proofscript" id="proof2434">
+<div class="toggleproof" onclick="toggleDisplay('proof2570')">Proof.</div>
+<div class="proofscript" id="proof2570">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A</span> <span class="id">B</span> <span class="id">_</span> <span class="id">i</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#T.gempty">T.gempty</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rauto</span>.<br/>
@@ -58,15 +58,15 @@
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="TreeRel.get_rel">get_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#T.get">T.get</a></span>) (<span class="id">forallr</span> <span class="id">R</span>, - ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2435')">Proof.</div>
-<div class="proofscript" id="proof2435">
+<div class="toggleproof" onclick="toggleDisplay('proof2571')">Proof.</div>
+<div class="proofscript" id="proof2571">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="TreeRel.set_rel">set_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#T.set">T.set</a></span>) (<span class="id">forallr</span> <span class="id">R</span>, - ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> @@ <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2436')">Proof.</div>
-<div class="proofscript" id="proof2436">
+<div class="toggleproof" onclick="toggleDisplay('proof2572')">Proof.</div>
+<div class="proofscript" id="proof2572">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A</span> <span class="id">B</span> <span class="id">R</span> <span class="id">i</span> <span class="id">x1</span> <span class="id">x2</span> <span class="id">Hx</span> <span class="id">t1</span> <span class="id">t2</span> <span class="id">Ht</span> <span class="id">j</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cklr.Mapsrel.html#T.elt_eq">T.elt_eq</a></span> <span class="id">i</span> <span class="id">j</span>) <span class="kwd">as</span> [<span class="id">Hij</span>|<span class="id">Hij</span>].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">subst</span>. <span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#T.gss">T.gss</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -79,8 +79,8 @@
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="TreeRel.remove_rel">remove_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#T.remove">T.remove</a></span>) (<span class="id">forallr</span> <span class="id">R</span>, - ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> (<span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> \/ <span class="id">option_rel</span> ⊥)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2437')">Proof.</div>
-<div class="proofscript" id="proof2437">
+<div class="toggleproof" onclick="toggleDisplay('proof2573')">Proof.</div>
+<div class="proofscript" id="proof2573">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A</span> <span class="id">B</span> <span class="id">R</span> <span class="id">i</span> <span class="id">t1</span> <span class="id">t2</span> <span class="id">Ht</span> <span class="id">j</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cklr.Mapsrel.html#T.elt_eq">T.elt_eq</a></span> <span class="id">i</span> <span class="id">j</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">subst</span>. <span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#T.grs">T.grs</a></span>. <span class="id">rauto</span>.<br/>
@@ -95,8 +95,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cklr.Mapsrel.html#T.map">T.map</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">forallr</span> <span class="id">RA</span>, <span class="id">forallr</span> <span class="id">RB</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> (<span class="id">option_rel</span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> (<span class="id">option_rel</span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2438')">Proof.</div>
-<div class="proofscript" id="proof2438">
+<div class="toggleproof" onclick="toggleDisplay('proof2574')">Proof.</div>
+<div class="proofscript" id="proof2574">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A1</span> <span class="id">A2</span> <span class="id">RA</span> <span class="id">B1</span> <span class="id">B2</span> <span class="id">RB</span> <span class="id">f</span> <span class="id">g</span> <span class="id">Hfg</span> <span class="id">t1</span> <span class="id">t2</span> <span class="id">Ht</span> <span class="id">i</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#T.gmap">T.gmap</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rauto</span>.<br/>
@@ -107,8 +107,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.cklr.Mapsrel.html#T.map">T.map</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">forallr</span> <span class="id">RA</span>, <span class="id">forallr</span> <span class="id">RB</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(- ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> (<span class="id">option_le</span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> (<span class="id">option_le</span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2439')">Proof.</div>
-<div class="proofscript" id="proof2439">
+<div class="toggleproof" onclick="toggleDisplay('proof2575')">Proof.</div>
+<div class="proofscript" id="proof2575">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A1</span> <span class="id">A2</span> <span class="id">RA</span> <span class="id">B1</span> <span class="id">B2</span> <span class="id">RB</span> <span class="id">f</span> <span class="id">g</span> <span class="id">Hfg</span> <span class="id">t1</span> <span class="id">t2</span> <span class="id">Ht</span> <span class="id">i</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#T.gmap">T.gmap</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">rauto</span>.<br/>
@@ -126,8 +126,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RC">RC</a></span>) /\<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">option_rel</span> ⊥ ++&gt; <span class="id">option_rel</span> ⊥ ++&gt; <span class="id">option_rel</span> ⊥)) ++&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#TreeRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RC">RC</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2440')">Proof.</div>
-<div class="proofscript" id="proof2440">
+<div class="toggleproof" onclick="toggleDisplay('proof2576')">Proof.</div>
+<div class="proofscript" id="proof2576">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A1</span> <span class="id">A2</span> <span class="id">RA</span> <span class="id">B1</span> <span class="id">B2</span> <span class="id">RB</span> <span class="id">C1</span> <span class="id">C2</span> <span class="id">RC</span> <span class="id">f</span> <span class="id">g</span> [<span class="id">Hfgb</span> <span class="id">Hfg</span>] <span class="id">tA1</span> <span class="id">tA2</span> <span class="id">HtA</span> <span class="id">tB1</span> <span class="id">tB2</span> <span class="id">HtB</span> <span class="id">i</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">option_rel</span> ⊥ (<span class="id">f</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>) (<span class="id">g</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>)) <span class="tactic">by</span> <span class="id">rauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#T.gcombine">T.gcombine</a></span>.<br/>
@@ -147,8 +147,8 @@
 &nbsp;&nbsp;<span class="id">Monotonic</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id"><a href="compcert.lib.Maps.html#PTree.elements">PTree.elements</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">forallr</span> <span class="id">R</span>, <span class="id"><a href="compcert.cklr.Mapsrel.html#r">PTreeRel.r</a></span> (<span class="id">option_rel</span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>) ++&gt; <span class="id">list_rel</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> * <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2441')">Proof.</div>
-<div class="proofscript" id="proof2441">
+<div class="toggleproof" onclick="toggleDisplay('proof2577')">Proof.</div>
+<div class="proofscript" id="proof2577">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A</span> <span class="id">B</span> <span class="id">R</span> <span class="id">tA</span> <span class="id">tB</span> <span class="id">Ht</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">cut</span> (<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> * <span class="id">R</span>)%<span class="id">rel</span> (<span class="id"><a href="compcert.lib.Maps.html#PTree.elements">PTree.elements</a></span> <span class="id">tA</span>) (<span class="id"><a href="compcert.lib.Maps.html#PTree.elements">PTree.elements</a></span> <span class="id">tB</span>)).<br/>
 &nbsp;&nbsp;{<br/>
@@ -171,8 +171,8 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="MapRel.r_subrel">r_subrel</a></span> <span class="id">A</span> <span class="id">B</span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#A">A</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#B">B</a></span>) (<span class="id">subrel</span> ++&gt; <span class="id">subrel</span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2442')">Proof.</div>
-<div class="proofscript" id="proof2442">
+<div class="toggleproof" onclick="toggleDisplay('proof2578')">Proof.</div>
+<div class="proofscript" id="proof2578">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">firstorder</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
@@ -181,8 +181,8 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="MapRel.init_rel">init_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#M.init">M.init</a></span>) (<span class="id">forallr</span> <span class="id">R</span>, <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2443')">Proof.</div>
-<div class="proofscript" id="proof2443">
+<div class="toggleproof" onclick="toggleDisplay('proof2579')">Proof.</div>
+<div class="proofscript" id="proof2579">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A</span> <span class="id">B</span> <span class="id">R</span> <span class="id">x</span> <span class="id">y</span> <span class="id">H</span> <span class="id">i</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#M.gi">M.gi</a></span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assumption</span>.<br/>
@@ -190,15 +190,15 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="MapRel.get_rel">get_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#M.get">M.get</a></span>) (<span class="id">forallr</span> <span class="id">R</span>, - ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2444')">Proof.</div>
-<div class="proofscript" id="proof2444">
+<div class="toggleproof" onclick="toggleDisplay('proof2580')">Proof.</div>
+<div class="proofscript" id="proof2580">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">repeat</span> <span class="id">rstep</span>. <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="MapRel.set_rel">set_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#M.set">M.set</a></span>) (<span class="id">forallr</span> <span class="id">R</span>, - ==&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#R">R</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2445')">Proof.</div>
-<div class="proofscript" id="proof2445">
+<div class="toggleproof" onclick="toggleDisplay('proof2581')">Proof.</div>
+<div class="proofscript" id="proof2581">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A</span> <span class="id">B</span> <span class="id">R</span> <span class="id">i</span> <span class="id">x</span> <span class="id">y</span> <span class="id">Hxy</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">j</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.cklr.Mapsrel.html#M.elt_eq">M.elt_eq</a></span> <span class="id">j</span> <span class="id">i</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">subst</span>. <span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#M.gss">M.gss</a></span>. <span class="tactic">assumption</span>.<br/>
@@ -207,8 +207,8 @@ Qed.</div>
 <br/>
 &nbsp;&nbsp;<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="MapRel.map_rel">map_rel</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.Mapsrel.html#M.map">M.map</a></span>) (<span class="id">forallr</span> <span class="id">RA</span>, <span class="id">forallr</span> <span class="id">RB</span>, (<span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span>) ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RA">RA</a></span> ++&gt; <span class="id"><a href="compcert.cklr.Mapsrel.html#MapRel.r">r</a></span> <span class="id"><a href="compcert.cklr.Mapsrel.html#RB">RB</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2446')">Proof.</div>
-<div class="proofscript" id="proof2446">
+<div class="toggleproof" onclick="toggleDisplay('proof2582')">Proof.</div>
+<div class="proofscript" id="proof2582">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">A1</span> <span class="id">A2</span> <span class="id">RA</span> <span class="id">B1</span> <span class="id">B2</span> <span class="id">RB</span> <span class="id">f</span> <span class="id">g</span> <span class="id">Hfg</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span> <span class="id">i</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> !<span class="id"><a href="compcert.cklr.Mapsrel.html#M.gmap">M.gmap</a></span>. <span class="id">rauto</span>.<br/>
 &nbsp;&nbsp;Qed.</div>

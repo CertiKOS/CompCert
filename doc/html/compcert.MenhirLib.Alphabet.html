@@ -1,0 +1,271 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Alphabet</title>
+<meta name="description" content="Documentation of Coq module Alphabet" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Alphabet</h1>
+<div class="coq">
+<br/>
+<span class="id">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.omega.Omega.html">Omega</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span> <span class="kwd">Syntax</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relations.html">Relations</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html">RelationClasses</a></span>.<br/>
+<br/>
+<span class="kwd">Local</span> <span class="kwd">Obligation</span> <span class="kwd">Tactic</span> := <span class="tactic">intros</span>.<br/>
+<br/>
+<div class="doc">A comparable type is equiped with a <span class="bracket"><span class="id">compare</span></span> function, that define an order
+   relation. *</div>
+<span class="kwd">Class</span> <span class="id"><a name="Comparable">Comparable</a></span> (<span class="id">A</span>:<span class="kwd">Type</span>) := {<br/>
+&nbsp;&nbsp;<span class="id"><a name="compare">compare</a></span> : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#comparison">comparison</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="compare_antisym">compare_antisym</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#CompOpp">CompOpp</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="compare_trans">compare_trans</a></span> :  <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> <span class="id">z</span> <span class="id">c</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#c">c</a></span> -&gt; (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#z">z</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#c">c</a></span> -&gt; (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#z">z</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#c">c</a></span><br/>
+}.<br/>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="compare_refl">compare_refl</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} (<span class="id">C</span>: <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) :<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6425')">Proof.</div>
+<div class="proofscript" id="proof6425">
+<span class="tactic">intros</span>.<br/>
+<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="id">x</span> <span class="id">x</span>).<br/>
+<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">x</span> <span class="id">x</span>); <span class="tactic">intuition</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">The corresponding order is a strict order. *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="comparableLt">comparableLt</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} (<span class="id">C</span>: <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Relations.Relation_Definitions.html#relation">relation</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">fun</span> <span class="id">x</span> <span class="id">y</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Lt">Lt</a></span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="ComparableLtStrictOrder">ComparableLtStrictOrder</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} (<span class="id">C</span>: <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) :<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#StrictOrder">StrictOrder</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#comparableLt">comparableLt</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#C">C</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6426')">Proof.</div>
+<div class="proofscript" id="proof6426">
+<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Build_StrictOrder">Build_StrictOrder</a></span>.<br/>
+<span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Irreflexive">Irreflexive</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Reflexive">Reflexive</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#complement">complement</a></span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#comparableLt">comparableLt</a></span>.<br/>
+<span class="tactic">intros</span>.<br/>
+<span class="id">pose</span> <span class="id">proof</span> <span class="id">H</span>.<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+<span class="tactic">rewrite</span> <span class="id">H0</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+<span class="tactic">discriminate</span> <span class="id">H</span>.<br/>
+<span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Transitive">Transitive</a></span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#comparableLt">comparableLt</a></span>.<br/>
+<span class="tactic">intros</span> <span class="id">x</span> <span class="id">y</span> <span class="id">z</span>.<br/>
+<span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_trans">compare_trans</a></span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">nat is comparable. *</div>
+<span class="kwd">Program</span> <span class="kwd">Instance</span> <span class="id"><a name="natComparable">natComparable</a></span> : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> :=<br/>
+&nbsp;&nbsp;{ <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.compare">Nat.compare</a></span> }.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6427')">Next Obligation.</div>
+<div class="proofscript" id="proof6427">
+<span class="tactic">symmetry</span>.<br/>
+<span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.compare">Nat.compare</a></span> <span class="id">x</span> <span class="id">y</span>)  <span class="kwd">as</span> [] <span class="id">eqn</span>:?.<br/>
+<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.compare_eq_iff">Nat.compare_eq_iff</a></span> <span class="kwd">in</span> <span class="id">Heqc</span>.<br/>
+<span class="tactic">destruct</span> <span class="id">Heqc</span>.<br/>
+<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.compare_eq_iff">Nat.compare_eq_iff</a></span>.<br/>
+<span class="tactic">trivial</span>.<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Compare_dec.html#nat_compare_lt">nat_compare_lt</a></span> <span class="kwd">in</span> *.<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Compare_dec.html#nat_compare_gt">nat_compare_gt</a></span> <span class="kwd">in</span> *.<br/>
+<span class="tactic">trivial</span>.<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Compare_dec.html#nat_compare_lt">nat_compare_lt</a></span> <span class="kwd">in</span> *.<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Compare_dec.html#nat_compare_gt">nat_compare_gt</a></span> <span class="kwd">in</span> *.<br/>
+<span class="tactic">trivial</span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof6428')">Next Obligation.</div>
+<div class="proofscript" id="proof6428">
+<span class="tactic">destruct</span> <span class="id">c</span>.<br/>
+<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.compare_eq_iff">Nat.compare_eq_iff</a></span> <span class="kwd">in</span> *; <span class="tactic">destruct</span> <span class="id">H</span>; <span class="tactic">assumption</span>.<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Compare_dec.html#nat_compare_lt">nat_compare_lt</a></span> <span class="kwd">in</span> *.<br/>
+<span class="tactic">apply</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.lt_trans">Nat.lt_trans</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span> <span class="id">H0</span>).<br/>
+<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Compare_dec.html#nat_compare_gt">nat_compare_gt</a></span> <span class="kwd">in</span> *.<br/>
+<span class="tactic">apply</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.Gt.html#gt_trans">gt_trans</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span> <span class="id">H0</span>).<br/>
+Qed.</div>
+<br/>
+<div class="doc">A pair of comparable is comparable. *</div>
+<span class="kwd">Program</span> <span class="kwd">Instance</span> <span class="id"><a name="PairComparable">PairComparable</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} (<span class="id">CA</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) {<span class="id">B</span>:<span class="kwd">Type</span>} (<span class="id">CB</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#B">B</a></span>) :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>*<span class="id"><a href="compcert.MenhirLib.Alphabet.html#B">B</a></span>) :=<br/>
+&nbsp;&nbsp;{ <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> := <span class="kwd">fun</span> <span class="id">x</span> <span class="id">y</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> (<span class="id">xa</span>, <span class="id">xb</span>) := <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="kwd">in</span> <span class="kwd">let</span> (<span class="id">ya</span>, <span class="id">yb</span>) := <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#xa">xa</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#ya">ya</a></span> <span class="kwd">return</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#comparison">comparison</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span> =&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#xb">xb</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#yb">yb</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">x</span> =&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span> }.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6429')">Next Obligation.</div>
+<div class="proofscript" id="proof6429">
+<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>.<br/>
+<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="id">a</span> <span class="id">a0</span>).<br/>
+<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="id">b</span> <span class="id">b0</span>).<br/>
+<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">a</span> <span class="id">a0</span>); <span class="tactic">intuition</span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof6430')">Next Obligation.</div>
+<div class="proofscript" id="proof6430">
+<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>, <span class="id">z</span>.<br/>
+<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">a</span> <span class="id">a0</span>) <span class="kwd">as</span> [] <span class="id">eqn</span>:?, (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">a0</span> <span class="id">a1</span>) <span class="kwd">as</span> [] <span class="id">eqn</span>:?;<br/>
+<span class="tactic">try</span> (<span class="tactic">rewrite</span> &lt;- <span class="id">H0</span> <span class="kwd">in</span> <span class="id">H</span>; <span class="tactic">discriminate</span>);<br/>
+<span class="tactic">try</span> (<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">a</span> <span class="id">a1</span>) <span class="kwd">as</span> [] <span class="id">eqn</span>:?;<br/>
+&nbsp;&nbsp;<span class="tactic">try</span> (<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="kwd">in</span> <span class="id">Heqc0</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#CompOpp_iff">CompOpp_iff</a></span> <span class="kwd">in</span> <span class="id">Heqc0</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_trans">compare_trans</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span>  <span class="id">_</span> <span class="id">Heqc0</span> <span class="id">Heqc2</span>) <span class="kwd">in</span> <span class="id">Heqc1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">discriminate</span>);<br/>
+&nbsp;&nbsp;<span class="tactic">try</span> (<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="kwd">in</span> <span class="id">Heqc1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#CompOpp_iff">CompOpp_iff</a></span> <span class="kwd">in</span> <span class="id">Heqc1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_trans">compare_trans</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Heqc2</span> <span class="id">Heqc1</span>) <span class="kwd">in</span> <span class="id">Heqc0</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">discriminate</span>);<br/>
+&nbsp;&nbsp;<span class="tactic">assumption</span>);<br/>
+<span class="tactic">rewrite</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_trans">compare_trans</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Heqc0</span> <span class="id">Heqc1</span>);<br/>
+<span class="tactic">try</span> <span class="tactic">assumption</span>.<br/>
+<span class="tactic">apply</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_trans">compare_trans</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">H</span> <span class="id">H0</span>).<br/>
+Qed.</div>
+<br/>
+<div class="doc">Special case of comparable, where equality is Leibniz equality. *</div>
+<span class="kwd">Class</span> <span class="id"><a name="ComparableLeibnizEq">ComparableLeibnizEq</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} (<span class="id">C</span>: <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="compare_eq">compare_eq</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>.<br/>
+<br/>
+<div class="doc">Boolean equality for a <span class="bracket"><span class="id">Comparable</span></span>. *</div>
+<span class="kwd">Definition</span> <span class="id"><a name="compare_eqb">compare_eqb</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} {<span class="id">C</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>} (<span class="id">x</span> <span class="id">y</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="compare_eqb_iff">compare_eqb_iff</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} {<span class="id">C</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>} {<span class="id">U</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#C">C</a></span>} :<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb">compare_eqb</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> &lt;-&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6431')">Proof.</div>
+<div class="proofscript" id="proof6431">
+<span class="tactic">unfold</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb">compare_eqb</a></span>.<br/>
+<span class="tactic">intuition</span>.<br/>
+<span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eq">compare_eq</a></span>.<br/>
+<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">x</span> <span class="id">y</span>); <span class="tactic">intuition</span>; <span class="tactic">discriminate</span>.<br/>
+<span class="tactic">destruct</span> <span class="id">H</span>.<br/>
+<span class="tactic">rewrite</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_refl">compare_refl</a></span>; <span class="tactic">intuition</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="NComparableLeibnizEq">NComparableLeibnizEq</a></span> : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#natComparable">natComparable</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.PeanoNat.html#Nat.compare_eq">Nat.compare_eq</a></span>.<br/>
+<br/>
+<div class="doc">A pair of ComparableLeibnizEq is ComparableLeibnizEq *</div>
+<span class="kwd">Instance</span> <span class="id"><a name="PairComparableLeibnizEq">PairComparableLeibnizEq</a></span><br/>
+&nbsp;&nbsp;{<span class="id">A</span>:<span class="kwd">Type</span>} {<span class="id">CA</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>} (<span class="id">UA</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#CA">CA</a></span>)<br/>
+&nbsp;&nbsp;{<span class="id">B</span>:<span class="kwd">Type</span>} {<span class="id">CB</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#B">B</a></span>} (<span class="id">UB</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#CB">CB</a></span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#PairComparable">PairComparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#CA">CA</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#CB">CB</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6432')">Proof.</div>
+<div class="proofscript" id="proof6432">
+<span class="tactic">intros</span> <span class="id">x</span> <span class="id">y</span>; <span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span>.<br/>
+<span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eq">compare_eq</a></span> <span class="id">a</span> <span class="id">a0</span>); <span class="id">pose</span> <span class="id">proof</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eq">compare_eq</a></span> <span class="id">b</span> <span class="id">b0</span>).<br/>
+<span class="tactic">destruct</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span> <span class="id">a</span> <span class="id">a0</span>); <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
+<span class="tactic">intuition</span>.<br/>
+<span class="tactic">destruct</span> <span class="id">H2</span>, <span class="id">H0</span>.<br/>
+<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">An <span class="bracket"><span class="id">Finite</span></span> type is a type with the list of all elements. *</div>
+<span class="kwd">Class</span> <span class="id"><a name="Finite">Finite</a></span> (<span class="id">A</span>:<span class="kwd">Type</span>) := {<br/>
+&nbsp;&nbsp;<span class="id"><a name="all_list">all_list</a></span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="all_list_forall">all_list_forall</a></span> : <span class="kwd">forall</span> <span class="id">x</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#all_list">all_list</a></span><br/>
+}.<br/>
+<br/>
+<div class="doc">An alphabet is both <span class="bracket"><span class="id">ComparableLeibnizEq</span></span> and <span class="bracket"><span class="id">Finite</span></span>. *</div>
+<span class="kwd">Class</span> <span class="id"><a name="Alphabet">Alphabet</a></span> (<span class="id">A</span>:<span class="kwd">Type</span>) := {<br/>
+&nbsp;&nbsp;<span class="id"><a name="AlphabetComparable">AlphabetComparable</a></span> :&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="AlphabetComparableLeibnizEq">AlphabetComparableLeibnizEq</a></span> :&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#AlphabetComparable">AlphabetComparable</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="AlphabetFinite">AlphabetFinite</a></span> :&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Finite">Finite</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span><br/>
+}.<br/>
+<br/>
+<div class="doc">The <span class="bracket"><span class="id">Numbered</span></span> class provides a conveniant way to build <span class="bracket"><span class="id">Alphabet</span></span> instances,
+   with a good computationnal complexity. It is mainly a injection from it to
+   <span class="bracket"><span class="id">positive</span></span> *</div>
+<span class="kwd">Class</span> <span class="id"><a name="Numbered">Numbered</a></span> (<span class="id">A</span>:<span class="kwd">Type</span>) := {<br/>
+&nbsp;&nbsp;<span class="id"><a name="inj">inj</a></span> : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="surj">surj</a></span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="surj_inj_compat">surj_inj_compat</a></span> : <span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj">surj</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="inj_bound">inj_bound</a></span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span>;<br/>
+&nbsp;&nbsp;<span class="id"><a name="inj_bound_spec">inj_bound_spec</a></span> : <span class="kwd">forall</span> <span class="id">x</span>, (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj_bound">inj_bound</a></span>)%<span class="id">positive</span><br/>
+}.<br/>
+<br/>
+<span class="kwd">Program</span> <span class="kwd">Instance</span> <span class="id"><a name="NumberedAlphabet">NumberedAlphabet</a></span> {<span class="id">A</span>:<span class="kwd">Type</span>} (<span class="id">N</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Numbered">Numbered</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span>) : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Alphabet">Alphabet</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#A">A</a></span> :=<br/>
+&nbsp;&nbsp;{ <span class="id"><a href="compcert.MenhirLib.Alphabet.html#AlphabetComparable">AlphabetComparable</a></span> := {| <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Build_Comparable">compare</a></span> := <span class="kwd">fun</span> <span class="id">x</span> <span class="id">y</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare">Pos.compare</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>) (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>) |};<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Alphabet.html#AlphabetFinite">AlphabetFinite</a></span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Build_Finite">all_list</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.iter">Pos.iter</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> '(<span class="id">l</span>, <span class="id">p</span>) =&gt; (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj">surj</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#p">p</a></span>::<span class="id"><a href="compcert.MenhirLib.Alphabet.html#l">l</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#p">p</a></span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;([], 1%<span class="id">positive</span>) <span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj_bound">inj_bound</a></span>) |} }.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6433')">Next Obligation.</div>
+<div class="proofscript" id="proof6433">
+ <span class="tactic">simpl</span>. <span class="id">now</span> <span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_antisym">Pos.compare_antisym</a></span>. Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof6434')">Next Obligation.</div>
+<div class="proofscript" id="proof6434">
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">goal</span> <span class="kwd">with</span> <span class="id">c</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#comparison">comparison</a></span> |- <span class="id">_</span> =&gt; <span class="tactic">destruct</span> <span class="id">c</span> <span class="kwd">end</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_eq_iff">Pos.compare_eq_iff</a></span> <span class="kwd">in</span> *. <span class="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_lt_iff">Pos.compare_lt_iff</a></span> <span class="kwd">in</span> *. <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.lt_trans">Pos.lt_trans</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_gt_iff">Pos.compare_gt_iff</a></span> <span class="kwd">in</span> *. <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.lt_trans">Pos.lt_trans</a></span>.<br/>
+Qed.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof6435')">Next Obligation.</div>
+<div class="proofscript" id="proof6435">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x</span> <span class="id">y</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span>. <span class="tactic">intros</span> <span class="id">Hxy</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hxy</span>' : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">x</span> = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">y</span>).<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;do&nbsp;not&nbsp;use&nbsp;[Pos.compare_eq_iff]&nbsp;directly&nbsp;to&nbsp;make&nbsp;sure&nbsp;the<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;proof&nbsp;is&nbsp;executable.&nbsp;*)</span><br/>
+&nbsp;&nbsp;{ <span class="tactic">destruct</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.eq_dec">Pos.eq_dec</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">x</span>) (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">y</span>)) <span class="kwd">as</span> [|[]]; [<span class="id">now</span> <span class="tactic">auto</span>|].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">now</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.compare_eq_iff">Pos.compare_eq_iff</a></span>. }<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Using&nbsp;rewrite&nbsp;here&nbsp;leads&nbsp;to&nbsp;non-executable&nbsp;proofs.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">transitivity</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj">surj</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">x</span>)).<br/>
+&nbsp;&nbsp;{ <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq_sym">eq_sym</a></span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj_inj_compat">surj_inj_compat</a></span>. }<br/>
+&nbsp;&nbsp;<span class="tactic">transitivity</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj">surj</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">y</span>)); <span class="id">cycle</span> 1.<br/>
+&nbsp;&nbsp;{ <span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj_inj_compat">surj_inj_compat</a></span>. }<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="tactic">f_equal</span>, <span class="id">Hxy</span>'.<br/>
+Defined.</div>
+<div class="toggleproof" onclick="toggleDisplay('proof6436')">Next Obligation.</div>
+<div class="proofscript" id="proof6436">
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;-(<span class="id"><a href="compcert.MenhirLib.Alphabet.html#surj_inj_compat">surj_inj_compat</a></span> <span class="id">x</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj_bound_spec">inj_bound_spec</a></span> <span class="id">x</span>). <span class="tactic">generalize</span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj">inj</a></span> <span class="id">x</span>). <span class="tactic">clear</span> <span class="id">x</span>. <span class="tactic">intros</span> <span class="id">x</span>.<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">goal</span> <span class="kwd">with</span> |- ?<span class="id">Hx</span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> ?<span class="id">s</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> ?<span class="id">p</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> ((<span class="id">Hx</span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id">s</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> <span class="id">p</span>)) /\ <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> <span class="id">p</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.succ">Pos.succ</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj_bound">inj_bound</a></span>); [|<span class="id">now</span> <span class="tactic">intuition</span>] <span class="kwd">end</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.lt_succ_r">Pos.lt_succ_r</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#inj_bound">inj_bound</a></span> <span class="kwd">as</span> [|<span class="id">y</span> [<span class="id">IH1</span> <span class="id">IH2</span>]] <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.peano_ind">Pos.peano_ind</a></span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="tactic">split</span>; [<span class="tactic">intros</span> <span class="id">Hx</span>|]); <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_antisym">Pos.le_antisym</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hx</span>); <span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_1_l">Pos.le_1_l</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.iter_succ">Pos.iter_succ</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.iter">Pos.iter</a></span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.le_lteq">Pos.le_lteq</a></span> <span class="kwd">in</span> <span class="id">Hx</span>. <span class="tactic">destruct</span> <span class="id">Hx</span> <span class="kwd">as</span> [?%<span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.lt_succ_r">Pos.lt_succ_r</a></span>| -&gt;]; <span class="id">now</span> <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.iter_succ">Pos.iter_succ</a></span>. <span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.PArith.BinPos.html#Pos.iter">Pos.iter</a></span>. <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">IH2</span>. <span class="tactic">subst</span>. <span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">Definitions of <span class="bracket"><span class="id">FSet</span></span>/<span class="bracket"><span class="id">FMap</span></span> from <span class="bracket"><span class="id">Comparable</span></span> *</div>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.OrderedTypeAlt.html">OrderedTypeAlt</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.FSets.FSetAVL.html">FSetAVL</a></span>.<br/>
+<span class="kwd">Require</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.FSets.FMapAVL.html">FMapAVL</a></span>.<br/>
+<span class="kwd">Import</span> <span class="id">OrderedType</span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="kwd">Type</span> <span class="id"><a name="ComparableM">ComparableM</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Parameter</span> <span class="id"><a name="ComparableM.t">t</a></span> : <span class="kwd">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id">Declare</span> <span class="kwd">Instance</span> <span class="id"><a name="ComparableM.tComparable">tComparable</a></span> : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableM.t">t</a></span>.<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableM">ComparableM</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="OrderedTypeAlt_from_ComparableM">OrderedTypeAlt_from_ComparableM</a></span> (<span class="id">C</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableM">ComparableM</a></span>) &lt;: <span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.OrderedTypeAlt.html#OrderedTypeAlt">OrderedTypeAlt</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="OrderedTypeAlt_from_ComparableM.t">t</a></span> := <span class="id"><a href="compcert.MenhirLib.Alphabet.html#C.t">C.t</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="OrderedTypeAlt_from_ComparableM.compare">compare</a></span> : <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedTypeAlt_from_ComparableM.t">t</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedTypeAlt_from_ComparableM.t">t</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#comparison">comparison</a></span> := <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare">compare</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Infix</span> "?=" := <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedTypeAlt_from_ComparableM.compare">compare</a></span> (<span class="tactic">at</span> <span class="id">level</span> 70, <span class="id">no</span> <span class="id">associativity</span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedTypeAlt_from_ComparableM.compare_sym">compare_sym</a></span> <span class="id">x</span> <span class="id">y</span> : (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>?=<span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#CompOpp">CompOpp</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>?=<span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6437')">Proof.</div>
+<div class="proofscript" id="proof6437">
+ <span class="tactic">exact</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq_sym">Logic.eq_sym</a></span> (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_antisym">compare_antisym</a></span> <span class="id">x</span> <span class="id">y</span>)). Qed.</div>
+&nbsp;&nbsp;<span class="kwd">Lemma</span> <span class="id"><a name="OrderedTypeAlt_from_ComparableM.compare_trans">compare_trans</a></span> <span class="id">c</span> <span class="id">x</span> <span class="id">y</span> <span class="id">z</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>?=<span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#c">c</a></span> -&gt; (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#y">y</a></span>?=<span class="id"><a href="compcert.MenhirLib.Alphabet.html#z">z</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#c">c</a></span> -&gt; (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#x">x</a></span>?=<span class="id"><a href="compcert.MenhirLib.Alphabet.html#z">z</a></span>) = <span class="id"><a href="compcert.MenhirLib.Alphabet.html#c">c</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6438')">Proof.</div>
+<div class="proofscript" id="proof6438">
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_trans">compare_trans</a></span>.<br/>
+&nbsp;&nbsp;Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedTypeAlt_from_ComparableM">OrderedTypeAlt_from_ComparableM</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="OrderedType_from_ComparableM">OrderedType_from_ComparableM</a></span> (<span class="id">C</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableM">ComparableM</a></span>) &lt;: <span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.OrderedType.html#OrderedType">OrderedType</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Module</span> <span class="id"><a name="OrderedType_from_ComparableM.Alt">Alt</a></span> := <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedTypeAlt_from_ComparableM">OrderedTypeAlt_from_ComparableM</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#C">C</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Include</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.OrderedTypeAlt.html#OrderedType_from_Alt">OrderedType_from_Alt</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedType_from_ComparableM.Alt">Alt</a></span>).<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#OrderedType_from_ComparableM">OrderedType_from_ComparableM</a></span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

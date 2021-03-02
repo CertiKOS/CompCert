@@ -73,8 +73,8 @@
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on">Mem.unchanged_on</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#Q">Q</a></span> <span class="id">m</span>' <span class="id">m</span>'' -&gt;<br/>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">b</span> <span class="id">ofs</span>, <span class="id"><a href="compcert.cklr.InjectFootprint.html#P">P</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#b">b</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#ofs">ofs</a></span> -&gt; <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#m">m</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.cklr.InjectFootprint.html#Q">Q</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#b">b</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#ofs">ofs</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on">Mem.unchanged_on</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#P">P</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#m">m</a></span> <span class="id">m</span>''.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2398')">Proof.</div>
-<div class="proofscript" id="proof2398">
+<div class="toggleproof" onclick="toggleDisplay('proof2483')">Proof.</div>
+<div class="proofscript" id="proof2483">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">H</span> <span class="id">HPQ</span> <span class="id">H</span>'.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_implies">Mem.unchanged_on_implies</a></span> (<span class="kwd">fun</span> <span class="id">b</span> <span class="id">o</span> =&gt; <span class="id">P</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#b">b</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#o">o</a></span> /\ <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#b">b</a></span>)).<br/>
 &nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_trans">Mem.unchanged_on_trans</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -87,8 +87,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="injp_acc_preo">injp_acc_preo</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#PreOrder">PreOrder</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#injp_acc">injp_acc</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2399')">Proof.</div>
-<div class="proofscript" id="proof2399">
+<div class="toggleproof" onclick="toggleDisplay('proof2484')">Proof.</div>
+<div class="proofscript" id="proof2484">
 &nbsp;&nbsp;<span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;- <span class="tactic">intros</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span>].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
@@ -132,15 +132,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="injp_mi_acc">injp_mi_acc</a></span>:<br/>
 &nbsp;&nbsp;<span class="id">Monotonic</span> (@<span class="id"><a href="compcert.cklr.InjectFootprint.html#injp_mi">injp_mi</a></span>) (<span class="id"><a href="compcert.cklr.InjectFootprint.html#injp_acc">injp_acc</a></span> ++&gt; <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2400')">Proof.</div>
-<div class="proofscript" id="proof2400">
+<div class="toggleproof" onclick="toggleDisplay('proof2485')">Proof.</div>
+<div class="proofscript" id="proof2485">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#injp_mi">injp_mi</a></span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inject_separated_refl">inject_separated_refl</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#inject_separated">inject_separated</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#f">f</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#f">f</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#m1">m1</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#m2">m2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2401')">Proof.</div>
-<div class="proofscript" id="proof2401">
+<div class="toggleproof" onclick="toggleDisplay('proof2486')">Proof.</div>
+<div class="proofscript" id="proof2486">
 &nbsp;&nbsp;<span class="tactic">red</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -156,8 +156,20 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id">match_stbls</span> := <span class="id"><a href="compcert.cklr.InjectFootprint.html#injp_match_stbls">injp_match_stbls</a></span>;<br/>
 &nbsp;&nbsp;|}.<br/>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2402')">Next Obligation.</div>
-<div class="proofscript" id="proof2402">
+<div class="doc">Acc separated </div>
+<div class="toggleproof" onclick="toggleDisplay('proof2487')">Next Obligation.</div>
+<div class="proofscript" id="proof2487">
+&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">m1</span> <span class="id">into</span> <span class="id">M1</span>. <span class="tactic">rename</span> <span class="id">m2</span> <span class="id">into</span> <span class="id">M2</span>.<br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Events.html#inject_separated">inject_separated</a></span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">b1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hw</span> <span class="id">Hw</span>'.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">H6</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> <span class="id">Hw</span> <span class="id">Hw</span>') <span class="kwd">as</span> [<span class="id">Hm1</span> <span class="id">Hm2</span>].<br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">tauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2488')">Next Obligation.</div>
+<div class="proofscript" id="proof2488">
  <span class="comment">(*&nbsp;~&gt;&nbsp;vs.&nbsp;match_stbls&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">w</span> <span class="id">w</span>' <span class="id">Hw</span>' <span class="id">se1</span> <span class="id">se2</span> <span class="id">Hse</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hse</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">Hse</span> <span class="id">Hnb1</span> <span class="id">Hnb2</span>]. <span class="id">inv</span> <span class="id">Hw</span>'.<br/>
@@ -169,19 +181,19 @@ Qed.</div>
 &nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_nextblock">Mem.unchanged_on_nextblock</a></span> <span class="kwd">in</span> <span class="id">H6</span>. <span class="id">xomega</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2403')">Next Obligation.</div>
-<div class="proofscript" id="proof2403">
+<div class="toggleproof" onclick="toggleDisplay('proof2489')">Next Obligation.</div>
+<div class="proofscript" id="proof2489">
  <span class="comment">(*&nbsp;match_stbls&nbsp;vs.&nbsp;Genv.match_stbls&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> 1; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2404')">Next Obligation.</div>
-<div class="proofscript" id="proof2404">
+<div class="toggleproof" onclick="toggleDisplay('proof2490')">Next Obligation.</div>
+<div class="proofscript" id="proof2490">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2405')">Next Obligation.</div>
-<div class="proofscript" id="proof2405">
+<div class="toggleproof" onclick="toggleDisplay('proof2491')">Next Obligation.</div>
+<div class="proofscript" id="proof2491">
  <span class="comment">(*&nbsp;Mem.alloc&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] <span class="id">lo</span> <span class="id">hi</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">m1</span> <span class="id">lo</span> <span class="id">hi</span>) <span class="kwd">as</span> [<span class="id">m1</span>' <span class="id">b1</span>] <span class="id">eqn</span>:<span class="id">Hm1</span>'.<br/>
@@ -214,8 +226,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Memory.html#Mem.fresh_block_alloc">Mem.fresh_block_alloc</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2406')">Next Obligation.</div>
-<div class="proofscript" id="proof2406">
+<div class="toggleproof" onclick="toggleDisplay('proof2492')">Next Obligation.</div>
+<div class="proofscript" id="proof2492">
  <span class="comment">(*&nbsp;Mem.free&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] [[<span class="id">b1</span> <span class="id">lo1</span>] <span class="id">hi1</span>] [[<span class="id">b2</span> <span class="id">lo2</span>] <span class="id">hi2</span>] <span class="id">Hr</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">red</span>.<br/>
@@ -242,8 +254,8 @@ Qed.</div>
 &nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#inject_separated_refl">inject_separated_refl</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2407')">Next Obligation.</div>
-<div class="proofscript" id="proof2407">
+<div class="toggleproof" onclick="toggleDisplay('proof2493')">Next Obligation.</div>
+<div class="proofscript" id="proof2493">
  <span class="comment">(*&nbsp;Mem.load&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">chunk</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hptr</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">red</span>.<br/>
@@ -252,8 +264,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hv2</span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2408')">Next Obligation.</div>
-<div class="proofscript" id="proof2408">
+<div class="toggleproof" onclick="toggleDisplay('proof2494')">Next Obligation.</div>
+<div class="proofscript" id="proof2494">
  <span class="comment">(*&nbsp;Mem.store&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">chunk</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hptr</span>] <span class="id">v1</span> <span class="id">v2</span> <span class="id">Hv</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">red</span>.<br/>
@@ -279,8 +291,8 @@ Qed.</div>
 &nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#inject_separated_refl">inject_separated_refl</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2409')">Next Obligation.</div>
-<div class="proofscript" id="proof2409">
+<div class="toggleproof" onclick="toggleDisplay('proof2495')">Next Obligation.</div>
+<div class="proofscript" id="proof2495">
  <span class="comment">(*&nbsp;Mem.loadbytes&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hptr</span>] <span class="id">sz</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">red</span>.<br/>
@@ -289,8 +301,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hvs2</span>. <span class="id">rauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2410')">Next Obligation.</div>
-<div class="proofscript" id="proof2410">
+<div class="toggleproof" onclick="toggleDisplay('proof2496')">Next Obligation.</div>
+<div class="proofscript" id="proof2496">
  <span class="comment">(*&nbsp;Mem.storebytes&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] [<span class="id">b1</span> <span class="id">ofs1</span>] [<span class="id">b2</span> <span class="id">ofs2</span>] <span class="id">Hptr</span> <span class="id">vs1</span> <span class="id">vs2</span> <span class="id">Hvs</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">red</span>.<br/>
@@ -349,15 +361,15 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">apply</span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#inject_separated_refl">inject_separated_refl</a></span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2411')">Next Obligation.</div>
-<div class="proofscript" id="proof2411">
+<div class="toggleproof" onclick="toggleDisplay('proof2497')">Next Obligation.</div>
+<div class="proofscript" id="proof2497">
  <span class="comment">(*&nbsp;Mem.perm&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] <span class="id">_</span> <span class="id">_</span> [<span class="id">b1</span> <span class="id">ofs1</span> <span class="id">b2</span> <span class="id">delta</span> <span class="id">Hb</span>] <span class="id">p</span> <span class="id">k</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_inject">Mem.perm_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2412')">Next Obligation.</div>
-<div class="proofscript" id="proof2412">
+<div class="toggleproof" onclick="toggleDisplay('proof2498')">Next Obligation.</div>
+<div class="proofscript" id="proof2498">
  <span class="comment">(*&nbsp;Mem.valid_block&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>] <span class="id">b1</span> <span class="id">b2</span> [<span class="id">delta</span> <span class="id">Hb</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intro</span>.<br/>
@@ -365,15 +377,15 @@ Qed.</div>
 &nbsp;&nbsp;- <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.valid_block_inject_1">Mem.valid_block_inject_1</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2413')">Next Obligation.</div>
-<div class="proofscript" id="proof2413">
+<div class="toggleproof" onclick="toggleDisplay('proof2499')">Next Obligation.</div>
+<div class="proofscript" id="proof2499">
  <span class="comment">(*&nbsp;Mem.meminj_no_overlap&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.mi_no_overlap">Mem.mi_no_overlap</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2414')">Next Obligation.</div>
-<div class="proofscript" id="proof2414">
+<div class="toggleproof" onclick="toggleDisplay('proof2500')">Next Obligation.</div>
+<div class="proofscript" id="proof2500">
  <span class="comment">(*&nbsp;representable&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.lib.Integers.html#Ptrofs.unsigned_repr">Ptrofs.unsigned_repr</a></span> <span class="id">ofs1</span>) <span class="tactic">by</span> <span class="id">xomega</span>.<br/>
@@ -382,41 +394,78 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">assumption</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2415')">Next Obligation.</div>
-<div class="proofscript" id="proof2415">
+<div class="toggleproof" onclick="toggleDisplay('proof2501')">Next Obligation.</div>
+<div class="proofscript" id="proof2501">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.aligned_area_inject">Mem.aligned_area_inject</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2416')">Next Obligation.</div>
-<div class="proofscript" id="proof2416">
+<div class="toggleproof" onclick="toggleDisplay('proof2502')">Next Obligation.</div>
+<div class="proofscript" id="proof2502">
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.disjoint_or_equal_inject">Mem.disjoint_or_equal_inject</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2503')">Next Obligation.</div>
+<div class="proofscript" id="proof2503">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">Hm</span>].<br/>
+&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H0</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.perm_inject_inv">Mem.perm_inject_inv</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2504')">Next Obligation.</div>
+<div class="proofscript" id="proof2504">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H0</span> <span class="kwd">as</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hm</span>').<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hw</span>'. <span class="id">inv</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">Hm</span>'.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Memory.html#Mem.unchanged_on_nextblock">Mem.unchanged_on_nextblock</a></span>.<br/>
 Qed.</div>
 <br/>
 <br/>
 <h1> Properties </h1>
 <br/>
+<div class="doc">Needs memory interpolation
+Lemma injp_injp:
+  subcklr injp (injp @ inj @ injp).
+Proof.
+  intros _ _ _ <span class="bracket"><span class="id">f</span> <span class="id">m1</span> <span class="id">m4</span> <span class="id">Hm14</span></span>.
+  eexists (injpw (meminj_dom f) m1 m1,
+           (injw (meminj_dom f) (Mem.nextblock m1) (Mem.nextblock m1) _,
+            injpw f m1 m4)).
+  simpl.
+  repeat apply conj.
+  - exists m1; split.
+    { constructor. eapply mem_inject_dom; eauto. }
+    exists m1; split.
+    { constructor; repeat rstep; eauto using mem_inject_dom. }
+    constructor; eauto.
+  - rewrite !meminj_dom_compose.
+    apply inject_incr_refl.
+  - intros (w12' &amp; w23' &amp; w34') m1' m4'.
+    intros (m2' &amp; Hm12' &amp; m3' &amp; Hm23' &amp; Hm34').
+    intros (H12 &amp; H23 &amp; H34). simpl in *.
+    destruct Hm12' as <span class="bracket"><span class="id">f12</span> <span class="id">m1</span>' <span class="id">m2</span>' <span class="id">Hm12</span>'</span>.
+    inversion Hm23' as <span class="bracket"><span class="id">f23</span> <span class="id">xm2</span>' <span class="id">xm3</span>' <span class="id">Hm23</span>''</span>; clear Hm23'; subst.
+    destruct Hm34' as <span class="bracket"><span class="id">f34</span> <span class="id">m3</span>' <span class="id">m4</span>' <span class="id">Hm34</span>'</span>.
+    inv H12.
+    inv H23.
+    inv H34.
+    exists (injpw (compose_meminj f12 (compose_meminj f23 f34)) m1' m4').
+    repeat apply conj.
+    + constructor; eauto.
+      eauto using Mem.inject_compose.
+    + constructor; eauto.
+      * apply injp_max_perm_decrease_dom; eauto.
+      * eapply Mem.unchanged_on_implies; eauto.
+        intros. apply loc_unmapped_dom; eauto.
+      * rewrite &lt;- (meminj_dom_compose f).
+        rewrite &lt;- (meminj_dom_compose f) at 2.
+        rauto.
+      * (* XXX we can't actually prove this because the intermediate
+          injection may map a new block into an old one, and falsify
+          the composite separation property. </div>
+Abort.</div>
+*)<br/>
 <br/>
-<br/>
-<h1> Correspondance with <span class="bracket"><span class="id">cc_injp</span></span> </h1>
-<br/>
-<span class="kwd">Lemma</span> <span class="id"><a name="cc_c_injp">cc_c_injp</a></span>:<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.common.CallconvAlgebra.html#cceqv">cceqv</a></span> (<span class="id"><a href="compcert.cklr.CKLR.html#cc_c">cc_c</a></span> <span class="id"><a href="compcert.cklr.InjectFootprint.html#injp">injp</a></span>) <span class="id"><a href="compcert.common.LanguageInterface.html#cc_injp">cc_injp</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof2417')">Proof.</div>
-<div class="proofscript" id="proof2417">
-&nbsp;&nbsp;<span class="tactic">split</span>.<br/>
-&nbsp;&nbsp;- <span class="tactic">red</span>. <span class="tactic">intros</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hq</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Hse</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.common.LanguageInterface.html#injpw">LanguageInterface.injpw</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span>). <span class="tactic">repeat</span> (<span class="id">constructor</span>; <span class="id">cbn</span>; <span class="tactic">eauto</span>).<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r2</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">Hr</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.InjectFootprint.html#injpw">injpw</a></span> <span class="id">f</span>' <span class="id">m1</span>' <span class="id">m2</span>' <span class="id">H7</span>). <span class="tactic">repeat</span> (<span class="id">constructor</span>; <span class="id">cbn</span>; <span class="tactic">eauto</span>).<br/>
-&nbsp;&nbsp;- <span class="tactic">red</span>. <span class="tactic">intros</span> <span class="id">w</span> <span class="id">se1</span> <span class="id">se2</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">Hse</span> <span class="id">Hq</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hq</span>. <span class="id">inv</span> <span class="id">Hse</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> (<span class="id"><a href="compcert.cklr.InjectFootprint.html#injpw">injpw</a></span> <span class="id">f</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">H1</span>). <span class="tactic">repeat</span> (<span class="id">constructor</span>; <span class="id">cbn</span>; <span class="tactic">eauto</span>).<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">r1</span> <span class="id">r2</span> (<span class="id">w</span>' &amp; <span class="id">Hw</span>' &amp; <span class="id">Hr</span>). <span class="id">inv</span> <span class="id">Hw</span>'. <span class="id">inv</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">H4</span>. <span class="tactic">red</span> <span class="kwd">in</span> <span class="id">H7</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
-Qed.</div>
 
 </div>
 <div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>

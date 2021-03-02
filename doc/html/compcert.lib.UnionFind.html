@@ -147,8 +147,8 @@
 <span class="kwd">Definition</span> <span class="id"><a name="UF.t">t</a></span> := <span class="id"><a href="compcert.lib.UnionFind.html#UF.unionfind">unionfind</a></span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="UF.getlink">getlink</a></span> (<span class="id">m</span>: <span class="id"><a href="compcert.lib.UnionFind.html#M.t">M.t</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.elt">elt</a></span>) (<span class="id">a</span>: <span class="id"><a href="compcert.lib.UnionFind.html#UF.elt">elt</a></span>) : {<span class="id">a</span>' | <span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">a</span>'} + {<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1053')">Proof.</div>
-<div class="proofscript" id="proof1053">
+<div class="toggleproof" onclick="toggleDisplay('proof1090')">Proof.</div>
+<div class="proofscript" id="proof1090">
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">a</span> <span class="id">m</span>). <span class="id">left</span>. <span class="id">exists</span> <span class="id">e</span>; <span class="tactic">auto</span>. <span class="id">right</span>; <span class="tactic">auto</span>.<br/>
 Defined.</div>
 <br/>
@@ -167,8 +167,8 @@ Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_unroll">repr_unroll</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="kwd">match</span> <span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">a</span>' =&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">a</span>' | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1054')">Proof.</div>
-<div class="proofscript" id="proof1054">
+<div class="toggleproof" onclick="toggleDisplay('proof1091')">Proof.</div>
+<div class="proofscript" id="proof1091">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Fix_eq">Fix_eq</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.F_repr">F_repr</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.getlink">getlink</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) <span class="id">a</span>) <span class="kwd">as</span> [[<span class="id">a</span>' <span class="id">P</span>] | <span class="id">Q</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">P</span>; <span class="tactic">auto</span>.<br/>
@@ -180,8 +180,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1055')">Proof.</div>
-<div class="proofscript" id="proof1055">
+<div class="toggleproof" onclick="toggleDisplay('proof1092')">Proof.</div>
+<div class="proofscript" id="proof1092">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_unroll">repr_unroll</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -189,30 +189,30 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">a</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">a</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">a</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1056')">Proof.</div>
-<div class="proofscript" id="proof1056">
+<div class="toggleproof" onclick="toggleDisplay('proof1093')">Proof.</div>
+<div class="proofscript" id="proof1093">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_unroll">repr_unroll</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_res_none">repr_res_none</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">a</span>: <span class="id"><a href="compcert.lib.UnionFind.html#UF.elt">elt</a></span>), <span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1057')">Proof.</div>
-<div class="proofscript" id="proof1057">
+<div class="toggleproof" onclick="toggleDisplay('proof1094')">Proof.</div>
+<div class="proofscript" id="proof1094">
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded_ind">well_founded_ind</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>)). <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_unroll">repr_unroll</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">x</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>)) <span class="kwd">as</span> [<span class="id">y</span>|] <span class="id">eqn</span>:<span class="id">X</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_canonical">repr_canonical</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">a</span>: <span class="id"><a href="compcert.lib.UnionFind.html#UF.elt">elt</a></span>), <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>) = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1058')">Proof.</div>
-<div class="proofscript" id="proof1058">
+<div class="toggleproof" onclick="toggleDisplay('proof1095')">Proof.</div>
+<div class="proofscript" id="proof1095">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_none">repr_none</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_res_none">repr_res_none</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_some_diff">repr_some_diff</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">a</span>', <span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">a</span>' -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">a</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1059')">Proof.</div>
-<div class="proofscript" id="proof1059">
+<div class="toggleproof" onclick="toggleDisplay('proof1096')">Proof.</div>
+<div class="proofscript" id="proof1096">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">a</span> = <span class="id">a</span>). <span class="tactic">rewrite</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_some">repr_some</a></span> <span class="id">a</span> <span class="id">a</span>'); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">a</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.REPR.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>). <span class="tactic">rewrite</span> &lt;- <span class="id">H1</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_res_none">repr_res_none</a></span>.<br/>
@@ -226,38 +226,38 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_refl">sameclass_refl</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1060')">Proof.</div>
-<div class="proofscript" id="proof1060">
+<div class="toggleproof" onclick="toggleDisplay('proof1097')">Proof.</div>
+<div class="proofscript" id="proof1097">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_sym">sameclass_sym</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1061')">Proof.</div>
-<div class="proofscript" id="proof1061">
+<div class="toggleproof" onclick="toggleDisplay('proof1098')">Proof.</div>
+<div class="proofscript" id="proof1098">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span>. <span class="tactic">symmetry</span>. <span class="tactic">exact</span> <span class="id">H</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_trans">sameclass_trans</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">c</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#c">c</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#c">c</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1062')">Proof.</div>
-<div class="proofscript" id="proof1062">
+<div class="toggleproof" onclick="toggleDisplay('proof1099')">Proof.</div>
+<div class="proofscript" id="proof1099">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span>. <span class="tactic">transitivity</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>). <span class="tactic">exact</span> <span class="id">H</span>. <span class="tactic">exact</span> <span class="id">H0</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_repr">sameclass_repr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1063')">Proof.</div>
-<div class="proofscript" id="proof1063">
+<div class="toggleproof" onclick="toggleDisplay('proof1100')">Proof.</div>
+<div class="proofscript" id="proof1100">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span>. <span class="tactic">symmetry</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_canonical">repr_canonical</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.wf_empty">wf_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded">well_founded</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.empty">M.empty</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.elt">elt</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1064')">Proof.</div>
-<div class="proofscript" id="proof1064">
+<div class="toggleproof" onclick="toggleDisplay('proof1101')">Proof.</div>
+<div class="proofscript" id="proof1101">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc_intro">Acc_intro</a></span>. <span class="tactic">intros</span> <span class="id">b</span> <span class="id">RO</span>. <span class="tactic">red</span> <span class="kwd">in</span> <span class="id">RO</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#M.gempty">M.gempty</a></span> <span class="kwd">in</span> <span class="id">RO</span>. <span class="tactic">discriminate</span>.<br/>
 Qed.</div>
@@ -266,15 +266,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_empty">repr_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.empty">empty</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1065')">Proof.</div>
-<div class="proofscript" id="proof1065">
+<div class="toggleproof" onclick="toggleDisplay('proof1102')">Proof.</div>
+<div class="proofscript" id="proof1102">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_none">repr_none</a></span>. <span class="tactic">simpl</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#M.gempty">M.gempty</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_empty">sameclass_empty</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.empty">empty</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1066')">Proof.</div>
-<div class="proofscript" id="proof1066">
+<div class="toggleproof" onclick="toggleDisplay('proof1103')">Proof.</div>
+<div class="proofscript" id="proof1103">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">red</span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">repeat</span> <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_empty">repr_empty</a></span> <span class="kwd">in</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -290,8 +290,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> &lt;-&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> \/ (<span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> /\ <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.b">b</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1067')">Proof.</div>
-<div class="proofscript" id="proof1067">
+<div class="toggleproof" onclick="toggleDisplay('proof1104')">Proof.</div>
+<div class="proofscript" id="proof1104">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#M.gsspec">M.gsspec</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> <span class="id">x</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span>). <span class="tactic">intuition</span> <span class="tactic">congruence</span>. <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
 Qed.</div>
@@ -299,8 +299,8 @@ Qed.</div>
 <span class="kwd">Remark</span> <span class="id"><a name="UF.identify_Acc_b">identify_Acc_b</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc">Acc</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc">Acc</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>))) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1068')">Proof.</div>
-<div class="proofscript" id="proof1068">
+<div class="toggleproof" onclick="toggleDisplay('proof1105')">Proof.</div>
+<div class="proofscript" id="proof1105">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>. <span class="id">constructor</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.identify_order">identify_order</a></span> <span class="kwd">in</span> <span class="id">H2</span>. <span class="tactic">destruct</span> <span class="id">H2</span> <span class="kwd">as</span> [<span class="id">A</span> | [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H0</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_some">repr_some</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">A</span>). <span class="tactic">auto</span>.<br/>
@@ -310,8 +310,8 @@ Qed.</div>
 <span class="kwd">Remark</span> <span class="id"><a name="UF.identify_Acc">identify_Acc</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc">Acc</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc">Acc</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>))) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1069')">Proof.</div>
-<div class="proofscript" id="proof1069">
+<div class="toggleproof" onclick="toggleDisplay('proof1106')">Proof.</div>
+<div class="proofscript" id="proof1106">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1. <span class="id">constructor</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.identify_order">identify_order</a></span> <span class="kwd">in</span> <span class="id">H1</span>. <span class="tactic">destruct</span> <span class="id">H1</span> <span class="kwd">as</span> [<span class="id">A</span> | [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -320,8 +320,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.identify_wf">identify_wf</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded">well_founded</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1070')">Proof.</div>
-<div class="proofscript" id="proof1070">
+<div class="toggleproof" onclick="toggleDisplay('proof1107')">Proof.</div>
+<div class="proofscript" id="proof1107">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.identify_Acc">identify_Acc</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span>).<br/>
 Qed.</div>
 <br/>
@@ -329,8 +329,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_identify_1">repr_identify_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.identify">identify</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1071')">Proof.</div>
-<div class="proofscript" id="proof1071">
+<div class="toggleproof" onclick="toggleDisplay('proof1108')">Proof.</div>
+<div class="proofscript" id="proof1108">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x0</span>; <span class="tactic">pattern</span> <span class="id">x0</span>. <span class="tactic">apply</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded_ind">well_founded_ind</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>)); <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_unroll">repr_unroll</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>) <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">x</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>)) <span class="kwd">as</span> [<span class="id">a</span>'|] <span class="id">eqn</span>:<span class="id">X</span>.<br/>
@@ -341,8 +341,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_identify_2">repr_identify_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.a">a</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.identify">identify</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1072')">Proof.</div>
-<div class="proofscript" id="proof1072">
+<div class="toggleproof" onclick="toggleDisplay('proof1109')">Proof.</div>
+<div class="proofscript" id="proof1109">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">x0</span>; <span class="tactic">pattern</span> <span class="id">x0</span>. <span class="tactic">apply</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded_ind">well_founded_ind</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>)); <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_unroll">repr_unroll</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>) <span class="kwd">in</span> <span class="id">H0</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">x</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.IDENTIFY.uf">uf</a></span>)) <span class="kwd">as</span> [<span class="id">a</span>'|] <span class="id">eqn</span>:<span class="id">X</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id">H</span> <span class="id">a</span>'); <span class="tactic">auto</span>.<br/>
@@ -356,8 +356,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="UF.union_not_same_class">union_not_same_class</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1073')">Proof.</div>
-<div class="proofscript" id="proof1073">
+<div class="toggleproof" onclick="toggleDisplay('proof1110')">Proof.</div>
+<div class="proofscript" id="proof1110">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_canonical">repr_canonical</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -371,8 +371,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_union_1">repr_union_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1074')">Proof.</div>
-<div class="proofscript" id="proof1074">
+<div class="toggleproof" onclick="toggleDisplay('proof1111')">Proof.</div>
+<div class="proofscript" id="proof1111">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_identify_1">repr_identify_1</a></span>. <span class="tactic">auto</span>.<br/>
@@ -380,8 +380,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_union_2">repr_union_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1075')">Proof.</div>
-<div class="proofscript" id="proof1075">
+<div class="toggleproof" onclick="toggleDisplay('proof1112')">Proof.</div>
+<div class="proofscript" id="proof1112">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_canonical">repr_canonical</a></span> <span class="id">uf</span> <span class="id">b</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_identify_2">repr_identify_2</a></span>. <span class="tactic">auto</span>.<br/>
@@ -389,23 +389,23 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_union_3">repr_union_3</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1076')">Proof.</div>
-<div class="proofscript" id="proof1076">
+<div class="toggleproof" onclick="toggleDisplay('proof1113')">Proof.</div>
+<div class="proofscript" id="proof1113">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_identify_1">repr_identify_1</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_union_1">sameclass_union_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1077')">Proof.</div>
-<div class="proofscript" id="proof1077">
+<div class="toggleproof" onclick="toggleDisplay('proof1114')">Proof.</div>
+<div class="proofscript" id="proof1114">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_union_2">repr_union_2</a></span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_union_3">repr_union_3</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_union_2">sameclass_union_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1078')">Proof.</div>
-<div class="proofscript" id="proof1078">
+<div class="toggleproof" onclick="toggleDisplay('proof1115')">Proof.</div>
+<div class="proofscript" id="proof1115">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">x</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>));<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">y</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>)).<br/>
@@ -420,8 +420,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span><br/>
 &nbsp;&nbsp;\/ <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> /\ <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span><br/>
 &nbsp;&nbsp;\/ <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> /\ <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1079')">Proof.</div>
-<div class="proofscript" id="proof1079">
+<div class="toggleproof" onclick="toggleDisplay('proof1116')">Proof.</div>
+<div class="proofscript" id="proof1116">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">x</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>));<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">y</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>)).<br/>
@@ -442,8 +442,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_merge">repr_merge</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1080')">Proof.</div>
-<div class="proofscript" id="proof1080">
+<div class="toggleproof" onclick="toggleDisplay('proof1117')">Proof.</div>
+<div class="proofscript" id="proof1117">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">x</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>)).<br/>
@@ -453,8 +453,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_merge">sameclass_merge</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.union">union</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1081')">Proof.</div>
-<div class="proofscript" id="proof1081">
+<div class="toggleproof" onclick="toggleDisplay('proof1118')">Proof.</div>
+<div class="proofscript" id="proof1118">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span>; <span class="tactic">intros</span>. <span class="tactic">repeat</span> <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_merge">repr_merge</a></span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -463,15 +463,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.path_ord_wellfounded">path_ord_wellfounded</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded">well_founded</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.path_ord">path_ord</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1082')">Proof.</div>
-<div class="proofscript" id="proof1082">
+<div class="toggleproof" onclick="toggleDisplay('proof1119')">Proof.</div>
+<div class="proofscript" id="proof1119">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.path_ord_canonical">path_ord_canonical</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> -&gt; ~<span class="id"><a href="compcert.lib.UnionFind.html#UF.path_ord">path_ord</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1083')">Proof.</div>
-<div class="proofscript" id="proof1083">
+<div class="toggleproof" onclick="toggleDisplay('proof1120')">Proof.</div>
+<div class="proofscript" id="proof1120">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="id">hnf</span> <span class="kwd">in</span> <span class="id">H0</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">x</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span> <span class="id">uf</span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>). <span class="tactic">rewrite</span> &lt;- <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_res_none">repr_res_none</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
@@ -480,8 +480,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.path_ord_merge_1">path_ord_merge_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span> <span class="id">x</span> <span class="id">y</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.path_ord">path_ord</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.path_ord">path_ord</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1084')">Proof.</div>
-<div class="proofscript" id="proof1084">
+<div class="toggleproof" onclick="toggleDisplay('proof1121')">Proof.</div>
+<div class="proofscript" id="proof1121">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -492,8 +492,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.path_ord_merge_2">path_ord_merge_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">uf</span> <span class="id">a</span> <span class="id">b</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> &lt;&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> -&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.path_ord">path_ord</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1085')">Proof.</div>
-<div class="proofscript" id="proof1085">
+<div class="toggleproof" onclick="toggleDisplay('proof1122')">Proof.</div>
+<div class="proofscript" id="proof1122">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
@@ -515,8 +515,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.pathlen_unroll">pathlen_unroll</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="kwd">match</span> <span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.PATHLEN.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">a</span>' =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span>(<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id">a</span>') | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span> <span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1086')">Proof.</div>
-<div class="proofscript" id="proof1086">
+<div class="toggleproof" onclick="toggleDisplay('proof1123')">Proof.</div>
+<div class="proofscript" id="proof1123">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="tactic">at</span> 1. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Fix_eq">Fix_eq</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.F_pathlen">F_pathlen</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.getlink">getlink</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.PATHLEN.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) <span class="id">a</span>) <span class="kwd">as</span> [[<span class="id">a</span>' <span class="id">P</span>] | <span class="id">Q</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">P</span>; <span class="tactic">auto</span>.<br/>
@@ -528,8 +528,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.PATHLEN.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1087')">Proof.</div>
-<div class="proofscript" id="proof1087">
+<div class="toggleproof" onclick="toggleDisplay('proof1124')">Proof.</div>
+<div class="proofscript" id="proof1124">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen_unroll">pathlen_unroll</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -537,15 +537,15 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">a</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.PATHLEN.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">a</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id">a</span>').<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1088')">Proof.</div>
-<div class="proofscript" id="proof1088">
+<div class="toggleproof" onclick="toggleDisplay('proof1125')">Proof.</div>
+<div class="proofscript" id="proof1125">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen_unroll">pathlen_unroll</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.pathlen_zero">pathlen_zero</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.PATHLEN.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#O">O</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1089')">Proof.</div>
-<div class="proofscript" id="proof1089">
+<div class="toggleproof" onclick="toggleDisplay('proof1126')">Proof.</div>
+<div class="proofscript" id="proof1126">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen_none">pathlen_none</a></span>. <span class="tactic">rewrite</span> &lt;- <span class="id">H</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_res_none">repr_res_none</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_none">repr_none</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen_unroll">pathlen_unroll</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
@@ -564,8 +564,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> + <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span> + 1<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1090')">Proof.</div>
-<div class="proofscript" id="proof1090">
+<div class="toggleproof" onclick="toggleDisplay('proof1127')">Proof.</div>
+<div class="proofscript" id="proof1127">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -589,8 +589,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> &gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> &gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen">pathlen</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.merge">merge</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#b">b</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1091')">Proof.</div>
-<div class="proofscript" id="proof1091">
+<div class="toggleproof" onclick="toggleDisplay('proof1128')">Proof.</div>
+<div class="proofscript" id="proof1128">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">repeat</span> <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.pathlen_merge">pathlen_merge</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">b</span>)). <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">y</span>) (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id">uf</span> <span class="id">a</span>)).<br/>
@@ -609,8 +609,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>) <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> \/ (<span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.a">a</a></span> /\ <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.b">b</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1092')">Proof.</div>
-<div class="proofscript" id="proof1092">
+<div class="toggleproof" onclick="toggleDisplay('proof1129')">Proof.</div>
+<div class="proofscript" id="proof1129">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#M.gsspec">M.gsspec</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.elt_eq">M.elt_eq</a></span> <span class="id">x</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.a">a</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
@@ -620,8 +620,8 @@ Qed.</div>
 <span class="kwd">Remark</span> <span class="id"><a name="UF.compress_Acc">compress_Acc</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc">Acc</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#Acc">Acc</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>))) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1093')">Proof.</div>
-<div class="proofscript" id="proof1093">
+<div class="toggleproof" onclick="toggleDisplay('proof1130')">Proof.</div>
+<div class="proofscript" id="proof1130">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1. <span class="id">constructor</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.compress_order">compress_order</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">H1</span>) <span class="kwd">as</span> [<span class="id">A</span> | [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -633,8 +633,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.compress_wf">compress_wf</a></span>:<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded">well_founded</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.order">order</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.set">M.set</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.a">a</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.b">b</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1094')">Proof.</div>
-<div class="proofscript" id="proof1094">
+<div class="toggleproof" onclick="toggleDisplay('proof1131')">Proof.</div>
+<div class="proofscript" id="proof1131">
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.compress_Acc">compress_Acc</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span>.(<span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span>).<br/>
 Qed.</div>
 <br/>
@@ -642,8 +642,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.repr_compress">repr_compress</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.compress">compress</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.COMPRESS.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1095')">Proof.</div>
-<div class="proofscript" id="proof1095">
+<div class="toggleproof" onclick="toggleDisplay('proof1132')">Proof.</div>
+<div class="proofscript" id="proof1132">
 &nbsp;&nbsp;<span class="tactic">apply</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Wf.html#well_founded_ind">well_founded_ind</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.compress">compress</a></span>)); <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_unroll">repr_unroll</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.compress">compress</a></span>).<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#M.get">M.get</a></span> <span class="id">x</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.m">m</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.compress">compress</a></span>)) <span class="kwd">as</span> [<span class="id">y</span>|] <span class="id">eqn</span>:<span class="id">G</span>.<br/>
@@ -672,24 +672,24 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
 &nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; (<span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.FIND.uf">uf</a></span>)<br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1096')">Next Obligation.</div>
-<div class="proofscript" id="proof1096">
+<div class="toggleproof" onclick="toggleDisplay('proof1133')">Next Obligation.</div>
+<div class="proofscript" id="proof1133">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1097')">Next Obligation.</div>
-<div class="proofscript" id="proof1097">
+<div class="toggleproof" onclick="toggleDisplay('proof1134')">Next Obligation.</div>
+<div class="proofscript" id="proof1134">
 &nbsp;&nbsp;<span class="comment">(*&nbsp;a&nbsp;&lt;&gt;&nbsp;b*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">find_x</span> <span class="id">a</span>')<br/>
 &nbsp;&nbsp;<span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">uf</span>''] [<span class="id">A</span> <span class="id">B</span>]]. <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Heq_anonymous</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_some_diff">repr_some_diff</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1098')">Next Obligation.</div>
-<div class="proofscript" id="proof1098">
+<div class="toggleproof" onclick="toggleDisplay('proof1135')">Next Obligation.</div>
+<div class="proofscript" id="proof1135">
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">find_x</span> <span class="id">a</span>') <span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">uf</span>''] [<span class="id">A</span> <span class="id">B</span>]]. <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Heq_anonymous</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">B</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_some">repr_some</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1099')">Next Obligation.</div>
-<div class="proofscript" id="proof1099">
+<div class="toggleproof" onclick="toggleDisplay('proof1136')">Next Obligation.</div>
+<div class="proofscript" id="proof1136">
 &nbsp;&nbsp;<span class="tactic">split</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">find_x</span> <span class="id">a</span>')<br/>
 &nbsp;&nbsp;<span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">uf</span>''] [<span class="id">A</span> <span class="id">B</span>]]. <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Heq_anonymous</span>.<br/>
@@ -698,12 +698,12 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">find_x</span> <span class="id">a</span>')<br/>
 &nbsp;&nbsp;<span class="kwd">as</span> [[<span class="id">b</span>' <span class="id">uf</span>''] [<span class="id">A</span> <span class="id">B</span>]]. <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">Heq_anonymous</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1100')">Next Obligation.</div>
-<div class="proofscript" id="proof1100">
+<div class="toggleproof" onclick="toggleDisplay('proof1137')">Next Obligation.</div>
+<div class="proofscript" id="proof1137">
 &nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">auto</span>. <span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr_none">repr_none</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
-<div class="toggleproof" onclick="toggleDisplay('proof1101')">Next Obligation.</div>
-<div class="proofscript" id="proof1101">
+<div class="toggleproof" onclick="toggleDisplay('proof1138')">Next Obligation.</div>
+<div class="proofscript" id="proof1138">
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.mwf">mwf</a></span>.<br/>
 Defined.</div>
 <br/>
@@ -711,36 +711,36 @@ Defined.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.find_repr">find_repr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>) = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.FIND.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1102')">Proof.</div>
-<div class="proofscript" id="proof1102">
+<div class="toggleproof" onclick="toggleDisplay('proof1139')">Proof.</div>
+<div class="proofscript" id="proof1139">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find_x">find_x</a></span> <span class="id">a</span>) <span class="kwd">as</span> [[<span class="id">b</span> <span class="id">uf</span>'] [<span class="id">A</span> <span class="id">B</span>]]. <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.find_unchanged">find_unchanged</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> = <span class="id"><a href="compcert.lib.UnionFind.html#UF.repr">repr</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.FIND.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1103')">Proof.</div>
-<div class="proofscript" id="proof1103">
+<div class="toggleproof" onclick="toggleDisplay('proof1140')">Proof.</div>
+<div class="proofscript" id="proof1140">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find_x">find_x</a></span> <span class="id">a</span>) <span class="kwd">as</span> [[<span class="id">b</span> <span class="id">uf</span>'] [<span class="id">A</span> <span class="id">B</span>]]. <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_find_1">sameclass_find_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span> &lt;-&gt; <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.FIND.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#x">x</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1104')">Proof.</div>
-<div class="proofscript" id="proof1104">
+<div class="toggleproof" onclick="toggleDisplay('proof1141')">Proof.</div>
+<div class="proofscript" id="proof1141">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span>; <span class="tactic">intros</span>. <span class="tactic">repeat</span> <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.find_unchanged">find_unchanged</a></span>. <span class="tactic">tauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_find_2">sameclass_find_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.FIND.uf">uf</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1105')">Proof.</div>
-<div class="proofscript" id="proof1105">
+<div class="toggleproof" onclick="toggleDisplay('proof1142')">Proof.</div>
+<div class="proofscript" id="proof1142">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.find_repr">find_repr</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass_repr">sameclass_repr</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="UF.sameclass_find_3">sameclass_find_3</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span>, <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass">sameclass</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#snd">snd</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>)) <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#fst">fst</a></span> (<span class="id"><a href="compcert.lib.UnionFind.html#UF.find">find</a></span> <span class="id"><a href="compcert.lib.UnionFind.html#a">a</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1106')">Proof.</div>
-<div class="proofscript" id="proof1106">
+<div class="toggleproof" onclick="toggleDisplay('proof1143')">Proof.</div>
+<div class="proofscript" id="proof1143">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass_find_1">sameclass_find_1</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.UnionFind.html#UF.sameclass_find_2">sameclass_find_2</a></span>.<br/>
 Qed.</div>
 <br/>

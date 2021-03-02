@@ -47,8 +47,8 @@
 <span class="kwd">Definition</span> <span class="id"><a name="eq_list_valnum">eq_list_valnum</a></span>: <span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#valnum">valnum</a></span>), {<span class="id"><a href="compcert.backend.CSEdomain.html#x">x</a></span>=<span class="id"><a href="compcert.backend.CSEdomain.html#y">y</a></span>}+{<span class="id"><a href="compcert.backend.CSEdomain.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.backend.CSEdomain.html#y">y</a></span>} := <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#list_eq_dec">list_eq_dec</a></span> <span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="eq_rhs">eq_rhs</a></span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="compcert.backend.CSEdomain.html#rhs">rhs</a></span>) : {<span class="id"><a href="compcert.backend.CSEdomain.html#x">x</a></span>=<span class="id"><a href="compcert.backend.CSEdomain.html#y">y</a></span>}+{<span class="id"><a href="compcert.backend.CSEdomain.html#x">x</a></span>&lt;&gt;<span class="id"><a href="compcert.backend.CSEdomain.html#y">y</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3689')">Proof.</div>
-<div class="proofscript" id="proof3689">
+<div class="toggleproof" onclick="toggleDisplay('proof3894')">Proof.</div>
+<div class="proofscript" id="proof3894">
 &nbsp;&nbsp;<span class="tactic">generalize</span> <span class="id"><a href="compcert.common.AST.html#chunk_eq">chunk_eq</a></span> <span class="id"><a href="compcert.x86.Op.html#eq_operation">eq_operation</a></span> <span class="id"><a href="compcert.x86.Op.html#eq_addressing">eq_addressing</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#eq_valnum">eq_valnum</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#eq_list_valnum">eq_list_valnum</a></span>.<br/>
 &nbsp;&nbsp;<span class="id">decide</span> <span class="id">equality</span>.<br/>
 Defined.</div>
@@ -141,8 +141,8 @@ Defined.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="empty_numbering_holds">empty_numbering_holds</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">valu</span> <span class="id">ge</span> <span class="id">sp</span> <span class="id">rs</span> <span class="id">m</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.CSEdomain.html#numbering_holds">numbering_holds</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#valu">valu</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#m">m</a></span> <span class="id"><a href="compcert.backend.CSEdomain.html#empty_numbering">empty_numbering</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3690')">Proof.</div>
-<div class="proofscript" id="proof3690">
+<div class="toggleproof" onclick="toggleDisplay('proof3895')">Proof.</div>
+<div class="proofscript" id="proof3895">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">split</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">split</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;+ <span class="id">contradiction</span>.<br/>

@@ -1,0 +1,102 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module FIX</title>
+<meta name="description" content="Documentation of Coq module FIX" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module FIX</h1>
+<div class="coq">
+<br/>
+<h1> Fixed-point format </h1>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.flocq.Core.Raux.html">Raux</a></span> <span class="id"><a href="compcert.flocq.Core.Defs.html">Defs</a></span> <span class="id"><a href="compcert.flocq.Core.Round_pred.html">Round_pred</a></span> <span class="id"><a href="compcert.flocq.Core.Generic_fmt.html">Generic_fmt</a></span> <span class="id"><a href="compcert.flocq.Core.Ulp.html">Ulp</a></span> <span class="id"><a href="compcert.flocq.Core.Round_NE.html">Round_NE</a></span>.<br/>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="RND_FIX">RND_FIX</a></span>.<br/>
+<br/>
+<span class="kwd">Variable</span> <span class="id"><a name="RND_FIX.beta">beta</a></span> : <span class="id"><a href="compcert.flocq.Core.Zaux.html#radix">radix</a></span>.<br/>
+<br/>
+<span class="kwd">Notation</span> <span class="id"><a name="bpow">bpow</a></span> := (<span class="id"><a href="compcert.flocq.Core.Raux.html#bpow">bpow</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.beta">beta</a></span>).<br/>
+<br/>
+<span class="kwd">Variable</span> <span class="id"><a name="RND_FIX.emin">emin</a></span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="FIX_format">FIX_format</a></span> (<span class="id">x</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Reals.Rdefinitions.html#R">R</a></span>) : <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="FIX_spec">FIX_spec</a></span> (<span class="id">f</span> : <span class="id"><a href="compcert.flocq.Core.Defs.html#float">float</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.beta">beta</a></span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span> = <span class="id"><a href="compcert.flocq.Core.Defs.html#F2R">F2R</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#f">f</a></span> -&gt; (<span class="id"><a href="compcert.flocq.Core.Defs.html#Fexp">Fexp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#f">f</a></span> = <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.emin">emin</a></span>)%<span class="id">Z</span> -&gt; <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_format">FIX_format</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="FIX_exp">FIX_exp</a></span> (<span class="id">e</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span>) := <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.emin">emin</a></span>.<br/>
+<br/>
+<div class="doc">Properties of the FIX format </div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="FIX_exp_valid">FIX_exp_valid</a></span> : <span class="id"><a href="compcert.flocq.Core.Generic_fmt.html#Valid_exp">Valid_exp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5684')">Proof.</div>
+<div class="proofscript" id="proof5684">
+<span class="tactic">intros</span> <span class="id">k</span>.<br/>
+<span class="tactic">unfold</span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span>.<br/>
+<span class="tactic">split</span> ; <span class="tactic">intros</span> <span class="id">H</span>.<br/>
+<span class="id">now</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zorder.html#Zlt_le_weak">Zlt_le_weak</a></span>.<br/>
+<span class="tactic">split</span>.<br/>
+<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_refl">Z.le_refl</a></span>.<br/>
+<span class="id">now</span> <span class="tactic">intros</span> <span class="id">_</span> <span class="id">_</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="generic_format_FIX">generic_format_FIX</a></span> :<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_format">FIX_format</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.flocq.Core.Generic_fmt.html#generic_format">generic_format</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.beta">beta</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5685')">Proof.</div>
+<div class="proofscript" id="proof5685">
+<span class="tactic">intros</span> <span class="id">x</span> [[<span class="id">xm</span> <span class="id">xe</span>] <span class="id">Hx1</span> <span class="id">Hx2</span>].<br/>
+<span class="tactic">rewrite</span> <span class="id">Hx1</span>.<br/>
+<span class="id">now</span> <span class="tactic">apply</span> <span class="id"><a href="compcert.flocq.Core.Generic_fmt.html#generic_format_canonical">generic_format_canonical</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="FIX_format_generic">FIX_format_generic</a></span> :<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.flocq.Core.Generic_fmt.html#generic_format">generic_format</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.beta">beta</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_format">FIX_format</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5686')">Proof.</div>
+<div class="proofscript" id="proof5686">
+<span class="tactic">intros</span> <span class="id">x</span> <span class="id">H</span>.<br/>
+<span class="tactic">rewrite</span> <span class="id">H</span>.<br/>
+<span class="id">eexists</span> ; <span class="tactic">repeat</span> <span class="tactic">split</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="FIX_format_satisfies_any">FIX_format_satisfies_any</a></span> :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.flocq.Core.Round_pred.html#satisfies_any">satisfies_any</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_format">FIX_format</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5687')">Proof.</div>
+<div class="proofscript" id="proof5687">
+<span class="tactic">refine</span> (<span class="id"><a href="compcert.flocq.Core.Round_pred.html#satisfies_any_eq">satisfies_any_eq</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">_</span> (<span class="id"><a href="compcert.flocq.Core.Generic_fmt.html#generic_format_satisfies_any">generic_format_satisfies_any</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.beta">beta</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span>)).<br/>
+<span class="tactic">intros</span> <span class="id">x</span>.<br/>
+<span class="tactic">split</span>.<br/>
+<span class="tactic">apply</span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_format_generic">FIX_format_generic</a></span>.<br/>
+<span class="tactic">apply</span> <span class="id"><a href="compcert.flocq.Core.FIX.html#generic_format_FIX">generic_format_FIX</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Global</span> <span class="kwd">Instance</span> <span class="id"><a name="FIX_exp_monotone">FIX_exp_monotone</a></span> : <span class="id"><a href="compcert.flocq.Core.Generic_fmt.html#Monotone_exp">Monotone_exp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5688')">Proof.</div>
+<div class="proofscript" id="proof5688">
+<span class="tactic">intros</span> <span class="id">ex</span> <span class="id">ey</span> <span class="id">H</span>.<br/>
+<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.le_refl">Z.le_refl</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="ulp_FIX">ulp_FIX</a></span> :<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.flocq.Core.Ulp.html#ulp">ulp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.beta">beta</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#x">x</a></span> = <span class="id"><a href="compcert.flocq.Core.FIX.html#bpow">bpow</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.emin">emin</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5689')">Proof.</div>
+<div class="proofscript" id="proof5689">
+<span class="tactic">intros</span> <span class="id">x</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.flocq.Core.Ulp.html#ulp">ulp</a></span>.<br/>
+<span class="tactic">case</span> <span class="id"><a href="compcert.flocq.Core.Raux.html#Req_bool_spec">Req_bool_spec</a></span>; <span class="tactic">intros</span> <span class="id">Zx</span>.<br/>
+<span class="tactic">case</span> (<span class="id"><a href="compcert.flocq.Core.Ulp.html#negligible_exp_spec">negligible_exp_spec</a></span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span>).<br/>
+<span class="tactic">intros</span> <span class="id">T</span>; <span class="id">specialize</span> (<span class="id">T</span> (<span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX.emin">emin</a></span>-1)%<span class="id">Z</span>); <span class="id">contradict</span> <span class="id">T</span>.<br/>
+<span class="tactic">unfold</span> <span class="id"><a href="compcert.flocq.Core.FIX.html#FIX_exp">FIX_exp</a></span>; <span class="tactic">omega</span>.<br/>
+<span class="tactic">intros</span> <span class="id">n</span> <span class="id">_</span>; <span class="tactic">reflexivity</span>.<br/>
+<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">End</span> <span class="id"><a href="compcert.flocq.Core.FIX.html#RND_FIX">RND_FIX</a></span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

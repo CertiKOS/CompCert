@@ -30,6 +30,8 @@
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Events.html">Events</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.RTL.html">RTL</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.backend.Conventions.html">Conventions</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.LanguageInterface.html">LanguageInterface</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Invariant.html">Invariant</a></span>.<br/>
 <br/>
 <h1> The type system </h1>
 <br/>
@@ -362,8 +364,8 @@
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="type_ros_incr">type_ros_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">ros</span> <span class="id">e</span>' <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_ros">type_ros</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ros">ros</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3228')">Proof.</div>
-<div class="proofscript" id="proof3228">
+<div class="toggleproof" onclick="toggleDisplay('proof3422')">Proof.</div>
+<div class="proofscript" id="proof3422">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_ros">type_ros</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">ros</span>. <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">ty</span>.<br/>
 Qed.</div>
 <br/>
@@ -372,8 +374,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_ros_sound">type_ros_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">ros</span> <span class="id">e</span>' <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_ros">type_ros</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ros">ros</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.RTLtyping.html#ros">ros</a></span> <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id">r</span> =&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">r</span> = <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span> | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id">s</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span> <span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3229')">Proof.</div>
-<div class="proofscript" id="proof3229">
+<div class="toggleproof" onclick="toggleDisplay('proof3423')">Proof.</div>
+<div class="proofscript" id="proof3423">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_ros">type_ros</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">ros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#set_sound">S.set_sound</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -381,8 +383,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="check_successor_sound">check_successor_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">x</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#check_successor">check_successor</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#x">x</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#valid_successor">valid_successor</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3230')">Proof.</div>
-<div class="proofscript" id="proof3230">
+<div class="toggleproof" onclick="toggleDisplay('proof3424')">Proof.</div>
+<div class="proofscript" id="proof3424">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#check_successor">check_successor</a></span>, <span class="id"><a href="compcert.backend.RTLtyping.html#valid_successor">valid_successor</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTL.html#fn_code">fn_code</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span>)!<span class="id">s</span>; <span class="id">inv</span> <span class="id">H</span>. <span class="id">exists</span> <span class="id">i</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -391,8 +393,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="check_successors_sound">check_successors_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sl</span> <span class="id">x</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#check_successors">check_successors</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sl">sl</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#x">x</a></span> -&gt; <span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sl">sl</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#valid_successor">valid_successor</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3231')">Proof.</div>
-<div class="proofscript" id="proof3231">
+<div class="toggleproof" onclick="toggleDisplay('proof3425')">Proof.</div>
+<div class="proofscript" id="proof3425">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">sl</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
 &nbsp;&nbsp;<span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">destruct</span> <span class="id">H0</span>. <span class="tactic">subst</span> <span class="id">a</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>. <span class="tactic">eauto</span>.<br/>
@@ -400,8 +402,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="type_expect_incr">type_expect_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">ty1</span> <span class="id">ty2</span> <span class="id">e</span>' <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect">type_expect</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty1">ty1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty2">ty2</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3232')">Proof.</div>
-<div class="proofscript" id="proof3232">
+<div class="toggleproof" onclick="toggleDisplay('proof3426')">Proof.</div>
+<div class="proofscript" id="proof3426">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect">type_expect</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.AST.html#typ_eq">typ_eq</a></span> <span class="id">ty1</span> <span class="id">ty2</span>); <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -409,22 +411,22 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_expect_sound">type_expect_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">ty1</span> <span class="id">ty2</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect">type_expect</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty1">ty1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty2">ty2</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#ty1">ty1</a></span> = <span class="id"><a href="compcert.backend.RTLtyping.html#ty2">ty2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3233')">Proof.</div>
-<div class="proofscript" id="proof3233">
+<div class="toggleproof" onclick="toggleDisplay('proof3427')">Proof.</div>
+<div class="proofscript" id="proof3427">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect">type_expect</a></span>; <span class="tactic">intros</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.AST.html#typ_eq">typ_eq</a></span> <span class="id">ty1</span> <span class="id">ty2</span>); <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_builtin_arg_incr">type_builtin_arg_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">a</span> <span class="id">ty</span> <span class="id">e</span>' <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_arg">type_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3234')">Proof.</div>
-<div class="proofscript" id="proof3234">
+<div class="toggleproof" onclick="toggleDisplay('proof3428')">Proof.</div>
+<div class="proofscript" id="proof3428">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_arg">type_builtin_arg</a></span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_builtin_args_incr">type_builtin_args_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">a</span> <span class="id">ty</span> <span class="id">e</span> <span class="id">e</span>' <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_args">type_builtin_args</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3235')">Proof.</div>
-<div class="proofscript" id="proof3235">
+<div class="toggleproof" onclick="toggleDisplay('proof3429')">Proof.</div>
+<div class="proofscript" id="proof3429">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">a</span>; <span class="tactic">destruct</span> <span class="id">ty</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_arg_incr">type_builtin_arg_incr</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -432,8 +434,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_builtin_res_incr">type_builtin_res_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">a</span> <span class="id">ty</span> <span class="id">e</span>' <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_res">type_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3236')">Proof.</div>
-<div class="proofscript" id="proof3236">
+<div class="toggleproof" onclick="toggleDisplay('proof3430')">Proof.</div>
+<div class="proofscript" id="proof3430">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_res">type_builtin_res</a></span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">a</span>; <span class="id">inv</span> <span class="id">H</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>.<br/>
 Qed.</div>
 <br/>
@@ -442,8 +444,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_builtin_arg_sound">type_builtin_arg_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">a</span> <span class="id">ty</span> <span class="id">e</span>' <span class="id">te</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_arg">type_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_arg">type_of_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> = <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3237')">Proof.</div>
-<div class="proofscript" id="proof3237">
+<div class="toggleproof" onclick="toggleDisplay('proof3431')">Proof.</div>
+<div class="proofscript" id="proof3431">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">try</span> (<span class="tactic">symmetry</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect_sound">type_expect_sound</a></span>; <span class="id">eassumption</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#set_sound">S.set_sound</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -451,8 +453,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_builtin_args_sound">type_builtin_args_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">al</span> <span class="id">tyl</span> <span class="id">e</span> <span class="id">e</span>' <span class="id">te</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_args">type_builtin_args</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#al">al</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#tyl">tyl</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_arg">type_of_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span>) <span class="id"><a href="compcert.backend.RTLtyping.html#al">al</a></span> = <span class="id"><a href="compcert.backend.RTLtyping.html#tyl">tyl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3238')">Proof.</div>
-<div class="proofscript" id="proof3238">
+<div class="toggleproof" onclick="toggleDisplay('proof3432')">Proof.</div>
+<div class="proofscript" id="proof3432">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">al</span> <span class="kwd">as</span> [|<span class="id">a</span> <span class="id">al</span>]; <span class="tactic">destruct</span> <span class="id">tyl</span> <span class="kwd">as</span> [|<span class="id">ty</span> <span class="id">tyl</span>]; <span class="tactic">simpl</span>; <span class="tactic">intros</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 - <span class="tactic">auto</span>.<br/>
 - <span class="id">monadInv</span> <span class="id">H</span>. <span class="tactic">f_equal</span>.<br/>
@@ -463,8 +465,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_builtin_res_sound">type_builtin_res_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">a</span> <span class="id">ty</span> <span class="id">e</span>' <span class="id">te</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_res">type_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_res">type_of_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> = <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3239')">Proof.</div>
-<div class="proofscript" id="proof3239">
+<div class="toggleproof" onclick="toggleDisplay('proof3433')">Proof.</div>
+<div class="proofscript" id="proof3433">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#set_sound">S.set_sound</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">symmetry</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect_sound">type_expect_sound</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -474,8 +476,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_instr_incr">type_instr_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">i</span> <span class="id">e</span>' <span class="id">te</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#type_instr">type_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3240')">Proof.</div>
-<div class="proofscript" id="proof3240">
+<div class="toggleproof" onclick="toggleDisplay('proof3434')">Proof.</div>
+<div class="proofscript" id="proof3434">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">try</span> (<span class="id">monadInv</span> <span class="id">H</span>); <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>.<br/>
 - <span class="comment">(*&nbsp;op&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLtyping.html#is_move">is_move</a></span> <span class="id">o</span>) <span class="id">eqn</span>:<span class="id">ISMOVE</span>.<br/>
@@ -499,8 +501,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_instr_sound">type_instr_sound</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">i</span> <span class="id">e</span>' <span class="id">te</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#type_instr">type_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3241')">Proof.</div>
-<div class="proofscript" id="proof3241">
+<div class="toggleproof" onclick="toggleDisplay('proof3435')">Proof.</div>
+<div class="proofscript" id="proof3435">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">i</span>; <span class="tactic">try</span> (<span class="id">monadInv</span> <span class="id">H</span>); <span class="tactic">simpl</span>.<br/>
 - <span class="comment">(*&nbsp;nop&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id">constructor</span>; <span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>.<br/>
@@ -567,8 +569,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">pc</span> <span class="id">i</span> <span class="id">e</span> <span class="id">e</span>' <span class="id">te</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#type_code">type_code</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span>.(<span class="id"><a href="compcert.backend.RTL.html#fn_code">fn_code</a></span>)!<span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3242')">Proof.</div>
-<div class="proofscript" id="proof3242">
+<div class="toggleproof" onclick="toggleDisplay('proof3436')">Proof.</div>
+<div class="proofscript" id="proof3436">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">pc</span> <span class="id">i</span> <span class="id">e0</span> <span class="id">e1</span> <span class="id">te</span> <span class="id">TCODE</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">P</span> := <span class="kwd">fun</span> <span class="id">c</span> <span class="id">opte</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.RTLtyping.html#opte">opte</a></span> <span class="kwd">with</span><br/>
@@ -591,8 +593,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="type_function_correct">type_function_correct</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_function">type_function</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_function">wt_function</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3243')">Proof.</div>
-<div class="proofscript" id="proof3243">
+<div class="toggleproof" onclick="toggleDisplay('proof3437')">Proof.</div>
+<div class="proofscript" id="proof3437">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_function">type_function</a></span>; <span class="tactic">intros</span>. <span class="id">monadInv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">SAT0</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id">env</span> <span class="id">x0</span>) <span class="tactic">by</span> (<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#solve_sound">S.solve_sound</a></span>; <span class="tactic">eauto</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">SAT1</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id">env</span> <span class="id">x</span>) <span class="tactic">by</span> (<span class="tactic">eauto</span> <span class="kwd">with</span> <span class="id">ty</span>).<br/>
@@ -615,8 +617,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.backend.RTLtyping.html#ros">ros</a></span> <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id">r</span> =&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">r</span> = <span class="id"><a href="compcert.common.AST.html#Tptr">Tptr</a></span> | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id">s</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span> <span class="kwd">end</span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_ros">type_ros</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ros">ros</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' /\ <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3244')">Proof.</div>
-<div class="proofscript" id="proof3244">
+<div class="toggleproof" onclick="toggleDisplay('proof3438')">Proof.</div>
+<div class="proofscript" id="proof3438">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">ros</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#set_complete">S.set_complete</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>; <span class="tactic">auto</span>.<br/>
@@ -624,16 +626,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="check_successor_complete">check_successor_complete</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#valid_successor">valid_successor</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#check_successor">check_successor</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#tt">tt</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3245')">Proof.</div>
-<div class="proofscript" id="proof3245">
+<div class="toggleproof" onclick="toggleDisplay('proof3439')">Proof.</div>
+<div class="proofscript" id="proof3439">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#valid_successor">valid_successor</a></span>, <span class="id"><a href="compcert.backend.RTLtyping.html#check_successor">check_successor</a></span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [<span class="id">i</span> <span class="id">EQ</span>]; <span class="tactic">rewrite</span> <span class="id">EQ</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="type_expect_complete">type_expect_complete</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">e</span> <span class="id">ty</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect">type_expect</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3246')">Proof.</div>
-<div class="proofscript" id="proof3246">
+<div class="toggleproof" onclick="toggleDisplay('proof3440')">Proof.</div>
+<div class="proofscript" id="proof3440">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect">type_expect</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -641,8 +643,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">te</span> <span class="id">a</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_arg">type_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_arg">type_of_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' /\ <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3247')">Proof.</div>
-<div class="proofscript" id="proof3247">
+<div class="toggleproof" onclick="toggleDisplay('proof3441')">Proof.</div>
+<div class="proofscript" id="proof3441">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> (<span class="id">exists</span> <span class="id">e</span>; <span class="tactic">split</span>; [<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_expect_complete">type_expect_complete</a></span>|<span class="tactic">assumption</span>]).<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#set_complete">S.set_complete</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
@@ -651,8 +653,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">te</span> <span class="id">al</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_args">type_builtin_args</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#al">al</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_arg">type_of_builtin_arg</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span>) <span class="id"><a href="compcert.backend.RTLtyping.html#al">al</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' /\ <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3248')">Proof.</div>
-<div class="proofscript" id="proof3248">
+<div class="toggleproof" onclick="toggleDisplay('proof3442')">Proof.</div>
+<div class="proofscript" id="proof3442">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">al</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 - <span class="id">exists</span> <span class="id">e</span>; <span class="tactic">auto</span>.<br/>
 - <span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_arg_complete">type_builtin_arg_complete</a></span> <span class="id">te</span> <span class="id">a</span> <span class="id">e</span>) <span class="kwd">as</span> (<span class="id">e1</span> &amp; <span class="id">A</span> &amp; <span class="id">B</span>); <span class="tactic">auto</span>.<br/>
@@ -664,8 +666,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">te</span> <span class="id">a</span> <span class="id">e</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_res">type_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_res">type_of_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span>) = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' /\ <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3249')">Proof.</div>
-<div class="proofscript" id="proof3249">
+<div class="toggleproof" onclick="toggleDisplay('proof3443')">Proof.</div>
+<div class="proofscript" id="proof3443">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#set_complete">S.set_complete</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>; <span class="tactic">auto</span>.<br/>
@@ -677,8 +679,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_instr">type_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' /\ <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3250')">Proof.</div>
-<div class="proofscript" id="proof3250">
+<div class="toggleproof" onclick="toggleDisplay('proof3444')">Proof.</div>
+<div class="proofscript" id="proof3444">
 &nbsp;&nbsp;<span class="tactic">induction</span> 2; <span class="tactic">simpl</span>.<br/>
 - <span class="comment">(*&nbsp;nop&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">split</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.RTLtyping.html#check_successor_complete">check_successor_complete</a></span>; <span class="tactic">simpl</span>; <span class="tactic">eauto</span>. <span class="tactic">auto</span>.<br/>
@@ -719,8 +721,7 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">A</span>; <span class="tactic">simpl</span>; <span class="tactic">rewrite</span> <span class="id">C</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H2</span>; <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">replace</span> (<span class="id"><a href="compcert.backend.Conventions.html#tailcall_is_possible">tailcall_is_possible</a></span> <span class="id">sig</span>) <span class="kwd">with</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>; <span class="tactic">auto</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">symmetry</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.backend.Conventions.html#tailcall_is_possible">tailcall_is_possible</a></span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#forallb_forall">forallb_forall</a></span>.<br/>
-&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id">H3</span> <span class="kwd">in</span> <span class="id">H4</span>. <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">intuition</span> <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.Conventions.html#tailcall_is_possible_complete">tailcall_is_possible_complete</a></span>; <span class="tactic">auto</span>.<br/>
 - <span class="comment">(*&nbsp;builtin&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_args_complete">type_builtin_args_complete</a></span>; <span class="tactic">eauto</span>. <span class="id">instantiate</span> (1 := <span class="id">args</span>). <span class="tactic">intros</span> [<span class="id">e1</span> [<span class="id">A</span> <span class="id">B</span>]].<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.backend.RTLtyping.html#type_builtin_res_complete">type_builtin_res_complete</a></span>; <span class="tactic">eauto</span>. <span class="id">instantiate</span> (1 := <span class="id">res</span>). <span class="tactic">intros</span> [<span class="id">e2</span> [<span class="id">C</span> <span class="id">D</span>]].<br/>
@@ -755,8 +756,8 @@ Qed.</div>
 &nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">pc</span> <span class="id">instr</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span>.(<span class="id"><a href="compcert.backend.RTL.html#fn_code">fn_code</a></span>)!<span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#instr">instr</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#instr">instr</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">e</span>', <span class="id"><a href="compcert.backend.RTLtyping.html#type_code">type_code</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#e">e</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id">e</span>' /\ <span class="id"><a href="compcert.backend.RTLtyping.html#satisf">S.satisf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> <span class="id">e</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3251')">Proof.</div>
-<div class="proofscript" id="proof3251">
+<div class="toggleproof" onclick="toggleDisplay('proof3445')">Proof.</div>
+<div class="proofscript" id="proof3445">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">te</span> <span class="id">e0</span> <span class="id">WTC</span> <span class="id">SAT0</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">set</span> (<span class="id">P</span> := <span class="kwd">fun</span> <span class="id">c</span> <span class="id">res</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">forall</span> <span class="id">pc</span> <span class="id">i</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#c">c</a></span>!<span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id">te</span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span>) -&gt;<br/>
@@ -778,8 +779,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Theorem</span> <span class="id"><a name="type_function_complete">type_function_complete</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#wt_function">wt_function</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#INFERENCE.f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span> -&gt; <span class="id">exists</span> <span class="id">te</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#type_function">type_function</a></span> = <span class="id"><a href="compcert.common.Errors.html#OK">OK</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#te">te</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3252')">Proof.</div>
-<div class="proofscript" id="proof3252">
+<div class="toggleproof" onclick="toggleDisplay('proof3446')">Proof.</div>
+<div class="proofscript" id="proof3446">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_code_complete">type_code_complete</a></span> <span class="id">te</span> <span class="id"><a href="compcert.backend.RTLtyping.html#initial">S.initial</a></span>) <span class="kwd">as</span> (<span class="id">e1</span> &amp; <span class="id">A</span> &amp; <span class="id">B</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#satisf_initial">S.satisf_initial</a></span>.<br/>
@@ -815,8 +816,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.has_type">Val.has_type</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#r">r</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>#<span class="id"><a href="compcert.backend.RTLtyping.html#r">r</a></span> &lt;- <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3253')">Proof.</div>
-<div class="proofscript" id="proof3253">
+<div class="toggleproof" onclick="toggleDisplay('proof3447')">Proof.</div>
+<div class="proofscript" id="proof3447">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">red</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Registers.html#Regmap.gsspec">Regmap.gsspec</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">case</span> (<span class="id"><a href="compcert.lib.Coqlib.html#peq">peq</a></span> <span class="id">r0</span> <span class="id">r</span>); <span class="tactic">intro</span>.<br/>
@@ -828,8 +829,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">rs</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">rl</span>, <span class="id"><a href="compcert.common.Values.html#Val.has_type_list">Val.has_type_list</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>##<span class="id"><a href="compcert.backend.RTLtyping.html#rl">rl</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rl">rl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3254')">Proof.</div>
-<div class="proofscript" id="proof3254">
+<div class="toggleproof" onclick="toggleDisplay('proof3448')">Proof.</div>
+<div class="proofscript" id="proof3448">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">rl</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">split</span>. <span class="tactic">apply</span> <span class="id">H</span>. <span class="tactic">apply</span> <span class="id">IHrl</span>.<br/>
@@ -840,8 +841,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.has_type">Val.has_type</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#type_of_builtin_res">type_of_builtin_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> (<span class="id"><a href="compcert.backend.Registers.html#regmap_setres">regmap_setres</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3255')">Proof.</div>
-<div class="proofscript" id="proof3255">
+<div class="toggleproof" onclick="toggleDisplay('proof3449')">Proof.</div>
+<div class="proofscript" id="proof3449">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">res</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">auto</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset_assign">wt_regset_assign</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -849,8 +850,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">env</span> <span class="id">rl</span> <span class="id">args</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.has_type_list">Val.has_type_list</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#args">args</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map">List.map</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rl">rl</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> (<span class="id"><a href="compcert.backend.RTL.html#init_regs">init_regs</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#args">args</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rl">rl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3256')">Proof.</div>
-<div class="proofscript" id="proof3256">
+<div class="toggleproof" onclick="toggleDisplay('proof3450')">Proof.</div>
+<div class="proofscript" id="proof3450">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">rl</span>; <span class="tactic">destruct</span> <span class="id">args</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">red</span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.backend.Registers.html#Regmap.gi">Regmap.gi</a></span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset_assign">wt_regset_assign</a></span>; <span class="tactic">auto</span>.<br/>
@@ -862,8 +863,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.x86.Op.html#eval_operation">eval_operation</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#op">op</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>##<span class="id"><a href="compcert.backend.RTLtyping.html#args">args</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>#<span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span> &lt;- <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3257')">Proof.</div>
-<div class="proofscript" id="proof3257">
+<div class="toggleproof" onclick="toggleDisplay('proof3451')">Proof.</div>
+<div class="proofscript" id="proof3451">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset_assign">wt_regset_assign</a></span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H4</span>; <span class="tactic">auto</span>.<br/>
@@ -877,8 +878,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#chunk">chunk</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#a">a</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> (<span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>#<span class="id"><a href="compcert.backend.RTLtyping.html#dst">dst</a></span> &lt;- <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3258')">Proof.</div>
-<div class="proofscript" id="proof3258">
+<div class="toggleproof" onclick="toggleDisplay('proof3452')">Proof.</div>
+<div class="proofscript" id="proof3452">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H0</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset_assign">wt_regset_assign</a></span>; <span class="tactic">eauto</span>. <span class="tactic">rewrite</span> <span class="id">H8</span>; <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Memory.html#Mem.load_type">Mem.load_type</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
@@ -889,8 +890,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Events.html#external_call">external_call</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ef">ef</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ge">ge</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#vargs">vargs</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#t">t</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#vres">vres</a></span> <span class="id">m</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> (<span class="id"><a href="compcert.backend.Registers.html#regmap_setres">regmap_setres</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#vres">vres</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3259')">Proof.</div>
-<div class="proofscript" id="proof3259">
+<div class="toggleproof" onclick="toggleDisplay('proof3453')">Proof.</div>
+<div class="proofscript" id="proof3453">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset_setres">wt_regset_setres</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H7</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Events.html#external_call_well_typed">external_call_well_typed</a></span>; <span class="tactic">eauto</span>.<br/>
@@ -899,26 +900,28 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="wt_instr_at">wt_instr_at</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">env</span> <span class="id">pc</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_function">wt_function</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.RTL.html#fn_code">fn_code</a></span>)!<span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3260')">Proof.</div>
-<div class="proofscript" id="proof3260">
+<div class="toggleproof" onclick="toggleDisplay('proof3454')">Proof.</div>
+<div class="proofscript" id="proof3454">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
-<span class="kwd">Inductive</span> <span class="id"><a name="wt_stackframes">wt_stackframes</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.RTL.html#stackframe">stackframe</a></span> -&gt; <span class="id"><a href="compcert.common.AST.html#signature">signature</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="wt_stackframes">wt_stackframes</a></span> <span class="id">ty</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="compcert.backend.RTL.html#stackframe">stackframe</a></span> -&gt; <span class="id"><a href="compcert.common.AST.html#signature">signature</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
 &nbsp;&nbsp;| <span class="id"><a name="wt_stackframes_nil">wt_stackframes_nil</a></span>: <span class="kwd">forall</span> <span class="id">sg</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span> = <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span><br/>
 &nbsp;&nbsp;| <span class="id"><a name="wt_stackframes_cons">wt_stackframes_cons</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">res</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">pc</span> <span class="id">rs</span> <span class="id">env</span> <span class="id">sg</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_function">wt_function</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span> = <span class="id"><a href="compcert.common.AST.html#proj_sig_res">proj_sig_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span> -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTL.html#fn_sig">fn_sig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>) -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> (<span class="id"><a href="compcert.backend.RTL.html#Stackframe">Stackframe</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> :: <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span>) <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTL.html#fn_sig">fn_sig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#ty">ty</a></span> (<span class="id"><a href="compcert.backend.RTL.html#Stackframe">Stackframe</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#res">res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> :: <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span>) <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span>.<br/>
 <br/>
 <span class="kwd">Section</span> <span class="id"><a name="SUBJECT_REDUCTION">SUBJECT_REDUCTION</a></span>.<br/>
 <br/>
 <span class="kwd">Variable</span> <span class="id"><a name="SUBJECT_REDUCTION.p">p</a></span>: <span class="id"><a href="compcert.backend.RTL.html#program">program</a></span>.<br/>
 <span class="kwd">Variable</span> <span class="id"><a name="SUBJECT_REDUCTION.se">se</a></span>: <span class="id"><a href="compcert.common.Globalenvs.html#Genv.symtbl">Genv.symtbl</a></span>.<br/>
+<span class="kwd">Variable</span> <span class="id"><a name="SUBJECT_REDUCTION.ty">ty</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="compcert.common.AST.html#typ">typ</a></span>.<br/>
 <br/>
 <span class="kwd">Hypothesis</span> <span class="id"><a name="SUBJECT_REDUCTION.wt_p">wt_p</a></span>: <span class="id"><a href="compcert.backend.RTLtyping.html#wt_program">wt_program</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.p">p</a></span>.<br/>
 <br/>
@@ -927,28 +930,28 @@ Qed.</div>
 <span class="kwd">Inductive</span> <span class="id"><a name="wt_state">wt_state</a></span>: <span class="id"><a href="compcert.backend.RTL.html#state">state</a></span> -&gt; <span class="kwd">Prop</span> :=<br/>
 &nbsp;&nbsp;| <span class="id"><a name="wt_state_intro">wt_state_intro</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">pc</span> <span class="id">rs</span> <span class="id">m</span> <span class="id">env</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WT_STK</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTL.html#fn_sig">fn_sig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WT_STK</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTL.html#fn_sig">fn_sig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WT_FN</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#wt_function">wt_function</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">WT_RS</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>),<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> (<span class="id"><a href="compcert.backend.RTL.html#State">State</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span>)<br/>
 &nbsp;&nbsp;| <span class="id"><a name="wt_state_call">wt_state_call</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">vf</span> <span class="id">f</span> <span class="id">args</span> <span class="id">m</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTL.html#funsig">funsig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> (<span class="id"><a href="compcert.backend.RTL.html#funsig">funsig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>) -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_fundef">wt_fundef</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.has_type_list">Val.has_type_list</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#args">args</a></span> (<span class="id"><a href="compcert.common.AST.html#sig_args">sig_args</a></span> (<span class="id"><a href="compcert.backend.RTL.html#funsig">funsig</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>)) -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct">Genv.find_funct</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ge">ge</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#vf">vf</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> (<span class="id"><a href="compcert.backend.RTL.html#Callstate">Callstate</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#vf">vf</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#args">args</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span>)<br/>
 &nbsp;&nbsp;| <span class="id"><a name="wt_state_return">wt_state_return</a></span>:<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">v</span> <span class="id">m</span> <span class="id">sg</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.has_type">Val.has_type</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> (<span class="id"><a href="compcert.common.AST.html#proj_sig_res">proj_sig_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span>) -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> (<span class="id"><a href="compcert.backend.RTL.html#Returnstate">Returnstate</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#v">v</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span>).<br/>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="wt_stackframes_change_sig">wt_stackframes_change_sig</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">sg1</span> <span class="id">sg2</span>,<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#sg1">sg1</a></span>.(<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span>) = <span class="id"><a href="compcert.backend.RTLtyping.html#sg2">sg2</a></span>.(<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span>) -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg1">sg1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg2">sg2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3261')">Proof.</div>
-<div class="proofscript" id="proof3261">
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#sg1">sg1</a></span>.(<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span>) = <span class="id"><a href="compcert.backend.RTLtyping.html#sg2">sg2</a></span>.(<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span>) -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg1">sg1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_stackframes">wt_stackframes</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ty">ty</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg2">sg2</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof3455')">Proof.</div>
+<div class="proofscript" id="proof3455">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H0</span>.<br/>
 - <span class="id">constructor</span>; <span class="tactic">congruence</span>.<br/>
 - <span class="id">econstructor</span>; <span class="tactic">eauto</span>. <span class="tactic">rewrite</span> <span class="id">H3</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#proj_sig_res">proj_sig_res</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
@@ -957,8 +960,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="subject_reduction">subject_reduction</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">st1</span> <span class="id">t</span> <span class="id">st2</span>, <span class="id"><a href="compcert.backend.RTL.html#step">step</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ge">ge</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#st1">st1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#t">t</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#st2">st2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> (<span class="id">WT</span>: <span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#st1">st1</a></span>), <span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#st2">st2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3262')">Proof.</div>
-<div class="proofscript" id="proof3262">
+<div class="toggleproof" onclick="toggleDisplay('proof3456')">Proof.</div>
+<div class="proofscript" id="proof3456">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="id">inv</span> <span class="id">WT</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">try</span> (<span class="tactic">generalize</span> (<span class="id"><a href="compcert.backend.RTLtyping.html#wt_instrs">wt_instrs</a></span> <span class="id">_</span> <span class="id">_</span> <span class="id">WT_FN</span> <span class="id">pc</span> <span class="id">_</span> <span class="id">H</span>); <span class="tactic">intros</span> <span class="id">WTI</span>).<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;Inop&nbsp;*)</span><br/>
@@ -1006,39 +1009,40 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset_assign">wt_regset_assign</a></span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">H10</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<span class="kwd">Lemma</span> <span class="id"><a name="wt_initial_state">wt_initial_state</a></span>:<br/>
-&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">S</span>, <span class="id"><a href="compcert.backend.Conventions.html#cc_alloc_mq">cc_alloc_mq</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#w">w</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#q1">q1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#q2">q2</a></span> -&gt; <span class="id"><a href="compcert.backend.RTL.html#initial_state">initial_state</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ge">ge</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#q1">q1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#S">S</a></span> -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#S">S</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3263')">Proof.</div>
-<div class="proofscript" id="proof3263">
-&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;<span class="id">constructor</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_prop">Genv.find_funct_prop</a></span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;<span class="id">cbn</span>. <span class="tactic">eauto</span>.<br/>
-Qed.</div>
-<br/>
-<span class="kwd">Lemma</span> <span class="id"><a name="wt_external_state">wt_external_state</a></span>:<br/>
-&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">w</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">r1</span> <span class="id">r2</span> <span class="id">S</span> <span class="id">S</span>', <span class="id"><a href="compcert.backend.Conventions.html#cc_alloc_mq">cc_alloc_mq</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#w">w</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#q1">q1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#q2">q2</a></span> -&gt; <span class="id"><a href="compcert.backend.Conventions.html#cc_alloc_mr">cc_alloc_mr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#w">w</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#r1">r1</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#r2">r2</a></span> -&gt;<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#S">S</a></span> -&gt; <span class="id"><a href="compcert.backend.RTL.html#at_external">at_external</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION.ge">ge</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#S">S</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#q1">q1</a></span> -&gt; <span class="id"><a href="compcert.backend.RTL.html#after_external">after_external</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#S">S</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#r1">r1</a></span> <span class="id">S</span>' -&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> <span class="id">S</span>'.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3264')">Proof.</div>
-<div class="proofscript" id="proof3264">
-&nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">inv</span> <span class="id">H0</span>. <span class="id">inv</span> <span class="id">H2</span>. <span class="id">inv</span> <span class="id">H3</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H15</span> <span class="kwd">in</span> <span class="id">H7</span>; <span class="id">inv</span> <span class="id">H7</span>. <span class="tactic">eauto</span>.<br/>
-Qed.</div>
-<br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="wt_instr_inv">wt_instr_inv</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">f</span> <span class="id">sp</span> <span class="id">pc</span> <span class="id">rs</span> <span class="id">m</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> (<span class="id"><a href="compcert.backend.RTL.html#State">State</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#s">s</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sp">sp</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#m">m</a></span>) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span>.(<span class="id"><a href="compcert.backend.RTL.html#fn_code">fn_code</a></span>)!<span class="id"><a href="compcert.backend.RTLtyping.html#pc">pc</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id">exists</span> <span class="id">env</span>, <span class="id"><a href="compcert.backend.RTLtyping.html#wt_instr">wt_instr</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#f">f</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#i">i</a></span> /\ <span class="id"><a href="compcert.backend.RTLtyping.html#wt_regset">wt_regset</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#env">env</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#rs">rs</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof3265')">Proof.</div>
-<div class="proofscript" id="proof3265">
+<div class="toggleproof" onclick="toggleDisplay('proof3457')">Proof.</div>
+<div class="proofscript" id="proof3457">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>. <span class="id">exists</span> <span class="id">env</span>; <span class="tactic">split</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">WT_FN</span>. <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">End</span> <span class="id"><a href="compcert.backend.RTLtyping.html#SUBJECT_REDUCTION">SUBJECT_REDUCTION</a></span>.<br/>
 <br/>
-<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="rtl_wt">rtl_wt</a></span> <span class="id">prog</span>:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.backend.RTLtyping.html#wt_program">wt_program</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#prog">prog</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.common.Invariant.html#preserves">preserves</a></span> (<span class="id"><a href="compcert.backend.RTL.html#semantics">semantics</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#prog">prog</a></span>) <span class="id"><a href="compcert.common.Invariant.html#wt_c">wt_c</a></span> <span class="id"><a href="compcert.common.Invariant.html#wt_c">wt_c</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> '(<span class="id">se</span>, <span class="id">sg</span>) =&gt; <span class="id"><a href="compcert.backend.RTLtyping.html#wt_state">wt_state</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#prog">prog</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#se">se</a></span> (<span class="id"><a href="compcert.common.AST.html#sig_res">sig_res</a></span> <span class="id"><a href="compcert.backend.RTLtyping.html#sg">sg</a></span>)).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof3458')">Proof.</div>
+<div class="proofscript" id="proof3458">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">PROG_WT</span> [<span class="id">se</span> <span class="id">sg</span>] <span class="id">xse</span> <span class="id">SE_VALID</span> <span class="id">Hxse</span>. <span class="tactic">destruct</span> <span class="id">Hxse</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="id">cbn</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.backend.RTLtyping.html#subject_reduction">subject_reduction</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">q</span> <span class="id">s</span> [<span class="id">Hsg</span> <span class="id">Hwt</span>] <span class="id">Hq</span>. <span class="tactic">subst</span>. <span class="tactic">destruct</span> <span class="id">Hq</span> <span class="kwd">as</span> [<span class="id">vf</span> <span class="id">f</span> <span class="id">vargs</span> <span class="id">m</span> <span class="id">Hvf</span>]. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">constructor</span>. <span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Globalenvs.html#Genv.find_funct_prop">Genv.find_funct_prop</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id">cbn</span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">q</span> <span class="id">Hs</span> <span class="id">Hq</span>. <span class="tactic">destruct</span> <span class="id">Hq</span>. <span class="id">inv</span> <span class="id">Hs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">f</span> = <span class="id"><a href="compcert.common.AST.html#External">External</a></span> (<span class="id"><a href="compcert.common.AST.html#EF_external">EF_external</a></span> <span class="id">name</span> <span class="id">sg0</span>)) <span class="tactic">by</span> <span class="tactic">congruence</span>. <span class="tactic">subst</span>. <span class="id">cbn</span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eexists</span> (<span class="id">_</span>, <span class="id">_</span>); <span class="id">cbn</span>. <span class="tactic">intuition</span> <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">inv</span> <span class="id">H1</span>. <span class="id">econstructor</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span> <span class="id">s</span> <span class="id">r</span> <span class="id">Hs</span> <span class="id">Hr</span>. <span class="tactic">destruct</span> <span class="id">Hr</span>. <span class="id">inv</span> <span class="id">Hs</span>. <span class="id">inv</span> <span class="id">H1</span>. <span class="id">cbn</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#proj_sig_res">proj_sig_res</a></span> <span class="kwd">in</span> *. <span class="tactic">rewrite</span> <span class="id">H</span> <span class="kwd">in</span> <span class="id">H3</span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
 
 </div>
 <div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>

@@ -1,0 +1,89 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Validator_classes</title>
+<meta name="description" content="Documentation of Coq module Validator_classes" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Validator_classes</h1>
+<div class="coq">
+<br/>
+<span class="id">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span>.<br/>
+<span class="id">From</span> <span class="id">Coq.ssr</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ssr.ssreflect.html">ssreflect</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html">Alphabet</a></span>.<br/>
+<br/>
+<span class="kwd">Class</span> <span class="id"><a name="IsValidator">IsValidator</a></span> (<span class="id">P</span> : <span class="kwd">Prop</span>) (<span class="id">b</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="id"><a name="is_validator">is_validator</a></span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P">P</a></span>.<br/>
+<span class="kwd">Hint</span> <span class="id">Mode</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> + - : <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="is_validator_true">is_validator_true</a></span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6517')">Proof.</div>
+<div class="proofscript" id="proof6517">
+ <span class="id">done</span>. Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="is_validator_false">is_validator_false</a></span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6518')">Proof.</div>
+<div class="proofscript" id="proof6518">
+ <span class="id">done</span>. Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="is_validator_eq_true">is_validator_eq_true</a></span> <span class="id">b</span> :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6519')">Proof.</div>
+<div class="proofscript" id="proof6519">
+ <span class="id">done</span>. Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="is_validator_and">is_validator_and</a></span> <span class="id">P1</span> <span class="id">b1</span> <span class="id">P2</span> <span class="id">b2</span> `{<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P1">P1</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b1">b1</a></span>} `{<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P2">P2</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b2">b2</a></span>}:<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P1">P1</a></span> /\ <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P2">P2</a></span>) (<span class="kwd">if</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b1">b1</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b2">b2</a></span> <span class="kwd">else</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6520')">Proof.</div>
+<div class="proofscript" id="proof6520">
+ <span class="tactic">by</span> <span class="tactic">split</span>; <span class="tactic">destruct</span> <span class="id">b1</span>, <span class="id">b2</span>; <span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#is_validator">is_validator</a></span>. Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="is_validator_comparable_leibniz_eq">is_validator_comparable_leibniz_eq</a></span> <span class="id">A</span> (<span class="id">C</span>:<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>) (<span class="id">x</span> <span class="id">y</span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>) :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Alphabet.html#ComparableLeibnizEq">ComparableLeibnizEq</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#C">C</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span> = <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#y">y</a></span>) (<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb">compare_eqb</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#y">y</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6521')">Proof.</div>
+<div class="proofscript" id="proof6521">
+ <span class="tactic">intros</span> ??. <span class="tactic">by</span> <span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb_iff">compare_eqb_iff</a></span>. Qed.</div>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="is_validator_comparable_eq_impl">is_validator_comparable_eq_impl</a></span> <span class="id">A</span> `(<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Comparable">Comparable</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>) (<span class="id">x</span> <span class="id">y</span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>) <span class="id">P</span> <span class="id">b</span> :<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P">P</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span> = <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#y">y</a></span> -&gt; <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P">P</a></span>) (<span class="kwd">if</span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb">compare_eqb</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#y">y</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span> <span class="kwd">else</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6522')">Proof.</div>
+<div class="proofscript" id="proof6522">
+&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">Hval</span> <span class="id">Val</span> -&gt;. <span class="tactic">rewrite</span> /<span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_eqb">compare_eqb</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#compare_refl">compare_refl</a></span> <span class="kwd">in</span> <span class="id">Val</span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="is_validator_forall_finite">is_validator_forall_finite</a></span> <span class="id">A</span> <span class="id">P</span> <span class="id">b</span> `(<span class="id"><a href="compcert.MenhirLib.Alphabet.html#Finite">Finite</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>) :<br/>
+&nbsp;&nbsp;(<span class="kwd">forall</span> (<span class="id">x</span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>), <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P">P</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span>) (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span>)) -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="kwd">forall</span> (<span class="id">x</span> : <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#A">A</a></span>), <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#P">P</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#x">x</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#forallb">forallb</a></span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#b">b</a></span> <span class="id"><a href="compcert.MenhirLib.Alphabet.html#all_list">all_list</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6523')">Proof.</div>
+<div class="proofscript" id="proof6523">
+&nbsp;&nbsp;<span class="tactic">move</span>=&gt; ? /<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#forallb_forall">forallb_forall</a></span> <span class="id">Hb</span> ?.<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.MenhirLib.Validator_classes.html#is_validator">is_validator</a></span>, <span class="id">Hb</span>, <span class="id"><a href="compcert.MenhirLib.Alphabet.html#all_list_forall">all_list_forall</a></span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 2 (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="kwd">forall</span> <span class="id">x</span> : ?<span class="id">A</span>, <span class="id">_</span>) <span class="id">_</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#is_validator_forall_finite">is_validator_forall_finite</a></span> <span class="id">_</span> <span class="id">_</span> (<span class="kwd">fun</span> (<span class="id">x</span>:<span class="id">A</span>) =&gt; <span class="id">_</span>))<br/>
+&nbsp;&nbsp;: <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 2 (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> (<span class="kwd">match</span> ?<span class="id">u</span> <span class="kwd">with</span> <span class="id">_</span> =&gt; <span class="id">_</span> <span class="kwd">end</span>) ?<span class="id">b0</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">b</span> := <span class="tactic">fresh</span> "<span class="id">b</span>" <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">unshelve</span> <span class="id">notypeclasses</span> <span class="tactic">refine</span> (<span class="kwd">let</span> <span class="id">b</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> := <span class="id">_</span> <span class="kwd">in</span> <span class="id">_</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="tactic">destruct</span> <span class="id">u</span>; <span class="tactic">intros</span>; <span class="id">shelve</span>|];    <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">unify</span> <span class="id">b</span> <span class="id">b0</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id">b</span>; <span class="tactic">destruct</span> <span class="id">u</span>; <span class="tactic">clear</span> <span class="id">b</span><br/>
+&nbsp;&nbsp;: <span class="id">typeclass_instances</span>.<br/>
+<br/>
+<span class="kwd">Hint</span> <span class="kwd">Extern</span> 100 (<span class="id"><a href="compcert.MenhirLib.Validator_classes.html#IsValidator">IsValidator</a></span> ?<span class="id">X</span> <span class="id">_</span>) =&gt; <span class="tactic">unfold</span> <span class="id">X</span><br/>
+&nbsp;&nbsp;: <span class="id">typeclass_instances</span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

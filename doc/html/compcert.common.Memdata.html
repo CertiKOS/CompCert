@@ -17,6 +17,7 @@
 <div class="doc">In-memory representation of values. </div>
 <br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Zbits.html">Zbits</a></span>.<br/>
 <span class="kwd">Require</span> <span class="id"><a href="compcert.x86_64.Archi.html">Archi</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span>.<br/>
 <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span>.<br/>
@@ -45,25 +46,25 @@
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_chunk_pos">size_chunk_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span>, <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1418')">Proof.</div>
-<div class="proofscript" id="proof1418">
+<div class="toggleproof" onclick="toggleDisplay('proof1457')">Proof.</div>
+<div class="proofscript" id="proof1457">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">simpl</span>; <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="size_chunk_nat">size_chunk_nat</a></span> (<span class="id">chunk</span>: <span class="id"><a href="compcert.common.AST.html#memory_chunk">memory_chunk</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> :=<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#nat_of_Z">nat_of_Z</a></span>(<span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>).<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.to_nat">Z.to_nat</a></span>(<span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>).<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_chunk_conv">size_chunk_conv</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span>, <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="compcert.common.Memdata.html#size_chunk_nat">size_chunk_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1419')">Proof.</div>
-<div class="proofscript" id="proof1419">
+<div class="toggleproof" onclick="toggleDisplay('proof1458')">Proof.</div>
+<div class="proofscript" id="proof1458">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_chunk_nat_pos">size_chunk_nat_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span>, <span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#size_chunk_nat">size_chunk_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1420')">Proof.</div>
-<div class="proofscript" id="proof1420">
+<div class="toggleproof" onclick="toggleDisplay('proof1459')">Proof.</div>
+<div class="proofscript" id="proof1459">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">generalize</span> (<span class="id"><a href="compcert.common.Memdata.html#size_chunk_pos">size_chunk_pos</a></span> <span class="id">chunk</span>). <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#size_chunk_conv">size_chunk_conv</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#size_chunk_nat">size_chunk_nat</a></span> <span class="id">chunk</span>).<br/>
@@ -72,8 +73,8 @@ Qed.</div>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_chunk_Mptr">size_chunk_Mptr</a></span>: <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span> = <span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> <span class="kwd">then</span> 8 <span class="kwd">else</span> 4.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1421')">Proof.</div>
-<div class="proofscript" id="proof1421">
+<div class="toggleproof" onclick="toggleDisplay('proof1460')">Proof.</div>
+<div class="proofscript" id="proof1460">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -103,29 +104,29 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="align_chunk_pos">align_chunk_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span>, <span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> &gt; 0.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1422')">Proof.</div>
-<div class="proofscript" id="proof1422">
+<div class="toggleproof" onclick="toggleDisplay('proof1461')">Proof.</div>
+<div class="proofscript" id="proof1461">
 &nbsp;&nbsp;<span class="tactic">intro</span>. <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">simpl</span>; <span class="tactic">omega</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="align_chunk_Mptr">align_chunk_Mptr</a></span>: <span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span> = <span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span> <span class="kwd">then</span> 8 <span class="kwd">else</span> 4.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1423')">Proof.</div>
-<div class="proofscript" id="proof1423">
+<div class="toggleproof" onclick="toggleDisplay('proof1462')">Proof.</div>
+<div class="proofscript" id="proof1462">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.AST.html#Mptr">Mptr</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="align_size_chunk_divides">align_size_chunk_divides</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span>, (<span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> | <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1424')">Proof.</div>
-<div class="proofscript" id="proof1424">
+<div class="toggleproof" onclick="toggleDisplay('proof1463')">Proof.</div>
+<div class="proofscript" id="proof1463">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">simpl</span>; <span class="tactic">try</span> <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_refl">Z.divide_refl</a></span>; <span class="id">exists</span> 2; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="align_le_divides">align_le_divides</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk1</span> <span class="id">chunk2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk1">chunk1</a></span> &lt;= <span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span> -&gt; (<span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk1">chunk1</a></span> | <span class="id"><a href="compcert.common.Memdata.html#align_chunk">align_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1425')">Proof.</div>
-<div class="proofscript" id="proof1425">
+<div class="toggleproof" onclick="toggleDisplay('proof1464')">Proof.</div>
+<div class="proofscript" id="proof1464">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">chunk1</span>; <span class="tactic">destruct</span> <span class="id">chunk2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *;<br/>
 &nbsp;&nbsp;<span class="id">solve</span> [ <span class="id">omegaContradiction</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_refl">Z.divide_refl</a></span><br/>
@@ -137,8 +138,8 @@ Qed.</div>
 <span class="kwd">Inductive</span> <span class="id"><a name="quantity">quantity</a></span> : <span class="kwd">Type</span> := <span class="id"><a name="Q32">Q32</a></span> | <span class="id"><a name="Q64">Q64</a></span>.<br/>
 <br/>
 <span class="kwd">Definition</span> <span class="id"><a name="quantity_eq">quantity_eq</a></span> (<span class="id">q1</span> <span class="id">q2</span>: <span class="id"><a href="compcert.common.Memdata.html#quantity">quantity</a></span>) : {<span class="id"><a href="compcert.common.Memdata.html#q1">q1</a></span> = <span class="id"><a href="compcert.common.Memdata.html#q2">q2</a></span>} + {<span class="id"><a href="compcert.common.Memdata.html#q1">q1</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Memdata.html#q2">q2</a></span>}.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1426')">Proof.</div>
-<div class="proofscript" id="proof1426">
+<div class="toggleproof" onclick="toggleDisplay('proof1465')">Proof.</div>
+<div class="proofscript" id="proof1465">
  <span class="id">decide</span> <span class="id">equality</span>. Defined.</div>
 <span class="kwd">Global</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.common.Memdata.html#quantity_eq">quantity_eq</a></span>.<br/>
 <br/>
@@ -147,8 +148,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="size_quantity_nat_pos">size_quantity_nat_pos</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">q</span>, <span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#size_quantity_nat">size_quantity_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1427')">Proof.</div>
-<div class="proofscript" id="proof1427">
+<div class="toggleproof" onclick="toggleDisplay('proof1466')">Proof.</div>
+<div class="proofscript" id="proof1466">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">q</span>; [<span class="id">exists</span> 3%<span class="id">nat</span> | <span class="id">exists</span> 7%<span class="id">nat</span>]; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -206,15 +207,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="length_bytes_of_int">length_bytes_of_int</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">x</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> (<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1428')">Proof.</div>
-<div class="proofscript" id="proof1428">
+<div class="toggleproof" onclick="toggleDisplay('proof1467')">Proof.</div>
+<div class="proofscript" id="proof1467">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>. <span class="tactic">auto</span>. <span class="id">decEq</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="rev_if_be_length">rev_if_be_length</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> (<span class="id"><a href="compcert.common.Memdata.html#rev_if_be">rev_if_be</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1429')">Proof.</div>
-<div class="proofscript" id="proof1429">
+<div class="toggleproof" onclick="toggleDisplay('proof1468')">Proof.</div>
+<div class="proofscript" id="proof1468">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#rev_if_be">rev_if_be</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev_length">List.rev_length</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -222,8 +223,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_int_length">encode_int_length</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">sz</span> <span class="id">x</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span>(<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#sz">sz</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#sz">sz</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1430')">Proof.</div>
-<div class="proofscript" id="proof1430">
+<div class="toggleproof" onclick="toggleDisplay('proof1469')">Proof.</div>
+<div class="proofscript" id="proof1469">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#rev_if_be_length">rev_if_be_length</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#length_bytes_of_int">length_bytes_of_int</a></span>.<br/>
 Qed.</div>
 <br/>
@@ -232,8 +233,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="int_of_bytes_of_int">int_of_bytes_of_int</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">x</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#int_of_bytes">int_of_bytes</a></span> (<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id">mod</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> * 8)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1431')">Proof.</div>
-<div class="proofscript" id="proof1431">
+<div class="toggleproof" onclick="toggleDisplay('proof1470')">Proof.</div>
+<div class="proofscript" id="proof1470">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zdiv.html#Zmod_1_r">Zmod_1_r</a></span>. <span class="tactic">auto</span>.<br/>
 <span class="id">Opaque</span> <span class="id"><a href="compcert.lib.Integers.html#Byte.wordsize">Byte.wordsize</a></span>.<br/>
@@ -248,8 +249,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="rev_if_be_involutive">rev_if_be_involutive</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span>, <span class="id"><a href="compcert.common.Memdata.html#rev_if_be">rev_if_be</a></span> (<span class="id"><a href="compcert.common.Memdata.html#rev_if_be">rev_if_be</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1432')">Proof.</div>
-<div class="proofscript" id="proof1432">
+<div class="toggleproof" onclick="toggleDisplay('proof1471')">Proof.</div>
+<div class="proofscript" id="proof1471">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#rev_if_be">rev_if_be</a></span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#rev_involutive">List.rev_involutive</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
@@ -257,16 +258,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_encode_int">decode_encode_int</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">x</span>, <span class="id"><a href="compcert.common.Memdata.html#decode_int">decode_int</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id">mod</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> * 8)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1433')">Proof.</div>
-<div class="proofscript" id="proof1433">
+<div class="toggleproof" onclick="toggleDisplay('proof1472')">Proof.</div>
+<div class="proofscript" id="proof1472">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#decode_int">decode_int</a></span>, <span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span>; <span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#rev_if_be_involutive">rev_if_be_involutive</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#int_of_bytes_of_int">int_of_bytes_of_int</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_encode_int_1">decode_encode_int_1</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_int">decode_int</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 1 (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>))) = <span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext">Int.zero_ext</a></span> 8 <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1434')">Proof.</div>
-<div class="proofscript" id="proof1434">
+<div class="toggleproof" onclick="toggleDisplay('proof1473')">Proof.</div>
+<div class="proofscript" id="proof1473">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#decode_encode_int">decode_encode_int</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.lib.Integers.html#Int.repr_unsigned">Int.repr_unsigned</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext">Int.zero_ext</a></span> 8 <span class="id">x</span>)).<br/>
 &nbsp;&nbsp;<span class="id">decEq</span>. <span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext_mod">Int.zero_ext_mod</a></span>. <span class="tactic">compute</span>. <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
@@ -274,8 +275,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_encode_int_2">decode_encode_int_2</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_int">decode_int</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 2 (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>))) = <span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext">Int.zero_ext</a></span> 16 <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1435')">Proof.</div>
-<div class="proofscript" id="proof1435">
+<div class="toggleproof" onclick="toggleDisplay('proof1474')">Proof.</div>
+<div class="proofscript" id="proof1474">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#decode_encode_int">decode_encode_int</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.lib.Integers.html#Int.repr_unsigned">Int.repr_unsigned</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext">Int.zero_ext</a></span> 16 <span class="id">x</span>)).<br/>
 &nbsp;&nbsp;<span class="id">decEq</span>. <span class="tactic">symmetry</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext_mod">Int.zero_ext_mod</a></span>. <span class="tactic">compute</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
@@ -283,28 +284,28 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_encode_int_4">decode_encode_int_4</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_int">decode_int</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 4 (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>))) = <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1436')">Proof.</div>
-<div class="proofscript" id="proof1436">
+<div class="toggleproof" onclick="toggleDisplay('proof1475')">Proof.</div>
+<div class="proofscript" id="proof1475">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#decode_encode_int">decode_encode_int</a></span>. <span class="tactic">transitivity</span> (<span class="id"><a href="compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> <span class="id">x</span>)).<br/>
-&nbsp;&nbsp;<span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Zmod_small">Zmod_small</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.unsigned_range">Int.unsigned_range</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.repr_unsigned">Int.repr_unsigned</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.mod_small">Z.mod_small</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.unsigned_range">Int.unsigned_range</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.repr_unsigned">Int.repr_unsigned</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_encode_int_8">decode_encode_int_8</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_int">decode_int</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 8 (<span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned">Int64.unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>))) = <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1437')">Proof.</div>
-<div class="proofscript" id="proof1437">
+<div class="toggleproof" onclick="toggleDisplay('proof1476')">Proof.</div>
+<div class="proofscript" id="proof1476">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#decode_encode_int">decode_encode_int</a></span>. <span class="tactic">transitivity</span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned">Int64.unsigned</a></span> <span class="id">x</span>)).<br/>
-&nbsp;&nbsp;<span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Coqlib.html#Zmod_small">Zmod_small</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned_range">Int64.unsigned_range</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.repr_unsigned">Int64.repr_unsigned</a></span>.<br/>
+&nbsp;&nbsp;<span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.mod_small">Z.mod_small</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned_range">Int64.unsigned_range</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.repr_unsigned">Int64.repr_unsigned</a></span>.<br/>
 Qed.</div>
 <br/>
 <div class="doc">A length-<span class="bracket"><span class="id">n</span></span> encoding depends only on the low <span class="bracket">8*<span class="id">n</span></span> bits of the integer. </div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="bytes_of_int_mod">bytes_of_int_mod</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">x</span> <span class="id">y</span>,<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Integers.html#Int.eqmod">Int.eqmod</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> * 8)) <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Zbits.html#eqmod">eqmod</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> * 8)) <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> = <span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1438')">Proof.</div>
-<div class="proofscript" id="proof1438">
+<div class="toggleproof" onclick="toggleDisplay('proof1477')">Proof.</div>
+<div class="proofscript" id="proof1477">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">y</span>.<br/>
@@ -314,7 +315,7 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">EQM</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>; <span class="id">decEq</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Byte.eqm_samerepr">Byte.eqm_samerepr</a></span>. <span class="tactic">red</span>.<br/>
-&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eqmod_divides">Int.eqmod_divides</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_factor_r">Z.divide_factor_r</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.lib.Zbits.html#eqmod_divides">eqmod_divides</a></span>; <span class="tactic">eauto</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.divide_factor_r">Z.divide_factor_r</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">IHn</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">EQM</span> <span class="kwd">as</span> [<span class="id">k</span> <span class="id">EQ</span>]. <span class="id">exists</span> <span class="id">k</span>. <span class="tactic">rewrite</span> <span class="id">EQ</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zdiv.html#Z_div_plus_full_l">Z_div_plus_full_l</a></span>. <span class="id">decEq</span>. <span class="id">change</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> 8) <span class="kwd">with</span> 256. <span class="tactic">ring</span>. <span class="tactic">omega</span>.<br/>
@@ -322,19 +323,19 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_int_8_mod">encode_int_8_mod</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>,<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Integers.html#Int.eqmod">Int.eqmod</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> 8) <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Zbits.html#eqmod">eqmod</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> 8) <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 1%<span class="id">nat</span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> = <span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 1%<span class="id">nat</span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1439')">Proof.</div>
-<div class="proofscript" id="proof1439">
+<div class="toggleproof" onclick="toggleDisplay('proof1478')">Proof.</div>
+<div class="proofscript" id="proof1478">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span>. <span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#bytes_of_int_mod">bytes_of_int_mod</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_int_16_mod">encode_int_16_mod</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>,<br/>
-&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Integers.html#Int.eqmod">Int.eqmod</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> 16) <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="compcert.lib.Zbits.html#eqmod">eqmod</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> 16) <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 2%<span class="id">nat</span> <span class="id"><a href="compcert.common.Memdata.html#x">x</a></span> = <span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span> 2%<span class="id">nat</span> <span class="id"><a href="compcert.common.Memdata.html#y">y</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1440')">Proof.</div>
-<div class="proofscript" id="proof1440">
+<div class="toggleproof" onclick="toggleDisplay('proof1479')">Proof.</div>
+<div class="proofscript" id="proof1479">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int">encode_int</a></span>. <span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#bytes_of_int_mod">bytes_of_int_mod</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -353,22 +354,22 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="length_inj_bytes">length_inj_bytes</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bl</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_bytes">inj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1441')">Proof.</div>
-<div class="proofscript" id="proof1441">
+<div class="toggleproof" onclick="toggleDisplay('proof1480')">Proof.</div>
+<div class="proofscript" id="proof1480">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#map_length">List.map_length</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="proj_inj_bytes">proj_inj_bytes</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bl</span>, <span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_bytes">inj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1442')">Proof.</div>
-<div class="proofscript" id="proof1442">
+<div class="toggleproof" onclick="toggleDisplay('proof1481')">Proof.</div>
+<div class="proofscript" id="proof1481">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">bl</span>; <span class="tactic">simpl</span>. <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">IHbl</span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_proj_bytes">inj_proj_bytes</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">cl</span> <span class="id">bl</span>, <span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#cl">cl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span> -&gt; <span class="id"><a href="compcert.common.Memdata.html#cl">cl</a></span> = <span class="id"><a href="compcert.common.Memdata.html#inj_bytes">inj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1443')">Proof.</div>
-<div class="proofscript" id="proof1443">
+<div class="toggleproof" onclick="toggleDisplay('proof1482')">Proof.</div>
+<div class="proofscript" id="proof1482">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">cl</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">try</span> <span class="tactic">congruence</span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">cl</span>); <span class="id">inv</span> <span class="id">H</span>.<br/>
@@ -450,15 +451,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_length">encode_val_length</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span> <span class="id">v</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span>(<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#size_chunk_nat">size_chunk_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1444')">Proof.</div>
-<div class="proofscript" id="proof1444">
+<div class="toggleproof" onclick="toggleDisplay('proof1483')">Proof.</div>
+<div class="proofscript" id="proof1483">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">v</span>; <span class="tactic">simpl</span>; <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="id">solve_encode_val_length</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="check_inj_value">check_inj_value</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">q</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#check_value">check_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_value_rec">inj_value_rec</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1445')">Proof.</div>
-<div class="proofscript" id="proof1445">
+<div class="toggleproof" onclick="toggleDisplay('proof1484')">Proof.</div>
+<div class="proofscript" id="proof1484">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.lib.Coqlib.html#proj_sumbool">proj_sumbool</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Coqlib.html#dec_eq_true">dec_eq_true</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.EqNat.html#beq_nat_refl">beq_nat_refl</a></span>. <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -466,16 +467,16 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="proj_inj_value">proj_inj_value</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">q</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1446')">Proof.</div>
-<div class="proofscript" id="proof1446">
+<div class="toggleproof" onclick="toggleDisplay('proof1485')">Proof.</div>
+<div class="proofscript" id="proof1485">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span>, <span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#size_quantity_nat_pos">size_quantity_nat_pos</a></span> <span class="id">q</span>) <span class="kwd">as</span> [<span class="id">n</span> <span class="id">EQ</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">EQ</span> <span class="tactic">at</span> 1. <span class="tactic">simpl</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#check_inj_value">check_inj_value</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="in_inj_value">in_inj_value</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mv</span> <span class="id">v</span> <span class="id">q</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.Memdata.html#mv">mv</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>) -&gt; <span class="id">exists</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#mv">mv</a></span> = <span class="id"><a href="compcert.common.Memdata.html#Fragment">Fragment</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1447')">Proof.</div>
-<div class="proofscript" id="proof1447">
+<div class="toggleproof" onclick="toggleDisplay('proof1486')">Proof.</div>
+<div class="proofscript" id="proof1486">
 <span class="kwd">Local</span> <span class="id">Transparent</span> <span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span>; <span class="tactic">intros</span> <span class="id">until</span> <span class="id">q</span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.common.Memdata.html#size_quantity_nat">size_quantity_nat</a></span> <span class="id">q</span>). <span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">contradiction</span>.<br/>
@@ -484,8 +485,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="proj_inj_value_mismatch">proj_inj_value_mismatch</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">q1</span> <span class="id">q2</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memdata.html#q1">q1</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Memdata.html#q2">q2</a></span> -&gt; <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q1">q1</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q2">q2</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>) = <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1448')">Proof.</div>
-<div class="proofscript" id="proof1448">
+<div class="toggleproof" onclick="toggleDisplay('proof1487')">Proof.</div>
+<div class="proofscript" id="proof1487">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span>. <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id">q2</span> <span class="id">v</span>) <span class="id">eqn</span>:<span class="id">V</span>. <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">m</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#in_inj_value">in_inj_value</a></span> (<span class="id"><a href="compcert.common.Memdata.html#Fragment">Fragment</a></span> <span class="id">v0</span> <span class="id">q</span> <span class="id">n</span>) <span class="id">v</span> <span class="id">q2</span>) <span class="kwd">as</span> [<span class="id">n</span>' <span class="id">EQ</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">V</span>; <span class="tactic">auto</span> <span class="kwd">with</span> <span class="id">coqlib</span>. <span class="id">inv</span> <span class="id">EQ</span>.<br/>
@@ -535,15 +536,15 @@ Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="decode_val_undef">decode_val_undef</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bl</span> <span class="id">chunk</span>, <span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> (<span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span> :: <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>) = <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1449')">Proof.</div>
-<div class="proofscript" id="proof1449">
+<div class="toggleproof" onclick="toggleDisplay('proof1488')">Proof.</div>
+<div class="proofscript" id="proof1488">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span>. <span class="tactic">simpl</span>. <span class="tactic">destruct</span> <span class="id">chunk</span>, <span class="id"><a href="compcert.x86_64.Archi.html#ptr64">Archi.ptr64</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Remark</span> <span class="id"><a name="proj_bytes_inj_value">proj_bytes_inj_value</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">q</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1450')">Proof.</div>
-<div class="proofscript" id="proof1450">
+<div class="toggleproof" onclick="toggleDisplay('proof1489')">Proof.</div>
+<div class="proofscript" id="proof1489">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">q</span>; <span class="tactic">reflexivity</span>.<br/>
 Qed.</div>
 <br/>
@@ -566,8 +567,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_encode_val_general">decode_encode_val_general</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span> <span class="id">chunk1</span> <span class="id">chunk2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#decode_encode_val">decode_encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk1">chunk1</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk1">chunk1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1451')">Proof.</div>
-<div class="proofscript" id="proof1451">
+<div class="toggleproof" onclick="toggleDisplay('proof1490')">Proof.</div>
+<div class="proofscript" id="proof1490">
 <span class="id">Opaque</span> <span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">v</span>; <span class="tactic">destruct</span> <span class="id">chunk1</span> <span class="id">eqn</span>:<span class="id">C1</span>; <span class="tactic">try</span> (<span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#decode_val_undef">decode_val_undef</a></span>);<br/>
@@ -583,8 +584,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk1">chunk1</a></span> = <span class="id"><a href="compcert.common.Memdata.html#size_chunk">size_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#decode_encode_val">decode_encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk1">chunk1</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> = <span class="id"><a href="compcert.common.Values.html#Val.load_result">Val.load_result</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk2">chunk2</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1452')">Proof.</div>
-<div class="proofscript" id="proof1452">
+<div class="toggleproof" onclick="toggleDisplay('proof1491')">Proof.</div>
+<div class="proofscript" id="proof1491">
 &nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">until</span> <span class="id">v2</span>; <span class="tactic">intros</span> <span class="id">TY</span> <span class="id">SZ</span> <span class="id">DE</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">chunk1</span>; <span class="tactic">destruct</span> <span class="id">chunk2</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">TY</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">SZ</span>; <span class="tactic">try</span> <span class="id">omegaContradiction</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">v1</span>; <span class="tactic">auto</span>.<br/>
@@ -593,8 +594,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_val_type">decode_val_type</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">chunk</span> <span class="id">cl</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.has_type">Val.has_type</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#cl">cl</a></span>) (<span class="id"><a href="compcert.common.AST.html#type_of_chunk">type_of_chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1453')">Proof.</div>
-<div class="proofscript" id="proof1453">
+<div class="toggleproof" onclick="toggleDisplay('proof1492')">Proof.</div>
+<div class="proofscript" id="proof1492">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">cl</span>).<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
@@ -605,44 +606,44 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_int8_signed_unsigned">encode_val_int8_signed_unsigned</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint8signed">Mint8signed</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> = <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint8unsigned">Mint8unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1454')">Proof.</div>
-<div class="proofscript" id="proof1454">
+<div class="toggleproof" onclick="toggleDisplay('proof1493')">Proof.</div>
+<div class="proofscript" id="proof1493">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">v</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_int16_signed_unsigned">encode_val_int16_signed_unsigned</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint16signed">Mint16signed</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> = <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint16unsigned">Mint16unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1455')">Proof.</div>
-<div class="proofscript" id="proof1455">
+<div class="toggleproof" onclick="toggleDisplay('proof1494')">Proof.</div>
+<div class="proofscript" id="proof1494">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">destruct</span> <span class="id">v</span>; <span class="tactic">simpl</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_int8_zero_ext">encode_val_int8_zero_ext</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint8unsigned">Mint8unsigned</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext">Int.zero_ext</a></span> 8 <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>)) = <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint8unsigned">Mint8unsigned</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1456')">Proof.</div>
-<div class="proofscript" id="proof1456">
+<div class="toggleproof" onclick="toggleDisplay('proof1495')">Proof.</div>
+<div class="proofscript" id="proof1495">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span>. <span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int_8_mod">encode_int_8_mod</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eqmod_zero_ext">Int.eqmod_zero_ext</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">compute</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_int8_sign_ext">encode_val_int8_sign_ext</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint8signed">Mint8signed</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.sign_ext">Int.sign_ext</a></span> 8 <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>)) = <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint8signed">Mint8signed</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1457')">Proof.</div>
-<div class="proofscript" id="proof1457">
+<div class="toggleproof" onclick="toggleDisplay('proof1496')">Proof.</div>
+<div class="proofscript" id="proof1496">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span>. <span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int_8_mod">encode_int_8_mod</a></span>. <span class="tactic">apply</span> <span class="id">Int.eqmod_sign_ext</span>'. <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_int16_zero_ext">encode_val_int16_zero_ext</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint16unsigned">Mint16unsigned</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext">Int.zero_ext</a></span> 16 <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>)) = <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint16unsigned">Mint16unsigned</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1458')">Proof.</div>
-<div class="proofscript" id="proof1458">
+<div class="toggleproof" onclick="toggleDisplay('proof1497')">Proof.</div>
+<div class="proofscript" id="proof1497">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span>. <span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int_16_mod">encode_int_16_mod</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.lib.Integers.html#Int.eqmod_zero_ext">Int.eqmod_zero_ext</a></span>. <span class="tactic">compute</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_int16_sign_ext">encode_val_int16_sign_ext</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint16signed">Mint16signed</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int.sign_ext">Int.sign_ext</a></span> 16 <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>)) = <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint16signed">Mint16signed</a></span> (<span class="id"><a href="compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1459')">Proof.</div>
-<div class="proofscript" id="proof1459">
+<div class="toggleproof" onclick="toggleDisplay('proof1498')">Proof.</div>
+<div class="proofscript" id="proof1498">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span>. <span class="id">decEq</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#encode_int_16_mod">encode_int_16_mod</a></span>. <span class="tactic">apply</span> <span class="id">Int.eqmod_sign_ext</span>'. <span class="tactic">compute</span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -656,8 +657,8 @@ Qed.</div>
 &nbsp;&nbsp;| <span class="id"><a href="compcert.common.AST.html#Mint16unsigned">Mint16unsigned</a></span> =&gt; <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> = <span class="id"><a href="compcert.common.Values.html#Val.zero_ext">Val.zero_ext</a></span> 16 <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span><br/>
 &nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1460')">Proof.</div>
-<div class="proofscript" id="proof1460">
+<div class="toggleproof" onclick="toggleDisplay('proof1499')">Proof.</div>
+<div class="proofscript" id="proof1499">
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span>; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">chunk</span>; <span class="tactic">auto</span>; <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">l</span>); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.sign_ext">Val.sign_ext</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.sign_ext_idem">Int.sign_ext_idem</a></span>; <span class="tactic">auto</span>. <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.zero_ext">Val.zero_ext</a></span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int.zero_ext_idem">Int.zero_ext_idem</a></span>; <span class="tactic">auto</span>. <span class="tactic">omega</span>.<br/>
@@ -689,8 +690,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#shape_encoding">shape_encoding</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> (<span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span> :: <span class="id"><a href="compcert.common.Memdata.html#mvl">mvl</a></span>).<br/>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="encode_val_shape">encode_val_shape</a></span>: <span class="kwd">forall</span> <span class="id">chunk</span> <span class="id">v</span>, <span class="id"><a href="compcert.common.Memdata.html#shape_encoding">shape_encoding</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> (<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1461')">Proof.</div>
-<div class="proofscript" id="proof1461">
+<div class="toggleproof" onclick="toggleDisplay('proof1500')">Proof.</div>
+<div class="proofscript" id="proof1500">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#size_chunk_nat_pos">size_chunk_nat_pos</a></span> <span class="id">chunk</span>) <span class="kwd">as</span> [<span class="id">sz</span> <span class="id">EQ</span>].<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">A</span>: <span class="kwd">forall</span> <span class="id">mv</span> <span class="id">q</span> <span class="id">n</span>,<br/>
@@ -748,8 +749,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="decode_val_shape">decode_val_shape</a></span>: <span class="kwd">forall</span> <span class="id">chunk</span> <span class="id">mv1</span> <span class="id">mvl</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#shape_decoding">shape_decoding</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> (<span class="id"><a href="compcert.common.Memdata.html#mv1">mv1</a></span> :: <span class="id"><a href="compcert.common.Memdata.html#mvl">mvl</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> (<span class="id"><a href="compcert.common.Memdata.html#mv1">mv1</a></span> :: <span class="id"><a href="compcert.common.Memdata.html#mvl">mvl</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1462')">Proof.</div>
-<div class="proofscript" id="proof1462">
+<div class="toggleproof" onclick="toggleDisplay('proof1501')">Proof.</div>
+<div class="proofscript" id="proof1501">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">A</span>: <span class="kwd">forall</span> <span class="id">mv</span> <span class="id">mvs</span> <span class="id">bs</span>, <span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#mvs">mvs</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memdata.html#bs">bs</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.Memdata.html#mv">mv</a></span> <span class="id"><a href="compcert.common.Memdata.html#mvs">mvs</a></span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exists</span> <span class="id">b</span>, <span class="id"><a href="compcert.common.Memdata.html#mv">mv</a></span> = <span class="id"><a href="compcert.common.Memdata.html#Byte">Byte</a></span> <span class="id"><a href="compcert.common.Memdata.html#b">b</a></span>).<br/>
@@ -812,8 +813,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="memval_inject_incr">memval_inject_incr</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">f</span>' <span class="id">v1</span> <span class="id">v2</span>, <span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> -&gt; <span class="id"><a href="compcert.common.Values.html#inject_incr">inject_incr</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id">f</span>' -&gt; <span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1463')">Proof.</div>
-<div class="proofscript" id="proof1463">
+<div class="toggleproof" onclick="toggleDisplay('proof1502')">Proof.</div>
+<div class="proofscript" id="proof1502">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>; <span class="id">econstructor</span>. <span class="tactic">eapply</span> <span class="id"><a href="compcert.common.Values.html#val_inject_incr">val_inject_incr</a></span>; <span class="tactic">eauto</span>.<br/>
 Qed.</div>
 <br/>
@@ -826,8 +827,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bl</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">vl</span>' = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1464')">Proof.</div>
-<div class="proofscript" id="proof1464">
+<div class="toggleproof" onclick="toggleDisplay('proof1503')">Proof.</div>
+<div class="proofscript" id="proof1503">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>. <span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="tactic">try</span> <span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">al</span>); <span class="tactic">intros</span>.<br/>
@@ -842,8 +843,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#check_value">check_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id">v</span>' -&gt; <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> &lt;&gt; <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#check_value">check_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id">v</span>' <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id">vl</span>' = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1465')">Proof.</div>
-<div class="proofscript" id="proof1465">
+<div class="toggleproof" onclick="toggleDisplay('proof1504')">Proof.</div>
+<div class="proofscript" id="proof1504">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span>; <span class="tactic">destruct</span> <span class="id">n</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> *; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="id">InvBooleans</span>. <span class="tactic">assert</span> (<span class="id">n</span> = <span class="id">n0</span>) <span class="tactic">by</span> (<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Arith.EqNat.html#beq_nat_true">beq_nat_true</a></span>; <span class="tactic">auto</span>). <span class="tactic">subst</span> <span class="id">v1</span> <span class="id">q0</span> <span class="id">n0</span>.<br/>
@@ -857,8 +858,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">q</span> <span class="id">vl1</span> <span class="id">vl2</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) <span class="id"><a href="compcert.common.Memdata.html#vl1">vl1</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl2">vl2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> (<span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl1">vl1</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl2">vl2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1466')">Proof.</div>
-<div class="proofscript" id="proof1466">
+<div class="toggleproof" onclick="toggleDisplay('proof1505')">Proof.</div>
+<div class="proofscript" id="proof1505">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">H</span>; <span class="tactic">subst</span>. <span class="tactic">auto</span>. <span class="tactic">inversion</span> <span class="id">H0</span>; <span class="tactic">subst</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#check_value">check_value</a></span> (<span class="id"><a href="compcert.common.Memdata.html#size_quantity_nat">size_quantity_nat</a></span> <span class="id">q</span>) <span class="id">v1</span> <span class="id">q</span> (<span class="id"><a href="compcert.common.Memdata.html#Fragment">Fragment</a></span> <span class="id">v1</span> <span class="id">q0</span> <span class="id">n</span> :: <span class="id">al</span>)) <span class="id">eqn</span>:<span class="id">B</span>; <span class="tactic">auto</span>.<br/>
@@ -870,8 +871,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">vl</span> <span class="id">vl</span>',<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> <span class="id">vl</span>' -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt; <span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">vl</span>' &lt;&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1467')">Proof.</div>
-<div class="proofscript" id="proof1467">
+<div class="toggleproof" onclick="toggleDisplay('proof1506')">Proof.</div>
+<div class="proofscript" id="proof1506">
 &nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">congruence</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="tactic">try</span> <span class="tactic">congruence</span>.<br/>
@@ -884,8 +885,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="check_value_undef">check_value_undef</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">q</span> <span class="id">v</span> <span class="id">vl</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> -&gt; <span class="id"><a href="compcert.common.Memdata.html#check_value">check_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1468')">Proof.</div>
-<div class="proofscript" id="proof1468">
+<div class="toggleproof" onclick="toggleDisplay('proof1507')">Proof.</div>
+<div class="proofscript" id="proof1507">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">intros</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">vl</span>. <span class="tactic">elim</span> <span class="id">H</span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">vl</span>. <span class="tactic">auto</span>.<br/>
@@ -895,8 +896,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="proj_value_undef">proj_value_undef</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">q</span> <span class="id">vl</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> -&gt; <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span> = <span class="id"><a href="compcert.common.Values.html#Vundef">Vundef</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1469')">Proof.</div>
-<div class="proofscript" id="proof1469">
+<div class="toggleproof" onclick="toggleDisplay('proof1508')">Proof.</div>
+<div class="proofscript" id="proof1508">
 &nbsp;&nbsp;<span class="tactic">intros</span>; <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#proj_value">proj_value</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">vl</span>; <span class="tactic">auto</span>. <span class="tactic">destruct</span> <span class="id">m</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#check_value_undef">check_value_undef</a></span>. <span class="tactic">auto</span>. <span class="tactic">auto</span>.<br/>
@@ -906,8 +907,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">vl1</span> <span class="id">vl2</span> <span class="id">chunk</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) <span class="id"><a href="compcert.common.Memdata.html#vl1">vl1</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl2">vl2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl1">vl1</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl2">vl2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1470')">Proof.</div>
-<div class="proofscript" id="proof1470">
+<div class="toggleproof" onclick="toggleDisplay('proof1509')">Proof.</div>
+<div class="proofscript" id="proof1509">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">vl1</span>) <span class="kwd">as</span> [<span class="id">bl1</span>|] <span class="id">eqn</span>:<span class="id">PB1</span>.<br/>
 &nbsp;&nbsp;<span class="id">exploit</span> <span class="id"><a href="compcert.common.Memdata.html#proj_bytes_inject">proj_bytes_inject</a></span>; <span class="tactic">eauto</span>. <span class="tactic">intros</span> <span class="id">PB2</span>. <span class="tactic">rewrite</span> <span class="id">PB2</span>.<br/>
@@ -931,39 +932,39 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_bytes_inject">inj_bytes_inject</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">bl</span>, <span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#inj_bytes">inj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#inj_bytes">inj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#bl">bl</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1471')">Proof.</div>
-<div class="proofscript" id="proof1471">
+<div class="toggleproof" onclick="toggleDisplay('proof1510')">Proof.</div>
+<div class="proofscript" id="proof1510">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">bl</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="repeat_Undef_inject_any">repeat_Undef_inject_any</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">vl</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) (<span class="id"><a href="compcert.lib.Coqlib.html#list_repeat">list_repeat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span>) <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span>) <span class="id"><a href="compcert.common.Memdata.html#vl">vl</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1472')">Proof.</div>
-<div class="proofscript" id="proof1472">
+<div class="toggleproof" onclick="toggleDisplay('proof1511')">Proof.</div>
+<div class="proofscript" id="proof1511">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">vl</span>; <span class="tactic">simpl</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="repeat_Undef_inject_encode_val">repeat_Undef_inject_encode_val</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">chunk</span> <span class="id">v</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) (<span class="id"><a href="compcert.lib.Coqlib.html#list_repeat">list_repeat</a></span> (<span class="id"><a href="compcert.common.Memdata.html#size_chunk_nat">size_chunk_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span>) <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1473')">Proof.</div>
-<div class="proofscript" id="proof1473">
+<div class="toggleproof" onclick="toggleDisplay('proof1512')">Proof.</div>
+<div class="proofscript" id="proof1512">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">rewrite</span> &lt;- (<span class="id"><a href="compcert.common.Memdata.html#encode_val_length">encode_val_length</a></span> <span class="id">chunk</span> <span class="id">v</span>). <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Memdata.html#repeat_Undef_inject_any">repeat_Undef_inject_any</a></span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="repeat_Undef_inject_self">repeat_Undef_inject_self</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">n</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) (<span class="id"><a href="compcert.lib.Coqlib.html#list_repeat">list_repeat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span>) (<span class="id"><a href="compcert.lib.Coqlib.html#list_repeat">list_repeat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n">n</a></span> <span class="id"><a href="compcert.common.Memdata.html#Undef">Undef</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1474')">Proof.</div>
-<div class="proofscript" id="proof1474">
+<div class="toggleproof" onclick="toggleDisplay('proof1513')">Proof.</div>
+<div class="proofscript" id="proof1513">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>. <span class="id">constructor</span>.<br/>
 Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="inj_value_inject">inj_value_inject</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">v1</span> <span class="id">v2</span> <span class="id">q</span>, <span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> -&gt; <span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span> <span class="id"><a href="compcert.common.Memdata.html#q">q</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1475')">Proof.</div>
-<div class="proofscript" id="proof1475">
+<div class="toggleproof" onclick="toggleDisplay('proof1514')">Proof.</div>
+<div class="proofscript" id="proof1514">
 &nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
 <span class="kwd">Local</span> <span class="id">Transparent</span> <span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#inj_value">inj_value</a></span>. <span class="tactic">generalize</span> (<span class="id"><a href="compcert.common.Memdata.html#size_quantity_nat">size_quantity_nat</a></span> <span class="id">q</span>). <span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">simpl</span>; <span class="id">constructor</span>; <span class="tactic">auto</span>.<br/>
@@ -974,8 +975,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">v1</span> <span class="id">v2</span> <span class="id">chunk</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Values.html#Val.inject">Val.inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.lib.Coqlib.html#list_forall2">list_forall2</a></span> (<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.Memdata.html#chunk">chunk</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1476')">Proof.</div>
-<div class="proofscript" id="proof1476">
+<div class="toggleproof" onclick="toggleDisplay('proof1515')">Proof.</div>
+<div class="proofscript" id="proof1515">
 <span class="kwd">Local</span> <span class="id">Opaque</span> <span class="id"><a href="compcert.lib.Coqlib.html#list_repeat">list_repeat</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">inversion</span> <span class="id">H</span>; <span class="tactic">subst</span>; <span class="tactic">simpl</span>; <span class="tactic">destruct</span> <span class="id">chunk</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">auto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.common.Memdata.html#inj_bytes_inject">inj_bytes_inject</a></span>, <span class="id"><a href="compcert.common.Memdata.html#inj_value_inject">inj_value_inject</a></span>, <span class="id"><a href="compcert.common.Memdata.html#repeat_Undef_inject_self">repeat_Undef_inject_self</a></span>, <span class="id"><a href="compcert.common.Memdata.html#repeat_Undef_inject_encode_val">repeat_Undef_inject_encode_val</a></span>.<br/>
@@ -989,8 +990,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="memval_lessdef_refl">memval_lessdef_refl</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">mv</span>, <span class="id"><a href="compcert.common.Memdata.html#memval_lessdef">memval_lessdef</a></span> <span class="id"><a href="compcert.common.Memdata.html#mv">mv</a></span> <span class="id"><a href="compcert.common.Memdata.html#mv">mv</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1477')">Proof.</div>
-<div class="proofscript" id="proof1477">
+<div class="toggleproof" onclick="toggleDisplay('proof1516')">Proof.</div>
+<div class="proofscript" id="proof1516">
 &nbsp;&nbsp;<span class="tactic">red</span>. <span class="tactic">destruct</span> <span class="id">mv</span>; <span class="id">econstructor</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.common.Values.html#val_inject_id">val_inject_id</a></span>. <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
@@ -1000,8 +1001,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">f</span> <span class="id">f</span>' <span class="id">v1</span> <span class="id">v2</span> <span class="id">v3</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> -&gt; <span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> <span class="id">f</span>' <span class="id"><a href="compcert.common.Memdata.html#v2">v2</a></span> <span class="id"><a href="compcert.common.Memdata.html#v3">v3</a></span> -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#memval_inject">memval_inject</a></span> (<span class="id"><a href="compcert.common.Values.html#compose_meminj">compose_meminj</a></span> <span class="id"><a href="compcert.common.Memdata.html#f">f</a></span> <span class="id">f</span>') <span class="id"><a href="compcert.common.Memdata.html#v1">v1</a></span> <span class="id"><a href="compcert.common.Memdata.html#v3">v3</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1478')">Proof.</div>
-<div class="proofscript" id="proof1478">
+<div class="toggleproof" onclick="toggleDisplay('proof1517')">Proof.</div>
+<div class="proofscript" id="proof1517">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="id">inv</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H0</span>. <span class="id">constructor</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H0</span>. <span class="id">econstructor</span>.<br/>
@@ -1014,8 +1015,8 @@ Qed.</div>
 <span class="kwd">Lemma</span> <span class="id"><a name="int_of_bytes_append">int_of_bytes_append</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l2</span> <span class="id">l1</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#int_of_bytes">int_of_bytes</a></span> (<span class="id"><a href="compcert.common.Memdata.html#l1">l1</a></span> ++ <span class="id"><a href="compcert.common.Memdata.html#l2">l2</a></span>) = <span class="id"><a href="compcert.common.Memdata.html#int_of_bytes">int_of_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#l1">l1</a></span> + <span class="id"><a href="compcert.common.Memdata.html#int_of_bytes">int_of_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#l2">l2</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#l1">l1</a></span>) * 8).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1479')">Proof.</div>
-<div class="proofscript" id="proof1479">
+<div class="toggleproof" onclick="toggleDisplay('proof1518')">Proof.</div>
+<div class="proofscript" id="proof1518">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l1</span>; <span class="tactic">simpl</span> <span class="id">int_of_bytes</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">ring</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="id">length</span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.inj_succ">Nat2Z.inj_succ</a></span>.<br/>
@@ -1026,8 +1027,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="int_of_bytes_range">int_of_bytes_range</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span>, 0 &lt;= <span class="id"><a href="compcert.common.Memdata.html#int_of_bytes">int_of_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span>) * 8).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1480')">Proof.</div>
-<div class="proofscript" id="proof1480">
+<div class="toggleproof" onclick="toggleDisplay('proof1519')">Proof.</div>
+<div class="proofscript" id="proof1519">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span>. <span class="tactic">omega</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">simpl</span> <span class="id">length</span>. <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.inj_succ">Nat2Z.inj_succ</a></span>.<br/>
@@ -1040,8 +1041,8 @@ Qed.</div>
 <br/>
 <span class="kwd">Lemma</span> <span class="id"><a name="length_proj_bytes">length_proj_bytes</a></span>:<br/>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">b</span>, <span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.Memdata.html#b">b</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#b">b</a></span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">length</a></span> <span class="id"><a href="compcert.common.Memdata.html#l">l</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1481')">Proof.</div>
-<div class="proofscript" id="proof1481">
+<div class="toggleproof" onclick="toggleDisplay('proof1520')">Proof.</div>
+<div class="proofscript" id="proof1520">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id">inv</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
@@ -1056,8 +1057,8 @@ Qed.</div>
 &nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">b1</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">b2</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">b1</span> ++ <span class="id">b2</span>)<br/>
 &nbsp;&nbsp;| <span class="id">_</span>, <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span><br/>
 &nbsp;&nbsp;<span class="kwd">end</span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1482')">Proof.</div>
-<div class="proofscript" id="proof1482">
+<div class="toggleproof" onclick="toggleDisplay('proof1521')">Proof.</div>
+<div class="proofscript" id="proof1521">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l1</span>; <span class="tactic">simpl</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">l2</span>); <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">auto</span>. <span class="tactic">rewrite</span> <span class="id">IHl1</span>.<br/>
@@ -1071,8 +1072,8 @@ Qed.</div>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint64">Mint64</a></span> (<span class="id"><a href="compcert.common.Memdata.html#l1">l1</a></span> ++ <span class="id"><a href="compcert.common.Memdata.html#l2">l2</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Values.html#Val.longofwords">Val.longofwords</a></span> (<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint32">Mint32</a></span> (<span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.common.Memdata.html#l1">l1</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.common.Memdata.html#l2">l2</a></span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint32">Mint32</a></span> (<span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.common.Memdata.html#l2">l2</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.common.Memdata.html#l1">l1</a></span>))).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1483')">Proof.</div>
-<div class="proofscript" id="proof1483">
+<div class="toggleproof" onclick="toggleDisplay('proof1522')">Proof.</div>
+<div class="proofscript" id="proof1522">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#decode_val">decode_val</a></span>. <span class="tactic">rewrite</span> <span class="id">H1</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="compcert.common.Memdata.html#proj_bytes_append">proj_bytes_append</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">l1</span>) <span class="kwd">as</span> [<span class="id">b1</span>|] <span class="id">eqn</span>:<span class="id">B1</span>; <span class="tactic">destruct</span> (<span class="id"><a href="compcert.common.Memdata.html#proj_bytes">proj_bytes</a></span> <span class="id">l2</span>) <span class="kwd">as</span> [<span class="id">b2</span>|] <span class="id">eqn</span>:<span class="id">B2</span>; <span class="tactic">auto</span>.<br/>
@@ -1102,8 +1103,8 @@ Qed.</div>
 &nbsp;&nbsp;0 &lt;= <span class="id"><a href="compcert.common.Memdata.html#x1">x1</a></span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n1">n1</a></span> * 8) -&gt;<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> (<span class="id"><a href="compcert.common.Memdata.html#n1">n1</a></span> + <span class="id"><a href="compcert.common.Memdata.html#n2">n2</a></span>) (<span class="id"><a href="compcert.common.Memdata.html#x1">x1</a></span> + <span class="id"><a href="compcert.common.Memdata.html#x2">x2</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id"><a href="compcert.common.Memdata.html#n1">n1</a></span> * 8)) =<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n1">n1</a></span> <span class="id"><a href="compcert.common.Memdata.html#x1">x1</a></span> ++ <span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> <span class="id"><a href="compcert.common.Memdata.html#n2">n2</a></span> <span class="id"><a href="compcert.common.Memdata.html#x2">x2</a></span>.<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1484')">Proof.</div>
-<div class="proofscript" id="proof1484">
+<div class="toggleproof" onclick="toggleDisplay('proof1523')">Proof.</div>
+<div class="proofscript" id="proof1523">
 &nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n1</span>; <span class="tactic">intros</span>.<br/>
 - <span class="tactic">simpl</span> <span class="kwd">in</span> *. <span class="tactic">f_equal</span>. <span class="tactic">omega</span>.<br/>
 - <span class="tactic">assert</span> (<span class="id">E</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id">n1</span>) * 8) = <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Zpower.html#two_p">two_p</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">n1</span> * 8) * 256).<br/>
@@ -1123,8 +1124,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">i</span>,<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> 8 (<span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned">Int64.unsigned</a></span> <span class="id"><a href="compcert.common.Memdata.html#i">i</a></span>) =<br/>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> 4 (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.loword">Int64.loword</a></span> <span class="id"><a href="compcert.common.Memdata.html#i">i</a></span>)) ++ <span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> 4 (<span class="id"><a href="compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.hiword">Int64.hiword</a></span> <span class="id"><a href="compcert.common.Memdata.html#i">i</a></span>)).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1485')">Proof.</div>
-<div class="proofscript" id="proof1485">
+<div class="toggleproof" onclick="toggleDisplay('proof1524')">Proof.</div>
+<div class="proofscript" id="proof1524">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">transitivity</span> (<span class="id"><a href="compcert.common.Memdata.html#bytes_of_int">bytes_of_int</a></span> (4 + 4) (<span class="id"><a href="compcert.lib.Integers.html#Int64.unsigned">Int64.unsigned</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.ofwords">Int64.ofwords</a></span> (<span class="id"><a href="compcert.lib.Integers.html#Int64.hiword">Int64.hiword</a></span> <span class="id">i</span>) (<span class="id"><a href="compcert.lib.Integers.html#Int64.loword">Int64.loword</a></span> <span class="id">i</span>)))).<br/>
 &nbsp;&nbsp;<span class="tactic">f_equal</span>. <span class="tactic">f_equal</span>. <span class="tactic">rewrite</span> <span class="id"><a href="compcert.lib.Integers.html#Int64.ofwords_recompose">Int64.ofwords_recompose</a></span>. <span class="tactic">auto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Int64.ofwords_add</span>'.<br/>
@@ -1138,8 +1139,8 @@ Qed.</div>
 &nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint64">Mint64</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> =<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint32">Mint32</a></span> (<span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.common.Values.html#Val.hiword">Val.hiword</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.common.Values.html#Val.loword">Val.loword</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>)<br/>
 &nbsp;&nbsp;++ <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span> <span class="id"><a href="compcert.common.AST.html#Mint32">Mint32</a></span> (<span class="kwd">if</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span> <span class="kwd">then</span> <span class="id"><a href="compcert.common.Values.html#Val.loword">Val.loword</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span> <span class="kwd">else</span> <span class="id"><a href="compcert.common.Values.html#Val.hiword">Val.hiword</a></span> <span class="id"><a href="compcert.common.Memdata.html#v">v</a></span>).<br/>
-<div class="toggleproof" onclick="toggleDisplay('proof1486')">Proof.</div>
-<div class="proofscript" id="proof1486">
+<div class="toggleproof" onclick="toggleDisplay('proof1525')">Proof.</div>
+<div class="proofscript" id="proof1525">
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span>. <span class="tactic">rewrite</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">v</span>; <span class="tactic">destruct</span> <span class="id"><a href="compcert.x86_64.Archi.html#big_endian">Archi.big_endian</a></span> <span class="id">eqn</span>:<span class="id">BI</span>; <span class="tactic">try</span> <span class="tactic">reflexivity</span>;<br/>
 &nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="compcert.common.Values.html#Val.loword">Val.loword</a></span>, <span class="id"><a href="compcert.common.Values.html#Val.hiword">Val.hiword</a></span>, <span class="id"><a href="compcert.common.Memdata.html#encode_val">encode_val</a></span>.<br/>

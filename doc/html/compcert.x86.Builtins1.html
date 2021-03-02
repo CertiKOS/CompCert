@@ -1,0 +1,60 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module Builtins1</title>
+<meta name="description" content="Documentation of Coq module Builtins1" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module Builtins1</h1>
+<div class="coq">
+<br/>
+<div class="doc">Platform-specific built-in functions </div>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Strings.String.html">String</a></span> <span class="id"><a href="compcert.lib.Coqlib.html">Coqlib</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.AST.html">AST</a></span> <span class="id"><a href="compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="compcert.lib.Floats.html">Floats</a></span> <span class="id"><a href="compcert.common.Values.html">Values</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="compcert.common.Builtins0.html">Builtins0</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="platform_builtin">platform_builtin</a></span> : <span class="kwd">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="BI_fmin">BI_fmin</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="BI_fmax">BI_fmax</a></span>.<br/>
+<br/>
+<span class="kwd">Local</span> <span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">string_scope</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="platform_builtin_table">platform_builtin_table</a></span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Strings.String.html#string">string</a></span> * <span class="id"><a href="compcert.x86.Builtins1.html#platform_builtin">platform_builtin</a></span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;("<span class="id">__builtin_fmin</span>", <span class="id"><a href="compcert.x86.Builtins1.html#BI_fmin">BI_fmin</a></span>)<br/>
+&nbsp;&nbsp;:: ("<span class="id">__builtin_fmax</span>", <span class="id"><a href="compcert.x86.Builtins1.html#BI_fmax">BI_fmax</a></span>)<br/>
+&nbsp;&nbsp;:: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="platform_builtin_sig">platform_builtin_sig</a></span> (<span class="id">b</span>: <span class="id"><a href="compcert.x86.Builtins1.html#platform_builtin">platform_builtin</a></span>) : <span class="id"><a href="compcert.common.AST.html#signature">signature</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.x86.Builtins1.html#b">b</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Builtins1.html#BI_fmin">BI_fmin</a></span> | <span class="id"><a href="compcert.x86.Builtins1.html#BI_fmax">BI_fmax</a></span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.AST.html#mksignature">mksignature</a></span> (<span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span> :: <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span> :: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span>) <span class="id"><a href="compcert.common.AST.html#cc_default">cc_default</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="platform_builtin_sem">platform_builtin_sem</a></span> (<span class="id">b</span>: <span class="id"><a href="compcert.x86.Builtins1.html#platform_builtin">platform_builtin</a></span>) : <span class="id"><a href="compcert.common.Builtins0.html#builtin_sem">builtin_sem</a></span> (<span class="id"><a href="compcert.common.AST.html#proj_sig_res">proj_sig_res</a></span> (<span class="id"><a href="compcert.x86.Builtins1.html#platform_builtin_sig">platform_builtin_sig</a></span> <span class="id"><a href="compcert.x86.Builtins1.html#b">b</a></span>)) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="compcert.x86.Builtins1.html#b">b</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Builtins1.html#BI_fmin">BI_fmin</a></span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Builtins0.html#mkbuiltin_n2t">mkbuiltin_n2t</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">f1</span> <span class="id">f2</span> =&gt; <span class="kwd">match</span> <span class="id"><a href="compcert.lib.Floats.html#Float.compare">Float.compare</a></span> <span class="id"><a href="compcert.x86.Builtins1.html#f1">f1</a></span> <span class="id"><a href="compcert.x86.Builtins1.html#f2">f2</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span> | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Lt">Lt</a></span> =&gt; <span class="id"><a href="compcert.x86.Builtins1.html#f1">f1</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Gt">Gt</a></span> | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="compcert.x86.Builtins1.html#f2">f2</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="compcert.x86.Builtins1.html#BI_fmax">BI_fmax</a></span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="compcert.common.Builtins0.html#mkbuiltin_n2t">mkbuiltin_n2t</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span> <span class="id"><a href="compcert.common.AST.html#Tfloat">Tfloat</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="kwd">fun</span> <span class="id">f1</span> <span class="id">f2</span> =&gt; <span class="kwd">match</span> <span class="id"><a href="compcert.lib.Floats.html#Float.compare">Float.compare</a></span> <span class="id"><a href="compcert.x86.Builtins1.html#f1">f1</a></span> <span class="id"><a href="compcert.x86.Builtins1.html#f2">f2</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Eq">Eq</a></span> | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Gt">Gt</a></span> =&gt; <span class="id"><a href="compcert.x86.Builtins1.html#f1">f1</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Lt">Lt</a></span> | <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="compcert.x86.Builtins1.html#f2">f2</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>)<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>
