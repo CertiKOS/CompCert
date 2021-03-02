@@ -293,6 +293,47 @@ Next Obligation.
   rauto.
 Qed.
 
+(** mi_acc_separated *)
+Next Obligation.
+  rename w1 into w2'.
+  rename w0 into w1'.
+  rename w into w1.
+  intros b1 b2 delta Hw Hw'.
+
+  destruct H as (m & Hm1 & Hm2).
+  destruct H0 as [HR1 HR2].
+  cbn in *.
+
+  specialize (mi_acc_separated R1 _ _ _ _ Hm1 HR1) as sep1.
+  specialize (mi_acc_separated R2 _ _ _ _ Hm2 HR2) as sep2.
+  unfold inject_separated in sep1, sep2.
+  unfold compose_meminj in Hw, Hw'.
+  destruct (mi R1 w1' b1) as [[b11' delta11'] |] eqn:HR1w1'; [|discriminate].
+  destruct (mi R2 w2' b11') as [[b22' delta22'] |] eqn:HR2w2'; [|discriminate].
+  injection Hw'. clear Hw'. intros; subst delta b22'.
+  destruct (mi R1 w1 b1) as [[b11 delta11] |] eqn:HR1w1.
+  - destruct (mi R2 w2 b11) as [[b22 delta22] |] eqn:HR2w2.
+    discriminate.
+    assert (HR1w1'_alt: mi R1 w1' b1 = Some (b11, delta11)).
+    { eapply mi_acc; eauto. }
+    rewrite HR1w1' in HR1w1'_alt. inv HR1w1'_alt.
+    destruct (sep2 _ _ _ HR2w2 HR2w2') as [Hnvb11 Hnvb2].
+    split; [|assumption].
+    contradict Hnvb11.
+    eapply (cklr_valid_block _ _ _ _ Hm1); eauto.
+    eexists. eauto.
+  - destruct (sep1 _ _ _ HR1w1 HR1w1') as [Hnvb1 Hnvb11'].
+    split. auto.
+    destruct (mi R2 w2 b11') as [[b22 delta22] |] eqn:HR2w2.
+    + contradict Hnvb11'.
+      assert (HR2w2'_alt: mi R2 w2' b11' = Some (b22, delta22)).
+      { eapply mi_acc; eauto. }
+      rewrite HR2w2' in HR2w2'_alt. inv HR2w2'_alt.
+      eapply cklr_valid_block; eauto.
+      eexists. eauto.
+    + eapply sep2; eauto.
+Qed.
+
 Next Obligation.
   intros [w12 w23] [w12' w23'] [H12 H23]. cbn.
   eapply rel_compose_subrel; rauto.
@@ -493,6 +534,23 @@ Next Obligation. (* disjoint_or_equal_inject *)
   - eapply (cklr_disjoint_or_equal_inject R1); eauto.
 Qed.
 
+Next Obligation. (* perm inv *)
+  simpl in *.
+  destruct H as (mi & Hm1i & Hmi2).
+  apply ptr_inject_compose in H0 as ([bi ofsi] & Hp1i & Hpi2).
+  edestruct (cklr_perm_inv R2); eauto.
+  - eapply (cklr_perm_inv R1); eauto.
+  - right. intros Hm1. apply H. revert Hm1. rauto.
+Qed.
+
+Next Obligation. (* nextblock incr*)
+  destruct H as (mI & Hm1I & Hm2I).
+  destruct H0 as ([w' w0'] & Hw' & mI' & Hm1I' & Hm2I').
+  cbn [fst snd] in *. unfold Ple in *.
+  inv Hw'; cbn in *.
+  etransitivity; eapply cklr_nextblock_incr; eauto; eexists; split; eauto.
+Qed.
+  
 Bind Scope cklr_scope with cklr.
 Delimit Scope cklr_scope with cklr.
 Infix "@" := cklr_compose (at level 30, right associativity) : cklr_scope.

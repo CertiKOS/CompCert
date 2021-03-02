@@ -2,6 +2,7 @@ Require Import Maps.
 Require Import Valuesrel.
 Require Import Globalenvs.
 Require Import CKLR.
+Require Import Builtinsrel.
 Require Export Events.
 
 
@@ -229,7 +230,7 @@ Proof.
       * pose proof Hsb1 as Hrp1.
         eapply Mem.storebytes_range_perm in Hrp1.
         erewrite Mem.loadbytes_length in Hrp1 by eauto.
-        rewrite nat_of_Z_eq in Hrp1 by xomega.
+        rewrite Z2Nat.id in Hrp1 by xomega.
         intros ofs Hofs.
         eapply Mem.perm_storebytes_1; eauto.
         eapply Mem.perm_implies; eauto.
@@ -237,7 +238,7 @@ Proof.
       * eapply Mem.perm_storebytes_1; eauto.
         eapply Mem.storebytes_range_perm; eauto.
         erewrite Mem.loadbytes_length; eauto.
-        rewrite nat_of_Z_eq by xomega.
+        rewrite Z2Nat.id by xomega.
         xomega.
     + assert (sz > 0 \/ sz = 0) as [Hsz | Hsz] by xomega.
       * rewrite Hw' in H8. inv H8.
@@ -257,12 +258,12 @@ Proof.
            eapply Mem.perm_implies; eauto.
            eapply Hsb1; eauto.
            erewrite Mem.loadbytes_length; eauto.
-           rewrite nat_of_Z_eq by xomega; eauto.
+           rewrite Z2Nat.id by xomega; eauto.
            constructor.
         -- eapply Mem.perm_storebytes_1; eauto.
            eapply Mem.storebytes_range_perm; eauto.
            erewrite Mem.loadbytes_length; eauto.
-           rewrite nat_of_Z_eq by xomega; eauto.
+           rewrite Z2Nat.id by xomega; eauto.
            xomega.
         -- eapply Mem.perm_storebytes_1; eauto.
            eapply Mem.loadbytes_range_perm; eauto.
@@ -307,6 +308,20 @@ Proof.
   - rauto.
 Qed.
 
+Require Import OptionRel.
+
+Global Instance known_builtin_sem_rel R:
+  Monotonic (@known_builtin_sem) (- ==> extcall_sem_rel R).
+Proof.
+  intros b w ge1 ge2 Hge vargs1 vargs2 Hvargs m1 m2 Hm t [vres1 m1'] H.
+  destruct H as [vargs1 vres1 m1 H].
+  pose proof (builtin_function_sem_rel R b) as Hbs. red in Hbs.
+  transport H.
+  eexists (_, _). simpl. split.
+  - econstructor; eauto.
+  - rauto.
+Qed.
+
 Axiom external_functions_sem_rel:
   forall R, Monotonic (@external_functions_sem) (- ==> - ==> extcall_sem_rel R).
 
@@ -315,6 +330,14 @@ Axiom inline_assembly_sem_rel:
 
 Global Existing Instance external_functions_sem_rel.
 Global Existing Instance inline_assembly_sem_rel.
+
+Global Instance builtin_or_external_sem_rel R:
+  Monotonic (@builtin_or_external_sem) (- ==> - ==> extcall_sem_rel R).
+Proof.
+  unfold builtin_or_external_sem.
+  intros name sg.
+  destruct Builtins.lookup_builtin_function; rauto.
+Qed.
 
 Global Instance external_call_rel R:
   Monotonic
@@ -334,7 +357,7 @@ Proof.
       edestruct (Genv.mge_info Hse _ H); subst; reflexivity.
   }
   destruct ef; simpl; try rauto.
-  repeat intro. destruct a0. contradiction.
+  - repeat intro. destruct a0. contradiction.
 Qed.
 
 Hint Extern 1 (Transport _ _ _ _ _) =>

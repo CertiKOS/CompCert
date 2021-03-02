@@ -132,6 +132,78 @@ Proof.
   simpl in *. InvBooleans. destruct H0. split; auto. eapply has_subtype; eauto.
 Qed.
 
+Definition has_type_dec (v: val) (t: typ) : { has_type v t } + { ~ has_type v t }.
+Proof.
+  unfold has_type; destruct v.
+- auto.
+- destruct t; auto.
+- destruct t; auto.
+- destruct t; auto.
+- destruct t; auto.
+- destruct t. 
+  apply bool_dec.
+  auto.
+  apply bool_dec.
+  auto.
+  apply bool_dec.
+  auto.
+Defined.
+
+(** Ensuring values have certain types *)
+
+Definition ensure_type (v: val) (t: typ) : val :=
+  match v, t with
+  | Vundef, _ => v
+  | Vint _, Tint => v
+  | Vlong _, Tlong => v
+  | Vfloat _, Tfloat => v
+  | Vsingle _, Tsingle => v
+  | Vptr _ _, Tint => if Archi.ptr64 then Vundef else v
+  | Vptr _ _, Tlong => if Archi.ptr64 then v else Vundef
+  | (Vint _ | Vsingle _), Tany32 => v
+  | Vptr _ _, Tany32 => if Archi.ptr64 then Vundef else v
+  | _, Tany64 => v
+  | _, _ => Vundef
+  end.
+
+Inductive ensure_type_list : list val -> list val -> list typ -> Prop :=
+  | ensure_type_nil :
+      ensure_type_list nil nil nil
+  | ensure_type_cons v t vl_ vl tl :
+      ensure_type_list vl_ vl tl ->
+      ensure_type_list (Val.ensure_type v t :: vl_) (v :: vl) (t :: tl).
+
+(** Properties *)
+
+Lemma ensure_has_type (v: val) (t: typ) :
+  Val.has_type (ensure_type v t) t.
+Proof.
+  destruct v, t; cbn; destruct Archi.ptr64 eqn:H64; cbn; auto.
+Qed.
+
+Lemma has_type_ensure (v: val) (t: typ) :
+  Val.has_type v t -> Val.ensure_type v t = v.
+Proof.
+  intros H.
+  destruct v, t; cbn in *; destruct Archi.ptr64; cbn in *; firstorder.
+Qed.
+
+Lemma ensure_has_type_list (vl_ vl: list val) (tl: list typ) :
+  ensure_type_list vl_ vl tl ->
+  Val.has_type_list vl_ tl.
+Proof.
+  induction 1; cbn; auto using ensure_has_type.
+Qed.
+
+Lemma has_type_list_ensure (vl: list val) (tl: list typ) :
+  Val.has_type_list vl tl -> ensure_type_list vl vl tl.
+Proof.
+  revert vl. induction tl; cbn; destruct vl; cbn; firstorder auto.
+  - constructor.
+  - rewrite <- (has_type_ensure v a) at 1; auto.
+    constructor; auto.
+Qed.
+
 (** Truth values.  Non-zero integers are treated as [True].
   The integer 0 (also used to represent the null pointer) is [False].
   Other values are neither true nor false. *)
@@ -766,6 +838,18 @@ Definition rolml (v: val) (amount: int) (mask: int64): val :=
   | _ => Vundef
   end.
 
+Definition zero_ext_l (nbits: Z) (v: val) : val :=
+  match v with
+  | Vlong n => Vlong(Int64.zero_ext nbits n)
+  | _ => Vundef
+  end.
+
+Definition sign_ext_l (nbits: Z) (v: val) : val :=
+  match v with
+  | Vlong n => Vlong(Int64.sign_ext nbits n)
+  | _ => Vundef
+  end.
+
 (** Comparisons *)
 
 Section COMPARISONS.
@@ -896,6 +980,55 @@ Definition offset_ptr (v: val) (delta: ptrofs) : val :=
   match v with
   | Vptr b ofs => Vptr b (Ptrofs.add ofs delta)
   | _ => Vundef
+  end.
+
+(** Normalize a value to the given type, turning it into Vundef if it does not
+    match the type. *)
+
+Definition normalize (v: val) (ty: typ) : val :=
+  match v, ty with
+  | Vundef, _ => Vundef
+  | Vint _, Tint => v
+  | Vlong _, Tlong => v
+  | Vfloat _, Tfloat => v
+  | Vsingle _, Tsingle => v
+  | Vptr _ _, (Tint | Tany32) => if Archi.ptr64 then Vundef else v
+  | Vptr _ _, Tlong => if Archi.ptr64 then v else Vundef
+  | (Vint _ | Vsingle _), Tany32 => v
+  | _, Tany64 => v
+  | _, _ => Vundef
+  end.
+
+Lemma normalize_type:
+  forall v ty, has_type (normalize v ty) ty.
+Proof.
+  intros; destruct v; simpl.
+- auto.
+- destruct ty; exact I.
+- destruct ty; exact I.
+- destruct ty; exact I.
+- destruct ty; exact I.
+- unfold has_type; destruct ty, Archi.ptr64; auto.
+Qed.
+
+Lemma normalize_idem:
+  forall v ty, has_type v ty -> normalize v ty = v.
+Proof.
+  unfold has_type, normalize; intros. destruct v.
+- auto.
+- destruct ty; intuition auto.
+- destruct ty; intuition auto.
+- destruct ty; intuition auto.
+- destruct ty; intuition auto.
+- destruct ty, Archi.ptr64; intuition congruence.
+Qed.
+
+(** Select between two values based on the result of a comparison. *)
+
+Definition select (cmp: option bool) (v1 v2: val) (ty: typ) :=
+  match cmp with
+  | Some b => normalize (if b then v1 else v2) ty
+  | None => Vundef
   end.
 
 (** [load_result] reflects the effect of storing a value with a given
@@ -1832,10 +1965,18 @@ Qed.
 
 Lemma zero_ext_and:
   forall n v,
-  0 < n < Int.zwordsize ->
+  0 <= n ->
   Val.zero_ext n v = Val.and v (Vint (Int.repr (two_p n - 1))).
 Proof.
-  intros. destruct v; simpl; auto. decEq. apply Int.zero_ext_and; auto. omega.
+  intros. destruct v; simpl; auto. decEq. apply Int.zero_ext_and; auto.
+Qed.
+
+Lemma zero_ext_andl:
+  forall n v,
+  0 <= n ->
+  Val.zero_ext_l n v = Val.andl v (Vlong (Int64.repr (two_p n - 1))).
+Proof.
+  intros. destruct v; simpl; auto. decEq. apply Int64.zero_ext_and; auto.
 Qed.
 
 Lemma rolm_lt_zero:
@@ -1883,7 +2024,7 @@ Inductive lessdef_list: list val -> list val -> Prop :=
       lessdef v1 v2 -> lessdef_list vl1 vl2 ->
       lessdef_list (v1 :: vl1) (v2 :: vl2).
 
-Hint Resolve lessdef_refl lessdef_undef lessdef_list_nil lessdef_list_cons.
+Hint Resolve lessdef_refl lessdef_undef lessdef_list_nil lessdef_list_cons : core.
 
 Lemma lessdef_list_inv:
   forall vl1 vl2, lessdef_list vl1 vl2 -> vl1 = vl2 \/ In Vundef vl1.
@@ -2044,6 +2185,59 @@ Proof.
   intros. destruct v; simpl; auto. f_equal. apply Ptrofs.add_assoc.
 Qed.
 
+Lemma lessdef_normalize:
+  forall v ty, lessdef (normalize v ty) v.
+Proof.
+  intros. destruct v; simpl.
+  - auto.
+  - destruct ty; auto.
+  - destruct ty; auto.
+  - destruct ty; auto.
+  - destruct ty; auto.
+  - destruct ty, Archi.ptr64; auto.
+Qed.
+
+Lemma normalize_lessdef:
+  forall v v' ty, lessdef v v' -> lessdef (normalize v ty) (normalize v' ty).
+Proof.
+  intros. inv H; auto.
+Qed.
+
+Lemma select_lessdef:
+  forall ob ob' v1 v1' v2 v2' ty,
+  ob = None \/ ob = ob' ->
+  lessdef v1 v1' -> lessdef v2 v2' ->
+  lessdef (select ob v1 v2 ty) (select ob' v1' v2' ty).
+Proof.
+  intros; unfold select. destruct H.
+- subst ob; auto.
+- subst ob'; destruct ob as [b|]; auto.
+  apply normalize_lessdef. destruct b; auto.
+Qed.
+
+Lemma ensure_type_lessdef:
+  forall v v' t, lessdef v v' -> lessdef (ensure_type v t) (ensure_type v' t).
+Proof.
+  destruct 1; auto.
+Qed.
+
+Lemma ensure_type_list_lessdef tl vs1_ vs1 vs2:
+  ensure_type_list vs1_ vs1 tl ->
+  Val.lessdef_list vs1 vs2 ->
+  exists vs2_,
+    Val.lessdef_list vs1_ vs2_ /\
+    ensure_type_list vs2_ vs2 tl.
+Proof.
+  intros H. revert vs2.
+  induction H; intros vs2 Hvs; inv Hvs.
+  - eauto using ensure_type_nil.
+  - edestruct IHensure_type_list as (vs2_ & Hvs_ & Hvs2_); eauto.
+    eexists (Val.ensure_type v2 t :: vs2_). split.
+    + constructor; auto.
+      apply Val.ensure_type_lessdef; auto.
+    + constructor; auto.
+Qed.
+
 (** * Values and memory injections *)
 
 (** A memory injection [f] is a function from addresses to either [None]
@@ -2078,7 +2272,7 @@ Inductive inject (mi: meminj): val -> val -> Prop :=
   | val_inject_undef: forall v,
       inject mi Vundef v.
 
-Hint Constructors inject.
+Hint Constructors inject : core.
 
 Inductive inject_list (mi: meminj): list val -> list val-> Prop:=
   | inject_list_nil :
@@ -2087,7 +2281,7 @@ Inductive inject_list (mi: meminj): list val -> list val-> Prop:=
       inject mi v v' -> inject_list mi vl vl'->
       inject_list mi (v :: vl) (v' :: vl').
 
-Hint Resolve inject_list_nil inject_list_cons.
+Hint Resolve inject_list_nil inject_list_cons : core.
 
 Lemma inject_ptrofs:
   forall mi i, inject mi (Vptrofs i) (Vptrofs i).
@@ -2095,7 +2289,7 @@ Proof.
   unfold Vptrofs; intros. destruct Archi.ptr64; auto.
 Qed.
 
-Hint Resolve inject_ptrofs.
+Hint Resolve inject_ptrofs : core.
 
 Section VAL_INJ_OPS.
 
@@ -2328,7 +2522,72 @@ Proof.
   intros. unfold Val.hiword; inv H; auto.
 Qed.
 
+Lemma normalize_inject:
+  forall v v' ty, inject f v v' -> inject f (normalize v ty) (normalize v' ty).
+Proof.
+  intros. inv H.
+- destruct ty; constructor.
+- destruct ty; constructor.
+- destruct ty; constructor.
+- destruct ty; constructor.
+- simpl. destruct ty.
++ destruct Archi.ptr64; econstructor; eauto.
++ auto.
++ destruct Archi.ptr64; econstructor; eauto.
++ auto.
++ destruct Archi.ptr64; econstructor; eauto.
++ econstructor; eauto.
+- constructor.
+Qed.
+
+Lemma select_inject:
+  forall ob ob' v1 v1' v2 v2' ty,
+  ob = None \/ ob = ob' ->
+  inject f v1 v1' -> inject f v2 v2' ->
+  inject f (select ob v1 v2 ty) (select ob' v1' v2' ty).
+Proof.
+  intros; unfold select. destruct H.
+- subst ob; auto.
+- subst ob'; destruct ob as [b|]; auto.
+  apply normalize_inject. destruct b; auto.
+Qed.
+
 End VAL_INJ_OPS.
+
+Lemma ensure_type_inject:
+  forall f v v' t, inject f v v' -> inject f (ensure_type v t) (ensure_type v' t).
+Proof.
+  destruct 1, t; cbn; econstructor; eauto.
+Qed.
+
+Lemma ensure_type_list_inject tl f vs1_ vs1 vs2:
+  ensure_type_list vs1_ vs1 tl ->
+  Val.inject_list f vs1 vs2 ->
+  exists vs2_,
+    Val.inject_list f vs1_ vs2_ /\
+    ensure_type_list vs2_ vs2 tl.
+Proof.
+  intros H. revert vs2.
+  induction H; intros vs2 Hvs; inv Hvs.
+  - eauto using ensure_type_nil.
+  - edestruct IHensure_type_list as (vs2_ & Hvs_ & Hvs2_); eauto.
+    exists (Val.ensure_type v' t :: vs2_). split.
+    + constructor; auto.
+      apply Val.ensure_type_inject; auto.
+    + constructor; auto.
+Qed.
+
+Lemma inject_ensure_type_l:
+  forall f v v' t, inject f v v' -> inject f (ensure_type v t) v'.
+Proof.
+  destruct 1, t; econstructor; eauto.
+Qed.
+
+Lemma inject_ensure_type_r:
+  forall f v v' t, inject f v (ensure_type v' t) -> inject f v v'.
+Proof.
+  intros. destruct t, v'; inv H; econstructor; eauto.
+Qed.
 
 End Val.
 
@@ -2368,7 +2627,7 @@ Proof.
   constructor. eapply val_inject_incr; eauto. auto.
 Qed.
 
-Hint Resolve inject_incr_refl val_inject_incr val_inject_list_incr.
+Hint Resolve inject_incr_refl val_inject_incr val_inject_list_incr : core.
 
 Lemma val_inject_lessdef:
   forall v1 v2, Val.lessdef v1 v2 <-> Val.inject (fun b => Some(b, 0)) v1 v2.

@@ -111,6 +111,50 @@ Proof.
     exists i', s2'. split; auto. exists wB; eauto.
 Qed.
 
+Global Instance open_bsim_ccref:
+  Monotonic
+    (@backward_simulation)
+    (forallr - @ liA1, forallr - @ liA2, ccref ++>
+     forallr - @ liB1, forallr - @ liB2, ccref -->
+     subrel).
+Proof.
+  intros liA1 liA2 ccA ccA' HA liB1 liB2 ccB ccB' HB sem1 sem2 [FS].
+  destruct FS as [index order match_states SKEL PROP WF].
+  constructor.
+  set (ms se1 se2 w' idx s1 s2 :=
+         exists w : ccworld ccB,
+           match_states se1 se2 w idx s1 s2 /\
+           match_senv ccB w se1 se2 /\
+           forall r1 r2, match_reply ccB w r1 r2 -> match_reply ccB' w' r1 r2).
+  eapply Backward_simulation with order ms; auto.
+  intros se1 se2 wB' Hse' Hse1.
+  split.
+  - intros q1 q2 Hq'.
+    destruct (HB wB' se1 se2 q1 q2) as (wB & Hse & Hq & Hr); auto.
+    eapply bsim_match_valid_query; eauto.
+  - intros q1 q2 Hq'.
+    destruct (HB wB' se1 se2 q1 q2) as (wB & Hse & Hq & Hr); auto.
+    edestruct @bsim_match_initial_states as [EXIST MATCH]; eauto.
+    split; auto.
+    intros. edestruct MATCH as (s1' & Hs1' & i & Hs); eauto. 
+    exists s1'. split; auto. exists i, wB; auto.
+  - intros i s1 s2 r1 (wB & Hs & Hse & Hr') SAFE Hr1.
+    edestruct @bsim_match_final_states as (s2' & r2 & Hs2' & Hr2 & Hr); eauto 10.
+  - intros i s1 s2 qA1 (wB & Hs & Hse & Hr') SAFE HqA1.
+    edestruct @bsim_match_external as (wA & s1' & qA2 & Hs1' & HqA2 & HqA & HseA & ?); eauto.
+    edestruct HA as (wA' & HseA' & HqA' & Hr); eauto.
+    exists wA', s1', qA2. intuition auto.
+    edestruct H as [EXIST MATCH]; eauto. split; auto.
+    intros. edestruct MATCH as (s1'' & Hs1'' & j & Hs''); eauto.
+    exists s1''. split; auto.
+    exists j. red. eauto 10.
+  - intros i s1 s2 (wB & Hs & Hse & Hr') SAFE.
+    eapply bsim_progress; eauto.
+  - intros s2 t s2' Hs2' i s1 (wB & Hs & Hse & Hr') SAFE.
+    edestruct @bsim_simulation as (i' & s1' & Hs1' & Hs'); eauto.
+    exists i', s1'. split; auto. exists wB; eauto.
+Qed.
+
 (** * Properties of [cc_compose] *)
 
 (** Language interfaces and calling conventions form a category, with
@@ -205,7 +249,7 @@ Global Instance cc_compose_ref_params:
   [cc1]-simulation and a [cc2]-simulation. *)
 
 Section JOIN.
-  Context {li: language_interface}.
+  Context {li1 li2: language_interface}.
 
   (** *** Definition *)
 
@@ -215,7 +259,7 @@ Section JOIN.
       | inr b => g b
     end.
 
-  Program Definition cc_join (cc1 cc2: callconv li li): callconv li li :=
+  Program Definition cc_join (cc1 cc2: callconv li1 li2): callconv li1 li2 :=
     {|
       ccworld := ccworld cc1 + ccworld cc2;
       match_senv := copair (match_senv cc1) (match_senv cc2);
@@ -326,7 +370,7 @@ Section JOIN.
   Hint Constructors cc_join_ms.
   Hint Constructors Relation_Operators.le_AsB.
 
-  Lemma cc_join_fsim (ccA: callconv li li) ccB1 ccB2 L1 L2:
+  Lemma cc_join_fsim {liA1 liA2} (ccA: callconv liA1 liA2) ccB1 ccB2 L1 L2:
     forward_simulation ccA ccB1 L1 L2 ->
     forward_simulation ccA ccB2 L1 L2 ->
     forward_simulation ccA (cc_join ccB1 ccB2) L1 L2.
@@ -352,7 +396,40 @@ Section JOIN.
   Qed.
 End JOIN.
 
+(** Distributivity *)
+
+Lemma cc_join_distr_l {li1 li2 li3} (ccA ccB: callconv li1 li2) (cc: callconv li2 li3):
+  cceqv (cc_join ccA ccB @ cc) (cc_join (ccA @ cc) (ccB @ cc)).
+Proof.
+  split.
+  - intros [[se [w1 | w2]] w].
+    + exists (inl (se, w1, w)). cbn in *. intuition eauto.
+    + exists (inr (se, w2, w)). cbn in *. intuition eauto.
+  - intros [[[se w1] w] | [[se w2] w]].
+    + exists (se, inl w1, w). cbn in *. intuition eauto.
+    + exists (se, inr w2, w). cbn in *. intuition eauto.
+Qed.
+
+Lemma cc_join_distr_r {li1 li2 li3} (cc: callconv li1 li2) (ccA ccB: callconv li2 li3):
+  cceqv (cc @ cc_join ccA ccB) (cc_join (cc @ ccA) (cc @ ccB)).
+Proof.
+  split.
+  - intros [[se w] [w1 | w2]].
+    + exists (inl (se, w, w1)). cbn in *. intuition eauto.
+    + exists (inr (se, w, w2)). cbn in *. intuition eauto.
+  - intros [[[se w] w1] | [[se w] w2]].
+    + exists (se, w, inl w1). cbn in *. intuition eauto.
+    + exists (se, w, inr w2). cbn in *. intuition eauto.
+Qed.
+
 Infix "+" := cc_join : cc_scope.
+
+(** The following hint database can be useful to prove refinements
+  involving joins. *)
+
+Create HintDb cc.
+Hint Resolve cc_join_ub_l cc_join_ub_r cc_join_l cc_join_r : cc.
+Hint Resolve (reflexivity (R := ccref)) : cc.
 
 (** ** Superposition *)
 
@@ -521,6 +598,26 @@ Section STAR.
       edestruct Hri3 as (ri2 & ? & ?); cbn in *; eauto.
   Qed.
 
+  Lemma cc_star_ind_r {li'} (x: callconv li' li):
+    ccref (x @ cc) x ->
+    ccref (x @ cc_star) x.
+  Proof.
+    intros H [[se2 w] [n ws]] se1 se3 q1 q3 [Hse12 Hse23] (q2 & Hq12 & Hq23).
+    revert x w se2 q2 H Hse12 Hse23 Hq12 Hq23.
+    induction n; intros.
+    - cbn in *. subst. exists w. intuition eauto.
+    - destruct ws as [[sei w2i] ws]. cbn in *.
+      destruct Hse23 as (Hse2i & Hsei3).
+      destruct Hq23 as (qi & Hq2i & Hqi3).
+      edestruct (IHn ws (x @ cc)%cc (se2, w, w2i))
+        as (w' & Hse' & Hq' & Hr');
+        cbn; eauto; try rauto.
+      edestruct (H w') as (w'' & Hse'' & Hq'' & Hr''); eauto.
+      exists w''. repeat apply conj; auto.
+      intros r1 r3 Hr13''.
+      edestruct Hr' as (ri & (r2 & Hr12 & Hr2i) & Hri3); eauto.
+  Qed.
+
   Lemma cc_star_idemp:
     cceqv (cc_star @ cc_star) cc_star.
   Proof.
@@ -545,12 +642,34 @@ Proof.
   induction n; simpl cc_pow; rauto.
 Qed.
 
-Global Instance cc_star_ref li:
-  Proper (ccref ++> ccref) (@cc_star li).
+Global Instance cc_star_ref:
+  Monotonic (@cc_star) (forallr -, ccref ++> ccref).
 Proof.
-  intros cc cc' Hcc [n ws] se1 se2 q1 q2 Hse Hq.
+  intros li cc cc' Hcc [n ws] se1 se2 q1 q2 Hse Hq.
   destruct (cc_pow_ref li cc cc' Hcc n ws se1 se2 q1 q2 Hse Hq) as (ws' & Hq' & Hse' & H).
   exists (existT _ n ws'); simpl. eauto.
+Qed.
+
+(** *** Additional lemmas *)
+
+Lemma cc_star_absorb_l {liA liB} x y (z : callconv liA liB) :
+  ccref x y ->
+  ccref (x @ y^{*} @ z) (y^{*} @ z).
+Proof.
+  intros Hxy.
+  rewrite (cc_one_star x), Hxy.
+  rewrite <- cc_compose_assoc, cc_star_idemp.
+  reflexivity.
+Qed.
+
+Lemma cc_star_absorb_r {liA liB} x y (z : callconv liA liB) :
+  ccref x y ->
+  ccref (y^{*} @ x @ z) (y^{*} @ z).
+Proof.
+  intros Hxy.
+  rewrite (cc_one_star x), Hxy.
+  rewrite <- cc_compose_assoc, cc_star_idemp.
+  reflexivity.
 Qed.
 
 (** *** Proving simulations *)

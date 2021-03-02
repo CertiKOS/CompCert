@@ -16,7 +16,7 @@ Require Import FunInd.
 Require Import Coqlib Maps Errors Integers Floats Lattice Kildall.
 Require Import AST Linking.
 Require Import Values Memory Globalenvs Events Smallstep.
-Require Import LanguageInterface Invariant.
+Require Import LanguageInterface Invariant cklr.Extends.
 Require Import Registers Op RTL.
 Require Import ValueDomain ValueAnalysis NeedDomain NeedOp Deadcode.
 
@@ -107,7 +107,7 @@ Local Transparent Mem.loadbytes.
   unfold Mem.loadbytes; intros. destruct H.
   destruct (Mem.range_perm_dec m1 b ofs (ofs + n) Cur Readable); inv H0.
   rewrite pred_dec_true. econstructor; split; eauto.
-  apply GETN. intros. rewrite nat_of_Z_max in H.
+  apply GETN. intros. rewrite Z_to_nat_max in H.
   assert (ofs <= i < ofs + n) by xomega.
   apply ma_memval0; auto.
   red; intros; eauto.
@@ -945,7 +945,7 @@ Ltac UseTransfer :=
   intros. eapply nlive_remove; eauto.
   unfold adst, vanalyze; rewrite AN; eapply aaddr_arg_sound_1; eauto.
   erewrite Mem.loadbytes_length in H1 by eauto.
-  rewrite nat_of_Z_eq in H1 by omega. auto.
+  rewrite Z2Nat.id in H1 by omega. auto.
   eauto.
   intros (tm' & A & B).
   econstructor; split.
@@ -970,7 +970,7 @@ Ltac UseTransfer :=
   intros (bc & A & B & C).
   intros. eapply nlive_contains; eauto.
   erewrite Mem.loadbytes_length in H0 by eauto.
-  rewrite nat_of_Z_eq in H0 by omega. auto.
+  rewrite Z2Nat.id in H0 by omega. auto.
 + (* annot *)
   destruct (transfer_builtin_args (kill_builtin_res res ne, nm) _x2) as (ne1, nm1) eqn:TR.
   InvSoundState.
@@ -1079,10 +1079,10 @@ Ltac UseTransfer :=
 Qed.
 
 Lemma transf_initial_states:
-  forall q1 q2 st1, cc_ext_query q1 q2 -> initial_state ge q1 st1 ->
+  forall w q1 q2 st1, match_query (cc_c ext) w q1 q2 -> initial_state ge q1 st1 ->
   exists st2, initial_state tge q2 st2 /\ match_states st1 st2.
 Proof.
-  intros. destruct H. inv H0.
+  intros. destruct H. inv H0. CKLR.uncklr. destruct H as [vf|]; try congruence.
   exploit functions_translated; eauto. intros (tf & A & B).
   exists (Callstate nil vf vargs2 m2); split.
   setoid_rewrite <- (sig_function_translated _ _ _ B). monadInv B.
@@ -1091,17 +1091,18 @@ Proof.
 Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r1, match_states st1 st2 -> final_state st1 r1 ->
-  exists r2, final_state st2 r2 /\ cc_ext_reply r1 r2.
+  forall w st1 st2 r1, match_states st1 st2 -> final_state st1 r1 ->
+  exists r2, final_state st2 r2 /\ match_reply (cc_c ext) w r1 r2.
 Proof.
   intros. inv H0. inv H. inv STACKS.
-  eexists. split; constructor; auto.
+  eexists. split. constructor; auto.
+  exists tt; split; constructor; CKLR.uncklr; auto.
 Qed.
 
 Lemma transf_external_states:
   forall st1 st2 q1, match_states st1 st2 -> at_external ge st1 q1 ->
-  exists q2, at_external tge st2 q2 /\ cc_ext_query q1 q2 /\ se = se /\
-  forall r1 r2 st1', cc_ext_reply r1 r2 -> after_external st1 r1 st1' ->
+  exists q2, at_external tge st2 q2 /\ match_query (cc_c ext) tt q1 q2 /\ se = se /\
+  forall r1 r2 st1', match_reply (cc_c ext) tt r1 r2 -> after_external st1 r1 st1' ->
   exists st2', after_external st2 r2 st2' /\ match_states st1' st2'.
 Proof.
   intros st1 st2 q1 Hst Hq1. destruct Hq1. inv Hst.
@@ -1109,10 +1110,10 @@ Proof.
   eexists. intuition idtac.
   - monadInv TFD. econstructor; eauto.
   - destruct VF; try discriminate.
-    constructor; auto.
+    constructor; CKLR.uncklr; auto.
     destruct v; cbn in *; congruence.
-  - inv H1. inv H0.
-    exists (Returnstate ts vres2 m2); split; constructor; eauto.
+  - inv H1. destruct H0 as ([ ] & _ & H0). inv H0. CKLR.uncklr.
+    exists (Returnstate ts vres2 m2'); split; constructor; eauto.
 Qed.
 
 End PRESERVATION.
@@ -1121,21 +1122,22 @@ End PRESERVATION.
 
 Theorem transf_program_correct prog tprog:
   match_prog prog tprog ->
-  forward_simulation (vamatch @ cc_ext) (vamatch @ cc_ext) (RTL.semantics prog) (RTL.semantics tprog).
+  forward_simulation (vamatch @ cc_c ext) (vamatch @ cc_c ext) (RTL.semantics prog) (RTL.semantics tprog).
 Proof.
   intros MATCH. eapply source_invariant_fsim; eauto using rtl_vamatch. revert MATCH.
   fsim eapply forward_simulation_step with (match_states := match_states prog se1);
     cbn in *; subst.
-- destruct 1. cbn. eapply (Genv.is_internal_transf_partial_id MATCH).
+- destruct 1. cbn. CKLR.uncklr. destruct H as [vf|]; try congruence.
+  eapply (Genv.is_internal_transf_partial_id MATCH).
   intros [|] [|] TFD; monadInv TFD; auto.
-- intros q1 q2 s1 Hq (_ & _ & Hs1 & _).
+- intros q1 q2 s1 Hq (Hs1 & _).
   eapply transf_initial_states; eauto.
-- intros s1 s2 r1 Hs (_ & _ & Hr1 & _).
+- intros s1 s2 r1 Hs (Hr1 & _).
   eapply transf_final_states; eauto.
-- intros s1 s2 q1 Hs (_ & _ & _ & Hq1 & _).
+- intros s1 s2 q1 Hs (Hq1 & _).
   edestruct transf_external_states as (q2 & Hq2 & Hq & _ & Hk); eauto.
   exists tt, q2. repeat apply conj; eauto.
-  intros r1 r2 s1' Hr (_ & _ & _ & _ & _ & Hs1' & _). eauto.
-- intros s1 t s1' ([se bc0 m0] & Hse & STEP & Hs1 & Hs1') s2 Hs. subst. cbn in *.
+  intros r1 r2 s1' Hr (Hs1' & _). eauto.
+- intros s1 t s1' (STEP & [se bc0 m0] & Hse & Hs1 & Hs1') s2 Hs. subst. cbn in *.
   eapply step_simulation; eauto.
 Qed.

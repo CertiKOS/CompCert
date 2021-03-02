@@ -178,6 +178,38 @@ Next Obligation.
   intuition xomega.
 Qed.
 
+Next Obligation.
+  inv H0. inv H3. rewrite Z.add_0_r in H1.
+  eapply Mem.perm_extends_inv; eauto.
+Qed.
+
+Next Obligation.
+  destruct H0 as (?&?&?).
+  inv H. inv H1. split; congruence.
+Qed.
+
+(** * Useful lemmas *)
+
+Lemma ext_lessdef w v1 v2:
+  Val.inject (mi ext w) v1 v2 <-> Val.lessdef v1 v2.
+Proof.
+  symmetry. apply val_inject_lessdef.
+Qed.
+
+Lemma ext_lessdef_list w vs1 vs2:
+  Val.inject_list (mi ext w) vs1 vs2 <-> Val.lessdef_list vs1 vs2.
+Proof.
+  split; induction 1; constructor; auto; apply val_inject_lessdef; auto.
+Qed.
+
+Lemma ext_extends w m1 m2:
+  match_mem ext w m1 m2 <-> Mem.extends m1 m2.
+Proof.
+  reflexivity.
+Qed.
+
+Hint Rewrite ext_lessdef ext_lessdef_list ext_extends : cklr.
+
 
 (** * Composition theorems *)
 
@@ -231,9 +263,10 @@ Proof.
   - intros [[ ] f] se1 se3 m1 m3 (se2 & Hse12 & Hse23) (m2 & Hm12 & Hm23).
     exists f. cbn in *. repeat apply conj; eauto.
     + congruence.
-    + destruct Hm23. constructor; eauto.
-      * eapply Mem.extends_inject_compose; eauto.
-      * erewrite Mem.mext_next; eauto.
+    + destruct Hm23.
+      erewrite <- Mem.mext_next; eauto.
+      constructor; eauto.
+      eapply Mem.extends_inject_compose; eauto.
     + rewrite compose_meminj_id_left. apply inject_incr_refl.
     + intros f' m1' m3' Hm' Hincr.
       exists (tt, f'). intuition auto; cbn.
@@ -247,9 +280,10 @@ Proof.
     + rewrite compose_meminj_id_left. apply inject_incr_refl.
     + intros [[ ] f'] m1' m2' (mi & Hm1i & Hmi2) [_ Hf']. cbn in *.
       exists f'. intuition auto.
-      * destruct Hmi2; constructor; auto.
+      * destruct Hmi2.
+        erewrite <- Mem.mext_next; eauto.
+        constructor; auto.
         eapply Mem.extends_inject_compose; eauto.
-        erewrite Mem.mext_next; eauto.
       * rewrite compose_meminj_id_left. apply inject_incr_refl.
 Qed.
 
@@ -260,9 +294,10 @@ Proof.
   - intros [f [ ]] se1 se3 m1 m3 (se2 & Hse12 & Hse23) (m2 & Hm12 & Hm23).
     exists f. cbn in *. repeat apply conj; eauto.
     + congruence.
-    + destruct Hm12; constructor; eauto.
+    + destruct Hm12.
+      erewrite (Mem.mext_next m2 m3); eauto.
+      constructor; eauto.
       eapply Mem.inject_extends_compose; eauto.
-      erewrite <- Mem.mext_next; eauto.
     + rewrite compose_meminj_id_right. apply inject_incr_refl.
     + intros f' m1' m3' Hm' Hincr.
       exists (f', tt). intuition auto; cbn.
@@ -276,34 +311,9 @@ Proof.
     + rewrite compose_meminj_id_right. apply inject_incr_refl.
     + intros [f' [ ]] m1' m2' (mi & Hm1i & Hmi2) [Hf' _]. cbn in *.
       exists f'. intuition auto.
-      * destruct Hm1i; constructor; auto.
+      * destruct Hm1i.
+        erewrite (Mem.mext_next m3 m2'); eauto.
+        constructor; auto.
         eapply Mem.inject_extends_compose; eauto.
-        erewrite <- Mem.mext_next; eauto.
       * rewrite compose_meminj_id_right. apply inject_incr_refl.
-Qed.
-
-
-(** * Connection to [cc_ext] *)
-
-Lemma cc_c_ext:
-  cceqv (cc_c ext) cc_ext.
-Proof.
-  split.
-  - red. intros [ ] se1 se2 q1 q2 Hse Hq. cbn in *.
-    destruct Hq. cbn in *.
-    apply val_inject_id in H. assert (vf1 = vf2) by (destruct H; congruence); subst.
-    apply val_inject_list_lessdef in H0.
-    exists tt. repeat apply conj; auto.
-    + constructor; auto.
-    + intros r1 r2 Hr. destruct Hr.
-      apply val_inject_id in H3.
-      exists tt. split; repeat (constructor; eauto).
-  - red. intros [ ] se1 se2 q1 q2 Hse Hq. cbn in *.
-    destruct Hq. cbn in *.
-    apply val_inject_list_lessdef in H.
-    exists tt. repeat apply conj; auto.
-    + constructor; eauto. reflexivity.
-    + intros r1 r2 ([ ] & _ & Hr). destruct Hr. cbn in *.
-      apply val_inject_id in H2.
-      eexists; eauto.
 Qed.

@@ -1336,8 +1336,35 @@ Proof.
   eauto using ptrbits_inject_shift.
 Qed.
 
+Global Instance val_normalize_inject f:
+  Monotonic
+    (@Val.normalize)
+    (Val.inject f ++> - ==> Val.inject f).
+Proof.
+  unfold Val.normalize. rauto.
+Qed.
+
+Global Instance val_select_inject f:
+  Monotonic
+    (@Val.select)
+    (option_le eq ++> Val.inject f ++> Val.inject f ++> - ==> Val.inject f).
+Proof.
+  unfold Val.select. rauto.
+Qed.
+
 Global Instance val_load_result_inject f:
   Monotonic (@Val.load_result) (- ==> Val.inject f ++> Val.inject f).
 Proof.
   unfold Val.load_result. rauto.
+Qed.
+
+Global Instance val_negativel_inject f:
+  Monotonic Val.negativel (Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.negativel. rauto.
+Qed.
+Global Instance val_subl_overflow_inject f:
+  Monotonic Val.subl_overflow (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold Val.subl_overflow. rauto.
 Qed.

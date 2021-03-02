@@ -14,9 +14,10 @@
 
 Require Import Coqlib Maps UnionFind.
 Require Import AST Linking.
-Require Import Values Memory Events Globalenvs LanguageInterface Smallstep.
+Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Op Locations Conventions LTL.
 Require Import Tunneling.
+Require Import LanguageInterface cklr.Extends.
 
 Definition match_prog (p tp: program) :=
   match_program (fun ctx f tf => tf = tunnel_fundef f) eq p tp.
@@ -522,51 +523,64 @@ Proof.
 Qed.
 
 Lemma transf_initial_states:
-  forall q1 q2 st1, cc_locset_ext_query q1 q2 -> initial_state ge q1 st1 ->
+  forall w q1 q2 st1, match_query (cc_locset ext) w q1 q2 -> initial_state ge q1 st1 ->
   exists st2, initial_state tge q2 st2 /\ match_states st1 st2.
 Proof.
-  intros. inv H. inv H0.
-  exists (Callstate (Stackbase ls2 :: nil) vf ls2 m2); split.
+  intros [w sg] q1 q2 st1 Hq Hst1. inv Hst1. inv Hq. CKLR.uncklr.
+  specialize (initial_regs_inject _ _ _ _ H6).
+  setoid_rewrite ext_lessdef. intro.
+  destruct H4 as [vf|]; try congruence.
+  eexists (Callstate _ vf _ m2); split.
   - setoid_rewrite <- (sig_preserved (Internal f)).
-    eapply functions_translated in H7; eauto.
+    eapply functions_translated in H; eauto.
     econstructor; eauto.
   - constructor; eauto.
     repeat constructor; eauto.
 Qed.
 
 Lemma transf_final_states:
-  forall st1 st2 r1, match_states st1 st2 -> final_state st1 r1 ->
-  exists r2, final_state st2 r2 /\ cc_locset_ext_reply r1 r2.
+  forall w st1 st2 r1, match_states st1 st2 -> final_state st1 r1 ->
+  exists r2, final_state st2 r2 /\ match_reply (cc_locset ext) w r1 r2.
 Proof.
-  intros. inv H0. inv H. inv STK. inv H1.
-  exists (lr tls tm). split; constructor; auto.
+  intros [w sg] st1 st2 r1 Hst Hr1. inv Hr1. inv Hst. inv STK. inv H1.
+  exists (lr tls tm). split. constructor; auto.
+  exists tt. split; constructor; CKLR.uncklr; auto.
+  intros r Hr. CKLR.uncklr; auto.
 Qed.
 
 Lemma transf_external_states:
   forall st1 st2 q1, match_states st1 st2 -> at_external ge st1 q1 ->
-  exists q2, at_external tge st2 q2 /\ cc_locset_ext_query q1 q2 /\ se = se /\
-  forall r1 r2 st1', cc_locset_ext_reply r1 r2 -> after_external st1 r1 st1' ->
-  exists st2', after_external st2 r2 st2' /\ match_states st1' st2'.
+  exists w q2, at_external tge st2 q2 /\ match_query (cc_locset ext) w q1 q2 /\ se = se /\
+  forall r1 r2 st1', match_reply (cc_locset ext) w r1 r2 -> after_external ge st1 r1 st1' ->
+  exists st2', after_external tge st2 r2 st2' /\ match_states st1' st2'.
 Proof.
   intros. inv H0. inv H.
   exploit functions_translated; eauto. cbn. intros TFIND.
-  eexists (lq tvf sg tls tm); intuition idtac.
+  exists (sg, tt), (lq tvf sg tls tm); intuition idtac.
   - econstructor; eauto.
-  - destruct LF; try discriminate. econstructor; eauto.
-  - inv H0. inv H.
+  - destruct LF; try discriminate. econstructor; CKLR.uncklr; eauto.
+    intros l _. setoid_rewrite ext_lessdef. auto.
+    destruct v; cbn in *; try congruence.
+  - inv H0. destruct H as ([ ] & _ & H). inv H.
+    rewrite H8 in H1; inv H1. CKLR.uncklr.
+ (*red in H3. setoid_rewrite ext_lessdef in H3. *)
     eexists; split; econstructor; eauto.
+    intro. apply ext_lessdef with tt. apply result_regs_inject; auto.
+    intro. apply ext_lessdef. auto.
 Qed.
 
 End PRESERVATION.
 
 Theorem transf_program_correct prog tprog:
   match_prog prog tprog ->
-  forward_simulation cc_locset_ext cc_locset_ext (LTL.semantics prog) (LTL.semantics tprog).
+  forward_simulation (cc_locset ext) (cc_locset ext) (LTL.semantics prog) (LTL.semantics tprog).
 Proof.
-  fsim eapply forward_simulation_opt; destruct Hse.
-  - intros q _ []. eapply (Genv.is_internal_transf_id MATCH). intros [|]; auto.
+  fsim eapply forward_simulation_opt; destruct w as [sg w], Hse.
+  - intros q _ []. CKLR.uncklr. destruct H; try congruence.
+    eapply (Genv.is_internal_transf_id MATCH). intros [|]; auto.
   - eapply transf_initial_states; eauto.
   - eapply transf_final_states; eauto.
-  - exists tt. eapply transf_external_states; eauto.
+  - intros. eapply transf_external_states in H0 as ([sgx wx] & ?); eauto.
+    eexists (sgx, wx). cbn. eauto.
   - eapply tunnel_step_correct; eauto.
 Qed.

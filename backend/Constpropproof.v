@@ -14,11 +14,12 @@
 
 Require Import Coqlib Maps Integers Floats Lattice Kildall.
 Require Import AST Linking.
-Require Import Values Events Memory Globalenvs Smallstep.
+Require Import Values Builtins Events Memory Globalenvs Smallstep.
 Require Compopts Machregs.
 Require Import Op Registers RTL.
 Require Import Liveness ValueDomain ValueAOp ValueAnalysis.
 Require Import ConstpropOp ConstpropOpproof Constprop.
+Require Import LanguageInterface cklr.Extends.
 
 Definition match_prog (prog tprog: program) :=
   match_program (fun _ f tf => tf = transf_fundef (romem_for prog) f) eq prog tprog.
@@ -433,17 +434,39 @@ Proof.
 - (* Ibuiltin *)
   rename pc'0 into pc. TransfInstr; intros.
 Opaque builtin_strength_reduction.
-  exploit builtin_strength_reduction_correct; eauto. intros (vargs' & P & Q).
-  exploit (@eval_builtin_args_lessdef _ ge (fun r => rs#r) (fun r => rs'#r)).
+  set (dfl := Ibuiltin ef (builtin_strength_reduction ae ef args) res pc') in *.
+  set (rm := romem_for prog) in *.
+  assert (DFL: (fn_code (transf_function rm f))!pc = Some dfl ->
+          exists (n2 : nat) (s2' : state),
+            step tge
+             (State s' (transf_function rm f) (Vptr sp0 Ptrofs.zero) pc rs' m'0) t s2' /\
+            match_states n2
+             (State s f (Vptr sp0 Ptrofs.zero) pc' (regmap_setres res vres rs) m') s2').
+  {
+    exploit builtin_strength_reduction_correct; eauto. intros (vargs' & P & Q).
+    exploit (@eval_builtin_args_lessdef _ ge (fun r => rs#r) (fun r => rs'#r)).
     apply REGS. eauto. eexact P.
-  intros (vargs'' & U & V).
-  exploit external_call_mem_extends; eauto.
-  intros [v' [m2' [A [B [C D]]]]].
+    intros (vargs'' & U & V).
+    exploit external_call_mem_extends; eauto.
+    intros (v' & m2' & A & B & C & D).
+    econstructor; econstructor; split.
+    eapply exec_Ibuiltin; eauto.
+    eapply match_states_succ; eauto.
+    apply set_res_lessdef; auto.
+  }
+  destruct ef; auto.
+  destruct res; auto.
+  destruct (lookup_builtin_function name sg) as [bf|] eqn:LK; auto.
+  destruct (eval_static_builtin_function ae am rm bf args) as [a|] eqn:ES; auto.
+  destruct (const_for_result a) as [cop|] eqn:CR; auto.
+  clear DFL. simpl in H1; red in H1; rewrite LK in H1; inv H1.
+  exploit const_for_result_correct; eauto. 
+  eapply eval_static_builtin_function_sound; eauto.
+  intros (v' & A & B).
   left; econstructor; econstructor; split.
-  eapply exec_Ibuiltin; eauto.
+  eapply exec_Iop; eauto.
   eapply match_states_succ; eauto.
-  apply set_res_lessdef; auto.
-
+  apply set_reg_lessdef; auto.
 - (* Icond, preserved *)
   rename pc'0 into pc. TransfInstr.
   set (ac := eval_static_condition cond (aregs ae args)).
@@ -514,13 +537,11 @@ Opaque builtin_strength_reduction.
   econstructor; eauto. constructor. apply set_reg_lessdef; auto.
 Qed.
 
-Require Import LanguageInterface.
-
 Lemma transf_initial_states:
-  forall q1 q2 st1, cc_ext_query q1 q2 -> initial_state ge q1 st1 ->
+  forall w q1 q2 st1, match_query (cc_c ext) w q1 q2 -> initial_state ge q1 st1 ->
   exists n, exists st2, initial_state tge q2 st2 /\ match_states n st1 st2.
 Proof.
-  intros. destruct H. inv H0.
+  intros. destruct H. CKLR.uncklr. inv H0. destruct H as [vf | ]; try discriminate.
   exploit functions_translated; eauto. intros FIND.
   exists O; exists (Callstate nil vf vargs2 m2); split.
   - setoid_rewrite <- (sig_function_translated (romem_for prog) (Internal f)).
@@ -531,27 +552,28 @@ Qed.
 Lemma transf_final_states:
   forall n st1 st2 r1,
   match_states n st1 st2 -> final_state st1 r1 ->
-  exists r2, final_state st2 r2 /\ cc_ext_reply r1 r2.
+  exists r2, final_state st2 r2 /\ match_reply (cc_c ext) tt r1 r2.
 Proof.
   intros. inv H0. inv H. inv STACKS.
-  eexists; split; constructor; eauto.
+  eexists; split. constructor; eauto.
+  exists tt; split; constructor; CKLR.uncklr; eauto.
 Qed.
 
 Lemma transf_external_states:
   forall n st1 st2 q1, match_states n st1 st2 -> at_external ge st1 q1 ->
-  exists q2, at_external tge st2 q2 /\ cc_ext_query q1 q2 /\ se = se /\
-  forall r1 r2 st1', cc_ext_reply r1 r2 -> after_external st1 r1 st1' ->
+  exists q2, at_external tge st2 q2 /\ match_query (cc_c ext) tt q1 q2 /\ match_senv (cc_c ext) tt se se /\
+  forall r1 r2 st1', match_reply (cc_c ext) tt r1 r2 -> after_external st1 r1 st1' ->
   exists n' st2', after_external st2 r2 st2' /\ match_states n' st1' st2'.
 Proof.
   intros n st1 st2 q1 Hst Hq1. destruct Hq1. inv Hst.
   exploit functions_translated; eauto. intro FIND'.
-  eexists. intuition idtac.
+  eexists. cbn. intuition idtac.
   - econstructor; eauto.
   - destruct VF; try discriminate.
-    constructor; auto.
+    constructor; CKLR.uncklr; auto.
     destruct v; cbn in *; congruence.
-  - inv H1. inv H0.
-    eexists _, (Returnstate s' vres2 m2); split; constructor; eauto.
+  - inv H1. destruct H0 as ([ ] & _ & H0). inv H0. CKLR.uncklr.
+    eexists _, (Returnstate s' vres2 m2'); split; constructor; eauto.
 Qed.
 
 End PRESERVATION.
@@ -563,21 +585,22 @@ Require Import Invariant.
 
 Theorem transf_program_correct prog tprog:
   match_prog prog tprog ->
-  forward_simulation (vamatch @ cc_ext) (vamatch @ cc_ext) (RTL.semantics prog) (RTL.semantics tprog).
+  forward_simulation (vamatch @ cc_c ext) (vamatch @ cc_c ext) (RTL.semantics prog) (RTL.semantics tprog).
 Proof.
   intros MATCH. eapply source_invariant_fsim; eauto using rtl_vamatch. revert MATCH.
   fsim (eapply Build_fsim_properties with (order := lt) (match_states := match_states prog));
     try destruct Hse; cbn.
-- destruct 1. cbn. eapply (Genv.is_internal_transf_id MATCH). intros [|]; auto.
-- intros q1 q2 s1 Hq (_ & _ & Hs1 & _).
+- destruct 1. cbn. CKLR.uncklr. destruct H; try congruence.
+  eapply (Genv.is_internal_transf_id MATCH). intros [|]; auto.
+- intros q1 q2 s1 Hq (Hs1 & _).
   eapply transf_initial_states; eauto.
-- intros n s1 s2 r1 Hs (_ & _ & Hr1 & _).
+- intros n s1 s2 r1 Hs (Hr1 & _).
   eapply transf_final_states; eauto.
-- intros n s1 s2 q1 Hs (_ & _ & _ & Hq1 & _).
+- intros n s1 s2 q1 Hs (Hq1 & _).
   edestruct transf_external_states as (q2 & Hq2 & Hq & _ & Hk); eauto.
   exists tt, q2. repeat apply conj; eauto.
-  intros r1 r2 s1' Hr (_ & _ & _ & _ & _ & Hs1' & _). eauto.
-- intros s1 t s1' ([se bc0 m0] & Hse & STEP & Hs1 & Hs1') n s2 Hs. subst. cbn in *.
+  intros r1 r2 s1' Hr (Hs1' & _). eauto.
+- intros s1 t s1' (STEP & [se bc0 m0] & Hse & Hs1 & Hs1') n s2 Hs. subst. cbn in *.
   exploit transf_step_correct; eauto.
   intros [ [n2 [s2' [A B]]] | [n2 [A [B C]]]].
   exists n2; exists s2'; split; auto. left; apply plus_one; auto.

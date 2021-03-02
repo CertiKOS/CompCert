@@ -15,19 +15,10 @@
 
 (** Dynamic semantics for the Compcert C language *)
 
-Require Import Coqlib.
-Require Import Errors.
-Require Import Maps.
-Require Import Integers.
-Require Import Floats.
-Require Import Values.
-Require Import AST.
-Require Import Memory.
-Require Import Events.
-Require Import Globalenvs.
-Require Import Ctypes.
-Require Import Cop.
-Require Import Csyntax.
+Require Import Coqlib Errors Maps.
+Require Import Integers Floats Values AST Memory Builtins Events Globalenvs.
+Require Import Ctypes Cop Csyntax.
+Require Import LanguageInterface.
 Require Import Smallstep.
 
 (** * Operational semantics *)
@@ -39,8 +30,8 @@ Require Import Smallstep.
 
 Record genv := { genv_genv :> Genv.t fundef type; genv_cenv :> composite_env }.
 
-Definition globalenv (p: program) :=
-  {| genv_genv := Genv.globalenv p; genv_cenv := p.(prog_comp_env) |}.
+Definition globalenv (se: Genv.symtbl) (p: program) :=
+  {| genv_genv := Genv.globalenv se p; genv_cenv := p.(prog_comp_env) |}.
 
 (** The local environment maps local variables to block references and types.
   The current value of the variable is stored in the associated memory
@@ -316,14 +307,14 @@ Inductive rred: expr -> mem -> trace -> expr -> mem -> Prop :=
 (** Head reduction for function calls.
     (More exactly, identification of function calls that can reduce.) *)
 
-Inductive callred: expr -> mem -> fundef -> list val -> type -> Prop :=
+Inductive callred: expr -> mem -> val -> list val -> type -> Prop :=
   | red_call: forall vf tyf m tyargs tyres cconv el ty fd vargs,
       Genv.find_funct ge vf = Some fd ->
       cast_arguments m el tyargs vargs ->
       type_of_fundef fd = Tfunction tyargs tyres cconv ->
       classify_fun tyf = fun_case_f tyargs tyres cconv ->
       callred (Ecall (Eval vf tyf) el ty) m
-              fd vargs ty.
+              vf vargs ty.
 
 (** Reduction contexts.  In accordance with C's nondeterministic semantics,
   we allow reduction both to the left and to the right of a binary operator.
@@ -437,6 +428,59 @@ Definition not_stuck (e: expr) (m: mem) : Prop :=
   forall k C e' ,
   context k RV C -> e = C e' -> imm_safe k e' m.
 
+(** ** Derived forms. *)
+
+(** The following are admissible reduction rules for some derived forms
+  of the CompCert C language.  They help showing that the derived forms
+  make sense. *)
+
+Lemma red_selection:
+  forall v1 ty1 v2 ty2 v3 ty3 ty m b v2' v3',
+  ty <> Tvoid ->
+  bool_val v1 ty1 m = Some b ->
+  sem_cast v2 ty2 ty m = Some v2' ->
+  sem_cast v3 ty3 ty m = Some v3' ->
+  rred (Eselection (Eval v1 ty1) (Eval v2 ty2) (Eval v3 ty3) ty) m
+    E0 (Eval (if b then v2' else v3') ty) m.
+Proof.
+  intros. unfold Eselection.
+  set (t := typ_of_type ty).
+  set (sg := mksignature (AST.Tint :: t :: t :: nil) (Some t) cc_default).
+  assert (LK: lookup_builtin_function "__builtin_sel"%string sg = Some (BI_standard (BI_select t))).
+  { unfold sg, t; destruct ty as   [ | ? ? ? | ? | [] ? | ? ? | ? ? ? | ? ? ? | ? ? | ? ? ];
+    simpl; unfold Tptr; destruct Archi.ptr64; reflexivity. }
+  set (v' := if b then v2' else v3').
+  assert (C: val_casted v' ty).
+  { unfold v'; destruct b; eapply cast_val_is_casted; eauto. }
+  assert (EQ: Val.normalize v' t = v').
+  { apply Val.normalize_idem. apply val_casted_has_type; auto. }
+  econstructor.
+- constructor. rewrite cast_bool_bool_val, H0. eauto.
+  constructor. eauto.
+  constructor. eauto.
+  constructor.
+- red. red. rewrite LK. constructor. simpl. rewrite <- EQ.
+  destruct b; auto.
+Qed.
+
+Lemma ctx_selection_1:
+  forall k C r2 r3 ty, context k RV C -> context k RV (fun x => Eselection (C x) r2 r3 ty).
+Proof.
+  intros. apply ctx_builtin. constructor; auto.
+Qed.
+
+Lemma ctx_selection_2:
+  forall k r1 C r3 ty, context k RV C -> context k RV (fun x => Eselection r1 (C x) r3 ty).
+Proof.
+  intros. apply ctx_builtin. constructor; constructor; auto.
+Qed.
+
+Lemma ctx_selection_3:
+  forall k r1 r2 C ty, context k RV C -> context k RV (fun x => Eselection r1 r2 (C x) ty).
+Proof.
+  intros. apply ctx_builtin. constructor; constructor; constructor; auto.
+Qed.
+
 End EXPR.
 
 (** ** Transition semantics. *)
@@ -515,7 +559,7 @@ Inductive state: Type :=
       (e: env)
       (m: mem) : state
   | Callstate                           (**r calling a function *)
-      (fd: fundef)
+      (vf: val)
       (args: list val)
       (k: cont)
       (m: mem) : state
@@ -593,11 +637,11 @@ Inductive estep: state -> trace -> state -> Prop :=
       estep (ExprState f (C a) k e m)
           t (ExprState f (C a') k e m')
 
-  | step_call: forall C f a k e m fd vargs ty,
-      callred a m fd vargs ty ->
+  | step_call: forall C f a k e m vf vargs ty,
+      callred a m vf vargs ty ->
       context RV RV C ->
       estep (ExprState f (C a) k e m)
-         E0 (Callstate fd vargs (Kcall f e C ty k) m)
+         E0 (Callstate vf vargs (Kcall f e C ty k) m)
 
   | step_stuck: forall C f a k e m K,
       context K RV C -> ~(imm_safe e K a m) ->
@@ -740,16 +784,18 @@ Inductive sstep: state -> trace -> state -> Prop :=
       sstep (State f (Sgoto lbl) k e m)
          E0 (State f s' k' e m)
 
-  | step_internal_function: forall f vargs k m e m1 m2,
+  | step_internal_function: forall vf f vargs k m e m1 m2,
+      forall FIND: Genv.find_funct ge vf = Some (Internal f),
       list_norepet (var_names (fn_params f) ++ var_names (fn_vars f)) ->
       alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
       bind_parameters e m1 f.(fn_params) vargs m2 ->
-      sstep (Callstate (Internal f) vargs k m)
+      sstep (Callstate vf vargs k m)
          E0 (State f f.(fn_body) k e m2)
 
-  | step_external_function: forall ef targs tres cc vargs k m vres t m',
+  | step_external_function: forall vf ef targs tres cc vargs k m vres t m',
+      forall FIND: Genv.find_funct ge vf = Some (External ef targs tres cc),
       external_call ef  ge vargs m t vres m' ->
-      sstep (Callstate (External ef targs tres cc) vargs k m)
+      sstep (Callstate vf vargs k m)
           t (Returnstate vres k m')
 
   | step_returnstate: forall v f e C ty k m,
@@ -759,42 +805,60 @@ Inductive sstep: state -> trace -> state -> Prop :=
 Definition step (S: state) (t: trace) (S': state) : Prop :=
   estep S t S' \/ sstep S t S'.
 
-End SEMANTICS.
-
 (** * Whole-program semantics *)
 
 (** Execution of whole programs are described as sequences of transitions
   from an initial state to a final state.  An initial state is a [Callstate]
-  corresponding to the invocation of the ``main'' function of the program
-  without arguments and with an empty continuation. *)
+  corresponding to the invocation of a given function of the program
+  with an empty continuation. *)
 
-Inductive initial_state (p: program): state -> Prop :=
-  | initial_state_intro: forall b f m0,
-      let ge := globalenv p in
-      Genv.init_mem p = Some m0 ->
-      Genv.find_symbol ge p.(prog_main) = Some b ->
-      Genv.find_funct_ptr ge b = Some f ->
-      type_of_fundef f = Tfunction Tnil type_int32s cc_default ->
-      initial_state p (Callstate f nil Kstop m0).
+Inductive initial_state: c_query -> state -> Prop :=
+  | initial_state_intro: forall vf f targs tres tcc vargs m,
+      Genv.find_funct ge vf = Some (Internal f) ->
+      type_of_function f = Tfunction targs tres tcc ->
+      val_casted_list vargs targs ->
+      Ple (Genv.genv_next ge) (Mem.nextblock m) ->
+      initial_state
+        (cq vf (signature_of_type targs tres tcc) vargs m)
+        (Callstate vf vargs Kstop m).
+
+Inductive at_external: state -> c_query -> Prop :=
+  | at_external_intro name sg targs tres cconv vf vargs k m:
+      let f := External (EF_external name sg) targs tres cconv in
+      Genv.find_funct ge vf = Some f ->
+      at_external
+        (Callstate vf vargs k m)
+        (cq vf sg vargs m).
+
+Inductive after_external: state -> c_reply -> state -> Prop :=
+  | after_external_intro vf vargs k m vres m':
+      after_external
+        (Callstate vf vargs k m)
+        (cr vres m')
+        (Returnstate vres k m').
 
 (** A final state is a [Returnstate] with an empty continuation. *)
 
-Inductive final_state: state -> int -> Prop :=
+Inductive final_state: state -> c_reply -> Prop :=
   | final_state_intro: forall r m,
-      final_state (Returnstate (Vint r) Kstop m) r.
+      final_state
+        (Returnstate r Kstop m)
+        (cr r m).
+
+End SEMANTICS.
 
 (** Wrapping up these definitions in a small-step semantics. *)
 
 Definition semantics (p: program) :=
-  Semantics_gen step (initial_state p) final_state (globalenv p) (globalenv p).
+  Semantics_gen step initial_state at_external (fun _ => after_external) (fun _ => final_state) globalenv p.
 
 (** This semantics has the single-event property. *)
 
 Lemma semantics_single_events:
-  forall p, single_events (semantics p).
+  forall p se, single_events (semantics p se).
 Proof.
   unfold semantics; intros; red; simpl; intros.
-  set (ge := globalenv p) in *.
+  set (ge := globalenv se p) in *.
   assert (DEREF: forall chunk m b ofs t v, deref_loc ge chunk m b ofs t v -> (length t <= 1)%nat).
     intros. inv H0; simpl; try omega. inv H3; simpl; try omega.
   assert (ASSIGN: forall chunk m b ofs t v m', assign_loc ge chunk m b ofs v t m' -> (length t <= 1)%nat).

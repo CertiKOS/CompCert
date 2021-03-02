@@ -13,7 +13,7 @@
 Require Import FunInd.
 Require Import Coqlib Maps Integers Floats Lattice Kildall.
 Require Import Compopts AST Linking.
-Require Import Values Memory Globalenvs Events.
+Require Import Values Memory Globalenvs Builtins Events.
 Require Import Registers Op RTL.
 Require Import ValueDomain ValueAOp Liveness.
 Require Import LanguageInterface Invariant.
@@ -79,6 +79,15 @@ Definition transfer_builtin_default
   let (av, am') := analyze_call am (map (abuiltin_arg ae am rm) args) in
   VA.State (set_builtin_res res av ae) am'.
 
+Definition eval_static_builtin_function
+              (ae: aenv) (am: amem) (rm: romem)
+              (bf: builtin_function) (args: list (builtin_arg reg)) :=
+  match builtin_function_sem bf
+                 (map val_of_aval (map (abuiltin_arg ae am rm) args)) with
+  | Some v => aval_of_val v
+  | None => None
+  end.
+
 Definition transfer_builtin
               (ae: aenv) (am: amem) (rm: romem) (ef: external_function)
               (args: list (builtin_arg reg)) (res: builtin_res reg) :=
@@ -106,6 +115,15 @@ Definition transfer_builtin
   | EF_annot_val _ _ _, v :: nil =>
       let av := abuiltin_arg ae am rm v in
       VA.State (set_builtin_res res av ae) am
+  | EF_builtin name sg, _ =>
+      match lookup_builtin_function name sg with
+      | Some bf => 
+          match eval_static_builtin_function ae am rm bf args with
+          | Some av => VA.State (set_builtin_res res av ae) am
+          | None => transfer_builtin_default ae am rm args res
+          end
+      | None => transfer_builtin_default ae am rm args res
+      end
   | _, _ =>
       transfer_builtin_default ae am rm args res
   end.
@@ -370,6 +388,31 @@ Lemma set_builtin_res_sound:
   ematch bc (regmap_setres res v rs) (set_builtin_res res av ae).
 Proof.
   intros. destruct res; simpl; auto. apply ematch_update; auto.
+Qed.
+
+Lemma eval_static_builtin_function_sound:
+  forall bc ge rs sp m ae rm am (bf: builtin_function) al vl v va,
+  ematch bc rs ae ->
+  romatch bc m rm ->
+  mmatch bc m am ->
+  genv_match bc ge ->
+  bc sp = BCstack ->
+  eval_builtin_args ge (fun r => rs#r) (Vptr sp Ptrofs.zero) m al vl ->
+  eval_static_builtin_function ae am rm bf al = Some va ->
+  builtin_function_sem bf vl = Some v ->
+  vmatch bc v va.
+Proof.
+  unfold eval_static_builtin_function; intros.
+  exploit abuiltin_args_sound; eauto. 
+  set (vla := map (abuiltin_arg ae am rm) al) in *. intros VMA.
+  destruct (builtin_function_sem bf (map val_of_aval vla)) as [v0|] eqn:A; try discriminate.
+  assert (LD: Val.lessdef v0 v).
+  { apply val_inject_lessdef.
+    exploit (bs_inject _ (builtin_function_sem bf)). 
+    apply val_inject_list_lessdef. eapply list_val_of_aval_sound; eauto.
+    rewrite A, H6; simpl. auto.
+  }
+  inv LD. apply aval_of_val_sound; auto. discriminate.
 Qed.
 
 (** ** Constructing block classifications *)
@@ -1099,6 +1142,7 @@ Inductive sound_state: state -> Prop :=
   | sound_call_state:
       forall s fd args m bc
         (STK: sound_stack bc s m (Mem.nextblock m))
+        (VF: vmatch bc fd Vtop)
         (ARGS: forall v, In v args -> vmatch bc v Vtop)
         (RO: romatch_all bc m)
         (MM: mmatch bc m mtop)
@@ -1218,6 +1262,22 @@ Proof.
   intros. rewrite H0; auto. xomega.
 Qed.
 
+(** For compatibility with CKLRs, we show the soundness of function
+  pointers in call states. *)
+
+Lemma find_funct_sound bc vf fd:
+  genv_match bc ge ->
+  Genv.find_funct (Genv.globalenv ge prog) vf = Some fd ->
+  vmatch bc vf (Ifptr Nonstack).
+Proof.
+  intros GEMATCH Hfd.
+  destruct vf; try discriminate. cbn in *.
+  destruct Ptrofs.eq_dec; try discriminate. subst.
+  apply Genv.find_funct_ptr_iff in Hfd.
+  apply Genv.genv_defs_range in Hfd.
+  constructor. constructor; apply GEMATCH; auto.
+Qed.
+
 (** ** Preservation of the semantic invariant by one step of execution *)
 
 Hint Unfold romatch_all.
@@ -1284,6 +1344,7 @@ Proof.
     apply Ple_refl.
     eapply mmatch_below; eauto.
     eapply mmatch_stack; eauto.
+  * eauto using vmatch_top, find_funct_sound.
   * intros. exploit list_in_map_inv; eauto. intros (r & P & Q). subst v.
     apply D with (areg ae r).
     rewrite forallb_forall in H2. apply vpincl_ge.
@@ -1296,6 +1357,7 @@ Proof.
   * eapply sound_stack_public_call with (bound' := Mem.nextblock m) (bc' := bc); eauto.
     apply Ple_refl.
     eapply mmatch_below; eauto.
+  * eauto using vmatch_top, find_funct_sound.
   * intros. exploit list_in_map_inv; eauto. intros (r & P & Q). subst v.
     apply D with (areg ae r). auto with va.
 
@@ -1308,6 +1370,7 @@ Proof.
   eapply sound_stack_free; eauto.
   intros. apply C. apply Plt_ne; auto.
   apply Plt_Ple. eapply mmatch_below; eauto. congruence.
+  eauto using vmatch_top, find_funct_sound.
   intros. exploit list_in_map_inv; eauto. intros (r & P & Q). subst v.
   apply D with (areg ae r). auto with va.
   eauto using romatch_free.
@@ -1373,6 +1436,13 @@ Proof.
   }
   unfold transfer_builtin in TR.
   destruct ef; auto.
++ (* builtin function *)
+  destruct (lookup_builtin_function name sg) as [bf|] eqn:LK; auto.
+  destruct (eval_static_builtin_function ae am rm bf args) as [av|] eqn:ES; auto.
+  simpl in H1. red in H1. rewrite LK in H1. inv H1.
+  eapply sound_succ_state; eauto. simpl; auto.
+  apply set_builtin_res_sound; auto.
+  eapply eval_static_builtin_function_sound; eauto.
 + (* volatile load *)
   inv H0; auto. inv H3; auto. inv H1.
   exploit abuiltin_arg_sound; eauto. intros VM1.
@@ -1494,6 +1564,7 @@ Qed.
 Inductive sound_query bc m: c_query -> Prop :=
   sound_query_intro vf sg vargs:
     genv_match bc ge ->
+    vmatch bc vf Vtop ->
     (forall v, In v vargs -> vmatch bc v Vtop) ->
     mmatch bc m mtop ->
     bc_nostack bc ->

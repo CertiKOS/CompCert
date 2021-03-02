@@ -25,11 +25,12 @@ Require Import Memory.
 Require Import Globalenvs.
 Require Import Events.
 Require Import Smallstep.
-Require Import LanguageInterface.
+Require Import LanguageInterface CKLR.
 Require Import Op.
 Require Import Locations.
 Require Import Conventions.
 Require Stacklayout.
+Local Opaque Z.add Z.mul.
 
 (** * Abstract syntax *)
 
@@ -164,6 +165,12 @@ Definition set_pair (p: rpair mreg) (v: val) (rs: regset) : regset :=
   match p with
   | One r => rs#r <- v
   | Twolong rhi rlo => rs#rhi <- (Val.hiword v) #rlo <- (Val.loword v)
+  end.
+
+Definition get_pair (p : rpair mreg) (rs : regset) :=
+  match p with
+  | One r => rs r
+  | Twolong r1 r2 => Val.longofwords (rs r1) (rs r2)
   end.
 
 Fixpoint set_res (res: builtin_res mreg) (v: val) (rs: regset) : regset :=
@@ -419,7 +426,11 @@ Inductive step: state -> trace -> state -> Prop :=
 
 End RELSEM.
 
-(** Language interface. *)
+(** * Language interface *)
+
+(** Mach interactions are similar to the [li_locset] ones, but the
+  register state contains only machine registers, whereas the stack
+  slots are now stored in memory. *)
 
 Record mach_query :=
   mq {
@@ -443,34 +454,15 @@ Canonical Structure li_mach: language_interface :=
     entry := mq_vf;
   |}.
 
-(** The [valid_blockv] predicate is used to characterize the initial
-  value [mq_sp] for the stack pointer. In order to maintain the
-  invariant that each new stack frame has a different stack pointer,
-  we need to know in particular that the initial stack pointers refers
-  to a valid block, so that any block allocated for new stack frames
-  will be different.
+(** * Interaction predicates *)
 
-  This version of [valid_blockv] forces the value to be both defined,
-  and a [Vptr] value. We may want to switch back to a characterization
-  where non-pointer values are allowed as well, so that [Vnullptr]
-  qualifies. [Vnullptr] which is a [Vlint]/[Vlong] null value used in
-  the original Compcert semantics as the initial stack pointer. *)
-
-Inductive valid_blockv (nb: block): val -> Prop :=
-  | valid_blockv_intro b ofs:
-      Pos.lt b nb ->
-      valid_blockv nb (Vptr b ofs).
-
-Lemma valid_blockv_nextblock nb nb' v:
-  valid_blockv nb v ->
-  Ple nb nb' ->
-  valid_blockv nb' v.
-Proof.
-  destruct 1. constructor.
-  unfold Mem.valid_block in *. xomega.
-Qed.
-
-(** Interaction predicates. *)
+(** We need to constrain [sp] to point at offset zero to avoid
+  wrap-around issues with the arguments region. The [cc_mach]
+  convention must take this into account and force the injection to
+  map the stack block at offset 0. Note that in the original CompCert
+  semantics, the stack pointer is initially a zero integer, so we may
+  want to relax this condition in cases where there are no arguments
+  to be read. *)
 
 Inductive initial_state (ge: genv): query li_mach -> state -> Prop :=
   | initial_state_intro: forall vf f sp ra rs m,
@@ -497,79 +489,228 @@ Inductive final_state: state -> mach_reply -> Prop :=
 Definition semantics (rao: function -> code -> ptrofs -> Prop) (p: program) :=
   Semantics (step rao) initial_state at_external after_external final_state p.
 
-(** * Calling convention *)
+(** * Simulation conventions *)
 
-(** The following calling convention is only used for this phase.
-  It is a rectangular injection diagram, with an additional
-  requirement that any incoming slots of the top-level function mapped
-  to a stack location in the target memory state should be out of
-  reach with respect to the memory injection. *)
+(** ** CKLR simulation convention *)
 
-Definition arguments_out_of_reach sg j m1 sp :=
-  forall ofs ty sb sofs i,
-    In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
-    Val.offset_ptr sp (Ptrofs.repr (Stacklayout.fe_ofs_arg + 4 * ofs)) = Vptr sb sofs ->
-    0 <= i < 4 * typesize ty ->
-    loc_out_of_reach j m1 sb (Ptrofs.unsigned sofs + i).
+Inductive cc_mach_mq R w: mach_query -> mach_query -> Prop :=
+  cc_mach_mq_intro vf1 vf2 sp1 sp2 ra1 ra2 rs1 rs2 m1 m2:
+    vf1 <> Vundef -> Val.inject (mi R w) vf1 vf2 ->
+    sp1 <> Vundef -> Val.inject (mi R w) sp1 sp2 ->
+    ra1 <> Vundef -> Val.inject (mi R w) ra1 ra2 ->
+    (forall r, Val.inject (mi R w) (rs1 r) (rs2 r)) ->
+    match_mem R w m1 m2 ->
+    cc_mach_mq R w
+      (mq vf1 sp1 ra1 rs1 m1)
+      (mq vf2 sp2 ra2 rs2 m2).
 
-Record cc_stk_world :=
-  stkw {
-    stk_inj :> meminj;
-    stk_rs1: Linear.locset;
-    stk_m1: mem;
-    stk_m2: mem;
-  }.
+Inductive cc_mach_mr R w: mach_reply -> mach_reply -> Prop :=
+  cc_mach_mr_intro rs1 rs2 m1 m2:
+    (forall r, Val.inject (mi R w) (rs1 r) (rs2 r)) ->
+    match_mem R w m1 m2 ->
+    cc_mach_mr R w (mr rs1 m1) (mr rs2 m2).
 
-Inductive cc_stacking_st: cc_stk_world -> Genv.symtbl -> Genv.symtbl -> Prop :=
-  cc_stacking_st_intro se1 se2 f ls m1 m2:
-    Genv.match_stbls f se1 se2 ->
-    Pos.le (Genv.genv_next se1) (Mem.nextblock m1) ->
-    Pos.le (Genv.genv_next se2) (Mem.nextblock m2) ->
-    cc_stacking_st (stkw f ls m1 m2) se1 se2.
-
-Inductive cc_stacking_mq: cc_stk_world -> locset_query -> mach_query -> Prop :=
-  cc_stacking_mq_intro f vf1 vf2 sg sp ra rs1 rs2 m1 m2:
-    Val.inject f vf1 vf2 ->
-    valid_blockv (Mem.nextblock m2) sp ->
-    Val.has_type ra Tptr ->
-    (forall r, Val.inject f (rs1 (R r)) (rs2 r)) ->
-    arguments_out_of_reach sg f m1 sp ->
-    (forall ofs ty,
-      In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
-      exists v2,
-        extcall_arg rs2 m2 sp (S Outgoing ofs ty) v2 /\
-        Val.inject f (rs1 (S Outgoing ofs ty)) v2) ->
-    (forall l, Val.has_type (rs1 l) (Loc.type l)) ->
-    Mem.inject f m1 m2 ->
-    vf1 <> Vundef ->
-    cc_stacking_mq (stkw f rs1 m1 m2) (lq vf1 sg rs1 m1) (mq vf2 sp ra rs2 m2).
-
-Inductive cc_stacking_mr: cc_stk_world -> locset_reply -> mach_reply -> Prop :=
-  cc_stacking_mr_intro f rs1 m1 m2 f' rs1' rs2' m1' m2':
-    (forall r, Val.inject f' (rs1' (R r)) (rs2' r)) ->
-    Mem.inject f' m1' m2' ->
-    Mem.unchanged_on (loc_unmapped f) m1 m1' ->
-    Mem.unchanged_on (loc_out_of_reach f m1) m2 m2' ->
-    inject_incr f f' ->
-    inject_separated f f' m1 m2 ->
-    (forall b ofs p, Mem.valid_block m1 b -> Mem.perm m1' b ofs Max p -> Mem.perm m1 b ofs Max p) ->
-    (* typing invariants *)
-    (forall l, Val.has_type (rs1' l) (Loc.type l)) ->
-    agree_callee_save rs1' rs1 ->
-    (forall ty ofs, rs1' (S Outgoing ofs ty) = Vundef) ->
-    cc_stacking_mr (stkw f rs1 m1 m2) (lr rs1' m1') (mr rs2' m2').
-
-Program Definition cc_stacking: callconv li_locset li_mach :=
+Program Definition cc_mach R: callconv li_mach li_mach :=
   {|
-    match_senv := cc_stacking_st;
-    match_query := cc_stacking_mq;
-    match_reply := cc_stacking_mr;
+    match_senv := match_stbls R;
+    match_query := cc_mach_mq R;
+    match_reply := (<> cc_mach_mr R)%klr;
   |}.
 Next Obligation.
-  destruct H. rewrite (Genv.mge_public H); auto.
+  eapply match_stbls_proj in H. eapply Genv.mge_public; eauto.
 Qed.
 Next Obligation.
-  destruct H. eapply (Genv.valid_for_match H); auto.
+  eapply match_stbls_proj in H. erewrite <- Genv.valid_for_match; eauto.
+Qed.
+
+(** ** Calling convention from [li_locset] *)
+
+(** A key aspect concerns the encoding of arguments in the memory.
+  Arguments may be found in assembly stack frames, but the source
+  program must not have access to them. So we assert that the source
+  memory is equal to the target memory, but in the source the
+  permissions for the stack's arguments area has been removed. *)
+
+Require Import Stacklayout.
+
+(** One complication occurs for compatibility with CKLRs. When the
+  arguments region is non-empty, success of the source-level
+  [Mem.free] ensures that the corresponding pointer [sp + fe_ofs_arg]
+  is valid, hence injects into the target-level one. But if the
+  argument region is empty, we do not have a similar guarantee.
+  For example, for the initial invocation of [main()] with empty
+  arguments, the stack pointer is not even of the form [Vptr b ofs]
+  but is instead a zero integer.
+
+  In addition to addressing this, we must make sure that accesses to
+  the arguments region formulated in terms of concrete binary pointers
+  correspond to the range freed in terms of abstract integer addresses.
+
+  This is handled by the following construction. *)
+
+Require Import Separation.
+Local Open Scope sep_scope.
+
+Definition offset_sarg sofs ofs :=
+  Ptrofs.unsigned (Ptrofs.add sofs (Ptrofs.repr fe_ofs_arg)) + 4 * ofs.
+
+Definition offset_fits sofs ofs :=
+  offset_sarg sofs ofs =
+  Ptrofs.unsigned (Ptrofs.add sofs (Ptrofs.repr (fe_ofs_arg + 4 * ofs))).
+
+(*
+  ofs >= 0 /\ offset_sarg sofs ofs <= Ptrofs.max_unsigned.
+*)
+
+Lemma access_fits sofs ofs:
+  offset_fits sofs ofs ->
+  offset_sarg sofs ofs =
+  Ptrofs.unsigned (Ptrofs.add sofs (Ptrofs.repr (fe_ofs_arg + 4 * ofs))).
+Proof.
+  auto.
+(*
+  unfold offset_fits, offset_sarg.
+  set (base := Ptrofs.unsigned _).
+  eassert (0 <= base <= _) by eapply Ptrofs.unsigned_range_2.
+  intros [OPOS FITS].
+  rewrite add_repr, <- Ptrofs.add_assoc.
+  rewrite Ptrofs.add_unsigned.
+  rewrite (Ptrofs.unsigned_repr (4 * ofs)) by xomega. fold base.
+  rewrite Ptrofs.unsigned_repr by xomega.
+  reflexivity.
+*)
+Qed.
+
+Inductive loc_init_args sz : val -> block -> Z -> Prop :=
+  loc_init_args_intro sb sofs ofs:
+    offset_sarg sofs 0 <= ofs < offset_sarg sofs sz ->
+    loc_init_args sz (Vptr sb sofs) sb ofs.
+
+Program Definition contains_init_args sg j ls m0 sp : massert :=
+  let sz := size_arguments sg in
+  {|
+    m_pred m :=
+      Mem.unchanged_on (loc_init_args sz sp) m0 m /\
+      (sz > 0 -> exists sb sofs, sp = Vptr sb sofs /\
+         Mem.range_perm m sb (offset_sarg sofs 0) (offset_sarg sofs sz) Cur Freeable /\
+         forall ofs, 0 <= ofs < sz -> offset_fits sofs ofs) /\
+      (forall ofs ty,
+          In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments sg)) ->
+          exists v,
+            load_stack m sp ty (Ptrofs.repr (fe_ofs_arg + 4 * ofs)) = Some v /\
+            Val.inject j (ls (S Outgoing ofs ty)) v);
+    m_footprint := loc_init_args sz sp;
+  |}.
+Next Obligation.
+  repeat apply conj.
+  - eapply Mem.unchanged_on_trans; eauto.
+  - intros Hsz. edestruct H1 as (sb & sofs & Hsp & PERM & FITS); eauto.
+    exists sb, sofs. intuition auto.
+    intros ofs Hofs. erewrite <- Mem.unchanged_on_perm; eauto.
+    + subst. constructor; auto.
+    + eapply Mem.perm_valid_block; eauto.
+  - intros ofs ty REG. edestruct H2 as (? & ? & ?); eauto.
+    destruct sp as [ | | | | | sb sofs]; eauto.
+    pose proof (loc_arguments_bounded _ _ _ REG).
+    pose proof (loc_arguments_acceptable_2 _ _ REG) as [? _].
+    pose proof (typesize_pos ty).
+    eexists; split; eauto.
+    edestruct H1 as (sb' & sofs' & Hsp & PERM & FITS). xomega. inv Hsp.
+    eapply Mem.load_unchanged_on; eauto. intros. constructor.
+    rewrite <- access_fits in H8 by (apply FITS; xomega). unfold offset_sarg in *.
+    destruct ty; cbn [typesize size_chunk chunk_of_type] in *; xomega.
+Qed.
+Next Obligation.
+  destruct H0.
+  edestruct H1 as (sb' & sofs' & Hsp & PERM & FITS); eauto.
+  + unfold offset_sarg in *. xomega.
+  + inv Hsp. eapply Mem.perm_valid_block; eauto.
+Qed.
+
+Record cc_stacking_world {R} :=
+  stkw {
+    stk_w :> world R;
+    stk_sg : signature;
+    stk_ls1 : Locmap.t;
+    stk_sp2 : val;
+    stk_m2 : mem;
+  }.
+
+Arguments cc_stacking_world : clear implicits.
+
+Inductive cc_stacking_mq R: cc_stacking_world R -> _ -> _ -> Prop :=
+  | cc_stacking_mq_intro w vf1 vf2 sg ls1 m1 sp2 ra2 rs2 m2:
+      vf1 <> Vundef -> Val.inject (mi R w) vf1 vf2 ->
+      (forall r, Val.inject (mi R w) (ls1 (Locations.R r)) (rs2 r)) ->
+      m2 |= contains_init_args sg (mi R w) ls1 m2 sp2 ->
+      match_mem R w m1 m2 ->
+      (forall b ofs, loc_init_args (size_arguments sg) sp2 b ofs ->
+                     loc_out_of_reach (mi R w) m1 b ofs) ->
+      Val.has_type sp2 Tptr ->
+      Val.has_type ra2 Tptr ->
+      cc_stacking_mq R
+        (stkw R w sg ls1 sp2 m2)
+        (lq vf1 sg ls1 m1)
+        (mq vf2 sp2 ra2 rs2 m2).
+
+Inductive cc_stacking_mr R: cc_stacking_world R -> _ -> _ -> Prop :=
+  | cc_stacking_mr_intro w w' sg ls1 ls1' m1' sp2 m2 rs2' m2':
+    w ~> w' ->
+    (forall r,
+      In r (regs_of_rpair (loc_result sg)) ->
+      Val.inject (mi R w') (ls1' (Locations.R r)) (rs2' r)) ->
+    (forall r,
+      is_callee_save r = true ->
+      Val.inject (mi R w') (ls1 (Locations.R r)) (rs2' r)) ->
+    match_mem R w' m1' m2' ->
+    Mem.unchanged_on (loc_init_args (size_arguments sg) sp2) m2 m2' ->
+    (forall b ofs, loc_init_args (size_arguments sg) sp2 b ofs ->
+                   loc_out_of_reach (mi R w') m1' b ofs) ->
+    cc_stacking_mr R
+      (stkw R w sg ls1 sp2 m2)
+      (lr ls1' m1')
+      (mr rs2' m2').
+
+Program Definition cc_stacking R: callconv li_locset li_mach :=
+  {|
+    match_senv := (match_stbls R @@ [stk_w])%klr;
+    match_query := cc_stacking_mq R;
+    match_reply := cc_stacking_mr R;
+  |}.
+Next Obligation.
+  eapply (LanguageInterface.cc_c_obligation_1 R w se1 se2 H); eauto.
+Qed.
+Next Obligation.
+  eapply (LanguageInterface.cc_c_obligation_2 R w se1 se2 sk H); eauto.
+Qed.
+
+(** ** To relocate or remove *)
+
+(** The [valid_blockv] predicate is used to characterize the initial
+  value [mq_sp] for the stack pointer. In order to maintain the
+  invariant that each new stack frame has a different stack pointer,
+  we need to know in particular that the initial stack pointers refers
+  to a valid block, so that any block allocated for new stack frames
+  will be different.
+
+  This version of [valid_blockv] forces the value to be both defined,
+  and a [Vptr] value. We may want to switch back to a characterization
+  where non-pointer values are allowed as well, so that [Vnullptr]
+  qualifies. [Vnullptr] which is a [Vlint]/[Vlong] null value used in
+  the original Compcert semantics as the initial stack pointer. *)
+
+Inductive valid_blockv (nb: block): val -> Prop :=
+  | valid_blockv_intro b ofs:
+      Pos.lt b nb ->
+      valid_blockv nb (Vptr b ofs).
+
+Lemma valid_blockv_nextblock nb nb' v:
+  valid_blockv nb v ->
+  Ple nb nb' ->
+  valid_blockv nb' v.
+Proof.
+  destruct 1. constructor.
+  unfold Mem.valid_block in *. xomega.
 Qed.
 
 (** * Leaf functions *)
