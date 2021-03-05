@@ -828,18 +828,6 @@ Qed.</div>
 &nbsp;&nbsp;<span class="tactic">intros</span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#c_semantic_preservation">c_semantic_preservation</a></span>. <span class="tactic">apply</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_c_program_match">transf_c_program_match</a></span>; <span class="tactic">auto</span>.<br/>
 Qed.</div>
 <br/>
-<div class="doc">Here is the separate compilation case.  Consider a nonempty list <span class="bracket"><span class="id">c_units</span></span>
-  of C source files (compilation units), <span class="bracket"><span class="id">C1</span> ,,, <span class="id">Cn</span></span>.  Assume that every
-  C compilation unit <span class="bracket"><span class="id">Ci</span></span> is successfully compiled by CompCert, obtaining
-  an Asm compilation unit <span class="bracket"><span class="id">Ai</span></span>.  Let <span class="bracket"><span class="id">asm_unit</span></span> be the nonempty list
-  <span class="bracket"><span class="id">A1</span> ... <span class="id">An</span></span>.  Further assume that the C units <span class="bracket"><span class="id">C1</span> ... <span class="id">Cn</span></span> can be linked
-  together to produce a whole C program <span class="bracket"><span class="id">c_program</span></span>.  Then, the generated
-  Asm units can be linked together, producing a whole Asm program
-  <span class="bracket"><span class="id">asm_program</span></span>.  Moreover, <span class="bracket"><span class="id">asm_program</span></span> preserves the semantics of
-  <span class="bracket"><span class="id">c_program</span></span>, in the sense that there exists a backward simulation of
-  the dynamic semantics of <span class="bracket"><span class="id">asm_program</span></span> by the dynamic semantics of <span class="bracket"><span class="id">c_program</span></span>.
-</div>
-<br/>
 <br/>
 <div class="doc">An example of how the correctness theorem, horizontal composition,
   and assembly linking proofs can be used together. </div>
@@ -863,7 +851,7 @@ Qed.</div>
 &nbsp;&nbsp;2: { <span class="tactic">unfold</span> <span class="id"><a href="compcert.common.SmallstepLinking.html#compose">compose</a></span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (@<span class="id"><a href="compcert.common.Linking.html#link">link</a></span> (<span class="id"><a href="compcert.common.AST.html#program">AST.program</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>)) <span class="kwd">as</span> [<span class="id">skel</span>|] <span class="id">eqn</span>:<span class="id">Hskel</span>; <span class="tactic">try</span> <span class="tactic">discriminate</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">cbn</span> <span class="kwd">in</span> *. <span class="id">inv</span> <span class="id">H</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.AsmLinking.html#foo">AsmLinking.foo</a></span>; <span class="tactic">eauto</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.x86.AsmLinking.html#asm_linking">AsmLinking.asm_linking</a></span>; <span class="tactic">eauto</span>. }<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.common.SmallstepLinking.html#compose_simulation">compose_simulation</a></span>; <span class="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#clight_semantic_preservation">clight_semantic_preservation</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program_match">transf_clight_program_match</a></span>.<br/>
 &nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="compcert.driver.Compiler.html#clight_semantic_preservation">clight_semantic_preservation</a></span>; <span class="tactic">eauto</span> <span class="kwd">using</span> <span class="id"><a href="compcert.driver.Compiler.html#transf_clight_program_match">transf_clight_program_match</a></span>.<br/>

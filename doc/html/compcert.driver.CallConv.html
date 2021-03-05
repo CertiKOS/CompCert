@@ -16,18 +16,21 @@
 <div class="doc">This file defines the overall calling convention for CompCertO
   and provides the simulation convention algebra used in the
   <span class="bracket"><span class="id">driver.Compiler</span></span> library to compose passes into the corresponding
-  correctness theorem.
-  The main principle before our approach is to separate the structural
+  correctness theorem. </div>
+<br/>
+<div class="doc">The main principle before our approach is to separate the structural
   aspect of calling conventions on one hand, which establish
   connections between the successive language interfaces, and the
   CKLRs used by various passes on the other hand, which can be
   promoted to endogenous simulation conventions for each language
   interface. Although composing the various pass correctness theorems
   directly yields a mixture of stuctural conventions and CKLRs, we use
-  commutation properties to separate these two components.
-  More precisely, for a structural component <span class="bracket"><span class="id">CC</span></span>, we make sure that
+  commutation properties to separate these two components. </div>
+<br/>
+<div class="doc">More precisely, for a structural component <span class="bracket"><span class="id">CC</span></span>, we make sure that
   the following holds for all CKLRs <span class="bracket"><span class="id">R</span></span>:
-                    ccref (CC @ R) (R @ CC)
+<pre>
+                    ccref (CC @ R) (R @ CC)</pre>
   In the context of external calls, this allows us to propagate CKLRs
   towards the source level, where they can be satisfied by the
   relational parametricity property of Clight. For incoming calls,
@@ -35,7 +38,8 @@
   in order to satisfy the incoming simulation convention of the
   various compiler passes. Ultimately, we can formulate a simulation
   convention for the whole compiler of the form:
-         (R1 + ... + Rn)^{*} @ (CC1 @ ... @ CCk) @ vainj
+<pre>
+         (R1 + ... + Rn)^{*} @ (CC1 @ ... @ CCk) @ vainj</pre>
   The first component expresses source-level compatibility with the
   various CKLRs <span class="bracket"><span class="id">R1</span></span>, ..., <span class="bracket"><span class="id">Rn</span></span> (and hence, thanks to commutation
   properties, overall compatibility with CKLRs for incoming calls).
@@ -499,8 +503,8 @@ Qed.</div>
 <br/>
 <div class="doc">An alternative approach for <span class="bracket"><span class="id">wt_c</span></span> would be to formulate a typing
   constraint on the target queries and replies, which can be
-  propagated towards the source as <span class="bracket"><span class="id">ccref</span> (<span class="id">cc</span> @ <span class="id">wt</span>) (<span class="id">wt</span> @ <span class="id">cc</span> @
-  <span class="id">wt</span>)</span>. Then we can use the following property to make it part of the
+  propagated towards the source as <span class="bracket"><span class="id">ccref</span> (<span class="id">cc</span> @ <span class="id">wt</span>) (<span class="id">wt</span> @ <span class="id">cc</span> @ <span class="id">wt</span>)</span>.
+  Then we can use the following property to make it part of the
   source-level compatibility relations to satisfy the typing
   requirements of other components' external calls. </div>
 <br/>
