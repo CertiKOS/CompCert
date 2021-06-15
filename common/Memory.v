@@ -2089,6 +2089,12 @@ Proof.
   injection ALLOC; intros. rewrite <- H0; auto.
 Qed.
 
+Lemma sup_include_alloc :
+  sup_include (support m1) (support m2).
+Proof.
+  unfold sup_include, sup_In. rewrite support_alloc. simpl. auto.
+Qed.
+
 Theorem stack_alloc:
   stack (support m2) = stack (support m1).
 Proof.
@@ -2638,6 +2644,12 @@ Lemma support_push_stage :
 Proof.
   intros. unfold push_stage in PUSH_STAGE. rewrite <- PUSH_STAGE.
   reflexivity.
+Qed.
+
+Lemma sup_include_push_stage :
+  sup_include (support m1) (support m2).
+Proof.
+  unfold sup_include, sup_In. rewrite support_push_stage. auto.
 Qed.
 
 Theorem nextblock_push_stage:
