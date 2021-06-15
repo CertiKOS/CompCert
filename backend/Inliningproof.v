@@ -1089,7 +1089,8 @@ Proof.
   intros. inv SIZES.
   destruct n; simpl in *. inv H0.
   econstructor; simpl; auto. etransitivity. apply H1.
-  simpl. generalize (Mem.frame_size_pos fr). intro. lia.
+  simpl. generalize (Mem.frame_size_pos fr). intro.
+  generalize (Mem.aligned_frame_size_order fr). intro. lia.
   econstructor; simpl; eauto.
 Qed.
 

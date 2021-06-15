@@ -952,7 +952,7 @@ Proof.
   - eapply Mem.sup_include_record_frame; eauto.
   - intros. eapply Mem.perm_record_frame. eauto.
   - intros. unfold Mem.record_frame in H.
-    destruct (zle (Mem.frame_size fr + Mem.stack_size (Mem.stack(Mem.support m)))). 2:discriminate.
+    destruct (zle (align (Mem.frame_size fr) 8 + Mem.stack_size (Mem.stack(Mem.support m)))). 2:discriminate.
     destruct (Mem.stack(Mem.support m)). discriminate.
     inv H. auto.
 Qed.

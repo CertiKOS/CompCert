@@ -122,7 +122,7 @@ Definition stage := list frame.
 Fixpoint size_of_all_frames (t:stage) : Z :=
   match t with
     |nil => 0
-    |hd :: tl => (frame_size hd) + size_of_all_frames tl
+    |hd :: tl => align (frame_size hd) 8 + size_of_all_frames tl
   end.
 
 Definition size_of_head_frame (t:stage) : Z :=
@@ -145,6 +145,13 @@ Proof.
   intros. induction s1. auto. simpl. lia.
 Qed.
 
+Lemma aligned_frame_size_order:
+  forall fr,
+    frame_size fr <= align (frame_size fr) 8.
+Proof.
+  intros. eapply align_le. omega.
+Qed.
+
 Lemma size_of_all_frames_pos:
   forall t,
     (0 <= size_of_all_frames t)%Z.
@@ -152,6 +159,7 @@ Proof.
   intros. induction t.
   simpl. lia.
   simpl. generalize (frame_size_pos a). intro.
+  generalize (aligned_frame_size_order a). intro.
   lia.
 Qed.
 
@@ -729,7 +737,7 @@ Proof.
 Qed.
 
 Program Definition record_frame (m:mem)(fr:frame) :=
-  if (zle (frame_size fr + (stack_size (stack (support m)))) max_stacksize) then
+  if (zle ((align (frame_size fr) 8) + (stack_size (stack (support m)))) max_stacksize) then
   match stack (support m) with
     |hd::tl =>
        Some (mkmem m.(mem_contents)
@@ -2739,7 +2747,7 @@ Local Hint Resolve valid_block_push_stage_1 valid_block_push_stage_2
 
 Lemma request_record_frame : forall m1 fr,
    stack (support m1) <> nil  ->
-    frame_size fr  + stack_size (stack(support m1)) <= max_stacksize
+    align (frame_size fr) 8  + stack_size (stack(support m1)) <= max_stacksize
    -> {m2:mem| record_frame m1 fr = Some m2}.
 Proof.
   intros; unfold record_frame. rewrite zle_true.
@@ -2759,16 +2767,16 @@ Lemma record_frame_size :
     (stack_size (stack(support m2))) <= max_stacksize.
 Proof.
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size (stack (support m1))) max_stacksize).
+  destruct (zle (align (frame_size fr) 8 + stack_size (stack (support m1))) max_stacksize).
   destruct (stack(support m1)). discriminate.
   inv RECORD_FRAME. simpl in *. lia.  discriminate.
 Qed.
 
 Lemma record_frame_size1:
-  (frame_size fr + stack_size (stack (support m1))) <= max_stacksize.
+  (align (frame_size fr) 8 + stack_size (stack (support m1))) <= max_stacksize.
 Proof.
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size (stack (support m1))) max_stacksize).
+  destruct (zle (align (frame_size fr) 8 + stack_size (stack (support m1))) max_stacksize).
   auto. discriminate.
 Qed.
 
@@ -2776,7 +2784,7 @@ Lemma record_frame_nonempty :
    stack (support m1) <> nil.
 Proof.
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size (stack (support m1))) max_stacksize).
+  destruct (zle (align (frame_size fr) 8 + stack_size (stack (support m1))) max_stacksize).
   destruct (stack (support m1)); auto.
   discriminate. congruence. discriminate.
 Qed.
@@ -2785,7 +2793,7 @@ Lemma support_record_frame :
     sup_record_frame fr (support m1) = Some (support m2).
 Proof.
   intros. unfold record_frame in RECORD_FRAME.
- destruct (zle (frame_size fr +(stack_size (stack (support m1)))) max_stacksize).
+ destruct (zle (align (frame_size fr) 8 +(stack_size (stack (support m1)))) max_stacksize).
   destruct (stack (support m1))eqn: H0.
   - discriminate.
   - inv RECORD_FRAME. simpl. unfold sup_record_frame. rewrite H0. auto.
@@ -2846,12 +2854,12 @@ Theorem perm_record_frame:
 Proof.
   split.
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size (stack(support m1))) max_stacksize).
+  destruct (zle (align (frame_size fr) 8 + stack_size (stack(support m1))) max_stacksize).
   destruct (stack(support m1)).
   discriminate. inv RECORD_FRAME. auto. discriminate.
 
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size (stack(support m1))) max_stacksize).
+  destruct (zle (align (frame_size fr) 8 + stack_size (stack(support m1))) max_stacksize).
   destruct (stack(support m1)).
   discriminate. inv RECORD_FRAME. auto. discriminate.
 Qed.
@@ -2874,7 +2882,7 @@ Theorem load_record_frame:
   load chunk m2 b ofs = load chunk m1 b ofs.
 Proof.
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size(stack(support m1))) max_stacksize). 2:discriminate.
+  destruct (zle (align (frame_size fr) 8 + stack_size(stack(support m1))) max_stacksize). 2:discriminate.
   destruct (stack(support m1)); auto. discriminate. inv RECORD_FRAME. auto.
 Qed.
 
@@ -2883,7 +2891,7 @@ Theorem loadbytes_record_frame:
   loadbytes m2 b ofs n = loadbytes m1 b ofs n.
 Proof.
   intros. unfold record_frame in RECORD_FRAME.
-  destruct (zle (frame_size fr + stack_size(stack(support m1))) max_stacksize). 2:discriminate.
+  destruct (zle (align (frame_size fr) 8 + stack_size(stack(support m1))) max_stacksize). 2:discriminate.
   destruct (stack(support m1)); auto. discriminate. inv RECORD_FRAME. auto.
 Qed.
 
@@ -3636,7 +3644,7 @@ Lemma record_frame_left_inj:
   mem_inj f m1' m2.
 Proof.
   intros. unfold record_frame in H0.
-  destruct (zle (frame_size fr + stack_size(stack(support m1))) max_stacksize). 2:discriminate.
+  destruct (zle (align (frame_size fr) 8 + stack_size(stack(support m1))) max_stacksize). 2:discriminate.
   destruct (stack(support m1)).
   discriminate. inv H0.
   inversion H.
@@ -3656,7 +3664,7 @@ Lemma record_frame_right_inj:
   mem_inj f m1 m2'.
 Proof.
   intros. unfold record_frame in H0.
-  destruct (zle (frame_size fr + stack_size(stack(support m2))) max_stacksize). 2:discriminate.
+  destruct (zle (align (frame_size fr) 8 + stack_size(stack(support m2))) max_stacksize). 2:discriminate.
   destruct (stack(support m2)).
   discriminate. inv H0.
   inversion H.
