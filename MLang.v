@@ -15,6 +15,7 @@ Set Implicit Arguments.
   algebraic effects. The memory state is implicit and computations
   proceed inward. Runtime values ([val]) cannot be accessed directly
   but instead are stored in an environment indexed by [nat] names.
+  We can only observe corresponding [eventval]s using [mpush] and [mread].
   The computation eventually yields a result of type [X]. *)
 
 Inductive mlang X : Type :=
@@ -46,15 +47,44 @@ Definition readglob i : mlang eventval :=
 
       M X := mem * (nat -> val) -> option (mem * (nat -> val) * X)
 
-  This is done informally below but could be made more explicit.
+  This is done informally below but can be made more explicit
+  (see the end of this file). *)
 
-  We use the following helper function to extend the environment with
-  a new runtime value. *)
+(** We use the following helper functions to extend the environment with
+  new runtime values and handle the conversion between [val] and the
+  external, memory-invariant representation [eventval]. *)
 
 Definition push (v : val) (e : nat -> val) (n : nat) : val :=
   match n with
-    | 0 => v
-    | S n => e n
+  | 0 => v
+  | S n => e n
+  end.
+
+Definition eval2val (se : Genv.symtbl) (v : eventval) : option val :=
+  match v with
+  | EVint n => Some (Vint n)
+  | EVlong n => Some (Vlong n)
+  | EVfloat n => Some (Vfloat n)
+  | EVsingle n => Some (Vsingle n)
+  | EVptr_global i ofs =>
+    match Genv.find_symbol se i with
+    | Some b => Some (Vptr b ofs)
+    | None => None
+    end
+  end.
+
+Definition val2eval (se : Genv.symtbl) (v : val) : option eventval :=
+  match v with
+  | Vundef => None
+  | Vint n => Some (EVint n)
+  | Vlong n => Some (EVlong n)
+  | Vfloat n => Some (EVfloat n)
+  | Vsingle n => Some (EVsingle n)
+  | Vptr b ofs =>
+    match Genv.invert_symbol se b with
+    | Some i => Some (EVptr_global i ofs)
+    | None => None
+    end
   end.
 
 (** With that the evaluation function is fairly straightforward. *)
@@ -63,29 +93,14 @@ Fixpoint meval {X} se (t : mlang X) (m : mem) (e : nat -> val) : option (mem * (
   match t with
   | mret x => Some (m, e, x)
   | mpush c t =>
-    match c with
-    | EVint n => meval se t m (push (Vint n) e)
-    | EVlong n => meval se t m (push (Vlong n) e)
-    | EVfloat n => meval se t m (push (Vfloat n) e)
-    | EVsingle n => meval se t m (push (Vsingle n) e)
-    | EVptr_global i ofs =>
-      match Genv.find_symbol se i with
-      | Some b => meval se t m (push (Vptr b ofs) e)
-      | None => None
-      end
+    match eval2val se c with
+    | Some v => meval se t m (push v e)
+    | None => None
     end
   | mread n t =>
-    match e n with
-    | Vundef => None
-    | Vint n => meval se (t (EVint n)) m e
-    | Vlong n => meval se (t (EVlong n)) m e
-    | Vfloat n => meval se (t (EVfloat n)) m e
-    | Vsingle n => meval se (t (EVsingle n)) m e
-    | Vptr b ofs =>
-      match Genv.invert_symbol se b with
-      | Some i => meval se (t (EVptr_global i ofs)) m e
-      | None => None
-      end
+    match val2eval se (e n) with
+    | Some v => meval se (t v) m e
+    | None => None
     end
   | mload chunk addr t =>
     match Mem.loadv chunk m (e addr) with
@@ -107,18 +122,49 @@ Fixpoint meval {X} se (t : mlang X) (m : mem) (e : nat -> val) : option (mem * (
 
 Require Import CKLR.
 
-Instance push_rel f:
-  Monotonic (@push)
-    (Val.inject f ++> (- ==> Val.inject f) ++> - ==> Val.inject f).
+Instance push_rel R:
+  Monotonic (@push) (R ++> (- ==> R) ++> (- ==> R)).
 Proof.
   unfold push. rauto.
+Qed.
+
+Instance eval2val_cklr R:
+  Monotonic (@eval2val)
+    (|= match_stbls R ++> - ==> k1 option_le (Val.inject @@ [mi R])).
+Proof.
+  intros w se1 se2 Hse v. unfold eval2val.
+  repeat rstep.
+  destruct (Genv.find_symbol se1 i) as [b1 | ] eqn:Hb1; try rauto.
+  eapply Genv.find_symbol_match in Hb1 as (b2 & Hb & Hb2).
+  2: eapply match_stbls_proj; eauto.
+  rewrite Hb2.
+  repeat rstep.
+  eapply block_sameofs_ptrbits_inject; auto.
+Qed.
+
+Instance val2eval_cklr R:
+  Monotonic (@val2eval)
+    (|= match_stbls R ++> Val.inject @@ [mi R] ++> k1 option_le (k eq)).
+Proof.
+  intros w se1 se2 Hse v1 v2 Hv. unfold val2eval.
+  repeat rstep.
+  destruct (Genv.invert_symbol se1 b1) as [i | ] eqn:Hb1; try rauto.
+  apply Genv.invert_find_symbol in Hb1.
+  eapply Genv.find_symbol_match in Hb1 as (b2' & Hb & Hb2).
+  2: eapply match_stbls_proj; eauto.
+  inversion H; clear H; subst.
+  assert (b2' = b2) by congruence; subst.
+  assert (delta = 0) by congruence; subst.
+  rewrite Ptrofs.add_zero.
+  apply Genv.find_invert_symbol in Hb2. rewrite Hb2.
+  rauto.
 Qed.
 
 Instance meval_cklr R:
   Monotonic
     (@meval)
     (forallr -,
-     |= match_stbls R ==> - ==> 
+     |= match_stbls R ==> - ==>
         match_mem R ++> (- ==> Val.inject @@ [mi R])%klr ++>
         k1 option_le (<> match_mem R * (- ==> Val.inject @@ [mi R]) * k eq)).
 Proof.
@@ -128,25 +174,11 @@ Proof.
     rauto.
   - (* mpush *)
     specialize (IHt w Hse).
-    repeat rstep.
-    destruct (Genv.find_symbol se1 i) as [b1 | ] eqn:Hb1; try rauto.
-    eapply Genv.find_symbol_match in Hb1 as (b2 & Hb & Hb2).
-    2: eapply match_stbls_proj; eauto.
-    rewrite Hb2.
-    repeat rstep.
-    eapply block_sameofs_ptrbits_inject; auto.
+    rauto.
   - (* mread *)
-    repeat rstep; try (eapply H; eauto).
-    destruct (Genv.invert_symbol se1 b1) as [i | ] eqn:Hb1; try rauto.
-    apply Genv.invert_find_symbol in Hb1.
-    eapply Genv.find_symbol_match in Hb1 as (b2' & Hb & Hb2).
-    2: eapply match_stbls_proj; eauto.
-    inversion H0; clear H0; subst.
-    assert (b2' = b2) by congruence; subst.
-    assert (delta = 0) by congruence; subst.
-    rewrite Ptrofs.add_zero.
-    apply Genv.find_invert_symbol in Hb2. rewrite Hb2.
-    eapply H; rauto.
+    repeat rstep. red in H2. subst.
+    specialize (H y w rauto).
+    rauto.
   - (* mload *)
     specialize (IHt w Hse).
     rauto.
@@ -166,7 +198,7 @@ Qed.
 
   Another limitation is the very basic management of the environment
   containing the real-time values. For simplicity, I used a
-  deBruijn-style approach where each new name is 0 and shift the
+  deBruijn-style approach where each new name is 0 and shifts the
   existing names, but that is not very user-friendly. Nominal
   approaches could be helpful here; I am not sure how that would
   overlap or not with the nominal memory model itself. It seems this
@@ -174,7 +206,7 @@ Qed.
   nominal game semantics could be a starting point.
 
   Support for quoting could be important in practical applications:
-  given an expression of property involving CompCert memory operations,
+  given an expression or property involving CompCert memory operations,
   can we write a tactic that puts it in the form [meval se t m0 e0]?
 
   I have not attempted to give an equational theory for [mlang] but
@@ -218,7 +250,8 @@ Inductive mterm X :=
 
 (** ** Interpretation *)
 
-(** First, I define explicitly the monad we use to interpret computations. *)
+(** First, I define explicitly the reader/state/maybe monad [mexec]
+  which we use to interpret computations. *)
 
 Definition state : Type :=
   mem * (nat -> val).
@@ -242,29 +275,14 @@ Definition minterp {N} (t : msig N) : mexec N :=
   fun '(se, (m, e)) =>
     match t with
     | epush c =>
-      match c with
-      | EVint n => Some (m, push (Vint n) e, tt)
-      | EVlong n => Some (m, push (Vlong n) e, tt)
-      | EVfloat n => Some (m, push (Vfloat n) e, tt)
-      | EVsingle n => Some (m, push (Vsingle n) e, tt)
-      | EVptr_global i ofs =>
-        match Genv.find_symbol se i with
-        | Some b => Some (m, push (Vptr b ofs) e, tt)
-        | None => None
-        end
+      match eval2val se c with
+      | Some v => Some (m, push v e, tt)
+      | None => None
       end
     | eread n =>
-      match e n with
-      | Vundef => None
-      | Vint n => Some (m, e, EVint n)
-      | Vlong n => Some (m, e, EVlong n)
-      | Vfloat n => Some (m, e, EVfloat n)
-      | Vsingle n => Some (m, e, EVsingle n)
-      | Vptr b ofs =>
-        match Genv.invert_symbol se b with
-        | Some i => Some (m, e, EVptr_global i ofs)
-        | None => None
-        end
+      match val2eval se (e n) with
+      | Some v => Some (m, e, v)
+      | None => None
       end
     | eload chunk addr =>
       match Mem.loadv chunk m (e addr) with
