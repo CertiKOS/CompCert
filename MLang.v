@@ -26,8 +26,10 @@ Inductive mlang X : Type :=
   (* accessing the runtime values environment *)
   | mpush : eventval -> mlang X -> mlang X
   | mpeek : nat -> (eventval -> mlang X) -> mlang X
+  | mshift : nat -> ptrofs -> mlang X -> mlang X
 
   (* actual memory operations *)
+  | malloc : Z -> mlang X -> mlang X
   | mload : memory_chunk -> nat -> mlang X -> mlang X
   | mstore : memory_chunk -> nat -> nat -> mlang X -> mlang X.
 
@@ -108,6 +110,11 @@ Fixpoint meval {X} se (t : mlang X) (m : mem) (e : nat -> val) : option (mem * (
     | Some v => meval se (t v) m e
     | None => None
     end
+  | mshift n ofs t =>
+    meval se t m (push (Val.offset_ptr (e n) ofs) e)
+  | malloc size t =>
+    let '(m, b) := Mem.alloc m 0 size in
+    meval se t m (push (Vptr b Ptrofs.zero) e)
   | mload chunk addr t =>
     match Mem.loadv chunk m (e addr) with
     | Some v => meval se t m (push v e)
@@ -185,6 +192,16 @@ Proof.
     repeat rstep. red in H2. subst.
     specialize (H y w rauto).
     rauto.
+  - (* mshift *)
+    specialize (IHt w Hse).
+    rauto.
+  - (* malloc *)
+    repeat rstep. destruct m, n, H1. destruct H0. cbn in *.
+    specialize (IHt x rauto m m0 rauto).
+    specialize (IHt (push (Vptr b Ptrofs.zero) e1)).
+    specialize (IHt (push (Vptr b0 Ptrofs.zero) e2)).
+    specialize (IHt rauto).
+    rauto.
   - (* mload *)
     specialize (IHt w Hse).
     rauto.
@@ -247,6 +264,8 @@ Qed.
 Variant msig : Type -> Type :=
   | epush : eventval -> msig unit
   | epeek : nat -> msig eventval
+  | eshift : nat -> ptrofs -> msig unit
+  | ealloc : Z -> msig unit
   | eload : memory_chunk -> nat -> msig unit
   | estore : memory_chunk -> nat -> nat -> msig unit.
 
@@ -270,6 +289,45 @@ Definition readglob' i : mterm eventval :=
   eload Mint32 0;
   v <- epeek 0;
   eret v.
+
+(** Here is a more sophisticated example: add a new head to the linked
+  list based at global [i]. *)
+
+Definition pushglob i n : mterm unit :=
+  epush (EVptr_global i Ptrofs.zero);
+  epush (EVint n);
+  eload Mptr 1;
+  ealloc (size_chunk Mptr + size_chunk Mint32);
+  eshift 0 (Ptrofs.repr (size_chunk Mptr));
+
+  (* at this point the stack is:
+        4 |-> &i
+        3 |-> n
+        2 |-> address of previous head cell
+        1 |-> address of new head cell's pointer
+        0 |-> address of new head cell's value
+   *)
+  estore Mint32 0 3;  (* store new value *)
+  estore Mptr 1 2;  (* store pointer to previous head *)
+  estore Mptr 4 1;  (* update head pointer *)
+  eret tt.
+
+(** Here is a computation for retreiving the k'th value *)
+
+Definition peekglob i k : mterm eventval :=
+  epush (EVptr_global i Ptrofs.zero);
+  eload Mptr 0;
+  (fix scan k :=
+     eload Mptr 0;
+     match k with
+       | O =>
+         eshift 0 (Ptrofs.repr (size_chunk Mptr));
+         eload Mint32 0;
+         v <- epeek 0;
+         eret v
+       | S k =>
+         scan k
+     end) k.
 
 (** ** Interpretation *)
 
