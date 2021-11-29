@@ -15,13 +15,19 @@ Set Implicit Arguments.
   algebraic effects. The memory state is implicit and computations
   proceed inward. Runtime values ([val]) cannot be accessed directly
   but instead are stored in an environment indexed by [nat] names.
-  We can only observe corresponding [eventval]s using [mpush] and [mread].
+  We can only observe corresponding [eventval]s using [mpush] and [mpeek].
   The computation eventually yields a result of type [X]. *)
 
 Inductive mlang X : Type :=
+
+  (* terminating computations *)
   | mret : X -> mlang X
+
+  (* accessing the runtime values environment *)
   | mpush : eventval -> mlang X -> mlang X
-  | mread : nat -> (eventval -> mlang X) -> mlang X
+  | mpeek : nat -> (eventval -> mlang X) -> mlang X
+
+  (* actual memory operations *)
   | mload : memory_chunk -> nat -> mlang X -> mlang X
   | mstore : memory_chunk -> nat -> nat -> mlang X -> mlang X.
 
@@ -36,7 +42,7 @@ Inductive mlang X : Type :=
 Definition readglob i : mlang eventval :=
   (mpush (EVptr_global i Ptrofs.zero)
     (mload Mint32 0
-      (mread 0
+      (mpeek 0
         (fun v => mret v)))).
 
 
@@ -97,7 +103,7 @@ Fixpoint meval {X} se (t : mlang X) (m : mem) (e : nat -> val) : option (mem * (
     | Some v => meval se t m (push v e)
     | None => None
     end
-  | mread n t =>
+  | mpeek n t =>
     match val2eval se (e n) with
     | Some v => meval se (t v) m e
     | None => None
@@ -175,7 +181,7 @@ Proof.
   - (* mpush *)
     specialize (IHt w Hse).
     rauto.
-  - (* mread *)
+  - (* mpeek *)
     repeat rstep. red in H2. subst.
     specialize (H y w rauto).
     rauto.
@@ -240,13 +246,30 @@ Qed.
 
 Variant msig : Type -> Type :=
   | epush : eventval -> msig unit
-  | eread : nat -> msig eventval
+  | epeek : nat -> msig eventval
   | eload : memory_chunk -> nat -> msig unit
   | estore : memory_chunk -> nat -> nat -> msig unit.
 
 Inductive mterm X :=
   | eret : X -> mterm X
   | econs {N} : msig N -> (N -> mterm X) -> mterm X.
+
+(** The fact that the structure is more explicit makes it possible to
+  define a monad-style notation for computations. *)
+
+Notation "v <- x ; M" := (econs x (fun v => M))
+  (at level 65, x at next level, right associativity).
+
+Notation "x ; M" := (econs x (fun _ => M))
+  (at level 65, right associativity).
+
+(** Here is the example from earlier. *)
+
+Definition readglob' i : mterm eventval :=
+  epush (EVptr_global i Ptrofs.zero);
+  eload Mint32 0;
+  v <- epeek 0;
+  eret v.
 
 (** ** Interpretation *)
 
@@ -279,7 +302,7 @@ Definition minterp {N} (t : msig N) : mexec N :=
       | Some v => Some (m, push v e, tt)
       | None => None
       end
-    | eread n =>
+    | epeek n =>
       match val2eval se (e n) with
       | Some v => Some (m, e, v)
       | None => None
