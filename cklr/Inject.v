@@ -147,14 +147,14 @@ Next Obligation.
 Qed.
 
 Lemma inj_cklr_alloc:
-    Monotonic Mem.alloc (|= inj_mem ++> - ==> - ==> (<> inj_mem * block_inject_sameofs @@ [injw_meminj])).
+    Monotonic Mem.alloc (|= inj_mem ++> - ==> - ==> k1 option_le (<> inj_mem * block_inject_sameofs @@ [injw_meminj])).
 Proof.
   intros [f nb1 nb2] m1 m2 Hm lo hi. cbn in *. inv Hm.
-  destruct (Mem.alloc m1 lo hi) as [m1' b1] eqn:Hm1'.
+  destruct (Mem.alloc m1 lo hi) as [[m1' b1]|] eqn:Hm1'; [|constructor].
   edestruct Mem.alloc_parallel_inject
     as (f' & m2' & b2 & Hm2' & Hm' & Hf'1 & Hb2 & Hf'2);
     eauto using Z.le_refl.
-  rewrite Hm2'.
+  rewrite Hm2'. red. constructor.
   exists (injw f' (Mem.nextblock m1') (Mem.nextblock m2')); split; repeat rstep.
   - constructor; eauto.
     intros b1' b2' delta' Hb Hb'.
@@ -278,7 +278,7 @@ Next Obligation.
   eapply Mem.aligned_area_inject; eauto.
 Qed.
 
-Next Obligation. 
+Next Obligation.
   destruct H as [f m1 m2 nb1 nb2 Hm Hnb1 Hnb2].
   eapply Mem.disjoint_or_equal_inject; eauto.
 Qed.
@@ -294,14 +294,21 @@ Lemma nextblock_inject:
     Mem.nextblock
     (|= inj_mem ++> (<> block_inject_sameofs @@ [injw_meminj])).
 Proof.
-  intros w m1 m2 Hm.
-  remember (Mem.alloc m1 0 0) as mb eqn: Hmb1. destruct mb as [m1' b1].
-  remember (Mem.alloc m2 0 0) as mb eqn: Hmb2. destruct mb as [m2' b2].
-  exploit Mem.alloc_result. symmetry. apply Hmb1. intros <-.
-  exploit Mem.alloc_result. symmetry. apply Hmb2. intros <-.
-  edestruct inj_cklr_alloc as (w' & Hw' & Hm'). apply Hm.
-  rewrite <- Hmb1 in Hm'. rewrite <- Hmb2 in Hm'.
-  exists w'. split; auto. apply Hm'.
+  intros w m1 m2 Hm. inv Hm.
+  set (f' := fun b => if eq_block b (Mem.nextblock m1) then Some(Mem.nextblock m2, 0) else f b).
+  exists (injw f' (Mem.nextblock m1) (Mem.nextblock m2)); split; repeat rstep.
+  - constructor.
+    + red; unfold f'; intros. destruct (eq_block b (Mem.nextblock m1)).
+      * exfalso. subst. erewrite Mem.mi_freeblocks in H0; eauto. inv H0.
+        unfold Mem.valid_block. xomega.
+      * easy.
+    + intros b1 b2 delta Hb Hb'. destruct (peq (Mem.nextblock m1) b1); subst.
+      * assert (Mem.nextblock m2 =  b2). subst f'. cbn in *.
+        destruct eq_block; congruence. subst. xomega.
+      * subst f'. cbn in *. destruct eq_block; congruence.
+    + reflexivity.
+    + reflexivity.
+  - red. cbn. subst f'. cbn. destruct eq_block; easy.
 Qed.
 
 Next Obligation. (* nextblock incr *)
@@ -480,6 +487,7 @@ Proof.
   - unfold meminj_dom. intros.
     destruct (f b1); inv H0.
     rewrite Z.add_0_r in H1; eauto.
+  - reflexivity.
 Qed.
 
 Lemma match_stbls_dom f se1 se2:
@@ -538,6 +546,6 @@ Proof.
           eapply Mem.valid_block_inject_1 in Hfbi; eauto.
           red in Hfbi. xomega.
         }
-        edestruct SEP23'; eauto. 
+        edestruct SEP23'; eauto.
     + cbn. rstep; auto.
 Qed.

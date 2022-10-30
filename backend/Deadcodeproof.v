@@ -52,7 +52,9 @@ Record magree (m1 m2: mem) (P: locset) : Prop := mk_magree {
     memval_lessdef (ZMap.get ofs (PMap.get b (Mem.mem_contents m1)))
                    (ZMap.get ofs (PMap.get b (Mem.mem_contents m2)));
   ma_nextblock:
-    Mem.nextblock m2 = Mem.nextblock m1
+    Mem.nextblock m2 = Mem.nextblock m1;
+  ma_alloc_flag:
+    Mem.alloc_flag m2 = Mem.alloc_flag m1
 }.
 
 Lemma magree_monotone:
@@ -73,6 +75,7 @@ Proof.
 - exploit mi_memval; eauto. unfold inject_id; eauto.
   rewrite Z.add_0_r. auto.
 - auto.
+- congruence.
 Qed.
 
 Lemma magree_extends:
@@ -174,6 +177,9 @@ Proof.
 - rewrite (Mem.nextblock_storebytes _ _ _ _ _ H0).
   rewrite (Mem.nextblock_storebytes _ _ _ _ _ ST2).
   eapply ma_nextblock; eauto.
+- apply Mem.storebytes_alloc_flag in H0.
+  apply Mem.storebytes_alloc_flag in ST2.
+  destruct H. congruence.
 Qed.
 
 Lemma magree_store_parallel:
@@ -217,6 +223,7 @@ Proof.
 + eapply ma_memval; eauto. eapply Mem.perm_storebytes_2; eauto.
 - rewrite (Mem.nextblock_storebytes _ _ _ _ _ H0).
   eapply ma_nextblock; eauto.
+- apply Mem.storebytes_alloc_flag in H0. destruct H. congruence.
 Qed.
 
 Lemma magree_store_left:
@@ -265,6 +272,8 @@ Proof.
   rewrite (Mem.free_result _ _ _ _ _ H0).
   rewrite (Mem.free_result _ _ _ _ _ FREE).
   simpl. eapply ma_nextblock; eauto.
+- apply Mem.free_alloc_flag in H0.
+  apply Mem.free_alloc_flag in FREE. destruct H. congruence.
 Qed.
 
 Lemma magree_valid_access:

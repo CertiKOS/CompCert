@@ -430,8 +430,9 @@ Proof.
   inversion 1;
   try (replace (Mem.nextblock m) with (Mem.nextblock m') by congruence);
   try apply Ple_refl.
-  - replace (Mem.nextblock m') with (Pos.succ (Mem.nextblock m)) by congruence.
+  - replace (Mem.nextblock m') with (Pos.succ (Mem.nextblock m)).
     xomega.
+    apply Mem.nextblock_alloc in H. congruence.
   - destruct zlt.
     + apply Mem.nextblock_free in H1. rewrite <- H1. subst. reflexivity.
     + inv H1. reflexivity.
@@ -511,7 +512,7 @@ Qed.
 
 Lemma alloc_sp_fresh m lo hi m' stk ofs:
   Ple init_nb (Mem.nextblock m) ->
-  Mem.alloc m lo hi = (m', stk) ->
+  Mem.alloc m lo hi = Some (m', stk) ->
   inner_sp init_nb (Vptr stk ofs) = Some true.
 Proof.
   intros Hm Hstk.

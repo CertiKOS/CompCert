@@ -924,7 +924,7 @@ Qed.
 Inductive extcall_malloc_sem (ge: Genv.symtbl):
               list val -> mem -> trace -> val -> mem -> Prop :=
   | extcall_malloc_sem_intro: forall sz m m' b m'',
-      Mem.alloc m (- size_chunk Mptr) (Ptrofs.unsigned sz) = (m', b) ->
+      Mem.alloc m (- size_chunk Mptr) (Ptrofs.unsigned sz) = Some (m', b) ->
       Mem.store Mptr m' b (- size_chunk Mptr) (Vptrofs sz) = Some m'' ->
       extcall_malloc_sem ge (Vptrofs sz :: nil) m E0 (Vptr b Ptrofs.zero) m''.
 
@@ -934,7 +934,7 @@ Lemma extcall_malloc_ok:
 Proof.
   assert (UNCHANGED:
     forall (P: block -> Z -> Prop) m lo hi v m' b m'',
-    Mem.alloc m lo hi = (m', b) ->
+    Mem.alloc m lo hi = Some (m', b) ->
     Mem.store Mptr m' b lo v = Some m'' ->
     Mem.unchanged_on P m m'').
   {
@@ -1372,10 +1372,10 @@ Proof.
 (* trace length *)
 - inv H; simpl; omega.
 (* receptive *)
-- inv H; inv H0. exists vres1, m1; constructor; auto. 
+- inv H; inv H0. exists vres1, m1; constructor; auto.
 (* determ *)
 - inv H; inv H0.
-  split. constructor. intuition congruence. 
+  split. constructor. intuition congruence.
 Qed.
 
 (** ** Semantics of external functions. *)
@@ -1407,7 +1407,7 @@ Definition builtin_or_external_sem name sg :=
 Lemma builtin_or_external_sem_ok: forall name sg,
   extcall_properties (builtin_or_external_sem name sg) sg.
 Proof.
-  unfold builtin_or_external_sem; intros. 
+  unfold builtin_or_external_sem; intros.
   destruct (lookup_builtin_function name sg) as [bf|] eqn:L.
 - exploit lookup_builtin_function_sig; eauto. intros EQ; subst sg.
   apply known_builtin_ok.
@@ -1577,7 +1577,7 @@ Lemma eval_builtin_arg_determ:
 Proof.
   induction 1; intros v' EV; inv EV; try congruence.
   f_equal; eauto.
-  apply IHeval_builtin_arg1 in H3. apply IHeval_builtin_arg2 in H5. subst; auto. 
+  apply IHeval_builtin_arg1 in H3. apply IHeval_builtin_arg2 in H5. subst; auto.
 Qed.
 
 Lemma eval_builtin_args_determ:
@@ -1622,7 +1622,7 @@ Proof.
   econstructor; split; eauto with barg. apply Val.longofwords_lessdef; auto.
 - destruct IHeval_builtin_arg1 as (vhi' & P & Q).
   destruct IHeval_builtin_arg2 as (vlo' & R & S).
-  econstructor; split; eauto with barg. 
+  econstructor; split; eauto with barg.
   destruct Archi.ptr64; auto using Val.add_lessdef, Val.addl_lessdef.
 Qed.
 
@@ -1638,4 +1638,3 @@ Proof.
 Qed.
 
 End EVAL_BUILTIN_ARG_LESSDEF.
-

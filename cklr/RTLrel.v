@@ -235,8 +235,8 @@ Proof.
   - inv H8.
     transport_hyps; eexists; split; [ eapply c; eauto; fail | ].
     exists w'; split; rauto.
-  - edestruct cklr_alloc as (w' & Hw' & Halloc); eauto.
-    transport e. clear Halloc. transport FIND.
+  - transport e. destruct x. destruct H0. cbn in *.
+    transport FIND.
     eexists; split. eapply c; eauto; fail.
     exists w'; split. rauto.
     repeat rstep.

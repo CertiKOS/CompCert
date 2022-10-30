@@ -234,7 +234,7 @@ Inductive step: state -> trace -> state -> Prop :=
   | exec_function_internal:
       forall s vf f rs m rs' m' stk,
       forall FIND: Genv.find_funct ge vf = Some (Internal f),
-      Mem.alloc m 0 f.(fn_stacksize) = (m', stk) ->
+      Mem.alloc m 0 f.(fn_stacksize) = Some (m', stk) ->
       rs' = undef_regs destroyed_at_function_entry (call_regs rs) ->
       step (Callstate s vf rs m)
         E0 (State s f (Vptr stk Ptrofs.zero) f.(fn_code) rs' m')

@@ -332,7 +332,7 @@ Qed.
 
 Lemma alloc_rule:
   forall m lo hi b m' P,
-  Mem.alloc m lo hi = (m', b) ->
+  Mem.alloc m lo hi = Some (m', b) ->
   0 <= lo -> hi <= Ptrofs.modulus ->
   m |= P ->
   m' |= range b lo hi ** P.
@@ -630,6 +630,7 @@ Next Obligation.
 - intros. destruct (Mem.perm_dec m0 b1 ofs Max Nonempty); auto.
   eapply mi_perm_inv; eauto.
   eapply Mem.perm_unchanged_on_2; eauto.
+- destruct H0. congruence.
 Qed.
 Next Obligation.
   eapply Mem.valid_block_inject_2; eauto.
@@ -706,8 +707,8 @@ Qed.
 Lemma alloc_parallel_rule:
   forall m1 sz1 m1' b1 m2 sz2 m2' b2 P j lo hi delta,
   m2 |= minjection j m1 ** P ->
-  Mem.alloc m1 0 sz1 = (m1', b1) ->
-  Mem.alloc m2 0 sz2 = (m2', b2) ->
+  Mem.alloc m1 0 sz1 = Some (m1', b1) ->
+  Mem.alloc m2 0 sz2 = Some (m2', b2) ->
   (8 | delta) ->
   lo = delta ->
   hi = delta + Z.max 0 sz1 ->
@@ -906,8 +907,8 @@ Qed.
 Lemma alloc_parallel_rule_2:
   forall ge1 ge2 m1 sz1 m1' b1 m2 sz2 m2' b2 P j lo hi delta,
   m2 |= minjection j m1 ** globalenv_inject ge1 ge2 j m1 ** P ->
-  Mem.alloc m1 0 sz1 = (m1', b1) ->
-  Mem.alloc m2 0 sz2 = (m2', b2) ->
+  Mem.alloc m1 0 sz1 = Some (m1', b1) ->
+  Mem.alloc m2 0 sz2 = Some (m2', b2) ->
   (8 | delta) ->
   lo = delta ->
   hi = delta + Z.max 0 sz1 ->

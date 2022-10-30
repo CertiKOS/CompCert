@@ -267,7 +267,7 @@ Inductive step: state -> trace -> state -> Prop :=
   | exec_function_internal:
       forall s vf f args m m' stk,
       forall FIND: Genv.find_funct ge vf = Some (Internal f),
-      Mem.alloc m 0 f.(fn_stacksize) = (m', stk) ->
+      Mem.alloc m 0 f.(fn_stacksize) = Some (m', stk) ->
       step (Callstate s vf args m)
         E0 (State s
                   f

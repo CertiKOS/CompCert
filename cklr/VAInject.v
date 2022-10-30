@@ -93,12 +93,15 @@ Qed.
 (** Alloc *)
 Next Obligation.
   intros x m1 m2 H lo hi. inv H.
-  edestruct (cklr_alloc inj w m1 m2 H2) as (w' & Hw' & Hm' & Hb).
+  destruct (Mem.alloc m1 _ _) as [[m1' b1]|] eqn: Hm1'; try constructor.
+  generalize Hm1'.
+  transport Hm1'. destruct x. destruct H3. cbn in *. intros Hm1'.
+  red. rewrite H. constructor.
   exists (se, w'). split; [cbn; rauto | ].
   repeat apply conj; eauto. constructor; eauto.
   - etransitivity; eauto.
     erewrite (Mem.nextblock_alloc m1 lo hi (fst _)); auto using surjective_pairing.
-    xomega.
+    xomega. apply Hm1'.
   - intros cu Hcu.
     eapply romatch_alloc; eauto using surjective_pairing, bc_of_symtbl_below.
 Qed.
@@ -322,7 +325,7 @@ Proof.
   - intros b1 Hb1. cbn in *.
     destruct (f b1) as [[b2 delta] | ] eqn:Hb; try congruence.
     eapply bc_of_inj_smatch; eauto.
-  - intros b1 Hb1. cbn in *.    
+  - intros b1 Hb1. cbn in *.
     destruct (f b1) as [[b2 delta] | ] eqn:Hb; try congruence.
     eapply Mem.valid_block_inject_1; eauto.
 Qed.
