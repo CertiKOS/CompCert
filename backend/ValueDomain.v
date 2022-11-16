@@ -2109,7 +2109,7 @@ Proof.
     intros. apply vmatch_sgn. apply is_sign_ext_sgn; auto with va.
   }
   intros. unfold sign_ext. destruct (zle nbits 0).
-- destruct v; simpl; auto with va. constructor. omega. 
+- destruct v; simpl; auto with va. constructor. omega.
   rewrite Int.sign_ext_below by auto. red; intros; apply Int.bits_zero.
 - inv H; simpl; auto with va.
 + destruct (zlt n nbits); eauto with va.
@@ -2897,7 +2897,7 @@ Proof.
 - apply add_undef_normalize; destruct b; auto.
 - apply add_undef_undef.
 - apply add_undef_normalize; destruct b; auto.
-- destruct ob as [b|]. 
+- destruct ob as [b|].
 + apply add_undef_normalize. destruct b; [apply vmatch_lub_l|apply vmatch_lub_r]; auto.
 + apply add_undef_undef.
 Qed.
@@ -3059,7 +3059,7 @@ Proof with (auto using provenance_monotone with va).
 Qed.
 
 (** Analysis of known builtin functions.  All we have is a dynamic semantics
-  as a function [list val -> option val], but we can still perform 
+  as a function [list val -> option val], but we can still perform
   some constant propagation. *)
 
 Definition val_of_aval (a: aval) : val :=
@@ -3093,7 +3093,7 @@ Proof.
 Qed.
 
 Lemma aval_of_val_sound:
-  forall v a, aval_of_val v = Some a -> vmatch v a. 
+  forall v a, aval_of_val v = Some a -> vmatch v a.
 Proof.
   intros v a E; destruct v; simpl in E; inv E; constructor.
 Qed.
@@ -3799,7 +3799,7 @@ Qed.
 
 Lemma romatch_alloc:
   forall m b lo hi m' rm,
-  Mem.alloc m lo hi = (m', b) ->
+  Mem.alloc m lo hi = Some (m', b) ->
   bc_below bc (Mem.nextblock m) ->
   romatch m rm ->
   romatch m' rm.
@@ -4444,6 +4444,8 @@ Proof.
 - (* perm inv *)
   intros. exploit inj_of_bc_inv; eauto. intros (A & B & C); subst.
   rewrite Z.add_0_r in H2. auto.
+  (* alloc_flag *)
+- reflexivity.
 Qed.
 
 Lemma inj_of_bc_preserves_globals:

@@ -117,7 +117,7 @@ Definition transfer_builtin
       VA.State (set_builtin_res res av ae) am
   | EF_builtin name sg, _ =>
       match lookup_builtin_function name sg with
-      | Some bf => 
+      | Some bf =>
           match eval_static_builtin_function ae am rm bf args with
           | Some av => VA.State (set_builtin_res res av ae) am
           | None => transfer_builtin_default ae am rm args res
@@ -403,12 +403,12 @@ Lemma eval_static_builtin_function_sound:
   vmatch bc v va.
 Proof.
   unfold eval_static_builtin_function; intros.
-  exploit abuiltin_args_sound; eauto. 
+  exploit abuiltin_args_sound; eauto.
   set (vla := map (abuiltin_arg ae am rm) al) in *. intros VMA.
   destruct (builtin_function_sem bf (map val_of_aval vla)) as [v0|] eqn:A; try discriminate.
   assert (LD: Val.lessdef v0 v).
   { apply val_inject_lessdef.
-    exploit (bs_inject _ (builtin_function_sem bf)). 
+    exploit (bs_inject _ (builtin_function_sem bf)).
     apply val_inject_list_lessdef. eapply list_val_of_aval_sound; eauto.
     rewrite A, H6; simpl. auto.
   }
@@ -461,7 +461,7 @@ Ltac splitall := repeat (match goal with |- _ /\ _ => split end).
 
 Theorem allocate_stack:
   forall m sz m' sp bc ge am,
-  Mem.alloc m 0 sz = (m', sp) ->
+  Mem.alloc m 0 sz = Some (m', sp) ->
   genv_match bc ge ->
   mmatch bc m am ->
   bc_nostack bc ->
@@ -1857,7 +1857,7 @@ Lemma alloc_global_match:
   initial_mem_match bc m' (Genv.add_global g idg).
 Proof.
   intros; red; intros. destruct idg as [id1 [fd | gv]]; simpl in *.
-- destruct (Mem.alloc m 0 1) as [m1 b1] eqn:ALLOC.
+- destruct (Mem.alloc m 0 1) as [[m1 b1]|] eqn:ALLOC; try congruence.
   unfold Genv.find_symbol in H2; simpl in H2.
   unfold Genv.find_var_info, Genv.find_info in H3; simpl in H3.
   rewrite PTree.gsspec in H2. destruct (peq id id1).
@@ -1872,7 +1872,7 @@ Proof.
   eapply Mem.loadbytes_drop; eauto.
   eapply Mem.loadbytes_alloc_unchanged; eauto.
 - set (sz := init_data_list_size (gvar_init gv)) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b1] eqn:ALLOC.
+  destruct (Mem.alloc m 0 sz) as [[m1 b1]|] eqn:ALLOC; try congruence.
   destruct (store_zeros m1 b1 0 sz) as [m2 | ] eqn:STZ; try discriminate.
   destruct (Genv.store_init_data_list _ m2 b1 0 (gvar_init gv)) as [m3 | ] eqn:SIDL; try discriminate.
   unfold Genv.find_symbol in H2; simpl in H2.

@@ -169,11 +169,11 @@ Qed.
 
 Next Obligation. (* Mem.alloc *)
   intros _ _ _ [f m1 m2 Hm] lo hi.
-  destruct (Mem.alloc m1 lo hi) as [m1' b1] eqn:Hm1'.
+  destruct (Mem.alloc m1 lo hi) as [[m1' b1]|] eqn:Hm1'; [|constructor].
   edestruct Mem.alloc_parallel_inject
     as (f' & m2' & b2 & Hm2' & Hm' & Hf' & Hb2 & Hff');
     eauto using Z.le_refl.
-  rewrite Hm2'.
+  rewrite Hm2'. red. constructor.
   exists (injpw f' m1' m2' Hm'); split; repeat rstep; eauto.
   constructor.
   - intros b ofs p Hb Hp.
@@ -354,7 +354,7 @@ Next Obligation.
   eapply Mem.aligned_area_inject; eauto.
 Qed.
 
-Next Obligation. 
+Next Obligation.
   destruct H as [f m1 m2 Hm].
   eapply Mem.disjoint_or_equal_inject; eauto.
 Qed.

@@ -286,9 +286,9 @@ Section ASM_LINKING.
         rewrite Heqo in H. inv H. exists y.
         intuition auto. constructor. reflexivity.
       - (* Pallocframe *)
-        apply Mem.nextblock_store in Heqo0. rewrite Heqo0.
-        apply Mem.nextblock_store in Heqo. rewrite Heqo.
-        apply Mem.nextblock_alloc in Heqp0. rewrite Heqp0.
+        apply Mem.nextblock_store in Heqo0.
+        apply Mem.nextblock_store in Heqo1. rewrite Heqo1. rewrite Heqo0.
+        apply Mem.nextblock_alloc in Heqo. rewrite Heqo.
         eexists. intuition (eauto using liveness_top; xomega).
       - (* Pfreeframe *)
         assert (Mem.nextblock m' = Mem.nextblock m). {

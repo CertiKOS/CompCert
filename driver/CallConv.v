@@ -770,6 +770,8 @@ Instance ext_mixable:
 Proof.
   intros sz sp1 sp2 [ ] m1 m2 [ ] m1'_ m2'_ m2' _ Hsp Hm Hm'_ UPD UNCH EXT OOR _ VB.
   uncklr.
+  assert (Hflag: Mem.alloc_flag m1 = Mem.alloc_flag m1'_).
+  { destruct Hm, Hm'_, UNCH, UPD. congruence. }
   destruct (classic (sz > 0 /\ exists sb1 sofs1, sp1 = Vptr sb1 sofs1)).
   - destruct H as (SZ & sb1 & sofs1 & Hsp1). subst. inv Hsp.
     assert (Mem.mixable m1'_ sb1 m1). {
@@ -788,7 +790,7 @@ Proof.
       * eapply Mem.extends_extends_compose; eauto.
       * eapply Mem.unchanged_on_implies; eauto.
         intros _ ofs [-> Hofs] VLD. constructor; eauto.
-    + eapply Mem.unchanged_on_implies; eauto using Mem.mix_updated.
+    + eapply Mem.unchanged_on_implies. eapply Mem.mix_updated; eauto.
       inversion 1; auto.
     + eapply Mem.unchanged_on_implies; eauto using Mem.mix_unchanged.
       intros _ ofs NIA _ [<- Hofs]. apply NIA. constructor; auto.
@@ -806,6 +808,7 @@ Proof.
         unfold offset_sarg in *. xomega.
       * destruct 1; eelim H; eauto. split; eauto.
         unfold offset_sarg in *. xomega.
+      * apply Hflag.
     + apply Mem.unchanged_on_refl.
     + reflexivity.
 Qed.
@@ -814,6 +817,8 @@ Instance inj_mixable:
   Mixable inj.
 Proof.
   intros sz sp1 sp2 w m1 m2 w' m1'_ m2'_ m2' Hw Hsp Hm Hm'_ UPD UNCH EXT OOR SZ VB.
+  assert (Hflag: Mem.alloc_flag m1 = Mem.alloc_flag m1'_).
+  { destruct Hm, Hm'_. destruct H, H0, UPD, UNCH. congruence. }
   destruct SZ as [k Hk]; subst.
   destruct (classic (k > 0 /\ exists sb1 sofs1, sp1 = Vptr sb1 sofs1)).
   - destruct H as (Hk & sb1 & sofs1 & Hsp1). subst. inv Hsp.
@@ -867,6 +872,7 @@ Proof.
         unfold offset_sarg in H3. xomega.
       * destruct 1; eelim H; eauto. split; eauto.
         unfold offset_sarg in H3. xomega.
+      * apply Hflag.
     + apply Mem.unchanged_on_refl.
     + reflexivity.
 Qed.
@@ -950,6 +956,7 @@ Proof.
   - intros. destruct (classic (Mem.perm m b ofs Max Nonempty)); auto. left.
     erewrite Mem.unchanged_on_perm; eauto.
     eapply Mem.perm_valid_block; eauto.
+  - destruct UNCH. congruence.
 Qed.
 
 (** With this, we can state and prove the commutation property. *)

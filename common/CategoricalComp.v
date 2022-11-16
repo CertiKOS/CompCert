@@ -1079,11 +1079,11 @@ Section NORMALIZE_COMP.
   Definition cn_measure (s: state (comp_semantics' (L1 o 1) (1 o L2) sk)) :=
     match s with
     | st1 (st1 s) => 3%nat
-    | st1  (st2  s (st_q _)) => 2%nat
-    | st2  (st2  s (st_q _)) (st1  (st_q _)) => 1%nat
-    | st2  (st2  _ (st_q _)) (st2  (st_q _) _) => 6%nat
-    | st2  (st2  s (st_q _)) (st1  (st_r _)) => 5%nat
-    | st1  (st2  s (st_r _)) => 4%nat
+    | st1 (st2 s (st_q _)) => 2%nat
+    | st2 (st2 s (st_q _)) (st1 (st_q _)) => 1%nat
+    | st2 (st2 _ (st_q _)) (st2 (st_q _) _) => 6%nat
+    | st2 (st2 s (st_q _)) (st1 (st_r _)) => 5%nat
+    | st1 (st2 s (st_r _)) => 4%nat
     | _ => 0%nat
     end.
   Inductive cn_ms se: state (comp_semantics' (L1 o 1) (1 o L2) sk) ->

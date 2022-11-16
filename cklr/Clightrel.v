@@ -245,9 +245,8 @@ Proof.
     + constructor.
     + rauto.
   - intros.
-    edestruct (cklr_alloc R w m1 m2 Hm 0 (sizeof ge1 ty)) as (p' & Hp' & Hm' & Hb); eauto.
-    destruct (Mem.alloc m2 0 (sizeof ge1 ty)) as [m2' b2] eqn:Hm2'.
-    rewrite Hm1' in *. cbn [fst snd] in *.
+    transport Hm1'. destruct x. destruct H0. cbn in *.
+    rename m into m2'. rename b into b2. rename w' into p'.
     specialize (IH p' (PTree.set id (b2, ty) e2) m2').
     edestruct IH as ((e2'' & m2'') & Hvars & p'' & He'' & Hm''); eauto.
     eapply genv_match_acc; eauto.
@@ -265,7 +264,7 @@ Proof.
     + simpl.
       econstructor; eauto.
       destruct Hge; eauto.
-    + rauto.
+    + exists p''. split; try rauto. transitivity p'; rauto.
 Qed.
 
 Global Instance bind_parameters_match R:

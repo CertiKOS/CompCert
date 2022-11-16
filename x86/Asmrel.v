@@ -309,11 +309,11 @@ Section PROG.
       apply set_inject'; [discriminate | auto | ].
       apply set_inject'; [discriminate | auto | auto ].
     - destruct m as [m1' b1']. destruct n as [m2' b2'].
-      destruct H1 as (Hw & Hm' & Hb'). cbn [fst snd] in *.
+      destruct H2 as (Hw & Hm' & Hb'). cbn [fst snd] in *.
       repeat rstep. rewrite Ptrofs.add_zero_l.
-      destruct H1 as (w2 & Hw2 & Hm2).
+      destruct H2 as (w2 & Hw2 & Hm2).
       repeat rstep.
-      destruct H1 as (w3 & Hw3 & Hm3).
+      destruct H2 as (w3 & Hw3 & Hm3).
       exists w3. split. rauto.
       repeat rstep. simpl in *.
       apply block_sameofs_ptrbits_inject; split; rauto.

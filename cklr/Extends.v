@@ -99,10 +99,10 @@ Qed.
 
 Next Obligation.
   intros [ ] m1 m2 Hm lo hi.
-  destruct (Mem.alloc m1 lo hi) as [m1' b1] eqn:H1.
+  destruct (Mem.alloc m1 lo hi) as [[m1' b1]|] eqn:H1; [|constructor].
   edestruct Mem.alloc_extends as (m2' & Hm2' & Hm'); eauto; try reflexivity.
   rewrite Hm2'.
-  exists tt; split; rauto.
+  red. constructor. exists tt; split; rauto.
 Qed.
 
 Next Obligation.
