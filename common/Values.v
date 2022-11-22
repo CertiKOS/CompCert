@@ -203,7 +203,7 @@ Lemma has_type_ensure (v: val) (t: typ) :
   Val.has_type v t -> Val.ensure_type v t = v.
 Proof.
   intros H.
-  destruct v, t; cbn in *; destruct Archi.ptr64; cbn in *; firstorder.
+  destruct v, t; cbn in *; destruct Archi.ptr64; cbn in *; firstorder congruence.
 Qed.
 
 Lemma ensure_has_type_list (vl_ vl: list val) (tl: list typ) :

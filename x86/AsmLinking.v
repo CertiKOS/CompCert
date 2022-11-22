@@ -106,18 +106,18 @@ Section ASM_LINKING.
   Qed.
 
   Lemma leb_refl b:
-    leb b b.
+    Bool.le b b.
   Proof.
     destruct b; cbn; auto.
   Qed.
 
   Lemma leb_true b:
-    leb b true.
+    Bool.le b true.
   Proof.
     destruct b; cbn; auto.
   Qed.
 
-  Hint Resolve p_linkorder leb_refl leb_true.
+  Hint Resolve p_linkorder leb_refl leb_true : core.
 
   Section SE.
     Context (se: Genv.symtbl) (init_nb: block).
@@ -178,8 +178,8 @@ Section ASM_LINKING.
       constructor; cbn; destruct plt; auto; extlia.
     Qed.
 
-    Hint Constructors match_liveness.
-    Hint Resolve match_inner_sp.
+    Hint Constructors match_liveness : core.
+    Hint Resolve match_inner_sp : core.
 
     (** To match the state of the composite semantics with that
       of the whole program, we require that the activation stack
@@ -192,7 +192,7 @@ Section ASM_LINKING.
           match_stack k nb ->
           match_liveness nb rs#SP live1 live2 ->
           Ple nb (Mem.nextblock m) ->
-          option_le leb (inner_sp init_nb rs#SP) (Some live2) ->
+          option_le Bool.le (inner_sp init_nb rs#SP) (Some live2) ->
           match_states (st L i (nb, State rs m live1) :: k) (State rs m live2).
 
     (** ** Simulation properties *)
@@ -200,7 +200,7 @@ Section ASM_LINKING.
     (** *** [exec_instr] *)
 
     Lemma liveness_top live:
-      option_le leb live (Some true).
+      option_le Bool.le live (Some true).
     Proof.
       destruct live; constructor; auto.
     Qed.
@@ -215,7 +215,7 @@ Section ASM_LINKING.
 
     Lemma exec_load_live chunk m a rs rd rs' m' live live':
       exec_load se chunk m a rs rd = Next' rs' m' live' ->
-      option_le leb live (Some live').
+      option_le Bool.le live (Some live').
     Proof.
       unfold exec_load. destruct Mem.loadv; inversion 1.
       destruct live; constructor; auto.
@@ -234,7 +234,7 @@ Section ASM_LINKING.
 
     Lemma exec_store_live chunk m a rs r1 rd rs' m' live live':
       exec_store se chunk m a rs r1 rd = Next' rs' m' live' ->
-      option_le leb live (Some live').
+      option_le Bool.le live (Some live').
     Proof.
       unfold exec_store. destruct Mem.storev; inversion 1.
       destruct live; constructor; auto.
@@ -251,7 +251,7 @@ Section ASM_LINKING.
 
     Lemma goto_label_live b f l rs m rs' m' live:
       goto_label f l rs m = Next' rs' m' live ->
-      option_le leb b (Some live).
+      option_le Bool.le b (Some live).
     Proof.
       unfold goto_label. destruct label_pos, (rs PC); inversion 1.
       destruct b; constructor; auto.
@@ -259,7 +259,7 @@ Section ASM_LINKING.
 
     Hint Resolve
       exec_load_nextblock exec_store_nextblock goto_label_nextblock
-      exec_load_live exec_store_live goto_label_live.
+      exec_load_live exec_store_live goto_label_live : core.
 
     Lemma exec_instr_match nb f instr rs m rs' m' live:
       Ple init_nb nb ->
@@ -269,7 +269,7 @@ Section ASM_LINKING.
         exec_instr init_nb se f instr rs m = Next' rs' m' live' /\
         match_liveness nb rs'#SP live live' /\
         Ple nb (Mem.nextblock m') /\
-        option_le leb (inner_sp init_nb (rs' RSP)) (Some live').
+        option_le Bool.le (inner_sp init_nb (rs' RSP)) (Some live').
     Proof.
       intros Hnb Hm H.
       destruct instr; cbn in H |- *;
@@ -310,7 +310,7 @@ Section ASM_LINKING.
         step init_nb (Genv.globalenv se p) (State rs m live2) t (State rs' m' live2') /\
         Ple nb (Mem.nextblock m') /\
         match_liveness nb rs'#SP live1' live2' /\
-        option_le leb (inner_sp init_nb rs'#SP) (Some live2').
+        option_le Bool.le (inner_sp init_nb rs'#SP) (Some live2').
     Proof.
       intros H Hlive Hnb Hm. inv H; inv Hlive; subst.
       - (* instruction *)

@@ -22,8 +22,8 @@ Require Import LanguageInterface cklr.CKLR cklr.Inject cklr.InjectFootprint.
 Module VSF := FSetFacts.Facts(VSet).
 Module VSP := FSetProperties.Properties(VSet).
 
-Definition match_prog (p tp: program) : Prop :=
-    match_program (fun ctx f tf => transf_fundef f = OK tf) eq p tp
+Definition match_prog (p tp: Clight.program) : Prop :=
+    match_program (fun ctx f tf => SimplLocals.transf_fundef f = OK tf) eq p tp
  /\ prog_types tp = prog_types p.
 
 Lemma match_transf_program:
@@ -35,8 +35,8 @@ Qed.
 
 Section PRESERVATION.
 
-Variable prog: program.
-Variable tprog: program.
+Variable prog: Clight.program.
+Variable tprog: Clight.program.
 Hypothesis TRANSF: match_prog prog tprog.
 Variable w: world inj.
 Variable se: Genv.symtbl.
@@ -54,16 +54,16 @@ Qed.
 
 Lemma functions_translated (j: meminj):
   Genv.match_stbls j se tse ->
-  forall (v tv: val) (f: fundef),
+  forall (v tv: val) (f: Clight.fundef),
   Val.inject j v tv -> Genv.find_funct ge v = Some f ->
-  exists tf, Genv.find_funct tge tv = Some tf /\ transf_fundef f = OK tf.
+  exists tf, Genv.find_funct tge tv = Some tf /\ SimplLocals.transf_fundef f = OK tf.
 Proof.
   apply (Genv.find_funct_transf_partial (proj1 TRANSF)).
 Qed.
 
 Lemma type_of_fundef_preserved:
   forall fd tfd,
-  transf_fundef fd = OK tfd -> type_of_fundef tfd = type_of_fundef fd.
+  SimplLocals.transf_fundef fd = OK tfd -> type_of_fundef tfd = type_of_fundef fd.
 Proof.
   intros. destruct fd; monadInv H; auto.
   monadInv EQ. simpl; unfold type_of_function; simpl. auto.
@@ -2246,8 +2246,9 @@ Proof.
     induction H6; inversion 1; econstructor; eauto using val_casted_inject. }
   eapply (match_stbls_nextblock inj); eauto.
   inv Hm; cbn in *.
-  econstructor; eauto. econstructor.
-  rewrite <- H0. reflexivity.
+  econstructor; eauto.
+  - constructor. rewrite <- H0. reflexivity.
+  - rewrite <- H0; auto.
 Qed.
 
 Lemma final_states_simulation:
@@ -2316,8 +2317,8 @@ Proof.
 Local Transparent Linker_fundef.
   simpl in *; unfold link_fundef in *.
   destruct f1; monadInv H3; destruct f2; monadInv H4; try discriminate.
-  destruct e; inv H2. exists (Internal x); split; auto. simpl; rewrite EQ; auto.
-  destruct e; inv H2. exists (Internal x); split; auto. simpl; rewrite EQ; auto.
+  destruct e; inv H2. exists (Ctypes.Internal x); split; auto. simpl; rewrite EQ; auto.
+  destruct e; inv H2. exists (Ctypes.Internal x); split; auto. simpl; rewrite EQ; auto.
   destruct (external_function_eq e e0 && typelist_eq t t1 &&
             type_eq t0 t2 && calling_convention_eq c c0); inv H2.
   econstructor; split; eauto. 

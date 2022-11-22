@@ -2073,4 +2073,4 @@ End TRANSFORM_TOTAL.
 End Genv.
 
 Coercion Genv.to_senv : Genv.t >-> Genv.symtbl.
-Hint Resolve Genv.mge_stbls.
+Hint Resolve Genv.mge_stbls : core.
