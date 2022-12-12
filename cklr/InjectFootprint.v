@@ -371,6 +371,9 @@ Next Obligation.
   split; eauto using Mem.unchanged_on_nextblock.
 Qed.
 
+Next Obligation.
+  inv H. inv Hm. eauto.
+Qed.
 
 (** * Properties *)
 

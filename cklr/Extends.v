@@ -188,6 +188,10 @@ Next Obligation.
   inv H. inv H1. split; congruence.
 Qed.
 
+Next Obligation.
+  inv H. eauto.
+Qed.
+
 (** * Useful lemmas *)
 
 Lemma ext_lessdef w v1 v2:

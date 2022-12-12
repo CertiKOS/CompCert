@@ -2139,7 +2139,7 @@ Proof.
     unfold var_names. rewrite map_app. auto.
   exploit match_envs_alloc_variables; eauto.
     instantiate (1 := cenv_for_gen (addr_taken_stmt f.(fn_body)) (fn_params f ++ fn_vars f)).
-    intros. eapply cenv_for_gen_by_value; eauto. rewrite VSF.mem_iff. eexact H4.
+    intros. eapply cenv_for_gen_by_value; eauto. rewrite VSF.mem_iff. eexact H5.
     intros. eapply cenv_for_gen_domain. rewrite VSF.mem_iff. eexact H3.
   intros [j' [te [tm0 [A [B [C [D [E [F G]]]]]]]]].
   assert (K: list_forall2 val_casted vargs (map snd (fn_params f))).
@@ -2161,10 +2161,11 @@ Proof.
   econstructor; split.
   eapply plus_left. econstructor; eauto.
   econstructor. exact Y. exact X. exact Z. simpl. eexact A. simpl. eexact Q.
+  { inv MINJ. congruence. }
   simpl. eapply star_trans. eapply step_add_debug_params. auto. eapply forall2_val_casted_inject; eauto. eexact Q.
   eapply star_trans. eexact P. eapply step_add_debug_vars.
   unfold remove_lifted; intros. rewrite List.filter_In in H3. destruct H3.
-  apply negb_true_iff in H4. eauto.
+  apply negb_true_iff in H5. eauto.
   reflexivity. reflexivity. traceEq.
   econstructor; eauto.
   eapply match_cont_invariant; eauto.

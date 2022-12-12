@@ -789,6 +789,7 @@ Inductive sstep: state -> trace -> state -> Prop :=
       list_norepet (var_names (fn_params f) ++ var_names (fn_vars f)) ->
       alloc_variables empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
       bind_parameters e m1 f.(fn_params) vargs m2 ->
+      Mem.alloc_flag m = true ->
       sstep (Callstate vf vargs k m)
          E0 (State f f.(fn_body) k e m2)
 

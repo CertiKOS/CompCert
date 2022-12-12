@@ -2138,7 +2138,11 @@ Opaque PTree.set.
     inv MK; simpl in ISCC; contradiction || econstructor; eauto.
   }
   {
-    admit.
+    intros X. exfalso.
+    inv MINJ.
+    Search Mem.alloc Mem.alloc_flag.
+    edestruct @Mem.alloc_succeed. rewrite <- mi_alloc_flag. eauto.
+    rewrite X in e0. inv e0.
   }
 (* external call *)
   exploit match_callstack_match_globalenvs; eauto. intros MG.

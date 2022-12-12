@@ -317,6 +317,10 @@ Next Obligation. (* nextblock incr *)
   split; auto.
 Qed.
 
+Next Obligation.
+  inv H. inv H0. eauto.
+Qed.
+
 (** * Useful theorems *)
 
 (** ** Composition lemmas *)

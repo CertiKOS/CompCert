@@ -530,6 +530,10 @@ Next Obligation.
   inv H6. inv H9. split; congruence.
 Qed.
 
+Next Obligation.
+  inv H.  inv H5. eauto.
+Qed.
+
 (** * Other properties *)
 
 (** ** Connection with [vamatch] *)

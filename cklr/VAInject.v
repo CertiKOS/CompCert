@@ -197,6 +197,10 @@ Next Obligation.
   eexists. split. apply Hw'. auto.
 Qed.
 
+Next Obligation.
+  inv H. inv H6. inv H. eauto.
+Qed.
+
 (** * Correspondance with [vamatch] *)
 
 (** ** Block classification for an injection *)

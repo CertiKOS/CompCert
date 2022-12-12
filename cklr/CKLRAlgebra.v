@@ -552,6 +552,11 @@ Next Obligation. (* nextblock incr*)
   etransitivity; eapply cklr_nextblock_incr; eauto; eexists; split; eauto.
 Qed.
 
+Next Obligation.
+  destruct H. destruct H. cbn in *.
+  transitivity (Mem.alloc_flag x); eapply cklr_alloc_flag; eauto.
+Qed.
+
 Bind Scope cklr_scope with cklr.
 Delimit Scope cklr_scope with cklr.
 Infix "@" := cklr_compose (at level 30, right associativity) : cklr_scope.

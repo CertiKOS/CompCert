@@ -173,6 +173,9 @@ Record cklr :=
       Ple (Mem.nextblock m1) (Mem.nextblock m1') <->
       Ple (Mem.nextblock m2) (Mem.nextblock m2');
 
+    cklr_alloc_flag w m1 m2:
+      match_mem w m1 m2 -> Mem.alloc_flag m1 = Mem.alloc_flag m2;
+
   }.
 
 Global Existing Instance cklr_kf.

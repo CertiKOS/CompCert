@@ -642,6 +642,7 @@ Proof.
   cbn [fst snd] in *.
   split.
   - econstructor; eauto.
+    apply cklr_alloc_flag in Hm. congruence.
   - assert (temp_env_match R w'' le le).
     { subst le. generalize (fn_temps f). clear. unfold temp_env_match.
       induction l; cbn; rauto. }
@@ -665,6 +666,7 @@ Proof.
   simpl in *.
   split.
   - constructor; eauto.
+    apply cklr_alloc_flag in Hm. congruence.
   - rauto.
 Qed.
 
