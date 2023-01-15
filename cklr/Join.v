@@ -18,6 +18,7 @@ Section JOIN.
       (forall k p, Mem.perm m2 b ofs k p <-> Mem.perm m b ofs k p) ->
       ZMap.get ofs m1.(Mem.mem_contents)#b = Undef ->
       ZMap.get ofs m2.(Mem.mem_contents)#b =ZMap.get ofs m.(Mem.mem_contents)#b ->
+      Mem.valid_block m2 b ->
       contents_join b ofs m1 m2 m
   | contents_join_r:
     forall m1 m2 m b ofs,
@@ -25,22 +26,36 @@ Section JOIN.
       (forall k p, Mem.perm m1 b ofs k p <-> Mem.perm m b ofs k p) ->
       ZMap.get ofs m2.(Mem.mem_contents)#b = Undef ->
       ZMap.get ofs m1.(Mem.mem_contents)#b =ZMap.get ofs m.(Mem.mem_contents)#b ->
+      Mem.valid_block m1 b ->
       contents_join b ofs m1 m2 m.
 
-  Inductive alloc_flag_join: bool -> bool -> bool -> Prop :=
+  Inductive alloc_flag_join: mem -> mem -> mem -> Prop :=
   | alloc_flag_join_l:
-      alloc_flag_join false true true
+    forall m m1 m2,
+      Mem.alloc_flag m = false ->
+      Mem.alloc_flag m1 = true ->
+      Mem.alloc_flag m2 = true ->
+      (Mem.nextblock m <= Mem.nextblock m1)%positive ->
+      alloc_flag_join m m1 m2
   | alloc_flag_join_r:
-      alloc_flag_join true false true
+    forall m m1 m2,
+      Mem.alloc_flag m1 = true ->
+      Mem.alloc_flag m = false ->
+      Mem.alloc_flag m2 = true ->
+      (Mem.nextblock m <= Mem.nextblock m1)%positive ->
+      alloc_flag_join m1 m m2
   | alloc_flag_join_x:
-      alloc_flag_join false false false.
+    forall m1 m2 m,
+      Mem.alloc_flag m1 = false ->
+      Mem.alloc_flag m2 = false ->
+      Mem.alloc_flag m = false ->
+      alloc_flag_join m1 m2 m.
 
   Record join (m1 m2 m: mem) : Prop :=
     mk_join {
         mjoin_contents: forall b ofs, contents_join b ofs m1 m2 m;
         mjoin_nextblock: Mem.nextblock m = Pos.max (Mem.nextblock m1) (Mem.nextblock m2);
-        mjoin_alloc_flag:
-          alloc_flag_join (Mem.alloc_flag m1) (Mem.alloc_flag m2) (Mem.alloc_flag m)
+        mjoin_alloc_flag: alloc_flag_join m1 m2 m;
       }.
 
 End JOIN.
@@ -112,11 +127,11 @@ Section JOIN_PROP.
   Proof.
     rstep. rstep. rstep. rstep. rstep.
     unfold Cop.cmp_ptr. rstep. rstep. rewrite H0. reflexivity. rstep.
-  (*   - rstep. unfold Val.cmplu_bool. repeat rstep. *)
-  (*   - rstep. unfold Val.cmpu_bool. repeat rstep. *)
-  (*     Unshelve. all: eauto. *)
-  (* Qed. *)
-  Admitted.
+    - rstep. unfold Val.cmplu_bool. repeat rstep.
+      destruct eq_block; repeat rstep.
+    - rstep. unfold Val.cmpu_bool. repeat rstep.
+      destruct eq_block; repeat rstep.
+  Qed.
 
   Instance sem_cmp_join:
     Monotonic
@@ -236,37 +251,67 @@ Section JOIN_PROP.
       specialize (mjoin_contents0 bx ox). inv mjoin_contents0.
       + apply contents_join_l; eauto.
         * intros k p. specialize (H0 k p).
-          admit.
-        * admit.
-      + admit.
-    - admit.
-    - admit.
-    (* - exploit Mem.support_store. apply X. intros ->. *)
-    (*   exploit Mem.support_store. apply Y. intros ->. *)
-    (*   apply H. *)
-    (* - intros bx ofsx k p HP. split; intros. *)
-    (*   + eapply Mem.perm_store_1; eauto. *)
-    (*     rewrite <- same_perm. 2-3: eauto. *)
-    (*     eapply Mem.perm_store_2; eauto. *)
-    (*   + eapply Mem.perm_store_1; eauto. *)
-    (*     rewrite same_perm. 2-3: eauto. *)
-    (*     eapply Mem.perm_store_2; eauto. *)
-    (* - intros bx ofsx HP. *)
-    (*   exploit Mem.store_mem_contents. apply X. intros ->. *)
-    (*   exploit Mem.store_mem_contents. apply Y. intros ->. *)
-    (*   exploit same_content; eauto. intros C. *)
-    (*   rewrite !NMap.gsspec. *)
-    (*   destruct (NMap.elt_eq bx b). *)
-    (*   + subst. destruct (zlt ofsx ofs). *)
-    (*     * now rewrite !Mem.setN_outside by lia. *)
-    (*     * destruct (zle (ofs + Z.of_nat (length (encode_val ch v))) ofsx). *)
-    (*       now rewrite !Mem.setN_outside by lia. *)
-    (*       now rewrite !get_setN_inside by lia. *)
-    (*   + apply C. *)
-    (* - intros bx ofsx HP C. *)
-    (*   eapply diff_perm; eauto. eauto with mem. *)
-    (* - intros. eapply Mem.store_valid_block_1; eauto. eapply H; eauto. *)
-  Admitted.
+          assert (P1: Mem.perm m0 bx ox k p <-> Mem.perm m1 bx ox k p).
+          split; eauto with mem.
+          assert (P2: Mem.perm n bx ox k p <-> Mem.perm m2 bx ox k p).
+          split; eauto with mem.
+          rewrite P1. rewrite H0. symmetry. apply P2.
+        * exploit Mem.store_mem_contents. apply X. intros ->.
+          exploit Mem.store_mem_contents. apply Y. intros ->.
+          destruct (PMap.elt_eq b bx).
+          -- subst. rewrite !PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (length (encode_val ch v))) ox).
+                now rewrite !Mem.setN_outside by lia.
+                now rewrite !get_setN_inside by lia.
+          -- rewrite !PMap.gso; eauto.
+        * eauto with mem.
+      + apply contents_join_r; eauto.
+        * intros P. apply H. eauto with mem.
+        * intros k p.
+          assert (P: Mem.perm n bx ox k p <-> Mem.perm m2 bx ox k p).
+          split; eauto with mem.
+          rewrite P. eauto.
+        * exploit Mem.store_mem_contents. apply X. intros ->.
+          destruct (PMap.elt_eq b bx).
+          -- subst. rewrite PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (length (encode_val ch v))) ox).
+                now rewrite !Mem.setN_outside by lia.
+                specialize (A ox).
+                exploit A.
+                rewrite encode_val_length in g0.
+                rewrite <- size_chunk_conv in g0. lia.
+                intros. exfalso. eauto with mem.
+          -- rewrite PMap.gso; eauto.
+        * rewrite H2.
+          exploit Mem.store_mem_contents. apply Y. intros ->.
+          destruct (PMap.elt_eq b bx).
+          -- subst. rewrite PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (length (encode_val ch v))) ox).
+                now rewrite !Mem.setN_outside by lia.
+                specialize (A ox).
+                exploit A.
+                rewrite encode_val_length in g0.
+                rewrite <- size_chunk_conv in g0. lia.
+                intros. exfalso. eauto with mem.
+          -- rewrite PMap.gso; eauto.
+    - destruct H.
+      apply Mem.nextblock_store in X.
+      apply Mem.nextblock_store in Y. congruence.
+    - destruct H.
+      exploit Mem.nextblock_store. apply X. intros C.
+      apply Mem.store_alloc_flag in X.
+      apply Mem.store_alloc_flag in Y.
+      inv mjoin_alloc_flag0.
+      + apply alloc_flag_join_l; eauto. congruence.
+      + apply alloc_flag_join_r; eauto. congruence.
+      + apply alloc_flag_join_x; eauto.
+  Qed.
 
   Instance storev_join:
     Monotonic
@@ -286,16 +331,21 @@ Section JOIN_PROP.
     rename x into m1. rename y into m2.
     destruct (Mem.range_perm_dec m1 b ofs (ofs + sz) Cur Readable); inv X.
     destruct Mem.range_perm_dec.
-    (* - constructor. apply Mem.getN_exten. intros i Hi. *)
-    (*   apply same_content; eauto. intros HP. *)
-    (*   eapply diff_perm; eauto. *)
-    (*   destruct (zle 0 sz); eauto. *)
-    (*   + rewrite Z2Nat.id in Hi by lia. eauto with mem. *)
-    (*   + rewrite Z_to_nat_neg in Hi by lia. lia. *)
-    (* - exfalso. apply n. *)
-    (*   eapply range_perm_join; eauto. *)
-  (* Qed. *)
-  Admitted.
+    - constructor. apply Mem.getN_exten. intros i Hi.
+      destruct H. specialize (mjoin_contents0 b i).
+      inv mjoin_contents0; eauto.
+      specialize (r i). exploit r.
+      {
+        destruct (zle 0 sz).
+        + rewrite Z2Nat.id in Hi; eauto.
+        + rewrite Z_to_nat_neg in Hi; lia.
+      }
+      intros. exfalso. eauto with mem.
+    - exfalso. destruct H.  apply n. intros x Hx.
+      specialize (mjoin_contents0 b x). inv mjoin_contents0.
+      + apply H0. eauto.
+      + exfalso. apply H. eauto with mem.
+  Qed.
 
   Instance storebytes_join:
     Monotonic
@@ -303,33 +353,72 @@ Section JOIN_PROP.
       (join m ++> - ==> - ==> - ==> option_le (join m)).
   Proof.
     repeat rstep. destruct Mem.storebytes eqn: X; try constructor.
-    unfold Mem.storebytes in *.
     rename x0 into b. rename x1 into ofs. rename x2 into vl.
     rename x into m1. rename y into m2.
-    destruct (Mem.range_perm_dec m1 b ofs (ofs + Z.of_nat (Datatypes.length vl)) Cur Writable); inv X.
-    destruct Mem.range_perm_dec.
-  Admitted.
-  (*   - constructor. constructor; cbn -[NMap.get]. *)
-  (*     + apply same_support; eauto. *)
-  (*     + intros bx ofsx k p HP. *)
-  (*       unfold Mem.perm. cbn. *)
-  (*       apply same_perm; eauto. *)
-  (*     + intros bx ofsx HP. *)
-  (*       exploit same_content; eauto. intros A. *)
-  (*       rewrite !NMap.gsspec. *)
-  (*       destruct (NMap.elt_eq bx b). *)
-  (*       * subst. destruct (zlt ofsx ofs). *)
-  (*         -- now rewrite !Mem.setN_outside by lia. *)
-  (*         -- destruct (zle (ofs + Z.of_nat (length vl)) ofsx). *)
-  (*            now rewrite !Mem.setN_outside by lia. *)
-  (*            now rewrite !get_setN_inside by lia. *)
-  (*       * apply A. *)
-  (*     + intros bx ofsx HP C. *)
-  (*       eapply diff_perm; eauto. *)
-  (*     + apply H. *)
-  (*   - exfalso. apply n. *)
-  (*     eauto using range_perm_join. *)
-  (* Qed. *)
+    pose proof (Mem.storebytes_range_perm _ _ _ _ _ X) as A.
+    edestruct Mem.range_perm_storebytes as (n & Y).
+    eapply range_perm_join; eauto.  rewrite Y. constructor.
+    constructor.
+    - intros bx ox. destruct H.
+      specialize (mjoin_contents0 bx ox). inv mjoin_contents0.
+      + apply contents_join_l; eauto.
+        * intros k p. specialize (H0 k p).
+          assert (P1: Mem.perm m0 bx ox k p <-> Mem.perm m1 bx ox k p).
+          split; eauto with mem.
+          assert (P2: Mem.perm n bx ox k p <-> Mem.perm m2 bx ox k p).
+          split; eauto with mem.
+          rewrite P1. rewrite H0. symmetry. apply P2.
+        * exploit Mem.storebytes_mem_contents. apply X. intros ->.
+          exploit Mem.storebytes_mem_contents. apply Y. intros ->.
+          destruct (PMap.elt_eq b bx).
+          -- subst. rewrite !PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (Datatypes.length vl)) ox).
+                now rewrite !Mem.setN_outside by lia.
+                now rewrite !get_setN_inside by lia.
+          -- rewrite !PMap.gso; eauto.
+        * eauto with mem.
+      + apply contents_join_r; eauto.
+        * intros P. apply H. eauto with mem.
+        * intros k p.
+          assert (P: Mem.perm n bx ox k p <-> Mem.perm m2 bx ox k p).
+          split; eauto with mem.
+          rewrite P. eauto.
+        * exploit Mem.storebytes_mem_contents. apply X. intros ->.
+          destruct (PMap.elt_eq b bx).
+          -- subst. rewrite PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (Datatypes.length vl)) ox).
+                now rewrite !Mem.setN_outside by lia.
+                specialize (A ox). exploit A. lia.
+                intros. exfalso. eauto with mem.
+          -- rewrite PMap.gso; eauto.
+        * rewrite H2.
+          exploit Mem.storebytes_mem_contents. apply Y. intros ->.
+          destruct (PMap.elt_eq b bx).
+          -- subst. rewrite PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (Datatypes.length vl)) ox).
+                now rewrite !Mem.setN_outside by lia.
+                specialize (A ox). exploit A. lia.
+                intros. exfalso. eauto with mem.
+          -- rewrite PMap.gso; eauto.
+    - destruct H.
+      apply Mem.nextblock_storebytes in X.
+      apply Mem.nextblock_storebytes in Y. congruence.
+    - destruct H.
+      exploit Mem.nextblock_storebytes. apply X. intros C.
+      apply Mem.storebytes_alloc_flag in X.
+      apply Mem.storebytes_alloc_flag in Y.
+      inv mjoin_alloc_flag0.
+      + apply alloc_flag_join_l; eauto. congruence.
+      + apply alloc_flag_join_r; eauto. congruence.
+      + apply alloc_flag_join_x; eauto.
+  Qed.
+
   Opaque Mem.loadbytes Mem.storebytes.
 
   Instance assign_loc_join:
@@ -346,42 +435,6 @@ Section JOIN_PROP.
       eapply assign_loc_copy; eauto.
   Qed.
 
-  (* Lemma mse_store_inside_p mx m m' ch b ofs v: *)
-  (*   join m mx m -> *)
-  (*   Mem.store ch m b ofs v = Some m' -> *)
-  (*   (forall i, ofs <= i < ofs + size_chunk ch -> P b i) -> *)
-  (*   join m mx m'. *)
-  (* Proof. *)
-  (*   intros H HST HX. *)
-  (*   constructor. *)
-  (*   - eapply Mem.support_store in HST. *)
-  (*     rewrite HST. apply H. *)
-  (*   - intros bx ofsx k p HP. split; intros. *)
-  (*     + eapply Mem.perm_store_1; eauto. *)
-  (*       rewrite <- same_perm; eauto. *)
-  (*     + rewrite same_perm. 2-3: eauto. *)
-  (*       eapply Mem.perm_store_2; eauto. *)
-  (*   - intros bx ofsx HP. *)
-  (*     erewrite same_content. 2-3: eauto. *)
-  (*     exploit Mem.store_mem_contents; eauto. intros ->. *)
-  (*     rewrite NMap.gsspec. *)
-  (*     destruct (NMap.elt_eq bx b). *)
-  (*     + subst. destruct (zlt ofsx ofs). *)
-  (*       * now rewrite !Mem.setN_outside by lia. *)
-  (*       * destruct (zle (ofs + Z.of_nat (length (encode_val ch v))) ofsx). *)
-  (*         -- now rewrite !Mem.setN_outside by lia. *)
-  (*         -- exfalso. *)
-  (*            apply HP. apply HX. *)
-  (*            rewrite encode_val_length in *. *)
-  (*            unfold size_chunk_nat in *. *)
-  (*            rewrite Z2Nat.id in *. lia. *)
-  (*            destruct ch; cbn; lia. *)
-  (*     + reflexivity. *)
-  (*   - intros bx ofsx HP C. *)
-  (*     eapply diff_perm; eauto. *)
-  (*   - apply H. *)
-  (* Qed. *)
-
   Instance free_join:
     Monotonic
       (@Mem.free)
@@ -395,37 +448,62 @@ Section JOIN_PROP.
     eapply range_perm_join; eauto.
     eapply Mem.free_range_perm; eauto.
     rewrite e. constructor. constructor.
-  Admitted.
-  (*   - exploit Mem.support_free; eauto. intros ->. *)
-  (*     exploit Mem.support_free. apply HF. intros ->. *)
-  (*     apply H. *)
-  (*   - intros * HP. split; intros. *)
-  (*     + exploit Mem.perm_free_3. apply HF. eauto. intros. *)
-  (*       eapply Mem.perm_free_1; eauto. *)
-  (*       destruct (peq b0 b). 2: eauto. *)
-  (*       destruct (zle lo ofs). 2: lia. *)
-  (*       destruct (zlt ofs hi). 2: lia. *)
-  (*       subst. exfalso. eapply Mem.perm_free_2. apply HF. *)
-  (*       instantiate (1 := ofs). lia. eauto. *)
-  (*       apply H; eauto. *)
-  (*     + exploit Mem.perm_free_3. apply e. eauto. intros. *)
-  (*       eapply Mem.perm_free_1; eauto. *)
-  (*       destruct (peq b0 b). 2: eauto. *)
-  (*       destruct (zle lo ofs). 2: lia. *)
-  (*       destruct (zlt ofs hi). 2: lia. *)
-  (*       subst. exfalso. eapply Mem.perm_free_2. apply e. *)
-  (*       instantiate (1 := ofs). lia. eauto. *)
-  (*       apply H; eauto. *)
-  (*   - intros * HP. *)
-  (*     eapply Mem.free_result in HF. *)
-  (*     eapply Mem.free_result in e. subst. *)
-  (*     cbn. apply same_content; eauto. *)
-  (*   - intros * HP. unfold loc_out_of_bounds. *)
-  (*     intros contra. *)
-  (*     exploit Mem.perm_free_3. apply HF. eauto. intros. *)
-  (*     exploit diff_perm; eauto. *)
-  (*   - intros. eapply Mem.valid_block_free_1; eauto. eapply H; eauto. *)
-  (* Qed. *)
+    - intros bx ox. destruct H.
+      specialize (mjoin_contents0 bx ox). inv mjoin_contents0.
+      + apply contents_join_l; eauto.
+        * intros k p. specialize (H0 k p). split; intros.
+          -- exploit Mem.perm_free_3. apply HF. eauto. intros A.
+             eapply Mem.perm_free_1; eauto.
+             destruct (peq bx b). 2: eauto.
+             destruct (zle lo ox). 2: lia.
+             destruct (zlt ox hi). 2: lia.
+             subst. exfalso. eapply Mem.perm_free_2. apply HF.
+             instantiate (1 := ox). lia. eauto.
+             apply H0; eauto.
+          -- exploit Mem.perm_free_3. apply e. eauto. intros.
+             eapply Mem.perm_free_1; eauto.
+             destruct (peq bx b). 2: eauto.
+             destruct (zle lo ox). 2: lia.
+             destruct (zlt ox hi). 2: lia.
+             subst. exfalso. eapply Mem.perm_free_2. apply e.
+             instantiate (1 := ox). lia. eauto.
+             apply H0; eauto.
+        * eapply Mem.free_result in HF.
+          eapply Mem.free_result in e. subst.
+          apply H2.
+        * eauto with mem.
+      + apply contents_join_r; eauto.
+        * intros A. apply H.
+          eapply Mem.perm_free_3; eauto.
+        * intros k p. specialize (H0 k p). rewrite H0.
+          assert (bx <> b \/ ox < lo \/ hi <= ox).
+          {
+             destruct (peq bx b). 2: eauto.
+             destruct (zle lo ox). 2: lia.
+             destruct (zlt ox hi). 2: lia.
+             exfalso. subst. apply H.
+             apply Mem.free_range_perm in HF.
+             eauto with mem.
+          }
+          split; intros.
+          -- eapply Mem.perm_free_1; eauto.
+          -- eapply Mem.perm_free_3; eauto.
+        * eapply Mem.free_result in HF. subst. apply H1.
+        * eapply Mem.free_result in HF.
+          eapply Mem.free_result in e. subst.
+          apply H2.
+    - destruct H.
+      apply Mem.nextblock_free in HF.
+      apply Mem.nextblock_free in e. congruence.
+    - destruct H.
+      exploit Mem.nextblock_free. apply HF. intros C.
+      apply Mem.free_alloc_flag in HF.
+      apply Mem.free_alloc_flag in e.
+      inv mjoin_alloc_flag0.
+      + apply alloc_flag_join_l; eauto. congruence.
+      + apply alloc_flag_join_r; eauto. congruence.
+      + apply alloc_flag_join_x; eauto.
+  Qed.
 
   Instance free_list_join:
     Monotonic
@@ -439,84 +517,86 @@ Section JOIN_PROP.
       transport HX. rewrite H0. eauto.
   Qed.
 
-  (* Lemma mse_free_outside_p m1 m2 b lo hi m1': *)
-  (*   join m m1 m2 -> *)
-  (*   Mem.free m1 b lo hi = Some m1' -> *)
-  (*   forall ofs, lo <= ofs < hi -> ~ P b ofs. *)
-  (* Proof. *)
-  (*   intros HM HF ofs HO contra. *)
-  (*   eapply diff_perm; eauto. *)
-  (*   apply Mem.free_range_perm in HF. eauto with mem. *)
-  (* Qed. *)
-
-  (* Lemma mse_freelist_outside_p m1 m2 bs m1': *)
-  (*   join m m1 m2 -> *)
-  (*   Mem.free_list m1 bs = Some m1' -> *)
-  (*   forall b lo hi ofs, In (b, lo, hi) bs -> lo <= ofs < hi -> ~ P b ofs. *)
-  (* Proof. *)
-  (*   revert m1 m2 m1'. induction bs. *)
-  (*   - intros. inv H1. *)
-  (*   - intros. cbn in H0. destruct a. destruct p. *)
-  (*     destruct Mem.free eqn: HF; try congruence. *)
-  (*     inv H1. *)
-  (*     + inv H3. eapply mse_free_outside_p; eauto. *)
-  (*     + transport HF. eapply IHbs; eauto. *)
-  (* Qed. *)
-
+  Local Transparent Mem.alloc.
   Instance alloc_join:
     Monotonic
       (@Mem.alloc)
       (join m ++> - ==> - ==> option_le ((join m) * eq)).
   Proof.
-  Admitted.
-  (*   repeat rstep. *)
-  (*   rename x into m1. rename y into m2. *)
-  (*   rename x0 into lo. rename x1 into hi. *)
-  (*   destruct (Mem.alloc m1 lo hi) as [m1' b1] eqn: HA1. *)
-  (*   destruct (Mem.alloc m2 lo hi) as [m2' b2] eqn: HA2. *)
-  (*   assert (HB: b1 = b2). *)
-  (*   { *)
-  (*     exploit Mem.alloc_result. apply HA1. *)
-  (*     exploit Mem.alloc_result. apply HA2. *)
-  (*     intros; subst. *)
-  (*     unfold Mem.nextblock. f_equal. apply H. *)
-  (*   } *)
-  (*   subst. split; cbn. constructor. *)
-  (*   - exploit Mem.support_alloc. apply HA1. *)
-  (*     exploit Mem.support_alloc. apply HA2. *)
-  (*     intros -> ->. f_equal. apply H. *)
-  (*   - intros * HP. split; intros X. *)
-  (*     + exploit Mem.perm_alloc_inv. apply HA1. apply X. *)
-  (*       destruct eq_block; subst; intros Y. *)
-  (*       * exploit Mem.perm_alloc_2. apply HA2. apply Y. *)
-  (*         intros Z. eauto with mem. *)
-  (*       * rewrite (same_perm _ _ H) in Y; eauto. *)
-  (*         eapply Mem.perm_alloc_1; eauto. *)
-  (*     + exploit Mem.perm_alloc_inv. apply HA2. apply X. *)
-  (*       destruct eq_block; subst; intros Y. *)
-  (*       * exploit Mem.perm_alloc_2. apply HA1. apply Y. *)
-  (*         intros Z. eauto with mem. *)
-  (*       * rewrite <- (same_perm _ _ H) in Y; eauto. *)
-  (*         eapply Mem.perm_alloc_1; eauto. *)
-  (*   - intros * HP. *)
-  (*     Transparent Mem.alloc. *)
-  (*     unfold Mem.alloc in HA1, HA2. inv HA1. inv HA2. cbn. *)
-  (*     rewrite H2. destruct (peq b (Mem.nextblock m1)); subst. *)
-  (*     + rewrite !NMap.gss. reflexivity. *)
-  (*     + rewrite !NMap.gso; eauto. *)
-  (*       apply H; eauto. *)
-  (*   - intros * HP contra. *)
-  (*     eapply diff_perm; eauto. *)
-  (*     eapply Mem.perm_alloc_4; eauto. *)
-  (*     intros contra'. subst. *)
-  (*     exploit diff_allocated; eauto. *)
-  (*     eapply Mem.fresh_block_alloc; eauto. *)
-  (*   - intros. destruct (peq b b2). subst. *)
-  (*     + eapply Mem.valid_new_block; eauto. *)
-  (*     + eapply Mem.valid_block_alloc; eauto. *)
-  (*       eapply H; eauto. *)
-  (*   - reflexivity. *)
-  (* Qed. *)
+    repeat rstep.
+    rename x0 into lo. rename x1 into hi.
+    rename x into m1. rename y into m2.
+    destruct (Mem.alloc m1 lo hi) eqn: HA; try constructor.
+    destruct p as (m1' & b1).
+    destruct H.
+    exploit Mem.alloc_flag_alloc1; eauto. intros A.
+    inv mjoin_alloc_flag0; try congruence.
+    edestruct Mem.alloc_succeed as [[m2' b2] HB].
+    apply H1. rewrite HB. constructor.
+    assert (HNB: Mem.nextblock m1 = Mem.nextblock m2).
+    { apply Pos.max_r in H2. congruence. }
+    assert (X: b1 = b2).
+    {
+      apply Mem.alloc_result in HA.
+      apply Mem.alloc_result in HB.
+      congruence.
+    }
+    subst; split; cbn; eauto.
+    - constructor.
+      + intros bx ox. specialize (mjoin_contents0 bx ox).
+        inv mjoin_contents0.
+        * apply contents_join_l; eauto.
+          -- intros k p.
+             destruct (peq bx b2).
+             ++ subst. split; intros.
+                ** exploit Mem.perm_alloc_inv. apply HA. eauto.
+                   destruct eq_block; try easy.
+                   intros. eauto with mem.
+                ** exploit Mem.perm_alloc_inv. apply HB. eauto.
+                   destruct eq_block; try easy.
+                   intros. eauto with mem.
+             ++ split; intros.
+                ** exploit Mem.perm_alloc_4. apply HA. all: eauto.
+                   intros. eapply Mem.perm_alloc_1; eauto.
+                   apply H4. eauto.
+                ** exploit Mem.perm_alloc_4. apply HB. all: eauto.
+                   intros. eapply Mem.perm_alloc_1; eauto.
+                   apply H4. eauto.
+          -- unfold Mem.alloc in HA, HB.
+             rewrite A in HA. inv HA.
+             rewrite H1 in HB. inv HB. cbn.
+             rewrite HNB.
+             destruct (peq bx (Mem.nextblock m2)).
+             ++ subst. rewrite !PMap.gss. reflexivity.
+             ++ rewrite !PMap.gso; eauto.
+          -- eauto with mem.
+        * assert (bx <> b2).
+          {
+            intros X. subst. unfold Mem.valid_block, Plt in H7.
+            apply Mem.alloc_result in HB. subst.
+            rewrite HNB in *. lia.
+          }
+          apply contents_join_r; eauto.
+          -- intros X. apply H3. eauto with mem.
+          -- intros k p. rewrite H4.
+             split; intros; eauto with mem.
+          -- unfold Mem.alloc in HA. rewrite A in HA. inv HA.
+             cbn. rewrite PMap.gso; eauto.
+          -- rewrite H6.
+             unfold Mem.alloc in HB. rewrite H1 in HB.
+             inv HB. cbn. rewrite PMap.gso; eauto.
+      + apply Mem.nextblock_alloc in HA.
+        apply Mem.nextblock_alloc in HB.
+        rewrite HA. rewrite HB. rewrite HNB.
+        symmetry. apply Pos.max_r.
+        etransitivity; eauto. rewrite HNB. lia.
+      + apply alloc_flag_join_l; eauto.
+        * apply Mem.alloc_flag_alloc2 in HA. easy.
+        * apply Mem.alloc_flag_alloc2 in HB. easy.
+        * apply Mem.nextblock_alloc in HA. rewrite HA.
+          etransitivity; eauto. rewrite HNB. lia.
+  Qed.
+
   Opaque Mem.alloc.
 
 (*
