@@ -60,6 +60,39 @@ Section JOIN.
 
 End JOIN.
 
+Hint Constructors  alloc_flag_join contents_join.
+
+Section JOIN_PROP.
+
+  Lemma join_commutative m1 m2 m:
+    join m1 m2 m -> join m2 m1 m.
+  Proof.
+    intros H. inv H. constructor.
+    - intros. specialize (mjoin_contents0 b ofs).
+      inv mjoin_contents0; eauto.
+    - now rewrite Pos.max_comm.
+    - inv mjoin_alloc_flag0; eauto.
+  Qed.
+
+  Lemma join_associative m1 m2 m3 m12 m23 m123:
+    join m1 m2 m12 -> join m12 m3 m123 -> join m2 m3 m23 -> join m1 m23 m123.
+  Proof.
+    intros A B C. inv A. inv B. inv C. constructor.
+    - intros b ofs.
+      specialize (mjoin_contents0 b ofs).
+      specialize (mjoin_contents1 b ofs).
+      specialize (mjoin_contents2 b ofs).
+      inv mjoin_contents0; inv mjoin_contents1; inv mjoin_contents2.
+      + apply contents_join_l; eauto; try congruence.
+        intros. rewrite <- H10. eauto.
+        unfold Mem.valid_block, Plt in *.
+        rewrite mjoin_nextblock2. lia.
+      + apply contents_join_l; eauto; try congruence.
+        intros. rewrite <- H5. rewrite <- H10. rewrite <- H0 in H4. split.
+  Admitted.
+
+End JOIN_PROP.
+
 Section JOIN_PROP.
 
   Variable (m: mem).
@@ -599,88 +632,33 @@ Section JOIN_PROP.
 
   Opaque Mem.alloc.
 
-(*
-  Lemma mse_store_unchanged_on m1 m2 ch b ofs v m1' m2':
-    mem_same_except m1 m2 ->
-    Mem.store ch m1 b ofs v = Some m1' ->
-    Mem.store ch m2 b ofs v = Some m2' ->
-    Mem.unchanged_on P m2 m2'.
+  Lemma bind_parameters_join:
+    Monotonic
+      (@bind_parameters)
+      (- ==> - ==> join m ++> - ==> - ==> set_le (join m)).
   Proof.
-    intros. eapply Mem.store_unchanged_on; eauto.
-    intros i Hi contra.
-    eapply diff_perm; eauto.
-    exploit Mem.store_valid_access_3. apply H0. intros [A B].
-    cut (Mem.perm m1 b i Cur Writable); eauto with mem.
+    repeat rstep. intros ? ?. revert y H.
+    induction H0.
+    - eexists. split. econstructor. eauto.
+    - intros. exploit assign_loc_join; eauto.
+      intros (? & ? & ?).
+      exploit IHbind_parameters. eauto.
+      intros (? & ? & ?).
+      eexists. split; eauto. econstructor; eauto.
   Qed.
 
-  Lemma mse_storebytes_unchanged_on m1 m2 b ofs vs m1' m2':
-    mem_same_except m1 m2 ->
-    Mem.storebytes m1 b ofs vs = Some m1' ->
-    Mem.storebytes m2 b ofs vs = Some m2' ->
-    Mem.unchanged_on P m2 m2'.
+  Lemma alloc_variables_join:
+    Monotonic
+      (@alloc_variables)
+      (- ==> - ==> join m ++> - ==> - ==> set_le (join m)).
   Proof.
-    intros. eapply Mem.storebytes_unchanged_on; eauto.
-    intros i Hi contra. eapply diff_perm; eauto.
-    cut (Mem.perm m1 b i Cur Writable); eauto with mem.
-    eapply Mem.storebytes_range_perm in H0. apply H0; eauto.
+    repeat rstep. intros ? ?. revert y H.
+    induction H0.
+    - intros. eexists. split. econstructor. eauto.
+    - intros. transport H. destruct x0. destruct H3. cbn in *. subst.
+      exploit IHalloc_variables. eauto.
+      intros (? & ? & ?).
+      eexists. split; eauto. econstructor; eauto.
   Qed.
 
-  Lemma mse_assign_loc_unchanged_on ce m1 ty b ofs bf v m1' m2 m2':
-    mem_same_except m1 m2 ->
-    assign_loc ce ty m1 b ofs bf v m1' ->
-    assign_loc ce ty m2 b ofs bf v m2' ->
-    Mem.unchanged_on P m2 m2'.
-  Proof.
-    intros. inv H0; inv H1; try congruence.
-    - unfold Mem.storev in H2. eapply mse_store_unchanged_on; eauto.
-      replace chunk with chunk0 by congruence. eauto.
-    - eapply mse_storebytes_unchanged_on; eauto.
-      replace bytes0 with bytes in *. eauto.
-      transport H6. subst. congruence.
-    - inv H2. inv H8. unfold Mem.storev in *.
-      eapply mse_store_unchanged_on; eauto.
-      replace c with c0. eauto.
-      transport H5. congruence.
-  Qed.
-
-  Lemma assign_loc_determ ce ty m b ofs bf v m1 m2:
-    assign_loc ce ty m b ofs bf v m1 ->
-    assign_loc ce ty m b ofs bf v m2 ->
-    m1 = m2.
-  Proof.
-    intros H1 H2. inv H1; inv H2; try congruence.
-    inv H; inv H7; try congruence.
-  Qed.
-
-  Lemma mse_bind_parameters_unchanged_on ge e m1 ps vargs m1' m2 m2':
-    mem_same_except m1 m2 ->
-    bind_parameters ge e m1 ps vargs m1' ->
-    bind_parameters ge e m2 ps vargs m2' ->
-    Mem.unchanged_on P m2 m2'.
-  Proof.
-    intros. revert m2 H H1. induction H0.
-    - intros. inv H1. apply Mem.unchanged_on_refl.
-    - intros. inv H3.
-      edestruct assign_loc_mse as (mx & A & B); eauto.
-      rewrite H in H11. inv H11.
-      exploit assign_loc_determ. eauto. apply H12. intros ->.
-      eapply Mem.unchanged_on_trans; eauto.
-      eapply mse_assign_loc_unchanged_on; eauto.
-  Qed.
-
-  Lemma mse_alloc_variables_unchanged_on ge e m1 l e' m1' m2 m2':
-    mem_same_except m1 m2 ->
-    alloc_variables ge e m1 l e' m1' ->
-    alloc_variables ge e m2 l e' m2' ->
-    Mem.unchanged_on P m2 m2'.
-  Proof.
-    intros. revert m2 H H1. induction H0.
-    - intros. inv H1. apply Mem.unchanged_on_refl.
-    - intros. inv H2.
-      exploit alloc_mse. eauto. rewrite H. rewrite H10. intros (A & B).
-      cbn in *. subst.
-      eapply Mem.unchanged_on_trans; eauto.
-      eapply Mem.alloc_unchanged_on; eauto.
-  Qed.
-*)
 End JOIN_PROP.
