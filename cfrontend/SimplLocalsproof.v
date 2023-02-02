@@ -29,7 +29,7 @@ Definition match_prog (p tp: program) : Prop :=
 Lemma match_transf_program:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
 Proof.
-  unfold transf_program; intros. monadInv H. 
+  unfold transf_program; intros. monadInv H.
   split; auto. apply match_transform_partial_program. rewrite EQ. destruct x; auto.
 Qed.
 
@@ -191,7 +191,7 @@ Proof.
 - inv H0; auto.
 - inv H0; auto.
 - inv H0; auto.
-- inv H0. unfold Mptr, Val.load_result; destruct Archi.ptr64; auto. 
+- inv H0. unfold Mptr, Val.load_result; destruct Archi.ptr64; auto.
 - inv H0. unfold Mptr, Val.load_result; rewrite H1; auto.
 - inv H0. unfold Val.load_result; rewrite H1; auto.
 - inv H0. unfold Mptr, Val.load_result; rewrite H1; auto.
@@ -2139,7 +2139,7 @@ Proof.
     unfold var_names. rewrite map_app. auto.
   exploit match_envs_alloc_variables; eauto.
     instantiate (1 := cenv_for_gen (addr_taken_stmt f.(fn_body)) (fn_params f ++ fn_vars f)).
-    intros. eapply cenv_for_gen_by_value; eauto. rewrite VSF.mem_iff. eexact H4.
+    intros. eapply cenv_for_gen_by_value; eauto. rewrite VSF.mem_iff. eexact H5.
     intros. eapply cenv_for_gen_domain. rewrite VSF.mem_iff. eexact H3.
   intros [j' [te [tm0 [A [B [C [D [E [F G]]]]]]]]].
   assert (K: list_forall2 val_casted vargs (map snd (fn_params f))).
@@ -2161,10 +2161,11 @@ Proof.
   econstructor; split.
   eapply plus_left. econstructor; eauto.
   econstructor. exact Y. exact X. exact Z. simpl. eexact A. simpl. eexact Q.
+  { inv MINJ. congruence. }
   simpl. eapply star_trans. eapply step_add_debug_params. auto. eapply forall2_val_casted_inject; eauto. eexact Q.
   eapply star_trans. eexact P. eapply step_add_debug_vars.
   unfold remove_lifted; intros. rewrite List.filter_In in H3. destruct H3.
-  apply negb_true_iff in H4. eauto.
+  apply negb_true_iff in H5. eauto.
   reflexivity. reflexivity. traceEq.
   econstructor; eauto.
   eapply match_cont_invariant; eauto.
@@ -2269,9 +2270,10 @@ Theorem transf_program_correct prog tprog:
   forward_simulation (cc_c injp) (cc_c inj) (semantics1 prog) (semantics2 tprog).
 Proof.
   fsim eapply forward_simulation_plus.
-  { intros. destruct Hse, H. cbn in *.
-    eapply (Genv.is_internal_match (proj1 MATCH)); eauto 1.
-    intros _ [|] [|] Hf; monadInv Hf; auto. }
+  (* { intros. destruct Hse, H. cbn in *. *)
+  (*   eapply (Genv.is_internal_match (proj1 MATCH)); eauto 1. *)
+  (*   intros _ [|] [|] Hf; monadInv Hf; auto. } *)
+  { destruct f1; monadInv H; intuition auto. }
   apply initial_states_simulation; eauto.
   apply final_states_simulation; eauto.
   intros. cbn. eapply external_states_simulation; eauto.
@@ -2282,7 +2284,7 @@ Qed.
 
 Instance TransfSimplLocalsLink : TransfLink match_prog.
 Proof.
-  red; intros. eapply Ctypes.link_match_program; eauto. 
+  red; intros. eapply Ctypes.link_match_program; eauto.
 - intros.
 Local Transparent Linker_fundef.
   simpl in *; unfold link_fundef in *.
@@ -2291,5 +2293,5 @@ Local Transparent Linker_fundef.
   destruct e; inv H2. exists (Internal x); split; auto. simpl; rewrite EQ; auto.
   destruct (external_function_eq e e0 && typelist_eq t t1 &&
             type_eq t0 t2 && calling_convention_eq c c0); inv H2.
-  econstructor; split; eauto. 
+  econstructor; split; eauto.
 Qed.

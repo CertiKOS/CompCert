@@ -75,7 +75,7 @@ Record cklr :=
       Monotonic
         (@Mem.alloc)
         (|= match_mem ++> - ==> - ==>
-         <> match_mem * block_inject_sameofs @@ [mi]);
+         k1 option_le (<> match_mem * block_inject_sameofs @@ [mi]));
 
     cklr_free:
       Monotonic
@@ -172,6 +172,9 @@ Record cklr :=
       (<> match_mem)%klr w m1' m2' ->
       Ple (Mem.nextblock m1) (Mem.nextblock m1') <->
       Ple (Mem.nextblock m2) (Mem.nextblock m2');
+
+    cklr_alloc_flag w m1 m2:
+      match_mem w m1 m2 -> Mem.alloc_flag m1 = Mem.alloc_flag m2;
 
   }.
 

@@ -187,7 +187,7 @@ Qed.
 Lemma alloc_mmatch m lo hi m' b bc am :
   bc_nostack bc ->
   mmatch bc m am ->
-  Mem.alloc m lo hi = (m', b) ->
+  Mem.alloc m lo hi = Some (m', b) ->
   mmatch (alloc_bc b bc) m' am.
 Proof.
   intros Hbc Hm Hm'.
@@ -239,11 +239,11 @@ Proof.
     + etransitivity.
       * eapply mmatch_below; eauto.
       * xomega.
-Qed. 
+Qed.
 
 Next Obligation.
   destruct 1. intros lo hi.
-  destruct (Mem.alloc m1) as [m1' b] eqn:Hm1'.
+  destruct (Mem.alloc m1) as [[m1' b]|] eqn:Hm1'; try constructor.
   edestruct Mem.alloc_extends as (m2' & Hm2' & Hm'); eauto.
   reflexivity. reflexivity.
   assert (vaext_wf se (alloc_bc b bc) m1').
@@ -260,6 +260,7 @@ Next Obligation.
       intros. symmetry. eapply alloc_bc_glob; eauto.
     - intros x. cbn. destruct Pos.eqb; eauto. discriminate.
   }
+  rewrite Hm2'. red. constructor.
   exists (vaextw se (alloc_bc b bc) m1' H1). split.
   - constructor; cbn; auto.
     + rewrite (Mem.alloc_result m1 lo hi m1' b); auto.
@@ -269,7 +270,7 @@ Next Obligation.
       xomega.
     + intros.
       erewrite <- Mem.loadbytes_alloc_unchanged; eauto.
-  - rewrite Hm2'. repeat rstep.
+  - repeat rstep.
     + constructor.
       edestruct (Mem.alloc_extends m1 m2 lo hi b m1' lo hi); eauto; xomega.
     + red. cbn. unfold inj_of_bc. cbn.
@@ -291,7 +292,7 @@ Next Obligation.
     + eapply mmatch_free; eauto.
     + intros cu Hcu. eapply romatch_free; eauto.
   }
-  exists (vaextw _ _ _ H'). split. 
+  exists (vaextw _ _ _ H'). split.
   - constructor; cbn; auto.
     + rewrite (Mem.nextblock_free m1 b lo hi m1'); eauto. reflexivity.
     + intros. red in Hptr; cbn in Hptr.
@@ -435,7 +436,7 @@ Next Obligation.
   edestruct Mem.storebytes_mapped_inject as (m2' & Hm2' & Hinj'); eauto.
   rewrite Z.add_0_r in Hm2'. rewrite Hm2'.
   constructor.
-  
+
   assert (H' : vaext_wf se bc m1').
   {
     destruct H.
@@ -443,7 +444,7 @@ Next Obligation.
     - eapply mmatch_inj_top; eauto.
     - intros cu Hcu. eapply romatch_storebytes; eauto.
   }
-  
+
   exists (vaextw _ _ _ H'). split.
   - constructor; cbn; auto.
     + apply Mem.nextblock_storebytes in Hm1'. rauto.
@@ -529,6 +530,10 @@ Next Obligation.
   inv H6. inv H9. split; congruence.
 Qed.
 
+Next Obligation.
+  inv H.  inv H5. eauto.
+Qed.
+
 (** * Other properties *)
 
 (** ** Connection with [vamatch] *)
@@ -571,7 +576,7 @@ Proof.
       exists (vaextw se bc' m' Hw'). split.
       * constructor; auto.
       * constructor; cbn; auto.
-        -- apply val_inject_id in H18. 
+        -- apply val_inject_id in H18.
            eapply Mem.val_inject_lessdef_compose; eauto.
            eapply vmatch_inj; eauto.
         -- constructor; auto.

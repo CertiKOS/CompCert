@@ -1,243 +1,329 @@
-Require Import Relations.
-Require Import List.
-Require Import Coqlib.
-Require Import LanguageInterface Events Globalenvs Smallstep_.
+Require Import Relations List Coqlib.
+Require Import SmallstepLinking.
+Require Import AST LanguageInterface Events Globalenvs Smallstep.
+Require Import Linking.
+Require Import CategoricalComp CallconvAlgebra.
+Require Import Coq.Logic.ClassicalFacts.
+Require Import Coq.Logic.FunctionalExtensionality.
+Axiom EquivThenEqual: prop_extensionality.
 
 Open Scope smallstep_scope.
 Delimit Scope smallstep_scope with smallstep.
 
 Section FLAT_COMP.
-  Context {liA liB S1 S2} (L1: lts liA liB S1) (L2: lts liA liB S2).
+  Context {I liA liB} (L: I -> semantics liA liB).
+  Section WITH_SE.
+    Context (se: Genv.symtbl).
 
-  Variant flat_state := | flat_st1 (s: S1) | flat_st2 (s: S2).
+    Variant flat_state := flat_st i (s: state (L i)).
 
-  Inductive flat_step: flat_state -> trace -> flat_state -> Prop :=
-  | step1 s t s':
-      Step L1 s t s' -> flat_step (flat_st1 s) t (flat_st1 s')
-  | step2 s t s':
-      Step L2 s t s' -> flat_step (flat_st2 s) t (flat_st2 s').
+    Inductive flat_step: flat_state -> trace -> flat_state -> Prop :=
+    | step_internal i s t s':
+        Step (L i se) s t s' -> flat_step (flat_st i s) t (flat_st i s').
 
-  Inductive flat_initial_state (q: query liB): flat_state -> Prop :=
-  | initial_state1 s:
-      valid_query L1 q = true ->
-      initial_state L1 q s ->
-      flat_initial_state q (flat_st1 s)
-  | initial_state2 s:
-      valid_query L2 q = true ->
-      initial_state L2 q s ->
-      flat_initial_state q (flat_st2 s).
+    Inductive flat_initial_state (q: query liB): flat_state -> Prop :=
+    | initial_state_intro i s:
+        initial_state (L i se) q s ->
+        flat_initial_state q (flat_st i s).
 
-  Inductive flat_at_external: flat_state -> query liA -> Prop :=
-  | at_external1 s q:
-      at_external L1 s q ->
-      flat_at_external (flat_st1 s) q
-  | at_external2 s q:
-      at_external L2 s q ->
-      flat_at_external (flat_st2 s) q.
+    Inductive flat_at_external: flat_state -> query liA -> Prop :=
+    | at_external_intro i s q:
+        at_external (L i se) s q -> flat_at_external (flat_st i s) q.
 
-  Inductive flat_after_external: flat_state -> reply liA -> flat_state -> Prop :=
-  | after_external1 s r s':
-      after_external L1 s r s' ->
-      flat_after_external (flat_st1 s) r (flat_st1 s')
-  | after_external2 s r s':
-      after_external L2 s r s' ->
-      flat_after_external (flat_st2 s) r (flat_st2 s').
+    Inductive flat_after_external: flat_state -> reply liA -> flat_state -> Prop :=
+    | after_external_intro i s r s':
+        after_external (L i se) s r s' ->
+        flat_after_external (flat_st i s) r (flat_st i s').
 
-  Inductive flat_final_state: flat_state -> reply liB -> Prop :=
-  | final_state1 s r:
-      final_state L1 s r ->
-      flat_final_state (flat_st1 s) r
-  | final_state2 s r:
-      final_state L2 s r ->
-      flat_final_state (flat_st2 s) r.
+    Inductive flat_final_state: flat_state -> reply liB -> Prop :=
+    | final_state1 i s r:
+        final_state (L i se) s r -> flat_final_state (flat_st i s) r.
 
-  Definition flat_lts :=
+    Lemma star_internal i s t s':
+      Star (L i se) s t s' ->
+      star (fun _ => flat_step) tt (flat_st i s) t (flat_st i s').
+    Proof.
+      induction 1; [eapply star_refl | eapply star_step]; eauto.
+      constructor; auto.
+    Qed.
+
+    Lemma plus_internal i s t s':
+      Plus (L i se) s t s' ->
+      plus (fun _ => flat_step) tt (flat_st i s) t (flat_st i s').
+    Proof.
+      destruct 1; econstructor; eauto using step_internal, star_internal.
+    Qed.
+
+  End WITH_SE.
+
+  Program Definition flat_comp_semantics' sk: semantics liA liB :=
     {|
-    step ge := flat_step;
-    valid_query q := valid_query L1 q || valid_query L2 q;
-    initial_state := flat_initial_state;
-    at_external := flat_at_external;
-    after_external := flat_after_external;
-    final_state := flat_final_state;
-    globalenv := tt;
+      activate se :=
+        {|
+          Smallstep.step ge:= flat_step se;
+          Smallstep.initial_state := flat_initial_state se;
+          Smallstep.at_external := flat_at_external se;
+          Smallstep.after_external := flat_after_external se;
+          Smallstep.final_state := flat_final_state se;
+          globalenv := tt;
+        |};
+      skel := sk;
+      footprint x := exists i, footprint (L i) x;
     |}.
+
+  (* The external call from (L i) cannot be in the footprint of (L j) for i ≠ j *)
+  Class FlatLinkable :=
+    flat_linking:
+      forall i j se s q, at_external (L i se) s q -> valid_query (L j) se q -> i = j.
 
 End FLAT_COMP.
 
-Notation "L1 ⊎ L2" :=  (flat_lts L1 L2)(at level 40, left associativity): lts_scope.
+Section FSIM.
+  Context {I liA1 liA2 liB1 liB2}
+          (cc1: callconv liA1 liA2)
+          (cc2: callconv liB1 liB2)
+          (L1: I -> semantics liA1 liB1)
+          (L2: I -> semantics liA2 liB2).
+  Context (HL: forall i, fsim_components cc1 cc2 (L1 i) (L2 i))
+          (se1 se2: Genv.symtbl) (w : ccworld cc2)
+          (Hse: match_senv cc2 w se1 se2)
+          (Hse1: forall i, Genv.valid_for (skel (L1 i)) se1).
 
-Require Import CategoricalComp.
+  Notation index := {i & fsim_index (HL i)}.
+  Variant order: index -> index -> Prop :=
+  | order_intro i x y: fsim_order (HL i) x y -> order (existT _ i x) (existT _ i y).
 
-Section IDENTITY.
-  Context {li S} (L : lts li li S).
+  Variant match_states: index -> flat_state L1 -> flat_state L2 -> Prop :=
+  | match_flat_st i idx s1 s2:
+      fsim_match_states (HL i) se1 se2 w idx s1 s2 ->
+      match_states (existT _ i idx) (flat_st L1 i s1) (flat_st L2 i s2).
 
-  Inductive id_state_match: (@flat_state (@id_state li) S) -> S -> Prop :=
-  | id_state_match_intro s:
-      id_state_match (flat_st2 s) s.
-
-  Lemma identity1: 1 ⊎ L ≤ L.
+  Local Lemma flat_compose_simulation' sk sk':
+    fsim_properties cc1 cc2 se1 se2 w
+                    (flat_comp_semantics' L1 sk se1)
+                    (flat_comp_semantics' L2 sk' se2)
+                    index order match_states.
   Proof.
-    apply fsim_lts_trivial_order.
-    eexists. intros se.
-    eapply forward_simulation_step with (match_states := id_state_match);
-      intros; inv H; cbn; auto; inv H0.
-    - inv H.
-    - eexists; repeat constructor; eauto.
-    - eexists; repeat constructor; eauto.
-    - exists tt. exists q1. repeat apply conj; try constructor; auto.
-      intros.  inv H0. eexists; repeat constructor; eauto.
-    - eexists; repeat constructor; eauto.
+    split; cbn.
+    - intros q1 q2 s1 Hq H.
+      inv H; pose proof (fsim_lts (HL i) _ _ Hse (Hse1 i)).
+      edestruct @fsim_match_initial_states as (idx & s' & Hs' & Hs);
+        eauto; eexists _, _; split; econstructor; eauto.
+    - intros idx s1 s2 r1 Hs H.
+      inv H. inv Hs. subst_dep.
+      pose proof (fsim_lts (HL i) _ _ Hse (Hse1 i)).
+      edestruct @fsim_match_final_states as (r' & H' & Hr');
+        eauto; eexists; split; try econstructor; eauto.
+    - intros idx s1 s2 q1 Hs H.
+      inv H. inv Hs. subst_dep.
+      pose proof (fsim_lts (HL i) _ _ Hse (Hse1 i)).
+      edestruct @fsim_match_external as (w1 & q' & H' & Hq' & Hse' & HH);
+        eauto; eexists _, _; repeat apply conj; eauto.
+      + constructor; auto.
+      + intros r1 r2 fs Hr Haft. inv Haft. subst_dep.
+        exploit HH; eauto. intros (? & ? & ? & ?).
+        eexists _, _; split; econstructor; eauto.
+    - intros s1 t s1' Hstep idx s2 Hs.
+      inv Hstep. inv Hs. subst_dep.
+      pose proof (fsim_lts (HL i) _ _ Hse (Hse1 i)).
+      edestruct @fsim_simulation as (idx' & ? & Hs2' & Hs'); eauto.
+      + eexists _, _; split.
+        * destruct Hs2'; [left | right].
+          -- apply plus_internal. eauto.
+          -- destruct a; split; [ | constructor ]; eauto.
+             apply star_internal. eauto.
+        * now constructor.
   Qed.
 
-  Hypothesis init_state_valid: forall q s, initial_state L q s -> valid_query L q = true.
+End FSIM.
 
-  Lemma identity2: L ≤ 1 ⊎ L.
+Require Import ClassicalEpsilon.
+
+Section FLAT_FSIM.
+
+  Context {I liA1 liA2 liB1 liB2}
+          (cc1: callconv liA1 liA2)
+          (cc2: callconv liB1 liB2)
+          (L1: I -> semantics liA1 liB1)
+          (L2: I -> semantics liA2 liB2).
+  Hypothesis (H: forall i, forward_simulation cc1 cc2 (L1 i) (L2 i)).
+  Variable (sk: AST.program unit unit).
+  Hypothesis (Hsk: forall i, linkorder (skel (L1 i)) sk).
+
+  Lemma flat_composition_simulation':
+    forward_simulation cc1 cc2 (flat_comp_semantics' L1 sk) (flat_comp_semantics' L2 sk).
   Proof.
-    apply fsim_lts_trivial_order.
-    eexists. intros se.
-    eapply forward_simulation_step with (match_states := fun s1 s2 => id_state_match s2 s1);
-      intros; cbn; auto.
-    - now inv H.
-    - inv H. exists (flat_st2 s1).
-      split; constructor; auto.
-      eapply init_state_valid. eauto.
-    - inv H. eexists. split; try constructor; auto.
-    - inv H. exists tt. exists q1. repeat apply conj; try constructor; auto.
-      intros. subst. eexists; repeat constructor; eauto.
-    - inv H0. eexists; repeat constructor; eauto.
+    assert (HL: forall i, fsim_components cc1 cc2 (L1 i) (L2 i)).
+    {
+      intros i. specialize (H i).
+      apply epsilon. auto. exact (fun _ => True).
+    }
+    constructor.
+    eapply Forward_simulation
+      with (order cc1 cc2 L1 L2 HL)
+           (match_states cc1 cc2 L1 L2 HL); auto.
+    - cbn. intros id.
+      split; intros [i Hi]; exists i; rewrite (fsim_footprint (HL i)) in *; auto.
+    - intros se1 se2 w Hse Hse1.
+      eapply flat_compose_simulation'; eauto.
+      intros; eapply Genv.valid_for_linkorder; eauto.
+    - clear - HL. intros [i x].
+      induction (fsim_order_wf (HL i) x) as [x Hx IHx].
+      constructor. intros z Hxz. inv Hxz; subst_dep. eauto.
   Qed.
 
-  Theorem flat_comp_left_identity: 1 ⊎ L ≡ L.
+End FLAT_FSIM.
+
+Definition flat_comp_semantics {liA liB} (L1: semantics liA liB)
+           (L2: semantics liA liB): option (semantics liA liB) :=
+  let L i := match i with true => L1 | false => L2 end in
+  option_map (flat_comp_semantics' L) (link (skel L1) (skel L2)).
+
+Notation "L1 ⊎ L2" :=  (flat_comp_semantics L1 L2)(at level 40, left associativity): lts_scope.
+
+Lemma flat_compose_simulation
+      {liA1 liA2 liB1 liB2}
+      (cc1: callconv liA1 liB1) (cc2: callconv liA2 liB2)
+      L1a L2a L1b L2b L1 L2:
+  forward_simulation cc1 cc2 L1a L2a ->
+  forward_simulation cc1 cc2 L1b L2b ->
+  L1a ⊎ L1b = Some L1 -> L2a ⊎ L2b = Some L2 ->
+  forward_simulation cc1 cc2 L1 L2.
+Proof.
+  unfold flat_comp_semantics. unfold option_map.  intros [HL1] [HL2] H1 H2.
+  destruct (link (skel L1a) (skel L1b)) as [sk1|] eqn:Hsk1;
+    try discriminate. inv H1.
+  destruct (link (skel L2a) (skel L2b)) as [sk2|] eqn:Hsk2;
+    try discriminate. inv H2.
+  replace sk2 with sk1.
+  apply flat_composition_simulation'.
+  - intros [|]; constructor; auto.
+  - intros [|]; pose proof (link_linkorder _ _ _ Hsk1) as [? ?]; auto.
+  - destruct HL1, HL2. congruence.
+Qed.
+
+Section APPROX.
+
+  Context {I li} (L: I -> semantics li li).
+  Context (sk: AST.program unit unit).
+  Context {HP: forall i, ProgramSem (L i)}.
+  Context `{!FlatLinkable L}.
+
+  Hypothesis I_dec: forall (i j : I), {i = j} + {i <> j}.
+
+  Inductive match_frame: flat_state L -> list (SmallstepLinking.frame L) -> Prop :=
+  | match_frame_intro i s:
+      match_frame (flat_st L i s) (st L i s :: nil).
+
+  Lemma flat_composition_approximation:
+    flat_comp_semantics' L sk ≤ SmallstepLinking.semantics' L sk.
   Proof.
-    split; [ exact identity1 | exact identity2 ].
+    constructor. econstructor; eauto. intros. reflexivity.
+    intros se ? [ ] [ ] Hse.
+    instantiate (1 := fun _ _ _ => _). cbn beta.
+    apply forward_simulation_step with (match_states := match_frame).
+    - intros q ? s1 [ ] Hs.
+      inv Hs; eexists; split; econstructor; eauto.
+      eapply incoming_query_valid; eauto.
+    - intros s1 s2 r Hs H.
+      inv H. inv Hs. subst_dep.
+      eexists; split; econstructor; eauto.
+    - intros s1 s2 q1 Hs H.
+      inv H. inv Hs. subst_dep.
+      eexists tt, _; repeat apply conj; try constructor; auto.
+      + intros j. destruct (I_dec i j) eqn: HI.
+        * subst. eapply outgoing_query_invalid. eauto.
+        * intros X. apply n. eapply flat_linking; eauto.
+      + intros r1 ? s1' [ ] H. inv H. subst_dep.
+        eexists; split; constructor; auto.
+    - intros s1 t s1' Hstep s2 Hs.
+      inv Hstep. inv Hs. subst_dep.
+      eexists; (split; [ | econstructor]; constructor; auto).
+    - apply well_founded_ltof.
   Qed.
 
-  Inductive id_state_match': (@flat_state S (@id_state li)) -> S -> Prop :=
-  | id_state_match'_intro s:
-      id_state_match' (flat_st1 s) s.
-
-  Lemma identity3: L ⊎ 1 ≤ L.
-  Proof.
-    apply fsim_lts_trivial_order.
-    eexists. intros se.
-    eapply forward_simulation_step with (match_states := id_state_match');
-      intros; inv H; cbn; rewrite? orb_false_r; auto; inv H0.
-    - eexists; repeat constructor; eauto.
-    - inv H1. inv H.
-    - eexists; repeat constructor; eauto.
-    - exists tt. exists q1. repeat apply conj; try constructor; auto.
-      intros. inv H0. eexists; repeat constructor; eauto.
-    - eexists; repeat constructor; eauto.
-  Qed.
-
-  Lemma identity4: L ≤ L ⊎ 1.
-  Proof.
-    apply fsim_lts_trivial_order.
-    eexists. intros se.
-    eapply forward_simulation_step with (match_states := fun s1 s2 => id_state_match' s2 s1);
-      intros; cbn; auto; try inv H.
-    - now rewrite orb_false_r.
-    - eexists; repeat constructor; auto.
-      eapply init_state_valid; eauto.
-    - eexists; repeat constructor; auto.
-    - exists tt. exists q1. repeat apply conj; try constructor; auto.
-      intros. subst. eexists; repeat constructor; auto.
-    - inv H0. eexists; repeat constructor; auto.
-  Qed.
-
-  Theorem flat_comp_right_identity: L ⊎ 1 ≡ L.
-  Proof.
-    split; [ exact identity3 | exact identity4 ].
-  Qed.
-
-End IDENTITY.
+End APPROX.
 
 Section DIST.
-  Context {liA liB liC S1 S2 S}
-          (L1: lts liB liC S1) (L2: lts liB liC S2)
-          (L: lts liA liB S).
+  Context {I liA liB liC} (Li: I -> semantics liB liC) (L: semantics liA liB).
+  Context (sk skh: AST.program unit unit) (skv: I -> AST.program unit unit).
+  Let Lh := flat_comp_semantics' Li skh.
+  Let Lv i := comp_semantics' (Li i) L (skv i).
+  Hypothesis non_empty: inhabited I.
 
-  Inductive dist_match_state:
-    (@comp_state (@flat_state S1 S2) S) ->
-    (@flat_state (@comp_state S1 S) (@comp_state S2 S)) -> Prop :=
-  | dist_match_state1 s1:
-      dist_match_state (st1 (flat_st1 s1)) (flat_st1 (st1 s1))
-  | dist_match_state2 s2:
-      dist_match_state (st1 (flat_st2 s2)) (flat_st2 (st1 s2))
-  | dist_match_state3 s1 s:
-      dist_match_state (st2 (flat_st1 s1) s) (flat_st1 (st2 s1 s))
-  | dist_match_state4 s2 s:
-      dist_match_state (st2 (flat_st2 s2) s) (flat_st2 (st2 s2 s)).
+  (* (L1 ⊎ L2 ⊎ ... ) ∘ L ≅ (L1 ∘ L) ⊎ (L2 ∘ L) ⊎ ... *)
+  Inductive dist_match_state: comp_state Lh L -> flat_state Lv -> Prop :=
+  | dist_match_state1 i s:
+      dist_match_state (st1 Lh _ (flat_st Li i s))
+                       (flat_st Lv i (st1 _ L s))
+  | dist_match_state2 i s1 s2:
+      dist_match_state (st2 Lh L (flat_st Li i s1) s2)
+                       (flat_st Lv i (st2 (Li i) L s1 s2)).
 
-  Lemma distributivity1: (L1 ⊎ L2) ∘ L ≤ (L1 ∘ L) ⊎ (L2 ∘ L).
+  Hint Constructors dist_match_state
+       flat_initial_state flat_at_external
+       flat_final_state flat_after_external
+       comp_initial_state comp_at_external
+       comp_after_external comp_final_state.
+
+  Ltac esca := eexists; split; repeat constructor; auto.
+  (* (L1 ⊎ L2) ∘ L ≤ (L1 ∘ L) ⊎ (L2 ∘ L) *)
+  Lemma distributivity1:
+    comp_semantics' Lh L sk ≤ flat_comp_semantics' Lv sk.
   Proof.
-    apply fsim_lts_trivial_order. eexists. intros se.
+    constructor. econstructor; eauto. intros id. firstorder.
+    intros se ? [ ] [ ] Hse.
+    instantiate (1 := fun _ _ _ => _). cbn beta.
     eapply forward_simulation_step with (match_states := dist_match_state).
-    - intros. inv H. cbn.
-      do 2 rewrite <- orb_assoc. f_equal.
-      rewrite orb_comm. rewrite <- orb_assoc. f_equal.
-      apply orb_diag.
-    - intros. inv H; inv H0; inv H.
-      + eexists; split; repeat constructor; auto.
-        cbn. now rewrite H0.
-      + eexists; split. apply initial_state2.
-        cbn. now rewrite H0. constructor; eauto.
-        constructor.
-    - intros. inv H; inv H0; inv H1; eexists; repeat constructor; auto.
-    - intros. inv H; inv H0.
-      + exists tt. eexists. repeat apply conj; repeat constructor; auto.
-        intros. inv H. inv H0. eexists; repeat constructor; auto.
-      + exists tt. eexists. repeat apply conj; repeat constructor; auto.
-        intros. inv H. inv H0. eexists; repeat constructor; auto.
-    - intros. inv H0; inv H; try inv H1.
-      + eexists; repeat constructor; auto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + inv H5. eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + inv H5. eexists. split; [ | constructor ]. repeat econstructor; eauto.
+    - intros q1 ? s1 [ ] H.
+      inv H. inv H0. eexists; split; auto.
+      repeat constructor. auto.
+    - intros s1 s2 r1 Hs H. inv H; inv H0; inv Hs. subst_dep. esca.
+    - intros s1 s2 q1 Hs H.
+      inv H. inv Hs.
+      eexists tt, _; repeat apply conj; try constructor; auto.
+      + constructor; auto.
+      + intros r1 ? s1' [ ] H. inv H. esca.
+    - intros s1 t s1' Hstep s2 Hs.
+      inv Hstep; inv Hs.
+      + inv H. subst_dep. esca.
+      + esca.
+      + inv H. subst_dep.
+        eexists; split; auto. constructor. eapply step_push; eauto.
+      + inv H0. subst_dep.
+        eexists; split; auto. constructor. eapply step_pop; eauto.
+    - apply well_founded_ltof.
   Qed.
 
-  Hypothesis init_state_valid1: forall q s, initial_state L1 q s -> valid_query L1 q = true.
-  Hypothesis init_state_valid2: forall q s, initial_state L2 q s -> valid_query L2 q = true.
-
-  Lemma distributivity2: (L1 ∘ L) ⊎ (L2 ∘ L) ≤ (L1 ⊎ L2) ∘ L.
+  Ltac esca' := eexists; split; [ | constructor]; repeat constructor; auto.
+  (* (L1 ∘ L) ⊎ (L2 ∘ L) ≤ (L1 ⊎ L2) ∘ L *)
+  Lemma distributivity2:
+    flat_comp_semantics' Lv sk ≤ comp_semantics' Lh L sk.
   Proof.
-    apply fsim_lts_trivial_order. eexists. intros se.
-    eapply forward_simulation_step with (match_states := fun s1 s2 => dist_match_state s2 s1).
-    - intros. inv H. cbn.
-      do 2 rewrite <- orb_assoc. f_equal.
-      rewrite orb_comm. rewrite orb_assoc. f_equal.
-      symmetry. apply orb_diag.
-    - intros. inv H; inv H0; inv H1.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-    - intros. inv H; inv H0; inv H1.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-    - intros. inv H; inv H0; inv H1.
-      + exists tt. exists q1. repeat apply conj; repeat constructor; auto.
-        intros. inv H. inv H0. inv H1.
-        eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + exists tt. exists q1. repeat apply conj; repeat constructor; auto.
-        intros. inv H. inv H0. inv H1.
-        eexists. split; [ | constructor ]. repeat econstructor; eauto.
-    - intros. inv H0; inv H; inv H1.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
-      + eexists. split; [ | constructor ]. repeat econstructor; eauto.
+    constructor. econstructor; eauto. intros i. firstorder.
+    intros se ? [ ] [ ] Hse.
+    instantiate (1 := fun _ _ _ => _). cbn beta.
+    eapply forward_simulation_step with
+        (match_states := fun s1 s2 => dist_match_state s2 s1).
+    - intros q1 ? s1 [ ] H. inv H; inv H0; esca'.
+    - intros s1 s2 r1 Hs H. inv H; inv H0; inv Hs; subst_dep; esca'.
+    - intros s1 s2 q1 Hs H.
+      inv H; inv H0; inv Hs; eexists tt, _; repeat apply conj;
+        try constructor; auto. subst_dep.
+      intros r1 ? s1' [ ] Hx. inv Hx.
+      subst_dep. inv H4. esca'.
+    - intros s1 t s1' Hstep s2 Hs.
+      inv Hstep; inv H; inv Hs; subst_dep.
+      + esca'.
+      + esca'.
+      + esca'. eapply step_push; eauto. now constructor.
+      + esca'. eapply step_pop; eauto. now constructor.
+    - apply well_founded_ltof.
   Qed.
 
   Theorem flat_categorical_comp_distributivity:
-    (L1 ⊎ L2) ∘ L ≡ (L1 ∘ L) ⊎ (L2 ∘ L).
+    flat_comp_semantics' Lv sk ≡ comp_semantics' Lh L sk.
   Proof.
-    split; [ exact distributivity1 | exact distributivity2 ].
+    split; [ exact distributivity2 | exact distributivity1 ].
   Qed.
 End DIST.

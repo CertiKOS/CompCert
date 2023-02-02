@@ -354,10 +354,11 @@ Qed.
 
 Next Obligation.
   intros [w12 w23] m1 m3 (m2 & Hm12 & Hm23) lo hi.
-  edestruct (cklr_alloc R1 w12 m1 m2 Hm12 lo hi)
-    as (w12' & Hw12' & Hm12' & Hb12).
-  edestruct (cklr_alloc R2 w23 m2 m3 Hm23 lo hi)
-    as (w23' & Hw23' & Hm23' & Hb23).
+  cbn in *. red.
+  destruct (Mem.alloc m1 _ _) as [[m1' b]|] eqn:H1; [|constructor].
+  transport H1. destruct x. destruct H0. cbn in *.
+  transport H. destruct x. destruct H3. cbn in *.
+  rewrite H2. constructor.
   exists (w12', w23'); split; [rauto | ].
   rstep. simpl. split.
   - eexists; split; rauto.
@@ -550,7 +551,12 @@ Next Obligation. (* nextblock incr*)
   inv Hw'; cbn in *.
   etransitivity; eapply cklr_nextblock_incr; eauto; eexists; split; eauto.
 Qed.
-  
+
+Next Obligation.
+  destruct H. destruct H. cbn in *.
+  transitivity (Mem.alloc_flag x); eapply cklr_alloc_flag; eauto.
+Qed.
+
 Bind Scope cklr_scope with cklr.
 Delimit Scope cklr_scope with cklr.
 Infix "@" := cklr_compose (at level 30, right associativity) : cklr_scope.

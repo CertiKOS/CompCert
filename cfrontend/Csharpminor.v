@@ -275,7 +275,7 @@ Inductive alloc_variables: env -> mem ->
       alloc_variables e m nil e m
   | alloc_variables_cons:
       forall e m id sz vars m1 b1 m2 e2,
-      Mem.alloc m 0 sz = (m1, b1) ->
+      Mem.alloc m 0 sz = Some (m1, b1) ->
       alloc_variables (PTree.set id (b1, sz) e) m1 vars e2 m2 ->
       alloc_variables e m ((id, sz) :: vars) e2 m2.
 
@@ -455,6 +455,7 @@ Inductive step: state -> trace -> state -> Prop :=
       list_norepet f.(fn_params) ->
       list_disjoint f.(fn_params) f.(fn_temps) ->
       alloc_variables empty_env m (fn_vars f) e m1 ->
+      Mem.alloc_flag m = true ->
       bind_parameters f.(fn_params) vargs (create_undef_temps f.(fn_temps)) = Some le ->
       step (Callstate vf vargs k m)
         E0 (State f f.(fn_body) k e le m1)

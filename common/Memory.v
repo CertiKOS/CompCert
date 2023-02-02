@@ -66,6 +66,7 @@ Record mem' : Type := mkmem {
   mem_access: PMap.t (Z -> perm_kind -> option permission);
                                          (**r [block -> offset -> kind -> option permission] *)
   nextblock: block;
+  alloc_flag: bool;
   access_max:
     forall b ofs, perm_order'' (mem_access#b ofs Max) (mem_access#b ofs Cur);
   nextblock_noaccess:
@@ -77,9 +78,9 @@ Record mem' : Type := mkmem {
 Definition mem := mem'.
 
 Lemma mkmem_ext:
- forall cont1 cont2 acc1 acc2 next1 next2 a1 a2 b1 b2 c1 c2,
-  cont1=cont2 -> acc1=acc2 -> next1=next2 ->
-  mkmem cont1 acc1 next1 a1 b1 c1 = mkmem cont2 acc2 next2 a2 b2 c2.
+ forall cont1 cont2 acc1 acc2 next1 next2 flag1 flag2 a1 a2 b1 b2 c1 c2,
+  cont1=cont2 -> acc1=acc2 -> next1=next2 -> flag1 = flag2 ->
+  mkmem cont1 acc1 next1 flag1 a1 b1 c1 = mkmem cont2 acc2 next2 flag2 a2 b2 c2.
 Proof.
   intros. subst. f_equal; apply proof_irr.
 Qed.
@@ -345,7 +346,21 @@ Qed.
 Program Definition empty: mem :=
   mkmem (PMap.init (ZMap.init Undef))
         (PMap.init (fun ofs k => None))
-        1%positive _ _ _.
+        1%positive true _ _ _.
+Next Obligation.
+  repeat rewrite PMap.gi. red; auto.
+Qed.
+Next Obligation.
+  rewrite PMap.gi. auto.
+Qed.
+Next Obligation.
+  rewrite PMap.gi. auto.
+Qed.
+
+Program Definition empty_fragment: mem :=
+  mkmem (PMap.init (ZMap.init Undef))
+        (PMap.init (fun ofs k => None))
+        1%positive false _ _ _.
 Next Obligation.
   repeat rewrite PMap.gi. red; auto.
 Qed.
@@ -361,7 +376,7 @@ Qed.
   undefined cells.  Note that allocation never fails: we model an
   infinite memory. *)
 
-Program Definition alloc (m: mem) (lo hi: Z) :=
+Program Definition alloc' (m: mem) (lo hi: Z) :=
   (mkmem (PMap.set m.(nextblock)
                    (ZMap.init Undef)
                    m.(mem_contents))
@@ -369,6 +384,7 @@ Program Definition alloc (m: mem) (lo hi: Z) :=
                    (fun ofs k => if zle lo ofs && zlt ofs hi then Some Freeable else None)
                    m.(mem_access))
          (Pos.succ m.(nextblock))
+         (m.(alloc_flag))
          _ _ _,
    m.(nextblock)).
 Next Obligation.
@@ -386,6 +402,9 @@ Next Obligation.
   rewrite PMap.gsspec. destruct (peq b (nextblock m)). auto. apply contents_default.
 Qed.
 
+Definition alloc (m: mem) (lo hi: Z) :=
+  if alloc_flag m then Some (alloc' m lo hi) else None.
+
 (** Freeing a block between the given bounds.
   Return the updated memory state where the given range of the given block
   has been invalidated: future reads and writes to this
@@ -396,7 +415,7 @@ Program Definition unchecked_free (m: mem) (b: block) (lo hi: Z): mem :=
         (PMap.set b
                 (fun ofs k => if zle lo ofs && zlt ofs hi then None else m.(mem_access)#b ofs k)
                 m.(mem_access))
-        m.(nextblock) _ _ _.
+        m.(nextblock) m.(alloc_flag) _ _ _.
 Next Obligation.
   repeat rewrite PMap.gsspec. destruct (peq b0 b).
   destruct (zle lo ofs && zlt ofs hi). red; auto. apply access_max.
@@ -551,6 +570,7 @@ Program Definition store (chunk: memory_chunk) (m: mem) (b: block) (ofs: Z) (v: 
                           m.(mem_contents))
                 m.(mem_access)
                 m.(nextblock)
+                m.(alloc_flag)
                 _ _ _)
   else
     None.
@@ -581,6 +601,7 @@ Program Definition storebytes (m: mem) (b: block) (ofs: Z) (bytes: list memval) 
              (PMap.set b (setN bytes ofs (m.(mem_contents)#b)) m.(mem_contents))
              m.(mem_access)
              m.(nextblock)
+             m.(alloc_flag)
              _ _ _)
   else
     None.
@@ -603,7 +624,7 @@ Program Definition drop_perm (m: mem) (b: block) (lo hi: Z) (p: permission): opt
                 (PMap.set b
                         (fun ofs k => if zle lo ofs && zlt ofs hi then Some p else m.(mem_access)#b ofs k)
                         m.(mem_access))
-                m.(nextblock) _ _ _)
+                m.(nextblock) m.(alloc_flag) _ _ _)
   else None.
 Next Obligation.
   repeat rewrite PMap.gsspec. destruct (peq b0 b). subst b0.
@@ -1666,6 +1687,14 @@ Proof.
   exploit store_valid_access_3. eexact H2. intros [P Q]. exact Q.
 Qed.
 
+Theorem alloc_succeed:
+  forall m1 lo hi,
+  alloc_flag m1 = true ->
+  { res | alloc m1 lo hi = Some res }.
+Proof.
+  intros; unfold alloc. rewrite H. eexists; reflexivity.
+Defined.
+
 (** ** Properties related to [alloc]. *)
 
 Section ALLOC.
@@ -1674,18 +1703,36 @@ Variable m1: mem.
 Variables lo hi: Z.
 Variable m2: mem.
 Variable b: block.
-Hypothesis ALLOC: alloc m1 lo hi = (m2, b).
+Hypothesis ALLOC: alloc m1 lo hi = Some (m2, b).
+
+Theorem alloc_alloc':
+  alloc' m1 lo hi = (m2, b).
+Proof.
+  unfold alloc in ALLOC. destruct (alloc_flag m1); congruence.
+Qed.
+
+Theorem alloc_flag_alloc1:
+  alloc_flag m1 = true.
+Proof.
+  unfold alloc in ALLOC. destruct (alloc_flag m1); easy.
+Qed.
+
+Theorem alloc_flag_alloc2:
+  alloc_flag m2 = true.
+Proof.
+  unfold alloc in ALLOC. destruct (alloc_flag m1) eqn: X; inv ALLOC; easy.
+Qed.
 
 Theorem nextblock_alloc:
   nextblock m2 = Pos.succ (nextblock m1).
 Proof.
-  injection ALLOC; intros. rewrite <- H0; auto.
+  injection alloc_alloc'; intros. rewrite <- H0; eauto.
 Qed.
 
 Theorem alloc_result:
   b = nextblock m1.
 Proof.
-  injection ALLOC; auto.
+  injection alloc_alloc'; auto.
 Qed.
 
 Theorem valid_block_alloc:
@@ -1720,7 +1767,7 @@ Qed.
 Theorem perm_alloc_1:
   forall b' ofs k p, perm m1 b' ofs k p -> perm m2 b' ofs k p.
 Proof.
-  unfold perm; intros. injection ALLOC; intros. rewrite <- H1; simpl.
+  unfold perm; intros. injection alloc_alloc'; intros. rewrite <- H1; simpl.
   subst b. rewrite PMap.gsspec. destruct (peq b' (nextblock m1)); auto.
   rewrite nextblock_noaccess in H. contradiction. subst b'. apply Plt_strict.
 Qed.
@@ -1728,7 +1775,7 @@ Qed.
 Theorem perm_alloc_2:
   forall ofs k, lo <= ofs < hi -> perm m2 b ofs k Freeable.
 Proof.
-  unfold perm; intros. injection ALLOC; intros. rewrite <- H1; simpl.
+  unfold perm; intros. injection alloc_alloc'; intros. rewrite <- H1; simpl.
   subst b. rewrite PMap.gss. unfold proj_sumbool. rewrite zle_true.
   rewrite zlt_true. simpl. auto with mem. omega. omega.
 Qed.
@@ -1738,6 +1785,7 @@ Theorem perm_alloc_inv:
   perm m2 b' ofs k p ->
   if eq_block b' b then lo <= ofs < hi else perm m1 b' ofs k p.
 Proof.
+  unfold alloc in ALLOC. destruct alloc_flag; try congruence.
   intros until p; unfold perm. inv ALLOC. simpl.
   rewrite PMap.gsspec. unfold eq_block. destruct (peq b' (nextblock m1)); intros.
   destruct (zle lo ofs); try contradiction. destruct (zlt ofs hi); try contradiction.
@@ -1808,7 +1856,7 @@ Proof.
   exploit valid_access_alloc_inv; eauto. destruct (eq_block b' b); intros.
   subst b'. elimtype False. eauto with mem.
   rewrite pred_dec_true; auto.
-  injection ALLOC; intros. rewrite <- H2; simpl.
+  injection alloc_alloc'; intros. rewrite <- H2; simpl.
   rewrite PMap.gso. auto. rewrite H1. apply not_eq_sym; eauto with mem.
   rewrite pred_dec_false. auto.
   eauto with mem.
@@ -1828,7 +1876,7 @@ Theorem load_alloc_same:
   v = Vundef.
 Proof.
   intros. exploit load_result; eauto. intro. rewrite H0.
-  injection ALLOC; intros. rewrite <- H2; simpl. rewrite <- H1.
+  injection alloc_alloc'; intros. rewrite <- H2; simpl. rewrite <- H1.
   rewrite PMap.gss. destruct (size_chunk_nat_pos chunk) as [n E]. rewrite E. simpl.
   rewrite ZMap.gi. apply decode_val_undef.
 Qed.
@@ -1853,7 +1901,7 @@ Proof.
   intros. unfold loadbytes.
   destruct (range_perm_dec m1 b' ofs (ofs + n) Cur Readable).
   rewrite pred_dec_true.
-  injection ALLOC; intros A B. rewrite <- B; simpl.
+  injection alloc_alloc'; intros A B. rewrite <- B; simpl.
   rewrite PMap.gso. auto. rewrite A. eauto with mem.
   red; intros. eapply perm_alloc_1; eauto.
   rewrite pred_dec_false; auto.
@@ -1867,7 +1915,7 @@ Theorem loadbytes_alloc_same:
 Proof.
   unfold loadbytes; intros. destruct (range_perm_dec m2 b ofs (ofs + n) Cur Readable); inv H.
   revert H0.
-  injection ALLOC; intros A B. rewrite <- A; rewrite <- B; simpl. rewrite PMap.gss.
+  injection alloc_alloc'; intros A B. rewrite <- A; rewrite <- B; simpl. rewrite PMap.gss.
   generalize (Z.to_nat n) ofs. induction n0; simpl; intros.
   contradiction.
   rewrite ZMap.gi in H0. destruct H0; eauto.
@@ -2605,13 +2653,15 @@ Qed.
 
 (** Preservation of allocations *)
 
+Arguments alloc_alloc' {_ _ _ _ _}.
+
 Lemma alloc_right_inj:
   forall f m1 m2 lo hi b2 m2',
   mem_inj f m1 m2 ->
-  alloc m2 lo hi = (m2', b2) ->
+  alloc m2 lo hi = Some (m2', b2) ->
   mem_inj f m1 m2'.
 Proof.
-  intros. injection H0. intros NEXT MEM.
+  intros. injection (alloc_alloc' H0). intros NEXT MEM.
   inversion H. constructor.
 (* perm *)
   intros. eapply perm_alloc_1; eauto.
@@ -2629,7 +2679,7 @@ Qed.
 Lemma alloc_left_unmapped_inj:
   forall f m1 m2 lo hi m1' b1,
   mem_inj f m1 m2 ->
-  alloc m1 lo hi = (m1', b1) ->
+  alloc m1 lo hi = Some (m1', b1) ->
   f b1 = None ->
   mem_inj f m1' m2.
 Proof.
@@ -2642,7 +2692,7 @@ Proof.
   red; intros. exploit perm_alloc_inv; eauto.
   destruct (eq_block b0 b1); auto. congruence.
 (* mem_contents *)
-  injection H0; intros NEXT MEM. intros.
+  injection (alloc_alloc' H0); intros NEXT MEM. intros.
   rewrite <- MEM; simpl. rewrite NEXT.
   exploit perm_alloc_inv; eauto. intros.
   rewrite PMap.gsspec. unfold eq_block in H4. destruct (peq b0 b1).
@@ -2655,7 +2705,7 @@ Definition inj_offset_aligned (delta: Z) (size: Z) : Prop :=
 Lemma alloc_left_mapped_inj:
   forall f m1 m2 lo hi m1' b1 b2 delta,
   mem_inj f m1 m2 ->
-  alloc m1 lo hi = (m1', b1) ->
+  alloc m1 lo hi = Some (m1', b1) ->
   valid_block m2 b2 ->
   inj_offset_aligned delta (hi-lo) ->
   (forall ofs k p, lo <= ofs < hi -> perm m2 b2 (ofs + delta) k p) ->
@@ -2678,7 +2728,7 @@ Proof.
   eapply mi_align0 with (ofs := ofs) (p := p); eauto.
   red; intros. eapply perm_alloc_4; eauto.
 (* mem_contents *)
-  injection H0; intros NEXT MEM.
+  injection (alloc_alloc' H0); intros NEXT MEM.
   intros. rewrite <- MEM; simpl. rewrite NEXT.
   exploit perm_alloc_inv; eauto. intros.
   rewrite PMap.gsspec. unfold eq_block in H7.
@@ -2831,6 +2881,46 @@ Proof.
   unfold drop_perm in H0; destruct (range_perm_dec m2 b lo hi Cur Freeable); inv H0; auto.
 Qed.
 
+(** alloc flag *)
+Lemma store_alloc_flag:
+  forall ch m1 b ofs v m2,
+    store ch m1 b ofs v = Some m2 ->
+    alloc_flag m2 = alloc_flag m1.
+Proof.
+  intros. unfold store in H.
+  destruct valid_access_dec; try congruence. inv H. reflexivity.
+Qed.
+
+Lemma storebytes_alloc_flag:
+  forall m1 b ofs vs m2,
+    storebytes m1 b ofs vs = Some m2 ->
+    alloc_flag m2 = alloc_flag m1.
+Proof.
+  intros. unfold storebytes in H.
+  destruct range_perm_dec; try congruence. inv H. reflexivity.
+Qed.
+
+Lemma free_alloc_flag:
+  forall m1 b lo hi m2,
+    free m1 b lo hi = Some m2 ->
+    alloc_flag m2 = alloc_flag m1.
+Proof.
+  intros. unfold free in H.
+  destruct range_perm_dec; try congruence. inv H. reflexivity.
+Qed.
+
+Lemma drop_alloc_flag:
+  forall m1 b lo hi p m2,
+    drop_perm m1 b lo hi p = Some m2 ->
+    alloc_flag m2 = alloc_flag m1.
+Proof.
+  intros. unfold drop_perm in H.
+  destruct range_perm_dec; try congruence. inv H. reflexivity.
+Qed.
+
+Local Hint Resolve store_alloc_flag storebytes_alloc_flag
+           free_alloc_flag drop_alloc_flag alloc_flag_alloc1 alloc_flag_alloc2.
+
 (** * Memory extensions *)
 
 (**  A store [m2] extends a store [m1] if [m2] can be obtained from [m1]
@@ -2845,7 +2935,8 @@ Record extends' (m1 m2: mem) : Prop :=
     mext_inj:  mem_inj inject_id m1 m2;
     mext_perm_inv: forall b ofs k p,
       perm m2 b ofs k p ->
-      perm m1 b ofs k p \/ ~perm m1 b ofs Max Nonempty
+      perm m1 b ofs k p \/ ~perm m1 b ofs Max Nonempty;
+    mext_alloc_flag: alloc_flag m1 = alloc_flag m2
   }.
 
 Definition extends := extends'.
@@ -2858,7 +2949,7 @@ Proof.
   intros. unfold inject_id in H; inv H. apply Z.divide_0_r.
   intros. unfold inject_id in H; inv H. replace (ofs + 0) with ofs by omega.
   apply memval_lessdef_refl.
-  tauto.
+  tauto. reflexivity.
 Qed.
 
 Theorem load_extends:
@@ -2918,6 +3009,7 @@ Proof.
   rewrite (nextblock_store _ _ _ _ _ _ A).
   auto.
   intros. exploit mext_perm_inv0; intuition eauto using perm_store_1, perm_store_2.
+  apply store_alloc_flag in H0. apply store_alloc_flag in A. congruence.
 Qed.
 
 Theorem store_outside_extends:
@@ -2932,6 +3024,7 @@ Proof.
   eapply store_outside_inj; eauto.
   unfold inject_id; intros. inv H2. eapply H1; eauto. omega.
   intros. eauto using perm_store_2.
+  apply store_alloc_flag in H0. congruence.
 Qed.
 
 Theorem storev_extends:
@@ -2970,6 +3063,7 @@ Proof.
   rewrite (nextblock_storebytes _ _ _ _ _ A).
   auto.
   intros. exploit mext_perm_inv0; intuition eauto using perm_storebytes_1, perm_storebytes_2.
+  apply storebytes_alloc_flag in H0. apply storebytes_alloc_flag in A. congruence.
 Qed.
 
 Theorem storebytes_outside_extends:
@@ -2984,19 +3078,27 @@ Proof.
   eapply storebytes_outside_inj; eauto.
   unfold inject_id; intros. inv H2. eapply H1; eauto. omega.
   intros. eauto using perm_storebytes_2.
+  apply storebytes_alloc_flag in H0. congruence.
 Qed.
 
 Theorem alloc_extends:
   forall m1 m2 lo1 hi1 b m1' lo2 hi2,
   extends m1 m2 ->
-  alloc m1 lo1 hi1 = (m1', b) ->
+  alloc m1 lo1 hi1 = Some (m1', b) ->
   lo2 <= lo1 -> hi1 <= hi2 ->
   exists m2',
-     alloc m2 lo2 hi2 = (m2', b)
+     alloc m2 lo2 hi2 = Some (m2', b)
   /\ extends m1' m2'.
 Proof.
   intros. inv H.
-  case_eq (alloc m2 lo2 hi2); intros m2' b' ALLOC.
+  case_eq (alloc m2 lo2 hi2).
+  2: {
+    intros H. exfalso.
+    exploit alloc_flag_alloc1. eauto. intros A.
+    rewrite mext_alloc_flag0 in A. edestruct alloc_succeed; eauto.
+    rewrite H in e. inv e.
+  }
+  intros [m2' b'] ALLOC.
   assert (b' = b).
     rewrite (alloc_result _ _ _ _ _ H0).
     rewrite (alloc_result _ _ _ _ _ ALLOC).
@@ -3024,6 +3126,9 @@ Proof.
   left. apply perm_implies with Freeable; auto with mem. eapply perm_alloc_2; eauto.
   right; tauto.
   exploit mext_perm_inv0; intuition eauto using perm_alloc_1, perm_alloc_4.
+  (* alloc_flag *)
+  erewrite alloc_flag_alloc2; eauto.
+  erewrite alloc_flag_alloc2; eauto.
 Qed.
 
 Theorem free_left_extends:
@@ -3039,6 +3144,7 @@ Proof.
   eapply perm_free_inv in A; eauto. destruct A as [[A B]|A]; auto.
   subst b0. right; eapply perm_free_2; eauto.
   intuition eauto using perm_free_3.
+  erewrite free_alloc_flag; eauto.
 Qed.
 
 Theorem free_right_extends:
@@ -3053,6 +3159,7 @@ Proof.
   eapply free_right_inj; eauto.
   unfold inject_id; intros. inv H. eapply H1; eauto. omega.
   intros. eauto using perm_free_3.
+  apply free_alloc_flag in H0; eauto.
 Qed.
 
 Theorem free_parallel_extends:
@@ -3081,6 +3188,7 @@ Proof.
   eapply perm_free_inv in A; eauto. destruct A as [[A B]|A]; auto.
   subst b0. right; eapply perm_free_2; eauto.
   right; intuition eauto using perm_free_3.
+  apply free_alloc_flag in H0. apply free_alloc_flag in FREE. congruence.
 Qed.
 
 Theorem valid_block_extends:
@@ -3167,7 +3275,9 @@ Record inject' (f: meminj) (m1 m2: mem) : Prop :=
       forall b1 ofs b2 delta k p,
       f b1 = Some(b2, delta) ->
       perm m2 b2 (ofs + delta) k p ->
-      perm m1 b1 ofs k p \/ ~perm m1 b1 ofs Max Nonempty
+      perm m1 b1 ofs k p \/ ~perm m1 b1 ofs Max Nonempty;
+    mi_alloc_flag:
+      alloc_flag m1 = alloc_flag m2
   }.
 Definition inject := inject'.
 
@@ -3501,6 +3611,8 @@ Proof.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_store_2.
   intuition eauto using perm_store_1, perm_store_2.
+(* alloc_flag *)
+  apply store_alloc_flag in H0. apply store_alloc_flag in STORE. congruence.
 Qed.
 
 Theorem store_unmapped_inject:
@@ -3526,6 +3638,8 @@ Proof.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_store_2.
   intuition eauto using perm_store_1, perm_store_2.
+(* alloc_flag *)
+  apply store_alloc_flag in H0. congruence.
 Qed.
 
 Theorem store_outside_inject:
@@ -3551,6 +3665,8 @@ Proof.
   eauto with mem.
 (* perm inv *)
   intros. eauto using perm_store_2.
+(* alloc_flag *)
+  apply store_alloc_flag in H1. congruence.
 Qed.
 
 Theorem storev_mapped_inject:
@@ -3597,6 +3713,8 @@ Proof.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_storebytes_2.
   intuition eauto using perm_storebytes_1, perm_storebytes_2.
+(* alloc_flag *)
+  apply storebytes_alloc_flag in H0. apply storebytes_alloc_flag in STORE. congruence.
 Qed.
 
 Theorem storebytes_unmapped_inject:
@@ -3622,6 +3740,8 @@ Proof.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto.
   intuition eauto using perm_storebytes_1, perm_storebytes_2.
+(* alloc_flag *)
+  apply storebytes_alloc_flag in H0. congruence.
 Qed.
 
 Theorem storebytes_outside_inject:
@@ -3647,6 +3767,8 @@ Proof.
   auto.
 (* perm inv *)
   intros. eapply mi_perm_inv0; eauto using perm_storebytes_2.
+(* alloc_flag *)
+  apply storebytes_alloc_flag in H1. congruence.
 Qed.
 
 Theorem storebytes_empty_inject:
@@ -3671,6 +3793,8 @@ Proof.
 (* perm inv *)
   intros. exploit mi_perm_inv0; eauto using perm_storebytes_2.
   intuition eauto using perm_storebytes_1, perm_storebytes_2.
+(* alloc_flag *)
+  apply storebytes_alloc_flag in H0. apply storebytes_alloc_flag in H1. congruence.
 Qed.
 
 (* Preservation of allocations *)
@@ -3678,10 +3802,10 @@ Qed.
 Theorem alloc_right_inject:
   forall f m1 m2 lo hi b2 m2',
   inject f m1 m2 ->
-  alloc m2 lo hi = (m2', b2) ->
+  alloc m2 lo hi = Some (m2', b2) ->
   inject f m1 m2'.
 Proof.
-  intros. injection H0. intros NEXT MEM.
+  intros. injection (alloc_alloc' H0). intros NEXT MEM.
   inversion H. constructor.
 (* inj *)
   eapply alloc_right_inj; eauto.
@@ -3697,12 +3821,15 @@ Proof.
   intros. eapply perm_alloc_inv in H2; eauto. destruct (eq_block b0 b2).
   subst b0. eelim fresh_block_alloc; eauto.
   eapply mi_perm_inv0; eauto.
+(* alloc_flag *)
+  exploit alloc_flag_alloc1. eauto.
+  exploit alloc_flag_alloc2. eauto. intros. congruence.
 Qed.
 
 Theorem alloc_left_unmapped_inject:
   forall f m1 m2 lo hi m1' b1,
   inject f m1 m2 ->
-  alloc m1 lo hi = (m1', b1) ->
+  alloc m1 lo hi = Some (m1', b1) ->
   exists f',
      inject f' m1' m2
   /\ inject_incr f f'
@@ -3744,6 +3871,9 @@ Proof.
   intros. unfold f' in H3; destruct (eq_block b0 b1); try discriminate.
   exploit mi_perm_inv0; eauto.
   intuition eauto using perm_alloc_1, perm_alloc_4.
+(* alloc_flag *)
+  exploit alloc_flag_alloc1. eauto.
+  exploit alloc_flag_alloc2. eauto. intros. congruence.
 (* incr *)
   split. auto.
 (* image *)
@@ -3755,7 +3885,7 @@ Qed.
 Theorem alloc_left_mapped_inject:
   forall f m1 m2 lo hi m1' b1 b2 delta,
   inject f m1 m2 ->
-  alloc m1 lo hi = (m1', b1) ->
+  alloc m1 lo hi = Some (m1', b1) ->
   valid_block m2 b2 ->
   0 <= delta <= Ptrofs.max_unsigned ->
   (forall ofs k p, perm m2 b2 ofs k p -> delta = 0 \/ 0 <= ofs < Ptrofs.max_unsigned) ->
@@ -3834,6 +3964,9 @@ Proof.
   left. apply perm_implies with Freeable; auto with mem. eapply perm_alloc_2; eauto.
   right; intros A. eapply perm_alloc_inv in A; eauto. rewrite dec_eq_true in A. tauto.
   exploit mi_perm_inv0; eauto. intuition eauto using perm_alloc_1, perm_alloc_4.
+(* alloc_flag *)
+  exploit alloc_flag_alloc1. eauto.
+  exploit alloc_flag_alloc2. eauto. intros. congruence.
 (* incr *)
   split. auto.
 (* image of b1 *)
@@ -3845,17 +3978,24 @@ Qed.
 Theorem alloc_parallel_inject:
   forall f m1 m2 lo1 hi1 m1' b1 lo2 hi2,
   inject f m1 m2 ->
-  alloc m1 lo1 hi1 = (m1', b1) ->
+  alloc m1 lo1 hi1 = Some (m1', b1) ->
   lo2 <= lo1 -> hi1 <= hi2 ->
   exists f', exists m2', exists b2,
-  alloc m2 lo2 hi2 = (m2', b2)
+  alloc m2 lo2 hi2 = Some (m2', b2)
   /\ inject f' m1' m2'
   /\ inject_incr f f'
   /\ f' b1 = Some(b2, 0)
   /\ (forall b, b <> b1 -> f' b = f b).
 Proof.
   intros.
-  case_eq (alloc m2 lo2 hi2). intros m2' b2 ALLOC.
+  case_eq (alloc m2 lo2 hi2).
+  2: {
+    intros. exfalso.
+    exploit alloc_flag_alloc1. eauto. intros A.
+    erewrite mi_alloc_flag in A; eauto. edestruct alloc_succeed; eauto.
+    rewrite H3 in e. inv e.
+  }
+  intros [m2' b2] ALLOC.
   exploit alloc_left_mapped_inject.
   eapply alloc_right_inject; eauto.
   eauto.
@@ -3894,6 +4034,8 @@ Proof.
   intros. exploit mi_perm_inv0; eauto. intuition eauto using perm_free_3.
   eapply perm_free_inv in H4; eauto. destruct H4 as [[A B] | A]; auto.
   subst b1. right; eapply perm_free_2; eauto.
+(* alloc_flag *)
+  apply free_alloc_flag in H0. congruence.
 Qed.
 
 Lemma free_list_left_inject:
@@ -3931,6 +4073,8 @@ Proof.
   auto.
 (* perm inv *)
   intros. eauto using perm_free_3.
+(* alloc_flag *)
+  apply free_alloc_flag in H0. congruence.
 Qed.
 
 Lemma perm_free_list:
@@ -4007,6 +4151,7 @@ Proof.
   eapply drop_outside_inj; eauto.
   intros. unfold valid_block in *. erewrite nextblock_drop; eauto.
   intros. eapply mi_perm_inv0; eauto using perm_drop_4.
+  apply drop_alloc_flag in H0. congruence.
 Qed.
 
 (** Composing two memory injections. *)
@@ -4089,6 +4234,8 @@ Proof.
   exploit mi_perm_inv1; eauto. intros [A|A].
   eapply mi_perm_inv0; eauto.
   right; red; intros. elim A. eapply perm_inj; eauto.
+(* alloc_flag *)
+  congruence.
 Qed.
 
 Lemma val_lessdef_inject_compose:
@@ -4127,6 +4274,8 @@ Proof.
   exploit mi_perm_inv0; eauto. intros [A|A].
   eapply mext_perm_inv0; eauto.
   right; red; intros; elim A. eapply perm_extends; eauto.
+(* alloc_flag *)
+  congruence.
 Qed.
 
 Lemma inject_extends_compose:
@@ -4150,6 +4299,8 @@ Proof.
   exploit mext_perm_inv0; eauto. intros [A|A].
   eapply mi_perm_inv0; eauto.
   right; red; intros; elim A. eapply perm_inj; eauto.
+(* alloc_flag *)
+  congruence.
 Qed.
 
 Lemma extends_extends_compose:
@@ -4167,6 +4318,8 @@ Proof.
   exploit mext_perm_inv1; eauto. intros [A|A].
   eapply mext_perm_inv0; eauto.
   right; red; intros; elim A. eapply perm_extends; eauto.
+  (* alloc_flag *)
+  congruence.
 Qed.
 
 (** Injecting a memory into itself. *)
@@ -4207,6 +4360,8 @@ Proof.
   unfold flat_inj; intros.
   destruct (plt b1 (nextblock m)); inv H0.
   rewrite Z.add_0_r in H1; auto.
+(* alloc_flag *)
+  reflexivity.
 Qed.
 
 Theorem empty_inject_neutral:
@@ -4224,7 +4379,7 @@ Qed.
 
 Theorem alloc_inject_neutral:
   forall thr m lo hi b m',
-  alloc m lo hi = (m', b) ->
+  alloc m lo hi = Some (m', b) ->
   inject_neutral thr m ->
   Plt (nextblock m) thr ->
   inject_neutral thr m'.
@@ -4285,13 +4440,15 @@ Record unchanged_on (m_before m_after: mem) : Prop := mk_unchanged_on {
     forall b ofs,
     P b ofs -> perm m_before b ofs Cur Readable ->
     ZMap.get ofs (PMap.get b m_after.(mem_contents)) =
-    ZMap.get ofs (PMap.get b m_before.(mem_contents))
+    ZMap.get ofs (PMap.get b m_before.(mem_contents));
+  unchanged_on_alloc_flag:
+    alloc_flag m_before = alloc_flag m_after
 }.
 
 Lemma unchanged_on_refl:
   forall m, unchanged_on m m.
 Proof.
-  intros; constructor. apply Ple_refl. tauto. tauto.
+  intros; constructor. apply Ple_refl. tauto. tauto. tauto.
 Qed.
 
 Lemma valid_block_unchanged_on:
@@ -4326,6 +4483,7 @@ Proof.
   eapply valid_block_unchanged_on; eauto.
 - intros. transitivity (ZMap.get ofs (mem_contents m2)#b); apply unchanged_on_contents; auto.
   eapply perm_unchanged_on; eauto.
+- destruct H, H0. congruence.
 Qed.
 
 Lemma loadbytes_unchanged_on_1:
@@ -4403,6 +4561,7 @@ Proof.
   destruct (zlt ofs0 ofs); auto.
   destruct (zlt ofs0 (ofs + size_chunk chunk)); auto.
   elim (H0 ofs0). omega. auto.
+- apply store_alloc_flag in H. congruence.
 Qed.
 
 Lemma storebytes_unchanged_on:
@@ -4419,11 +4578,12 @@ Proof.
   destruct (zlt ofs0 ofs); auto.
   destruct (zlt ofs0 (ofs + Z.of_nat (length bytes))); auto.
   elim (H0 ofs0). omega. auto.
+- apply storebytes_alloc_flag in H. congruence.
 Qed.
 
 Lemma alloc_unchanged_on:
   forall m lo hi m' b,
-  alloc m lo hi = (m', b) ->
+  alloc m lo hi = Some (m', b) ->
   unchanged_on m m'.
 Proof.
   intros; constructor; intros.
@@ -4432,8 +4592,10 @@ Proof.
   eapply perm_alloc_1; eauto.
   eapply perm_alloc_4; eauto.
   eapply valid_not_valid_diff; eauto with mem.
-- injection H; intros A B. rewrite <- B; simpl.
+- injection (alloc_alloc' H); intros A B. rewrite <- B; simpl.
   rewrite PMap.gso; auto. rewrite A.  eapply valid_not_valid_diff; eauto with mem.
+- exploit alloc_flag_alloc1. apply H.
+  exploit alloc_flag_alloc2. apply H. congruence.
 Qed.
 
 Lemma free_unchanged_on:
@@ -4451,6 +4613,7 @@ Proof.
   eapply perm_free_3; eauto.
 - unfold free in H. destruct (range_perm_dec m b lo hi Cur Freeable); inv H.
   simpl. auto.
+- apply free_alloc_flag in H. congruence.
 Qed.
 
 Lemma drop_perm_unchanged_on:
@@ -4469,6 +4632,7 @@ Proof.
   eapply perm_drop_4; eauto.
 - unfold drop_perm in H.
   destruct (range_perm_dec m b lo hi Cur Freeable); inv H; simpl. auto.
+- apply drop_alloc_flag in H. congruence.
 Qed.
 
 End UNCHANGED_ON.
@@ -4484,6 +4648,7 @@ Proof.
 - apply unchanged_on_perm0; auto.
 - apply unchanged_on_contents0; auto.
   apply H0; auto. eapply perm_valid_block; eauto.
+- congruence.
 Qed.
 
 (** * Memory mixing *)
@@ -4524,6 +4689,7 @@ Program Definition mix m' b lo hi m : option mem :=
         pmap_update b (mix_perms lo hi perms) (Mem.mem_access m');
       nextblock :=
         Mem.nextblock m';
+      alloc_flag := alloc_flag m'
     |}
   else
     None.
@@ -4622,6 +4788,7 @@ Proof.
     destruct (zlt ofs1 hi); try (elim H; split; auto; xomega).
     rewrite getN_length, Z_to_nat_max, <- Z.add_max_distr_l.
     rewrite Zmax_spec. destruct zlt; xomega.
+  - reflexivity.
 Qed.
 
 Lemma get_setN_getN_at lo k n x y:
@@ -4659,6 +4826,7 @@ Qed.
 Theorem mix_updated:
   forall m' b lo hi m m'',
   mix m' b lo hi m = Some m'' ->
+  alloc_flag m = alloc_flag m' ->
   unchanged_on (fun b1 ofs1 => b = b1 /\ lo <= ofs1 < hi) m m''.
 Proof.
   intros. unfold mix in H. destruct mixable_dec as [[NB VALID] | ]; inv H.
@@ -4670,11 +4838,13 @@ Proof.
   - intros _ ofs [[ ] Hofs] Hp.
     unfold pmap_update. rewrite PMap.gss.
     rewrite get_setN_getN; auto.
+  - congruence.
 Qed.
 
 Lemma mix_left_mem_inj:
   forall f f' m1 m2 m1' m2' b1 b2 delta lo hi m1'',
   mix m1' b1 lo hi m1 = Some m1'' ->
+  alloc_flag m1 = alloc_flag m1' ->
   mem_inj f m1 m2 ->
   mem_inj f' m1' m2' ->
   f b1 = Some (b2, delta) ->
@@ -4684,7 +4854,7 @@ Lemma mix_left_mem_inj:
   (8 | delta) ->
   mem_inj f' m1'' m2'.
 Proof.
-  intros f f' m1 m2 m1' m2' b1 b2 delta lo hi m1'' Hm1'' Hm Hm' Hb Hf' Hm2'.
+  intros f f' m1 m2 m1' m2' b1 b2 delta lo hi m1'' Hm1'' Hflag Hm Hm' Hb Hf' Hm2'.
   split.
   - (* perm *)
     intros b1' b2' delta' ofs k p Hb' Hp.
@@ -4739,15 +4909,25 @@ Proof.
       eapply mi_memval; eauto.
 Qed.
 
+Lemma mix_alloc_flag:
+  forall m1 m1' m1'' b lo hi,
+  mix m1'  b lo hi m1 = Some m1'' ->
+  alloc_flag m1' = alloc_flag m1''.
+Proof.
+  intros. unfold mix in H.
+  destruct mixable_dec; try congruence. inv H. reflexivity.
+Qed.
+
 Lemma mix_left_extends:
   forall m1 m2 m1' m2' b lo hi m1'',
   mix m1' b lo hi m1 = Some m1'' ->
+  alloc_flag m1 = alloc_flag m1' ->
   extends m1 m2 ->
   extends m1' m2' ->
   unchanged_on (fun b' ofs => b' = b /\ lo <= ofs < hi) m2 m2' ->
   extends m1'' m2'.
 Proof.
-  intros m1 m2 m1' m2' b lo hi m1'' Hm1'' [NB INJ PINV] [NB' INJ' PINV'] UNCH.
+  intros m1 m2 m1' m2' b lo hi m1'' Hm1'' Hflag [NB INJ PINV] [NB' INJ' PINV'] UNCH.
   assert (valid_block m1 b) by eauto using mix_valid_block.
   assert (valid_block m2 b) by (unfold valid_block in *; congruence).
   constructor.
@@ -4764,11 +4944,13 @@ Proof.
       erewrite <- !(unchanged_on_perm _ m1 m1''); [ | eauto using mix_updated ..]; cbn; auto.
     + assert (valid_block m1' b') by (unfold valid_block; apply perm_valid_block in Hp; congruence).
       erewrite <- !(unchanged_on_perm _ m1' m1''); [ | eauto using mix_unchanged ..]; cbn; auto.
+  - apply mix_alloc_flag in Hm1''. congruence.
 Qed.
 
 Lemma mix_left_inject:
   forall f f' m1 m2 m1' m2' b1 b2 delta lo hi m1'',
   mix m1' b1 lo hi m1 = Some m1'' ->
+  alloc_flag m1 = alloc_flag m1' ->
   inject f m1 m2 ->
   inject f' m1' m2' ->
   f b1 = Some (b2, delta) ->
@@ -4780,7 +4962,7 @@ Lemma mix_left_inject:
   (8 | delta) ->
   inject f' m1'' m2'.
 Proof.
-  intros f f' m1 m2 m1' m2' b1 b2 delta lo hi m1'' Hm1'' H H' Hb Hf Hm2' OOR AL.
+  intros f f' m1 m2 m1' m2' b1 b2 delta lo hi m1'' Hm1'' Hflag H H' Hb Hf Hm2' OOR AL.
   constructor.
   - eapply mix_left_mem_inj; eauto using mi_inj.
     eapply valid_block_inject_2; eauto.
@@ -4841,6 +5023,7 @@ Proof.
       assert (valid_block m2' x2) by eauto using valid_block_inject_2.
       erewrite <- !(unchanged_on_perm _ m1' m1''); eauto using mix_unchanged.
       eapply mi_perm_inv; eauto.
+  - apply mix_alloc_flag in Hm1''. destruct H'. congruence.
 Qed.
 
 End Mem.

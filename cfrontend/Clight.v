@@ -257,7 +257,7 @@ Inductive alloc_variables: env -> mem ->
       alloc_variables e m nil e m
   | alloc_variables_cons:
       forall e m id ty vars m1 b1 m2 e2,
-      Mem.alloc m 0 (sizeof ge ty) = (m1, b1) ->
+      Mem.alloc m 0 (sizeof ge ty) = Some (m1, b1) ->
       alloc_variables (PTree.set id (b1, ty) e) m1 vars e2 m2 ->
       alloc_variables e m ((id, ty) :: vars) e2 m2.
 
@@ -713,6 +713,7 @@ Inductive function_entry1 (ge: genv) (f: function) (vargs: list val) (m: mem) (e
       alloc_variables ge empty_env m (f.(fn_params) ++ f.(fn_vars)) e m1 ->
       bind_parameters ge e m1 f.(fn_params) vargs m' ->
       le = create_undef_temps f.(fn_temps) ->
+      Mem.alloc_flag m = true ->
       function_entry1 ge f vargs m e le m'.
 
 Definition step1 (ge: genv) := step ge (function_entry1 ge).
@@ -726,6 +727,7 @@ Inductive function_entry2 (ge: genv)  (f: function) (vargs: list val) (m: mem) (
       list_disjoint (var_names f.(fn_params)) (var_names f.(fn_temps)) ->
       alloc_variables ge empty_env m f.(fn_vars) e m' ->
       bind_parameter_temps f.(fn_params) vargs (create_undef_temps f.(fn_temps)) = Some le ->
+      Mem.alloc_flag m = true ->
       function_entry2 ge f vargs m e le m'.
 
 Definition step2 (ge: genv) := step ge (function_entry2 ge).
@@ -759,4 +761,43 @@ Proof.
   red; simpl; intros. inv H; simpl; try omega.
   eapply external_call_trace_length; eauto.
   eapply external_call_trace_length; eauto.
+Qed.
+
+Global Instance clight_program_sem p: ProgramSem (semantics1 p).
+Proof.
+  split.
+  - intros. inv H. clear -H0. unfold valid_query; cbn.
+    unfold Genv.find_funct in H0.
+    destruct vf; try congruence.
+    destruct Ptrofs.eq_dec; try congruence.
+    split. intros X. discriminate X.
+    subst. unfold Genv.find_funct_ptr in H0.
+    destruct Genv.find_def eqn: Hdef; try congruence.
+    destruct g; try congruence. inv H0.
+    unfold globalenv in Hdef; cbn in *.
+    rewrite Genv.find_def_spec in Hdef.
+    destruct Genv.invert_symbol eqn: Hse; try congruence.
+    exists i. split. unfold footprint_of_program.
+    rewrite Hdef. auto.
+    unfold Genv.symbol_address.
+    apply Genv.invert_find_symbol in Hse.
+    rewrite Hse. auto.
+  - intros. inv H. unfold valid_query. cbn.
+    intros [? (i & Hi & Hse)].
+    unfold Genv.find_funct in H0.
+    destruct vf; try congruence.
+    destruct Ptrofs.eq_dec; try congruence.
+    unfold Genv.find_funct_ptr in H0.
+    destruct Genv.find_def eqn: Hdef; try congruence.
+    destruct g eqn: Hg; try congruence. inv H0.
+    unfold globalenv in Hdef. cbn in *.
+    rewrite Genv.find_def_spec in Hdef.
+    destruct Genv.invert_symbol eqn: Hs; try congruence.
+    apply Genv.invert_find_symbol in Hs.
+    unfold Genv.symbol_address in Hse.
+    destruct (Genv.find_symbol se i) eqn: Hxe; try congruence.
+    inv Hse. exploit Genv.find_symbol_injective.
+    apply Hs. apply Hxe. intros ->.
+    unfold footprint_of_program in Hi. rewrite Hdef in Hi.
+    subst f. cbn in *. discriminate Hi.
 Qed.

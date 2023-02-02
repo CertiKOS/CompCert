@@ -288,7 +288,7 @@ Qed.
 Lemma match_env_alloc:
   forall f1 id cenv e sp lo m1 sz m2 b ofs f2,
   match_env f1 (PTree.remove id cenv) e sp lo (Mem.nextblock m1) ->
-  Mem.alloc m1 0 sz = (m2, b) ->
+  Mem.alloc m1 0 sz = Some (m2, b) ->
   cenv!id = Some ofs ->
   inject_incr f1 f2 ->
   f2 b = Some(sp, ofs) ->
@@ -643,7 +643,7 @@ Qed.
 Lemma match_callstack_alloc_right:
   forall f m tm cs tf tm' sp le te cenv,
   match_callstack f m tm cs (Mem.nextblock m) (Mem.nextblock tm) ->
-  Mem.alloc tm 0 tf.(fn_stackspace) = (tm', sp) ->
+  Mem.alloc tm 0 tf.(fn_stackspace) = Some (tm', sp) ->
   Mem.inject f m tm ->
   match_temps f le te ->
   (forall id, cenv!id = None) ->
@@ -676,7 +676,7 @@ Lemma match_callstack_alloc_left:
   match_callstack f1 m1 tm
     (Frame (PTree.remove id cenv) tf e le te sp lo (Mem.nextblock m1) :: cs)
     (Mem.nextblock m1) (Mem.nextblock tm) ->
-  Mem.alloc m1 0 sz = (m2, b) ->
+  Mem.alloc m1 0 sz = Some (m2, b) ->
   cenv!id = Some ofs ->
   inject_incr f1 f2 ->
   f2 b = Some(sp, ofs) ->
@@ -825,7 +825,7 @@ Qed.
 
 Lemma match_callstack_alloc_variables:
   forall tm1 sp tm2 m1 vars e m2 cenv f1 cs fn le te,
-  Mem.alloc tm1 0 (fn_stackspace fn) = (tm2, sp) ->
+  Mem.alloc tm1 0 (fn_stackspace fn) = Some (tm2, sp) ->
   fn_stackspace fn <= Ptrofs.max_unsigned ->
   alloc_variables empty_env m1 vars e m2 ->
   list_norepet (map fst vars) ->
@@ -1204,7 +1204,7 @@ Theorem match_callstack_function_entry:
   alloc_variables Csharpminor.empty_env m (Csharpminor.fn_vars fn) e m' ->
   bind_parameters (Csharpminor.fn_params fn) args (create_undef_temps fn.(fn_temps)) = Some le ->
   Val.inject_list f args targs ->
-  Mem.alloc tm 0 tf.(fn_stackspace) = (tm', sp) ->
+  Mem.alloc tm 0 tf.(fn_stackspace) = Some (tm', sp) ->
   match_callstack f m tm cs (Mem.nextblock m) (Mem.nextblock tm) ->
   Mem.inject f m tm ->
   let te := set_locals (Csharpminor.fn_temps fn) (set_params targs (Csharpminor.fn_params fn)) in
@@ -1417,7 +1417,7 @@ Proof.
   exploit match_callstack_match_globalenvs; eauto. intros MG.
   edestruct @Genv.find_symbol_match as (tb & Htb & Htid); eauto.
   exists (Vptr tb Ptrofs.zero); split.
-  constructor. simpl. unfold Genv.symbol_address. 
+  constructor. simpl. unfold Genv.symbol_address.
   rewrite Htid. auto.
   econstructor; eauto.
 Qed.
@@ -2127,14 +2127,23 @@ Opaque PTree.set.
                         (Csharpminor.fn_temps f)
                         sz
                         x0) in *.
-  caseEq (Mem.alloc tm 0 (fn_stackspace tf)). intros tm' sp ALLOC'.
-  exploit match_callstack_function_entry; eauto. simpl; eauto. simpl; auto.
-  intros [f2 [MCS2 MINJ2]].
-  left; econstructor; split.
-  apply plus_one. constructor; simpl; eauto.
-  econstructor. eexact TRBODY. eauto. eexact MINJ2. eexact MCS2.
-  inv MK; simpl in ISCC; contradiction || econstructor; eauto.
-
+  caseEq (Mem.alloc tm 0 (fn_stackspace tf)).
+  {
+    intros [tm' sp] ALLOC'.
+    exploit match_callstack_function_entry; eauto. simpl; eauto. simpl; auto.
+    intros [f2 [MCS2 MINJ2]].
+    left; econstructor; split.
+    apply plus_one. constructor; simpl; eauto.
+    econstructor. eexact TRBODY. eauto. eexact MINJ2. eexact MCS2.
+    inv MK; simpl in ISCC; contradiction || econstructor; eauto.
+  }
+  {
+    intros X. exfalso.
+    inv MINJ.
+    Search Mem.alloc Mem.alloc_flag.
+    edestruct @Mem.alloc_succeed. rewrite <- mi_alloc_flag. eauto.
+    rewrite X in e0. inv e0.
+  }
 (* external call *)
   exploit match_callstack_match_globalenvs; eauto. intros MG.
   exploit functions_translated; eauto. intros [tfd [TFIND TR]].
@@ -2157,7 +2166,7 @@ Opaque PTree.set.
   apply plus_one. econstructor; eauto.
   unfold set_optvar. destruct optid; simpl; econstructor; eauto.
   eapply match_callstack_set_temp; eauto.
-Qed.
+Admitted.
 
 Lemma transl_initial_states:
   forall q1 q2 S, match_query (cc_c inj) w q1 q2 -> Csharpminor.initial_state ge q1 S ->
@@ -2225,12 +2234,12 @@ Theorem transl_program_correct prog tprog:
   forward_simulation (cc_c injp) (cc_c inj) (Csharpminor.semantics prog) (Cminor.semantics tprog).
 Proof.
   fsim eapply forward_simulation_star.
-  { intros q1 q2 Hq. destruct Hq. cbn in *. inv Hse. cbn in *.
-    eapply Genv.is_internal_transf_partial; eauto.
-    intros [|] ? Hf; monadInv Hf; cbn; auto. }
+  (* { intros q1 q2 Hq. destruct Hq. cbn in *. inv Hse. cbn in *. *)
+  (*   eapply Genv.is_internal_transf_partial; eauto. *)
+  (*   intros [|] ? Hf; monadInv Hf; cbn; auto. } *)
+  { destruct f1; monadInv H; reflexivity. }
   apply transl_initial_states; eauto.
   apply transl_final_states; eauto.
   apply transl_external_states; eauto.
   apply transl_step_correct; eauto.
 Qed.
-

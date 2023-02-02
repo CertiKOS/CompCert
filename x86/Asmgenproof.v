@@ -430,8 +430,9 @@ Proof.
   inversion 1;
   try (replace (Mem.nextblock m) with (Mem.nextblock m') by congruence);
   try apply Ple_refl.
-  - replace (Mem.nextblock m') with (Pos.succ (Mem.nextblock m)) by congruence.
+  - replace (Mem.nextblock m') with (Pos.succ (Mem.nextblock m)).
     xomega.
+    apply Mem.nextblock_alloc in H. congruence.
   - destruct zlt.
     + apply Mem.nextblock_free in H1. rewrite <- H1. subst. reflexivity.
     + inv H1. reflexivity.
@@ -511,7 +512,7 @@ Qed.
 
 Lemma alloc_sp_fresh m lo hi m' stk ofs:
   Ple init_nb (Mem.nextblock m) ->
-  Mem.alloc m lo hi = (m', stk) ->
+  Mem.alloc m lo hi = Some (m', stk) ->
   inner_sp init_nb (Vptr stk ofs) = Some true.
 Proof.
   intros Hm Hstk.
@@ -1023,7 +1024,7 @@ Transparent destroyed_at_function_entry.
   econstructor; eauto.
   eapply match_stack_incr_bound; eauto.
   unfold loc_external_result. apply agree_set_other; auto. apply agree_set_pair; auto.
-  apply agree_undef_caller_save_regs; auto. 
+  apply agree_undef_caller_save_regs; auto.
   rewrite Pregmap.gso by discriminate.
   unfold set_pair, loc_external_result. induction loc_result; cbn.
   unfold undef_caller_save_regs. rewrite Pregmap.gso by (destruct r; discriminate).
@@ -1133,17 +1134,18 @@ Theorem transf_program_correct prog tprog:
     (Asm.semantics tprog).
 Proof.
   set (ms := fun '(se, tt, (rs0, nb0)) s1 '(nb, s2) =>
-               match_states prog se rs0 nb0 s1 s2 /\ nb = nb0). 
+               match_states prog se rs0 nb0 s1 s2 /\ nb = nb0).
   fsim eapply forward_simulation_star with
       (match_states := ms w)
       (measure := measure);
-    destruct w as [[se [ ]] [rs0 nb0]], Hse as [[ ] [ ]];
+    try destruct w as [[se [ ]] [rs0 nb0]], Hse as [[ ] [ ]];
     intros.
-  - destruct H as (qi & Hq1i & Hqi2). destruct Hq1i. inv Hqi2. cbn.
-    setoid_rewrite ext_lessdef in H2. inv H2; try congruence.
-    uncklr. inv H0; try congruence.
-    eapply (Genv.is_internal_transf_partial_id MATCH); eauto.
-    intros [|] ? Hf; monadInv Hf; auto.
+  (* - destruct H as (qi & Hq1i & Hqi2). destruct Hq1i. inv Hqi2. cbn. *)
+  (*   setoid_rewrite ext_lessdef in H2. inv H2; try congruence. *)
+  (*   uncklr. inv H0; try congruence. *)
+  (*   eapply (Genv.is_internal_transf_partial_id MATCH); eauto. *)
+  (*   intros [|] ? Hf; monadInv Hf; auto. *)
+  - destruct f1; monadInv H; reflexivity.
   - edestruct transf_initial_states as (s2 & Hs2 & Hs); eauto.
     exists (Mem.nextblock (snd q2), s2). cbn. intuition auto.
     destruct H as (? & ? & ?). destruct H1. auto.

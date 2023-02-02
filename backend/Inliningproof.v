@@ -283,7 +283,7 @@ Qed.
 Lemma range_private_alloc_left:
   forall F m m' sp' base hi sz m1 sp F1,
   range_private F m m' sp' base hi ->
-  Mem.alloc m 0 sz = (m1, sp) ->
+  Mem.alloc m 0 sz = Some (m1, sp) ->
   F1 sp = Some(sp', base) ->
   (forall b, b <> sp -> F1 b = F b) ->
   range_private F1 m1 m' sp' (base + Z.max sz 0) hi.
@@ -707,7 +707,7 @@ Lemma match_stacks_inside_alloc_left:
   forall F m m' stk stk' f' ctx sp' rs',
   match_stacks_inside F m m' stk stk' f' ctx sp' rs' ->
   forall sz m1 b F1 delta,
-  Mem.alloc m 0 sz = (m1, b) ->
+  Mem.alloc m 0 sz = Some (m1, b) ->
   inject_incr F F1 ->
   F1 b = Some(sp', delta) ->
   (forall b1, b1 <> b -> F1 b1 = F b1) ->
@@ -1380,11 +1380,17 @@ Theorem transf_program_correct prog tprog:
   forward_simulation (cc_c injp) (cc_c inj) (semantics prog) (semantics tprog).
 Proof.
   fsim eapply forward_simulation_star.
-  { intros. destruct Hse, H. cbn in *.
-    eapply (Genv.is_internal_match MATCH); eauto 1.
-    unfold transf_fundef, transf_partial_fundef.
-    intros ? [|] [|]; cbn -[transf_function]; inversion 1; auto.
-    destruct transf_function; inv H5. }
+  {
+    destruct f1; unfold transf_fundef, transf_partial_fundef in H.
+    - destruct (transf_function (funenv_program c) f); cbn in *;
+        intuition; now inv H.
+    - now inv H.
+  }
+  (* { intros. destruct Hse, H. cbn in *. *)
+  (*   eapply (Genv.is_internal_match MATCH); eauto 1. *)
+  (*   unfold transf_fundef, transf_partial_fundef. *)
+  (*   intros ? [|] [|]; cbn -[transf_function]; inversion 1; auto. *)
+  (*   destruct transf_function; inv H5. } *)
   intros. eapply transf_initial_states; eauto.
   intros. eapply transf_final_states; eauto.
   intros. eapply transf_external_states; eauto.

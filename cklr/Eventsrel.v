@@ -153,14 +153,13 @@ Proof.
   simpl in *.
   destruct H.
   inv Hvargs. inv H5. apply val_inject_vptrofs_inv in H3. subst.
-  edestruct cklr_alloc as (w' & Hw' & HH); eauto.
-  transport H. clear HH.
-  assert (ptr_inject (mi R w') (b, (-size_chunk Mptr)) (x0, (-size_chunk Mptr)))
+  transport H. destruct x. destruct H2. cbn in *.
+  assert (ptr_inject (mi R w') (b, (-size_chunk Mptr)) (b0, (-size_chunk Mptr)))
     by rauto.
   transport H0.
   eexists (_, _). simpl. split.
   - econstructor; eauto.
-  - exists w''; split; rauto.
+  - exists w''; split; try rauto. transitivity w'; eauto.
 Qed.
 
 Global Instance extcall_free_sem_rel R:

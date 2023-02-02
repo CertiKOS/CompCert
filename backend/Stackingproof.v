@@ -329,8 +329,8 @@ Lemma contains_locations_exten:
               (contains_locations j sp pos bound sl ls').
 Proof.
   intros; split; simpl; intros; auto.
-  intuition auto. exploit H5; eauto. intros (v & A & B). exists v; split; auto. 
-  specialize (H ofs ty). inv H. congruence. auto. 
+  intuition auto. exploit H5; eauto. intros (v & A & B). exists v; split; auto.
+  specialize (H ofs ty). inv H. congruence. auto.
 Qed.
 
 Lemma contains_locations_incr:
@@ -693,9 +693,9 @@ Lemma agree_regs_undef_caller_save_regs:
   agree_regs j ls rs ->
   agree_regs j (LTL.undef_caller_save_regs ls) (Mach.undef_caller_save_regs rs).
 Proof.
-  intros; red; intros. 
-  unfold LTL.undef_caller_save_regs, Mach.undef_caller_save_regs. 
-  destruct (is_callee_save r); auto. 
+  intros; red; intros.
+  unfold LTL.undef_caller_save_regs, Mach.undef_caller_save_regs.
+  destruct (is_callee_save r); auto.
 Qed.
 
 (** Preservation under assignment of stack slot *)
@@ -1073,11 +1073,11 @@ Lemma function_prologue_correct:
   (forall r, Val.has_type (ls (R r)) (mreg_type r)) ->
   ls1 = LTL.undef_regs destroyed_at_function_entry (LTL.call_regs ls) ->
   rs1 = undef_regs destroyed_at_function_entry rs ->
-  Mem.alloc m1 0 f.(Linear.fn_stacksize) = (m2, sp) ->
+  Mem.alloc m1 0 f.(Linear.fn_stacksize) = Some (m2, sp) ->
   Val.has_type parent Tptr -> Val.has_type ra Tptr ->
   m1' |= minjection j m1 ** globalenv_inject se tse j m1 ** P ->
   exists j', exists rs', exists m2', exists sp', exists m3', exists m4', exists m5',
-     Mem.alloc m1' 0 tf.(fn_stacksize) = (m2', sp')
+     Mem.alloc m1' 0 tf.(fn_stacksize) = Some (m2', sp')
   /\ store_stack m2' (Vptr sp' Ptrofs.zero) Tptr tf.(fn_link_ofs) parent = Some m3'
   /\ store_stack m3' (Vptr sp' Ptrofs.zero) Tptr tf.(fn_retaddr_ofs) ra = Some m4'
   /\ star step tge
@@ -1098,7 +1098,12 @@ Local Opaque b fe.
   generalize (frame_env_range b) (frame_env_aligned b). replace (make_env b) with fe by auto. simpl.
   intros LAYOUT1 LAYOUT2.
   (* Allocation step *)
-  destruct (Mem.alloc m1' 0 (fe_size fe)) as [m2' sp'] eqn:ALLOC'.
+  destruct (Mem.alloc m1' 0 (fe_size fe)) as [[m2' sp']|] eqn:ALLOC'.
+  2: {
+    exfalso. destruct SEP. apply Mem.alloc_flag_alloc1 in ALLOC.
+    edestruct (Mem.alloc_succeed m1'). destruct H. congruence.
+    rewrite ALLOC' in e. inv e.
+  }
   exploit alloc_parallel_rule_2.
   eexact SEP. eexact ALLOC. eexact ALLOC'.
   instantiate (1 := fe_stack_data fe). tauto.
@@ -1326,7 +1331,7 @@ Proof.
     apply CS; auto.
     rewrite NCS by auto. apply AGR.
   split. red; unfold return_regs; intros.
-    destruct l. rewrite H; auto. destruct sl; auto; contradiction. 
+    destruct l. rewrite H; auto. destruct sl; auto; contradiction.
   assumption.
 Qed.
 
@@ -1514,7 +1519,7 @@ Proof.
     + destruct (zlt 0 (size_arguments (stk_sg w))).
       * edestruct PERM as (sb' & sofs' & Hsp & PERM' & FITS). xomega.
         rewrite H4 in Hsp. inv Hsp. auto.
-      * intro. unfold offset_sarg. xomega. 
+      * intro. unfold offset_sarg. xomega.
     + apply zero_size_arguments_tailcall_possible in Hsg.
       unfold offset_sarg. intro. xomega.
   - eapply mconj_proj1, sep_proj1, sep_proj2, sep_proj1 in SEP. cbn in SEP.
@@ -2168,7 +2173,7 @@ Proof.
   econstructor; eauto with coqlib.
   unfold Val.offset_ptr. destruct fb; constructor; eauto.
   intros; red.
-    apply Z.le_trans with (size_arguments (Linear.funsig f')); auto. 
+    apply Z.le_trans with (size_arguments (Linear.funsig f')); auto.
     apply loc_arguments_bounded; auto.
   destruct ros; simpl in *; eauto. eapply symbol_address_inject; eauto. apply SEP.
   simpl. rewrite sep_assoc. exact SEP.
@@ -2317,7 +2322,7 @@ Proof.
   (*eauto using external_call_max_perm.*)
   eapply match_stacks_change_meminj; eauto.
   eapply stack_contents_nextblock; eauto. apply SEP'.
-  apply agree_regs_set_pair. apply agree_regs_undef_caller_save_regs. 
+  apply agree_regs_set_pair. apply agree_regs_undef_caller_save_regs.
   apply agree_regs_inject_incr with j; auto.
   auto.
   apply stack_contents_change_meminj with j; auto.
@@ -2332,7 +2337,7 @@ Proof.
   apply agree_locs_return with rs0; auto.
   apply frame_contents_exten with rs0 (parent_locset s); auto.
   intros; apply Val.lessdef_same; apply AGCS; red; congruence.
-  intros; rewrite (OUTU ty ofs); auto. 
+  intros; rewrite (OUTU ty ofs); auto.
 Qed.
 
 End STEP_CORRECT.
@@ -2480,9 +2485,10 @@ Proof.
   eapply source_invariant_fsim; eauto using linear_wt, wt_prog.
   revert MATCH.
   fsim eapply forward_simulation_plus with (match_states:= match_states rao prog tprog se1 se2 w).
-  - intros q1 q2 Hq. destruct Hq. inv Hse. cbn in *.
-    eapply (Genv.is_internal_transf_partial MATCH); eauto 1.
-    intros [|] ? Hfd; monadInv Hfd; auto.
+  (* - intros q1 q2 Hq. destruct Hq. inv Hse. cbn in *. *)
+  (*   eapply (Genv.is_internal_transf_partial MATCH); eauto 1. *)
+  (*   intros [|] ? Hfd; monadInv Hfd; auto. *)
+  - destruct f1; monadInv H; reflexivity.
   - cbn. intuition eauto using transf_initial_states.
   - intros s1 s2 r1 Hs  (Hr1 & [? ?] & Hxse & WTS & WTR). cbn in Hxse. subst.
     eapply transf_final_states; eauto.

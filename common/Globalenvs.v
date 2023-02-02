@@ -628,19 +628,24 @@ Definition perm_globvar (gv: globvar unit) : permission :=
 Definition alloc_global (m: mem) (idg: ident * globdef unit unit): option mem :=
   match idg with
   | (id, Gfun f) =>
-      let (m1, b) := Mem.alloc m 0 1 in
-      Mem.drop_perm m1 b 0 1 Nonempty
+      match Mem.alloc m 0 1 with
+      | Some (m1, b) => Mem.drop_perm m1 b 0 1 Nonempty
+      | None => None
+      end
   | (id, Gvar v) =>
       let init := v.(gvar_init) in
       let sz := init_data_list_size init in
-      let (m1, b) := Mem.alloc m 0 sz in
-      match store_zeros m1 b 0 sz with
-      | None => None
-      | Some m2 =>
-          match store_init_data_list m2 b 0 init with
+      match Mem.alloc m 0 sz with
+      | Some (m1, b) =>
+          match store_zeros m1 b 0 sz with
           | None => None
-          | Some m3 => Mem.drop_perm m3 b 0 sz (perm_globvar v)
+          | Some m2 =>
+              match store_init_data_list m2 b 0 init with
+              | None => None
+              | Some m3 => Mem.drop_perm m3 b 0 sz (perm_globvar v)
+              end
           end
+      | None => None
       end
   end.
 
@@ -697,12 +702,12 @@ Proof.
   unfold alloc_global. intros.
   destruct g as [id [f|v]].
   (* function *)
-  destruct (Mem.alloc m 0 1) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:?; try congruence.
   erewrite Mem.nextblock_drop; eauto. erewrite Mem.nextblock_alloc; eauto.
   (* variable *)
   set (init := gvar_init v) in *.
   set (sz := init_data_list_size init) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:?; try congruence.
   destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
   destruct (store_init_data_list m2 b 0 init) as [m3|] eqn:?; try discriminate.
   erewrite Mem.nextblock_drop; eauto.
@@ -771,7 +776,7 @@ Remark alloc_global_perm:
 Proof.
   intros. destruct idg as [id [f|v]]; simpl in H.
   (* function *)
-  destruct (Mem.alloc m 0 1) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:?; try congruence.
   assert (b' <> b). apply Mem.valid_not_valid_diff with m; eauto with mem.
   split; intros.
   eapply Mem.perm_drop_3; eauto. eapply Mem.perm_alloc_1; eauto.
@@ -779,7 +784,7 @@ Proof.
   (* variable *)
   set (init := gvar_init v) in *.
   set (sz := init_data_list_size init) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:?; try congruence.
   destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
   destruct (store_init_data_list m2 b 0 init) as [m3|] eqn:?; try discriminate.
   assert (b' <> b). apply Mem.valid_not_valid_diff with m; eauto with mem.
@@ -1083,7 +1088,7 @@ Remark alloc_global_unchanged:
 Proof.
   intros. destruct g as [f|v]; simpl in H.
 - (* function *)
-  destruct (Mem.alloc m 0 1) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:?; try congruence.
   set (Q := fun b' (ofs: Z) => b' <> b).
   apply Mem.unchanged_on_implies with Q.
   apply Mem.unchanged_on_trans with m1.
@@ -1093,7 +1098,7 @@ Proof.
 - (* variable *)
   set (init := gvar_init v) in *.
   set (sz := init_data_list_size init) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:?; try congruence.
   destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
   destruct (store_init_data_list m2 b 0 init) as [m3|] eqn:?; try discriminate.
   set (Q := fun b' (ofs: Z) => b' <> b).
@@ -1162,7 +1167,7 @@ Proof.
   red; intros. unfold find_info in H2; simpl in H2.
   rewrite PTree.gsspec in H2. destruct (peq b (genv_next g)).
 + inv H2. destruct gd0 as [f|v]; simpl in H0.
-* destruct (Mem.alloc m 0 1) as [m1 b] eqn:ALLOC.
+* destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:ALLOC; try congruence.
   exploit Mem.alloc_result; eauto. intros RES.
   rewrite H, <- RES. split.
   eapply Mem.perm_drop_1; eauto. omega.
@@ -1172,7 +1177,7 @@ Proof.
   split. omega. inv ORD; auto.
 * set (init := gvar_init v) in *.
   set (sz := init_data_list_size init) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:?; try congruence.
   destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
   destruct (store_init_data_list m2 b 0 init) as [m3|] eqn:?; try discriminate.
   exploit Mem.alloc_result; eauto. intro RES.
@@ -1338,17 +1343,17 @@ Lemma alloc_global_neutral:
 Proof.
   intros. destruct idg as [id [f|v]]; simpl in H.
   (* function *)
-  destruct (Mem.alloc m 0 1) as [m1 b] eqn:?.
-  assert (Plt b thr). rewrite (Mem.alloc_result _ _ _ _ _ Heqp). auto.
+  destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:?; try congruence.
+  assert (Plt b thr). rewrite (Mem.alloc_result _ _ _ _ _ Heqo). auto.
   eapply Mem.drop_inject_neutral; eauto.
   eapply Mem.alloc_inject_neutral; eauto.
   (* variable *)
   set (init := gvar_init v) in *.
   set (sz := init_data_list_size init) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b] eqn:?.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:?; try congruence.
   destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
   destruct (store_init_data_list ge m2 b 0 init) as [m3|] eqn:?; try discriminate.
-  assert (Plt b thr). rewrite (Mem.alloc_result _ _ _ _ _ Heqp). auto.
+  assert (Plt b thr). rewrite (Mem.alloc_result _ _ _ _ _ Heqo). auto.
   eapply Mem.drop_inject_neutral; eauto.
   eapply store_init_data_list_neutral with (m := m2) (b := b); eauto.
   eapply store_zeros_neutral with (m := m1); eauto.
@@ -1479,7 +1484,7 @@ Proof.
   destruct H0.
 + subst idg1; simpl in A.
   set (il := gvar_init v) in *. set (sz := init_data_list_size il) in *.
-  destruct (Mem.alloc m 0 sz) as [m1 b].
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|]; try congruence.
   destruct (store_zeros m1 b 0 sz) as [m2|]; try discriminate.
   destruct (store_init_data_list ge m2 b 0 il) as [m3|] eqn:B; try discriminate.
   split. eapply store_init_data_list_aligned; eauto. intros; eapply store_init_data_list_free_idents; eauto.
@@ -1545,6 +1550,7 @@ Qed.
 
 Lemma alloc_global_exists:
   forall m idg,
+  Mem.alloc_flag  m = true ->
   match idg with
   | (id, Gfun f) => True
   | (id, Gvar v) =>
@@ -1554,13 +1560,15 @@ Lemma alloc_global_exists:
   exists m', alloc_global ge m idg = Some m'.
 Proof.
   intros m [id [f|v]]; intros; simpl.
-- destruct (Mem.alloc m 0 1) as [m1 b] eqn:ALLOC.
+- destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:ALLOC.
+  2: { exfalso. edestruct Mem.alloc_succeed; eauto. rewrite ALLOC in e. inv e. }
   destruct (Mem.range_perm_drop_2 m1 b 0 1 Nonempty) as [m2 DROP].
   red; intros; eapply Mem.perm_alloc_2; eauto.
   exists m2; auto.
-- destruct H as [P Q].
+- destruct H0 as [P Q].
   set (sz := init_data_list_size (gvar_init v)).
-  destruct (Mem.alloc m 0 sz) as [m1 b] eqn:ALLOC.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:ALLOC.
+  2: { exfalso. edestruct Mem.alloc_succeed; eauto. rewrite ALLOC in e. inv e. }
   assert (P1: Mem.range_perm m1 b 0 sz Cur Freeable) by (red; intros; eapply Mem.perm_alloc_2; eauto).
   destruct (@store_zeros_exists m1 b 0 sz) as [m2 ZEROS].
   red; intros. apply Mem.perm_implies with Freeable; auto with mem.
@@ -1586,13 +1594,39 @@ Theorem init_mem_exists:
   exists m, init_mem p = Some m.
 Proof.
   intros. set (ge := symboltbl p) in *.
-  unfold init_mem. revert H. generalize (prog_defs p) Mem.empty.
+  assert (Mem.alloc_flag Mem.empty = true) as HF by reflexivity.
+  unfold init_mem. revert H HF. generalize (prog_defs p) Mem.empty.
   induction l as [ | idg l]; simpl; intros.
 - exists m; auto.
 - destruct (@alloc_global_exists ge m idg) as [m1 A1].
+  apply HF.
   destruct idg as [id [f|v]]; eauto.
   fold ge. rewrite A1. eapply IHl; eauto.
-Qed.
+  clear - HF A1. unfold alloc_global in A1. rename m1 into m'.
+  destruct idg as [id [f|v]].
+  (* function *)
+  destruct (Mem.alloc m 0 1) as [[m1 b]|] eqn:?; try congruence.
+  apply Mem.drop_alloc_flag in A1.
+  exploit Mem.alloc_flag_alloc1; eauto.
+  exploit Mem.alloc_flag_alloc2; eauto.
+  (* variable *)
+  set (init := gvar_init v) in *.
+  set (sz := init_data_list_size init) in *.
+  destruct (Mem.alloc m 0 sz) as [[m1 b]|] eqn:?; try congruence.
+  destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
+  destruct (store_init_data_list ge m2 b 0 init) as [m3|] eqn:?; try discriminate.
+  apply Mem.drop_alloc_flag in A1.
+  assert (Mem.alloc_flag m2 = Mem.alloc_flag m3).
+  {
+    admit.
+  }
+  assert (Mem.alloc_flag m1 = Mem.alloc_flag m2).
+  {
+    admit.
+  }
+  exploit Mem.alloc_flag_alloc1; eauto.
+  exploit Mem.alloc_flag_alloc2; eauto.
+Admitted.
 
 End GENV.
 

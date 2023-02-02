@@ -69,6 +69,8 @@ COMMON=Errors.v AST.v Linking.v \
   SmallstepLinking.v \
   Invariant.v \
   CallconvAlgebra.v \
+  CategoricalComp.v \
+  FlatComp.v \
 
 # Behaviors.v
 # Determinism.v
@@ -84,6 +86,7 @@ CKLR=\
   Valuesrel.v Builtinsrel.v Eventsrel.v \
   Coprel.v Clightrel.v \
   Registersrel.v RTLrel.v \
+  Join.v
 
 # Back-end modules (in backend/, $(ARCH)/)
 
