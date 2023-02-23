@@ -74,22 +74,7 @@ Section JOIN_PROP.
     - inv mjoin_alloc_flag0; eauto.
   Qed.
 
-  Lemma join_associative m1 m2 m3 m12 m23 m123:
-    join m1 m2 m12 -> join m12 m3 m123 -> join m2 m3 m23 -> join m1 m23 m123.
-  Proof.
-    intros A B C. inv A. inv B. inv C. constructor.
-    - intros b ofs.
-      specialize (mjoin_contents0 b ofs).
-      specialize (mjoin_contents1 b ofs).
-      specialize (mjoin_contents2 b ofs).
-      inv mjoin_contents0; inv mjoin_contents1; inv mjoin_contents2.
-      + apply contents_join_l; eauto; try congruence.
-        intros. rewrite <- H10. eauto.
-        unfold Mem.valid_block, Plt in *.
-        rewrite mjoin_nextblock2. lia.
-      + apply contents_join_l; eauto; try congruence.
-        intros. rewrite <- H5. rewrite <- H10. rewrite <- H0 in H4. split.
-  Admitted.
+  (* associativity property in compcertox/JoinAssoc.v *)
 
 End JOIN_PROP.
 

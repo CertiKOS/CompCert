@@ -1586,6 +1586,35 @@ Qed.
 
 End INITMEM_EXISTS.
 
+Lemma store_init_data_list_alloc_flag:
+  forall ge b il m p m',
+    store_init_data_list ge m b p il = Some m' ->
+    Mem.alloc_flag m = Mem.alloc_flag m'.
+Proof.
+  induction il as [ | i1 il]; simpl; intros.
+  - inv H. reflexivity.
+  - destruct (store_init_data ge m b p i1) as [m1|] eqn:S1; try discriminate.
+    apply IHil in H.
+    assert (Mem.alloc_flag m1 = Mem.alloc_flag m).
+    {
+      unfold store_init_data in S1.
+      destruct i1; eauto using Mem.store_alloc_flag.
+      now inv S1.
+      destruct (find_symbol ge i) as [b'|]; try congruence.
+      eauto using Mem.store_alloc_flag.
+    }
+    congruence.
+Qed.
+
+Lemma store_zeros_alloc_flag:
+  forall m b p n m', store_zeros m b p n = Some m' -> Mem.alloc_flag m' = Mem.alloc_flag m.
+Proof.
+  intros until n. functional induction (store_zeros m b p n); intros.
+  inv H; auto.
+  rewrite IHo; eauto with mem. eauto using Mem.store_alloc_flag.
+  congruence.
+Qed.
+
 Theorem init_mem_exists:
   forall p,
   (forall id v, In (id, Gvar v) (prog_defs p) ->
@@ -1616,17 +1645,11 @@ Proof.
   destruct (store_zeros m1 b 0 sz) as [m2|] eqn:?; try discriminate.
   destruct (store_init_data_list ge m2 b 0 init) as [m3|] eqn:?; try discriminate.
   apply Mem.drop_alloc_flag in A1.
-  assert (Mem.alloc_flag m2 = Mem.alloc_flag m3).
-  {
-    admit.
-  }
-  assert (Mem.alloc_flag m1 = Mem.alloc_flag m2).
-  {
-    admit.
-  }
+  apply store_init_data_list_alloc_flag in Heqo1. symmetry in Heqo1.
+  apply store_zeros_alloc_flag in Heqo0.
   exploit Mem.alloc_flag_alloc1; eauto.
   exploit Mem.alloc_flag_alloc2; eauto.
-Admitted.
+Qed.
 
 End GENV.
 

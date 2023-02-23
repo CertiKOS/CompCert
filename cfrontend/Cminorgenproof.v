@@ -2166,7 +2166,7 @@ Opaque PTree.set.
   apply plus_one. econstructor; eauto.
   unfold set_optvar. destruct optid; simpl; econstructor; eauto.
   eapply match_callstack_set_temp; eauto.
-Admitted.
+Qed.
 
 Lemma transl_initial_states:
   forall q1 q2 S, match_query (cc_c inj) w q1 q2 -> Csharpminor.initial_state ge q1 S ->
