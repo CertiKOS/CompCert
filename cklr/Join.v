@@ -28,6 +28,18 @@ Section JOIN.
       ZMap.get ofs m1.(Mem.mem_contents)#b =ZMap.get ofs m.(Mem.mem_contents)#b ->
       Mem.valid_block m1 b ->
       contents_join b ofs m1 m2 m.
+  Inductive contents_join_empty: block -> Z -> mem -> mem -> mem -> Prop  :=
+  | contents_join_x:
+    forall m1 m2 m b ofs,
+      ~Mem.perm m1 b ofs Max Nonempty ->
+      ~Mem.perm m2 b ofs Max Nonempty ->
+      ~Mem.perm m b ofs Max Nonempty ->
+      ZMap.get ofs m1.(Mem.mem_contents)#b = Undef ->
+      ZMap.get ofs m2.(Mem.mem_contents)#b = Undef ->
+      ZMap.get ofs m.(Mem.mem_contents)#b = Undef ->
+      ~Mem.valid_block m1 b ->
+      ~Mem.valid_block m2 b ->
+      contents_join_empty b ofs m1 m2 m.
 
   Inductive alloc_flag_join: mem -> mem -> mem -> Prop :=
   | alloc_flag_join_l:
@@ -53,14 +65,18 @@ Section JOIN.
 
   Record join (m1 m2 m: mem) : Prop :=
     mk_join {
-        mjoin_contents: forall b ofs, contents_join b ofs m1 m2 m;
-        mjoin_nextblock: Mem.nextblock m = Pos.max (Mem.nextblock m1) (Mem.nextblock m2);
+        mjoin_contents:
+          forall b ofs, Mem.valid_block m b -> contents_join b ofs m1 m2 m;
+        mjoin_nextblock:
+          Mem.nextblock m = Pos.max (Mem.nextblock m1) (Mem.nextblock m2);
         mjoin_alloc_flag: alloc_flag_join m1 m2 m;
+        mjoin_empty_contents:
+          forall b ofs, ~Mem.valid_block m b -> contents_join_empty b ofs m1 m2 m
       }.
 
 End JOIN.
 
-Hint Constructors  alloc_flag_join contents_join.
+Hint Constructors  alloc_flag_join contents_join contents_join_empty.
 
 Section JOIN_PROP.
 
@@ -68,15 +84,458 @@ Section JOIN_PROP.
     join m1 m2 m -> join m2 m1 m.
   Proof.
     intros H. inv H. constructor.
-    - intros. specialize (mjoin_contents0 b ofs).
+    - intros. specialize (mjoin_contents0 b ofs H).
       inv mjoin_contents0; eauto.
     - now rewrite Pos.max_comm.
     - inv mjoin_alloc_flag0; eauto.
+    - intros. specialize (mjoin_empty_contents0 b ofs H).
+      inv mjoin_empty_contents0; eauto.
   Qed.
 
-  (* associativity property in compcertox/JoinAssoc.v *)
-
 End JOIN_PROP.
+
+Lemma valid_block_dec m b:
+  { Mem.valid_block m b } + { ~Mem.valid_block m b}.
+Proof.  apply plt. Qed.
+
+(** * Associativity properties for [join] *)
+
+(** In our relational approach to separation algebras, associativity
+  proceeds in two steps. First, we show that three shares join one way
+  if and only if they join the other way. *)
+
+Lemma join_associative m1 m2 m3 m12 m23 m123:
+  join m1 m2 m12 -> join m12 m3 m123 -> join m2 m3 m23 -> join m1 m23 m123.
+Proof.
+  intros [H12c H12n H12f H12e] [H123c H123n H123f H123e] [H23c H23n H23f H23e].
+  assert (Hanyperm: forall m b ofs k p, Mem.perm m b ofs k p -> Mem.perm m b ofs Max Nonempty).
+  { intros. eauto with mem. }
+  split.
+  - (* contents *)
+    intros b ofs Hvb. unfold Mem.valid_block, Plt in *.
+    specialize (H123c b ofs Hvb).
+    rewrite H123n in Hvb. apply Pos.max_lt_iff in Hvb as [Hvb|Hvb].
+    + specialize (H12c b ofs Hvb). inv H12c; inv H123c.
+      (* m2 dominates m12 & m3 dominates m123 *)
+      * assert (HX: Mem.valid_block m23 b).
+        {
+          unfold Mem.valid_block, Plt in *. rewrite H23n.
+          eapply Pos.max_lt_iff. firstorder.
+        }
+        specialize (H23c b ofs HX). inv H23c.
+        -- left; eauto; try congruence.
+           intros. etransitivity; eauto. symmetry. eauto.
+        -- left; eauto; try congruence.
+           intros; split; intros; eauto.
+           exfalso. apply H4. apply H0. apply H10. eauto with mem.
+           exfalso. apply H9. apply H5. eauto with mem.
+      (* m2 dominates m12 & m12 dominates m123 *)
+      * assert (HX: Mem.valid_block m23 b).
+        {
+          unfold Mem.valid_block, Plt in *. rewrite H23n.
+          eapply Pos.max_lt_iff. firstorder.
+        }
+        specialize (H23c b ofs HX). inv H23c.
+        -- left; eauto; try congruence.
+           intros; split; intros; eauto.
+           exfalso. apply H4. apply H10. eauto with mem.
+           exfalso. apply H9. apply H0. apply H5. eauto with mem.
+        -- left; eauto; try congruence.
+           intros. etransitivity; eauto.
+           etransitivity; eauto. symmetry; eauto.
+      (* m1 dominates m12 & m3 dominates m123 *)
+      * assert (HX: Mem.valid_block m23 b).
+        {
+          unfold Mem.valid_block, Plt in *. rewrite H23n.
+          eapply Pos.max_lt_iff. now right.
+        }
+        specialize (H23c b ofs HX). inv H23c.
+        -- left; eauto; try congruence.
+           intros x. apply H4. apply H0. eauto.
+           intros. etransitivity; eauto. symmetry; eauto.
+        -- left; eauto; try congruence.
+           intros x. apply H4. apply H0. eauto.
+           intros; split; intros; eauto.
+           exfalso. apply H. apply H10. eauto with mem.
+           exfalso. apply H9. apply H5. eauto with mem.
+      (* m1 dominates m12 & m12 dominates m123 *)
+      * destruct (valid_block_dec m23 b).
+        -- specialize (H23c b ofs v). inv H23c.
+           ++ right; eauto; try congruence.
+              intros x. apply H4. apply H10. eauto.
+              intros. etransitivity; eauto.
+           ++ right; eauto; try congruence.
+              intros x. apply H. apply H10. eauto.
+              intros. etransitivity; eauto.
+        -- specialize (H23e b ofs n). inv H23e.
+           right; eauto; try congruence.
+           intros. etransitivity; eauto.
+    + assert (HX: Mem.valid_block m23 b).
+      {
+        unfold Mem.valid_block, Plt in *. rewrite H23n.
+        eapply Pos.max_lt_iff. now right.
+      }
+      specialize (H23c b ofs HX). inv H23c; inv H123c.
+      (* m3 dominates m23 & m3 dominates m123 *)
+      * destruct (valid_block_dec m12 b).
+        -- specialize (H12c b ofs v). inv H12c.
+           ++ left; eauto; try congruence.
+              intros. etransitivity; eauto. symmetry; eauto.
+           ++ left; eauto; try congruence.
+              intros x. apply H4. apply H10. eauto.
+              intros. etransitivity; eauto. symmetry; eauto.
+        -- specialize (H12e b ofs n). inv H12e.
+           left; eauto; try congruence.
+           intros. etransitivity; eauto. symmetry; eauto.
+      (* m3 dominates m23 & m12 dominates m123 *)
+      * specialize (H12c b ofs H8). inv H12c.
+        -- left; eauto; try congruence.
+           intros; split; intros; exfalso.
+           apply H4. apply H0. eauto with mem.
+           apply H. apply H10. apply H5. eauto with mem.
+        -- right; eauto; try congruence.
+           rewrite <- H0. eauto.
+           intros. etransitivity; eauto.
+      (* m2 dominates m23 & m3 dominates m123 *)
+      * destruct (valid_block_dec m12 b).
+        -- specialize (H12c b ofs v). inv H12c.
+           ++ left; eauto; try congruence.
+              intros. split; intros; exfalso.
+              apply H4. apply H10. apply H0. eauto with mem.
+              apply H. apply H5. eauto with mem.
+           ++ left; eauto; try congruence.
+              rewrite H10. eauto.
+              intros. split; intros; exfalso.
+              apply H9. apply H0. eauto with mem.
+              apply H. apply H5. eauto with mem.
+        -- specialize (H12e b ofs n). inv H12e.
+           left; eauto; try congruence.
+      (* m2 dominates m23 & m12 dominates m123 *)
+      * specialize (H12c b ofs H8). inv H12c.
+        -- left; eauto; try congruence.
+           intros. etransitivity; eauto. etransitivity; eauto.
+           symmetry; eauto.
+        -- right; eauto; try congruence.
+           rewrite <- H0. eauto.
+           intros. etransitivity; eauto.
+  - rewrite H123n. rewrite H12n, H23n.
+    symmetry. apply Pos.max_assoc.
+  - inv H12f; inv H123f; inv H23f; try congruence.
+    * apply alloc_flag_join_l; eauto.
+      rewrite H23n. lia.
+    * apply alloc_flag_join_r; eauto.
+      rewrite H23n. rewrite H12n in H6. lia.
+    * apply alloc_flag_join_l; eauto.
+      rewrite H23n. rewrite H12n in H5. lia.
+    * apply alloc_flag_join_x; eauto.
+  - intros b ofs Hvb. specialize (H123e b ofs Hvb).
+    apply Pos.le_nlt in Hvb. rewrite H123n in Hvb.
+    apply Pos.max_lub_iff in Hvb as [Hvb1 Hvb2]; eauto.
+    rewrite H12n in Hvb1.
+    apply Pos.max_lub_iff in Hvb1 as [Hvb0 Hvb1]; eauto.
+    assert (~Mem.valid_block m1 b). apply Pos.le_nlt. apply Hvb0.
+    assert (~Mem.valid_block m2 b). apply Pos.le_nlt. apply Hvb1.
+    assert (~Mem.valid_block m3 b). apply Pos.le_nlt. apply Hvb2.
+    assert (Ha: ~Mem.valid_block m12 b).
+    {
+      apply Pos.le_nlt. rewrite H12n.
+      apply Pos.max_lub_iff; split; eauto.
+    }
+    assert (Hb: ~Mem.valid_block m23 b).
+    {
+      apply Pos.le_nlt. rewrite H23n.
+      apply Pos.max_lub_iff; split; eauto.
+    }
+    specialize (H12e b ofs Ha).
+    specialize (H23e b ofs Hb).
+    inv H123e; inv H12e; inv H23e.
+    constructor; eauto.
+Qed.
+
+(** Then, we prove the stronger property that if three shares join one
+  way, then the intermediate share required to join them the other way
+  actually exists. This property is a bit harder to establish because
+  we must show how to construct this intermediate memory state [m23]
+  when [m1 • m2 ≡ m12] and [m12 • m3 ≡ m123].
+
+  One approach would be to remove from [m123] any location where [m1]
+  is defined. However, because of the way [PMap] work, it is difficult
+  to filter them in an index-dependent manner.
+
+  So instead we choose to construct a combination of [m2] and [m3]
+  which is an appropriate join when the premises hold.
+  If [m2] and [m3] overlap (a situation which the premises prevent),
+  we can just choose convenient dummy values. *)
+
+Definition memval_combine (v1 v2: memval) :=
+  match v1 with
+    | Undef => v2
+    | _ => v1
+  end.
+
+Definition perm_combine (p1 p2: option permission): option permission :=
+  match p1, p2 with
+    | None, None => None
+    | Some x, None => Some x
+    | None, Some x => Some x
+    | Some _, Some _ => Some Freeable
+  end.
+
+Definition option_map2 {A} (f: A -> A -> A) (d1 d2: A): option A -> option A -> option A :=
+  fun x1 x2 =>
+    match x1, x2 with
+      | None, None => None
+      | Some a1, None => Some (f a1 d2)
+      | None, Some a2 => Some (f d1 a2)
+      | Some a1, Some a2 => Some (f a1 a2)
+    end.
+
+Definition PMap_combine {A} (f: A -> A -> A) (m1 m2: PMap.t A) :=
+  (f (fst m1) (fst m2),
+   PTree.combine (option_map2 f (fst m1) (fst m2)) (snd m1) (snd m2)).
+
+Definition ZMap_combine {A} (f: A -> A -> A) (m1 m2: ZMap.t A): ZMap.t A :=
+  PMap_combine f m1 m2.
+
+(** With auxiliary combination constructions defined, we can put
+  everything together and define the resulting memory state. *)
+
+Lemma PMap_gcombine {A} (f: A -> A -> A) (m1 m2: PMap.t A) (i: positive):
+  (PMap_combine f m1 m2) !! i = f (m1 !! i) (m2 !! i).
+Proof.
+  unfold PMap_combine, PMap.get; cbn.
+  rewrite PTree.gcombine by auto.
+  destruct PTree.get, PTree.get; auto.
+Qed.
+
+Lemma ZMap_gcombine {A} (f: A -> A -> A) (m1 m2: PMap.t A) (i: Z):
+  ZMap.get i (ZMap_combine f m1 m2) = f (ZMap.get i m1) (ZMap.get i m2).
+Proof.
+  unfold ZMap_combine, ZMap.get.
+  apply PMap_gcombine.
+Qed.
+
+Program Definition mem_combine (m1 m2: mem): mem :=
+  {|
+    Mem.mem_contents :=
+      PMap_combine
+        (ZMap_combine memval_combine)
+        (Mem.mem_contents m1)
+        (Mem.mem_contents m2);
+    Mem.mem_access :=
+      PMap_combine
+        (fun f1 f2 ofs k => perm_combine (f1 ofs k) (f2 ofs k))
+        (Mem.mem_access m1)
+        (Mem.mem_access m2);
+    Mem.nextblock :=
+      Pos.max (Mem.nextblock m1) (Mem.nextblock m2);
+    Mem.alloc_flag :=
+      Mem.alloc_flag m1 || Mem.alloc_flag m2;
+  |}.
+Next Obligation.
+  rewrite PMap_gcombine.
+  pose proof (Mem.access_max m1 b ofs).
+  pose proof (Mem.access_max m2 b ofs).
+  destruct PMap.get, PMap.get; cbn in *; try tauto;
+  destruct PMap.get, PMap.get; cbn in *; try tauto;
+  constructor.
+Qed.
+Next Obligation.
+  rewrite PMap_gcombine.
+  rewrite !Mem.nextblock_noaccess by xomega.
+  reflexivity.
+Qed.
+Next Obligation.
+  rewrite PMap_gcombine. cbn.
+  rewrite !Mem.contents_default.
+  reflexivity.
+Qed.
+
+(** Now it just remains to establish that under the right
+  circumstances, this memory state is a join. *)
+
+Lemma mem_combine_perm_l m1 m2 b ofs k p:
+  Mem.perm m1 b ofs k p -> Mem.perm (mem_combine m1 m2) b ofs k p.
+Proof.
+  unfold Mem.perm. cbn. rewrite PMap_gcombine.
+  destruct (_ !! b ofs k); cbn; firstorder.
+  destruct (_ !! b ofs k); cbn; firstorder.
+Qed.
+
+Lemma mem_combine_perm_r m1 m2 b ofs k p:
+  Mem.perm m2 b ofs k p -> Mem.perm (mem_combine m1 m2) b ofs k p.
+Proof.
+  unfold Mem.perm. cbn. rewrite PMap_gcombine.
+  destruct (_ !! b ofs k); cbn; firstorder.
+  destruct (_ !! b ofs k); cbn; firstorder.
+Qed.
+
+Lemma mem_combine_perm_iff_l m1 m2 b ofs k p:
+  ~ Mem.perm m2 b ofs Max Nonempty ->
+  Mem.perm (mem_combine m1 m2) b ofs k p <-> Mem.perm m1 b ofs k p.
+Proof.
+  intro.
+  assert (~ Mem.perm m2 b ofs k Nonempty) as Hn by eauto using Mem.perm_max.
+  assert (~ Mem.perm m2 b ofs k p) as Hn' by eauto using Mem.perm_implies, perm_any_N.
+  revert Hn Hn'; clear.
+  unfold Mem.perm. cbn. rewrite PMap_gcombine.
+  destruct ((Mem.mem_access m1) !! b ofs k) as [p1 | ],
+           ((Mem.mem_access m2) !! b ofs k) as [p2 | ]; cbn; try tauto.
+  intro H. elim H. constructor.
+Qed.
+
+Lemma mem_combine_perm_iff_r m1 m2 b ofs k p:
+  ~ Mem.perm m1 b ofs Max Nonempty ->
+  Mem.perm (mem_combine m1 m2) b ofs k p <-> Mem.perm m2 b ofs k p.
+Proof.
+  intro.
+  assert (~ Mem.perm m1 b ofs k Nonempty) as Hn by eauto using Mem.perm_max.
+  assert (~ Mem.perm m1 b ofs k p) as Hn' by eauto using Mem.perm_implies, perm_any_N.
+  revert Hn Hn'; clear.
+  unfold Mem.perm. cbn. rewrite PMap_gcombine.
+  destruct ((Mem.mem_access m1) !! b ofs k) as [p1 | ],
+           ((Mem.mem_access m2) !! b ofs k) as [p2 | ]; cbn; try tauto.
+  intro H. elim H. constructor.
+Qed.
+
+Lemma mem_gcombine m1 m2 b ofs:
+  ZMap.get ofs (Mem.mem_contents (mem_combine m1 m2)) !! b =
+  memval_combine (ZMap.get ofs (Mem.mem_contents m1) !! b)
+                 (ZMap.get ofs (Mem.mem_contents m2) !! b).
+Proof.
+  cbn.
+  rewrite PMap_gcombine, ZMap_gcombine.
+  reflexivity.
+Qed.
+
+Lemma join_split m1 m2 m3 m12 m123:
+  join m1 m2 m12 -> join m12 m3 m123 ->
+  exists m23, join m2 m3 m23.
+Proof.
+  intros [H12c H12nb H12a H12e] [H123c H123nb H123a H123e].
+  exists (mem_combine m2 m3).
+  constructor.
+  - (* Contents *)
+    intros b ofs Hvb.
+    assert (Hvb123: Mem.valid_block m123 b).
+    {
+      unfold Mem.valid_block, Plt in *. rewrite H123nb.
+      apply Pos.max_lt_iff in Hvb as [Hvb|Hvb]; apply Pos.max_lt_iff.
+      - left. rewrite H12nb. apply Pos.max_lt_iff. now right.
+      - now right.
+    }
+    specialize (H123c b ofs Hvb123). inv H123c.
+    + (* Location is empty in m12 hence m2 *)
+      destruct (valid_block_dec m12 b).
+      * specialize (H12c b ofs v). inv H12c.
+        -- left; eauto; try congruence.
+           ++ firstorder.
+           ++ intros. rewrite mem_combine_perm_iff_r; firstorder.
+           ++ rewrite mem_gcombine.
+              replace (ZMap.get ofs (Mem.mem_contents m2) !! b) with Undef.
+              reflexivity. congruence.
+        -- left; eauto.
+           ++ intros. rewrite mem_combine_perm_iff_r; firstorder.
+           ++ rewrite mem_gcombine.
+              replace (ZMap.get ofs (Mem.mem_contents m2) !! b) with Undef.
+              reflexivity.
+      * specialize (H12e b ofs n). inv H12e; eauto.
+        left; eauto.
+        -- intros. rewrite mem_combine_perm_iff_r; firstorder.
+        -- rewrite mem_gcombine.
+           replace (ZMap.get ofs (Mem.mem_contents m2) !! b) with Undef.
+           reflexivity.
+    + (* Location is empty in m3 *)
+      specialize (H12c b ofs H3). inv H12c.
+      -- right; auto.
+         ++ intros. rewrite mem_combine_perm_iff_l by auto. reflexivity.
+         ++ rewrite mem_gcombine, H1.
+            clear. destruct ZMap.get; reflexivity.
+      -- apply Pos.max_lt_iff in Hvb as [Hvb|Hvb].
+         ++ right; auto.
+            ** intros. rewrite mem_combine_perm_iff_l by auto. reflexivity.
+            ** rewrite mem_gcombine, H1.
+               clear. destruct ZMap.get; reflexivity.
+         ++ left; auto.
+            ** intros. rewrite mem_combine_perm_iff_l by auto.
+               split; intros; exfalso; eauto with mem.
+            ** rewrite mem_gcombine. rewrite H6. reflexivity.
+  - (* Nextblock *)
+    reflexivity.
+  - (* Alloc flag *)
+    inv H12a; inv H123a; try congruence.
+    + apply alloc_flag_join_r; eauto.
+      cbn. rewrite H0. reflexivity.
+      rewrite H12nb in H6.
+      apply Pos.max_le_iff in H6 as [|].
+      * etransitivity; eauto.
+      * eauto.
+    + apply alloc_flag_join_x; eauto.
+      cbn. rewrite H0. eauto.
+    + apply alloc_flag_join_l; eauto.
+      cbn. rewrite H0. eauto.
+      rewrite H12nb in H5.
+      apply Pos.max_lub_iff in H5 as [? ?]; eauto.
+    + apply alloc_flag_join_x; eauto.
+      cbn. rewrite H0; eauto.
+  - intros b ofs Hvb.
+    apply Pos.le_nlt in Hvb.
+    apply Pos.max_lub_iff in Hvb as [Hvb1 Hvb2]; eauto.
+    assert (Hvb1': ~ Mem.valid_block m2 b).
+    { apply Pos.le_nlt; eauto. }
+    assert (Hvb2': ~ Mem.valid_block m3 b).
+    { apply Pos.le_nlt; eauto. }
+    destruct (valid_block_dec m1 b).
+    + assert (Hvb3: Mem.valid_block m12 b).
+      {
+        unfold Mem.valid_block. rewrite H12nb.
+        apply Pos.max_lt_iff. left. apply v.
+      }
+      assert (Hvb4: Mem.valid_block m123 b).
+      {
+        unfold Mem.valid_block. rewrite H123nb.
+        apply Pos.max_lt_iff. left. apply Hvb3.
+      }
+      specialize (H12c b ofs Hvb3).
+      specialize (H123c b ofs Hvb4).
+      inv H12c; inv H123c; try congruence.
+      constructor; eauto.
+      * rewrite mem_combine_perm_iff_l; eauto.
+      * rewrite mem_gcombine. rewrite H1. eauto.
+    + assert (Hvb3: ~Mem.valid_block m12 b).
+      {
+        apply Pos.le_nlt. rewrite H12nb.
+        apply Pos.max_lub_iff; split; eauto.
+        apply Pos.le_nlt. apply n.
+      }
+      assert (Hvb4: ~Mem.valid_block m123 b).
+      {
+        apply Pos.le_nlt. rewrite H123nb.
+        apply Pos.max_lub_iff; split; eauto.
+        apply Pos.le_nlt. apply Hvb3.
+      }
+      specialize (H12e b ofs Hvb3).
+      specialize (H123e b ofs Hvb4).
+      inv H12e. inv H123e.
+      constructor; eauto.
+      * rewrite mem_combine_perm_iff_l; eauto.
+      * rewrite mem_gcombine. rewrite H3. eauto.
+Qed.
+
+(** Once we bring in the first associativity property, we can show
+  that the memory state we have constructed joins with [m1] into [m123]. *)
+
+Lemma join_associative_exist m1 m2 m3 m12 m123:
+  join m1 m2 m12 -> join m12 m3 m123 ->
+  exists m23, join m2 m3 m23 /\ join m1 m23 m123.
+Proof.
+  intros.
+  destruct (join_split m1 m2 m3 m12 m123) as [m23 Hm23]; auto.
+  exists m23; eauto using join_associative.
+Qed.
+
+(** ------------------------------------------------------------------------- *)
+(** ** Monotonicity *)
 
 Section JOIN_PROP.
 
@@ -90,7 +549,12 @@ Section JOIN_PROP.
     do 4 rstep. destruct Mem.valid_pointer eqn: X; try easy.
     cbn. rewrite !Mem.valid_pointer_nonempty_perm in *.
     rename x0 into b. rename x1 into ofs.
-    destruct H. specialize (mjoin_contents0 b ofs). inv mjoin_contents0.
+    exploit Mem.perm_valid_block; eauto. intros A.
+    assert (B: Mem.valid_block y b).
+    { unfold Mem.valid_block in *. inv H. unfold Plt in *.
+      rewrite mjoin_nextblock0. lia. }
+    destruct H. specialize (mjoin_contents0 _ ofs B).
+    inv mjoin_contents0.
     - apply H0. apply X.
     - exfalso. apply H. eauto with mem.
   Qed.
@@ -185,7 +649,13 @@ Section JOIN_PROP.
     Mem.perm m2 b ofs k p.
   Proof.
     intros HM H. inv HM. specialize (mjoin_contents0 b ofs).
-    inv mjoin_contents0.
+    exploit mjoin_contents0.
+    {
+      exploit Mem.perm_valid_block; eauto.
+      intros X. unfold Mem.valid_block, Plt in *.
+      rewrite mjoin_nextblock0. lia.
+    }
+    intro X. inv X.
     - apply H1. apply H.
     - exfalso. apply H0. eauto with mem.
   Qed.
@@ -213,11 +683,20 @@ Section JOIN_PROP.
     exploit Mem.load_result. apply X.
     exploit Mem.load_result. apply Y. intros -> ->.
     f_equal. apply Mem.getN_exten.
-    intros i Hi. destruct H. specialize (mjoin_contents0 b i).
+    destruct H.
+    assert (H: Mem.valid_block m2 b).
+    {
+      exploit Mem.perm_valid_block.
+      apply A. instantiate (1 := ofs). split; try lia.
+      destruct ch; cbn; try lia.
+      intros. unfold Mem.valid_block, Plt in *.
+      rewrite mjoin_nextblock0. lia.
+    }
+    intros i Hi. specialize (mjoin_contents0 b i H).
     inv mjoin_contents0; eauto.
-    exfalso. apply H. exploit A. instantiate (1 := i).
-    rewrite <- size_chunk_conv in Hi. exact Hi.
-    eauto with mem.
+    - exfalso. apply H0. exploit A. instantiate (1 := i).
+      rewrite <- size_chunk_conv in Hi. exact Hi.
+      eauto with mem.
   Qed.
 
   Instance loadv_join:
@@ -265,8 +744,10 @@ Section JOIN_PROP.
     eapply range_perm_join; eauto.
     rewrite Y. constructor.
     constructor.
-    - intros bx ox. destruct H.
-      specialize (mjoin_contents0 bx ox). inv mjoin_contents0.
+    - intros bx ox Hbx. destruct H.
+      assert (HV: Mem.valid_block m2 bx).
+      { eapply Mem.store_valid_block_2; eauto. }
+      specialize (mjoin_contents0 bx ox HV). inv mjoin_contents0.
       + apply contents_join_l; eauto.
         * intros k p. specialize (H0 k p).
           assert (P1: Mem.perm m0 bx ox k p <-> Mem.perm m1 bx ox k p).
@@ -329,6 +810,29 @@ Section JOIN_PROP.
       + apply alloc_flag_join_l; eauto. congruence.
       + apply alloc_flag_join_r; eauto. congruence.
       + apply alloc_flag_join_x; eauto.
+    - intros bx ox Hbx. destruct H.
+      destruct (PMap.elt_eq b bx).
+      + subst. assert (Mem.valid_block m2 bx).
+        {
+          apply Mem.store_valid_access_3 in Y as [C D].
+          eapply Mem.perm_valid_block. apply C.
+          instantiate (1 := ofs).
+          rewrite size_chunk_conv. destruct ch; cbn; lia.
+        }
+        exploit Mem.store_valid_block_1; eauto. easy.
+      + assert (Hvb: ~Mem.valid_block m2 bx).
+        { intros x. apply Hbx.
+          eapply Mem.store_valid_block_1; eauto. }
+        specialize (mjoin_empty_contents0 bx ox Hvb).
+        inv mjoin_empty_contents0.
+        constructor; eauto.
+        * intros x. apply H0. eauto with mem.
+        * intros x. apply H1. eauto with mem.
+        * erewrite Mem.store_mem_contents; eauto.
+          rewrite PMap.gso; eauto.
+        * erewrite Mem.store_mem_contents; eauto.
+          rewrite PMap.gso; eauto.
+        * intros x. apply H6. eauto with mem.
   Qed.
 
   Instance storev_join:
@@ -350,17 +854,27 @@ Section JOIN_PROP.
     destruct (Mem.range_perm_dec m1 b ofs (ofs + sz) Cur Readable); inv X.
     destruct Mem.range_perm_dec.
     - constructor. apply Mem.getN_exten. intros i Hi.
-      destruct H. specialize (mjoin_contents0 b i).
-      inv mjoin_contents0; eauto.
-      specialize (r i). exploit r.
+      destruct H.
+      assert (HI: ofs <= i < ofs + sz).
       {
         destruct (zle 0 sz).
         + rewrite Z2Nat.id in Hi; eauto.
         + rewrite Z_to_nat_neg in Hi; lia.
       }
+      assert (HV: Mem.valid_block m2 b).
+      { eapply Mem.perm_valid_block. apply r0; eauto. }
+      specialize (mjoin_contents0 b i HV).
+      inv mjoin_contents0; eauto.
+      specialize (r i).  exploit r; eauto.
       intros. exfalso. eauto with mem.
     - exfalso. destruct H.  apply n. intros x Hx.
-      specialize (mjoin_contents0 b x). inv mjoin_contents0.
+      assert (HV: Mem.valid_block m2 b).
+      {
+        exploit Mem.perm_valid_block. apply r; eauto.
+        intros. unfold Mem.valid_block, Plt in *.
+        rewrite mjoin_nextblock0. lia.
+      }
+      specialize (mjoin_contents0 b x HV). inv mjoin_contents0.
       + apply H0. eauto.
       + exfalso. apply H. eauto with mem.
   Qed.
@@ -377,8 +891,10 @@ Section JOIN_PROP.
     edestruct Mem.range_perm_storebytes as (n & Y).
     eapply range_perm_join; eauto.  rewrite Y. constructor.
     constructor.
-    - intros bx ox. destruct H.
-      specialize (mjoin_contents0 bx ox). inv mjoin_contents0.
+    - intros bx ox Hbx. destruct H.
+      assert (HV: Mem.valid_block m2 bx).
+      { eapply Mem.storebytes_valid_block_2; eauto. }
+      specialize (mjoin_contents0 bx ox HV). inv mjoin_contents0.
       + apply contents_join_l; eauto.
         * intros k p. specialize (H0 k p).
           assert (P1: Mem.perm m0 bx ox k p <-> Mem.perm m1 bx ox k p).
@@ -435,6 +951,41 @@ Section JOIN_PROP.
       + apply alloc_flag_join_l; eauto. congruence.
       + apply alloc_flag_join_r; eauto. congruence.
       + apply alloc_flag_join_x; eauto.
+    - intros bx ox Hbx. destruct H.
+      destruct (PMap.elt_eq b bx).
+      + subst. destruct (valid_block_dec m2 bx).
+        * exfalso. apply Hbx. eauto with mem.
+        * specialize (mjoin_empty_contents0 bx ox n0).
+          inv mjoin_empty_contents0.
+          constructor; eauto with mem.
+          -- unfold Mem.storebytes in X.
+             destruct Mem.range_perm_dec eqn: Hp;
+               try congruence. inv X. cbn.
+             rewrite PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (Datatypes.length vl)) ox).
+                now rewrite !Mem.setN_outside by lia.
+                specialize (A ox). exploit A. lia.
+                intros. exfalso. eauto with mem.
+          -- unfold Mem.storebytes in Y.
+             destruct Mem.range_perm_dec eqn: Hp;
+               try congruence. inv Y. cbn.
+             rewrite PMap.gss.
+             destruct (zlt ox ofs).
+             ++ now rewrite !Mem.setN_outside by lia.
+             ++ destruct (zle (ofs + Z.of_nat (Datatypes.length vl)) ox).
+                now rewrite !Mem.setN_outside by lia.
+                specialize (A ox). exploit A. lia.
+                intros. exfalso. eauto with mem.
+      + assert (Hvb: ~Mem.valid_block m2 bx). eauto with mem.
+        specialize (mjoin_empty_contents0 bx ox Hvb).
+        inv mjoin_empty_contents0.
+        constructor; eauto with mem.
+        * erewrite Mem.storebytes_mem_contents; eauto.
+          rewrite PMap.gso; eauto.
+        * erewrite Mem.storebytes_mem_contents; eauto.
+          rewrite PMap.gso; eauto.
   Qed.
 
   Opaque Mem.loadbytes Mem.storebytes.
@@ -453,6 +1004,8 @@ Section JOIN_PROP.
       eapply assign_loc_copy; eauto.
   Qed.
 
+  Transparent Mem.free.
+
   Instance free_join:
     Monotonic
       (@Mem.free)
@@ -466,8 +1019,10 @@ Section JOIN_PROP.
     eapply range_perm_join; eauto.
     eapply Mem.free_range_perm; eauto.
     rewrite e. constructor. constructor.
-    - intros bx ox. destruct H.
-      specialize (mjoin_contents0 bx ox). inv mjoin_contents0.
+    - intros bx ox Hx. destruct H.
+      assert (HV: Mem.valid_block m2 bx).
+      { eapply Mem.valid_block_free_2; eauto. }
+      specialize (mjoin_contents0 bx ox HV). inv mjoin_contents0.
       + apply contents_join_l; eauto.
         * intros k p. specialize (H0 k p). split; intros.
           -- exploit Mem.perm_free_3. apply HF. eauto. intros A.
@@ -521,7 +1076,26 @@ Section JOIN_PROP.
       + apply alloc_flag_join_l; eauto. congruence.
       + apply alloc_flag_join_r; eauto. congruence.
       + apply alloc_flag_join_x; eauto.
+    - intros bx ox Hx. destruct H.
+      assert (Hvb: ~Mem.valid_block m2 bx).
+      { intros contra. apply Hx. eauto with mem. }
+      specialize (mjoin_empty_contents0 bx ox Hvb).
+      inv mjoin_empty_contents0. constructor; eauto.
+      + intros p. apply H0. eauto with mem.
+      + intros p. apply H1. eauto with mem.
+      + replace (Mem.mem_contents m0)
+          with (Mem.mem_contents m1); eauto.
+        unfold Mem.free in HF.
+        destruct Mem.range_perm_dec; try congruence. inv HF.
+        reflexivity.
+      + replace (Mem.mem_contents x)
+          with (Mem.mem_contents m2); eauto.
+        unfold Mem.free in e.
+        destruct Mem.range_perm_dec; try congruence. inv e.
+        reflexivity.
+      + intros p. apply H6. eauto with mem.
   Qed.
+  Opaque Mem.free.
 
   Instance free_list_join:
     Monotonic
@@ -559,62 +1133,83 @@ Section JOIN_PROP.
       apply Mem.alloc_result in HB.
       congruence.
     }
-    subst; split; cbn; eauto.
-    - constructor.
-      + intros bx ox. specialize (mjoin_contents0 bx ox).
-        inv mjoin_contents0.
-        * apply contents_join_l; eauto.
-          -- intros k p.
-             destruct (peq bx b2).
-             ++ subst. split; intros.
-                ** exploit Mem.perm_alloc_inv. apply HA. eauto.
+    subst; split; cbn; eauto. constructor.
+    - intros bx ox Hx. destruct (peq bx b2).
+      + subst.
+        assert (Hy: ~Mem.valid_block m2 b2).
+        { eapply Mem.fresh_block_alloc; eauto. }
+        specialize (mjoin_empty_contents0 b2 ox Hy).
+        apply contents_join_l; eauto with mem.
+        * intros X. exploit Mem.perm_valid_block. apply X.
+          intros Y. unfold Mem.valid_block, Plt in *.
+          apply Mem.alloc_result in HB. subst.
+          rewrite mjoin_nextblock0 in Y. lia.
+        * intros k p. split; intros; eauto with mem.
+        * inv mjoin_empty_contents0; eauto.
+        * unfold Mem.alloc in *.
+          destruct (Mem.alloc_flag m1); try congruence.
+          destruct (Mem.alloc_flag m2); try congruence.
+          inv HA. inv HB. cbn. rewrite HNB at 3.
+          rewrite !PMap.gss. reflexivity.
+      + assert (HV: Mem.valid_block m2 bx).
+          { exploit Mem.valid_block_alloc_inv; eauto.
+            intros [|]; easy. }
+          specialize (mjoin_contents0 bx ox HV). inv mjoin_contents0.
+          * apply contents_join_l; eauto.
+            -- intros k p. split; intros.
+               ++ exploit Mem.perm_alloc_inv. apply HA. eauto.
+                  destruct eq_block; try easy.
+                   intros. eapply Mem.perm_alloc_1; eauto. firstorder.
+               ++ exploit Mem.perm_alloc_inv. apply HB. eauto.
                    destruct eq_block; try easy.
-                   intros. eauto with mem.
-                ** exploit Mem.perm_alloc_inv. apply HB. eauto.
-                   destruct eq_block; try easy.
-                   intros. eauto with mem.
-             ++ split; intros.
-                ** exploit Mem.perm_alloc_4. apply HA. all: eauto.
-                   intros. eapply Mem.perm_alloc_1; eauto.
-                   apply H4. eauto.
-                ** exploit Mem.perm_alloc_4. apply HB. all: eauto.
-                   intros. eapply Mem.perm_alloc_1; eauto.
-                   apply H4. eauto.
-          -- unfold Mem.alloc in HA, HB.
-             rewrite A in HA. inv HA.
-             rewrite H1 in HB. inv HB. cbn.
-             rewrite HNB.
-             destruct (peq bx (Mem.nextblock m2)).
-             ++ subst. rewrite !PMap.gss. reflexivity.
-             ++ rewrite !PMap.gso; eauto.
-          -- eauto with mem.
-        * assert (bx <> b2).
-          {
-            intros X. subst. unfold Mem.valid_block, Plt in H7.
-            apply Mem.alloc_result in HB. subst.
-            rewrite HNB in *. lia.
-          }
-          apply contents_join_r; eauto.
-          -- intros X. apply H3. eauto with mem.
-          -- intros k p. rewrite H4.
-             split; intros; eauto with mem.
-          -- unfold Mem.alloc in HA. rewrite A in HA. inv HA.
-             cbn. rewrite PMap.gso; eauto.
-          -- rewrite H6.
-             unfold Mem.alloc in HB. rewrite H1 in HB.
-             inv HB. cbn. rewrite PMap.gso; eauto.
-      + apply Mem.nextblock_alloc in HA.
+                   intros. eapply Mem.perm_alloc_1; eauto. firstorder.
+             -- unfold Mem.alloc in HA, HB.
+                rewrite A in HA. inv HA.
+                rewrite H1 in HB. inv HB. cbn.
+                rewrite HNB.
+                destruct (peq bx (Mem.nextblock m2)).
+                ++ subst. rewrite !PMap.gss. reflexivity.
+                ++ rewrite !PMap.gso; eauto.
+             -- eauto with mem.
+          * apply contents_join_r; eauto.
+            -- intros X. apply H3. eauto with mem.
+            -- intros k p. rewrite H4.
+               split; intros; eauto with mem.
+            -- unfold Mem.alloc in HA. rewrite A in HA. inv HA.
+               cbn. rewrite PMap.gso; eauto.
+            -- rewrite H6.
+               unfold Mem.alloc in HB. rewrite H1 in HB.
+               inv HB. cbn. rewrite PMap.gso; eauto.
+    - apply Mem.nextblock_alloc in HA.
         apply Mem.nextblock_alloc in HB.
         rewrite HA. rewrite HB. rewrite HNB.
         symmetry. apply Pos.max_r.
         etransitivity; eauto. rewrite HNB. lia.
-      + apply alloc_flag_join_l; eauto.
-        * apply Mem.alloc_flag_alloc2 in HA. easy.
-        * apply Mem.alloc_flag_alloc2 in HB. easy.
-        * apply Mem.nextblock_alloc in HA. rewrite HA.
-          etransitivity; eauto. rewrite HNB. lia.
+    - apply alloc_flag_join_l; eauto.
+      + apply Mem.alloc_flag_alloc2 in HA. easy.
+      + apply Mem.alloc_flag_alloc2 in HB. easy.
+      + apply Mem.nextblock_alloc in HA. rewrite HA.
+        etransitivity; eauto. rewrite HNB. lia.
+    - intros b ofs Hb. assert (Hvb: ~Mem.valid_block m2 b).
+      { intros v. apply Hb. eauto with mem. }
+      assert (b <> b2).
+      { intros e. subst. apply Hb. eauto with mem. }
+      specialize (mjoin_empty_contents0 b ofs Hvb).
+      inv mjoin_empty_contents0. constructor; eauto.
+      + intros p. apply H5. eauto with mem.
+      + intros p. apply H6. eauto with mem.
+      + replace ((Mem.mem_contents m1') # b)
+          with ((Mem.mem_contents m1) # b); eauto.
+        unfold Mem.alloc in HA. rewrite A in HA. inv HA.
+        cbn. rewrite PMap.gso; eauto.
+      + replace ((Mem.mem_contents m2') # b)
+          with ((Mem.mem_contents m2) # b); eauto.
+        unfold Mem.alloc in HB. rewrite H1 in HB. inv HB.
+        cbn. rewrite PMap.gso; eauto.
+      + intros v. apply H11.
+        eapply Mem.valid_block_alloc_inv in HA; eauto.
+        destruct HA as [|]. congruence. eauto.
   Qed.
-
   Opaque Mem.alloc.
 
   Lemma bind_parameters_join:
