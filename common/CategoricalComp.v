@@ -18,6 +18,8 @@ Axiom EquivThenEqual: prop_extensionality.
 Open Scope smallstep_scope.
 Delimit Scope smallstep_scope with smallstep.
 
+Set Asymmetric Patterns.
+
 Section COMP.
   Context {liA liB liC} (L1: semantics liB liC) (L2: semantics liA liB).
   Section WITH_SE.
@@ -496,7 +498,7 @@ Ltac inv_id :=
   | [ H : final_state ((_ (id_semantics _)) _) _ _ |- _ ] => inv H
   | [ H : step ((_ (id_semantics _)) _) _ _ _ _ |- _ ] => inv H
   end.
-Ltac ese := eexists; repeat split; eauto.
+Ltac ese := eexists; repeat split; eauto with ccomp.
 
 Module CAT.
 
@@ -525,7 +527,7 @@ Module CAT.
     | lu_ms5 r:
       lu_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r)).
 
-    Hint Constructors lu_ms.
+    Hint Constructors lu_ms: ccomp.
 
     Lemma left_unit_1: forward_simulation 1 1 L (left_comp_id L).
     Proof.
@@ -597,10 +599,10 @@ Module CAT.
       ul_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r))
     | ul_ms5' q r:
       ul_ms (st2 1 (1 o L o 1) (st_q q) (st1 1 _ (st_r r))) (st1 1 _ (st_r r)).
-    Hint Constructors ul_ms.
+    Hint Constructors ul_ms: ccomp.
 
     Lemma left_unit_2: forward_simulation 1 1 (left_comp_id L) L.
-    Proof.
+    Proof with (eauto with ccomp).
       unfold forward_simulation, normalize_sem.
       etransitivity. instantiate (1 := 1 o (1 o L o 1)).
       {
@@ -623,7 +625,7 @@ Module CAT.
         intros. repeat (inv_comp || inv_id). inv H. ese.
       - intros * HSTEP s HS. inv HS.
         + inv HSTEP; repeat (inv_comp || inv_id).
-          right. repeat split; eauto.
+          right. repeat split; eauto...
         + inv HSTEP; repeat (inv_comp || inv_id).
           left. ese. eapply step_push; constructor; eauto.
         + inv HSTEP; repeat (inv_comp || inv_id).
@@ -638,7 +640,7 @@ Module CAT.
           apply step2. eapply step_pop; repeat constructor; eauto.
         + inv HSTEP; repeat (inv_comp || inv_id).
         + inv HSTEP; repeat (inv_comp || inv_id).
-          right. cbn. repeat split; eauto.
+          right. cbn. repeat split; eauto...
     Qed.
 
     Inductive ru_ms: state (1 o L o 1) -> state (1 o (L o 1) o 1) -> Prop :=
@@ -655,7 +657,7 @@ Module CAT.
             (st2 1 ((L o 1) o 1) (st_q qi) (st2 (L o 1) 1 (st2 L 1 s (st_q qo)) (st_r ro)))
     | ru_ms5 r:
       ru_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r)).
-    Hint Constructors ru_ms.
+    Hint Constructors ru_ms: ccomp.
 
     Lemma right_unit_1: forward_simulation 1 1 L (right_comp_id L).
     Proof.
@@ -718,7 +720,7 @@ Module CAT.
             (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro)))
     | ur_ms5 r:
       ur_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r)).
-    Hint Constructors ur_ms.
+    Hint Constructors ur_ms: ccomp.
 
     Lemma right_unit_2: forward_simulation 1 1 (right_comp_id L) L.
     Proof.
@@ -743,9 +745,9 @@ Module CAT.
           * left. ese. eapply step_pop; constructor. assumption.
         + inv HSTEP; repeat (inv_comp || inv_id).
         + inv HSTEP; repeat (inv_comp || inv_id).
-          right. repeat split; eauto.
+          right. repeat split; eauto. eauto with ccomp.
         + inv HSTEP; repeat (inv_comp || inv_id).
-          right. repeat split; eauto.
+          right. repeat split; eauto. eauto with ccomp.
         + inv HSTEP; repeat (inv_comp || inv_id).
           left. ese. apply step2. eapply step_pop; try constructor; eauto.
         + inv HSTEP; repeat (inv_comp || inv_id).
@@ -859,7 +861,7 @@ Section HCOMP_IDENTITY.
 
   Let L1 := fun b => match b with | true => id_semantics sk | false => L end.
 
-  Local Inductive state_match1: list (SmallstepLinking.frame L1) -> Smallstep.state L -> Prop :=
+  Inductive state_match1: list (SmallstepLinking.frame L1) -> Smallstep.state L -> Prop :=
   | state_match_intro1 s:
       state_match1 (SmallstepLinking.st L1 false s :: nil) s.
 
@@ -930,7 +932,7 @@ Section HCOMP_IDENTITY.
 
   Let L2 := fun b => match b with | true => L | false => id_semantics sk end.
 
-  Local Inductive state_match2: list (SmallstepLinking.frame L2) -> Smallstep.state L -> Prop :=
+  Inductive state_match2: list (SmallstepLinking.frame L2) -> Smallstep.state L -> Prop :=
   | state_match_intro2 s:
       state_match2 (SmallstepLinking.st L2 true s :: nil) s.
 
@@ -1017,12 +1019,12 @@ Section NORMALIZE_COMP.
   | nc_ms2 s1 s2 q:
     nc_ms (st2 L1 L2 s1 s2)
           (st2 (L1 o 1) (1 o L2) (st2 L1 1 s1 (st_q q)) (st2 1 L2 (st_q q) s2)).
-  Hint Constructors nc_ms.
+  Hint Constructors nc_ms: ccomp.
 
   Lemma normalize_comp_fsim_sk1':
     forward_simulation 1 1 (comp_semantics' L1 L2 sk)
                        (comp_semantics' (L1 o 1) (1 o L2) sk).
-  Proof.
+  Proof with (eauto with ccomp).
     constructor.
     eapply Forward_simulation with
       (ltof _ (fun _ => O)) (fun _ _ _ x s1 s2 => x = s1 /\ nc_ms s1 s2).
@@ -1031,33 +1033,33 @@ Section NORMALIZE_COMP.
     eapply forward_simulation_plus.
     - intros. inv H. inv H0.
       eexists. split; eauto.
-      repeat constructor; eauto.
+      repeat constructor; eauto. eauto...
     - intros. inv H0. inv H.
       exists r1. split; repeat constructor; eauto.
     - intros. inv H0. inv H. exists tt.
-      exists q1. repeat split; eauto.
+      exists q1. repeat split; eauto...
       intros. inv H. inv H0.
       eexists. split; repeat constructor; eauto.
     - intros. inv H0.
       + inv H.
         * eexists. split; eauto.
-          apply plus_one. apply step1. apply step1. assumption.
+          apply plus_one. apply step1. apply step1; eauto. eauto...
         * eexists; split; eauto.
           eapply plus_three.
           apply step1. eapply step_push; try constructor; eauto.
           eapply step_push; repeat constructor; eauto.
           apply step2. eapply step_push; try constructor; eauto.
-          reflexivity. eauto.
+          reflexivity. eauto...
       + inv H.
         * eexists. split; eauto.
           apply plus_one. apply step2. apply step2. eassumption.
-          eauto.
+          eauto...
         * eexists. split; eauto.
           eapply plus_three.
           apply step2. eapply step_pop; try constructor; eauto.
           eapply step_pop; repeat constructor; eauto.
           apply step1. eapply step_pop; try constructor; eauto.
-          reflexivity.
+          reflexivity. eauto...
   Qed.
 
   Lemma normalize_comp_fsim_sk1:
@@ -1110,12 +1112,12 @@ Section NORMALIZE_COMP.
     final_state (L2 se) s2 r ->
     cn_ms se (st1 (L1 o 1) _ (st2 L1 1 s1 (st_r r)))
           (st2 L1 L2 s1 s2).
-  Hint Constructors cn_ms.
+  Hint Constructors cn_ms: ccomp.
 
   Lemma normalize_comp_fsim_sk2':
     forward_simulation 1 1 (comp_semantics' (L1 o 1) (1 o L2) sk)
                        (comp_semantics' L1 L2 sk).
-  Proof.
+  Proof with (eauto with ccomp).
     constructor.
     eapply Forward_simulation
       with (fsim_order := (ltof _ cn_measure))
@@ -1125,32 +1127,32 @@ Section NORMALIZE_COMP.
     intros se ? [] [] Hse.
     eapply forward_simulation_opt.
     - intros. inv H. inv H0. inv H.
-      eexists. split; eauto. constructor. assumption.
+      eexists. split; eauto. constructor. eassumption. eauto...
     - intros. inv H0. inv H1. inv H.
       eexists. split; eauto.
       constructor. eassumption. constructor.
     - intros. exists tt. inv H0. inv H1. inv H.
       eexists. repeat split; eauto.
       intros. inv H. inv H1. inv H5.
-      eexists. split; eauto. constructor. assumption.
+      eexists. split; eauto. constructor. eassumption. eauto...
     - unfold left_comp_id, right_comp_id; intros.
       inv H0; repeat (inv_comp || inv_id).
       + left. eexists. split; eauto.
-        apply step1. assumption.
+        apply step1. eassumption. eauto...
       + (* 2 < 3 *)
-        right. repeat split; eauto.
+        right. repeat split; eauto. eauto...
       + left. eexists. split; eauto.
-        apply step2. assumption.
+        apply step2. eassumption. eauto...
       + (* 5 < 6 *)
-        right. repeat split; eauto.
+        right. repeat split; eauto. eauto...
       + (* 1 < 2 *)
-        right. repeat split; eauto.
+        right. repeat split; eauto. eauto...
       + left. eexists. split; eauto.
-        eapply step_push; eauto.
+        eapply step_push; eauto. eauto...
       + (* 4 < 5 *)
-        right. repeat split; eauto.
+        right. repeat split; eauto...
       + left. eexists. split; eauto.
-        eapply step_pop; eauto.
+        eapply step_pop; eauto. eauto...
   Qed.
 
   Lemma normalize_comp_fsim_sk2:

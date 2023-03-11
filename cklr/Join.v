@@ -76,20 +76,20 @@ Section JOIN.
 
 End JOIN.
 
-Hint Constructors  alloc_flag_join contents_join contents_join_empty.
+Hint Constructors  alloc_flag_join contents_join contents_join_empty: join.
 
 Section JOIN_PROP.
 
   Lemma join_commutative m1 m2 m:
     join m1 m2 m -> join m2 m1 m.
-  Proof.
+  Proof with (eauto with join).
     intros H. inv H. constructor.
     - intros. specialize (mjoin_contents0 b ofs H).
-      inv mjoin_contents0; eauto.
+      inv mjoin_contents0...
     - now rewrite Pos.max_comm.
-    - inv mjoin_alloc_flag0; eauto.
+    - inv mjoin_alloc_flag0...
     - intros. specialize (mjoin_empty_contents0 b ofs H).
-      inv mjoin_empty_contents0; eauto.
+      inv mjoin_empty_contents0...
   Qed.
 
 End JOIN_PROP.
@@ -342,7 +342,7 @@ Next Obligation.
 Qed.
 Next Obligation.
   rewrite PMap_gcombine.
-  rewrite !Mem.nextblock_noaccess by xomega.
+  rewrite !Mem.nextblock_noaccess by extlia.
   reflexivity.
 Qed.
 Next Obligation.
@@ -360,6 +360,7 @@ Proof.
   unfold Mem.perm. cbn. rewrite PMap_gcombine.
   destruct (_ !! b ofs k); cbn; firstorder.
   destruct (_ !! b ofs k); cbn; firstorder.
+  eauto with mem.
 Qed.
 
 Lemma mem_combine_perm_r m1 m2 b ofs k p:
@@ -368,6 +369,7 @@ Proof.
   unfold Mem.perm. cbn. rewrite PMap_gcombine.
   destruct (_ !! b ofs k); cbn; firstorder.
   destruct (_ !! b ofs k); cbn; firstorder.
+  eauto with mem.
 Qed.
 
 Lemma mem_combine_perm_iff_l m1 m2 b ofs k p:
@@ -544,7 +546,7 @@ Section JOIN_PROP.
   Instance valid_pointer_join:
     Monotonic
       (@Mem.valid_pointer)
-      (join m ++> - ==> - ==> leb).
+      (join m ++> - ==> - ==> Bool.le).
   Proof.
     do 4 rstep. destruct Mem.valid_pointer eqn: X; try easy.
     cbn. rewrite !Mem.valid_pointer_nonempty_perm in *.
@@ -562,7 +564,7 @@ Section JOIN_PROP.
   Instance weak_valid_pointer_join:
     Monotonic
       (@Mem.weak_valid_pointer)
-      (join m ++> - ==> - ==> leb).
+      (join m ++> - ==> - ==> Bool.le).
   Proof.
     unfold Mem.weak_valid_pointer. do 4 rstep.
     destruct orb eqn: X.
@@ -708,10 +710,12 @@ Section JOIN_PROP.
   Instance deref_loc_join a:
     Monotonic
       (@deref_loc a)
-      (join m ++> - ==> - ==> - ==> impl).
+      (join m ++> - ==> - ==> - ==> - ==> impl).
   Proof.
     repeat rstep. intros A. inv A; eauto using @deref_loc_reference, @deref_loc_copy.
     transport H1. subst. eapply deref_loc_value; eauto.
+    constructor. inv H0. constructor; eauto.
+    transport H5. subst; eauto.
   Qed.
 
   Lemma get_setN_inside:
@@ -993,7 +997,7 @@ Section JOIN_PROP.
   Instance assign_loc_join:
     Monotonic
       (@assign_loc)
-      (- ==> - ==> join m ++> - ==> - ==> - ==> set_le (join m)).
+      (- ==> - ==> join m ++> - ==> - ==> - ==> - ==> set_le (join m)).
   Proof.
     repeat rstep. intros ma A. inv A.
     - transport H1. eexists; split; eauto.
@@ -1002,6 +1006,8 @@ Section JOIN_PROP.
       transport H5.
       eexists; split; eauto.
       eapply assign_loc_copy; eauto.
+    - inv H0. transport H5. subst. transport H6.
+      eexists. split; eauto. repeat econstructor; eauto. all: lia.
   Qed.
 
   Transparent Mem.free.

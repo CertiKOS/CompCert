@@ -79,6 +79,20 @@ Global Existing Instance State_rel.
 Global Existing Instance Callstate_rel.
 Global Existing Instance Returnstate_rel.
 
+Global Instance maxf_rel f:
+  Monotonic (@maxf) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold maxf.
+  rauto.
+Qed.
+
+Global Instance minf_rel f:
+  Monotonic (@minf) (Val.inject f ++> Val.inject f ++> Val.inject f).
+Proof.
+  unfold minf.
+  rauto.
+Qed.
+
 Global Instance eval_addressing32_rel R w:
   Monotonic
     (@eval_addressing32)
@@ -141,7 +155,7 @@ Proof.
 Qed.
 
 Global Instance map_inject_list_params:
-  Params (@map) 2.
+  Params (@map) 2 := {}.
 
 
 (** The [option] equivalent of [R ++> impl]. *)
@@ -156,7 +170,7 @@ Proof.
 Qed.
 
 Global Instance option_impl_subrel_params:
-  Params (@option_impl) 3.
+  Params (@option_impl) 3 := {}.
 
 Global Instance option_impl_bot {A B} (R: rel A B) y:
   Related None y (option_impl R).

@@ -413,11 +413,11 @@ Section LEVEL.
       match_levels (st S1 i (k :: ks) :: k1) k2 ->
       match_levels (st S1 i (st (S1' i) j s :: k :: ks) :: k1)
                    (st S2 (existT _ i j) s :: k2).
-  Hint Constructors match_levels.
-  Hint Constructors initial_state final_state at_external after_external.
+  Hint Constructors match_levels: slink.
+  Hint Constructors initial_state final_state at_external after_external: slink.
 
   Lemma level_simulation1: forward_simulation 1 1 L1 L2.
-  Proof.
+  Proof with (eauto with slink; auto).
     constructor. econstructor. reflexivity.
     - intros x. cbn. split.
       + intros [i [j H]]. exists (existT _ i j). apply H.
@@ -427,7 +427,7 @@ Section LEVEL.
       eapply forward_simulation_step
         with (match_states := match_levels).
       + intros q ? s1 [ ] H. inv H. inv H1. cbn in *.
-        exists (st S2 (existT _ i i0) s0 :: nil). split; auto.
+        exists (st S2 (existT _ i i0) s0 :: nil). split...
       + intros s1 s2 r Hs Hr. inv Hr. inv H.
         inv Hs. subst_dep. inv H5.
         exists r. split; constructor; auto.
@@ -450,24 +450,24 @@ Section LEVEL.
         * inv H.
           (* Internal step of L i j *)
           -- inv Hs; subst_dep; eexists.
-             ++ split; [ apply step_internal | econstructor ]; eauto.
-             ++ split; [ apply step_internal | econstructor ]; eauto.
+             ++ split; [ apply step_internal | econstructor ]...
+             ++ split; [ apply step_internal | econstructor ]...
           (* L i j calls into L i j' *)
           -- inv Hs; subst_dep; eexists.
-             ++ split; [ eapply step_push | ]; eauto; auto.
-             ++ split; [ eapply step_push | ]; eauto; auto.
+             ++ split; [ eapply step_push | ]...
+             ++ split; [ eapply step_push | ]...
           (* L i j returns to L i j' *)
           -- inv Hs. subst_dep. inv H8; subst_dep; eexists.
-             ++ split; [ eapply step_pop | ]; eauto.
-             ++ split; [ eapply step_pop | ]; eauto.
+             ++ split; [ eapply step_pop | ]...
+             ++ split; [ eapply step_pop | ]...
         (* L i j calls into L i' j' *)
         * inv H. inv H1. inv Hs; subst_dep; eexists.
-          -- split; [ eapply step_push | ]; eauto; auto.
-          -- split; [ eapply step_push | ]; eauto; auto.
+          -- split; [ eapply step_push | ]...
+          -- split; [ eapply step_push | ]...
         (* L i j return to L i' j' *)
         * inv H. inv H0. inv Hs; subst_dep. inv H6; subst_dep; eexists.
-          -- split; [ eapply step_pop | ]; eauto.
-          -- split; [ eapply step_pop | ]; eauto.
+          -- split; [ eapply step_pop | ]...
+          -- split; [ eapply step_pop | ]...
     - apply well_founded_ltof.
   Qed.
 
@@ -499,7 +499,7 @@ Section LEVEL.
         * constructor. instantiate (1 := i). firstorder.
           constructor. instantiate (1 := j). firstorder.
           eauto.
-        * auto.
+        * eauto with slink.
       + intros s1 s2 r Hs Hr. inv Hr.
         remember (st S2 i s :: nil) as xs. inv Hs.
         * inv H1.
@@ -562,27 +562,29 @@ Section LEVEL.
              inversion H5. subst. apply foo in H5. subst.
              destruct j as [i j]. destruct (I_dec i i0).
              ++ subst. eexists. split.
-                apply step_internal. eapply step_push; eauto. auto.
+                apply step_internal. eapply step_push; eauto...
+                auto with slink.
              ++ eexists. split.
                 eapply step_push. econstructor. apply H.
                 intros j1 Hx. apply n.
                 exploit valid_query_excl. apply H0. apply Hx.
                 apply eq_sigT_fst.
                 instantiate (1 := i). firstorder.
-                constructor. apply H0. eauto. auto.
+                constructor. apply H0. eauto. auto with slink.
           -- subst. remember (st S2 (existT J i0 j0) s0) as x.
              remember (st S2 i s) as y. inv H4.
              inversion H5. subst. apply foo in H5. subst.
              destruct j as [i j]. destruct (I_dec i i0).
              ++ subst. eexists. split.
-                apply step_internal. eapply step_push; eauto. auto.
+                apply step_internal. eapply step_push; eauto.
+                auto with slink.
              ++ eexists. split.
                 eapply step_push. econstructor. apply H.
                 intros j1 Hx. apply n.
                 exploit valid_query_excl. apply H0. apply Hx.
                 apply eq_sigT_fst.
                 instantiate (1 := i). firstorder.
-                constructor. apply H0. eauto. auto.
+                constructor. apply H0. eauto. auto with slink.
         (* function return *)
         * remember (st S2 i s :: st S2 j sk0 :: k) as xs.
           inversion Hs; subst.
@@ -595,24 +597,23 @@ Section LEVEL.
              ++ inversion H2. subst. apply foo in H2. subst.
                 eexists. split.
                 eapply step_pop. constructor. eauto.
-                constructor. eauto. auto.
+                constructor. eauto. auto with slink.
              ++ inversion H2. subst. apply foo in H2. subst.
                 eexists. split.
                 eapply step_pop. constructor. eauto.
-                constructor. eauto. auto.
+                constructor. eauto. auto with slink.
           -- remember (st S2 (existT J i0 j0) s0) as x.
              remember (st S2 i s) as y. inv H3.
              inversion H4. subst. apply foo in H4. subst.
-
              remember (st S2 j sk0) as xs. inv H1.
              ++ inversion H7. subst. apply foo in H7.
                 subst_dep. eexists. split.
                 eapply step_internal. eapply step_pop.
-                eauto. eauto. auto.
+                eauto. eauto. auto with slink.
              ++ inversion H7. subst. apply foo in H7.
                 subst_dep. eexists. split.
                 eapply step_internal. eapply step_pop.
-                eauto. eauto. auto.
+                eauto. eauto. auto with slink.
     - apply well_founded_ltof.
   Qed.
 
@@ -647,7 +648,7 @@ Section MAP.
       match_bijection (st L i s :: k) (st (fun i => L (F i)) j s'  :: k')
   | match_bijection_nils: match_bijection nil nil.
 
-  Hint Constructors match_bijection.
+  Hint Constructors match_bijection: slink.
 
   Definition switch_index {i j} (H: i = F j) (s: state (L i)): state (L (F j)).
   Proof.
@@ -668,7 +669,7 @@ Section MAP.
       eapply forward_simulation_step with (match_states := match_bijection).
       + intros q ? s [ ] H. inv H.
         specialize (HF i) as [j Hj]. subst.
-        eexists; split; constructor; eauto.
+        eexists; split; constructor; eauto with slink.
       + intros s1 s2 r Hs H. inv H. inv Hs. inv H5.
         inv H4. subst_dep. exists r. split; constructor; auto.
       + intros s1 s2 q Hs H. inv H. inv Hs. inv H5.
@@ -681,9 +682,9 @@ Section MAP.
           constructor; eauto.
         * specialize (HF j) as [x Hx]. subst.
           inv H6. subst_dep. eexists. split.
-          eapply step_push; eauto. auto.
+          eapply step_push; eauto. auto with slink.
         * inv H5. subst_dep. inv H6. inv H5. subst_dep.
-          eexists. split. eapply step_pop; eauto. auto.
+          eexists. split. eapply step_pop; eauto. auto with slink.
     - apply well_founded_ltof.
   Qed.
 
@@ -700,7 +701,7 @@ Section MAP.
       eapply forward_simulation_step
         with (match_states := fun s1 s2 => match_bijection s2 s1).
       + intros q ? s [ ] H. inv H.
-        eexists; split; constructor; eauto.
+        eexists; split; constructor; eauto with slink.
       + intros s1 s2 r Hs H. inv H. inv Hs.
         inv H3. subst_dep. inv H5.
         eexists; split; constructor; auto.
@@ -713,12 +714,12 @@ Section MAP.
           eexists; split; constructor; auto. auto.
       + intros s1 t s1' Hstep s2 Hs. inv Hstep; inv Hs.
         * inv H3. subst_dep. eexists; split.
-          apply step_internal; eauto. auto.
+          apply step_internal; eauto. auto with slink.
         * inv H5. subst_dep. eexists; split.
-          eapply step_push; eauto. auto.
+          eapply step_push; eauto. auto with slink.
         * inv H4. subst_dep. inv H6. inv H4. subst_dep.
           eexists; split.
-          eapply step_pop; eauto. auto.
+          eapply step_pop; eauto. auto with slink.
     - apply well_founded_ltof.
   Qed.
 

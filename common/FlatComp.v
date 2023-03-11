@@ -264,20 +264,20 @@ Section DIST.
        flat_initial_state flat_at_external
        flat_final_state flat_after_external
        comp_initial_state comp_at_external
-       comp_after_external comp_final_state.
+       comp_after_external comp_final_state: fcomp.
 
-  Ltac esca := eexists; split; repeat constructor; auto.
+  Ltac esca := eexists; split; repeat constructor; auto with fcomp.
   (* (L1 ⊎ L2) ∘ L ≤ (L1 ∘ L) ⊎ (L2 ∘ L) *)
   Lemma distributivity1:
     comp_semantics' Lh L sk ≤ flat_comp_semantics' Lv sk.
-  Proof.
+  Proof with (eauto with fcomp).
     constructor. econstructor; eauto. intros id. firstorder.
     intros se ? [ ] [ ] Hse.
     instantiate (1 := fun _ _ _ => _). cbn beta.
     eapply forward_simulation_step with (match_states := dist_match_state).
     - intros q1 ? s1 [ ] H.
       inv H. inv H0. eexists; split; auto.
-      repeat constructor. auto.
+      repeat constructor; eauto. eauto...
     - intros s1 s2 r1 Hs H. inv H; inv H0; inv Hs. subst_dep. esca.
     - intros s1 s2 q1 Hs H.
       inv H. inv Hs.
@@ -289,13 +289,13 @@ Section DIST.
       + inv H. subst_dep. esca.
       + esca.
       + inv H. subst_dep.
-        eexists; split; auto. constructor. eapply step_push; eauto.
+        eexists; split; auto. constructor. eapply step_push; eauto. eauto...
       + inv H0. subst_dep.
-        eexists; split; auto. constructor. eapply step_pop; eauto.
+        eexists; split; auto. constructor. eapply step_pop; eauto. eauto...
     - apply well_founded_ltof.
   Qed.
 
-  Ltac esca' := eexists; split; [ | constructor]; repeat constructor; auto.
+  Ltac esca' := eexists; split; [ | constructor]; repeat constructor; auto with fcomp.
   (* (L1 ∘ L) ⊎ (L2 ∘ L) ≤ (L1 ⊎ L2) ∘ L *)
   Lemma distributivity2:
     flat_comp_semantics' Lv sk ≤ comp_semantics' Lh L sk.

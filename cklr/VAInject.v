@@ -101,7 +101,7 @@ Next Obligation.
   repeat apply conj; eauto. constructor; eauto.
   - etransitivity; eauto.
     erewrite (Mem.nextblock_alloc m1 lo hi (fst _)); auto using surjective_pairing.
-    xomega. apply Hm1'.
+    extlia. apply Hm1'.
   - intros cu Hcu.
     eapply romatch_alloc; eauto using surjective_pairing, bc_of_symtbl_below.
 Qed.
@@ -367,14 +367,14 @@ Proof.
         edestruct H4 as (? & ? & ?); eauto using bc_of_symtbl_inj_glob.
         intuition auto.
         eapply bmatch_incr; eauto using bc_of_symtbl_inj.
-    + constructor; cbn; auto.
+    + constructor; cbn; auto with inj.
   - intros r1 r2 (ri & Hr1i & w' & Hw' & Hri2).
     exists (se1, w'). split.
     + constructor; auto.
     + destruct Hr1i. destruct Hri2. inv Hw'. inv H5. inv H8. cbn in *.
       constructor; cbn; auto.
-      constructor; cbn; auto.
-      * xomega.
+      constructor; cbn; auto with inj.
+      * extlia.
       * clear - H11 H18 H17 H6. inv H6. cbn in *.
         intros cu Hcu. eapply romatch_exten; eauto. intros b id.
         destruct H17 as [Hglob Hdef]. rewrite <- Hglob. cbn. clear.
@@ -425,7 +425,7 @@ Proof.
         destruct (f bi) as [[? ?] | ] eqn:Hfbi.
         {
           eapply Mem.valid_block_inject_1 in Hfbi; eauto.
-          red in Hfbi. xomega.
+          red in Hfbi. extlia.
         }
         edestruct SEP23'; eauto.
 Qed.
@@ -464,7 +464,7 @@ Proof.
         destruct (f bi) as [[? ?] | ] eqn:Hfbi.
         {
           eapply Mem.valid_block_inject_1 in Hfbi; eauto.
-          red in Hfbi. xomega.
+          red in Hfbi. extlia.
         }
         edestruct SEP23'; eauto.
 Qed.

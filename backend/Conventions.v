@@ -18,8 +18,8 @@ Require Import AST.
 Require Import Values.
 Require Import Memory.
 Require Import LanguageInterface.
-Require Import Locations.
 Require Import CKLR.
+Require Import Locations.
 Require Export Conventions1.
 
 (** The processor-dependent and EABI-dependent definitions are in
@@ -36,6 +36,73 @@ Proof.
 - rewrite in_app_iff in H0. destruct H0.
   exploit H; eauto. destruct p; simpl in *; intuition congruence.
   apply IHpl; auto.
+Qed.
+
+(** ** Stack size of function arguments *)
+
+(** [size_arguments s] returns the number of [Outgoing] slots used
+  to call a function with signature [s]. *)
+
+Definition max_outgoing_1 (accu: Z) (l: loc) : Z :=
+  match l with
+  | S Outgoing ofs ty => Z.max accu (ofs + typesize ty)
+  | _ => accu
+  end.
+
+Definition max_outgoing_2 (accu: Z) (rl: rpair loc) : Z :=
+  match rl with
+  | One l => max_outgoing_1 accu l
+  | Twolong l1 l2 => max_outgoing_1 (max_outgoing_1 accu l1) l2
+  end.
+
+Definition size_arguments (s: signature) : Z :=
+  List.fold_left max_outgoing_2 (loc_arguments s) 0.
+
+(** The offsets of [Outgoing] arguments are below [size_arguments s]. *)
+
+Remark fold_max_outgoing_above:
+  forall l n, fold_left max_outgoing_2 l n >= n.
+Proof.
+  assert (A: forall n l, max_outgoing_1 n l >= n).
+  { intros; unfold max_outgoing_1. destruct l as [_ | [ ]]; extlia. }
+  induction l; simpl; intros. 
+  - lia.
+  - eapply Zge_trans. eauto.
+    destruct a; simpl. apply A. eapply Zge_trans; eauto.
+Qed.
+
+Lemma size_arguments_above:
+  forall s, size_arguments s >= 0.
+Proof.
+  intros. apply fold_max_outgoing_above.
+Qed.
+
+Lemma loc_arguments_bounded:
+  forall (s: signature) (ofs: Z) (ty: typ),
+  In (S Outgoing ofs ty) (regs_of_rpairs (loc_arguments s)) ->
+  ofs + typesize ty <= size_arguments s.
+Proof.
+  intros until ty.
+  assert (A: forall n l, n <= max_outgoing_1 n l).
+  { intros; unfold max_outgoing_1. destruct l as [_ | [ ]]; extlia. }
+  assert (B: forall p n,
+             In (S Outgoing ofs ty) (regs_of_rpair p) ->
+             ofs + typesize ty <= max_outgoing_2 n p).
+  { intros. destruct p; simpl in H; intuition; subst; simpl.
+  - extlia.
+  - eapply Z.le_trans. 2: apply A. extlia.
+  - extlia. }
+  assert (C: forall l n,
+             In (S Outgoing ofs ty) (regs_of_rpairs l) ->
+             ofs + typesize ty <= fold_left max_outgoing_2 l n).
+  { induction l; simpl; intros.
+  - contradiction.
+  - rewrite in_app_iff in H. destruct H.
+  + eapply Z.le_trans. eapply B; eauto.
+    apply Z.ge_le. apply fold_max_outgoing_above.
+  + apply IHl; auto.
+  }
+  apply C. 
 Qed.
 
 (** ** Location of function parameters *)
@@ -106,7 +173,7 @@ Proof.
   pose proof Hl as Hacc. apply loc_arguments_acceptable_2 in Hacc.
   destruct l as [ | [ ]]; cbn in *; auto.
   pose proof Hl as Hbnd. apply loc_arguments_bounded in Hbnd.
-  pose proof (typesize_pos ty). red in Hsg. omega.
+  pose proof (typesize_pos ty). red in Hsg. lia.
 Qed.
 
 Lemma zero_size_arguments_tailcall_possible:
