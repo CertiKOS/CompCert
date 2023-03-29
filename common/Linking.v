@@ -17,6 +17,7 @@
 (** Separate compilation and syntactic linking *)
 
 Require Import Coqlib Maps Errors AST.
+Require Import RelationClasses.
 
 (** This file follows "approach A" from the paper
        "Lightweight Verification of Separate Compilation"
@@ -39,6 +40,14 @@ Class Linker (A: Type) := {
   linkorder_trans: forall x y z, linkorder x y -> linkorder y z -> linkorder x z;
   link_linkorder: forall x y z, link x y = Some z -> linkorder x z /\ linkorder y z
 }.
+
+Global Instance linkorder_reflexive A {H: Linker A}:
+  Reflexive linkorder.
+Proof. intros x. apply linkorder_refl. Qed.
+
+Global Instance linkorder_transitive A {H: Linker A}:
+  Transitive linkorder.
+Proof. intros x y z. apply linkorder_trans. Qed.
 
 (** Linking function definitions.  External functions of the [EF_external]
   kind can link with internal function definitions; the result of
@@ -273,10 +282,37 @@ Definition link_prog_merge (o1 o2: option (globdef F V)) :=
   | Some gd1, Some gd2 => link gd1 gd2
   end.
 
+Definition link_main_check (m1 m2: option ident) :=
+  match m1, m2 with
+  | Some p1, Some p2 => if ident_eq p1 p2 then true else false
+  | _, _ => true
+  end.
+
+Inductive link_main_prop : option ident -> option ident -> Prop :=
+| link_main_some_some i1 i2:
+  i1 = i2 -> link_main_prop (Some i1) (Some i2)
+| link_main_none_some i: link_main_prop None (Some i)
+| link_main_some_none i: link_main_prop (Some i) None
+| link_main_none_none: link_main_prop None None.
+
+Definition link_main (m1 m2: option ident) :=
+  match m1 with | Some p1 => m1 | None => m2 end.
+
+Lemma link_main_reflect:
+  link_main_check (prog_main p1) (prog_main p2) = true <->
+    link_main_prop (prog_main p1) (prog_main p2).
+Proof.
+  split; unfold link_main_check; intros.
+  - destruct (prog_main p1) eqn: A; destruct (prog_main p2) eqn: B;
+      try constructor.
+    destruct (ident_eq i i0); congruence.
+  - inv H; try easy. now rewrite dec_eq_true.
+Qed.
+
 Definition link_prog :=
-  if ident_eq p1.(prog_main) p2.(prog_main)
+  if link_main_check p1.(prog_main) p2.(prog_main)
   && PTree_Properties.for_all dm1 link_prog_check then
-    Some {| prog_main := p1.(prog_main);
+    Some {| prog_main := link_main p1.(prog_main) p2.(prog_main);
             prog_public := p1.(prog_public) ++ p2.(prog_public);
             prog_defs := PTree.elements (PTree.combine link_prog_merge dm1 dm2) |}
   else
@@ -285,19 +321,21 @@ Definition link_prog :=
 Lemma link_prog_inv:
   forall p,
   link_prog = Some p ->
-      p1.(prog_main) = p2.(prog_main)
+     link_main_prop p1.(prog_main) p2.(prog_main)
    /\ (forall id gd1 gd2,
          dm1!id = Some gd1 -> dm2!id = Some gd2 ->
          In id p1.(prog_public) /\ In id p2.(prog_public) /\ exists gd, link gd1 gd2 = Some gd)
-  /\ p = {| prog_main := p1.(prog_main);
+  /\ p = {| prog_main := link_main p1.(prog_main) p2.(prog_main);
             prog_public := p1.(prog_public) ++ p2.(prog_public);
             prog_defs := PTree.elements (PTree.combine link_prog_merge dm1 dm2) |}.
 Proof.
   unfold link_prog; intros p E.
-  destruct (ident_eq (prog_main p1) (prog_main p2)); try discriminate.
+  destruct (link_main_check (prog_main p1) (prog_main p2)) eqn: A;
+    try discriminate.
   destruct (PTree_Properties.for_all dm1 link_prog_check) eqn:C; inv E.
   rewrite PTree_Properties.for_all_correct in C.
-  split; auto. split; auto.
+  split; auto. apply link_main_reflect; eauto.
+  split; auto.
   intros. exploit C; eauto. unfold link_prog_check. rewrite H0. intros.
   destruct (in_dec peq id (prog_public p1)); try discriminate.
   destruct (in_dec peq id (prog_public p2)); try discriminate.
@@ -306,16 +344,18 @@ Proof.
 Qed.
 
 Lemma link_prog_succeeds:
-  p1.(prog_main) = p2.(prog_main) ->
+  link_main_prop p1.(prog_main) p2.(prog_main) ->
   (forall id gd1 gd2,
       dm1!id = Some gd1 -> dm2!id = Some gd2 ->
       In id p1.(prog_public) /\ In id p2.(prog_public) /\ link gd1 gd2 <> None) ->
   link_prog =
-    Some {| prog_main := p1.(prog_main);
+    Some {| prog_main := link_main p1.(prog_main) p2.(prog_main);
             prog_public := p1.(prog_public) ++ p2.(prog_public);
             prog_defs := PTree.elements (PTree.combine link_prog_merge dm1 dm2) |}.
 Proof.
-  intros. unfold link_prog. unfold proj_sumbool. rewrite H, dec_eq_true. simpl.
+  intros. unfold link_prog.
+  apply link_main_reflect in H.
+  unfold proj_sumbool. rewrite H. simpl.
   replace (PTree_Properties.for_all dm1 link_prog_check) with true; auto.
   symmetry. apply PTree_Properties.for_all_correct; intros. rename a into gd1.
   unfold link_prog_check. destruct dm2!x as [gd2|] eqn:G2; auto.
@@ -332,10 +372,25 @@ Qed.
 
 End LINKER_PROG.
 
+Inductive linkorder_main: option ident -> option ident -> Prop :=
+| linkorder_main_none m: linkorder_main None m
+| linkorder_main_some i1 i2:
+  i1 = i2 -> linkorder_main (Some i1) (Some i2).
+
+Instance linkorder_main_refl:
+  Reflexive linkorder_main.
+Proof. intros x. destruct x; now constructor. Qed.
+
+Instance linkorder_main_tran:
+  Transitive linkorder_main.
+Proof.
+  intros x y z H1 H2. inv H1; inv H2; try constructor; eauto.
+Qed.
+
 Global Program Instance Linker_prog (F V: Type) {LF: Linker F} {LV: Linker V} : Linker (program F V) := {
   link := link_prog;
   linkorder := fun p1 p2 =>
-     p1.(prog_main) = p2.(prog_main)
+    linkorder_main p1.(prog_main) p2.(prog_main)
   /\ incl p1.(prog_public) p2.(prog_public)
   /\ forall id gd1,
      (prog_defmap p1)!id = Some gd1 ->
@@ -345,11 +400,11 @@ Global Program Instance Linker_prog (F V: Type) {LF: Linker F} {LV: Linker V} : 
      /\ (~In id p2.(prog_public) -> gd2 = gd1)
 }.
 Next Obligation.
-  split; auto. split. apply incl_refl. intros.
+  split; auto. reflexivity. split. apply incl_refl. intros.
   exists gd1; split; auto. split; auto. apply linkorder_refl.
 Defined.
 Next Obligation.
-  split. congruence. split. red; eauto.
+  split. etransitivity; eauto. split. red; eauto.
   intros. exploit H4; eauto. intros (gd2 & P & Q & R).
   exploit H2; eauto. intros (gd3 & U & X & Y).
   exists gd3. split; auto. split. eapply linkorder_trans; eauto.
@@ -358,6 +413,7 @@ Defined.
 Next Obligation.
   apply link_prog_inv in H. destruct H as (L1 & L2 & L3).
   subst z; simpl. intuition auto.
++ inv L1; try constructor; eauto.
 + red; intros; apply in_app_iff; auto.
 + rewrite prog_defmap_elements, PTree.gcombine, H by auto.
   destruct (prog_defmap y)!id as [gd2|] eqn:GD2; simpl.
@@ -365,6 +421,7 @@ Next Obligation.
   exists gd; split. auto. split. apply link_linkorder in R; tauto.
   rewrite in_app_iff; tauto.
 * exists gd1; split; auto. split. apply linkorder_refl. auto.
++ inv L1; try constructor; eauto.
 + red; intros; apply in_app_iff; auto.
 + rewrite prog_defmap_elements, PTree.gcombine, H by auto.
   destruct (prog_defmap x)!id as [gd2|] eqn:GD2; simpl.
@@ -420,7 +477,7 @@ Lemma link_erase_program (p1 p2 p: program F V):
 Proof.
   intros Hp. apply link_prog_inv in Hp as (MAIN & DEFMAP & Hp). subst.
   setoid_rewrite link_prog_succeeds; auto.
-  - unfold erase_program at 3 4 5 6; cbn. f_equal. f_equal.
+  - unfold erase_program at 3 4 5 6 7; cbn. f_equal. f_equal.
     assert (forall (l1: list (ident * globdef unit unit)) (l2: list (ident * globdef F V)),
              list_forall2 (fun x y => fst x = fst y /\ snd x = erase_globdef (snd y)) l1 l2 ->
              l1 = map (fun '(a, b) => (a, erase_globdef b)) l2).
@@ -760,7 +817,7 @@ Proof.
 * exploit Q; eauto. intros (X & Y & gd & Z).
   exploit link_match_globdef. eexact H2. eexact H3. eauto. eauto. eauto.
   intros (tg & TL & MG). rewrite Z, TL. constructor; auto.
-+ rewrite R; simpl; auto.
++ rewrite R; simpl; auto. congruence.
 + rewrite R; simpl. congruence.
 Qed.
 

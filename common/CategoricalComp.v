@@ -445,8 +445,20 @@ Proof.
   - destruct Ha, Hb. congruence.
 Qed.
 
-Variable id_skel: AST.program unit unit.
-Hypothesis id_skel_order: forall sk, Linking.linkorder id_skel sk.
+Definition id_skel: AST.program unit unit :=
+  {|
+    prog_defs := nil;
+    prog_public := nil;
+    prog_main := None;
+  |}.
+Lemma id_skel_order: forall sk, linkorder id_skel sk.
+Proof.
+  intros sk. destruct sk. unfold id_skel.
+  split. 2: split.
+  - constructor.
+  - intros x [].
+  - intros * H. inv H.
+Qed.
 
 Section ID_SEM.
 

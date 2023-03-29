@@ -936,11 +936,12 @@ End NATURALSEM.
 
 Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
   | bigstep_program_terminates_intro:
-      forall b f m0 t m r,
+      forall b f m0 t m r i,
       let se := Genv.symboltbl (erase_program p) in
       let ge := Genv.globalenv se p in
       Genv.init_mem (erase_program p) = Some m0 ->
-      Genv.find_symbol ge p.(prog_main) = Some b ->
+      p.(prog_main) = Some i ->
+      Genv.find_symbol ge i = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       funsig f = signature_main ->
       eval_funcall ge m0 f nil t m (Vint r) ->
@@ -948,11 +949,12 @@ Inductive bigstep_program_terminates (p: program): trace -> int -> Prop :=
 
 Inductive bigstep_program_diverges (p: program): traceinf -> Prop :=
   | bigstep_program_diverges_intro:
-      forall b f m0 t,
+      forall b f m0 t i,
       let se := Genv.symboltbl (erase_program p) in
       let ge := Genv.globalenv se p in
       Genv.init_mem (erase_program p) = Some m0 ->
-      Genv.find_symbol ge p.(prog_main) = Some b ->
+      p.(prog_main) = Some i ->
+      Genv.find_symbol ge i = Some b ->
       Genv.find_funct_ptr ge b = Some f ->
       funsig f = signature_main ->
       evalinf_funcall ge m0 f nil t ->

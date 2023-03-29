@@ -25,7 +25,7 @@ Section PROG.
       induction (AST.prog_defs p)
         as [ | [id [f|[ ]]] ? ?];
         repeat (econstructor; eauto using incl_refl, linkorder_refl).
-      apply linkorder_refl.
+      reflexivity. reflexivity.
     - apply match_stbls_proj; auto.
   Qed.
 

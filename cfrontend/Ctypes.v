@@ -222,7 +222,7 @@ Proof.
 - apply ident_eq.
 Defined.
 
-Global Opaque composite_def_eq. 
+Global Opaque composite_def_eq.
 
 (** For type-checking, compilation and semantics purposes, the composite
   definitions are collected in the following [composite_env] environment.
@@ -510,13 +510,13 @@ Proof.
   { unfold al, bitalignof. generalize (alignof_pos env t). lia. }
   assert (pos <= align pos al) by (apply align_le; auto).
   assert (bitsizeof t >= 0).
-  { unfold bitsizeof. generalize (sizeof_pos env t). lia. } 
+  { unfold bitsizeof. generalize (sizeof_pos env t). lia. }
   lia.
 - set (s := bitalignof_intsize sz).
   assert (A: s > 0) by (apply bitalignof_intsize_pos).
   destruct (zle width 0).
 + apply align_le; auto.
-+ generalize (floor_interval pos s A). 
++ generalize (floor_interval pos s A).
   set (start := floor pos s). intros B.
   destruct (zle (pos + width) (start + s)); lia.
 Qed.
@@ -529,7 +529,7 @@ Definition layout_width (t: type) (bf: bitfield) :=
 
 Lemma layout_field_range: forall pos m ofs bf,
   layout_field pos m = OK (ofs, bf) ->
-  pos <= layout_start ofs bf 
+  pos <= layout_start ofs bf
   /\ layout_start ofs bf + layout_width (type_member m) bf <= next_field pos m.
 Proof.
   intros until bf; intros L. unfold layout_start, layout_width. destruct m; simpl in L.
@@ -540,7 +540,7 @@ Proof.
   { unfold al, bitalignof. generalize (alignof_pos env t). lia. }
   assert (B: pos <= q) by (apply align_le; auto).
   assert (C: (al | q)) by (apply align_divides; auto).
-  assert (D: (8 | q)). 
+  assert (D: (8 | q)).
   { apply Z.divide_transitive with al; auto. apply Z.divide_factor_r. }
   assert (E: q / 8 * 8 = q).
   { destruct D as (n & E). rewrite E. rewrite Z.div_mul by lia. auto. }
@@ -574,7 +574,7 @@ Lemma layout_field_alignment: forall pos m ofs bf,
   (layout_alignment (type_member m) bf | ofs).
 Proof.
   intros until bf; intros L. destruct m; simpl in L.
-- inv L; simpl. 
+- inv L; simpl.
   set (q := align pos (bitalignof t)).
   assert (A: (bitalignof t | q)).
   { apply align_divides. unfold bitalignof. generalize (alignof_pos env t). lia. }
@@ -605,7 +605,7 @@ End LAYOUT.
 Fixpoint alignof_composite (env: composite_env) (ms: members) : Z :=
   match ms with
   | nil => 1
-  | m :: ms => 
+  | m :: ms =>
      if member_is_padding m
      then alignof_composite env ms
      else Z.max (alignof env (type_member m)) (alignof_composite env ms)
@@ -708,7 +708,7 @@ Proof.
   induction ms as [ | m ms]; simpl; intros.
 - discriminate.
 - destruct (ident_eq id (name_member m)).
-  + inv H0. 
+  + inv H0.
     exploit layout_field_range; eauto.
     generalize (bitsizeof_struct_incr env ms (next_field env pos m)).
     lia.
@@ -731,10 +731,10 @@ Corollary field_offset_in_range:
   field_offset env id ms = OK (ofs, Full) -> field_type id ms = OK ty ->
   0 <= ofs /\ ofs + sizeof env ty <= sizeof_struct env ms.
 Proof.
-  intros. exploit field_offset_in_range_gen; eauto. 
+  intros. exploit field_offset_in_range_gen; eauto.
   unfold layout_start, layout_width, bitsizeof, sizeof_struct. intros [A B].
   assert (C: forall x y, x * 8 <= y -> x <= bytes_of_bits y).
-  { unfold bytes_of_bits; intros. 
+  { unfold bytes_of_bits; intros.
     assert (P: 8 > 0) by lia.
     generalize (Z_div_mod_eq (y + 7) 8 P) (Z_mod_lt (y + 7) 8 P).
     lia. }
@@ -829,7 +829,7 @@ Proof.
 - destruct (ident_eq id (name_member m)).
   + inv H0. set (ty := type_member m) in *.
     destruct m; simpl in H.
-    * inv H. unfold layout_start, layout_width. 
+    * inv H. unfold layout_start, layout_width.
       rewrite align_same. change (0 / 8) with 0. unfold bitsizeof. lia.
       unfold bitalignof. generalize (alignof_pos env t). lia.
       apply Z.divide_0_r.
@@ -849,7 +849,7 @@ Corollary union_field_offset_in_range:
   union_field_offset env id ms = OK (ofs, Full) -> field_type id ms = OK ty ->
   ofs = 0 /\ sizeof env ty <= sizeof_union env ms.
 Proof.
-  intros. exploit union_field_offset_in_range_gen; eauto. 
+  intros. exploit union_field_offset_in_range_gen; eauto.
   unfold layout_start, layout_width, bitsizeof. lia.
 Qed.
 
@@ -1337,9 +1337,9 @@ Lemma composite_consistent_stable:
          co,
   composite_consistent env co -> composite_consistent env' co.
 Proof.
-  intros. destruct H as [A B C D]. constructor. 
+  intros. destruct H as [A B C D]. constructor.
   eapply complete_members_stable; eauto.
-  symmetry; rewrite B. f_equal. apply alignof_composite_stable; auto. 
+  symmetry; rewrite B. f_equal. apply alignof_composite_stable; auto.
   symmetry; rewrite C. f_equal. apply sizeof_composite_stable; auto.
   symmetry; rewrite D. apply rank_members_stable; auto.
 Qed.
@@ -1349,10 +1349,10 @@ Lemma composite_of_def_consistent:
   composite_of_def env id su m a = OK co ->
   composite_consistent env co.
 Proof.
-  unfold composite_of_def; intros. 
+  unfold composite_of_def; intros.
   destruct (env!id); try discriminate. destruct (complete_members env m) eqn:C; inv H.
   constructor; auto.
-Qed. 
+Qed.
 
 Theorem build_composite_env_consistent:
   forall defs env, build_composite_env defs = OK env -> composite_env_consistent env.
@@ -1367,7 +1367,7 @@ Proof.
 - destruct d1; monadInv H.
   eapply IHdefs; eauto.
   set (env1 := PTree.set id x env0) in *.
-  assert (env0!id = None). 
+  assert (env0!id = None).
   { unfold composite_of_def in EQ. destruct (env0!id). discriminate. auto. }
   assert (forall id1 co1, env0!id1 = Some co1 -> env1!id1 = Some co1).
   { intros. unfold env1. rewrite PTree.gso; auto. congruence. }
@@ -1375,7 +1375,7 @@ Proof.
   unfold env1 in H2; rewrite PTree.gsspec in H2; destruct (peq id0 id).
 + subst id0. inversion H2; clear H2. subst co.
   eapply composite_of_def_consistent; eauto.
-+ eapply H0; eauto. 
++ eapply H0; eauto.
 Qed.
 
 (** Moreover, every composite definition is reflected in the composite environment. *)
@@ -1410,7 +1410,7 @@ Proof.
     add_composite_definitions env l = OK env' ->
     env'!id = Some co ->
     env!id = Some co \/ In (Composite id (co_su co) (co_members co) (co_attr co)) l).
-  { induction l; simpl; intros. 
+  { induction l; simpl; intros.
   - inv H; auto.
   - destruct a; monadInv H. exploit IHl; eauto.
     unfold composite_of_def in EQ. destruct (env!id0) eqn:E; try discriminate.
@@ -1465,7 +1465,7 @@ Qed.
 
 (** * Programs and compilation units *)
 
-(** The definitions in this section are parameterized over a type [F] of 
+(** The definitions in this section are parameterized over a type [F] of
   internal function definitions, so that they apply both to CompCert C and to Clight. *)
 
 Set Implicit Arguments.
@@ -1499,7 +1499,7 @@ Global Instance clight_fundef_is_internal : FundefIsInternal fundef :=
 Record program : Type := {
   prog_defs: list (ident * globdef fundef type);
   prog_public: list ident;
-  prog_main: ident;
+  prog_main: option ident;
   prog_types: list composite_definition;
   prog_comp_env: composite_env;
   prog_comp_env_eq: build_composite_env prog_types = OK prog_comp_env
@@ -1515,7 +1515,7 @@ Coercion program_of_program: program >-> AST.program.
 Program Definition make_program (types: list composite_definition)
                                 (defs: list (ident * globdef fundef type))
                                 (public: list ident)
-                                (main: ident) : res program :=
+                                (main: option ident) : res program :=
   match build_composite_env types with
   | Error e => Error e
   | OK ce =>
@@ -1573,14 +1573,14 @@ Lemma link_composite_def_inv:
 Proof.
   unfold link_composite_defs; intros.
   destruct (forallb (check_compat_composite l2) l1) eqn:C; inv H.
-  assert (A: 
+  assert (A:
     forall cd1 cd2, In cd1 l1 -> In cd2 l2 -> name_composite_def cd2 = name_composite_def cd1 -> cd2 = cd1).
   { rewrite forallb_forall in C. intros.
-    apply C in H. unfold check_compat_composite in H. rewrite forallb_forall in H. 
+    apply C in H. unfold check_compat_composite in H. rewrite forallb_forall in H.
     apply H in H0. rewrite H1, dec_eq_true in H0. symmetry; eapply proj_sumbool_true; eauto. }
-  split. auto. split. auto. 
-  unfold filter_redefs; intros. 
-  rewrite in_app_iff. rewrite filter_In. intuition auto. 
+  split. auto. split. auto.
+  unfold filter_redefs; intros.
+  rewrite in_app_iff. rewrite filter_In. intuition auto.
   destruct (in_dec ident_eq (name_composite_def x) (map name_composite_def l1)); simpl; auto.
   exploit list_in_map_inv; eauto. intros (y & P & Q).
   assert (x = y) by eauto. subst y. auto.
@@ -1611,7 +1611,7 @@ Proof.
   induction l1; simpl; intros.
 - split; intros. exists env; auto. destruct H as (env' & A & B). congruence.
 - destruct a; simpl. destruct (composite_of_def env id su m a); simpl.
-  apply IHl1. 
+  apply IHl1.
   split; intros. discriminate. destruct H as (env' & A & B); discriminate.
 Qed.
 
@@ -1622,7 +1622,7 @@ Lemma composite_eq:
   Build_composite su1 m1 a1 sz1 al1 r1 pos1 al2p1 szal1 = Build_composite su2 m2 a2 sz2 al2 r2 pos2 al2p2 szal2.
 Proof.
   intros. subst.
-  assert (pos1 = pos2) by apply proof_irr. 
+  assert (pos1 = pos2) by apply proof_irr.
   assert (al2p1 = al2p2) by apply proof_irr.
   assert (szal1 = szal2) by apply proof_irr.
   subst. reflexivity.
@@ -1635,7 +1635,7 @@ Lemma composite_of_def_eq:
   composite_of_def env id (co_su co) (co_members co) (co_attr co) = OK co.
 Proof.
   intros. destruct H as [A B C D]. unfold composite_of_def. rewrite H0, A.
-  destruct co; simpl in *. f_equal. apply composite_eq; auto. rewrite C, B; auto. 
+  destruct co; simpl in *. f_equal. apply composite_eq; auto. rewrite C, B; auto.
 Qed.
 
 Lemma composite_consistent_unique:
@@ -1658,14 +1658,14 @@ Lemma composite_of_def_stable:
   composite_of_def env id su m a = OK co ->
   composite_of_def env' id su m a = OK co.
 Proof.
-  intros. 
-  unfold composite_of_def in H0. 
+  intros.
+  unfold composite_of_def in H0.
   destruct (env!id) eqn:E; try discriminate.
   destruct (complete_members env m) eqn:CM; try discriminate.
   transitivity (composite_of_def env' id (co_su co) (co_members co) (co_attr co)).
-  inv H0; auto. 
-  apply composite_of_def_eq; auto. 
-  apply composite_consistent_stable with env; auto. 
+  inv H0; auto.
+  apply composite_of_def_eq; auto.
+  apply composite_consistent_stable with env; auto.
   inv H0; constructor; auto.
 Qed.
 
@@ -1687,9 +1687,9 @@ Proof.
 - inv ACD. exists env2; auto.
 - destruct a. destruct (composite_of_def env1 id su m a) as [x|e] eqn:EQ; try discriminate.
   simpl in ACD.
-  generalize EQ. unfold composite_of_def at 1. 
+  generalize EQ. unfold composite_of_def at 1.
   destruct (env1!id) eqn:E1; try congruence.
-  destruct (complete_members env1 m) eqn:CM1; try congruence. 
+  destruct (complete_members env1 m) eqn:CM1; try congruence.
   intros EQ1.
   simpl. destruct (in_dec ident_eq id (map name_composite_def l0)); simpl.
 + eapply IHl; eauto.
@@ -1699,28 +1699,28 @@ Proof.
   assert (X: Composite id su m a = Composite id' su' m' a').
   { eapply UNIQUE. auto. auto. rewrite <- P; auto. }
   inv X.
-  exploit build_composite_env_charact; eauto. intros (co' & U & V & W & X). 
+  exploit build_composite_env_charact; eauto. intros (co' & U & V & W & X).
   assert (co' = co).
   { apply composite_consistent_unique with env2.
-    apply composite_consistent_stable with env0; auto. 
+    apply composite_consistent_stable with env0; auto.
     eapply build_composite_env_consistent; eauto.
     apply composite_consistent_stable with env1; auto.
-    inversion EQ1; constructor; auto. 
+    inversion EQ1; constructor; auto.
     inversion EQ1; auto.
     inversion EQ1; auto.
     inversion EQ1; auto. }
-  subst co'. apply AGREE0; auto. 
-* intros. rewrite AGREE2. destruct (in_dec ident_eq id0 (map name_composite_def l0)); auto. 
+  subst co'. apply AGREE0; auto.
+* intros. rewrite AGREE2. destruct (in_dec ident_eq id0 (map name_composite_def l0)); auto.
   rewrite PTree.gsspec. destruct (peq id0 id); auto. subst id0. contradiction.
 + assert (E2: env2!id = None).
   { rewrite AGREE2. rewrite pred_dec_false by auto. auto. }
   assert (E3: composite_of_def env2 id su m a = OK x).
   { eapply composite_of_def_stable. eexact AGREE1. eauto. eauto. }
-  rewrite E3. simpl. eapply IHl; eauto. 
+  rewrite E3. simpl. eapply IHl; eauto.
 * intros until co; rewrite ! PTree.gsspec. destruct (peq id0 id); auto.
 * intros until co; rewrite ! PTree.gsspec. intros. destruct (peq id0 id); auto.
   subst id0. apply AGREE0 in H0. congruence.
-* intros. rewrite ! PTree.gsspec. destruct (peq id0 id); auto. subst id0. 
+* intros. rewrite ! PTree.gsspec. destruct (peq id0 id); auto. subst id0.
   rewrite pred_dec_false by auto. auto.
 Qed.
 
@@ -1741,11 +1741,11 @@ Proof.
   instantiate (1 := env1). intros. rewrite PTree.gempty in H2; discriminate.
   auto.
   intros. destruct (in_dec ident_eq id (map name_composite_def l1)); auto.
-  rewrite PTree.gempty. destruct (env1!id) eqn:E1; auto. 
+  rewrite PTree.gempty. destruct (env1!id) eqn:E1; auto.
   exploit build_composite_env_domain. eexact H. eauto.
-  intros. apply (in_map name_composite_def) in H2. elim n; auto. 
+  intros. apply (in_map name_composite_def) in H2. elim n; auto.
   auto.
-  exists env; split; auto. subst l. apply add_composite_definitions_append. exists env1; auto. 
+  exists env; split; auto. subst l. apply add_composite_definitions_append. exists env1; auto.
 Qed.
 
 (** ** Linking function definitions *)
@@ -1806,7 +1806,7 @@ Global Opaque Linker_fundef.
 
 Definition lift_option {A: Type} (opt: option A) : { x | opt = Some x } + { opt = None }.
 Proof.
-  destruct opt. left; exists a; auto. right; auto. 
+  destruct opt. left; exists a; auto. right; auto.
 Defined.
 
 Definition link_program {F:Type} (p1 p2: program F): option (program F) :=
@@ -1853,7 +1853,7 @@ Next Obligation.
   destruct (link_build_composite_env (prog_types x) (prog_types y) typs
        (prog_comp_env x) (prog_comp_env y) (prog_comp_env_eq x)
        (prog_comp_env_eq y) EQ) as (env & P & Q & R).
-  destruct (link_linkorder _ _ _ LP). 
+  destruct (link_linkorder _ _ _ LP).
   intros X; inv X.
   split; split; auto.
 Defined.
@@ -1883,7 +1883,7 @@ Theorem link_match_program_gen:
   exists tp, link tp1 tp2 = Some tp /\ match_program p tp.
 Proof.
   intros until p; intros L [M1 T1] [M2 T2].
-  exploit link_linkorder; eauto. intros [LO1 LO2]. 
+  exploit link_linkorder; eauto. intros [LO1 LO2].
 Local Transparent Linker_program.
   simpl in L; unfold link_program in L.
   destruct (link (program_of_program p1) (program_of_program p2)) as [pp|] eqn:LP; try discriminate.
@@ -1900,10 +1900,10 @@ Local Transparent Linker_program.
   destruct (lift_option (link (prog_types p1) (prog_types p2))) as [[typs EQ]|EQ]; try discriminate.
   destruct (link_build_composite_env (prog_types p1) (prog_types p2) typs
            (prog_comp_env p1) (prog_comp_env p2) (prog_comp_env_eq p1)
-           (prog_comp_env_eq p2) EQ) as (env & P & Q). 
+           (prog_comp_env_eq p2) EQ) as (env & P & Q).
   rewrite <- T1, <- T2 in EQ.
   destruct (lift_option (link (prog_types tp1) (prog_types tp2))) as [[ttyps EQ']|EQ']; try congruence.
-  assert (ttyps = typs) by congruence. subst ttyps. 
+  assert (ttyps = typs) by congruence. subst ttyps.
   destruct (link_build_composite_env (prog_types tp1) (prog_types tp2) typs
          (prog_comp_env tp1) (prog_comp_env tp2) (prog_comp_env_eq tp1)
          (prog_comp_env_eq tp2) EQ') as (tenv & R & S).
@@ -1933,14 +1933,14 @@ Theorem link_match_program:
   link p1 p2 = Some p -> match_program p1 tp1 -> match_program p2 tp2 ->
   exists tp, link tp1 tp2 = Some tp /\ match_program p tp.
 Proof.
-  intros. destruct H0, H1. 
+  intros. destruct H0, H1.
 Local Transparent Linker_program.
   simpl in H; unfold link_program in H.
   destruct (link (program_of_program p1) (program_of_program p2)) as [pp|] eqn:LP; try discriminate.
   assert (A: exists tpp,
                link (program_of_program tp1) (program_of_program tp2) = Some tpp
              /\ Linking.match_program (fun ctx f tf => match_fundef f tf) eq pp tpp).
-  { eapply Linking.link_match_program. 
+  { eapply Linking.link_match_program.
   - intros. exploit link_match_fundef; eauto. intros (tf & A & B). exists tf; auto.
   - intros.
     Local Transparent Linker_types.
@@ -1955,10 +1955,10 @@ Local Transparent Linker_program.
   destruct (lift_option (link (prog_types p1) (prog_types p2))) as [[typs EQ]|EQ]; try discriminate.
   destruct (link_build_composite_env (prog_types p1) (prog_types p2) typs
            (prog_comp_env p1) (prog_comp_env p2) (prog_comp_env_eq p1)
-           (prog_comp_env_eq p2) EQ) as (env & P & Q). 
+           (prog_comp_env_eq p2) EQ) as (env & P & Q).
   rewrite <- H2, <- H3 in EQ.
   destruct (lift_option (link (prog_types tp1) (prog_types tp2))) as [[ttyps EQ']|EQ']; try congruence.
-  assert (ttyps = typs) by congruence. subst ttyps. 
+  assert (ttyps = typs) by congruence. subst ttyps.
   destruct (link_build_composite_env (prog_types tp1) (prog_types tp2) typs
          (prog_comp_env tp1) (prog_comp_env tp2) (prog_comp_env_eq tp1)
          (prog_comp_env_eq tp2) EQ') as (tenv & R & S).
@@ -1968,4 +1968,3 @@ Local Transparent Linker_program.
 Qed.
 
 End LINK_MATCH_PROGRAM.
-

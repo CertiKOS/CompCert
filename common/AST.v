@@ -306,7 +306,9 @@ Arguments Gvar [F V].
 Record program (F V: Type) : Type := mkprogram {
   prog_defs: list (ident * globdef F V);
   prog_public: list ident;
-  prog_main: ident
+  (** there may not be a main function in some cases, such as an imaginary empty
+      program *)
+  prog_main: option ident
 }.
 
 Definition prog_defs_names (F V: Type) (p: program F V) : list ident :=
