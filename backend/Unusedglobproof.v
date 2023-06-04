@@ -440,7 +440,294 @@ Proof.
   apply filter_globdefs_unique_names.
 Qed.
 
+(* -------------------------------------------------------------------------- *)
+(** Semantics preservation proof with local symbol table *)
+
+Lemma invert_find_symbol_local (F V: Type) (ge: Genv.t F V) id b:
+  Genv.invert_symbol_local ge b = Some id <->
+  Genv.find_symbol_local ge id = Some b.
+Proof.
+  split.
+  - unfold Genv.invert_symbol_local, Genv.find_symbol_local.
+    apply PTree_Properties.fold_rec.
+    + intros. rewrite H in H0; auto.
+    + congruence.
+    + intros. destruct (eq_block b v). inv H2. apply PTree.gss.
+      rewrite PTree.gsspec. destruct (peq id k).
+      subst. assert (m!k = Some b) by auto. congruence.
+      auto.
+  - assert (Genv.find_symbol_local ge id = Some b ->
+            exists id', Genv.invert_symbol_local ge b = Some id').
+    unfold Genv.find_symbol_local, Genv.invert_symbol_local.
+    apply PTree_Properties.fold_rec.
+    intros. rewrite H in H0; auto.
+    rewrite PTree.gempty; congruence.
+    intros. destruct (eq_block b v). exists k; auto.
+    rewrite PTree.gsspec in H2. destruct (peq id k).
+    inv H2. congruence. auto.
+
+    intros; exploit H; eauto. intros [id' A].
+    assert (id = id'). eapply Genv.genv_vars_inj; eauto.
+    apply Genv.invert_find_symbol; auto.
+    congruence.
+Qed.
+
+Lemma find_symbol_public_local (F V: Type) se (p: AST.program F V) id:
+  exists b, Genv.find_symbol_local (Genv.globalenv se p) id = Some b.
+Proof.
+Admitted.
+
+Lemma public_symbol_in_local (F V: Type) se (p: AST.program F V) id:
+  Genv.public_symbol_local (Genv.globalenv se p) id = true <->
+  In id (prog_public p).
+Proof.
+  split; unfold Genv.public_symbol_local; intros H.
+  - destruct Genv.find_symbol_local; try congruence.
+    destruct in_dec. apply i. inv H.
+  - edestruct find_symbol_public_local as (b & Hb).
+    rewrite Hb.
+    destruct in_dec. reflexivity. contradiction.
+Qed.
+
+Lemma invert_symbol_local_global  (F V: Type) (ge: Genv.t F V) id b:
+  Genv.invert_symbol_local ge b = Some id ->
+  Genv.invert_symbol ge b = Some id.
+Proof.
+  intros.
+Admitted.
+
 (** * Semantic preservation *)
+
+Require Import LanguageInterface cklr.Inject cklr.InjectFootprint.
+
+Section SOUNDNESS.
+
+Variable p: program.
+Variable tp: program.
+Variable used: IS.t.
+Hypothesis USED_VALID: valid_used_set p used.
+Hypothesis TRANSF: match_prog_1 used p tp.
+Variable w: CKLR.world Inject.inj.
+Variable se tse: Genv.symtbl.
+Hypothesis SEVALID: Genv.valid_for (erase_program p) se.
+Let ge := Genv.globalenv se p.
+Let tge := Genv.globalenv tse tp.
+Let pm := prog_defmap p.
+Hypothesis GE: CKLR.match_stbls Inject.inj w se tse.
+
+Definition kept (id: ident) : Prop := IS.In id used.
+
+Lemma kept_closed:
+  forall id gd id',
+  kept id -> pm!id = Some gd -> ref_def gd id' -> kept id'.
+Proof.
+  intros. eapply used_closed; eauto.
+Qed.
+
+Lemma kept_main:
+  kept p.(prog_main).
+Proof.
+  eapply used_main; eauto.
+Qed.
+
+Lemma kept_public:
+  forall id, In id p.(prog_public) -> kept id.
+Proof.
+  intros. eapply used_public; eauto.
+Qed.
+
+(** Relating [Genv.find_symbol] operations in the original and transformed program *)
+
+Lemma transform_find_symbol_1:
+  forall id b,
+  Genv.find_symbol_local ge id = Some b -> kept id ->
+  Genv.find_symbol_local tge id = Some b.
+Proof.
+Admitted.
+(*   intros. *)
+(*   assert (A: exists g, (prog_defmap p)!id = Some g). *)
+(*   { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. } *)
+(*   destruct A as (g & P). *)
+(*   apply Genv.find_symbol_exists with g. *)
+(*   apply in_prog_defmap. *)
+(*   erewrite match_prog_def by eauto. rewrite IS.mem_1 by auto. auto. *)
+(* Qed. *)
+
+Lemma transform_find_symbol_2:
+  forall id b,
+  Genv.find_symbol_local tge id = Some b ->
+  kept id /\ Genv.find_symbol_local ge id = Some b.
+Proof.
+Admitted.
+(*   intros. *)
+(*   assert (A: exists g, (prog_defmap tp)!id = Some g). *)
+(*   { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. } *)
+(*   destruct A as (g & P). *)
+(*   erewrite match_prog_def in P by eauto. *)
+(*   destruct (IS.mem id used) eqn:U; try discriminate. *)
+(*   split. apply IS.mem_2; auto. *)
+(*   apply Genv.find_symbol_exists with g. *)
+(*   apply in_prog_defmap. auto. *)
+(* Qed. *)
+
+(** Simulation relation *)
+
+Record meminj_preserves_globals (f: meminj) : Prop := {
+  symbols_inject_1: forall id b b' delta,
+    f b = Some(b', delta) -> Genv.find_symbol ge id = Some b ->
+    delta = 0 /\ Genv.find_symbol tge id = Some b';
+  symbols_inject_2: forall id b,
+    kept id -> Genv.find_symbol ge id = Some b ->
+    exists b', Genv.find_symbol tge id = Some b' /\ f b = Some(b', 0);
+  symbols_inject_3: forall id b',
+    Genv.find_symbol tge id = Some b' ->
+    exists b, Genv.find_symbol ge id = Some b /\ f b = Some(b', 0);
+  defs_inject: forall b b' delta gd,
+    f b = Some(b', delta) -> Genv.find_def ge b = Some gd ->
+    Genv.find_def tge b' = Some gd /\ delta = 0 /\
+    (forall id, ref_def gd id -> kept id);
+  defs_rev_inject: forall b b' delta gd,
+    f b = Some(b', delta) -> Genv.find_def tge b' = Some gd ->
+    Genv.find_def ge b = Some gd /\ delta = 0
+}.
+
+Definition regset_inject (f: meminj) (rs rs': regset): Prop :=
+  forall r, Val.inject f rs#r rs'#r.
+
+Inductive match_stacks (j: meminj):
+        list stackframe -> list stackframe -> block -> block -> Prop :=
+  | match_stacks_nil: forall bound tbound,
+      meminj_preserves_globals j ->
+      Ple (Genv.genv_next ge) bound -> Ple (Genv.genv_next tge) tbound ->
+      match_stacks j nil nil bound tbound
+  | match_stacks_cons: forall res f sp pc rs s tsp trs ts bound tbound
+         (STACKS: match_stacks j s ts sp tsp)
+         (KEPT: forall id, ref_function f id -> kept id)
+         (SPINJ: j sp = Some(tsp, 0))
+         (REGINJ: regset_inject j rs trs)
+         (BELOW: Plt sp bound)
+         (TBELOW: Plt tsp tbound),
+      match_stacks j (Stackframe res f (Vptr sp Ptrofs.zero) pc rs :: s)
+                     (Stackframe res f (Vptr tsp Ptrofs.zero) pc trs :: ts)
+                     bound tbound.
+
+Inductive match_states: state -> state -> Prop :=
+  | match_states_regular: forall s f sp pc rs m ts tsp trs tm j
+         (STACKS: match_stacks j s ts sp tsp)
+         (KEPT: forall id, ref_function f id -> kept id)
+         (SPINJ: j sp = Some(tsp, 0))
+         (REGINJ: regset_inject j rs trs)
+         (MEMINJ: Mem.inject j m tm),
+      match_states (State s f (Vptr sp Ptrofs.zero) pc rs m)
+                   (State ts f (Vptr tsp Ptrofs.zero) pc trs tm)
+  | match_states_call: forall s vf tvf args m ts targs tm j
+         (STACKS: match_stacks j s ts (Mem.nextblock m) (Mem.nextblock tm))
+         (VFINJ: Val.inject j vf tvf)
+         (KEPT: forall fd,
+           Genv.find_funct ge vf = Some fd ->
+           forall id, ref_fundef fd id -> kept id)
+         (ARGINJ: Val.inject_list j args targs)
+         (MEMINJ: Mem.inject j m tm),
+      match_states (Callstate s vf args m)
+                   (Callstate ts tvf targs tm)
+  | match_states_return: forall s res m ts tres tm j
+         (STACKS: match_stacks j s ts (Mem.nextblock m) (Mem.nextblock tm))
+         (RESINJ: Val.inject j res tres)
+         (MEMINJ: Mem.inject j m tm),
+      match_states (Returnstate s res m)
+                   (Returnstate ts tres tm).
+
+Lemma transf_initial_states:
+  forall w q1 q2 st1, match_query (cc_c inj) w q1 q2 ->
+  initial_state_local ge q1 st1 ->
+  exists st2, initial_state_local tge q2 st2 /\ match_states st1 st2.
+Proof.
+  (* intros * HQ HS. inv HQ. inv HS. *)
+  (* exists (Callstate nil (Vptr b ofs) vargs2 m2). *)
+  (* rewrite val_inject_id in H. inv H. split. *)
+  (* - econstructor. reflexivity. *)
+  (*   + apply invert_find_symbol_local in INV. *)
+  (*     apply invert_find_symbol_local. *)
+  (*     apply transform_find_symbol_1 in INV. eauto. *)
+  (*     apply kept_public. *)
+  (*     eapply public_symbol_in_local. apply PUB. *)
+  (*   + apply public_symbol_in_local. *)
+  (*     erewrite match_prog_public; eauto. *)
+  (*     eapply public_symbol_in_local. apply PUB. *)
+  (*   + cbn in *. destruct Ptrofs.eq_dec; try congruence. *)
+  (*     rewrite Genv.find_funct_ptr_iff in H8 |- *. *)
+  (*     subst ge tge. *)
+  (*     rewrite Genv.find_def_spec in H8 |- *. *)
+  (*     exploit invert_symbol_local_global. apply INV. *)
+  (*     intros Hx. cbn in Hx. rewrite Hx in H8 |- *. *)
+  (*     exploit match_prog_def. eauto. intros Hy. *)
+  (*     rewrite Hy. rewrite IS.mem_1. eauto. *)
+  (*     apply kept_public. *)
+  (*     eapply public_symbol_in_local; eauto. *)
+  (* - constructor; eauto. *)
+  (*   + constructor. *)
+  (*   + intros fd HF idx HREF. *)
+  (*     rewrite H8 in HF. inv HF. *)
+  (*     eapply used_closed with (id := id); eauto. *)
+  (*     * eapply used_public; eauto. *)
+  (*       eapply public_symbol_in_local. apply PUB. *)
+  (*     * assert (HX: Genv.find_def ge b = Some (Gfun (Internal f))). *)
+  (*       { cbn in H8. destruct Ptrofs.eq_dec; try congruence. *)
+  (*         apply Genv.find_funct_ptr_iff. eauto. } *)
+  (*       subst ge. rewrite Genv.find_def_spec in HX. *)
+  (*       apply invert_symbol_local_global in INV. *)
+  (*       setoid_rewrite INV in HX. apply HX. *)
+  (*     * cbn in HREF. apply HREF. *)
+  (*   + eapply ext_lessdef_list; eauto. *)
+(* Qed. *)
+Admitted.
+
+Lemma transf_external_states:
+  forall st1 st2 q1, match_states st1 st2 -> at_external ge st1 q1 ->
+  exists w q2, at_external tge st2 q2 /\ match_query (cc_c injp) w q1 q2 /\ CKLR.match_stbls injp w se tse /\
+  forall r1 r2 st1', match_reply (cc_c injp) w r1 r2 -> after_external st1 r1 st1' ->
+  exists st2', after_external st2 r2 st2' /\ match_states st1' st2'.
+Proof.
+  intros * HS HA. inv HS; inv HA.
+Admitted.
+
+Lemma transf_final_states:
+  forall w st1 st2 r1, match_states st1 st2 -> final_state st1 r1 ->
+  exists r2, final_state st2 r2 /\ match_reply (cc_c inj) w r1 r2.
+Proof.
+  intros * HS HF. inv HF; inv HS.
+Admitted.
+
+Lemma step_simulation:
+  forall S1 t S2, step_local ge S1 t S2 ->
+  forall S1' (MS: match_states S1 S1'),
+  exists S2', step_local tge S1' t S2' /\ match_states S2 S2'.
+Proof.
+Admitted.
+
+End SOUNDNESS.
+
+Theorem transf_program_correct_1 p tp:
+  match_prog p tp ->
+  forward_simulation (cc_c injp) (cc_c inj)
+               (semantics_local p) (semantics_local tp).
+Proof.
+  intros (used & USED_VALID & MATCH). constructor.
+  eapply Forward_simulation with (fsim_match_states := fun _ _ _ => _).
+  - admit.
+  - intros se1 se2 w Hse Hse1. cbn -[semantics_local] in *. subst.
+    eapply forward_simulation_step
+      with (match_states := match_states p tp used se1 se2).
+    + admit.
+    + eapply transf_initial_states; eauto.
+    + eapply transf_final_states; eauto.
+    + eapply transf_external_states; eauto.
+    + eapply step_simulation; eauto.
+  - admit.
+Admitted.
+
+(* -------------------------------------------------------------------------- *)
+(** Original CompCert proof below *)
 
 Section SOUNDNESS.
 

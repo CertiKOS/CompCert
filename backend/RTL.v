@@ -309,6 +309,104 @@ Proof.
   intros. subst rs'. eapply exec_Iload; eauto.
 Qed.
 
+(* -------------------------------------------------------------------------- *)
+(* local *)
+
+Inductive step_local: state -> trace -> state -> Prop :=
+  | exec_Inop_local:
+      forall s f sp pc rs m pc',
+      (fn_code f)!pc = Some(Inop pc') ->
+      step_local (State s f sp pc rs m)
+        E0 (State s f sp pc' rs m)
+  | exec_Iop_local:
+      forall s f sp pc rs m op args res pc' v,
+      (fn_code f)!pc = Some(Iop op args res pc') ->
+      eval_operation ge.(Genv.local_senv) sp op rs##args m = Some v ->
+      step_local (State s f sp pc rs m)
+        E0 (State s f sp pc' (rs#res <- v) m)
+  | exec_Iload_local:
+      forall s f sp pc rs m chunk addr args dst pc' a v,
+      (fn_code f)!pc = Some(Iload chunk addr args dst pc') ->
+      eval_addressing ge.(Genv.local_senv) sp addr rs##args = Some a ->
+      Mem.loadv chunk m a = Some v ->
+      step_local (State s f sp pc rs m)
+        E0 (State s f sp pc' (rs#dst <- v) m)
+  | exec_Istore_local:
+      forall s f sp pc rs m chunk addr args src pc' a m',
+      (fn_code f)!pc = Some(Istore chunk addr args src pc') ->
+      eval_addressing ge.(Genv.local_senv) sp addr rs##args = Some a ->
+      Mem.storev chunk m a rs#src = Some m' ->
+      step_local (State s f sp pc rs m)
+        E0 (State s f sp pc' rs m')
+  | exec_Icall_local:
+      forall s f sp pc rs m sig ros args res pc' fd,
+      let vf := ros_address ge ros rs in
+      (fn_code f)!pc = Some(Icall sig ros args res pc') ->
+      Genv.find_funct ge vf = Some fd ->
+      funsig fd = sig ->
+      step_local (State s f sp pc rs m)
+        E0 (Callstate (Stackframe res f sp pc' rs :: s) vf rs##args m)
+  | exec_Itailcall_local:
+      forall s f stk pc rs m sig ros args fd m',
+      let vf := ros_address ge ros rs in
+      (fn_code f)!pc = Some(Itailcall sig ros args) ->
+      Genv.find_funct ge vf = Some fd ->
+      funsig fd = sig ->
+      Mem.free m stk 0 f.(fn_stacksize) = Some m' ->
+      step_local (State s f (Vptr stk Ptrofs.zero) pc rs m)
+        E0 (Callstate s vf rs##args m')
+  | exec_Ibuiltin_local:
+      forall s f sp pc rs m ef args res pc' vargs t vres m',
+      (fn_code f)!pc = Some(Ibuiltin ef args res pc') ->
+      eval_builtin_args ge.(Genv.local_senv) (fun r => rs#r) sp m args vargs ->
+      external_call ef ge.(Genv.local_senv) vargs m t vres m' ->
+      step_local (State s f sp pc rs m)
+         t (State s f sp pc' (regmap_setres res vres rs) m')
+  | exec_Icond_local:
+      forall s f sp pc rs m cond args ifso ifnot b pc',
+      (fn_code f)!pc = Some(Icond cond args ifso ifnot) ->
+      eval_condition cond rs##args m = Some b ->
+      pc' = (if b then ifso else ifnot) ->
+      step_local (State s f sp pc rs m)
+        E0 (State s f sp pc' rs m)
+  | exec_Ijumptable_local:
+      forall s f sp pc rs m arg tbl n pc',
+      (fn_code f)!pc = Some(Ijumptable arg tbl) ->
+      rs#arg = Vint n ->
+      list_nth_z tbl (Int.unsigned n) = Some pc' ->
+      step_local (State s f sp pc rs m)
+        E0 (State s f sp pc' rs m)
+  | exec_Ireturn_local:
+      forall s f stk pc rs m or m',
+      (fn_code f)!pc = Some(Ireturn or) ->
+      Mem.free m stk 0 f.(fn_stacksize) = Some m' ->
+      step_local (State s f (Vptr stk Ptrofs.zero) pc rs m)
+        E0 (Returnstate s (regmap_optget or Vundef rs) m')
+  | exec_function_internal_local:
+      forall s vf f args m m' stk,
+      forall FIND: Genv.find_funct ge vf = Some (Internal f),
+      Mem.alloc m 0 f.(fn_stacksize) = (m', stk) ->
+      step_local (Callstate s vf args m)
+        E0 (State s
+                  f
+                  (Vptr stk Ptrofs.zero)
+                  f.(fn_entrypoint)
+                  (init_regs args f.(fn_params))
+                  m')
+  | exec_function_external_local:
+      forall s vf ef args res t m m',
+      forall FIND: Genv.find_funct ge vf = Some (External ef),
+      external_call ef ge.(Genv.local_senv) args m t res m' ->
+      step_local (Callstate s vf args m)
+         t (Returnstate s res m')
+  | exec_return_local:
+      forall res f sp pc rs s vres m,
+      step_local (Returnstate (Stackframe res f sp pc rs :: s) vres m)
+        E0 (State s f sp pc (rs#res <- vres) m).
+
+(* end *)
+(* -------------------------------------------------------------------------- *)
+
 End RELSEM.
 
 (** Execution of whole programs are described as sequences of transitions
@@ -320,6 +418,16 @@ Inductive initial_state (ge: genv): c_query -> state -> Prop :=
   | initial_state_intro: forall vf f vargs m,
       Genv.find_funct ge vf = Some (Internal f) ->
       initial_state ge
+        (cq vf (fn_sig f) vargs m)
+        (Callstate nil vf vargs m).
+
+Inductive initial_state_local (ge: genv): c_query -> state -> Prop :=
+  | initial_state_local_intro: forall vf f vargs m b ofs id
+    (VF: vf = Vptr b ofs)
+    (INV: Genv.invert_symbol_local ge b = Some id)
+    (PUB: Genv.public_symbol_local ge id = true),
+      Genv.find_funct ge vf = Some (Internal f) ->
+      initial_state_local ge
         (cq vf (fn_sig f) vargs m)
         (Callstate nil vf vargs m).
 
@@ -347,6 +455,10 @@ Inductive final_state: state -> c_reply -> Prop :=
 
 Definition semantics (p: program) :=
   Semantics step initial_state at_external after_external final_state p.
+
+Definition semantics_local (p: program) :=
+  Semantics step_local initial_state_local
+    at_external after_external final_state p.
 
 (** This semantics is receptive to changes in events. *)
 
