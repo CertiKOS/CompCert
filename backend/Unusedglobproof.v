@@ -17,6 +17,7 @@ Require Import AST Linking.
 Require Import Integers Values Memory Globalenvs Events Smallstep.
 Require Import Op Registers RTL.
 Require Import Unusedglob.
+Require CKLR.
 
 Module ISF := FSetFacts.Facts(IS).
 Module ISP := FSetProperties.Properties(IS).
@@ -500,6 +501,25 @@ Admitted.
 
 Require Import LanguageInterface cklr.Inject cklr.InjectFootprint.
 
+(** The initial memory injection inferred from global symbol tables *)
+Definition init_meminj (se tse: Genv.symtbl) : meminj :=
+  fun b =>
+    match Genv.invert_symbol se b with
+    | Some id =>
+        match Genv.find_symbol tse id with
+        | Some b' => Some (b', 0)
+        | None => None
+        end
+    | None => None
+    end.
+
+(** Validity of erased programs implies inclusion of skeletons *)
+Lemma src_skel_incl: forall {F V} (p: AST.program F V) se,
+  Genv.valid_for (erase_program p) se 
+  -> incl (prog_defs (erase_program p)) (PTree.elements (Genv.genv_info se)).
+Proof.
+Admitted.
+
 Section SOUNDNESS.
 
 Variable p: program.
@@ -507,13 +527,45 @@ Variable tp: program.
 Variable used: IS.t.
 Hypothesis USED_VALID: valid_used_set p used.
 Hypothesis TRANSF: match_prog_1 used p tp.
+
 Variable w: CKLR.world Inject.inj.
-Variable se tse: Genv.symtbl.
-Hypothesis SEVALID: Genv.valid_for (erase_program p) se.
+
+(** Global skeletons *)
+Variable skel tskel: AST.program unit unit.
+
+(** Global symbol tables for source and target programs *)
+Definition se: Genv.symtbl := Genv.symboltbl skel.
+Definition tse: Genv.symtbl := Genv.symboltbl tskel.
+
+(** Global target skeleton should be a subset of the source skeleton. *)
+Hypothesis skel_incl: incl (prog_defs tskel) (prog_defs skel).
+
+(** The current injection implied by the world should be consistent
+    with the initial memory injection for global symbols. *)
+Hypothesis winj_consistent: forall b, 
+    Ple b (Genv.genv_next se) -> (CKLR.mi Inject.inj w) b = init_meminj se tse b.
+
+(** The skeleton of the source/target module should be valid w.r.t. to the
+    global source/target symbol table. This implies that it is a subset of
+    the global source skeleton *)
+Hypothesis src_skel_valid: Genv.valid_for (erase_program p) se.
+Hypothesis tgt_skel_valid: Genv.valid_for (erase_program tp) tse.
+
+(** The removal of unused global definitions for the current module
+    should be consistent with that at a global level. That is, for any
+    definition in the source module, if it (in fact, its erased
+    version) occurs in the global symbol table, then it should be
+    preserved in the target program. *)
+Hypothesis remove_unused_consistent: forall id gd b skel,
+    (prog_defmap p) ! id = Some gd -> 
+    Genv.find_symbol tse id = Some b -> 
+    Genv.find_info tse b = Some skel -> 
+    (prog_defmap tp) ! id = Some gd.
+
 Let ge := Genv.globalenv se p.
 Let tge := Genv.globalenv tse tp.
 Let pm := prog_defmap p.
-Hypothesis GE: CKLR.match_stbls Inject.inj w se tse.
+(* Hypothesis GE: CKLR.match_stbls Inject.inj w se tse. *)
 
 Definition kept (id: ident) : Prop := IS.In id used.
 
