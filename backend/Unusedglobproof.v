@@ -473,7 +473,7 @@ Variable used: IS.t.
 Hypothesis USED_VALID: valid_used_set p used.
 Hypothesis TRANSF: match_prog_1 used p tp.
 
-Variable w: CKLR.world Inject.inj.
+Variable w: CKLR.world inj.
 
 (* (** Global skeletons *) *)
 (* Variable skel tskel: AST.program unit unit. *)
@@ -494,7 +494,7 @@ Hypothesis se_public_same: forall id,
 (** The current injection implied by the world should be consistent
     with the initial memory injection for global symbols. *)
 Hypothesis winj_consistent: forall b, 
-    Plt b (Genv.genv_next se) -> (CKLR.mi Inject.inj w) b = init_meminj se tse b.
+    Plt b (Genv.genv_next se) -> (CKLR.mi inj w) b = init_meminj se tse b.
 
 (** The skeleton of the source/target module should be valid w.r.t. to the
     global source/target symbol table. This implies that it is a subset of
@@ -575,7 +575,7 @@ Lemma symbols_inject_init_public: forall id b,
     Genv.public_symbol se id = true -> 
     Genv.find_symbol ge id = Some b ->
     exists b', Genv.find_symbol tge id = Some b' /\ 
-          CKLR.mi Inject.inj w b = Some(b', 0).
+          CKLR.mi inj w b = Some(b', 0).
 Proof.
   intros id b PUB FND.
   generalize PUB; intros PUB1.
@@ -1207,6 +1207,7 @@ Proof.
 Qed.
 *)
 
+(*
 Lemma init_meminj_invert_strong:
   forall b b' delta,
   init_meminj b = Some(b', delta) ->
@@ -1227,7 +1228,9 @@ Proof.
   eauto. eauto. intros (X & _ & Y).
   split. auto. exists id, gd; auto.
 Qed.
+*)
 
+(*
 Section INIT_MEM.
 
 Variables m tm: mem.
@@ -1367,47 +1370,117 @@ Proof.
   apply init_meminj_preserves_globals.
 Qed.
 
+*)
+
 Lemma transf_initial_states:
-  forall S1, initial_state p S1 -> exists S2, initial_state tp S2 /\ match_states S1 S2.
+  forall q1 q2, match_senv (cc_c inj) w se tse -> match_query (cc_c inj) w q1 q2 ->
+  forall S, initial_state ge q1 S ->
+  exists R, initial_state tge q2 R /\ match_states S R.
 Proof.
-  intros. inv H. exploit init_mem_inject; eauto. intros (j & tm & A & B & C).
-  exploit symbols_inject_2. eauto. eapply kept_main. eexact H1. intros (tb & P & Q).
-  rewrite Genv.find_funct_ptr_iff in H2.
-  exploit defs_inject. eauto. eexact Q. exact H2.
-  intros (R & S & T).
-  rewrite <- Genv.find_funct_ptr_iff in R.
-  exists (Callstate nil f nil tm); split.
-  econstructor; eauto.
-  fold tge. erewrite match_prog_main by eauto. auto.
-  econstructor; eauto.
-  constructor. auto.
-  erewrite <- Genv.init_mem_genv_next by eauto. apply Ple_refl.
-  erewrite <- Genv.init_mem_genv_next by eauto. apply Ple_refl.
-Qed.
+(*   intros. inv H1. inv H0. inv H9; cbn in *. *)
+(*   assert (Genv.match_stbls w se tse) by (inv H; auto). *)
+(*   eapply functions_translated in H2 as (cu & tf & FIND & TR & LINK); eauto. *)
+(*   setoid_rewrite <- (sig_function_translated _ _ _ TR). *)
+(*   simpl in TR. destruct transf_function eqn:Hf; try discriminate. cbn in TR. inv TR. *)
+(*   exists (Callstate nil vf2 vargs2 m2); split. *)
+(*   econstructor; eauto. *)
+(*   econstructor; eauto. *)
+(*   apply match_stacks_nil; auto. *)
+(*   - rewrite <- H1. reflexivity. *)
+(*   - rewrite <- H1. cbn. reflexivity. *)
+(*   - rewrite <- H1. auto. *)
+(* Qed. *)
+Admitted.
 
 Lemma transf_final_states:
-  forall S1 S2 r,
-  match_states S1 S2 -> final_state S1 r -> final_state S2 r.
+  forall S R r1, match_states S R -> final_state S r1 ->
+  exists r2, final_state R r2 /\ match_reply (cc_c inj) w r1 r2.
 Proof.
-  intros. inv H0. inv H. inv STACKS. inv RESINJ. constructor.
-Qed.
+Admitted.
 
-Lemma transf_program_correct_1:
-  forward_simulation (semantics p) (semantics tp).
+Lemma transf_external_states:
+  forall S R q1, match_states S R -> at_external ge S q1 ->
+  exists wx q2, at_external tge R q2 /\ match_query (cc_c injp) wx q1 q2 /\ match_senv (cc_c injp) wx se tse /\
+  forall r1 r2 S', match_reply (cc_c injp) wx r1 r2 -> after_external S r1 S' ->
+  exists R', after_external R r2 R' /\ match_states S' R'.
 Proof.
-  intros.
-  eapply forward_simulation_step.
-  exploit globals_symbols_inject. apply init_meminj_preserves_globals. intros [A B]. exact A.
-  eexact transf_initial_states.
-  eexact transf_final_states.
-  eexact step_simulation.
-Qed.
+(*   intros S R q1 HSR Hq1. *)
+(*   destruct Hq1; inv HSR; try congruence. *)
+(*   exploit match_stacks_globalenvs; eauto. intros SEINJ. *)
+(*   edestruct functions_translated as (cu & fd' & Hfd' & FD & Hcu); eauto. *)
+(*   simpl in FD. inv FD. *)
+(*   eexists (injpw _ _ _ MINJ), _. intuition idtac. *)
+(*   - econstructor; eauto. *)
+(*   - econstructor; eauto. constructor; auto. *)
+(*     destruct FINJ; cbn in *; congruence. *)
+(*   - constructor. *)
+(*     + eapply match_stacks_globalenvs; eauto. *)
+(*     + eapply match_stacks_nextblock in MS; eauto. inv GE. extlia. *)
+(*     + eapply match_stacks_nextblock in MS; eauto. inv GE. extlia. *)
+(*   - inv H1. destruct H0 as (w' & Hw' & H0). inv Hw'. inv H0. inv H11. *)
+(*     eexists; split; econstructor; eauto. *)
+(*     eapply match_stacks_bound with (Mem.nextblock m'). *)
+(*     eapply match_stacks_extcall with (F1 := F) (F2 := f') (m1 := m) (m1' := m'); eauto. *)
+(*     eapply Mem.unchanged_on_nextblock; eauto. *)
+(*     extlia. *)
+(*     eapply Mem.unchanged_on_nextblock; eauto. *)
+(* Qed. *)
+Admitted.
 
 End SOUNDNESS.
 
-
-
-
+Theorem transf_program_correct prog tprog:
+  match_prog prog tprog ->
+  forward_simulation (cc_c injp) (cc_c inj) (semantics prog) (semantics tprog).
+Proof.
+  intros MATCH.
+  inv MATCH. destruct H as (VALID_USED & MATCH1).
+  rename x into used.
+  constructor.
+  eapply Forward_simulation.
+  - admit.
+  - intros se1 se2 wB MSNEV VALID.
+    eapply forward_simulation_determ_one
+      with (match_states := match_states prog tprog used se1 se2).
+    + admit.
+    + admit.
+    + intros q1 q2 s1 MQUERY INIT.
+      eapply transf_initial_states with (se := se1) (tse := se2); eauto.
+      ++ admit.
+      ++ admit.
+      ++ admit.
+      ++ admit.
+    + intros s1 s2 r1 MSTATE FINAL.
+      eapply transf_final_states with (se := se1) (tse := se2); eauto.
+      ++ admit.
+      ++ admit.
+      ++ admit.
+      ++ admit.
+    + intros s1 s2 q1 MSTATE ATEXT.
+      eapply transf_external_states; eauto.
+      ++ admit.
+      ++ admit.
+      ++ admit.
+      ++ admit.
+    + intros s1 t s1' STEP s2 MSTATE.
+      unfold semantics; cbn in *.
+      assert (exists s2', step (Genv.globalenv se2 tprog) s2 t s2' /\
+                     match_states prog tprog used se1 se2 s1' s2') as GOAL.
+      { 
+        apply step_simulation with (w:=wB) (S1:=s1); auto.
+        admit.
+        admit.
+        admit.
+        admit.
+      }
+      destruct GOAL as (s2' & STEP' & MSTATE').
+      exists s1', s2'. split.
+      apply star_refl.
+      split; auto.
+  - apply wf_lex_ord.
+    apply well_founded_ltof.
+    apply lt_wf.
+Admitted.
 
 
 
