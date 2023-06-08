@@ -312,6 +312,7 @@ Qed.
 (* -------------------------------------------------------------------------- *)
 (* local *)
 
+(*
 Inductive step_local: state -> trace -> state -> Prop :=
   | exec_Inop_local:
       forall s f sp pc rs m pc',
@@ -403,7 +404,7 @@ Inductive step_local: state -> trace -> state -> Prop :=
       forall res f sp pc rs s vres m,
       step_local (Returnstate (Stackframe res f sp pc rs :: s) vres m)
         E0 (State s f sp pc (rs#res <- vres) m).
-
+*)
 (* end *)
 (* -------------------------------------------------------------------------- *)
 
@@ -421,6 +422,7 @@ Inductive initial_state (ge: genv): c_query -> state -> Prop :=
         (cq vf (fn_sig f) vargs m)
         (Callstate nil vf vargs m).
 
+(*
 Inductive initial_state_local (ge: genv): c_query -> state -> Prop :=
   | initial_state_local_intro: forall vf f vargs m b ofs id
     (VF: vf = Vptr b ofs)
@@ -430,6 +432,7 @@ Inductive initial_state_local (ge: genv): c_query -> state -> Prop :=
       initial_state_local ge
         (cq vf (fn_sig f) vargs m)
         (Callstate nil vf vargs m).
+*)
 
 Inductive at_external (ge: genv): state -> c_query -> Prop :=
   | at_external_intro s vf name sg vargs m:
@@ -456,9 +459,11 @@ Inductive final_state: state -> c_reply -> Prop :=
 Definition semantics (p: program) :=
   Semantics step initial_state at_external after_external final_state p.
 
+(*
 Definition semantics_local (p: program) :=
   Semantics step_local initial_state_local
     at_external after_external final_state p.
+*)
 
 (** This semantics is receptive to changes in events. *)
 
