@@ -465,6 +465,13 @@ Definition init_meminj (se tse: Genv.symtbl) : meminj :=
 (* Proof. *)
 (* Admitted. *)
 
+(** Matching symbol tables implies compatiblity with initial memory injection *)
+Lemma match_stbls_init_meminj: forall j se1 se2,
+    Genv.match_stbls j se1 se2 ->
+    forall b, Plt b (Genv.genv_next se1) -> j b = init_meminj se1 se2 b.
+Admitted.
+
+
 Section SOUNDNESS.
 
 Variable p: program.
@@ -473,7 +480,7 @@ Variable used: IS.t.
 Hypothesis USED_VALID: valid_used_set p used.
 Hypothesis TRANSF: match_prog_1 used p tp.
 
-Variable w: CKLR.world inj.
+Variable w: inj_world.
 
 (* (** Global skeletons *) *)
 (* Variable skel tskel: AST.program unit unit. *)
@@ -494,7 +501,7 @@ Hypothesis se_public_same: forall id,
 (** The current injection implied by the world should be consistent
     with the initial memory injection for global symbols. *)
 Hypothesis winj_consistent: forall b, 
-    Plt b (Genv.genv_next se) -> (CKLR.mi inj w) b = init_meminj se tse b.
+    Plt b (Genv.genv_next se) -> injw_meminj w b = init_meminj se tse b.
 
 (** The skeleton of the source/target module should be valid w.r.t. to the
     global source/target symbol table. This implies that it is a subset of
@@ -541,10 +548,10 @@ Qed.
 
 (** Relating [Genv.find_symbol] operations in the original and transformed program *)
 
-Lemma transform_find_symbol_1:
-  forall id b,
-  Genv.find_symbol ge id = Some b -> kept id -> exists b', Genv.find_symbol tge id = Some b'.
-Proof.
+(* Lemma transform_find_symbol_1: *)
+(*   forall id b, *)
+(*   Genv.find_symbol ge id = Some b -> kept id -> exists b', Genv.find_symbol tge id = Some b'. *)
+(* Proof. *)
 (*   intros. *)
 (*   assert (A: exists g, (prog_defmap p)!id = Some g). *)
 (*   { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. } *)
@@ -553,13 +560,11 @@ Proof.
 (*   apply in_prog_defmap. *)
 (*   erewrite match_prog_def by eauto. rewrite IS.mem_1 by auto. auto. *)
 (* Qed. *)
-Admitted.
 
-Lemma transform_find_symbol_2:
-  forall id b,
-  Genv.find_symbol tge id = Some b -> kept id /\ exists b', Genv.find_symbol ge id = Some b'.
-Proof.
-Admitted.
+(* Lemma transform_find_symbol_2: *)
+(*   forall id b, *)
+(*   Genv.find_symbol tge id = Some b -> kept id /\ exists b', Genv.find_symbol ge id = Some b'. *)
+(* Proof. *)
 (*   intros. *)
 (*   assert (A: exists g, (prog_defmap tp)!id = Some g). *)
 (*   { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. } *)
@@ -575,15 +580,16 @@ Lemma symbols_inject_init_public: forall id b,
     Genv.public_symbol se id = true -> 
     Genv.find_symbol ge id = Some b ->
     exists b', Genv.find_symbol tge id = Some b' /\ 
-          CKLR.mi inj w b = Some(b', 0).
+          injw_meminj w b = Some(b', 0).
 Proof.
+  cbn.
   intros id b PUB FND.
   generalize PUB; intros PUB1.
   rewrite se_public_same in PUB1.
   unfold Genv.public_symbol in PUB.
   destruct (Genv.find_symbol se id) as [b1|] eqn:FND1; try discriminate.
   cbn in *. 
-  rewrite FND1 in FND. inv FND.
+  inv FND.
   assert (Plt b (Genv.genv_next se)) as INBOUND.
   {
     unfold Genv.find_symbol in FND1.
@@ -682,6 +688,12 @@ Admitted.
 (*   fold ge in P. replace b with b1 by congruence. auto. *)
 (* Qed. *)
 
+Lemma inj_world_preserves_globals:
+  meminj_preserves_globals w.
+Proof.
+Admitted.  
+
+
 Lemma globals_symbols_inject:
   forall j, meminj_preserves_globals j -> symbols_inject j ge tge.
 Proof.
@@ -767,6 +779,7 @@ Inductive match_stacks (j: meminj):
         list stackframe -> list stackframe -> block -> block -> Prop :=
   | match_stacks_nil: forall bound tbound,
       meminj_preserves_globals j ->
+      inj_incr w (injw j bound tbound) ->
       Ple (Genv.genv_next ge) bound -> Ple (Genv.genv_next tge) tbound ->
       match_stacks j nil nil bound tbound
   | match_stacks_cons: forall res f sp pc rs s tsp trs ts bound tbound
@@ -834,7 +847,13 @@ Lemma match_stacks_bound:
   match_stacks j s ts bound' tbound'.
 Proof.
   induction 1; intros.
-- constructor; auto. eapply Ple_trans; eauto. eapply Ple_trans; eauto.
+- constructor; auto. 
+  + inv H0. 
+    constructor; auto. 
+    red in H3. lia.
+    red in H4. lia.
+  + eapply Ple_trans; eauto. 
+  + eapply Ple_trans; eauto.
 - econstructor; eauto. eapply Plt_Ple_trans; eauto. eapply Plt_Ple_trans; eauto.
 Qed.
 
@@ -1377,26 +1396,41 @@ Lemma transf_initial_states:
   forall S, initial_state ge q1 S ->
   exists R, initial_state tge q2 R /\ match_states S R.
 Proof.
-(*   intros. inv H1. inv H0. inv H9; cbn in *. *)
-(*   assert (Genv.match_stbls w se tse) by (inv H; auto). *)
-(*   eapply functions_translated in H2 as (cu & tf & FIND & TR & LINK); eauto. *)
-(*   setoid_rewrite <- (sig_function_translated _ _ _ TR). *)
-(*   simpl in TR. destruct transf_function eqn:Hf; try discriminate. cbn in TR. inv TR. *)
-(*   exists (Callstate nil vf2 vargs2 m2); split. *)
-(*   econstructor; eauto. *)
-(*   econstructor; eauto. *)
-(*   apply match_stacks_nil; auto. *)
-(*   - rewrite <- H1. reflexivity. *)
-(*   - rewrite <- H1. cbn. reflexivity. *)
-(*   - rewrite <- H1. auto. *)
-(* Qed. *)
-Admitted.
+  intros q1 q2 MSENV MQUERY S INIT_STATE.
+  inv MQUERY. inv INIT_STATE. inv MSENV.
+  cbn in *.
+  generalize inj_world_preserves_globals.
+  intros PRES.
+  eexists; split. 
+  - constructor.
+    generalize (find_function_inject _ _ _ _ PRES H H8).
+    intros (FINDFUN & KEPT). auto.
+  - eapply match_states_call with (j := injw_meminj w); eauto.
+    + constructor; eauto.
+      ++ inv H1; cbn in *. 
+         constructor; intros; try congruence. 
+         lia. lia.
+      ++ inv H1; cbn in *. auto.
+      ++ inv H1; cbn in *. auto.
+    + generalize (find_function_inject _ _ _ _ PRES H H8).
+      intros (FINDFUN & KEPT). auto.
+Qed.    
 
 Lemma transf_final_states:
   forall S R r1, match_states S R -> final_state S r1 ->
   exists r2, final_state R r2 /\ match_reply (cc_c inj) w r1 r2.
 Proof.
-Admitted.
+  intros S R r1 MSTATE FINAL.
+  inv FINAL. inv MSTATE. inv STACKS.
+  eexists; split.
+  - econstructor.
+  - unfold cc_c; cbn. red.
+    exists (injw j (Mem.nextblock m) (Mem.nextblock tm)).
+    split; cbn.
+    + inv H0. constructor; auto.
+    + constructor; auto.
+      cbn. constructor; auto.
+Qed.
 
 Lemma transf_external_states:
   forall S R q1, match_states S R -> at_external ge S q1 ->
@@ -1404,6 +1438,10 @@ Lemma transf_external_states:
   forall r1 r2 S', match_reply (cc_c injp) wx r1 r2 -> after_external S r1 S' ->
   exists R', after_external R r2 R' /\ match_states S' R'.
 Proof.
+  intros S R q1 MSTATE AT_EXT.
+  inv AT_EXT. inv MSTATE.
+
+
 (*   intros S R q1 HSR Hq1. *)
 (*   destruct Hq1; inv HSR; try congruence. *)
 (*   exploit match_stacks_globalenvs; eauto. intros SEINJ. *)
@@ -1439,37 +1477,33 @@ Proof.
   constructor.
   eapply Forward_simulation.
   - admit.
-  - intros se1 se2 wB MSNEV VALID.
+  - intros se1 se2 wB MSENV VALID.
+    generalize MSENV.
+    inversion 1; subst.
+    generalize (Genv.mge_public inj_stbls_match).
+    intros PUBEQ.
+    generalize (match_stbls_init_meminj _ _ _ inj_stbls_match).
+    intros INIT_INJ.
     eapply forward_simulation_determ_one
-      with (match_states := match_states prog tprog used se1 se2).
+      with (match_states := match_states prog tprog used wB se1 se2).
     + admit.
     + admit.
     + intros q1 q2 s1 MQUERY INIT.
       eapply transf_initial_states with (se := se1) (tse := se2); eauto.
       ++ admit.
       ++ admit.
-      ++ admit.
-      ++ admit.
     + intros s1 s2 r1 MSTATE FINAL.
       eapply transf_final_states with (se := se1) (tse := se2); eauto.
-      ++ admit.
-      ++ admit.
-      ++ admit.
-      ++ admit.
     + intros s1 s2 q1 MSTATE ATEXT.
       eapply transf_external_states; eauto.
-      ++ admit.
-      ++ admit.
       ++ admit.
       ++ admit.
     + intros s1 t s1' STEP s2 MSTATE.
       unfold semantics; cbn in *.
       assert (exists s2', step (Genv.globalenv se2 tprog) s2 t s2' /\
-                     match_states prog tprog used se1 se2 s1' s2') as GOAL.
+                     match_states prog tprog used wB se1 se2 s1' s2') as GOAL.
       { 
         apply step_simulation with (w:=wB) (S1:=s1); auto.
-        admit.
-        admit.
         admit.
         admit.
       }
