@@ -465,12 +465,6 @@ Definition init_meminj (se tse: Genv.symtbl) : meminj :=
 (* Proof. *)
 (* Admitted. *)
 
-(** Matching symbol tables implies compatiblity with initial memory injection *)
-Lemma match_stbls_init_meminj: forall j se1 se2,
-    Genv.match_stbls j se1 se2 ->
-    forall b, Plt b (Genv.genv_next se1) -> j b = init_meminj se1 se2 b.
-Admitted.
-
 
 Section SOUNDNESS.
 
@@ -494,14 +488,26 @@ Variable w: inj_world.
 
 Variable se tse: Genv.symtbl.
 
+Hypothesis GE: CKLR.match_stbls Inject.inj w se tse.
+
 (** Public symbols of source and target symbol tables are the same *)
 Hypothesis se_public_same: forall id, 
     Genv.public_symbol se id = Genv.public_symbol tse id.
 
+(** Matching symbol tables implies compatiblity with initial memory injection *)
+Lemma match_stbls_init_meminj: forall w se1 se2,
+    CKLR.match_stbls inj w se1 se2 ->
+    forall b, Plt b (Genv.genv_next se1) -> injw_meminj w b = init_meminj se1 se2 b.
+Admitted.
+
 (** The current injection implied by the world should be consistent
     with the initial memory injection for global symbols. *)
-Hypothesis winj_consistent: forall b, 
+Lemma winj_consistent: forall b, 
     Plt b (Genv.genv_next se) -> injw_meminj w b = init_meminj se tse b.
+Proof.
+  apply match_stbls_init_meminj.
+  auto.
+Qed.
 
 (** The skeleton of the source/target module should be valid w.r.t. to the
     global source/target symbol table. This implies that it is a subset of
@@ -523,7 +529,6 @@ Hypothesis remove_unused_consistent: forall id gd b,
 Let ge := Genv.globalenv se p.
 Let tge := Genv.globalenv tse tp.
 Let pm := prog_defmap p.
-(* Hypothesis GE: CKLR.match_stbls Inject.inj w se tse. *)
 
 Definition kept (id: ident) : Prop := IS.In id used.
 
@@ -792,6 +797,44 @@ Inductive match_stacks (j: meminj):
       match_stacks j (Stackframe res f (Vptr sp Ptrofs.zero) pc rs :: s)
                      (Stackframe res f (Vptr tsp Ptrofs.zero) pc trs :: ts)
                      bound tbound.
+
+Lemma match_stacks_bound1: forall j s ts sp tsp,
+    match_stacks j s ts sp tsp -> Ple (Genv.genv_next se) sp.
+Proof.
+  induction 1; auto.
+  red in BELOW. red. red in IHmatch_stacks. lia.
+Qed.
+
+Lemma match_stacks_bound2: forall j s ts sp tsp,
+    match_stacks j s ts sp tsp -> Ple (Genv.genv_next tse) tsp.
+Proof.
+  induction 1; auto.
+  red in TBELOW. red. red in IHmatch_stacks. lia.
+Qed.
+
+Lemma match_stacks_incr_bound
+     : forall (j : meminj) s ts
+         (bound tbound : block) (bound' tbound' : positive),
+       match_stacks j s ts bound tbound ->
+       Ple bound bound' ->
+       Ple tbound tbound' -> match_stacks j s ts bound' tbound'.
+Proof.
+Admitted.
+
+Lemma match_stacks_match_stbls:
+  forall j s ts sp tsp,
+    CKLR.match_stbls inj w se tse ->
+    match_stacks j s ts sp tsp ->
+    Genv.match_stbls j se tse.
+Proof.
+  induction 2; eauto. 
+  generalize (CKLR.match_stbls_acc inj). cbn.
+  intros MONO.
+  repeat red in MONO. 
+  generalize (MONO _ _ H1 se tse). intros SUB. 
+  apply SUB.
+  apply H.
+Qed.
 
 Lemma match_stacks_preserves_globals:
   forall j s ts bound tbound,
@@ -1432,6 +1475,7 @@ Proof.
       cbn. constructor; auto.
 Qed.
 
+
 Lemma transf_external_states:
   forall S R q1, match_states S R -> at_external ge S q1 ->
   exists wx q2, at_external tge R q2 /\ match_query (cc_c injp) wx q1 q2 /\ match_senv (cc_c injp) wx se tse /\
@@ -1440,30 +1484,33 @@ Lemma transf_external_states:
 Proof.
   intros S R q1 MSTATE AT_EXT.
   inv AT_EXT. inv MSTATE.
+  rewrite H in FUN. inv FUN.
+  generalize (match_stacks_preserves_globals _ _ _ _ _ STACKS).
+  intros PRES.
+  generalize (find_function_inject _ _ _ _ PRES FUNINJ H).
+  intros (FIND & KEPT1).
+  eexists (injpw j m tm MEMINJ), _. intuition idtac.  
+  - econstructor; eauto.
+  - econstructor; eauto. constructor. 
+    intros EQ. subst vf. inv FUNINJ. inv H.
+  - constructor.
+    + eapply match_stacks_match_stbls; eauto.
+    + eapply match_stacks_bound1; eauto.
+    + eapply match_stacks_bound2; eauto.
+  - destruct H0 as (wx' & Hwx' & H'). inv Hwx'. inv H1. inv H'. eexists. split.
+    + econstructor; eauto.
+    + inv H8. econstructor; eauto. cbn.
+      apply match_stacks_incr_bound with (Mem.nextblock m) (Mem.nextblock tm).
+      ++ apply match_stacks_incr with j; eauto.
+         red in H10. intros.
+         generalize (H10 _ _ _ H0 H1).
+         unfold Mem.valid_block.
+         intros (INVLD1 & INVLD2). extlia.
+      ++ eapply Mem.unchanged_on_nextblock; eauto.
+      ++ eapply Mem.unchanged_on_nextblock; eauto.
+Qed.
 
 
-(*   intros S R q1 HSR Hq1. *)
-(*   destruct Hq1; inv HSR; try congruence. *)
-(*   exploit match_stacks_globalenvs; eauto. intros SEINJ. *)
-(*   edestruct functions_translated as (cu & fd' & Hfd' & FD & Hcu); eauto. *)
-(*   simpl in FD. inv FD. *)
-(*   eexists (injpw _ _ _ MINJ), _. intuition idtac. *)
-(*   - econstructor; eauto. *)
-(*   - econstructor; eauto. constructor; auto. *)
-(*     destruct FINJ; cbn in *; congruence. *)
-(*   - constructor. *)
-(*     + eapply match_stacks_globalenvs; eauto. *)
-(*     + eapply match_stacks_nextblock in MS; eauto. inv GE. extlia. *)
-(*     + eapply match_stacks_nextblock in MS; eauto. inv GE. extlia. *)
-(*   - inv H1. destruct H0 as (w' & Hw' & H0). inv Hw'. inv H0. inv H11. *)
-(*     eexists; split; econstructor; eauto. *)
-(*     eapply match_stacks_bound with (Mem.nextblock m'). *)
-(*     eapply match_stacks_extcall with (F1 := F) (F2 := f') (m1 := m) (m1' := m'); eauto. *)
-(*     eapply Mem.unchanged_on_nextblock; eauto. *)
-(*     extlia. *)
-(*     eapply Mem.unchanged_on_nextblock; eauto. *)
-(* Qed. *)
-Admitted.
 
 End SOUNDNESS.
 
@@ -1482,8 +1529,6 @@ Proof.
     inversion 1; subst.
     generalize (Genv.mge_public inj_stbls_match).
     intros PUBEQ.
-    generalize (match_stbls_init_meminj _ _ _ inj_stbls_match).
-    intros INIT_INJ.
     eapply forward_simulation_determ_one
       with (match_states := match_states prog tprog used wB se1 se2).
     + admit.
