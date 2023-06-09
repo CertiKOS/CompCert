@@ -488,26 +488,12 @@ Variable w: inj_world.
 
 Variable se tse: Genv.symtbl.
 
+(** Hypothesis about injections in the world *)
 Hypothesis GE: CKLR.match_stbls Inject.inj w se tse.
-
-(** Public symbols of source and target symbol tables are the same *)
-Hypothesis se_public_same: forall id, 
-    Genv.public_symbol se id = Genv.public_symbol tse id.
-
-(** Matching symbol tables implies compatiblity with initial memory injection *)
-Lemma match_stbls_init_meminj: forall w se1 se2,
-    CKLR.match_stbls inj w se1 se2 ->
-    forall b, Plt b (Genv.genv_next se1) -> injw_meminj w b = init_meminj se1 se2 b.
-Admitted.
-
-(** The current injection implied by the world should be consistent
-    with the initial memory injection for global symbols. *)
-Lemma winj_consistent: forall b, 
-    Plt b (Genv.genv_next se) -> injw_meminj w b = init_meminj se tse b.
-Proof.
-  apply match_stbls_init_meminj.
-  auto.
-Qed.
+Hypothesis winj_incr: inject_incr (init_meminj se tse) (injw_meminj w).
+Hypothesis winj_separated: forall b1 b2 delta,
+    init_meminj se tse b1 = None -> injw_meminj w b1 = Some(b2, delta) -> 
+    Ple (Genv.genv_next se) b1 /\ Ple (Genv.genv_next tse) b2.
 
 (** The skeleton of the source/target module should be valid w.r.t. to the
     global source/target symbol table. This implies that it is a subset of
@@ -524,6 +510,39 @@ Hypothesis remove_unused_consistent: forall id gd b,
     (prog_defmap p) ! id = Some gd -> 
     Genv.find_symbol tse id = Some b -> 
     (prog_defmap tp) ! id = Some gd.
+
+
+(** Public symbols of source and target symbol tables are the same *)
+Lemma se_public_same: forall id, 
+    Genv.public_symbol se id = Genv.public_symbol tse id.
+Proof.
+  inv GE. inv inj_stbls_match.
+  intros. symmetry. eapply mge_public.
+Qed.
+
+(** The current injection implied by the world should be consistent
+    with the initial memory injection for global symbols. *)
+Lemma winj_consistent_1: forall b b' delta, 
+    Plt b (Genv.genv_next se) ->
+    injw_meminj w b = Some(b', delta) -> 
+    init_meminj se tse b = Some(b', delta).
+Proof.
+  intros. destruct (init_meminj se tse b) as [[b1 delta1] | ] eqn: J.
+    exploit winj_incr; eauto. congruence.
+    exploit winj_separated; eauto. intros [A B]. elim (Plt_strict b).
+    eapply Plt_Ple_trans. eauto. auto.
+Qed.
+
+Lemma winj_consistent_2: forall b b' delta, 
+    Plt b' (Genv.genv_next tse) ->
+    injw_meminj w b = Some(b', delta) -> 
+    init_meminj se tse b = Some(b', delta).
+Proof.
+  intros. destruct (init_meminj se tse b) as [[b1 delta1] | ] eqn: J.
+  exploit winj_incr; eauto. congruence.
+  exploit winj_separated; eauto. intros [A B]. elim (Plt_strict b').
+  eapply Plt_Ple_trans. eauto. auto.
+Qed.
 
 
 Let ge := Genv.globalenv se p.
@@ -600,10 +619,10 @@ Proof.
     unfold Genv.find_symbol in FND1.
     eapply Genv.genv_symb_range; eauto.
   }
-  rewrite winj_consistent; auto.
   unfold Genv.public_symbol in PUB1.
   destruct (Genv.find_symbol tse id) as [b1|] eqn:FND2; try discriminate.
   exists b1; split; auto.
+  apply winj_incr.
   unfold init_meminj.
   rewrite (Genv.find_invert_symbol _ id); auto.
   rewrite FND2. auto.
@@ -701,39 +720,33 @@ Proof.
   constructor.
   - inv PRES. intros. 
     eapply symbols_inject_4; eauto.
-    erewrite <- winj_consistent; eauto.
+    eapply winj_consistent_1; eauto.
     eapply Genv.genv_symb_range; eauto.
   - inv PRES. intros. 
     exploit symbols_inject_5; eauto.
     intros (b & FND & INIT).
     exists b; split; auto.
-    erewrite winj_consistent; eauto.
-    eapply Genv.genv_symb_range; eauto.
   - inv PRES. intros.
     exploit symbols_inject_public0; eauto.
     intros (b' & FND & INIT).
     exists b'; split; auto.
-    erewrite winj_consistent; eauto.
-    eapply Genv.genv_symb_range; eauto.
   - inv PRES. intros.
     eapply info_inject0; eauto.
-    erewrite <- winj_consistent; eauto.
+    eapply winj_consistent_1; eauto.
     eapply Genv.genv_info_range; eauto.
   - inv PRES. intros.
     exploit info_rev_inject0; eauto.
-    erewrite <- winj_consistent; eauto.
-    admit.
+    eapply winj_consistent_2; eauto.
+    eapply Genv.genv_info_range; eauto.
   - inv PRES. intros.
     exploit symbols_inject_6; eauto.
     intros (b' & FND & INIT).
     exists b'; split; auto.
-    erewrite winj_consistent; eauto.
-    eapply Genv.genv_symb_range; eauto.    
   - inv PRES. intros.
     eapply defs_inject0; eauto.
-    erewrite <- winj_consistent; eauto.
+    eapply winj_consistent_1; eauto.
     exploit Genv.genv_defs_range; eauto.
-Admitted.
+Qed.
     
 
 Lemma globals_symbols_inject:
@@ -928,25 +941,20 @@ Lemma match_stacks_incr_aux:
   forall j bound tbound s ts, 
     match_stacks j s ts bound tbound ->
     forall j' bound' tbound', 
-      (forall b1 b2 delta,
-          j b1 = None -> j' b1 = Some(b2, delta) -> Ple bound b1 /\ Ple tbound b2) ->
       inj_incr (injw j bound tbound) (injw j' bound' tbound') ->
       match_stacks j' s ts bound' tbound'.
 Proof.
   induction 1; intros.
+  inv H3.
 - constructor; auto.
-  + inv H4. eapply meminj_preserves_globals_incr; eauto.
+  + eapply meminj_preserves_globals_incr; eauto.
   + etransitivity. exact H0. auto.
-  + inv H4. extlia.
-  + inv H4. extlia.
-- inv H1. constructor; auto.
+  + extlia.
+  + extlia.
+- inv H0. constructor; auto.
   + apply IHmatch_stacks; auto.
-    ++ intros.
-       exploit H9; eauto.
-       intros (BND1 & BND2).
-       split; extlia.
     ++ constructor; auto; try lia.
-       intros. exploit H9; eauto.
+       intros. exploit H8; eauto.
        intros (BND1 & BND2). extlia.
   + eapply regset_inject_incr; eauto.
   + extlia.
@@ -961,32 +969,7 @@ Lemma match_stacks_incr:
 Proof.
   intros. 
   apply match_stacks_incr_aux with j bound tbound; auto.
-Admitted.
-
-(*   assert (SAME: forall b b' delta, Plt b (Genv.genv_next ge) -> *)
-(*                                    j' b = Some(b', delta) -> j b = Some(b', delta)). *)
-(*   { intros. destruct (j b) as [[b1 delta1] | ] eqn: J. *)
-(*     exploit H; eauto. congruence. *)
-(*     exploit H4; eauto. intros [A B]. elim (Plt_strict b). *)
-(*     eapply Plt_Ple_trans. eauto. eapply Ple_trans; eauto. } *)
-(*   assert (SAME': forall b b' delta, Plt b' (Genv.genv_next tge) -> *)
-(*                                    j' b = Some(b', delta) -> j b = Some (b', delta)). *)
-(*   { intros. destruct (j b) as [[b1 delta1] | ] eqn: J. *)
-(*     exploit H; eauto. congruence. *)
-(*     exploit H4; eauto. intros [A B]. elim (Plt_strict b'). *)
-(*     eapply Plt_Ple_trans. eauto. eapply Ple_trans; eauto. } *)
-(*   constructor; auto. *)
-(*   + admit. *)
-(*   + inv H1. constructor; auto. *)
-(*     eapply inject_incr_trans; eauto. *)
-    
-(* - econstructor; eauto. *)
-(*   apply IHmatch_stacks. *)
-(*   intros. exploit H1; eauto. intros [A B]. split; eapply Ple_trans; eauto. *)
-(*   apply Plt_Ple; auto. apply Plt_Ple; auto. *)
-(*   apply regset_inject_incr with j; auto. *)
-(* Qed. *)
-
+Qed.
 
 Lemma match_stacks_bound:
   forall j s ts bound tbound bound' tbound',
