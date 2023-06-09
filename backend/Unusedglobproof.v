@@ -848,44 +848,63 @@ Proof.
   induction 1; auto.
 Qed.
 
-Lemma match_stacks_incr:
-  forall j j', inject_incr j j' ->
-  forall s ts bound tbound, match_stacks j s ts bound tbound ->
-  (forall b1 b2 delta,
-      j b1 = None -> j' b1 = Some(b2, delta) -> Ple bound b1 /\ Ple tbound b2) ->
-  match_stacks j' s ts bound tbound.
+Lemma match_stacks_incr_aux:
+  forall j bound tbound s ts, 
+    match_stacks j s ts bound tbound ->
+    forall j' bound' tbound', 
+      inj_incr (injw j bound tbound) (injw j' bound' tbound') ->
+      match_stacks j' s ts bound' tbound'.
 Proof.
-(*   induction 2; intros. *)
-(* - assert (SAME: forall b b' delta, Plt b (Genv.genv_next ge) -> *)
+  induction 1; intros.
+- constructor; auto.
+  + admit.
+  + etransitivity. exact H0. auto.
+  + inv H3. extlia.
+  + inv H3. extlia.
+- inv H0. constructor; auto.
+  + apply IHmatch_stacks; auto.
+    constructor; auto; try lia.
+    intros. exploit H8; eauto.
+    intros (BND1 & BND2). extlia.
+  + eapply regset_inject_incr; eauto.
+  + extlia.
+  + extlia.
+Admitted.
+
+Lemma match_stacks_incr:
+  forall j j' bound bound' tbound tbound' s ts, 
+    inj_incr (injw j bound tbound) (injw j' bound' tbound') ->
+    match_stacks j s ts bound tbound ->
+    match_stacks j' s ts bound' tbound'.
+Proof.
+  intros. 
+  apply match_stacks_incr_aux with j bound tbound; auto.
+Qed.
+
+(*   assert (SAME: forall b b' delta, Plt b (Genv.genv_next ge) -> *)
 (*                                    j' b = Some(b', delta) -> j b = Some(b', delta)). *)
 (*   { intros. destruct (j b) as [[b1 delta1] | ] eqn: J. *)
 (*     exploit H; eauto. congruence. *)
-(*     exploit H3; eauto. intros [A B]. elim (Plt_strict b). *)
+(*     exploit H4; eauto. intros [A B]. elim (Plt_strict b). *)
 (*     eapply Plt_Ple_trans. eauto. eapply Ple_trans; eauto. } *)
 (*   assert (SAME': forall b b' delta, Plt b' (Genv.genv_next tge) -> *)
 (*                                    j' b = Some(b', delta) -> j b = Some (b', delta)). *)
 (*   { intros. destruct (j b) as [[b1 delta1] | ] eqn: J. *)
 (*     exploit H; eauto. congruence. *)
-(*     exploit H3; eauto. intros [A B]. elim (Plt_strict b'). *)
+(*     exploit H4; eauto. intros [A B]. elim (Plt_strict b'). *)
 (*     eapply Plt_Ple_trans. eauto. eapply Ple_trans; eauto. } *)
-(*   constructor; auto.  constructor; intros. *)
-(*   + exploit symbols_inject_1; eauto. apply SAME; auto. *)
-(*     eapply Genv.genv_symb_range; eauto. *)
-(*   + exploit symbols_inject_2; eauto. intros (b' & A & B). *)
-(*     exists b'; auto. *)
-(*   + exploit symbols_inject_3; eauto. intros (b & A & B). *)
-(*     exists b; auto. *)
-(*   + eapply defs_inject; eauto. apply SAME; auto. *)
-(*     eapply Genv.genv_defs_range; eauto. *)
-(*   + eapply defs_rev_inject; eauto. apply SAME'; auto. *)
-(*     eapply Genv.genv_defs_range; eauto. *)
+(*   constructor; auto. *)
+(*   + admit. *)
+(*   + inv H1. constructor; auto. *)
+(*     eapply inject_incr_trans; eauto. *)
+    
 (* - econstructor; eauto. *)
 (*   apply IHmatch_stacks. *)
 (*   intros. exploit H1; eauto. intros [A B]. split; eapply Ple_trans; eauto. *)
 (*   apply Plt_Ple; auto. apply Plt_Ple; auto. *)
 (*   apply regset_inject_incr with j; auto. *)
 (* Qed. *)
-Admitted.
+
 
 Lemma match_stacks_bound:
   forall j s ts bound tbound bound' tbound',
@@ -1174,12 +1193,14 @@ Proof.
   econstructor; split.
   eapply exec_Ibuiltin; eauto.
   eapply match_states_regular with (j := j'); eauto.
-  apply match_stacks_incr with j; auto.
-  intros. exploit G; eauto. intros [U V].
-  assert (Mem.valid_block m sp0) by (eapply Mem.valid_block_inject_1; eauto).
-  assert (Mem.valid_block tm tsp) by (eapply Mem.valid_block_inject_2; eauto).
-  unfold Mem.valid_block in *; extlia.
-  apply set_res_inject; auto. apply regset_inject_incr with j; auto.
+  + apply match_stacks_incr with j sp0 tsp; eauto.
+    constructor; auto.
+    intros. exploit G; eauto. intros [U V].
+    assert (Mem.valid_block m sp0) by (eapply Mem.valid_block_inject_1; eauto).
+    assert (Mem.valid_block tm tsp) by (eapply Mem.valid_block_inject_2; eauto).
+    unfold Mem.valid_block in *; extlia. 
+    lia. lia.
+  + apply set_res_inject; auto. apply regset_inject_incr with j; auto.
 
 - (* cond *)
   assert (C: eval_condition cond trs##args tm = Some b).
@@ -1213,7 +1234,9 @@ Proof.
   assert (TSTK: tstk = Mem.nextblock tm) by (eapply Mem.alloc_result; eauto).
   assert (STACKS': match_stacks j' s ts stk tstk).
   { rewrite STK, TSTK.
-    apply match_stacks_incr with j; auto.
+    apply match_stacks_incr 
+      with j (Mem.nextblock m) (Mem.nextblock tm); auto.
+    constructor; auto; try lia.
     intros. destruct (eq_block b1 stk).
     subst b1. rewrite F in H1; inv H1. split; apply Ple_refl.
     rewrite G in H1 by auto. congruence. }
@@ -1240,7 +1263,9 @@ Proof.
   auto.
   eapply match_states_return with (j := j'); eauto.
   apply match_stacks_bound with (Mem.nextblock m) (Mem.nextblock tm).
-  apply match_stacks_incr with j; auto.
+  apply match_stacks_incr 
+    with j (Mem.nextblock m) (Mem.nextblock tm); auto.
+  constructor; auto; try lia.
   intros. exploit G; eauto. intros [P Q].
   unfold Mem.valid_block in *; extlia.
   eapply external_call_nextblock; eauto.
@@ -1321,7 +1346,9 @@ Proof.
     + inv H6. econstructor; eauto. cbn.
       apply match_stacks_incr_bound 
         with (Mem.nextblock m) (Mem.nextblock tm); auto.
-      apply match_stacks_incr with j; eauto.
+      apply match_stacks_incr 
+        with j (Mem.nextblock m) (Mem.nextblock tm); auto.
+      constructor; auto; try lia.
 Qed.
 
 End SOUNDNESS.
