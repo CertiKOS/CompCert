@@ -696,8 +696,45 @@ Admitted.
 Lemma inj_world_preserves_globals:
   meminj_preserves_globals w.
 Proof.
-Admitted.  
-
+  generalize init_meminj_preserves_globals.
+  intros PRES. 
+  constructor.
+  - inv PRES. intros. 
+    eapply symbols_inject_4; eauto.
+    erewrite <- winj_consistent; eauto.
+    eapply Genv.genv_symb_range; eauto.
+  - inv PRES. intros. 
+    exploit symbols_inject_5; eauto.
+    intros (b & FND & INIT).
+    exists b; split; auto.
+    erewrite winj_consistent; eauto.
+    eapply Genv.genv_symb_range; eauto.
+  - inv PRES. intros.
+    exploit symbols_inject_public0; eauto.
+    intros (b' & FND & INIT).
+    exists b'; split; auto.
+    erewrite winj_consistent; eauto.
+    eapply Genv.genv_symb_range; eauto.
+  - inv PRES. intros.
+    eapply info_inject0; eauto.
+    erewrite <- winj_consistent; eauto.
+    eapply Genv.genv_info_range; eauto.
+  - inv PRES. intros.
+    exploit info_rev_inject0; eauto.
+    erewrite <- winj_consistent; eauto.
+    admit.
+  - inv PRES. intros.
+    exploit symbols_inject_6; eauto.
+    intros (b' & FND & INIT).
+    exists b'; split; auto.
+    erewrite winj_consistent; eauto.
+    eapply Genv.genv_symb_range; eauto.    
+  - inv PRES. intros.
+    eapply defs_inject0; eauto.
+    erewrite <- winj_consistent; eauto.
+    exploit Genv.genv_defs_range; eauto.
+Admitted.
+    
 
 Lemma globals_symbols_inject:
   forall j, meminj_preserves_globals j -> symbols_inject j ge tge.
@@ -857,7 +894,35 @@ Lemma meminj_preserves_globals_incr: forall j j' bound tbound,
   meminj_preserves_globals j ->
   meminj_preserves_globals j'.
 Proof.
-Admitted.
+  intros j j' bound tbound INCR BND1 BND2 SEP PRES.
+  assert (SAME: forall b b' delta, Plt b (Genv.genv_next ge) ->
+                              j' b = Some(b', delta) -> j b = Some(b', delta)).
+  { intros. destruct (j b) as [[b1 delta1] | ] eqn: J.
+    exploit INCR; eauto. congruence.
+    exploit SEP; eauto. intros [A B]. elim (Plt_strict b).
+    eapply Plt_Ple_trans. eauto. eapply Ple_trans; eauto. }
+  assert (SAME': forall b b' delta, Plt b' (Genv.genv_next tge) ->
+                               j' b = Some(b', delta) -> j b = Some (b', delta)).
+  { intros. destruct (j b) as [[b1 delta1] | ] eqn: J.
+    exploit INCR; eauto. congruence.
+    exploit SEP; eauto. intros [A B]. elim (Plt_strict b').
+    eapply Plt_Ple_trans. eauto. eapply Ple_trans; eauto. }
+  constructor; intros.  
+  + exploit symbols_inject_1; eauto. apply SAME; auto.
+    eapply Genv.genv_symb_range; eauto.
+  + exploit symbols_inject_3; eauto. intros (b & A & B).
+    exists b; auto.
+  + exploit symbols_inject_public; eauto. intros (b' & A & B).
+    exists b'; auto.
+  + eapply info_inject; eauto. apply SAME; auto.
+    eapply Genv.genv_info_range; eauto.
+  + eapply info_rev_inject; eauto. apply SAME'; auto.
+    eapply Genv.genv_info_range; eauto.
+  + exploit symbols_inject_2; eauto. intros (b' & A & B).
+    exists b'; auto.
+  + eapply defs_inject; eauto. apply SAME; auto.
+    eapply Genv.genv_defs_range; eauto.
+Qed.  
 
 Lemma match_stacks_incr_aux:
   forall j bound tbound s ts, 
@@ -896,7 +961,7 @@ Lemma match_stacks_incr:
 Proof.
   intros. 
   apply match_stacks_incr_aux with j bound tbound; auto.
-Qed.
+Admitted.
 
 (*   assert (SAME: forall b b' delta, Plt b (Genv.genv_next ge) -> *)
 (*                                    j' b = Some(b', delta) -> j b = Some(b', delta)). *)
