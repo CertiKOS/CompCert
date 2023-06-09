@@ -848,28 +848,45 @@ Proof.
   induction 1; auto.
 Qed.
 
+Lemma meminj_preserves_globals_incr: forall j j' bound tbound,
+  inject_incr j j' ->
+  Ple (Genv.genv_next ge) bound ->
+  Ple (Genv.genv_next tge) tbound ->
+  (forall b1 b2 delta,
+      j b1 = None -> j' b1 = Some(b2, delta) -> Ple bound b1 /\ Ple tbound b2) ->
+  meminj_preserves_globals j ->
+  meminj_preserves_globals j'.
+Proof.
+Admitted.
+
 Lemma match_stacks_incr_aux:
   forall j bound tbound s ts, 
     match_stacks j s ts bound tbound ->
     forall j' bound' tbound', 
+      (forall b1 b2 delta,
+          j b1 = None -> j' b1 = Some(b2, delta) -> Ple bound b1 /\ Ple tbound b2) ->
       inj_incr (injw j bound tbound) (injw j' bound' tbound') ->
       match_stacks j' s ts bound' tbound'.
 Proof.
   induction 1; intros.
 - constructor; auto.
-  + admit.
+  + inv H4. eapply meminj_preserves_globals_incr; eauto.
   + etransitivity. exact H0. auto.
-  + inv H3. extlia.
-  + inv H3. extlia.
-- inv H0. constructor; auto.
+  + inv H4. extlia.
+  + inv H4. extlia.
+- inv H1. constructor; auto.
   + apply IHmatch_stacks; auto.
-    constructor; auto; try lia.
-    intros. exploit H8; eauto.
-    intros (BND1 & BND2). extlia.
+    ++ intros.
+       exploit H9; eauto.
+       intros (BND1 & BND2).
+       split; extlia.
+    ++ constructor; auto; try lia.
+       intros. exploit H9; eauto.
+       intros (BND1 & BND2). extlia.
   + eapply regset_inject_incr; eauto.
   + extlia.
   + extlia.
-Admitted.
+Qed.
 
 Lemma match_stacks_incr:
   forall j j' bound bound' tbound tbound' s ts, 
