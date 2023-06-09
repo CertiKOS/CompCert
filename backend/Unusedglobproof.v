@@ -1434,20 +1434,21 @@ Proof.
     inversion 1; subst.
     generalize (Genv.mge_public inj_stbls_match).
     intros PUBEQ.
-    eapply forward_simulation_determ_one
+    eapply forward_simulation_step
       with (match_states := match_states prog tprog used wB se1 se2).
-    + admit.
     + admit.
     + intros q1 q2 s1 MQUERY INIT.
       eapply transf_initial_states with (se := se1) (tse := se2); eauto.
       ++ admit.
       ++ admit.
+      ++ admit.
+      ++ admit.
     + intros s1 s2 r1 MSTATE FINAL.
       eapply transf_final_states with (se := se1) (tse := se2); eauto.
+      ++ admit.
+      ++ admit.
     + intros s1 s2 q1 MSTATE ATEXT.
       eapply transf_external_states; eauto.
-      ++ admit.
-      ++ admit.
     + intros s1 t s1' STEP s2 MSTATE.
       unfold semantics; cbn in *.
       assert (exists s2', step (Genv.globalenv se2 tprog) s2 t s2' /\
@@ -1458,12 +1459,8 @@ Proof.
         admit.
       }
       destruct GOAL as (s2' & STEP' & MSTATE').
-      exists s1', s2'. split.
-      apply star_refl.
-      split; auto.
-  - apply wf_lex_ord.
-    apply well_founded_ltof.
-    apply lt_wf.
+      exists s2'. split; auto.
+  - apply well_founded_ltof.
 Admitted.
 
 
