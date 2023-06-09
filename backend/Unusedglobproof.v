@@ -1478,8 +1478,8 @@ Qed.
 
 Lemma transf_external_states:
   forall S R q1, match_states S R -> at_external ge S q1 ->
-  exists wx q2, at_external tge R q2 /\ match_query (cc_c injp) wx q1 q2 /\ match_senv (cc_c injp) wx se tse /\
-  forall r1 r2 S', match_reply (cc_c injp) wx r1 r2 -> after_external S r1 S' ->
+  exists wx q2, at_external tge R q2 /\ match_query (cc_c inj) wx q1 q2 /\ match_senv (cc_c inj) wx se tse /\
+  forall r1 r2 S', match_reply (cc_c inj) wx r1 r2 -> after_external S r1 S' ->
   exists R', after_external R r2 R' /\ match_states S' R'.
 Proof.
   intros S R q1 MSTATE AT_EXT.
@@ -1489,9 +1489,9 @@ Proof.
   intros PRES.
   generalize (find_function_inject _ _ _ _ PRES FUNINJ H).
   intros (FIND & KEPT1).
-  eexists (injpw j m tm MEMINJ), _. intuition idtac.  
+  eexists (injw j (Mem.nextblock m) (Mem.nextblock tm)), _. intuition idtac.  
   - econstructor; eauto.
-  - econstructor; eauto. constructor. 
+  - econstructor; eauto. constructor. auto.
     intros EQ. subst vf. inv FUNINJ. inv H.
   - constructor.
     + eapply match_stacks_match_stbls; eauto.
@@ -1499,24 +1499,18 @@ Proof.
     + eapply match_stacks_bound2; eauto.
   - destruct H0 as (wx' & Hwx' & H'). inv Hwx'. inv H1. inv H'. eexists. split.
     + econstructor; eauto.
-    + inv H8. econstructor; eauto. cbn.
-      apply match_stacks_incr_bound with (Mem.nextblock m) (Mem.nextblock tm).
-      ++ apply match_stacks_incr with j; eauto.
-         red in H10. intros.
-         generalize (H10 _ _ _ H0 H1).
-         unfold Mem.valid_block.
-         intros (INVLD1 & INVLD2). extlia.
-      ++ eapply Mem.unchanged_on_nextblock; eauto.
-      ++ eapply Mem.unchanged_on_nextblock; eauto.
+    + inv H6. econstructor; eauto. cbn.
+      apply match_stacks_incr_bound 
+        with (Mem.nextblock m) (Mem.nextblock tm); auto.
+      apply match_stacks_incr with j; eauto.
 Qed.
-
-
 
 End SOUNDNESS.
 
+
 Theorem transf_program_correct prog tprog:
   match_prog prog tprog ->
-  forward_simulation (cc_c injp) (cc_c inj) (semantics prog) (semantics tprog).
+  forward_simulation (cc_c inj) (cc_c inj) (semantics prog) (semantics tprog).
 Proof.
   intros MATCH.
   inv MATCH. destruct H as (VALID_USED & MATCH1).
