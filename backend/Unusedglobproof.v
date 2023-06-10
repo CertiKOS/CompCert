@@ -458,13 +458,6 @@ Definition init_meminj (se tse: Genv.symtbl) : meminj :=
     | None => None
     end.
 
-(* (** Validity of erased programs implies inclusion of skeletons *) *)
-(* Lemma src_skel_incl: forall {F V} (p: AST.program F V) se, *)
-(*   Genv.valid_for (erase_program p) se  *)
-(*   -> incl (prog_defs (erase_program p)) (PTree.elements (Genv.genv_info se)). *)
-(* Proof. *)
-(* Admitted. *)
-
 
 Section SOUNDNESS.
 
@@ -475,18 +468,21 @@ Hypothesis USED_VALID: valid_used_set p used.
 Hypothesis TRANSF: match_prog_1 used p tp.
 
 Variable w: inj_world.
-
-(* (** Global skeletons *) *)
-(* Variable skel tskel: AST.program unit unit. *)
-
-(* (** Global symbol tables for source and target programs *) *)
-(* Definition se: Genv.symtbl := Genv.symboltbl skel. *)
-(* Definition tse: Genv.symtbl := Genv.symboltbl tskel. *)
-
-(* (** Global target skeleton should be a subset of the source skeleton. *) *)
-(* Hypothesis skel_incl: incl (prog_defs tskel) (prog_defs skel). *)
-
 Variable se tse: Genv.symtbl.
+
+Definition skel := erase_program p.
+Definition tskel := erase_program tp.
+
+(** Hypothesis about symbol tables *)
+Hypothesis main_symb_pres: forall b,
+    Genv.find_symbol se (prog_main skel) = Some b -> 
+    exists b', Genv.find_symbol tse (prog_main tskel) = Some b'.
+Hypothesis symb_incl: forall id b,
+    Genv.find_symbol tse id = Some b -> exists b', Genv.find_symbol se id = Some b'.
+Hypothesis info_incl: forall b b' id,
+    Genv.find_symbol se id = Some b ->
+    Genv.find_symbol tse id = Some b' ->
+    exists gd, Genv.find_info se b = Some gd /\ Genv.find_info tse b' = Some gd.
 
 (** Hypothesis about injections in the world *)
 Hypothesis GE: CKLR.match_stbls Inject.inj w se tse.
@@ -507,9 +503,9 @@ Hypothesis tgt_skel_valid: Genv.valid_for (erase_program tp) tse.
     version) occurs in the global symbol table, then it should be
     preserved in the target program. *)
 Hypothesis remove_unused_consistent: forall id gd b,
-    (prog_defmap p) ! id = Some gd -> 
+    (prog_defmap (erase_program p)) ! id = Some gd -> 
     Genv.find_symbol tse id = Some b -> 
-    (prog_defmap tp) ! id = Some gd.
+    (prog_defmap (erase_program tp)) ! id = Some gd.
 
 
 (** Public symbols of source and target symbol tables are the same *)
@@ -520,7 +516,7 @@ Proof.
   intros. symmetry. eapply mge_public.
 Qed.
 
-(** The current injection implied by the world should be consistent
+(** The current injection implied by the world are consistent
     with the initial memory injection for global symbols. *)
 Lemma winj_consistent_1: forall b b' delta, 
     Plt b (Genv.genv_next se) ->
@@ -572,22 +568,31 @@ Qed.
 
 (** Relating [Genv.find_symbol] operations in the original and transformed program *)
 
-(* Lemma transform_find_symbol_1: *)
-(*   forall id b, *)
-(*   Genv.find_symbol ge id = Some b -> kept id -> exists b', Genv.find_symbol tge id = Some b'. *)
-(* Proof. *)
-(*   intros. *)
-(*   assert (A: exists g, (prog_defmap p)!id = Some g). *)
-(*   { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. } *)
-(*   destruct A as (g & P). *)
-(*   apply Genv.find_symbol_exists with g. *)
-(*   apply in_prog_defmap. *)
-(*   erewrite match_prog_def by eauto. rewrite IS.mem_1 by auto. auto. *)
-(* Qed. *)
+Lemma transform_find_symbol_1:
+  forall id b,
+  Genv.find_symbol ge id = Some b -> kept id -> exists b', Genv.find_symbol tge id = Some b'.
+Proof.
+  intros.
+  inv USED_VALID.
+  generalize (used_defined0 _ H0).
+  destruct 1 as [IN | EQ].
+  - exploit prog_defmap_dom; eauto.
+    intros (gd & DEF).
+    inv TRANSF.
+    generalize (match_prog_def0 id).
+    red in H0. apply IS.mem_1 in H0. rewrite H0.
+    rewrite DEF. 
+    rewrite (Genv.find_def_symbol id gd tgt_skel_valid); auto.
+    intros (b' & SYM & DEF').
+    eauto.
+  - subst.
+    erewrite <- match_prog_main; eauto.
+    eapply main_symb_pres; eauto.
+Qed.
 
 (* Lemma transform_find_symbol_2: *)
 (*   forall id b, *)
-(*   Genv.find_symbol tge id = Some b -> kept id /\ exists b', Genv.find_symbol ge id = Some b'. *)
+(*   Genv.find_symbol tge id = Some b -> exists b', Genv.find_symbol ge id = Some b'. *)
 (* Proof. *)
 (*   intros. *)
 (*   assert (A: exists g, (prog_defmap tp)!id = Some g). *)
@@ -602,9 +607,9 @@ Qed.
 
 Lemma symbols_inject_init_public: forall id b,
     Genv.public_symbol se id = true -> 
-    Genv.find_symbol ge id = Some b ->
-    exists b', Genv.find_symbol tge id = Some b' /\ 
-          injw_meminj w b = Some(b', 0).
+    Genv.find_symbol se id = Some b ->
+    exists b', Genv.find_symbol tse id = Some b' /\ 
+          init_meminj se tse b = Some(b', 0).
 Proof.
   cbn.
   intros id b PUB FND.
@@ -612,7 +617,7 @@ Proof.
   rewrite se_public_same in PUB1.
   unfold Genv.public_symbol in PUB.
   destruct (Genv.find_symbol se id) as [b1|] eqn:FND1; try discriminate.
-  cbn in *. 
+  cbn in *.
   inv FND.
   assert (Plt b (Genv.genv_next se)) as INBOUND.
   {
@@ -622,7 +627,6 @@ Proof.
   unfold Genv.public_symbol in PUB1.
   destruct (Genv.find_symbol tse id) as [b1|] eqn:FND2; try discriminate.
   exists b1; split; auto.
-  apply winj_incr.
   unfold init_meminj.
   rewrite (Genv.find_invert_symbol _ id); auto.
   rewrite FND2. auto.
@@ -657,9 +661,6 @@ Record meminj_preserves_globals (f: meminj) : Prop := {
     f b = Some(b', delta) -> Genv.find_def ge b = Some gd ->
     Genv.find_def tge b' = Some gd /\ delta = 0 /\
     (forall id, ref_def gd id -> kept id);
-  (* defs_rev_inject: forall b b' delta gd, *)
-  (*   f b = Some(b', delta) -> Genv.find_def tge b' = Some gd -> *)
-  (*   Genv.find_def ge b = Some gd /\ delta = 0; *)
 }.
 
 Remark init_meminj_eq:
@@ -685,32 +686,54 @@ Qed.
 Lemma init_meminj_preserves_globals:
   meminj_preserves_globals (init_meminj se tse).
 Proof.
-Admitted.
-(*   constructor; intros. *)
-(* - exploit init_meminj_invert; eauto. intros (A & id1 & B & C). *)
-(*   assert (id1 = id) by (eapply (Genv.genv_vars_inj ge); eauto). subst id1. *)
-(*   auto. *)
-(* - exploit transform_find_symbol_1; eauto. intros (b' & F). exists b'; split; auto. *)
-(*   eapply init_meminj_eq; eauto. *)
-(* - exploit transform_find_symbol_2; eauto. intros (K & b & F). *)
-(*   exists b; split; auto. eapply init_meminj_eq; eauto. *)
-(* - exploit init_meminj_invert; eauto. intros (A & id & B & C). *)
-(*   assert (kept id) by (eapply transform_find_symbol_2; eauto). *)
-(*   assert (pm!id = Some gd). *)
-(*   { unfold pm; rewrite Genv.find_def_symbol. exists b; auto. } *)
-(*   assert ((prog_defmap tp)!id = Some gd). *)
-(*   { erewrite match_prog_def by eauto. rewrite IS.mem_1 by auto. auto. } *)
-(*   rewrite Genv.find_def_symbol in H3. destruct H3 as (b1 & P & Q). *)
-(*   fold tge in P. replace b' with b1 by congruence. split; auto. split; auto. *)
-(*   intros. eapply kept_closed; eauto. *)
-(* - exploit init_meminj_invert; eauto. intros (A & id & B & C). *)
-(*   assert ((prog_defmap tp)!id = Some gd). *)
-(*   { rewrite Genv.find_def_symbol. exists b'; auto. } *)
-(*   erewrite match_prog_def in H1 by eauto. *)
-(*   destruct (IS.mem id used); try discriminate. *)
-(*   rewrite Genv.find_def_symbol in H1. destruct H1 as (b1 & P & Q). *)
-(*   fold ge in P. replace b with b1 by congruence. auto. *)
-(* Qed. *)
+  constructor; intros.
+- exploit init_meminj_invert; eauto. intros (A & id1 & B & C).
+  assert (id1 = id) by (eapply (Genv.genv_vars_inj ge); eauto). subst id1.
+  auto.
+- exploit symb_incl; eauto. intros (b & F).
+  exists b; split; auto. eapply init_meminj_eq; eauto.
+- exploit symbols_inject_init_public; eauto. 
+- exploit init_meminj_invert; eauto. intros (A & id & B & C).
+  exploit info_incl; eauto.
+  intros (gd' & INFO1 & INFO2).
+  split; auto. 
+  cbn. unfold Genv.find_info in INFO2. rewrite INFO2.
+  rewrite <- INFO1. apply H0.
+- exploit init_meminj_invert; eauto. intros (A & id & B & C).
+  exploit info_incl; eauto.
+  intros (gd' & INFO1 & INFO2).
+  split; auto. 
+  cbn. unfold Genv.find_info in INFO1. rewrite INFO1.
+  rewrite <- INFO2. apply H0.
+- exploit transform_find_symbol_1; eauto. intros (b' & F). exists b'; split; auto.
+  eapply init_meminj_eq; eauto.
+- exploit init_meminj_invert; eauto. intros (A & id & B & C). 
+  unfold tge. rewrite Genv.find_def_spec.
+  rewrite (Genv.find_invert_symbol tse id); auto.
+  unfold ge in H0. rewrite Genv.find_def_spec in H0.
+  destruct (Genv.invert_symbol se b) eqn:INV; try discriminate.
+  rewrite (Genv.find_invert_symbol se id) in INV; auto. 
+  inv INV.
+  generalize (erase_program_defmap p i).
+  rewrite H0. cbn [option_map].
+  intros DEF.
+  generalize (remove_unused_consistent _ _ _ DEF C).
+  intros TDEF.
+  rewrite erase_program_defmap in TDEF.
+  unfold option_map in TDEF.
+  destruct ((prog_defmap tp) ! i) eqn:TDEF'; try discriminate.
+  inv TDEF.
+  inv TRANSF. 
+  rewrite (match_prog_def0 i) in TDEF'.
+  destruct (IS.mem i used) eqn:MEM; try discriminate.
+  rewrite H0 in TDEF'. inv TDEF'.
+  split; auto.
+  split; auto.
+  inv USED_VALID.
+  intros. 
+  apply used_closed0 with i g; eauto.
+  apply IS.mem_2; auto.
+Qed.
 
 Lemma inj_world_preserves_globals:
   meminj_preserves_globals w.
@@ -1436,7 +1459,27 @@ Proof.
     intros PUBEQ.
     eapply forward_simulation_step
       with (match_states := match_states prog tprog used wB se1 se2).
-    + admit.
+    + intros q1 q2 QRY.
+      destruct QRY. cbn in *. inv MSENV. 
+      destruct vf1; try congruence; try (inv H; cbn; auto).
+      unfold Genv.is_internal. cbn.
+      destruct (plt b (Genv.genv_next se1)).
+      ++ assert (init_meminj se1 se2 b = Some (b2, delta)) as INIT.
+         {
+           apply winj_consistent_1 with wB; auto.
+           admit.
+           admit.
+         }
+         unfold init_meminj in INIT.
+         destruct (Genv.invert_symbol se1 b) eqn:INV; try discriminate.
+         destruct (Genv.find_symbol se2 i0) eqn:FIND; try discriminate.
+         inv INIT.
+         rewrite Ptrofs.add_zero.
+         destruct (Ptrofs.eq_dec i Ptrofs.zero); try congruence.
+         unfold Genv.find_funct_ptr.
+         admit.
+
+      ++ admit.
     + intros q1 q2 s1 MQUERY INIT.
       eapply transf_initial_states with (se := se1) (tse := se2); eauto.
       ++ admit.
