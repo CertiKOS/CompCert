@@ -589,20 +589,6 @@ Proof.
     eapply main_symb_pres; eauto.
 Qed.
 
-(* Lemma transform_find_symbol_2: *)
-(*   forall id b, *)
-(*   Genv.find_symbol tge id = Some b -> exists b', Genv.find_symbol ge id = Some b'. *)
-(* Proof. *)
-(*   intros. *)
-(*   assert (A: exists g, (prog_defmap tp)!id = Some g). *)
-(*   { apply prog_defmap_dom. eapply Genv.find_symbol_inversion; eauto. } *)
-(*   destruct A as (g & P). *)
-(*   erewrite match_prog_def in P by eauto. *)
-(*   destruct (IS.mem id used) eqn:U; try discriminate. *)
-(*   split. apply IS.mem_2; auto. *)
-(*   apply Genv.find_symbol_exists with g. *)
-(*   apply in_prog_defmap. auto. *)
-(* Qed. *)
 
 Lemma symbols_inject_init_public: forall id b,
     Genv.public_symbol se id = true -> 
@@ -1441,6 +1427,34 @@ Qed.
 
 End SOUNDNESS.
 
+Lemma find_def_none: forall {F V} (ge:Genv.t F V) b,
+    Ple (Genv.genv_next ge) b -> Genv.find_def ge b = None.
+Proof.
+  intros F V ge b PLE.
+  destruct (Genv.find_def ge b) eqn:EQ; auto.
+  unfold Genv.find_def in EQ.
+  apply Genv.genv_defs_range in EQ.
+  red in PLE. red in EQ. lia.
+Qed.
+
+Lemma find_funct_ptr_none: forall {F V} (ge:Genv.t F V) b,
+    Ple (Genv.genv_next ge) b -> Genv.find_funct_ptr ge b = None.
+Proof.
+  intros. 
+  destruct (Genv.find_funct_ptr ge b) eqn:EQ; auto.
+  rewrite Genv.find_funct_ptr_iff in EQ.
+  generalize (find_def_none _ _ H).
+  intros. congruence.
+Qed.
+
+Lemma find_funct_none: forall {F V} (ge:Genv.t F V) b ofs,
+    Ple (Genv.genv_next ge) b -> Genv.find_funct ge (Vptr b ofs) = None.
+Proof.
+  intros.
+  unfold Genv.find_funct.
+  destruct Ptrofs.eq_dec; auto.
+  apply find_funct_ptr_none; auto.
+Qed.
 
 Theorem transf_program_correct prog tprog:
   match_prog prog tprog ->
@@ -1453,6 +1467,58 @@ Proof.
   eapply Forward_simulation.
   - admit.
   - intros se1 se2 wB MSENV VALID.
+
+    (**** Assupmtions to be discharged ****)
+    assert (forall b : block,
+               Genv.find_symbol se1 (prog_main (skel prog)) = Some b ->
+               exists b' : block, Genv.find_symbol se2 (prog_main (tskel tprog)) = Some b')
+      as MAIN_SYM_PRES.
+    { 
+      admit. 
+    }
+    assert (forall (id : ident) (b : block),
+               Genv.find_symbol se2 id = Some b ->
+               exists b' : block, Genv.find_symbol se1 id = Some b')
+      as SYMB_INCL.
+    {
+      admit.
+    }
+    assert (forall (b b' : block) (id : ident),
+               Genv.find_symbol se1 id = Some b ->
+               Genv.find_symbol se2 id = Some b' ->
+               Genv.find_info se1 b = Genv.find_info se2 b')
+      as INFO_EQ.
+    {
+      admit.
+    }
+    assert (inject_incr (init_meminj se1 se2) wB)
+      as WINJ_INCR.
+    {
+      admit.
+    }
+    assert (forall (b1 b2 : block) (delta : Z),
+               init_meminj se1 se2 b1 = None ->
+               injw_meminj wB b1 = Some (b2, delta) ->
+               Ple (Genv.genv_next se1) b1 /\ Ple (Genv.genv_next se2) b2)
+      as WINJ_SEPARATED.
+    {
+      admit.
+    }
+    assert (Genv.valid_for (tskel tprog) se2)
+      as TGT_SKEL_VALID.
+    {
+      admit.
+    }
+    assert (forall (id : positive) (gd : globdef unit unit) (b : block),
+               (prog_defmap (skel prog)) ! id = Some gd ->
+               Genv.find_symbol se2 id = Some b ->
+               (prog_defmap (tskel tprog)) ! id = Some gd)
+      as REMOVE_UNUSED_CONSISTENT.
+    {
+      admit.
+    }
+    (**** End of Assupmtions ****)
+
     generalize MSENV.
     inversion 1; subst.
     generalize (Genv.mge_public inj_stbls_match).
@@ -1462,14 +1528,12 @@ Proof.
     + intros q1 q2 QRY.
       destruct QRY. cbn in *. inv MSENV. 
       destruct vf1; try congruence; try (inv H; cbn; auto).
-      unfold Genv.is_internal. cbn.
-      destruct (plt b (Genv.genv_next se1)).
-      ++ assert (init_meminj se1 se2 b = Some (b2, delta)) as INIT.
-         {
-           apply winj_consistent_1 with wB; auto.
-           admit.
-           admit.
-         }
+      unfold Genv.is_internal.
+      destruct (init_meminj se1 se2 b) eqn:INIT.
+      ++ unfold Genv.find_funct.
+         destruct p.
+         generalize (WINJ_INCR _ _ _ INIT).
+         intros WB. rewrite H5 in WB. inv WB.
          unfold init_meminj in INIT.
          destruct (Genv.invert_symbol se1 b) eqn:INV; try discriminate.
          destruct (Genv.find_symbol se2 i0) eqn:FIND; try discriminate.
@@ -1493,20 +1557,14 @@ Proof.
          }
          rewrite USED.
          auto. auto.
-      ++ admit.
+      ++ generalize (WINJ_SEPARATED _ _ _ INIT H5).
+         intros (LB1 & LB2).
+         rewrite find_funct_none; eauto.
+         rewrite find_funct_none; eauto.
     + intros q1 q2 s1 MQUERY INIT.
       eapply transf_initial_states with (se := se1) (tse := se2); eauto.
-      ++ admit.
-      ++ admit.
-      ++ admit.
-      ++ admit.
-      ++ admit.
-      ++ admit.
-      ++ admit.
     + intros s1 s2 r1 MSTATE FINAL.
       eapply transf_final_states with (se := se1) (tse := se2); eauto.
-      ++ admit.
-      ++ admit.
     + intros s1 s2 q1 MSTATE ATEXT.
       eapply transf_external_states; eauto.
     + intros s1 t s1' STEP s2 MSTATE.
@@ -1515,8 +1573,6 @@ Proof.
                      match_states prog tprog used wB se1 se2 s1' s2') as GOAL.
       { 
         apply step_simulation with (w:=wB) (S1:=s1); auto.
-        admit.
-        admit.
       }
       destruct GOAL as (s2' & STEP' & MSTATE').
       exists s2'. split; auto.
