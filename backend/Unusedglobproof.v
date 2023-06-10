@@ -1427,34 +1427,6 @@ Qed.
 
 End SOUNDNESS.
 
-Lemma find_def_none: forall {F V} (ge:Genv.t F V) b,
-    Ple (Genv.genv_next ge) b -> Genv.find_def ge b = None.
-Proof.
-  intros F V ge b PLE.
-  destruct (Genv.find_def ge b) eqn:EQ; auto.
-  unfold Genv.find_def in EQ.
-  apply Genv.genv_defs_range in EQ.
-  red in PLE. red in EQ. lia.
-Qed.
-
-Lemma find_funct_ptr_none: forall {F V} (ge:Genv.t F V) b,
-    Ple (Genv.genv_next ge) b -> Genv.find_funct_ptr ge b = None.
-Proof.
-  intros. 
-  destruct (Genv.find_funct_ptr ge b) eqn:EQ; auto.
-  rewrite Genv.find_funct_ptr_iff in EQ.
-  generalize (find_def_none _ _ H).
-  intros. congruence.
-Qed.
-
-Lemma find_funct_none: forall {F V} (ge:Genv.t F V) b ofs,
-    Ple (Genv.genv_next ge) b -> Genv.find_funct ge (Vptr b ofs) = None.
-Proof.
-  intros.
-  unfold Genv.find_funct.
-  destruct Ptrofs.eq_dec; auto.
-  apply find_funct_ptr_none; auto.
-Qed.
 
 Theorem transf_program_correct prog tprog:
   match_prog prog tprog ->
@@ -1559,8 +1531,8 @@ Proof.
          auto. auto.
       ++ generalize (WINJ_SEPARATED _ _ _ INIT H5).
          intros (LB1 & LB2).
-         rewrite find_funct_none; eauto.
-         rewrite find_funct_none; eauto.
+         rewrite Genv.find_funct_non_glob; eauto.
+         rewrite Genv.find_funct_non_glob; eauto.
     + intros q1 q2 s1 MQUERY INIT.
       eapply transf_initial_states with (se := se1) (tse := se2); eauto.
     + intros s1 s2 r1 MSTATE FINAL.

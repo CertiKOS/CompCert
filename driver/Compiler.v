@@ -58,7 +58,7 @@ Require Renumber.
 Require Constprop.
 Require CSE.
 Require Deadcode.
-(*Require Unusedglob.*)
+Require Unusedglob.
 Require Allocation.
 Require Tunneling.
 Require Linearize.
@@ -79,7 +79,7 @@ Require Renumberproof.
 Require Constpropproof.
 Require CSEproof.
 Require Deadcodeproof.
-(*Require Unusedglobproof.*)
+Require Unusedglobproof.
 Require Allocproof.
 Require Tunnelingproof.
 Require Linearizeproof.
@@ -151,10 +151,8 @@ Definition transf_rtl_program (f: RTL.program) : res Asm.program :=
   !@@ print (print_RTL 6)
   @@@ partial_if Compopts.optim_redundancy (time "Redundancy elimination" Deadcode.transf_program)
   !@@ print (print_RTL 7)
-(*
   @@@ time "Unused globals" Unusedglob.transform_program
-   @@ print (print_RTL 8)
-*)
+  !@@ print (print_RTL 8)
   @@@ time "Register allocation" Allocation.transf_program
   !@@ print print_LTL
   !@@ time "Branch tunneling" Tunneling.tunnel_program
@@ -262,9 +260,7 @@ Definition CompCertO's_passes :=
   ::: mkpass (match_if Compopts.optim_constprop Renumberproof.match_prog)
   ::: mkpass (match_if Compopts.optim_CSE CSEproof.match_prog)
   ::: mkpass (match_if Compopts.optim_redundancy Deadcodeproof.match_prog)
-(*
   ::: mkpass Unusedglobproof.match_prog
-*)
   ::: mkpass Allocproof.match_prog
   ::: mkpass Tunnelingproof.match_prog
   ::: mkpass Linearizeproof.match_prog
@@ -314,10 +310,8 @@ Proof.
   set (p11 := total_if optim_constprop Renumber.transf_program p10) in *.
   destruct (partial_if optim_CSE CSE.transf_program p11) as [p12|e] eqn:P12; simpl in T; try discriminate.
   destruct (partial_if optim_redundancy Deadcode.transf_program p12) as [p13|e] eqn:P13; simpl in T; try discriminate.
-  (*
   destruct (Unusedglob.transform_program p13) as [p14|e] eqn:P14; simpl in T; try discriminate.
-   *)
-  destruct (Allocation.transf_program p13) as [p15|e] eqn:P15; simpl in T; try discriminate.
+  destruct (Allocation.transf_program p14) as [p15|e] eqn:P15; simpl in T; try discriminate.
   set (p16 := Tunneling.tunnel_program p15) in *.
   destruct (Linearize.transf_program p16) as [p17|e] eqn:P17; simpl in T; try discriminate.
   set (p18 := CleanupLabels.transf_program p17) in *.
@@ -336,9 +330,7 @@ Proof.
   exists p11; split. apply total_if_match. apply Renumberproof.transf_program_match.
   exists p12; split. eapply partial_if_match; eauto. apply CSEproof.transf_program_match.
   exists p13; split. eapply partial_if_match; eauto. apply Deadcodeproof.transf_program_match.
-  (*
   exists p14; split. apply Unusedglobproof.transf_program_match; auto.
-   *)
   exists p15; split. apply Allocproof.transf_program_match; auto.
   exists p16; split. apply Tunnelingproof.transf_program_match.
   exists p17; split. apply Linearizeproof.transf_program_match; auto.
@@ -553,6 +545,13 @@ Proof.
   rewrite cc_star_absorb_l; eauto with cc.
 Qed.
 
+Lemma cc_dom_inj:
+  ccref (cc_c inj @ cc_dom) cc_dom.
+Proof.
+  unfold cc_dom.
+  rewrite cc_star_absorb_l; eauto with cc.
+Qed.
+
 Lemma cc_dom_ext:
   ccref (cc_c ext @ cc_dom) cc_dom.
 Proof.
@@ -606,6 +605,16 @@ Lemma compose_injection_pass sem bsem tsem:
 Proof.
   intros.
   rewrite <- cc_dom_injp, cc_cod_inj, !cc_compose_assoc.
+  eapply compose_forward_simulations; eauto.
+Qed.
+
+Lemma compose_injection_pass_weak sem bsem tsem:
+  forward_simulation (cc_c inj) (cc_c inj) sem bsem ->
+  forward_simulation (cc_dom @ ccA) (cc_cod @ ccB) bsem tsem ->
+  forward_simulation (cc_dom @ ccA) (cc_cod @ ccB) sem tsem.
+Proof.
+  intros.
+  rewrite <- cc_dom_inj, cc_cod_inj, !cc_compose_assoc.
   eapply compose_forward_simulations; eauto.
 Qed.
 
@@ -706,7 +715,7 @@ Ltac DestructM :=
       destruct H as (p & M & MM); clear H
   end.
   repeat DestructM. subst tp.
-  assert (F: forward_simulation cc_compcert cc_compcert (Clight.semantics1 p) (Asm.semantics p19)).
+  assert (F: forward_simulation cc_compcert cc_compcert (Clight.semantics1 p) (Asm.semantics p20)).
   {
   rewrite cc_compcert_expand at 2.
   rewrite <- cc_compcert_collapse at 1.
@@ -735,6 +744,8 @@ Ltac DestructM :=
     exact CSEproof.transf_program_correct.
   eapply compose_optional_pass; eauto using compose_va_pass.
     exact Deadcodeproof.transf_program_correct; eauto.
+  eapply compose_injection_pass_weak. 
+    eapply Unusedglobproof.transf_program_correct; eassumption.
   eapply compose_backend_passes; eauto using Allocproof.wt_prog.
   eapply compose_forward_simulations.
     eapply Allocproof.transf_program_correct; eassumption.

@@ -472,6 +472,35 @@ Proof.
   intros. unfold find_funct_ptr. destruct (find_def ge b) as [[f1|v1]|]; intuition congruence.
 Qed.
 
+Lemma find_def_non_glob: forall (ge:t) b,
+    Ple (genv_next ge) b -> find_def ge b = None.
+Proof.
+  intros ge b PLE.
+  destruct (find_def ge b) eqn:EQ; auto.
+  unfold find_def in EQ.
+  apply genv_defs_range in EQ.
+  red in PLE. red in EQ. lia.
+Qed.
+
+Lemma find_funct_ptr_non_glob: forall (ge:t) b,
+    Ple (genv_next ge) b -> find_funct_ptr ge b = None.
+Proof.
+  intros. 
+  destruct (find_funct_ptr ge b) eqn:EQ; auto.
+  rewrite find_funct_ptr_iff in EQ.
+  generalize (find_def_non_glob _ H).
+  intros. congruence.
+Qed.
+
+Lemma find_funct_non_glob: forall (ge:t) b ofs,
+    Ple (genv_next ge) b -> find_funct ge (Vptr b ofs) = None.
+Proof.
+  intros.
+  unfold find_funct.
+  destruct Ptrofs.eq_dec; auto.
+  apply find_funct_ptr_non_glob; auto.
+Qed.
+
 Theorem find_var_info_iff:
   forall ge b v, find_var_info ge b = Some v <-> find_info ge b = Some (Gvar v).
 Proof.
@@ -529,6 +558,8 @@ Proof.
   assert (id = id'). eapply genv_vars_inj; eauto. apply invert_find_symbol; auto.
   congruence.
 Qed.
+
+
 
 (** ** Properties of [symboltbl] *)
 
