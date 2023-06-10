@@ -479,10 +479,10 @@ Hypothesis main_symb_pres: forall b,
     exists b', Genv.find_symbol tse (prog_main tskel) = Some b'.
 Hypothesis symb_incl: forall id b,
     Genv.find_symbol tse id = Some b -> exists b', Genv.find_symbol se id = Some b'.
-Hypothesis info_incl: forall b b' id,
+Hypothesis info_eq: forall b b' id,
     Genv.find_symbol se id = Some b ->
     Genv.find_symbol tse id = Some b' ->
-    exists gd, Genv.find_info se b = Some gd /\ Genv.find_info tse b' = Some gd.
+    Genv.find_info se b = Genv.find_info tse b'.
 
 (** Hypothesis about injections in the world *)
 Hypothesis GE: CKLR.match_stbls Inject.inj w se tse.
@@ -492,10 +492,9 @@ Hypothesis winj_separated: forall b1 b2 delta,
     Ple (Genv.genv_next se) b1 /\ Ple (Genv.genv_next tse) b2.
 
 (** The skeleton of the source/target module should be valid w.r.t. to the
-    global source/target symbol table. This implies that it is a subset of
-    the global source skeleton *)
-Hypothesis src_skel_valid: Genv.valid_for (erase_program p) se.
-Hypothesis tgt_skel_valid: Genv.valid_for (erase_program tp) tse.
+    global source/target symbol table. *)
+Hypothesis src_skel_valid: Genv.valid_for skel se.
+Hypothesis tgt_skel_valid: Genv.valid_for tskel tse.
 
 (** The removal of unused global definitions for the current module
     should be consistent with that at a global level. That is, for any
@@ -503,9 +502,9 @@ Hypothesis tgt_skel_valid: Genv.valid_for (erase_program tp) tse.
     version) occurs in the global symbol table, then it should be
     preserved in the target program. *)
 Hypothesis remove_unused_consistent: forall id gd b,
-    (prog_defmap (erase_program p)) ! id = Some gd -> 
+    (prog_defmap skel) ! id = Some gd -> 
     Genv.find_symbol tse id = Some b -> 
-    (prog_defmap (erase_program tp)) ! id = Some gd.
+    (prog_defmap tskel) ! id = Some gd.
 
 
 (** Public symbols of source and target symbol tables are the same *)
@@ -694,17 +693,17 @@ Proof.
   exists b; split; auto. eapply init_meminj_eq; eauto.
 - exploit symbols_inject_init_public; eauto. 
 - exploit init_meminj_invert; eauto. intros (A & id & B & C).
-  exploit info_incl; eauto.
-  intros (gd' & INFO1 & INFO2).
+  exploit info_eq; eauto.
+  intros EQ.
   split; auto. 
-  cbn. unfold Genv.find_info in INFO2. rewrite INFO2.
-  rewrite <- INFO1. apply H0.
+  cbn. unfold Genv.find_info in EQ. rewrite <- EQ.
+  apply H0.
 - exploit init_meminj_invert; eauto. intros (A & id & B & C).
-  exploit info_incl; eauto.
-  intros (gd' & INFO1 & INFO2).
+  exploit info_eq; eauto.
+  intros EQ.
   split; auto. 
-  cbn. unfold Genv.find_info in INFO1. rewrite INFO1.
-  rewrite <- INFO2. apply H0.
+  cbn. unfold Genv.find_info in EQ. rewrite EQ.
+  apply H0.
 - exploit transform_find_symbol_1; eauto. intros (b' & F). exists b'; split; auto.
   eapply init_meminj_eq; eauto.
 - exploit init_meminj_invert; eauto. intros (A & id & B & C). 
@@ -719,6 +718,7 @@ Proof.
   intros DEF.
   generalize (remove_unused_consistent _ _ _ DEF C).
   intros TDEF.
+  unfold tskel in TDEF.
   rewrite erase_program_defmap in TDEF.
   unfold option_map in TDEF.
   destruct ((prog_defmap tp) ! i) eqn:TDEF'; try discriminate.
@@ -1477,11 +1477,28 @@ Proof.
          rewrite Ptrofs.add_zero.
          destruct (Ptrofs.eq_dec i Ptrofs.zero); try congruence.
          unfold Genv.find_funct_ptr.
-         admit.
-
+         rewrite Genv.find_def_spec.
+         rewrite (Genv.find_invert_symbol _ i0).
+         rewrite Genv.find_def_spec.
+         rewrite INV.
+         inv MATCH1. 
+         rewrite match_prog_def0.
+         assert (In i0 (prog_public prog)) as PUB.
+         { admit. }
+         assert (IS.mem i0 used = true) as USED.
+         { 
+           exploit kept_public; eauto. 
+           intros KEPT.
+           apply IS.mem_1. apply KEPT.
+         }
+         rewrite USED.
+         auto. auto.
       ++ admit.
     + intros q1 q2 s1 MQUERY INIT.
       eapply transf_initial_states with (se := se1) (tse := se2); eauto.
+      ++ admit.
+      ++ admit.
+      ++ admit.
       ++ admit.
       ++ admit.
       ++ admit.
