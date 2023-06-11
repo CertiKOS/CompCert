@@ -90,7 +90,6 @@ Record symtbl: Type := mkstbl {
 
 Record t: Type := mkgenv {
   to_senv :> symtbl;
-  local_senv: symtbl;               (* should be a sub-structure of [to_senv] *)
   genv_defs: PTree.t (globdef F V);     (**r mapping block -> definition *)
   genv_defs_range: forall b g, PTree.get b genv_defs = Some g -> Plt b (genv_next to_senv);
 }.
@@ -178,40 +177,6 @@ Definition is_internal `{Fii: FundefIsInternal F} (ge: t) (v: val) :=
     | None => false
   end.
 
-(* -------------------------------------------------------------------------- *)
-(* local *)
-
-Definition find_symbol_local (ge: t) (id: ident) : option block :=
-  PTree.get id ge.(local_senv).(genv_symb).
-
-Definition has_symbol_local (ge: t) (id: ident) : Prop :=
-  exists b, find_symbol_local ge id = Some b.
-
-Definition symbol_address_local (ge: t) (id: ident) (ofs: ptrofs) : val :=
-  match find_symbol_local ge id with
-  | Some b => Vptr b ofs
-  | None => Vundef
-  end.
-
-Definition public_symbol_local (ge: t) (id: ident) : bool :=
-  match find_symbol_local ge id with
-  | None => false
-  | Some _ => In_dec ident_eq id ge.(local_senv).(genv_public)
-  end.
-
-Definition find_info_local (ge: t) (b: block) : option (globdef unit unit) :=
-  PTree.get b ge.(local_senv).(genv_info).
-
-Definition invert_symbol_local (ge: t) (b: block) : option ident :=
-  PTree.fold
-    (fun res id b' => if eq_block b b' then Some id else res)
-    ge.(local_senv).(genv_symb) None.
-
-Definition find_var_info_local (ge: t) (b: block) : option (globvar unit) :=
-  match find_info_local ge b with Some (Gvar v) => Some v | _ => None end.
-
-(* end *)
-(* -------------------------------------------------------------------------- *)
 
 (** ** Constructing symbol tables *)
 
@@ -342,43 +307,8 @@ Definition add_globdef (defs: PTree.t _) (id: ident) (g: globdef F V) :=
     | None => defs
   end.
 
-Definition add_local_genv_symb (symb: PTree.t block) (id: ident) :=
-  match find_symbol se id with
-  | Some b => PTree.set id b symb
-  | None => symb
-  end.
-
-Definition make_local_genv_symb (ids: list ident): PTree.t block :=
-  fold_left add_local_genv_symb ids (PTree.empty _).
-
-Definition add_local_genv_info (info: PTree.t (globdef unit unit)) (id: ident) :=
-  match find_symbol se id with
-  | Some b =>
-      match find_info se b with
-        | Some g => PTree.set b g info
-        | None => info
-      end
-  | None => info
-  end.
-
-Definition make_local_genv_info (ids: list ident): PTree.t (globdef unit unit) :=
-  fold_left add_local_genv_info ids (PTree.empty _).
-
-Program Definition make_local_symtbl (pub: list ident) (ids: list ident): symtbl :=
-  @mkstbl pub
-    (make_local_genv_symb ids)
-    (make_local_genv_info ids)
-    se.(genv_next) _ _ _.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-
 Program Definition globalenv (p: program F V): t :=
   @mkgenv se
-    (make_local_symtbl p.(prog_public) (map fst p.(prog_defs)))
     (PTree.fold add_globdef (prog_defmap p) (PTree.empty _)) _.
 Next Obligation.
   revert H. rewrite PTree.fold_spec.
