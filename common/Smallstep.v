@@ -821,10 +821,10 @@ Record fsim_components {liA1 liA2} (ccA: callconv liA1 liA2) {liB1 liB2} ccB L1 
     fsim_match_states: _;
 
     fsim_skel:
-      skel L1 = skel L2;
+      Genv.skel_le (skel L1) (skel L2);
     fsim_lts se1 se2 wB:
       @match_senv liB1 liB2 ccB wB se1 se2 ->
-      Genv.valid_for (skel L1) se1 ->
+      Genv.skel_symtbl_compatible (skel L1) (skel L2) se1 se2 ->
       fsim_properties ccA ccB se1 se2 wB (activate L1 se1) (activate L2 se2)
         fsim_index fsim_order (fsim_match_states se1 se2 wB);
     fsim_order_wf:
@@ -855,7 +855,8 @@ Ltac fsim_match_prog_reduce H :=
 
 Ltac fsim_skel MATCH :=
   fsim_match_prog_reduce MATCH;
-  apply Linking.match_program_skel in MATCH; auto; fail.
+  apply Linking.match_program_skel in MATCH;
+  rewrite MATCH; auto; fail.
 
 Ltac fsim_tac tac :=
   intros MATCH; constructor;
@@ -868,10 +869,14 @@ Tactic Notation (at level 3) "fsim" tactic3(tac) := fsim_tac tac.
 
 (** ** Identity simulation *)
 
+Existing Instance Genv.skel_le_refl.
+Existing Instance Genv.skel_le_tran.
+
 Definition identity_fsim_components {liA liB} (L: semantics liA liB):
   fsim_components cc_id cc_id L L.
 Proof.
   eapply Forward_simulation with _ (fun _ _ _ => _); auto.
+  - reflexivity.
   - intros se _ [ ] [ ] _.
     eapply forward_simulation_plus with (match_states := eq);
     cbn; intros; subst; eauto 10 using plus_one.
@@ -903,17 +908,21 @@ Proof.
   set (ff_index := (index' * index)%type).
   set (ff_order := lex_ord (clos_trans _ order') order).
   set (ff_match_states :=
-         fun se1 se3 '(se2, w, w') (i: ff_index) (s1: state L1) (s3: state L3) =>
+         fun se1 se3 '(f, w, w') (i: ff_index) (s1: state L1) (s3: state L3) =>
            exists s2,
-             match_states se1 se2 w (snd i) s1 s2 /\
-             match_states' se2 se3 w' (fst i) s2 s3).
+             match_states se1 (f (skel L2)) w (snd i) s1 s2 /\
+             match_states' (f (skel L2)) se3 w' (fst i) s2 s3).
   apply Forward_simulation with ff_order ff_match_states.
-  3: { unfold ff_order. auto using wf_lex_ord, wf_clos_trans. }
-  1: { congruence. }
-  intros se1 se3 [[se2 w] w'] (Hse12 & Hse23) Hse1. cbn in *.
-  assert (Hse2: Genv.valid_for (skel L2) se2).
-  { rewrite <- Hsk. eapply match_senv_valid_for; eauto. }
-  constructor.
+  1: { etransitivity; eauto. }
+  2: { unfold ff_order. auto using wf_lex_ord, wf_clos_trans. }
+  intros se1 se3 [[f w] w'] Hse Hc.
+  specialize (Hse (skel L2)) as (Hv2 & Hrc & Hse1 & Hse2).
+  exploit composition_compatible. apply Hrc. apply Hc. intros [Hrc12 Hrc23].
+  assert (Hc1: Genv.skel_symtbl_compatible (skel L1) (skel L2) se1 (f (skel L2))).
+  { split; eauto. apply Hc. }
+  assert (Hc2: Genv.skel_symtbl_compatible (skel L2) (skel L3) (f (skel L2)) se3).
+  { split; eauto. split; eauto. apply Hc. }
+  cbn in *. constructor.
 - (* valid query *)
   intros q1 q3 (q2 & Hq12 & Hq23).
   erewrite fsim_match_valid_query by eauto.
@@ -931,7 +940,7 @@ Proof.
   intros. destruct H as [s3 [A B]].
   edestruct (@fsim_match_external liA1) as (w12 & q2 & Hq2 & Hq12 & Hw12 & Hk12); eauto.
   edestruct (@fsim_match_external liA2) as (w23 & q3 & Hq3 & Hq23 & Hw23 & Hk23); eauto.
-  exists (se2, w12, w23), q3. cbn; repeat apply conj; eauto.
+  exists (f, w12, w23), q3. cbn; repeat apply conj; eauto. admit.
   intros r1 r3 s1' (r2 & Hr12 & Hr23) Hs1'.
   edestruct Hk12 as (i12' & s2' & Hs2' & Hs12'); eauto.
   edestruct Hk23 as (i23' & s3' & Hs3' & Hs23'); eauto.

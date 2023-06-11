@@ -340,6 +340,35 @@ Proof.
   eapply linkorder_trans; eauto.
 Qed.
 
+Definition skel_le (sk1 sk2: program unit unit): Prop :=
+  forall id g, (prog_defmap sk1) ! id = Some g -> (prog_defmap sk2) ! id = Some g.
+
+Instance skel_le_refl: RelationClasses.Reflexive skel_le.
+Proof. intros sk id g. auto. Qed.
+
+Instance skel_le_tran: RelationClasses.Transitive skel_le.
+Proof.
+  intros sk1 sk2 sk3 H12 H23 id g H.
+  specialize (H12 _ _ H).
+  specialize (H23 _ _ H12). auto.
+Qed.
+
+Definition symbols_not_found (se: symtbl) (symbols: list ident) : Prop :=
+  forall id, In id symbols -> find_symbol se id = None.
+
+Definition skel_removed_symbol (sk1 sk2: program unit unit) (id: ident) : Prop :=
+  In id (prog_defs_names sk1) -> ~In id (prog_defs_names sk2).
+
+Definition removed_symbol (se1 se2: symtbl) (id: ident): Prop :=
+  forall b, find_symbol se1 id = Some b -> find_symbol se2 id = None.
+
+Definition removed_compatible (sk1 sk2: program unit unit) (se1 se2: symtbl) :=
+  (forall id, skel_removed_symbol sk1 sk2 id <-> removed_symbol se1 se2 id).
+
+(** under the circumstances where sk1 = sk2, there should be no symbol removed *)
+Definition skel_symtbl_compatible (sk1 sk2: program unit unit) (se1 se2: symtbl) :=
+  valid_for sk1 se1 /\ valid_for sk2 se2 /\ removed_compatible sk1 sk2 se1 se2.
+
 (** ** Properties of the operations over global environments *)
 
 Theorem public_symbol_exists:
@@ -1592,7 +1621,35 @@ End GENV.
 
 Section MATCH_GENVS.
 
-Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
+(* -------------------------------------------------------------------------- *)
+(* with skel *)
+
+(* a generalized version of [match_stbls] *)
+Record match_stbls' (f: meminj) (ge1 ge2: symtbl) := {
+  mge_public':
+    forall id, ~ removed_symbol ge1 ge2 id ->
+    Genv.public_symbol ge2 id = Genv.public_symbol ge1 id;
+  mge_dom':
+    forall b1, Plt b1 (genv_next ge1) ->
+    (forall id, invert_symbol ge1 b1 = Some id -> ~ removed_symbol ge1 ge2 id) ->
+    exists b2, f b1 = Some (b2, 0); (* kept *)
+  (* TODO: we might need an extra condition: blocks correspond to removed
+     symbols are mapped to none *)
+  mge_img':
+    forall b2, Plt b2 (genv_next ge2) ->
+    exists b1, f b1 = Some (b2, 0);
+  mge_symb':
+    forall b1 b2 delta, f b1 = Some (b2, delta) ->
+    forall id, (Genv.genv_symb ge1) ! id = Some b1 <-> (Genv.genv_symb ge2) ! id = Some b2;
+  mge_info':
+    forall b1 b2 delta, f b1 = Some (b2, delta) ->
+    ge1.(genv_info) ! b1 = ge2.(genv_info) ! b2;
+  mge_separated':
+    forall b1 b2 delta, f b1 = Some (b2, delta) ->
+    Pos.le (genv_next ge1) b1 <-> Pos.le (genv_next ge2) b2;
+}.
+
+Record match_stbls (f: meminj) (ge1 ge2: symtbl) := {
   mge_public:
     forall id, Genv.public_symbol ge2 id = Genv.public_symbol ge1 id;
   mge_dom:
@@ -1611,6 +1668,20 @@ Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
     forall b1 b2 delta, f b1 = Some (b2, delta) ->
     Pos.le (genv_next ge1) b1 <-> Pos.le (genv_next ge2) b2;
 }.
+
+Lemma match_stbls_kept_all f se1 se2:
+  (forall id, ~ removed_symbol se1 se2 id) ->
+  match_stbls' f se1 se2 -> match_stbls f se1 se2.
+Proof.
+  intros * Hk Hs. constructor.
+  - pose proof (mge_public' Hs) as Hx. intros id. eauto.
+  - pose proof (mge_dom' Hs) as Hx.
+    intros b Hb. apply Hx; eauto.
+  - eauto using mge_img'.
+  - eauto using mge_symb'.
+  - eauto using mge_info'.
+  - eauto using mge_separated'.
+Qed.
 
 Record match_genvs {A B V W} (f: meminj) R (ge1: t A V) (ge2: t B W) := {
   mge_stbls :> match_stbls f ge1 ge2;
@@ -1728,6 +1799,10 @@ Proof.
     erewrite <- mge_info in Hg'; eauto.
     erewrite <- mge_symb in Hb2; eauto.
 Qed.
+
+Definition kept_symbol (se1 se2: symtbl) (id: ident): Prop :=
+  forall b, find_symbol se1 id = Some b ->
+       exists b', find_symbol se2 id = Some b'.
 
 Context {A B V W: Type} (R: globdef A V -> globdef B W -> Prop).
 

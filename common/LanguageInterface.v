@@ -55,12 +55,8 @@ Record callconv {li1 li2} :=
     match_senv_public_preserved:
       forall w se1 se2,
         match_senv w se1 se2 ->
-        forall id, Genv.public_symbol se2 id = Genv.public_symbol se1 id;
-    match_senv_valid_for:
-      forall w se1 se2 sk,
-        match_senv w se1 se2 ->
-        Genv.valid_for sk se1 ->
-        Genv.valid_for sk se2;
+        forall id, ~ Genv.removed_symbol se1 se2 id ->
+          Genv.public_symbol se2 id = Genv.public_symbol se1 id;
   }.
 
 Arguments callconv: clear implicits.
@@ -84,17 +80,30 @@ Notation "1" := cc_id : cc_scope.
 
 (** ** Composition *)
 
+Inductive mid_se_compatible (se1 se2 se3: Genv.symtbl) (sk: program unit unit) := .
+
+Lemma composition_compatible (se1 se2 se3: Genv.symtbl) (sk1 sk2 sk3: program unit unit):
+    mid_se_compatible se1 se2 se3 sk2 ->
+    Genv.removed_compatible sk1 sk3 se1 se3 ->
+    Genv.removed_compatible sk1 sk2 se1 se2 /\
+    Genv.removed_compatible sk2 sk3 se2 se3.
+Proof.
+Admitted.
+
 Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: callconv li2 li3) :=
   {|
-    ccworld := Genv.symtbl * ccworld cc12 * ccworld cc23;
-    match_senv '(se2, w12, w23) se1 se3 :=
-      match_senv cc12 w12 se1 se2 /\
-      match_senv cc23 w23 se2 se3;
-    match_query '(se2, w12, w23) q1 q3 :=
+    ccworld := (program unit unit -> Genv.symtbl) * ccworld cc12 * ccworld cc23;
+    match_senv '(f, w12, w23) se1 se3 :=
+      forall sk2,
+        Genv.valid_for sk2 (f sk2) /\
+        mid_se_compatible se1 (f sk2) se3 sk2 /\
+        match_senv cc12 w12 se1 (f sk2) /\
+        match_senv cc23 w23 (f sk2) se3;
+    match_query '(_, w12, w23) q1 q3 :=
       exists q2,
         match_query cc12 w12 q1 q2 /\
         match_query cc23 w23 q2 q3;
-    match_reply '(se2, w12, w23) r1 r3 :=
+    match_reply '(_, w12, w23) r1 r3 :=
       exists r2,
         match_reply cc12 w12 r1 r2 /\
         match_reply cc23 w23 r2 r3;
@@ -102,11 +111,7 @@ Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: call
 Next Obligation.
   intros li1 li2 li3 cc12 cc23 [[se2 w12] w23] se1 se3 (H12 & H23) id.
   etransitivity; eauto using match_senv_public_preserved.
-Qed.
-Next Obligation.
-  intros li1 li2 li3 cc12 cc23 [[se2 w12] w23] se1 se3 sk [Hse12 Hse23] H.
-  eauto using match_senv_valid_for.
-Qed.
+Admitted.
 
 Infix "@" := cc_compose (at level 30, right associativity) : cc_scope.
 
@@ -167,7 +172,4 @@ Program Definition cc_c (R: cklr): callconv li_c li_c :=
   |}.
 Next Obligation.
   intros. eapply match_stbls_proj in H. eapply Genv.mge_public; eauto.
-Qed.
-Next Obligation.
-  intros. eapply match_stbls_proj in H. erewrite <- Genv.valid_for_match; eauto.
-Qed.
+Admitted.

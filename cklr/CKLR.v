@@ -64,7 +64,7 @@ Record cklr :=
     match_stbls_acc:
       Monotonic match_stbls (wacc ++> subrel);
     match_stbls_proj w:
-      Related (match_stbls w) (Genv.match_stbls (mi w)) subrel;
+      Related (match_stbls w) (Genv.match_stbls' (mi w)) subrel;
     match_stbls_nextblock w se1 se2 m1 m2:
       match_stbls w se1 se2 ->
       match_mem w m1 m2 ->
