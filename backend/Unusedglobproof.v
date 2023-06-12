@@ -458,10 +458,6 @@ Definition init_meminj (se tse: Genv.symtbl) : meminj :=
 
 (** * Try to define new match_stbls for this pass only *)
 
-(*
-Section TEST.
-
-(* Definitions *)
 Record match_stbls' (f: meminj) (ge1: Genv.symtbl) (ge2: Genv.symtbl) := {
   mge_public':
     forall id, Genv.public_symbol ge2 id = Genv.public_symbol ge1 id;
@@ -483,13 +479,16 @@ Record match_stbls' (f: meminj) (ge1: Genv.symtbl) (ge2: Genv.symtbl) := {
 }.
 
 Definition skel_removed_symbol (sk1 sk2: AST.program unit unit) (id: ident) : Prop :=
-  In id (prog_defs_names sk1) -> ~In id (prog_defs_names sk2).
+  In id (prog_defs_names sk1) /\ ~In id (prog_defs_names sk2).
 
 Definition removed_symbol (se1 se2: Genv.symtbl) (id: ident): Prop :=
-  forall b, Genv.find_symbol se1 id = Some b -> Genv.find_symbol se2 id = None.
+  exists b, Genv.find_symbol se1 id = Some b /\ Genv.find_symbol se2 id = None.
 
 Definition removed_compatible (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
-  (forall id, skel_removed_symbol sk1 sk2 id -> removed_symbol se1 se2 id).
+  (forall id, skel_removed_symbol sk1 sk2 id -> removed_symbol se1 se2 id) /\
+    ~ removed_symbol se1 se2 (prog_main sk1).
+ (* main is defined as kept in this pass, thus we need to ensure that it can not be 
+    droped by symtbl *)
 
 Definition skel_le (sk1 sk2: AST.program unit unit): Prop :=
   prog_public sk1 = prog_public sk1 /\ prog_main sk1 = prog_main sk1 /\
@@ -507,6 +506,12 @@ Proof.
   intros sk1 sk2 sk3 [H11 [H12 H13]] [H21 [H22 H23]]. split. eauto. split. eauto.
   intros id g H. eauto.
 Qed.
+
+
+(*
+Section TEST.
+
+(* Definitions *)
 
 Variable p: program.
 Variable tp: program.
@@ -532,8 +537,13 @@ Lemma main_symb_pres: forall b,
     Genv.find_symbol se (prog_main skel) = Some b -> 
     exists b', Genv.find_symbol tse (prog_main tskel) = Some b'.
 Proof.
-  intros.
-  Admitted.
+  intros. destruct compatible.
+  simpl in *. inv TRANSF. rewrite match_prog_main0.
+  destruct (Genv.find_symbol tse (prog_main p)) eqn : F'.
+  eexists. eauto.
+  exfalso. apply H1. exists b. split; eauto.
+Qed.
+
 Lemma symb_incl: forall id b,
     Genv.find_symbol tse id = Some b -> exists b', Genv.find_symbol se id = Some b'.
 Proof.
@@ -592,6 +602,16 @@ Proof.
     admit.
 Admitted.
 
+Lemma map_fst_in {A B:Type}: forall (a:A) (b:B) list,
+    In (a,b) list -> In a (map fst list).
+Proof.
+  intros. induction list.
+  - inv H.
+  - inv H.
+    left. auto.
+    right. eauto.
+Qed.
+
 Lemma remove_unused_consistent: forall id gd b,
     (prog_defmap skel) ! id = Some gd -> 
     Genv.find_symbol tse id = Some b -> 
@@ -619,13 +639,16 @@ Proof.
     rewrite H in HFIND. inv HFIND. reflexivity. }
     subst. eauto.
   - exploit symb_incl; eauto.
-    intros [a INJ].
-    exploit compatible; eauto.
-    intro X. congruence.
+    intros [a INJ]. destruct compatible.
+    exploit H1; eauto. split. instantiate (1:= id).
+    apply in_prog_defmap in H. unfold prog_defs_names.
+    eapply map_fst_in; eauto.
+    eauto.
+    intros [b' [A B]]. congruence.
 Qed.
     
 End TEST.
- *)
+*)
 
 (** * Semantic preservation *)
 
@@ -644,7 +667,7 @@ Definition skel := erase_program p.
 Definition tskel := erase_program tp.
 
 (** Hypothesis about symbol tables *)
- Hypothesis main_symb_pres: forall b,
+Hypothesis main_symb_pres: forall b,
     Genv.find_symbol se (prog_main skel) = Some b -> 
     exists b', Genv.find_symbol tse (prog_main tskel) = Some b'. 
 
@@ -696,9 +719,9 @@ Lemma winj_consistent_1: forall b b' delta,
     init_meminj se tse b = Some(b', delta).
 Proof.
   intros. destruct (init_meminj se tse b) as [[b1 delta1] | ] eqn: J.
-    exploit winj_incr; eauto. congruence.
-    exploit winj_separated; eauto. intros [A B]. elim (Plt_strict b).
-    eapply Plt_Ple_trans. eauto. auto.
+  exploit winj_incr; eauto. congruence.
+  exploit winj_separated; eauto. intros [A B]. elim (Plt_strict b).
+  eapply Plt_Ple_trans. eauto. auto.
 Qed.
 
 Lemma winj_consistent_2: forall b b' delta, 
@@ -899,8 +922,8 @@ Proof.
   generalize init_meminj_preserves_globals.
   intros PRES. 
   constructor.
-  - inv PRES. intros. 
-    eapply symbols_inject_4; eauto.
+  - inv PRES. intros.
+    eapply symbols_inject_4; eauto.    
     eapply winj_consistent_1; eauto.
     eapply Genv.genv_symb_range; eauto.
   - inv PRES. intros. 
