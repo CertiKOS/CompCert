@@ -120,7 +120,7 @@ COMMON=Errors.v AST.v Linking.v \
 CKLR=\
   CKLR.v CKLRAlgebra.v \
   Extends.v \
-  Inject.v InjectFootprint.v \
+  Inject.v InjectUnusedglob.v InjectFootprint.v \
   VAInject.v VAExtends.v \
   Mapsrel.v \
   Valuesrel.v Builtinsrel.v Eventsrel.v \

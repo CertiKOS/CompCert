@@ -836,6 +836,30 @@ Arguments Forward_simulation {_ _ ccA _ _ ccB L1 L2 fsim_index}.
 Definition forward_simulation {liA1 liA2} ccA {liB1 liB2} ccB L1 L2 :=
   inhabited (@fsim_components liA1 liA2 ccA liB1 liB2 ccB L1 L2).
 
+
+Record fsim_components' {liA1 liA2} (ccA: callconv liA1 liA2) {liB1 liB2} ccB L1 L2 :=
+  Forward_simulation' {
+    fsim_index': Type;
+    fsim_order': fsim_index' -> fsim_index' -> Prop;
+    fsim_match_states': _;
+
+    fsim_skel':
+      Genv.skel_le (skel L2) (skel L1);
+    fsim_lts' se1 se2 wB:
+      @match_senv liB1 liB2 ccB wB se1 se2 ->
+      Genv.skel_symtbl_compatible (skel L1) (skel L2) se1 se2 ->
+      fsim_properties ccA ccB se1 se2 wB (activate L1 se1) (activate L2 se2)
+        fsim_index' fsim_order' (fsim_match_states' se1 se2 wB);
+    fsim_order_wf':
+      well_founded fsim_order';
+  }.
+
+Arguments Forward_simulation' {_ _ ccA _ _ ccB L1 L2 fsim_index'}.
+
+Definition forward_simulation' {liA1 liA2} ccA {liB1 liB2} ccB L1 L2 :=
+  inhabited (@fsim_components' liA1 liA2 ccA liB1 liB2 ccB L1 L2).
+
+
 (** ** Tactics for forward simulation proofs *)
 
 (** The forward simulation proofs for each compiler pass have the same
