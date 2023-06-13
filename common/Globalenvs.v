@@ -1961,12 +1961,30 @@ Qed.
 End MATCH_GENVS'.
 
 
-Lemma match_stbl_subrel :
+Lemma match_stbls_stbls' :
   forall j se tse, match_stbls j se tse -> match_stbls' j se tse.
 Proof.
   intros. inv H. constructor; intros; eauto.
   exploit mge_dom0; eauto. intros [b2' INJ].
   rewrite H0 in INJ. inv INJ. reflexivity.
+Qed.
+
+Lemma match_stbls_stbls'_compose  f g ge1 ge2 ge3:
+  match_stbls f ge1 ge2 ->
+  match_stbls' g ge2 ge3 ->
+  match_stbls' (compose_meminj f g) ge1 ge3.
+Proof.
+  intros. eapply match_stbls'_compose; eauto.
+  eapply match_stbls_stbls'; eauto.
+Qed.
+
+Lemma match_stbls'_stbls_compose  f g ge1 ge2 ge3:
+  match_stbls f ge1 ge2 ->
+  match_stbls' g ge2 ge3 ->
+  match_stbls' (compose_meminj f g) ge1 ge3.
+Proof.
+  intros. eapply match_stbls'_compose; eauto.
+  eapply match_stbls_stbls'; eauto.
 Qed.
 
 
