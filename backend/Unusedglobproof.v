@@ -478,6 +478,45 @@ Record match_stbls' (f: meminj) (ge1: Genv.symtbl) (ge2: Genv.symtbl) := {
     Pos.le (Genv.genv_next ge1) b1 <-> Pos.le (Genv.genv_next ge2) b2;
 }.
 
+Lemma match_stbls_incr' : forall f se tse,
+  match_stbls' f se tse ->
+  forall f' : meminj,
+  inject_incr f f' ->
+  (forall (b1 b2 : block) (delta : Z),
+   f b1 = None ->
+   f' b1 = Some (b2, delta) -> (Genv.genv_next se <= b1)%positive /\ (Genv.genv_next tse <= b2)%positive) ->
+  match_stbls' f' se tse.
+Proof.
+  intros f se tse MSENV f' Hf' SEP. split.
+  - eapply mge_public'; eauto.
+  - intros. inv MSENV. eapply mge_dom0; eauto.
+    destruct (f b1) as [[xb2 xdelta] | ] eqn:Hb.
+    + rewrite (Hf' _ _ _ Hb) in H0. inv H0.
+      reflexivity.
+    + exploit SEP; eauto. intros [A B]. extlia.
+  - intros. edestruct mge_img as (bi & Hbi); eauto.
+  - intros. split.
+    + intros Hb1. inv MSENV. destruct (f b1) as [[xb2 xdelta] | ] eqn:Hb.
+      * rewrite (Hf' _ _ _ Hb) in H. inv H. eapply mge_symb0; eauto.
+      * exploit SEP; eauto. intros [A B]. apply Genv.genv_symb_range in Hb1. extlia.
+    + intros Hb2. destruct (f b1) as [[xb2 xdelta] | ] eqn:Hb.
+      * rewrite (Hf' _ _ _ Hb) in H. inv H. rewrite mge_symb; eauto.
+      * edestruct SEP; eauto. apply Genv.genv_symb_range in Hb2. extlia.
+  - intros b1 b2 delta Hb'.
+    destruct (f b1) as [[xb2 xdelta] | ] eqn:Hb.
+    + rewrite (Hf' _ _ _ Hb) in Hb'. inv Hb'.
+      eapply mge_info; eauto.
+    + edestruct SEP; eauto.
+      destruct (Genv.genv_info se) ! b1 eqn:H1. apply Genv.genv_info_range in H1. extlia.
+      destruct (Genv.genv_info tse) ! b2 eqn:H2. apply Genv.genv_info_range in H2. extlia.
+      reflexivity.
+  - intros b1 b2 delta Hb'.
+    destruct (f b1) as [[xb2 xdelta] | ] eqn:Hb.
+    + rewrite (Hf' _ _ _ Hb) in Hb'. inv Hb'.
+      eapply mge_separated; eauto.
+    + edestruct SEP; eauto. tauto.
+Qed.
+
 Definition skel_removed_symbol (sk1 sk2: AST.program unit unit) (id: ident) : Prop :=
   In id (prog_defs_names sk1) /\ ~In id (prog_defs_names sk2).
 
