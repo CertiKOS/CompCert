@@ -1622,7 +1622,7 @@ Proof.
   rename x into used.
   constructor.
   eapply Forward_simulation'.
-  - split. eauto. split. eauto.
+  - cbn. unfold Genv.skel_le.
     intros. inv MATCH1. simpl in *.
     rewrite erase_program_defmap in H.
     rewrite erase_program_defmap .

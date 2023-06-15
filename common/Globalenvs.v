@@ -1824,19 +1824,18 @@ Definition skel_symtbl_compatible (sk1 sk2: AST.program unit unit) (se1 se2: Gen
   valid_for sk1 se1 /\ valid_for sk2 se2 /\ removed_compatible sk1 sk2 se1 se2.
 
 Definition skel_le (sk1 sk2: AST.program unit unit): Prop :=
-  prog_public sk1 = prog_public sk1 /\ prog_main sk1 = prog_main sk1 /\
   forall id g, (prog_defmap sk1) ! id = Some g -> (prog_defmap sk2) ! id = Some g.
 
 
 Instance skel_le_refl: RelationClasses.Reflexive skel_le.
 Proof.
-  intro sk. split. auto. split. auto.
+  intro sk. 
   intros id g. auto.
 Qed.
 
 Instance skel_le_tran: RelationClasses.Transitive skel_le.
 Proof.
-  intros sk1 sk2 sk3 [H11 [H12 H13]] [H21 [H22 H23]]. split. eauto. split. eauto.
+  intros sk1 sk2 sk3 H1 H2.
   intros id g H. eauto.
 Qed.
 
