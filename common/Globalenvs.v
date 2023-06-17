@@ -1807,36 +1807,41 @@ Qed.
 End MATCH_GENVS.
 
 
-
 Definition skel_removed_symbol (sk1 sk2: AST.program unit unit) (id: ident) : Prop :=
   In id (prog_defs_names sk1) /\ ~In id (prog_defs_names sk2).
 
 Definition removed_symbol (se1 se2: Genv.symtbl) (id: ident): Prop :=
   exists b, Genv.find_symbol se1 id = Some b /\ Genv.find_symbol se2 id = None.
 
+
 Definition removed_compatible (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
-  (forall id, skel_removed_symbol sk1 sk2 id -> removed_symbol se1 se2 id) /\
-    ~ removed_symbol se1 se2 (prog_main sk1).
- (* main is defined as kept in this pass, thus we need to ensure that it can not be 
+  (forall id, In id (prog_defs_names sk1) -> Genv.find_symbol se2 id <> None -> In id (prog_defs_names sk2))
+  /\ ~ removed_symbol se1 se2 (prog_main sk1).
+ (* main is defined as kept in Unusedglob, thus we need to ensure that it can not be 
     droped by symtbl *)
 
 Definition skel_symtbl_compatible (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
   valid_for sk1 se1 /\ valid_for sk2 se2 /\ removed_compatible sk1 sk2 se1 se2.
 
 Definition skel_le (sk1 sk2: AST.program unit unit): Prop :=
-  forall id g, (prog_defmap sk1) ! id = Some g -> (prog_defmap sk2) ! id = Some g.
-
+  (forall id g, (prog_defmap sk1) ! id = Some g -> (prog_defmap sk2) ! id = Some g)
+  /\ (forall id g, (prog_defmap sk2)! id = Some g -> In id (prog_public sk2) ->
+             (prog_defmap sk1)! id = Some g)
+  /\ (prog_public sk2 = prog_public sk1).
 
 Instance skel_le_refl: RelationClasses.Reflexive skel_le.
 Proof.
-  intro sk. 
-  intros id g. auto.
+  intro sk. split; intros; auto.
 Qed.
 
 Instance skel_le_tran: RelationClasses.Transitive skel_le.
 Proof.
-  intros sk1 sk2 sk3 H1 H2.
-  intros id g H. eauto.
+  intros sk1 sk2 sk3 [H11 [H12 H13]] [H21 [H22 H23]].
+  split.
+  intros. eauto.
+  split.
+  intros. eapply H12; eauto. rewrite <- H23. eauto.
+  congruence.
 Qed.
 
 Section MATCH_GENVS'.

@@ -557,35 +557,26 @@ Lemma remove_unused_consistent: forall id gd b,
     (prog_defmap tskel) ! id = Some gd.
 Proof.
   intros.
-  destruct compat as (valid1 & valid2 & compatible).
-  unfold Genv.removed_compatible in compatible.
-  unfold Genv.skel_removed_symbol in compatible.
-  unfold Genv.removed_symbol in compatible.
-  destruct (In_dec peq id (prog_defs_names tskel)).
-  - 
-    exploit prog_defmap_dom; eauto.
-    intros [g HFIND].
-    assert (g = gd). {
-    clear -TRANSF H HFIND.
-    unfold tskel in HFIND.
-    rewrite erase_program_defmap in HFIND.
-    unfold option_map in HFIND.
-    unfold skel in H.
-    rewrite erase_program_defmap in H.
-    unfold option_map in H.
-    inv TRANSF. rewrite match_prog_def0 in HFIND.
-    destruct (IS.mem id used); try discriminate.
-    destruct ((prog_defmap p) ! id); try discriminate.
-    rewrite H in HFIND. inv HFIND. reflexivity. }
-    subst. eauto.
-  - exploit symb_incl; eauto.
-    intros [a INJ]. destruct compatible.
-    exploit H1; eauto. split. instantiate (1:= id).
-    apply in_prog_defmap in H. unfold prog_defs_names.
-    eapply map_fst_in; eauto.
-    eauto.
-    intros [b' [A B]]. congruence.
+  destruct compat as (valid1 & valid2 & compatible & main).
+  exploit compatible; eauto.
+  eapply map_fst_in.
+  eapply in_prog_defmap; eauto. congruence.
+  intro. inv TRANSF.
+  unfold tskel in *. unfold skel in *.
+  rewrite erase_program_defmap in *.
+  unfold option_map in *.
+  rewrite match_prog_def0.
+  destruct (IS.mem id used) eqn:IN.
+  + eauto.
+  + exfalso.
+    apply prog_defmap_dom in H1.
+    destruct H1 as [g H1].
+    rewrite erase_program_defmap in H1.
+    rewrite match_prog_def0 in H1.
+    rewrite IN in H1. cbn in H1.
+    congruence.
 Qed.
+
 
 Lemma remove_unused_consistent_p :forall id gd b,
     (prog_defmap p) ! id = Some gd -> 
@@ -1622,12 +1613,18 @@ Proof.
   rename x into used.
   constructor.
   eapply Forward_simulation'.
-  - cbn. unfold Genv.skel_le.
-    intros. inv MATCH1. simpl in *.
-    rewrite erase_program_defmap in H.
-    rewrite erase_program_defmap .
-    rewrite match_prog_def0 in H.
-    destruct (IS.mem id used); simpl in *; congruence.
+  - cbn. unfold Genv.skel_le. inv MATCH1.
+    repeat apply conj.
+    + intros. rewrite erase_program_defmap in *.
+      rewrite match_prog_def0 in H.
+      destruct (IS.mem id used); simpl in H; congruence.
+    + intros. rewrite erase_program_defmap in *.
+      rewrite match_prog_def0. inv VALID_USED.
+      cbn in H0. exploit used_public0; eauto.
+      Search IS.mem.
+      intro. apply IS.mem_1 in H1. rewrite H1.
+      eauto.
+    + cbn. eauto.
   - intros se1 se2 wB GE COMPAT. inversion GE. rename inj_stbls_match into MSENV.
     (**** Assupmtions to be discharged ****)
     assert (forall b : block,
