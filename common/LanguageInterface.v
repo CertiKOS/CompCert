@@ -48,48 +48,64 @@ Definition li_wp :=
 Record callconv {li1 li2} :=
   mk_callconv {
     ccworld : Type;
-    match_senv: ccworld -> Genv.symtbl -> Genv.symtbl -> Prop;
+    match_senv: ccworld -> forall se1 se2, Genv.symtbl_path se1 se2 -> Prop;
     match_query: ccworld -> query li1 -> query li2 -> Prop;
     match_reply: ccworld -> reply li1 -> reply li2 -> Prop;
 
-    match_senv_public_preserved:
-      forall w se1 se2,
-        match_senv w se1 se2 ->
-        forall id, Genv.public_symbol se2 id = Genv.public_symbol se1 id;
-    match_senv_valid_for:
-      forall w se1 se2 sk,
-        match_senv w se1 se2 ->
-        Genv.valid_for sk se1 ->
-        Genv.valid_for sk se2;
+    (* match_senv_local: *)
+    (* forall sk1 sk2 w path se1 se2, *)
+    (*   match_senv sk1 sk2 w path se1 se2 -> *)
+    (*   Genv.valid_stbls sk1 sk2 se1 se2; *)
   }.
 
 Arguments callconv: clear implicits.
+Arguments match_senv {_ _} _ _ {_ _} _.
 Delimit Scope cc_scope with cc.
 Bind Scope cc_scope with callconv.
 Local Obligation Tactic := cbn; eauto.
 
 (** ** Identity *)
 
+(* Inductive match_senv_id sk1 sk2: *)
+(*     skel_path sk1 sk2 -> Genv.symtbl -> Genv.symtbl -> Prop := *)
+(* | Match_senv_id_intro se (H: sk2 = sk1): *)
+(*     match_senv_id sk1 sk2 (Edge (same_skel_le _ _ H)) se se. *)
+
 Program Definition cc_id {li}: callconv li li :=
   {|
     ccworld := unit;
-    match_senv w := eq;
+    match_senv w se1 se2 _ := se1 = se2;
     match_query w := eq;
     match_reply w := eq;
   |}.
-Solve All Obligations with
-  cbn; intros; subst; auto.
+(* Next Obligation. *)
+(*   intros. apply H. *)
+(* Qed. *)
 
 Notation "1" := cc_id : cc_scope.
 
 (** ** Composition *)
 
+Inductive match_senv_compose
+  {li1 li2 li3} (cc12: callconv li1 li2) (cc23: callconv li2 li3) {se1 se3}:
+    Genv.symtbl * ccworld cc12 * ccworld cc23 ->
+    Genv.symtbl_path se1 se3 -> Prop :=
+| Match_senv_compose_compose w12 w23 se2
+    (symtbl_path12: Genv.symtbl_path se1 se2) (symtbl_path23: Genv.symtbl_path se2 se3)
+    (SE12: match_senv cc12 w12 symtbl_path12)
+    (SE23: match_senv cc23 w23 symtbl_path23):
+    match_senv_compose cc12 cc23 (se2, w12, w23)
+      (Genv.Compose symtbl_path12 symtbl_path23)
+| Match_senv_compose_direct w12 w23 se2
+    (symtbl_path12: Genv.symtbl_path se1 se2) (symtbl_path23: Genv.symtbl_path se2 se3)
+    (SE12: match_senv cc12 w12 symtbl_path12)
+    (SE23: match_senv cc23 w23 symtbl_path23):
+    match_senv_compose cc12 cc23 (se2, w12, w23) (Genv.Direct (fun _ _ => True) _ _ I).
+
 Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: callconv li2 li3) :=
   {|
     ccworld := Genv.symtbl * ccworld cc12 * ccworld cc23;
-    match_senv '(se2, w12, w23) se1 se3 :=
-      match_senv cc12 w12 se1 se2 /\
-      match_senv cc23 w23 se2 se3;
+    match_senv w se1 se3 se_path := match_senv_compose cc12 cc23 w se_path;
     match_query '(se2, w12, w23) q1 q3 :=
       exists q2,
         match_query cc12 w12 q1 q2 /\
@@ -99,14 +115,13 @@ Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: call
         match_reply cc12 w12 r1 r2 /\
         match_reply cc23 w23 r2 r3;
   |}.
-Next Obligation.
-  intros li1 li2 li3 cc12 cc23 [[se2 w12] w23] se1 se3 (H12 & H23) id.
-  etransitivity; eauto using match_senv_public_preserved.
-Qed.
-Next Obligation.
-  intros li1 li2 li3 cc12 cc23 [[se2 w12] w23] se1 se3 sk [Hse12 Hse23] H.
-  eauto using match_senv_valid_for.
-Qed.
+(* Next Obligation. *)
+(*   intros. rename sk2 into sk3. rename se2 into se3. *)
+(*   destruct w as [[se2 w12] w23]. inv H. *)
+(*   apply match_senv_local in SE12. *)
+(*   apply match_senv_local in SE23. *)
+(*   eapply Genv.valid_stbls_compose; eauto. *)
+(* Qed. *)
 
 Infix "@" := cc_compose (at level 30, right associativity) : cc_scope.
 
@@ -161,13 +176,7 @@ Inductive cc_c_reply R (w: world R): relation c_reply :=
 Program Definition cc_c (R: cklr): callconv li_c li_c :=
   {|
     ccworld := world R;
-    match_senv := match_stbls R;
+    match_senv w se1 se2 _se_path := match_stbls R w se1 se2;
     match_query := cc_c_query R;
     match_reply := (<> cc_c_reply R)%klr;
   |}.
-Next Obligation.
-  intros. eapply match_stbls_proj in H. eapply Genv.mge_public; eauto.
-Qed.
-Next Obligation.
-  intros. eapply match_stbls_proj in H. erewrite <- Genv.valid_for_match; eauto.
-Qed.
