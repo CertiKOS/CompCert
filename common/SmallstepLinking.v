@@ -10,15 +10,6 @@ Require Import Classical.
 (** NB: we assume that all components are deterministic and that their
   domains are disjoint. *)
 
-Ltac subst_dep :=
-  subst;
-  lazymatch goal with
-    | H: existT ?P ?x _ = existT ?P ?x _ |- _ =>
-      apply inj_pair2 in H; subst_dep
-    | _ =>
-      idtac
-  end.
-
 Section LINK.
   Context {li} (L: bool -> semantics li li).
   Let I := bool.
@@ -108,6 +99,7 @@ Section LINK.
 
   (** * Receptiveness and determinacy *)
 
+(*
   Lemma semantics_receptive:
     (forall i, receptive (L i)) ->
     receptive semantics.
@@ -121,13 +113,13 @@ Section LINK.
     - intros s t s' STEP. destruct STEP; cbn; eauto.
       eapply sr_traces; eauto.
   Qed.
-
+*)
   Hypothesis valid_query_excl:
     forall i j se q,
       Smallstep.valid_query (L i se) q = true ->
       Smallstep.valid_query (L j se) q = true ->
       i = j.
-
+(*
   Lemma semantics_determinate:
     (forall i, determinate (L i)) ->
     determinate semantics.
@@ -170,7 +162,7 @@ Section LINK.
     - destruct 1. inversion 1; subst_dep.
       eapply sd_final_determ; eauto.
   Qed.
-
+*)
 End LINK.
 
 (** * Compatibility with forward simulations *)
@@ -185,14 +177,13 @@ Section FSIM.
   Context (L2 : I -> Smallstep.semantics li2 li2).
   Context (HL : forall i, fsim_components cc cc (L1 i) (L2 i)).
   Context (se1 se2: Genv.symtbl) (w : ccworld cc).
-  Context (Hse: match_senv cc w se1 se2).
-  Context (Hse1: forall i, Genv.valid_for (skel (L1 i)) se1).
+  Context (Hse: forall i, match_senv cc w (fsim_skel (HL i)) se1 se2).
+  Context (Hvs : forall i : I, valid_skel cc (fsim_skel (HL i))).
   Notation index := {i & fsim_index (HL i)}.
 
   Inductive match_topframes wk: index -> frame L1 -> frame L2 -> Prop :=
     match_topframes_intro i s1 s2 idx:
-      match_senv cc wk se1 se2 ->
-      Genv.valid_for (skel (L1 i)) se1 ->
+      match_senv cc wk (fsim_skel (HL i)) se1 se2 ->
       fsim_match_states (HL i) se1 se2 wk idx s1 s2 ->
       match_topframes wk
         (existT _ i idx)
@@ -201,7 +192,7 @@ Section FSIM.
 
   Inductive match_contframes wk wk': frame L1 -> frame L2 -> Prop :=
     match_contframes_intro i s1 s2:
-      match_senv cc wk' se1 se2 ->
+      match_senv cc wk' (fsim_skel (HL i)) se1 se2 ->
       (forall r1 r2 s1', match_reply cc wk r1 r2 ->
        Smallstep.after_external (L1 i se1) s1 r1 s1' ->
        exists idx s2',
@@ -247,8 +238,9 @@ Section FSIM.
       * econstructor; eauto. econstructor; eauto.
     - (* cross-component call *)
       inv H5; subst_dep. clear idx0.
-      edestruct @fsim_match_external as (wx & qx2 & Hqx2 & Hqx & Hsex & Hrx); eauto using fsim_lts.
-      pose proof (fsim_lts (HL j) _ _ Hsex (Hse1 j)).
+      edestruct @fsim_match_external as (wx & qx2 & Hqx & Hqx2 & Hsex & Hrx);
+        eauto using fsim_lts.
+      pose proof (fsim_lts (HL j) _ _ _ Hsex).
       edestruct @fsim_match_initial_states as (idx' & s2' & Hs2' & Hs'); eauto.
       eexists (existT _ j idx'), _. split.
       + left. apply plus_one. eapply step_push; eauto 1.
@@ -256,9 +248,9 @@ Section FSIM.
       + repeat (econstructor; eauto).
     - (* cross-component return *)
       inv H4; subst_dep. clear idx0.
-      pose proof (fsim_lts (HL i) _ _ H3 H7).
+      pose proof (fsim_lts (HL i) _ _ _ H5).
       edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
-      inv H6. inv H8; subst_dep. edestruct H10 as (idx' & s2' & Hs2'& Hs'); eauto.
+      inv H6. inv H7; subst_dep. edestruct H9 as (idx' & s2' & Hs2'& Hs'); eauto.
       eexists (existT _ j idx'), _. split.
       + left. apply plus_one. eapply step_pop; eauto.
       + repeat (econstructor; eauto).
@@ -269,7 +261,7 @@ Section FSIM.
     exists idx s2, initial_state L2 se2 q2 s2 /\ match_states idx s1 s2.
   Proof.
     intros q1 q2 _ Hq [i s1 Hq1 Hs1].
-    pose proof (fsim_lts (HL i) _ _ Hse (Hse1 i)).
+    pose proof (fsim_lts (HL i) _ _ _ (Hse i)).
     edestruct @fsim_match_initial_states as (idx & s2 & Hs2 & Hs); eauto.
     exists (existT _ i idx), (st L2 i s2 :: nil).
     split; econstructor; eauto.
@@ -284,31 +276,33 @@ Section FSIM.
   Proof.
     clear. intros idx s1 s2 r1 Hs Hr1. destruct Hr1 as [i s1 r1 Hr1].
     inv Hs. inv H4. inv H2. subst_dep. clear idx0.
-    pose proof (fsim_lts (HL i) _ _ H1 H4).
+    pose proof (fsim_lts (HL i) _ _ _ H3).
     edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
     exists r2. split; eauto. constructor; eauto.
   Qed.
 
   Lemma external_simulation:
     forall idx s1 s2 qx1, match_states idx s1 s2 -> at_external L1 se1 s1 qx1 ->
-    exists wx qx2, at_external L2 se2 s2 qx2 /\ match_query cc wx qx1 qx2 /\ match_senv cc wx se1 se2 /\
+    forall sk1 sk2 (path: Genv.skel_path sk1 sk2), valid_skel cc path ->
+    exists wx qx2, at_external L2 se2 s2 qx2 /\  match_query cc wx qx1 qx2 /\
+    match_senv cc wx path se1 se2 /\
     forall rx1 rx2 s1', match_reply cc wx rx1 rx2 -> after_external L1 se1 s1 rx1 s1' ->
     exists idx' s2', after_external L2 se2 s2 rx2 s2' /\ match_states idx' s1' s2'.
   Proof.
-    clear - HL Hse1.
-    intros idx s1 s2 q1 Hs Hq1. destruct Hq1 as [i s1 qx1 k1 Hqx1 Hvld].
+    intros idx s1 s2 q1 Hs Hq1 sk1 sk2 path Hpath.
+    destruct Hq1 as [i s1 qx1 k1 Hqx1 Hvld].
     inv Hs. inv H2. subst_dep. clear idx0.
-    pose proof (fsim_lts (HL i) _ _ H1 H5) as Hi.
+    pose proof (fsim_lts (HL i) _ _ _ H3) as Hi.
     edestruct @fsim_match_external as (wx & qx2 & Hqx2 & Hqx & Hsex & H); eauto.
     exists wx, qx2. intuition idtac.
-    + constructor. eauto.
-      intros j. pose proof (fsim_lts (HL j) _ _ Hsex (Hse1 j)).
-      erewrite fsim_match_valid_query; eauto.
-    + inv H2; subst_dep.
+    + constructor. eauto. intros j.
+      (* XXX: I suspect this could be fixed by footprint *)
+      admit.
+    + inv H1; subst_dep.
       edestruct H as (idx' & s2' & Hs2' & Hs'); eauto.
       eexists (existT _ i idx'), _.
       split; repeat (econstructor; eauto).
-  Qed.
+  Admitted.
 
   Lemma semantics_simulation sk1 sk2:
     fsim_properties cc cc se1 se2 w
@@ -335,6 +329,30 @@ Definition compose {li} (La Lb: Smallstep.semantics li li) :=
   let L i := match i with true => La | false => Lb end in
   option_map (semantics L) (link (skel La) (skel Lb)).
 
+Record packed_path: Type := {
+    src_skel: AST.program unit unit;
+    tgt_skel: AST.program unit unit;
+    skel_path: Genv.skel_path src_skel tgt_skel;
+  }.
+
+Fixpoint compose_path {sk1a sk2a sk1b sk2b}
+                      (patha: Genv.skel_path sk1a sk2a)
+                      (pathb: Genv.skel_path sk1b sk2b): option packed_path.
+Proof.
+  destruct patha eqn: HA; destruct pathb eqn: Hb.
+  - destruct (link t t0) eqn: Hlink.
+    + refine (Some {| src_skel := p; tgt_skel := p; skel_path := Genv.Same p |}).
+    + refine None.
+  (* we could also combine [Same] and [Direct] *)
+  - refine None.
+  - refine None.
+  - refine None.
+  - destruct (link start start0) eqn: Hlink1.
+    + destruct (link end_ end_0) eqn: Hlink2.
+Admitted.
+
+(* TODO: compose paths *)
+
 Lemma compose_simulation {li1 li2} (cc: callconv li1 li2) L1a L1b L1 L2a L2b L2:
   forward_simulation cc cc L1a L2a ->
   forward_simulation cc cc L1b L2b ->
@@ -349,7 +367,9 @@ Proof.
   set (L2 := fun i:bool => if i then L2a else L2b).
   assert (HL: forall i, fsim_components cc cc (L1 i) (L2 i)) by (intros [|]; auto).
   constructor.
-  eapply Forward_simulation with (order cc L1 L2 HL) (match_states cc L1 L2 HL).
+  eapply Forward_simulation with
+    (order cc L1 L2 HL) (match_states cc L1 L2 HL)
+    (path_compose (fsim_skel Ha) (fsim_skel Hb) Hsk1 Hsk2).
   - destruct Ha, Hb. cbn. congruence.
   - intros se1 se2 w Hse Hse1.
     eapply semantics_simulation; eauto.
@@ -358,4 +378,7 @@ Proof.
   - clear - HL. intros [i x].
     induction (fsim_order_wf (HL i) x) as [x Hx IHx].
     constructor. intros z Hxz. inv Hxz; subst_dep. eauto.
+  - intros. unfold valid_query. f_equal.
+    + eapply (fsim_lts (HL true)); eauto.
+    + eapply (fsim_lts (HL false)); eauto.
 Qed.

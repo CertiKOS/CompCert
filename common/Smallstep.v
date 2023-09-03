@@ -528,14 +528,14 @@ Section FSIM.
 
 Context {liA1 liA2} (ccA: callconv liA1 liA2).
 Context {liB1 liB2} (ccB: callconv liB1 liB2).
-Context (se1 se2: Genv.symtbl) (se_path: Genv.symtbl_path se1 se2) (wB: ccworld ccB).
+Context (se1 se2: Genv.symtbl) (wB: ccworld ccB).
 Context {state1 state2: Type}.
 
 (** The general form of a forward simulation. *)
 
 Record fsim_properties (L1: lts liA1 liB1 state1) (L2: lts liA2 liB2 state2) (index: Type)
                        (order: index -> index -> Prop)
-                       (match_states: index -> state1 -> state2 -> Prop) : Prop := {
+                       (match_states: index -> state1 -> state2 -> Prop) : Type := {
     fsim_match_valid_query:
       forall q1 q2, match_query ccB wB q1 q2 ->
       valid_query L2 q2 = valid_query L1 q1;
@@ -545,9 +545,13 @@ Record fsim_properties (L1: lts liA1 liB1 state1) (L2: lts liA2 liB2 state2) (in
     fsim_match_final_states:
       forall i s1 s2 r1, match_states i s1 s2 -> final_state L1 s1 r1 ->
       exists r2, final_state L2 s2 r2 /\ match_reply ccB wB r1 r2;
+    (* In theory, the choice of q2 should be independent of skel, but in that
+       way horizontal composition doesn't work *)
     fsim_match_external:
       forall i s1 s2 q1, match_states i s1 s2 -> at_external L1 s1 q1 ->
-      exists w q2, at_external L2 s2 q2 /\ match_query ccA w q1 q2 /\ match_senv ccA w se_path /\
+      forall sk1 sk2 (path: Genv.skel_path sk1 sk2), valid_skel ccA path ->
+      exists w q2, at_external L2 s2 q2 /\ match_query ccA w q1 q2 /\
+      match_senv ccA w path se1 se2 /\
       forall r1 r2 s1', match_reply ccA w r1 r2 -> after_external L1 s1 r1 s1' ->
       exists i' s2', after_external L2 s2 r2 s2' /\ match_states i' s1' s2';
     fsim_simulation:
@@ -602,7 +606,9 @@ Hypothesis match_final_states:
 
 Hypothesis match_external:
   forall s1 s2 q1, match_states s1 s2 -> at_external L1 s1 q1 ->
-  exists wA q2, at_external L2 s2 q2 /\ match_query ccA wA q1 q2 /\ match_senv ccA wA se_path /\
+  forall sk1 sk2 (path: Genv.skel_path sk1 sk2), valid_skel ccA path ->
+  exists wA q2, at_external L2 s2 q2 /\ match_query ccA wA q1 q2 /\
+  match_senv ccA wA path se1 se2 /\
   forall r1 r2 s1', match_reply ccA wA r1 r2 -> after_external L1 s1 r1 s1' ->
   exists s2', after_external L2 s2 r2 s2' /\ match_states s1' s2'.
 
@@ -639,7 +645,7 @@ Proof.
     exists s1; exists s2; auto.
 - intros. destruct H. eapply match_final_states; eauto.
 - intros. destruct H.
-  edestruct match_external as (wA & q2 & H2 & Hq & Hw & Hr); eauto.
+  edestruct match_external as (wA & q2 & Hq & Hw & Hse & Hr); eauto.
   exists wA, q2. intuition auto.
   edestruct Hr as (s2' & Hs2' & Hs'); eauto.
 - intros. destruct H0. subst i. exploit simulation; eauto. intros [s2' [A B]].
@@ -814,7 +820,7 @@ End SIMULATION_SEQUENCES.
 
 End FSIM.
 
-Arguments fsim_properties {_ _} _ {_ _} _ {_ _} _ _ {_ _} L1 L2 index order match_states.
+Arguments fsim_properties {_ _} _ {_ _} _ se1 se2 _ {_ _} L1 L2 index order match_states.
 
 Record fsim_components {liA1 liA2} (ccA: callconv liA1 liA2)
   {liB1 liB2} (ccB: callconv liB1 liB2) L1 L2 :=
@@ -825,10 +831,11 @@ Record fsim_components {liA1 liA2} (ccA: callconv liA1 liA2)
 
     fsim_skel:
       Genv.skel_path (skel L1) (skel L2);
-    fsim_lts se1 se2 (se_path: Genv.symtbl_path se1 se2) wB:
-      match_senv ccB wB se_path ->
-      Genv.valid_stbls fsim_skel se_path ->
-      fsim_properties ccA ccB se_path wB (activate L1 se1) (activate L2 se2)
+    fsim_skel_valid:
+      valid_skel ccB fsim_skel;
+    fsim_lts se1 se2 wB:
+      match_senv ccB wB fsim_skel se1 se2 ->
+      fsim_properties ccA ccB se1 se2 wB (activate L1 se1) (activate L2 se2)
         fsim_index fsim_order (fsim_match_states se1 se2 wB);
     fsim_order_wf:
       well_founded fsim_order;
@@ -879,10 +886,10 @@ Definition identity_fsim_components {liA liB} (L: semantics liA liB):
 Proof.
   (* eapply Forward_simulation. *)
   (* instantiate (1 := (fun _ _ _ => _)). *)
-  assert (path: Genv.skel_path (skel L) (skel L)).
-  { eapply Genv.Direct. reflexivity. }
-  eapply Forward_simulation with _ (fun _ _ _ => _) path; auto.
-  - intros se ? se_path w Hse Hvs. inv Hse. destruct w.
+  eapply Forward_simulation with
+    _ (fun _ _ _ _ => _) (Genv.Same (skel L)); auto.
+  - econstructor.
+  - intros se ? w Hse. inv Hse. destruct w.
     eapply forward_simulation_plus with (match_states := eq);
     cbn; intros; subst; eauto 10 using plus_one.
     exists tt, q1. intuition (subst; eauto).
@@ -902,38 +909,36 @@ Section COMPOSE_FORWARD_SIMULATIONS.
 Context {liA1 liA2 liA3} {ccA12: callconv liA1 liA2} {ccA23: callconv liA2 liA3}.
 Context {liB1 liB2 liB3} {ccB12: callconv liB1 liB2} {ccB23: callconv liB2 liB3}.
 Context (L1: semantics liA1 liB1) (L2: semantics liA2 liB2) (L3: semantics liA3 liB3).
+Context (H12: fsim_components ccA12 ccB12 L1 L2) (H23: fsim_components ccA23 ccB23 L2 L3).
 
-Require Import Coq.Program.Equality.
+Definition ff_index := ((fsim_index H23) * (fsim_index H12))%type.
+Definition ff_order := lex_ord (clos_trans _ (fsim_order H23)) (fsim_order H12).
+
+Inductive ff_match_states se1 se3:
+  ccworld (ccB12 @ ccB23) -> ff_index -> state L1 -> state L3 -> Prop :=
+  | ff_match_states_intros se2 w w' s1 s2 s3 i1 i2:
+    fsim_match_states H12 se1 se2 w i2 s1 s2 ->
+    fsim_match_states H23 se2 se3 w' i1 s2 s3 ->
+    ff_match_states se1 se3 (se2, w, w') (i1, i2) s1 s3.
 
 Lemma compose_fsim_components:
-  fsim_components ccA12 ccB12 L1 L2 ->
-  fsim_components ccA23 ccB23 L2 L3 ->
   fsim_components (ccA12 @ ccA23) (ccB12 @ ccB23) L1 L3.
 Proof.
-  intros [index order match_states path12 props order_wf].
-  intros [index' order' match_states' path23 props' order_wf'].
   set (sk2 := skel L2).
-  set (ff_index := (index' * index)%type).
-  set (ff_order := lex_ord (clos_trans _ order') order).
-  set (ff_match_states :=
-         fun se1 se3 '(se2, w, w') (i: ff_index) (s1: state L1) (s3: state L3) =>
-           exists s2,
-             match_states se1 se2 w (snd i) s1 s2 /\
-             match_states' se2 se3 w' (fst i) s2 s3).
+  (* destruct H12 as [index order match_states path12 props order_wf] eqn: Hf12. *)
+  (* destruct H23 as [index' order' match_states' path23 props' order_wf'] eqn: Hf23. *)
   apply Forward_simulation
-    with ff_order ff_match_states (Genv.Compose path12 path23).
-  2: { unfold ff_order. auto using wf_lex_ord, wf_clos_trans. }
-
-  intros se1 se3 se_path13 [[se2 w] w'] Hse Hvs. cbn in *.
-  simple inversion Hvs; subst. { exfalso. inv H1. }
-  dependent destruction H1.
-  simple inversion Hse. 2: { exfalso. inv H0. } inv H.
-  dependent destruction H0.
-  intros Hse12 Hse23 Hvs12 Hvs23.
-  clear Hvs Hse. rename se12 into se2.
+    with ff_order ff_match_states (Genv.Compose (fsim_skel H12) (fsim_skel H23)).
+  { constructor. apply H12. apply H23. }
+  2: { unfold ff_order. destruct H12. destruct H23.
+       auto using wf_lex_ord, wf_clos_trans. }
+  intros se1 se3 [[se2 w] w'] Hse. cbn in *.
+  inv Hse. subst_dep.
+  pose proof (fsim_lts H12) as props.
+  pose proof (fsim_lts H23) as props'.
 
   constructor.
-- (* valid query *)
+- (* valid_query *)
   intros q1 q3 (q2 & Hq12 & Hq23).
   erewrite fsim_match_valid_query by eauto.
   eapply fsim_match_valid_query; eauto.
@@ -943,11 +948,11 @@ Proof.
   edestruct (@fsim_match_initial_states liA2) as (i' & s3 & C & D); eauto.
   exists (i', i); exists s3; split; auto. exists s2; auto.
 - (* final states *)
-  intros. cbn. destruct H as (s3 & A & B).
+  intros. cbn. inv H.
   edestruct (@fsim_match_final_states liA1) as (r2 & Hr2 & Hr12); eauto.
   edestruct (@fsim_match_final_states liA2) as (r3 & Hr3 & Hr23); eauto.
 - (* external states *)
-  intros. destruct H as [s3 [A B]].
+  intros. inv H. inv H1.
   edestruct (@fsim_match_external liA1) as (w12 & q2 & Hq2 & Hq12 & Hw12 & Hk12); eauto.
   edestruct (@fsim_match_external liA2) as (w23 & q3 & Hq3 & Hq23 & Hw23 & Hk23); eauto.
   exists (se2, w12, w23), q3. cbn; repeat apply conj; eauto.
@@ -957,7 +962,10 @@ Proof.
   edestruct Hk23 as (i23' & s3' & Hs3' & Hs23'); eauto.
   exists (i23', i12'), s3'. split; auto. exists s2'; auto.
 - (* simulation *)
-  intros. destruct H0 as [s3 [A B]]. destruct i as [i2 i1]; simpl in *.
+  intros. inv H0.
+  (* FIXME *)
+  rename i2 into i_temp. rename i1 into i2. rename i_temp into i1.
+  simpl in *.
   edestruct (@fsim_simulation' liA1) as [(i1' & s3' & C & D) | (i1' & C & D & E)]; eauto.
 + (* L2 makes one or several steps. *)
   edestruct (@simulation_plus liA2) as [(i2' & s2' & P & Q) | (i2' & P & Q & R)]; eauto.
@@ -971,6 +979,7 @@ Proof.
   exists (i2, i1'); exists s2; split.
   right; split. subst t; apply star_refl. red. right. auto.
   exists s3; auto.
+
 Qed.
 
 Lemma compose_forward_simulations:
@@ -984,6 +993,7 @@ Qed.
 
 End COMPOSE_FORWARD_SIMULATIONS.
 
+(*
 (** * Receptiveness and determinacy *)
 
 Definition single_events {liA liB st} (L: lts liA liB st) : Prop :=
@@ -1529,7 +1539,7 @@ Record bsim_components {liA1 liA2} (ccA: callconv liA1 liA2)
         match_senv ccB wB se_path ->
         Genv.valid_stbls bsim_skel se_path ->
         bsim_properties ccA ccB se_path wB (activate L1 se1) (activate L2 se2)
-                        bsim_index bsim_order (bsim_match_states se1 se2 wB);
+                        bsim_index bsim_order (bsim_match_states se1 se2 se_path wB);
     bsim_order_wf:
       well_founded bsim_order;
     }.
@@ -1669,9 +1679,16 @@ Lemma compose_backward_simulations:
     backward_simulation (ccA12 @ ccA23) (ccB12 @ ccB23) L1 L3.
 Proof.
   intros until L3. intros [H12] [H23] H3.
-  set (ms := fun se1 se3 '(se2, w12, w23) =>
-               bb_match_states (L2 se2) (bsim_match_states H12 se1 se2 w12)
-                                        (bsim_match_states H23 se2 se3 w23)).
+  set (ms := fun se1 se3 (se_path: Genv.symtbl_path se1 se3) '(se2, w12, w23) i s1 s3 =>
+               match se_path with
+               | Genv.Compose se_path12 se_path23 =>
+                   bb_match_states (L2 se2)
+                     (bsim_match_states H12 se_path12 w12)
+                     (bsim_match_states H23 se_path23 w23)
+                     i s1 s3
+               | Genv.Direct _ _ _ _ => False
+               end
+      ).
   constructor.
   eapply Backward_simulation with
     (bb_order (bsim_order H12) (bsim_order H23)) ms
@@ -2020,7 +2037,9 @@ Lemma forward_to_backward_simulation:
 Proof.
   intros until L2. intros FS L1_receptive L2_determinate.
   destruct FS as [[index order match_states Hskel FS order_wf]].
-  set (ms se1 se2 w := f2b_match_states (L1 se1) (L2 se2) (match_states := match_states se1 se2 w)).
+  set (ms se1 se2 se_path w :=
+         f2b_match_states (L1 se1) (L2 se2)
+           (match_states := match_states se1 se2 se_path w)).
   constructor.
   eapply Backward_simulation with f2b_order ms Hskel; auto using wf_f2b_order.
   intros se1 se2 se_path wB Hse Hvs.
@@ -2128,10 +2147,10 @@ Let sim := fsim_lts FS w Hse Hvs.
 
 Inductive ffs_match: fsim_index FS -> (trace * state L1) -> state L2 -> Prop :=
   | ffs_match_at: forall i s1 s2,
-      fsim_match_states FS se1 se2 w i s1 s2 ->
+      fsim_match_states FS se_path w i s1 s2 ->
       ffs_match i (E0, s1) s2
   | ffs_match_buffer: forall i ev t s1 s2 s2',
-      Star (L2 se2) s2 (ev :: t) s2' -> fsim_match_states FS se1 se2 w i s1 s2' ->
+      Star (L2 se2) s2 (ev :: t) s2' -> fsim_match_states FS se_path w i s1 s2' ->
       ffs_match i (ev :: t, s1) s2.
 
 Lemma star_non_E0_split':
@@ -2236,7 +2255,7 @@ Let sim := bsim_lts BS w Hse Hvs.
 
 Inductive fbs_match: bsim_index BS -> state L1 -> (trace * state L2) -> Prop :=
   | fbs_match_intro: forall i s1 t s2 s1',
-      Star (L1 se1) s1 t s1' -> bsim_match_states BS se1 se2 w i s1' s2 ->
+      Star (L1 se1) s1 t s1' -> bsim_match_states BS se_path w i s1' s2 ->
       t = E0 \/ output_trace t ->
       fbs_match i s1 (t, s2).
 
@@ -2402,3 +2421,4 @@ Record bigstep_sound (B: bigstep_semantics) (L: semantics li_null li_wp) : Prop 
       bigstep_diverges B T ->
       exists s1, initial_state (load L) tt s1 /\ forever (step (load L)) (globalenv (load L)) s1 T
 }.
+*)

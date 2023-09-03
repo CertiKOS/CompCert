@@ -1840,23 +1840,13 @@ Proof.
   congruence.
 Qed.
 
-Inductive path {T: Type} (P: T -> T -> Prop) (start end_: T) : Type :=
-  | Direct:
-      P start end_ -> path P start end_
-  | Compose mid
-      (path12: path P start mid)
-      (path23: path P mid end_):
-      path P start end_.
+Inductive path {T: Type} : T -> T -> Type :=
+  | Same t: path t t
+  | Direct start end_: path start end_
+  | Compose start mid end_ (path12: path start mid) (path23: path mid end_):
+      path start end_.
 
-Definition skel_path := @path (AST.program unit unit) (fun start end_ => skel_le end_ start).
-Definition symtbl_path := @path symtbl (fun _ _ => True).
-
-Lemma skel_path_le sk1 sk2:
-  skel_path sk1 sk2 -> skel_le sk2 sk1.
-Proof.
-  induction 1; eauto.
-  etransitivity; eauto.
-Qed.
+Definition skel_path := @path (AST.program unit unit).
 
 Record valid_stbls' (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
   {
@@ -1872,14 +1862,14 @@ Record valid_stbls' (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
       exists b, Genv.find_symbol se2 (prog_main sk2) = Some b;
   }.
 
-Inductive valid_stbls {sk1 sk2 se1 se2}: skel_path sk1 sk2 -> symtbl_path se1 se2 -> Prop :=
-  | Leaf_valid_stbls (H: skel_le sk2 sk1):
-    valid_stbls' sk1 sk2 se1 se2 -> valid_stbls (Direct _ sk1 sk2 H) (Direct _ se1 se2 I)
-  | Node_valid_stbls
-      sk12 (skel_path12: skel_path sk1 sk12) (skel_path23: skel_path sk12 sk2)
-      se12 (symtbl_path12: symtbl_path se1 se12) (symtbl_path23: symtbl_path se12 se2):
-    valid_stbls skel_path12 symtbl_path12 -> valid_stbls skel_path23 symtbl_path23 ->
-    valid_stbls (Compose skel_path12 skel_path23) (Compose symtbl_path12 symtbl_path23).
+(* Inductive valid_stbls {sk1 sk2 se1 se2}: skel_path sk1 sk2 -> symtbl_path se1 se2 -> Prop := *)
+(*   | Leaf_valid_stbls (H: skel_le sk2 sk1): *)
+(*     valid_stbls' sk1 sk2 se1 se2 -> valid_stbls (Direct _ sk1 sk2 H) (Direct _ se1 se2 I) *)
+(*   | Node_valid_stbls *)
+(*       sk12 (skel_path12: skel_path sk1 sk12) (skel_path23: skel_path sk12 sk2) *)
+(*       se12 (symtbl_path12: symtbl_path se1 se12) (symtbl_path23: symtbl_path se12 se2): *)
+(*     valid_stbls skel_path12 symtbl_path12 -> valid_stbls skel_path23 symtbl_path23 -> *)
+(*     valid_stbls (Compose skel_path12 skel_path23) (Compose symtbl_path12 symtbl_path23). *)
 
 Lemma valid_stbls'_compose sk1 sk2 sk3 se1 se2 se3:
     valid_stbls' sk1 sk2 se1 se2 ->
@@ -1905,6 +1895,9 @@ Qed.
 End SKEL_PATH.
 
 (*
+
+FIXME: This is temporarily commented out. We need to update the properties to cacht up with weakened [match_stbls].
+
 Section MATCH_PROGRAMS.
 
 Context {C F1 V1 F2 V2: Type} {LC: Linker C} {LF: Linker F1} {LV: Linker V1}.
