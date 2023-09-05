@@ -29,33 +29,20 @@ Require Import InjectFootprint.
   [cc']-simulation is also a [cc]-simulation. *)
 
 Definition ccref_query_reply {li1 li2} (cc cc': callconv li1 li2)
-  {sk1 sk2} (path path': Genv.skel_path sk1 sk2) :=
-  forall w se1 se2, match_senv cc w path se1 se2 ->
+  (removed removed': Genv.removed_symbols) :=
+  forall w se1 se2, match_senv cc removed w se1 se2 ->
     forall q1 q2, match_query cc w q1 q2 ->
     exists w',
-      match_senv cc' w' path' se1 se2 /\
+      match_senv cc' removed' w' se1 se2 /\
       match_query cc' w' q1 q2 /\
       forall r1 r2, match_reply cc' w' r1 r2 ->
         match_reply cc w r1 r2.
 
-Record ccref_component {li1 li2} (cc cc': callconv li1 li2): Type :=
-  Ccref {
-    (* skel_path_ref {sk1 sk2}: *)
-    (*   { skel_path' | @valid_skel _ _ cc' sk1 sk2 skel_path' } -> *)
-    (*   { skel_path | @valid_skel _ _ cc sk1 sk2 skel_path }; *)
-    path_ref {sk1 sk2}:
-      Genv.skel_path sk1 sk2 -> option (Genv.skel_path sk1 sk2);
-    ccref_prop {sk1 sk2}:
-      forall (path': Genv.skel_path sk1 sk2),
-        valid_skel cc' path' ->
-        exists path, path_ref path' = Some path /\
-                valid_skel cc path /\
-                ccref_query_reply cc cc' path path';
-  }.
-(* match_senv cc w (proj1_sig (skel_path_ref (exist _ path' H))) se1 se2 -> *)
-
 Definition ccref {li1 li2} (cc cc': callconv li1 li2) :=
-  inhabited (@ccref_component li1 li2 cc cc').
+  forall sk1 sk2 (removed': Genv.removed_symbols),
+    valid_skel cc' removed' sk1 sk2 ->
+    exists removed, valid_skel cc removed sk1 sk2 /\
+               ccref_query_reply cc cc' removed removed'.
 
 Definition cceqv {li1 li2} (cc cc': callconv li1 li2) :=
   ccref cc cc' /\ ccref cc' cc.
@@ -98,18 +85,16 @@ Global Instance open_fsim_ccref:
      forallr - @ liB1, forallr - @ liB2, ccref -->
      subrel).
 Proof.
-  intros liA1 liA2 ccA ccA' [HA] liB1 liB2 ccB ccB' [HB] sem1 sem2 [FS].
-  destruct FS as [index order match_states SKEL VSK PROP WF].
-  destruct HA as [SKREF1 HA]. destruct HB as [SKREF2 HB].
-  pose proof (HB' := HB).
-  specialize (HB _ _ _ VSK) as (path' & Hpath' & Hv' & Href).
+  intros liA1 liA2 ccA ccA' HA liB1 liB2 ccB ccB' HB sem1 sem2 [FS].
+  destruct FS as [index order match_states REM VSK PROP WF].
+  specialize (HB _ _ _ VSK) as (REM' & Hsk' & Href).
   constructor.
   set (ms se1 se2 w' idx s1 s2 :=
          exists w : ccworld ccB,
            match_states se1 se2 w idx s1 s2 /\
-           match_senv ccB w SKEL se1 se2 /\
+           match_senv ccB REM w se1 se2 /\
            forall r1 r2, match_reply ccB w r1 r2 -> match_reply ccB' w' r1 r2).
-  eapply Forward_simulation with order ms path'; auto.
+  eapply Forward_simulation with order ms REM'; auto.
   intros se1 se2 wB' Hse'. specialize (Href _ _ _ Hse').
   split.
   - intros q1 q2 Hq'.
@@ -121,8 +106,8 @@ Proof.
     exists i, s2. split; auto. exists wB; auto.
   - intros i s1 s2 r1 (wB & Hs & Hse & Hr') Hr1.
     edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
-  - intros i s1 s2 qA1 (wB & Hs & Hse & Hr') HqA1 * HpathA'.
-    specialize (HA _ _ _ HpathA') as (pathA & HpathA & HvA & HrefA).
+  - intros i s1 s2 qA1 (wB & Hs & Hse & Hr') HqA1 * HremA'.
+    specialize (HA _ _ _ HremA') as (? & ? & HrefA).
     edestruct @fsim_match_external
       as (wA & qA2 & HqA2 & HseA & HqA & HrA); eauto.
     edestruct HrefA as (wA' & HseA' & HqA' & Hr); eauto.
@@ -185,39 +170,19 @@ Qed.
 (** Language interfaces and calling conventions form a category, with
   [cc_id] as the identity arrow and [cc_compose] as the composition. *)
 
-Definition g {sk1 sk2} (path: Genv.skel_path sk1 sk2):
-    option (Genv.skel_path sk1 sk2).
-Proof.
-  destruct path.
-  - refine None.
-  - refine None.
-  - destruct path1.
-    + refine (Some path2).
-    + refine None.
-    + refine None.
-Defined.
-
 Lemma cc_compose_id_left {li1 li2} (cc: callconv li1 li2):
   cceqv (cc_compose cc_id cc) cc.
 Proof.
   split.
-  - constructor.
-    set (f := fun {sk1 sk2} (path: Genv.skel_path sk1 sk2) =>
-                 Some (Genv.Compose (Genv.Same sk1) path)).
-    eapply Ccref with f.
-    intros sk1 sk2 path Hpath.
-    eexists. intuition eauto. repeat constructor; eauto.
+  - intros sk1 sk2 rem Hrem.
+    eexists (Genv.Compose (Genv.Removed (fun _ => False)) rem).
+    split. repeat econstructor; eauto.
     intros [[se2 []] w] se1 se3 Hse q1 q3 (q2 & Hq12 & Hq23).
-    cbn in Hse. inv Hse. subst_dep.
-    inv SE12. inv Hq12.
+    cbn in Hse. inv Hse. inv Hq12. inv H6.
     exists w. intuition eauto.
     econstructor. split; eauto. constructor.
-  - set (g := fun sk1 sk2 (path: Genv.skel_path sk1 sk2) => g path).
-    constructor.
-    eapply Ccref with g.
-    intros sk1 sk2 path' Hpath'. inv Hpath'.
-    cbn in H. destruct path12. 2-3: inv H.
-    exists path23. intuition eauto.
+  - intros sk1 sk2 rem Hrem. inv Hrem. inv H.
+    exists removed2. split; eauto.
     intros w se1 se2 Hse q1 q2 Hq.
     exists (se1, tt, w); repeat apply conj.
     + cbn. constructor. constructor. eauto.

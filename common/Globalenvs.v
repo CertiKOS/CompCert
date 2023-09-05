@@ -1625,7 +1625,7 @@ End GENV.
 
 Section MATCH_GENVS.
 
-Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
+Record match_stbls (is_removed: ident -> Prop) (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
   mge_public:
     forall id, Genv.public_symbol ge2 id = Genv.public_symbol ge1 id;
   mge_delta:
@@ -1646,13 +1646,15 @@ Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
     Pos.le (genv_next ge1) b1 <-> Pos.le (genv_next ge2) b2;
 }.
 
-Record match_genvs {A B V W} (f: meminj) R (ge1: t A V) (ge2: t B W) := {
-  mge_stbls :> match_stbls f ge1 ge2;
+Record match_genvs {A B V W} (is_removed: ident -> Prop)
+  (f: meminj) R (ge1: t A V) (ge2: t B W) := {
+  mge_stbls :> match_stbls is_removed f ge1 ge2;
   mge_defs:
     forall b1 b2 delta, f b1 = Some (b2, delta) ->
     option_rel R ge1.(genv_defs)!b1 ge2.(genv_defs)!b2;
 }.
 
+(*
 Theorem match_stbls_id ge:
   match_stbls inject_id ge ge.
 Proof.
@@ -1736,6 +1738,7 @@ Proof.
       eapply mge_separated; eauto.
     + edestruct SEP; eauto. tauto.
 Qed.
+*)
 
 (* TODO: restore these properties under appropriate conditions  *)
 
@@ -1840,13 +1843,9 @@ Proof.
   congruence.
 Qed.
 
-Inductive path {T: Type} : T -> T -> Type :=
-  | Same t: path t t
-  | Direct start end_: path start end_
-  | Compose start mid end_ (path12: path start mid) (path23: path mid end_):
-      path start end_.
-
-Definition skel_path := @path (AST.program unit unit).
+Inductive removed_symbols :=
+  | Removed (p: ident -> Prop): removed_symbols
+  | Compose (removed1 removed2: removed_symbols): removed_symbols.
 
 Record valid_stbls' (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
   {
@@ -1861,15 +1860,6 @@ Record valid_stbls' (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
     main_kept:
       exists b, Genv.find_symbol se2 (prog_main sk2) = Some b;
   }.
-
-(* Inductive valid_stbls {sk1 sk2 se1 se2}: skel_path sk1 sk2 -> symtbl_path se1 se2 -> Prop := *)
-(*   | Leaf_valid_stbls (H: skel_le sk2 sk1): *)
-(*     valid_stbls' sk1 sk2 se1 se2 -> valid_stbls (Direct _ sk1 sk2 H) (Direct _ se1 se2 I) *)
-(*   | Node_valid_stbls *)
-(*       sk12 (skel_path12: skel_path sk1 sk12) (skel_path23: skel_path sk12 sk2) *)
-(*       se12 (symtbl_path12: symtbl_path se1 se12) (symtbl_path23: symtbl_path se12 se2): *)
-(*     valid_stbls skel_path12 symtbl_path12 -> valid_stbls skel_path23 symtbl_path23 -> *)
-(*     valid_stbls (Compose skel_path12 skel_path23) (Compose symtbl_path12 symtbl_path23). *)
 
 Lemma valid_stbls'_compose sk1 sk2 sk3 se1 se2 se3:
     valid_stbls' sk1 sk2 se1 se2 ->
