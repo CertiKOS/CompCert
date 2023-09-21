@@ -1625,7 +1625,7 @@ End GENV.
 
 Section MATCH_GENVS.
 
-Record match_stbls (is_removed: ident -> Prop) (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
+Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
   mge_public:
     forall id, Genv.public_symbol ge2 id = Genv.public_symbol ge1 id;
   mge_delta:
@@ -1646,9 +1646,9 @@ Record match_stbls (is_removed: ident -> Prop) (f: meminj) (ge1: symtbl) (ge2: s
     Pos.le (genv_next ge1) b1 <-> Pos.le (genv_next ge2) b2;
 }.
 
-Record match_genvs {A B V W} (is_removed: ident -> Prop)
+Record match_genvs {A B V W}
   (f: meminj) R (ge1: t A V) (ge2: t B W) := {
-  mge_stbls :> match_stbls is_removed f ge1 ge2;
+  mge_stbls :> match_stbls f ge1 ge2;
   mge_defs:
     forall b1 b2 delta, f b1 = Some (b2, delta) ->
     option_rel R ge1.(genv_defs)!b1 ge2.(genv_defs)!b2;
@@ -1843,44 +1843,58 @@ Proof.
   congruence.
 Qed.
 
-Inductive removed_symbols :=
-  | Removed (p: ident -> Prop): removed_symbols
-  | Compose (removed1 removed2: removed_symbols): removed_symbols.
-
-Record valid_stbls' (sk1 sk2: AST.program unit unit) (se1 se2: Genv.symtbl) :=
+Inductive match_stbls' (src: ident -> Prop) (tgt: ident -> Prop)
+  (f: meminj) (ge1: symtbl) (ge2: symtbl) :=
   {
-    valid1: valid_for sk1 se1;
-    valid2: valid_for sk2 se2;
+    global_prop: match_stbls f ge1 ge2;
+
     symbols_removed:
-      forall id, AST.has_symbol sk1 id -> ~ AST.has_symbol sk2 id -> Genv.find_symbol se2 id = None;
-    (** [symbols_subset] is for proving [valid_stbls_compose] *)
+      forall id, src id -> ~ tgt id -> Genv.find_symbol ge2 id = None;
+    symbols_kept:
+      forall id, src id -> tgt id -> exists b, Genv.find_symbol ge2 id = Some b;
     symbols_subset:
-      forall id, Genv.has_symbol se2 id -> Genv.has_symbol se1 id;
-    (** [valid_for] tells us information about kept symbols, but [prog_main] is not included *)
-    main_kept:
-      exists b, Genv.find_symbol se2 (prog_main sk2) = Some b;
+      forall id, Genv.has_symbol ge2 id -> Genv.has_symbol ge1 id;
   }.
 
-Lemma valid_stbls'_compose sk1 sk2 sk3 se1 se2 se3:
-    valid_stbls' sk1 sk2 se1 se2 ->
-    valid_stbls' sk2 sk3 se2 se3 ->
-    valid_stbls' sk1 sk3 se1 se3.
-Proof.
-  intros SE1 SE2. constructor.
-  - apply SE1.
-  - apply SE2.
-  - intros id H1 H2.
-    destruct (In_dec Pos.eq_dec id (prog_defs_names sk2)).
-    + apply SE2; eauto.
-    + exploit symbols_removed. apply SE1. all: eauto.
-      intros Hx.
-      destruct (find_symbol se3 id) eqn: Hf.
-      * exfalso. exploit symbols_subset. apply SE2.
-        eexists. apply Hf. intros (g & Hg). congruence.
-      * reflexivity.
-  - intros id Hx. apply SE1. apply SE2. eauto.
-  - apply SE2.
-Qed.
+Inductive skel_info :=
+  | Skel_info (src: ident -> Prop) (tgt: ident -> Prop): skel_info
+  | Compose (info1 info2: skel_info): skel_info.
+
+(* Record valid_stbls' (d1 d2: ident -> Prop) (se1 se2: Genv.symtbl) := *)
+(*   { *)
+(*     valid1: valid_for sk1 se1; *)
+(*     valid2: valid_for sk2 se2; *)
+(*     symbols_removed: *)
+(*       forall id, d1 id -> ~ d2 id -> Genv.find_symbol se2 id = None; *)
+(*     (** [symbols_subset] is for proving [valid_stbls_compose] *) *)
+(*     symbols_subset: *)
+(*       forall id, Genv.has_symbol se2 id -> Genv.has_symbol se1 id; *)
+(*     (** [valid_for] tells us information about kept symbols, but [prog_main] is not included *) *)
+(*     (* main_kept: *) *)
+(*     (*   exists b, Genv.find_symbol se2 (prog_main sk2) = Some b; *) *)
+(*     (* TODO: make [main] part of [public]? *) *)
+(*   }. *)
+
+(* Lemma valid_stbls'_compose sk1 sk2 sk3 se1 se2 se3: *)
+(*     valid_stbls' sk1 sk2 se1 se2 -> *)
+(*     valid_stbls' sk2 sk3 se2 se3 -> *)
+(*     valid_stbls' sk1 sk3 se1 se3. *)
+(* Proof. *)
+(*   intros SE1 SE2. constructor. *)
+(*   - apply SE1. *)
+(*   - apply SE2. *)
+(*   - intros id H1 H2. *)
+(*     destruct (In_dec Pos.eq_dec id (prog_defs_names sk2)). *)
+(*     + apply SE2; eauto. *)
+(*     + exploit symbols_removed. apply SE1. all: eauto. *)
+(*       intros Hx. *)
+(*       destruct (find_symbol se3 id) eqn: Hf. *)
+(*       * exfalso. exploit symbols_subset. apply SE2. *)
+(*         eexists. apply Hf. intros (g & Hg). congruence. *)
+(*       * reflexivity. *)
+(*   - intros id Hx. apply SE1. apply SE2. eauto. *)
+(*   - apply SE2. *)
+(* Qed. *)
 
 End SKEL_PATH.
 

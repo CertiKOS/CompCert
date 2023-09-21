@@ -29,20 +29,20 @@ Require Import InjectFootprint.
   [cc']-simulation is also a [cc]-simulation. *)
 
 Definition ccref_query_reply {li1 li2} (cc cc': callconv li1 li2)
-  (removed removed': Genv.removed_symbols) :=
-  forall w se1 se2, match_senv cc removed w se1 se2 ->
+  (skel_info skel_info': Genv.skel_info) :=
+  forall w se1 se2, match_senv cc skel_info w se1 se2 ->
     forall q1 q2, match_query cc w q1 q2 ->
     exists w',
-      match_senv cc' removed' w' se1 se2 /\
+      match_senv cc' skel_info' w' se1 se2 /\
       match_query cc' w' q1 q2 /\
       forall r1 r2, match_reply cc' w' r1 r2 ->
         match_reply cc w r1 r2.
 
 Definition ccref {li1 li2} (cc cc': callconv li1 li2) :=
-  forall sk1 sk2 (removed': Genv.removed_symbols),
-    valid_skel cc' removed' sk1 sk2 ->
-    exists removed, valid_skel cc removed sk1 sk2 /\
-               ccref_query_reply cc cc' removed removed'.
+  forall sk1 sk2 (skel_info': Genv.skel_info),
+    valid_skel cc' skel_info' sk1 sk2 ->
+    exists skel_info, valid_skel cc skel_info sk1 sk2 /\
+               ccref_query_reply cc cc' skel_info skel_info'.
 
 Definition cceqv {li1 li2} (cc cc': callconv li1 li2) :=
   ccref cc cc' /\ ccref cc' cc.
@@ -95,7 +95,7 @@ Proof.
            match_senv ccB REM w se1 se2 /\
            forall r1 r2, match_reply ccB w r1 r2 -> match_reply ccB' w' r1 r2).
   eapply Forward_simulation with order ms REM'; auto.
-  intros se1 se2 wB' Hse'. specialize (Href _ _ _ Hse').
+  intros se1 se2 wB' Hse' Hvf. specialize (Href _ _ _ Hse').
   split.
   - intros q1 q2 Hq'.
     destruct (Href q1 q2) as (wB & Hse & Hq & Hr); auto.

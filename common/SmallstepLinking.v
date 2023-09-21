@@ -177,14 +177,14 @@ Section FSIM.
   Context (L2 : I -> Smallstep.semantics li2 li2).
   Context (HL : forall i, fsim_components cc cc (L1 i) (L2 i)).
   Context (se1 se2: Genv.symtbl) (w : ccworld cc).
-  Context (Hse: forall i, match_senv cc (fsim_removed (HL i)) w se1 se2).
-  Context (sk1i sk2i: forall (i: I), AST.program unit unit).
-  Context (Hsk: forall i, valid_skel cc (fsim_removed (HL i)) (sk1i i) (sk2i i)).
+  Context (Hse: forall i, match_senv cc (fsim_skel_info (HL i)) w se1 se2).
+  Context (Hsk: forall i, valid_skel cc (fsim_skel_info (HL i)) (skel (L1 i)) (skel (L2 i))).
+  Context (Hvf: forall i, Genv.valid_for (skel (L1 i)) se1).
   Notation index := {i & fsim_index (HL i)}.
 
   Inductive match_topframes wk: index -> frame L1 -> frame L2 -> Prop :=
     match_topframes_intro i s1 s2 idx:
-      match_senv cc (fsim_removed (HL i)) wk se1 se2 ->
+      match_senv cc (fsim_skel_info (HL i)) wk se1 se2 ->
       fsim_match_states (HL i) se1 se2 wk idx s1 s2 ->
       match_topframes wk
         (existT _ i idx)
@@ -193,7 +193,7 @@ Section FSIM.
 
   Inductive match_contframes wk wk': frame L1 -> frame L2 -> Prop :=
     match_contframes_intro i s1 s2:
-      match_senv cc (fsim_removed (HL i)) wk' se1 se2 ->
+      match_senv cc (fsim_skel_info (HL i)) wk' se1 se2 ->
       (forall r1 r2 s1', match_reply cc wk r1 r2 ->
        Smallstep.after_external (L1 i se1) s1 r1 s1' ->
        exists idx s2',
@@ -241,7 +241,7 @@ Section FSIM.
       inv H5; subst_dep. clear idx0.
       edestruct @fsim_match_external as (wx & qx2 & Hqx & Hqx2 & Hsex & Hrx);
         eauto using fsim_lts.
-      pose proof (fsim_lts (HL j) _ _ _ Hsex).
+      pose proof (fsim_lts (HL j) _ _ Hsex (Hvf j)).
       edestruct @fsim_match_initial_states as (idx' & s2' & Hs2' & Hs'); eauto.
       eexists (existT _ j idx'), _. split.
       + left. apply plus_one. eapply step_push; eauto 1.
@@ -249,7 +249,7 @@ Section FSIM.
       + repeat (econstructor; eauto).
     - (* cross-component return *)
       inv H4; subst_dep. clear idx0.
-      pose proof (fsim_lts (HL i) _ _ _ H5).
+      pose proof (fsim_lts (HL i) _ _ H5 (Hvf i)).
       edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
       inv H6. inv H7; subst_dep. edestruct H9 as (idx' & s2' & Hs2'& Hs'); eauto.
       eexists (existT _ j idx'), _. split.
@@ -262,7 +262,7 @@ Section FSIM.
     exists idx s2, initial_state L2 se2 q2 s2 /\ match_states idx s1 s2.
   Proof.
     intros q1 q2 _ Hq [i s1 Hq1 Hs1].
-    pose proof (fsim_lts (HL i) _ _ _ (Hse i)).
+    pose proof (fsim_lts (HL i) _ _ (Hse i) (Hvf i)).
     edestruct @fsim_match_initial_states as (idx & s2 & Hs2 & Hs); eauto.
     exists (existT _ i idx), (st L2 i s2 :: nil).
     split; econstructor; eauto.
@@ -275,30 +275,30 @@ Section FSIM.
     forall idx s1 s2 r1, match_states idx s1 s2 -> final_state L1 se1 s1 r1 ->
     exists r2, final_state L2 se2 s2 r2 /\ match_reply cc w r1 r2.
   Proof.
-    clear. intros idx s1 s2 r1 Hs Hr1. destruct Hr1 as [i s1 r1 Hr1].
+    clear -Hvf. intros idx s1 s2 r1 Hs Hr1. destruct Hr1 as [i s1 r1 Hr1].
     inv Hs. inv H4. inv H2. subst_dep. clear idx0.
-    pose proof (fsim_lts (HL i) _ _ _ H3).
+    pose proof (fsim_lts (HL i) _ _ H3 (Hvf i)).
     edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
     exists r2. split; eauto. constructor; eauto.
   Qed.
 
   Lemma external_simulation:
     forall idx s1 s2 qx1, match_states idx s1 s2 -> at_external L1 se1 s1 qx1 ->
-    forall sk1 sk2 (removed: Genv.removed_symbols), valid_skel cc removed sk1 sk2 ->
+    forall sk1 sk2 (skel_info: Genv.skel_info), valid_skel cc skel_info sk1 sk2 ->
     exists wx qx2, at_external L2 se2 s2 qx2 /\  match_query cc wx qx1 qx2 /\
-    match_senv cc removed wx se1 se2 /\
+    match_senv cc skel_info wx se1 se2 /\
     forall rx1 rx2 s1', match_reply cc wx rx1 rx2 -> after_external L1 se1 s1 rx1 s1' ->
     exists idx' s2', after_external L2 se2 s2 rx2 s2' /\ match_states idx' s1' s2'.
   Proof.
     intros idx s1 s2 q1 Hs Hq1 sk1' sk2' rem Hrem.
     destruct Hq1 as [i s1 qx1 k1 Hqx1 Hvld].
     inv Hs. inv H2. subst_dep. clear idx0.
-    pose proof (fsim_lts (HL i) _ _ _ H3) as Hi.
+    pose proof (fsim_lts (HL i) _ _ H3 (Hvf i)) as Hi.
     edestruct @fsim_match_external as (wx & qx2 & Hqx2 & Hqx & Hsex & H); eauto.
     exists wx, qx2. intuition idtac.
     + constructor. eauto. intros j.
       erewrite fsim_match_valid_query; eauto.
-      apply HL.
+      apply HL; eauto.
       (* XXX: I suspect this could be fixed by the [footprint] version of
          forward simulation. [valid_query] may not be same, but at least when
          [valid_query (L1 j) q = false], we have [valid_query (L2 j) q =
@@ -335,19 +335,25 @@ Definition compose {li} (La Lb: Smallstep.semantics li li) :=
   let L i := match i with true => La | false => Lb end in
   option_map (semantics L) (link (skel La) (skel Lb)).
 
-Lemma compose_removed {li1 li2} (cc: callconv li1 li2)
-  removed1 removed2 sk1l sk1r sk2l sk2r sk1 sk2:
-  valid_skel cc removed1 sk1l sk2l ->
-  valid_skel cc removed2 sk1r sk2r ->
+Lemma compose_skel_info {li1 li2} (cc: callconv li1 li2)
+  skel_info1 skel_info2 sk1l sk1r sk2l sk2r sk1 sk2:
+  valid_skel cc skel_info1 sk1l sk2l ->
+  valid_skel cc skel_info2 sk1r sk2r ->
   link sk1l sk1r = Some sk1 ->
   link sk2l sk2r = Some sk2 ->
-  exists removed,
-    valid_skel cc removed sk1 sk2 /\
+  exists skel_info,
+    valid_skel cc skel_info sk1 sk2 /\
     forall se1 se2 w,
-      match_senv cc removed w se1 se2 ->
-      match_senv cc removed1 w se1 se2 /\
-      match_senv cc removed2 w se1 se2.
-Admitted.
+      match_senv cc skel_info w se1 se2 ->
+      match_senv cc skel_info1 w se1 se2 /\
+      match_senv cc skel_info2 w se1 se2.
+Proof.
+  intros Hsk1 Hsk2 Hlink1 Hlink2.
+  exploit @valid_skel_link. 3: apply Hlink1. 1-2: eauto.
+  intros (skel_info & sk2' & Hlink2' & Hsk2' & Ho1 & Ho2).
+  rewrite Hlink2 in Hlink2'. inv Hlink2'.
+  exists skel_info. intuition eauto; eapply match_senv_order; eauto.
+Qed.
 
 Lemma compose_simulation {li1 li2} (cc: callconv li1 li2) L1a L1b L1 L2a L2b L2:
   forward_simulation cc cc L1a L2a ->
@@ -361,19 +367,19 @@ Proof.
   destruct (link (skel L2a) (skel L2b)) as [sk2|] eqn:Hsk2; try discriminate. inv H2.
   set (L1 := fun i:bool => if i then L1a else L1b).
   set (L2 := fun i:bool => if i then L2a else L2b).
-  set (sk1i := fun i:bool => if i then (skel L1a) else (skel L1b)).
-  set (sk2i := fun i:bool => if i then (skel L2a) else (skel L2b)).
   assert (HL: forall i, fsim_components cc cc (L1 i) (L2 i)) by (intros [|]; auto).
-  edestruct (compose_removed cc) as (removed & Hsk & HSE).
+  edestruct (compose_skel_info cc) as (skel_info & Hsk & HSE).
   apply (HL true). apply (HL false). 1-2: eauto.
   constructor.
-  eapply Forward_simulation with (order cc L1 L2 HL) (match_states cc L1 L2 HL) removed.
+  eapply Forward_simulation with (order cc L1 L2 HL) (match_states cc L1 L2 HL) skel_info.
   - apply Hsk.
-  - intros se1 se2 w Hse.
-    eapply semantics_simulation with sk1i sk2i.
+  - intros se1 se2 w Hse Hvf.
+    eapply semantics_simulation.
     + specialize (HSE _ _ _ Hse) as (? & ?).
       intros [|]; eauto.
     + intros [|]; eauto. apply (HL true). apply (HL false).
+    + apply link_linkorder in Hsk1 as [? ?].
+      intros [|]; eapply Genv.valid_for_linkorder; eauto.
   - clear - HL. intros [i x].
     induction (fsim_order_wf (HL i) x) as [x Hx IHx].
     constructor. intros z Hxz. inv Hxz; subst_dep. eauto.

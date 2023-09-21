@@ -6,6 +6,7 @@ Require Import Globalenvs.
 Require Import Events.
 Require Import CKLR.
 Require Import Classical.       (* inj_pair2 *)
+Require Import Linking.
 
 Ltac subst_dep :=
   subst;
@@ -55,15 +56,44 @@ Definition li_wp :=
 
 (** ** Definition *)
 
+Inductive skel_info_order: Genv.skel_info -> Genv.skel_info -> Prop :=
+  | skel_info_order_compose info1 info2 info1' info2':
+        skel_info_order info1 info1' ->
+        skel_info_order info2 info2' ->
+        skel_info_order (Genv.Compose info1 info2)
+                        (Genv.Compose info1' info2').
+
 Record callconv {li1 li2} :=
   mk_callconv {
     ccworld : Type;
-    valid_skel (removed: Genv.removed_symbols)
+    valid_skel (skel_info: Genv.skel_info)
       (sk1 sk2: AST.program unit unit): Prop;
-    match_senv (removed: Genv.removed_symbols):
+    match_senv (skel_info: Genv.skel_info):
         ccworld -> Genv.symtbl -> Genv.symtbl -> Prop;
     match_query: ccworld -> query li1 -> query li2 -> Prop;
     match_reply: ccworld -> reply li1 -> reply li2 -> Prop;
+
+    match_senv_valid:
+        forall sk1 sk2 w se1 se2 skel_info,
+          valid_skel skel_info sk1 sk2 ->
+          match_senv skel_info w se1 se2 ->
+          Genv.valid_for sk1 se1 ->
+          Genv.valid_for sk2 se2;
+    match_senv_order:
+        forall se1 se2 w skel_info skel_info',
+          match_senv skel_info w se1 se2 ->
+          skel_info_order skel_info' skel_info ->
+          match_senv skel_info' w se1 se2;
+    valid_skel_link:
+        forall skel_info1 skel_info2 sk1l sk1r sk2l sk2r sk1,
+          valid_skel skel_info1 sk1l sk2l ->
+          valid_skel skel_info2 sk1r sk2r ->
+          link sk1l sk1r = Some sk1 ->
+          exists skel_info sk2,
+            link sk2l sk2r = Some sk2 /\
+            valid_skel skel_info sk1 sk2 /\
+            skel_info_order skel_info1 skel_info /\
+            skel_info_order skel_info2 skel_info;
   }.
 
 Arguments callconv: clear implicits.
@@ -74,9 +104,9 @@ Local Obligation Tactic := cbn; eauto.
 (** ** Identity *)
 
 Inductive valid_skel_id:
-    Genv.removed_symbols -> AST.program unit unit -> AST.program unit unit -> Prop :=
+    Genv.skel_info -> AST.program unit unit -> AST.program unit unit -> Prop :=
 | valid_skel_id_intro sk:
-    valid_skel_id (Genv.Removed (fun id => False)) sk sk.
+    valid_skel_id (Genv.Skel_info (AST.has_symbol sk) (AST.has_symbol sk)) sk sk.
 
 Program Definition cc_id {li}: callconv li li :=
   {|
@@ -86,6 +116,16 @@ Program Definition cc_id {li}: callconv li li :=
     match_query w := eq;
     match_reply w := eq;
   |}.
+Next Obligation.
+  intros. inv H. eauto.
+Qed.
+Next Obligation.
+  intros. inv H. inv H0.
+  exists (Genv.Skel_info (AST.has_symbol sk1) (AST.has_symbol sk1)), sk1.
+  intuition eauto.
+  constructor.
+  admit.
+Admitted.
 
 Notation "1" := cc_id : cc_scope.
 
@@ -93,20 +133,20 @@ Notation "1" := cc_id : cc_scope.
 
 Inductive valid_skel_compose {li1 li2 li3} (cc12: callconv li1 li2)
   (cc23: callconv li2 li3):
-    Genv.removed_symbols -> AST.program unit unit -> AST.program unit unit -> Prop :=
-  | Valid_skel_compose_intro removed1 removed2 sk1 sk2 sk3:
-      valid_skel cc12 removed1 sk1 sk2 ->
-      valid_skel cc23 removed2 sk2 sk3 ->
-      valid_skel_compose cc12 cc23 (Genv.Compose removed1 removed2) sk1 sk3.
+    Genv.skel_info -> AST.program unit unit -> AST.program unit unit -> Prop :=
+  | Valid_skel_compose_intro info1 info2 sk1 sk2 sk3:
+      valid_skel cc12 info1 sk1 sk2 ->
+      valid_skel cc23 info2 sk2 sk3 ->
+      valid_skel_compose cc12 cc23 (Genv.Compose info1 info2) sk1 sk3.
 
 Inductive match_senv_compose {li1 li2 li3} (cc12: callconv li1 li2)
   (cc23: callconv li2 li3):
-    Genv.removed_symbols -> (Genv.symtbl * ccworld cc12 * ccworld cc23) ->
+    Genv.skel_info -> (Genv.symtbl * ccworld cc12 * ccworld cc23) ->
     Genv.symtbl -> Genv.symtbl -> Prop :=
-  | Match_senv_compose_intro removed1 removed2 w12 w23 se1 se2 se3:
-      match_senv cc12 removed1 w12 se1 se2 ->
-      match_senv cc23 removed2 w23 se2 se3 ->
-      match_senv_compose cc12 cc23 (Genv.Compose removed1 removed2)
+  | Match_senv_compose_intro info1 info2 w12 w23 se1 se2 se3:
+      match_senv cc12 info1 w12 se1 se2 ->
+      match_senv cc23 info2 w23 se2 se3 ->
+      match_senv_compose cc12 cc23 (Genv.Compose info1 info2)
         (se2, w12, w23) se1 se3.
 
 Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: callconv li2 li3) :=
@@ -123,6 +163,28 @@ Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: call
         match_reply cc12 w12 r1 r2 /\
         match_reply cc23 w23 r2 r3;
   |}.
+Next Obligation.
+  intros. inv H. inv H0.
+  eapply match_senv_valid; eauto.
+  eapply match_senv_valid; eauto.
+Qed.
+
+Next Obligation.
+  intros. rename se2 into se3.
+  destruct w as [[se2 w12] w23].
+  inv H. inv H0.
+  constructor; eapply match_senv_order; eauto.
+Qed.
+
+Next Obligation.
+  intros. inv H. inv H0.
+  exploit @valid_skel_link. 3: eauto. 1-2: eauto.
+  intros (i & k & Hi & Hk & Ho1 & Ho2).
+  exploit @valid_skel_link. 3: apply Hi. 1-2: eauto.
+  intros (i' & k' & Hi' & Hk' & Ho1' & Ho2').
+  eexists (Genv.Compose i i'), k'.
+  intuition eauto; econstructor; eauto.
+Qed.
 
 Infix "@" := cc_compose (at level 30, right associativity) : cc_scope.
 
@@ -176,7 +238,6 @@ Inductive cc_c_reply R (w: world R): relation c_reply :=
 
 (* TODO: for most passes we use [valid_skel_id], but for Unusedglob, we need
    something more general *)
-
 
 (* Program Definition cc_c (R: cklr): callconv li_c li_c := *)
 (*   {| *)
