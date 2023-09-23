@@ -73,6 +73,15 @@ Record callconv {li1 li2} :=
     match_query: ccworld -> query li1 -> query li2 -> Prop;
     match_reply: ccworld -> reply li1 -> reply li2 -> Prop;
 
+    match_senv_symbol_address:
+      forall w skel_info se1 se2, match_senv skel_info w se1 se2 ->
+      forall q1 q2, match_query w q1 q2 ->
+      forall i, Genv.symbol_address se1 i Ptrofs.zero = entry q1 <->
+           Genv.symbol_address se2 i Ptrofs.zero = entry q2;
+    match_query_defined:
+      forall w q1 q2,
+        match_query w q1 q2 ->
+        entry q1 <> Vundef <-> entry q2 <> Vundef;
     match_senv_valid:
         forall sk1 sk2 w se1 se2 skel_info,
           valid_skel skel_info sk1 sk2 ->
@@ -116,6 +125,12 @@ Program Definition cc_id {li}: callconv li li :=
     match_query w := eq;
     match_reply w := eq;
   |}.
+Next Obligation.
+  intros. subst. reflexivity.
+Qed.
+Next Obligation.
+  intros. subst. reflexivity.
+Qed.
 Next Obligation.
   intros. inv H. eauto.
 Qed.
@@ -163,6 +178,19 @@ Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: call
         match_reply cc12 w12 r1 r2 /\
         match_reply cc23 w23 r2 r3;
   |}.
+Next Obligation.
+  intros. rename se2 into se3. rename q2 into q3.
+  destruct w as [[se2 w12] w23].
+  destruct H0 as (q2 & Hq1 & Hq2).
+  inv H. etransitivity; eapply match_senv_symbol_address; eauto.
+Qed.
+
+Next Obligation.
+  intros. destruct w as [[se2 w12] w23].
+  destruct H as (q & Hq & Hq').
+  etransitivity; eapply match_query_defined; eauto.
+Qed.
+
 Next Obligation.
   intros. inv H. inv H0.
   eapply match_senv_valid; eauto.

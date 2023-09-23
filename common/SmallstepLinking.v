@@ -28,7 +28,7 @@ Section LINK.
           step (st i s :: k) t (st i s' :: k)
       | step_push i j s q s' k :
           Smallstep.at_external (L i se) s q ->
-          valid_query (L j se) q = true ->
+          valid_query (L j) se q ->
           Smallstep.initial_state (L j se) q s' ->
           step (st i s :: k) E0 (st j s' :: st i s :: k)
       | step_pop i j s sk r s' k :
@@ -38,14 +38,14 @@ Section LINK.
 
     Inductive initial_state (q: query li): state -> Prop :=
       | initial_state_intro i s :
-          valid_query (L i se) q = true ->
+          valid_query (L i) se q ->
           Smallstep.initial_state (L i se) q s ->
           initial_state q (st i s :: nil).
 
     Inductive at_external: state -> query li -> Prop :=
       | at_external_intro i s q k:
           Smallstep.at_external (L i se) s q ->
-          (forall j, valid_query (L j se) q = false) ->
+          (forall j, ~ valid_query (L j) se q) ->
           at_external (st i s :: k) q.
 
     Inductive after_external: state -> reply li -> state -> Prop :=
@@ -58,9 +58,6 @@ Section LINK.
           Smallstep.final_state (L i se) s r ->
           final_state (st i s :: nil) r.
 
-    Definition valid_query q :=
-      valid_query (L true se) q || valid_query (L false se) q.
-
   End WITH_SE.
 
   Context (sk: AST.program unit unit).
@@ -70,7 +67,6 @@ Section LINK.
       activate se :=
         {|
           Smallstep.step ge := step se;
-          Smallstep.valid_query := valid_query se;
           Smallstep.initial_state := initial_state se;
           Smallstep.at_external := at_external se;
           Smallstep.after_external := after_external se;
@@ -78,6 +74,7 @@ Section LINK.
           Smallstep.globalenv := tt;
         |};
       skel := sk;
+      footprint x := exists i, footprint (L i) x;
     |}.
 
   (** * Properties *)
@@ -115,9 +112,9 @@ Section LINK.
   Qed.
 *)
   Hypothesis valid_query_excl:
-    forall i j se q,
-      Smallstep.valid_query (L i se) q = true ->
-      Smallstep.valid_query (L j se) q = true ->
+    forall i j se (q: query li),
+      Smallstep.valid_query (L i) se q ->
+      Smallstep.valid_query (L j) se q ->
       i = j.
 (*
   Lemma semantics_determinate:
@@ -245,7 +242,7 @@ Section FSIM.
       edestruct @fsim_match_initial_states as (idx' & s2' & Hs2' & Hs'); eauto.
       eexists (existT _ j idx'), _. split.
       + left. apply plus_one. eapply step_push; eauto 1.
-        erewrite fsim_match_valid_query; eauto.
+        erewrite <- match_valid_query; eauto. constructor. apply HL.
       + repeat (econstructor; eauto).
     - (* cross-component return *)
       inv H4; subst_dep. clear idx0.
@@ -266,9 +263,10 @@ Section FSIM.
     edestruct @fsim_match_initial_states as (idx & s2 & Hs2 & Hs); eauto.
     exists (existT _ i idx), (st L2 i s2 :: nil).
     split; econstructor; eauto.
-    + erewrite fsim_match_valid_query; eauto.
+    + erewrite <- match_valid_query; eauto. constructor; apply HL.
     + econstructor; eauto.
     + constructor.
+      Unshelve. exact i.
   Qed.
 
   Lemma final_states_simulation:
@@ -297,18 +295,12 @@ Section FSIM.
     edestruct @fsim_match_external as (wx & qx2 & Hqx2 & Hqx & Hsex & H); eauto.
     exists wx, qx2. intuition idtac.
     + constructor. eauto. intros j.
-      erewrite fsim_match_valid_query; eauto.
-      apply HL; eauto.
-      (* XXX: I suspect this could be fixed by the [footprint] version of
-         forward simulation. [valid_query] may not be same, but at least when
-         [valid_query (L1 j) q = false], we have [valid_query (L2 j) q =
-         false] *)
-      admit.
+      erewrite <- match_valid_query; eauto. constructor; apply HL.
     + inv H1; subst_dep.
       edestruct H as (idx' & s2' & Hs2' & Hs'); eauto.
       eexists (existT _ i idx'), _.
       split; repeat (econstructor; eauto).
-  Admitted.
+  Qed.
 
   Lemma semantics_simulation sk1 sk2:
     fsim_properties cc cc se1 se2 w
@@ -317,9 +309,6 @@ Section FSIM.
       index order match_states.
   Proof.
     split; cbn.
-    - intros. unfold valid_query. f_equal.
-      + eapply (fsim_lts (HL true)); eauto.
-      + eapply (fsim_lts (HL false)); eauto.
     - eauto using initial_states_simulation.
     - eauto using final_states_simulation.
     - eauto using external_simulation.
@@ -372,6 +361,7 @@ Proof.
   apply (HL true). apply (HL false). 1-2: eauto.
   constructor.
   eapply Forward_simulation with (order cc L1 L2 HL) (match_states cc L1 L2 HL) skel_info.
+  - intros id. split; intros [i Hi]; exists i; rewrite (fsim_footprint (HL i)) in *; auto.
   - apply Hsk.
   - intros se1 se2 w Hse Hvf.
     eapply semantics_simulation.
