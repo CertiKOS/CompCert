@@ -28,6 +28,7 @@ Require Import Globalenvs.
 Require Import LanguageInterface.
 Require Import Integers.
 Require Import Maps.            (* ! *)
+Require Import SkelInfo.
 
 Set Implicit Arguments.
 
@@ -567,7 +568,7 @@ Section FSIM.
 
 Context {liA1 liA2} (ccA: callconv liA1 liA2).
 Context {liB1 liB2} (ccB: callconv liB1 liB2).
-Context (se1 se2: Genv.symtbl) (wB: ccworld ccB) (skel_infoA: Genv.skel_info).
+Context (se1 se2: Genv.symtbl) (wB: ccworld ccB) (skel_infoA: skel_info).
 Context {state1 state2: Type}.
 
 (** The general form of a forward simulation. *)
@@ -857,7 +858,7 @@ Record fsim_components {liA1 liA2} (ccA: callconv liA1 liA2)
     fsim_match_states: _;
 
     fsim_footprint: forall i, footprint L1 i <-> footprint L2 i;
-    fsim_skel_info: Genv.skel_info;
+    fsim_skel_info: skel_info;
     fsim_skel_valid:
       valid_skel ccB fsim_skel_info (skel L1) (skel L2);
     fsim_lts se1 se2 wB sk1 sk2 skel_infoA:
@@ -929,8 +930,8 @@ Tactic Notation (at level 3) "fsim" tactic3(tac) := fsim_tac tac.
 
 (** ** Identity simulation *)
 
-Existing Instance Genv.skel_le_refl.
-Existing Instance Genv.skel_le_tran.
+Existing Instance skel_le_refl.
+Existing Instance skel_le_tran.
 
 Definition identity_fsim_components {liA liB} (L: semantics liA liB):
   fsim_components cc_id cc_id L L.
@@ -938,8 +939,7 @@ Proof.
   (* eapply Forward_simulation. *)
   (* instantiate (1 := (fun _ _ _ => _)). *)
   eapply Forward_simulation with
-    _ (fun _ _ _ _ => _)
-    (Genv.Skel_info (AST.has_symbol (skel L)) (AST.has_symbol (skel L))); auto.
+    _ (fun _ _ _ _ => _) (atom_skel_info (skel L)); auto.
   - firstorder.
   - econstructor.
   - intros se ? w sk1 sk2 skel_infoA Hse Hvf Hvsk. inv Hse. destruct w.
@@ -982,7 +982,7 @@ Proof.
   (* destruct H23 as [index' order' match_states' path23 props' order_wf'] eqn: Hf23. *)
   apply Forward_simulation
     with ff_order ff_match_states
-         (Genv.Compose (fsim_skel_info H12) (fsim_skel_info H23)).
+         (Compose (fsim_skel_info H12) (fsim_skel_info H23)).
   { intros i. etransitivity. apply H12. apply H23. }
   { econstructor. apply H12. apply H23. }
   2: { unfold ff_order. destruct H12. destruct H23.

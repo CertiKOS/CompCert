@@ -111,6 +111,7 @@ COMMON=Errors.v AST.v Linking.v \
   SmallstepLinking.v \
   Invariant.v \
   CallconvAlgebra.v \
+  SkelInfo.v \
 
 # Behaviors.v
 # Determinism.v

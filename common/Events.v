@@ -1531,7 +1531,6 @@ Qed.
 
 (** Special case of [external_call_mem_inject_gen] (for backward compatibility) *)
 
-(*
 Lemma external_call_mem_inject:
   forall ef se tse vargs m1 t vres m2 f m1' vargs',
   Genv.match_stbls f se tse ->
@@ -1556,7 +1555,6 @@ Proof.
   + simpl; unfold Genv.block_is_volatile, Genv.find_var_info, Genv.find_def.
     edestruct (Genv.mge_info H _ H3); subst; reflexivity.
 Qed.
-*)
 
 (** Corollaries of [external_call_determ]. *)
 

@@ -49,8 +49,7 @@ Record cklr :=
 
     mi: world -> meminj;
     match_mem: klr world mem mem;
-    match_stbls (src_skel tgt_skel: ident -> Prop):
-      klr world Genv.symtbl Genv.symtbl;
+    match_stbls: klr world Genv.symtbl Genv.symtbl;
 
     acc_preorder:
       PreOrder wacc;
@@ -62,13 +61,12 @@ Record cklr :=
       wacc w w' ->
       inject_separated (mi w) (mi w') m1 m2;
 
-    match_stbls_acc src_skel tgt_skel:
-      Monotonic (match_stbls src_skel tgt_skel) (wacc ++> subrel);
-     match_stbls_proj src_skel tgt_skel w:
-       Related (match_stbls src_skel tgt_skel w)
-         (Genv.match_stbls (mi w)) subrel;
-    match_stbls_nextblock src_skel tgt_skel w se1 se2 m1 m2:
-      match_stbls src_skel tgt_skel w se1 se2 ->
+    match_stbls_acc:
+      Monotonic match_stbls (wacc ++> subrel);
+    match_stbls_proj w:
+      Related (match_stbls w) (Genv.match_stbls (mi w)) subrel;
+    match_stbls_nextblock w se1 se2 m1 m2:
+      match_stbls w se1 se2 ->
       match_mem w m1 m2 ->
       Pos.le (Genv.genv_next se1) (Mem.nextblock m1) ->
       Pos.le (Genv.genv_next se2) (Mem.nextblock m2);

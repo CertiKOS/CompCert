@@ -7,6 +7,15 @@ Require Import Smallstep.
 Require Import Linking.
 Require Import Classical.
 
+Ltac subst_dep :=
+  subst;
+  lazymatch goal with
+    | H: existT ?P ?x _ = existT ?P ?x _ |- _ =>
+      apply inj_pair2 in H; subst_dep
+    | _ =>
+      idtac
+  end.
+
 (** NB: we assume that all components are deterministic and that their
   domains are disjoint. *)
 

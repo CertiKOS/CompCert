@@ -6,16 +6,8 @@ Require Import Globalenvs.
 Require Import Events.
 Require Import CKLR.
 Require Import Classical.       (* inj_pair2 *)
-Require Import Linking.
-
-Ltac subst_dep :=
-  subst;
-  lazymatch goal with
-    | H: existT ?P ?x _ = existT ?P ?x _ |- _ =>
-      apply inj_pair2 in H; subst_dep
-    | _ =>
-      idtac
-  end.
+Require Import Linking.         (* link *)
+Require Import SkelInfo.
 
 (** * Semantic interface of languages *)
 
@@ -56,20 +48,17 @@ Definition li_wp :=
 
 (** ** Definition *)
 
-Inductive skel_info_order: Genv.skel_info -> Genv.skel_info -> Prop :=
+Inductive skel_info_order: skel_info -> skel_info -> Prop :=
   | skel_info_order_compose info1 info2 info1' info2':
         skel_info_order info1 info1' ->
         skel_info_order info2 info2' ->
-        skel_info_order (Genv.Compose info1 info2)
-                        (Genv.Compose info1' info2').
+        skel_info_order (Compose info1 info2) (Compose info1' info2').
 
 Record callconv {li1 li2} :=
   mk_callconv {
     ccworld : Type;
-    valid_skel (skel_info: Genv.skel_info)
-      (sk1 sk2: AST.program unit unit): Prop;
-    match_senv (skel_info: Genv.skel_info):
-        ccworld -> Genv.symtbl -> Genv.symtbl -> Prop;
+    valid_skel: skel_info -> skel -> skel -> Prop;
+    match_senv: skel_info -> ccworld -> Genv.symtbl -> Genv.symtbl -> Prop;
     match_query: ccworld -> query li1 -> query li2 -> Prop;
     match_reply: ccworld -> reply li1 -> reply li2 -> Prop;
 
@@ -112,10 +101,11 @@ Local Obligation Tactic := cbn; eauto.
 
 (** ** Identity *)
 
-Inductive valid_skel_id:
-    Genv.skel_info -> AST.program unit unit -> AST.program unit unit -> Prop :=
+Inductive valid_skel_id: skel_info -> skel -> skel -> Prop :=
 | valid_skel_id_intro sk:
-    valid_skel_id (Genv.Skel_info (AST.has_symbol sk) (AST.has_symbol sk)) sk sk.
+    valid_skel_id
+      (Atom (fun id => AST.has_symbol sk id /\ ~ In id sk.(prog_public)) (fun _ => False))
+      sk sk.
 
 Program Definition cc_id {li}: callconv li li :=
   {|
@@ -136,7 +126,7 @@ Next Obligation.
 Qed.
 Next Obligation.
   intros. inv H. inv H0.
-  exists (Genv.Skel_info (AST.has_symbol sk1) (AST.has_symbol sk1)), sk1.
+  exists (atom_skel_info sk1), sk1.
   intuition eauto.
   constructor.
   admit.
@@ -147,21 +137,20 @@ Notation "1" := cc_id : cc_scope.
 (** ** Composition *)
 
 Inductive valid_skel_compose {li1 li2 li3} (cc12: callconv li1 li2)
-  (cc23: callconv li2 li3):
-    Genv.skel_info -> AST.program unit unit -> AST.program unit unit -> Prop :=
+  (cc23: callconv li2 li3): skel_info -> skel -> skel -> Prop :=
   | Valid_skel_compose_intro info1 info2 sk1 sk2 sk3:
       valid_skel cc12 info1 sk1 sk2 ->
       valid_skel cc23 info2 sk2 sk3 ->
-      valid_skel_compose cc12 cc23 (Genv.Compose info1 info2) sk1 sk3.
+      valid_skel_compose cc12 cc23 (Compose info1 info2) sk1 sk3.
 
 Inductive match_senv_compose {li1 li2 li3} (cc12: callconv li1 li2)
   (cc23: callconv li2 li3):
-    Genv.skel_info -> (Genv.symtbl * ccworld cc12 * ccworld cc23) ->
+    skel_info -> (Genv.symtbl * ccworld cc12 * ccworld cc23) ->
     Genv.symtbl -> Genv.symtbl -> Prop :=
   | Match_senv_compose_intro info1 info2 w12 w23 se1 se2 se3:
       match_senv cc12 info1 w12 se1 se2 ->
       match_senv cc23 info2 w23 se2 se3 ->
-      match_senv_compose cc12 cc23 (Genv.Compose info1 info2)
+      match_senv_compose cc12 cc23 (Compose info1 info2)
         (se2, w12, w23) se1 se3.
 
 Program Definition cc_compose {li1 li2 li3} (cc12: callconv li1 li2) (cc23: callconv li2 li3) :=
@@ -210,7 +199,7 @@ Next Obligation.
   intros (i & k & Hi & Hk & Ho1 & Ho2).
   exploit @valid_skel_link. 3: apply Hi. 1-2: eauto.
   intros (i' & k' & Hi' & Hk' & Ho1' & Ho2').
-  eexists (Genv.Compose i i'), k'.
+  eexists (Compose i i'), k'.
   intuition eauto; econstructor; eauto.
 Qed.
 

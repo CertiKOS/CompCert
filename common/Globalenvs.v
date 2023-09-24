@@ -1628,10 +1628,9 @@ Section MATCH_GENVS.
 Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
   mge_public:
     forall id, Genv.public_symbol ge2 id = Genv.public_symbol ge1 id;
-  mge_delta:
-    forall b1 b2 delta, Plt b1 (genv_next ge1) ->
-    f b1 = Some (b2, delta) ->
-    delta = 0;
+  mge_dom:
+    forall b1, Plt b1 (genv_next ge1) ->
+    exists b2, f b1 = Some (b2, 0); (* kept *)
   mge_img:
     forall b2, Plt b2 (genv_next ge2) ->
     exists b1, f b1 = Some (b2, 0);
@@ -1646,20 +1645,17 @@ Record match_stbls (f: meminj) (ge1: symtbl) (ge2: symtbl) := {
     Pos.le (genv_next ge1) b1 <-> Pos.le (genv_next ge2) b2;
 }.
 
-Record match_genvs {A B V W}
-  (f: meminj) R (ge1: t A V) (ge2: t B W) := {
+Record match_genvs {A B V W} (f: meminj) R (ge1: t A V) (ge2: t B W) := {
   mge_stbls :> match_stbls f ge1 ge2;
   mge_defs:
     forall b1 b2 delta, f b1 = Some (b2, delta) ->
     option_rel R ge1.(genv_defs)!b1 ge2.(genv_defs)!b2;
 }.
 
-(*
 Theorem match_stbls_id ge:
   match_stbls inject_id ge ge.
 Proof.
   unfold inject_id. split; eauto.
-  - inversion 2. reflexivity.
   - inversion 1. reflexivity.
   - inversion 1. auto.
   - inversion 1. reflexivity.
@@ -1672,12 +1668,11 @@ Theorem match_stbls_compose f g ge1 ge2 ge3:
 Proof.
   intros H12 H23. split; intros.
   - erewrite !mge_public by eauto. reflexivity.
-  - unfold compose_meminj in H0.
-    destruct (f b1) as [[? ?]|] eqn: Hfb; try discriminate.
-    destruct (g b) as [[? ?]|] eqn: Hgb; try discriminate.
-    exploit (mge_delta H12); eauto. intros ->. inv H0.
-    exploit (mge_delta H23); eauto.
-    pose proof (mge_separated H12 _ Hfb). extlia.
+  - edestruct (mge_dom H12) as (b2 & Hb12); eauto.
+    assert (Plt b2 (genv_next ge2)).
+    { pose proof (mge_separated H12 _ Hb12). extlia. }
+    edestruct (mge_dom H23) as (b3 & Hb23); eauto.
+    eexists. unfold compose_meminj. rewrite Hb12, Hb23. reflexivity.
   - edestruct (mge_img H23) as (bi & Hbi2); eauto.
     assert (Plt bi (genv_next ge2)).
     { pose proof (mge_separated H23 _ Hbi2). extlia. }
@@ -1713,10 +1708,7 @@ Theorem match_stbls_incr f':
 Proof.
   intros Hf' SEP. split.
   - eapply mge_public; eauto.
-  - intros. destruct (f b1) as [[? ?]|] eqn: Hb.
-    + exploit mge_delta; eauto. intros ->.
-      exploit Hf'; eauto. rewrite H0. intros. inv H1. reflexivity.
-    + exploit SEP; eauto. intros [? ?]. extlia.
+  - intros. edestruct mge_dom as (b2 & Hb2); eauto.
   - intros. edestruct mge_img as (bi & Hbi); eauto.
   - intros. destruct (f b1) as [[? ?]|] eqn:Hb.
     + eapply mge_symb; eauto.
@@ -1738,169 +1730,81 @@ Proof.
       eapply mge_separated; eauto.
     + edestruct SEP; eauto. tauto.
 Qed.
-*)
 
-(* TODO: restore these properties under appropriate conditions  *)
+Theorem find_symbol_match:
+  forall id b, Genv.find_symbol se id = Some b ->
+  exists tb, f b = Some (tb, 0) /\ Genv.find_symbol tse id = Some tb.
+Proof.
+  unfold Genv.find_symbol. intros id b Hb.
+  edestruct mge_dom as (tb & Htb); eauto.
+  - eapply genv_symb_range. eassumption.
+  - erewrite mge_symb in Hb; eauto.
+Qed.
 
-(* Theorem find_symbol_match: *)
-(*   forall id b, Genv.find_symbol se id = Some b -> *)
-(*   exists tb, f b = Some (tb, 0) /\ Genv.find_symbol tse id = Some tb. *)
-(* Proof. *)
-(*   unfold Genv.find_symbol. intros id b Hb. *)
-(*   edestruct mge_dom as (tb & Htb); eauto. *)
-(*   - eapply genv_symb_range. eassumption. *)
-(*   - erewrite mge_symb in Hb; eauto. *)
-(* Qed. *)
+Theorem valid_for_match sk:
+  valid_for sk se <->
+  valid_for sk tse.
+Proof.
+  split.
++ intros H id g Hg.
+  edestruct H as (b1 & g' & Hb1 & Hg' & Hgg'); eauto.
+  edestruct mge_dom as (b2 & Hb); eauto.
+  - eapply genv_symb_range; eauto.
+  - unfold find_info, find_symbol in *.
+    erewrite mge_info in Hg'; eauto.
+    erewrite mge_symb in Hb1; eauto.
++ intros H id g Hg.
+  edestruct H as (b2 & g' & Hb2 & Hg' & Hgg'); eauto.
+  edestruct mge_img as (b1 & Hb); eauto.
+  - eapply genv_symb_range; eauto.
+  - unfold find_info, find_symbol in *.
+    erewrite <- mge_info in Hg'; eauto.
+    erewrite <- mge_symb in Hb2; eauto.
+Qed.
 
-(* Theorem valid_for_match sk: *)
-(*   valid_for sk se <-> *)
-(*   valid_for sk tse. *)
-(* Proof. *)
-(*   split. *)
-(* + intros H id g Hg. *)
-(*   edestruct H as (b1 & g' & Hb1 & Hg' & Hgg'); eauto. *)
-(*   edestruct mge_dom as (b2 & Hb); eauto. *)
-(*   - eapply genv_symb_range; eauto. *)
-(*   - unfold find_info, find_symbol in *. *)
-(*     erewrite mge_info in Hg'; eauto. *)
-(*     erewrite mge_symb in Hb1; eauto. *)
-(* + intros H id g Hg. *)
-(*   edestruct H as (b2 & g' & Hb2 & Hg' & Hgg'); eauto. *)
-(*   edestruct mge_img as (b1 & Hb); eauto. *)
-(*   - eapply genv_symb_range; eauto. *)
-(*   - unfold find_info, find_symbol in *. *)
-(*     erewrite <- mge_info in Hg'; eauto. *)
-(*     erewrite <- mge_symb in Hb2; eauto. *)
-(* Qed. *)
+Context {A B V W: Type} (R: globdef A V -> globdef B W -> Prop).
 
-(* Context {A B V W: Type} (R: globdef A V -> globdef B W -> Prop). *)
+Theorem find_def_match_genvs ge tge:
+  @match_genvs A B V W f R ge tge ->
+  forall b tb delta g,
+  find_def ge b = Some g ->
+  f b = Some (tb, delta) ->
+  exists tg,
+  find_def tge tb = Some tg /\
+  R g tg /\
+  delta = 0.
+Proof.
+  clear. intros. unfold Genv.find_def in *.
+  assert (Plt b (genv_next ge)) by eauto using Genv.genv_defs_range.
+  edestruct mge_dom; eauto using mge_stbls.
+  destruct (mge_defs H b H1); try congruence.
+  exists y. intuition eauto; congruence.
+Qed.
 
-(* Theorem find_def_match_genvs ge tge: *)
-(*   @match_genvs A B V W f R ge tge -> *)
-(*   forall b tb delta g, *)
-(*   find_def ge b = Some g -> *)
-(*   f b = Some (tb, delta) -> *)
-(*   exists tg, *)
-(*   find_def tge tb = Some tg /\ *)
-(*   R g tg /\ *)
-(*   delta = 0. *)
-(* Proof. *)
-(*   clear. intros. unfold Genv.find_def in *. *)
-(*   assert (Plt b (genv_next ge)) by eauto using Genv.genv_defs_range. *)
-(*   edestruct mge_dom; eauto using mge_stbls. *)
-(*   destruct (mge_defs H b H1); try congruence. *)
-(*   exists y. intuition eauto; congruence. *)
-(* Qed. *)
-
-(* Lemma add_globdef_match: *)
-(*   forall b1 b2 delta defs1 defs2 id gd1 gd2, *)
-(*   f b1 = Some (b2, delta) -> *)
-(*   option_rel R (defs1 ! b1) (defs2 ! b2) -> *)
-(*   R gd1 gd2 -> *)
-(*   option_rel R ((add_globdef se defs1 id gd1) ! b1) ((add_globdef tse defs2 id gd2) ! b2). *)
-(* Proof. *)
-(*   intros until gd2. intros Hb Hdefs Hgd. unfold add_globdef. cbn. *)
-(*   destruct ((genv_symb se) ! id) as [b1' | ] eqn:Hb1'. *)
-(*   - edestruct mge_dom as (b2' & Hb'); eauto. eapply genv_symb_range; eauto. *)
-(*     pose proof Hb1' as Hb2'. erewrite mge_symb in Hb2' by eauto. rewrite Hb2'. *)
-(*     destruct (peq b1' b1); subst. *)
-(*     + assert (b2' = b2) by congruence; subst. *)
-(*       rewrite !PTree.gss. constructor; auto. *)
-(*     + assert (b2' <> b2). *)
-(*       { intro. subst. erewrite <- (mge_symb Hse b1) in Hb2' by eauto. congruence. } *)
-(*       rewrite !PTree.gso by eauto. assumption. *)
-(*   - destruct ((genv_symb tse) ! id) as [b2' | ] eqn:Hb2'; auto. *)
-(*     destruct (peq b2' b2); subst. *)
-(*     + erewrite <- mge_symb in Hb2' by eauto. congruence. *)
-(*     + rewrite PTree.gso; eauto. *)
-(* Qed. *)
+Lemma add_globdef_match:
+  forall b1 b2 delta defs1 defs2 id gd1 gd2,
+  f b1 = Some (b2, delta) ->
+  option_rel R (defs1 ! b1) (defs2 ! b2) ->
+  R gd1 gd2 ->
+  option_rel R ((add_globdef se defs1 id gd1) ! b1) ((add_globdef tse defs2 id gd2) ! b2).
+Proof.
+  intros until gd2. intros Hb Hdefs Hgd. unfold add_globdef. cbn.
+  destruct ((genv_symb se) ! id) as [b1' | ] eqn:Hb1'.
+  - edestruct mge_dom as (b2' & Hb'); eauto. eapply genv_symb_range; eauto.
+    pose proof Hb1' as Hb2'. erewrite mge_symb in Hb2' by eauto. rewrite Hb2'.
+    destruct (peq b1' b1); subst.
+    + assert (b2' = b2) by congruence; subst.
+      rewrite !PTree.gss. constructor; auto.
+    + assert (b2' <> b2).
+      { intro. subst. erewrite <- (mge_symb Hse b1) in Hb2' by eauto. congruence. }
+      rewrite !PTree.gso by eauto. assumption.
+  - destruct ((genv_symb tse) ! id) as [b2' | ] eqn:Hb2'; auto.
+    destruct (peq b2' b2); subst.
+    + erewrite <- mge_symb in Hb2' by eauto. congruence.
+    + rewrite PTree.gso; eauto.
+Qed.
 
 End MATCH_GENVS.
-
-Section SKEL_PATH.
-
-Local Set Elimination Schemes.
-Local Set Case Analysis Schemes.
-
-Definition skel_le (sk1 sk2: AST.program unit unit): Prop :=
-  (forall id g, (prog_defmap sk1) ! id = Some g -> (prog_defmap sk2) ! id = Some g)
-  /\ (forall id g, (prog_defmap sk2)! id = Some g -> In id (prog_public sk2) ->
-             (prog_defmap sk1)! id = Some g)
-  /\ (prog_public sk2 = prog_public sk1).
-
-Instance skel_le_refl: RelationClasses.Reflexive skel_le.
-Proof.
-  intro sk. split; intros; auto.
-Qed.
-
-Instance skel_le_tran: RelationClasses.Transitive skel_le.
-Proof.
-  intros sk1 sk2 sk3 [H11 [H12 H13]] [H21 [H22 H23]].
-  split.
-  intros. eauto.
-  split.
-  intros. eapply H12; eauto. rewrite <- H23. eauto.
-  congruence.
-Qed.
-
-Inductive match_stbls' (src: ident -> Prop) (tgt: ident -> Prop)
-  (f: meminj) (ge1: symtbl) (ge2: symtbl) :=
-  {
-    global_prop: match_stbls f ge1 ge2;
-
-    symbols_removed:
-      forall id, src id -> ~ tgt id -> Genv.find_symbol ge2 id = None;
-    symbols_kept:
-      forall id, src id -> tgt id -> exists b, Genv.find_symbol ge2 id = Some b;
-    symbols_subset:
-      forall id, Genv.has_symbol ge2 id -> Genv.has_symbol ge1 id;
-  }.
-
-Inductive skel_info :=
-  | Skel_info (src: ident -> Prop) (tgt: ident -> Prop): skel_info
-  | Compose (info1 info2: skel_info): skel_info.
-
-(* Record valid_stbls' (d1 d2: ident -> Prop) (se1 se2: Genv.symtbl) := *)
-(*   { *)
-(*     valid1: valid_for sk1 se1; *)
-(*     valid2: valid_for sk2 se2; *)
-(*     symbols_removed: *)
-(*       forall id, d1 id -> ~ d2 id -> Genv.find_symbol se2 id = None; *)
-(*     (** [symbols_subset] is for proving [valid_stbls_compose] *) *)
-(*     symbols_subset: *)
-(*       forall id, Genv.has_symbol se2 id -> Genv.has_symbol se1 id; *)
-(*     (** [valid_for] tells us information about kept symbols, but [prog_main] is not included *) *)
-(*     (* main_kept: *) *)
-(*     (*   exists b, Genv.find_symbol se2 (prog_main sk2) = Some b; *) *)
-(*     (* TODO: make [main] part of [public]? *) *)
-(*   }. *)
-
-(* Lemma valid_stbls'_compose sk1 sk2 sk3 se1 se2 se3: *)
-(*     valid_stbls' sk1 sk2 se1 se2 -> *)
-(*     valid_stbls' sk2 sk3 se2 se3 -> *)
-(*     valid_stbls' sk1 sk3 se1 se3. *)
-(* Proof. *)
-(*   intros SE1 SE2. constructor. *)
-(*   - apply SE1. *)
-(*   - apply SE2. *)
-(*   - intros id H1 H2. *)
-(*     destruct (In_dec Pos.eq_dec id (prog_defs_names sk2)). *)
-(*     + apply SE2; eauto. *)
-(*     + exploit symbols_removed. apply SE1. all: eauto. *)
-(*       intros Hx. *)
-(*       destruct (find_symbol se3 id) eqn: Hf. *)
-(*       * exfalso. exploit symbols_subset. apply SE2. *)
-(*         eexists. apply Hf. intros (g & Hg). congruence. *)
-(*       * reflexivity. *)
-(*   - intros id Hx. apply SE1. apply SE2. eauto. *)
-(*   - apply SE2. *)
-(* Qed. *)
-
-End SKEL_PATH.
-
-(*
-
-FIXME: This is temporarily commented out. We need to update the properties to cacht up with weakened [match_stbls].
 
 Section MATCH_PROGRAMS.
 
@@ -2198,7 +2102,6 @@ Proof.
 Qed.
 
 End TRANSFORM_TOTAL.
-*)
 End Genv.
 
 Coercion Genv.to_senv : Genv.t >-> Genv.symtbl.
