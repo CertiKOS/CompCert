@@ -567,7 +567,7 @@ Section FSIM.
 
 Context {liA1 liA2} (ccA: callconv liA1 liA2).
 Context {liB1 liB2} (ccB: callconv liB1 liB2).
-Context (se1 se2: Genv.symtbl) (wB: ccworld ccB).
+Context (se1 se2: Genv.symtbl) (wB: ccworld ccB) (skel_infoA: Genv.skel_info).
 Context {state1 state2: Type}.
 
 (** The general form of a forward simulation. *)
@@ -581,13 +581,10 @@ Record fsim_properties (L1: lts liA1 liB1 state1) (L2: lts liA2 liB2 state2) (in
     fsim_match_final_states:
       forall i s1 s2 r1, match_states i s1 s2 -> final_state L1 s1 r1 ->
       exists r2, final_state L2 s2 r2 /\ match_reply ccB wB r1 r2;
-    (* In theory, the choice of q2 should be independent of skel, but in that
-       way horizontal composition doesn't work *)
     fsim_match_external:
       forall i s1 s2 q1, match_states i s1 s2 -> at_external L1 s1 q1 ->
-      forall sk1 sk2 (skel_info: Genv.skel_info), valid_skel ccA skel_info sk1 sk2 ->
       exists w q2, at_external L2 s2 q2 /\ match_query ccA w q1 q2 /\
-      match_senv ccA skel_info w se1 se2 /\
+      match_senv ccA skel_infoA w se1 se2 /\
       forall r1 r2 s1', match_reply ccA w r1 r2 -> after_external L1 s1 r1 s1' ->
       exists i' s2', after_external L2 s2 r2 s2' /\ match_states i' s1' s2';
     fsim_simulation:
@@ -638,9 +635,8 @@ Hypothesis match_final_states:
 
 Hypothesis match_external:
   forall s1 s2 q1, match_states s1 s2 -> at_external L1 s1 q1 ->
-  forall sk1 sk2 (skel_info: Genv.skel_info), valid_skel ccA skel_info sk1 sk2 ->
   exists wA q2, at_external L2 s2 q2 /\ match_query ccA wA q1 q2 /\
-  match_senv ccA skel_info wA se1 se2 /\
+  match_senv ccA skel_infoA wA se1 se2 /\
   forall r1 r2 s1', match_reply ccA wA r1 r2 -> after_external L1 s1 r1 s1' ->
   exists s2', after_external L2 s2 r2 s2' /\ match_states s1' s2'.
 
@@ -851,7 +847,7 @@ End SIMULATION_SEQUENCES.
 
 End FSIM.
 
-Arguments fsim_properties {_ _} _ {_ _} _ se1 se2 _ {_ _} L1 L2 index order match_states.
+Arguments fsim_properties {_ _} _ {_ _} _ se1 se2 _ _ {_ _} L1 L2 index order match_states.
 
 Record fsim_components {liA1 liA2} (ccA: callconv liA1 liA2)
   {liB1 liB2} (ccB: callconv liB1 liB2) L1 L2 :=
@@ -864,10 +860,12 @@ Record fsim_components {liA1 liA2} (ccA: callconv liA1 liA2)
     fsim_skel_info: Genv.skel_info;
     fsim_skel_valid:
       valid_skel ccB fsim_skel_info (skel L1) (skel L2);
-    fsim_lts se1 se2 wB:
+    fsim_lts se1 se2 wB sk1 sk2 skel_infoA:
       match_senv ccB fsim_skel_info wB se1 se2 ->
       Genv.valid_for (skel L1) se1 ->
-      fsim_properties ccA ccB se1 se2 wB (activate L1 se1) (activate L2 se2)
+      valid_skel ccA skel_infoA sk1 sk2 ->
+      fsim_properties ccA ccB se1 se2 wB skel_infoA
+        (activate L1 se1) (activate L2 se2)
         fsim_index fsim_order (fsim_match_states se1 se2 wB);
     fsim_order_wf:
       well_founded fsim_order;
@@ -944,7 +942,7 @@ Proof.
     (Genv.Skel_info (AST.has_symbol (skel L)) (AST.has_symbol (skel L))); auto.
   - firstorder.
   - econstructor.
-  - intros se ? w Hse Hvf. inv Hse. destruct w.
+  - intros se ? w sk1 sk2 skel_infoA Hse Hvf Hvsk. inv Hse. destruct w.
     eapply forward_simulation_plus with (match_states := eq);
     cbn; intros; subst; eauto 10 using plus_one.
     exists tt, q1. intuition (subst; eauto).
@@ -989,7 +987,8 @@ Proof.
   { econstructor. apply H12. apply H23. }
   2: { unfold ff_order. destruct H12. destruct H23.
        auto using wf_lex_ord, wf_clos_trans. }
-  intros se1 se3 [[se2 w] w'] Hse Hvf1. inv Hse.
+  intros se1 se3 [[se2 w] w'] ska1 ska2 infoa Hse Hvf1 Hvsk.
+  inv Hse. inv Hvsk.
   assert (Hvf2: Genv.valid_for (skel L2) se2).
   { eapply match_senv_valid; eauto. apply H12. }
   cbn in *.
@@ -1002,11 +1001,11 @@ Proof.
   edestruct (@fsim_match_initial_states liA2) as (i' & s3 & C & D); eauto.
   exists (i', i); exists s3; split; auto. exists s2; auto.
 - (* final states *)
-  intros. cbn. inv H.
+  intros. cbn. inv H1.
   edestruct (@fsim_match_final_states liA1) as (r2 & Hr2 & Hr12); eauto.
   edestruct (@fsim_match_final_states liA2) as (r3 & Hr3 & Hr23); eauto.
 - (* external states *)
-  intros. inv H. inv H1.
+  intros. inv H1.
   edestruct (@fsim_match_external liA1) as (w12 & q2 & Hq2 & Hq12 & Hw12 & Hk12); eauto.
   edestruct (@fsim_match_external liA2) as (w23 & q3 & Hq3 & Hq23 & Hw23 & Hk23); eauto.
   exists (se2, w12, w23), q3. cbn; repeat apply conj; eauto.
@@ -1016,7 +1015,7 @@ Proof.
   edestruct Hk23 as (i23' & s3' & Hs3' & Hs23'); eauto.
   exists (i23', i12'), s3'. split; auto. exists s2'; auto.
 - (* simulation *)
-  intros. inv H0.
+  intros. inv H2.
   (* FIXME *)
   rename i2 into i_temp. rename i1 into i2. rename i_temp into i1.
   simpl in *.
@@ -1033,7 +1032,6 @@ Proof.
   exists (i2, i1'); exists s2; split.
   right; split. subst t; apply star_refl. red. right. auto.
   exists s3; auto.
-
 Qed.
 
 Lemma compose_forward_simulations:

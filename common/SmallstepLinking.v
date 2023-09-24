@@ -238,7 +238,7 @@ Section FSIM.
       inv H5; subst_dep. clear idx0.
       edestruct @fsim_match_external as (wx & qx2 & Hqx & Hqx2 & Hsex & Hrx);
         eauto using fsim_lts.
-      pose proof (fsim_lts (HL j) _ _ Hsex (Hvf j)).
+      pose proof (fsim_lts (HL j) _ _ _ _ _ Hsex (Hvf j) (Hsk j)).
       edestruct @fsim_match_initial_states as (idx' & s2' & Hs2' & Hs'); eauto.
       eexists (existT _ j idx'), _. split.
       + left. apply plus_one. eapply step_push; eauto 1.
@@ -246,12 +246,13 @@ Section FSIM.
       + repeat (econstructor; eauto).
     - (* cross-component return *)
       inv H4; subst_dep. clear idx0.
-      pose proof (fsim_lts (HL i) _ _ H5 (Hvf i)).
+      pose proof (fsim_lts (HL i) _ _ _ _ _ H5 (Hvf i) (Hsk i)).
       edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
       inv H6. inv H7; subst_dep. edestruct H9 as (idx' & s2' & Hs2'& Hs'); eauto.
       eexists (existT _ j idx'), _. split.
       + left. apply plus_one. eapply step_pop; eauto.
       + repeat (econstructor; eauto).
+        Unshelve. exact i.
   Qed.
 
   Lemma initial_states_simulation:
@@ -259,7 +260,7 @@ Section FSIM.
     exists idx s2, initial_state L2 se2 q2 s2 /\ match_states idx s1 s2.
   Proof.
     intros q1 q2 _ Hq [i s1 Hq1 Hs1].
-    pose proof (fsim_lts (HL i) _ _ (Hse i) (Hvf i)).
+    pose proof (fsim_lts (HL i) _ _ _ _ _ (Hse i) (Hvf i) (Hsk i)).
     edestruct @fsim_match_initial_states as (idx & s2 & Hs2 & Hs); eauto.
     exists (existT _ i idx), (st L2 i s2 :: nil).
     split; econstructor; eauto.
@@ -273,25 +274,26 @@ Section FSIM.
     forall idx s1 s2 r1, match_states idx s1 s2 -> final_state L1 se1 s1 r1 ->
     exists r2, final_state L2 se2 s2 r2 /\ match_reply cc w r1 r2.
   Proof.
-    clear -Hvf. intros idx s1 s2 r1 Hs Hr1. destruct Hr1 as [i s1 r1 Hr1].
+    clear -Hvf Hsk. intros idx s1 s2 r1 Hs Hr1. destruct Hr1 as [i s1 r1 Hr1].
     inv Hs. inv H4. inv H2. subst_dep. clear idx0.
-    pose proof (fsim_lts (HL i) _ _ H3 (Hvf i)).
+    pose proof (fsim_lts (HL i) _ _ _ _ _ H3 (Hvf i) (Hsk i)).
     edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
     exists r2. split; eauto. constructor; eauto.
   Qed.
 
+  Context sk1' sk2' skel_info (Hvsk: valid_skel cc skel_info sk1' sk2').
+
   Lemma external_simulation:
     forall idx s1 s2 qx1, match_states idx s1 s2 -> at_external L1 se1 s1 qx1 ->
-    forall sk1 sk2 (skel_info: Genv.skel_info), valid_skel cc skel_info sk1 sk2 ->
     exists wx qx2, at_external L2 se2 s2 qx2 /\  match_query cc wx qx1 qx2 /\
     match_senv cc skel_info wx se1 se2 /\
     forall rx1 rx2 s1', match_reply cc wx rx1 rx2 -> after_external L1 se1 s1 rx1 s1' ->
     exists idx' s2', after_external L2 se2 s2 rx2 s2' /\ match_states idx' s1' s2'.
   Proof.
-    intros idx s1 s2 q1 Hs Hq1 sk1' sk2' rem Hrem.
+    intros idx s1 s2 q1 Hs Hq1.
     destruct Hq1 as [i s1 qx1 k1 Hqx1 Hvld].
     inv Hs. inv H2. subst_dep. clear idx0.
-    pose proof (fsim_lts (HL i) _ _ H3 (Hvf i)) as Hi.
+    pose proof (fsim_lts (HL i) _ _ _ _ _ H3 (Hvf i) Hvsk) as Hi.
     edestruct @fsim_match_external as (wx & qx2 & Hqx2 & Hqx & Hsex & H); eauto.
     exists wx, qx2. intuition idtac.
     + constructor. eauto. intros j.
@@ -303,7 +305,7 @@ Section FSIM.
   Qed.
 
   Lemma semantics_simulation sk1 sk2:
-    fsim_properties cc cc se1 se2 w
+    fsim_properties cc cc se1 se2 w skel_info
       (semantics L1 sk1 se1)
       (semantics L2 sk2 se2)
       index order match_states.
@@ -363,13 +365,14 @@ Proof.
   eapply Forward_simulation with (order cc L1 L2 HL) (match_states cc L1 L2 HL) skel_info.
   - intros id. split; intros [i Hi]; exists i; rewrite (fsim_footprint (HL i)) in *; auto.
   - apply Hsk.
-  - intros se1 se2 w Hse Hvf.
+  - intros se1 se2 w sk1' sk2' skel_info' Hse Hvf Hvsk.
     eapply semantics_simulation.
     + specialize (HSE _ _ _ Hse) as (? & ?).
       intros [|]; eauto.
     + intros [|]; eauto. apply (HL true). apply (HL false).
     + apply link_linkorder in Hsk1 as [? ?].
       intros [|]; eapply Genv.valid_for_linkorder; eauto.
+    + apply Hvsk.
   - clear - HL. intros [i x].
     induction (fsim_order_wf (HL i) x) as [x Hx IHx].
     constructor. intros z Hxz. inv Hxz; subst_dep. eauto.

@@ -47,34 +47,41 @@ Definition ccref {li1 li2} (cc cc': callconv li1 li2) :=
 Definition cceqv {li1 li2} (cc cc': callconv li1 li2) :=
   ccref cc cc' /\ ccref cc' cc.
 
-(* Global Instance ccref_preo li1 li2: *)
-(*   PreOrder (@ccref li1 li2). *)
-(* Proof. *)
-(*   split. *)
-(*   - intros cc w q1 q2 Hq. *)
-(*     eauto. *)
-(*   - intros cc cc' cc'' H' H'' w se1 se2 se_path q1 q2 Hse Hq. *)
-(*     edestruct H' as (w' & Hse' & Hq' & Hr'); eauto. *)
-(*     edestruct H'' as (w'' & Hse'' & Hq'' & Hr''); eauto 10. *)
-(* Qed. *)
+Global Instance ccref_preo li1 li2:
+  PreOrder (@ccref li1 li2).
+Proof.
+  split.
+  - intros cc sk1 sk2 si Hsi.
+    exists si. split; eauto.
+    intros w * Hse * Hq.
+    exists w. split; eauto.
+  - intros cc cc' cc'' H' H'' sk1 sk2 si'' Hsi''.
+    specialize (H'' _ _ _ Hsi'') as (si' & Hsi' & Hx).
+    specialize (H' _ _ _ Hsi') as (si & Hsi & Hy).
+    exists si. split; eauto. clear -Hx Hy.
+    intros w * Hse * Hq.
+    edestruct Hy as (w' & Hse' & Hq' & Hr'); eauto.
+    edestruct Hx as (w'' & Hse'' & Hq'' & Hr''); eauto.
+    eauto 10.
+Qed.
 
-(* Global Instance cceqv_equiv li1 li2: *)
-(*   Equivalence (@cceqv li1 li2). *)
-(* Proof. *)
-(*   split. *)
-(*   - intros cc. *)
-(*     split; reflexivity. *)
-(*   - intros cc1 cc2. unfold cceqv. *)
-(*     tauto. *)
-(*   - intros cc1 cc2 cc3 [H12 H21] [H23 H32]. *)
-(*     split; etransitivity; eauto. *)
-(* Qed. *)
+Global Instance cceqv_equiv li1 li2:
+  Equivalence (@cceqv li1 li2).
+Proof.
+  split.
+  - intros cc.
+    split; reflexivity.
+  - intros cc1 cc2. unfold cceqv.
+    tauto.
+  - intros cc1 cc2 cc3 [H12 H21] [H23 H32].
+    split; etransitivity; eauto.
+Qed.
 
-(* Global Instance ccref_po li1 li2: *)
-(*   PartialOrder (@cceqv li1 li2) (@ccref li1 li2). *)
-(* Proof. *)
-(*   firstorder. *)
-(* Qed. *)
+Global Instance ccref_po li1 li2:
+  PartialOrder (@cceqv li1 li2) (@ccref li1 li2).
+Proof.
+ split; intros; eauto.
+Qed.
 
 (** ** Relation to forward simulations *)
 
@@ -86,28 +93,25 @@ Global Instance open_fsim_ccref:
      subrel).
 Proof.
   intros liA1 liA2 ccA ccA' HA liB1 liB2 ccB ccB' HB sem1 sem2 [FS].
-  destruct FS as [index order match_states REM VSK PROP WF].
-  specialize (HB _ _ _ VSK) as (REM' & Hsk' & Href).
+  destruct FS as [index order match_states HFP INFO VSK PROP WF].
+  specialize (HB _ _ _ VSK) as (INFO' & Hsk' & Href).
   constructor.
   set (ms se1 se2 w' idx s1 s2 :=
          exists w : ccworld ccB,
            match_states se1 se2 w idx s1 s2 /\
-           match_senv ccB REM w se1 se2 /\
+           match_senv ccB INFO w se1 se2 /\
            forall r1 r2, match_reply ccB w r1 r2 -> match_reply ccB' w' r1 r2).
-  eapply Forward_simulation with order ms REM'; auto.
-  intros se1 se2 wB' Hse' Hvf. specialize (Href _ _ _ Hse').
+  eapply Forward_simulation with order ms INFO'; auto.
+  intros se1 se2 wB' sk1' sk2' infoA' Hse' Hvf HvskA'. specialize (Href _ _ _ Hse').
+  specialize (HA _ _ _ HvskA') as (infoA & HvskA & HrefA).
   split.
-  - intros q1 q2 Hq'.
-    destruct (Href q1 q2) as (wB & Hse & Hq & Hr); auto.
-    erewrite fsim_match_valid_query; eauto.
   - intros q1 q2 s1 Hq' Hs1.
     destruct (Href q1 q2) as (wB & Hse & Hq & Hr); auto.
     edestruct @fsim_match_initial_states as (i & s2 & Hs2 & Hs); eauto.
     exists i, s2. split; auto. exists wB; auto.
   - intros i s1 s2 r1 (wB & Hs & Hse & Hr') Hr1.
     edestruct @fsim_match_final_states as (r2 & Hr2 & Hr); eauto.
-  - intros i s1 s2 qA1 (wB & Hs & Hse & Hr') HqA1 * HremA'.
-    specialize (HA _ _ _ HremA') as (? & ? & HrefA).
+  - intros i s1 s2 qA1 (wB & Hs & Hse & Hr') HqA1.
     edestruct @fsim_match_external
       as (wA & qA2 & HqA2 & HseA & HqA & HrA); eauto.
     edestruct HrefA as (wA' & HseA' & HqA' & Hr); eauto.
@@ -174,7 +178,7 @@ Lemma cc_compose_id_left {li1 li2} (cc: callconv li1 li2):
   cceqv (cc_compose cc_id cc) cc.
 Proof.
   split.
-  - intros sk1 sk2 rem Hrem.
+  - intros sk1 sk2 si Hsi.
     eexists (Genv.Compose (Genv.Removed (fun _ => False)) rem).
     split. repeat econstructor; eauto.
     intros [[se2 []] w] se1 se3 Hse q1 q3 (q2 & Hq12 & Hq23).
