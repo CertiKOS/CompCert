@@ -8,6 +8,7 @@ Require Import CKLR.
 Require Import Classical.       (* inj_pair2 *)
 Require Import Linking.         (* link *)
 Require Import SkelInfo.
+Require Import Maps.
 
 (** * Semantic interface of languages *)
 
@@ -48,12 +49,6 @@ Definition li_wp :=
 
 (** ** Definition *)
 
-Inductive skel_info_order: skel_info -> skel_info -> Prop :=
-  | skel_info_order_compose info1 info2 info1' info2':
-        skel_info_order info1 info1' ->
-        skel_info_order info2 info2' ->
-        skel_info_order (Compose info1 info2) (Compose info1' info2').
-
 Record callconv {li1 li2} :=
   mk_callconv {
     ccworld : Type;
@@ -80,7 +75,7 @@ Record callconv {li1 li2} :=
     match_senv_order:
         forall se1 se2 w skel_info skel_info',
           match_senv skel_info w se1 se2 ->
-          skel_info_order skel_info' skel_info ->
+          skel_info_le skel_info' skel_info ->
           match_senv skel_info' w se1 se2;
     valid_skel_link:
         forall skel_info1 skel_info2 sk1l sk1r sk2l sk2r sk1,
@@ -90,8 +85,8 @@ Record callconv {li1 li2} :=
           exists skel_info sk2,
             link sk2l sk2r = Some sk2 /\
             valid_skel skel_info sk1 sk2 /\
-            skel_info_order skel_info1 skel_info /\
-            skel_info_order skel_info2 skel_info;
+            skel_info_le skel_info1 skel_info /\
+            skel_info_le skel_info2 skel_info;
   }.
 
 Arguments callconv: clear implicits.
@@ -104,8 +99,7 @@ Local Obligation Tactic := cbn; eauto.
 Inductive valid_skel_id: skel_info -> skel -> skel -> Prop :=
 | valid_skel_id_intro sk:
     valid_skel_id
-      (Atom (fun id => AST.has_symbol sk id /\ ~ In id sk.(prog_public)) (fun _ => False))
-      sk sk.
+      (Atom (fun id => AST.has_symbol sk id) (fun _ => False)) sk sk.
 
 Program Definition cc_id {li}: callconv li li :=
   {|
@@ -115,22 +109,14 @@ Program Definition cc_id {li}: callconv li li :=
     match_query w := eq;
     match_reply w := eq;
   |}.
+Next Obligation. intros. subst. reflexivity. Qed.
+Next Obligation. intros. subst. reflexivity. Qed.
+Next Obligation. intros. inv H. eauto. Qed.
 Next Obligation.
-  intros. subst. reflexivity.
+  intros. inv H. inv H0. exists (atom_skel_info sk1), sk1.
+  intuition eauto. constructor.
+  1-2: apply linkorder_skel_info_le; apply link_linkorder in H1 as [? ?]; eauto.
 Qed.
-Next Obligation.
-  intros. subst. reflexivity.
-Qed.
-Next Obligation.
-  intros. inv H. eauto.
-Qed.
-Next Obligation.
-  intros. inv H. inv H0.
-  exists (atom_skel_info sk1), sk1.
-  intuition eauto.
-  constructor.
-  admit.
-Admitted.
 
 Notation "1" := cc_id : cc_scope.
 
@@ -253,15 +239,339 @@ Inductive cc_c_reply R (w: world R): relation c_reply :=
       match_mem R w m1' m2' ->
       cc_c_reply R w (cr vres1 m1') (cr vres2 m2').
 
-(* TODO: for most passes we use [valid_skel_id], but for Unusedglob, we need
-   something more general *)
+Program Definition cc_c (R: cklr): callconv li_c li_c :=
+  {|
+    ccworld := world R;
+    valid_skel := valid_skel_id;
+    match_senv _skel_info w se1 se2 := match_stbls R w se1 se2;
+    match_query := cc_c_query R;
+    match_reply := (<> cc_c_reply R)%klr;
+  |}.
 
-(* Program Definition cc_c (R: cklr): callconv li_c li_c := *)
-(*   {| *)
-(*     ccworld := world R; *)
-(*     valid_skel := valid_skel_id; *)
-(*     match_senv w removed se1 se2 := *)
-(*       match_stbls R w se1 se2 /\ Genv.valid_stbls' sk1 sk2 se1 se2; *)
-(*     match_query := cc_c_query R; *)
-(*     match_reply := (<> cc_c_reply R)%klr; *)
-(*   |}. *)
+Lemma symbol_address_match (f: meminj) i vf1 vf2 se1 se2:
+  Genv.match_stbls f se1 se2 ->
+  Val.inject f vf1 vf2 ->
+  vf1 <> Vundef ->
+  Genv.symbol_address se1 i Ptrofs.zero = vf1 <->
+  Genv.symbol_address se2 i Ptrofs.zero = vf2.
+Proof.
+  unfold Genv.symbol_address. split.
+  - destruct Genv.find_symbol eqn: Hx.
+    + edestruct @Genv.find_symbol_match as (b' & fb & Hb); eauto.
+      rewrite Hb. intros. subst. inv H0. rewrite fb in H4. inv H4.
+      f_equal.
+    + intros. exfalso. apply H1. easy.
+  - intros. destruct Genv.find_symbol eqn: Hx.
+    + subst vf2. inv H0; try congruence.
+      unfold Genv.find_symbol in Hx.
+      rewrite <- Genv.mge_symb in Hx; eauto.
+      exploit Genv.genv_symb_range. apply Hx. intros Hplt.
+      unfold Genv.find_symbol. rewrite Hx.
+      edestruct Genv.mge_dom as (bx & Hbx); eauto.
+      rewrite Hbx in H5. inv H5.
+      replace (Ptrofs.repr 0) with Ptrofs.zero in H6 by reflexivity.
+      rewrite Ptrofs.add_zero in H6. congruence.
+    + subst. inv H0. exfalso. apply H1. auto.
+Qed.
+
+Next Obligation.
+  intros until i. eapply match_stbls_proj in H. inv H0. cbn.
+  eapply symbol_address_match; eauto.
+Qed.
+
+Next Obligation.
+  intros. inv H. split; eauto.
+  intros. cbn. inv H0; easy.
+Qed.
+
+Next Obligation.
+  intros. eapply match_stbls_proj in H0. inv H.
+  erewrite <- Genv.valid_for_match; eauto.
+Qed.
+
+Next Obligation.
+  intros. inv H. inv H0.
+  exists (atom_skel_info sk1), sk1.
+  repeat split; eauto.
+  1-2: apply linkorder_skel_info_le; apply link_linkorder in H1 as [? ?]; eauto.
+Qed.
+
+
+Record inj_world :=
+  injw {
+    injw_meminj :> meminj;
+    injw_next_l: block;
+    injw_next_r: block;
+  }.
+
+Variant inj_incr: relation inj_world :=
+  inj_incr_intro f f' nb1 nb2 nb1' nb2':
+    inject_incr f f' ->
+    (forall b1 b2 delta, f b1 = None -> f' b1 = Some (b2, delta) ->
+     Pos.le nb1 b1 /\ Pos.le nb2 b2) ->
+    Pos.le nb1 nb1' ->
+    Pos.le nb2 nb2' ->
+    inj_incr (injw f nb1 nb2) (injw f' nb1' nb2').
+
+Record inj_stbls' (w: inj_world) (kept removed: ident -> Prop) (se1 se2: Genv.symtbl): Prop :=
+  {
+    inj_stbls_match: match_stbls_static kept removed (injw_meminj w) se1 se2;
+    inj_stbls_next_l: Pos.le (Genv.genv_next se1) (injw_next_l w);
+    inj_stbls_next_r: Pos.le (Genv.genv_next se2) (injw_next_r w);
+  }.
+
+Variant inj_mem: klr inj_world mem mem :=
+  inj_mem_intro f m1 m2:
+    Mem.inject f m1 m2 ->
+    inj_mem (injw f (Mem.nextblock m1) (Mem.nextblock m2)) m1 m2.
+
+(* only consider static symbols? *)
+Inductive ug_valid_skel: skel_info -> skel -> skel -> Prop :=
+  Ug_valid_skel_intro sk1 sk2:
+    skel_le sk2 sk1 -> skel_prop sk1 ->
+    ug_valid_skel
+      (Atom (AST.has_symbol sk2)
+         (fun id => ~ AST.has_symbol sk2 id /\ AST.has_symbol sk1 id)) sk1 sk2.
+
+Inductive ug_match_senv: skel_info -> inj_world -> Genv.symtbl -> Genv.symtbl -> Prop :=
+  Ug_match_senv_intro w kept removed se1 se2:
+    inj_stbls' w kept removed se1 se2 ->
+    ug_match_senv (Atom kept removed) w se1 se2.
+
+Inductive ug_match_query (w: inj_world): relation c_query :=
+  | ug_match_query_intro vf1 vf2 sg vargs1 vargs2 m1 m2:
+      Val.inject (injw_meminj w) vf1 vf2 ->
+      Val.inject_list (injw_meminj w) vargs1 vargs2 ->
+      inj_mem w m1 m2 ->
+      vf1 <> Vundef ->
+      ug_match_query w (cq vf1 sg vargs1 m1) (cq vf2 sg vargs2 m2).
+
+Inductive ug_match_reply (w: inj_world): relation c_reply :=
+  | ug_match_reply_intro vres1 vres2 m1' m2':
+      Val.inject (injw_meminj w) vres1 vres2 ->
+      inj_mem w m1' m2' ->
+      ug_match_reply w (cr vres1 m1') (cr vres2 m2').
+
+Instance inj_cklr_kf: KripkeFrame unit inj_world.
+split. intro. exact inj_incr.
+Defined.
+
+Program Definition cc_ug: callconv li_c li_c :=
+  {|
+    ccworld := inj_world;
+    valid_skel := ug_valid_skel;
+    match_senv := ug_match_senv;
+    match_query := ug_match_query;
+    match_reply := (<> ug_match_reply)%klr;
+  |}.
+
+Lemma symbol_address_match' (f: meminj) i vf1 vf2 se1 se2:
+  match_stbls' f se1 se2 ->
+  Val.inject f vf1 vf2 ->
+  vf1 <> Vundef ->
+  Genv.symbol_address se1 i Ptrofs.zero = vf1 <->
+  Genv.symbol_address se2 i Ptrofs.zero = vf2.
+Proof.
+  unfold Genv.symbol_address. split.
+  - destruct Genv.find_symbol eqn: Hx.
+    + intros <-. inv H0.
+      edestruct mge_symb' with (id:=i) as (Ha & Hb); eauto.
+      exploit mge_delta; eauto. eapply Genv.genv_symb_range; eauto.
+      intros ->.
+      exploit Ha; eauto. intros Hc. setoid_rewrite Hc.
+      rewrite Ptrofs.add_zero. reflexivity.
+    + intros <-. easy.
+  - destruct Genv.find_symbol eqn: Hx.
+    + intros <-. inv H0; try congruence.
+      edestruct mge_symb' with (id:=i) as (Ha & Hb); eauto.
+      setoid_rewrite Hb; eauto.
+      specialize (Hb Hx).
+      exploit mge_delta; eauto. eapply Genv.genv_symb_range; eauto.
+      intros ->. f_equal. rewrite H6.
+      replace (Ptrofs.repr 0) with Ptrofs.zero by reflexivity.
+      apply Ptrofs.add_zero.
+    + intros <-. inv H0. easy.
+Qed.
+
+Next Obligation.
+  intros. inv H. inv H1. inv H0. cbn.
+  eapply symbol_address_match'; eauto. apply inj_stbls_match0.
+Qed.
+
+Next Obligation.
+  intros. inv H. split; eauto.
+  intros. cbn. inv H0; easy.
+Qed.
+
+Next Obligation.
+  intros. inv H. inv H0. inv H8. destruct inj_stbls_match0.
+  intros id g Hg.
+  destruct H2 as [Hle1 Hle2 Hle3 Hle4].
+  exploit Hle1; eauto. intros Hg1.
+  edestruct H1 as (b1 & g' & Hb1 & Hg' & Hgg'); eauto.
+  edestruct symbols_kept as (bx & Hbx).
+  unfold has_symbol. unfold prog_defs_names.
+  apply in_map. apply in_prog_defmap. apply Hg. cbn in *.
+  exploit mge_img'; eauto. eapply Genv.genv_symb_range; eauto.
+  intros (b1' & Hf).
+  exploit mge_symb'; eauto. intros (Hsymb1 & Hsymb2).
+  exploit mge_info'; eauto. intros Hinfo.
+  exploit Hsymb2. apply Hbx. intros Hb1'.
+  setoid_rewrite Hb1 in Hb1'. inv Hb1'.
+  exists bx, g'. repeat split; eauto.
+  setoid_rewrite <- Hinfo. apply Hg'.
+Qed.
+
+Next Obligation.
+  intros. inv H. inv H1. inv H0. destruct inj_stbls_match0.
+  constructor. split; eauto. split; eauto.
+Qed.
+
+Local Opaque PTree_Properties.of_list.
+
+Lemma has_symbol_link1 sk1 sk2 sk id:
+  link sk1 sk2 = Some sk ->
+  has_symbol sk1 id -> has_symbol sk id.
+Proof.
+  intros Hlink Hid.
+  apply link_prog_inv in Hlink as (? & Hdef & ?). subst sk.
+  apply prog_defmap_dom in Hid as (g & Hg).
+  apply in_map_iff; cbn.
+  destruct ((prog_defmap sk2) ! id) eqn: Hg'.
+  - specialize (Hdef _ _ _ Hg Hg') as (? & ? & (g' & Hgg)).
+    exists (id, g'). split; eauto.
+    apply PTree.elements_correct.
+    rewrite PTree.gcombine by reflexivity.
+    rewrite Hg. rewrite Hg'. apply Hgg.
+  - exists (id, g). split; eauto.
+    apply PTree.elements_correct.
+    rewrite PTree.gcombine by reflexivity.
+    rewrite Hg. rewrite Hg'. reflexivity.
+Qed.
+
+Lemma has_symbol_link2 sk1 sk2 sk id:
+  link sk1 sk2 = Some sk ->
+  has_symbol sk2 id -> has_symbol sk id.
+Proof.
+  intros Hlink Hid.
+  apply link_prog_inv in Hlink as (? & Hdef & ?). subst sk.
+  apply prog_defmap_dom in Hid as (g & Hg).
+  apply in_map_iff; cbn.
+  destruct ((prog_defmap sk1) ! id) eqn: Hg'.
+  - specialize (Hdef _ _ _ Hg' Hg) as (? & ? & (g' & Hgg)).
+    exists (id, g'). split; eauto.
+    apply PTree.elements_correct.
+    rewrite PTree.gcombine by reflexivity.
+    rewrite Hg. rewrite Hg'. apply Hgg.
+  - exists (id, g). split; eauto.
+    apply PTree.elements_correct.
+    rewrite PTree.gcombine by reflexivity.
+    rewrite Hg. rewrite Hg'. reflexivity.
+Qed.
+
+Next Obligation.
+  intros. inv H. inv H0.
+  exploit (link_prog_succeeds sk2l sk2r).
+  - apply link_prog_inv in H1 as (Hmain & ?).
+    destruct H, H2. congruence.
+  - intros * Hl Hr.
+    exploit defmap_le. apply H2. eauto. intros Hid1.
+    exploit defmap_le. apply H. eauto. intros Hid2.
+    apply link_prog_inv in H1 as (? & Hdef & ?).
+    specialize (Hdef _ _ _ Hid1 Hid2) as (Hg1 & Hg2 & (g & Hg3)).
+    repeat split.
+    + rewrite <- (public_same H2); eauto.
+    + rewrite <- (public_same H); eauto.
+    + rewrite Hg3. easy.
+  - intros Hlink.
+    eexists _, _. split; eauto.
+    split. econstructor. 3: split; constructor.
+    + apply link_prog_inv in H1 as (? & Hdef & ?). subst sk1.
+      constructor.
+      * intros * Hg. rewrite prog_defmap_elements in Hg |- *.
+        rewrite PTree.gcombine in Hg |- * by reflexivity.
+        destruct ((prog_defmap sk2l) ! id) eqn: Hg1;
+          destruct ((prog_defmap sk2r) ! id) eqn: Hg2; cbn in *.
+        -- eapply defmap_le in Hg1; eauto.
+           eapply defmap_le in Hg2; eauto.
+           rewrite Hg1. rewrite Hg2. eauto.
+        -- eapply defmap_le in Hg1; eauto. inv Hg.
+           destruct ((prog_defmap sk1r) ! id) eqn: Hg3.
+           ++ exfalso.
+              specialize (Hdef _ _ _ Hg1 Hg3) as (Hpub1 & Hpub2 & ?).
+              eapply defmap_public in Hg3; eauto. congruence.
+           ++ rewrite Hg1. eauto.
+        -- eapply defmap_le in Hg2; eauto. inv Hg.
+           destruct ((prog_defmap sk1l) ! id) eqn: Hg3.
+           ++ exfalso.
+              specialize (Hdef _ _ _ Hg3 Hg2) as (Hpub1 & Hpub2 & ?).
+              eapply defmap_public in Hg3; eauto. congruence.
+           ++ rewrite Hg2. eauto.
+        -- inv Hg.
+      * intros * Hg Hpub. rewrite prog_defmap_elements in Hg |- *.
+        cbn in *.
+        rewrite PTree.gcombine in Hg |- * by reflexivity.
+        destruct ((prog_defmap sk1l) ! id) eqn: Hg1;
+          destruct ((prog_defmap sk1r) ! id) eqn: Hg2; cbn in *.
+        -- specialize (Hdef _ _ _ Hg1 Hg2) as (Hpub1 & Hpub2 & ?).
+           eapply defmap_public in Hg1; eauto.
+           eapply defmap_public in Hg2; eauto.
+           rewrite Hg1. rewrite Hg2. eauto.
+        -- inv Hg.
+           destruct ((prog_defmap sk2r) ! id) eqn: Hg3.
+           ++ exfalso.
+              eapply defmap_le in Hg3; eauto. congruence.
+           ++ apply in_app_or in Hpub as [Hpub|Hpub].
+              ** eapply defmap_public in Hg1; eauto.
+                 rewrite Hg1. reflexivity.
+              ** exfalso.
+                 eapply public_defined in Hpub; eauto.
+                 apply prog_defmap_dom in Hpub as (g' & Hg').
+                 congruence.
+        -- inv Hg.
+           destruct ((prog_defmap sk2l) ! id) eqn: Hg3.
+           ++ exfalso.
+              eapply defmap_le in Hg3; eauto. congruence.
+           ++ apply in_app_or in Hpub as [Hpub|Hpub].
+              ** exfalso.
+                 eapply public_defined in Hpub; eauto.
+                 apply prog_defmap_dom in Hpub as (g' & Hg').
+                 congruence.
+              ** eapply defmap_public in Hg2; eauto.
+        -- inv Hg.
+      * cbn. destruct H2, H. congruence.
+      * cbn. apply H2.
+    + exploit link_prog_inv. apply H1. intros (? & ? & ->).
+      split; cbn -[has_symbol].
+      * intros id Hpub.
+        apply in_app_or in Hpub as [Hpub|Hpub]; eauto.
+        -- eapply has_symbol_link1; eauto.
+           eapply public_defined; eauto.
+        -- eapply has_symbol_link2; eauto.
+           eapply public_defined; eauto.
+      * destruct H3. apply in_or_app.
+        left. apply main_public.
+    + intros id Hid. eapply has_symbol_link1; eauto.
+    + intros id (Hid1 & Hid2). split.
+      * intros Hid3.
+        apply prog_defmap_dom in Hid2 as (g & Hg).
+        apply prog_defmap_dom in Hid3 as (g' & Hg').
+        rewrite prog_defmap_elements in Hg'.
+        rewrite PTree.gcombine in Hg' by reflexivity.
+        destruct ((prog_defmap sk2l) ! id) eqn: Hg1.
+        -- apply Hid1. apply in_map_iff.
+           exists (id, g0). split; eauto.
+           apply in_prog_defmap. eauto.
+        -- destruct ((prog_defmap sk2r) ! id) eqn: Hg2.
+           ++ eapply defmap_le in Hg2; eauto.
+              apply link_prog_inv in H1 as (? & Hdef & ?).
+              specialize (Hdef _ _ _ Hg Hg2).
+              eapply defmap_public in Hg; eauto. 2: apply Hdef.
+              apply Hid1. apply in_map_iff.
+              exists (id, g). split; eauto.
+              apply in_prog_defmap. eauto.
+           ++ inv Hg'.
+      * eapply has_symbol_link1; eauto.
+    + intros id Hid. eapply has_symbol_link2; eauto.
+    + admit.
+Admitted.
