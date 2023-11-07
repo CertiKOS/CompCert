@@ -2,11 +2,9 @@ From compcert Require Import
      AST Coqlib Maps Values Integers Errors Events
      LanguageInterface Smallstep Globalenvs Memory Floats.
 Require Import Ctypes Cop Clight.
-Require Import Lifting.
 Require Import Lia.
-Require Import AbRel.
 Require Import Join.
-From compcert.clightp Require Import PEnv.
+From compcert.clightp Require Import Lifting AbRel PEnv.
 
 (** ------------------------------------------------------------------------- *)
 Hypothesis external_call_join:
@@ -159,9 +157,10 @@ Module ClightP.
   | Efield: expr -> ident -> type -> expr (**r access to a member of a struct or union *)
   | Esizeof: type -> type -> expr         (**r size of a type *)
   | Ealignof: type -> type -> expr        (**r alignment of a type *)
-  (* two new cases for persistent data and struct and array *)
-  | Epvar : ident -> type -> expr
-  | Eaccess : expr -> expr -> type -> expr.
+  (* new cases for persistent data and struct and array *)
+  | Epvar: ident -> type -> expr
+  | Eindex: expr -> expr -> type -> expr
+  | Epfield: expr -> ident -> type -> expr.
 
   Definition typeof (e: expr) : type :=
     match e with
@@ -180,7 +179,8 @@ Module ClightP.
     | Esizeof _ ty => ty
     | Ealignof _ ty => ty
     | Epvar _ ty => ty
-    | Eaccess _ _ ty => ty
+    | Eindex _ _ ty => ty
+    | Epfield _ _ ty => ty
     end.
 
   Inductive statement : Type :=
@@ -282,6 +282,7 @@ Module ClightP.
   Section SEM.
     Open Scope Z_scope.
 
+    Variable ce: composite_env.
     Variable ge: genv.
 
     Inductive alloc_variables: env -> mem ->
@@ -356,7 +357,7 @@ Module ClightP.
       (* the new case *)
       | eval_Eloc: forall e id l v ty,
           eval_loc e id l ->
-          pread pe id l v ty ->
+          pread ce pe id l v ty ->
           ty = typeof e ->
           eval_expr e v
 
@@ -375,7 +376,7 @@ Module ClightP.
           eval_expr a (Vptr l ofs)  ->
           typeof a = Tstruct id att ->
           ge.(genv_cenv)!id = Some co ->
-          field_offset ge i (co_members co) = OK (delta, bf) ->
+          Ctypes.field_offset ge i (co_members co) = OK (delta, bf) ->
           eval_lvalue (Efield a i ty) l (Ptrofs.add ofs (Ptrofs.repr delta)) bf
       | eval_Efield_union:   forall a i ty l ofs id co att delta bf,
           eval_expr a (Vptr l ofs)  ->
@@ -395,11 +396,21 @@ Module ClightP.
           (TPREV: ty_prev = typeof earr)
           (ELOC: eval_loc earr id (Loc ty_prev l))
           (EINT: eval_expr ei (Vint i))
-          (NEXT_LOC: l' = l ++ ((Int.unsigned i, ty_elem):: nil))
+          (NEXT_LOC: l' = l ++ (Index (Int.unsigned i) ty_elem :: nil))
           (* this condition might be superfluous but we need it to solve some
              overflow puzzles *)
           (BOUND: 0 <= Int.unsigned i < n),
-          eval_loc (Eaccess earr ei ty_elem) id (Loc ty_elem l').
+          eval_loc (Eindex earr ei ty_elem) id (Loc ty_elem l')
+      | eval_Efield: forall estruct f tid l l' ty_field ty_prev id co ofs
+        (TSTRUCT: typeof estruct = Tstruct tid noattr)
+        (TPREV: ty_prev = typeof estruct)
+        (ELOC: eval_loc estruct id (Loc ty_prev l))
+        (NEXT_LOC: l' = l ++ (Field f tid :: nil))
+        (HCO: ce!tid = Some co)
+        (HTY: field_type f (co_members co) = OK ty_field)
+        (HSU: co_su co = Ctypes.Struct)
+        (HF: Ctypes.field_offset ce f (co_members co) = OK (ofs, Full)),
+        eval_loc (Epfield estruct f ty_field) id (Loc ty_field l').
       Scheme eval_expr_ind2 := Minimality for eval_expr Sort Prop
           with eval_lvalue_ind2 := Minimality for eval_lvalue Sort Prop
           with eval_loc_ind2 := Minimality for eval_loc Sort Prop.
@@ -513,7 +524,7 @@ Module ClightP.
     | step_update: forall f a1 a2 k e le l pe pe' m id new_v,
         eval_loc e le pe m a1 id l ->
         eval_expr e le pe m a2 new_v ->
-        pwrite pe id l new_v pe' (typeof a2) ->
+        pwrite ce pe id l new_v pe' (typeof a2) ->
         (* maybe we could implement [sem_cast] like in Sassign *)
         typeof a2 = typeof a1 ->
         val_casted new_v (typeof a1) ->
@@ -667,7 +678,7 @@ Module ClightP.
       Mem.alloc_flag m = true ->
       function_entry1 ge f vargs m e le m'.
 
-  Definition step1 (ge: genv) := step ge (function_entry1 ge).
+  Definition step1 ce (ge: genv) := step ce ge (function_entry1 ge).
 
   (** Second, parameters as temporaries. *)
 
@@ -681,7 +692,7 @@ Module ClightP.
     Mem.alloc_flag m = true ->
     function_entry2 ge f vargs m e le m'.
 
-  Definition step2 (ge: genv) := step ge (function_entry2 ge).
+  Definition step2 ce (ge: genv) := step ce ge (function_entry2 ge).
 
   Definition add_private (pe: penv) (x: ident * privvar) : penv :=
     match x with
@@ -722,7 +733,7 @@ Module ClightP.
       activate se :=
         let ge := globalenv se p in
         {|
-          Smallstep.step := step1;
+          Smallstep.step := step1 (prog_comp_env p);
           Smallstep.initial_state := initial_state ge;
           Smallstep.at_external := at_external ge;
           Smallstep.after_external := after_external;
@@ -738,7 +749,7 @@ Module ClightP.
       activate se :=
         let ge := globalenv se p in
         {|
-          Smallstep.step := step2;
+          Smallstep.step := step2 (prog_comp_env p);
           Smallstep.initial_state := initial_state ge;
           Smallstep.at_external := at_external ge;
           Smallstep.after_external := after_external;
@@ -793,11 +804,14 @@ Section TRANSF.
     | Epvar i ty =>
         assertion (zlt (sizeof ce ty) Ptrofs.max_unsigned);
         OK (Clight.Evar i ty)
-    | Eaccess ea ei ty =>
+    | Eindex ea ei ty =>
         do tea <- transl_expr ea;
         do tei <- transl_expr ei;
         OK (Clight.Ederef
               (Clight.Ebinop Oadd tea tei (Tpointer ty noattr)) ty)
+    | Epfield estruct f ty =>
+        do testruct <- transl_expr estruct;
+        OK (Clight.Efield testruct f ty)
     end.
 
   Fixpoint transl_exprlist (xs: list expr): res (list Clight.expr) :=
@@ -930,6 +944,12 @@ Section PRESERVATION.
   Let tge : Clight.genv := Clight.globalenv se tprog.
   Let ce : composite_env := ClightP.prog_comp_env prog.
 
+  Lemma Hconsistent: composite_env_consistent ce.
+  Proof.
+    eapply build_composite_env_consistent.
+    subst ce. eapply ClightP.prog_comp_env_eq.
+  Qed.
+
   Inductive pmatch_cont: (ClightP.cont * penv) -> Clight.cont -> Prop :=
   | pmatch_Kstop: forall pe, pmatch_cont (ClightP.Kstop, pe) Clight.Kstop
   | pmatch_Kseq: forall s t k tk pe,
@@ -977,21 +997,22 @@ Section PRESERVATION.
 
 (** ------------------------------------------------------------------------- *)
 (** Correctness of [eval_expr] *)
+
   Lemma eval_expr_lvalue_correct :
     forall e le m tm pe,
       penv_match ce se (pe, m) tm ->
       (forall expr v,
-          ClightP.eval_expr ge e le pe m expr v ->
+          ClightP.eval_expr ce ge e le pe m expr v ->
           forall texpr (TR: transl_expr ce expr = OK texpr),
             Clight.eval_expr tge e le tm texpr v)
       /\
       (forall expr b ofs bf,
-         ClightP.eval_lvalue ge e le pe m expr b ofs bf ->
+         ClightP.eval_lvalue ce ge e le pe m expr b ofs bf ->
          forall texpr (TR: transl_expr ce expr = OK texpr),
            Clight.eval_lvalue tge e le tm texpr b ofs bf)
       /\
       (forall expr id l,
-        ClightP.eval_loc ge e le pe m expr id l ->
+        ClightP.eval_loc ce ge e le pe m expr id l ->
         forall texpr (TR: transl_expr ce expr = OK texpr),
         exists b ofs, Clight.eval_lvalue tge e le tm texpr b (Ptrofs.repr ofs) Full
                  /\ Genv.find_symbol se id = Some b
@@ -1062,6 +1083,7 @@ Section PRESERVATION.
       specialize (H _ EQ) as (b & ofs & A & B & C & D).
       specialize (H0 _ EQ1).
       eexists b, _. split.
+      (* eval_lvalue *)
       + constructor. econstructor.
         * eapply Clight.eval_Elvalue. apply A.
           apply deref_loc_reference.
@@ -1113,7 +1135,9 @@ Section PRESERVATION.
           unfold Int.unsigned in BOUND. lia.
         }
         split.
-        * eapply match_loc_app; eauto. apply Z.mul_comm.
+        (* match_loc *)
+        * eapply match_loc_app_index; eauto. apply Z.mul_comm.
+        (* max_unsigned *)
         * eapply Z.le_lt_trans with (m := (ofs + sizeof ce (ClightP.typeof earr))); eauto.
           rewrite <- Z.add_assoc.
           apply Z.add_le_mono_l. cbn.
@@ -1123,13 +1147,46 @@ Section PRESERVATION.
           transitivity (z * (Int.intval i + 1)); try lia.
           apply Zmult_le_compat_l; try lia.
           unfold Int.unsigned in BOUND. lia.
+    - intros. monadInv TR.
+      specialize (H _ EQ) as (b & ofs_start & A & B & C & D).
+      monadInv TRANSL. eexists b, _.
+      assert (ofs_start >= 0).
+      { eapply match_loc_pos; eauto. }
+      assert (sizeof ce ty_field >= 0).
+      { eapply sizeof_pos. }
+      assert (sizeof ce (ClightP.typeof estruct) >= 0).
+      { eapply sizeof_pos. }
+      repeat apply conj; eauto.
+      (* eval_lvalue *)
+      + econstructor; eauto.
+        * eapply Clight.eval_Elvalue. apply A.
+          apply deref_loc_copy.
+          erewrite <- transl_expr_typeof; eauto.
+          rewrite TSTRUCT. reflexivity.
+        * erewrite <- !transl_expr_typeof; eauto.
+      (* match_loc *)
+      + rewrite !Ptrofs.unsigned_repr; eauto.
+        * eapply match_loc_app_field; eauto. apply Hconsistent.
+        * edestruct Ctypes.field_offset_in_range as [X Y]; eauto.
+          eapply field_offset_size with (attr := noattr) in HF; eauto.
+          split; eauto. rewrite TSTRUCT in D. lia. apply Hconsistent.
+        * split; lia.
+      + rewrite !Ptrofs.unsigned_repr; eauto.
+        * cut (ofs + sizeof ce ty_field <= sizeof ce (ClightP.typeof estruct)).
+          cbn in *. lia. rewrite TSTRUCT. eapply field_offset_size; eauto.
+          apply Hconsistent.
+        * edestruct Ctypes.field_offset_in_range as [X Y]; eauto.
+          eapply field_offset_size with (attr := noattr) in HF; eauto.
+          split; eauto. rewrite TSTRUCT in D. lia.
+          apply Hconsistent.
+        * split; lia.
   Qed.
 
   Lemma eval_expr_correct:
     forall e le m tm pe,
       penv_match ce se (pe, m) tm ->
       forall expr v,
-          ClightP.eval_expr ge e le pe m expr v ->
+          ClightP.eval_expr ce ge e le pe m expr v ->
           forall texpr (TR: transl_expr ce expr = OK texpr),
             Clight.eval_expr tge e le tm texpr v.
   Proof. apply eval_expr_lvalue_correct. Qed.
@@ -1138,7 +1195,7 @@ Section PRESERVATION.
     forall e le m tm pe,
       penv_match ce se (pe, m) tm ->
       forall expr b ofs bf,
-        ClightP.eval_lvalue ge e le pe m expr b ofs bf ->
+        ClightP.eval_lvalue ce ge e le pe m expr b ofs bf ->
         forall texpr (TR: transl_expr ce expr = OK texpr),
           Clight.eval_lvalue tge e le tm texpr b ofs bf.
   Proof. apply eval_expr_lvalue_correct. Qed.
@@ -1147,7 +1204,7 @@ Section PRESERVATION.
     forall e le m tm pe,
       penv_match ce se (pe, m) tm ->
       forall expr id l,
-        ClightP.eval_loc ge e le pe m expr id l ->
+        ClightP.eval_loc ce ge e le pe m expr id l ->
         forall texpr (TR: transl_expr ce expr = OK texpr),
         exists b ofs, Clight.eval_lvalue tge e le tm texpr b (Ptrofs.repr ofs) Full
                  /\ Genv.find_symbol se id = Some b
@@ -1159,7 +1216,7 @@ Section PRESERVATION.
     forall e le m tm pe,
       penv_match ce se (pe, m) tm ->
       forall es tys vs,
-          ClightP.eval_exprlist ge e le pe m es tys vs ->
+          ClightP.eval_exprlist ce ge e le pe m es tys vs ->
           forall tes (TR: transl_exprlist ce es = OK tes),
             Clight.eval_exprlist tge e le tm tes tys vs.
   Proof.
@@ -1594,7 +1651,7 @@ Section PRESERVATION.
 
   Lemma step_correct:
     forall s1 pe t s1' pe',
-      ClightP.step2 ge (s1, pe) t (s1', pe') ->
+      ClightP.step2 ce ge (s1, pe) t (s1', pe') ->
       forall s2 : state,
         pmatch_state se (s1, pe) s2 ->
         exists s2' : state, Clight.step2 tge s2 t s2' /\ pmatch_state se (s1', pe') s2'.
@@ -1627,7 +1684,7 @@ Section PRESERVATION.
       inv MP. clear pe. rename pe0 into pe.
       inv H1. exploit MVALUE. apply H. intros (bx & C & D).
       rewrite C in X. inv X.
-      exploit pwrite_val_correct; eauto.
+      exploit pwrite_val_correct; eauto. apply Hconsistent.
       intros (tm' & E & F).
       apply join_commutative in MJOIN.
       exploit store_join. apply MJOIN. intros G.
@@ -1661,7 +1718,7 @@ Section PRESERVATION.
              }
              clear - K E J.
              (* pvalue_match unchanged_on *)
-             eapply pvalue_match_unchanged; eauto.
+             eapply pvalue_match_unchanged; eauto. apply Hconsistent.
              instantiate (1 := (fun bi _ => bi <> b)).
              eapply Mem.store_unchanged_on; eauto.
              intros; cbn. congruence.
