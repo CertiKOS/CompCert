@@ -72,7 +72,7 @@ Section CLIGHTP.
   Definition rb_get_body : statement :=
     Sreturn
       (Some
-         (Eaccess (Epvar arr_id (tarray tint Nz))
+         (Eindex (Epvar arr_id (tarray tint Nz))
             (Etempvar get_arg_id tint) tint)).
   Definition rb_get : function :=
     {|
@@ -94,7 +94,7 @@ Section CLIGHTP.
   Definition rb_set_body : statement :=
     Ssequence
       (Supdate
-         (Eaccess (Epvar arr_id (tarray tint Nz))
+         (Eindex (Epvar arr_id (tarray tint Nz))
             (Etempvar get_arg_id tint) tint)
          (Etempvar set_arg2_id tint))
       (Sreturn None).
@@ -184,22 +184,22 @@ Section CLIGHTP.
       fn_body := rb_inc2_body;
     |}.
 
-  Program Definition arr_pvar : privvar :=
+  Definition arr_pvar : privvar :=
     let tarr := tarray tint Nz in
     {|
       pvar_init := Array Nz (ZMap.init (Val (Vint Int.zero) tint)) tarr;
     |}.
-  Next Obligation.
-    constructor; eauto.
-    - intros. rewrite ZMap.gi. constructor.
-    - unfold type_size_eq. intros. reflexivity.
-  Qed.
+  (* Next Obligation. *)
+  (*   constructor; eauto. *)
+  (*   - intros. rewrite ZMap.gi. constructor. *)
+  (*   - unfold type_size_eq. intros. reflexivity. *)
+  (* Qed. *)
 
-  Program Definition cnt_pvar : privvar :=
+  Definition cnt_pvar : privvar :=
     {|
       pvar_init := Val (Vint Int.zero) tint;
     |}.
-  Next Obligation. constructor. Qed.
+  (* Next Obligation. constructor. Qed. *)
 
   Program Definition rb_program: ClightP.program :=
     {|
@@ -215,11 +215,36 @@ Section CLIGHTP.
       prog_types := [];
       prog_comp_env := (PTree.empty _);
       prog_norepet := _;
+      prog_priv_ok := _;
     |}.
   Next Obligation.
     unfold arr_id, cnt1_id, cnt2_id, get_id, set_id, inc1_id, inc2_id in *.
     repeat (constructor; [ simpl; lia | ]). constructor.
   Defined.
+  Next Obligation.
+    constructor.
+    - (repeat apply in_inv in H as [H|H]); inv H.
+      + constructor; intros; rewrite ZMap.gi.
+        * constructor.
+        * reflexivity.
+      + constructor.
+      + constructor.
+    - (repeat apply in_inv in H as [H|H]); inv H.
+      + econstructor.
+        * intros. rewrite ZMap.gi. constructor. cbn.
+          apply Z.divide_refl.
+        * cbn. exists 100%Z. lia.
+      + constructor. apply Z.divide_refl.
+      + constructor. apply Z.divide_refl.
+    - unfold pvar_size_ok. (repeat apply in_inv in H as [H|H]); inv H.
+      + etransitivity. 2: apply int_max_le_ptrofs_max. cbn. lia.
+      + etransitivity. 2: apply int_max_le_ptrofs_max. cbn. lia.
+      + etransitivity. 2: apply int_max_le_ptrofs_max. cbn. lia.
+    - unfold pvar_type_ok. (repeat apply in_inv in H as [H|H]); inv H; cbn.
+      + econstructor; intros; try easy. constructor.
+      + constructor.
+      + constructor.
+  Qed.
 
   (**
 <<
@@ -295,11 +320,15 @@ Section CLIGHTP.
       prog_types := [];
       prog_comp_env := (PTree.empty _);
       prog_norepet := _;
+      prog_priv_ok := _;
     |}.
   Next Obligation.
     unfold enq_id, deq_id, inc1_id, inc2_id, get_id, set_id.
     repeat (constructor; [ simpl; lia | ]). constructor.
   Defined.
+  Next Obligation.
+    intros H p Hp. inv Hp.
+  Qed.
 
 End CLIGHTP.
 
@@ -319,34 +348,34 @@ Ltac solve_ptree := solve [ eauto | ptree_tac ].
 Ltac crush_loc:=
   cbn;
   lazymatch goal with
-  | [ |- eval_loc _ _ _ _ _ (Epvar _ _) _ _ ] =>
+  | [ |- eval_loc _ _ _ _ _ _ (Epvar _ _) _ _ ] =>
       eapply eval_Epvar; [ eauto | solve_ptree ]
   end.
 
 Ltac crush_penv :=
   cbn; eauto;
   lazymatch goal with
-  | [ |- pwrite _ _ _ _ _ _ ] =>
+  | [ |- pwrite _ _ _ _ _ _ _ ] =>
       econstructor; [ solve_ptree | eauto | eauto | try reflexivity ]
-  | [ |- pread _ _ _ _ _ ] =>
+  | [ |- pread _ _ _ _ _ _ ] =>
       econstructor; [ solve_ptree | eauto ]
   end.
 
 Ltac crush_eval_expr :=
   cbn;
   lazymatch goal with
-  | [ |- eval_expr _ _ _ _ _ (Etempvar _ _) _ ] => apply eval_Etempvar; reflexivity
-  | [ |- eval_expr _ _ _ _ _ (Econst_int _ _) _ ] => apply eval_Econst_int
-  | [ |- eval_expr _ _ _ _ _ (Ebinop _ _ _ _) _ ] => eapply eval_Ebinop
-  | [ |- eval_expr _ _ _ _ _ (Evar _ _) _ ] => eapply eval_Elvalue
-  | [ |- eval_expr _ _ _ _ _ (Ederef _ _) _ ] => eapply eval_Elvalue
-  | [ |- eval_expr _ _ _ _ _ (Epvar _ _) _ ] =>
+  | [ |- eval_expr _ _ _ _ _ _ (Etempvar _ _) _ ] => apply eval_Etempvar; reflexivity
+  | [ |- eval_expr _ _ _ _ _ _ (Econst_int _ _) _ ] => apply eval_Econst_int
+  | [ |- eval_expr _ _ _ _ _ _ (Ebinop _ _ _ _) _ ] => eapply eval_Ebinop
+  | [ |- eval_expr _ _ _ _ _ _ (Evar _ _) _ ] => eapply eval_Elvalue
+  | [ |- eval_expr _ _ _ _ _ _ (Ederef _ _) _ ] => eapply eval_Elvalue
+  | [ |- eval_expr _ _ _ _ _ _ (Epvar _ _) _ ] =>
       eapply eval_Eloc; [ try crush_loc | try crush_penv | ]; eauto
   end.
 Ltac crush_eval_lvalue :=
   cbn;
   lazymatch goal with
-  | [ |- eval_lvalue _ _ _ _ _ (Evar _ _) _ _ _ ] =>
+  | [ |- eval_lvalue _ _ _ _ _ _ (Evar _ _) _ _ _ ] =>
       solve [ apply eval_Evar_local; reflexivity
             | apply eval_Evar_global; [ reflexivity | eassumption ] ]
   | _ => constructor
@@ -362,9 +391,9 @@ Ltac crush_deref :=
 Ltac crush_expr :=
   repeat (cbn;
     match goal with
-    | [ |- eval_expr _ _ _ _ _ _ _ ] => crush_eval_expr
-    | [ |- eval_lvalue _ _ _ _ _ _ _ _ _ ] => crush_eval_lvalue
-    | [ |- eval_exprlist _ _ _ _ _ _ _ _ ] => econstructor
+    | [ |- eval_expr _ _ _ _ _ _ _ _ ] => crush_eval_expr
+    | [ |- eval_lvalue _ _ _ _ _ _ _ _ _ _ ] => crush_eval_lvalue
+    | [ |- eval_exprlist _ _ _ _ _ _ _ _ _ ] => econstructor
     | [ |- deref_loc _ _ _ _ _ _ ] => crush_deref
     | [ |- Cop.sem_binary_operation _ _ _ _ _ _ _ = Some _] => try reflexivity
     | [ |- Cop.sem_cast _ ?ty ?ty _ = Some _ ] =>
@@ -1437,7 +1466,7 @@ Section REFINE.
     }
     rewrite H.
     destruct link_build_composite_env. destruct a.
-    destruct list_norepet_dec eqn: Hx.
+    destruct list_norepet_dec eqn: Hx. destruct a.
     - eexists. reflexivity.
     - clear - n. exfalso. apply n. clear n. cbn.
       Ltac rewrite_gso :=
@@ -1891,11 +1920,12 @@ Section REFINE.
   Context tbq trb (HT1: transl_program bq_program = Errors.OK tbq)
               (HT2: transl_program rb_program = Errors.OK trb).
   Let vars := vars_of_program bq_program ++ vars_of_program rb_program.
+  Let ce := PTree.empty composite.
 
   Lemma rb_bq_correct_clight:
     E.forward_simulation
       (ST.cc_compose (&1) unp_out)
-      (ST.cc_compose (&flag_cc) (unp_in vars))
+      (ST.cc_compose (&flag_cc) (unp_in ce vars))
       abs_bq_espec
       (comp_esem' (semantics_embed (semantics2 tbq))
          (semantics_embed (semantics2 trb)) rb_bq_skel).
@@ -1903,7 +1933,6 @@ Section REFINE.
     eapply encap_fsim_vcomp. apply rb_bq_correct.
     apply clightp_comp; eauto.
     cbn. intros x y [].
-    apply link_clightp_erase.
     unfold rb_bq_prog. destruct rb_bq_linking.
     apply e.
   Qed.

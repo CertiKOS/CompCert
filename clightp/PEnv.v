@@ -824,7 +824,7 @@ Inductive pv_type_ok ce: val -> Prop :=
     pv_type_ok ce (Val v (Tint I32 sign attr))
   | pv_array_type ty_elem n attr vs:
     (forall i, 0 <= i < n -> pv_type_ok ce (ZMap.get i vs)) ->
-    (forall i, 0 <= i < n -> ty_elem = ZMap.get i vs) ->
+    (forall i, 0 <= i < n -> ty_elem = type_of_pv (ZMap.get i vs)) ->
     pv_type_ok ce (Array n vs (Tarray ty_elem n attr))
   | pv_struct_type tid attr fs:
     struct_type_ok ce tid fs ->
