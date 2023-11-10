@@ -818,10 +818,26 @@ Definition pvar_align_ok ce (pvar: privvar): Prop := sizeof_div4 ce pvar.
 (* TODO: add [pvar_align_ok] and [pvar_size_ok] to the definition of ClightP
    program. *)
 
+(* This property for stablity of type size in different ce *)
+Inductive pv_type_ok ce: val -> Prop :=
+  | pv_int_type sign attr v:
+    pv_type_ok ce (Val v (Tint I32 sign attr))
+  | pv_array_type ty_elem n attr vs:
+    (forall i, 0 <= i < n -> pv_type_ok ce (ZMap.get i vs)) ->
+    (forall i, 0 <= i < n -> ty_elem = ZMap.get i vs) ->
+    pv_type_ok ce (Array n vs (Tarray ty_elem n attr))
+  | pv_struct_type tid attr fs:
+    struct_type_ok ce tid fs ->
+    (forall f v, In (f, v) fs -> pv_type_ok ce v) ->
+    pv_type_ok ce (Struct fs (Tstruct tid attr)).
+
+Definition pvar_type_ok ce (pvar: privvar): Prop := pv_type_ok ce pvar.
+
 Record pvar_ok ce (pvar: privvar) := {
     init_ok: init_pv ce pvar;
     align_ok: pvar_align_ok ce pvar;
     size_ok: pvar_size_ok ce pvar;
+    type_ok: pvar_type_ok ce pvar;
   }.
 
 Lemma init_pvalue_match ce b pv:
@@ -958,11 +974,8 @@ Inductive penv_mem_match ce: Genv.symtbl -> penv -> Mem.mem -> Prop :=
           pvalue_match ce b 0 v m):
   penv_mem_match ce se pe m.
 
-Fixpoint init_of_pvars (vs: list (ident * privvar)) : list (ident * val) :=
-  match vs with
-  | nil => nil
-  | (id, v) :: rest => (id, pvar_init v) :: (init_of_pvars rest)
-  end.
+Definition init_of_pvars (vs: list (ident * privvar)) : list (ident * val) :=
+  map (fun '(id, v) => (id, pvar_init v)) vs.
 
 Lemma pvalue_match_invariant ce b ofs v m m':
   composite_env_consistent ce ->
@@ -1225,6 +1238,7 @@ Proof.
       unfold init_fragment. rewrite Hb.
       apply init_pvalue_match; eauto. constructor.
       * eapply H0. left; eauto.
+      * eapply H0. constructor. reflexivity.
       * eapply H0. constructor. reflexivity.
       * eapply H0. constructor. reflexivity.
     + rewrite PTree.gso in Hv; eauto.
@@ -1591,15 +1605,55 @@ Section DISJOINT.
       + rewrite mem_combine_perm_iff_l; eauto.
   Qed.
 
+  Definition vars_type_ok ce (vars: list (ident * val)):=
+    forall id v, In (id, v) vars -> pv_type_ok ce v.
+
+  Lemma sizeof_vars_same ce1 ce2 v:
+    (forall id co, ce1!id = Some co -> ce2!id = Some co) ->
+    pv_type_ok ce1 v ->
+    sizeof ce1 (type_of_pv v) = sizeof ce2 (type_of_pv v).
+  Proof.
+    intros Hext Hv. induction Hv.
+    - reflexivity.
+    - cbn.
+      (* destruct on 0 < n and 0 >= n *)
+      destruct (Z_lt_ge_dec 0 n).
+      + (* rewrite Z.max 0 n to n *)
+        rewrite Z.max_r by lia. f_equal.
+        specialize (H1 0). rewrite !H1 by lia.
+        eapply H0. lia.
+      + (* rewrite Z.max 0 n to 0 *)
+        rewrite Z.max_l by lia.
+        rewrite !Z.mul_0_r. reflexivity.
+    - cbn. inv H. rewrite HCE. erewrite Hext; eauto.
+  Qed.
+
+  Context (ce ce1 ce2: composite_env)
+    (Hce1: forall id co, ce1!id = Some co -> ce!id = Some co)
+    (Hce2: forall id co, ce2!id = Some co -> ce!id = Some co).
+
   Lemma disjoint_init_mem:
-    forall ce se vars1 vars2,
+    forall se vars1 vars2,
       vars_disjoint vars1 vars2 ->
-      join (m0 ce vars1 se) (m0 ce vars2 se)
+      vars_type_ok ce1 vars1 ->
+      vars_type_ok ce2 vars2 ->
+      join (m0 ce1 vars1 se) (m0 ce2 vars2 se)
         (m0 ce (vars1 ++ vars2) se).
   Proof.
     intros *. revert vars2.
     induction vars1 as [| [id pv] ]; intros; cbn.
-    - apply join_empty_left.
+    - assert (m0 ce2 vars2 se = m0 ce vars2 se).
+      {
+        clear -Hce2 H1. induction vars2. reflexivity.
+        cbn. destruct a.
+        rewrite IHvars2. f_equal.
+        + unfold init_fragment.
+          eapply sizeof_vars_same in Hce2.
+          rewrite Hce2. reflexivity.
+          eapply H1. left; eauto.
+        + intros x y Hx. eapply H1. right; eauto.
+      }
+      rewrite H2. apply join_empty_left.
     - assert (Hvs: vars_disjoint vars1 vars2).
       { unfold vars_disjoint, list_disjoint in *.
         intros x y Hx Hy. apply H; eauto.
@@ -1611,13 +1665,20 @@ Section DISJOINT.
           unfold vars_disjoint in H. cbn in *.
           unfold list_disjoint in H.
           exploit H; eauto. now left. }
+        assert (sizeof ce1 pv = sizeof ce pv).
+        { apply sizeof_vars_same; eauto.
+          eapply H0. left; eauto. }
+        rewrite H3.
         eapply join_combine_left.
         * intros ofs. eapply m0_other_block_perm; eauto.
         * intros ofs. eapply m0_other_block_content; eauto.
         * apply m0_alloc_flag.
         * apply m0_alloc_flag.
         * apply IHvars1; eauto.
+          intros x y Hx. eapply H0. right; eauto.
       + apply join_combine_empty_fragment; eauto.
+        eapply IHvars1; eauto.
+        intros x y Hx. eapply H0. right; eauto.
   Qed.
 
 End DISJOINT.

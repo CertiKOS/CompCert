@@ -113,17 +113,17 @@ End LEFT_UNIT.
 (** ------------------------------------------------------------------------- *)
 (** simulation conventions *)
 
-Instance mem_pset (vars: list (ident * val)) : PSet mem :=
-  { pset_init se := m0 vars se }.
+Instance mem_pset ce (vars: list (ident * val)) : PSet mem :=
+  { pset_init se := m0 ce vars se }.
 Instance penv_pset (vars: list (ident * val)) : PSet penv :=
   { pset_init _ := p0 vars }.
 Instance symtbl_pset : PSet Genv.symtbl :=
   { pset_init se := se }.
 
-Instance mem_world (vars: list (ident * val)): World mem :=
+Instance mem_world ce (vars: list (ident * val)): World mem :=
   {|
     w_state := mem;
-    w_pset := mem_pset vars;
+    w_pset := mem_pset ce vars;
     (* maybe we need unchanged_on *)
     w_int_step := {| Encapsulation.rel := fun m1 m2 => True |};
     w_ext_step := {| Encapsulation.rel := eq |};
@@ -173,10 +173,10 @@ Inductive unp_in_reply: Memory.mem -> reply li_c -> reply li_c -> Prop :=
     (MJOIN: join m msrc mtgt):
   unp_in_reply m (cr rv msrc) (cr rv mtgt).
 
-Program Definition unp_in vars : ST.callconv li_c li_c :=
+Program Definition unp_in ce vars : ST.callconv li_c li_c :=
   {|
     ST.ccworld := Genv.symtbl * mem;
-    ST.ccworld_world := world_prod se_world (mem_world vars);
+    ST.ccworld_world := world_prod se_world (mem_world ce vars);
     ST.match_senv '(se, _) se1 se2 := se = se1 /\ se = se2;
     ST.match_query '(_, m) := unp_in_query m;
     ST.match_reply '(_, m) := unp_in_reply m;
@@ -249,7 +249,7 @@ Section ESIM.
 
   Lemma penv_encap:
     E.forward_simulation
-     (& (pin ce)) (unp_in vars)
+     (& (pin ce)) (unp_in ce vars)
      (@encap_prim _ penv (penv_pset vars) sk)
      (semantics_embed (id_semantics sk)).
   Proof.
@@ -262,7 +262,10 @@ Section ESIM.
       try easy.
     - intros. cbn in *. eprod_crush. eauto.
     - intros. cbn in *. apply vars_init.
-      apply valid_for_pvars. apply H.
+      + eapply build_composite_env_consistent.
+        subst ce. eapply ClightP.prog_comp_env_eq.
+      + apply valid_for_pvars. apply H.
+      + apply prog.
     - intros. cbn in *. constructor; cbn.
       + intros. eprod_crush. subst. inv H3. inv H4.
         eexists tt, _. split. constructor.
@@ -288,10 +291,10 @@ Section ESIM.
   Qed.
 
   Lemma promote_clightp:
-    E.forward_simulation unp_out (unp_in vars) S T.
+    E.forward_simulation unp_out (unp_in ce vars) S T.
   Proof.
     rewrite <- (ccref_right_unit2 unp_out).
-    rewrite (ccref_right_unit1 (unp_in vars)).
+    rewrite (ccref_right_unit1 (unp_in ce vars)).
     eapply encap_fsim_vcomp.
     instantiate (1 := (comp_esem' (semantics_embed (id_semantics sk)) T sk)).
     - eapply encap_fsim_lcomp_sk.
@@ -322,34 +325,40 @@ Section UNP_IN.
 
   Context (vars1 vars2: list (ident * val)) (Hvs: PEnv.vars_disjoint vars1 vars2).
   Let vars := vars1 ++ vars2.
+  Context (ce ce1 ce2: composite_env).
+  Context (Hce1: forall id co, ce1 ! id = Some co -> ce ! id = Some co).
+  Context (Hce2: forall id co, ce2 ! id = Some co -> ce ! id = Some co).
+  Context (Hvs1: vars_type_ok ce1 vars1).
+  Context (Hvs2: vars_type_ok ce2 vars2).
+
   Inductive unp_in_inv:
-    ST.ccstate (ST.cc_compose (unp_in vars1) (unp_in vars2)) ->
-    ST.ccstate (unp_in vars) -> Prop :=
+    ST.ccstate (ST.cc_compose (unp_in ce1 vars1) (unp_in ce2 vars2)) ->
+    ST.ccstate (unp_in ce vars) -> Prop :=
   | unp_in_inv_intro:
     forall m m1 m2 se, join m1 m2 m -> unp_in_inv ((se, m1), (se, m2)) (se, m).
   Inductive unp_in_ms se:
-    ST.ccstate (ST.cc_compose (unp_in vars1) (unp_in vars2)) ->
-    ST.ccstate (unp_in vars) -> @state li_c li_c 1 -> @state li_c li_c 1 -> Prop :=
+    ST.ccstate (ST.cc_compose (unp_in ce1 vars1) (unp_in ce2 vars2)) ->
+    ST.ccstate (unp_in ce vars) -> @state li_c li_c 1 -> @state li_c li_c 1 -> Prop :=
   | unp_in_ms_query:
     forall q1 q2 m1 m2 m
-      (MQ: ST.match_query (unp_in vars) (se, m) q1 q2)
+      (MQ: ST.match_query (unp_in ce vars) (se, m) q1 q2)
       (MJ: join m1 m2 m),
       unp_in_ms se ((se, m1), (se, m2)) (se, m) (st_q q1) (st_q q2)
   | unp_in_ms_reply:
     forall r1 r2 m1 m2 m
-      (MR: ST.match_reply (unp_in vars) (se, m) r1 r2)
+      (MR: ST.match_reply (unp_in ce vars) (se, m) r1 r2)
       (MJ: join m1 m2 m),
       unp_in_ms se ((se, m1), (se, m2)) (se, m) (st_r r1) (st_r r2).
 
   Lemma unp_in_idemp:
-    st_ccref (unp_in vars) (ST.cc_compose (unp_in vars1) (unp_in vars2)).
+    st_ccref (unp_in ce vars) (ST.cc_compose (unp_in ce1 vars1) (unp_in ce2 vars2)).
   Proof.
     apply st_normalize_fsim. constructor.
     eapply ST.Forward_simulation with
       (ltof _ (fun (_: unit) => 0)) (fun se _ _ wa wb _ => unp_in_ms se wa wb)
       (fun wa wb => unp_in_inv wa wb); try easy.
     - intros. cbn in *. eprod_crush. inv H. constructor; eauto.
-    - cbn. intros se. constructor.
+    - cbn. intros se Hse. constructor.
       apply disjoint_init_mem; eauto.
     - intros sa wb se1 se2 Hse0 Hsk I. inv I.
       cbn in *. eprod_crush. subst. constructor.
@@ -452,7 +461,7 @@ End UNP_OUT.
 
 Section CLIGHT_IN.
 
-  Context (p: Clight.program) (vars: list (ident * val)).
+  Context (p: Clight.program) (vars: list (ident * val)) (ce: composite_env).
 
   Lemma clight_expr_lvalue_join mx ge:
     forall e le m1 m2,
@@ -528,8 +537,8 @@ Section CLIGHT_IN.
   Qed.
 
   Inductive clight_ms se:
-    ST.ccstate (unp_in vars) ->
-    ST.ccstate (ST.callconv_lift (unp_in vars) unit unit) ->
+    ST.ccstate (unp_in ce vars) ->
+    ST.ccstate (ST.callconv_lift (unp_in ce vars) unit unit) ->
     state (Clight.semantics2 p) -> state (Clight.semantics2 p) -> Prop :=
   | clight_ms_State:
     forall f s k e le m1 m2 mx
@@ -547,7 +556,7 @@ Section CLIGHT_IN.
       clight_ms se (se, mx) ((se, mx), (tt, tt))
         (Clight.Returnstate rv k m1) (Clight.Returnstate rv k m2).
 
-  Inductive clight_inv : ST.ccstate (unp_in vars) -> ST.ccstate (ST.callconv_lift (unp_in vars) unit unit) -> Prop :=
+  Inductive clight_inv : ST.ccstate (unp_in ce vars) -> ST.ccstate (ST.callconv_lift (unp_in ce vars) unit unit) -> Prop :=
   | clight_inv_intro m se:
     clight_inv (se, m) ((se, m), (tt, tt)).
 
@@ -587,7 +596,7 @@ Section CLIGHT_IN.
     - exploit ClightP.external_call_join; eauto. intros (? & A & B)...
   Qed.
 
-  Lemma clight_in: E.forward_simulation (unp_in vars) (unp_in vars)
+  Lemma clight_in: E.forward_simulation (unp_in ce vars) (unp_in ce vars)
                      (semantics_embed (Clight.semantics2 p))
                      (semantics_embed (Clight.semantics2 p)).
   Proof.
@@ -640,6 +649,7 @@ End CLIGHT_IN.
 Section CLICHTP_OUT.
 
   Context (p: ClightP.program).
+  Let ce := ClightP.prog_comp_env p.
 
   Inductive clightp_ms mx : state (ClightP.clightp1 p) -> state (ClightP.clightp1 p) -> Prop :=
   | clightp_ms_State:
@@ -659,16 +669,16 @@ Section CLICHTP_OUT.
     forall e le m1 m2 pe,
       join mx m1 m2 ->
       (forall expr v,
-          ClightP.eval_expr ge e le pe m1 expr v ->
-          ClightP.eval_expr ge e le pe m2 expr v)
+          ClightP.eval_expr ce ge e le pe m1 expr v ->
+          ClightP.eval_expr ce ge e le pe m2 expr v)
       /\
       (forall expr b ofs bf,
-         ClightP.eval_lvalue ge e le pe m1 expr b ofs bf ->
-         ClightP.eval_lvalue ge e le pe m2 expr b ofs bf)
+         ClightP.eval_lvalue ce ge e le pe m1 expr b ofs bf ->
+         ClightP.eval_lvalue ce ge e le pe m2 expr b ofs bf)
       /\
       (forall expr id l,
-        ClightP.eval_loc ge e le pe m1 expr id l ->
-        ClightP.eval_loc ge e le pe m2 expr id l ).
+        ClightP.eval_loc ce ge e le pe m1 expr id l ->
+        ClightP.eval_loc ce ge e le pe m2 expr id l ).
   Proof.
     intros e le m1 m2 pe HM.
     apply ClightP.eval_expr_lvalue_loc_ind;
@@ -689,8 +699,8 @@ Section CLICHTP_OUT.
   Lemma clightp_expr_join mx ge:
     forall e le m1 m2 pe expr v,
       join mx m1 m2 ->
-      ClightP.eval_expr ge e le pe m1 expr v ->
-      ClightP.eval_expr ge e le pe m2 expr v.
+      ClightP.eval_expr ce ge e le pe m1 expr v ->
+      ClightP.eval_expr ce ge e le pe m2 expr v.
   Proof.
     intros. eapply clightp_expr_lvalue_loc_join in H.
     destruct H. apply H; eauto.
@@ -699,8 +709,8 @@ Section CLICHTP_OUT.
   Lemma clightp_lvalue_join mx ge:
     forall e le m1 m2 pe expr b ofs bf,
       join mx m1 m2 ->
-      ClightP.eval_lvalue ge e le pe m1 expr b ofs bf ->
-      ClightP.eval_lvalue ge e le pe m2 expr b ofs bf.
+      ClightP.eval_lvalue ce ge e le pe m1 expr b ofs bf ->
+      ClightP.eval_lvalue ce ge e le pe m2 expr b ofs bf.
   Proof.
     intros. eapply clightp_expr_lvalue_loc_join in H.
     destruct H as (A & B & C). apply B; eauto.
@@ -709,8 +719,8 @@ Section CLICHTP_OUT.
   Lemma clightp_loc_join mx ge:
     forall e le m1 m2 pe expr id l,
       join mx m1 m2 ->
-      ClightP.eval_loc ge e le pe m1 expr id l ->
-      ClightP.eval_loc ge e le pe m2 expr id l.
+      ClightP.eval_loc ce ge e le pe m1 expr id l ->
+      ClightP.eval_loc ce ge e le pe m2 expr id l.
   Proof.
     intros. eapply clightp_expr_lvalue_loc_join in H.
     destruct H as (A & B & C). apply C; eauto.
@@ -719,8 +729,8 @@ Section CLICHTP_OUT.
   Lemma clightp_exprlist_join mx ge:
     forall e le m1 m2 pe al tyargs vargs,
       join mx m1 m2 ->
-      ClightP.eval_exprlist ge e le pe m1 al tyargs vargs ->
-      ClightP.eval_exprlist ge e le pe m2 al tyargs vargs.
+      ClightP.eval_exprlist ce ge e le pe m1 al tyargs vargs ->
+      ClightP.eval_exprlist ce ge e le pe m2 al tyargs vargs.
   Proof.
     intros * HM HX. induction HX; cbn.
     - constructor.
@@ -761,9 +771,9 @@ Section CLICHTP_OUT.
 
   Lemma clightp_out_step mx ge:
     forall s1 t s1',
-      ClightP.step2 ge s1 t s1' ->
+      ClightP.step2 ce ge s1 t s1' ->
       forall s2, clightp_ms mx s1 s2 ->
-      exists s2', ClightP.step2 ge s2 t s2' /\
+      exists s2', ClightP.step2 ce ge s2 t s2' /\
       clightp_ms mx s1' s2'.
   Proof with (eexists (_, _); split; econstructor; eauto).
     induction 1; intros S2 MS; inv MS;
@@ -908,32 +918,37 @@ Section COMP.
     (T1: li_c +-> li_c) (T2: li_c +-> li_c)
     (vars1 vars2: list (ident * val))
     (Hvs: PEnv.vars_disjoint vars1 vars2)
-    (H1: E.forward_simulation unp_out (unp_in vars1) S1 T1)
-    (H2: E.forward_simulation unp_out (unp_in vars2) S2 T2).
+    (ce1 ce2 ce: composite_env)
+    (Hvs1: vars_type_ok ce1 vars1)
+    (Hvs2: vars_type_ok ce2 vars2)
+    (Hce1: forall id co, ce1 ! id = Some co -> ce ! id = Some co)
+    (Hce2: forall id co, ce2 ! id = Some co -> ce ! id = Some co)
+    (H1: E.forward_simulation unp_out (unp_in ce1 vars1) S1 T1)
+    (H2: E.forward_simulation unp_out (unp_in ce2 vars2) S2 T2).
   Context (sk: AST.program unit unit)
     (Hsk1: Linking.linkorder (skel S1) sk)
     (Hsk2: Linking.linkorder (skel S2) sk).
 
-  Hypothesis P1:
-    forall vars, E.forward_simulation (unp_in vars) (unp_in vars) T1 T1.
+  Hypothesis P1: E.forward_simulation (unp_in ce2 vars2) (unp_in ce2 vars2) T1 T1.
   Hypothesis P2: E.forward_simulation unp_out unp_out S2 S2.
 
   Let vars := vars1 ++ vars2.
 
   Theorem clightp_comp':
-    E.forward_simulation unp_out (unp_in vars)
+    E.forward_simulation unp_out (unp_in ce vars)
       (comp_esem' S1 S2 sk) (comp_esem' T1 T2 sk).
   Proof.
-    rewrite <- unp_out_idemp.
-    unfold vars. rewrite unp_in_idemp.
+    rewrite <- unp_out_idemp. unfold vars.
+    rewrite unp_in_idemp. 5-6: eauto. 2-4: eauto.
     eapply encap_fsim_lcomp_sk; eauto.
-    instantiate (1 := (ST.cc_compose unp_out (unp_in vars2))).
+    instantiate (1 := (ST.cc_compose unp_out (unp_in ce2 vars2))).
     - eapply encap_fsim_vcomp; eauto.
     - eapply encap_fsim_vcomp; eauto.
-    - eauto.
   Qed.
 
 End COMP.
+
+Require Import ClightPLink.
 
 Section COMP.
 
@@ -946,19 +961,40 @@ Section COMP.
   Let T2 := semantics_embed (Clight.semantics2 tp2).
   Let sk1 := ClightP.clightp_erase_program p1.
   Let sk2 := ClightP.clightp_erase_program p2.
-  Context sk (Hlk: Linking.link sk1 sk2 = Some sk).
   Let vars := vars_of_program p1 ++ vars_of_program p2.
+  Context p (Hp: Linking.link p1 p2 = Some p).
+  Let sk := ClightP.clightp_erase_program p.
+  Let ce := ClightP.prog_comp_env p.
 
   Theorem clightp_comp:
-    E.forward_simulation unp_out (unp_in vars)
+    E.forward_simulation unp_out (unp_in ce vars)
       (comp_esem' S1 S2 sk) (comp_esem' T1 T2 sk).
   Proof.
-    apply clightp_comp'; eauto.
+    eapply clightp_comp' with
+      (ce1:=(ClightP.prog_comp_env p1))
+      (ce2:=(ClightP.prog_comp_env p2)).
+    - eauto.
+    - generalize (ClightP.prog_priv_ok p1).
+      intros H i x Hi.
+      unfold vars_of_program, init_of_pvars in Hi.
+      apply in_map_iff in Hi as ((i' & x') & Hi' & Hx'). inv Hi'.
+      specialize (H _ _ Hx'). apply H.
+    - generalize (ClightP.prog_priv_ok p2).
+      intros H i x Hi.
+      unfold vars_of_program, init_of_pvars in Hi.
+      apply in_map_iff in Hi as ((i' & x') & Hi' & Hx'). inv Hi'.
+      specialize (H _ _ Hx'). apply H.
+    - apply Linking.link_linkorder in Hp as [Hp1 Hp2].
+      destruct Hp1 as (A & B & C). apply B.
+    - apply Linking.link_linkorder in Hp as [Hp1 Hp2].
+      destruct Hp2 as (A & B & C). apply B.
     - apply promote_clightp; eauto.
     - apply promote_clightp; eauto.
-    - eapply Linking.link_linkorder in Hlk. apply Hlk.
-    - eapply Linking.link_linkorder in Hlk. apply Hlk.
-    - intros vs. eapply clight_in.
+    - apply link_clightp_erase in Hp.
+      apply Linking.link_linkorder in Hp. apply Hp.
+    - apply link_clightp_erase in Hp.
+      apply Linking.link_linkorder in Hp. apply Hp.
+    - eapply clight_in.
     - apply eclightp_out.
   Qed.
 

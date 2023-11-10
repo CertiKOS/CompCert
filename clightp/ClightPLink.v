@@ -11,6 +11,70 @@ Set Asymmetric Patterns.
 
 Opaque PTree_Properties.of_list.
 
+Lemma find_field_in id fs v:
+  find_field fs id = Some v -> In (id, v) fs.
+Proof.
+  induction fs; intros; try easy.
+  destruct a. cbn in H. destruct peq; inv H; eauto.
+  - left. reflexivity.
+  - right. eapply IHfs; eauto.
+Qed.
+
+Lemma pvars_ok_ext ce0 ce vars:
+  (forall id co, ce0 ! id = Some co -> ce ! id = Some co) ->
+  pvars_ok ce0 vars -> pvars_ok ce vars.
+Proof.
+  intros Hce Hvs.
+  unfold pvars_ok in *. intros * Hid.
+  apply Hvs in Hid. destruct Hid.
+  split.
+  - clear - init_ok Hce.
+    induction init_ok; intros; constructor; eauto.
+    inv HT. econstructor; eauto.
+  - unfold pvar_align_ok in *.
+    clear - align_ok type_ok Hce.
+    unfold pvar_type_ok in type_ok.
+    revert type_ok. induction align_ok.
+    + intros. inv type_ok. constructor. apply H.
+    + intros. inv type_ok. constructor.
+      * intros. eapply H0; eauto.
+      * cbn in H1 |- *.
+        destruct (Z_lt_ge_dec 0 n).
+        -- assert (0 <= 0 < n) by lia.
+           erewrite H6; eauto. apply Z.divide_mul_l.
+           eapply sizeof_type_div4; eauto.
+        -- (* rewrite Z.max 0 n to 0 *)
+           rewrite !Z.max_l in * by lia.
+           (* rewrite x * 0 to 0 *)
+            rewrite Z.mul_0_r in *. eauto.
+    + intros. inv type_ok.
+      constructor.
+      * intros. eapply H0; eauto.
+        eapply H5. apply find_field_in; eauto.
+      * cbn in *. inv H4.
+        rewrite HCE in H1. erewrite Hce; eauto.
+  - unfold pvar_size_ok in *.
+    erewrite <- sizeof_vars_same; eauto.
+  - unfold pvar_type_ok in *.
+    clear - type_ok Hce.
+    induction type_ok; econstructor; eauto.
+    inv H. econstructor; eauto.
+Qed.
+
+Lemma link_pvars_ok vars1 vars2 ce1 ce2 ce:
+  (forall id co, ce1 ! id = Some co -> ce ! id = Some co) ->
+  (forall id co, ce2 ! id = Some co -> ce ! id = Some co) ->
+  pvars_ok ce1 vars1 ->
+  pvars_ok ce2 vars2 ->
+  pvars_ok ce (vars1 ++ vars2).
+Proof.
+  intros Hce1 Hce2 Hvs1 Hvs2.
+  eapply pvars_ok_ext in Hvs1; eauto.
+  eapply pvars_ok_ext in Hvs2; eauto.
+  unfold pvars_ok in *. intros * Hid.
+  apply in_app_or in Hid as [Hid | Hid]; eauto.
+Qed.
+
 Definition link_program (p1 p2: program): option program :=
   match link (program_of_program p1) (program_of_program p2) with
   | None => None
@@ -22,7 +86,7 @@ Definition link_program (p1 p2: program): option program :=
                   p1.(prog_types) p2.(prog_types) typs
                   p1.(prog_comp_env) p2.(prog_comp_env)
                   p1.(prog_comp_env_eq) p2.(prog_comp_env_eq) EQ with
-          | exist env (conj P Q) =>
+          | exist env (conj P (conj Q1 Q2)) =>
               let privs := p1.(prog_private) ++ p2.(prog_private) in
               match list_norepet_dec peq
                       ((map fst privs ++ map fst p.(AST.prog_defs))) with
@@ -36,6 +100,11 @@ Definition link_program (p1 p2: program): option program :=
                          prog_comp_env := env;
                          prog_comp_env_eq := P;
                          prog_norepet := H;
+                         prog_priv_ok :=
+                           link_pvars_ok
+                             p1.(prog_private) p2.(prog_private)
+                             p1.(prog_comp_env) p2.(prog_comp_env) env Q1 Q2
+                             p1.(prog_priv_ok) p2.(prog_priv_ok);
                        |}
               end
           end

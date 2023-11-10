@@ -263,7 +263,9 @@ Module ClightP.
       prog_comp_env_eq: build_composite_env prog_types = OK prog_comp_env;
       (* for the purpose of making linking properties easier *)
       prog_norepet:
-        list_norepet (map fst prog_private ++ map fst prog_defs)
+        list_norepet (map fst prog_private ++ map fst prog_defs);
+      prog_priv_ok:
+        pvars_ok prog_comp_env prog_private;
     }.
 
   Definition program_of_program (p: program) : AST.program fundef type :=
