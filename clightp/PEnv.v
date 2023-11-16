@@ -735,31 +735,43 @@ Inductive sizeof_div4 ce : val -> Prop :=
     (* TODO: need some well-typed property so that we can infer (4 | sizeof ce ty) *)
     (4 | sizeof ce ty) ->
     sizeof_div4 ce (Array n vs ty)
-  | sizeof_div4_Struct fs ty:
+  | sizeof_div4_Struct fs tid attr co:
     (forall f v, find_field fs f = Some v -> sizeof_div4 ce v) ->
-    (4 | sizeof ce ty) ->
-    sizeof_div4 ce (Struct fs ty).
+    ce!tid = Some co ->
+    (* TODO: is this too strong? *)
+    (forall f ofs bf,
+          Ctypes.field_offset ce f (co_members co) = OK (ofs, bf) -> (4 | ofs)) ->
+    (4 | co_sizeof co) ->
+    sizeof_div4 ce (Struct fs (Tstruct tid attr)).
 
 Lemma sizeof_type_div4 ce pv :
   sizeof_div4 ce pv -> (4 | sizeof ce pv).
-Proof. destruct 1; eauto. Qed.
+Proof. destruct 1; eauto. cbn. rewrite H0. eauto. Qed.
 
-Lemma field_offset_div4 ce f fs ofs:
-  (forall f v, find_field fs f = Some v -> sizeof_div4 ce v) ->
-  field_offset ce f fs = Some ofs -> (4 | ofs).
-Proof.
-  intros Hf. unfold field_offset.
-  assert (4 | 0). apply Z.divide_0_r.
-  revert H. generalize 0 as z.
-  induction fs; intros; try easy.
-  - cbn in H0. destruct a.
-    destruct ident_eq.
-    + subst. inv H0.
-      specialize (Hf i v). exploit Hf.
-      cbn. rewrite peq_true. reflexivity.
-      intros Hv.
-      unfold layout_field. unfold bitalignof.
-Admitted
+(* Lemma field_offset_div4 ce f fs ofs: *)
+(*   (forall f v, find_field fs f = Some v -> sizeof_div4 ce v) -> *)
+(*   field_offset ce f fs = Some ofs -> (4 | ofs). *)
+(* Proof. *)
+(*   intros Hf. unfold field_offset. *)
+(*   assert (32 | 0). apply Z.divide_0_r. *)
+(*   revert H. generalize 0 as z. *)
+(*   induction fs; intros; try easy. *)
+(*   - cbn in H0. destruct a. *)
+(*     destruct ident_eq. *)
+(*     + subst. inv H0. *)
+(*       specialize (Hf i v). exploit Hf. *)
+(*       cbn. rewrite peq_true. reflexivity. *)
+(*       intros Hv. *)
+(*       unfold layout_field. unfold bitalignof. *)
+(*       Search (?x | ?y / ?z). *)
+(*       change 4 with (32 / 8). *)
+(*       eapply Z.divide_div. lia. exists 4. lia. *)
+(*       admit. *)
+(*     + eapply IHfs in H0; eauto. *)
+(*       * intros. destruct (peq f0 i). *)
+(*         -- subst. eapply Hf. cbn. rewrite peq_true; eauto. *)
+
+(* Admitted *)
 
 (* This property for stablity of type size in different ce *)
 Inductive pv_type_ok ce: val -> Prop :=
@@ -954,8 +966,10 @@ Proof.
       eapply H; eauto.
       * inv Hd4; eauto.
       * lia.
-      * apply Z.divide_add_r; eauto.
-        inv Hd4. eapply field_offset_div4; eauto.
+      * apply Z.divide_add_r; eauto. inv Hd4.
+        rewrite HCE in H4. inv H4.
+        eapply H5; eauto.
+        eapply struct_same_offset; eauto.
       * intros o Hr. apply Hp. rewrite HCE. split; lia.
       * eapply read_as_zero_weaken. 3: eauto.
         2: rewrite HCE. 1-2: lia.

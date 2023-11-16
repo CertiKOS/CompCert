@@ -21,10 +21,11 @@ Proof.
 Qed.
 
 Lemma pvars_ok_ext ce0 ce vars:
+  composite_env_consistent ce0 ->
   (forall id co, ce0 ! id = Some co -> ce ! id = Some co) ->
   pvars_ok ce0 vars -> pvars_ok ce vars.
 Proof.
-  intros Hce Hvs.
+  intros Hce0 Hce Hvs.
   unfold pvars_ok in *. intros * Hid.
   apply Hvs in Hid. destruct Hid.
   split.
@@ -32,7 +33,7 @@ Proof.
     induction init_ok; intros; constructor; eauto.
     inv HT. econstructor; eauto.
   - unfold pvar_align_ok in *.
-    clear - align_ok type_ok Hce.
+    clear - align_ok type_ok Hce Hce0.
     unfold pvar_type_ok in type_ok.
     revert type_ok. induction align_ok.
     + intros. inv type_ok. constructor. apply H.
@@ -48,11 +49,16 @@ Proof.
            (* rewrite x * 0 to 0 *)
             rewrite Z.mul_0_r in *. eauto.
     + intros. inv type_ok.
-      constructor.
+      econstructor.
       * intros. eapply H0; eauto.
-        eapply H5. apply find_field_in; eauto.
-      * cbn in *. inv H4.
-        rewrite HCE in H1. erewrite Hce; eauto.
+        eapply H8. apply find_field_in; eauto.
+      * eauto.
+      * intros. eapply H2; eauto.
+        instantiate (1 := bf). instantiate (1 := f).
+        erewrite <- Ctypes.field_offset_stable; eauto.
+        eapply co_consistent_complete.
+        unfold composite_env_consistent in Hce0. eauto.
+      * eauto.
   - unfold pvar_size_ok in *.
     erewrite <- sizeof_vars_same; eauto.
   - unfold pvar_type_ok in *.
@@ -64,11 +70,13 @@ Qed.
 Lemma link_pvars_ok vars1 vars2 ce1 ce2 ce:
   (forall id co, ce1 ! id = Some co -> ce ! id = Some co) ->
   (forall id co, ce2 ! id = Some co -> ce ! id = Some co) ->
+  composite_env_consistent ce1 ->
+  composite_env_consistent ce2 ->
   pvars_ok ce1 vars1 ->
   pvars_ok ce2 vars2 ->
   pvars_ok ce (vars1 ++ vars2).
 Proof.
-  intros Hce1 Hce2 Hvs1 Hvs2.
+  intros Hce1 Hce2 Hc1 Hc2 Hvs1 Hvs2.
   eapply pvars_ok_ext in Hvs1; eauto.
   eapply pvars_ok_ext in Hvs2; eauto.
   unfold pvars_ok in *. intros * Hid.
@@ -104,6 +112,8 @@ Definition link_program (p1 p2: program): option program :=
                            link_pvars_ok
                              p1.(prog_private) p2.(prog_private)
                              p1.(prog_comp_env) p2.(prog_comp_env) env Q1 Q2
+                             (Ctypes.build_composite_env_consistent _ _ p1.(prog_comp_env_eq))
+                             (Ctypes.build_composite_env_consistent _ _ p2.(prog_comp_env_eq))
                              p1.(prog_priv_ok) p2.(prog_priv_ok);
                        |}
               end
