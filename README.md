@@ -5,23 +5,16 @@
 You will need a version of Coq and various other tools supported by
 CompCert v3.6. If you are using `opam` (recommended),
 
-
     $ opam init
     $ opam install coq.8.12.0 menhir.20200211
 
-We first build the prerequisite Coqrel by:
+You first need to build the prerequisite Coqrel by:
 
-    $ (cd coqrel & ./configure & make)
+    $ (cd coqrel && ./configure && make)
 
-At this point make sure there were no error messages. In particular
-if your versions of Coq, Menhir, etc. are not suitable to build
-Coqrel and CompCertO, this is when things will break.
+Then you can build the CompCertO compiler with the development for the state composition and encapsulation, and the proof for the running example in our paper by:
 
-If the configuration was successful you should be able to build the
-development using `make`. For example, the following command will
-build our development for the state composition and encapsulation,
-and the proof for the running example in our paper.
-
+    $ ./configure x86_64-linux
     $ make
 
 ## Formalization
