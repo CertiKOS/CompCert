@@ -1,3 +1,76 @@
+# CompCertO with State Composition and Encapsulation
+
+## Setup
+
+You will need a version of Coq and various other tools supported by
+CompCert v3.6. If you are using `opam` (recommended),
+
+
+    $ opam init
+    $ opam install coq.8.12.0 menhir.20200211
+
+We first build the prerequisite Coqrel by:
+
+    $ (cd coqrel & ./configure & make)
+
+At this point make sure there were no error messages. In particular
+if your versions of Coq, Menhir, etc. are not suitable to build
+Coqrel and CompCertO, this is when things will break.
+
+If the configuration was successful you should be able to build the
+development using `make`. For example, the following command will
+build our development for the state composition and encapsulation,
+and the proof for the running example in our paper.
+
+    $ make
+
+## Formalization
+
+Our constructions are mainly in the `clightp/` directory
+
+* The formalization to equip the CompCertO with a notion of compositional state and a structure of double category. CategoricalComp.v defines the layered composition in the paper, and TensorComp.v and FlatComp.v defines two styles of horizontal composition that are used in Certified Abstraction Layers:
+```
+  clightp/Lifting.v
+  clightp/TensorComp.v
+  common/CategoricalComp.v
+  common/FlatComp.v
+```
+
+* The development for Certified Abstraction Layers:
+```
+  clightp/AbRel.v
+  clightp/CModule.v
+  clightp/SkelLinking.v
+  clightp/Composition.v
+```
+
+* The development for memory separation
+```
+  cklr/Join.v
+```
+
+* The development for state encapsulation
+```
+  clightp/Encapsulation.v
+```
+
+* The development for ClightP semantics and composition
+```
+  clightp/PEnv.v
+  clightp/ClightP.v
+  clightp/ClightPComp.v
+  clightp/ClightPLink.v
+```
+
+* The ring buffer and bounded queue example using ClightP and encapsulation
+```
+  clightp/Example.v
+```
+
+---
+
+Original README.md from CompCertO below
+
 # CompCertO
 
 A version of CompCert featuring an open module semantics, designed to
