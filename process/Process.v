@@ -2,6 +2,7 @@ Require Import Coqlib Integers.
 
 Require Import Events LanguageInterface Smallstep Globalenvs Values Memory.
 Require Import AST Ctypes Clight.
+Require Import Lifting Encapsulation.
 
 Require Import List Maps.
 Import ListNotations.
@@ -35,17 +36,20 @@ Definition read : fundef :=
 Definition main_sig := signature_of_type Tnil tint cc_default.
 
 Definition secret_main_id: positive := 1.
-Definition secret_msg_id: positive := 2.
-Definition secret_write_id: positive := 3.
+Definition secret_write_id: positive := 2.
+Definition secret_msg_id: positive := 3.
+
+Definition msg_il : list init_data :=
+  [ Init_int8 (Int.repr 117); (* u *)
+    Init_int8 (Int.repr 114); (* r *)
+    Init_int8 (Int.repr 98); (* b *)
+    Init_int8 (Int.repr 98); (* b *)
+    Init_int8 (Int.repr 121) ]. (* y *)
 
 Definition msg_globvar : globvar type :=
   {|
     gvar_info := tarray tchar 5%Z;
-    gvar_init := [ Init_int8 (Int.repr 104); (* h *)
-                   Init_int8 (Int.repr 101); (* e *)
-                   Init_int8 (Int.repr 108); (* l *)
-                   Init_int8 (Int.repr 108); (* l *)
-                   Init_int8 (Int.repr 111) ]; (* o *)
+    gvar_init := msg_il;
     gvar_readonly := false;
     gvar_volatile := false;
   |}.
@@ -55,13 +59,13 @@ Definition secret_main_body : statement :=
     (* write(1, msg, sizeof msg - 1) *)
     (Scall None (Evar secret_write_id write_type)
        [ Econst_int (Int.repr 1) tint;
-         Evar secret_msg_id (tptr tchar);
+         Eaddrof (Evar secret_msg_id (tptr tchar)) (tptr tchar);
          Econst_int (Int.repr 5) tint ]) (* sizeof msg - 1 *)
-    (Sreturn None).
+    (Sreturn (Some (Econst_int (Int.repr 0) tint))).
 
 Definition secret_main : function :=
   {|
-    fn_return := tvoid;
+    fn_return := tint;
     fn_callconv := cc_default;
     fn_params := [];
     fn_temps := [];
@@ -72,14 +76,219 @@ Definition secret_main : function :=
 Program Definition secret_program : Clight.program :=
   {|
     prog_defs := [ (secret_main_id, Gfun (Internal secret_main));
-                   (secret_msg_id, Gvar msg_globvar);
-                   (secret_write_id, Gfun write)
+                   (secret_write_id, Gfun write);
+                   (secret_msg_id, Gvar msg_globvar)
     ];
     prog_public := [ secret_main_id ];
     prog_main := Some secret_main_id;
     prog_types := [];
     prog_comp_env := (PTree.empty _);
   |}.
+
+Section INIT_MEM.
+  Context (se: Genv.symtbl).
+
+  Program Definition empty : mem :=
+    Mem.mkmem (PMap.init (ZMap.init Undef))
+      (PMap.init (fun ofs k => None))
+      (Genv.genv_next se) true _ _ _.
+
+  (* like [Mem.alloc], but only changes the perm *)
+  Program Definition init_perm (m: mem) (b: block) (lo hi: Z) :=
+    if plt b m.(Mem.nextblock) then
+      Some
+        (Mem.mkmem
+           m.(Mem.mem_contents)
+           (PMap.set b
+              (fun ofs k => if zle lo ofs && zlt ofs hi then Some Freeable else None)
+              m.(Mem.mem_access))
+           m.(Mem.nextblock) m.(Mem.alloc_flag) _ _ _)
+    else None.
+  Next Obligation.
+    repeat rewrite PMap.gsspec. destruct (peq b0 b).
+    - subst b. destruct (zle lo ofs && zlt ofs hi); red; auto with mem.
+    - apply Mem.access_max.
+  Qed.
+  Next Obligation.
+    repeat rewrite PMap.gsspec. destruct (peq b0 b).
+    - subst b. elim H0. exact H.
+    - eapply Mem.nextblock_noaccess. exact H0.
+  Qed.
+  Next Obligation. apply Mem.contents_default. Qed.
+
+  Definition init_global' (m: mem) (b: block) (g: globdef unit unit): option mem :=
+    match g with
+    | Gfun f =>
+        match init_perm m b 0 1 with
+        | Some m1 => Mem.drop_perm m1 b 0 1 Nonempty
+        | None => None
+        end
+    | Gvar v =>
+        let init := v.(gvar_init) in
+        let sz := init_data_list_size init in
+        match init_perm m b 0 sz with
+        | Some m1 =>
+            match store_zeros m1 b 0 sz with
+            | None => None
+            | Some m2 =>
+                match Genv.store_init_data_list se m2 b 0 init with
+                | None => None
+                | Some m3 => Mem.drop_perm m3 b 0 sz (Genv.perm_globvar v)
+                end
+            end
+        | None => None
+        end
+    end.
+
+  Definition init_global (m: mem) (idg: ident * globdef unit unit): option mem :=
+    match idg with
+    | (id, g) =>
+        match Genv.find_symbol se id with
+        | Some b => init_global' m b g
+        | None => None
+        end
+    end.
+
+  Fixpoint init_globals (m: mem) (gl: list (ident * globdef unit unit)): option mem :=
+    match gl with
+    | [] => Some m
+    | g :: gl' =>
+        match init_global m g with
+        | None => None
+        | Some m' => init_globals m' gl'
+        end
+    end.
+
+  Definition init_mem (p: AST.program unit unit) : option mem :=
+    init_globals empty p.(AST.prog_defs).
+
+  Lemma init_perm_inv m1 m2 lo hi b:
+    init_perm m1 b lo hi = Some m2 ->
+    forall ofs k, lo <= ofs < hi -> Mem.perm m2 b ofs k Freeable.
+  Proof.
+    intros. unfold init_perm in H. destruct plt; inv H.
+    unfold Mem.perm. cbn. rewrite PMap.gss.
+    destruct (zle lo ofs && zlt ofs hi) eqn: H1; try constructor.
+    exfalso. destruct zle eqn: H2; try lia. destruct zlt eqn: H3; try lia.
+    cbn in H1. congruence.
+  Qed.
+
+  Lemma init_global_exists:
+    forall m idg,
+      (exists b, Genv.find_symbol se (fst idg) = Some b /\
+              Plt b m.(Mem.nextblock)) ->
+      match idg with
+      | (id, Gfun f) => True
+      | (id, Gvar v) =>
+          Genv.init_data_list_aligned 0 v.(gvar_init)
+          /\ forall i o, In (Init_addrof i o) v.(gvar_init) -> exists b, Genv.find_symbol se i = Some b
+      end ->
+      exists m', init_global m idg = Some m'.
+  Proof.
+    intros m [id [f|v]] [b [Hb1 Hb2]]; intros; simpl in *; rewrite Hb1.
+    - destruct (init_perm m b 0 1) as [m1|] eqn:H1.
+      2: { exfalso. unfold init_perm in H1. destruct plt; [ inv H1 | contradiction ]. }
+      destruct (Mem.range_perm_drop_2 m1 b 0 1 Nonempty) as [m2 DROP].
+      red; intros; eapply init_perm_inv; eauto.
+      exists m2. eauto.
+    - destruct H as [P Q].
+      set (sz := init_data_list_size (gvar_init v)).
+      destruct (init_perm m b 0 sz) as [m1|] eqn:H1.
+      2: { exfalso. unfold init_perm in H1. destruct plt; [ inv H1 | contradiction ]. }
+      assert (P1: Mem.range_perm m1 b 0 sz Cur Freeable) by (red; intros; eapply init_perm_inv; eauto).
+      exploit (@Genv.store_zeros_exists m1 b 0 sz).
+      { red; intros. apply Mem.perm_implies with Freeable; auto with mem. }
+      intros [m2 ZEROS]. rewrite ZEROS.
+      assert (P2: Mem.range_perm m2 b 0 sz Cur Freeable).
+      { red; intros. erewrite <- Genv.store_zeros_perm by eauto. eauto. }
+      exploit (@Genv.store_init_data_list_exists se b (gvar_init v) m2 0); eauto.
+      { red; intros. apply Mem.perm_implies with Freeable; auto with mem. }
+      intros [m3 STORE]. rewrite STORE.
+      assert (P3: Mem.range_perm m3 b 0 sz Cur Freeable).
+      { red; intros. erewrite <- Genv.store_init_data_list_perm by eauto. eauto. }
+      destruct (Mem.range_perm_drop_2 m3 b 0 sz (Genv.perm_globvar v)) as [m4 DROP]; auto.
+      exists m4; auto.
+  Qed.
+
+  Lemma init_perm_nextblock m1 m2 b lo hi:
+    init_perm m1 b lo hi = Some m2 ->
+    Mem.nextblock m2 = Mem.nextblock m1.
+  Proof.
+    intros. unfold init_perm in H. destruct plt; inv H.
+    cbn. reflexivity.
+  Qed.
+
+  Lemma init_global_nextblock m1 m2 idg:
+    init_global m1 idg = Some m2 ->
+    Mem.nextblock m1 = Mem.nextblock m2.
+  Proof.
+    intros. unfold init_global in H. destruct idg as [id [f|v]]; simpl in H.
+    - destruct (Genv.find_symbol se id) as [b|] eqn: H1; inv H.
+      destruct (init_perm m1 b 0 1) as [m|] eqn: A1; inv H2.
+      erewrite <- init_perm_nextblock; [ | eauto ].
+      erewrite <- Mem.nextblock_drop; eauto.
+    - destruct (Genv.find_symbol se id) as [b|] eqn: H1; inv H.
+      destruct init_perm as [m3|] eqn: A1; inv H2.
+      destruct store_zeros as [m4|] eqn: A2; inv H0.
+      destruct Genv.store_init_data_list as [m5|] eqn: A3; inv H2.
+      erewrite <- init_perm_nextblock; [ | eauto ].
+      erewrite <- Genv.store_zeros_nextblock; [ | eauto ].
+      erewrite <- Genv.store_init_data_list_nextblock; [ | eauto ].
+      erewrite <- Mem.nextblock_drop; eauto.
+  Qed.
+
+  Lemma init_mem_exists p:
+    (forall id v, In (id, Gvar v) (AST.prog_defs p) ->
+             Genv.init_data_list_aligned 0 v.(gvar_init)
+             /\ forall i o, In (Init_addrof i o) v.(gvar_init) -> exists b, Genv.find_symbol se i = Some b) ->
+    Genv.valid_for p se ->
+    exists m, init_mem p = Some m.
+  Proof.
+    intros. unfold init_mem.
+    assert (H1: forall id g,
+               In (id, g) (AST.prog_defs p) ->
+               exists b, Genv.find_symbol se id = Some b
+                    /\ Plt b (Mem.nextblock empty)).
+    {
+      intros. edestruct prog_defmap_dom as [g' Hg'].
+      unfold prog_defs_names. apply in_map_iff.
+      exists (id, g). split; eauto. cbn in Hg'.
+      specialize (H0 _ _ Hg') as (b & ? & Hb & ? & ?).
+      exists b; split; eauto.
+      unfold empty. cbn. eapply Genv.genv_symb_range.
+      apply Hb.
+    }
+    clear H0.
+    revert H H1. generalize (AST.prog_defs p) empty.
+    induction l as [ | idg l ]; simpl; intros.
+    - exists m. reflexivity.
+    - destruct (@init_global_exists m idg) as [m1 A1].
+      + destruct idg as [id g]. apply (H1 id g). left; easy.
+      + destruct idg as [id [f|v]]; eauto.
+      + rewrite A1. edestruct (IHl m1) as [m2 IH]; eauto.
+        intros. erewrite <- init_global_nextblock; eauto.
+  Qed.
+
+  Lemma init_mem_nextblock p m:
+    init_mem p = Some m ->
+    Mem.nextblock m = Genv.genv_next se.
+  Proof.
+    assert (H: Mem.nextblock empty = Genv.genv_next se) by reflexivity.
+    revert H. unfold init_mem. generalize (AST.prog_defs p) empty.
+    induction l as [ | idg l ]; simpl; intros.
+    - inv H0. eauto.
+    - destruct init_global eqn: A1; inv H0.
+      erewrite <- IHl; [ eauto | | eauto ].
+      rewrite <- H. symmetry.  eapply init_global_nextblock; eauto.
+  Qed.
+
+  Lemma init_mem_alloc_flag p m:
+    init_mem p = Some m ->
+    Mem.alloc_flag m = true.
+  Proof.
+  Admitted.
+
+End INIT_MEM.
 
 Section INIT_C.
   Context (prog: program).
@@ -92,7 +301,7 @@ Section INIT_C.
     | init_c_initial_state_intro: init_c_initial_state q None.
     Inductive init_c_at_external: option int -> query li_c -> Prop :=
     | init_c_at_external_intro vf m f main:
-      Genv.init_mem sk = Some m ->
+      init_mem se sk = Some m ->
       Genv.find_funct ge vf = Some f ->
       prog_main prog = Some main ->
       (prog_defmap prog) ! main = Some (Gfun f) ->
@@ -160,15 +369,15 @@ Section SYS.
 
     Inductive sys_c_initial_state: query li_c -> sys_state -> Prop :=
     | sys_c_initial_state_read vf args m n b ofs:
-      Genv.find_funct ge vf = Some write ->
-      args = [ Vint (Int.repr 0); Vptr b ofs; Vint n ] ->
-      sys_c_initial_state (cq vf write_sig args m) (sys_read_query n b ofs m)
-    | sys_c_initial_state_write vf args m bytes bytes_val b ofs len:
       Genv.find_funct ge vf = Some read ->
+      args = [ Vint (Int.repr 0); Vptr b ofs; Vint n ] ->
+      sys_c_initial_state (cq vf read_sig args m) (sys_read_query n b ofs m)
+    | sys_c_initial_state_write vf args m bytes bytes_val b ofs len:
+      Genv.find_funct ge vf = Some write ->
       args = [ Vint (Int.repr 1); Vptr b ofs; Vint (Int.repr len) ] ->
       Mem.loadbytes m b (Ptrofs.unsigned ofs) len = Some bytes_val ->
       map Byte bytes = bytes_val ->
-      sys_c_initial_state (cq vf read_sig args m) (sys_write_query bytes m).
+      sys_c_initial_state (cq vf write_sig args m) (sys_write_query bytes m).
 
     Inductive sys_c_at_external: sys_state -> query (li_sys + li_sys) -> Prop :=
     | sys_c_at_external_read n b ofs m:
@@ -220,23 +429,29 @@ Definition secret_c : semantics (li_sys + li_sys) li_wp := load_c secret_program
 
 Section SECRET_SPEC.
 
-  Inductive secret_spec_initial_state: query li_wp -> option int -> Prop :=
-  | secret_spec_initial_state_intro q: secret_spec_initial_state q None.
-  Inductive secret_spec_at_external: option int -> query (li_sys + li_sys) -> Prop :=
+  Variant secret_state :=
+    | secret1 | secret2 | secret3 | secret4 (n: int).
+
+  Inductive secret_spec_initial_state: query li_wp -> secret_state -> Prop :=
+  | secret_spec_initial_state_intro q: secret_spec_initial_state q secret1.
+  Inductive secret_spec_at_external: secret_state -> query (li_sys + li_sys) -> Prop :=
   | secret_spec_at_external_intro bytes:
     bytes = urbby_bytes ->
-    secret_spec_at_external None (inr (write_query bytes)).
-  Inductive secret_spec_after_external: option int -> reply (li_sys + li_sys) -> option int -> Prop :=
+    secret_spec_at_external secret2 (inr (write_query bytes)).
+  Inductive secret_spec_after_external: secret_state -> reply (li_sys + li_sys) -> secret_state -> Prop :=
   | secret_spec_after_external_intro n:
-    secret_spec_after_external None (inr (write_reply n)) (Some n).
-  Inductive secret_spec_final_state: option int -> reply li_wp -> Prop :=
-  | secret_spec_final_state_intro n: secret_spec_final_state (Some n) n.
+    secret_spec_after_external secret2 (inr (write_reply n)) secret3.
+  Inductive secret_spec_final_state: secret_state -> reply li_wp -> Prop :=
+  | secret_spec_final_state_intro n: secret_spec_final_state (secret4 n) n.
+  Inductive secret_step : secret_state -> trace -> secret_state -> Prop :=
+  | secret_step1: secret_step secret1 E0 secret2
+  | secret_step2: secret_step secret3 E0 (secret4 Int.zero).
 
   Definition secret_spec: semantics (li_sys + li_sys) li_wp :=
     {|
       activate se :=
         {|
-          Smallstep.step _ _ _ _ := False;
+          Smallstep.step _ := secret_step;
           Smallstep.initial_state := secret_spec_initial_state;
           Smallstep.at_external := secret_spec_at_external;
           Smallstep.after_external := secret_spec_after_external;
@@ -245,15 +460,301 @@ Section SECRET_SPEC.
 
         |};
       skel := AST.erase_program secret_program;
-      footprint i := False;
+      footprint := AST.footprint_of_program secret_program;
     |}.
 
 End SECRET_SPEC.
 
+Ltac one_step := eapply star_left with (t1 := E0) (t2 := E0); [ | | reflexivity ].
+
+Require Import Lia.
+
+Ltac ptree_tac :=
+  cbn -[PTree.get];
+  lazymatch goal with
+  | [ |- PTree.get ?x (PTree.set ?x _ _) = _ ] =>
+      rewrite PTree.gss; reflexivity
+  | [ |- PTree.get ?x (PTree.set ?y _ _) = _ ] =>
+      rewrite PTree.gso by (unfold x, y; lia); eauto; ptree_tac
+  end.
+
+Ltac solve_ptree := solve [ eauto | ptree_tac ].
+
+Ltac crush_eval_expr :=
+  cbn;
+  lazymatch goal with
+  | [ |- eval_expr _ _ _ _ (Etempvar _ _) _ ] => apply eval_Etempvar; reflexivity
+  | [ |- eval_expr _ _ _ _ (Econst_int _ _) _ ] => apply eval_Econst_int
+  | [ |- eval_expr _ _ _ _ (Ebinop _ _ _ _) _ ] => eapply eval_Ebinop
+  | [ |- eval_expr _ _ _ _ (Evar _ _) _ ] => eapply eval_Elvalue
+  | [ |- eval_expr _ _ _ _ (Ederef _ _) _ ] => eapply eval_Elvalue
+  | [ |- eval_expr _ _ _ _ (Eaddrof _ _) _ ] => eapply eval_Eaddrof
+  end.
+Ltac crush_eval_lvalue :=
+  cbn;
+  lazymatch goal with
+  | [ |- eval_lvalue _ _ _ _ (Evar _ _) _ _ _ ] =>
+      solve [ apply eval_Evar_local; reflexivity
+            | apply eval_Evar_global; [ reflexivity | eassumption ] ]
+  | _ => constructor
+  end.
+Ltac crush_deref :=
+  cbn;
+  lazymatch goal with
+  | [ |- deref_loc (Tarray _ _ _) _ _ _ _ _] => eapply deref_loc_reference; reflexivity
+  | [ |- deref_loc (Tfunction _ _ _) _ _ _ _ _] => eapply deref_loc_reference; reflexivity
+  | [ |- deref_loc (Tint _ _ _) _ _ _ _ _] => eapply deref_loc_value; [ reflexivity | ]
+  end.
+
+Ltac crush_expr :=
+  repeat (cbn;
+    match goal with
+    | [ |- eval_expr _ _ _ _ _ _ ] => crush_eval_expr
+    | [ |- eval_lvalue _ _ _ _ _ _ _ _ ] => crush_eval_lvalue
+    | [ |- eval_exprlist _ _ _ _ _ _ _ ] => econstructor
+    | [ |- deref_loc _ _ _ _ _ _ ] => crush_deref
+    | [ |- Cop.sem_binary_operation _ _ _ _ _ _ _ = Some _] => try reflexivity
+    | [ |- Cop.sem_cast _ ?ty ?ty _ = Some _ ] =>
+        apply Cop.cast_val_casted; eauto
+    | [ |- assign_loc _ (Tint _ _ _) _ _ _ _ _ _ ] =>
+        eapply assign_loc_value; [ reflexivity | ]
+    | _ => try solve [ easy | eassumption ]
+    end).
+
+Ltac prove_norepet H :=
+  match type of H with
+  | False => inversion H
+  | (?a = ?b) \/ _ =>
+      destruct H as [H|H]; [inversion H|prove_norepet H]
+  end.
+
+Ltac solve_list_norepet :=
+  simpl;
+  match goal with
+  | |- list_norepet nil =>  apply list_norepet_nil
+  | |- list_norepet (?x :: ?l) =>
+      apply list_norepet_cons;
+      [simpl; let H := fresh "H" in intro H; prove_norepet H |solve_list_norepet]
+  end.
+Ltac destruct_or H :=
+  match type of H with
+  | _ \/ _ => destruct H as [H|H]; [ |destruct_or H]
+  | _ => idtac
+  end.
+
+Ltac solve_list_disjoint :=
+  simpl; unfold list_disjoint; simpl; red;
+  let x := fresh "x" in
+  let y := fresh "y" in
+  let Lx := fresh "Lx" in
+  let Ly := fresh "Ly" in
+  let xyEq := fresh "xyEq" in
+  intros x y Lx Ly xyEq; try rewrite xyEq in *; clear xyEq;
+  destruct_or Lx; destruct_or Ly; subst; try solve [inversion Lx]; try solve [inversion Ly].
+
+Ltac crush_step := cbn;
+  match goal with
+  | [ |- Step _ (Callstate _ _ _ _) _ _ ] =>
+      eapply step_internal_function;
+      [ eauto | constructor; cbn;
+        [ solve_list_norepet
+        | solve_list_norepet
+        | solve_list_disjoint
+        | repeat (econstructor; simpl; auto)
+        | reflexivity | eauto ] ]
+  | [ |- Step _ (State _ (Ssequence _ _) _ _ _ _) _ _ ] => apply step_seq
+  | [ |- Step _ (State _ (Sset _ _) _ _ _ _) _ _ ] => apply step_set
+  | [ |- Step _ (State _ (Scall _ _ _) _ _ _ _) _ _ ] => eapply step_call
+  | [ |- Step _ (Returnstate _ _ _) _ _ ] => eapply step_returnstate
+  | [ |- Step _ (State _ Sskip (Kseq _ _) _ _ _) _ _ ] => apply step_skip_seq
+  | [ |- Step _ (State _ (Sassign _ _) _ _ _ _) _ _ ] => eapply step_assign
+  | [ |- Step _ (State _ (Sreturn None) _ _ _ _) _ _ ] => eapply step_return_0
+  | [ |- Step _ (State _ (Sreturn (Some _)) _ _ _ _) _ _ ] => eapply step_return_1
+  | [ |- Step _ (State _ ?s _ _ _ _) _ _ ] => is_const s; unfold s; crush_step
+  end.
+
+Lemma genv_funct_symbol se id b f (p: program):
+  Genv.find_symbol se id = Some b ->
+  (prog_defmap p) ! id = Some (Gfun f) ->
+  Genv.find_funct (globalenv se p) (Vptr b Ptrofs.zero) = Some f.
+Proof.
+  intros H1 H2.
+  unfold Genv.find_funct, Genv.find_funct_ptr.
+  destruct Ptrofs.eq_dec; try congruence.
+  apply Genv.find_invert_symbol in H1. cbn.
+  rewrite Genv.find_def_spec. rewrite H1.
+  rewrite H2. reflexivity.
+Qed.
+
+Require Example.
+
 Section SECRET_FSIM.
 
+  Notation L1 := (comp_semantics' (semantics2 secret_program) (sys_c secret_program) (erase_program secret_program)).
+  Opaque semantics2.
+
+  Inductive secret_match_state (se: Genv.symtbl): secret_state -> Smallstep.state secret_c -> Prop :=
+  | secret_match_state1:
+    secret_match_state se secret1 (st1 (init_c secret_program) L1 None)
+  | secret_match_state2 vf m args:
+    secret_match_state se secret2
+      (st2 (init_c secret_program) L1 None
+         (st2 (semantics2 secret_program) (sys_c secret_program)
+         (Callstate vf args (Kcall None secret_main empty_env (PTree.empty val) (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)) m)
+         (sys_write_query urbby_bytes m)))
+  | secret_match_state3 vf n m args:
+    secret_match_state se secret3
+      (st2 (init_c secret_program) L1 None
+         (st2 (semantics2 secret_program) (sys_c secret_program)
+         (Callstate vf args (Kcall None secret_main empty_env (PTree.empty val) (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)) m)
+         (sys_write_reply n m)))
+  | secret_match_state4:
+    secret_match_state se (secret4 Int.zero) (st1 (init_c secret_program) L1 (Some Int.zero)).
+
+  Lemma secret_prog_defmap_main:
+    (prog_defmap secret_program) ! secret_main_id =
+      Some (Gfun (Internal secret_main)).
+  Proof. reflexivity. Qed.
+
+  Lemma secret_prog_defmap_write:
+    (prog_defmap secret_program) ! secret_write_id = Some (Gfun write).
+  Proof. reflexivity. Qed.
+
+  Lemma secret_prog_defmap_msg:
+    (prog_defmap secret_program) ! secret_msg_id = Some (Gvar msg_globvar).
+  Proof. reflexivity. Qed.
+
+  Import Ptrofs.
+
+  Lemma secret_init_mem se:
+    Genv.valid_for (erase_program secret_program) se ->
+    exists m, init_mem se (erase_program secret_program) = Some m /\
+           (forall b, Genv.find_symbol se secret_msg_id = Some b ->
+                 Mem.loadbytes m b (unsigned zero) 5 = Some (map Byte urbby_bytes)).
+  Proof.
+    intros Hvalid.
+    edestruct init_mem_exists with
+      (p := (erase_program secret_program)) as [m Hm]; eauto.
+    - split.
+      + cbn in H. destruct_or H; inv H. cbn.
+        repeat apply conj; solve [ easy | apply Z.divide_1_l ].
+      + cbn in H. destruct_or H; inv H. cbn. intros.
+        destruct_or H; inv H.
+    - exists m. split; eauto. intros b Hb.
+      unfold init_mem in Hm.
+      Opaque Genv.store_init_data_list.
+      cbn in Hm.
+      Ltac destruct_match :=
+        match goal with
+        | [ H: context [ match ?x with | Some _ => _ | None => _ end ] |- _ ] =>
+            let H' := fresh "H" in destruct x eqn:H'; [ | inv H ]
+        end.
+      repeat (destruct_match; eprod_crush).
+      inv Hb. inv Hm.
+      eapply (@Genv.store_init_data_list_loadbytes se b msg_il) in H5.
+      + erewrite Mem.loadbytes_drop; eauto.
+        right. right. right. constructor.
+      + eapply Genv.store_zeros_loadbytes. eauto.
+  Qed.
+
+  Lemma main_block se:
+    Genv.valid_for (AST.erase_program secret_program) se ->
+    exists b, Genv.find_symbol (globalenv se secret_program) secret_main_id = Some b /\
+           Genv.find_funct (globalenv se secret_program) (Vptr b zero) = Some (Internal secret_main).
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H secret_prog_defmap_main).
+    destruct H as (b & Hb1 & Hb2); eauto.
+    exists b. split; eauto. eapply genv_funct_symbol; eauto.
+  Qed.
+
+  Lemma write_block se:
+    Genv.valid_for (AST.erase_program secret_program) se ->
+    exists b, Genv.find_symbol (globalenv se secret_program) secret_write_id = Some b /\
+           Genv.find_funct (globalenv se secret_program) (Vptr b zero) = Some write.
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H secret_prog_defmap_write).
+    destruct H as (b & Hb1 & Hb2); eauto.
+    exists b. split; eauto. eapply genv_funct_symbol; eauto.
+  Qed.
+
+  Lemma msg_block se:
+    Genv.valid_for (AST.erase_program secret_program) se ->
+    exists b, Genv.find_symbol (globalenv se secret_program) secret_msg_id = Some b.
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H secret_prog_defmap_msg).
+    destruct H as (b & Hb1 & Hb2); eauto.
+  Qed.
+
   Lemma secret_fsim: forward_simulation 1 1 secret_spec secret_c.
-  Admitted.
+  Proof.
+    constructor. econstructor. reflexivity. cbn.
+    { intros; split; intros.
+      - right. left. apply H.
+      - destruct_or H; easy. }
+    intros. instantiate (1 := fun _ _ _ => _). cbn beta.
+    destruct H.
+    eapply forward_simulation_plus with
+      (match_states := fun s1 s2 => secret_match_state se1 s1 s2).
+    - intros. inv H1. inv H.
+      exists (st1 (init_c secret_program) L1 None).
+      split; repeat constructor.
+    - intros. inv H1. inv H. cbn in *. exists Int.zero.
+      split; repeat constructor.
+    - intros. inv H1. inv H. exists tt, (inr (write_query urbby_bytes)).
+      repeat apply conj; try repeat constructor.
+      intros. inv H. inv H1.
+      eexists. split. 2: constructor.
+      repeat constructor.
+    - intros. inv H; inv H1.
+      + edestruct secret_init_mem as [m [Hm1 Hm2]]; eauto.
+        edestruct main_block as [b [Hb1 Hb2]]; eauto.
+        edestruct write_block as [b1 [Hb3 Hb4]]; eauto.
+        edestruct msg_block as [b2 Hb5]; eauto.
+        eexists. split. 2: constructor.
+        eapply plus_left. (* init calls the C program *)
+        {
+          eapply step_push.
+          - econstructor; try reflexivity; eauto.
+          - constructor. econstructor; eauto.
+            + constructor.
+            + cbn. apply init_mem_nextblock in Hm1.
+              rewrite Hm1. reflexivity.
+        }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of secret.c *)
+        { eapply step2. eapply step1. crush_step.
+          eapply init_mem_alloc_flag. apply Hm1. }
+        one_step. (* internal step of secret.c *)
+        { eapply step2. eapply step1. crush_step. }
+        one_step. (* internal step of secret.c *)
+        { eapply step2. eapply step1. crush_step; crush_expr.
+          unfold write_type. crush_deref. }
+        one_step. (* secret.c calls sys *)
+        { eapply step2. eapply step_push.
+          - econstructor. eauto.
+          - econstructor; eauto. }
+        eapply star_refl.
+      + eexists. split. 2: constructor.
+        eapply plus_left. (* sys returns to secret.c *)
+        { eapply step2. eapply step_pop; econstructor. }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of secret.c *)
+        { eapply step2. eapply step1. crush_step. }
+        one_step. (* internal step of secret.c *)
+        { eapply step2. eapply step1. crush_step. }
+        one_step. (* internal step of secret.c *)
+        { eapply step2. eapply step1. crush_step; crush_expr. }
+        one_step. (* secret.c returns to init *)
+        { eapply step_pop; repeat constructor. }
+        eapply star_refl.
+    - easy.
+  Qed.
 
 End SECRET_FSIM.
 
@@ -404,8 +905,6 @@ Section WITH.
 
 End WITH.
 
-Require Import Lifting Encapsulation.
-
 Section PIPE.
 
   Definition pipe_state := list byte.
@@ -529,18 +1028,6 @@ Section PIPE_CORRECT.
         (TensorComp.semantics_map (comp_semantics' seq (with_semantics secret_spec rot13_spec) hello_skel)
            TensorComp.lf (TensorComp.li_iso_inv TensorComp.li_iso_unit) @ pipe_state)%lts.
 
-(* Lemma x: *)
-(*   comp_state *)
-(*     (TensorComp.semantics_map (comp_semantics' seq (with_semantics secret_spec rot13_spec) empty_skel) *)
-(*        TensorComp.lf (TensorComp.li_iso_inv TensorComp.li_iso_unit) @ pipe_state) pipe_operator. *)
-(* Proof. *)
-(*   refine (st2 L1 pipe_operator _ _). cbn. *)
-(*   refine (st2 _ _ _ _). cbn. split. *)
-(*   refine (st1 _ _ _, _). cbn. *)
-(*   refine seq1. refine []. *)
-(* Defined. *)
-
-
   Inductive pipe_match_state: hello_state -> Smallstep.state (pipe secret_spec rot13_spec hello_skel) -> Prop :=
   | pipe_match_state1 buf:
     pipe_match_state hello1
@@ -559,7 +1046,6 @@ Section PIPE_CORRECT.
     pipe_match_state (hello4 n)
       (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret n), buf)).
 
-  Ltac step1 := eapply star_left with (t1 := E0) (t2 := E0); [ | | reflexivity ].
   Local Opaque app.
 
   Lemma pipe_spec_correct: E.forward_simulation &1 &1 encap_hello_spec (pipe secret_spec rot13_spec hello_skel).
