@@ -423,7 +423,7 @@ Require Import CategoricalComp.
 Definition load_c (prog: program) : semantics (li_sys + li_sys) li_wp :=
   let sk := AST.erase_program prog in
   comp_semantics' (init_c prog)
-    (comp_semantics' (semantics2 prog) (sys_c prog) sk) sk.
+    (comp_semantics' (semantics1 prog) (sys_c prog) sk) sk.
 
 Definition secret_c : semantics (li_sys + li_sys) li_wp := load_c secret_program.
 
@@ -556,12 +556,12 @@ Ltac crush_step := cbn;
   match goal with
   | [ |- Step _ (Callstate _ _ _ _) _ _ ] =>
       eapply step_internal_function;
-      [ eauto | constructor; cbn;
-        [ solve_list_norepet
-        | solve_list_norepet
-        | solve_list_disjoint
-        | repeat (econstructor; simpl; auto)
-        | reflexivity | eauto ] ]
+      [ eauto | econstructor; cbn
+        (* [ solve_list_norepet *)
+        (* | solve_list_norepet *)
+        (* | solve_list_disjoint *)
+        (* | repeat (econstructor; simpl; auto) *)
+        (* | reflexivity | eauto ] *) ]
   | [ |- Step _ (State _ (Ssequence _ _) _ _ _ _) _ _ ] => apply step_seq
   | [ |- Step _ (State _ (Sset _ _) _ _ _ _) _ _ ] => apply step_set
   | [ |- Step _ (State _ (Scall _ _ _) _ _ _ _) _ _ ] => eapply step_call
@@ -590,8 +590,8 @@ Require Example.
 
 Section SECRET_FSIM.
 
-  Notation L1 := (comp_semantics' (semantics2 secret_program) (sys_c secret_program) (erase_program secret_program)).
-  Opaque semantics2.
+  Notation L1 := (comp_semantics' (semantics1 secret_program) (sys_c secret_program) (erase_program secret_program)).
+  Opaque semantics1.
 
   Inductive secret_match_state (se: Genv.symtbl): secret_state -> Smallstep.state secret_c -> Prop :=
   | secret_match_state1:
@@ -599,13 +599,13 @@ Section SECRET_FSIM.
   | secret_match_state2 vf m args:
     secret_match_state se secret2
       (st2 (init_c secret_program) L1 None
-         (st2 (semantics2 secret_program) (sys_c secret_program)
+         (st2 (semantics1 secret_program) (sys_c secret_program)
          (Callstate vf args (Kcall None secret_main empty_env (PTree.empty val) (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)) m)
          (sys_write_query urbby_bytes m)))
   | secret_match_state3 vf n m args:
     secret_match_state se secret3
       (st2 (init_c secret_program) L1 None
-         (st2 (semantics2 secret_program) (sys_c secret_program)
+         (st2 (semantics1 secret_program) (sys_c secret_program)
          (Callstate vf args (Kcall None secret_main empty_env (PTree.empty val) (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)) m)
          (sys_write_reply n m)))
   | secret_match_state4:
@@ -728,7 +728,7 @@ Section SECRET_FSIM.
         }
         2: { instantiate (1 := E0). reflexivity. }
         one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step.
+        { eapply step2. eapply step1. crush_step; try solve [ constructor | easy ].
           eapply init_mem_alloc_flag. apply Hm1. }
         one_step. (* internal step of secret.c *)
         { eapply step2. eapply step1. crush_step. }
@@ -758,18 +758,109 @@ Section SECRET_FSIM.
 
 End SECRET_FSIM.
 
-Definition rot13_program : program.
-Admitted.
+Definition rot13_rot13_id: positive := 1.
+Definition rot13_main_id: positive := 2.
+Definition rot13_read_id: positive := 3.
+Definition rot13_write_id: positive := 4.
+Definition rot13_rot13_c_id: positive := 5.
+Definition rot13_main_buf_id: positive := 6.
+Definition rot13_main_n_id: positive := 7.
+Definition rot13_main_i_id: positive := 8.
+Definition rot13_main_t_id: positive := 9.
+
+Require Import Cop.
+
+Definition rot13_rot13_body : statement :=
+  let c := Etempvar rot13_rot13_c_id tchar in
+  let a := Econst_int (Int.repr 65) tint in
+  let z := Econst_int (Int.repr 91) tint in
+  let m := Econst_int (Int.repr 78) tint in
+  let thirteen := Econst_int (Int.repr 13) tint in
+  Sifthenelse
+    (* if c >= 'a' && c <= 'z' *)
+    (Ebinop Oand (Ebinop Oge c a tint) (Ebinop Ole c z tint) tint)
+    (
+      (* if c > 'm' *)
+      Sifthenelse (Ebinop Ogt c m tint)
+        (* return c - 13 *)
+        (Sreturn (Some (Ebinop Osub c thirteen tint)))
+        (* return c + 13 *)
+        (Sreturn (Some (Ebinop Oadd c thirteen tint)))
+    )
+    (* return c *)
+    (Sreturn (Some c)).
+
+Definition rot13_rot13 : function :=
+  {|
+    fn_return := tchar;
+    fn_callconv := cc_default;
+    fn_params := [ (rot13_rot13_c_id, tchar) ];
+    fn_temps := [];
+    fn_vars := [];
+    fn_body := rot13_rot13_body;
+  |}.
+
+Definition rot13_type := Tfunction (Tcons tchar Tnil) tchar cc_default.
+
+Program Definition rot13_main_body : statement :=
+  let zero := Econst_int (Int.repr 0) tint in
+  let one := Econst_int (Int.repr 1) tint in
+  let n := Etempvar rot13_main_n_id tint in
+  let i := Etempvar rot13_main_i_id tint in
+  let t := Etempvar rot13_main_t_id tint in
+  let buf := Evar rot13_main_buf_id (tarray tchar 100) in
+  let buf_i := Ederef (Ebinop Oadd buf i tchar) tchar in
+  let for_loop :=
+    (* for i = 0; i < n; i++ *)
+    Sfor (Sset rot13_main_i_id zero) (Ebinop Olt i n tint) (Sset rot13_main_i_id (Ebinop Oadd i one tint))
+      (Ssequence
+         (* t = rot13(buf[i]) *)
+         (Scall (Some rot13_main_t_id) (Evar rot13_rot13_id rot13_type) [ buf_i ])
+         (* buf[i] = t *)
+         (Sassign buf_i t))
+  in
+  let read_buf :=
+    (* n = read(0, buf, sizeof buf) *)
+    Scall (Some rot13_main_n_id) (Evar rot13_read_id read_type) [ zero; buf; Esizeof (tarray tchar 100) tint ]
+  in
+  let write_buf :=
+    (* write(1, buf, n) *)
+    Scall None (Evar rot13_write_id write_type) [ one; buf; n ]
+  in
+  Ssequence read_buf (Ssequence for_loop (Ssequence write_buf (Sreturn (Some zero)))).
+
+Definition rot13_main : function :=
+  {|
+    fn_return := tint;
+    fn_callconv := cc_default;
+    fn_params := [];
+    fn_temps := [ (rot13_main_n_id, tint); (rot13_main_i_id, tint) ];
+    fn_vars := [ (rot13_main_buf_id, tarray tchar 100) ];
+    fn_body := rot13_main_body;
+  |}.
+
+Program Definition rot13_program : Clight.program :=
+  {|
+    prog_defs := [(rot13_rot13_id, Gfun (Internal rot13_rot13));
+                  (rot13_main_id, Gfun (Internal rot13_main));
+                  (rot13_read_id, Gfun read);
+                  (rot13_write_id, Gfun write)];
+    prog_public := [ rot13_main_id ];
+    prog_main := Some rot13_main_id;
+    prog_types := [];
+    prog_comp_env := (PTree.empty _);
+  |}.
 
 Definition rot13_c : semantics (li_sys + li_sys) li_wp := load_c rot13_program.
 
 Section ROT13_SPEC.
 
   Variant rot13_state :=
-  | rot13_read | rot13_write (bytes: list byte) | rot13_ret (n: int).
+    | rot13_read0 | rot13_write0 (bytes: list byte) | rot13_ret0 (n: int)
+    | rot13_read | rot13_write (bytes: list byte) | rot13_ret (n: int).
 
   Inductive rot13_spec_initial_state: query li_wp -> rot13_state -> Prop :=
-  | rot13_spec_initial_state_intro q: rot13_spec_initial_state q rot13_read.
+  | rot13_spec_initial_state_intro q: rot13_spec_initial_state q rot13_read0.
   Inductive rot13_spec_at_external: rot13_state -> query (li_sys + li_sys) -> Prop :=
   | rot13_spec_at_external_read:
     rot13_spec_at_external rot13_read (inl (read_query (Int.repr 5)))
@@ -778,17 +869,21 @@ Section ROT13_SPEC.
   Inductive rot13_spec_after_external: rot13_state -> reply (li_sys + li_sys) -> rot13_state -> Prop :=
   | rot13_spec_after_external_read bytes bytes':
     bytes' = rot13_bytes bytes ->
-    rot13_spec_after_external rot13_read (inl (read_reply bytes)) (rot13_write bytes')
+    rot13_spec_after_external rot13_read (inl (read_reply bytes)) (rot13_write0 bytes')
   | rot13_spec_after_external_write bytes n:
-    rot13_spec_after_external (rot13_write bytes) (inr (write_reply n)) (rot13_ret n).
+    rot13_spec_after_external (rot13_write bytes) (inr (write_reply n)) (rot13_ret0 n).
   Inductive rot13_spec_final_state: rot13_state -> reply li_wp -> Prop :=
   | rot13_spec_final_state_intro n: rot13_spec_final_state (rot13_ret n) n.
+  Inductive rot13_spec_step: rot13_state -> trace -> rot13_state -> Prop :=
+  | rot13_spec_step1: rot13_spec_step rot13_read0 E0 rot13_read
+  | rot13_spec_step2 bytes: rot13_spec_step (rot13_write0 bytes) E0 (rot13_write bytes)
+  | rot13_spec_step3 n: rot13_spec_step (rot13_ret0 n) E0 (rot13_ret n).
 
   Definition rot13_spec: semantics (li_sys + li_sys) li_wp :=
     {|
       activate se :=
         {|
-          Smallstep.step _ _ _ _ := False;
+          Smallstep.step _ := rot13_spec_step;
           Smallstep.initial_state := rot13_spec_initial_state;
           Smallstep.at_external := rot13_spec_at_external;
           Smallstep.after_external := rot13_spec_after_external;
