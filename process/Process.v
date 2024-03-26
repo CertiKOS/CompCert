@@ -9,6 +9,8 @@ Import ListNotations.
 
 Notation hello_bytes := [ Byte.repr 104; Byte.repr 101; Byte.repr 108; Byte.repr 108; Byte.repr 111 ].
 Notation urbby_bytes := [ Byte.repr 117; Byte.repr 114; Byte.repr 98; Byte.repr 98; Byte.repr 121].
+Definition rot13_byte : byte -> byte. Admitted.
+Definition rot13_bytes_i : list byte -> Z -> list byte. Admitted.
 Definition rot13_bytes : list byte -> list byte. Admitted.
 Lemma rot13_bytes_hello: rot13_bytes hello_bytes = urbby_bytes. Admitted.
 Lemma rot13_bytes_urbby: rot13_bytes urbby_bytes = hello_bytes. Admitted.
@@ -16,22 +18,19 @@ Lemma rot13_bytes_urbby: rot13_bytes urbby_bytes = hello_bytes. Admitted.
 Notation tvoid := (Tvoid).
 Notation tchar := (Tint I8 Unsigned noattr).
 Notation tint := (Tint I32 Unsigned noattr).
+Notation tlong := (Tlong Unsigned noattr).
 Notation tarray := (fun ty size => Tarray ty size noattr).
 Notation tptr := (fun ty => Tpointer ty noattr).
 
-Definition rw_parameters := Tcons tint (Tcons (tptr tchar) (Tcons tint Tnil)).
-Definition write_sig : signature :=
+Definition rw_parameters := Tcons tint (Tcons (tptr tchar) (Tcons tlong Tnil)).
+Definition rw_type :=
+  Tfunction rw_parameters tint cc_default.
+Definition rw_sig : signature :=
   signature_of_type rw_parameters tvoid cc_default.
-Definition write_type :=
-  Tfunction rw_parameters tint cc_default.
 Definition write : fundef :=
-  External (EF_external "write" write_sig) rw_parameters tint cc_default.
-Definition read_sig : signature :=
-  signature_of_type rw_parameters tint cc_default.
-Definition read_type :=
-  Tfunction rw_parameters tint cc_default.
+  External (EF_external "write" rw_sig) rw_parameters tint cc_default.
 Definition read : fundef :=
-  External (EF_external "read" write_sig) rw_parameters tint cc_default.
+  External (EF_external "read" rw_sig) rw_parameters tint cc_default.
 
 Definition main_sig := signature_of_type Tnil tint cc_default.
 
@@ -48,7 +47,7 @@ Definition msg_il : list init_data :=
 
 Definition msg_globvar : globvar type :=
   {|
-    gvar_info := tarray tchar 5%Z;
+    gvar_info := tarray tchar 6%Z;
     gvar_init := msg_il;
     gvar_readonly := false;
     gvar_volatile := false;
@@ -57,10 +56,10 @@ Definition msg_globvar : globvar type :=
 Definition secret_main_body : statement :=
   Ssequence
     (* write(1, msg, sizeof msg - 1) *)
-    (Scall None (Evar secret_write_id write_type)
+    (Scall None (Evar secret_write_id rw_type)
        [ Econst_int (Int.repr 1) tint;
          Eaddrof (Evar secret_msg_id (tptr tchar)) (tptr tchar);
-         Econst_int (Int.repr 5) tint ]) (* sizeof msg - 1 *)
+         Econst_long (Int64.repr 5) tlong ]) (* sizeof msg - 1 *)
     (Sreturn (Some (Econst_int (Int.repr 0) tint))).
 
 Definition secret_main : function :=
@@ -342,7 +341,7 @@ Infix "+" := with_ (at level 50, left associativity).
 
 Variant sys_query :=
   | write_query: list byte -> sys_query
-  | read_query: int -> sys_query.
+  | read_query: int64 -> sys_query.
 
 Variant sys_reply :=
   | write_reply: int -> sys_reply
@@ -362,7 +361,7 @@ Section SYS.
     Context (se: Genv.symtbl).
     Let ge := globalenv se prog.
     Variant sys_state :=
-      | sys_read_query (n: int) (b: block) (ofs: ptrofs) (m: mem)
+      | sys_read_query (n: int64) (b: block) (ofs: ptrofs) (m: mem)
       | sys_read_reply (bytes: list byte) (b: block) (ofs: ptrofs) (m: mem)
       | sys_write_query (bytes: list byte) (m: mem)
       | sys_write_reply (n: int) (m: mem).
@@ -370,14 +369,14 @@ Section SYS.
     Inductive sys_c_initial_state: query li_c -> sys_state -> Prop :=
     | sys_c_initial_state_read vf args m n b ofs:
       Genv.find_funct ge vf = Some read ->
-      args = [ Vint (Int.repr 0); Vptr b ofs; Vint n ] ->
-      sys_c_initial_state (cq vf read_sig args m) (sys_read_query n b ofs m)
+      args = [ Vint (Int.repr 0); Vptr b ofs; Vlong n ] ->
+      sys_c_initial_state (cq vf rw_sig args m) (sys_read_query n b ofs m)
     | sys_c_initial_state_write vf args m bytes bytes_val b ofs len:
       Genv.find_funct ge vf = Some write ->
-      args = [ Vint (Int.repr 1); Vptr b ofs; Vint (Int.repr len) ] ->
+      args = [ Vint (Int.repr 1); Vptr b ofs; Vlong (Int64.repr len) ] ->
       Mem.loadbytes m b (Ptrofs.unsigned ofs) len = Some bytes_val ->
       map Byte bytes = bytes_val ->
-      sys_c_initial_state (cq vf write_sig args m) (sys_write_query bytes m).
+      sys_c_initial_state (cq vf rw_sig args m) (sys_write_query bytes m).
 
     Inductive sys_c_at_external: sys_state -> query (li_sys + li_sys) -> Prop :=
     | sys_c_at_external_read n b ofs m:
@@ -385,18 +384,21 @@ Section SYS.
     | sys_c_at_external_write bytes m:
       sys_c_at_external (sys_write_query bytes m) (inr (write_query bytes)).
 
+    Search int64.
+
     Inductive sys_c_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
     | sys_c_after_external_read n b ofs m bytes:
+      Z.of_nat (length bytes) <= Int64.unsigned n ->
       sys_c_after_external (sys_read_query n b ofs m) (inl (read_reply bytes)) (sys_read_reply bytes b ofs m)
     | sys_c_after_external_write n m bytes:
       sys_c_after_external (sys_write_query bytes m) (inr (write_reply n)) (sys_write_reply n m).
 
     Inductive sys_c_final_state: sys_state -> reply li_c -> Prop :=
-    | sys_c_final_state_read bytes b ofs bytes_val m len:
+    | sys_c_final_state_read bytes b ofs bytes_val m len m':
       len = Z.of_nat (length bytes) ->
-      Mem.loadbytes m b (Ptrofs.unsigned ofs) len = Some bytes_val ->
+      Mem.storebytes m b (Ptrofs.unsigned ofs) bytes_val = Some m' ->
       map Byte bytes = bytes_val ->
-      sys_c_final_state (sys_read_reply bytes b ofs m) (cr (Vint (Int.repr len)) m)
+      sys_c_final_state (sys_read_reply bytes b ofs m) (cr (Vint (Int.repr len)) m')
     | sys_c_final_state_write n m:
       sys_c_final_state (sys_write_reply n m) (cr (Vint n) m).
 
@@ -430,7 +432,7 @@ Definition secret_c : semantics (li_sys + li_sys) li_wp := load_c secret_program
 Section SECRET_SPEC.
 
   Variant secret_state :=
-    | secret1 | secret2 | secret3 | secret4 (n: int).
+    | secret1 | secret2 | secret3 | secret4.
 
   Inductive secret_spec_initial_state: query li_wp -> secret_state -> Prop :=
   | secret_spec_initial_state_intro q: secret_spec_initial_state q secret1.
@@ -442,10 +444,10 @@ Section SECRET_SPEC.
   | secret_spec_after_external_intro n:
     secret_spec_after_external secret2 (inr (write_reply n)) secret3.
   Inductive secret_spec_final_state: secret_state -> reply li_wp -> Prop :=
-  | secret_spec_final_state_intro n: secret_spec_final_state (secret4 n) n.
+  | secret_spec_final_state_intro: secret_spec_final_state secret4 Int.zero.
   Inductive secret_step : secret_state -> trace -> secret_state -> Prop :=
   | secret_step1: secret_step secret1 E0 secret2
-  | secret_step2: secret_step secret3 E0 (secret4 Int.zero).
+  | secret_step2: secret_step secret3 E0 secret4.
 
   Definition secret_spec: semantics (li_sys + li_sys) li_wp :=
     {|
@@ -485,10 +487,12 @@ Ltac crush_eval_expr :=
   lazymatch goal with
   | [ |- eval_expr _ _ _ _ (Etempvar _ _) _ ] => apply eval_Etempvar; reflexivity
   | [ |- eval_expr _ _ _ _ (Econst_int _ _) _ ] => apply eval_Econst_int
+  | [ |- eval_expr _ _ _ _ (Econst_long _ _) _ ] => apply eval_Econst_long
   | [ |- eval_expr _ _ _ _ (Ebinop _ _ _ _) _ ] => eapply eval_Ebinop
   | [ |- eval_expr _ _ _ _ (Evar _ _) _ ] => eapply eval_Elvalue
   | [ |- eval_expr _ _ _ _ (Ederef _ _) _ ] => eapply eval_Elvalue
   | [ |- eval_expr _ _ _ _ (Eaddrof _ _) _ ] => eapply eval_Eaddrof
+  | [ |- eval_expr _ _ _ _ (Esizeof _ _) _ ] => eapply eval_Esizeof
   end.
 Ltac crush_eval_lvalue :=
   cbn;
@@ -570,6 +574,9 @@ Ltac crush_step := cbn;
   | [ |- Step _ (State _ (Sassign _ _) _ _ _ _) _ _ ] => eapply step_assign
   | [ |- Step _ (State _ (Sreturn None) _ _ _ _) _ _ ] => eapply step_return_0
   | [ |- Step _ (State _ (Sreturn (Some _)) _ _ _ _) _ _ ] => eapply step_return_1
+  | [ |- Step _ (State _ (Sloop _ _) _ _ _ _) _ _ ] => eapply step_loop
+  | [ |- Step _ (State _ (Sifthenelse _ _ _) _ _ _ _) _ _ ] => eapply step_ifthenelse
+  | [ |- Step _ (State _ Sbreak _ _ _ _) _ _ ] => eapply step_break_loop1
   | [ |- Step _ (State _ ?s _ _ _ _) _ _ ] => is_const s; unfold s; crush_step
   end.
 
@@ -609,7 +616,7 @@ Section SECRET_FSIM.
          (Callstate vf args (Kcall None secret_main empty_env (PTree.empty val) (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)) m)
          (sys_write_reply n m)))
   | secret_match_state4:
-    secret_match_state se (secret4 Int.zero) (st1 (init_c secret_program) L1 (Some Int.zero)).
+    secret_match_state se secret4 (st1 (init_c secret_program) L1 (Some Int.zero)).
 
   Lemma secret_prog_defmap_main:
     (prog_defmap secret_program) ! secret_main_id =
@@ -717,7 +724,7 @@ Section SECRET_FSIM.
         edestruct write_block as [b1 [Hb3 Hb4]]; eauto.
         edestruct msg_block as [b2 Hb5]; eauto.
         eexists. split. 2: constructor.
-        eapply plus_left. (* init calls the C program *)
+        eapply plus_left. (* init calls secret.c *)
         {
           eapply step_push.
           - econstructor; try reflexivity; eauto.
@@ -734,11 +741,11 @@ Section SECRET_FSIM.
         { eapply step2. eapply step1. crush_step. }
         one_step. (* internal step of secret.c *)
         { eapply step2. eapply step1. crush_step; crush_expr.
-          unfold write_type. crush_deref. }
+          unfold rw_type. crush_deref. }
         one_step. (* secret.c calls sys *)
         { eapply step2. eapply step_push.
           - econstructor. eauto.
-          - econstructor; eauto. }
+          - eapply sys_c_initial_state_write; eauto. }
         eapply star_refl.
       + eexists. split. 2: constructor.
         eapply plus_left. (* sys returns to secret.c *)
@@ -812,20 +819,22 @@ Program Definition rot13_main_body : statement :=
   let buf_i := Ederef (Ebinop Oadd buf i tchar) tchar in
   let for_loop :=
     (* for i = 0; i < n; i++ *)
-    Sfor (Sset rot13_main_i_id zero) (Ebinop Olt i n tint) (Sset rot13_main_i_id (Ebinop Oadd i one tint))
+    Sfor (Sset rot13_main_i_id zero) (Ebinop Olt i n tint)
       (Ssequence
          (* t = rot13(buf[i]) *)
          (Scall (Some rot13_main_t_id) (Evar rot13_rot13_id rot13_type) [ buf_i ])
          (* buf[i] = t *)
          (Sassign buf_i t))
+      (* i++ *)
+      (Sset rot13_main_i_id (Ebinop Oadd i one tint))
   in
   let read_buf :=
     (* n = read(0, buf, sizeof buf) *)
-    Scall (Some rot13_main_n_id) (Evar rot13_read_id read_type) [ zero; buf; Esizeof (tarray tchar 100) tint ]
+    Scall (Some rot13_main_n_id) (Evar rot13_read_id rw_type) [ zero; buf; Esizeof (tarray tchar 100) tlong ]
   in
   let write_buf :=
     (* write(1, buf, n) *)
-    Scall None (Evar rot13_write_id write_type) [ one; buf; n ]
+    Scall None (Evar rot13_write_id rw_type) [ one; buf; n ]
   in
   Ssequence read_buf (Ssequence for_loop (Ssequence write_buf (Sreturn (Some zero)))).
 
@@ -834,7 +843,7 @@ Definition rot13_main : function :=
     fn_return := tint;
     fn_callconv := cc_default;
     fn_params := [];
-    fn_temps := [ (rot13_main_n_id, tint); (rot13_main_i_id, tint) ];
+    fn_temps := [ (rot13_main_n_id, tint); (rot13_main_i_id, tint); (rot13_main_t_id, tint) ];
     fn_vars := [ (rot13_main_buf_id, tarray tchar 100) ];
     fn_body := rot13_main_body;
   |}.
@@ -856,28 +865,40 @@ Definition rot13_c : semantics (li_sys + li_sys) li_wp := load_c rot13_program.
 Section ROT13_SPEC.
 
   Variant rot13_state :=
-    | rot13_read0 | rot13_write0 (bytes: list byte) | rot13_ret0 (n: int)
-    | rot13_read | rot13_write (bytes: list byte) | rot13_ret (n: int).
+    | rot13_read0 | rot13_write0 (bytes: list byte) | rot13_ret0
+    | rot13_read | rot13_write (bytes: list byte) | rot13_ret
+    (* The first i bytes have been decoded. These intermediate steps correspond
+       to internal steps in the loop of rot13.c, so that we don't have to do
+       induction proof on the Clight loops *)
+    | rot13_writei (bytes: list byte) (i: Z).
 
   Inductive rot13_spec_initial_state: query li_wp -> rot13_state -> Prop :=
   | rot13_spec_initial_state_intro q: rot13_spec_initial_state q rot13_read0.
   Inductive rot13_spec_at_external: rot13_state -> query (li_sys + li_sys) -> Prop :=
   | rot13_spec_at_external_read:
-    rot13_spec_at_external rot13_read (inl (read_query (Int.repr 5)))
+    rot13_spec_at_external rot13_read (inl (read_query (Int64.repr 100)))
   | rot13_spec_at_external_write bytes:
     rot13_spec_at_external (rot13_write bytes) (inr (write_query bytes)).
   Inductive rot13_spec_after_external: rot13_state -> reply (li_sys + li_sys) -> rot13_state -> Prop :=
-  | rot13_spec_after_external_read bytes bytes':
-    bytes' = rot13_bytes bytes ->
-    rot13_spec_after_external rot13_read (inl (read_reply bytes)) (rot13_write0 bytes')
+  | rot13_spec_after_external_read bytes:
+    Z.of_nat (length bytes) <= 100 ->
+    rot13_spec_after_external rot13_read (inl (read_reply bytes)) (rot13_write0 bytes)
   | rot13_spec_after_external_write bytes n:
-    rot13_spec_after_external (rot13_write bytes) (inr (write_reply n)) (rot13_ret0 n).
+    rot13_spec_after_external (rot13_write bytes) (inr (write_reply n)) rot13_ret0.
   Inductive rot13_spec_final_state: rot13_state -> reply li_wp -> Prop :=
-  | rot13_spec_final_state_intro n: rot13_spec_final_state (rot13_ret n) n.
+  | rot13_spec_final_state_intro: rot13_spec_final_state rot13_ret Int.zero.
   Inductive rot13_spec_step: rot13_state -> trace -> rot13_state -> Prop :=
   | rot13_spec_step1: rot13_spec_step rot13_read0 E0 rot13_read
-  | rot13_spec_step2 bytes: rot13_spec_step (rot13_write0 bytes) E0 (rot13_write bytes)
-  | rot13_spec_step3 n: rot13_spec_step (rot13_ret0 n) E0 (rot13_ret n).
+  | rot13_spec_step2 bytes:
+    rot13_spec_step (rot13_write0 bytes) E0 (rot13_writei bytes 0)
+  | rot13_spec_stepi bytes bytes' i:
+    i < Z.of_nat (length bytes) ->
+    bytes' = rot13_bytes_i bytes i ->
+    rot13_spec_step (rot13_writei bytes i) E0 (rot13_writei bytes' (i + 1))
+  | rot13_spec_step3 bytes i:
+    i = Z.of_nat (length bytes) ->
+    rot13_spec_step (rot13_writei bytes i) E0 (rot13_write bytes)
+  | rot13_spec_step4: rot13_spec_step rot13_ret0 E0 rot13_ret.
 
   Definition rot13_spec: semantics (li_sys + li_sys) li_wp :=
     {|
@@ -891,14 +912,305 @@ Section ROT13_SPEC.
           Smallstep.globalenv := tt;
         |};
       skel := AST.erase_program rot13_program;
-      footprint i := False;
+      footprint := AST.footprint_of_program rot13_program;
     |}.
 
 End ROT13_SPEC.
 
 Section ROT13_FSIM.
 
+  Notation L1 := (comp_semantics' (semantics1 rot13_program) (sys_c rot13_program) (erase_program rot13_program)).
+  Opaque semantics1.
+  Import Ptrofs.
+
+  Lemma rot13_prog_defmap_main:
+    (prog_defmap rot13_program) ! rot13_main_id =
+      Some (Gfun (Internal rot13_main)).
+  Proof. reflexivity. Qed.
+
+  Lemma rot13_prog_defmap_read:
+    (prog_defmap rot13_program) ! rot13_read_id = Some (Gfun read).
+  Proof. reflexivity. Qed.
+
+  Lemma rot13_prog_defmap_write:
+    (prog_defmap rot13_program) ! rot13_write_id = Some (Gfun write).
+  Proof. reflexivity. Qed.
+
+  Lemma rot13_prog_defmap_rot13:
+    (prog_defmap rot13_program) ! rot13_rot13_id = Some (Gfun (Internal rot13_rot13)).
+  Proof. reflexivity. Qed.
+
+  Lemma rot13_main_block se:
+    Genv.valid_for (AST.erase_program rot13_program) se ->
+    exists b, Genv.find_symbol (globalenv se rot13_program) rot13_main_id = Some b /\
+           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some (Internal rot13_main).
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H rot13_prog_defmap_main).
+    destruct H as (b & Hb1 & Hb2); eauto.
+    exists b. split; eauto. eapply genv_funct_symbol; eauto.
+  Qed.
+
+  Lemma rot13_read_block se:
+    Genv.valid_for (AST.erase_program rot13_program) se ->
+    exists b, Genv.find_symbol (globalenv se rot13_program) rot13_read_id = Some b /\
+           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some read.
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H rot13_prog_defmap_read).
+    destruct H as (b & Hb1 & Hb2); eauto.
+    exists b. split; eauto. eapply genv_funct_symbol; eauto.
+  Qed.
+
+  Lemma rot13_write_block se:
+    Genv.valid_for (AST.erase_program rot13_program) se ->
+    exists b, Genv.find_symbol (globalenv se rot13_program) rot13_write_id = Some b /\
+           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some write.
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H rot13_prog_defmap_write).
+    destruct H as (b & Hb1 & Hb2); eauto.
+    exists b. split; eauto. eapply genv_funct_symbol; eauto.
+  Qed.
+
+  Lemma rot13_rot13_block se:
+    Genv.valid_for (AST.erase_program rot13_program) se ->
+    exists b, Genv.find_symbol (globalenv se rot13_program) rot13_rot13_id = Some b /\
+           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some (Internal rot13_rot13).
+  Proof.
+    intros Hse.
+    exploit @Genv.find_def_symbol; eauto.
+    intros [H _]. specialize (H rot13_prog_defmap_rot13).
+    destruct H as (b & Hb1 & Hb2); eauto.
+    exists b. split; eauto. eapply genv_funct_symbol; eauto.
+  Qed.
+
+  Lemma rot13_init_mem se:
+    Genv.valid_for (erase_program rot13_program) se ->
+    exists m, init_mem se (erase_program rot13_program) = Some m.
+  Proof.
+    intros Hvalid. eapply init_mem_exists; eauto.
+    split; cbn in H; destruct_or H; inv H.
+  Qed.
+
+  Definition kont1 buf_block :=
+    (Kcall (Some rot13_main_n_id) rot13_main (PTree.set rot13_main_buf_id (buf_block, Tarray tchar 100 noattr) empty_env)
+       (PTree.set rot13_main_n_id Vundef
+          (PTree.set rot13_main_i_id Vundef (PTree.set rot13_main_t_id Vundef (PTree.empty val))))
+       (Kseq
+          (Ssequence
+             (Sfor (Sset rot13_main_i_id (Econst_int (Int.repr 0) tint))
+                (Ebinop Olt (Etempvar rot13_main_i_id tint) (Etempvar rot13_main_n_id tint) tint)
+                (Ssequence
+                   (Scall (Some rot13_main_t_id) (Evar rot13_rot13_id rot13_type)
+                      [Ederef
+                         (Ebinop Oadd (Evar rot13_main_buf_id (Tarray tchar 100 noattr)) (Etempvar rot13_main_i_id tint)
+                            tchar) tchar])
+                   (Sassign
+                      (Ederef
+                         (Ebinop Oadd (Evar rot13_main_buf_id (Tarray tchar 100 noattr)) (Etempvar rot13_main_i_id tint)
+                            tchar) tchar) (Etempvar rot13_main_t_id tint)))
+                (Sset rot13_main_i_id (Ebinop Oadd (Etempvar rot13_main_i_id tint) (Econst_int (Int.repr 1) tint) tint)))
+             (Ssequence
+                (Scall None (Evar rot13_write_id rw_type)
+                   [Econst_int (Int.repr 1) tint; Evar rot13_main_buf_id (Tarray tchar 100 noattr);
+                    Etempvar rot13_main_n_id tint]) (Sreturn (Some (Econst_int (Int.repr 0) tint))))) Kstop)).
+
+  Definition state_i m len buf_block i :=
+    State rot13_main
+      (Sloop
+         (Ssequence
+            (Sifthenelse (Ebinop Olt (Etempvar rot13_main_i_id tint) (Etempvar rot13_main_n_id tint) tint) Sskip Sbreak)
+            (Ssequence
+               (Scall (Some rot13_main_t_id) (Evar rot13_rot13_id rot13_type)
+                  [Ederef (Ebinop Oadd (Evar rot13_main_buf_id (Tarray tchar 100 noattr)) (Etempvar rot13_main_i_id tint) tchar)
+                     tchar])
+               (Sassign
+                  (Ederef (Ebinop Oadd (Evar rot13_main_buf_id (Tarray tchar 100 noattr)) (Etempvar rot13_main_i_id tint) tchar)
+                     tchar) (Etempvar rot13_main_t_id tint)))
+         )
+         (Sset rot13_main_i_id (Ebinop Oadd (Etempvar rot13_main_i_id tint) (Econst_int (Int.repr 1) tint) tint))
+      )
+      (Kseq
+         (Ssequence
+            (Scall None (Evar rot13_write_id rw_type)
+               [Econst_int (Int.repr 1) tint; Evar rot13_main_buf_id (Tarray tchar 100 noattr); Etempvar rot13_main_n_id tint])
+            (Sreturn (Some (Econst_int (Int.repr 0) tint)))) Kstop)
+      (PTree.set rot13_main_buf_id (buf_block, Tarray tchar 100 noattr) empty_env)
+      (PTree.set rot13_main_i_id (Vint (Int.repr i))
+         (PTree.set rot13_main_n_id (Vint (Int.repr len))
+            (PTree.set rot13_main_i_id Vundef (PTree.set rot13_main_t_id Vundef (PTree.empty val))))) m.
+
+  Definition sys_st s1 s2 :=
+    st2 (init_c rot13_program) L1 None
+         (st2 (semantics1 rot13_program) (sys_c rot13_program) s1 s2).
+
+  Definition c_st s :=
+    st2 (init_c rot13_program) L1 None
+         (st1 (semantics1 rot13_program) (sys_c rot13_program) s).
+
+  Inductive rot13_match_state (se: Genv.symtbl): rot13_state -> Smallstep.state rot13_c -> Prop :=
+  | rot13_match_state1:
+    rot13_match_state se rot13_read0 (st1 (init_c rot13_program) L1 None)
+  | rot13_match_state2 vf m args kont buf_block:
+    kont = kont1 buf_block ->
+    Mem.range_perm m buf_block 0 100 Cur Writable ->
+    rot13_match_state se rot13_read
+      (sys_st (Callstate vf args kont m) (sys_read_query (Int64.repr 100) buf_block Ptrofs.zero m))
+  | rot13_match_state3 vf m args kont bytes buf_block:
+    kont = kont1 buf_block ->
+    Mem.range_perm m buf_block 0 (Z.of_nat (Datatypes.length bytes)) Cur Writable ->
+    rot13_match_state se (rot13_write0 bytes)
+      (sys_st (Callstate vf args kont m) (sys_read_reply bytes buf_block Ptrofs.zero m))
+  | rot13_match_state_i m bytes i buf_block len:
+    len = Z.of_nat (length bytes) -> i <= len ->
+    Mem.loadbytes m buf_block 0 len = Some (map Byte bytes) ->
+    rot13_match_state se (rot13_writei bytes i)
+      (c_st (state_i m len buf_block i))
+  | rot13_match_state4 vf m args kont bytes:
+    rot13_match_state se (rot13_write bytes)
+      (st2 (init_c rot13_program) L1 None
+         (st2 (semantics1 rot13_program) (sys_c rot13_program)
+         (Callstate vf args kont m)
+         (sys_write_query bytes m)))
+  | rot13_match_state5 vf m args kont n:
+    rot13_match_state se rot13_ret0
+      (st2 (init_c rot13_program) L1 None
+         (st2 (semantics1 rot13_program) (sys_c rot13_program)
+         (Callstate vf args kont m)
+         (sys_write_reply n m)))
+  | rot13_match_state6:
+    rot13_match_state se rot13_ret (st1 (init_c rot13_program) L1 (Some Int.zero)).
+
   Lemma rot13_fsim: forward_simulation 1 1 rot13_spec rot13_c.
+  Proof.
+    constructor. econstructor. reflexivity. cbn.
+    { intros; split; intros.
+      - right. left. apply H.
+      - destruct_or H; easy. }
+    intros. instantiate (1 := fun _ _ _ => _). cbn beta.
+    destruct H.
+    eapply forward_simulation_plus with
+      (match_states := fun s1 s2 => rot13_match_state se1 s1 s2).
+    - intros. inv H1. inv H.
+      exists (st1 (init_c rot13_program) L1 None).
+      split; repeat constructor.
+    - intros. inv H1. inv H. cbn in *. exists Int.zero.
+      split; repeat constructor.
+    - intros. inv H; inv H1.
+      + exists tt, (inl (read_query (Int64.repr 100))).
+        repeat apply conj; try repeat constructor.
+        intros. inv H. inv H1.
+        eexists. split. 2: econstructor; eauto. repeat constructor; eauto.
+        (* range_perm *)
+        intros p Hperm. apply H3. lia.
+      + exists tt, (inr (write_query bytes)).
+        repeat apply conj; try repeat constructor.
+        intros. inv H. inv H1.
+        eexists. split. 2: constructor. repeat constructor.
+    - intros. inv H; inv H1.
+      (* transition to the call to read *)
+      + edestruct rot13_init_mem as [m Hm]; eauto.
+        edestruct rot13_main_block as [b [Hb1 Hb2]]; eauto.
+        edestruct rot13_read_block as [b1 [Hb3 Hb4]]; eauto.
+        exploit init_mem_alloc_flag; eauto. intros Hflag.
+        edestruct (@Mem.alloc_succeed m 0 100); eauto. destruct x as (m1 & b2).
+        eexists. split.
+        2: { econstructor; eauto.
+             (* range_perm *)
+             intros p Hperm.
+             eapply Mem.perm_alloc_2 in e; eauto.
+             eauto with mem. }
+        eapply plus_left. (* init calls rot13.c *)
+        {
+          eapply step_push.
+          - econstructor; try reflexivity; eauto.
+          - constructor. econstructor; eauto.
+            + constructor.
+            + cbn. apply init_mem_nextblock in Hm.
+              rewrite Hm. reflexivity.
+        }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of rot13.c *)
+        { eapply step2. eapply step1; crush_step; try solve [ constructor | easy ].
+          - solve_list_norepet.
+          - repeat econstructor. eauto. }
+        one_step. (* internal step of rot13.c *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c *)
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          - unfold rw_type. crush_deref.
+          - constructor. }
+        one_step. (* rot13.c calls sys *)
+        {
+          eapply step2. eapply step_push.
+          - econstructor. eauto.
+          - eapply sys_c_initial_state_read; eauto. reflexivity.
+        }
+        eapply star_refl.
+      (* enter the loop *)
+      + edestruct Mem.range_perm_storebytes with (ofs := 0) (bytes := map Byte bytes) as (m1 & Hm1).
+        (* range_perm *)
+        intros p Hperm. apply H3. rewrite map_length in Hperm. eauto.
+        eexists. split.
+        eapply plus_left. (* sys returns to rot13.c, and storebytes "urbby" *)
+        { eapply step2. eapply step_pop; econstructor; eauto. }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of rot13.c: Returnstate -> Sskip *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Sskip *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Ssequence *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Sfor *)
+        { eapply step2. eapply step1. unfold Sfor. crush_step. }
+        one_step. (* internal step of rot13.c: Sset *)
+        { eapply step2. eapply step1; crush_step; crush_expr. }
+        one_step. (* internal step of rot13.c: Sskip *)
+        { eapply step2. eapply step1; crush_step. }
+        rewrite PTree.set2. eapply star_refl.
+        { econstructor; eauto; try lia.
+          (* loadbytes *)
+          apply Mem.loadbytes_storebytes_same in Hm1.
+          rewrite map_length in Hm1. apply Hm1. }
+      (* looping *)
+      + edestruct rot13_rot13_block as [b [Hb1 Hb2]]; eauto.
+        eexists. split.
+        eapply plus_left. (* internal step of rot13.c: Sloop *)
+        { eapply step2. eapply step1. unfold state_i. crush_step. }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of rot13.c: Ssequence *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Sifthenelse *)
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          instantiate (1 := true).
+          destruct Int.ltu eqn: Hltu. cbn. reflexivity.
+          exfalso. unfold Int.ltu in Hltu. admit.
+        }
+        one_step. (* internal step of rot13.c: Sskip *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Ssequence *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Scall *)
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          - apply deref_loc_reference. reflexivity.
+          - replace (unsigned (add zero (mul (repr 1) (of_intu (Int.repr i))))) with i.
+            2: admit.
+            (* instantiate (1 := decode_val Mint8unsigned [nth (Z.to_nat i) (map Byte bytes) Undef]). *)
+            instantiate (1 := Vint (Int.repr (Byte.unsigned (nth (Z.to_nat i) bytes (Byte.repr 0))))).
+            admit.
+          - constructor. cbn. admit.
+        }
+        one_step. (* internal step of rot13.c: call rot13 *)
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          - solve_list_norepet.
+          - econstructor.
+        }
+
+
   Admitted.
 
 End ROT13_FSIM.
