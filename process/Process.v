@@ -328,6 +328,128 @@ Section INIT_C.
     |}.
 End INIT_C.
 
+Require Import Machregs Asm.
+
+Section INIT_ASM.
+  Context (prog: program).
+  Let sk := erase_program prog.
+  Section WITH_SE.
+
+    Context (se: Genv.symtbl).
+    Let ge := Genv.globalenv se prog.
+    Inductive init_asm_initial_state (q: query li_wp) : option int -> Prop :=
+    | init_asm_initial_state_intro: init_asm_initial_state q None.
+    Inductive init_asm_at_external: option int -> query li_asm -> Prop :=
+    | init_asm_at_external_intro m rs f main:
+      init_mem se sk = Some m ->
+      AST.prog_main prog = Some main ->
+      (prog_defmap prog) ! main = Some (Gfun f) ->
+      Genv.find_funct ge rs#PC = Some f ->
+      init_asm_at_external None (rs, m).
+    Inductive init_asm_after_external: option int -> reply li_asm -> option int -> Prop :=
+    | init_asm_after_external_intro i rs m:
+      rs#(IR RAX) = Vint i ->
+      init_asm_after_external None (rs, m) (Some i).
+    Inductive init_asm_final_state: option int -> reply li_wp -> Prop :=
+    | inic_asm_final_state_intro i: init_asm_final_state (Some i) i.
+
+  End WITH_SE.
+  Program Definition init_asm: Smallstep.semantics li_asm li_wp :=
+    {|
+      activate se :=
+        {|
+          Smallstep.step _ _ _ _ := False;
+          Smallstep.initial_state := init_asm_initial_state;
+          Smallstep.at_external := init_asm_at_external se;
+          Smallstep.after_external := init_asm_after_external;
+          Smallstep.final_state := init_asm_final_state;
+          Smallstep.globalenv := Genv.globalenv se prog;
+        |};
+      skel := sk;
+      footprint i := False
+    |}.
+End INIT_ASM.
+
+Require Import Compiler.
+
+Section INIT_C_ASM.
+
+  Local Transparent Archi.ptr64.
+
+  Lemma init_c_asm p tp:
+    match_prog p tp -> forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
+  Proof.
+    intros H. assert (Hsk: erase_program p = erase_program tp). admit.
+    constructor. econstructor. apply Hsk.
+    intros. reflexivity.
+    intros. instantiate (1 := fun _ _ _ => _). cbn beta. destruct H0.
+    eapply forward_simulation_step with (match_states := eq).
+    - intros. inv H0. inv H2.
+      eexists; split; eauto. constructor.
+    - intros. inv H2. exists r1. split; constructor.
+    - intros. inv H2.
+      eexists _, ((Pregmap.init Vundef)#PC <- vf, m).
+      repeat apply conj.
+      + admit.
+      + unfold cc_compcert.
+        (* cklr *)
+        instantiate (1 := (se1, existT _ 0%nat _, _)).
+        exists (cq vf main_sig [] m). split.
+        { reflexivity. }
+        (* inv wt_c *)
+        instantiate (1 := (se1, (se1, main_sig), _)).
+        exists (cq vf main_sig [] m). split.
+        { repeat constructor. }
+        (* lessdef_c *)
+        instantiate (1 := (se1, tt, _)).
+        exists (cq vf main_sig [] m). split.
+        { repeat constructor. }
+        (* cc_c_locset *)
+        instantiate (1 := (se1, main_sig, _)).
+        eexists (Conventions.lq vf main_sig (CallConv.make_locset (Mach.Regmap.init Vundef) m Vundef) m). split.
+        { constructor. unfold Conventions1.loc_arguments. cbn.
+          destruct Archi.win64; reflexivity. }
+        (* cc_locset_mach *)
+        instantiate (1 := (se1, CallConv.lmw main_sig (Mach.Regmap.init Vundef) m Vundef, _)).
+        eexists (Mach.mq vf Vundef Vundef (Mach.Regmap.init Vundef) m). split.
+        { repeat constructor. red.
+          unfold Conventions.size_arguments. cbn.
+          destruct Archi.win64; reflexivity. }
+        (* cc_mach_asm *)
+        instantiate (1 := (se1, ((Pregmap.init Vundef)#PC <- vf, Mem.nextblock m), _)).
+        eexists ((Pregmap.init Vundef)#PC <- vf, m). split.
+        {
+          admit.
+        }
+        (* cc_asm vainj *)
+        instantiate (1 := (se1, Inject.injw inject_id _ _)).
+        repeat apply conj.
+        * cbn. admit.
+        * admit.
+        * cbn. admit.
+      + cbn. repeat apply conj; eauto. constructor. eauto.
+        constructor. cbn. admit. admit. admit.
+      + intros. inv H2. exists (Some i). split; eauto.
+        cbn in H0.
+        destruct H0 as (r3 & Hr3 & HR). inv Hr3.
+        destruct HR as (r3 & Hr3 & HR). inv Hr3.
+        destruct HR as (r3 & Hr3 & HR). inv Hr3. inv H9.
+        destruct HR as (r3 & Hr3 & HR). inv Hr3. cbn in H9.
+        destruct HR as (r3 & Hr3 & HR). inv Hr3.
+        specialize (H13 AX). rewrite <- H9 in H13.
+        exploit H13. cbn. left. reflexivity. intros HAX.
+        destruct HR as ((rs & mx) & Hr3 & Hr4). inv Hr3.
+        specialize (H20 AX). rewrite HAX in H20. cbn in H20.
+        destruct Hr4 as ((? & ?) & ? & Hr). destruct r2.
+        inv Hr. specialize (H7 RAX). rewrite <- H20 in H7.
+        destruct H2. cbn in H10. cbn in H7. inv H7.
+        constructor. easy.
+    - easy.
+    - easy.
+  Admitted.
+
+End INIT_C_ASM.
+
 Definition with_ (liA liB: language_interface): language_interface :=
   {|
     query := sum (query liA) (query liB);
