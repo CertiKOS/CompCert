@@ -778,24 +778,24 @@ Definition rot13_main_t_id: positive := 9.
 Require Import Cop.
 
 Definition rot13_rot13_body : statement :=
-  let c := Etempvar rot13_rot13_c_id tchar in
-  let a := Econst_int (Int.repr 65) tint in
-  let z := Econst_int (Int.repr 91) tint in
-  let m := Econst_int (Int.repr 78) tint in
+  let c := Evar rot13_rot13_c_id tchar in
+  (* let a := Econst_int (Int.repr 65) tint in *)
+  (* let z := Econst_int (Int.repr 91) tint in *)
+  let m := Econst_int (Int.repr 109) tint in
   let thirteen := Econst_int (Int.repr 13) tint in
-  Sifthenelse
-    (* if c >= 'a' && c <= 'z' *)
-    (Ebinop Oand (Ebinop Oge c a tint) (Ebinop Ole c z tint) tint)
-    (
-      (* if c > 'm' *)
-      Sifthenelse (Ebinop Ogt c m tint)
-        (* return c - 13 *)
-        (Sreturn (Some (Ebinop Osub c thirteen tint)))
+  (* Sifthenelse *)
+  (*   (* if c >= 'a' && c <= 'z' *) *)
+  (*   (Ebinop Oand (Ebinop Oge c a tint) (Ebinop Ole c z tint) tint) *)
+  (*   ( *)
+      (* if c <= 'm' *)
+      Sifthenelse (Ebinop Ole c m tint)
         (* return c + 13 *)
-        (Sreturn (Some (Ebinop Oadd c thirteen tint)))
-    )
-    (* return c *)
-    (Sreturn (Some c)).
+        (Sreturn (Some (Ebinop Osub c thirteen tint)))
+        (* return c - 13 *)
+        (Sreturn (Some (Ebinop Oadd c thirteen tint))).
+    (* ) *)
+    (* (* return c *) *)
+    (* (Sreturn (Some c)). *)
 
 Definition rot13_rot13 : function :=
   {|
@@ -1178,6 +1178,12 @@ Section ROT13_FSIM.
           rewrite map_length in Hm1. apply Hm1. }
       (* looping *)
       + edestruct rot13_rot13_block as [b [Hb1 Hb2]]; eauto.
+        edestruct (Mem.alloc_succeed m 0 1) as ((m1 & b1) & Hmb). admit.
+        assert (exists m2, Mem.store Mint8unsigned m1 b1 (unsigned zero) (Vint (Int.repr (Byte.unsigned (nth (Z.to_nat i) bytes (Byte.repr 0))))) = Some m2)
+                 as (m2 & Hm2). admit.
+        assert (exists m3,   Mem.free_list m2
+                          (blocks_of_env (Smallstep.globalenv (semantics1 rot13_program se1)) (PTree.set rot13_rot13_c_id (b1, tchar) empty_env)) =
+                          Some m3) as (m3 & Hm3). admit.
         eexists. split.
         eapply plus_left. (* internal step of rot13.c: Sloop *)
         { eapply step2. eapply step1. unfold state_i. crush_step. }
@@ -1202,14 +1208,33 @@ Section ROT13_FSIM.
             (* instantiate (1 := decode_val Mint8unsigned [nth (Z.to_nat i) (map Byte bytes) Undef]). *)
             instantiate (1 := Vint (Int.repr (Byte.unsigned (nth (Z.to_nat i) bytes (Byte.repr 0))))).
             admit.
-          - constructor. cbn. admit.
+          - constructor. cbn.  admit.
         }
         one_step. (* internal step of rot13.c: call rot13 *)
         { eapply step2. eapply step1; crush_step; crush_expr.
           - solve_list_norepet.
+          - econstructor. apply Hmb. constructor.
           - econstructor.
+            + reflexivity.
+            + eapply assign_loc_value. reflexivity. cbn. apply Hm2.
+            + constructor.
+          - admit.
         }
-
+        one_step.
+        { eapply step2. eapply step1; crush_step.
+          - admit.
+          - instantiate (1 := true). admit.
+        }
+        one_step.
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          - erewrite Mem.load_store_same; eauto.
+          - cbn. crush_expr.
+          - cbn. reflexivity.
+        }
+        one_step.
+        { eapply step2. eapply step1; crush_step. }
+        one_step.
+        { eapply step2. eapply step1; crush_step. }
 
   Admitted.
 
