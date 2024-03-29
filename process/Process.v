@@ -299,9 +299,10 @@ Section INIT_C.
     Inductive init_c_initial_state (q: query li_wp) : option int -> Prop :=
     | init_c_initial_state_intro: init_c_initial_state q None.
     Inductive init_c_at_external: option int -> query li_c -> Prop :=
-    | init_c_at_external_intro vf m f main:
+    | init_c_at_external_intro vf m f main b:
       init_mem se sk = Some m ->
-      Genv.find_funct ge vf = Some f ->
+      Genv.invert_symbol se b = Some main ->
+      vf = Vptr b Ptrofs.zero ->
       prog_main prog = Some main ->
       (prog_defmap prog) ! main = Some (Gfun f) ->
       init_c_at_external None (cq vf main_sig [] m).
@@ -340,11 +341,17 @@ Section INIT_ASM.
     Inductive init_asm_initial_state (q: query li_wp) : option int -> Prop :=
     | init_asm_initial_state_intro: init_asm_initial_state q None.
     Inductive init_asm_at_external: option int -> query li_asm -> Prop :=
-    | init_asm_at_external_intro m rs f main:
+    | init_asm_at_external_intro m rs f main vf b:
       init_mem se sk = Some m ->
       AST.prog_main prog = Some main ->
       (prog_defmap prog) ! main = Some (Gfun f) ->
-      Genv.find_funct ge rs#PC = Some f ->
+      Genv.invert_symbol se b = Some main ->
+      vf = Vptr b Ptrofs.zero ->
+      (* (* TODO: use invert_symbol to associate main with a block *) *)
+      (* Genv.find_funct ge vf = Some f -> *)
+      (* [RSP] need to be qualified as Mach.valid_blockv, so it's using vf instead
+      of Vnullptr. See Mach.v for more details *)
+      rs = (((Pregmap.init Vundef) # PC <- vf) # RSP <- vf) # RA <- Vnullptr ->
       init_asm_at_external None (rs, m).
     Inductive init_asm_after_external: option int -> reply li_asm -> option int -> Prop :=
     | init_asm_after_external_intro i rs m:
@@ -379,7 +386,9 @@ Section INIT_C_ASM.
   Lemma init_c_asm p tp:
     match_prog p tp -> forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
   Proof.
-    intros H. assert (Hsk: erase_program p = erase_program tp). admit.
+    intros H. assert (Hsk: erase_program p = erase_program tp).
+    { apply clight_semantic_preservation in H as [H1 ?].
+      apply H1. }
     constructor. econstructor. apply Hsk.
     intros. reflexivity.
     intros. instantiate (1 := fun _ _ _ => _). cbn beta. destruct H0.
@@ -388,47 +397,68 @@ Section INIT_C_ASM.
       eexists; split; eauto. constructor.
     - intros. inv H2. exists r1. split; constructor.
     - intros. inv H2.
-      eexists _, ((Pregmap.init Vundef)#PC <- vf, m).
+      eexists _, (_, m).
       repeat apply conj.
-      + admit.
+      + assert (exists tf, (prog_defmap tp) ! main = Some (Gfun tf)) as (tf & Htf).
+        { assert ((prog_defmap (erase_program p)) ! main = Some (Gfun tt)).
+          rewrite erase_program_defmap. unfold option_map. rewrite H7. reflexivity.
+          rewrite Hsk in H0. rewrite erase_program_defmap in H0.
+          unfold option_map in H0.
+          destruct (prog_defmap tp) ! main as [[tf|]|] eqn: Htf; inv H0.
+          exists tf. split; eauto. }
+        econstructor; eauto.
+        * rewrite <- Hsk. eauto.
+        * replace (AST.prog_main tp) with (AST.prog_main (erase_program tp))
+            by reflexivity.
+          rewrite <- Hsk. apply H6.
       + unfold cc_compcert.
         (* cklr *)
         instantiate (1 := (se1, existT _ 0%nat _, _)).
-        exists (cq vf main_sig [] m). split.
+        exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
         { reflexivity. }
         (* inv wt_c *)
         instantiate (1 := (se1, (se1, main_sig), _)).
-        exists (cq vf main_sig [] m). split.
+        exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
         { repeat constructor. }
         (* lessdef_c *)
         instantiate (1 := (se1, tt, _)).
-        exists (cq vf main_sig [] m). split.
+        exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
         { repeat constructor. }
         (* cc_c_locset *)
         instantiate (1 := (se1, main_sig, _)).
-        eexists (Conventions.lq vf main_sig (CallConv.make_locset (Mach.Regmap.init Vundef) m Vundef) m). split.
+        eexists (Conventions.lq (Vptr b Ptrofs.zero) main_sig (CallConv.make_locset (Mach.Regmap.init Vundef) m (Vptr b Ptrofs.zero)) m). split.
         { constructor. unfold Conventions1.loc_arguments. cbn.
           destruct Archi.win64; reflexivity. }
         (* cc_locset_mach *)
-        instantiate (1 := (se1, CallConv.lmw main_sig (Mach.Regmap.init Vundef) m Vundef, _)).
-        eexists (Mach.mq vf Vundef Vundef (Mach.Regmap.init Vundef) m). split.
-        { repeat constructor. red.
-          unfold Conventions.size_arguments. cbn.
-          destruct Archi.win64; reflexivity. }
+        set (rs := ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # SP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr)).
+        instantiate (1 := (se1, CallConv.lmw main_sig (Mach.Regmap.init Vundef) m (Vptr b Ptrofs.zero), _)).
+        eexists (Mach.mq rs#PC rs#SP rs#RA (Mach.Regmap.init Vundef) m). split.
+        { repeat constructor.
+          red. unfold Conventions.size_arguments. cbn. destruct Archi.win64; reflexivity. }
         (* cc_mach_asm *)
-        instantiate (1 := (se1, ((Pregmap.init Vundef)#PC <- vf, Mem.nextblock m), _)).
-        eexists ((Pregmap.init Vundef)#PC <- vf, m). split.
-        {
-          admit.
-        }
+        instantiate (1 := (se1, ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # RSP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr, Mem.nextblock m), _)).
+        eexists ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # RSP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr, m). split.
+        { econstructor; cbn; try congruence.
+          - constructor. erewrite init_mem_nextblock; eauto.
+            apply Genv.invert_find_symbol in H4.
+            exploit @Genv.genv_symb_range; eauto.
+          - intros. destruct r; eauto. }
         (* cc_asm vainj *)
-        instantiate (1 := (se1, Inject.injw inject_id _ _)).
-        repeat apply conj.
-        * cbn. admit.
-        * admit.
-        * cbn. admit.
+        instantiate (1 := (se1, Inject.injw (Mem.flat_inj (Mem.nextblock m)) (Mem.nextblock m) (Mem.nextblock m))).
+        repeat apply conj; cbn; eauto; try easy.
+        * intros. destruct r; eauto; cbn; try constructor.
+          eapply Val.inject_ptr. unfold Mem.flat_inj. admit. admit. admit.
+        * constructor; cbn.
+          -- erewrite init_mem_nextblock; eauto. reflexivity.
+          -- intros x Hx.  admit.
+          -- constructor. unfold Mem.inject.
+             (* Search (Mem.inject _ ?m ?m). *)
+             (* Search Mem.inject_neutral. *)
+             admit.
       + cbn. repeat apply conj; eauto. constructor. eauto.
-        constructor. cbn. admit. admit. admit.
+        constructor; cbn.
+        (* Search (Genv.match_stbls _ ?se ?se). *)
+        admit. admit. admit.
       + intros. inv H2. exists (Some i). split; eauto.
         cbn in H0.
         destruct H0 as (r3 & Hr3 & HR). inv Hr3.
@@ -441,8 +471,8 @@ Section INIT_C_ASM.
         destruct HR as ((rs & mx) & Hr3 & Hr4). inv Hr3.
         specialize (H20 AX). rewrite HAX in H20. cbn in H20.
         destruct Hr4 as ((? & ?) & ? & Hr). destruct r2.
-        inv Hr. specialize (H7 RAX). rewrite <- H20 in H7.
-        destruct H2. cbn in H10. cbn in H7. inv H7.
+        inv Hr. specialize (H5 RAX). rewrite <- H20 in H5.
+        destruct H2. cbn in H10. cbn in H5. inv H5.
         constructor. easy.
     - easy.
     - easy.
@@ -477,7 +507,7 @@ Definition li_sys :=
   |}.
 
 Section SYS.
-  Context (prog: program).
+  Context (prog: Clight.program).
   Let sk := erase_program prog.
   Section WITH_SE.
     Context (se: Genv.symtbl).
@@ -506,8 +536,6 @@ Section SYS.
     | sys_c_at_external_write bytes m:
       sys_c_at_external (sys_write_query bytes m) (inr (write_query bytes)).
 
-    Search int64.
-
     Inductive sys_c_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
     | sys_c_after_external_read n b ofs m bytes:
       Z.of_nat (length bytes) <= Int64.unsigned n ->
@@ -525,7 +553,7 @@ Section SYS.
       sys_c_final_state (sys_write_reply n m) (cr (Vint n) m).
 
   End WITH_SE.
-  Definition sys_c: semantics (li_sys + li_sys) li_c :=
+  Definition sys_c: Smallstep.semantics (li_sys + li_sys) li_c :=
     {|
       activate se :=
         {|
@@ -542,14 +570,102 @@ Section SYS.
 
 End SYS.
 
+Section SYS_ASM.
+  Context (prog: Asm.program).
+  Let sk := erase_program prog.
+  Section WITH_SE.
+    Context (se: Genv.symtbl).
+    Let ge := Genv.globalenv se prog.
+
+    Definition read_asm : fundef := AST.External (EF_external "read_asm" rw_sig).
+    Definition write_asm : fundef := AST.External (EF_external "write_asm" rw_sig).
+    Inductive sys_asm_initial_state: query li_asm -> sys_state -> Prop :=
+    | sys_asm_initial_state_read m n b ofs rs:
+      Genv.find_funct ge rs#PC = Some read_asm ->
+      rs#RDI = Vint (Int.repr 0) ->
+      rs#RSI = Vptr b ofs ->
+      rs#RDX = Vlong n ->
+      sys_asm_initial_state (rs, m) (sys_read_query n b ofs m)
+    | sys_asm_initial_state_write m bytes bytes_val b ofs n rs:
+      Genv.find_funct ge rs#PC = Some write_asm ->
+      rs#RDI = Vint (Int.repr 1) ->
+      rs#RSI = Vptr b ofs ->
+      rs#RDX = Vlong n ->
+      Mem.loadbytes m b (Ptrofs.unsigned ofs) (Int64.unsigned n) = Some bytes_val ->
+      map Byte bytes = bytes_val ->
+      sys_asm_initial_state (rs, m) (sys_write_query bytes m).
+
+    Inductive sys_asm_at_external: sys_state -> query (li_sys + li_sys) -> Prop :=
+    | sys_asm_at_external_read n b ofs m:
+      sys_asm_at_external (sys_read_query n b ofs m) (inl (read_query n))
+    | sys_asm_at_external_write bytes m:
+      sys_asm_at_external (sys_write_query bytes m) (inr (write_query bytes)).
+
+    Inductive sys_asm_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
+    | sys_asm_after_external_read n b ofs m bytes:
+      Z.of_nat (length bytes) <= Int64.unsigned n ->
+      sys_asm_after_external (sys_read_query n b ofs m) (inl (read_reply bytes)) (sys_read_reply bytes b ofs m)
+    | sys_asm_after_external_write n m bytes:
+      sys_asm_after_external (sys_write_query bytes m) (inr (write_reply n)) (sys_write_reply n m).
+
+    Inductive sys_asm_final_state: sys_state -> reply li_asm -> Prop :=
+    | sys_asm_final_state_read bytes b ofs bytes_val m len m' (rs: regset):
+      len = Z.of_nat (length bytes) ->
+      Mem.storebytes m b (Ptrofs.unsigned ofs) bytes_val = Some m' ->
+      map Byte bytes = bytes_val ->
+      rs#RAX = Vint (Int.repr len) ->
+      sys_asm_final_state (sys_read_reply bytes b ofs m) (rs, m')
+    | sys_asm_final_state_write n m (rs: regset):
+      rs#RAX = Vint n ->
+      sys_asm_final_state (sys_write_reply n m) (rs, m).
+
+  End WITH_SE.
+  Definition sys_asm: Smallstep.semantics (li_sys + li_sys) li_asm :=
+    {|
+      activate se :=
+        {|
+          Smallstep.step _ _ _ _ := False;
+          Smallstep.initial_state := sys_asm_initial_state se;
+          Smallstep.at_external := sys_asm_at_external;
+          Smallstep.after_external := sys_asm_after_external;
+          Smallstep.final_state := sys_asm_final_state;
+          Smallstep.globalenv := Genv.globalenv se prog;
+        |};
+      skel := sk;
+      footprint i := False
+    |}.
+
+End SYS_ASM.
+
+Section SYS_C_ASM.
+
+  Local Transparent Archi.ptr64.
+
+  Lemma sys_c_asm p tp:
+    match_prog p tp -> forward_simulation 1 cc_compcert (sys_c p) (sys_asm tp).
+  Proof.
+    intros H. assert (Hsk: erase_program p = erase_program tp).
+    { apply clight_semantic_preservation in H as [H1 ?].
+      apply H1. }
+    constructor. econstructor. apply Hsk.
+    intros. reflexivity.
+    intros. instantiate (1 := fun _ _ _ => _). cbn beta.
+    eapply forward_simulation_step with (match_states := eq).
+    - intros. inv H3.
+      + unfold cc_compcert in *. cbn in wB, H2 |- *.
+        eprod_crush. destruct s9. inv H3.
+  Admitted.
+
+End SYS_C_ASM.
+
 Require Import CategoricalComp.
 
-Definition load_c (prog: program) : semantics (li_sys + li_sys) li_wp :=
+Definition load_c (prog: Clight.program) : Smallstep.semantics (li_sys + li_sys) li_wp :=
   let sk := AST.erase_program prog in
   comp_semantics' (init_c prog)
     (comp_semantics' (semantics1 prog) (sys_c prog) sk) sk.
 
-Definition secret_c : semantics (li_sys + li_sys) li_wp := load_c secret_program.
+Definition secret_c : Smallstep.semantics (li_sys + li_sys) li_wp := load_c secret_program.
 
 Section SECRET_SPEC.
 
@@ -571,7 +687,7 @@ Section SECRET_SPEC.
   | secret_step1: secret_step secret1 E0 secret2
   | secret_step2: secret_step secret3 E0 secret4.
 
-  Definition secret_spec: semantics (li_sys + li_sys) li_wp :=
+  Definition secret_spec: Smallstep.semantics (li_sys + li_sys) li_wp :=
     {|
       activate se :=
         {|
@@ -702,7 +818,7 @@ Ltac crush_step := cbn;
   | [ |- Step _ (State _ ?s _ _ _ _) _ _ ] => is_const s; unfold s; crush_step
   end.
 
-Lemma genv_funct_symbol se id b f (p: program):
+Lemma genv_funct_symbol se id b f (p: Clight.program):
   Genv.find_symbol se id = Some b ->
   (prog_defmap p) ! id = Some (Gfun f) ->
   Genv.find_funct (globalenv se p) (Vptr b Ptrofs.zero) = Some f.
@@ -850,6 +966,7 @@ Section SECRET_FSIM.
         {
           eapply step_push.
           - econstructor; try reflexivity; eauto.
+            apply Genv.find_invert_symbol; eauto.
           - constructor. econstructor; eauto.
             + constructor.
             + cbn. apply init_mem_nextblock in Hm1.
