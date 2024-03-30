@@ -9,11 +9,137 @@ Import ListNotations.
 
 Require Import Load With InitMem.
 
+Section NTH.
+
+  Inductive nth {A}: list A -> nat -> A -> Prop :=
+  | nth_this a l: nth (a :: l) 0%nat a
+  | nth_next a b n l:
+    nth l n b -> nth (a :: l) (S n) b.
+
+  Open Scope Z_scope.
+  Local Transparent Mem.loadbytes Mem.load.
+
+  Lemma getN_nth_exists len memvals bytes start i:
+    Mem.getN len start memvals = map Byte bytes ->
+    (i < len)%nat ->
+    exists byte : byte, nth bytes i byte.
+  Proof.
+    revert start i len memvals. induction bytes.
+    - intros. destruct len.
+      + inv H0.
+      + inv H.
+    - intros. destruct len.
+      + inv H0.
+      + destruct i.
+        * exists a. constructor.
+        * cbn in H. inv H.
+          exploit IHbytes. eauto.
+          instantiate (1 := i). lia.
+          intros (b & Hb). exists b. constructor. eauto.
+  Qed.
+
+  Lemma loadbytes_nth m b bytes i len:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len ->
+    exists byte, nth bytes (Z.to_nat i) byte.
+  Proof.
+    intros H Hi. unfold Mem.loadbytes in H.
+    destruct Mem.range_perm_dec eqn: Hp; try congruence. clear Hp.
+    inv H.
+    exploit getN_nth_exists; eauto.
+    lia.
+  Qed.
+
+  Lemma getN_nth' len start i bytes byte memvals:
+    Mem.getN len start memvals = map Byte bytes ->
+    (0 <= i < len)%nat ->
+    nth bytes i byte ->
+    ZMap.get (start + (Z.of_nat i)) memvals = Byte byte.
+  Proof.
+    (* TODO: cleanup *)
+    revert start len i byte memvals. induction bytes.
+    - intros. inv H1.
+    - intros. inv H1.
+      + cbn. destruct len. lia. cbn in H. inv H.
+        rewrite Z.add_0_r. reflexivity.
+      + cbn. destruct len. lia. cbn in H. inv H.
+        exploit IHbytes. 1,3: eauto. lia.
+        intros Hx.
+        assert (Z.pos (Pos.of_succ_nat n) = 1 + Z.of_nat n). lia.
+        rewrite H. rewrite Z.add_assoc. apply Hx.
+  Qed.
+
+  Lemma getN_nth len i bytes byte memvals:
+    Mem.getN len 0 memvals = map Byte bytes ->
+    (i < len)%nat ->
+    nth bytes i byte ->
+    ZMap.get (Z.of_nat i) memvals = Byte byte.
+  Proof. intros. exploit getN_nth'; eauto. lia. Qed.
+
+  Lemma loadbyte' m b bytes i len byte:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len ->
+    nth bytes (Z.to_nat i) byte ->
+    Mem.load Mint8unsigned m b i = Some (Vint (Int.repr (Byte.unsigned byte))).
+  Proof.
+    intros H Hi Hb. unfold Mem.loadbytes in H. unfold Mem.load.
+    destruct Mem.range_perm_dec eqn: Hp; try congruence. clear Hp.
+    destruct Mem.valid_access_dec.
+    2: { exfalso. apply n. unfold Mem.valid_access. split; cbn.
+         - intros x Hx. apply r. lia.
+         - apply Z.divide_1_l. }
+    inv H. f_equal. cbn. change (Pos.to_nat 1) with 1%nat.
+    unfold Mem.getN.
+    exploit getN_nth. 1,3: eauto. lia. intros A.
+    rewrite Z_to_nat_max in A. rewrite Z.max_l in A. 2: lia. rewrite A. cbn.
+    f_equal. unfold Int.zero_ext.
+    rewrite Zbits.Zzero_ext_mod. 2: lia.
+    pose proof (Byte.unsigned_range_2 byte) as Hx; cbn in Hx.
+    rewrite Int.unsigned_repr.
+    2: { unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia. }
+    change (two_p 8) with 256.
+    f_equal. rewrite Z.mod_small.
+    unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia.
+    unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia.
+  Qed.
+
+  Lemma loadbyte m b bytes i len:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len ->
+    exists byte,
+      nth bytes (Z.to_nat i) byte /\
+        Mem.load Mint8unsigned m b i = Some (Vint (Int.repr (Byte.unsigned byte))).
+  Proof.
+    intros. exploit loadbytes_nth; eauto.
+    intros (byte & Hbyte). exists byte. split; eauto.
+    eapply loadbyte'; eauto.
+  Qed.
+
+  Inductive nth_update {A}: list A -> nat -> (A -> A) -> list A -> Prop :=
+  | nth_update_this a f l: nth_update (a :: l) 0%nat f (f a :: l)
+  | nth_update_next a n f l l':
+    nth_update l n f l' -> nth_update (a :: l) (S n) f (a :: l').
+
+  Lemma storebyte m b bytes i len byte m' bytes' f:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len -> nth bytes (Z.to_nat i) byte ->
+    Mem.store Mint8unsigned m b i (Vint (Int.repr (Byte.unsigned (f byte)))) = Some m' ->
+    nth_update bytes (Z.to_nat i) f bytes' ->
+    Mem.loadbytes m' b 0 len = Some (map Byte bytes').
+  Admitted.
+
+  Lemma nth_update_length {A} (l: list A) n f l':
+    nth_update l n f l' -> length l = length l'.
+  Proof. intros H. induction H; cbn; lia. Qed.
+
+End NTH.
+
 Notation hello_bytes := [ Byte.repr 104; Byte.repr 101; Byte.repr 108; Byte.repr 108; Byte.repr 111 ].
 Notation urbby_bytes := [ Byte.repr 117; Byte.repr 114; Byte.repr 98; Byte.repr 98; Byte.repr 121].
-Definition rot13_byte : byte -> byte. Admitted.
-Definition rot13_bytes_i : list byte -> Z -> list byte. Admitted.
-Definition rot13_bytes : list byte -> list byte. Admitted.
+Notation tqaax_bytes := [ Byte.repr 116; Byte.repr 113; Byte.repr 97; Byte.repr 97; Byte.repr 120].
+Definition rot13'_byte (b: byte) : byte := Byte.sub b Byte.one.
+Definition rot13_byte (b: byte) : byte. Admitted.
+Definition rot13_bytes : list byte -> list byte := map rot13_byte.
 Lemma rot13_bytes_hello: rot13_bytes hello_bytes = urbby_bytes. Admitted.
 Lemma rot13_bytes_urbby: rot13_bytes urbby_bytes = hello_bytes. Admitted.
 
@@ -262,7 +388,7 @@ Proof.
   rewrite H2. reflexivity.
 Qed.
 
-Require Example.
+Hint Constructors Cop.val_casted.
 
 Section SECRET_FSIM.
 
@@ -299,13 +425,11 @@ Section SECRET_FSIM.
     (prog_defmap secret_program) ! secret_msg_id = Some (Gvar msg_globvar).
   Proof. reflexivity. Qed.
 
-  Import Ptrofs.
-
   Lemma secret_init_mem se:
     Genv.valid_for (erase_program secret_program) se ->
     exists m, init_mem se (erase_program secret_program) = Some m /\
            (forall b, Genv.find_symbol se secret_msg_id = Some b ->
-                 Mem.loadbytes m b (unsigned zero) 5 = Some (map Byte urbby_bytes)).
+                 Mem.loadbytes m b (Ptrofs.unsigned Ptrofs.zero) 5 = Some (map Byte urbby_bytes)).
   Proof.
     intros Hvalid.
     edestruct init_mem_exists with
@@ -335,7 +459,7 @@ Section SECRET_FSIM.
   Lemma main_block se:
     Genv.valid_for (AST.erase_program secret_program) se ->
     exists b, Genv.find_symbol (globalenv se secret_program) secret_main_id = Some b /\
-           Genv.find_funct (globalenv se secret_program) (Vptr b zero) = Some (Internal secret_main).
+           Genv.find_funct (globalenv se secret_program) (Vptr b Ptrofs.zero) = Some (Internal secret_main).
   Proof.
     intros Hse.
     exploit @Genv.find_def_symbol; eauto.
@@ -347,7 +471,7 @@ Section SECRET_FSIM.
   Lemma write_block se:
     Genv.valid_for (AST.erase_program secret_program) se ->
     exists b, Genv.find_symbol (globalenv se secret_program) secret_write_id = Some b /\
-           Genv.find_funct (globalenv se secret_program) (Vptr b zero) = Some write.
+           Genv.find_funct (globalenv se secret_program) (Vptr b Ptrofs.zero) = Some write.
   Proof.
     intros Hse.
     exploit @Genv.find_def_symbol; eauto.
@@ -559,7 +683,7 @@ Section ROT13_SPEC.
     rot13_spec_step (rot13_write0 bytes) E0 (rot13_writei bytes 0)
   | rot13_spec_stepi bytes bytes' i:
     0 <= i < Z.of_nat (length bytes) ->
-    bytes' = rot13_bytes_i bytes i ->
+    nth_update bytes (Z.to_nat i) rot13'_byte bytes' ->
     rot13_spec_step (rot13_writei bytes i) E0 (rot13_writei bytes' (i + 1))
   | rot13_spec_step3 bytes i:
     i = Z.of_nat (length bytes) ->
@@ -760,110 +884,6 @@ Section ROT13_FSIM.
   | rot13_match_state6:
     rot13_match_state se rot13_ret (st1 (init_c rot13_program) L1 (Some Int.zero)).
 
-  Inductive nth {A}: list A -> nat -> A -> Prop :=
-  | nth_this a l: nth (a :: l) 0%nat a
-  | nth_next a b n l:
-    nth l n b -> nth (a :: l) (S n) b.
-
-  Open Scope Z_scope.
-  Local Transparent Mem.loadbytes Mem.load.
-
-  Lemma getN_nth_exists len memvals bytes start i:
-    Mem.getN len start memvals = map Byte bytes ->
-    (i < len)%nat ->
-    exists byte : byte, nth bytes i byte.
-  Proof.
-    revert start i len memvals. induction bytes.
-    - intros. destruct len.
-      + inv H0.
-      + inv H.
-    - intros. destruct len.
-      + inv H0.
-      + destruct i.
-        * exists a. constructor.
-        * cbn in H. inv H.
-          exploit IHbytes. eauto.
-          instantiate (1 := i). lia.
-          intros (b & Hb). exists b. constructor. eauto.
-  Qed.
-
-  Lemma loadbytes_nth m b bytes i len:
-    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
-    0 <= i < len ->
-    exists byte, nth bytes (Z.to_nat i) byte.
-  Proof.
-    intros H Hi. unfold Mem.loadbytes in H.
-    destruct Mem.range_perm_dec eqn: Hp; try congruence. clear Hp.
-    inv H.
-    exploit getN_nth_exists; eauto.
-    lia.
-  Qed.
-
-  Lemma getN_nth' len start i bytes byte memvals:
-    Mem.getN len start memvals = map Byte bytes ->
-    (0 <= i < len)%nat ->
-    nth bytes i byte ->
-    ZMap.get (start + (Z.of_nat i)) memvals = Byte byte.
-  Proof.
-    (* TODO: cleanup *)
-    revert start len i byte memvals. induction bytes.
-    - intros. inv H1.
-    - intros. inv H1.
-      + cbn. destruct len. lia. cbn in H. inv H.
-        rewrite Z.add_0_r. reflexivity.
-      + cbn. destruct len. lia. cbn in H. inv H.
-        exploit IHbytes. 1,3: eauto. lia.
-        intros Hx.
-        assert (Z.pos (Pos.of_succ_nat n) = 1 + Z.of_nat n). lia.
-        rewrite H. rewrite Z.add_assoc. apply Hx.
-  Qed.
-
-  Lemma getN_nth len i bytes byte memvals:
-    Mem.getN len 0 memvals = map Byte bytes ->
-    (i < len)%nat ->
-    nth bytes i byte ->
-    ZMap.get (Z.of_nat i) memvals = Byte byte.
-  Proof. intros. exploit getN_nth'; eauto. lia. Qed.
-
-  Lemma loadbyte' m b bytes i len byte:
-    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
-    0 <= i < len ->
-    nth bytes (Z.to_nat i) byte ->
-    Mem.load Mint8unsigned m b i = Some (Vint (Int.repr (Byte.unsigned byte))).
-  Proof.
-    intros H Hi Hb. unfold Mem.loadbytes in H. unfold Mem.load.
-    destruct Mem.range_perm_dec eqn: Hp; try congruence. clear Hp.
-    destruct Mem.valid_access_dec.
-    2: { exfalso. apply n. unfold Mem.valid_access. split; cbn.
-         - intros x Hx. apply r. lia.
-         - apply Z.divide_1_l. }
-    inv H. f_equal. cbn. change (Pos.to_nat 1) with 1%nat.
-    unfold Mem.getN.
-    exploit getN_nth. 1,3: eauto. lia. intros A.
-    rewrite Z_to_nat_max in A. rewrite Z.max_l in A. 2: lia. rewrite A. cbn.
-    f_equal. unfold Int.zero_ext.
-    rewrite Zbits.Zzero_ext_mod. 2: lia.
-    pose proof (Byte.unsigned_range_2 byte) as Hx; cbn in Hx.
-    rewrite Int.unsigned_repr.
-    2: { unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia. }
-    change (two_p 8) with 256.
-    f_equal. rewrite Z.mod_small.
-    unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia.
-    unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia.
-  Qed.
-
-  Lemma loadbyte m b bytes i len:
-    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
-    0 <= i < len ->
-    exists byte,
-      nth bytes (Z.to_nat i) byte /\
-        Mem.load Mint8unsigned m b i = Some (Vint (Int.repr (Byte.unsigned byte))).
-  Proof.
-    intros. exploit loadbytes_nth; eauto.
-    intros (byte & Hbyte). exists byte. split; eauto.
-    eapply loadbyte'; eauto.
-  Qed.
-
   Lemma byte_val_casted byte:
     val_casted (Vint (Int.repr (Byte.unsigned byte))) tchar.
   Proof.
@@ -889,6 +909,27 @@ Section ROT13_FSIM.
     unfold Ptrofs.wordsize. unfold Wordsize_Ptrofs.wordsize.
     destruct Archi.ptr64; cbn; lia.
   Qed.
+
+  Lemma byte_minus_one byte:
+    Int.repr (Byte.unsigned (Byte.sub byte Byte.one)) =
+      Int.zero_ext 8 (Int.zero_ext 8 (Int.sub (Int.zero_ext 8 (Int.repr (Byte.unsigned byte))) (Int.repr 1))).
+  Proof.
+    rewrite Int.zero_ext_idem by lia.
+    unfold Int.zero_ext. rewrite !Zbits.Zzero_ext_mod by lia.
+    pose proof (Byte.unsigned_range_2 byte) as Hx; cbn in Hx.
+    repeat rewrite !Z.mod_small; try rewrite !Int.repr_unsigned.
+    - unfold Int.sub, Byte.sub. f_equal.
+      rewrite !Int.unsigned_repr; cbn; try lia.
+      unfold Byte.one.
+      repeat rewrite !Byte.unsigned_repr; cbn; try lia.
+      split; try lia.
+      admit.
+    - change (two_p 8) with 256.
+      rewrite Int.unsigned_repr; cbn; lia.
+    - admit.
+    - change (two_p 8) with 256.
+      rewrite Int.unsigned_repr; cbn; lia.
+  Admitted.
 
   Lemma rot13_fsim: forward_simulation 1 1 rot13_spec rot13_c.
   Proof.
@@ -986,7 +1027,7 @@ Section ROT13_FSIM.
         { edestruct Mem.range_perm_free as (m3 & Hm3).
           2: cbn; eexists; rewrite Hm3; eauto.
           intros p Hp. eauto with mem. }
-        assert (exists m4, Mem.store Mint8unsigned m3 buf_block i (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))) = Some m4)
+        assert (exists m4, Mem.store Mint8unsigned m3 buf_block i (Vint (Int.repr (Byte.unsigned (rot13'_byte byte)))) = Some m4)
                  as (m4 & Hm4).
         { edestruct Mem.valid_access_store as (m4 & Hm4); eauto. split; cbn.
           - intros p Hp. cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
@@ -1031,18 +1072,22 @@ Section ROT13_FSIM.
         one_step.
         { eapply step2. eapply step1. crush_step; crush_expr.
           rewrite ptrofs_lemma1 by lia.
-          replace (Vint (Int.zero_ext 8 (Int.zero_ext 8 (Int.sub (Int.zero_ext 8 (Int.repr (Byte.unsigned byte))) (Int.repr 1)))))
-            with (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))).
-          2: admit.
+          rewrite <- byte_minus_one.
           apply Hm4. }
         one_trivial_step. (* internal step of rot13.c: Sskip *)
         one_trivial_step. (* internal step of rot13.c: Sset *)
         one_trivial_step. (* internal step of rot13.c: Sskip *)
         apply star_refl.
         { econstructor; eauto with mem.
-          - admit.
-          - admit.
-          - admit.
+          - erewrite <- nth_update_length; eauto. lia.
+          - erewrite <- nth_update_length; eauto.
+          - eapply storebyte; eauto. all: erewrite <- nth_update_length; eauto.
+            cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
+            assert (buf_block <> b1).
+            { intros Hb. subst. eapply Mem.fresh_block_alloc; eauto. }
+            erewrite Mem.loadbytes_free. 2-3: eauto.
+            erewrite Mem.loadbytes_store_other. 2-3: eauto.
+            erewrite Mem.loadbytes_alloc_unchanged; eauto.
           - erewrite Mem.store_alloc_flag. 2: eauto.
             cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
             erewrite Mem.free_alloc_flag. 2: eauto.
@@ -1059,7 +1104,7 @@ Section ROT13_FSIM.
             unfold Int.add. f_equal.
             rewrite !Int.unsigned_repr; cbn; lia.
           - do 2 rewrite PTree.gso by easy. rewrite HNEQ.
-            do 4 f_equal. admit. }
+            do 4 f_equal. eapply nth_update_length; eauto. }
       (* exiting the loop and proceed to call write *)
       + edestruct rot13_write_block as [b1 [Hb3 Hb4]]; eauto.
         eexists. split.
@@ -1101,7 +1146,7 @@ Section ROT13_FSIM.
         { eapply step_pop; repeat econstructor. }
         eapply star_refl.
     - easy.
-  Admitted.
+  Qed.
 
 End ROT13_FSIM.
 
@@ -1136,18 +1181,20 @@ Section SEQ.
 
 End SEQ.
 
+Definition pipe_state := list byte.
+Instance pset_pipe_state : PSet pipe_state :=
+  { pset_init _ := [] }.
 
 Section PIPE.
 
-  Definition pipe_state := list byte.
   Definition pipe_in := (((li_sys + li_sys) + (li_sys + li_sys)) @ pipe_state)%li.
   Definition encap_pipe_in := ((li_sys + li_sys) + (li_sys + li_sys))%li.
   Definition pipe_out := (li_sys + li_sys)%li.
   Variant pipe_internal_state :=
-    | pipe1_read_query (n: int) (s: pipe_state)
+    | pipe1_read_query (n: int64) (s: pipe_state)
     | pipe1_read_reply (bytes: list byte) (s: pipe_state)
     | pipe1_write (bytes: list byte) (s: pipe_state)
-    | pipe2_read (n: int) (s: pipe_state)
+    | pipe2_read (n: int64) (s: pipe_state)
     | pipe2_write_query (bytes: list byte) (s: pipe_state)
     | pipe2_write_reply (n: int) (s: pipe_state).
 
@@ -1175,11 +1222,19 @@ Section PIPE.
     pipe_final_state (pipe1_read_reply bytes s) ((inl (inl (read_reply bytes))), s)
   | pipe_final_state2 n bytes s:
     n = Int.repr (Z.of_nat (length bytes)) ->
-    pipe_final_state (pipe1_write bytes s) ((inl (inr (write_reply n)), bytes ++ s))
-  | pipe_final_state3 n s s' bytes:
-    s = bytes ++ s' ->
-    n = Int.repr (Z.of_nat (length bytes)) ->
-    pipe_final_state (pipe2_read n s) ((inr (inl (read_reply bytes)), s'))
+    (* The old buffer is replaced. Otherwise, we'd need "open" or "reset"
+       operation to set the buffer to initial state *)
+    pipe_final_state (pipe1_write bytes s) ((inl (inr (write_reply n)), bytes))
+  | pipe_final_state3 n s:
+    (* read all the buffer if [n] is greater than or equal to the length of the
+       buffer *)
+    Int64.unsigned n >= (Z.of_nat (length s)) ->
+    pipe_final_state (pipe2_read n s) ((inr (inl (read_reply s)), []))
+  | pipe_final_state3' n s bytes bytes':
+    (* read first [n] bytes otherwise *)
+    Int64.unsigned n = (Z.of_nat (length bytes)) ->
+    s = bytes ++ bytes' ->
+    pipe_final_state (pipe2_read n s) ((inr (inl (read_reply bytes)), bytes'))
   | pipe_final_state4 n s:
     pipe_final_state (pipe2_write_reply n s) ((inr (inr (write_reply n)), s)).
 
@@ -1197,9 +1252,6 @@ Section PIPE.
       skel := empty_skel;
       footprint i := False;
     |}.
-
-  Instance pset_pipe_state : PSet pipe_state :=
-    { pset_init _ := [] }.
 
   Definition encap_pipe_operator: pipe_out +-> encap_pipe_in :=
     {|
@@ -1220,21 +1272,21 @@ Section HELLO_SPEC.
 
   (* The redundant internal step makes the simulation easier. *)
   Variant hello_state :=
-    | hello1 | hello2 | hello3 (n: int) | hello4 (n: int).
+    | hello1 | hello2 | hello3 | hello4.
   Inductive hello_spec_initial_state: query li_wp -> hello_state -> Prop :=
   | hello_spec_initial_state_intro q: hello_spec_initial_state q hello1.
   Inductive hello_spec_at_external: hello_state -> query (li_sys + li_sys) -> Prop :=
   | hello_spec_at_external_intro bytes:
-    bytes = [ Byte.repr 104; Byte.repr 101; Byte.repr 108; Byte.repr 108; Byte.repr 111 ] ->
+    bytes = tqaax_bytes ->
     hello_spec_at_external hello2 (inr (write_query bytes)).
   Inductive hello_spec_after_external: hello_state -> reply (li_sys + li_sys) -> hello_state -> Prop :=
   | hello_spec_after_external_intro n:
-    hello_spec_after_external hello2 (inr (write_reply n)) (hello3 n).
+    hello_spec_after_external hello2 (inr (write_reply n)) hello3.
   Inductive hello_spec_final_state: hello_state -> reply li_wp -> Prop :=
-  | hello_spec_final_state_intro n: hello_spec_final_state (hello4 n) n.
+  | hello_spec_final_state_intro: hello_spec_final_state hello4 Int.zero.
   Inductive hello_spec_step: hello_state -> trace -> hello_state -> Prop :=
   | hello_spec_step1: hello_spec_step hello1 E0 hello2
-  | hello_spec_step2 n: hello_spec_step (hello3 n) E0 (hello4 n).
+  | hello_spec_step2: hello_spec_step hello3 E0 hello4.
 
   Definition hello_spec: semantics (li_sys + li_sys) li_wp :=
     {|
@@ -1267,16 +1319,16 @@ Section PIPE_CORRECT.
   | pipe_match_state2 buf:
     pipe_match_state hello2
       (st2 L1 pipe_operator
-         (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write hello_bytes)), buf)
-         (pipe2_write_query hello_bytes buf))
+         (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), buf)
+         (pipe2_write_query tqaax_bytes []))
   | pipe_match_state3 buf n:
-    pipe_match_state (hello3 n)
+    pipe_match_state hello3
       (st2 L1 pipe_operator
-         (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write hello_bytes)), buf)
-         (pipe2_write_reply n buf))
-  | pipe_match_state4 n buf:
-    pipe_match_state (hello4 n)
-      (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret n), buf)).
+         (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), buf)
+         (pipe2_write_reply n []))
+  | pipe_match_state4:
+    pipe_match_state hello4
+      (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret Int.zero), [])).
 
   Local Opaque app.
 
@@ -1293,57 +1345,92 @@ Section PIPE_CORRECT.
       eexists tt, (st1 L1 _ (_, _)). split. repeat constructor; eauto.
       eexists tt, (tt, (tt, (tt, p0))). split; repeat constructor; eauto.
     - intros. cbn in *. eprod_crush. inv H3. inv H2.
-      exists (i0, (tt, buf)). split.
-      * exists (i0, tt, buf). split; repeat constructor; eauto.
-        cbn. exists i0. split; repeat constructor.
-      * exists (tt, (tt, (tt, buf))). split; repeat constructor; eauto.
+      exists (Int.zero, (tt, [])). split.
+      * exists (Int.zero, tt, []). split; repeat constructor; eauto.
+        cbn. exists Int.zero. split; repeat constructor.
+      * exists (tt, (tt, (tt, []))). split; repeat constructor; eauto.
     - intros. cbn in *. eprod_crush. inv H3. unfold id in H5. subst. inv H2.
-      exists (inr (write_query hello_bytes)). split.
+      exists (inr (write_query tqaax_bytes)). split.
       * repeat constructor.
       * exists tt, tt. repeat split; eauto.
         destruct H3 as (r' & Hr1 & Hr2). unfold id in Hr1. subst. inv Hr2.
         exists (st2 L1 pipe_operator
-             (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write hello_bytes)), buf)
-             (pipe2_write_reply n buf)). split.
+             (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), buf)
+             (pipe2_write_reply n [])). split.
         -- exists (inr (write_reply n)). split; eauto. repeat constructor.
         -- exists tt, (tt, (tt, (tt, buf))). split; repeat constructor.
     - intros. cbn in *. eprod_crush. exists tt. inv H2; inv H3.
       * eexists (st2 L1 pipe_operator
-                   (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write hello_bytes)), buf)
-                   (pipe2_write_query hello_bytes buf)).
+                   (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), [])
+                   (pipe2_write_query tqaax_bytes [])).
         split.
         -- left. eapply plus_left. (* seq calls secret *)
            { repeat econstructor. instantiate (1 := (_, _)). split; eauto.
              eapply step_push; repeat constructor. }
            2: { instantiate (1 := E0). reflexivity. }
-           step1. (* secret calls write to pipe *)
+           one_step. (* secret internal step *)
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. }
+           one_step. (* secret calls write to pipe *)
            { eapply step_push.
              instantiate (1 := (_, _)). repeat constructor. constructor. }
-           step1. (* pipe returns to secret *)
+           one_step. (* pipe returns to secret *)
            { eapply step_pop. repeat constructor.
              instantiate (1 := (_, _)). repeat constructor; cbn.
              eexists. split; eauto. reflexivity.
              repeat constructor. }
-           step1. (* secret returns to seq *)
+           one_step. (* secret internal step *)
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. }
+           one_step. (* secret returns to seq *)
            { repeat econstructor. instantiate (1 := (_, _)). split; eauto.
              eapply step_pop; repeat constructor. }
-           step1. (* seq calls rot13 *)
+           one_step. (* seq calls rot13 *)
            { repeat econstructor. instantiate (1 := (_, _)). split; eauto.
              eapply step_push; repeat constructor. }
-           step1. (* rot13 calls read to pipe *)
+           one_step. (* rot13 internal step *)
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. }
+           one_step. (* rot13 calls read to pipe *)
            { eapply step_push.
              instantiate (1 := (_, _)). repeat constructor. constructor. }
-           step1. (* pipe returns to rot13 *)
+           one_step. (* pipe returns to rot13 *)
            { eapply step_pop. repeat constructor.
+             cbn. rewrite Int64.unsigned_repr; cbn; try lia.
              instantiate (1 := (_, _)). repeat constructor; cbn.
              eexists. split; eauto. reflexivity.
-             repeat constructor. }
-           step1. (* rot13 calls write to pipe *)
+             repeat constructor. cbn. lia. }
+           (* entering the loop *)
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. }
+           (* loop 5 times to decode the buffer *)
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. lia. }
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. lia. }
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. lia. }
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. lia. }
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. lia. }
+           (* exit loop *)
+           one_step.
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. constructor. apply rot13_spec_step3.
+             reflexivity. }
+           one_step. (* rot13 calls write to pipe *)
            { eapply step_push.
              instantiate (1 := (_, _)). repeat constructor. constructor. }
-           rewrite rot13_bytes_urbby. apply star_refl.
+           apply star_refl.
         -- exists tt, (tt, (tt, (tt, buf))). split; repeat constructor.
-      * exists (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret n), buf)).
+      * exists (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret Int.zero), [])).
         split.
         -- left. eapply plus_left. (* pipe returns to rot13 *)
            { eapply step_pop. repeat constructor.
@@ -1351,7 +1438,10 @@ Section PIPE_CORRECT.
              eexists. split; eauto. reflexivity.
              repeat constructor. }
            2: { instantiate (1 := E0). reflexivity. }
-           step1. (* rot13 returns to seq *)
+           one_step. (* rot13 internal step *)
+           { eapply step1. instantiate (1 := (_, _)). split; eauto.
+             apply step2. repeat constructor. }
+           one_step. (* rot13 returns to seq *)
            { repeat econstructor. instantiate (1 := (_, _)). split; eauto.
              eapply step_pop; repeat constructor. }
            apply star_refl.
@@ -1359,3 +1449,22 @@ Section PIPE_CORRECT.
   Qed.
 
 End PIPE_CORRECT.
+
+  (* Instance pipe_state_world: World pipe_state := *)
+  (*   {| *)
+  (*     w_state := list byte; *)
+  (*     w_lens := lens_id; *)
+  (*     w_int_step := {| rel s t := True |}; *)
+  (*     w_ext_step := {| rel := eq |}; *)
+  (*   |}. *)
+
+  (* Program Definition empty_buf_callconv : ST.callconv li_wp li_wp := *)
+  (*   {| *)
+  (*     ST.ccworld := pipe_state; *)
+  (*     ST.match_senv _ := eq; *)
+  (*     ST.match_query buf q1 q2 := buf = [] /\ q1 = q2; *)
+  (*     ST.match_reply _ := eq; *)
+  (*   |}. *)
+  (* Next Obligation. reflexivity. Qed. *)
+  (* Next Obligation. reflexivity. Qed. *)
+  (* Next Obligation. reflexivity. Qed. *)
