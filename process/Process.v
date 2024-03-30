@@ -236,6 +236,8 @@ Ltac crush_step := cbn;
   | [ |- Step _ (State _ Sskip (Kseq _ _) _ _ _) _ _ ] => apply step_skip_seq
   | [ |- Step _ (State _ Sskip (Kloop1 _ _ _) _ _ _) _ _ ] => apply step_skip_or_continue_loop1; left; reflexivity
   | [ |- Step _ (State _ Sskip (Kloop2 _ _ _) _ _ _) _ _ ] => apply step_skip_loop2
+  | [ |- Step _ (State _ Sbreak (Kseq _ _) _ _ _) _ _ ] => apply step_break_seq
+  | [ |- Step _ (State _ Sbreak (Kloop1 _ _ _) _ _ _) _ _ ] => apply step_break_loop1
   | [ |- Step _ (State _ (Sreturn None) _ _ _ _) _ _ ] => eapply step_return_0
   | [ |- Step _ (State _ (Sreturn (Some _)) _ _ _ _) _ _ ] => eapply step_return_1
   | [ |- Step _ (State _ (Sloop _ _) _ _ _ _) _ _ ] => eapply step_loop
@@ -243,6 +245,9 @@ Ltac crush_step := cbn;
   | [ |- Step _ (State _ Sbreak _ _ _ _) _ _ ] => eapply step_break_loop1
   | [ |- Step _ (State _ ?s _ _ _ _) _ _ ] => is_const s; unfold s; crush_step
   end.
+
+Ltac one_trivial_step :=
+  one_step; [ eapply step2; eapply step1; crush_step; crush_expr; try solve [ constructor | easy ] | ].
 
 Lemma genv_funct_symbol se id b f (p: Clight.program):
   Genv.find_symbol se id = Some b ->
@@ -283,8 +288,7 @@ Section SECRET_FSIM.
     secret_match_state se secret4 (st1 (init_c secret_program) L1 (Some Int.zero)).
 
   Lemma secret_prog_defmap_main:
-    (prog_defmap secret_program) ! secret_main_id =
-      Some (Gfun (Internal secret_main)).
+    (prog_defmap secret_program) ! secret_main_id = Some (Gfun (Internal secret_main)).
   Proof. reflexivity. Qed.
 
   Lemma secret_prog_defmap_write:
@@ -389,24 +393,19 @@ Section SECRET_FSIM.
         edestruct msg_block as [b2 Hb5]; eauto.
         eexists. split. 2: constructor.
         eapply plus_left. (* init calls secret.c *)
-        {
-          eapply step_push.
+        { eapply step_push.
           - econstructor; try reflexivity; eauto.
             apply Genv.find_invert_symbol; eauto.
           - constructor. econstructor; eauto.
             + constructor.
             + cbn. apply init_mem_nextblock in Hm1.
-              rewrite Hm1. reflexivity.
-        }
+              rewrite Hm1. reflexivity. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step; try solve [ constructor | easy ].
-          eapply init_mem_alloc_flag. apply Hm1. }
-        one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step. }
-        one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step; crush_expr.
-          unfold rw_type. crush_deref. }
+        one_trivial_step. (* internal step of secret.c *)
+        { eapply init_mem_alloc_flag. apply Hm1. }
+        one_trivial_step. (* internal step of secret.c *)
+        one_trivial_step. (* internal step of secret.c *)
+        { unfold rw_type. crush_deref. }
         one_step. (* secret.c calls sys *)
         { eapply step2. eapply step_push.
           - econstructor. eauto.
@@ -416,12 +415,9 @@ Section SECRET_FSIM.
         eapply plus_left. (* sys returns to secret.c *)
         { eapply step2. eapply step_pop; econstructor. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step. }
-        one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step. }
-        one_step. (* internal step of secret.c *)
-        { eapply step2. eapply step1. crush_step; crush_expr. }
+        one_trivial_step. (* internal step of secret.c *)
+        one_trivial_step. (* internal step of secret.c *)
+        one_trivial_step. (* internal step of secret.c *)
         one_step. (* secret.c returns to init *)
         { eapply step_pop; repeat constructor. }
         eapply star_refl.
@@ -732,16 +728,17 @@ Section ROT13_FSIM.
     Mem.range_perm m buf_block 0 100 Cur Writable ->
     rot13_match_state se rot13_read
       (sys_st (Callstate vf args kont m) (sys_read_query (Int64.repr 100) buf_block Ptrofs.zero m))
-  | rot13_match_state3 vf m args kont bytes buf_block:
-    kont = kont1 buf_block ->
-    Mem.range_perm m buf_block 0 (Z.of_nat (Datatypes.length bytes)) Cur Writable ->
+  | rot13_match_state3 vf m args kont bytes buf_block
+    (HKONT: kont = kont1 buf_block)
+    (HPERM: Mem.range_perm m buf_block 0 (Z.of_nat (Datatypes.length bytes)) Cur Writable)
+    (HLEN: Z.of_nat (length bytes) <= 100):
     rot13_match_state se (rot13_write0 bytes)
       (sys_st (Callstate vf args kont m) (sys_read_reply bytes buf_block Ptrofs.zero m))
-  | rot13_match_state_i m bytes i buf_block len le:
-    len = Z.of_nat (length bytes) -> i <= len ->
-    Mem.loadbytes m buf_block 0 len = Some (map Byte bytes) ->
-    le!rot13_main_i_id = Some (Vint (Int.repr i)) ->
-    le!rot13_main_n_id = Some (Vint (Int.repr len)) ->
+  | rot13_match_state_i m bytes i buf_block len le
+    (HLENEQ: len = Z.of_nat (length bytes)) (HI: i <= len) (HLEN: len <= 100)
+    (HLB: Mem.loadbytes m buf_block 0 len = Some (map Byte bytes))
+    (HIEQ: le!rot13_main_i_id = Some (Vint (Int.repr i)))
+    (HNEQ: le!rot13_main_n_id = Some (Vint (Int.repr len))):
     rot13_match_state se (rot13_writei bytes i)
       (c_st (state_i buf_block le m))
   | rot13_match_state4 vf m args kont bytes buf_block le:
@@ -912,53 +909,39 @@ Section ROT13_FSIM.
              eapply Mem.perm_alloc_2 in e; eauto.
              eauto with mem. }
         eapply plus_left. (* init calls rot13.c *)
-        {
-          eapply step_push.
+        { eapply step_push.
           - econstructor; try reflexivity; eauto.
             eapply Genv.find_invert_symbol. eauto.
           - constructor. econstructor; eauto.
             + constructor.
             + cbn. apply init_mem_nextblock in Hm.
-              rewrite Hm. reflexivity.
-        }
+              rewrite Hm. reflexivity. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of rot13.c *)
+        one_step. (* internal step of rot13.c: Callstate *)
         { eapply step2. eapply step1; crush_step; try solve [ constructor | easy ].
           - solve_list_norepet.
           - repeat econstructor. eauto. }
-        one_step. (* internal step of rot13.c *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c *)
-        { eapply step2. eapply step1; crush_step; crush_expr.
-          - unfold rw_type. crush_deref.
-          - constructor. }
-        one_step. (* rot13.c calls sys *)
-        {
-          eapply step2. eapply step_push.
-          - econstructor. eauto.
-          - eapply sys_c_initial_state_read; eauto. reflexivity.
-        }
+        one_trivial_step. (* internal step of rot13.c: Ssequence *)
+        one_trivial_step. (* internal step of rot13.c: Scall *)
+        { unfold rw_type. crush_deref. }
+        one_step. (* rot13.c calls read to sys *)
+        { eapply step2. eapply step_push; repeat econstructor; eauto. }
         eapply star_refl.
       (* enter the loop *)
       + edestruct Mem.range_perm_storebytes with (ofs := 0) (bytes := map Byte bytes) as (m1 & Hm1).
         (* range_perm *)
-        intros p Hperm. apply H3. rewrite map_length in Hperm. eauto.
+        intros p Hperm. apply HPERM. rewrite map_length in Hperm. eauto.
         eexists. split.
         eapply plus_left. (* sys returns to rot13.c, and storebytes "urbby" *)
         { eapply step2. eapply step_pop; econstructor; eauto. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of rot13.c: Returnstate -> Sskip *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Sskip *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Ssequence *)
-        { eapply step2. eapply step1; crush_step. }
+        one_trivial_step. (* internal step of rot13.c: Returnstate *)
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
+        one_trivial_step. (* internal step of rot13.c: Ssequence *)
         one_step. (* internal step of rot13.c: Sfor *)
         { eapply step2. eapply step1. unfold Sfor. crush_step. }
-        one_step. (* internal step of rot13.c: Sset *)
-        { eapply step2. eapply step1; crush_step; crush_expr. }
-        one_step. (* internal step of rot13.c: Sskip *)
-        { eapply step2. eapply step1; crush_step. }
+        one_trivial_step. (* internal step of rot13.c: Sset *)
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
         rewrite PTree.set2. eapply star_refl.
         { econstructor; eauto; try lia.
           (* loadbytes *)
@@ -981,18 +964,14 @@ Section ROT13_FSIM.
         eapply plus_left. (* internal step of rot13.c: Sloop *)
         { eapply step2. eapply step1. unfold state_i. crush_step. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of rot13.c: Ssequence *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Sifthenelse *)
-        { eapply step2. eapply step1; crush_step; crush_expr.
-          instantiate (1 := true).
-          destruct Int.ltu eqn: Hltu. cbn. reflexivity.
-          exfalso. unfold Int.ltu in Hltu. admit.
-        }
-        one_step. (* internal step of rot13.c: Sskip *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Ssequence *)
-        { eapply step2. eapply step1; crush_step. }
+        one_trivial_step. (* internal step of rot13.c: Ssequence *)
+        one_trivial_step. (* internal step of rot13.c: Sifthenelse *)
+        { instantiate (1 := true). destruct Int.ltu eqn: Hltu.
+          - reflexivity.
+          - exfalso. unfold Int.ltu in Hltu. destruct zlt; try easy.
+            rewrite !Int.unsigned_repr in g; cbn; lia. }
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
+        one_trivial_step. (* internal step of rot13.c: Ssequence *)
         one_step. (* internal step of rot13.c: Scall *)
         { eapply step2. eapply step1; crush_step; crush_expr.
           - apply deref_loc_reference. reflexivity.
@@ -1015,10 +994,8 @@ Section ROT13_FSIM.
           - eapply Mem.load_store_same; eauto.
           - crush_expr.
           - cbn. reflexivity. }
-        one_step.
-        { eapply step2. eapply step1; crush_step. }
-        one_step.
-        { eapply step2. eapply step1; crush_step. }
+        one_trivial_step. (* internal step of rot13.c: Returnstate *)
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
         one_step.
         { eapply step2. eapply step1. crush_step; crush_expr.
           replace (unsigned (add zero (mul (repr 1) (of_intu (Int.repr i))))) with i.
@@ -1027,12 +1004,9 @@ Section ROT13_FSIM.
             with (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))).
           2: admit.
           apply Hm4. }
-        one_step.
-        { eapply step2. eapply step1; crush_step. }
-        one_step.
-        { eapply step2. eapply step1; crush_step; crush_expr. }
-        one_step.
-        { eapply step2. eapply step1; crush_step. }
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
+        one_trivial_step. (* internal step of rot13.c: Sset *)
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
         apply star_refl.
         {
           econstructor; eauto.
@@ -1048,31 +1022,23 @@ Section ROT13_FSIM.
         eapply plus_left. (* internal step of rot13.c: Sloop *)
         { eapply step2. eapply step1. unfold state_i. crush_step. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of rot13.c: Ssequence *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Sifthenelse *)
-        { eapply step2. eapply step1; crush_step; crush_expr.
-          instantiate (1 := false).
-          destruct Int.ltu eqn: Hltu.
-          - exfalso. admit.
+        one_trivial_step. (* internal step of rot13.c: Ssequence *)
+        one_trivial_step. (* internal step of rot13.c: Sifthenelse *)
+        { instantiate (1 := false). destruct Int.ltu eqn: Hltu.
+          - exfalso. unfold Int.ltu in Hltu.
+            destruct zlt; try solve [easy | lia].
           - cbn. reflexivity. }
-        one_step. (* internal step of rot13.c: Sbreak *)
-        { eapply step2. eapply step1; apply step_break_seq. }
-        one_step. (* internal step of rot13.c: Sbreak *)
-        { eapply step2. eapply step1; apply step_break_loop1. }
-        one_step. (* internal step of rot13.c: Sskip *)
-        { eapply step2. eapply step1; crush_step; crush_expr. }
-        one_step. (* internal step of rot13.c: Ssequence *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Scall *)
-        { eapply step2. eapply step1; crush_step; crush_expr.
-          (* deref_loc *) constructor. reflexivity. }
+        one_trivial_step. (* internal step of rot13.c: Sbreak *)
+        one_trivial_step. (* internal step of rot13.c: Sbreak *)
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
+        one_trivial_step. (* internal step of rot13.c: Ssequence *)
+        one_trivial_step. (* internal step of rot13.c: Scall *)
+        { unfold rw_type. crush_deref. }
         one_step. (* rot13.c call sys *)
         { rewrite Int.unsigned_repr by admit.
           eapply step2. eapply step_push.
           - econstructor. eauto.
-          - eapply sys_c_initial_state_write; eauto.
-        }
+          - eapply sys_c_initial_state_write; eauto. }
         eapply star_refl.
         { econstructor. reflexivity. }
       (* return from sys *)
@@ -1085,12 +1051,9 @@ Section ROT13_FSIM.
         eapply plus_left. (* sys returns to rot13.c *)
         { eapply step2. eapply step_pop; constructor. }
         2: { instantiate (1 := E0). reflexivity. }
-        one_step. (* internal step of rot13.c: Returnstate *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Sskip *)
-        { eapply step2. eapply step1; crush_step. }
-        one_step. (* internal step of rot13.c: Sreturn *)
-        { eapply step2. eapply step1; crush_step; crush_expr. }
+        one_trivial_step. (* internal step of rot13.c: Returnstate *)
+        one_trivial_step. (* internal step of rot13.c: Sskip *)
+        one_trivial_step. (* internal step of rot13.c: Sreturn *)
         one_step. (* rot13 returns to init *)
         { eapply step_pop; repeat econstructor. }
         eapply star_refl.
