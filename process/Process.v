@@ -7,6 +7,8 @@ Require Import Lifting Encapsulation.
 Require Import List Maps.
 Import ListNotations.
 
+Require Import Load With InitMem.
+
 Notation hello_bytes := [ Byte.repr 104; Byte.repr 101; Byte.repr 108; Byte.repr 108; Byte.repr 111 ].
 Notation urbby_bytes := [ Byte.repr 117; Byte.repr 114; Byte.repr 98; Byte.repr 98; Byte.repr 121].
 Definition rot13_byte : byte -> byte. Admitted.
@@ -32,7 +34,6 @@ Definition write : fundef :=
 Definition read : fundef :=
   External (EF_external "read" rw_sig) rw_parameters tint cc_default.
 
-Definition main_sig := signature_of_type Tnil tint cc_default.
 
 Definition secret_main_id: positive := 1.
 Definition secret_write_id: positive := 2.
@@ -84,586 +85,8 @@ Program Definition secret_program : Clight.program :=
     prog_comp_env := (PTree.empty _);
   |}.
 
-Section INIT_MEM.
-  Context (se: Genv.symtbl).
-
-  Program Definition empty : mem :=
-    Mem.mkmem (PMap.init (ZMap.init Undef))
-      (PMap.init (fun ofs k => None))
-      (Genv.genv_next se) true _ _ _.
-
-  (* like [Mem.alloc], but only changes the perm *)
-  Program Definition init_perm (m: mem) (b: block) (lo hi: Z) :=
-    if plt b m.(Mem.nextblock) then
-      Some
-        (Mem.mkmem
-           m.(Mem.mem_contents)
-           (PMap.set b
-              (fun ofs k => if zle lo ofs && zlt ofs hi then Some Freeable else None)
-              m.(Mem.mem_access))
-           m.(Mem.nextblock) m.(Mem.alloc_flag) _ _ _)
-    else None.
-  Next Obligation.
-    repeat rewrite PMap.gsspec. destruct (peq b0 b).
-    - subst b. destruct (zle lo ofs && zlt ofs hi); red; auto with mem.
-    - apply Mem.access_max.
-  Qed.
-  Next Obligation.
-    repeat rewrite PMap.gsspec. destruct (peq b0 b).
-    - subst b. elim H0. exact H.
-    - eapply Mem.nextblock_noaccess. exact H0.
-  Qed.
-  Next Obligation. apply Mem.contents_default. Qed.
-
-  Definition init_global' (m: mem) (b: block) (g: globdef unit unit): option mem :=
-    match g with
-    | Gfun f =>
-        match init_perm m b 0 1 with
-        | Some m1 => Mem.drop_perm m1 b 0 1 Nonempty
-        | None => None
-        end
-    | Gvar v =>
-        let init := v.(gvar_init) in
-        let sz := init_data_list_size init in
-        match init_perm m b 0 sz with
-        | Some m1 =>
-            match store_zeros m1 b 0 sz with
-            | None => None
-            | Some m2 =>
-                match Genv.store_init_data_list se m2 b 0 init with
-                | None => None
-                | Some m3 => Mem.drop_perm m3 b 0 sz (Genv.perm_globvar v)
-                end
-            end
-        | None => None
-        end
-    end.
-
-  Definition init_global (m: mem) (idg: ident * globdef unit unit): option mem :=
-    match idg with
-    | (id, g) =>
-        match Genv.find_symbol se id with
-        | Some b => init_global' m b g
-        | None => None
-        end
-    end.
-
-  Fixpoint init_globals (m: mem) (gl: list (ident * globdef unit unit)): option mem :=
-    match gl with
-    | [] => Some m
-    | g :: gl' =>
-        match init_global m g with
-        | None => None
-        | Some m' => init_globals m' gl'
-        end
-    end.
-
-  Definition init_mem (p: AST.program unit unit) : option mem :=
-    init_globals empty p.(AST.prog_defs).
-
-  Lemma init_perm_inv m1 m2 lo hi b:
-    init_perm m1 b lo hi = Some m2 ->
-    forall ofs k, lo <= ofs < hi -> Mem.perm m2 b ofs k Freeable.
-  Proof.
-    intros. unfold init_perm in H. destruct plt; inv H.
-    unfold Mem.perm. cbn. rewrite PMap.gss.
-    destruct (zle lo ofs && zlt ofs hi) eqn: H1; try constructor.
-    exfalso. destruct zle eqn: H2; try lia. destruct zlt eqn: H3; try lia.
-    cbn in H1. congruence.
-  Qed.
-
-  Lemma init_global_exists:
-    forall m idg,
-      (exists b, Genv.find_symbol se (fst idg) = Some b /\
-              Plt b m.(Mem.nextblock)) ->
-      match idg with
-      | (id, Gfun f) => True
-      | (id, Gvar v) =>
-          Genv.init_data_list_aligned 0 v.(gvar_init)
-          /\ forall i o, In (Init_addrof i o) v.(gvar_init) -> exists b, Genv.find_symbol se i = Some b
-      end ->
-      exists m', init_global m idg = Some m'.
-  Proof.
-    intros m [id [f|v]] [b [Hb1 Hb2]]; intros; simpl in *; rewrite Hb1.
-    - destruct (init_perm m b 0 1) as [m1|] eqn:H1.
-      2: { exfalso. unfold init_perm in H1. destruct plt; [ inv H1 | contradiction ]. }
-      destruct (Mem.range_perm_drop_2 m1 b 0 1 Nonempty) as [m2 DROP].
-      red; intros; eapply init_perm_inv; eauto.
-      exists m2. eauto.
-    - destruct H as [P Q].
-      set (sz := init_data_list_size (gvar_init v)).
-      destruct (init_perm m b 0 sz) as [m1|] eqn:H1.
-      2: { exfalso. unfold init_perm in H1. destruct plt; [ inv H1 | contradiction ]. }
-      assert (P1: Mem.range_perm m1 b 0 sz Cur Freeable) by (red; intros; eapply init_perm_inv; eauto).
-      exploit (@Genv.store_zeros_exists m1 b 0 sz).
-      { red; intros. apply Mem.perm_implies with Freeable; auto with mem. }
-      intros [m2 ZEROS]. rewrite ZEROS.
-      assert (P2: Mem.range_perm m2 b 0 sz Cur Freeable).
-      { red; intros. erewrite <- Genv.store_zeros_perm by eauto. eauto. }
-      exploit (@Genv.store_init_data_list_exists se b (gvar_init v) m2 0); eauto.
-      { red; intros. apply Mem.perm_implies with Freeable; auto with mem. }
-      intros [m3 STORE]. rewrite STORE.
-      assert (P3: Mem.range_perm m3 b 0 sz Cur Freeable).
-      { red; intros. erewrite <- Genv.store_init_data_list_perm by eauto. eauto. }
-      destruct (Mem.range_perm_drop_2 m3 b 0 sz (Genv.perm_globvar v)) as [m4 DROP]; auto.
-      exists m4; auto.
-  Qed.
-
-  Lemma init_perm_nextblock m1 m2 b lo hi:
-    init_perm m1 b lo hi = Some m2 ->
-    Mem.nextblock m2 = Mem.nextblock m1.
-  Proof.
-    intros. unfold init_perm in H. destruct plt; inv H.
-    cbn. reflexivity.
-  Qed.
-
-  Lemma init_global_nextblock m1 m2 idg:
-    init_global m1 idg = Some m2 ->
-    Mem.nextblock m1 = Mem.nextblock m2.
-  Proof.
-    intros. unfold init_global in H. destruct idg as [id [f|v]]; simpl in H.
-    - destruct (Genv.find_symbol se id) as [b|] eqn: H1; inv H.
-      destruct (init_perm m1 b 0 1) as [m|] eqn: A1; inv H2.
-      erewrite <- init_perm_nextblock; [ | eauto ].
-      erewrite <- Mem.nextblock_drop; eauto.
-    - destruct (Genv.find_symbol se id) as [b|] eqn: H1; inv H.
-      destruct init_perm as [m3|] eqn: A1; inv H2.
-      destruct store_zeros as [m4|] eqn: A2; inv H0.
-      destruct Genv.store_init_data_list as [m5|] eqn: A3; inv H2.
-      erewrite <- init_perm_nextblock; [ | eauto ].
-      erewrite <- Genv.store_zeros_nextblock; [ | eauto ].
-      erewrite <- Genv.store_init_data_list_nextblock; [ | eauto ].
-      erewrite <- Mem.nextblock_drop; eauto.
-  Qed.
-
-  Lemma init_mem_exists p:
-    (forall id v, In (id, Gvar v) (AST.prog_defs p) ->
-             Genv.init_data_list_aligned 0 v.(gvar_init)
-             /\ forall i o, In (Init_addrof i o) v.(gvar_init) -> exists b, Genv.find_symbol se i = Some b) ->
-    Genv.valid_for p se ->
-    exists m, init_mem p = Some m.
-  Proof.
-    intros. unfold init_mem.
-    assert (H1: forall id g,
-               In (id, g) (AST.prog_defs p) ->
-               exists b, Genv.find_symbol se id = Some b
-                    /\ Plt b (Mem.nextblock empty)).
-    {
-      intros. edestruct prog_defmap_dom as [g' Hg'].
-      unfold prog_defs_names. apply in_map_iff.
-      exists (id, g). split; eauto. cbn in Hg'.
-      specialize (H0 _ _ Hg') as (b & ? & Hb & ? & ?).
-      exists b; split; eauto.
-      unfold empty. cbn. eapply Genv.genv_symb_range.
-      apply Hb.
-    }
-    clear H0.
-    revert H H1. generalize (AST.prog_defs p) empty.
-    induction l as [ | idg l ]; simpl; intros.
-    - exists m. reflexivity.
-    - destruct (@init_global_exists m idg) as [m1 A1].
-      + destruct idg as [id g]. apply (H1 id g). left; easy.
-      + destruct idg as [id [f|v]]; eauto.
-      + rewrite A1. edestruct (IHl m1) as [m2 IH]; eauto.
-        intros. erewrite <- init_global_nextblock; eauto.
-  Qed.
-
-  Lemma init_mem_nextblock p m:
-    init_mem p = Some m ->
-    Mem.nextblock m = Genv.genv_next se.
-  Proof.
-    assert (H: Mem.nextblock empty = Genv.genv_next se) by reflexivity.
-    revert H. unfold init_mem. generalize (AST.prog_defs p) empty.
-    induction l as [ | idg l ]; simpl; intros.
-    - inv H0. eauto.
-    - destruct init_global eqn: A1; inv H0.
-      erewrite <- IHl; [ eauto | | eauto ].
-      rewrite <- H. symmetry.  eapply init_global_nextblock; eauto.
-  Qed.
-
-  Lemma init_mem_alloc_flag p m:
-    init_mem p = Some m ->
-    Mem.alloc_flag m = true.
-  Proof.
-  Admitted.
-
-End INIT_MEM.
-
-Section INIT_C.
-  Context (prog: program).
-  Let sk := erase_program prog.
-  Section WITH_SE.
-
-    Context (se: Genv.symtbl).
-    Let ge := Genv.globalenv se prog.
-    Inductive init_c_initial_state (q: query li_wp) : option int -> Prop :=
-    | init_c_initial_state_intro: init_c_initial_state q None.
-    Inductive init_c_at_external: option int -> query li_c -> Prop :=
-    | init_c_at_external_intro vf m f main b:
-      init_mem se sk = Some m ->
-      Genv.invert_symbol se b = Some main ->
-      vf = Vptr b Ptrofs.zero ->
-      prog_main prog = Some main ->
-      (prog_defmap prog) ! main = Some (Gfun f) ->
-      init_c_at_external None (cq vf main_sig [] m).
-    Inductive init_c_after_external: option int -> reply li_c -> option int -> Prop :=
-    | init_c_after_external_intro i m:
-      init_c_after_external None (cr (Vint i) m) (Some i).
-    Inductive init_c_final_state: option int -> reply li_wp -> Prop :=
-    | inic_c_final_state_intro i: init_c_final_state (Some i) i.
-
-  End WITH_SE.
-  Program Definition init_c: semantics li_c li_wp :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step _ _ _ _ := False;
-          Smallstep.initial_state := init_c_initial_state;
-          Smallstep.at_external := init_c_at_external se;
-          Smallstep.after_external := init_c_after_external;
-          Smallstep.final_state := init_c_final_state;
-          Smallstep.globalenv := Genv.globalenv se prog;
-        |};
-      skel := sk;
-      footprint i := False
-    |}.
-End INIT_C.
-
-Require Import Machregs Asm.
-
-Section INIT_ASM.
-  Context (prog: program).
-  Let sk := erase_program prog.
-  Section WITH_SE.
-
-    Context (se: Genv.symtbl).
-    Let ge := Genv.globalenv se prog.
-    Inductive init_asm_initial_state (q: query li_wp) : option int -> Prop :=
-    | init_asm_initial_state_intro: init_asm_initial_state q None.
-    Inductive init_asm_at_external: option int -> query li_asm -> Prop :=
-    | init_asm_at_external_intro m rs f main vf b:
-      init_mem se sk = Some m ->
-      AST.prog_main prog = Some main ->
-      (prog_defmap prog) ! main = Some (Gfun f) ->
-      Genv.invert_symbol se b = Some main ->
-      vf = Vptr b Ptrofs.zero ->
-      (* (* TODO: use invert_symbol to associate main with a block *) *)
-      (* Genv.find_funct ge vf = Some f -> *)
-      (* [RSP] need to be qualified as Mach.valid_blockv, so it's using vf instead
-      of Vnullptr. See Mach.v for more details *)
-      rs = (((Pregmap.init Vundef) # PC <- vf) # RSP <- vf) # RA <- Vnullptr ->
-      init_asm_at_external None (rs, m).
-    Inductive init_asm_after_external: option int -> reply li_asm -> option int -> Prop :=
-    | init_asm_after_external_intro i rs m:
-      rs#(IR RAX) = Vint i ->
-      init_asm_after_external None (rs, m) (Some i).
-    Inductive init_asm_final_state: option int -> reply li_wp -> Prop :=
-    | inic_asm_final_state_intro i: init_asm_final_state (Some i) i.
-
-  End WITH_SE.
-  Program Definition init_asm: Smallstep.semantics li_asm li_wp :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step _ _ _ _ := False;
-          Smallstep.initial_state := init_asm_initial_state;
-          Smallstep.at_external := init_asm_at_external se;
-          Smallstep.after_external := init_asm_after_external;
-          Smallstep.final_state := init_asm_final_state;
-          Smallstep.globalenv := Genv.globalenv se prog;
-        |};
-      skel := sk;
-      footprint i := False
-    |}.
-End INIT_ASM.
-
-Require Import Compiler.
-
-Section INIT_C_ASM.
-
-  Local Transparent Archi.ptr64.
-
-  Lemma init_c_asm p tp:
-    match_prog p tp -> forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
-  Proof.
-    intros H. assert (Hsk: erase_program p = erase_program tp).
-    { apply clight_semantic_preservation in H as [H1 ?].
-      apply H1. }
-    constructor. econstructor. apply Hsk.
-    intros. reflexivity.
-    intros. instantiate (1 := fun _ _ _ => _). cbn beta. destruct H0.
-    eapply forward_simulation_step with (match_states := eq).
-    - intros. inv H0. inv H2.
-      eexists; split; eauto. constructor.
-    - intros. inv H2. exists r1. split; constructor.
-    - intros. inv H2.
-      eexists _, (_, m).
-      repeat apply conj.
-      + assert (exists tf, (prog_defmap tp) ! main = Some (Gfun tf)) as (tf & Htf).
-        { assert ((prog_defmap (erase_program p)) ! main = Some (Gfun tt)).
-          rewrite erase_program_defmap. unfold option_map. rewrite H7. reflexivity.
-          rewrite Hsk in H0. rewrite erase_program_defmap in H0.
-          unfold option_map in H0.
-          destruct (prog_defmap tp) ! main as [[tf|]|] eqn: Htf; inv H0.
-          exists tf. split; eauto. }
-        econstructor; eauto.
-        * rewrite <- Hsk. eauto.
-        * replace (AST.prog_main tp) with (AST.prog_main (erase_program tp))
-            by reflexivity.
-          rewrite <- Hsk. apply H6.
-      + unfold cc_compcert.
-        (* cklr *)
-        instantiate (1 := (se1, existT _ 0%nat _, _)).
-        exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
-        { reflexivity. }
-        (* inv wt_c *)
-        instantiate (1 := (se1, (se1, main_sig), _)).
-        exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
-        { repeat constructor. }
-        (* lessdef_c *)
-        instantiate (1 := (se1, tt, _)).
-        exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
-        { repeat constructor. }
-        (* cc_c_locset *)
-        instantiate (1 := (se1, main_sig, _)).
-        eexists (Conventions.lq (Vptr b Ptrofs.zero) main_sig (CallConv.make_locset (Mach.Regmap.init Vundef) m (Vptr b Ptrofs.zero)) m). split.
-        { constructor. unfold Conventions1.loc_arguments. cbn.
-          destruct Archi.win64; reflexivity. }
-        (* cc_locset_mach *)
-        set (rs := ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # SP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr)).
-        instantiate (1 := (se1, CallConv.lmw main_sig (Mach.Regmap.init Vundef) m (Vptr b Ptrofs.zero), _)).
-        eexists (Mach.mq rs#PC rs#SP rs#RA (Mach.Regmap.init Vundef) m). split.
-        { repeat constructor.
-          red. unfold Conventions.size_arguments. cbn. destruct Archi.win64; reflexivity. }
-        (* cc_mach_asm *)
-        instantiate (1 := (se1, ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # RSP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr, Mem.nextblock m), _)).
-        eexists ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # RSP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr, m). split.
-        { econstructor; cbn; try congruence.
-          - constructor. erewrite init_mem_nextblock; eauto.
-            apply Genv.invert_find_symbol in H4.
-            exploit @Genv.genv_symb_range; eauto.
-          - intros. destruct r; eauto. }
-        (* cc_asm vainj *)
-        instantiate (1 := (se1, Inject.injw (Mem.flat_inj (Mem.nextblock m)) (Mem.nextblock m) (Mem.nextblock m))).
-        repeat apply conj; cbn; eauto; try easy.
-        * intros. destruct r; eauto; cbn; try constructor.
-          eapply Val.inject_ptr. unfold Mem.flat_inj. admit. admit. admit.
-        * constructor; cbn.
-          -- erewrite init_mem_nextblock; eauto. reflexivity.
-          -- intros x Hx.  admit.
-          -- constructor. unfold Mem.inject.
-             (* Search (Mem.inject _ ?m ?m). *)
-             (* Search Mem.inject_neutral. *)
-             admit.
-      + cbn. repeat apply conj; eauto. constructor. eauto.
-        constructor; cbn.
-        (* Search (Genv.match_stbls _ ?se ?se). *)
-        admit. admit. admit.
-      + intros. inv H2. exists (Some i). split; eauto.
-        cbn in H0.
-        destruct H0 as (r3 & Hr3 & HR). inv Hr3.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3. inv H9.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3. cbn in H9.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3.
-        specialize (H13 AX). rewrite <- H9 in H13.
-        exploit H13. cbn. left. reflexivity. intros HAX.
-        destruct HR as ((rs & mx) & Hr3 & Hr4). inv Hr3.
-        specialize (H20 AX). rewrite HAX in H20. cbn in H20.
-        destruct Hr4 as ((? & ?) & ? & Hr). destruct r2.
-        inv Hr. specialize (H5 RAX). rewrite <- H20 in H5.
-        destruct H2. cbn in H10. cbn in H5. inv H5.
-        constructor. easy.
-    - easy.
-    - easy.
-  Admitted.
-
-End INIT_C_ASM.
-
-Definition with_ (liA liB: language_interface): language_interface :=
-  {|
-    query := sum (query liA) (query liB);
-    reply := sum (reply liA) (reply liB);
-    entry := fun q => match q with
-                  | inl qA => entry qA
-                  | inr qB => entry qB
-                  end;
-  |}.
-Infix "+" := with_ (at level 50, left associativity).
-
-Variant sys_query :=
-  | write_query: list byte -> sys_query
-  | read_query: int64 -> sys_query.
-
-Variant sys_reply :=
-  | write_reply: int -> sys_reply
-  | read_reply: list byte -> sys_reply.
-
-Definition li_sys :=
-  {|
-    query := sys_query;
-    reply := sys_reply;
-    entry q := Vundef;
-  |}.
-
-Section SYS.
-  Context (prog: Clight.program).
-  Let sk := erase_program prog.
-  Section WITH_SE.
-    Context (se: Genv.symtbl).
-    Let ge := globalenv se prog.
-    Variant sys_state :=
-      | sys_read_query (n: int64) (b: block) (ofs: ptrofs) (m: mem)
-      | sys_read_reply (bytes: list byte) (b: block) (ofs: ptrofs) (m: mem)
-      | sys_write_query (bytes: list byte) (m: mem)
-      | sys_write_reply (n: int) (m: mem).
-
-    Inductive sys_c_initial_state: query li_c -> sys_state -> Prop :=
-    | sys_c_initial_state_read vf args m n b ofs:
-      Genv.find_funct ge vf = Some read ->
-      args = [ Vint (Int.repr 0); Vptr b ofs; Vlong n ] ->
-      sys_c_initial_state (cq vf rw_sig args m) (sys_read_query n b ofs m)
-    | sys_c_initial_state_write vf args m bytes bytes_val b ofs len:
-      Genv.find_funct ge vf = Some write ->
-      args = [ Vint (Int.repr 1); Vptr b ofs; Vlong (Int64.repr len) ] ->
-      Mem.loadbytes m b (Ptrofs.unsigned ofs) len = Some bytes_val ->
-      map Byte bytes = bytes_val ->
-      sys_c_initial_state (cq vf rw_sig args m) (sys_write_query bytes m).
-
-    Inductive sys_c_at_external: sys_state -> query (li_sys + li_sys) -> Prop :=
-    | sys_c_at_external_read n b ofs m:
-      sys_c_at_external (sys_read_query n b ofs m) (inl (read_query n))
-    | sys_c_at_external_write bytes m:
-      sys_c_at_external (sys_write_query bytes m) (inr (write_query bytes)).
-
-    Inductive sys_c_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
-    | sys_c_after_external_read n b ofs m bytes:
-      Z.of_nat (length bytes) <= Int64.unsigned n ->
-      sys_c_after_external (sys_read_query n b ofs m) (inl (read_reply bytes)) (sys_read_reply bytes b ofs m)
-    | sys_c_after_external_write n m bytes:
-      sys_c_after_external (sys_write_query bytes m) (inr (write_reply n)) (sys_write_reply n m).
-
-    Inductive sys_c_final_state: sys_state -> reply li_c -> Prop :=
-    | sys_c_final_state_read bytes b ofs bytes_val m len m':
-      len = Z.of_nat (length bytes) ->
-      Mem.storebytes m b (Ptrofs.unsigned ofs) bytes_val = Some m' ->
-      map Byte bytes = bytes_val ->
-      sys_c_final_state (sys_read_reply bytes b ofs m) (cr (Vint (Int.repr len)) m')
-    | sys_c_final_state_write n m:
-      sys_c_final_state (sys_write_reply n m) (cr (Vint n) m).
-
-  End WITH_SE.
-  Definition sys_c: Smallstep.semantics (li_sys + li_sys) li_c :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step _ _ _ _ := False;
-          Smallstep.initial_state := sys_c_initial_state se;
-          Smallstep.at_external := sys_c_at_external;
-          Smallstep.after_external := sys_c_after_external;
-          Smallstep.final_state := sys_c_final_state;
-          Smallstep.globalenv := Genv.globalenv se prog;
-        |};
-      skel := sk;
-      footprint i := False
-    |}.
-
-End SYS.
-
-Section SYS_ASM.
-  Context (prog: Asm.program).
-  Let sk := erase_program prog.
-  Section WITH_SE.
-    Context (se: Genv.symtbl).
-    Let ge := Genv.globalenv se prog.
-
-    Definition read_asm : fundef := AST.External (EF_external "read_asm" rw_sig).
-    Definition write_asm : fundef := AST.External (EF_external "write_asm" rw_sig).
-    Inductive sys_asm_initial_state: query li_asm -> sys_state -> Prop :=
-    | sys_asm_initial_state_read m n b ofs rs:
-      Genv.find_funct ge rs#PC = Some read_asm ->
-      rs#RDI = Vint (Int.repr 0) ->
-      rs#RSI = Vptr b ofs ->
-      rs#RDX = Vlong n ->
-      sys_asm_initial_state (rs, m) (sys_read_query n b ofs m)
-    | sys_asm_initial_state_write m bytes bytes_val b ofs n rs:
-      Genv.find_funct ge rs#PC = Some write_asm ->
-      rs#RDI = Vint (Int.repr 1) ->
-      rs#RSI = Vptr b ofs ->
-      rs#RDX = Vlong n ->
-      Mem.loadbytes m b (Ptrofs.unsigned ofs) (Int64.unsigned n) = Some bytes_val ->
-      map Byte bytes = bytes_val ->
-      sys_asm_initial_state (rs, m) (sys_write_query bytes m).
-
-    Inductive sys_asm_at_external: sys_state -> query (li_sys + li_sys) -> Prop :=
-    | sys_asm_at_external_read n b ofs m:
-      sys_asm_at_external (sys_read_query n b ofs m) (inl (read_query n))
-    | sys_asm_at_external_write bytes m:
-      sys_asm_at_external (sys_write_query bytes m) (inr (write_query bytes)).
-
-    Inductive sys_asm_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
-    | sys_asm_after_external_read n b ofs m bytes:
-      Z.of_nat (length bytes) <= Int64.unsigned n ->
-      sys_asm_after_external (sys_read_query n b ofs m) (inl (read_reply bytes)) (sys_read_reply bytes b ofs m)
-    | sys_asm_after_external_write n m bytes:
-      sys_asm_after_external (sys_write_query bytes m) (inr (write_reply n)) (sys_write_reply n m).
-
-    Inductive sys_asm_final_state: sys_state -> reply li_asm -> Prop :=
-    | sys_asm_final_state_read bytes b ofs bytes_val m len m' (rs: regset):
-      len = Z.of_nat (length bytes) ->
-      Mem.storebytes m b (Ptrofs.unsigned ofs) bytes_val = Some m' ->
-      map Byte bytes = bytes_val ->
-      rs#RAX = Vint (Int.repr len) ->
-      sys_asm_final_state (sys_read_reply bytes b ofs m) (rs, m')
-    | sys_asm_final_state_write n m (rs: regset):
-      rs#RAX = Vint n ->
-      sys_asm_final_state (sys_write_reply n m) (rs, m).
-
-  End WITH_SE.
-  Definition sys_asm: Smallstep.semantics (li_sys + li_sys) li_asm :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step _ _ _ _ := False;
-          Smallstep.initial_state := sys_asm_initial_state se;
-          Smallstep.at_external := sys_asm_at_external;
-          Smallstep.after_external := sys_asm_after_external;
-          Smallstep.final_state := sys_asm_final_state;
-          Smallstep.globalenv := Genv.globalenv se prog;
-        |};
-      skel := sk;
-      footprint i := False
-    |}.
-
-End SYS_ASM.
-
-Section SYS_C_ASM.
-
-  Local Transparent Archi.ptr64.
-
-  Lemma sys_c_asm p tp:
-    match_prog p tp -> forward_simulation 1 cc_compcert (sys_c p) (sys_asm tp).
-  Proof.
-    intros H. assert (Hsk: erase_program p = erase_program tp).
-    { apply clight_semantic_preservation in H as [H1 ?].
-      apply H1. }
-    constructor. econstructor. apply Hsk.
-    intros. reflexivity.
-    intros. instantiate (1 := fun _ _ _ => _). cbn beta.
-    eapply forward_simulation_step with (match_states := eq).
-    - intros. inv H3.
-      + unfold cc_compcert in *. cbn in wB, H2 |- *.
-        eprod_crush. destruct s9. inv H3.
-  Admitted.
-
-End SYS_C_ASM.
 
 Require Import CategoricalComp.
-
-Definition load_c (prog: Clight.program) : Smallstep.semantics (li_sys + li_sys) li_wp :=
-  let sk := AST.erase_program prog in
-  comp_semantics' (init_c prog)
-    (comp_semantics' (semantics1 prog) (sys_c prog) sk) sk.
 
 Definition secret_c : Smallstep.semantics (li_sys + li_sys) li_wp := load_c secret_program.
 
@@ -723,7 +146,8 @@ Ltac solve_ptree := solve [ eauto | ptree_tac ].
 Ltac crush_eval_expr :=
   cbn;
   lazymatch goal with
-  | [ |- eval_expr _ _ _ _ (Etempvar _ _) _ ] => apply eval_Etempvar; reflexivity
+  | [ |- eval_expr _ _ _ _ (Etempvar _ _) _ ] =>
+      apply eval_Etempvar; try solve [ reflexivity | eassumption | solve_ptree ]
   | [ |- eval_expr _ _ _ _ (Econst_int _ _) _ ] => apply eval_Econst_int
   | [ |- eval_expr _ _ _ _ (Econst_long _ _) _ ] => apply eval_Econst_long
   | [ |- eval_expr _ _ _ _ (Ebinop _ _ _ _) _ ] => eapply eval_Ebinop
@@ -805,11 +229,13 @@ Ltac crush_step := cbn;
         (* | repeat (econstructor; simpl; auto) *)
         (* | reflexivity | eauto ] *) ]
   | [ |- Step _ (State _ (Ssequence _ _) _ _ _ _) _ _ ] => apply step_seq
+  | [ |- Step _ (State _ (Sassign _ _) _ _ _ _) _ _ ] => eapply step_assign
   | [ |- Step _ (State _ (Sset _ _) _ _ _ _) _ _ ] => apply step_set
   | [ |- Step _ (State _ (Scall _ _ _) _ _ _ _) _ _ ] => eapply step_call
   | [ |- Step _ (Returnstate _ _ _) _ _ ] => eapply step_returnstate
   | [ |- Step _ (State _ Sskip (Kseq _ _) _ _ _) _ _ ] => apply step_skip_seq
-  | [ |- Step _ (State _ (Sassign _ _) _ _ _ _) _ _ ] => eapply step_assign
+  | [ |- Step _ (State _ Sskip (Kloop1 _ _ _) _ _ _) _ _ ] => apply step_skip_or_continue_loop1; left; reflexivity
+  | [ |- Step _ (State _ Sskip (Kloop2 _ _ _) _ _ _) _ _ ] => apply step_skip_loop2
   | [ |- Step _ (State _ (Sreturn None) _ _ _ _) _ _ ] => eapply step_return_0
   | [ |- Step _ (State _ (Sreturn (Some _)) _ _ _ _) _ _ ] => eapply step_return_1
   | [ |- Step _ (State _ (Sloop _ _) _ _ _ _) _ _ ] => eapply step_loop
@@ -1036,6 +462,11 @@ Definition rot13_rot13_body : statement :=
     (* (* return c *) *)
     (* (Sreturn (Some c)). *)
 
+Definition rot13_rot13'_body : statement :=
+  let c := Evar rot13_rot13_c_id tchar in
+  let one := Econst_int (Int.repr 1) tint in
+  (Sreturn (Some (Ebinop Osub c one tint))).
+
 Definition rot13_rot13 : function :=
   {|
     fn_return := tchar;
@@ -1043,7 +474,7 @@ Definition rot13_rot13 : function :=
     fn_params := [ (rot13_rot13_c_id, tchar) ];
     fn_temps := [];
     fn_vars := [];
-    fn_body := rot13_rot13_body;
+    fn_body := rot13_rot13'_body;
   |}.
 
 Definition rot13_type := Tfunction (Tcons tchar Tnil) tchar cc_default.
@@ -1131,7 +562,7 @@ Section ROT13_SPEC.
   | rot13_spec_step2 bytes:
     rot13_spec_step (rot13_write0 bytes) E0 (rot13_writei bytes 0)
   | rot13_spec_stepi bytes bytes' i:
-    i < Z.of_nat (length bytes) ->
+    0 <= i < Z.of_nat (length bytes) ->
     bytes' = rot13_bytes_i bytes i ->
     rot13_spec_step (rot13_writei bytes i) E0 (rot13_writei bytes' (i + 1))
   | rot13_spec_step3 bytes i:
@@ -1258,7 +689,11 @@ Section ROT13_FSIM.
                    [Econst_int (Int.repr 1) tint; Evar rot13_main_buf_id (Tarray tchar 100 noattr);
                     Etempvar rot13_main_n_id tint]) (Sreturn (Some (Econst_int (Int.repr 0) tint))))) Kstop)).
 
-  Definition state_i m len buf_block i :=
+  Definition kont2 buf_block le :=
+    (Kcall None rot13_main (PTree.set rot13_main_buf_id (buf_block, Tarray tchar 100 noattr) empty_env) le
+                (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)).
+
+  Definition state_i buf_block le m :=
     State rot13_main
       (Sloop
          (Ssequence
@@ -1279,9 +714,7 @@ Section ROT13_FSIM.
                [Econst_int (Int.repr 1) tint; Evar rot13_main_buf_id (Tarray tchar 100 noattr); Etempvar rot13_main_n_id tint])
             (Sreturn (Some (Econst_int (Int.repr 0) tint)))) Kstop)
       (PTree.set rot13_main_buf_id (buf_block, Tarray tchar 100 noattr) empty_env)
-      (PTree.set rot13_main_i_id (Vint (Int.repr i))
-         (PTree.set rot13_main_n_id (Vint (Int.repr len))
-            (PTree.set rot13_main_i_id Vundef (PTree.set rot13_main_t_id Vundef (PTree.empty val))))) m.
+      le m.
 
   Definition sys_st s1 s2 :=
     st2 (init_c rot13_program) L1 None
@@ -1304,25 +737,140 @@ Section ROT13_FSIM.
     Mem.range_perm m buf_block 0 (Z.of_nat (Datatypes.length bytes)) Cur Writable ->
     rot13_match_state se (rot13_write0 bytes)
       (sys_st (Callstate vf args kont m) (sys_read_reply bytes buf_block Ptrofs.zero m))
-  | rot13_match_state_i m bytes i buf_block len:
+  | rot13_match_state_i m bytes i buf_block len le:
     len = Z.of_nat (length bytes) -> i <= len ->
     Mem.loadbytes m buf_block 0 len = Some (map Byte bytes) ->
+    le!rot13_main_i_id = Some (Vint (Int.repr i)) ->
+    le!rot13_main_n_id = Some (Vint (Int.repr len)) ->
     rot13_match_state se (rot13_writei bytes i)
-      (c_st (state_i m len buf_block i))
-  | rot13_match_state4 vf m args kont bytes:
+      (c_st (state_i buf_block le m))
+  | rot13_match_state4 vf m args kont bytes buf_block le:
+    kont = kont2 buf_block le ->
     rot13_match_state se (rot13_write bytes)
-      (st2 (init_c rot13_program) L1 None
-         (st2 (semantics1 rot13_program) (sys_c rot13_program)
-         (Callstate vf args kont m)
-         (sys_write_query bytes m)))
-  | rot13_match_state5 vf m args kont n:
+      (sys_st (Callstate vf args kont m) (sys_write_query bytes m))
+  | rot13_match_state5 vf m args kont n buf_block le:
+    kont = kont2 buf_block le ->
     rot13_match_state se rot13_ret0
-      (st2 (init_c rot13_program) L1 None
-         (st2 (semantics1 rot13_program) (sys_c rot13_program)
-         (Callstate vf args kont m)
-         (sys_write_reply n m)))
+      (sys_st (Callstate vf args kont m) (sys_write_reply n m))
   | rot13_match_state6:
     rot13_match_state se rot13_ret (st1 (init_c rot13_program) L1 (Some Int.zero)).
+
+  Inductive nth {A}: list A -> nat -> A -> Prop :=
+  | nth_this a l: nth (a :: l) 0%nat a
+  | nth_next a b n l:
+    nth l n b -> nth (a :: l) (S n) b.
+
+  Open Scope Z_scope.
+  Local Transparent Mem.loadbytes Mem.load.
+
+  Lemma getN_nth_exists len memvals bytes start i:
+    Mem.getN len start memvals = map Byte bytes ->
+    (i < len)%nat ->
+    exists byte : byte, nth bytes i byte.
+  Proof.
+    revert start i len memvals. induction bytes.
+    - intros. destruct len.
+      + inv H0.
+      + inv H.
+    - intros. destruct len.
+      + inv H0.
+      + destruct i.
+        * exists a. constructor.
+        * cbn in H. inv H.
+          exploit IHbytes. eauto.
+          instantiate (1 := i). lia.
+          intros (b & Hb). exists b. constructor. eauto.
+  Qed.
+
+  Lemma loadbytes_nth m b bytes i len:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len ->
+    exists byte, nth bytes (Z.to_nat i) byte.
+  Proof.
+    intros H Hi. unfold Mem.loadbytes in H.
+    destruct Mem.range_perm_dec eqn: Hp; try congruence. clear Hp.
+    inv H.
+    exploit getN_nth_exists; eauto.
+    lia.
+  Qed.
+
+  Lemma getN_nth' len start i bytes byte memvals:
+    Mem.getN len start memvals = map Byte bytes ->
+    (0 <= i < len)%nat ->
+    nth bytes i byte ->
+    ZMap.get (start + (Z.of_nat i)) memvals = Byte byte.
+  Proof.
+    (* TODO: cleanup *)
+    revert start len i byte memvals. induction bytes.
+    - intros. inv H1.
+    - intros. inv H1.
+      + cbn. destruct len. lia. cbn in H. inv H.
+        rewrite Z.add_0_r. reflexivity.
+      + cbn. destruct len. lia. cbn in H. inv H.
+        exploit IHbytes. 1,3: eauto. lia.
+        intros Hx.
+        assert (Z.pos (Pos.of_succ_nat n) = 1 + Z.of_nat n). lia.
+        rewrite H. rewrite Z.add_assoc. apply Hx.
+  Qed.
+
+  Lemma getN_nth len i bytes byte memvals:
+    Mem.getN len 0 memvals = map Byte bytes ->
+    (i < len)%nat ->
+    nth bytes i byte ->
+    ZMap.get (Z.of_nat i) memvals = Byte byte.
+  Proof. intros. exploit getN_nth'; eauto. lia. Qed.
+
+  Lemma loadbyte' m b bytes i len byte:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len ->
+    nth bytes (Z.to_nat i) byte ->
+    Mem.load Mint8unsigned m b i = Some (Vint (Int.repr (Byte.unsigned byte))).
+  Proof.
+    intros H Hi Hb. unfold Mem.loadbytes in H. unfold Mem.load.
+    destruct Mem.range_perm_dec eqn: Hp; try congruence. clear Hp.
+    destruct Mem.valid_access_dec.
+    2: { exfalso. apply n. unfold Mem.valid_access. split; cbn.
+         - intros x Hx. apply r. lia.
+         - apply Z.divide_1_l. }
+    inv H. f_equal. cbn. change (Pos.to_nat 1) with 1%nat.
+    unfold Mem.getN.
+    exploit getN_nth. 1,3: eauto. lia. intros A.
+    rewrite Z_to_nat_max in A. rewrite Z.max_l in A. 2: lia. rewrite A. cbn.
+    f_equal. unfold Int.zero_ext.
+    rewrite Zbits.Zzero_ext_mod. 2: lia.
+    pose proof (Byte.unsigned_range_2 byte) as Hx; cbn in Hx.
+    rewrite Int.unsigned_repr.
+    2: { unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia. }
+    change (two_p 8) with 256.
+    f_equal. rewrite Z.mod_small.
+    unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia.
+    unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia.
+  Qed.
+
+  Lemma loadbyte m b bytes i len:
+    Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
+    0 <= i < len ->
+    exists byte,
+      nth bytes (Z.to_nat i) byte /\
+        Mem.load Mint8unsigned m b i = Some (Vint (Int.repr (Byte.unsigned byte))).
+  Proof.
+    intros. exploit loadbytes_nth; eauto.
+    intros (byte & Hbyte). exists byte. split; eauto.
+    eapply loadbyte'; eauto.
+  Qed.
+
+  Lemma byte_val_casted byte:
+    val_casted (Vint (Int.repr (Byte.unsigned byte))) tchar.
+  Proof.
+    constructor. cbn.
+    unfold Int.zero_ext.
+    rewrite Zbits.Zzero_ext_mod. 2: lia.
+    pose proof (Byte.unsigned_range_2 byte) as Hx; cbn in Hx.
+    rewrite Int.unsigned_repr.
+    2: { unfold decode_int, rev_if_be. destruct Archi.big_endian; cbn; lia. }
+    change (two_p 8) with 256.
+    f_equal. rewrite Z.mod_small; lia.
+  Qed.
 
   Lemma rot13_fsim: forward_simulation 1 1 rot13_spec rot13_c.
   Proof.
@@ -1349,7 +897,7 @@ Section ROT13_FSIM.
       + exists tt, (inr (write_query bytes)).
         repeat apply conj; try repeat constructor.
         intros. inv H. inv H1.
-        eexists. split. 2: constructor. repeat constructor.
+        eexists. split. 2: econstructor; eauto. repeat constructor.
     - intros. inv H; inv H1.
       (* transition to the call to read *)
       + edestruct rot13_init_mem as [m Hm]; eauto.
@@ -1367,6 +915,7 @@ Section ROT13_FSIM.
         {
           eapply step_push.
           - econstructor; try reflexivity; eauto.
+            eapply Genv.find_invert_symbol. eauto.
           - constructor. econstructor; eauto.
             + constructor.
             + cbn. apply init_mem_nextblock in Hm.
@@ -1417,12 +966,17 @@ Section ROT13_FSIM.
           rewrite map_length in Hm1. apply Hm1. }
       (* looping *)
       + edestruct rot13_rot13_block as [b [Hb1 Hb2]]; eauto.
+        edestruct loadbyte as (byte & Hbyte & Hload); eauto.
         edestruct (Mem.alloc_succeed m 0 1) as ((m1 & b1) & Hmb). admit.
-        assert (exists m2, Mem.store Mint8unsigned m1 b1 (unsigned zero) (Vint (Int.repr (Byte.unsigned (nth (Z.to_nat i) bytes (Byte.repr 0))))) = Some m2)
+        assert (exists m2, Mem.store Mint8unsigned m1 b1 (unsigned zero) (Vint (Int.repr (Byte.unsigned byte))) = Some m2)
                  as (m2 & Hm2). admit.
         assert (exists m3,   Mem.free_list m2
                           (blocks_of_env (Smallstep.globalenv (semantics1 rot13_program se1)) (PTree.set rot13_rot13_c_id (b1, tchar) empty_env)) =
-                          Some m3) as (m3 & Hm3). admit.
+                          Some m3) as (m3 & Hm3).
+        admit.
+        assert (exists m4, Mem.store Mint8unsigned m3 buf_block i (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))) = Some m4)
+                 as (m4 & Hm4).
+        admit.
         eexists. split.
         eapply plus_left. (* internal step of rot13.c: Sloop *)
         { eapply step2. eapply step1. unfold state_i. crush_step. }
@@ -1444,10 +998,8 @@ Section ROT13_FSIM.
           - apply deref_loc_reference. reflexivity.
           - replace (unsigned (add zero (mul (repr 1) (of_intu (Int.repr i))))) with i.
             2: admit.
-            (* instantiate (1 := decode_val Mint8unsigned [nth (Z.to_nat i) (map Byte bytes) Undef]). *)
-            instantiate (1 := Vint (Int.repr (Byte.unsigned (nth (Z.to_nat i) bytes (Byte.repr 0))))).
-            admit.
-          - constructor. cbn.  admit.
+            apply Hload.
+          - apply byte_val_casted.
         }
         one_step. (* internal step of rot13.c: call rot13 *)
         { eapply step2. eapply step1; crush_step; crush_expr.
@@ -1457,34 +1009,95 @@ Section ROT13_FSIM.
             + reflexivity.
             + eapply assign_loc_value. reflexivity. cbn. apply Hm2.
             + constructor.
-          - admit.
-        }
-        one_step.
-        { eapply step2. eapply step1; crush_step.
-          - admit.
-          - instantiate (1 := true). admit.
-        }
-        one_step.
+          - admit. }
+        one_step. (* internal step of rot13: rot13 returns *)
         { eapply step2. eapply step1; crush_step; crush_expr.
-          - erewrite Mem.load_store_same; eauto.
-          - cbn. crush_expr.
-          - cbn. reflexivity.
+          - eapply Mem.load_store_same; eauto.
+          - crush_expr.
+          - cbn. reflexivity. }
+        one_step.
+        { eapply step2. eapply step1; crush_step. }
+        one_step.
+        { eapply step2. eapply step1; crush_step. }
+        one_step.
+        { eapply step2. eapply step1. crush_step; crush_expr.
+          replace (unsigned (add zero (mul (repr 1) (of_intu (Int.repr i))))) with i.
+          2: admit.
+          replace (Vint (Int.zero_ext 8 (Int.zero_ext 8 (Int.sub (Int.zero_ext 8 (Int.repr (Byte.unsigned byte))) (Int.repr 1)))))
+            with (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))).
+          2: admit.
+          apply Hm4. }
+        one_step.
+        { eapply step2. eapply step1; crush_step. }
+        one_step.
+        { eapply step2. eapply step1; crush_step; crush_expr. }
+        one_step.
+        { eapply step2. eapply step1; crush_step. }
+        apply star_refl.
+        {
+          econstructor; eauto.
+          - admit.
+          - admit.
+          - rewrite PTree.gss. f_equal. f_equal.
+            unfold Int.add. admit.
+          - admit.
         }
-        one_step.
+      (* exiting the loop and proceed to call write *)
+      + edestruct rot13_write_block as [b1 [Hb3 Hb4]]; eauto.
+        eexists. split.
+        eapply plus_left. (* internal step of rot13.c: Sloop *)
+        { eapply step2. eapply step1. unfold state_i. crush_step. }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of rot13.c: Ssequence *)
         { eapply step2. eapply step1; crush_step. }
-        one_step.
+        one_step. (* internal step of rot13.c: Sifthenelse *)
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          instantiate (1 := false).
+          destruct Int.ltu eqn: Hltu.
+          - exfalso. admit.
+          - cbn. reflexivity. }
+        one_step. (* internal step of rot13.c: Sbreak *)
+        { eapply step2. eapply step1; apply step_break_seq. }
+        one_step. (* internal step of rot13.c: Sbreak *)
+        { eapply step2. eapply step1; apply step_break_loop1. }
+        one_step. (* internal step of rot13.c: Sskip *)
+        { eapply step2. eapply step1; crush_step; crush_expr. }
+        one_step. (* internal step of rot13.c: Ssequence *)
         { eapply step2. eapply step1; crush_step. }
-
+        one_step. (* internal step of rot13.c: Scall *)
+        { eapply step2. eapply step1; crush_step; crush_expr.
+          (* deref_loc *) constructor. reflexivity. }
+        one_step. (* rot13.c call sys *)
+        { rewrite Int.unsigned_repr by admit.
+          eapply step2. eapply step_push.
+          - econstructor. eauto.
+          - eapply sys_c_initial_state_write; eauto.
+        }
+        eapply star_refl.
+        { econstructor. reflexivity. }
+      (* return from sys *)
+      + assert
+          (exists m1, Mem.free_list m
+                   (blocks_of_env (Smallstep.globalenv (semantics1 rot13_program se1))
+                      (PTree.set rot13_main_buf_id (buf_block, Tarray tchar 100 noattr) empty_env)) = Some m1)
+        as (m1 & Hm1). admit.
+        eexists. split. 2: constructor.
+        eapply plus_left. (* sys returns to rot13.c *)
+        { eapply step2. eapply step_pop; constructor. }
+        2: { instantiate (1 := E0). reflexivity. }
+        one_step. (* internal step of rot13.c: Returnstate *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Sskip *)
+        { eapply step2. eapply step1; crush_step. }
+        one_step. (* internal step of rot13.c: Sreturn *)
+        { eapply step2. eapply step1; crush_step; crush_expr. }
+        one_step. (* rot13 returns to init *)
+        { eapply step_pop; repeat econstructor. }
+        eapply star_refl.
+    - easy.
   Admitted.
 
 End ROT13_FSIM.
-
-Definition empty_skel: AST.program unit unit :=
-  {|
-    AST.prog_defs := [];
-    AST.prog_public := [];
-    AST.prog_main := None;
-  |}.
 
 Section SEQ.
 
@@ -1517,64 +1130,6 @@ Section SEQ.
 
 End SEQ.
 
-Section WITH.
-  Context {liA1 liA2 liB1 liB2}
-    (L1: semantics liA1 liB1) (L2: semantics liA2 liB2).
-  Section WITH_SE.
-    Context (se: Genv.symtbl).
-    Definition with_state := (Smallstep.state L1 + Smallstep.state L2)%type.
-    Inductive with_initial_state: query (liB1 + liB2) -> with_state -> Prop :=
-    | with_initial_state1 q s:
-      Smallstep.initial_state (L1 se) q s ->
-      with_initial_state (inl q) (inl s)
-    | with_initial_state2 q s:
-      Smallstep.initial_state (L2 se) q s ->
-      with_initial_state (inr q) (inr s).
-    Inductive with_at_external: with_state -> query (liA1 + liA2) -> Prop :=
-    | with_at_external1 s q:
-      Smallstep.at_external (L1 se) s q ->
-      with_at_external (inl s) (inl q)
-    | with_at_external2 s q:
-      Smallstep.at_external (L2 se) s q ->
-      with_at_external (inr s) (inr q).
-    Inductive with_after_external: with_state -> reply (liA1 + liA2) -> with_state -> Prop :=
-    | with_after_external1 s r s':
-      Smallstep.after_external (L1 se) s r s' ->
-      with_after_external (inl s) (inl r) (inl s')
-    | with_after_external2 s r s':
-      Smallstep.after_external (L2 se) s r s' ->
-      with_after_external (inr s) (inr r) (inr s').
-    Inductive with_final_state: with_state -> reply (liB1 + liB2) -> Prop :=
-    | with_final_state1 s r:
-      Smallstep.final_state (L1 se) s r ->
-      with_final_state (inl s) (inl r)
-    | with_final_state2 s r:
-      Smallstep.final_state (L2 se) s r ->
-      with_final_state (inr s) (inr r).
-    Inductive with_step: with_state -> trace -> with_state -> Prop :=
-    | with_step1 s1 s1' t:
-      Step (L1 se) s1 t s1' -> with_step (inl s1) t (inl s1')
-    | with_step2 s2 s2' t:
-      Step (L2 se) s2 t s2' -> with_step (inr s2) t (inr s2').
-
-  End WITH_SE.
-
-  Definition with_semantics: semantics (liA1 + liA2) (liB1 + liB2) :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step := with_step;
-          Smallstep.initial_state := with_initial_state se;
-          Smallstep.at_external := with_at_external se;
-          Smallstep.after_external := with_after_external se;
-          Smallstep.final_state := with_final_state se;
-          Smallstep.globalenv := se;
-        |};
-      skel := empty_skel;
-      footprint i := False;
-    |}.
-
-End WITH.
 
 Section PIPE.
 
