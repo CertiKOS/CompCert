@@ -587,7 +587,6 @@ Section ROT13_FSIM.
 
   Notation L1 := (comp_semantics' (semantics1 rot13_program) (sys_c rot13_program) (erase_program rot13_program)).
   Opaque semantics1.
-  Import Ptrofs.
 
   Lemma rot13_prog_defmap_main:
     (prog_defmap rot13_program) ! rot13_main_id =
@@ -609,7 +608,7 @@ Section ROT13_FSIM.
   Lemma rot13_main_block se:
     Genv.valid_for (AST.erase_program rot13_program) se ->
     exists b, Genv.find_symbol (globalenv se rot13_program) rot13_main_id = Some b /\
-           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some (Internal rot13_main).
+           Genv.find_funct (globalenv se rot13_program) (Vptr b Ptrofs.zero) = Some (Internal rot13_main).
   Proof.
     intros Hse.
     exploit @Genv.find_def_symbol; eauto.
@@ -621,7 +620,7 @@ Section ROT13_FSIM.
   Lemma rot13_read_block se:
     Genv.valid_for (AST.erase_program rot13_program) se ->
     exists b, Genv.find_symbol (globalenv se rot13_program) rot13_read_id = Some b /\
-           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some read.
+           Genv.find_funct (globalenv se rot13_program) (Vptr b Ptrofs.zero) = Some read.
   Proof.
     intros Hse.
     exploit @Genv.find_def_symbol; eauto.
@@ -633,7 +632,7 @@ Section ROT13_FSIM.
   Lemma rot13_write_block se:
     Genv.valid_for (AST.erase_program rot13_program) se ->
     exists b, Genv.find_symbol (globalenv se rot13_program) rot13_write_id = Some b /\
-           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some write.
+           Genv.find_funct (globalenv se rot13_program) (Vptr b Ptrofs.zero) = Some write.
   Proof.
     intros Hse.
     exploit @Genv.find_def_symbol; eauto.
@@ -645,7 +644,7 @@ Section ROT13_FSIM.
   Lemma rot13_rot13_block se:
     Genv.valid_for (AST.erase_program rot13_program) se ->
     exists b, Genv.find_symbol (globalenv se rot13_program) rot13_rot13_id = Some b /\
-           Genv.find_funct (globalenv se rot13_program) (Vptr b zero) = Some (Internal rot13_rot13).
+           Genv.find_funct (globalenv se rot13_program) (Vptr b Ptrofs.zero) = Some (Internal rot13_rot13).
   Proof.
     intros Hse.
     exploit @Genv.find_def_symbol; eauto.
@@ -723,30 +722,39 @@ Section ROT13_FSIM.
   Inductive rot13_match_state (se: Genv.symtbl): rot13_state -> Smallstep.state rot13_c -> Prop :=
   | rot13_match_state1:
     rot13_match_state se rot13_read0 (st1 (init_c rot13_program) L1 None)
-  | rot13_match_state2 vf m args kont buf_block:
-    kont = kont1 buf_block ->
-    Mem.range_perm m buf_block 0 100 Cur Writable ->
+  | rot13_match_state2 vf m args kont buf_block
+    (HKONT: kont = kont1 buf_block)
+    (HALLOC: Mem.alloc_flag m = true)
+    (HPERM: Mem.range_perm m buf_block 0 100 Cur Freeable)
+    (HVALID: Mem.valid_block m buf_block):
     rot13_match_state se rot13_read
       (sys_st (Callstate vf args kont m) (sys_read_query (Int64.repr 100) buf_block Ptrofs.zero m))
   | rot13_match_state3 vf m args kont bytes buf_block
     (HKONT: kont = kont1 buf_block)
-    (HPERM: Mem.range_perm m buf_block 0 (Z.of_nat (Datatypes.length bytes)) Cur Writable)
+    (HALLOC: Mem.alloc_flag m = true)
+    (HPERM: Mem.range_perm m buf_block 0 100 Cur Freeable)
+    (HVALID: Mem.valid_block m buf_block)
     (HLEN: Z.of_nat (length bytes) <= 100):
     rot13_match_state se (rot13_write0 bytes)
       (sys_st (Callstate vf args kont m) (sys_read_reply bytes buf_block Ptrofs.zero m))
   | rot13_match_state_i m bytes i buf_block len le
     (HLENEQ: len = Z.of_nat (length bytes)) (HI: i <= len) (HLEN: len <= 100)
     (HLB: Mem.loadbytes m buf_block 0 len = Some (map Byte bytes))
+    (HALLOC: Mem.alloc_flag m = true)
+    (HPERM: Mem.range_perm m buf_block 0 100 Cur Freeable)
+    (HVALID: Mem.valid_block m buf_block)
     (HIEQ: le!rot13_main_i_id = Some (Vint (Int.repr i)))
     (HNEQ: le!rot13_main_n_id = Some (Vint (Int.repr len))):
     rot13_match_state se (rot13_writei bytes i)
       (c_st (state_i buf_block le m))
-  | rot13_match_state4 vf m args kont bytes buf_block le:
-    kont = kont2 buf_block le ->
+  | rot13_match_state4 vf m args kont bytes buf_block le
+    (HPERM: Mem.range_perm m buf_block 0 100 Cur Freeable)
+    (HKONT: kont = kont2 buf_block le):
     rot13_match_state se (rot13_write bytes)
       (sys_st (Callstate vf args kont m) (sys_write_query bytes m))
-  | rot13_match_state5 vf m args kont n buf_block le:
-    kont = kont2 buf_block le ->
+  | rot13_match_state5 vf m args kont n buf_block le
+    (HPERM: Mem.range_perm m buf_block 0 100 Cur Freeable)
+    (HKONT: kont = kont2 buf_block le):
     rot13_match_state se rot13_ret0
       (sys_st (Callstate vf args kont m) (sys_write_reply n m))
   | rot13_match_state6:
@@ -869,6 +877,19 @@ Section ROT13_FSIM.
     f_equal. rewrite Z.mod_small; lia.
   Qed.
 
+  Lemma ptrofs_lemma1 i:
+    0 <= i <= 100 ->
+    Ptrofs.unsigned (Ptrofs.add Ptrofs.zero (Ptrofs.mul (Ptrofs.repr 1) (Ptrofs.of_intu (Int.repr i)))) = i.
+  Proof.
+    intros. rewrite Ptrofs.add_zero_l, Ptrofs.mul_commut, Ptrofs.mul_one.
+    unfold Ptrofs.of_intu. unfold Ptrofs.of_int.
+    rewrite Int.unsigned_repr. 2: cbn; lia.
+    rewrite Ptrofs.unsigned_repr. reflexivity.
+    unfold Ptrofs.max_unsigned. unfold Ptrofs.modulus.
+    unfold Ptrofs.wordsize. unfold Wordsize_Ptrofs.wordsize.
+    destruct Archi.ptr64; cbn; lia.
+  Qed.
+
   Lemma rot13_fsim: forward_simulation 1 1 rot13_spec rot13_c.
   Proof.
     constructor. econstructor. reflexivity. cbn.
@@ -889,8 +910,6 @@ Section ROT13_FSIM.
         repeat apply conj; try repeat constructor.
         intros. inv H. inv H1.
         eexists. split. 2: econstructor; eauto. repeat constructor; eauto.
-        (* range_perm *)
-        intros p Hperm. apply H3. lia.
       + exists tt, (inr (write_query bytes)).
         repeat apply conj; try repeat constructor.
         intros. inv H. inv H1.
@@ -903,11 +922,13 @@ Section ROT13_FSIM.
         exploit init_mem_alloc_flag; eauto. intros Hflag.
         edestruct (@Mem.alloc_succeed m 0 100); eauto. destruct x as (m1 & b2).
         eexists. split.
-        2: { econstructor; eauto.
+        2: { econstructor. eauto.
+             (* alloc_flag *)
+             - eapply Mem.alloc_flag_alloc2; eauto.
              (* range_perm *)
-             intros p Hperm.
-             eapply Mem.perm_alloc_2 in e; eauto.
-             eauto with mem. }
+             - intros p Hperm. eapply Mem.perm_alloc_2 in e; eauto.
+             (* valid_block *)
+             - eapply Mem.valid_new_block; eauto. }
         eapply plus_left. (* init calls rot13.c *)
         { eapply step_push.
           - econstructor; try reflexivity; eauto.
@@ -928,9 +949,10 @@ Section ROT13_FSIM.
         { eapply step2. eapply step_push; repeat econstructor; eauto. }
         eapply star_refl.
       (* enter the loop *)
-      + edestruct Mem.range_perm_storebytes with (ofs := 0) (bytes := map Byte bytes) as (m1 & Hm1).
-        (* range_perm *)
-        intros p Hperm. apply HPERM. rewrite map_length in Hperm. eauto.
+      + edestruct (Mem.range_perm_storebytes m buf_block 0 (map Byte bytes)) as (m1 & Hm1).
+        { (* range_perm *)
+          intros p Hperm. eapply Mem.perm_implies. apply HPERM.
+          rewrite map_length in Hperm. lia. auto with mem. }
         eexists. split.
         eapply plus_left. (* sys returns to rot13.c, and storebytes "urbby" *)
         { eapply step2. eapply step_pop; econstructor; eauto. }
@@ -945,21 +967,35 @@ Section ROT13_FSIM.
         rewrite PTree.set2. eapply star_refl.
         { econstructor; eauto; try lia.
           (* loadbytes *)
-          apply Mem.loadbytes_storebytes_same in Hm1.
-          rewrite map_length in Hm1. apply Hm1. }
+          - apply Mem.loadbytes_storebytes_same in Hm1.
+            rewrite map_length in Hm1. apply Hm1.
+          - erewrite Mem.storebytes_alloc_flag; eauto.
+          - intros p Hp. eauto with mem.
+          - eauto with mem. }
       (* looping *)
       + edestruct rot13_rot13_block as [b [Hb1 Hb2]]; eauto.
         edestruct loadbyte as (byte & Hbyte & Hload); eauto.
-        edestruct (Mem.alloc_succeed m 0 1) as ((m1 & b1) & Hmb). admit.
-        assert (exists m2, Mem.store Mint8unsigned m1 b1 (unsigned zero) (Vint (Int.repr (Byte.unsigned byte))) = Some m2)
-                 as (m2 & Hm2). admit.
-        assert (exists m3,   Mem.free_list m2
-                          (blocks_of_env (Smallstep.globalenv (semantics1 rot13_program se1)) (PTree.set rot13_rot13_c_id (b1, tchar) empty_env)) =
-                          Some m3) as (m3 & Hm3).
-        admit.
+        edestruct (Mem.alloc_succeed m 0 1) as ((m1 & b1) & Hmb); eauto.
+        assert (exists m2, Mem.store Mint8unsigned m1 b1 0 (Vint (Int.repr (Byte.unsigned byte))) = Some m2)
+                 as (m2 & Hm2).
+        { edestruct Mem.valid_access_store as (m2 & Hm2); eauto. split; cbn.
+          - intros p Hp. eapply Mem.perm_alloc_2 in Hmb.
+            eapply Mem.perm_implies; eauto. auto with mem. lia.
+          - apply Z.divide_1_l. }
+        assert (exists m3,   Mem.free_list m2 [(b1, 0, 1)] = Some m3) as (m3 & Hm3).
+        { edestruct Mem.range_perm_free as (m3 & Hm3).
+          2: cbn; eexists; rewrite Hm3; eauto.
+          intros p Hp. eauto with mem. }
         assert (exists m4, Mem.store Mint8unsigned m3 buf_block i (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))) = Some m4)
                  as (m4 & Hm4).
-        admit.
+        { edestruct Mem.valid_access_store as (m4 & Hm4); eauto. split; cbn.
+          - intros p Hp. cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
+            eapply Mem.perm_free_1; eauto. left.
+            intros Hb. subst. eapply Mem.fresh_block_alloc; eauto.
+            eapply Mem.perm_store_1; eauto.
+            eapply Mem.perm_alloc_1; eauto.
+            eapply Mem.perm_implies; eauto. apply HPERM. lia. auto with mem.
+          - apply Z.divide_1_l. }
         eexists. split.
         eapply plus_left. (* internal step of rot13.c: Sloop *)
         { eapply step2. eapply step1. unfold state_i. crush_step. }
@@ -975,11 +1011,8 @@ Section ROT13_FSIM.
         one_step. (* internal step of rot13.c: Scall *)
         { eapply step2. eapply step1; crush_step; crush_expr.
           - apply deref_loc_reference. reflexivity.
-          - replace (unsigned (add zero (mul (repr 1) (of_intu (Int.repr i))))) with i.
-            2: admit.
-            apply Hload.
-          - apply byte_val_casted.
-        }
+          - rewrite ptrofs_lemma1 by lia. apply Hload.
+          - apply byte_val_casted. }
         one_step. (* internal step of rot13.c: call rot13 *)
         { eapply step2. eapply step1; crush_step; crush_expr.
           - solve_list_norepet.
@@ -987,8 +1020,7 @@ Section ROT13_FSIM.
           - econstructor.
             + reflexivity.
             + eapply assign_loc_value. reflexivity. cbn. apply Hm2.
-            + constructor.
-          - admit. }
+            + constructor. }
         one_step. (* internal step of rot13: rot13 returns *)
         { eapply step2. eapply step1; crush_step; crush_expr.
           - eapply Mem.load_store_same; eauto.
@@ -998,8 +1030,7 @@ Section ROT13_FSIM.
         one_trivial_step. (* internal step of rot13.c: Sskip *)
         one_step.
         { eapply step2. eapply step1. crush_step; crush_expr.
-          replace (unsigned (add zero (mul (repr 1) (of_intu (Int.repr i))))) with i.
-          2: admit.
+          rewrite ptrofs_lemma1 by lia.
           replace (Vint (Int.zero_ext 8 (Int.zero_ext 8 (Int.sub (Int.zero_ext 8 (Int.repr (Byte.unsigned byte))) (Int.repr 1)))))
             with (Vint (Int.sub (Int.repr (Byte.unsigned byte)) (Int.repr 1))).
           2: admit.
@@ -1008,14 +1039,27 @@ Section ROT13_FSIM.
         one_trivial_step. (* internal step of rot13.c: Sset *)
         one_trivial_step. (* internal step of rot13.c: Sskip *)
         apply star_refl.
-        {
-          econstructor; eauto.
+        { econstructor; eauto with mem.
           - admit.
           - admit.
+          - admit.
+          - erewrite Mem.store_alloc_flag. 2: eauto.
+            cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
+            erewrite Mem.free_alloc_flag. 2: eauto.
+            erewrite Mem.store_alloc_flag. 2: eauto.
+            eapply Mem.alloc_flag_alloc2; eauto.
+          - intros p Hp.
+            eapply Mem.perm_store_1; eauto.
+            cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
+            eapply Mem.perm_free_1; eauto. left.
+            intros Hb. subst. eapply Mem.fresh_block_alloc; eauto.
+            eapply Mem.perm_store_1; eauto.
+            eapply Mem.perm_alloc_1; eauto.
           - rewrite PTree.gss. f_equal. f_equal.
-            unfold Int.add. admit.
-          - admit.
-        }
+            unfold Int.add. f_equal.
+            rewrite !Int.unsigned_repr; cbn; lia.
+          - do 2 rewrite PTree.gso by easy. rewrite HNEQ.
+            do 4 f_equal. admit. }
       (* exiting the loop and proceed to call write *)
       + edestruct rot13_write_block as [b1 [Hb3 Hb4]]; eauto.
         eexists. split.
@@ -1035,18 +1079,17 @@ Section ROT13_FSIM.
         one_trivial_step. (* internal step of rot13.c: Scall *)
         { unfold rw_type. crush_deref. }
         one_step. (* rot13.c call sys *)
-        { rewrite Int.unsigned_repr by admit.
+        { rewrite Int.unsigned_repr by (cbn; lia).
           eapply step2. eapply step_push.
           - econstructor. eauto.
           - eapply sys_c_initial_state_write; eauto. }
         eapply star_refl.
-        { econstructor. reflexivity. }
+        { econstructor; eauto. reflexivity. }
       (* return from sys *)
-      + assert
-          (exists m1, Mem.free_list m
-                   (blocks_of_env (Smallstep.globalenv (semantics1 rot13_program se1))
-                      (PTree.set rot13_main_buf_id (buf_block, Tarray tchar 100 noattr) empty_env)) = Some m1)
-        as (m1 & Hm1). admit.
+      + assert (exists m1, Mem.free_list m [(buf_block, 0, 100%Z)] = Some m1) as (m1 & Hm1).
+        { edestruct Mem.range_perm_free as (m1 & Hm1).
+          2: cbn; eexists; rewrite Hm1; eauto.
+          intros p Hp. eauto with mem. }
         eexists. split. 2: constructor.
         eapply plus_left. (* sys returns to rot13.c *)
         { eapply step2. eapply step_pop; constructor. }
