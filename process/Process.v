@@ -17,7 +17,7 @@ Section NTH.
     nth l n b -> nth (a :: l) (S n) b.
 
   Open Scope Z_scope.
-  Local Transparent Mem.loadbytes Mem.load.
+  Local Transparent Mem.loadbytes Mem.load Mem.store.
 
   Lemma getN_nth_exists len memvals bytes start i:
     Mem.getN len start memvals = map Byte bytes ->
@@ -120,13 +120,63 @@ Section NTH.
   | nth_update_next a n f l l':
     nth_update l n f l' -> nth_update (a :: l) (S n) f (a :: l').
 
+  Local Transparent Archi.big_endian.
+
+  Lemma getN_set_outside len start x v memvals:
+    (x < start \/ start + Z.of_nat len <= x)%Z ->
+    Mem.getN len start (ZMap.set x v memvals) = Mem.getN len start memvals.
+  Proof.
+    revert start x v memvals. induction len.
+    - intros. cbn. reflexivity.
+    - intros. cbn. f_equal.
+      + rewrite ZMap.gso; eauto. lia.
+      + eapply IHlen. lia.
+  Qed.
+
+  Lemma nth_update_getN i len start memvals f byte bytes bytes':
+    (i < len)%nat ->
+    nth bytes i byte ->
+    nth_update bytes i f bytes' ->
+    Mem.getN len start memvals = map Byte bytes ->
+    Mem.getN len start (ZMap.set (start + Z.of_nat i) (Byte (f byte)) memvals) = map Byte bytes'.
+  Proof.
+    revert start i len memvals byte bytes'. induction bytes.
+    - intros. inv H0.
+    - intros. inv H0; inv H1.
+      + cbn. destruct len. lia. cbn in H2. inv H2. rewrite Z.add_0_r.
+        cbn. f_equal.
+        * rewrite ZMap.gss. reflexivity.
+        * apply getN_set_outside. lia.
+      + cbn. destruct len. lia. cbn in H2. inv H2.
+        assert (Z.pos (Pos.of_succ_nat n) = 1 + Z.of_nat n) as Hn. lia.
+        cbn. f_equal.
+        * rewrite ZMap.gso; try lia. reflexivity.
+        * rewrite Hn. rewrite Z.add_assoc. eapply IHbytes; eauto. lia.
+  Qed.
+
   Lemma storebyte m b bytes i len byte m' bytes' f:
     Mem.loadbytes m b 0 len = Some (map Byte bytes) ->
     0 <= i < len -> nth bytes (Z.to_nat i) byte ->
     Mem.store Mint8unsigned m b i (Vint (Int.repr (Byte.unsigned (f byte)))) = Some m' ->
     nth_update bytes (Z.to_nat i) f bytes' ->
     Mem.loadbytes m' b 0 len = Some (map Byte bytes').
-  Admitted.
+  Proof.
+    intros.
+    unfold Mem.loadbytes in *.
+    destruct Mem.range_perm_dec; try congruence. inv H.
+    cbn. destruct Mem.range_perm_dec.
+    2: { exfalso. apply n. intros p Hp. eauto with mem. }
+    unfold Mem.store in H2.
+    destruct Mem.valid_access_dec; try congruence. inv H2.
+    clear r0. cbn. f_equal.
+    rewrite Int.unsigned_repr.
+    2: { pose proof (Byte.unsigned_range_2 (f byte)) as Hx; cbn in *; lia. }
+    rewrite Byte.repr_unsigned.
+    rewrite PMap.gss.
+    exploit (nth_update_getN (Z.to_nat i) (Z.to_nat len) 0); eauto. lia.
+    cbn.
+    rewrite Z_to_nat_max. rewrite Z.max_l. 2: lia. eauto.
+  Qed.
 
   Lemma nth_update_length {A} (l: list A) n f l':
     nth_update l n f l' -> length l = length l'.
