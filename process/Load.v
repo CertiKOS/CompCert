@@ -145,7 +145,7 @@ End CA.
 
 Notation tint := (Tint I32 Unsigned noattr).
 
-Definition main_sig := signature_of_type Tnil tint cc_default.
+Definition main_sig := signature_of_type Ctypes.Tnil tint cc_default.
 
 Section INIT_C.
   Context (prog: Clight.program).
@@ -260,6 +260,9 @@ End VA.
 
 Require Import Compiler.
 
+Definition cc_compcert : callconv li_c li_asm :=
+  cc_cklrs^{*} @ Invariant.cc_inv Invariant.wt_c @ lessdef_c @ cc_c_asm @ cc_asm vainj.
+
 Section INIT_C_ASM.
 
   Local Transparent Archi.ptr64.
@@ -281,6 +284,8 @@ Section INIT_C_ASM.
     intros. edestruct clight_semantic_preservation as [H1 ?]; eauto.
     destruct H1. destruct X. apply fsim_skel.
   Qed.
+
+  Hypothesis (Hwin64: Archi.win64 = false).
 
   Lemma init_c_asm p tp:
     match_prog p tp -> forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
@@ -322,25 +327,27 @@ Section INIT_C_ASM.
         instantiate (1 := (se1, tt, _)).
         exists (cq (Vptr b Ptrofs.zero) main_sig [] m). split.
         { repeat constructor. }
-        (* cc_c_locset *)
-        instantiate (1 := (se1, main_sig, _)).
-        eexists (Conventions.lq (Vptr b Ptrofs.zero) main_sig (CallConv.make_locset (Mach.Regmap.init Vundef) m (Vptr b Ptrofs.zero)) m). split.
-        { constructor. unfold Conventions1.loc_arguments. cbn.
-          destruct Archi.win64; reflexivity. }
-        (* cc_locset_mach *)
-        set (rs := ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # SP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr)).
-        instantiate (1 := (se1, CallConv.lmw main_sig (Mach.Regmap.init Vundef) m (Vptr b Ptrofs.zero), _)).
-        eexists (Mach.mq rs#PC rs#SP rs#RA (Mach.Regmap.init Vundef) m). split.
-        { repeat constructor.
-          red. unfold Conventions.size_arguments. cbn. destruct Archi.win64; reflexivity. }
-        (* cc_mach_asm *)
-        instantiate (1 := (se1, ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # RSP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr, Mem.nextblock m), _)).
-        eexists ((((Pregmap.init Vundef) # PC <- (Vptr b Ptrofs.zero)) # RSP <- (Vptr b Ptrofs.zero)) # RA <- Vnullptr, m). split.
-        { econstructor; cbn; try congruence.
+        (* cc_c_asm *)
+        instantiate (1 := (se1, caw main_sig
+                                  (((Pregmap.init Vundef) # PC
+                                    <- (Vptr b Ptrofs.zero)# RSP
+                                    <- (Vptr b Ptrofs.zero))# RA
+                                   <- Vnullptr) m, _)).
+        eexists ((((Pregmap.init Vundef) # PC
+                   <- (Vptr b Ptrofs.zero)) # RSP
+                  <- (Vptr b Ptrofs.zero)) # RA
+                 <- Vnullptr, m). split.
+        {
+          econstructor; cbn; eauto.
+          - rewrite Hwin64. reflexivity.
+          - repeat constructor. red. unfold size_arguments.
+            cbn. rewrite Hwin64. reflexivity.
           - constructor. erewrite init_mem_nextblock; eauto.
             apply Genv.invert_find_symbol in H4.
             exploit @Genv.genv_symb_range; eauto.
-          - intros. destruct r; eauto. }
+          - easy.
+          - easy.
+        }
         (* cc_asm vainj *)
         instantiate (1 := (se1, Inject.injw (Mem.flat_inj (Mem.nextblock m)) (Mem.nextblock m) (Mem.nextblock m))).
         repeat apply conj; cbn; eauto; try easy.
@@ -365,15 +372,10 @@ Section INIT_C_ASM.
         destruct H0 as (r3 & Hr3 & HR). inv Hr3.
         destruct HR as (r3 & Hr3 & HR). inv Hr3.
         destruct HR as (r3 & Hr3 & HR). inv Hr3. inv H9.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3. cbn in H9.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3.
-        specialize (H13 AX). rewrite <- H9 in H13.
-        exploit H13. cbn. left. reflexivity. intros HAX.
-        destruct HR as ((rs & mx) & Hr3 & Hr4). inv Hr3.
-        specialize (H20 AX). rewrite HAX in H20. cbn in H20.
-        destruct Hr4 as ((? & ?) & ? & Hr). destruct r2.
-        inv Hr. specialize (H5 RAX). rewrite <- H20 in H5.
-        destruct H2. cbn in H10. cbn in H5. inv H5.
+        destruct HR as (r3 & Hr3 & HR). inv Hr3. cbn in *.
+        destruct HR as ((? & ?) & ? & Hr). destruct r2.
+        inv Hr. specialize (H5 RAX). rewrite <- H11 in H5.
+        cbn in H5. inv H5.
         constructor. easy.
     - easy.
     - easy.
