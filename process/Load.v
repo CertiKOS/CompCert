@@ -606,7 +606,7 @@ Section SYS_C_ASM.
     - eapply IHbytes. eauto.
   Qed.
 
-  Lemma match_cklr_loadbytes w m b ofs m' b' ofs' len bytes:
+  Lemma cklr_loadbytes w m b ofs m' b' ofs' len bytes:
     mm_cklr w m m' ->
     mp_cklr w b ofs b' ofs' ->
     Mem.loadbytes m b (Ptrofs.unsigned ofs) len = Some (map Byte bytes) ->
@@ -626,7 +626,7 @@ Section SYS_C_ASM.
     induction bytes.
   Admitted.
 
-  Lemma match_cklr_storebytes w m1 m2 m3 b1 ofs1 b2 ofs2 bytes:
+  Lemma cklr_storebytes w m1 m2 m3 b1 ofs1 b2 ofs2 bytes:
     mm_cklr w m1 m2 ->
     mp_cklr w b1 ofs1 b2 ofs2 ->
     Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) (map Byte bytes) = Some m3 ->
@@ -681,8 +681,8 @@ Section SYS_C_ASM.
 
   Inductive mp_cklrs: ccworld (cc_cklrs^{*}) -> block -> ptrofs -> block -> ptrofs -> Prop :=
   | mp_cklrs_zero b ofs: mp_cklrs (existT _ 0%nat tt) b ofs b ofs
-  | mp_cklrs_succ n se w wx wn b1 ofs1 b2 ofs2 b3 ofs3:
-        mp_cklr wx b1 ofs1 b2 ofs2 -> mp_cklrs (existT _ n wn) b2 ofs2 b3 ofs3 ->
+  | mp_cklrs_succ n se w wn b1 ofs1 b2 ofs2 b3 ofs3:
+        mp_cklr w b1 ofs1 b2 ofs2 -> mp_cklrs (existT _ n wn) b2 ofs2 b3 ofs3 ->
         mp_cklrs (existT _ (S n) (se, w, wn)) b1 ofs1 b3 ofs3.
 
   Require Import Classical.
@@ -806,14 +806,13 @@ Section SYS_C_ASM.
     (* PTree.extensionality_empty *)
   Admitted.
 
-
-  Inductive mm_ca: ccworld (cc_cklrs^{*}) -> world vainj -> cc_ca_world -> mem -> mem -> Prop :=
-  | mm_ca_intro wn wi wj m1 m2 m3 sg rs se
+  Inductive mm_ca: ccworld (cc_cklrs^{*}) -> world vainj -> mem -> mem -> mem -> Prop :=
+  | mm_ca_intro wn wi wj m1 m2 m3 se mbefore
     (HN: mm_cklrs wn m1 m2) (HI: match_mem inj wj m2 m3) (HJ: wi ~> wj)
     (HRO: romatch_all se (bc_of_symtbl se) m2)
     (HNEXT: (Genv.genv_next se <= Mem.nextblock m2)%positive)
-    (HSG: sg = rw_sig):
-    mm_ca wn (se, wi) (caw sg rs m2) m1 m3.
+    (MBEFORE: Mem.unchanged_on (fun _ _ => False) mbefore m2):
+    mm_ca wn (se, wi) mbefore m1 m3.
 
   Inductive mp_ca: ccworld (cc_cklrs^{*}) -> world inj -> block -> ptrofs -> block -> ptrofs -> Prop :=
   | mp_ca_intro wn wi b1 ofs1 b2 ofs2 b3 ofs3:
@@ -821,27 +820,79 @@ Section SYS_C_ASM.
     ptrbits_inject (mi inj wi) (b2, ofs2) (b3, ofs3) ->
     mp_ca wn wi b1 ofs1 b3 ofs3.
 
-  (* Inductive acc_ca: ccworld (cc_cklrs^{*}) -> world inj -> ccworld (cc_cklrs^{*}) -> world inj -> Prop := *)
-  (* | acc_ca_intro wn wi wn' wi': *)
-  (*   acc_cklrs wn wn' ->  wi ~> wi' -> acc_ca wn wi wn' wi'. *)
+  Lemma mp_cklr_acc w1 w2 b1 ofs1 b2 ofs2:
+    mp_cklr w1 b1 ofs1 b2 ofs2 -> acc_cklr w1 w2 -> mp_cklr w2 b1 ofs1 b2 ofs2.
+  Proof. intros HP HW. inv HP; inv HW; constructor; rauto. Qed.
 
-  Lemma ca_storebytes n w m1 b1 ofs1 m2 b2 ofs2 bytes m3 caw se:
-    mm_ca n (se, w) caw m1 m2 ->
+  Lemma cklrs_storebytes w m1 m2 b1 ofs1 b2 ofs2 bytes m3:
+    mm_cklrs w m1 m2 ->
+    mp_cklrs w b1 ofs1 b2 ofs2 ->
+    Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) (map Byte bytes) = Some m3 ->
+    exists m4,
+      Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some m4
+      /\ mm_cklrs w m3 m4.
+  Proof.
+    destruct w. revert m1 m2 b1 ofs1 b2 ofs2 m3. induction x.
+    - intros.
+      inv H. subst_dep. inv H0.
+      exists m3. split; eauto. constructor.
+    - intros * HM HP HS.
+      simple inversion HM. inv H.
+      exploit eq_sigT_fst. apply H1. intros HNat. inv HNat.
+      subst_dep. intros (Hw & Hm) Hms.
+      simple inversion HP. inv H.
+      exploit eq_sigT_fst. apply H1. intros HNat. inv HNat.
+      subst_dep. intros Hp Hps. inv H1.
+      eapply mp_cklr_acc in Hp. 2: apply Hw.
+      exploit cklr_storebytes; eauto.
+      intros (ww & mx & Hww & Hmx & Hmm).
+      specialize (IHx _ _ _ _ _ _ _ _ Hms Hps Hmx) as (mt & Hmt & Hmmt).
+      exists mt; split; eauto.
+      econstructor; eauto. split. 2: eauto.
+      etransitivity; eauto.
+  Qed.
+
+  Lemma ca_storebytes n w m1 b1 ofs1 m2 b2 ofs2 bytes m3 se mbefore:
+    mm_ca n (se, w) mbefore m1 m2 ->
     mp_ca n w b1 ofs1 b2 ofs2 ->
     Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) (map Byte bytes) = Some m3 ->
     exists m4,
       Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some m4
-      /\ mm_ca n (se, w) caw m3 m4.
+      /\ mm_ca n (se, w) mbefore m3 m4.
+  Proof.
+    intros HM HP HS. inv HM. inv HP.
+    exploit cklrs_storebytes; eauto. intros (mc & Hmc & Hmmc).
+    assert (Hp: ptr_inject (mi inj wj) (b3, Ptrofs.unsigned ofs3) (b2, Ptrofs.unsigned ofs2)).
+    { eapply ptrbits_ptr_inject; eauto.
+      - eapply ptrbits_inject_incr. 2: eauto. rauto.
+      - eapply Mem.storebytes_range_perm; eauto. admit. }
+    exploit (CKLR.cklr_storebytes inj); eauto. left. apply Hp. apply bytes_inject.
+    unfold k1, uncurry. rewrite Hmc.
+    intros Ht. inv Ht. destruct H3 as (wt & Hwt & Hmt).
+    exists y. split; eauto. econstructor; eauto.
+    - etransitivity; eauto.
+    - intros b Hb. eapply romatch_storebytes; eauto.
+    - erewrite Mem.nextblock_storebytes; eauto.
+    - destruct MBEFORE. split; try easy.
+      + etransitivity; eauto.
+        erewrite <- Mem.nextblock_storebytes; eauto.
+        reflexivity.
+      + rewrite unchanged_on_alloc_flag. symmetry.
+        eapply Mem.storebytes_alloc_flag; eauto.
   Admitted.
 
   Inductive match_sys_state:
     ccworld (cc_cklrs^{*}) -> world vainj -> cc_ca_world -> sys_state -> sys_state -> Prop :=
-  | match_sys_state_read_query wn wi len b1 ofs1 m1 b2 ofs2 m2 caw se
-      (HM: mm_ca wn (se, wi) caw m1 m2) (HP: mp_ca wn wi b1 ofs1 b2 ofs2):
+  | match_sys_state_read_query wn wi len b1 ofs1 m1 b2 ofs2 m2 caw se rs
+      (HM: mm_ca wn (se, wi) (caw_m caw) m1 m2) (HP: mp_ca wn wi b1 ofs1 b2 ofs2)
+      (HRS: forall r, Val.inject (mi inj wi) ((caw_rs caw)#r) (rs#r))
+      (HSG: caw_sg caw = rw_sig):
       match_sys_state wn (se, wi) caw
         (sys_read_query len b1 ofs1 m1) (sys_read_query len b2 ofs2 m2)
-  | match_sys_state_read_reply wn wi bytes b1 ofs1 m1 b2 ofs2 m2 caw se
-      (HM: mm_ca wn (se, wi) caw m1 m2) (HP: mp_ca wn wi b1 ofs1 b2 ofs2):
+  | match_sys_state_read_reply wn wi bytes b1 ofs1 m1 b2 ofs2 m2 caw se rs
+      (HM: mm_ca wn (se, wi) (caw_m caw) m1 m2) (HP: mp_ca wn wi b1 ofs1 b2 ofs2)
+      (HRS: forall r, Val.inject (mi inj wi) ((caw_rs caw)#r) (rs#r))
+      (HSG: caw_sg caw = rw_sig):
       match_sys_state wn (se, wi) caw
         (sys_read_reply bytes b1 ofs1 m1) (sys_read_reply bytes b2 ofs2 m2).
 
@@ -899,11 +950,16 @@ Section SYS_C_ASM.
           -- admit.
           -- admit.
           -- admit.
-        * constructor.
+        * econstructor.
           (* mem *)
           -- inv H10. econstructor; eauto. reflexivity.
+             cbn. apply Mem.unchanged_on_refl.
           (* ptr *)
           -- econstructor; eauto. inv Hb'. constructor; eauto.
+          (* regset *)
+          -- instantiate (1:= r0). apply H3.
+          (* sig *)
+          -- reflexivity.
       + admit.
     - intros. inv H3.
       + subst ms. inv H2.
@@ -912,27 +968,37 @@ Section SYS_C_ASM.
         cbn -[match_prog] in *. inv H6. inv Hm.
         eexists ((rs#RAX <- (Vint (Int.repr (Z.of_nat (length bytes)))))#PC <- (rs#RA) , mx). split.
         * econstructor; eauto.
-        * eexists (cr (Vint (Int.repr (Z.of_nat (length bytes)))) m0). split.
+        * set (v := (Vint (Int.repr (Z.of_nat (length bytes))))).
+          eexists (cr v m0). split.
           { destruct s6. eapply cklrs_match_reply_intro; eauto. }
-          eexists (cr (Vint (Int.repr (Z.of_nat (length bytes)))) m0). split.
+          eexists (cr v m0). split.
           (* need sig *)
           { constructor. cbn. admit. }
-          eexists (cr (Vint (Int.repr (Z.of_nat (length bytes)))) m0). split.
+          eexists (cr v m0). split.
           { constructor. constructor. }
-          exists ((rs#RAX <- (Vint (Int.repr (Z.of_nat (length bytes)))))#PC <- (rs#RA), m0). split.
-          {
-            admit.
-          }
-          {
-            exists (s, wj). split. split; eauto. split.
-            - intros. admit.
-            - constructor; eauto.
-          }
+          exists (((caw_rs c)#RAX <- v)#PC <- ((caw_rs c)#RA), m0). split.
+          { destruct c; cbn in HSG, HRS |- *.
+            subst caw_sg0. constructor; eauto.
+            - intros r. destruct r; cbn; eauto. easy.
+            - apply Mem.unchanged_on_refl.
+            - cbn. rewrite Hwin64. cbn.
+              replace (loc_init_args 0 (caw_rs0 RSP))
+                with (fun (_: block) (_: Z) => False); eauto.
+              repeat (apply Axioms.functional_extensionality; intros).
+              apply PropExtensionality.propositional_extensionality.
+              split; try easy. intros HX. inv HX. lia.
+            - cbn. rewrite Hwin64. cbn.
+              intros * HX. inv HX. lia. }
+          { exists (s, wj). split. split; eauto. split.
+            - intros. cbn in HRS. apply (mi_acc inj) in HJ.
+              destruct r; cbn; eauto.
+              destruct i0; cbn; eauto.
+              subst v. eauto.
+            - constructor; eauto. }
       + admit.
-        admit.
-
-
-
+    - admit.
+    - easy.
+    - easy.
   Admitted.
 
 End SYS_C_ASM.
