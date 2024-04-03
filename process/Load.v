@@ -143,9 +143,11 @@ Section CA.
 
 End CA.
 
+Import Ctypes.                  (* shadow Tnil and Tcons from RelationClasses *)
+
 Notation tint := (Tint I32 Unsigned noattr).
 
-Definition main_sig := signature_of_type Ctypes.Tnil tint cc_default.
+Definition main_sig := signature_of_type Tnil tint cc_default.
 
 Section INIT_C.
   Context (prog: Clight.program).
@@ -188,7 +190,7 @@ Section INIT_C.
 End INIT_C.
 
 Section INIT_ASM.
-  Context (prog: program).
+  Context (prog: Asm.program).
   Let sk := erase_program prog.
   Section WITH_SE.
 
@@ -415,11 +417,12 @@ Definition read : Clight.fundef :=
   External (EF_external "read" rw_sig) rw_parameters tint cc_default.
 
 Section SYS.
+  Close Scope Z_scope.
   Context (prog: Clight.program).
   Let sk := erase_program prog.
   Section WITH_SE.
     Context (se: Genv.symtbl).
-    Let ge := globalenv se prog.
+    Let ge := Clight.globalenv se prog.
     Variant sys_state :=
       | sys_read_query (n: int64) (b: block) (ofs: ptrofs) (m: mem)
       | sys_read_reply (bytes: list byte) (b: block) (ofs: ptrofs) (m: mem)
@@ -446,7 +449,7 @@ Section SYS.
 
     Inductive sys_c_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
     | sys_c_after_external_read n b ofs m bytes:
-      Z.of_nat (length bytes) <= Int64.unsigned n ->
+      (Z.of_nat (length bytes) <= Int64.unsigned n)%Z ->
       sys_c_after_external (sys_read_query n b ofs m) (inl (read_reply bytes)) (sys_read_reply bytes b ofs m)
     | sys_c_after_external_write n m bytes:
       sys_c_after_external (sys_write_query bytes m) (inr (write_reply n)) (sys_write_reply n m).
@@ -479,6 +482,8 @@ Section SYS.
 End SYS.
 
 Section SYS_ASM.
+  Import Asm.
+  Close Scope Z_scope.
   Context (prog: Asm.program).
   Let sk := erase_program prog.
   Section WITH_SE.
@@ -511,7 +516,7 @@ Section SYS_ASM.
 
     Inductive sys_asm_after_external: sys_state -> reply (li_sys + li_sys) -> sys_state -> Prop :=
     | sys_asm_after_external_read n b ofs m bytes:
-      Z.of_nat (length bytes) <= Int64.unsigned n ->
+      (Z.of_nat (length bytes) <= Int64.unsigned n)%Z ->
       sys_asm_after_external (sys_read_query n b ofs m) (inl (read_reply bytes)) (sys_read_reply bytes b ofs m)
     | sys_asm_after_external_write n m bytes:
       sys_asm_after_external (sys_write_query bytes m) (inr (write_reply n)) (sys_write_reply n m).
@@ -559,6 +564,19 @@ Section SYS_C_ASM.
 (* Definition cc_cklrs : callconv li_c li_c := *)
 (*   injp + inj + ext + vainj + vaext. *)
 
+
+  Inductive acc_cklr : ccworld cc_cklrs -> ccworld cc_cklrs -> Prop :=
+  | acc_cklr_vaext w w':
+    w ~> w' -> acc_cklr (inr w) (inr w')
+  | acc_cklr_vainj w w':
+    w ~> w' -> acc_cklr (inl (inr w)) (inl (inr w'))
+  | acc_cklr_ext w w':
+    w ~> w' -> acc_cklr (inl (inl (inr w))) (inl (inl (inr w')))
+  | acc_cklr_inj w w':
+    w ~> w' -> acc_cklr (inl (inl (inl (inr w)))) (inl (inl (inl (inr w'))))
+  | acc_cklr_injp w w':
+    w ~> w' -> acc_cklr (inl (inl (inl (inl w)))) (inl (inl (inl (inl w')))).
+
   Inductive mm_cklr: ccworld cc_cklrs -> mem -> mem -> Prop :=
   | mm_cklr_vaext w m m' (HM: match_mem vaext w m m'): mm_cklr (inr w) m m'
   | mm_cklr_vainj w m m' (HM: match_mem vainj w m m'): mm_cklr (inl (inr w)) m m'
@@ -567,20 +585,15 @@ Section SYS_C_ASM.
   | mm_cklr_injp w m m' (HM: match_mem injp w m m'): mm_cklr (inl (inl (inl (inl w)))) m m'.
 
   Inductive mp_cklr: ccworld cc_cklrs -> block -> ptrofs -> block -> ptrofs -> Prop :=
-  | mp_cklr_vaext w b ofs b' ofs'
-      (HP: ptr_inject (mi vaext w) (b, (Ptrofs.unsigned ofs)) (b', (Ptrofs.unsigned ofs'))):
+  | mp_cklr_vaext w b ofs b' ofs' (HP: ptrbits_inject (mi vaext w) (b, ofs) (b', ofs')):
       mp_cklr (inr w) b ofs b' ofs'
-  | mp_cklr_vainj w b ofs b' ofs'
-      (HP: ptr_inject (mi vainj w) (b, (Ptrofs.unsigned ofs)) (b', (Ptrofs.unsigned ofs'))):
+  | mp_cklr_vainj w b ofs b' ofs' (HP: ptrbits_inject (mi vainj w) (b, ofs) (b', ofs')):
       mp_cklr (inl (inr w)) b ofs b' ofs'
-  | mp_cklr_ext w b ofs b' ofs'
-      (HP: ptr_inject (mi ext w) (b, (Ptrofs.unsigned ofs)) (b', (Ptrofs.unsigned ofs'))):
+  | mp_cklr_ext w b ofs b' ofs' (HP: ptrbits_inject (mi ext w) (b, ofs) (b', ofs')):
       mp_cklr (inl (inl (inr w))) b ofs b' ofs'
-  | mp_cklr_inj w b ofs b' ofs'
-      (HP: ptr_inject (mi inj w) (b, (Ptrofs.unsigned ofs)) (b', (Ptrofs.unsigned ofs'))):
+  | mp_cklr_inj w b ofs b' ofs' (HP: ptrbits_inject (mi inj w) (b, ofs) (b', ofs')):
       mp_cklr (inl (inl (inl (inr w)))) b ofs b' ofs'
-  | mp_cklr_injp w b ofs b' ofs'
-      (HP: ptr_inject (mi injp w) (b, (Ptrofs.unsigned ofs)) (b', (Ptrofs.unsigned ofs'))):
+  | mp_cklr_injp w b ofs b' ofs' (HP: ptrbits_inject (mi injp w) (b, ofs) (b', ofs')):
       mp_cklr (inl (inl (inl (inl w)))) b ofs b' ofs'.
 
   Lemma inject_bytes j bytes y:
@@ -600,55 +613,76 @@ Section SYS_C_ASM.
     Mem.loadbytes m' b' (Ptrofs.unsigned ofs') len = Some (map Byte bytes).
   Proof.
     intros Hm Hp Hl. inv Hm; inv Hp.
-    - exploit cklr_loadbytes; eauto. unfold k1, uncurry. rewrite Hl.
+    - exploit ptrbits_ptr_inject; eauto. eapply Mem.loadbytes_range_perm; eauto.
+      split. lia. admit.
+      intros HX.
+      exploit cklr_loadbytes; eauto. unfold k1, uncurry. rewrite Hl.
       intros Ho. inv Ho. apply inject_bytes in H1. congruence.
-    - exploit cklr_loadbytes; eauto. unfold k1, uncurry. rewrite Hl.
-      intros Ho. inv Ho. apply inject_bytes in H1. congruence.
-    - exploit cklr_loadbytes; eauto. unfold k1, uncurry. rewrite Hl.
-      intros Ho. inv Ho. apply inject_bytes in H1. congruence.
-    - exploit cklr_loadbytes; eauto. unfold k1, uncurry. rewrite Hl.
-      intros Ho. inv Ho. apply inject_bytes in H1. congruence.
-    - exploit cklr_loadbytes; eauto. unfold k1, uncurry. rewrite Hl.
-      intros Ho. inv Ho. apply inject_bytes in H1. congruence.
-  Qed.
+  Admitted.
 
-  Hint Resolve ptr_ptrbits_inject_unsigned.
-
-  Lemma bytes_inject j bytes:
-    list_rel j (map Byte bytes) (map Byte bytes).
+  Lemma bytes_inject mi bytes:
+    list_rel (memval_inject mi) (map Byte bytes) (map Byte bytes).
   Proof.
+    induction bytes.
   Admitted.
 
   Lemma match_cklr_storebytes w m1 m2 m3 b1 ofs1 b2 ofs2 bytes:
     mm_cklr w m1 m2 ->
     mp_cklr w b1 ofs1 b2 ofs2 ->
     Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) (map Byte bytes) = Some m3 ->
-    exists wx m4, Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some m4
+    exists wx m4, acc_cklr w wx
+             /\ Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some m4
              /\ mm_cklr wx m3 m4.
   Proof.
     intros Hm Hp Hs. inv Hm; inv Hp.
-    - exploit @cklr_storebytes; eauto.
-      apply ptrbits_rptr_inject_unsigned; eauto.
+    - exploit ptrbits_ptr_inject; eauto. eapply Mem.storebytes_range_perm; eauto.
+      admit. intros HX.
+      exploit @cklr_storebytes; eauto. left. eauto.
       apply bytes_inject.
       unfold k1, uncurry. rewrite Hs. intros. inv H.
       destruct H2 as (wx & Hw & Hm).
-      eexists (inr wx), y. split; eauto. constructor. eauto.
+      eexists (inr wx), y. repeat split; constructor; eauto.
     - admit.
     - admit.
     - admit.
     - admit.
   Admitted.
 
+  Import Datatypes.
+
+  (* Inductive acc_cklrs: ccworld (cc_cklrs^{*}) -> ccworld (cc_cklrs^{*}) -> Prop := *)
+  (* | acc_cklrs_zero: acc_cklrs (existT _ 0%nat tt) (existT _ 0%nat tt) *)
+  (* | acc_cklrs_succ n se w w' wn wn': *)
+  (*   acc_cklr w w' -> acc_cklrs (existT _ n wn) (existT _ n wn') -> *)
+  (*   acc_cklrs (existT _ (S n) (se, w, wn)) (existT _ (S n) (se, w', wn')). *)
+
+  Instance acc_cklr_kf: KripkeFrame unit (ccworld cc_cklrs) :=
+    {| acc _ := acc_cklr; |}.
+
+  Instance acc_cklr_refl: Reflexive acc_cklr.
+  Proof.
+    red. destruct x; eauto. 2: { constructor. reflexivity. }
+    destruct c; eauto. 2: { constructor. reflexivity. }
+    destruct c; eauto. 2: { constructor. reflexivity. }
+    destruct c; eauto. 2: { constructor. reflexivity. }
+    constructor. reflexivity.
+  Qed.
+
+  Instance acc_cklr_trans: Transitive acc_cklr.
+  Proof.
+    red. destruct x; destruct y; destruct z; intros.
+  Admitted.
+
   Inductive mm_cklrs: ccworld (cc_cklrs^{*}) -> mem -> mem -> Prop :=
   | mm_cklrs_zero m: mm_cklrs (existT _ 0%nat tt) m m
-  | mm_cklrs_succ n se w wn m1 m2 m3:
-        mm_cklr w m1 m2 -> mm_cklrs (existT _ n wn) m2 m3 ->
+  | mm_cklrs_succ n se w wx wn m1 m2 m3:
+        w ~> wx /\ mm_cklr wx m1 m2 -> mm_cklrs (existT _ n wn) m2 m3 ->
         mm_cklrs (existT _ (S n) (se, w, wn)) m1 m3.
 
   Inductive mp_cklrs: ccworld (cc_cklrs^{*}) -> block -> ptrofs -> block -> ptrofs -> Prop :=
   | mp_cklrs_zero b ofs: mp_cklrs (existT _ 0%nat tt) b ofs b ofs
-  | mp_cklrs_succ n se w wn b1 ofs1 b2 ofs2 b3 ofs3:
-        mp_cklr w b1 ofs1 b2 ofs2 -> mp_cklrs (existT _ n wn) b2 ofs2 b3 ofs3 ->
+  | mp_cklrs_succ n se w wx wn b1 ofs1 b2 ofs2 b3 ofs3:
+        mp_cklr wx b1 ofs1 b2 ofs2 -> mp_cklrs (existT _ n wn) b2 ofs2 b3 ofs3 ->
         mp_cklrs (existT _ (S n) (se, w, wn)) b1 ofs1 b3 ofs3.
 
   Require Import Classical.
@@ -671,47 +705,43 @@ Section SYS_C_ASM.
   (*   subst_dep. eauto using match_cklr_loadbytes. *)
   (* Qed. *)
 
-  Inductive mm_ca: ccworld (cc_cklrs^{*}) -> world inj -> mem -> mem -> Prop :=
-  | mm_ca_intro wn wi m1 m2 m3:
-    mm_cklrs wn m1 m2 -> match_mem inj wi m2 m3 -> mm_ca wn wi m1 m3.
+  Ltac inv_inj:=
+    match goal with
+    | [ H: Val.inject_list _ _ _ |- _ ] => inv H
+    | [ H: Val.inject _ (Vint _) _ |- _ ] => inv H
+    | [ H: Val.inject _ (Vlong _) _ |- _ ] => inv H
+    | [ H: Val.inject _ (Vptr _ _) _ |- _ ] => inv H
+    end.
 
-  Inductive mp_ca: ccworld (cc_cklrs^{*}) -> world inj -> block -> ptrofs -> block -> ptrofs -> Prop :=
-  | mp_ca_intro wn wi b1 ofs1 b2 ofs2 b3 ofs3:
-    mp_cklrs wn b1 ofs1 b2 ofs2 ->
-    ptr_inject (mi inj wi) (b2, (Ptrofs.unsigned ofs2)) (b3, (Ptrofs.unsigned ofs3)) ->
-    mp_ca wn wi b1 ofs1 b3 ofs3.
+  Ltac inv_lessdef:=
+    match goal with
+    | [ H: Val.lessdef_list _ _ |- _ ] => inv H
+    | [ H: Val.lessdef _ _ |- _ ] => inv H
+    end.
 
-  Lemma ca_storebytes n w m1 b1 ofs1 m2 b2 ofs2 bytes m3:
-    mm_ca n w m1 m2 ->
-    Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some m3 ->
-    exists m4, Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) (map Byte bytes) = Some m4
-          /\ mm_ca n w m4 m3.
-  Admitted.
-
-  Inductive match_sys_state:
-    ccworld (cc_cklrs^{*}) -> world inj -> sys_state -> sys_state -> Prop :=
-  | match_sys_state_read_query wn wi len b1 ofs1 m1 b2 ofs2 m2:
-      mm_ca wn wi m1 m2 ->
-      mp_ca wn wi b1 ofs1 b2 ofs2 ->
-      match_sys_state wn wi (sys_read_query len b1 ofs1 m1) (sys_read_query len b2 ofs2 m2)
-  | match_sys_state_read_reply wn wi bytes b1 ofs1 m1 b2 ofs2 m2:
-      mm_ca wn wi m1 m2 ->
-      mp_ca wn wi b1 ofs1 b2 ofs2 ->
-      match_sys_state wn wi (sys_read_reply bytes b1 ofs1 m1) (sys_read_reply bytes b2 ofs2 m2).
-
-  (*   Variant sys_state := *)
-  (*     | sys_read_query (n: int64) (b: block) (ofs: ptrofs) (m: mem) *)
-  (*     | sys_read_reply (bytes: list byte) (b: block) (ofs: ptrofs) (m: mem) *)
-  (*     | sys_write_query (bytes: list byte) (m: mem) *)
-  (*     | sys_write_reply (n: int) (m: mem). *)
-
-  Definition nw_of_world (w: ccworld cc_compcert): sigT (fun n => ccworld (cc_cklrs ^ n)).
-  Proof. cbn in w. destruct w. destruct p. exact s0. Defined.
-
-  Definition injw_of_world (w: ccworld cc_compcert): world inj.
-  Proof. cbn in w. eprod_crush. exact i. Defined.
-
-  Import ListNotations.
+  Lemma cklr_match_query_inv (w: ccworld cc_cklrs) b ofs len m q vf:
+    match_query cc_cklrs w
+                (cq vf rw_sig [Vint (Int.repr 0); Vptr b ofs; Vlong len] m)
+                q ->
+    exists m' b' ofs' vf',
+      q = (cq vf' rw_sig [Vint (Int.repr 0); Vptr b' ofs'; Vlong len] m')
+      /\ mm_cklr w m m' /\ mp_cklr w b ofs b' ofs'.
+  Proof.
+    destruct w.
+    2: { cbn. intros Hq. inv Hq. repeat inv_inj.
+         eexists _, _, _, _. repeat split; try econstructor;eauto. }
+    destruct c.
+    2: { cbn. intros Hq. inv Hq. repeat inv_inj.
+         eexists _, _, _, _. repeat split; try econstructor;eauto. }
+    destruct c.
+    2: { cbn. intros Hq. inv Hq. repeat inv_inj.
+         eexists _, _, _, _. repeat split; try econstructor;eauto. }
+    destruct c.
+    2: { cbn. intros Hq. inv Hq. repeat inv_inj.
+         eexists _, _, _, _. repeat split; try econstructor;eauto. }
+    cbn. intros Hq. inv Hq. repeat inv_inj.
+    eexists _, _, _, _. repeat split; try econstructor;eauto.
+  Qed.
 
   Lemma cklrs_match_query_inv (nw: ccworld (cc_cklrs ^ {*})) b ofs len m q vf:
     match_query (cc_cklrs ^ {*}) nw
@@ -721,7 +751,47 @@ Section SYS_C_ASM.
       q = (cq vf' rw_sig [Vint (Int.repr 0); Vptr b' ofs'; Vlong len] m')
       /\ mm_cklrs nw m m' /\ mp_cklrs nw b ofs b' ofs'.
   Proof.
-  Admitted.
+    destruct nw. cbn. revert vf b ofs m. induction x; cbn.
+    - intros. subst. destruct c.
+      eexists _, _, _, _. repeat split; try econstructor; eauto.
+    - cbn in *. destruct c as [[se w] wn].
+      intros * (qm & Hq1 & Hq2).
+      apply cklr_match_query_inv in Hq1 as
+          (mm & bm & ofsm & vfm & Hqm & Hmm & Hmp).
+      subst qm.
+      specialize (IHx _ _ _ _ _ Hq2) as
+        (m' & b' & ofs' & vf' & Hq' & Hm' & Hp').
+      exists m', b', ofs', vf'. repeat split; try econstructor; eauto.
+      split. reflexivity. eauto.
+  Qed.
+
+  Lemma cklr_match_reply_intro w0 w m1 m2 v:
+    w0 ~> w -> mm_cklr w m1 m2 ->
+    match_reply cc_cklrs w0 {| cr_retval := Vint v; cr_mem := m1 |}
+                {| cr_retval := Vint v; cr_mem := m2 |}.
+  Proof.
+    intros Hw Hm. inv Hw; inv Hm.
+    - eexists w'; split; eauto. constructor; eauto.
+    - eexists w'; split; eauto. constructor; eauto.
+    - eexists w'; split; eauto. constructor; eauto.
+    - eexists w'; split; eauto. constructor; eauto.
+    - eexists w'; split; eauto. constructor; eauto.
+  Qed.
+
+  Lemma cklrs_match_reply_intro x c m1 m2 v:
+    mm_cklrs (existT (fun n : nat => ccworld (cc_cklrs ^ n)) x c) m1 m2 ->
+    match_reply (cc_cklrs ^ x) c {| cr_retval := Vint v; cr_mem := m1 |}
+                {| cr_retval := Vint v; cr_mem := m2 |}.
+  Proof.
+    revert m1 m2. induction x.
+    - intros. inv H. reflexivity.
+    - intros. simple inversion H. inv H0.
+      exploit eq_sigT_fst. apply H2. intros. inv H0.
+      subst_dep.
+      destruct H1. cbn.
+      exists (cr (Vint v) m3). split; eauto.
+      eapply cklr_match_reply_intro; eauto.
+  Qed.
 
   Hypothesis (Hwin64: Archi.win64 = false).
 
@@ -736,6 +806,64 @@ Section SYS_C_ASM.
     (* PTree.extensionality_empty *)
   Admitted.
 
+
+  Inductive mm_ca: ccworld (cc_cklrs^{*}) -> world vainj -> cc_ca_world -> mem -> mem -> Prop :=
+  | mm_ca_intro wn wi wj m1 m2 m3 sg rs se
+    (HN: mm_cklrs wn m1 m2) (HI: match_mem inj wj m2 m3) (HJ: wi ~> wj)
+    (HRO: romatch_all se (bc_of_symtbl se) m2)
+    (HNEXT: (Genv.genv_next se <= Mem.nextblock m2)%positive)
+    (HSG: sg = rw_sig):
+    mm_ca wn (se, wi) (caw sg rs m2) m1 m3.
+
+  Inductive mp_ca: ccworld (cc_cklrs^{*}) -> world inj -> block -> ptrofs -> block -> ptrofs -> Prop :=
+  | mp_ca_intro wn wi b1 ofs1 b2 ofs2 b3 ofs3:
+    mp_cklrs wn b1 ofs1 b2 ofs2 ->
+    ptrbits_inject (mi inj wi) (b2, ofs2) (b3, ofs3) ->
+    mp_ca wn wi b1 ofs1 b3 ofs3.
+
+  (* Inductive acc_ca: ccworld (cc_cklrs^{*}) -> world inj -> ccworld (cc_cklrs^{*}) -> world inj -> Prop := *)
+  (* | acc_ca_intro wn wi wn' wi': *)
+  (*   acc_cklrs wn wn' ->  wi ~> wi' -> acc_ca wn wi wn' wi'. *)
+
+  Lemma ca_storebytes n w m1 b1 ofs1 m2 b2 ofs2 bytes m3 caw se:
+    mm_ca n (se, w) caw m1 m2 ->
+    mp_ca n w b1 ofs1 b2 ofs2 ->
+    Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) (map Byte bytes) = Some m3 ->
+    exists m4,
+      Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some m4
+      /\ mm_ca n (se, w) caw m3 m4.
+  Admitted.
+
+  Inductive match_sys_state:
+    ccworld (cc_cklrs^{*}) -> world vainj -> cc_ca_world -> sys_state -> sys_state -> Prop :=
+  | match_sys_state_read_query wn wi len b1 ofs1 m1 b2 ofs2 m2 caw se
+      (HM: mm_ca wn (se, wi) caw m1 m2) (HP: mp_ca wn wi b1 ofs1 b2 ofs2):
+      match_sys_state wn (se, wi) caw
+        (sys_read_query len b1 ofs1 m1) (sys_read_query len b2 ofs2 m2)
+  | match_sys_state_read_reply wn wi bytes b1 ofs1 m1 b2 ofs2 m2 caw se
+      (HM: mm_ca wn (se, wi) caw m1 m2) (HP: mp_ca wn wi b1 ofs1 b2 ofs2):
+      match_sys_state wn (se, wi) caw
+        (sys_read_reply bytes b1 ofs1 m1) (sys_read_reply bytes b2 ofs2 m2).
+
+  (*   Variant sys_state := *)
+  (*     | sys_read_query (n: int64) (b: block) (ofs: ptrofs) (m: mem) *)
+  (*     | sys_read_reply (bytes: list byte) (b: block) (ofs: ptrofs) (m: mem) *)
+  (*     | sys_write_query (bytes: list byte) (m: mem) *)
+  (*     | sys_write_reply (n: int) (m: mem). *)
+
+  Definition nw_of_world (w: ccworld cc_compcert): sigT (fun n => ccworld (cc_cklrs ^ n)).
+  Proof. cbn in w. destruct w. destruct p. exact s0. Defined.
+
+  Definition injw_of_world (w: ccworld cc_compcert): world vainj.
+  Proof. cbn in w. destruct w.
+         destruct p0. destruct p1. destruct p2.
+         exact p3. Defined.
+
+  Definition caw_of_world (w: ccworld cc_compcert): cc_ca_world.
+  Proof. cbn in w. eprod_crush. exact c. Defined.
+
+  Import ListNotations.
+
   Lemma sys_c_asm p tp:
     match_prog p tp -> forward_simulation 1 cc_compcert (sys_c p) (sys_asm tp).
   Proof.
@@ -744,50 +872,64 @@ Section SYS_C_ASM.
     constructor. econstructor. apply Hsk.
     intros. reflexivity.
     intros. instantiate (1 := fun _ _ _ => _). cbn beta.
-    set (ms := match_sys_state (nw_of_world wB) (injw_of_world wB)).
+    set (ms := match_sys_state (nw_of_world wB) (injw_of_world wB) (caw_of_world wB)).
     eapply forward_simulation_step with (match_states := fun s1 s2 => ms s1 s2).
     - intros. inv H3.
       + unfold cc_compcert in *. cbn in wB, H2 |- *.
-        eprod_crush. destruct s9. inv H3. destruct H10; subst. cbn in *.
+        eprod_crush. destruct s6. inv H3. destruct H8; subst. cbn in ms.
         (* cklrs *)
-        eapply (cklrs_match_query_inv (existT _ x4 c0)) in H2 as
+        eapply (cklrs_match_query_inv (existT _ x2 c0)) in H2 as
             (mx & bx & ofsx & vfx & Hqx & Hmx & Hpx). subst x0.
         (* lessdef *)
-        inv H5.
-        repeat match goal with
-        | [ H: Val.lessdef_list _ _ |- _ ] => inv H
-        | [ H: Val.lessdef _ _ |- _ ] => inv H
-        end.
-        (* cc_c_locset *)
+        inv H5. repeat inv_lessdef.
+        (* cc_c_asm: need to show args_removed changes nothing *)
         inv H6.
-        (* cc_locset_mach: need to show args_removed changes nothing *)
-        inv H7.
-        inv H14. inv H2.
+        inv H15. inv H2.
         { admit. }
-        cbn in H2. rewrite Hwin64 in H2. cbn in H2. apply free_empty in H2. subst m1.
-        (* cc_mach_asm *)
-        inv H8.
+        cbn in H3. rewrite Hwin64 in H3. cbn in H3. apply free_empty in H3.
+        subst m0. subst sp.
         (* cc_asm vainj *)
-        destruct q2. destruct H9. destruct H8.
+        destruct q2. destruct H7. destruct H7.
         (* arguments *)
-        cbn in H13. rewrite Hwin64 in H13. cbn in H13. inv H13.
+        cbn in H12. rewrite Hwin64 in H12. cbn in H12. inv H12.
         assert (exists b' ofs', r0#RSI = Vptr b' ofs' /\ Val.inject i (Vptr bx ofsx) (Vptr b' ofs')) as (b' & ofs' & Hofs & Hb').
         { admit. }
-        eexists (sys_read_query n b' ofs' m1). split.
+        eexists (sys_read_query n b' ofs' m0). split.
         * econstructor; eauto.
-          -- admit.
           -- admit.
           -- admit.
           -- admit.
         * constructor.
           (* mem *)
-          -- econstructor; eauto. inv H9; auto.
+          -- inv H10. econstructor; eauto. reflexivity.
           (* ptr *)
-          -- econstructor; eauto. admit.
-             (* ptr_ptrbits_inject_unsigned *)
+          -- econstructor; eauto. inv Hb'. constructor; eauto.
       + admit.
     - intros. inv H3.
+      + subst ms. inv H2.
+        exploit ca_storebytes; eauto. intros (mx & Hs & Hm).
+        cbn in wB. eprod_crush.
+        cbn -[match_prog] in *. inv H6. inv Hm.
+        eexists ((rs#RAX <- (Vint (Int.repr (Z.of_nat (length bytes)))))#PC <- (rs#RA) , mx). split.
+        * econstructor; eauto.
+        * eexists (cr (Vint (Int.repr (Z.of_nat (length bytes)))) m0). split.
+          { destruct s6. eapply cklrs_match_reply_intro; eauto. }
+          eexists (cr (Vint (Int.repr (Z.of_nat (length bytes)))) m0). split.
+          (* need sig *)
+          { constructor. cbn. admit. }
+          eexists (cr (Vint (Int.repr (Z.of_nat (length bytes)))) m0). split.
+          { constructor. constructor. }
+          exists ((rs#RAX <- (Vint (Int.repr (Z.of_nat (length bytes)))))#PC <- (rs#RA), m0). split.
+          {
+            admit.
+          }
+          {
+            exists (s, wj). split. split; eauto. split.
+            - intros. admit.
+            - constructor; eauto.
+          }
       + admit.
+        admit.
 
 
 
